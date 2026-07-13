@@ -1,0 +1,24 @@
+# .NET
+**/bin/
+**/obj/
+*.user
+*.suo
+*.userprefs
+*.csproj.user
+
+# IDE
+.vs/
+.idea/
+.vscode/
+*.sln.iml
+
+# Test and coverage output
+TestResults/
+coverage/
+*.trx
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Engine-generated directories are added when an engine adapter is introduced.

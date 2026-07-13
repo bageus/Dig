@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <RootNamespace>Dig.Domain</RootNamespace>
+    <AssemblyName>Dig.Domain</AssemblyName>
+  </PropertyGroup>
+</Project>
