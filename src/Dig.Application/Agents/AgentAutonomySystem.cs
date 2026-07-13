@@ -1,3 +1,4 @@
+using Dig.Application.Messaging;
 using Dig.Application.Runtime;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
@@ -8,12 +9,14 @@ public sealed class AgentAutonomySystem : ISimulationSystem
 {
     private readonly IAgentRepository _repository;
     private readonly IAgentDecisionContextProvider _contextProvider;
+    private readonly IEventSink _eventSink;
     private readonly AgentDecisionSystem _decisionSystem;
     private readonly AgentBehaviorPolicy _policy;
 
     public AgentAutonomySystem(
         IAgentRepository repository,
         IAgentDecisionContextProvider contextProvider,
+        IEventSink eventSink,
         AgentDecisionSystem decisionSystem,
         AgentBehaviorPolicy policy,
         int order = 300,
@@ -27,6 +30,7 @@ public sealed class AgentAutonomySystem : ISimulationSystem
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _contextProvider = contextProvider
             ?? throw new ArgumentNullException(nameof(contextProvider));
+        _eventSink = eventSink ?? throw new ArgumentNullException(nameof(eventSink));
         _decisionSystem = decisionSystem
             ?? throw new ArgumentNullException(nameof(decisionSystem));
         _policy = policy ?? throw new ArgumentNullException(nameof(policy));
@@ -55,7 +59,7 @@ public sealed class AgentAutonomySystem : ISimulationSystem
             Require(agent.AdvanceNeeds(_policy, context.Tick));
             if (!agent.IsAlive)
             {
-                _repository.Save(agent);
+                SaveAndPublish(agent);
                 continue;
             }
 
@@ -70,11 +74,17 @@ public sealed class AgentAutonomySystem : ISimulationSystem
                 context.Tick);
             Require(agent.ApplyDecision(decision, _policy, context.Tick));
             Require(agent.AdvanceAction(_policy, context.Tick));
-            _repository.Save(agent);
+            SaveAndPublish(agent);
             decisions.Add(new AgentTickDecision(agent.Id, decision));
         }
 
         LastReport = new AgentTickReport(context.Tick, decisions);
+    }
+
+    private void SaveAndPublish(AgentState agent)
+    {
+        _repository.Save(agent);
+        _eventSink.Append(agent.DequeueUncommittedEvents());
     }
 
     private static void Require(Result result)
