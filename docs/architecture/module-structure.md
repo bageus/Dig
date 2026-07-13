@@ -2,9 +2,9 @@
 
 ## 1. Назначение
 
-Документ описывает рекомендуемое разбиение исходного кода и владение данными. Публичные контракты, события и правила зависимостей вынесены в [`module-contracts.md`](module-contracts.md).
+Документ описывает рекомендуемое разбиение исходного кода и владение данными. Контракты, события и зависимости вынесены в [`module-contracts.md`](module-contracts.md).
 
-Имена директорий можно адаптировать к выбранному движку, но архитектурные границы сохраняются.
+Имена директорий можно адаптировать к движку, но архитектурные границы сохраняются.
 
 ## 2. Корневая структура
 
@@ -41,7 +41,6 @@ Domain/
   Core/
     EntityId
     Result
-    Optional
     DomainEvent
     RandomStream
     VersionStamp
@@ -58,7 +57,6 @@ Domain/
     Chunk
     MaterialState
     EnvironmentState
-    ExplorationState
     DesignationState
 
   Navigation/
@@ -79,13 +77,11 @@ Domain/
 
   Needs/
     NeedSet
-    NeedDefinitionRef
     NeedModifier
     NeedEvaluator
 
   Jobs/
     Job
-    JobId
     JobType
     JobStage
     JobPriority
@@ -105,19 +101,16 @@ Domain/
     ConstructionSite
     BuildingPlacement
     Room
-    FacilityState
 
   Production/
     ProductionOrder
     RecipeRef
     ProductionQueue
-    ProductionProgress
     EnergyDemand
 
   Technology/
     TechnologyState
     UnlockSet
-    ResearchProgress
     PrerequisiteGraph
 
   Society/
@@ -140,13 +133,6 @@ Domain/
     DiplomacyState
     StrategicGoal
     TerritoryState
-
-  Events/
-    WorldEvents
-    AgentEvents
-    JobEvents
-    EconomyEvents
-    SocietyEvents
 ```
 
 Domain содержит игровые правила и не зависит от движка, UI, файловой системы или сцен.
@@ -175,7 +161,6 @@ Application/
     IssueDirectOrder
     CreateProductionOrder
     ChangeSchedule
-    ChangePriority
     SaveGame
     LoadGame
 
@@ -194,7 +179,7 @@ Application/
     TechnologyView
 ```
 
-Application не владеет доменным состоянием. Он преобразует ввод в команды и координирует владельцев состояния.
+Application преобразует ввод в команды и координирует владельцев состояния, но не хранит доменные данные.
 
 ## 5. Infrastructure
 
@@ -230,7 +215,7 @@ Infrastructure/
     ResourceAdapter
 ```
 
-Infrastructure реализует внешние технические возможности через интерфейсы внутренних слоёв.
+Infrastructure реализует внешние возможности через интерфейсы внутренних слоёв.
 
 ## 6. Presentation
 
@@ -260,7 +245,7 @@ Presentation/
   DebugView/
 ```
 
-Presentation получает read models и события отображения. Он не хранит авторитетное игровое состояние.
+Presentation отображает read models и события. Он не хранит авторитетное игровое состояние.
 
 ## 7. Content
 
@@ -283,7 +268,7 @@ Content/
   ValidationRules/
 ```
 
-Runtime-состояние не хранится в Content. После загрузки определения становятся неизменяемыми.
+Runtime-состояние не хранится в Content. После загрузки определения неизменяемы.
 
 ## 8. Diagnostics
 
@@ -298,7 +283,7 @@ Diagnostics/
   EventTrace/
 ```
 
-Diagnostics читает только публичные read-only контракты и не изменяет симуляцию.
+Diagnostics использует только read-only контракты.
 
 ## 9. Tests
 
@@ -323,29 +308,28 @@ Tests/
     Pathfinding
     Terrain updates
     Large populations
-    Save/load size and time
+    Save/load
 ```
 
-## 10. Правила добавления нового модуля
+## 10. Добавление нового модуля
 
-Перед добавлением модуля необходимо определить:
+Перед добавлением модуля определяются:
 
-- владельца состояния;
-- публичные команды и запросы;
-- публикуемые события;
+- владелец состояния;
+- команды, запросы и события;
 - инварианты;
 - направление зависимостей;
-- сохранение или способ пересчёта;
-- диагностику;
+- способ сохранения или пересчёта;
+- диагностика;
 - тестовые сценарии;
-- ожидаемый performance budget.
+- performance budget.
 
-Не следует создавать модуль только ради группировки файлов. Модуль нужен, когда существует самостоятельная ответственность и граница владения.
+Модуль создаётся только при наличии самостоятельной ответственности и границы владения.
 
 ## 11. Связанные документы
 
-- [`overview.md`](overview.md) — верхнеуровневая архитектура.
-- [`module-contracts.md`](module-contracts.md) — контракты, события и зависимости.
-- [`system-catalog.md`](system-catalog.md) — индекс систем.
-- [`../development-rules.md`](../development-rules.md) — обязательные правила.
+- [`overview.md`](overview.md) — верхнеуровневая архитектура;
+- [`module-contracts.md`](module-contracts.md) — контракты и зависимости;
+- [`system-catalog.md`](system-catalog.md) — индекс систем;
+- [`../development-rules.md`](../development-rules.md) — обязательные правила;
 - [`../ROADMAP.md`](../ROADMAP.md) — порядок реализации.
