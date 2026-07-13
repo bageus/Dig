@@ -39,7 +39,8 @@
     ],
     "Dig.Headless": [
       "Dig.Application",
-      "Dig.Domain"
+      "Dig.Domain",
+      "Dig.Infrastructure"
     ]
   },
   "domain_banned_tokens": [
