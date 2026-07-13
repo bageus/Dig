@@ -2,7 +2,9 @@
 
 ## 1. Назначение
 
-Документ описывает рекомендуемое разбиение исходного кода, владение данными и публичные контракты. Имена директорий могут быть адаптированы к движку, но направления зависимостей сохраняются.
+Документ описывает рекомендуемое разбиение исходного кода и владение данными. Публичные контракты, события и правила зависимостей вынесены в [`module-contracts.md`](module-contracts.md).
+
+Имена директорий можно адаптировать к выбранному движку, но архитектурные границы сохраняются.
 
 ## 2. Корневая структура
 
@@ -147,6 +149,8 @@ Domain/
     SocietyEvents
 ```
 
+Domain содержит игровые правила и не зависит от движка, UI, файловой системы или сцен.
+
 ## 4. Application
 
 ```text
@@ -190,7 +194,7 @@ Application/
     TechnologyView
 ```
 
-Application не владеет доменным состоянием. Он координирует вызовы владельцев состояния.
+Application не владеет доменным состоянием. Он преобразует ввод в команды и координирует владельцев состояния.
 
 ## 5. Infrastructure
 
@@ -226,6 +230,8 @@ Infrastructure/
     ResourceAdapter
 ```
 
+Infrastructure реализует внешние технические возможности через интерфейсы внутренних слоёв.
+
 ## 6. Presentation
 
 ```text
@@ -254,7 +260,7 @@ Presentation/
   DebugView/
 ```
 
-Presentation получает read models и события представления. Он не хранит авторитетное игровое состояние.
+Presentation получает read models и события отображения. Он не хранит авторитетное игровое состояние.
 
 ## 7. Content
 
@@ -279,126 +285,67 @@ Content/
 
 Runtime-состояние не хранится в Content. После загрузки определения становятся неизменяемыми.
 
-## 8. Публичные контракты модулей
-
-Каждый крупный модуль предоставляет минимальный фасад.
-
-Пример:
+## 8. Diagnostics
 
 ```text
-IWorldService
-  GetCell(cellId)
-  ValidateDesignation(command)
-  ApplyTerrainChange(change)
-  CreateSnapshot(region)
-
-IJobService
-  CreateWorkOrder(spec)
-  FindCandidates(agentId)
-  ClaimJob(agentId, jobId)
-  AdvanceJob(jobId, result)
-  CancelJob(jobId, reason)
-
-IInventoryService
-  QueryAvailableItems(filter)
-  ReserveItems(request)
-  Transfer(transfer)
-  ReleaseReservation(id)
+Diagnostics/
+  AgentInspector/
+  JobInspector/
+  ReservationView/
+  NavigationView/
+  ChunkView/
+  PerformanceView/
+  EventTrace/
 ```
 
-Внутренние коллекции и изменяемые сущности наружу не выдаются.
+Diagnostics читает только публичные read-only контракты и не изменяет симуляцию.
 
-## 9. События между системами
-
-Примеры фактов:
+## 9. Tests
 
 ```text
-CellChanged
-ChunkInvalidated
-JobCreated
-JobClaimed
-JobCompleted
-ReservationReleased
-ItemTransferred
-BuildingCompleted
-TechnologyUnlocked
-AgentNeedBecameCritical
-AgentDied
-ChildBorn
-FactionRelationChanged
+Tests/
+  Unit/
+    Domain rules
+    Policies
+    State transitions
+
+  Integration/
+    Cross-system scenarios
+    Save/load
+    Content loading
+
+  Simulation/
+    Deterministic scenarios
+    Long-running colonies
+    Regression fixtures
+
+  Performance/
+    Pathfinding
+    Terrain updates
+    Large populations
+    Save/load size and time
 ```
 
-Событие содержит идентификаторы и минимально необходимый снимок данных. Получатель не должен изменять состояние отправителя через ссылку на объект.
+## 10. Правила добавления нового модуля
 
-## 10. Структура системы
+Перед добавлением модуля необходимо определить:
 
-Каждая система по возможности имеет одинаковый внутренний шаблон:
+- владельца состояния;
+- публичные команды и запросы;
+- публикуемые события;
+- инварианты;
+- направление зависимостей;
+- сохранение или способ пересчёта;
+- диагностику;
+- тестовые сценарии;
+- ожидаемый performance budget.
 
-```text
-<System>/
-  Model/
-  Commands/
-  Events/
-  Queries/
-  Policies/
-  Services/
-  Serialization/
-  Tests/
-```
+Не следует создавать модуль только ради группировки файлов. Модуль нужен, когда существует самостоятельная ответственность и граница владения.
 
-Не нужно создавать пустые папки заранее. Шаблон применяется по мере появления ответственности.
+## 11. Связанные документы
 
-## 11. Правила разбиения файлов
-
-При достижении 250–300 строк следует проверить, не смешаны ли:
-
-- модель и оркестрация;
-- валидация и выполнение;
-- сериализация и доменная логика;
-- выбор стратегии и реализация стратегии;
-- публичный контракт и детали движка;
-- разные состояния конечного автомата.
-
-Файл более 350 строк считается нарушением, кроме документированных исключений из `docs/development-rules.md`.
-
-## 12. Направления зависимостей
-
-Разрешено:
-
-```text
-Presentation -> Application
-Application -> Domain
-Infrastructure -> Domain interfaces
-Infrastructure -> Application interfaces
-Content loader -> Content schemas
-Diagnostics -> public read-only contracts
-```
-
-Запрещено:
-
-```text
-Domain -> Presentation
-Domain -> Engine API
-Domain -> File system
-World -> UI
-Jobs -> concrete animation controller
-Inventory -> scene object
-Content definitions -> mutable runtime entity
-```
-
-## 13. Минимальный вертикальный срез
-
-Первый сквозной сценарий должен пройти через всю структуру:
-
-1. пользователь назначает одну клетку на копание;
-2. Application создаёт команду;
-3. World валидирует назначение;
-4. Jobs создаёт работу;
-5. Agent выбирает и резервирует её;
-6. Navigation возвращает маршрут;
-7. Agent выполняет действие;
-8. World меняет клетку;
-9. Inventory создаёт ресурс;
-10. Presentation перестраивает затронутый чанк;
-11. состояние сохраняется и загружается;
-12. сценарий проверяется интеграционным тестом.
+- [`overview.md`](overview.md) — верхнеуровневая архитектура.
+- [`module-contracts.md`](module-contracts.md) — контракты, события и зависимости.
+- [`system-catalog.md`](system-catalog.md) — индекс систем.
+- [`../development-rules.md`](../development-rules.md) — обязательные правила.
+- [`../ROADMAP.md`](../ROADMAP.md) — порядок реализации.
