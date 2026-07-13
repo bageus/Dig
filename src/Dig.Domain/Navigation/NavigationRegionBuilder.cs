@@ -29,15 +29,18 @@ internal static class NavigationRegionBuilder
             throw new ArgumentNullException(nameof(topology));
         }
 
+        CellId[] cells = topology.Chunks
+            .SelectMany(chunk => chunk.WalkableCells)
+            .OrderBy(cell => cell)
+            .ToArray();
+        Dictionary<CellId, HashSet<CellId>> adjacency = BuildWeakAdjacency(
+            topology,
+            cells);
         Dictionary<CellId, int> regionsByCell = new Dictionary<CellId, int>();
         List<NavigationRegionSnapshot> regions = new List<NavigationRegionSnapshot>();
         ChunkLayout layout = new ChunkLayout(
             topology.WorldSize,
             topology.ChunkSize);
-        CellId[] cells = topology.Chunks
-            .SelectMany(chunk => chunk.WalkableCells)
-            .OrderBy(cell => cell)
-            .ToArray();
 
         int nextRegionId = 0;
         foreach (CellId start in cells)
@@ -60,11 +63,11 @@ internal static class NavigationRegionBuilder
                 cellCount++;
                 chunks.Add(layout.GetChunk(current));
 
-                foreach (NavigationTransition transition in topology.GetTransitions(current))
+                foreach (CellId neighbor in adjacency[current].OrderBy(cell => cell))
                 {
-                    if (regionsByCell.TryAdd(transition.Target, regionId))
+                    if (regionsByCell.TryAdd(neighbor, regionId))
                     {
-                        frontier.Enqueue(transition.Target);
+                        frontier.Enqueue(neighbor);
                     }
                 }
             }
@@ -76,5 +79,30 @@ internal static class NavigationRegionBuilder
         }
 
         return new NavigationRegionBuildResult(regionsByCell, regions);
+    }
+
+    private static Dictionary<CellId, HashSet<CellId>> BuildWeakAdjacency(
+        NavigationSnapshot topology,
+        IReadOnlyCollection<CellId> cells)
+    {
+        Dictionary<CellId, HashSet<CellId>> adjacency = cells.ToDictionary(
+            cell => cell,
+            _ => new HashSet<CellId>());
+
+        foreach (CellId cell in cells)
+        {
+            foreach (NavigationTransition transition in topology.GetTransitions(cell))
+            {
+                if (!adjacency.ContainsKey(transition.Target))
+                {
+                    continue;
+                }
+
+                adjacency[cell].Add(transition.Target);
+                adjacency[transition.Target].Add(cell);
+            }
+        }
+
+        return adjacency;
     }
 }
