@@ -1,0 +1,104 @@
+// cw_New_York_Central
+set map_size "300 250"
+
+set Zone "Urwald"
+
+adaptive_sound primary cave
+adaptive_sound changetheme cave
+
+set TempRatio 0.3
+
+set temp_list 	{
+				{100	172	multi_urw_start_012_a_1}
+				{144	180	multi_unq_hostage_001}
+				{76	28	multi_unq_rescue_001}
+				{160	100	urw_gng_009_a}
+				{160	124	urw_gng_009_b}
+				{124	124	urw_gng_009_c}
+				{64	28	urw_gng_009_d}
+				{124	76	urw_gng_009_a}
+				{160	76	urw_gng_009_b}
+				{124	52	urw_gng_009_c}
+				{88	100	urw_gng_009_a}
+				{88	124	urw_gng_009_b}
+				{160	24	urw_gng_009_c}
+				{124	100	urw_gng_009_d}
+				{160	148	urw_gng_009_a}
+				{88	148	urw_gng_009_b}
+				{88	172	urw_gng_009_c}
+				{124	148	urw_gng_009_d}
+				{156	112	urw_gng_033_a}
+				{156	88	urw_gng_033_b}
+				{156	64	urw_gng_033_a}
+				{120	160	urw_gng_033_b}
+				{120	64	urw_gng_033_a}
+				{120	88	urw_gng_033_b}
+				{120	112	urw_gng_033_a}
+				{120	136	urw_gng_033_b}
+				{156	136	urw_gng_033_a}
+				{84	136	urw_gng_033_b}
+				{84	112	urw_gng_033_a}
+				{84	88	urw_gng_033_b}
+				{108	92	urw_gng_003_a}
+				{96	68	urw_gng_003_b}
+				{132	92	urw_gng_003_c}
+				{108	116	urw_gng_003_d}
+				{132	116	urw_gng_003_a}
+				{132	164	urw_gng_003_b}
+				{100	164	urw_gng_003_c}
+				{96	116	urw_gng_003_d}
+				{96	92	urw_gng_003_a}
+				{144	164	urw_gng_003_b}
+				{144	92	urw_gng_003_c}
+				{144	116	urw_gng_003_d}
+				{108	68	urw_gng_003_a}
+				{144	68	urw_gng_003_c}
+				{108	140	urw_gng_003_d}
+				{96	140	urw_gng_003_a}
+				{132	68	urw_gng_003_b}
+				{132	140	urw_gng_003_c}
+				{144	140	urw_gng_003_d}
+				{64	64	urw_gng_043_b}
+				{64	16	urw_gng_045_a}
+				{152	16	urw_gng_044_b}
+				{156	160	urw_gng_034_c}
+				{88	160	urw_gng_031_a}
+				{168	168	urw_gng_044_a}
+				{64	40	urw_gng_031_a}
+				{152	36	urw_gng_032_b}
+				{84	68	urw_gng_029_a}
+				{112	164	urw_gng_002_a}
+				{88	80	urw_gng_008_b}
+				{116	16	urw_gng_029_a}
+				{76	16	urw_gng_003_a}
+				{88	16	urw_gng_003_b}
+				{100	16	urw_gng_004_b}
+				{136	16	urw_gng_004_a}
+				{160	48	urw_gng_010_a}
+				{88	200	urw_gng_043_a}
+				{168	200	urw_gng_042_b}
+				{176	176	urw_gng_008_a}
+				{168	184	urw_gng_032_b}
+				{88	184	urw_gng_031_a}
+				{88	196	urw_gng_007_a}
+				{176	196	urw_gng_007_b}
+				{116	196	urw_gng_030_b}
+				{100	204	urw_gng_004_b}
+				{152	204	urw_gng_004_a}
+				{128	204	urw_gng_003_b}
+				{140	204	urw_gng_003_c}
+				{100	28	multi_urw_start_011_a_0}
+				{76	68	urw_gng_002_a}
+				{128	16	urw_gng_002_b}
+				{144	40	urw_gng_002_c}
+				{64	24	urw_gng_007_a}
+				{64	52	urw_gng_009_a}
+				{80	92	urw_gng_021_a}
+				{80	116	urw_gng_021_b}
+				{80	140	urw_gng_021_c}
+				{168	68	urw_gng_022_a}
+				{168	92	urw_gng_022_b}
+				{168	116	urw_gng_022_c}
+				{168	140	urw_gng_022_a}
+				{mat {0 48 0 148 8} {0 48 8 8 72} {0 48 80 24 144} {0 72 164 8 60} {0 80 216 116 8} {0 172 8 24 48} {0 180 56 16 96} {0 180 152 8 4} {0 188 152 8 64} }
+				}

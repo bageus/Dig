@@ -1,0 +1,466 @@
+ 74701  
+ 74701 -------- 13-07-26 20:54:08 --------- 
+ 74701 ---- Victor ---- Ende Freizeit nach 891.74 Sekunden 
+ 74701  CIV_STATE: 0.630258202552 
+ 74701 Verluste wegen eatquality:      0.0132 
+ 74701 Verluste wegen placevariety:    0.0412 
+ 74701 Verluste wegen homequality:     0.0569 
+ 74701 Verluste wegen slpquality:      0.0407 
+ 74701 Verluste wegen funstations:     0.1115 
+ 74701 Verluste wegen common:          0.0445 
+ 74701 ocw 5.09 
+ 74701 mnf 2.88 
+ 74701 fun 10.60 
+ 74701 eat 12.86 
+ 74701 asw 2.03 
+ 74701 tlw 2.31 
+ 74701 wmm 8.74 
+ 74701 wis 1.54 
+ 74701 wal 5.09 
+ 74701 wthr 1.85 
+ 74701 bth 4.44 
+ 74701 ubw 2.74 
+ 74701 slp 10.72 
+ 74701 weitere Themen: uqw wtm 
+ 74702  
+ 74702 -------- 13-07-26 20:54:09 --------- 
+ 74702 ---- Ludovicus ---- Ende Freizeit nach 819.72 Sekunden 
+ 74702  CIV_STATE: 0.630330741405 
+ 74702 Verluste wegen placevariety:    0.0318 
+ 74702 Verluste wegen homequality:     0.0524 
+ 74702 Verluste wegen slpquality:      0.0377 
+ 74702 Verluste wegen funstations:     0.1193 
+ 74702 Verluste wegen common:          0.0409 
+ 74702 ocw 7.26 
+ 74702 mnf 3.18 
+ 74702 fun 17.54 
+ 74702 eat 4.14 
+ 74702 asw 1.55 
+ 74702 uqw 1.14 
+ 74702 tlw 1.21 
+ 74702 wtm 2.17 
+ 74702 wmm 1.93 
+ 74702 wis 1.97 
+ 74702 wal 3.25 
+ 74702 bth 3.41 
+ 74702 ubw 8.50 
+ 74702 user 3.18 
+ 74702 slp 4.16 
+ 74702 weitere Themen: pfl frgt 
+ 74703  
+ 74703 -------- 13-07-26 20:54:10 --------- 
+ 74703 ---- Gina ---- Ende Freizeit nach 892.03 Sekunden 
+ 74703  CIV_STATE: 0.630330741405 
+ 74703 Verluste wegen eatvariety:      0.0471 
+ 74703 Verluste wegen eatquality:      0.0128 
+ 74703 Verluste wegen placevariety:    0.0505 
+ 74703 Verluste wegen homequality:     0.0569 
+ 74703 Verluste wegen slpquality:      0.1547 
+ 74703 Verluste wegen bthquality:      0.0106 
+ 74703 Verluste wegen funstations:     0.0941 
+ 74703 Verluste wegen common:          0.0445 
+ 74703 fun 6.30 
+ 74703 mnf 5.86 
+ 74703 asw 3.30 
+ 74703 tlw 1.96 
+ 74703 wtm 1.02 
+ 74703 fgt 3.58 
+ 74703 wis 6.04 
+ 74703 amng 1.10 
+ 74703 ubw 4.67 
+ 74703 old 20.10 
+ 74703 user 1.10 
+ 74703 weitere Themen: pnb eat uqw ubr bth slp 
+ 74704  
+ 74704 -------- 13-07-26 20:54:12 --------- 
+ 74704 ---- Bendt ---- Ende Arbeitszeit nach 900.11 Sekunden 
+ 74704  CIV_STATE: 0.630275189876 
+ 74704 Verluste wegen eatvariety:      0.0881 
+ 74704 Verluste wegen placevariety:    0.0216 
+ 74704 Verluste wegen homequality:     0.0575 
+ 74704 Verluste wegen slpquality:      0.0412 
+ 74704 Verluste wegen funstations:     0.0896 
+ 74704 Verluste wegen common:          0.1387 
+ 74704 ocw 50.0 
+ 74704 mnf 25.74 
+ 74704 fun 50.0 
+ 74704 eat 29.37 
+ 74704 asw 14.26 
+ 74704 wtm 1.61 
+ 74704 wmm 8.19 
+ 74704 ubr 5.99 
+ 74704 wal 3.69 
+ 74704 bth 7.45 
+ 74704 ubw 7.51 
+ 74704 slp 15.47 
+ 74704 weitere Themen: tlw wis wthr 
+ 74705  
+ 74705 -------- 13-07-26 20:54:13 --------- 
+ 74705 ---- Nane ---- Ende Freizeit nach 901.12 Sekunden 
+ 74705  CIV_STATE: 0.630339205265 
+ 74705 Verluste wegen placevariety:    0.0386 
+ 74705 Verluste wegen homequality:     0.0575 
+ 74705 Verluste wegen slpquality:      0.0412 
+ 74705 Verluste wegen funstations:     0.0992 
+ 74705 Verluste wegen common:          0.0450 
+ 74705 fun 7.40 
+ 74705 eat 3.58 
+ 74705 asw 1.62 
+ 74705 tlw 2.51 
+ 74705 wmm 1.96 
+ 74705 wal 2.33 
+ 74705 bth 4.17 
+ 74705 ubw 2.77 
+ 74705 prgn 6.92 
+ 74705 weitere Themen: mnf uqw wtm wis slp 
+ 74705  
+ 74705 -------- 13-07-26 20:54:13 --------- 
+ 74705 ---- Aurica ---- Ende Freizeit nach 875.34 Sekunden 
+ 74705  CIV_STATE: 0.630339205265 
+ 74705 Verluste wegen eatvariety:      0.0460 
+ 74705 Verluste wegen eatquality:      0.0108 
+ 74705 Verluste wegen placevariety:    0.1008 
+ 74705 Verluste wegen homequality:     0.0556 
+ 74705 Verluste wegen slpquality:      0.0702 
+ 74705 Verluste wegen funstations:     0.0971 
+ 74705 Verluste wegen common:          0.0437 
+ 74705 eat 1.60 
+ 74705 asw 4.92 
+ 74705 wil 2.97 
+ 74705 tlw 1.61 
+ 74705 wtm 2.05 
+ 74705 fgt 1.23 
+ 74705 wmm 2.66 
+ 74705 wis 3.97 
+ 74705 bth 3.59 
+ 74705 ubw 4.54 
+ 74705 slp 6.92 
+ 74705 weitere Themen: mnf fun uqw frgt amng user 
+ 74706  
+ 74706 -------- 13-07-26 20:54:14 --------- 
+ 74706 ---- Conny ---- Ende Arbeitszeit nach 899.72 Sekunden 
+ 74706  CIV_STATE: 0.630330741405 
+ 74706 Verluste wegen eatquality:      0.0508 
+ 74706 Verluste wegen placevariety:    0.1043 
+ 74706 Verluste wegen homequality:     0.0575 
+ 74706 Verluste wegen slpquality:      0.0412 
+ 74706 Verluste wegen funstations:     0.0845 
+ 74706 Verluste wegen common:          0.1579 
+ 74706 ocw 3.0 
+ 74706 mnf 2.41 
+ 74706 fun 50.0 
+ 74706 eat 5.09 
+ 74706 asw 9.97 
+ 74706 tlw 1.46 
+ 74706 wtm 5.88 
+ 74706 wmm 17.88 
+ 74706 wis 1.07 
+ 74706 wal 9.84 
+ 74706 ubw 5.43 
+ 74706 bth 5.94 
+ 74706 slp 22.72 
+ 74706 weitere Themen: uqw ubr frgt user 
+ 74706  
+ 74706 -------- 13-07-26 20:54:14 --------- 
+ 74706 ---- Mathew ---- Ende Freizeit nach 897.82 Sekunden 
+ 74706  CIV_STATE: 0.630420684814 
+ 74706 Verluste wegen eatvariety:      0.0476 
+ 74706 Verluste wegen placevariety:    0.0792 
+ 74706 Verluste wegen homequality:     0.0575 
+ 74706 Verluste wegen slpquality:      0.0413 
+ 74706 Verluste wegen bthquality:      0.0269 
+ 74706 Verluste wegen funstations:     0.1055 
+ 74706 Verluste wegen common:          0.0448 
+ 74706 uqw 1.83 
+ 74706 tlw 1.74 
+ 74706 wtm 3.64 
+ 74706 wmm 2.87 
+ 74706 bth 3.00 
+ 74706 ubw 3.92 
+ 74706 slp 4.96 
+ 74706 weitere Themen: mnf fun ocw eat wis 
+ 74706  
+ 74706 -------- 13-07-26 20:54:14 --------- 
+ 74706 ---- Pablo ---- Ende Freizeit nach 803.03 Sekunden 
+ 74706  CIV_STATE: 0.630415737628 
+ 74706 Verluste wegen eatvariety:      0.0366 
+ 74706 Verluste wegen placevariety:    0.0626 
+ 74706 Verluste wegen homequality:     0.0518 
+ 74706 Verluste wegen slpquality:      0.0382 
+ 74706 Verluste wegen bthquality:      0.0174 
+ 74706 Verluste wegen funstations:     0.0875 
+ 74706 Verluste wegen common:          0.0401 
+ 74706 fun 4.88 
+ 74706 asw 2.89 
+ 74706 wtm 1.93 
+ 74706 wal 1.13 
+ 74706 ubw 1.84 
+ 74706 slp 1.68 
+ 74706 weitere Themen: mnf ocw eat tlw bth 
+ 74708  
+ 74708 -------- 13-07-26 20:54:15 --------- 
+ 74708 ---- Gertraude ---- Ende Freizeit nach 893.32 Sekunden 
+ 74708  CIV_STATE: 0.630420684814 
+ 74708 Verluste wegen eatvariety:      0.0120 
+ 74708 Verluste wegen placevariety:    0.0116 
+ 74708 Verluste wegen homequality:     0.0575 
+ 74708 Verluste wegen slpquality:      0.0423 
+ 74708 Verluste wegen bthquality:      0.0107 
+ 74708 Verluste wegen funstations:     0.0995 
+ 74708 Verluste wegen common:          0.0446 
+ 74708 pnb 1.30 
+ 74708 ocw 2.06 
+ 74708 mnf 1.88 
+ 74708 eat 4.21 
+ 74708 asw 4.49 
+ 74708 tns 5.24 
+ 74708 uqw 1.32 
+ 74708 tlw 2.40 
+ 74708 wtm 1.92 
+ 74708 wis 3.00 
+ 74708 ubw 5.24 
+ 74708 bth 1.66 
+ 74708 weitere Themen: fun yamm slp user 
+ 74709  
+ 74709 -------- 13-07-26 20:54:16 --------- 
+ 74709 ---- Bettina ---- Ende Freizeit nach 849.41 Sekunden 
+ 74709  CIV_STATE: 0.630364716053 
+ 74709 Verluste wegen eatvariety:      0.0450 
+ 74709 Verluste wegen placevariety:    0.0985 
+ 74709 Verluste wegen homequality:     0.0543 
+ 74709 Verluste wegen slpquality:      0.0390 
+ 74709 Verluste wegen funstations:     0.0935 
+ 74709 Verluste wegen common:          0.0424 
+ 74709 fun 13.09 
+ 74709 eat 1.85 
+ 74709 tlw 2.14 
+ 74709 wtm 1.56 
+ 74709 wis 2.00 
+ 74709 amng 2.65 
+ 74709 weitere Themen: mnf ocw pns tns uqw bth slp 
+ 74710  
+ 74710 -------- 13-07-26 20:54:18 --------- 
+ 74710 ---- Jolande ---- Ende Arbeitszeit nach 903.52 Sekunden 
+ 74710  CIV_STATE: 0.6303986907 
+ 74710 Verluste wegen placevariety:    0.0654 
+ 74710 Verluste wegen homequality:     0.0575 
+ 74710 Verluste wegen slpquality:      0.0432 
+ 74710 Verluste wegen bthquality:      0.0192 
+ 74710 Verluste wegen funstations:     0.0866 
+ 74710 Verluste wegen common:          0.1541 
+ 74710 fun 50.0 
+ 74710 mnf 4.12 
+ 74710 ocw 13.49 
+ 74710 asw 10.88 
+ 74710 uqw 50.0 
+ 74710 tlw 2.17 
+ 74710 wtm 4.59 
+ 74710 wmm 22.76 
+ 74710 wis 3.10 
+ 74710 wal 4.70 
+ 74710 bth 50.0 
+ 74710 ubw 7.26 
+ 74710 slp 17.93 
+ 74710 weitere Themen:  
+ 74710  
+ 74710 -------- 13-07-26 20:54:18 --------- 
+ 74710 ---- Hein ---- Ende Freizeit nach 890.12 Sekunden 
+ 74710  CIV_STATE: 0.630415737628 
+ 74710 Verluste wegen eatvariety:      0.0871 
+ 74710 Verluste wegen placevariety:    0.1031 
+ 74710 Verluste wegen homequality:     0.0569 
+ 74710 Verluste wegen slpquality:      0.0408 
+ 74710 Verluste wegen funstations:     0.1106 
+ 74710 Verluste wegen common:          0.0445 
+ 74710 ocw 3.14 
+ 74710 mnf 2.10 
+ 74710 eat 6.94 
+ 74710 asw 4.23 
+ 74710 tns 1.96 
+ 74710 tlw 3.37 
+ 74710 wtm 2.24 
+ 74710 wis 2.33 
+ 74710 bth 4.14 
+ 74710 ubw 2.58 
+ 74710 slp 1.18 
+ 74710 old 34.99 
+ 74710 weitere Themen: wti whu uqw amng frgt 
+ 74711  
+ 74711 -------- 13-07-26 20:54:19 --------- 
+ 74711 ---- Florestan ---- Ende Arbeitszeit nach 1359.30 Sekunden 
+ 74711  CIV_STATE: 0.630420684814 
+ 74711 Verluste wegen eatvariety:      0.0713 
+ 74711 Verluste wegen placevariety:    0.0624 
+ 74711 Verluste wegen homequality:     0.0866 
+ 74711 Verluste wegen slpquality:      0.0611 
+ 74711 Verluste wegen bthquality:      0.0156 
+ 74711 Verluste wegen funstations:     0.2039 
+ 74711 Verluste wegen common:          0.1550 
+ 74711 Verluste wegen hunger:          0.0205 
+ 74711 pnb 6.99 
+ 74711 ocw 13.34 
+ 74711 fun 50.0 
+ 74711 eat 50.0 
+ 74711 asw 4.78 
+ 74711 whu 42.0 
+ 74711 wti 14.19 
+ 74711 wil 50.0 
+ 74711 ston 1.93 
+ 74711 tlw 2.62 
+ 74711 wtm 3.01 
+ 74711 wmm 18.53 
+ 74711 fgt 37.99 
+ 74711 wis 34.99 
+ 74711 wal 41.69 
+ 74711 ubw 6.60 
+ 74711 bth 8.28 
+ 74711 slp 48.90 
+ 74711 old 50.0 
+ 74711 weitere Themen: mnf 
+ 74714  
+ 74714 -------- 13-07-26 20:54:21 --------- 
+ 74714 ---- Cilia ---- Ende Arbeitszeit nach 913.21 Sekunden 
+ 74714  CIV_STATE: 0.630454719066 
+ 74714 Verluste wegen eatvariety:      0.0481 
+ 74714 Verluste wegen placevariety:    0.0268 
+ 74714 Verluste wegen homequality:     0.0582 
+ 74714 Verluste wegen slpquality:      0.0417 
+ 74714 Verluste wegen funstations:     0.1091 
+ 74714 Verluste wegen common:          0.1411 
+ 74714 ocw 15.0 
+ 74714 fun 50.0 
+ 74714 pns 12.0 
+ 74714 eat 22.82 
+ 74714 asw 3.29 
+ 74714 uqw 20.66 
+ 74714 tlw 2.14 
+ 74714 wtm 12.70 
+ 74714 wmm 7.79 
+ 74714 wal 49.10 
+ 74714 bth 21.07 
+ 74714 ubw 21.46 
+ 74714 slp 14.45 
+ 74714 weitere Themen: mnf wis wthr 
+ 74716  
+ 74716 -------- 13-07-26 20:54:23 --------- 
+ 74716 ---- Demetrius ---- Ende Arbeitszeit nach 914.30 Sekunden 
+ 74716  CIV_STATE: 0.630437731742 
+ 74716 Verluste wegen placevariety:    0.0572 
+ 74716 Verluste wegen homequality:     0.0582 
+ 74716 Verluste wegen slpquality:      0.0638 
+ 74716 Verluste wegen bthquality:      0.1437 
+ 74716 Verluste wegen funstations:     0.0926 
+ 74716 Verluste wegen common:          0.1324 
+ 74716 ocw 13.5 
+ 74716 fun 50.0 
+ 74716 asw 50.0 
+ 74716 tlw 1.05 
+ 74716 wtm 2.30 
+ 74716 wmm 5.99 
+ 74716 wal 5.24 
+ 74716 bth 50.0 
+ 74716 ubw 6.65 
+ 74716 slp 25.73 
+ 74716 weitere Themen: mnf wis 
+ 74728  
+ 74728 -------- 13-07-26 20:54:36 --------- 
+ 74728 ---- Jonathan ---- Ende Arbeitszeit nach 925.52 Sekunden 
+ 74728  CIV_STATE: 0.630567669868 
+ 74728 Verluste wegen eatvariety:      0.0492 
+ 74728 Verluste wegen placevariety:    0.0179 
+ 74728 Verluste wegen homequality:     0.0594 
+ 74728 Verluste wegen slpquality:      0.0427 
+ 74728 Verluste wegen funstations:     0.1061 
+ 74728 Verluste wegen common:          0.1593 
+ 74728 ocw 9.0 
+ 74728 fun 20.20 
+ 74728 mnf 6.0 
+ 74728 eat 33.37 
+ 74728 asw 4.55 
+ 74728 elfe 30.85 
+ 74728 uqw 1.19 
+ 74728 wtm 2.59 
+ 74728 wmm 14.44 
+ 74728 wal 4.49 
+ 74728 bth 31.32 
+ 74728 ubw 31.85 
+ 74728 slp 33.09 
+ 74728 weitere Themen: tlw wis 
+ 74740  
+ 74740 -------- 13-07-26 20:54:47 --------- 
+ 74740 ---- Walther ---- Ende Arbeitszeit nach 932.92 Sekunden 
+ 74740  CIV_STATE: 0.63061517477 
+ 74740 Verluste wegen eatvariety:      0.0911 
+ 74740 Verluste wegen eatquality:      0.0183 
+ 74740 Verluste wegen placevariety:    0.1078 
+ 74740 Verluste wegen homequality:     0.0595 
+ 74740 Verluste wegen slpquality:      0.0427 
+ 74740 Verluste wegen funstations:     0.0992 
+ 74740 Verluste wegen common:          0.1792 
+ 74740 pnb 3.24 
+ 74740 ocw 50.0 
+ 74740 fun 50.0 
+ 74740 mnf 1.09 
+ 74740 eat 44.19 
+ 74740 asw 8.99 
+ 74740 tns 3.22 
+ 74740 tlw 1.81 
+ 74740 wtm 5.00 
+ 74740 wmm 18.14 
+ 74740 wal 5.66 
+ 74740 ubw 6.52 
+ 74740 bth 2.58 
+ 74740 slp 23.10 
+ 74740 weitere Themen: uqw fgt wthr user 
+ 74756  
+ 74756 -------- 13-07-26 20:55:04 --------- 
+ 74756 ---- Emmy ---- Ende Arbeitszeit nach 950.63 Sekunden 
+ 74756  CIV_STATE: 0.63062018156 
+ 74756 Verluste wegen placevariety:    0.0896 
+ 74756 Verluste wegen homequality:     0.0607 
+ 74756 Verluste wegen slpquality:      0.0436 
+ 74756 Verluste wegen funstations:     0.1139 
+ 74756 Verluste wegen common:          0.1342 
+ 74756 ocw 13.5 
+ 74756 mnf 12.0 
+ 74756 fun 50.0 
+ 74756 eat 7.90 
+ 74756 asw 6.78 
+ 74756 tlw 3.45 
+ 74756 wtm 4.00 
+ 74756 wmm 12.79 
+ 74756 wis 1.34 
+ 74756 amng 3.32 
+ 74756 wal 8.83 
+ 74756 wthr 3.32 
+ 74756 bth 5.19 
+ 74756 ubw 50.0 
+ 74756 slp 19.45 
+ 74756 weitere Themen: uqw user 
+ 74780  
+ 74780 -------- 13-07-26 20:55:27 --------- 
+ 74780 ---- Timofej ---- Ende Arbeitszeit nach 978.71 Sekunden 
+ 74780  CIV_STATE: 0.630805194377 
+ 74780 Verluste wegen eatvariety:      0.0519 
+ 74780 Verluste wegen placevariety:    0.0925 
+ 74780 Verluste wegen homequality:     0.0627 
+ 74780 Verluste wegen slpquality:      0.0451 
+ 74780 Verluste wegen funstations:     0.1175 
+ 74780 Verluste wegen common:          0.1773 
+ 74780 ocw 6.0 
+ 74780 mnf 4.99 
+ 74780 fun 50.0 
+ 74780 eat 29.56 
+ 74780 asw 5.79 
+ 74780 elfe 50.0 
+ 74780 wti 26.32 
+ 74780 whu 50.0 
+ 74780 tlw 1.76 
+ 74780 wtm 2.31 
+ 74780 wmm 4.40 
+ 74780 wis 1.43 
+ 74780 wal 7.39 
+ 74780 bth 50.0 
+ 74780 ubw 3.59 
+ 74780 slp 29.21 
+ 74780 weitere Themen: ston 
