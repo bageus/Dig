@@ -1,0 +1,133 @@
+050a You don’t want to put the egg in there?
+050b Didn’t we want fried eggs...?
+050c Almost done! I’ll go get the others...
+050d Uahhh... Yuck... Go away!... this is gross!
+050e Mom!    Mom mom mom!
+
+068a Excuse me! Do you have a light?
+068b Oh, I just wanted to ask, whether it would be possible, |to use your fiery breath to get this...
+068c STUPID ANNOYING MACHINE!
+068d ahm, working...please?
+068e Hmmm... Methinks, it might work!
+068f Yes... Finally! Finally I have been |able to help you out!... How wonderful.
+068g Step back.
+
+071a We’re done!
+071b Now I have enough room for my big belly |and my brilliant thoughts.
+071c That’s right!
+071d I don’t understand the Knocker dwarf. | He is really adorable ... Well, maybe they got sick of | his exuberant way of talking.
+
+073a Ahhh! Whoever said you were |a great inventor, was right!
+073b Yup! I agree.
+073c And which role - if I may ask - is it going to take, |this astonishing, brilliant, ingenious.... thing?
+073d We haven’t decided yet.
+
+085a Grrr...Who dares to disturb my sleep?!
+085b If you don’t do anything to me, |I won’t do anything to you either!
+085c Diggles... I can smell them...|their scent is so distinctive...
+085c2 Methinks, you Diggles, do not |have a beard!
+085d Grrrr...
+085e Listen! As impolite as it might have seemed |far be it from me to offend your pride.
+085f Ok, I’ll let it go this time...
+085g You may understand my astonishment - |they speak of warriors, brave as the vikings, |who are trying to restrain Fenris.
+085h It is a great honor to meet you... |- even if you don’t have a beard!
+085i Sure! My pleasure.
+085j Be my guests, noble warriors - though I cannot |offer you an appropriate welcome.
+085k My wife banished me from the great lava lakes.|We had, what people call, a little disagreement|regarding how to hatch our eggs.|So now I am all alone.
+085l As you can see, my accomodation does not match my size. |Maybe, if you could be so kind - no, nevermind!
+085m I do not want to keep the gentlemen from their noble mission, |by troubling them with my rather minor problems...
+085n So do you want us to extend your cave or what? Are you willing |to help us against the trolls and Fenris in return?
+085o Are you willing to help us against the trolls and Fenris in return?
+085p Ahm...One solution to a problem might solve the other |one as well. Dig, and you can count on my help.
+085q Dig, and you can count on my help.
+
+
+090a That was a noble gesture!
+090b Thank you! I am in your debt. |My fiery breath shall be at your service!
+
+090ba ??? ...
+090bb What on earth ist that ?
+090bc Looks like a heating boiler.
+090bd What ever ...
+
+092a Ohoh ...
+092b ...Zzzz...Zzzz...Zzzzz...
+
+095a Stop!
+095b Who is it?!?!
+095c A bunch of Diggles!
+095d Get lost!
+095e Hey!
+095f Looking for trouble?!
+095g What,
+095h Diggles and fighting!? That’s ridiculous!
+095i I don’t get why Odin picked you guys for this mission!
+095j Because we are the best of the best!
+095k The best!?...
+095l If there is one worthy clan, then it’s us!
+095m The masters of mining, the only true miners!
+095n One for all - all for one, we stick|together even if the dragon gets...
+095o Dragon?... What dragon?
+095p A GIGANTIC AND UNBELIEVABLY DANGEROUS BEAST!
+095q Legend says that he lurks in a cave|filled with our fellow miners’ bones.
+095r He spits fire when someone tries|to get near the ship.
+095s He is a lunatic! An underground ship?
+095u You don’t believe me!?
+095v Well,
+095w watch out,
+095x if you wake him, it’ll be your end.
+095y Ok, dwarfs... get lost now.
+
+116a I... have done my part -|if only my wife could see me -|she wouldn’t be able to refuse reconciliation.
+116b Come on, don’t give up now.
+116c Please take care of my son! |My wife and I separated in a dispute - | guide my son to her. Will you fulfill my last request?
+116d guide my son to her.|Will you fulfill my last request?
+116e Son?.... Taking care...?
+116f Of course, we promise Mister dragon!
+116g ARRRGGGHHH !!!
+116h For Odin’s sake!... he perished.
+116i Farewell my friends, see you in Walhalla.
+116x I beg you, noble warriers, may I?
+116y Well, if you insist...
+
+118a Go ahead, help yourselves!! I am sure|they took the coal from the ship|just so you could steal it.
+118b Watch out that the Knockers don’t kick your butt for that!
+118c Precisely!
+118d You don’t actually think that you |can just help yourself here, do you?
+118e Our chief had to give his life for this coal! He died aboard the cursed ship,
+118f eaten by a monster. In the end we had to flood the ship!
+118g I thought the dragon ate him?!
+118h Nonsense! Though he was toasted by the dragon |- something in the belly of the ship ate him.
+118i Bad, bad, bad, bad, bad...
+118j Go ahead and check out the area, but don’t |you dare go stealing a single piece of coal.
+
+701a Ten mushroom stems.
+701b Hmm.. 15 - just to be on the safe side.
+701c Well, let’s go!
+701d Building, building.... a bridge right here, not very far, just 15 stems, lallalla...
+701e Here’s number one!
+
+702a Ok, that’s enough! Let’s do it...
+702b Building, building...
+702c What’s that gonna be?!
+702d We’re repairing a bridge.
+702e With stems?... No way! We need some iron,|at least ten units! Come on, build a furnace!
+702f Well... right... good idea.
+702g ENTSETZLICH SCHREIEN - ALS WÜRDE ER ABSTÜRZEN!
+702h Nur'n Spass.
+702i Building, building...
+
+0131aa The Ring of the Water! I knew it!
+0131ab It’s my rubber-Diggle.
+
+703aa You’re never gonna make it!
+703a It's not gonna hold very long!
+703b He’s right! Some of you guys are actually smart...
+703c You should hurry up and move quickly!
+703d Uahh!
+703e Some hours later.
+
+8102a The bridge really doesn’t seem very sturdy! |Get your Diggles across it, ok?...|I just want to help!
+8103a I beg you! We have to catch Fenris! |SO GET YOUR DIGGLES ACROSS THE BRIDGE!
+
+

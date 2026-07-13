@@ -1,0 +1,65 @@
+2125c Are you trying to carry all of |those by hand?
+2125d Use the basket, doofus!
+
+1010x Das sind Ole, Trine, |Erik und Frida - |deine Zwerge.
+2100a The Wiggles made it! Late as always!
+2100b As you know, Odin asked us, the dwarfs, |to capture Fenris.
+2100c This tournament is being held in order to determine which clan is worthiest for this task.
+2100d Looks like one clan didn’t show up...
+2100e Anyways!
+2100f When I give the starting order...|Dig till your pickaxes break.
+2100g He who returns|the golden hamster first, shall win.
+2100h This clan shall serve Odin and restrain Fenris...
+2100i and of course they will get the glory...|and so on... and so on...
+2100j Ready... On your marks...
+2100k Now?! Has it started?!|Has he given the order yet?!?
+2100l I have no idea, dude! The light is way|too bright for me! I don’t like it overground...|You can’t really see anything here.
+2100m Whatever, let’s just start! Nobody’s gonna notice anyways..
+2100n Good luck!
+2100o ... Get set...
+2100p ... Go!
+
+2110a You can’t get through there!
+2110b Dig somewhere else!
+2110c I’ll go check on the other clans real quick...
+2110d Die kommen gut voran! Aber da links gräbt|keiner...
+
+2125a Chop the mushrooms and bring the caps and stems to the brewery!
+
+2130a It's your task to produce |one keg of mushroom beer!
+2130b When you're done, |leave through the door |to your next task.
+
+2138a That’s good!
+2138b Now quickly go through the door to the next task!
+
+2140a Get him! Get your butt into gear!
+2140b If the KNOCKER-DWARF reaches the finishing line with|the hamster,he’ll be the winner!
+
+
+2150aa And the winner is....
+2150ab THE DIIIIGGGGLLLEESSS!
+2150b CHEATS! WE are the true winners!
+2150c I’ll kick your butt!
+
+2160a May Fenris have you for breakfast! |We’ll meet again!
+
+2170a You are the Diggle of all Diggles!|Be on your guard!
+2170b It will be a difficult journey.
+2170c A journey full of danger into the underworld.|A journey full of enemies and treachery... A journey full of...
+2170d ... A journey full of traps, A journey full of magic and mystery, and full threats...
+2170d2 A journey full of foes and friends, |but also a journey full of inventions...
+2170e .... full of obstacles...Full of stones and gravel --
+2170f and full of great speeches! And he won’t make it anyway!
+2170g Exactly! That’s why I want you to go with him!
+2170h Sure, I could - but on the other hand, |maybe we’ll see whether ...Odin?!
+2170i Odin?... OOOOODIIIINNNN!????
+
+# Newstickermeldungen
+2101a Dig a shaft to get deeper into the ground
+2101b Dig somewhere else
+2101c Chop the mushrooms and put them in front of the brewery
+2101d Produce one keg of beer at the brewery
+2101e Advance to the golden hamster with at least one dwarf
+2101f Chase the thief
+2101g Attack the Knocker
+

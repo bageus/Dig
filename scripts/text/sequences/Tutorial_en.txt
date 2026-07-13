@@ -1,0 +1,259 @@
+#Sequenz 2100
+1100a Ouch! That hurts!
+1100b To be honest with you: |I don’t like your face, and I am |certainly not volunteering to help you out here!
+1100c Don’t feel too flattered! |Odin gave me the ORDER to help you!
+
+#Einleitung und erste Erklärungen (Elfe)
+1010a Ok! This is Charly, one of your Diggles.
+1010z I’ll start out by teaching |you how to control your Diggles gang. | You’ll need to know how to handle those guys!
+1200  To take a look at your Diggles from |side, HOLD the CTRL-KEY |and move the mouse.
+1010b Great! That was almost too easy, wasn’t it?!
+1210  To take a closer look at your Diggle, |hold the CTRL-KEY and the LEFT mousebutton. |Then move your mouse back and forth.
+1220  Awesome!... Moving the mouse pointer to the edge of the screen- (or by holding the CTRL-KEY and the RIGHT mousebutton) - |you can move into all directions.
+1010c Good, now get used to it while checking out the area.
+1010d OK. This way you can hopefully keep an eye on your Diggles.
+1010e Unlike me you can |give these little guys ORDERS.. |You have to SELECT them first.
+1010k Oh! You have already selected Charly...wonderful...
+1230  LEFT CLICK onto your Diggle to SELECT him.
+1010f It’s not an aura around your Diggle. |The white shine indicates which |dwarf you have presently selected...
+1235  In order to DESELECT a Diggle, |RIGHT CLICK somewhere in the background.
+1105j So, you always do what people |tell you to do!?! Could you |do me a favor and select | Charly again?!
+1225  To do so, you have to select the dwarf.
+1240  You give ORDERS with the LEFT mousebutton.|LEFT CLICK anywhere and the little guy will|go there. If he can.
+1010y Go ahead and let Charly wander around a little in the area.
+1010g Good - now let Charly walk to the gate on the left.
+1010h For Odin’s sake!! How do you think you’ll |be able to handle a whole army of dwarfs?!?! |- to the gate on the LEFT!
+1010i That’s better.
+1010j Great job!
+1105a Alright, now get him to pick up that chunk of coal.
+1105b Move the hand onto the coal. |When it starts shining kind of |blueish LEFT CLICK on it.
+1105h LEFT CLICK - the left mousebutton |is on the other side!
+1105c First select the Diggle with the left mousebutton, | THEN LEFT CLICK onto the coal.
+1105d In those six fields you can see what |the ugly little Diggle is carrying right now.
+1105f Come on! Follow me!
+1105m Leave Charly where he is! Deselect the dwarf.
+
+#Hier folgt die erste Sequenz, in der ein 2. Zwerg mit Feuerstelle erscheint (2010)
+2010a Are you playing with coals? I can’t believe it!
+2010b Typical! We are already pretty late!
+2010c Let’s get the fireplace ready and then start practicing|for the tournament!
+2010d Yes ma’am!
+
+#Elfe wieder
+1270a Louise brought a box with a fireplace, which you are |supposed to PICK UP...
+1270z To Pick up a box Select one of your Diggles, |hold the ALT-KEY then click |klick on the box and the Diggle will pick it up.
+1270y No, wrong ... You have selected the box!
+1270b Now click on the fireplace |symbol in your inventory!
+1270c Now you are carrying the fireplace. |Walk around with it a little to check |out where you can assemble it.
+1270d When it shines RED, there’s not enough |room to build the fireplace.
+1270e When the fireplace shines GREEN, |you can place it right there.
+1270f You can put down the BOX with the |fireplace in the area at the front.
+1270g You dropped the fireplace as a box! |Start over again!
+1270h I am soooooooo proud of you!
+1270i Now build the fireplace!
+1105g Tell Charly to drop the coal! |You can deal with it, just like you dealt with the fireplace. |But you can ALSO DOUBLECLICK onto the |coal symbol, then he’ll immediately drop it right in front of him.
+1105i Oh, you already put the coal away! |Then I don’t have to tell you the whole |deal about the doubleclick!
+1120a As you could see, you can give your Diggles |lots of DIRECT orders.
+1120b Everything in the scenery that |appears green, blue, or red underneath your mouse pointer means |it’s directly CONNECTED with an ORDER to your Diggle.
+1120c Mushroom, coal, weapons, and so on are dealt with differently: |A stone for instance gets picked up, a mushroom chopped, a button pressed, |or an enemy gets attacked.
+1120d In the end of this section, let your |Diggles chop a mushroom. |Diggles like to |grill those.
+1120e Terrific. You will learn that your |Diggles start doing stuff almost on |their own, if you let them.
+1120f Oh, you have already tried the deal with the mushroom.| Aren’t you smart?
+1120g Oh, and mushrooms don’t re-grow if you |put buildings on top of them.
+
+#Es folgt die Sequenz mit dem Kifferzwerg. (2015)
+2015x Argh!
+2015a Not cool
+2015b Hey, the smoke from your fireplace is totally NOT cool.
+2015c Our tent is so full of it that we can’t even smell our own smoke anymore!
+2015d Put it somewhere else.
+2015e -Somewhere else- would be cooool.
+2015f Why don’t you do it!
+2015g Tzzz... You guys are -coool-... |You will kick his butt during the tournament!
+2015h Ok, ok, chill out man and try to relax a little! 
+
+#Elfe erklärt indirekte Steuerung.
+1273a Well, let’s start packing! In order to pack the fireplace, |you have to select it first.
+1273b The packing icon appears down here. |Click on it!
+1273c Good! |One of your Diggles is already |taking care of it.
+1110a Ok, I think, I’ll |have to be a bit more specific.
+1110b You can give your Diggles INDIRECT orders, |meaning they do stuff automatically.
+1110c It’s important though, that at |least some of your Diggles are in WORKING MODE.
+1280a Click onto one of your Wobbles - sorry, Diggles!
+1280b Ok! Right here you can adjust the amount of leisure time |and working time given to your Diggle. |Working time is in the yellow region, |the rest is leisure time.
+1280c Every dwarf has his own personal schedule. |Click onto a different Diggle!
+1280d You see?
+1280e Alright... Just click onto the little buttons on the edge, HOLD the mousebutton and drag them – |or simply click into the middle of the clock - |this is how you adjust the working time.
+1280h By the way - to invent things or produce items, |your dwarfs have to be in WORKING MODE.
+1280z Click onto the little gear |symbol, which is close to |the clock, bottom right, |and you can gain total control over your Diggle.
+1280i If it wasn’t for me, you could |make them work till they collapse. |But then again it’s|really not advisable.
+1280j Leisure time gives your Diggles |time to relax and recover. |It also gives women and men the chance to get|to get to know each other |a little better - if you know what I mean.
+1110d OK, now set Charly’s working hours from 3 o’clock till 9 o’clock!
+1110e OK, now set Charly’s working hours from 9 o’clock till 3 o’clock!
+1110f OK, now set Louise’s working hours from 3 o’clock till 9 o’clock!
+1110g OK, now set Louise’s working hours from 9 o’clock till 3 o’clock!
+1280k That’s good... The following task will be performed automatically by the Diggles.
+1271a Select the box ...
+1271b Down here, the 'unpack' icon appears.
+1271c Click on it and you can |position the fireplace again.
+1272b Go ahead and select the fireplace.
+1272a At a fireplace you cannot only take care of|food supply, but also invent |or produce less complicated items.|A fireplace is a so-called PRODUCTION FACILITY.
+1272c Below you can see a list of things that can |be produced at a fireplace. Move the mouse |pointer over the different icons.
+1272d By moving over the icons you can now see which resources you |have and how much experience is required to produce an item. |The WHITE items, such as the tent |can be produced now.
+1272e The RED items are not available due to your |present lack of resources. 
+1272p The question mark indicates |that you can invent something - again the WHITE ones are |ready, but for the RED ones your dwarves are not yet smart enough.
+1272f Got it?... Ok, let’s start out |by builing a TENT, |so your Diggles will have a more |comfortable place to sleep.
+1272o You weren’t supposed to click on anything!
+1272g CLICK on the TENT SYMBOL.
+1272h The number on the tent icon indicates the |amount of tents you want to produce.
+1272i For heaven’s sake, |that’s too many!
+1272j RIGHT CLICK onto |the tent symbol again  |to produce LESS.
+1272k Unless your dwarfs are all enjoying |their leisure time at the moment, they should |be taking care of everything necessary to build the tents.
+1272l Watch what happens...
+1272m Well, BOTH Diggles are set on LEISURE TIME - |that won’t work! |Put at least one of them on working time so he can take care of the task!
+1272n Let’s put up the tent somewhere close-by, |just like you did with the fireplace.
+
+#Es folgt die Sequenz, die auf 4 Zwerge aufstockt. (2020)
+2020z Hey guys!...
+2020a Has the tournament started yet?
+2020b Not yet, but we should practice a little.
+2020c Forget it, we’re sooo exhausted. |What’s for dinner?
+
+#Weiter mit Elfe, Nahrungsversorgung
+2020d The population has grown quite a bit. You’ll need |to take care of everybody’s food supply now.
+1310a At the fireplace you can get them to grill mushrooms.
+1310b First select the fireplace.
+1310c Click onto the grilled mushroom symbol until the |number right next to it indicates at least 3.
+1310d You see, you don’t even have |to do anything else.
+1310e By the way... By using the ALT-KEY you assign a |PARTICULAR Diggle to a CERTAIN production facility. |It means that the Diggle will prefer to work there.
+2020e Soon you will need more grilled mushrooms; |your Diggles have quite an appetite.
+1330a To find out how a particular dwarf is doing, |you have to select him.
+1330b Here you see how hungry, tired, |and grumpy the Diggle is.
+1330c If hunger and fatigue levels become too high, |the Diggles’ health will suffer.
+1330d The condition can ONLY be improved |during LEISURE TIME.
+1330e Now make sure that Charly gets 2 grilled mushrooms to eat!
+1330f Now make sure that Louise gets 2 grilled mushrooms to eat!
+1330g Now make sure that Erik gets 2 grilled mushrooms to eat!
+1330h Now make sure that Fiona gets 2 grilled mushrooms to eat!
+1330i Oh - should your Diggle not feel like eating right away, |you can use the ALT-KEY to make him eat.
+1330o For Odin’s sake! |Charly is starving!
+1330p For Odin’s sake! |Louise is starving!
+1330q For Odin’s sake! |Erik is starving!
+1330r For Odin’s sake! |Fiona is starving!
+1330s If this Diggle isn’t busy |cooking food, you should switch him |to leisure time mode, so he can recover a little. Be generous: | let him eat something and get some sleep.
+1330t Oh my god!! If you don’t get any food quickly, |this Diggle is gonna pass out.
+1330u Provide enough food and let |this Diggle get some |leisure time as soon as possible.
+1330v If you boss your Diggle around |all the time, he won’t be able |to eat anything!
+1330w Well, I am curious to see whether |you’ll get your act together.
+
+#Abschnitt Buddeln erklären
+1260a I am impressed. |Your Diggles are now ready for the next level:|Checking out the area.
+1260b Sometimes your way is blocked by heaps of soil, |that you’ll need to dig through first.
+1260c Let me explain, how you can |dig a tunnel from here...
+1260d ... all the way over there.
+1260e RIGHT CLICK to deselect all Diggles.
+1260f Here you see the menu with the digging tools.
+1260g The symbol on the left means to dig |a tunnel. Here is what you should do.
+1260h Click onto the symbol and |HOLD the LEFT mousebutton while marking |a horizontal line from the door to the left.
+1260i You have to extend the marking a little further to the left, |to reach the next cave.
+1260j Extend the marking a little |further to the right, |almost up to the door.
+1260k Excellent. |As always your Diggles perform |the task automatically.
+1260l Oh, before I forget! You can use the + (plus) and - (minus) KEYS | on the KEYPAD of your keyboard |to increase or decrease the game speed.
+2019b The stones around here indicate |more natural resources |in the ground.
+2019c Right here, where the stone was picked up, |are most likely more natural resources.
+2019d If you would like to mine them, |you have to dig a cave right here.
+2019e Digging caves is similar to digging tunnels.
+2019f Deselect all Diggles. |In the digging menu click onto the cave symbol |and use it to mark a cave |in the middle of the new tunnel.
+2019g Your dwarfs will automatically |start digging the cave and uncover |a few stones as well.
+2019h Good! I think, |that’s enough.
+2019i Use the ERASE-tool, to - oh well, guess what? |To erase the marking of course.
+1335a Select the fireplace one more time.
+1335b As you can see a few |more symbols turned white.
+1335c Since you have more |stones now, you could |create more fireplaces.
+1335d But you could also... Taaadaaa...|invent the stonemason! |It’s the result of your Diggles |gaining experience with |stones while digging.
+1335e Right now you don’t need |any of that! So don’t worry about it! |There’s so much more important stuff |that your little proteges need to learn.
+1355f ....
+
+#Elfe erklärt Fog of War
+2025a This newly discovered cave is |only visible when one of your Diggles, |or a building is close to it.
+2025b Get out of the way, Diggle!
+2025c Come over here, Diggle!
+2025d By putting a BOUNDARY STONE |right here, you can see what’s |going on in the cave.
+2025e This is a really important |feature since only completely visible resources |will automatically be used.
+2025i Later on you can get the stonemason |to produce boundary stones.
+2025f Wait ... I’ll give you one. |Put it into the center of the cave!
+2025g The boundary stone |is not in the cave. |Pick it up and try again!
+2025h Ok, let’s continue...
+
+#Vordringen zum Kampfraum
+2018a We are surrounded by massive rocks. |This seems to be the only way out.
+2018b Mark a tunnel downwards from here |using the tool to dig tunnels.
+2018c Eventually you’ll have to draw the |marking a little further until your Diggles dig |all the way to the deeper tunnel.
+2018d Underneath the surface it’s dark.
+2018e First send one of your Diggles |to explore the tunnel.
+2040a Oops... Who forgot those? I guess |somebody must have left a few training dummies here.
+2040b You can practice fighting a little, |just in case your Diggles get beaten up.
+2040c The more you let a Diggle fight, |the more experience he will get.
+2040m The dummy on the right is on your side, |so you can’t attack it. It’s your friend.
+2040n But the dummy on the left... OK! Is an enemy! | Start the attack by SELECTING |your Diggle and then CLICKING onto the dummy.
+2040o The dummy in the middle is NEUTRAL. |This means you have to FORCE |the ATTACK by holding the ALT-KEY and a LEFT CLICK.
+2040p Ok... now go and play with your toys...
+2040d Of course you can also get your butt kicked as the attacker!
+2040e But don’t worry, some good nourishment |and the little guys will recover pretty quickly.
+2040f Keep going! You’ll need some fighting experience for the tournament!
+2040g Try to receive |two experience points in fighting.
+2040h You can see a dwarf’s experience level |by selecting him.
+
+#abschlusssequenz
+2500a Ok, guys! Good job! |I could teach you more, |but let’s leave the thinking to the trolls - they’ve got bigger heads!
+2500b Let’s go! |The tournament is about to begin!
+2500c Now I know why |the dwarfs hate the elves!
+2500d Though she doesn’t look like one --
+2500e -- she’s dumb as a brick!
+
+
+#Die folgenden Texte sind für den Newsticker und werden NICHT! gesprochen.
+1001a Change the viewing angle by holding the CTRL-key and moving the mouse.
+1001b Zoom by holding the CTRL-key and the left mousebutton.
+1001c Scroll by holding the CTRL-key and the right mousebutton
+1001d Left click on Charly to select him
+1001e Right click on Charly to deselect him
+1001f Select Charly one more time
+1001g Left click to let Charly wander around a little
+1001h Send Charly to the gate on the left
+1001i Left click to make Charly pick up the coal
+1001j Tell Charly to follow the elf
+1001l Deselect Charly
+1001k Tell Charly to drop the coal by doubleclicking on the symbol
+1001m Tell one of your Diggles to pick up the box containing the fireplace (ALT-key)
+1001z Click on the fireplace in your Diggle's inventory
+1001n Place the fireplace close to the mushrooms
+1001o Chop a mushroom
+1001p Select the fireplace and click on the packing symbol
+1001q Select a Diggle
+1001r Select the other Diggle
+1001s Adjust the working time (yellow area) of $gnomename5 from $begin till $end o'clock
+1001t Deselect all dwarfs and select the fireplace
+1001u Click on the unpack symbol to place the fireplace once more
+1001v Build ONE tent at the fireplace
+1001w Pitch the tent
+1001x Adjust the number of grilled mushrooms to be produced to 3
+1001y Wait until your dwarfs have finished setting up the fireplace
+1002a Deselect all dwarfs
+1002b Mark a green line from the door to the cave
+1002c Wait until your dwarfs have finished digging the tunnel
+1002d Place a cave marking in the middle of the tunnel
+1002e Wait until your dwarfs uncover a few stones
+1002f Erase the digging marking using the erase tool
+1002g Select the fireplace
+1002h Mark a vertical line for a shaft
+1002i Wait until your dwarfs have finished digging the shaft
+1002j Send one of your dwarfs into the tunnel
+1002k Practice fighting using the dummies
+1002l Increase one of your dwarf's fighting experience to 2 percent
+1002m Make sure that all your dwarfs are doing fine
+1002n Place the boundary stone in the cave
+1002o Get Charly to eat 2 grilled mushrooms
+1002p Get Louise to eat 2 grilled mushrooms
+1002q Get Erik to eat 2 grilled mushrooms
+1002r Get Fiona to eat 2 grilled mushrooms

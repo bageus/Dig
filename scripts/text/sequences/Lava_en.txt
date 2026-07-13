@@ -1,0 +1,113 @@
+170a What on earth is that!?!?
+170b Ooops... Looks like it’s Mrs. Dragon?!
+170c Get back!
+
+170ba Oops... Another dragon! Doesn’t look|quite as sleepy as the other one.
+170bb Right, be careful! Would be a pity|to blow it at this point!?!
+170bc Me - I laugh in the face of danger!
+
+175a Who is it?! 
+175b I am the guardian of the hammer! | Nobody gets past me! Show yourself!
+175c We met your husband, he said hi.
+175d I don’t have a husband! He’s such a | terrible gossip. 
+175e So, how is he?
+175f Well.. listen... to be honest.. not too good. | You have to be strong now... he’s kinda... dead. | He gave his life honorably - battling Fenris and his myrmidons. | I’m sorry.
+175g *Sigh* !
+175h He was a gossip... | but a noble one.
+175i We brought someone along for you.
+175j My...my son.... Is it really him....? Thank you so much!
+175k Wait! So you want to catch Fenris? | I have something for you!
+175l This is the hammer! Hope it will help!
+
+177a Ooops... What is this? Where on|earth did that stupid elf bring us?
+177b Listen! I smell something...
+177c Yes, there’s something creepy going on here...
+177d Hello --!??! Where are you?!? Hello...?
+177e For Odin’s sake!
+177f You! What did you do to him!?!
+177g Me? Nothing. Really! I promise!
+177h Yeah, right! ... I suspect you of foul play.
+177i No way! It would hurt me more than|you guys! All I want is for you to get|the GLEIPNIR together..
+177j There must be some evil dwarfs around here.
+177k Evil dwarfs?!!? If there’s anyone|that’s evil, then it’s the elves!
+177l Come on, don’t be silly! I’ll get you some light.
+177m Let’s hope so, by goodness.
+177n Hey! Stay here!... Where ---?|...I just don’t trust her.
+
+183a Now, if that doesn’t make the little Wiggle happy?|Plenty of fire, grime, and dirt to play with.
+183b Wow, some of you dwarfs must have already been here.|Such a 'handy' log, can only be made by Wiggles’ hands!
+
+190a Stop! Not yet! Hold on!
+190b Are those all the rings you could find?!| I thought I could rely on you guys by now!
+190c Keep going. You need six rings.
+
+200aa Oh great, they made it!
+200ab Now they have the Gleipnir!|Grrrrr!.... STOP THEM!
+200ac NOOOOOOOW!
+
+250a Watching you really is a fulltime job! | Didn’t I tell you everything about the Gleipnir? | Did I not try hard enough? Hm?.
+250b Well...ahm, you did…
+
+251a Seriously, are you listening at all?!?
+251b You are supposed to forge the Gleipnir to defeat Fenris.
+251c Yes mom!
+
+253a Wow, I am impressed! You have the Gleipnir! | Maybe now you can restrain Fenris without getting yourself beaten up?... | Maybe you just like it?
+
+340a Hm - what’s going on over there?
+340b My lava bath!
+340c Which stupid troll didn't plug in the|stopper properly!
+340d Do I really have to do everything on my own?
+340e Where is it? For Odin’s sake,|the lava is already pretty cold...
+340f Ah - there it is, that stupid stopper...
+
+350a What the...? Am I already drunk?
+350b Darned.
+350c Stupid stopper... Just stay in there!
+
+360a Nevermind then. I’m gonna smell anyway!
+
+
+370a Am I nuts!?!
+370b Wait till I catch you! Where are you!?
+
+300a You made it! You have all six rings!|I knew you could do it!
+300b Now seek a good fire|to forge the Gleipnir!
+300c I am starting to like you guys...
+300d Yuck!... I HATE ELVES!
+300aa I HATE WIGGLES.
+300ab What are you staring at?
+300ac Pardon me, master your-your...
+300ad WHAT?!
+300ae Oh! Darned... The Ring of Fire. These...
+300ag Thank you, soldier!
+300ah No comments please!
+
+400ba Woaa...ohaa... it sizzles...
+400bb Let’s see ...hicks... where are the restrooms...?
+400bc Oh nooo..
+400bd Uuuha... they can’t do that to me...
+
+450a We are the champions – we are the champions...
+450b D..D.I.G...D.I.G.G.L.E.S... the DIGGLEs kicked some butt! GO HOME Fenris!
+450c Odin! Odin! We want mead! We want mead! mead-mead-mead... | DIGGLEDIGGLEDIGGLE... mead-mead-mead... DIGGLEDIGGLEDIGGLE... | mead-mead-mead... DIGGLEDIGGLEDIGGLE
+450d It ain’t over till the fat lady sings – little drunkards!
+450e FENRIS... come here... yummy food.. come here...
+450f You shouldn’t be staring at me like that?!
+450g And as unfair as life can be, the DIGGLEs got nothing in the end. NOTHING..RIEN…NADA. The Elf got away with her scam |and Odin made her a demigod. But the DIGGLEs...  the DIGGLEs lived happily ever after | underground until the end of their days. And who knows, maybe their grand-children are still drinking their mead, | waiting for their beards to grow, and digging their underground tunnels and caves.
+450h What are you doing?! YOU ARE TELLING FAIRY-TALES here, | you...you  STORYTELLER, you! You – ARE – FIRED!
+450i The gate is still open! We can catch that elf!
+450j HURRY DIGGLES! WE NEED TWO VOLUNTEERS! Get going!
+
+650a Bad, bad Fenris... Don’t you ever run away again... | A big NONONONONO!
+650b Hello!? Odin? What about the reward?!?!
+650c What about it? The elf got the reward. Yeah... | Oh... I guess someone has to go get the Valkyrie, well... | I gotta go.
+650d So the DIGGLEs succeeded and lived underground happily ever after ---
+650e HAPPILY?!?
+650f You storytelling troll! Don’t you get it? | He tricked us!
+650g Tricked them? Why?
+650h Tricking, in the sense of outsmarting us,|  getting the better of us, fooling us, | or pulling the wool over our eyes.
+650i Is this true? Impossible!
+650j How right you are.
+650k That’s... I am outta here. This fairy-tale sucks. | I’m not gonna tell this to all those people.
+650l Ok. If that’s the way it is: | I’ll be generous! Good job - guys!

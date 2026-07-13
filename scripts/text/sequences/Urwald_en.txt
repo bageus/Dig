@@ -1,0 +1,240 @@
+001a Gibbrich!!... Wake up!
+001b Uuha...Odin? - What’s wrong?
+001c Gibbrich, lord of all dwarf clans, ruler of gold and mushrooms,
+001d master of the pick-axe...
+001e Get your lazy butt into gear!
+001f What are you doing in my cosy bed chamber?
+001g Do you need more tunnel diggers for Valhalla?!
+001h Or do you actually have a -real- problem this time?
+001i Let’s call it a mission.
+001j I need your best dwarfs, your very best clan...
+001k I have a little problem...
+001l Not too bad... Anyway, yesterday I was|taking Fenris for a walk,
+001m  and all of a sudden he...
+001n ... Fenris...my cute little puppy, he ... ran off.
+001o F-F-Fenris...the...the...the... w-w-w-wolf?
+001p You want us to catch Fenris, that beast?
+001q He’s not a beast!...
+001r He just likes to play. I promise...
+001s He disappeared into the underworld,|far beneath Midgard. You know your way around down there, right...?
+001t Is there gonna be any reward for us?
+001u The members of the clan returning Fenris to me, in return shall become demigods.
+001v What about gold?...hm.
+001w And - and - some mead, yes mead - as much as you can drink.
+001x And a beard?! Are we gonna get a beard!?
+001y OK...OK... Just like... who was it again?...|oh, the vikings! Are we in business?
+001z You shall get my best clan...
+001za Now let me get some sleep!
+
+
+003a Ah! This must be where Fenris ran off.
+003b Finally! Let’s start digging!
+003c Let’s go!
+003d I am supposed to watch you guys!?|Hmm... I didn’t become an elf|to play Diggle-sitter.
+003e There you go!
+003f There you go! Odin gave these to me. These rings are all that’s left|of Fenris’ neckband. The Ring of the Air and the|Ring of the Earth. Take good care of them! Understand?
+003g We’re not stupid!
+003h There have to be more rings down there!
+003i How nice, this desolate place looks exactly like|your pathetic little camp...
+003j Pitch the tents right here, then check out the area. The losers of the|other clans are certainly somewhere down here in the ground.|Maybe they know where Fenris hid the other rings.
+003k I’ll never understand how anyone could live underground... Yuck!| Well, have fun guys, there’s plenty dirt to play with.
+003l Stupid elf! Why don’t you bump into that rock!
+003m Elves... yuck!
+003m Elfenschrei
+003o Alright, now let’s go get Fenris!
+
+006aa Hey wobbles - oops, Diggles!?! Did you guys find any rings yet?
+006ab What do you want, again?
+006ac To help you poor, weak little guys out here.
+006ad No thanks!
+006ae Nevermind then! I did ask...
+006af But to keep Fenris under control you have to collect the rings.
+006ag And then?!? Shall we use them as nose piercings, or what!?
+006ah Hahaha...
+006ai Many centuries ago, your ancestors created a powerful necklace. |It was made out of six rings.... six rings that...
+
+006ba ...were forged into one powerful band. |Indestructable and strong...
+006bb ... - unique forging techniques and ancient dwarf magic|resulted in... the GLEIPNIR!
+006bc This is how Odin, king of all gods, could restrain Fenris -
+006bd Anyway, he took off. Bummer!|Somehow he must have gotten rid of the Gleipnir.
+006bdb Now poor Odin is all alone... where was I?
+006be For centuries the Gleipnir had contained Fenris’ rage.
+006beb But now the necklace has broken.
+006bec It cracked, shattered, smashed...|basically it flew into pieces...
+006bf And the knowledge about the Gleipnir vanished as well.
+006bg I think you guys’ve got it by now, right?
+006bh Somewhere deep in the underworld, six rings are waiting for their finders... |The Diggles.
+006bhb They have to construct the Gleipnir and use this|indestructible band to chain Fenris up forever.
+006ca Almost sounds too easy, doesn’t it?
+006cb Your clever little friends are gonna be of great help here.
+
+007a  These are some of the finest cigars in the world...
+007c  We even have hamster flavored ones!
+007d  A mild to medium taste, but still invigorating.
+007f  I don’t care if YOUR dwarfs smoke cigars.
+007h  Cooool... She can flyyyyyyy...
+007n  Shhhh... The trolls
+007o  have kidnapped our gatekeeper.
+007p  We’d free her but we are kinda --
+007q  -- indisposed.
+007s  What would you give us for freeing your gatekeeper?
+007w  She’d open the gate to the underworld...
+007x  and you could return Fenris to Odin...
+007y  Cooool...
+007aa Hi there!
+007ab Heeeeloooo...
+007abb Want one...
+007ac Yuck! No thanks.
+007ad She is just a stupid elf!
+007ae Cooool.
+007af Hmmm... Sounds good... 'cool'.
+
+008a Hey fairies. What’s up?
+008b Ach hallo, du bist es...
+008c I see Elves and Diggles in one team|Tell me, is it just a dream?
+008d Unfortunately not!! Odin gave me an order to go with them!
+008e An unthankful order Odin gave to you,|But you must obey, that is true!
+008f Exactly... so how are you?
+008g Better days I recall to see, the water is missing for our tree.|Making us suffer as a whole are the fat and nasty evil trolls.
+008h If water is not flowing soon|We’ll vanish, this is our doom.
+008i Oh, that’s not good -
+008j We really need you in our hood!
+008k ...ihr werdet alle sterben?... Shit!
+008l Wait a second. What’s this rabble good for?
+008m Hey stupidos. Maybe you guys could actually do something right!?!!
+008n DIGGEEELLLLLESSSS!!!!!!!!!
+008o Come on guys do something! Pronto!
+008p The trolls with their nasty smell, are blocking our beloved well.|But he who brings us water soon
+008q Shall get a sword and prevent our doom.
+
+009a Na, auch schon hier..?
+009b Laß mich an den Schalter ran!
+009c Bevor du hier auf jede beliebige Taste drückst.. schau dich doch erstmal um.
+009d Die Tür muß auf..
+009e Und wo soll dann das Wasser hin? Überleg erstmal..
+
+010a The tree is saved, the fairies, too...|Thanks to the Diggles for this coup.
+010b We do thank you and the lord,|now walk on with this mighty sword!
+010c Nimm dies!
+
+011a Und? Damm schon gefunden?...
+011b ...Wo bleibt das Wasser.
+011c Die Feen krepieren sonst! Beeil Dich mal!
+
+012a For Odin's sake, there's a whole village full of them ...
+
+025a Thank you!...
+025b The trolls ambushed and imprisoned me.
+025c They thought I would tell them |how to open the gate to the underworld.
+025d I didn’t tell them!
+025e We have to get the ring. |Only with the ring I’ll be able to open the gate.
+025f The .. ring?... Where is it?
+025fb The .. ring?... We already have it!
+025g They took it to another troll camp,
+025gb It’s great to be able to count on you guys.
+025h a fortress which is supposedly less guarded -
+025hb I’m getting sick of this place...
+025i that’s what he told me.. the other day.
+025ib of this place...
+025j I’ll be waiting at the gate.
+025o What’s up with her?!
+025p I think it’s all those cigars!
+025aa Guess this is the well guarded troll post.|Maybe I should try to find another way!
+025ab I think that’s the place|the hermit was talking about.
+
+023a Hi!
+023b So, nun habe ich dir aber genug Hamster gebracht!!!
+023c The hamsters of mine! My treasures, my cute little ones.
+023d My promise I'll keep and tell you the way.
+023e Oppressed and tortured, a slave for |the trolls I was...until my escape!
+023f Long ago it is, captured I was while drawing |this map. Of advantage it will be, I’m sure.
+023g Thanks, dude.
+023h Hey, here are your hamsters.
+023i Thank you, young Diggle!|Some more I need!
+023j Come on old dwarf!
+023z Kann dir vielleicht weiterhelfen. |Klicke sie mit gehaltener UMSCHALT Taste an, um sie dir anzuschauen.
+020a All gone, it is! Destroyed is everything! Vandals! (Sigh)|Hang them, is what they should do. UAAA....
+020aa  Bei Odin...!
+020ab  He !
+020b Hey old man, smells like grilled hamster!
+020c Making fun of me, is all you ever do!|It’s the trolls, who I hate.|Destruction is what they leave behind!
+020e Chill out old dwarf - ok?
+020f 'CHILL OUT'? How? Tell me!
+020g All my hamsters - burnt and gone.|Telling me how to survive the winter -|is what you need to do.
+020h No idea.
+020i For help, I beg you! Help me... you must!
+020j Please, young Diggle, my hamsters, I want you to catch.| A few maybe you could give me at least?
+020k The gatekeeper, is what you’re looking for?|A way into the fortress I know.|Not getting caught, is the key!
+020l Was denn?
+020m PSSSTTT...
+020n An impatient, young Diggle you are, just like your father.|Six hamsters you get me, then ready you are.
+020z Hm, da scheint jemand zu sein.
+022a Hmmm... Smells kinda... burnt!
+022b Seems like it’s coming from over there...
+022ba Smells like barbecued hamster... Or is it grilled Diggle?! |Hehe... I’ll check it out.
+
+030a Wow, that’s really deep.
+
+040a_a Where’s the ring?
+040a_b The ring?
+040a_c She needs the ring from the small troll fortress, doofus!
+040a_d You won’t get anywhere without it.
+040a_e Almost sounds too easy, doesn’t it?
+
+040b_a Here you are.
+040b_b Then I shall open the gate...
+040b_c Scoot over !! Magic needs some room!
+040b_d Ok!
+040b_e Thanks...
+040b_f Let’s go...
+040b_g Take Odin’s ring and open the gate!
+040b_h There you go.
+040b_i And the ring?
+040b_j What about it, it’s mine!
+040b_k Hold on?!
+040b_l Come on, give him the ring!
+040b_m What? But... I...?!
+040b_n Give him the ring! He freed you!|He’ll defeat Fenris...
+040b_o or he’ll be his lunch.
+040b_p So?!
+040b_q You have to learn to look after the rings|on your own. I can’t be everywhere at|the same time, I only have one pair of wings!
+040b_r Here you are. Hurry up, move the Diggles with|their goods before the gate closes.
+040b_s Sure, we got it...
+
+040_ca Oh, those stupid idiots! First they|don’t move in time...
+040_cb run in there and almost|don’t make it and forget
+040_cc their equipment! Now I gotta deal|with it... wait until I get there!
+
+043aaa Was?
+043aa You let the gatekeeper escape?!
+043ab I ordered that she would remain here until she opened the gate for me!
+043ac For Odin’s sake... the Ring of Life...
+043ae Wuff?! Igllmmmns shmmm hnnnnn....
+043af Ahm.. master?
+043ag Wuff?!
+
+1009a Vielleicht solltest du das lieber nicht tun!|Nur'n Tip.
+
+045a Örgs ...
+045b Oops... fiendish stuff...
+
+460aa I can feel new power running though my veins!
+460ab The time has come; after all those centuries the elves | finally prevail over you
+460ac little worms! In the end, after decades, | Odin made a wise decision.
+460ad Diggles? Demigods? Ha! You’re nothing! | Why don’t you come and challenge me.
+
+650a Bad, bad Fenris... Don’t you |ever run away again - Big NONO!
+650b Hello!? Odin? What about the reward?!?!
+650c What about it? The elf got rewarded. Yes... oh... |I guess someone has to go|get the Valkyrie, well... I gotta go.
+650d So the Diggles succeeded and lived|underground happily ever after ---
+650e 'HAPPILY'?!? You storytelling |troll! Don’t you get it? They tricked them!
+650f Tricked them? Why?
+650g Tricking, in the sense of|outsmarting them,|getting the|better of them,|fooling them,|or pulling the wool over their eyes.
+650h Is this true? That’s heinous!
+650i How right you are.
+650j That’s... I am outta here. This fairy-tale sucks.|I’m not gonna tell this to all those people.
+650k Ok. If that’s the way it is: |I’ll be generous!|Good job - guys!
+
+8100 Hello?! Hurry up! Get your Diggles and their stuff through|the gate before it closes.
+8101a Maybe you don’t understand -
+8101b LISTEN TO ME NOW! Get your Diggles through the gate!|The gatekeeper is just about to close it!
