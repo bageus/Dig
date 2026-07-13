@@ -1,7 +1,9 @@
+using Dig.Application.Agents;
 using Dig.Application.Messaging;
 using Dig.Application.Navigation;
 using Dig.Application.Runtime;
 using Dig.Application.World;
+using Dig.Domain.Agents;
 using Dig.Domain.Core;
 using Dig.Domain.Navigation;
 using Dig.Domain.Runtime;
@@ -17,10 +19,45 @@ internal static class Program
         SimulationState state = SimulationState.Create(
             worldSeed: 42,
             tickDuration: TimeSpan.FromMilliseconds(100));
+        InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
+        EntityId residentId = Require(state.Entities.RegisterNew());
+        AgentState resident = new AgentState(
+            residentId,
+            "Headless Dwarf",
+            new AgentNeedsSnapshot(
+                new NeedValue(1_000),
+                new NeedValue(2_500),
+                new NeedValue(6_000),
+                new NeedValue(10_000)),
+            DailySchedule.CreateBalanced(ticksPerDay: 12),
+            new[]
+            {
+                new AgentSkillValue(new AgentSkillId("general.work"), 4_000),
+            });
+        InMemoryAgentRepository agentRepository = new InMemoryAgentRepository();
+        Require(agentRepository.Add(resident));
+        InMemoryAgentDecisionContextProvider agentContexts =
+            new InMemoryAgentDecisionContextProvider(
+                AgentDecisionContext.AllAvailable());
+        AgentAutonomySystem autonomy = new AgentAutonomySystem(
+            agentRepository,
+            agentContexts,
+            journal,
+            new AgentDecisionSystem(),
+            AgentBehaviorPolicy.CreateDefault());
+
         SimulationScheduler scheduler = new SimulationScheduler();
         scheduler.Register(new EntityCreationSystem(intervalTicks: 5));
+        scheduler.Register(autonomy);
         SimulationRunner runner = new SimulationRunner(state, scheduler);
         runner.Step(20);
+
+        AgentSnapshot residentSnapshot = resident.CreateSnapshot(state.Clock.TickIndex);
+        if (!residentSnapshot.IsAlive || residentSnapshot.LastDecision is null)
+        {
+            throw new InvalidOperationException(
+                "Headless resident did not complete autonomous decisions.");
+        }
 
         MaterialId rock = new MaterialId("rock");
         MaterialId air = new MaterialId("air");
@@ -39,7 +76,6 @@ internal static class Program
         WorldState world = Require(worldCreation);
 
         InMemoryWorldRepository worldRepository = new InMemoryWorldRepository(world);
-        InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
         CommandPipeline commands = new CommandPipeline(journal);
         CellId target = new CellId(3, 3);
 
@@ -105,7 +141,8 @@ internal static class Program
 
         Console.WriteLine(
             $"Headless simulation completed at tick {state.Clock.TickIndex} "
-            + $"with {state.Entities.Count} entities, world version {world.Version}, "
+            + $"with {state.Entities.Count} entities, resident intent "
+            + $"{residentSnapshot.LastDecision.SelectedIntent}, world version {world.Version}, "
             + $"{navigationSnapshot.Regions.Count} navigation regions and "
             + $"a {route.Path!.Cells.Count}-cell route.");
         return 0;
