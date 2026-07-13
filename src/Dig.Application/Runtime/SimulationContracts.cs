@@ -2,9 +2,18 @@ using Dig.Domain.Runtime;
 
 namespace Dig.Application.Runtime;
 
-public readonly record struct SimulationContext(
-    long Tick,
-    SimulationState State);
+public readonly struct SimulationContext
+{
+    public SimulationContext(long tick, SimulationState state)
+    {
+        Tick = tick;
+        State = state ?? throw new ArgumentNullException(nameof(state));
+    }
+
+    public long Tick { get; }
+
+    public SimulationState State { get; }
+}
 
 public interface ISimulationSystem
 {
@@ -17,10 +26,21 @@ public interface ISimulationSystem
     void Execute(SimulationContext context);
 }
 
-public readonly record struct SystemExecution(
-    long Tick,
-    string SystemName,
-    int Order);
+public readonly struct SystemExecution
+{
+    public SystemExecution(long tick, string systemName, int order)
+    {
+        Tick = tick;
+        SystemName = systemName;
+        Order = order;
+    }
+
+    public long Tick { get; }
+
+    public string SystemName { get; }
+
+    public int Order { get; }
+}
 
 public interface ISimulationTrace
 {
