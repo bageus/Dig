@@ -8,7 +8,9 @@ The repository contains an engine-independent C# core with explicit Domain, Appl
 
 The logical world foundation provides authoritative cells, immutable material definitions, chunk versioning, local invalidation, atomic terrain changes and immutable snapshots.
 
-Navigation now derives versioned walkability caches and regions from world snapshots, refreshes changed chunks locally, supports multiple traversal profiles plus ladder and elevator links, and returns diagnosable paths with stale-result validation.
+Navigation derives versioned walkability caches and regions from world snapshots, refreshes changed chunks locally, supports multiple traversal profiles plus ladder and elevator links, and returns diagnosable paths with stale-result validation.
+
+Residents now own needs, schedules, skills, traits, player orders and one active action. Deterministic Utility AI explains every selected and rejected intent, uses hysteresis and cooldown against oscillation, and keeps critical survival above ordinary work or direct orders.
 
 The concrete Unity or Godot adapter has not been selected yet. Domain rules must remain usable without either engine.
 
@@ -16,7 +18,7 @@ The concrete Unity or Godot adapter has not been selected yet. Domain rules must
 
 ```text
 src/
-  Dig.Domain/                    Authoritative game rules, runtime, world and derived navigation state
+  Dig.Domain/                    Authoritative game rules and derived runtime state
   Dig.Application/               Commands, queries and simulation orchestration
   Dig.Infrastructure/            Technical adapter implementations
   Dig.Presentation.Abstractions/ Read models and presentation contracts
@@ -67,7 +69,7 @@ The authoritative development rules are in [`docs/development-rules.md`](docs/de
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) and the [roadmap issue](https://github.com/bageus/Dig/issues/16).
 
-Architecture foundation is tracked by issue [#1](https://github.com/bageus/Dig/issues/1). The deterministic simulation runtime is tracked by issue [#2](https://github.com/bageus/Dig/issues/2). The logical world and chunk model is tracked by issue [#3](https://github.com/bageus/Dig/issues/3). Navigation in the changing world is tracked by issue [#4](https://github.com/bageus/Dig/issues/4). The next gameplay stage is residents, needs and utility AI in issue [#5](https://github.com/bageus/Dig/issues/5).
+Architecture foundation is tracked by issue [#1](https://github.com/bageus/Dig/issues/1). The deterministic simulation runtime is tracked by issue [#2](https://github.com/bageus/Dig/issues/2). The logical world and chunk model is tracked by issue [#3](https://github.com/bageus/Dig/issues/3). Navigation in the changing world is tracked by issue [#4](https://github.com/bageus/Dig/issues/4). Residents, needs and Utility AI are tracked by issue [#5](https://github.com/bageus/Dig/issues/5). The next gameplay stage is jobs and reservations in issue [#6](https://github.com/bageus/Dig/issues/6).
 
 ## License
 
