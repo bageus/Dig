@@ -188,7 +188,7 @@ public sealed class Result<T> : Result
         }
     }
 
-    public static Result<T> Success(T value)
+    public static new Result<T> Success(T value)
     {
         return new Result<T>(true, value, null);
     }
