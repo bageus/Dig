@@ -4,7 +4,7 @@ Dig is an independent 2.5D colony simulation inspired by the systemic ideas of c
 
 ## Current status
 
-The repository is in the architecture-foundation stage. The first implementation provides an engine-independent C# core with explicit Domain, Application, Infrastructure and Presentation boundaries.
+The repository contains an engine-independent C# core with explicit Domain, Application, Infrastructure and Presentation boundaries. The deterministic simulation foundation now includes fixed ticks, speed control, named random streams, entity identity, system scheduling and a headless host.
 
 The concrete Unity or Godot adapter has not been selected yet. Domain rules must remain usable without either engine.
 
@@ -12,10 +12,11 @@ The concrete Unity or Godot adapter has not been selected yet. Domain rules must
 
 ```text
 src/
-  Dig.Domain/                    Authoritative game rules and state
-  Dig.Application/               Commands, queries and orchestration
+  Dig.Domain/                    Authoritative game rules and runtime state
+  Dig.Application/               Commands, queries and simulation orchestration
   Dig.Infrastructure/            Technical adapter implementations
   Dig.Presentation.Abstractions/ Read models and presentation contracts
+  Dig.Headless/                  Engine-free simulation bootstrap
 
 tests/
   Dig.Tests/                     Domain and cross-layer tests
@@ -24,6 +25,7 @@ tools/quality/                   Architecture and file-size checks
 
 docs/
   architecture/                  System and module design
+  implementation/                Notes for implemented systems
   adr/                           Architecture decision records
 ```
 
@@ -41,9 +43,10 @@ python tools/quality/check_quality.py
 dotnet restore Dig.sln
 dotnet build Dig.sln --configuration Release --no-restore
 dotnet test Dig.sln --configuration Release --no-build
+dotnet run --project src/Dig.Headless/Dig.Headless.csproj
 ```
 
-GitHub Actions runs the same checks for pushes and pull requests.
+GitHub Actions runs the quality, build and test checks for pushes and pull requests.
 
 ## Architectural rules
 
@@ -60,7 +63,7 @@ The authoritative development rules are in [`docs/development-rules.md`](docs/de
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) and the [roadmap issue](https://github.com/bageus/Dig/issues/16).
 
-The current implementation corresponds to issue [#1](https://github.com/bageus/Dig/issues/1). The next technical stage is the deterministic simulation loop and entity identity described in issue [#2](https://github.com/bageus/Dig/issues/2).
+Architecture foundation is tracked by issue [#1](https://github.com/bageus/Dig/issues/1). The deterministic simulation runtime is tracked by issue [#2](https://github.com/bageus/Dig/issues/2). The next gameplay foundation is the logical world and chunk model in issue [#3](https://github.com/bageus/Dig/issues/3).
 
 ## License
 
