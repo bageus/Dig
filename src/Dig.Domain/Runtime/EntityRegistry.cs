@@ -23,7 +23,15 @@ public static class EntityRegistryErrors
         "A unique entity id could not be generated.");
 }
 
-public readonly record struct EntityRegistrySnapshot(IReadOnlyList<EntityId> EntityIds);
+public readonly struct EntityRegistrySnapshot
+{
+    public EntityRegistrySnapshot(IReadOnlyList<EntityId> entityIds)
+    {
+        EntityIds = entityIds;
+    }
+
+    public IReadOnlyList<EntityId> EntityIds { get; }
+}
 
 public sealed class EntityRegistry
 {
