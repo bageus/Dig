@@ -50,3 +50,6 @@ jobs:
 
       - name: Test
         run: dotnet test Dig.sln --configuration Release --no-build --verbosity normal
+
+      - name: Run headless smoke test
+        run: dotnet run --project src/Dig.Headless/Dig.Headless.csproj --configuration Release --no-build

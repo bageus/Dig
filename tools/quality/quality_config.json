@@ -36,6 +36,10 @@
     "Dig.Presentation.Abstractions": [
       "Dig.Application",
       "Dig.Domain"
+    ],
+    "Dig.Headless": [
+      "Dig.Application",
+      "Dig.Domain"
     ]
   },
   "domain_banned_tokens": [
