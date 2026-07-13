@@ -1,0 +1,11 @@
+[2026-07-13T23:40:48.047Z][INFO] Command-line: 'C:\\Program Files\\Unity\\Hub\\Editor\\6000.5.3f1\\Editor\\Data\\Resources\\PackageManager\\Server\\UnityPackageManager.exe' server -s 24400 --ipc-path Unity-Upm-24400 -l 2 --log-file D:\\unity\\project\\Dig/Logs/upm.log
+[2026-07-13T23:40:48.113Z][INFO] IPC server started (IPC path=Unity-Upm-24400).
+[2026-07-13T23:40:48.113Z][INFO] Hint: To connect to this UPM instance, launch Unity with the command-line parameter -upmIpcPath Upm-24400.
+[2026-07-13T23:40:58.220Z][INFO] project:list-packages <-- Request received
+params: {}
+[2026-07-13T23:40:58.440Z][INFO] project:list-packages <-- Request received
+params: {}
+[2026-07-13T23:40:58.460Z][INFO] config:project:get-registries <-- Request received
+params: {}
+[2026-07-13T23:40:58.594Z][INFO] project:update-dependencies <-- Request received
+params: {}
