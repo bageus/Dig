@@ -4,7 +4,9 @@ Dig is an independent 2.5D colony simulation inspired by the systemic ideas of c
 
 ## Current status
 
-The repository contains an engine-independent C# core with explicit Domain, Application, Infrastructure and Presentation boundaries. The deterministic simulation foundation now includes fixed ticks, speed control, named random streams, entity identity, system scheduling and a headless host.
+The repository contains an engine-independent C# core with explicit Domain, Application, Infrastructure and Presentation boundaries. The deterministic simulation foundation includes fixed ticks, speed control, named random streams, entity identity, system scheduling and a headless host.
+
+The logical world foundation now provides authoritative cells, immutable material definitions, chunk versioning, local invalidation, atomic terrain changes and immutable snapshots for future navigation and rendering systems.
 
 The concrete Unity or Godot adapter has not been selected yet. Domain rules must remain usable without either engine.
 
@@ -12,7 +14,7 @@ The concrete Unity or Godot adapter has not been selected yet. Domain rules must
 
 ```text
 src/
-  Dig.Domain/                    Authoritative game rules and runtime state
+  Dig.Domain/                    Authoritative game rules, runtime and world state
   Dig.Application/               Commands, queries and simulation orchestration
   Dig.Infrastructure/            Technical adapter implementations
   Dig.Presentation.Abstractions/ Read models and presentation contracts
@@ -46,7 +48,7 @@ dotnet test Dig.sln --configuration Release --no-build
 dotnet run --project src/Dig.Headless/Dig.Headless.csproj
 ```
 
-GitHub Actions runs the quality, build and test checks for pushes and pull requests.
+GitHub Actions runs the quality, build, test and headless smoke checks for pushes and pull requests.
 
 ## Architectural rules
 
@@ -63,7 +65,7 @@ The authoritative development rules are in [`docs/development-rules.md`](docs/de
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) and the [roadmap issue](https://github.com/bageus/Dig/issues/16).
 
-Architecture foundation is tracked by issue [#1](https://github.com/bageus/Dig/issues/1). The deterministic simulation runtime is tracked by issue [#2](https://github.com/bageus/Dig/issues/2). The next gameplay foundation is the logical world and chunk model in issue [#3](https://github.com/bageus/Dig/issues/3).
+Architecture foundation is tracked by issue [#1](https://github.com/bageus/Dig/issues/1). The deterministic simulation runtime is tracked by issue [#2](https://github.com/bageus/Dig/issues/2). The logical world and chunk model is tracked by issue [#3](https://github.com/bageus/Dig/issues/3). The next technical stage is navigation in the changing world, tracked by issue [#4](https://github.com/bageus/Dig/issues/4).
 
 ## License
 
