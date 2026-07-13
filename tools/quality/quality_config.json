@@ -1,0 +1,48 @@
+{
+  "max_lines": 350,
+  "source_roots": [
+    "src",
+    "tests",
+    "tools",
+    ".github"
+  ],
+  "extensions": [
+    ".cs",
+    ".py",
+    ".sh",
+    ".ps1",
+    ".yml",
+    ".yaml",
+    ".csproj",
+    ".props",
+    ".targets"
+  ],
+  "excluded_directories": [
+    "bin",
+    "obj",
+    "Generated",
+    "Migrations",
+    "Vendor"
+  ],
+  "allowed_project_references": {
+    "Dig.Domain": [],
+    "Dig.Application": [
+      "Dig.Domain"
+    ],
+    "Dig.Infrastructure": [
+      "Dig.Application",
+      "Dig.Domain"
+    ],
+    "Dig.Presentation.Abstractions": [
+      "Dig.Application",
+      "Dig.Domain"
+    ]
+  },
+  "domain_banned_tokens": [
+    "UnityEngine",
+    "Godot",
+    "Microsoft.Xna.Framework",
+    "System.IO",
+    "System.Net"
+  ]
+}
