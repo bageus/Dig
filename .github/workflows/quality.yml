@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          show-progress: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -32,7 +34,19 @@ jobs:
         run: dotnet restore Dig.sln
 
       - name: Build
-        run: dotnet build Dig.sln --configuration Release --no-restore
+        shell: bash
+        run: |
+          set -o pipefail
+          dotnet build Dig.sln --configuration Release --no-restore 2>&1 | tee build.log
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Test
         run: dotnet test Dig.sln --configuration Release --no-build --verbosity normal
