@@ -4,6 +4,10 @@ namespace Dig.Domain.Navigation;
 
 public static class NavigationErrors
 {
+    public static readonly DomainError MapNotFound = new DomainError(
+        "navigation.map.not_found",
+        "The requested traversal profile has no navigation map.");
+
     public static readonly DomainError NotBuilt = new DomainError(
         "navigation.not_built",
         "The navigation map has not been built yet.");
