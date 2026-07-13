@@ -8,10 +8,24 @@ public enum SimulationRate
     VeryFast = 4,
 }
 
-public readonly record struct SimulationClockSnapshot(
-    long TickIndex,
-    long TickDurationTicks,
-    SimulationRate Rate);
+public readonly struct SimulationClockSnapshot
+{
+    public SimulationClockSnapshot(
+        long tickIndex,
+        long tickDurationTicks,
+        SimulationRate rate)
+    {
+        TickIndex = tickIndex;
+        TickDurationTicks = tickDurationTicks;
+        Rate = rate;
+    }
+
+    public long TickIndex { get; }
+
+    public long TickDurationTicks { get; }
+
+    public SimulationRate Rate { get; }
+}
 
 public sealed class SimulationClock
 {
