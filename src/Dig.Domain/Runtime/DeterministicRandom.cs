@@ -3,7 +3,18 @@ using System.Text;
 
 namespace Dig.Domain.Runtime;
 
-public readonly record struct RandomStreamSnapshot(string Name, ulong State);
+public readonly struct RandomStreamSnapshot
+{
+    public RandomStreamSnapshot(string name, ulong state)
+    {
+        Name = name;
+        State = state;
+    }
+
+    public string Name { get; }
+
+    public ulong State { get; }
+}
 
 public sealed class DeterministicRandomStream
 {
