@@ -2,11 +2,28 @@ using Dig.Domain.Core;
 
 namespace Dig.Application.Messaging;
 
-public readonly record struct CommandJournalEntry(
-    long Tick,
-    string CommandName,
-    bool Succeeded,
-    string? ErrorCode);
+public readonly struct CommandJournalEntry
+{
+    public CommandJournalEntry(
+        long tick,
+        string commandName,
+        bool succeeded,
+        string? errorCode)
+    {
+        Tick = tick;
+        CommandName = commandName;
+        Succeeded = succeeded;
+        ErrorCode = errorCode;
+    }
+
+    public long Tick { get; }
+
+    public string CommandName { get; }
+
+    public bool Succeeded { get; }
+
+    public string? ErrorCode { get; }
+}
 
 public interface IExecutionJournal : IEventSink
 {
