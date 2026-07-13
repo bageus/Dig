@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <RootNamespace>Dig.Presentation</RootNamespace>
+    <AssemblyName>Dig.Presentation.Abstractions</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Dig.Application/Dig.Application.csproj" />
+    <ProjectReference Include="../Dig.Domain/Dig.Domain.csproj" />
+  </ItemGroup>
+</Project>
