@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Dig.Headless</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Dig.Application/Dig.Application.csproj" />
+    <ProjectReference Include="../Dig.Domain/Dig.Domain.csproj" />
+  </ItemGroup>
+</Project>
