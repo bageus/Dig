@@ -1,7 +1,9 @@
 using Dig.Application.Messaging;
+using Dig.Application.Navigation;
 using Dig.Application.Runtime;
 using Dig.Application.World;
 using Dig.Domain.Core;
+using Dig.Domain.Navigation;
 using Dig.Domain.Runtime;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
@@ -59,10 +61,53 @@ internal static class Program
             throw new InvalidOperationException("Excavated headless cell remained solid.");
         }
 
+        List<TerrainChange> corridor = new List<TerrainChange>();
+        for (int x = 0; x < world.Size.Width; x++)
+        {
+            corridor.Add(new TerrainChange(
+                new CellId(x, 1),
+                new CellState(
+                    air,
+                    CellDesignation.None,
+                    isExplored: true,
+                    damage: 0,
+                    temperature: 20)));
+        }
+
+        Require(world.ApplyTerrainChanges(corridor, tick: 22));
+        TraversalProfile profile = TraversalProfile.CreateGroundedDwarf();
+        InMemoryNavigationRepository navigationRepository =
+            new InMemoryNavigationRepository();
+        RebuildNavigationCommandHandler rebuildNavigation =
+            new RebuildNavigationCommandHandler(navigationRepository);
+        Require(rebuildNavigation.Handle(
+            new RebuildNavigationCommand(
+                profile,
+                world.CreateSnapshot(),
+                Array.Empty<TraversalLink>())));
+        NavigationMap navigation = navigationRepository.Get(profile.Id)
+            ?? throw new InvalidOperationException("Navigation map was not stored.");
+        NavigationSnapshot navigationSnapshot = Require(navigation.GetSnapshot());
+        FindPathQueryHandler findPath = new FindPathQueryHandler(
+            navigationRepository,
+            new NavigationPathfinder());
+        PathResult route = Require(findPath.Handle(
+            new FindPathQuery(
+                profile.Id,
+                new PathRequest(
+                    new CellId(0, 1),
+                    new CellId(7, 1),
+                    navigationSnapshot.NavigationVersion))));
+        if (!route.Succeeded)
+        {
+            throw new InvalidOperationException(route.Diagnostics.Detail);
+        }
+
         Console.WriteLine(
             $"Headless simulation completed at tick {state.Clock.TickIndex} "
             + $"with {state.Entities.Count} entities, world version {world.Version}, "
-            + $"and {world.PeekDirtyChunks().Count} dirty chunks.");
+            + $"{navigationSnapshot.Regions.Count} navigation regions and "
+            + $"a {route.Path!.Cells.Count}-cell route.");
         return 0;
     }
 
