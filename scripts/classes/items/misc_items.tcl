@@ -1,0 +1,418 @@
+call scripts/misc/utility.tcl
+
+def_class Fake_Feuerstelle none dummy 0 {} {
+	def_event evt_dummy
+	handle_event evt_dummy {}
+	method dummy {} {}
+	call scripts/misc/autodef.tcl
+	class_defaultanim feuerstelle.hamsterdreh
+
+	obj_init {
+		call scripts/misc/autodef.tcl
+		set_physic this 0
+		set_collision this 1
+		set_anim this feuerstelle.hamsterdreh 0 $ANIM_STILL
+		change_particlesource this 0 0 {0 -0.1 0} {0 0 0} 32 1 0
+		set_particlesource this 0 1
+		change_light this {0 -0.1 0} 1 "1 0.9 0.8"
+		set_light this 1
+
+	}
+}
+def_class Discoboden none dummy 0 {} {
+	def_event evt_dummy
+	handle_event evt_dummy {}
+	method dummy {} {}
+	call scripts/misc/autodef.tcl
+	class_defaultanim discoboden.standard
+
+	obj_init {
+		call scripts/misc/autodef.tcl
+		set_physic this 0
+		set_collision this 1
+		set_anim this discoboden.standard 0 $ANIM_LOOP
+	}
+}
+def_class Lava_Hammer_Stein none dummy 0 {} {
+	def_event evt_dummy
+	handle_event evt_dummy {}
+	method dummy {} {}
+	call scripts/misc/autodef.tcl
+	class_defaultanim lava_hammer_stein.standard
+
+	obj_init {
+		call scripts/misc/autodef.tcl
+		set_physic this 0
+		set_collision this 1
+		set_anim this lava_hammer_stein.standard 0 $ANIM_STILL
+	}
+}
+
+def_class Lautsprecher_a none dummy 0 {} {
+	def_event evt_dummy
+	handle_event evt_dummy {}
+	method dummy {} {}
+	call scripts/misc/autodef.tcl
+	class_defaultanim lautsprecher_a.standard
+
+	obj_init {
+		call scripts/misc/autodef.tcl
+		set_physic this 0
+		set_collision this 1
+		set_anim this lautsprecher_a.standard 0 $ANIM_STILL
+	}
+}
+def_class Lautsprecher_b none dummy 0 {} {
+	def_event evt_dummy
+	handle_event evt_dummy {}
+	method dummy {} {}
+	call scripts/misc/autodef.tcl
+	class_defaultanim lautsprecher_b.standard
+
+	obj_init {
+		call scripts/misc/autodef.tcl
+		set_physic this 0
+		set_collision this 1
+		set_anim this lautsprecher_b.standard 0 $ANIM_STILL
+	}
+}
+
+def_class Schatzkiste none material 0 {} {
+
+	method release_content {owner} {
+		global destroyed
+
+		if {$destroyed} {
+			return
+		}
+		set destroyed 1
+		set_attrib this PilzAge 1
+		action this anim goldkiste.oeffnen {set_anim this goldkiste.auf 0 $ANIM_STILL}
+		set_particlesource this 0 5
+		set_light this 1
+		release_nextitem $owner
+	}
+
+	method is_destroyed {} {
+		global destroyed
+		return $destroyed
+	}
+
+	def_event evt_timer0
+	def_event evt_init
+
+	handle_event evt_timer0 {
+		release_nextitem [event_get this -subject1]
+	}
+
+	call scripts/misc/animclassinit.tcl
+	call scripts/classes/items/calls/takeitems.tcl
+
+	obj_init {
+		call scripts/misc/animclassinit.tcl
+		set_anim this goldkiste.zu 0 $ANIM_STILL
+		change_particlesource this 0 13 {0 -0.4 0.1} {0 -0.07 0.01} 300 50 0
+		change_light this {0 -0.5 0} 1.2 {0.6 0.6 0.2}
+		set_collision this 1
+		set_viewinfog this 1
+		set destroyed 0
+		set_attrib this PilzAge 0
+        call scripts/classes/items/calls/takeitems.tcl
+
+		proc release_nextitem {owner} {
+			set ilst [inv_list this]
+			if { [llength $ilst] } {
+				set item [lindex $ilst 0]
+				inv_rem this $item
+				//if {[get_boxed $item]} {
+					set_owner $item [net localid]
+				//}
+				if {[lsearch "production protection store elevator energy" [get_objtype $item]] != -1} {
+					if {[check_method [get_objclass $item] packtobox]} {
+						call_method $item packtobox
+					}
+				}
+
+				if {[get_objclass $item]=="Schatzbuch"} {
+					call_method $item initiate [get_pos this]
+				} else {
+					set pos [vector_add [get_pos this] "[random -0.3 0.3] -0.1 0.6"]
+					if {[lindex $pos 2] > 14} {
+						set pos [get_pos this]
+					}
+//					log "item = $item, pos = $pos"
+					set_posbottom $item $pos
+				}
+				set_hoverable $item 1
+				timer_event this evt_timer0 -subject1 $owner -userid 1 -repeat 0 -attime [expr {[gettime]+0.2}]
+			} else {
+				set_hoverable this 0
+			}
+		}
+	}
+}
+
+def_class Schatztonne none material 0 {} {
+
+	method release_content {owner} {
+		global destroyed
+
+		if {$destroyed} {
+			return
+		}
+		set destroyed 1
+		set_attrib this PilzAge 1
+		set cpos [get_pos this]
+		action this anim tonne.ani {set_anim this tonne.auf 0 $ANIM_STILL}
+		set_particlesource this 0 5
+		release_nextitem $owner
+	}
+
+	method is_destroyed {} {
+		global destroyed
+		return $destroyed
+	}
+
+	def_event evt_timer0
+	def_event evt_timer1
+	def_event evt_timer2
+
+
+	handle_event evt_timer0 {
+		release_nextitem [event_get this -subject1]
+	}
+
+	handle_event evt_timer1 {
+		set_physic this 0
+		set_vel this {0 0.05 0}
+		set_forceipol this 1
+		timer_event this evt_timer2 -userid 1 -repeat 0 -attime [expr {[gettime]+5}]
+	}
+
+	handle_event evt_timer2 {
+		del this
+	}
+
+	call scripts/misc/animclassinit.tcl
+	call scripts/classes/items/calls/takeitems.tcl
+
+	obj_init {
+		call scripts/misc/animclassinit.tcl
+		set_roty this [random 6.28]
+		set_anim this tonne.zu 0 $ANIM_STILL
+		change_particlesource this 0 13 {0 -0.4 0.1} {0 -0.07 0.01} 300 50 0
+		set_collision this 1
+		set_viewinfog this 1
+		set destroyed 0
+		set_attrib this PilzAge 0
+        call scripts/classes/items/calls/takeitems.tcl
+
+		proc release_nextitem {owner} {
+			set ilst [inv_list this]
+			if { [llength $ilst] } {
+				global cpos
+				set item [lindex $ilst 0]
+				inv_rem this $item
+				//if {[get_boxed $item]} {
+				    set_owner $item $owner
+				//}
+				if {[lsearch "production protection store elevator energy" [get_objtype $item]] != -1} {
+					if {[check_method [get_objclass $item] packtobox]} {
+						log "Methode packtobox fuer $item wird aufgerufen"
+						call_method $item packtobox
+					}
+				}
+				if {[get_objclass $item]=="Schatzbuch"} {
+					call_method $item initiate [get_pos this]
+				} else {
+					set_posbottom $item [vector_add $cpos {0.0 -0.2 0.0}]
+				}
+				set_hoverable $item 1
+				timer_event this evt_timer0 -subject1 $owner -userid 1 -repeat 0 -attime [expr {[gettime]+0.2}]
+			} else {
+				set_hoverable this 0
+				timer_event this evt_timer1 -userid 1 -repeat 0 -attime [expr {[gettime]+5}]
+			}
+		}
+	}
+}
+
+def_class Schatzbuch none material 0 {} {
+	class_defaultanim buch_blau.standard
+	method Editor_Set_Info {infostring} {
+		global buchname info_string punktezahl sign color
+		set info_string $infostring
+		set gain [lindex $infostring [irandom [llength $infostring]]]
+		set attype [string range $gain 4 6]
+		if {[llength $gain]!=2} {log "";log "Fehler: $gain !!!";log "";return}
+		if {[lindex $gain 1]<0} {set sign 1} {set sign 0}
+
+		if {[lsearch {F_D0 F_K0 F_B0 F_T0 F_S0} ${attype}$sign]!=-1} {set color "rot"}
+		if {[lsearch {Moo1 Met0 Ste0} ${attype}$sign]!=-1} {set color "blau"}
+		if {[lsearch {Nah0 Ser0 Tra0} ${attype}$sign]!=-1} {set color "gruen"}
+		if {[lsearch {Exp0 Hol0 Moo0 Ene0} ${attype}$sign]!=-1} {set color "braun"}
+		if {$color==0} {log "";log "Ungültig: $gain !!!";log "";return}
+		set_anim this buch_$color.standard 0 0
+
+		set codname ${attype}$sign
+		switch $attype {
+			"F_D" {set erfahrung Verteidigung}
+			"F_K" {set erfahrung Kungfu}
+			"F_B" {set erfahrung Schusswaffen}
+			"F_T" {set erfahrung Zweihandkampf}
+			"F_S" {set erfahrung Schwertkampf}
+			"Ene" {set erfahrung Alchemie}
+			"Hit" {set erfahrung Gesundheit}
+			"Moo" {set erfahrung Stimmung}
+			"Met" {set erfahrung Metalle}
+			"Exp" {set erfahrung Gehirngroesse}
+			"Ste" {set erfahrung Steine}
+			"Tra" {set erfahrung Transport}
+			"Ser" {set erfahrung Service}
+			"Hol" {set erfahrung Holz}
+			"Nah" {set erfahrung Nahrung}
+			default {set erfahrung "Assemblerprogrammierung"}
+		}
+		if {$sign == 0} {set end Pos} else {set end Neg}
+		set buchname $erfahrung$end[irandom 0 5]
+		set_objname this [lmsg $buchname]
+		log "Buchname = $buchname"
+		set punktezahl [lindex $gain 1]
+		set erfahrung [lmsg $erfahrung]
+	}
+	method initiate {pos} {
+		global color
+		log "Initiate vom Schatzbuch wurde aufgerufen!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+		set_pos this $pos
+		set_hoverable this 1
+		set_physic this 1
+		set_storable this 1
+		set_viewinfog this 1
+
+		timer_event this evt_timer_schweben -repeat 1 -interval 1 -attime [expr [gettime] + 1]
+		//set_anim this buch_$color.schweben 0 2
+		//tasklist_add this "set_anim this buch_$color.schweben 0 2"
+	}
+
+	method set_standartanim {} {
+		global color
+		set_anim this buch_$color.schweben 6 0
+	}
+
+	method get_gain {} {
+		//del this
+		return $gain
+	}
+
+	method get_buchname {} {
+		global buchname
+		return $buchname
+	}
+
+	method get_erfahrungsbezeichnung {} {
+		global erfahrung
+		return $erfahrung
+	}
+
+	method get_punktezahl {} {
+		global punktezahl
+		return $punktezahl
+	}
+
+	method get_infostring {} {
+	global info_string
+	return $info_string
+	}
+
+	method get_sign {} {
+		global sign
+		return $sign
+	}
+
+	def_event evt_timer_schweben
+	handle_event evt_timer_schweben {
+		global color
+		set_anim this buch_$color.schweben 0 2
+	}
+
+	obj_init {
+		set_anim this buch_blau.standard 0 0
+		set gain {atr_Mood 0.5}
+		set_hoverable this 0
+		set info_string {{atr_Mood 0.5}}
+		set buchname ""
+		set erfahrung ""
+		set punktezahl 0
+		set sign 0
+		set color 0
+	}
+	state waving {
+		set wavestep [expr {($wavestep+1)%10}]
+		set_posy this [lindex $wavepath $wavestep]
+	}
+}
+def_class Holzpuppe none monster 0 {} {
+	call scripts/misc/animclassinit.tcl
+
+	class_fightdist 1.2
+	method im_attacking_you {} {}
+
+	obj_init {
+		set_anim this obw_puppe_a.standard 0 $ANIM_STILL
+		set_hoverable this 1
+		state_triggerfresh this idle
+	}
+	method check_first_strike {caller} {
+		return 1
+	}
+	state idle {
+		//state_disable this
+		set fresult [fight_setactions_strikeback this 2.2]
+		set_attrib this atr_Hitpoints 1.0
+		state_disable this
+	}
+}
+
+def_class Trainingspuppe none monster 0 {} {
+	call scripts/misc/animclassinit.tcl
+
+	class_fightdist 1.2
+	method im_attacking_you {} {}
+
+	obj_init {
+		set_anim this obw_puppe_b.standard 0 $ANIM_STILL
+		set_hoverable this 1
+		state_triggerfresh this idle
+	}
+	method check_first_strike {caller} {
+		return 1
+	}
+	state idle {
+		//state_disable this
+		set fresult [fight_setactions_strikeback this 2.2]
+		set_attrib this atr_Hitpoints 1.0
+		state_disable this
+	}
+}
+
+def_class Wecker none dummy 0 {} {
+	def_event evt_dummy
+	handle_event evt_dummy {}
+	method dummy {} {}
+	obj_init {
+		set_anim this wecker.standard 0 0
+	}
+}
+
+def_class Streikschild none dummy 0 {} {
+	def_event evt_dummy
+	handle_event evt_dummy {}
+	method dummy {} {}
+//	call scripts/misc/autodef.tcl
+	class_defaultanim streik.standard
+
+	obj_init {
+		//call scripts/misc/autodef.tcl
+		set_anim this streik.standard 0 0
+	}
+}
