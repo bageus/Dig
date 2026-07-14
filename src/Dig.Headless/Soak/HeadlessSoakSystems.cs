@@ -106,6 +106,7 @@ internal sealed class SoakHaulingSystem : ISimulationSystem
     private readonly AdvanceJobHandler _advance;
     private readonly CompleteHaulingJobHandler _complete;
     private readonly EntityId[] _workers;
+    private readonly List<EntityId> _trackedJobIds = new List<EntityId>();
 
     public SoakHaulingSystem(
         IInventoryRepository inventory,
@@ -145,59 +146,44 @@ internal sealed class SoakHaulingSystem : ISimulationSystem
 
     public void Execute(SimulationContext context)
     {
-        _planner.Handle(new PlanHaulingCommand(
+        HaulingPlanningReport planning = _planner.Handle(new PlanHaulingCommand(
             maximumJobs: _workers.Length,
             priority: 500,
             tick: context.Tick));
-        SetCandidatesForAvailableJobs();
+        TrackCreatedJobs(planning.Created);
+        SetCandidatesForTrackedJobs();
         _assign.Handle(new AssignAvailableJobsCommand(context.Tick));
+        AdvanceTrackedJobs(context.Tick);
+    }
 
-        JobSnapshot[] jobs = _jobs.Get().GetAll()
-            .Where(value => value.Definition is HaulJobDefinition)
-            .Where(value => !value.IsTerminal)
-            .OrderBy(value => value.Id.ToString(), StringComparer.Ordinal)
-            .ToArray();
-        foreach (JobSnapshot job in jobs)
+    private void TrackCreatedJobs(IReadOnlyList<PlannedHaulingJob> created)
+    {
+        if (created.Count == 0)
         {
-            Result result;
-            if (job.Status == JobStatus.Claimed)
+            return;
+        }
+
+        foreach (PlannedHaulingJob job in created)
+        {
+            if (!_trackedJobIds.Contains(job.JobId))
             {
-                result = _advance.Handle(new AdvanceJobCommand(job.Id, context.Tick));
+                _trackedJobIds.Add(job.JobId);
             }
-            else if (job.Status == JobStatus.InProgress
-                && job.Stage == JobStageKind.DepositItem)
-            {
-                result = _complete.Handle(new CompleteHaulingJobCommand(
-                    job.Id,
-                    splitStackId: default,
-                    tick: context.Tick));
-                if (result.IsSuccess)
-                {
-                    CompletedJobCount = checked(CompletedJobCount + 1);
-                }
-            }
-            else if (job.Status == JobStatus.InProgress)
-            {
-                result = _advance.Handle(new AdvanceJobCommand(job.Id, context.Tick));
-            }
-            else
+        }
+
+        _trackedJobIds.Sort(CompareEntityIds);
+    }
+
+    private void SetCandidatesForTrackedJobs()
+    {
+        foreach (EntityId jobId in _trackedJobIds)
+        {
+            JobSnapshot? job = _jobs.Get().Get(jobId);
+            if (job?.Status != JobStatus.Available)
             {
                 continue;
             }
 
-            if (result.IsFailure)
-            {
-                throw new InvalidOperationException(result.Error!.ToString());
-            }
-        }
-    }
-
-    private void SetCandidatesForAvailableJobs()
-    {
-        foreach (JobSnapshot job in _jobs.Get().GetAll()
-            .Where(value => value.Status == JobStatus.Available)
-            .Where(value => value.Definition is HaulJobDefinition))
-        {
             JobCandidate[] candidates = _workers
                 .Select((worker, index) => new JobCandidate(
                     worker,
@@ -207,6 +193,71 @@ internal sealed class SoakHaulingSystem : ISimulationSystem
                 .ToArray();
             _candidates.SetCandidates(job.Id, candidates);
         }
+    }
+
+    private void AdvanceTrackedJobs(long tick)
+    {
+        int index = 0;
+        while (index < _trackedJobIds.Count)
+        {
+            EntityId jobId = _trackedJobIds[index];
+            JobSnapshot? job = _jobs.Get().Get(jobId);
+            if (job is null || job.IsTerminal)
+            {
+                _trackedJobIds.RemoveAt(index);
+                continue;
+            }
+
+            Result? result = Advance(job, tick);
+            if (result?.IsFailure == true)
+            {
+                throw new InvalidOperationException(result.Error!.ToString());
+            }
+
+            JobSnapshot? updated = _jobs.Get().Get(jobId);
+            if (updated is null || updated.IsTerminal)
+            {
+                _trackedJobIds.RemoveAt(index);
+                continue;
+            }
+
+            index++;
+        }
+    }
+
+    private Result? Advance(JobSnapshot job, long tick)
+    {
+        if (job.Status == JobStatus.Claimed)
+        {
+            return _advance.Handle(new AdvanceJobCommand(job.Id, tick));
+        }
+
+        if (job.Status == JobStatus.InProgress
+            && job.Stage == JobStageKind.DepositItem)
+        {
+            Result completed = _complete.Handle(new CompleteHaulingJobCommand(
+                job.Id,
+                splitStackId: default,
+                tick));
+            if (completed.IsSuccess)
+            {
+                CompletedJobCount = checked(CompletedJobCount + 1);
+            }
+
+            return completed;
+        }
+
+        return job.Status == JobStatus.InProgress
+            ? _advance.Handle(new AdvanceJobCommand(job.Id, tick))
+            : null;
+    }
+
+    private static int CompareEntityIds(EntityId left, EntityId right)
+    {
+        return string.Compare(
+            left.ToString(),
+            right.ToString(),
+            StringComparison.Ordinal);
     }
 }
 
