@@ -33,6 +33,12 @@ Initially designated cavern cells receive real digging jobs. The scene assigns r
 
 Left-click a marker to inspect lifecycle and reservation ownership. Press `F3` to hide or restore the complete diagnostic layer without changing simulation state. See [`unity-job-overlay.md`](unity-job-overlay.md) for colors, ownership and current orchestration limitations.
 
+## Terrain work completion
+
+Assigned residents now follow real Navigation paths to adjacent work cells. A final Application coordinator excavates the authoritative World cell, creates an Inventory resource stack and completes the Job only after all inputs pass preflight validation. Dirty world chunks refresh Navigation before later routes are calculated.
+
+Cyan route lines can be toggled with `F4`. Excavated output appears as a rebuildable world-item visual. See [`unity-terrain-work-vertical-slice.md`](unity-terrain-work-vertical-slice.md) for the commit order, ownership rules, route selection and current demo limitations.
+
 ## Core integration
 
 `unity/Dig.Unity/Packages/manifest.json` references `src/` as a local UPM package:
