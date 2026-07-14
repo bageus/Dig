@@ -25,17 +25,19 @@ public sealed partial class StorageState
             throw new ArgumentOutOfRangeException(nameof(minimumQuantity));
         }
 
-        StorageZoneState? selected = null;
+        StorageZoneDefinition? selected = null;
         int selectedOccupied = 0;
-        foreach (StorageZoneState zone in _zones.Values)
+        int selectedReserved = 0;
+        foreach (StorageZoneDefinition zone in _zones.Values)
         {
-            if (!zone.Definition.Filter.Accepts(item))
+            if (!zone.Filter.Accepts(item))
             {
                 continue;
             }
 
-            int occupied = occupiedQuantityProvider(zone.Definition.Id);
-            int available = zone.Definition.Capacity - occupied - zone.ReservedIncoming;
+            int occupied = occupiedQuantityProvider(zone.Id);
+            int reserved = GetReservedIncoming(zone.Id);
+            int available = zone.Capacity - occupied - reserved;
             if (available < minimumQuantity)
             {
                 continue;
@@ -45,26 +47,28 @@ public sealed partial class StorageState
             {
                 selected = zone;
                 selectedOccupied = occupied;
+                selectedReserved = reserved;
             }
         }
 
         return selected is null
             ? null
-            : CreateSnapshot(selected, selectedOccupied);
+            : new StorageZoneSnapshot(selected, selectedOccupied, selectedReserved);
     }
 
-    private static int CompareZones(StorageZoneState left, StorageZoneState right)
+    private static int CompareZones(
+        StorageZoneDefinition left,
+        StorageZoneDefinition right)
     {
-        int priorityComparison = right.Definition.Priority.CompareTo(
-            left.Definition.Priority);
+        int priorityComparison = right.Priority.CompareTo(left.Priority);
         if (priorityComparison != 0)
         {
             return priorityComparison;
         }
 
         return string.Compare(
-            left.Definition.Id.ToString(),
-            right.Definition.Id.ToString(),
+            left.Id.ToString(),
+            right.Id.ToString(),
             StringComparison.Ordinal);
     }
 }
