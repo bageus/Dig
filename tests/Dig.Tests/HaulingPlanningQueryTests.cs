@@ -72,7 +72,9 @@ public sealed class HaulingPlanningQueryTests
             "Raw high",
             priority: 900,
             capacity: 8,
-            new StorageFilter(false, new[] { Raw }))).IsSuccess);
+            new StorageFilter(
+                acceptsAll: false,
+                allowedCategories: new[] { Raw }))).IsSuccess);
         Assert.True(storage.AddZone(new StorageZoneDefinition(
             low,
             "All low",
