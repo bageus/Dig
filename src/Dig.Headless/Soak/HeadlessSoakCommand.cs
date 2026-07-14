@@ -33,7 +33,9 @@ internal static class HeadlessSoakCommand
     private static void PrintSummary(HeadlessSoakReport report)
     {
         Console.WriteLine(
-            $"Soak {report.RequestedTicks} ticks (+drain to {report.FinalTick}) "
+            $"Soak profile={report.Profile}, residents={report.ResidentCount}, "
+            + $"workers={report.HaulingWorkerCount}, "
+            + $"ticks={report.RequestedTicks} (+drain to {report.FinalTick}) "
             + $"completed in {report.ElapsedMilliseconds:F1} ms; "
             + $"hash {report.StateHash}; replay={report.DeterministicReplayMatched}; "
             + $"ore {report.StoredOre}/{report.SpawnedOre}; "
@@ -81,9 +83,12 @@ internal static class HeadlessSoakCommand
         EnsureDirectory(path);
         object failure = new
         {
+            Profile = configuration.Profile.Name,
             configuration.Seed,
             RequestedTicks = configuration.TickCount,
             configuration.ResidentCount,
+            configuration.HaulingWorkerCount,
+            configuration.InitialFoodQuantity,
             Succeeded = false,
             ExceptionType = exception.GetType().FullName,
             exception.Message,
