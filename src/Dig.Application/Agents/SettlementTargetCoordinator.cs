@@ -166,6 +166,15 @@ internal sealed class SettlementTargetCoordinator
         return null;
     }
 
+    private static bool HasFood(InventoryState inventory, EntityId agentId)
+    {
+        return inventory.CreateSnapshot().Stacks.Any(value =>
+            inventory.Catalog.Get(value.ItemId).HasCategory(FoodCategory)
+            && (value.AvailableQuantity > 0
+                || value.Reservations.Any(reservation =>
+                    reservation.JobId == agentId && reservation.Quantity > 0)));
+    }
+
     private Result<AgentActivityTarget> AcquireFood(EntityId agentId, long tick)
     {
         InventoryState inventory = _inventoryRepository.Get();
