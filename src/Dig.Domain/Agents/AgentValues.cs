@@ -133,6 +133,7 @@ public readonly struct AgentSkillValue
 internal sealed class AgentSkillSet
 {
     private readonly Dictionary<AgentSkillId, int> _levels;
+    private IReadOnlyList<AgentSkillValue>? _snapshot;
 
     public AgentSkillSet(IEnumerable<AgentSkillValue> skills)
     {
@@ -170,22 +171,34 @@ internal sealed class AgentSkillSet
             throw new ArgumentOutOfRangeException(nameof(level));
         }
 
+        bool changed = !_levels.TryGetValue(id, out int current) || current != level;
         _levels[id] = level;
+        if (changed)
+        {
+            _snapshot = null;
+        }
     }
 
     public IReadOnlyList<AgentSkillValue> CreateSnapshot()
     {
+        if (_snapshot is not null)
+        {
+            return _snapshot;
+        }
+
         AgentSkillValue[] values = _levels
             .OrderBy(pair => pair.Key)
             .Select(pair => new AgentSkillValue(pair.Key, pair.Value))
             .ToArray();
-        return new ReadOnlyCollection<AgentSkillValue>(values);
+        _snapshot = new ReadOnlyCollection<AgentSkillValue>(values);
+        return _snapshot;
     }
 }
 
 internal sealed class AgentTraitSet
 {
     private readonly HashSet<AgentTraitId> _traits;
+    private readonly IReadOnlyList<AgentTraitId> _snapshot;
 
     public AgentTraitSet(IEnumerable<AgentTraitId> traits)
     {
@@ -209,6 +222,9 @@ internal sealed class AgentTraitSet
                     nameof(traits));
             }
         }
+
+        AgentTraitId[] ordered = _traits.OrderBy(trait => trait).ToArray();
+        _snapshot = new ReadOnlyCollection<AgentTraitId>(ordered);
     }
 
     public bool Contains(AgentTraitId id)
@@ -218,7 +234,6 @@ internal sealed class AgentTraitSet
 
     public IReadOnlyList<AgentTraitId> CreateSnapshot()
     {
-        AgentTraitId[] traits = _traits.OrderBy(trait => trait).ToArray();
-        return new ReadOnlyCollection<AgentTraitId>(traits);
+        return _snapshot;
     }
 }
