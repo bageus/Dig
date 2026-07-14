@@ -27,6 +27,12 @@ The same scene creates four authoritative resident aggregates with logical cell 
 
 Left-click a resident to inspect its needs, active action, decision reason and all Utility AI alternatives. See [`unity-resident-presentation.md`](unity-resident-presentation.md) for ownership, interpolation and current demo limitations.
 
+## Jobs and reservations overlay
+
+Initially designated cavern cells receive real digging jobs. The scene assigns residents through the common candidate scorer, advances job stages through Application handlers and renders target markers plus active worker links from immutable snapshots.
+
+Left-click a marker to inspect lifecycle and reservation ownership. Press `F3` to hide or restore the complete diagnostic layer without changing simulation state. See [`unity-job-overlay.md`](unity-job-overlay.md) for colors, ownership and current orchestration limitations.
+
 ## Core integration
 
 `unity/Dig.Unity/Packages/manifest.json` references `src/` as a local UPM package:

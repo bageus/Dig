@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using Dig.Domain.Core;
 using Dig.Presentation.Agents;
+using Dig.Presentation.Jobs;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -10,24 +12,34 @@ namespace Dig.Unity
         [SerializeField]
         private float tickIntervalSeconds = 0.8f;
 
-        private DigAgentSession? _session;
-        private DigAgentRenderer? _renderer;
+        private DigAgentSession? _agentSession;
+        private DigAgentRenderer? _agentRenderer;
+        private DigJobSession? _jobSession;
+        private DigJobRenderer? _jobRenderer;
         private DigHudOverlay? _hud;
         private float _elapsed;
 
         internal void Initialize(
-            DigAgentSession session,
-            DigAgentRenderer renderer,
+            DigAgentSession agentSession,
+            DigAgentRenderer agentRenderer,
+            DigJobSession jobSession,
+            DigJobRenderer jobRenderer,
             DigHudOverlay hud)
         {
-            _session = session;
-            _renderer = renderer;
+            _agentSession = agentSession;
+            _agentRenderer = agentRenderer;
+            _jobSession = jobSession;
+            _jobRenderer = jobRenderer;
             _hud = hud;
         }
 
         private void Update()
         {
-            if (_session == null || _renderer == null || _hud == null)
+            if (_agentSession == null
+                || _agentRenderer == null
+                || _jobSession == null
+                || _jobRenderer == null
+                || _hud == null)
             {
                 return;
             }
@@ -39,8 +51,14 @@ namespace Dig.Unity
             }
 
             _elapsed -= tickIntervalSeconds;
-            string? selectedId = _renderer.SelectedAgentId;
-            Result result = _session.Advance();
+            string? selectedAgentId = _agentRenderer.SelectedAgentId;
+            string? selectedJobId = _jobRenderer.SelectedJobId;
+            Result result = _agentSession.Advance();
+            if (result.IsSuccess)
+            {
+                result = _jobSession.Advance(_agentSession.Tick);
+            }
+
             if (result.IsFailure)
             {
                 _hud.SetCommandResult(result);
@@ -48,13 +66,21 @@ namespace Dig.Unity
                 return;
             }
 
-            var agents = _session.LoadView();
-            _renderer.Render(agents, tickIntervalSeconds * 0.82f);
-            _hud.SetAgents(agents, _session.Tick);
-            if (selectedId != null)
+            IReadOnlyList<AgentViewModel> agents = _agentSession.LoadView();
+            IReadOnlyList<JobOverlayViewModel> jobs = _jobSession.LoadView();
+            _agentRenderer.Render(agents, tickIntervalSeconds * 0.82f);
+            _jobRenderer.Render(jobs);
+            _hud.SetAgents(agents, _agentSession.Tick);
+            _hud.SetJobs(jobs);
+            if (selectedAgentId != null)
             {
-                DigAgentVisual? selected = _renderer.SelectById(selectedId);
-                _hud.SetAgentSelection(selected?.Model);
+                DigAgentVisual? selectedAgent = _agentRenderer.SelectById(selectedAgentId);
+                _hud.SetAgentSelection(selectedAgent?.Model);
+            }
+            else if (selectedJobId != null)
+            {
+                DigJobVisual? selectedJob = _jobRenderer.SelectById(selectedJobId);
+                _hud.SetJobSelection(selectedJob?.Model);
             }
         }
 
