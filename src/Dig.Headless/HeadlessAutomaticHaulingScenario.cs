@@ -32,14 +32,14 @@ internal static class HeadlessAutomaticHaulingScenario
             firstStack,
             ore,
             quantity: 3,
-            ItemLocation.InWorld(new CellId(1, 4)),
-            startTick));
+            location: ItemLocation.InWorld(new CellId(1, 4)),
+            tick: startTick));
         Require(inventory.AddStack(
             secondStack,
             ore,
             quantity: 3,
-            ItemLocation.InWorld(new CellId(2, 4)),
-            startTick));
+            location: ItemLocation.InWorld(new CellId(2, 4)),
+            tick: startTick));
 
         StorageState storage = new StorageState();
         EntityId highStorage = Require(state.Entities.RegisterNew());
@@ -73,7 +73,7 @@ internal static class HeadlessAutomaticHaulingScenario
         HaulingPlanningReport planning = planner.Handle(new PlanHaulingCommand(
             maximumJobs: 2,
             priority: 600,
-            startTick + 1));
+            tick: startTick + 1));
         if (planning.Created.Count != 2)
         {
             throw new InvalidOperationException("Automatic hauling did not create two jobs.");
@@ -84,11 +84,11 @@ internal static class HeadlessAutomaticHaulingScenario
         InMemoryJobCandidateProvider candidates = new InMemoryJobCandidateProvider();
         candidates.SetCandidates(firstJob, new[]
         {
-            new JobCandidate(firstWorker, skillScore: 5000, distanceCost: 1, isAvailable: true),
+            new JobCandidate(firstWorker, skillLevel: 5000, distanceCost: 1, isAvailable: true),
         });
         candidates.SetCandidates(secondJob, new[]
         {
-            new JobCandidate(secondWorker, skillScore: 5000, distanceCost: 1, isAvailable: true),
+            new JobCandidate(secondWorker, skillLevel: 5000, distanceCost: 1, isAvailable: true),
         });
         JobAssignmentReport assignment = new AssignAvailableJobsHandler(
             jobRepository,
@@ -114,7 +114,7 @@ internal static class HeadlessAutomaticHaulingScenario
             Require(complete.Handle(new CompleteHaulingJobCommand(
                 planned.JobId,
                 splitStackId: default,
-                tick++)));
+                tick: tick++)));
         }
 
         int stored = inventory.GetQuantityAt(ore, ItemLocation.InStorage(highStorage))
