@@ -4,11 +4,11 @@
 
 `InventoryState` is the only authoritative owner of item stacks, quantities, quantity reservations and current locations. A stack has exactly one `ItemLocation`: world cell, resident inventory, building inventory, storage zone or equipped slot.
 
-`StorageState` owns only storage definitions, acceptance filters, priorities and reserved incoming capacity. It does not copy the current contents of a zone. Occupied quantity is derived from an `InventorySnapshot` whenever capacity is evaluated.
+`StorageState` owns only storage definitions, acceptance filters, priorities and reserved incoming capacity. It does not copy the current contents of a zone. Occupied quantity is derived directly from authoritative Inventory state whenever capacity is evaluated.
 
 `JobSystem` owns the hauling lifecycle and worker claim. A `HaulJobDefinition` stores the source stack, item id, exact quantity and typed destination, but it never mutates Inventory or Storage directly.
 
-The automatic hauling planner is stateless. It reads immutable/current snapshots, chooses work deterministically and delegates creation to the existing hauling command handler. It never becomes a second owner of stacks, capacity or jobs.
+The automatic hauling planner is stateless. It reads owner-owned point queries, chooses work deterministically and delegates creation to the existing hauling command handler. It never becomes a second owner of stacks, capacity or jobs.
 
 ## Item catalog and locations
 
@@ -45,15 +45,27 @@ Destination queries sort valid zones by descending priority and then stable id. 
 
 ## Automatic planning
 
-`PlanHaulingHandler` scans available world stacks in stable location and stack-id order. For each stack it:
+`PlanHaulingHandler` reads only available world stacks in stable location and stack-id order. For each stack it:
 
-1. re-reads the current available quantity;
-2. asks Storage for destinations accepting at least one unit;
+1. reads the immutable candidate quantity and item definition;
+2. asks Storage for the first accepting destination with at least one free unit;
 3. selects the highest-priority destination with the stable id tie-break;
 4. limits quantity by both unreserved stack quantity and available destination capacity;
 5. creates the normal typed hauling job through `CreateHaulingJobHandler`.
 
 A planning pass has an explicit maximum job count. Repeated passes see the reservations created by earlier passes, so they can plan only the remaining unreserved quantity and cannot assign one unit twice.
+
+## Allocation discipline
+
+The simulation hot path avoids full-state materialization:
+
+- `GetAvailableWorldStacks` snapshots only world stacks that still have unreserved quantity;
+- `GetTotalQuantityAt` computes one destination occupancy without constructing an `InventorySnapshot`;
+- `FindFirstDestination` scans Storage-owned definitions and returns only the winning zone instead of a sorted result list;
+- an empty planning pass uses shared empty arrays rather than temporary lists and sorted wrappers;
+- the soak runner tracks its created hauling jobs and reads them by id instead of repeatedly materializing the full terminal job history.
+
+These read paths do not cache mutable quantities, occupancy or reservations. Inventory, Storage and Jobs remain the only authoritative owners.
 
 ## Typed hauling lifecycle
 
@@ -96,6 +108,7 @@ Tests cover:
 - repeated stack splits with total quantity conservation;
 - transactional reserved moves;
 - storage filter ownership and priority ordering;
+- allocation-light world-stack ordering and mixed-item occupancy;
 - rollback when item reservation fails;
 - cancellation releasing item and destination reservations;
 - automatic planning priority, capacity and pass limits;
@@ -105,4 +118,4 @@ Tests cover:
 - reconciliation of damaged and orphaned reservation links;
 - complete hauling preserving total quantity;
 - tool equipment;
-- the headless automatic multi-stack, multi-worker hauling scenario.
+- the deterministic headless automatic multi-stack, multi-worker hauling scenario.
