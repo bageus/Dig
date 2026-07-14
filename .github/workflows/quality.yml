@@ -23,7 +23,19 @@ jobs:
           fetch-depth: 0
 
       - name: Convert source to C# 9
-        run: python tools/migrations/convert_to_unity_csharp9.py
+        shell: bash
+        run: |
+          set -o pipefail
+          python tools/migrations/convert_to_unity_csharp9.py 2>&1 | tee migration.log
+
+      - name: Upload migration log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-csharp9-migration-log
+          path: migration.log
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Commit migration
         shell: bash
