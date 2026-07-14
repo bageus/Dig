@@ -9,7 +9,7 @@ public sealed class JobSystem : AggregateRoot
         new Dictionary<EntityId, JobState>();
     private readonly ReservationLedger _reservations = new ReservationLedger();
 
-    public Result Add(DigJobDefinition definition)
+    public Result Add(JobDefinition definition)
     {
         if (definition is null)
         {
@@ -74,7 +74,7 @@ public sealed class JobSystem : AggregateRoot
             ReservationKey.ForJob(jobId),
             ReservationKey.ForAgent(agentId),
         };
-        keys.AddRange(job.Definition.Target.CreateReservationKeys());
+        keys.AddRange(job.Definition.CreateReservationKeys());
 
         Result reserved = _reservations.ReserveAll(jobId, agentId, keys, tick);
         if (reserved.IsFailure)
@@ -290,7 +290,7 @@ public sealed class JobSystem : AggregateRoot
         return Result.Success();
     }
 
-    private bool DependenciesCompleted(DigJobDefinition definition)
+    private bool DependenciesCompleted(JobDefinition definition)
     {
         return definition.Dependencies.All(
             dependency => _jobs.TryGetValue(dependency, out JobState? job)
