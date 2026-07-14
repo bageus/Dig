@@ -44,6 +44,16 @@ public readonly struct RecipeId : IEquatable<RecipeId>, IComparable<RecipeId>
     {
         return _value ?? string.Empty;
     }
+
+    public static bool operator ==(RecipeId left, RecipeId right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(RecipeId left, RecipeId right)
+    {
+        return !left.Equals(right);
+    }
 }
 
 public readonly struct TechnologyId : IEquatable<TechnologyId>, IComparable<TechnologyId>
@@ -85,6 +95,16 @@ public readonly struct TechnologyId : IEquatable<TechnologyId>, IComparable<Tech
     public override string ToString()
     {
         return _value ?? string.Empty;
+    }
+
+    public static bool operator ==(TechnologyId left, TechnologyId right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(TechnologyId left, TechnologyId right)
+    {
+        return !left.Equals(right);
     }
 }
 

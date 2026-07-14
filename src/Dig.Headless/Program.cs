@@ -204,6 +204,10 @@ internal static class Program
             rockChunk,
             target,
             startTick: 29);
+        int automaticHauls = HeadlessAutomaticHaulingScenario.Run(
+            state,
+            journal,
+            startTick: 42);
 
         List<TerrainChange> corridor = new List<TerrainChange>();
         for (int x = 0; x < world.Size.Width; x++)
@@ -218,7 +222,7 @@ internal static class Program
                     temperature: 20)));
         }
 
-        Require(world.ApplyTerrainChanges(corridor, tick: 42));
+        Require(world.ApplyTerrainChanges(corridor, tick: 60));
         TraversalProfile profile = TraversalProfile.CreateGroundedDwarf();
         InMemoryNavigationRepository navigationRepository =
             new InMemoryNavigationRepository();
@@ -248,9 +252,10 @@ internal static class Program
             $"Headless simulation completed at tick {state.Clock.TickIndex} "
             + $"with {state.Entities.Count} entities, resident intent "
             + $"{residentSnapshot.LastDecision.SelectedIntent}, dig {completedDig.Status}, "
-            + $"haul {completedHaul.Status}, building {completedBuilding.Status}, "
-            + $"remaining resources {inventory.GetTotal(rockChunk)}, world version {world.Version}, "
-            + $"{navigationSnapshot.Regions.Count} regions and a {route.Path!.Cells.Count}-cell route.");
+            + $"haul {completedHaul.Status}, automatic hauls {automaticHauls}, "
+            + $"building {completedBuilding.Status}, remaining resources {inventory.GetTotal(rockChunk)}, "
+            + $"world version {world.Version}, {navigationSnapshot.Regions.Count} regions and "
+            + $"a {route.Path!.Cells.Count}-cell route.");
         return 0;
     }
 
