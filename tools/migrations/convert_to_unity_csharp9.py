@@ -44,7 +44,7 @@ IMPLICIT_USINGS: tuple[tuple[str, re.Pattern[str]], ...] = (
             r"\bEnumerable\.|\.(?:OrderBy|OrderByDescending|ThenBy|ThenByDescending|"
             r"Select|Where|ToArray|ToList|ToDictionary|First|FirstOrDefault|Single|"
             r"SingleOrDefault|Any|All|Sum|Max|Min|GroupBy|Distinct|Cast|OfType|"
-            r"SequenceEqual|Skip|Take)\s*\("
+            r"SequenceEqual|Skip|Take)(?:<[^>\r\n]+>)?\s*\("
         ),
     ),
     (
