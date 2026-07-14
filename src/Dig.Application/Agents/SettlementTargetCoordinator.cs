@@ -34,21 +34,19 @@ internal sealed class SettlementTargetCoordinator
         InventoryState inventory = _inventoryRepository.Get();
         BuildingFacilitiesState facilities = _facilitiesRepository.Get();
         return new AgentDecisionContext(
-            foodAvailable: HasFood(inventory, agent.Id),
-            bedAvailable: facilities.FindAvailable(
-                BuildingFacilityKind.Bed,
-                agent.Id).Count > 0,
+            foodAvailable: inventory.HasAvailableCategory(FoodCategory, agent.Id),
+            bedAvailable: facilities.HasAvailable(BuildingFacilityKind.Bed, agent.Id),
             workAvailable: external.WorkAvailable,
-            restAvailable: facilities.FindAvailable(
-                BuildingFacilityKind.Leisure,
-                agent.Id).Count > 0,
+            restAvailable: facilities.HasAvailable(BuildingFacilityKind.Leisure, agent.Id),
             escapeRouteAvailable: external.EscapeRouteAvailable,
             threatLevel: external.ThreatLevel);
     }
 
-    public string? ValidateExistingTarget(AgentState agent, long tick)
+    public string? ValidateExistingTarget(
+        AgentState agent,
+        AgentActionSnapshot? action,
+        long tick)
     {
-        AgentActionSnapshot? action = agent.CreateSnapshot(tick).ActiveAction;
         if (!action.HasValue || !action.Value.Target.HasValue)
         {
             return null;
@@ -127,18 +125,19 @@ internal sealed class SettlementTargetCoordinator
     {
         if (target.Kind == AgentActivityTargetKind.Food)
         {
-            ItemStackSnapshot? stack = _inventoryRepository.Get().GetStack(target.EntityId);
-            return stack is not null
-                && stack.Reservations.Any(value => value.JobId == agentId && value.Quantity >= 1);
+            return _inventoryRepository.Get().HasReservation(
+                target.EntityId,
+                agentId,
+                minimumQuantity: 1);
         }
 
-        BuildingFacilitySnapshot? facility = _facilitiesRepository.Get().Get(target.EntityId);
         BuildingFacilityKind expected = target.Kind == AgentActivityTargetKind.Bed
             ? BuildingFacilityKind.Bed
             : BuildingFacilityKind.Leisure;
-        return facility is not null
-            && facility.Definition.Kind == expected
-            && facility.ReservedAgentId == agentId;
+        return _facilitiesRepository.Get().IsReservedBy(
+            target.EntityId,
+            agentId,
+            expected);
     }
 
     public string? GetUnavailableNeedReason(
@@ -166,31 +165,17 @@ internal sealed class SettlementTargetCoordinator
         return null;
     }
 
-    private static bool HasFood(InventoryState inventory, EntityId agentId)
-    {
-        return inventory.CreateSnapshot().Stacks.Any(value =>
-            inventory.Catalog.Get(value.ItemId).HasCategory(FoodCategory)
-            && (value.AvailableQuantity > 0
-                || value.Reservations.Any(reservation =>
-                    reservation.JobId == agentId && reservation.Quantity > 0)));
-    }
-
     private Result<AgentActivityTarget> AcquireFood(EntityId agentId, long tick)
     {
         InventoryState inventory = _inventoryRepository.Get();
-        ItemStackSnapshot? stack = inventory.CreateSnapshot().Stacks
-            .Where(value => value.AvailableQuantity > 0)
-            .Where(value => inventory.Catalog.Get(value.ItemId).HasCategory(FoodCategory))
-            .OrderBy(value => value.Location)
-            .ThenBy(value => value.StackId.ToString(), StringComparer.Ordinal)
-            .FirstOrDefault();
-        if (stack is null)
+        EntityId? stackId = inventory.FindFirstAvailableStackId(FoodCategory);
+        if (!stackId.HasValue)
         {
             return Result<AgentActivityTarget>.Failure(AgentSettlementErrors.FoodUnavailable);
         }
 
         Result reserved = inventory.ReserveQuantity(
-            stack.StackId,
+            stackId.Value,
             agentId,
             quantity: 1,
             tick);
@@ -202,7 +187,7 @@ internal sealed class SettlementTargetCoordinator
         _inventoryRepository.Save(inventory);
         return Result<AgentActivityTarget>.Success(new AgentActivityTarget(
             AgentActivityTargetKind.Food,
-            stack.StackId));
+            stackId.Value));
     }
 
     private Result<AgentActivityTarget> AcquireFacility(
@@ -212,9 +197,8 @@ internal sealed class SettlementTargetCoordinator
         long tick)
     {
         BuildingFacilitiesState facilities = _facilitiesRepository.Get();
-        BuildingFacilitySnapshot? facility = facilities.FindAvailable(facilityKind, agentId)
-            .FirstOrDefault();
-        if (facility is null)
+        EntityId? facilityId = facilities.FindFirstAvailableId(facilityKind, agentId);
+        if (!facilityId.HasValue)
         {
             DomainError error = facilityKind == BuildingFacilityKind.Bed
                 ? AgentSettlementErrors.BedUnavailable
@@ -222,7 +206,7 @@ internal sealed class SettlementTargetCoordinator
             return Result<AgentActivityTarget>.Failure(error);
         }
 
-        Result reserved = facilities.Reserve(facility.Definition.Id, agentId, tick);
+        Result reserved = facilities.Reserve(facilityId.Value, agentId, tick);
         if (reserved.IsFailure)
         {
             return Result<AgentActivityTarget>.Failure(reserved.Error!);
@@ -231,7 +215,7 @@ internal sealed class SettlementTargetCoordinator
         _facilitiesRepository.Save(facilities);
         return Result<AgentActivityTarget>.Success(new AgentActivityTarget(
             targetKind,
-            facility.Definition.Id));
+            facilityId.Value));
     }
 
     private static void Require(Result result)
