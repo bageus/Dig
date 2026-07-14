@@ -68,7 +68,6 @@ namespace Dig.Unity
             hud.SetWorld(world);
             hud.SetAgents(agents, agentSession.Tick);
             hud.SetJobs(jobs);
-            hud.SetTerrainDiagnostics(items, routes);
             cameraController.Initialize(targetCamera, world);
             interaction.Initialize(
                 targetCamera,
