@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "com.bageus.dig.core": "file:../../../src"
+  }
+}
