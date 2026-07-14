@@ -68,7 +68,7 @@ internal sealed class HeadlessSoakProfile
                     new SystemPerformanceBudgetLimit(
                         "agents.settlement",
                         maximumAverageMicroseconds: 500,
-                        maximumAverageAllocatedBytes: 20_000,
+                        maximumAverageAllocatedBytes: 12_000,
                         maximumSingleExecutionMilliseconds: 100),
                     new SystemPerformanceBudgetLimit(
                         "soak.hauling",
@@ -101,7 +101,7 @@ internal sealed class HeadlessSoakProfile
                     new SystemPerformanceBudgetLimit(
                         "agents.settlement",
                         maximumAverageMicroseconds: 1_500,
-                        maximumAverageAllocatedBytes: 125_000,
+                        maximumAverageAllocatedBytes: 80_000,
                         maximumSingleExecutionMilliseconds: 75),
                     new SystemPerformanceBudgetLimit(
                         "soak.hauling",
