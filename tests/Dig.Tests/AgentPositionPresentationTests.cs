@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Agents;
 using Dig.Domain.Agents;
@@ -79,7 +80,7 @@ public sealed class AgentPositionPresentationTests
 
         AgentPresenter presenter = new AgentPresenter(
             new GetAgentSnapshotsQueryHandler(repository));
-        var residents = presenter.Load(tick: 1);
+        IReadOnlyList<AgentViewModel> residents = presenter.Load(tick: 1);
 
         Assert.Equal(new[] { "Einar", "Fara" }, residents.Select(item => item.Name));
         AgentViewModel first = residents[0];
@@ -125,7 +126,7 @@ public sealed class AgentPositionPresentationTests
             DailySchedule.CreateBalanced(24),
             skills: null,
             traits: null,
-            position);
+            initialPosition: position);
     }
 
     private static void ApplyDecision(AgentState agent, long tick)
