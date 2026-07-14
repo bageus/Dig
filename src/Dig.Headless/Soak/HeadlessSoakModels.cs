@@ -173,5 +173,7 @@ internal sealed class HeadlessSoakReport
     public IReadOnlyList<string> InvariantViolations { get; init; } =
         Array.Empty<string>();
 
-    public bool Succeeded { get; init; }
+    public bool DeterministicReplayMatched { get; set; }
+
+    public bool Succeeded { get; set; }
 }
