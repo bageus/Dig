@@ -64,13 +64,22 @@ The drain requires all hauling work to finish. At the end there must be no activ
 The deterministic hash includes, in stable order:
 
 - final tick and entity count;
-- resident needs, schedule phase, active action and target;
+- resident logical cell position, needs, schedule phase, active action and target;
 - item stack identity, item type, quantity, location and reservations;
 - job definition, status, stage, worker and retry count;
 - Storage incoming reservations;
 - building facility reservations.
 
 Performance samples, wall-clock time and retained event ordering outside authoritative state are not hashed.
+
+Adding logical resident positions in issue #52 intentionally changed both profile hashes. The current position-aware hashes are:
+
+```text
+standard: 8DF64EE713D040AFF7EB8330B5557B8C672D2C103FAD8E3F527544284F514659
+large:    2AFB7E6757414C9A2DA34D8005C3478C74028DA7D38B7A35CD9BF95F1D45669A
+```
+
+Both position-aware baseline runs matched deterministic replay and contained zero invariant and performance-budget violations.
 
 ## Scheduler profiling
 
@@ -198,19 +207,7 @@ Large system baseline:
 | `soak.hauling` | 62.79 us | 26.56 ms | 7769 bytes |
 | `soak.resource_spawn` | 19.28 us | 0.62 ms | 360 bytes |
 
-The large profile exposes population-scale costs while retaining the same authoritative mechanics. Its state hash is expected to differ from standard because load parameters and initial state differ, but repeated large runs must match each other.
-
-The standard state hash remains:
-
-```text
-B315282B332B67B4EEE68D3B3C59D997013C014A947B534106DA7FD75EC04480
-```
-
-The first large state hash is:
-
-```text
-42B798277A05A1099E5C8DF3EC59F0B8931AE8C49BB6C10AD11238F2B8D0CC99
-```
+The large profile exposes population-scale costs while retaining the same authoritative mechanics. Its state hash differs from standard because load parameters and initial state differ, but repeated large runs must match each other.
 
 ## Bounded diagnostics
 
