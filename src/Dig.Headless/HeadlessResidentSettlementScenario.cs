@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using Dig.Application.Agents;
 using Dig.Application.Runtime;
