@@ -53,3 +53,19 @@ jobs:
 
       - name: Run headless smoke test
         run: dotnet run --project src/Dig.Headless/Dig.Headless.csproj --configuration Release --no-build
+
+      - name: Run deterministic soak and performance budgets
+        run: >-
+          dotnet run --project src/Dig.Headless/Dig.Headless.csproj
+          --configuration Release --no-build --
+          --soak --ticks 2000 --residents 8
+          --max-seconds 30 --report soak-report.json
+
+      - name: Upload soak report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: soak-report
+          path: soak-report.json
+          if-no-files-found: warn
+          retention-days: 14
