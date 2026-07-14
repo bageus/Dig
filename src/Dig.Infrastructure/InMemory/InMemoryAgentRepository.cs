@@ -9,6 +9,8 @@ public sealed class InMemoryAgentRepository : IAgentRepository
 {
     private readonly Dictionary<EntityId, AgentState> _agents =
         new Dictionary<EntityId, AgentState>();
+    private AgentState[]? _orderedAgents;
+    private IReadOnlyList<AgentState>? _orderedView;
 
     public Result Add(AgentState agent)
     {
@@ -22,6 +24,8 @@ public sealed class InMemoryAgentRepository : IAgentRepository
             return Result.Failure(AgentApplicationErrors.AlreadyExists);
         }
 
+        _orderedAgents = null;
+        _orderedView = null;
         return Result.Success();
     }
 
@@ -32,10 +36,16 @@ public sealed class InMemoryAgentRepository : IAgentRepository
 
     public IReadOnlyList<AgentState> GetAll()
     {
-        AgentState[] agents = _agents.Values
+        if (_orderedView is not null)
+        {
+            return _orderedView;
+        }
+
+        _orderedAgents = _agents.Values
             .OrderBy(agent => agent.Id.ToString(), StringComparer.Ordinal)
             .ToArray();
-        return new ReadOnlyCollection<AgentState>(agents);
+        _orderedView = new ReadOnlyCollection<AgentState>(_orderedAgents);
+        return _orderedView;
     }
 
     public void Save(AgentState agent)
@@ -52,5 +62,21 @@ public sealed class InMemoryAgentRepository : IAgentRepository
         }
 
         _agents[agent.Id] = agent;
+        if (_orderedAgents is null)
+        {
+            return;
+        }
+
+        for (int index = 0; index < _orderedAgents.Length; index++)
+        {
+            if (_orderedAgents[index].Id == agent.Id)
+            {
+                _orderedAgents[index] = agent;
+                return;
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"Cached agent '{agent.Id}' was not found in repository order.");
     }
 }
