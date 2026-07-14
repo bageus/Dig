@@ -84,9 +84,42 @@ public sealed class ResidentSettlementSystem : ISimulationSystem
                 decisionContext,
                 _policy,
                 context.Tick);
+            string? unavailable = _targets.GetUnavailableNeedReason(
+                snapshot,
+                decisionContext,
+                _policy);
+            if (IsCriticalUnavailable(unavailable))
+            {
+                blockedReason = unavailable;
+                _targets.Release(agent.Id, context.Tick);
+                if (snapshot.ActiveAction.HasValue)
+                {
+                    Require(agent.BlockCurrentAction(
+                        InferBlockedIntent(unavailable!),
+                        unavailable!,
+                        context.Tick));
+                }
+                else
+                {
+                    RecordUnavailable(
+                        agent,
+                        InferBlockedIntent(unavailable!),
+                        unavailable!,
+                        context.Tick);
+                }
+
+                SaveAgent(agent);
+                diagnostics.Add(new SettlementAgentDiagnostic(
+                    agent.Id,
+                    decision,
+                    target: null,
+                    actionCompleted: false,
+                    blockedReason));
+                continue;
+            }
+
             AgentActivityTarget? target = null;
             bool completed = false;
-
             if (IsTargeted(decision.SelectedIntent))
             {
                 Result<AgentActivityTarget> acquired = ResolveTarget(
@@ -139,23 +172,14 @@ public sealed class ResidentSettlementSystem : ISimulationSystem
                 Require(agent.AdvanceAction(_policy, context.Tick));
             }
 
-            string? unavailable = _targets.GetUnavailableNeedReason(
-                agent.CreateSnapshot(context.Tick),
-                decisionContext,
-                _policy);
             if (blockedReason is null && unavailable is not null)
             {
                 blockedReason = unavailable;
-                if (!string.Equals(
-                    agent.LastActionBlockReason,
+                RecordUnavailable(
+                    agent,
+                    InferBlockedIntent(unavailable),
                     unavailable,
-                    StringComparison.Ordinal))
-                {
-                    agent.RecordBlockedIntent(
-                        InferBlockedIntent(unavailable),
-                        unavailable,
-                        context.Tick);
-                }
+                    context.Tick);
             }
 
             SaveAgent(agent);
@@ -206,6 +230,11 @@ public sealed class ResidentSettlementSystem : ISimulationSystem
     private static bool IsTargeted(AgentIntentKind intent)
     {
         return intent is AgentIntentKind.Eat or AgentIntentKind.Sleep or AgentIntentKind.Rest;
+    }
+
+    private static bool IsCriticalUnavailable(string? reason)
+    {
+        return reason is "food_unavailable" or "bed_unavailable";
     }
 
     private static AgentIntentKind InferBlockedIntent(string reason)
