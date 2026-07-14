@@ -59,9 +59,38 @@ public sealed class NullSimulationPerformanceSink : ISimulationPerformanceSink
     }
 }
 
-public sealed class SimulationPerformanceBudget
+public sealed class SystemPerformanceBudgetLimit
 {
-    public SimulationPerformanceBudget(
+    public SystemPerformanceBudgetLimit(
+        string systemName,
+        double maximumAverageMicroseconds,
+        long maximumAverageAllocatedBytes,
+        double maximumSingleExecutionMilliseconds)
+    {
+        if (string.IsNullOrWhiteSpace(systemName))
+        {
+            throw new ArgumentException("System name is required.", nameof(systemName));
+        }
+
+        ValidateLimits(
+            maximumAverageMicroseconds,
+            maximumAverageAllocatedBytes,
+            maximumSingleExecutionMilliseconds);
+        SystemName = systemName.Trim();
+        MaximumAverageMicroseconds = maximumAverageMicroseconds;
+        MaximumAverageAllocatedBytes = maximumAverageAllocatedBytes;
+        MaximumSingleExecutionMilliseconds = maximumSingleExecutionMilliseconds;
+    }
+
+    public string SystemName { get; }
+
+    public double MaximumAverageMicroseconds { get; }
+
+    public long MaximumAverageAllocatedBytes { get; }
+
+    public double MaximumSingleExecutionMilliseconds { get; }
+
+    internal static void ValidateLimits(
         double maximumAverageMicroseconds,
         long maximumAverageAllocatedBytes,
         double maximumSingleExecutionMilliseconds)
@@ -80,10 +109,41 @@ public sealed class SimulationPerformanceBudget
         {
             throw new ArgumentOutOfRangeException(nameof(maximumSingleExecutionMilliseconds));
         }
+    }
+}
 
+public sealed class SimulationPerformanceBudget
+{
+    private readonly Dictionary<string, SystemPerformanceBudgetLimit> _overrides;
+
+    public SimulationPerformanceBudget(
+        double maximumAverageMicroseconds,
+        long maximumAverageAllocatedBytes,
+        double maximumSingleExecutionMilliseconds,
+        IEnumerable<SystemPerformanceBudgetLimit>? overrides = null)
+    {
+        SystemPerformanceBudgetLimit.ValidateLimits(
+            maximumAverageMicroseconds,
+            maximumAverageAllocatedBytes,
+            maximumSingleExecutionMilliseconds);
         MaximumAverageMicroseconds = maximumAverageMicroseconds;
         MaximumAverageAllocatedBytes = maximumAverageAllocatedBytes;
         MaximumSingleExecutionMilliseconds = maximumSingleExecutionMilliseconds;
+        SystemPerformanceBudgetLimit[] values = (overrides
+                ?? Array.Empty<SystemPerformanceBudgetLimit>())
+            .ToArray();
+        if (values.Any(value => value is null)
+            || values.Select(value => value.SystemName).Distinct(StringComparer.Ordinal).Count()
+                != values.Length)
+        {
+            throw new ArgumentException(
+                "Performance budget overrides must be non-null and unique by system name.",
+                nameof(overrides));
+        }
+
+        _overrides = values.ToDictionary(
+            value => value.SystemName,
+            StringComparer.Ordinal);
     }
 
     public double MaximumAverageMicroseconds { get; }
@@ -91,6 +151,22 @@ public sealed class SimulationPerformanceBudget
     public long MaximumAverageAllocatedBytes { get; }
 
     public double MaximumSingleExecutionMilliseconds { get; }
+
+    public SystemPerformanceBudgetLimit GetLimit(string systemName)
+    {
+        if (string.IsNullOrWhiteSpace(systemName))
+        {
+            throw new ArgumentException("System name is required.", nameof(systemName));
+        }
+
+        return _overrides.TryGetValue(systemName, out SystemPerformanceBudgetLimit? value)
+            ? value
+            : new SystemPerformanceBudgetLimit(
+                systemName,
+                MaximumAverageMicroseconds,
+                MaximumAverageAllocatedBytes,
+                MaximumSingleExecutionMilliseconds);
+    }
 }
 
 public sealed class SystemPerformanceSummary

@@ -23,8 +23,8 @@ UI, игровой движок и навигация не могут напря
 1. пассивно изменяются потребности;
 2. истёкший прямой приказ удаляется;
 3. проверяется смерть от критического состояния;
-4. проверяется сохранность reservation текущей цели;
-5. создаётся immutable `AgentSnapshot`;
+4. создаётся один decision `AgentSnapshot`;
+5. проверяется сохранность reservation текущей цели;
 6. внешняя доступность объединяется с реальным Inventory и Facilities;
 7. Utility AI оценивает все намерения;
 8. для `Eat`, `Sleep` или `Rest` атомарно резервируется цель;
@@ -33,7 +33,7 @@ UI, игровой движок и навигация не могут напря
 11. только после успешного результата применяется `NeedDelta`;
 12. состояния сохраняются, события публикуются через общий `IEventSink`.
 
-Жители обрабатываются последовательно. Поэтому reservation первого жителя немедленно видна следующему жителю в том же simulation tick.
+Второй snapshot создаётся только на аварийном пути, когда существующая reservation цели исчезла и действие было заблокировано. Жители обрабатываются последовательно, поэтому reservation первого жителя немедленно видна следующему жителю в том же simulation tick.
 
 ## Потребности
 
@@ -83,7 +83,7 @@ UI, игровой движок и навигация не могут напря
 
 При выборе `Eat` система:
 
-1. сортирует доступные stacks по location и стабильному ID;
+1. выбирает доступный stack по location и стабильному ID;
 2. резервирует ровно одну единицу на `AgentId`;
 3. сохраняет stack как `AgentActivityTarget`;
 4. продвигает действие до заданной длительности;
@@ -120,6 +120,27 @@ progress -> ready -> external commit -> need effect -> completed
 Текущее намерение получает hysteresis bonus. После переключения действует cooldown против осцилляции. Cooldown не блокирует критическое выживание, бегство, новый приказ или продолжение текущего действия.
 
 При смене targeted intent прежние Inventory/Facility reservations освобождаются до захвата новой цели.
+
+## Allocation-light read path
+
+Settlement не строит полный `InventorySnapshot` и списки facilities для каждого жителя. Авторитетные агрегаты предоставляют узкие read-only операции:
+
+- наличие доступного item category с учётом reservation конкретного жителя;
+- стабильный ID первого доступного food stack;
+- проверка одной reservation без materialization всех reservations;
+- наличие и стабильный ID доступного `Bed` или `Leisure` места;
+- проверка ownership одной facility reservation.
+
+Эти операции сканируют authoritative dictionaries и возвращают bool или один ID. Они не создают второго состояния и сохраняют тот же stable tie-break, который раньше обеспечивался сортировкой полных snapshots.
+
+`InMemoryAgentRepository` кэширует immutable порядок ссылок на жителей и обновляет элемент при `Save`, не пересортировывая всех жителей на каждом тике.
+
+В стандартном 2020-тиковом Linux CI soak оптимизация сохранила прежний state hash и снизила `agents.settlement`:
+
+- average allocations с `295927` до `34517` bytes/execution;
+- average time с `570.62` до `213.73` microseconds/execution.
+
+CI закрепляет отдельный budget: 500 microseconds average, 50000 average allocated bytes и 100 milliseconds maximum execution.
 
 ## Диагностика
 
@@ -162,4 +183,6 @@ progress -> ready -> external commit -> need effect -> completed
 - стабильный порядок нескольких жителей;
 - освобождение facilities после completion;
 - атомарное списание еды;
+- allocation-light owner queries с сохранением deterministic ordering;
+- per-system performance budget override;
 - headless-сценарий двух жителей, которые независимо едят и спят без нарушения reservations.

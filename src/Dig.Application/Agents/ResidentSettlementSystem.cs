@@ -75,8 +75,16 @@ public sealed class ResidentSettlementSystem : ISimulationSystem
                 continue;
             }
 
-            string? blockedReason = _targets.ValidateExistingTarget(agent, context.Tick);
             AgentSnapshot snapshot = agent.CreateSnapshot(context.Tick);
+            string? blockedReason = _targets.ValidateExistingTarget(
+                agent,
+                snapshot.ActiveAction,
+                context.Tick);
+            if (blockedReason is not null)
+            {
+                snapshot = agent.CreateSnapshot(context.Tick);
+            }
+
             AgentDecisionContext external = _externalContexts.GetContext(snapshot, context.Tick);
             AgentDecisionContext decisionContext = _targets.CreateContext(snapshot, external);
             AgentDecision decision = _decisions.Decide(

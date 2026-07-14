@@ -116,7 +116,7 @@ public static class BuildingFacilityErrors
         "The resident already owns another building facility reservation.");
 }
 
-public sealed class BuildingFacilitiesState : AggregateRoot
+public sealed partial class BuildingFacilitiesState : AggregateRoot
 {
     private readonly Dictionary<EntityId, BuildingFacilityDefinition> _facilities =
         new Dictionary<EntityId, BuildingFacilityDefinition>();
@@ -157,9 +157,12 @@ public sealed class BuildingFacilitiesState : AggregateRoot
                 : Result.Failure(BuildingFacilityErrors.AlreadyReserved);
         }
 
-        if (_reservations.Values.Any(value => value.AgentId == agentId))
+        foreach (BuildingFacilityReservation reservation in _reservations.Values)
         {
-            return Result.Failure(BuildingFacilityErrors.AgentAlreadyReserved);
+            if (reservation.AgentId == agentId)
+            {
+                return Result.Failure(BuildingFacilityErrors.AgentAlreadyReserved);
+            }
         }
 
         _reservations.Add(
@@ -178,23 +181,25 @@ public sealed class BuildingFacilitiesState : AggregateRoot
             throw new ArgumentException("Agent id cannot be empty.", nameof(agentId));
         }
 
-        EntityId[] facilityIds = _reservations.Values
-            .Where(value => value.AgentId == agentId)
-            .Select(value => value.FacilityId)
-            .OrderBy(value => value.ToString(), StringComparer.Ordinal)
-            .ToArray();
-        foreach (EntityId facilityId in facilityIds)
+        EntityId facilityId = default;
+        foreach (BuildingFacilityReservation reservation in _reservations.Values)
         {
-            _reservations.Remove(facilityId);
-            Raise(new BuildingFacilityReservationChanged(tick, facilityId, null));
+            if (reservation.AgentId == agentId)
+            {
+                facilityId = reservation.FacilityId;
+                break;
+            }
         }
 
-        if (facilityIds.Length > 0)
+        if (facilityId.IsEmpty)
         {
-            Version = checked(Version + 1);
+            return 0;
         }
 
-        return facilityIds.Length;
+        _reservations.Remove(facilityId);
+        Version = checked(Version + 1);
+        Raise(new BuildingFacilityReservationChanged(tick, facilityId, null));
+        return 1;
     }
 
     public BuildingFacilitySnapshot? Get(EntityId facilityId)
@@ -214,11 +219,15 @@ public sealed class BuildingFacilitiesState : AggregateRoot
 
     public BuildingFacilitySnapshot? GetForAgent(EntityId agentId)
     {
-        BuildingFacilityReservation? reservation = _reservations.Values
-            .Where(value => value.AgentId == agentId)
-            .Cast<BuildingFacilityReservation?>()
-            .FirstOrDefault();
-        return reservation.HasValue ? Get(reservation.Value.FacilityId) : null;
+        foreach (BuildingFacilityReservation reservation in _reservations.Values)
+        {
+            if (reservation.AgentId == agentId)
+            {
+                return Get(reservation.FacilityId);
+            }
+        }
+
+        return null;
     }
 
     public IReadOnlyList<BuildingFacilitySnapshot> FindAvailable(
