@@ -29,20 +29,16 @@ def load_config() -> dict[str, object]:
 def iter_checked_files(config: dict[str, object]) -> Iterable[Path]:
     extensions = set(config["extensions"])
     excluded = set(config["excluded_directories"])
-
     for relative_root in config["source_roots"]:
         source_root = ROOT / str(relative_root)
         if not source_root.exists():
             continue
-
         for path in source_root.rglob("*"):
             if not path.is_file() or path.suffix not in extensions:
                 continue
-
             relative_parts = path.relative_to(ROOT).parts
             if any(part in excluded for part in relative_parts):
                 continue
-
             yield path
 
 
@@ -61,17 +57,14 @@ def iter_unity_visible_csharp() -> Iterable[Path]:
 def check_file_lengths(config: dict[str, object]) -> list[str]:
     max_lines = int(config["max_lines"])
     errors: list[str] = []
-
     for path in iter_checked_files(config):
         with path.open("r", encoding="utf-8") as stream:
             line_count = sum(1 for _ in stream)
-
         if line_count > max_lines:
             relative = path.relative_to(ROOT)
             errors.append(
                 f"{relative}: {line_count} lines exceeds the {max_lines}-line limit"
             )
-
     return errors
 
 
@@ -138,36 +131,39 @@ def check_unity_compiler_configuration(config: dict[str, object]) -> list[str]:
     else:
         assembly = json.loads(asmdef_path.read_text(encoding="utf-8-sig"))
         references = {str(reference) for reference in assembly.get("references", [])}
-        required_module = "UnityEngine.PhysicsModule"
-        if required_module not in references:
+        if "UnityEngine.PhysicsModule" not in references:
             errors.append(
-                f"Dig.Unity.asmdef must reference {required_module} for raycast input"
+                "Dig.Unity.asmdef must reference UnityEngine.PhysicsModule for raycast input"
             )
 
+    manifest_path = ROOT / "unity" / "Dig.Unity" / "Packages" / "manifest.json"
+    if not manifest_path.exists():
+        errors.append("unity/Dig.Unity/Packages/manifest.json is required")
+    else:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
+        dependencies = manifest.get("dependencies", {})
+        if dependencies.get("com.unity.modules.physics") != "1.0.0":
+            errors.append(
+                "Unity package manifest must include com.unity.modules.physics 1.0.0"
+            )
     return errors
 
 
 def project_name(project_path: Path) -> str:
-    tree = ET.parse(project_path)
-    root = tree.getroot()
-
+    root = ET.parse(project_path).getroot()
     assembly_name = root.find(".//AssemblyName")
     if assembly_name is not None and assembly_name.text:
         return assembly_name.text.strip()
-
     return project_path.stem
 
 
 def project_references(project_path: Path) -> set[str]:
-    tree = ET.parse(project_path)
+    root = ET.parse(project_path).getroot()
     references: set[str] = set()
-
-    for node in tree.getroot().findall(".//ProjectReference"):
+    for node in root.findall(".//ProjectReference"):
         include = node.attrib.get("Include")
         if include:
-            normalized = include.replace("\\", "/")
-            references.add(Path(normalized).stem)
-
+            references.add(Path(include.replace("\\", "/")).stem)
     return references
 
 
@@ -178,28 +174,21 @@ def check_project_dependencies(config: dict[str, object]) -> list[str]:
     }
     discovered: dict[str, set[str]] = {}
     errors: list[str] = []
-
     for project_path in sorted((ROOT / "src").rglob("*.csproj")):
-        name = project_name(project_path)
-        discovered[name] = project_references(project_path)
-
+        discovered[project_name(project_path)] = project_references(project_path)
     for name, allowed_references in allowed.items():
         if name not in discovered:
             errors.append(f"Missing configured source project: {name}")
             continue
-
         unexpected = discovered[name] - allowed_references
         if unexpected:
             errors.append(
                 f"{name} has forbidden project references: {sorted(unexpected)}"
             )
-
-    unconfigured = set(discovered) - set(allowed)
-    for name in sorted(unconfigured):
+    for name in sorted(set(discovered) - set(allowed)):
         errors.append(
             f"Source project {name} is not present in allowed_project_references"
         )
-
     errors.extend(find_dependency_cycles(discovered))
     return errors
 
@@ -215,10 +204,8 @@ def find_dependency_cycles(graph: dict[str, set[str]]) -> list[str]:
             cycle = active[cycle_start:] + [node]
             errors.append("Project dependency cycle: " + " -> ".join(cycle))
             return
-
         if node in visited:
             return
-
         active.append(node)
         for dependency in graph.get(node, set()):
             if dependency in graph:
@@ -228,7 +215,6 @@ def find_dependency_cycles(graph: dict[str, set[str]]) -> list[str]:
 
     for project in graph:
         visit(project)
-
     return errors
 
 
@@ -236,14 +222,12 @@ def check_domain_boundaries(config: dict[str, object]) -> list[str]:
     domain_root = ROOT / "src" / "Dig.Domain"
     banned_tokens = [str(token) for token in config["domain_banned_tokens"]]
     errors: list[str] = []
-
     for path in sorted(domain_root.rglob("*.cs")):
         text = path.read_text(encoding="utf-8")
         for token in banned_tokens:
             if token in text:
                 relative = path.relative_to(ROOT)
                 errors.append(f"{relative}: forbidden Domain dependency token '{token}'")
-
     return errors
 
 
@@ -257,7 +241,6 @@ def main() -> int:
         ("project dependencies", check_project_dependencies),
         ("domain boundaries", check_domain_boundaries),
     ]
-
     all_errors: list[str] = []
     for name, check in checks:
         errors = check(config)
@@ -265,13 +248,11 @@ def main() -> int:
             all_errors.extend(f"[{name}] {error}" for error in errors)
         else:
             print(f"PASS: {name}")
-
     if all_errors:
         print("\nQuality checks failed:", file=sys.stderr)
         for error in all_errors:
             print(f"- {error}", file=sys.stderr)
         return 1
-
     print("All quality checks passed.")
     return 0
 
