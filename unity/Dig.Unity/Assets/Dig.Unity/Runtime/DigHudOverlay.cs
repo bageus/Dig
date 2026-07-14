@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Dig.Unity
 {
     [DisallowMultipleComponent]
-    public sealed class DigHudOverlay : MonoBehaviour
+    public sealed partial class DigHudOverlay : MonoBehaviour
     {
         private WorldViewModel? _world;
         private IReadOnlyList<AgentViewModel> _agents =
@@ -32,12 +32,14 @@ namespace Dig.Unity
         {
             _selectedCell = selected;
             _selectedAgent = null;
+            ClearJobSelection();
         }
 
         public void SetAgentSelection(AgentViewModel? selected)
         {
             _selectedAgent = selected;
             _selectedCell = null;
+            ClearJobSelection();
         }
 
         public void SetCommandResult(Result result)
@@ -52,20 +54,21 @@ namespace Dig.Unity
 
         private void OnGUI()
         {
-            GUILayout.BeginArea(new Rect(16f, 16f, 470f, 720f), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(16f, 16f, 500f, 760f), GUI.skin.box);
             GUILayout.Label("DIG — Interactive Settlement Slice");
             if (_world != null)
             {
                 GUILayout.Label($"World: {_world.Width}×{_world.Height} | v{_world.Version}");
             }
 
-            GUILayout.Label($"Residents: {_agents.Count} | simulation tick: {_tick}");
+            GUILayout.Label($"Residents: {_agents.Count} | jobs: {JobCount} | tick: {_tick}");
             GUILayout.Space(6f);
-            GUILayout.Label("WASD pan | wheel zoom | Q/E rotate");
+            GUILayout.Label("WASD pan | wheel zoom | Q/E rotate | F3 job overlay");
             GUILayout.Label("Left click select | right click toggle digging");
             GUILayout.Space(8f);
             DrawCellSelection();
             DrawAgentSelection();
+            DrawJobSelection();
             GUILayout.Space(8f);
             GUILayout.Label(_status);
             GUILayout.EndArea();
@@ -89,7 +92,7 @@ namespace Dig.Unity
         {
             if (_selectedAgent == null)
             {
-                if (!_selectedCell.HasValue)
+                if (!_selectedCell.HasValue && !HasJobSelection)
                 {
                     GUILayout.Label("Selected object: none");
                 }
