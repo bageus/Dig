@@ -71,8 +71,9 @@ public sealed class CreateBuildingDeliveryHandler
         }
 
         BuildingMaterialRequirement? requirement = building.Definition.Materials
-            .Cast<BuildingMaterialRequirement?>()
-            .FirstOrDefault(value => value!.Value.ItemId == stack.ItemId);
+            .Where(value => value.ItemId == stack.ItemId)
+            .Select(value => (BuildingMaterialRequirement?)value)
+            .FirstOrDefault();
         if (!requirement.HasValue)
         {
             return Result.Failure(BuildingUseCaseErrors.MaterialNotRequired);
