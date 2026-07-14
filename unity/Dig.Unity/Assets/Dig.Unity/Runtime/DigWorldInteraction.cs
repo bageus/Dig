@@ -10,23 +10,30 @@ namespace Dig.Unity
         private Camera? _camera;
         private DigWorldSession? _session;
         private DigWorldRenderer? _renderer;
+        private DigAgentRenderer? _agentRenderer;
         private DigHudOverlay? _hud;
 
         internal void Initialize(
             Camera targetCamera,
             DigWorldSession session,
             DigWorldRenderer renderer,
+            DigAgentRenderer agentRenderer,
             DigHudOverlay hud)
         {
             _camera = targetCamera;
             _session = session;
             _renderer = renderer;
+            _agentRenderer = agentRenderer;
             _hud = hud;
         }
 
         private void Update()
         {
-            if (_camera == null || _session == null || _renderer == null || _hud == null)
+            if (_camera == null
+                || _session == null
+                || _renderer == null
+                || _agentRenderer == null
+                || _hud == null)
             {
                 return;
             }
@@ -39,12 +46,29 @@ namespace Dig.Unity
             }
 
             Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
-            if (!Physics.Raycast(ray, out RaycastHit hit, 500f)
-                || !_renderer.TryGetCell(hit, out DigCellVisual cell))
+            if (!Physics.Raycast(ray, out RaycastHit hit, 500f))
             {
                 return;
             }
 
+            if (_agentRenderer.TryGetAgent(hit, out DigAgentVisual agent))
+            {
+                if (select)
+                {
+                    _renderer.Select(null);
+                    _agentRenderer.Select(agent);
+                    _hud.SetAgentSelection(agent.Model);
+                }
+
+                return;
+            }
+
+            if (!_renderer.TryGetCell(hit, out DigCellVisual cell))
+            {
+                return;
+            }
+
+            _agentRenderer.Select(null);
             _renderer.Select(cell);
             _hud.SetSelection(cell.Model);
             if (updateCell)
