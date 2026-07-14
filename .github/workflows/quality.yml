@@ -66,7 +66,19 @@ jobs:
           python-version: "3.12"
 
       - name: Run architecture and file-size checks
-        run: python tools/quality/check_quality.py
+        shell: bash
+        run: |
+          set -o pipefail
+          python tools/quality/check_quality.py 2>&1 | tee quality.log
+
+      - name: Upload quality log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-log
+          path: quality.log
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
