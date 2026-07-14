@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -9,6 +10,15 @@ from typing import Iterable
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PATH = Path(__file__).with_name("quality_config.json")
+UNITY_CSHARP_ROOTS = ("src", "tests", "unity")
+FILE_SCOPED_NAMESPACE = re.compile(
+    r"^[ \t]*namespace\s+[A-Za-z_][A-Za-z0-9_.]*\s*;[ \t]*$",
+    re.MULTILINE,
+)
+UNSUPPORTED_CSHARP_PATTERNS = (
+    ("global using", re.compile(r"^[ \t]*global\s+using\b", re.MULTILINE)),
+    ("record struct", re.compile(r"\brecord\s+struct\b")),
+)
 
 
 def load_config() -> dict[str, object]:
@@ -36,6 +46,18 @@ def iter_checked_files(config: dict[str, object]) -> Iterable[Path]:
             yield path
 
 
+def iter_unity_visible_csharp() -> Iterable[Path]:
+    excluded = {"bin", "obj", "Library", "Generated", "Vendor"}
+    for relative_root in UNITY_CSHARP_ROOTS:
+        source_root = ROOT / relative_root
+        if not source_root.exists():
+            continue
+        for path in source_root.rglob("*.cs"):
+            if any(part in excluded for part in path.relative_to(ROOT).parts):
+                continue
+            yield path
+
+
 def check_file_lengths(config: dict[str, object]) -> list[str]:
     max_lines = int(config["max_lines"])
     errors: list[str] = []
@@ -50,6 +72,38 @@ def check_file_lengths(config: dict[str, object]) -> list[str]:
                 f"{relative}: {line_count} lines exceeds the {max_lines}-line limit"
             )
 
+    return errors
+
+
+def check_csharp9_compatibility(config: dict[str, object]) -> list[str]:
+    del config
+    errors: list[str] = []
+    for path in sorted(iter_unity_visible_csharp()):
+        text = path.read_text(encoding="utf-8-sig")
+        relative = path.relative_to(ROOT)
+        if FILE_SCOPED_NAMESPACE.search(text):
+            errors.append(f"{relative}: file-scoped namespace requires C# 10")
+        for feature, pattern in UNSUPPORTED_CSHARP_PATTERNS:
+            if pattern.search(text):
+                errors.append(f"{relative}: unsupported Unity C# 9 feature '{feature}'")
+    return errors
+
+
+def check_compiler_baseline(config: dict[str, object]) -> list[str]:
+    del config
+    props_path = ROOT / "Directory.Build.props"
+    root = ET.parse(props_path).getroot()
+    lang_version = root.findtext(".//LangVersion")
+    implicit_usings = root.findtext(".//ImplicitUsings")
+    errors: list[str] = []
+    if lang_version != "9.0":
+        errors.append(
+            f"Directory.Build.props LangVersion must be 9.0, found {lang_version!r}"
+        )
+    if implicit_usings != "disable":
+        errors.append(
+            "Directory.Build.props ImplicitUsings must be disabled for Unity parity"
+        )
     return errors
 
 
@@ -157,6 +211,8 @@ def main() -> int:
     config = load_config()
     checks = [
         ("file length", check_file_lengths),
+        ("C# 9 compatibility", check_csharp9_compatibility),
+        ("compiler baseline", check_compiler_baseline),
         ("project dependencies", check_project_dependencies),
         ("domain boundaries", check_domain_boundaries),
     ]
