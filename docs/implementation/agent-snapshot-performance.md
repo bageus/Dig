@@ -16,17 +16,17 @@ Tests cover stable ordering, list reuse, skill refresh, old-snapshot immutabilit
 
 ## Measured result
 
-The first 64-resident large-profile run produced:
+The final budget-enforced 64-resident large-profile run produced:
 
 | Metric | Before #43 | After #43 | Change |
 |---|---:|---:|---:|
-| Settlement average time | 842.997 us | 816.582 us | -3.1% |
+| Settlement average time | 842.997 us | 863.700 us | +2.5% |
 | Settlement average allocations | 172511 bytes | 90613 bytes | -47.5% |
 | Settlement total allocations | 175961832 bytes | 92425648 bytes | -47.5% |
 | Invariant average allocations | 134439 bytes | 18850 bytes | -86.0% |
-| Whole large run | 1166.24 ms | 975.85 ms | -16.3% |
+| Whole large run | 1166.24 ms | 1035.95 ms | -11.2% |
 
-The standard profile measured 105.06 us and 11755 bytes for `agents.settlement`, and 39.33 us and 2414 bytes for `soak.invariants`.
+The final standard profile measured 99.34 us and 11758 bytes for `agents.settlement`, and 36.62 us and 2414 bytes for `soak.invariants`.
 
 Both hashes remained unchanged:
 
