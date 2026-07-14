@@ -58,8 +58,11 @@ public sealed class ResidentSettlementSystem : ISimulationSystem
 
     public void Execute(SimulationContext context)
     {
-        List<SettlementAgentDiagnostic> diagnostics = new List<SettlementAgentDiagnostic>();
-        foreach (AgentState agent in _agents.GetAll())
+        IReadOnlyList<AgentState> agents = _agents.GetAll();
+        SettlementAgentDiagnostic[] diagnostics =
+            new SettlementAgentDiagnostic[agents.Count];
+        int diagnosticCount = 0;
+        foreach (AgentState agent in agents)
         {
             if (!agent.IsAlive)
             {
@@ -117,12 +120,12 @@ public sealed class ResidentSettlementSystem : ISimulationSystem
                 }
 
                 SaveAgent(agent);
-                diagnostics.Add(new SettlementAgentDiagnostic(
+                diagnostics[diagnosticCount++] = new SettlementAgentDiagnostic(
                     agent.Id,
                     decision,
                     target: null,
                     actionCompleted: false,
-                    blockedReason));
+                    blockedReason);
                 continue;
             }
 
@@ -191,16 +194,19 @@ public sealed class ResidentSettlementSystem : ISimulationSystem
             }
 
             SaveAgent(agent);
-            diagnostics.Add(new SettlementAgentDiagnostic(
+            diagnostics[diagnosticCount++] = new SettlementAgentDiagnostic(
                 agent.Id,
                 decision,
                 target,
                 completed,
-                blockedReason));
+                blockedReason);
         }
 
         SaveSharedState();
-        LastReport = new SettlementTickReport(context.Tick, diagnostics);
+        LastReport = SettlementTickReport.CreateFromStableOrder(
+            context.Tick,
+            diagnostics,
+            diagnosticCount);
     }
 
     private Result<AgentActivityTarget> ResolveTarget(

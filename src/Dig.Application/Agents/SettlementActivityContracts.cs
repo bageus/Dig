@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using Dig.Domain.Agents;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
@@ -12,7 +11,7 @@ public interface IBuildingFacilitiesRepository
     void Save(BuildingFacilitiesState facilities);
 }
 
-public sealed class SettlementAgentDiagnostic
+public readonly struct SettlementAgentDiagnostic
 {
     public SettlementAgentDiagnostic(
         EntityId agentId,
@@ -29,13 +28,9 @@ public sealed class SettlementAgentDiagnostic
     }
 
     public EntityId AgentId { get; }
-
     public AgentDecision Decision { get; }
-
     public AgentActivityTarget? Target { get; }
-
     public bool ActionCompleted { get; }
-
     public string? BlockedReason { get; }
 }
 
@@ -44,6 +39,11 @@ public sealed class SettlementTickReport
     public SettlementTickReport(
         long tick,
         IReadOnlyCollection<SettlementAgentDiagnostic> agents)
+        : this(tick, SortCopy(agents))
+    {
+    }
+
+    private SettlementTickReport(long tick, SettlementAgentDiagnostic[] agents)
     {
         if (tick < 0)
         {
@@ -51,12 +51,47 @@ public sealed class SettlementTickReport
         }
 
         Tick = tick;
-        Agents = new ReadOnlyCollection<SettlementAgentDiagnostic>(agents
-            .OrderBy(value => value.AgentId.ToString(), StringComparer.Ordinal)
-            .ToArray());
+        Agents = agents ?? throw new ArgumentNullException(nameof(agents));
     }
 
     public long Tick { get; }
-
     public IReadOnlyList<SettlementAgentDiagnostic> Agents { get; }
+
+    internal static SettlementTickReport CreateFromStableOrder(
+        long tick,
+        SettlementAgentDiagnostic[] agents,
+        int count)
+    {
+        if (agents is null)
+        {
+            throw new ArgumentNullException(nameof(agents));
+        }
+
+        if (count < 0 || count > agents.Length)
+        {
+            throw new ArgumentOutOfRangeException(nameof(count));
+        }
+
+        if (count == agents.Length)
+        {
+            return new SettlementTickReport(tick, agents);
+        }
+
+        SettlementAgentDiagnostic[] result = new SettlementAgentDiagnostic[count];
+        Array.Copy(agents, result, count);
+        return new SettlementTickReport(tick, result);
+    }
+
+    private static SettlementAgentDiagnostic[] SortCopy(
+        IReadOnlyCollection<SettlementAgentDiagnostic> agents)
+    {
+        if (agents is null)
+        {
+            throw new ArgumentNullException(nameof(agents));
+        }
+
+        return agents
+            .OrderBy(value => value.AgentId.ToString(), StringComparer.Ordinal)
+            .ToArray();
+    }
 }

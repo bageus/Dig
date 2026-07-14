@@ -2,13 +2,19 @@ namespace Dig.Domain.Agents;
 
 public sealed partial class AgentDecisionSystem
 {
-    private static Candidate[] CreateCandidates(
+    private static string? PopulateCandidates(
         AgentSnapshot agent,
         AgentDecisionContext context,
         AgentBehaviorPolicy policy,
         long tick,
-        AgentIntentKind? currentIntent)
+        AgentIntentKind? currentIntent,
+        Span<Candidate> candidates)
     {
+        if (candidates.Length != CandidateCount)
+        {
+            throw new ArgumentException("Unexpected utility candidate count.", nameof(candidates));
+        }
+
         AgentUtilityPolicy utility = policy.Utility;
         bool currentFlee = currentIntent == AgentIntentKind.Flee;
         bool fleeCritical = context.ThreatLevel >= utility.CriticalThreatThreshold;
@@ -46,54 +52,50 @@ public sealed partial class AgentDecisionSystem
             restScore = checked(restScore + utility.RestScheduleBonus);
         }
 
-        Candidate[] candidates =
-        {
-            new Candidate(
-                AgentIntentKind.Flee,
-                context.ThreatLevel,
-                context.EscapeRouteAvailable && (context.ThreatLevel > 0 || currentFlee),
-                fleeCritical,
-                null),
-            new Candidate(
-                AgentIntentKind.Eat,
-                agent.Needs.Nutrition.Deficit,
-                context.FoodAvailable || currentIntent == AgentIntentKind.Eat,
-                eatCritical,
-                null),
-            new Candidate(
-                AgentIntentKind.Sleep,
-                sleepScore,
-                context.BedAvailable || currentIntent == AgentIntentKind.Sleep,
-                sleepCritical,
-                null),
-            new Candidate(
-                AgentIntentKind.PlayerOrder,
-                checked(utility.PlayerOrderBaseScore + orderPriority),
-                order is not null || currentIntent == AgentIntentKind.PlayerOrder,
-                critical: false,
-                activeOrderId),
-            new Candidate(
-                AgentIntentKind.Work,
-                workScore,
-                context.WorkAvailable || currentIntent == AgentIntentKind.Work,
-                critical: false,
-                null),
-            new Candidate(
-                AgentIntentKind.Rest,
-                restScore,
-                context.RestAvailable || currentIntent == AgentIntentKind.Rest,
-                critical: false,
-                null),
-            new Candidate(
-                AgentIntentKind.Idle,
-                utility.IdleScore,
-                available: true,
-                critical: false,
-                null),
-        };
+        candidates[(int)AgentIntentKind.Flee] = new Candidate(
+            AgentIntentKind.Flee,
+            context.ThreatLevel,
+            context.EscapeRouteAvailable && (context.ThreatLevel > 0 || currentFlee),
+            fleeCritical);
+        candidates[(int)AgentIntentKind.Eat] = new Candidate(
+            AgentIntentKind.Eat,
+            agent.Needs.Nutrition.Deficit,
+            context.FoodAvailable || currentIntent == AgentIntentKind.Eat,
+            eatCritical);
+        candidates[(int)AgentIntentKind.Sleep] = new Candidate(
+            AgentIntentKind.Sleep,
+            sleepScore,
+            context.BedAvailable || currentIntent == AgentIntentKind.Sleep,
+            sleepCritical);
+        candidates[(int)AgentIntentKind.PlayerOrder] = new Candidate(
+            AgentIntentKind.PlayerOrder,
+            checked(utility.PlayerOrderBaseScore + orderPriority),
+            order is not null || currentIntent == AgentIntentKind.PlayerOrder,
+            critical: false);
+        candidates[(int)AgentIntentKind.Work] = new Candidate(
+            AgentIntentKind.Work,
+            workScore,
+            context.WorkAvailable || currentIntent == AgentIntentKind.Work,
+            critical: false);
+        candidates[(int)AgentIntentKind.Rest] = new Candidate(
+            AgentIntentKind.Rest,
+            restScore,
+            context.RestAvailable || currentIntent == AgentIntentKind.Rest,
+            critical: false);
+        candidates[(int)AgentIntentKind.Idle] = new Candidate(
+            AgentIntentKind.Idle,
+            utility.IdleScore,
+            available: true,
+            critical: false);
 
         for (int index = 0; index < candidates.Length; index++)
         {
+            if (candidates[index].IntentKind != (AgentIntentKind)index)
+            {
+                throw new InvalidOperationException(
+                    "Utility candidate order no longer matches stable intent rank.");
+            }
+
             if (candidates[index].Critical)
             {
                 candidates[index].FinalScore = checked(
@@ -101,7 +103,7 @@ public sealed partial class AgentDecisionSystem
             }
         }
 
-        return candidates;
+        return activeOrderId;
     }
 
     private static void ApplyContinuityRules(
@@ -109,7 +111,7 @@ public sealed partial class AgentDecisionSystem
         AgentBehaviorPolicy policy,
         long tick,
         AgentIntentKind? currentIntent,
-        Candidate[] candidates)
+        Span<Candidate> candidates)
     {
         bool cooldownActive = currentIntent.HasValue
             && agent.LastActionSwitchTick >= 0
@@ -131,26 +133,19 @@ public sealed partial class AgentDecisionSystem
         }
     }
 
-    private static int GetTieBreakRank(AgentIntentKind intentKind)
-    {
-        return (int)intentKind;
-    }
-
     private struct Candidate
     {
         public Candidate(
             AgentIntentKind intentKind,
             int baseScore,
             bool available,
-            bool critical,
-            string? playerOrderId)
+            bool critical)
         {
             IntentKind = intentKind;
             BaseScore = baseScore;
             FinalScore = baseScore;
             Available = available;
             Critical = critical;
-            PlayerOrderId = playerOrderId;
             ReceivedHysteresis = false;
             BlockedByCooldown = false;
         }
@@ -160,24 +155,7 @@ public sealed partial class AgentDecisionSystem
         public int FinalScore;
         public bool Available;
         public bool Critical;
-        public string? PlayerOrderId;
         public bool ReceivedHysteresis;
         public bool BlockedByCooldown;
-    }
-
-    private sealed class CandidateIntentComparer : IComparer<Candidate>
-    {
-        public static readonly CandidateIntentComparer Instance =
-            new CandidateIntentComparer();
-
-        private CandidateIntentComparer()
-        {
-        }
-
-        public int Compare(Candidate left, Candidate right)
-        {
-            return GetTieBreakRank(left.IntentKind).CompareTo(
-                GetTieBreakRank(right.IntentKind));
-        }
     }
 }
