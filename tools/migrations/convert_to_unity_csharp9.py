@@ -34,8 +34,8 @@ IMPLICIT_USINGS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "System.IO",
         re.compile(
-            r"\b(?:File|Directory|Path|Stream|FileInfo|DirectoryInfo|TextReader|"
-            r"TextWriter|MemoryStream|BinaryReader|BinaryWriter)\b"
+            r"\b(?:File|Directory|Path)\s*\.|\b(?:Stream|FileInfo|DirectoryInfo|"
+            r"TextReader|TextWriter|MemoryStream|BinaryReader|BinaryWriter)\b"
         ),
     ),
     (
