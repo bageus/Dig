@@ -86,12 +86,8 @@ public sealed class HaulingPlanningReport
         IReadOnlyCollection<SkippedHaulingStack> skipped)
     {
         Tick = tick;
-        Created = new ReadOnlyCollection<PlannedHaulingJob>(created
-            .OrderBy(value => value.JobId.ToString(), StringComparer.Ordinal)
-            .ToArray());
-        Skipped = new ReadOnlyCollection<SkippedHaulingStack>(skipped
-            .OrderBy(value => value.StackId.ToString(), StringComparer.Ordinal)
-            .ToArray());
+        Created = SortCreated(created);
+        Skipped = SortSkipped(skipped);
     }
 
     public long Tick { get; }
@@ -99,6 +95,32 @@ public sealed class HaulingPlanningReport
     public IReadOnlyList<PlannedHaulingJob> Created { get; }
 
     public IReadOnlyList<SkippedHaulingStack> Skipped { get; }
+
+    private static IReadOnlyList<PlannedHaulingJob> SortCreated(
+        IReadOnlyCollection<PlannedHaulingJob> values)
+    {
+        if (values.Count == 0)
+        {
+            return Array.Empty<PlannedHaulingJob>();
+        }
+
+        return new ReadOnlyCollection<PlannedHaulingJob>(values
+            .OrderBy(value => value.JobId.ToString(), StringComparer.Ordinal)
+            .ToArray());
+    }
+
+    private static IReadOnlyList<SkippedHaulingStack> SortSkipped(
+        IReadOnlyCollection<SkippedHaulingStack> values)
+    {
+        if (values.Count == 0)
+        {
+            return Array.Empty<SkippedHaulingStack>();
+        }
+
+        return new ReadOnlyCollection<SkippedHaulingStack>(values
+            .OrderBy(value => value.StackId.ToString(), StringComparer.Ordinal)
+            .ToArray());
+    }
 }
 
 public sealed class PlanHaulingHandler
@@ -135,14 +157,9 @@ public sealed class PlanHaulingHandler
 
         InventoryState inventory = _inventoryRepository.Get();
         StorageState storage = _storageRepository.Get();
-        ItemStackSnapshot[] candidates = inventory.CreateSnapshot().Stacks
-            .Where(value => value.Location.Kind == ItemLocationKind.World)
-            .Where(value => value.AvailableQuantity > 0)
-            .OrderBy(value => value.Location)
-            .ThenBy(value => value.StackId.ToString(), StringComparer.Ordinal)
-            .ToArray();
-        List<PlannedHaulingJob> created = new List<PlannedHaulingJob>();
-        List<SkippedHaulingStack> skipped = new List<SkippedHaulingStack>();
+        IReadOnlyList<ItemStackSnapshot> candidates = inventory.GetAvailableWorldStacks();
+        List<PlannedHaulingJob>? created = null;
+        List<SkippedHaulingStack>? skipped = null;
         CreateHaulingJobHandler create = new CreateHaulingJobHandler(
             _inventoryRepository,
             _storageRepository,
@@ -151,33 +168,24 @@ public sealed class PlanHaulingHandler
 
         foreach (ItemStackSnapshot candidate in candidates)
         {
-            if (created.Count >= command.MaximumJobs)
+            if (created?.Count >= command.MaximumJobs)
             {
                 break;
             }
 
-            ItemStackSnapshot? current = inventory.GetStack(candidate.StackId);
-            if (current is null
-                || current.Location.Kind != ItemLocationKind.World
-                || current.AvailableQuantity <= 0)
-            {
-                skipped.Add(new SkippedHaulingStack(candidate.StackId, "no_available_quantity"));
-                continue;
-            }
-
-            ItemDefinition item = inventory.Catalog.Get(current.ItemId);
-            IReadOnlyList<StorageZoneSnapshot> destinations = storage.FindDestinations(
+            ItemDefinition item = inventory.Catalog.Get(candidate.ItemId);
+            StorageZoneSnapshot? destination = storage.FindFirstDestination(
                 item,
-                quantity: 1,
-                zoneId => GetOccupiedQuantity(inventory, zoneId));
-            if (destinations.Count == 0)
+                minimumQuantity: 1,
+                zoneId => inventory.GetTotalQuantityAt(ItemLocation.InStorage(zoneId)));
+            if (destination is null)
             {
-                skipped.Add(new SkippedHaulingStack(candidate.StackId, "no_storage_destination"));
+                (skipped ??= new List<SkippedHaulingStack>()).Add(
+                    new SkippedHaulingStack(candidate.StackId, "no_storage_destination"));
                 continue;
             }
 
-            StorageZoneSnapshot destination = destinations[0];
-            int quantity = Math.Min(current.AvailableQuantity, destination.AvailableCapacity);
+            int quantity = Math.Min(candidate.AvailableQuantity, destination.AvailableCapacity);
             EntityId jobId = _jobIds.Next();
             if (jobId.IsEmpty)
             {
@@ -186,34 +194,32 @@ public sealed class PlanHaulingHandler
 
             Result result = create.Handle(new CreateHaulingJobCommand(
                 jobId,
-                current.StackId,
+                candidate.StackId,
                 quantity,
                 destination.Definition.Id,
                 command.Priority,
                 command.Tick));
             if (result.IsFailure)
             {
-                skipped.Add(new SkippedHaulingStack(
-                    candidate.StackId,
-                    result.Error?.Code ?? "creation_failed"));
+                (skipped ??= new List<SkippedHaulingStack>()).Add(
+                    new SkippedHaulingStack(
+                        candidate.StackId,
+                        result.Error?.Code ?? "creation_failed"));
                 continue;
             }
 
-            created.Add(new PlannedHaulingJob(
+            (created ??= new List<PlannedHaulingJob>()).Add(new PlannedHaulingJob(
                 jobId,
-                current.StackId,
+                candidate.StackId,
                 destination.Definition.Id,
                 quantity));
         }
 
-        return new HaulingPlanningReport(command.Tick, created, skipped);
-    }
-
-    private static int GetOccupiedQuantity(InventoryState inventory, EntityId zoneId)
-    {
-        ItemLocation location = ItemLocation.InStorage(zoneId);
-        return inventory.CreateSnapshot().Stacks
-            .Where(value => value.Location == location)
-            .Sum(value => value.Quantity);
+        return new HaulingPlanningReport(
+            command.Tick,
+            (IReadOnlyCollection<PlannedHaulingJob>?)created
+                ?? Array.Empty<PlannedHaulingJob>(),
+            (IReadOnlyCollection<SkippedHaulingStack>?)skipped
+                ?? Array.Empty<SkippedHaulingStack>());
     }
 }

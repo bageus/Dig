@@ -91,13 +91,12 @@ Global CI budgets are deliberately conservative:
 
 `SimulationPerformanceBudget` also supports stable-name overrides. A system override replaces all three global execution limits only for that system.
 
-The settlement system has a dedicated regression budget:
+Dedicated regression budgets:
 
-| `agents.settlement` metric | Budget |
-|---|---:|
-| Average execution | 500 microseconds |
-| Average allocation | 50000 bytes |
-| Maximum single execution | 100 milliseconds |
+| System | Average execution | Average allocation | Maximum execution |
+|---|---:|---:|---:|
+| `agents.settlement` | 500 microseconds | 50000 bytes | 100 milliseconds |
+| `soak.hauling` | 100 microseconds | 25000 bytes | 100 milliseconds |
 
 Budgets must be tightened from retained reports rather than guessed. A budget increase requires a documented reason and should not be used to hide a regression.
 
@@ -151,13 +150,34 @@ The first optimized Linux CI soak produced:
 | Settlement average allocations | 295927 bytes | 34517 bytes | -88.3% |
 | Settlement total allocations | 597773120 bytes | 69724984 bytes | -88.3% |
 
-Authoritative behavior did not change. Both baselines produced state hash:
+## Hauling allocation optimization
+
+Issue #34 completed the planner optimization that PR #35 had only started. The final implementation:
+
+- snapshots only world stacks with available quantity;
+- computes one storage occupancy directly from Inventory;
+- returns only the winning Storage destination;
+- avoids empty planning lists and sorted wrappers;
+- uses the same point occupancy query during hauling job creation;
+- tracks soak-created jobs by id instead of materializing complete terminal job history multiple times per tick.
+
+The budget-enforced Linux CI soak produced:
+
+| Result | Before | After | Change |
+|---|---:|---:|---:|
+| Overall wall-clock | 1286.58 ms | 620.77 ms | -51.7% |
+| Hauling average time | 162.24 us | 35.95 us | -77.8% |
+| Hauling maximum time | 23.11 ms | 13.23 ms | -42.8% |
+| Hauling average allocations | 60767 bytes | 13117 bytes | -78.4% |
+| Hauling total allocations | 122749848 bytes | 26496616 bytes | -78.4% |
+
+Authoritative behavior did not change across the settlement and hauling optimizations. The retained state hash is:
 
 ```text
 B315282B332B67B4EEE68D3B3C59D997013C014A947B534106DA7FD75EC04480
 ```
 
-The optimized result is below the dedicated 500 microsecond and 50000 byte budgets while retaining substantial CI-runner variance margin.
+The final run also retained 500 / 500 / 500 spawned, total and stored ore, completed 100 hauling jobs and ended with zero active hauling jobs, Jobs reservations, Storage reservations, invariant violations or budget violations.
 
 ## Bounded diagnostics
 

@@ -95,7 +95,7 @@ public sealed class StorageReservationChanged : IDomainEvent
     public int ReservedQuantity { get; }
 }
 
-public sealed class StorageState : AggregateRoot
+public sealed partial class StorageState : AggregateRoot
 {
     private readonly Dictionary<EntityId, StorageZoneDefinition> _zones =
         new Dictionary<EntityId, StorageZoneDefinition>();
