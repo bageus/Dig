@@ -1,0 +1,10 @@
+{
+  "unity/Dig.Unity/Assets/Dig.Unity/Runtime/Dig.Unity.asmdef": {
+    "UnityEngine.PhysicsModule": [
+      "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentRenderer.cs",
+      "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigJobRenderer.cs",
+      "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldRenderer.cs",
+      "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.cs"
+    ]
+  }
+}
