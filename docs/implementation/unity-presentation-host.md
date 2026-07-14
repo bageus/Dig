@@ -57,6 +57,12 @@ Assembly definitions mirror the existing `.csproj` dependency direction:
 
 This keeps one source tree for both `dotnet` tests and Unity compilation. Engine-specific code belongs under `unity/Dig.Unity/Assets/Dig.Unity` and must not be added to Domain.
 
+## Nullable compiler context
+
+The shared source uses nullable reference annotations in its public contracts. The .NET projects enable nullable analysis through MSBuild, while Unity invokes Roslyn separately. `Assets/csc.rsp` passes `-nullable:enable` to Unity so annotations such as `NavigationMap?` do not produce `CS8632` warnings.
+
+After changing the response file, allow Unity to recompile scripts. If old diagnostics remain cached, reopen the project or use **Assets > Reimport All**.
+
 ## Generated files
 
 Unity-generated folders such as `Library`, `Temp`, `Logs`, `UserSettings`, builds and generated IDE files are ignored. Project assets, scripts, scenes, settings and their `.meta` files should be committed.
