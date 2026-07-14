@@ -45,6 +45,16 @@ public readonly struct BuildingDefinitionId
     {
         return _value ?? string.Empty;
     }
+
+    public static bool operator ==(BuildingDefinitionId left, BuildingDefinitionId right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(BuildingDefinitionId left, BuildingDefinitionId right)
+    {
+        return !left.Equals(right);
+    }
 }
 
 public enum BuildingOrientation
