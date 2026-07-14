@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE_ROOTS = ("src", "tests", "unity")
 FILE_SCOPED_NAMESPACE = re.compile(
-    r"^(?P<indent>\s*)namespace\s+(?P<name>[A-Za-z_][A-Za-z0-9_.]*)\s*;\s*$",
+    r"^(?P<indent>[ \t]*)namespace\s+(?P<name>[A-Za-z_][A-Za-z0-9_.]*)\s*;[ \t]*$",
     re.MULTILINE,
 )
 
