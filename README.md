@@ -18,6 +18,8 @@ Inventory owns immutable item definitions plus authoritative stack quantities, p
 
 Buildings own immutable definitions, validated footprints, projects, construction progress, durability and functional resident places. Placement reads World and Navigation-derived reachability, materials remain in Inventory, and final construction atomically consumes delivered resources before emitting one completed building.
 
+The scheduler records per-system execution time and allocations. A deterministic replay soak runs multiple residents and hauling for thousands of ticks, checks cross-system invariants, enforces conservative CI budgets and retains a JSON report with the most expensive systems.
+
 Unity is the selected presentation host. Engine-specific scenes, rendering, input and editor tooling live under `unity/Dig.Unity`; authoritative simulation rules remain usable without Unity.
 
 ## Repository structure
@@ -28,7 +30,7 @@ src/
   Dig.Application/               Commands, queries and simulation orchestration
   Dig.Infrastructure/            Technical adapter implementations
   Dig.Presentation.Abstractions/ Read models and presentation contracts
-  Dig.Headless/                  Engine-free simulation bootstrap
+  Dig.Headless/                  Engine-free simulation bootstrap and soak host
   package.json                   Local Unity Package Manager entry point
 
 tests/
@@ -61,9 +63,13 @@ dotnet restore Dig.sln
 dotnet build Dig.sln --configuration Release --no-restore
 dotnet test Dig.sln --configuration Release --no-build
 dotnet run --project src/Dig.Headless/Dig.Headless.csproj
+dotnet run --project src/Dig.Headless/Dig.Headless.csproj -- \
+  --soak --ticks 2000 --residents 8 --report soak-report.json
 ```
 
-GitHub Actions runs the quality, build, test and headless smoke checks for pushes and pull requests.
+GitHub Actions runs quality, build, tests, the normal headless smoke and the deterministic soak for pushes and pull requests. Build logs are retained for seven days and soak reports for fourteen days.
+
+See [`docs/implementation/quality-soak-performance.md`](docs/implementation/quality-soak-performance.md) for budgets, invariants, report fields and the current Linux CI baseline.
 
 ## Open in Unity
 
@@ -90,7 +96,7 @@ The authoritative development rules are in [`docs/development-rules.md`](docs/de
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) and the [roadmap issue](https://github.com/bageus/Dig/issues/16).
 
-Architecture foundation is tracked by issue [#1](https://github.com/bageus/Dig/issues/1). The deterministic simulation runtime is tracked by issue [#2](https://github.com/bageus/Dig/issues/2). The logical world and chunk model is tracked by issue [#3](https://github.com/bageus/Dig/issues/3). Navigation in the changing world is tracked by issue [#4](https://github.com/bageus/Dig/issues/4). Residents, needs and Utility AI are tracked by issues [#5](https://github.com/bageus/Dig/issues/5) and [#28](https://github.com/bageus/Dig/issues/28). Jobs and reservations are tracked by issue [#6](https://github.com/bageus/Dig/issues/6). Inventory, storage and hauling are tracked by issues [#7](https://github.com/bageus/Dig/issues/7) and [#27](https://github.com/bageus/Dig/issues/27). Buildings and construction are tracked by issue [#8](https://github.com/bageus/Dig/issues/8). Production and technology are tracked by issue [#9](https://github.com/bageus/Dig/issues/9). Unity presentation work is tracked by issue [#14](https://github.com/bageus/Dig/issues/14).
+Architecture foundation is tracked by issue [#1](https://github.com/bageus/Dig/issues/1). The deterministic simulation runtime is tracked by issue [#2](https://github.com/bageus/Dig/issues/2). The logical world and chunk model is tracked by issue [#3](https://github.com/bageus/Dig/issues/3). Navigation in the changing world is tracked by issue [#4](https://github.com/bageus/Dig/issues/4). Residents, needs and Utility AI are tracked by issues [#5](https://github.com/bageus/Dig/issues/5) and [#28](https://github.com/bageus/Dig/issues/28). Jobs and reservations are tracked by issue [#6](https://github.com/bageus/Dig/issues/6). Inventory, storage and hauling are tracked by issues [#7](https://github.com/bageus/Dig/issues/7) and [#27](https://github.com/bageus/Dig/issues/27). Buildings and construction are tracked by issue [#8](https://github.com/bageus/Dig/issues/8). Production and technology are tracked by issue [#9](https://github.com/bageus/Dig/issues/9). Quality, performance budgets and soak testing are tracked by issue [#15](https://github.com/bageus/Dig/issues/15). Unity presentation work is tracked by issue [#14](https://github.com/bageus/Dig/issues/14).
 
 ## License
 
