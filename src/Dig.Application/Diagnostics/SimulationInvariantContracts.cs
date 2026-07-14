@@ -43,12 +43,19 @@ public sealed class SimulationInvariantReport
             throw new ArgumentOutOfRangeException(nameof(tick));
         }
 
+        if (violations is null)
+        {
+            throw new ArgumentNullException(nameof(violations));
+        }
+
         Tick = tick;
-        Violations = new ReadOnlyCollection<SimulationInvariantViolation>(violations
-            .OrderBy(value => value.Code, StringComparer.Ordinal)
-            .ThenBy(value => value.EntityId?.ToString(), StringComparer.Ordinal)
-            .ThenBy(value => value.Detail, StringComparer.Ordinal)
-            .ToArray());
+        Violations = violations.Count == 0
+            ? Array.Empty<SimulationInvariantViolation>()
+            : new ReadOnlyCollection<SimulationInvariantViolation>(violations
+                .OrderBy(value => value.Code, StringComparer.Ordinal)
+                .ThenBy(value => value.EntityId?.ToString(), StringComparer.Ordinal)
+                .ThenBy(value => value.Detail, StringComparer.Ordinal)
+                .ToArray());
     }
 
     public long Tick { get; }
