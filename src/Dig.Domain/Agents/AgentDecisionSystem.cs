@@ -2,6 +2,7 @@ namespace Dig.Domain.Agents;
 
 public sealed partial class AgentDecisionSystem
 {
+    private const int CandidateCount = 7;
     private static readonly AgentSkillId GeneralWorkSkill =
         new AgentSkillId("general.work");
 
@@ -18,14 +19,15 @@ public sealed partial class AgentDecisionSystem
         }
 
         AgentIntentKind? currentIntent = agent.ActiveAction?.IntentKind;
-        Candidate[] candidates = CreateCandidates(
+        Span<Candidate> candidates = stackalloc Candidate[CandidateCount];
+        string? activeOrderId = PopulateCandidates(
             agent,
             context,
             policy,
             tick,
-            currentIntent);
+            currentIntent,
+            candidates);
         ApplyContinuityRules(agent, policy, tick, currentIntent, candidates);
-        Array.Sort(candidates, CandidateIntentComparer.Instance);
 
         int selectedIndex = SelectCandidate(candidates);
         Candidate selected = candidates[selectedIndex];
@@ -35,7 +37,7 @@ public sealed partial class AgentDecisionSystem
             selectedIndex,
             selectedReason);
         string? orderId = selected.IntentKind == AgentIntentKind.PlayerOrder
-            ? selected.PlayerOrderId
+            ? activeOrderId
             : null;
 
         return AgentDecision.CreateOwned(
@@ -82,7 +84,7 @@ public sealed partial class AgentDecisionSystem
         }
     }
 
-    private static int SelectCandidate(Candidate[] candidates)
+    private static int SelectCandidate(ReadOnlySpan<Candidate> candidates)
     {
         int selectedIndex = -1;
         for (int index = 0; index < candidates.Length; index++)
@@ -109,7 +111,7 @@ public sealed partial class AgentDecisionSystem
     }
 
     private static UtilityOptionDiagnostic[] CreateDiagnostics(
-        Candidate[] candidates,
+        ReadOnlySpan<Candidate> candidates,
         int selectedIndex,
         string selectedReason)
     {
