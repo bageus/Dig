@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using Dig.Presentation.Agents;
 using Dig.Presentation.World;
 using UnityEngine;
 
@@ -21,29 +23,44 @@ namespace Dig.Unity
 
         private void Awake()
         {
-            DigWorldSession session = DigWorldSession.CreateDemo(
+            DigWorldSession worldSession = DigWorldSession.CreateDemo(
                 demoWidth,
                 demoHeight,
                 chunkSize);
-            WorldViewModel world = session.LoadView();
+            WorldViewModel world = worldSession.LoadView();
+            DigAgentSession agentSession = DigAgentSession.CreateDemo(
+                world,
+                worldSession.Journal);
+            IReadOnlyList<AgentViewModel> agents = agentSession.LoadView();
             Camera targetCamera = EnsureCamera();
-            DigWorldRenderer renderer = GetOrAdd<DigWorldRenderer>(gameObject);
+            DigWorldRenderer worldRenderer = GetOrAdd<DigWorldRenderer>(gameObject);
+            DigAgentRenderer agentRenderer = GetOrAdd<DigAgentRenderer>(gameObject);
             DigHudOverlay hud = GetOrAdd<DigHudOverlay>(gameObject);
             DigWorldInteraction interaction = GetOrAdd<DigWorldInteraction>(gameObject);
+            DigAgentSimulationDriver simulation =
+                GetOrAdd<DigAgentSimulationDriver>(gameObject);
             DigCameraController cameraController =
                 GetOrAdd<DigCameraController>(targetCamera.gameObject);
 
             RenderSettings.ambientLight = new Color(0.58f, 0.60f, 0.66f, 1f);
-            renderer.Render(world);
+            worldRenderer.Render(world);
+            agentRenderer.Render(agents, movementDuration: 0f);
             hud.SetWorld(world);
+            hud.SetAgents(agents, agentSession.Tick);
             cameraController.Initialize(targetCamera, world);
-            interaction.Initialize(targetCamera, session, renderer, hud);
+            interaction.Initialize(
+                targetCamera,
+                worldSession,
+                worldRenderer,
+                agentRenderer,
+                hud);
+            simulation.Initialize(agentSession, agentRenderer, hud);
 
             if (logStartup)
             {
                 Debug.Log(
-                    "Dig Unity world vertical slice started. " +
-                    "WorldState remains authoritative; scene objects are rebuildable views.",
+                    "Dig Unity settlement slice started. " +
+                    "WorldState and AgentState remain authoritative; visuals are rebuildable views.",
                     this);
             }
         }
