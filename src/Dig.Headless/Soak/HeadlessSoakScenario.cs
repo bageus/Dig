@@ -101,7 +101,15 @@ internal static class HeadlessSoakScenario
         SimulationPerformanceBudget budget = new SimulationPerformanceBudget(
             maximumAverageMicroseconds: 10_000,
             maximumAverageAllocatedBytes: 2_000_000,
-            maximumSingleExecutionMilliseconds: 500);
+            maximumSingleExecutionMilliseconds: 500,
+            overrides: new[]
+            {
+                new SystemPerformanceBudgetLimit(
+                    "agents.settlement",
+                    maximumAverageMicroseconds: 500,
+                    maximumAverageAllocatedBytes: 50_000,
+                    maximumSingleExecutionMilliseconds: 100),
+            });
         SimulationPerformanceReport performanceReport = performance.CreateReport(budget);
         SimulationInvariantReport invariantReport = checker.Check(state.Clock.TickIndex);
         JobSnapshot[] jobs = jobRepository.Get().GetAll().ToArray();
