@@ -135,6 +135,14 @@ public sealed class ReservationLedger
             : null;
     }
 
+    internal void Visit(IJobInspectionVisitor visitor)
+    {
+        foreach (ReservationSnapshot reservation in _reservations.Values)
+        {
+            visitor.VisitJobReservation(reservation);
+        }
+    }
+
     public IReadOnlyList<ReservationSnapshot> CreateSnapshot()
     {
         ReservationSnapshot[] snapshot = _reservations.Values
