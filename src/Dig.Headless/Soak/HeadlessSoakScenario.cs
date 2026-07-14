@@ -114,6 +114,11 @@ internal static class HeadlessSoakScenario
                     maximumAverageMicroseconds: 100,
                     maximumAverageAllocatedBytes: 25_000,
                     maximumSingleExecutionMilliseconds: 100),
+                new SystemPerformanceBudgetLimit(
+                    "soak.invariants",
+                    maximumAverageMicroseconds: 150,
+                    maximumAverageAllocatedBytes: 25_000,
+                    maximumSingleExecutionMilliseconds: 50),
             });
         SimulationPerformanceReport performanceReport = performance.CreateReport(budget);
         SimulationInvariantReport invariantReport = checker.Check(state.Clock.TickIndex);
