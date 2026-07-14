@@ -8,11 +8,7 @@ public sealed partial class InventoryState
         ItemCategoryId categoryId,
         EntityId reservationOwnerId)
     {
-        if (categoryId.IsEmpty)
-        {
-            throw new ArgumentException("Category id cannot be empty.", nameof(categoryId));
-        }
-
+        ValidateCategoryId(categoryId);
         if (reservationOwnerId.IsEmpty)
         {
             throw new ArgumentException(
@@ -39,11 +35,7 @@ public sealed partial class InventoryState
 
     public EntityId? FindFirstAvailableStackId(ItemCategoryId categoryId)
     {
-        if (categoryId.IsEmpty)
-        {
-            throw new ArgumentException("Category id cannot be empty.", nameof(categoryId));
-        }
-
+        ValidateCategoryId(categoryId);
         ItemStackState? selected = null;
         foreach (ItemStackState stack in _stacks.Values)
         {
@@ -89,5 +81,13 @@ public sealed partial class InventoryState
             left.Id.ToString(),
             right.Id.ToString(),
             StringComparison.Ordinal);
+    }
+
+    private static void ValidateCategoryId(ItemCategoryId categoryId)
+    {
+        if (categoryId.Equals(default(ItemCategoryId)))
+        {
+            throw new ArgumentException("Category id cannot be empty.", nameof(categoryId));
+        }
     }
 }
