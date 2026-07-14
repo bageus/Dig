@@ -166,7 +166,7 @@ namespace Dig.Unity
                     DailySchedule.CreateBalanced(24),
                     skills: null,
                     traits: null,
-                    new CellId(cell.X, cell.Y));
+                    initialPosition: new CellId(cell.X, cell.Y));
                 Result added = repository.Add(agent);
                 if (added.IsFailure)
                 {
