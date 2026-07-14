@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Dig.Presentation.Agents;
+using Dig.Presentation.Jobs;
 using Dig.Presentation.World;
 using UnityEngine;
 
@@ -32,9 +33,15 @@ namespace Dig.Unity
                 world,
                 worldSession.Journal);
             IReadOnlyList<AgentViewModel> agents = agentSession.LoadView();
+            DigJobSession jobSession = DigJobSession.CreateDemo(
+                world,
+                agents,
+                worldSession.Journal);
+            IReadOnlyList<JobOverlayViewModel> jobs = jobSession.LoadView();
             Camera targetCamera = EnsureCamera();
             DigWorldRenderer worldRenderer = GetOrAdd<DigWorldRenderer>(gameObject);
             DigAgentRenderer agentRenderer = GetOrAdd<DigAgentRenderer>(gameObject);
+            DigJobRenderer jobRenderer = GetOrAdd<DigJobRenderer>(gameObject);
             DigHudOverlay hud = GetOrAdd<DigHudOverlay>(gameObject);
             DigWorldInteraction interaction = GetOrAdd<DigWorldInteraction>(gameObject);
             DigAgentSimulationDriver simulation =
@@ -45,22 +52,31 @@ namespace Dig.Unity
             RenderSettings.ambientLight = new Color(0.58f, 0.60f, 0.66f, 1f);
             worldRenderer.Render(world);
             agentRenderer.Render(agents, movementDuration: 0f);
+            jobRenderer.Initialize(agentRenderer);
+            jobRenderer.Render(jobs);
             hud.SetWorld(world);
             hud.SetAgents(agents, agentSession.Tick);
+            hud.SetJobs(jobs);
             cameraController.Initialize(targetCamera, world);
             interaction.Initialize(
                 targetCamera,
                 worldSession,
                 worldRenderer,
                 agentRenderer,
+                jobRenderer,
                 hud);
-            simulation.Initialize(agentSession, agentRenderer, hud);
+            simulation.Initialize(
+                agentSession,
+                agentRenderer,
+                jobSession,
+                jobRenderer,
+                hud);
 
             if (logStartup)
             {
                 Debug.Log(
-                    "Dig Unity settlement slice started. " +
-                    "WorldState and AgentState remain authoritative; visuals are rebuildable views.",
+                    "Dig Unity settlement slice started. World, Agents, Jobs and " +
+                    "ReservationLedger remain authoritative; overlays are rebuildable views.",
                     this);
             }
         }
