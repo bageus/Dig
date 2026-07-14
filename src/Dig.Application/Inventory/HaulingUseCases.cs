@@ -46,10 +46,8 @@ public sealed class CreateHaulingJobHandler
         }
 
         ItemDefinition item = inventory.Catalog.Get(stack.ItemId);
-        int occupied = inventory.CreateSnapshot().Stacks
-            .Where(value => value.Location == ItemLocation.InStorage(
-                command.DestinationStorageId))
-            .Sum(value => value.Quantity);
+        int occupied = inventory.GetTotalQuantityAt(
+            ItemLocation.InStorage(command.DestinationStorageId));
         Result destinationReserved = storage.ReserveIncoming(
             command.DestinationStorageId,
             command.JobId,
