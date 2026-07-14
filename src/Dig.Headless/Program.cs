@@ -6,6 +6,7 @@ using Dig.Application.Navigation;
 using Dig.Application.Runtime;
 using Dig.Application.World;
 using Dig.Domain.Agents;
+using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
@@ -190,6 +191,20 @@ internal static class Program
             throw new InvalidOperationException("Headless hauling did not conserve the resource.");
         }
 
+        BuildingSnapshot completedBuilding = HeadlessBuildingScenario.Run(
+            state,
+            journal,
+            worldRepository,
+            inventoryRepository,
+            jobRepository,
+            jobCandidates,
+            residentId,
+            residentSnapshot,
+            resourceStackId,
+            rockChunk,
+            target,
+            startTick: 29);
+
         List<TerrainChange> corridor = new List<TerrainChange>();
         for (int x = 0; x < world.Size.Width; x++)
         {
@@ -203,7 +218,7 @@ internal static class Program
                     temperature: 20)));
         }
 
-        Require(world.ApplyTerrainChanges(corridor, tick: 29));
+        Require(world.ApplyTerrainChanges(corridor, tick: 42));
         TraversalProfile profile = TraversalProfile.CreateGroundedDwarf();
         InMemoryNavigationRepository navigationRepository =
             new InMemoryNavigationRepository();
@@ -233,9 +248,9 @@ internal static class Program
             $"Headless simulation completed at tick {state.Clock.TickIndex} "
             + $"with {state.Entities.Count} entities, resident intent "
             + $"{residentSnapshot.LastDecision.SelectedIntent}, dig {completedDig.Status}, "
-            + $"haul {completedHaul.Status}, stored {inventory.GetTotal(rockChunk)} resource, "
-            + $"world version {world.Version}, {navigationSnapshot.Regions.Count} regions and "
-            + $"a {route.Path!.Cells.Count}-cell route.");
+            + $"haul {completedHaul.Status}, building {completedBuilding.Status}, "
+            + $"remaining resources {inventory.GetTotal(rockChunk)}, world version {world.Version}, "
+            + $"{navigationSnapshot.Regions.Count} regions and a {route.Path!.Cells.Count}-cell route.");
         return 0;
     }
 
