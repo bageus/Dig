@@ -1,10 +1,12 @@
 using Dig.Application.Agents;
+using Dig.Application.Jobs;
 using Dig.Application.Messaging;
 using Dig.Application.Navigation;
 using Dig.Application.Runtime;
 using Dig.Application.World;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
+using Dig.Domain.Jobs;
 using Dig.Domain.Navigation;
 using Dig.Domain.Runtime;
 using Dig.Domain.World;
@@ -78,23 +80,65 @@ internal static class Program
         InMemoryWorldRepository worldRepository = new InMemoryWorldRepository(world);
         CommandPipeline commands = new CommandPipeline(journal);
         CellId target = new CellId(3, 3);
+        EntityId digJobId = Require(state.Entities.RegisterNew());
+        InMemoryJobRepository jobRepository = new InMemoryJobRepository();
+        InMemoryJobCandidateProvider jobCandidates = new InMemoryJobCandidateProvider();
+        CreateDigJobHandler createJob = new CreateDigJobHandler(jobRepository, journal);
+        AssignAvailableJobsHandler assignJobs = new AssignAvailableJobsHandler(
+            jobRepository,
+            jobCandidates,
+            journal);
+        AdvanceJobHandler advanceJob = new AdvanceJobHandler(jobRepository, journal);
+        DigJobDefinition digJob = new DigJobDefinition(
+            digJobId,
+            new DigJobTarget(target),
+            priority: 700,
+            createdTick: 20,
+            JobRetryPolicy.Default);
+        Require(createJob.Handle(new CreateDigJobCommand(digJob, makeAvailable: true)));
+        jobCandidates.SetCandidates(
+            digJobId,
+            new[]
+            {
+                new JobCandidate(
+                    residentId,
+                    skillLevel: residentSnapshot.GetSkillLevel(new AgentSkillId("general.work")),
+                    distanceCost: 6,
+                    isAvailable: true),
+            });
+        JobAssignmentReport assignment = assignJobs.Handle(
+            new AssignAvailableJobsCommand(tick: 20));
+        if (assignment.Assignments.Count != 1 || assignment.Failures.Count != 0)
+        {
+            throw new InvalidOperationException("Headless digging job was not assigned.");
+        }
+
+        Require(advanceJob.Handle(new AdvanceJobCommand(digJobId, tick: 20)));
+        Require(advanceJob.Handle(new AdvanceJobCommand(digJobId, tick: 21)));
 
         Require(commands.Execute(
-            new DesignateDiggingCommand(target, designated: true, tick: 20),
+            new DesignateDiggingCommand(target, designated: true, tick: 21),
             new DesignateDiggingCommandHandler(worldRepository, journal),
-            tick: 20));
-        Require(commands.Execute(
-            new ExcavateCellCommand(target, air, tick: 21),
-            new ExcavateCellCommandHandler(worldRepository, journal),
             tick: 21));
+        Require(commands.Execute(
+            new ExcavateCellCommand(target, air, tick: 22),
+            new ExcavateCellCommandHandler(worldRepository, journal),
+            tick: 22));
+        Require(advanceJob.Handle(new AdvanceJobCommand(digJobId, tick: 22)));
+        Require(advanceJob.Handle(new AdvanceJobCommand(digJobId, tick: 23)));
 
         Result<CellSnapshot> cellResult = new QueryPipeline().Execute(
             new GetCellQuery(target),
             new GetCellQueryHandler(worldRepository));
         CellSnapshot cell = Require(cellResult);
-        if (cell.IsSolid)
+        JobSnapshot completedJob = jobRepository.Get().Get(digJobId)
+            ?? throw new InvalidOperationException("Headless digging job disappeared.");
+        if (cell.IsSolid
+            || completedJob.Status != JobStatus.Completed
+            || jobRepository.Get().GetReservations().Count != 0)
         {
-            throw new InvalidOperationException("Excavated headless cell remained solid.");
+            throw new InvalidOperationException(
+                "Headless digging job did not complete and release reservations.");
         }
 
         List<TerrainChange> corridor = new List<TerrainChange>();
@@ -110,7 +154,7 @@ internal static class Program
                     temperature: 20)));
         }
 
-        Require(world.ApplyTerrainChanges(corridor, tick: 22));
+        Require(world.ApplyTerrainChanges(corridor, tick: 24));
         TraversalProfile profile = TraversalProfile.CreateGroundedDwarf();
         InMemoryNavigationRepository navigationRepository =
             new InMemoryNavigationRepository();
@@ -142,7 +186,8 @@ internal static class Program
         Console.WriteLine(
             $"Headless simulation completed at tick {state.Clock.TickIndex} "
             + $"with {state.Entities.Count} entities, resident intent "
-            + $"{residentSnapshot.LastDecision.SelectedIntent}, world version {world.Version}, "
+            + $"{residentSnapshot.LastDecision.SelectedIntent}, job {completedJob.Status}, "
+            + $"world version {world.Version}, "
             + $"{navigationSnapshot.Regions.Count} navigation regions and "
             + $"a {route.Path!.Cells.Count}-cell route.");
         return 0;
