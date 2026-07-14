@@ -52,7 +52,7 @@ public sealed class JobPresenter
 
         return new JobDiagnosticView(
             snapshot.Id.ToString(),
-            snapshot.Definition.Target.ToString(),
+            snapshot.Definition.Description,
             snapshot.Status.ToString(),
             snapshot.Stage.ToString(),
             snapshot.AssignedAgentId?.ToString(),
