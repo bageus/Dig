@@ -3,7 +3,7 @@ using Dig.Domain.Core;
 
 namespace Dig.Domain.Jobs;
 
-public sealed class JobSystem : AggregateRoot
+public sealed partial class JobSystem : AggregateRoot
 {
     private readonly Dictionary<EntityId, JobState> _jobs =
         new Dictionary<EntityId, JobState>();

@@ -97,6 +97,7 @@ Dedicated regression budgets:
 |---|---:|---:|---:|
 | `agents.settlement` | 500 microseconds | 50000 bytes | 100 milliseconds |
 | `soak.hauling` | 100 microseconds | 25000 bytes | 100 milliseconds |
+| `soak.invariants` | 150 microseconds | 25000 bytes | 50 milliseconds |
 
 Budgets must be tightened from retained reports rather than guessed. A budget increase requires a documented reason and should not be used to hide a regression.
 
@@ -165,19 +166,40 @@ The budget-enforced Linux CI soak produced:
 
 | Result | Before | After | Change |
 |---|---:|---:|---:|
-| Overall wall-clock | 1286.58 ms | 620.77 ms | -51.7% |
-| Hauling average time | 162.24 us | 35.95 us | -77.8% |
-| Hauling maximum time | 23.11 ms | 13.23 ms | -42.8% |
-| Hauling average allocations | 60767 bytes | 13117 bytes | -78.4% |
-| Hauling total allocations | 122749848 bytes | 26496616 bytes | -78.4% |
+| Overall wall-clock | 1286.58 ms | 679.28 ms | -47.2% |
+| Hauling average time | 162.24 us | 35.30 us | -78.2% |
+| Hauling maximum time | 23.11 ms | 15.97 ms | -30.9% |
+| Hauling average allocations | 60767 bytes | 13114 bytes | -78.4% |
+| Hauling total allocations | 122749848 bytes | 26490424 bytes | -78.4% |
 
-Authoritative behavior did not change across the settlement and hauling optimizations. The retained state hash is:
+## Invariant checker allocation optimization
+
+Issue #37 replaces full diagnostic snapshots with owner-owned inspection visitors:
+
+- Inventory visits stack quantities and reservations directly;
+- Jobs visits lifecycle state and reservation ledger entries without creating `JobSnapshot` history;
+- Storage and Facilities visit only current reservations;
+- cross-system hauling links use point quantity and reservation lookups;
+- job-by-agent and facility-agent validation buffers are reused across ticks;
+- valid reports share the empty violation array;
+- violation objects and formatted details are created only when a rule actually fails.
+
+The first optimized Linux CI soak produced:
+
+| Result | Before | After | Change |
+|---|---:|---:|---:|
+| Invariant average time | 165.69 us | 84.93 us | -48.7% |
+| Invariant maximum time | 19.02 ms | 7.26 ms | -61.8% |
+| Invariant average allocations | 84509 bytes | 16875 bytes | -80.0% |
+| Invariant total allocations | 170710016 bytes | 34088096 bytes | -80.0% |
+
+Authoritative behavior did not change across the optimizations. The retained state hash is:
 
 ```text
 B315282B332B67B4EEE68D3B3C59D997013C014A947B534106DA7FD75EC04480
 ```
 
-The final run also retained 500 / 500 / 500 spawned, total and stored ore, completed 100 hauling jobs and ended with zero active hauling jobs, Jobs reservations, Storage reservations, invariant violations or budget violations.
+The optimized runs retain 500 / 500 / 500 spawned, total and stored ore, complete 100 hauling jobs and end with zero active hauling jobs, Jobs reservations, Storage reservations, invariant violations or budget violations.
 
 ## Bounded diagnostics
 
@@ -206,7 +228,7 @@ The JSON report exposes retained and dropped totals so diagnostic pressure remai
 - sleep and leisure actions owning the correct facility reservation;
 - facility reservations referencing the matching active resident target.
 
-The checker returns an immutable report and can throw with all sorted violations in debug, test or soak modes.
+The checker returns an immutable report. Valid checks use the shared empty result, while failed checks retain deterministic sorting by code, entity and detail and can throw with the complete report in debug, test or soak modes.
 
 ## CI artifacts
 
