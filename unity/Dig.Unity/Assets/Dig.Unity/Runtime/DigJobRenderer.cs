@@ -119,11 +119,12 @@ namespace Dig.Unity
 
             foreach (DigJobVisual visual in _jobs.Values)
             {
+                Vector3 workerPosition = default;
                 string? agentId = visual.Model.AssignedAgentId;
                 bool showLink = agentId != null
                     && visual.Model.Reservations.Count > 0
-                    && _agents.TryGetWorldPosition(agentId, out Vector3 workerPosition);
-                visual.SetWorkerLink(showLink, showLink ? workerPosition : default);
+                    && _agents.TryGetWorldPosition(agentId, out workerPosition);
+                visual.SetWorkerLink(showLink, workerPosition);
             }
         }
 
@@ -196,6 +197,14 @@ namespace Dig.Unity
                 shader,
                 "Job Completed",
                 new Color(0.42f, 0.48f, 0.42f, 1f)));
+            _statusMaterials.Add("Cancelled", CreateMaterial(
+                shader,
+                "Job Cancelled",
+                new Color(0.48f, 0.42f, 0.42f, 1f)));
+            _statusMaterials.Add("Failed", CreateMaterial(
+                shader,
+                "Job Failed",
+                new Color(0.82f, 0.18f, 0.18f, 1f)));
         }
 
         private Material ResolveMaterial(string status)
