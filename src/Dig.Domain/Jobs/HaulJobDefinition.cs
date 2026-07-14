@@ -23,6 +23,29 @@ public sealed class HaulJobDefinition : JobDefinition
         long createdTick,
         JobRetryPolicy retryPolicy,
         IEnumerable<EntityId>? dependencies = null)
+        : this(
+            id,
+            sourceStackId,
+            itemId,
+            quantity,
+            ItemLocation.InStorage(destinationStorageId),
+            priority,
+            createdTick,
+            retryPolicy,
+            dependencies)
+    {
+    }
+
+    public HaulJobDefinition(
+        EntityId id,
+        EntityId sourceStackId,
+        ItemId itemId,
+        int quantity,
+        ItemLocation destination,
+        int priority,
+        long createdTick,
+        JobRetryPolicy retryPolicy,
+        IEnumerable<EntityId>? dependencies = null)
         : base(id, priority, createdTick, retryPolicy, HaulStages, dependencies)
     {
         if (sourceStackId.IsEmpty)
@@ -40,17 +63,15 @@ public sealed class HaulJobDefinition : JobDefinition
             throw new ArgumentOutOfRangeException(nameof(quantity));
         }
 
-        if (destinationStorageId.IsEmpty)
+        if (!destination.HasOwner && !destination.HasCell)
         {
-            throw new ArgumentException(
-                "Destination storage id cannot be empty.",
-                nameof(destinationStorageId));
+            throw new ArgumentException("Hauling destination is required.", nameof(destination));
         }
 
         SourceStackId = sourceStackId;
         ItemId = itemId;
         Quantity = quantity;
-        DestinationStorageId = destinationStorageId;
+        Destination = destination;
     }
 
     public EntityId SourceStackId { get; }
@@ -59,10 +80,15 @@ public sealed class HaulJobDefinition : JobDefinition
 
     public int Quantity { get; }
 
-    public EntityId DestinationStorageId { get; }
+    public ItemLocation Destination { get; }
+
+    public EntityId DestinationStorageId =>
+        Destination.Kind == ItemLocationKind.Storage && Destination.HasOwner
+            ? Destination.OwnerId
+            : default;
 
     public override string Description =>
-        $"Haul:{Quantity} {ItemId} {SourceStackId}->{DestinationStorageId}";
+        $"Haul:{Quantity} {ItemId} {SourceStackId}->{Destination}";
 
     public override IReadOnlyList<ReservationKey> CreateReservationKeys()
     {
