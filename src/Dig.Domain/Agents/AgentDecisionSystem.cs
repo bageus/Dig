@@ -1,11 +1,54 @@
 namespace Dig.Domain.Agents;
 
-public sealed class AgentDecisionSystem
+public sealed partial class AgentDecisionSystem
 {
     private static readonly AgentSkillId GeneralWorkSkill =
         new AgentSkillId("general.work");
 
     public AgentDecision Decide(
+        AgentSnapshot agent,
+        AgentDecisionContext context,
+        AgentBehaviorPolicy policy,
+        long tick)
+    {
+        ValidateInputs(agent, context, policy, tick);
+        if (!agent.IsAlive)
+        {
+            return CreateDeadDecision(tick);
+        }
+
+        AgentIntentKind? currentIntent = agent.ActiveAction?.IntentKind;
+        Candidate[] candidates = CreateCandidates(
+            agent,
+            context,
+            policy,
+            tick,
+            currentIntent);
+        ApplyContinuityRules(agent, policy, tick, currentIntent, candidates);
+        Array.Sort(candidates, CandidateIntentComparer.Instance);
+
+        int selectedIndex = SelectCandidate(candidates);
+        Candidate selected = candidates[selectedIndex];
+        string selectedReason = GetSelectedReason(selected, currentIntent);
+        UtilityOptionDiagnostic[] diagnostics = CreateDiagnostics(
+            candidates,
+            selectedIndex,
+            selectedReason);
+        string? orderId = selected.IntentKind == AgentIntentKind.PlayerOrder
+            ? selected.PlayerOrderId
+            : null;
+
+        return AgentDecision.CreateOwned(
+            tick,
+            selected.IntentKind,
+            orderId,
+            selected.FinalScore,
+            selected.Critical,
+            selectedReason,
+            diagnostics);
+    }
+
+    private static void ValidateInputs(
         AgentSnapshot agent,
         AgentDecisionContext context,
         AgentBehaviorPolicy policy,
@@ -37,186 +80,60 @@ public sealed class AgentDecisionSystem
                 nameof(tick),
                 "Decision tick cannot precede the active action switch tick.");
         }
-
-        if (!agent.IsAlive)
-        {
-            return CreateDeadDecision(tick);
-        }
-
-        AgentIntentKind? currentIntent = agent.ActiveAction?.IntentKind;
-        List<Candidate> candidates = CreateCandidates(
-            agent,
-            context,
-            policy,
-            tick,
-            currentIntent);
-        ApplyContinuityRules(agent, policy, tick, currentIntent, candidates);
-
-        Candidate selected = candidates
-            .Where(candidate => candidate.Available && !candidate.BlockedByCooldown)
-            .OrderByDescending(candidate => candidate.FinalScore)
-            .ThenBy(candidate => GetTieBreakRank(candidate.IntentKind))
-            .First();
-
-        string selectedReason = GetSelectedReason(selected, currentIntent);
-        UtilityOptionDiagnostic[] diagnostics = candidates
-            .OrderBy(candidate => GetTieBreakRank(candidate.IntentKind))
-            .Select(candidate => CreateDiagnostic(candidate, selected, selectedReason))
-            .ToArray();
-        string? orderId = selected.IntentKind == AgentIntentKind.PlayerOrder
-            ? selected.PlayerOrderId
-            : null;
-
-        return new AgentDecision(
-            tick,
-            selected.IntentKind,
-            orderId,
-            selected.FinalScore,
-            selected.Critical,
-            selectedReason,
-            BuildExplanation(selected, selectedReason),
-            diagnostics);
     }
 
-    private static List<Candidate> CreateCandidates(
-        AgentSnapshot agent,
-        AgentDecisionContext context,
-        AgentBehaviorPolicy policy,
-        long tick,
-        AgentIntentKind? currentIntent)
+    private static int SelectCandidate(Candidate[] candidates)
     {
-        AgentUtilityPolicy utility = policy.Utility;
-        bool currentFlee = currentIntent == AgentIntentKind.Flee;
-        bool fleeCritical = context.ThreatLevel >= utility.CriticalThreatThreshold;
-        Candidate flee = new Candidate(
-            AgentIntentKind.Flee,
-            context.ThreatLevel,
-            context.EscapeRouteAvailable && (context.ThreatLevel > 0 || currentFlee),
-            fleeCritical,
-            null);
-
-        bool eatCritical = agent.Needs.Nutrition.IsAtOrBelow(
-            policy.Needs.CriticalThreshold);
-        Candidate eat = new Candidate(
-            AgentIntentKind.Eat,
-            agent.Needs.Nutrition.Deficit,
-            context.FoodAvailable || currentIntent == AgentIntentKind.Eat,
-            eatCritical,
-            null);
-
-        bool sleepCritical = agent.Needs.Alertness.IsAtOrBelow(
-            policy.Needs.CriticalThreshold);
-        int sleepScore = agent.Needs.Alertness.Deficit;
-        if (agent.ScheduledActivity == ScheduleActivity.Sleep)
+        int selectedIndex = -1;
+        for (int index = 0; index < candidates.Length; index++)
         {
-            sleepScore = checked(sleepScore + utility.SleepScheduleBonus);
-        }
-
-        Candidate sleep = new Candidate(
-            AgentIntentKind.Sleep,
-            sleepScore,
-            context.BedAvailable || currentIntent == AgentIntentKind.Sleep,
-            sleepCritical,
-            null);
-
-        PlayerOrder? order = agent.PlayerOrder is not null
-            && agent.PlayerOrder.IsActiveAt(tick)
-            ? agent.PlayerOrder
-            : null;
-        string? activeOrderId = order?.Id
-            ?? (currentIntent == AgentIntentKind.PlayerOrder
-                ? agent.ActiveAction?.PlayerOrderId
-                : null);
-        int orderPriority = order?.Priority ?? 0;
-        Candidate playerOrder = new Candidate(
-            AgentIntentKind.PlayerOrder,
-            checked(utility.PlayerOrderBaseScore + orderPriority),
-            order is not null || currentIntent == AgentIntentKind.PlayerOrder,
-            critical: false,
-            activeOrderId);
-
-        int workScore = agent.ScheduledActivity == ScheduleActivity.Work
-            ? utility.WorkScheduleScore
-            : utility.OffScheduleWorkScore;
-        workScore = checked(
-            workScore
-            + (agent.GetSkillLevel(GeneralWorkSkill) / 20)
-            + (agent.Needs.Mood.Points / 50));
-        Candidate work = new Candidate(
-            AgentIntentKind.Work,
-            workScore,
-            context.WorkAvailable || currentIntent == AgentIntentKind.Work,
-            critical: false,
-            null);
-
-        int restScore = agent.Needs.Mood.Deficit;
-        if (agent.ScheduledActivity == ScheduleActivity.Rest)
-        {
-            restScore = checked(restScore + utility.RestScheduleBonus);
-        }
-
-        Candidate rest = new Candidate(
-            AgentIntentKind.Rest,
-            restScore,
-            context.RestAvailable || currentIntent == AgentIntentKind.Rest,
-            critical: false,
-            null);
-        Candidate idle = new Candidate(
-            AgentIntentKind.Idle,
-            utility.IdleScore,
-            available: true,
-            critical: false,
-            null);
-
-        Candidate[] candidates = { flee, eat, sleep, playerOrder, work, rest, idle };
-        foreach (Candidate candidate in candidates)
-        {
-            if (candidate.Critical)
+            Candidate candidate = candidates[index];
+            if (!candidate.Available || candidate.BlockedByCooldown)
             {
-                candidate.FinalScore = checked(
-                    candidate.FinalScore + utility.CriticalBonus);
+                continue;
+            }
+
+            if (selectedIndex < 0
+                || candidate.FinalScore > candidates[selectedIndex].FinalScore)
+            {
+                selectedIndex = index;
             }
         }
 
-        return candidates.ToList();
+        if (selectedIndex < 0)
+        {
+            throw new InvalidOperationException("Utility AI has no eligible candidate.");
+        }
+
+        return selectedIndex;
     }
 
-    private static void ApplyContinuityRules(
-        AgentSnapshot agent,
-        AgentBehaviorPolicy policy,
-        long tick,
-        AgentIntentKind? currentIntent,
-        IEnumerable<Candidate> candidates)
+    private static UtilityOptionDiagnostic[] CreateDiagnostics(
+        Candidate[] candidates,
+        int selectedIndex,
+        string selectedReason)
     {
-        bool cooldownActive = currentIntent.HasValue
-            && agent.LastActionSwitchTick >= 0
-            && tick - agent.LastActionSwitchTick < policy.Utility.DecisionCooldownTicks;
-
-        foreach (Candidate candidate in candidates)
+        UtilityOptionDiagnostic[] diagnostics =
+            new UtilityOptionDiagnostic[candidates.Length];
+        for (int index = 0; index < candidates.Length; index++)
         {
-            if (currentIntent == candidate.IntentKind)
-            {
-                candidate.FinalScore = checked(
-                    candidate.FinalScore + policy.Utility.HysteresisBonus);
-                candidate.ReceivedHysteresis = true;
-            }
-
-            bool bypassCooldown = candidate.Critical
-                || candidate.IntentKind == AgentIntentKind.PlayerOrder
-                || candidate.IntentKind == currentIntent;
-            candidate.BlockedByCooldown = cooldownActive && !bypassCooldown;
+            diagnostics[index] = CreateDiagnostic(
+                candidates[index],
+                index == selectedIndex,
+                selectedReason);
         }
+
+        return diagnostics;
     }
 
     private static UtilityOptionDiagnostic CreateDiagnostic(
         Candidate candidate,
-        Candidate selected,
+        bool selected,
         string selectedReason)
     {
-        bool isSelected = ReferenceEquals(candidate, selected);
         string reason;
         string detail;
-        if (isSelected)
+        if (selected)
         {
             reason = selectedReason;
             detail = "Selected as the highest eligible deterministic utility option.";
@@ -243,7 +160,7 @@ public sealed class AgentDecisionSystem
             candidate.FinalScore,
             candidate.Available,
             candidate.Critical,
-            isSelected,
+            selected,
             reason,
             detail);
     }
@@ -270,16 +187,6 @@ public sealed class AgentDecisionSystem
         return "selected.utility";
     }
 
-    private static string BuildExplanation(Candidate selected, string reasonCode)
-    {
-        return $"{selected.IntentKind} selected with score {selected.FinalScore} ({reasonCode}).";
-    }
-
-    private static int GetTieBreakRank(AgentIntentKind intentKind)
-    {
-        return (int)intentKind;
-    }
-
     private static AgentDecision CreateDeadDecision(long tick)
     {
         UtilityOptionDiagnostic option = new UtilityOptionDiagnostic(
@@ -300,39 +207,5 @@ public sealed class AgentDecisionSystem
             "selected.agent_dead",
             "Agent is dead and remains idle.",
             new[] { option });
-    }
-
-    private sealed class Candidate
-    {
-        public Candidate(
-            AgentIntentKind intentKind,
-            int baseScore,
-            bool available,
-            bool critical,
-            string? playerOrderId)
-        {
-            IntentKind = intentKind;
-            BaseScore = baseScore;
-            FinalScore = baseScore;
-            Available = available;
-            Critical = critical;
-            PlayerOrderId = playerOrderId;
-        }
-
-        public AgentIntentKind IntentKind { get; }
-
-        public int BaseScore { get; }
-
-        public int FinalScore { get; set; }
-
-        public bool Available { get; }
-
-        public bool Critical { get; }
-
-        public string? PlayerOrderId { get; }
-
-        public bool ReceivedHysteresis { get; set; }
-
-        public bool BlockedByCooldown { get; set; }
     }
 }

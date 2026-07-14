@@ -49,7 +49,7 @@ public sealed class AgentDecisionContext
     }
 }
 
-public sealed class UtilityOptionDiagnostic
+public readonly struct UtilityOptionDiagnostic
 {
     public UtilityOptionDiagnostic(
         AgentIntentKind intentKind,
@@ -100,6 +100,8 @@ public sealed class UtilityOptionDiagnostic
 
 public sealed class AgentDecision
 {
+    private string? _explanation;
+
     public AgentDecision(
         long tick,
         AgentIntentKind selectedIntent,
@@ -110,24 +112,10 @@ public sealed class AgentDecision
         string explanation,
         IReadOnlyCollection<UtilityOptionDiagnostic> options)
     {
-        if (tick < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(tick));
-        }
-
-        if (string.IsNullOrWhiteSpace(reasonCode))
-        {
-            throw new ArgumentException("Reason code is required.", nameof(reasonCode));
-        }
-
+        Validate(tick, reasonCode, options);
         if (string.IsNullOrWhiteSpace(explanation))
         {
             throw new ArgumentException("Explanation is required.", nameof(explanation));
-        }
-
-        if (options is null)
-        {
-            throw new ArgumentNullException(nameof(options));
         }
 
         Tick = tick;
@@ -135,9 +123,28 @@ public sealed class AgentDecision
         SelectedPlayerOrderId = selectedPlayerOrderId;
         SelectedScore = selectedScore;
         Critical = critical;
-        ReasonCode = reasonCode;
-        Explanation = explanation;
+        ReasonCode = reasonCode.Trim();
+        _explanation = explanation.Trim();
         Options = new ReadOnlyCollection<UtilityOptionDiagnostic>(options.ToArray());
+    }
+
+    private AgentDecision(
+        long tick,
+        AgentIntentKind selectedIntent,
+        string? selectedPlayerOrderId,
+        int selectedScore,
+        bool critical,
+        string reasonCode,
+        UtilityOptionDiagnostic[] ownedOptions)
+    {
+        Validate(tick, reasonCode, ownedOptions);
+        Tick = tick;
+        SelectedIntent = selectedIntent;
+        SelectedPlayerOrderId = selectedPlayerOrderId;
+        SelectedScore = selectedScore;
+        Critical = critical;
+        ReasonCode = reasonCode;
+        Options = new ReadOnlyCollection<UtilityOptionDiagnostic>(ownedOptions);
     }
 
     public long Tick { get; }
@@ -152,7 +159,52 @@ public sealed class AgentDecision
 
     public string ReasonCode { get; }
 
-    public string Explanation { get; }
+    public string Explanation => _explanation ??= BuildExplanation();
 
     public IReadOnlyList<UtilityOptionDiagnostic> Options { get; }
+
+    internal static AgentDecision CreateOwned(
+        long tick,
+        AgentIntentKind selectedIntent,
+        string? selectedPlayerOrderId,
+        int selectedScore,
+        bool critical,
+        string reasonCode,
+        UtilityOptionDiagnostic[] ownedOptions)
+    {
+        return new AgentDecision(
+            tick,
+            selectedIntent,
+            selectedPlayerOrderId,
+            selectedScore,
+            critical,
+            reasonCode,
+            ownedOptions);
+    }
+
+    private string BuildExplanation()
+    {
+        return $"{SelectedIntent} selected with score {SelectedScore} ({ReasonCode}).";
+    }
+
+    private static void Validate(
+        long tick,
+        string reasonCode,
+        IReadOnlyCollection<UtilityOptionDiagnostic> options)
+    {
+        if (tick < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(tick));
+        }
+
+        if (string.IsNullOrWhiteSpace(reasonCode))
+        {
+            throw new ArgumentException("Reason code is required.", nameof(reasonCode));
+        }
+
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+    }
 }
