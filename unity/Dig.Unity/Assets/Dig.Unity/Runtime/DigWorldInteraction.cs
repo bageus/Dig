@@ -11,6 +11,7 @@ namespace Dig.Unity
         private DigWorldSession? _session;
         private DigWorldRenderer? _renderer;
         private DigAgentRenderer? _agentRenderer;
+        private DigJobRenderer? _jobRenderer;
         private DigHudOverlay? _hud;
 
         internal void Initialize(
@@ -18,12 +19,14 @@ namespace Dig.Unity
             DigWorldSession session,
             DigWorldRenderer renderer,
             DigAgentRenderer agentRenderer,
+            DigJobRenderer jobRenderer,
             DigHudOverlay hud)
         {
             _camera = targetCamera;
             _session = session;
             _renderer = renderer;
             _agentRenderer = agentRenderer;
+            _jobRenderer = jobRenderer;
             _hud = hud;
         }
 
@@ -33,6 +36,7 @@ namespace Dig.Unity
                 || _session == null
                 || _renderer == null
                 || _agentRenderer == null
+                || _jobRenderer == null
                 || _hud == null)
             {
                 return;
@@ -56,8 +60,22 @@ namespace Dig.Unity
                 if (select)
                 {
                     _renderer.Select(null);
+                    _jobRenderer.Select(null);
                     _agentRenderer.Select(agent);
                     _hud.SetAgentSelection(agent.Model);
+                }
+
+                return;
+            }
+
+            if (_jobRenderer.TryGetJob(hit, out DigJobVisual job))
+            {
+                if (select)
+                {
+                    _renderer.Select(null);
+                    _agentRenderer.Select(null);
+                    _jobRenderer.Select(job);
+                    _hud.SetJobSelection(job.Model);
                 }
 
                 return;
@@ -69,6 +87,7 @@ namespace Dig.Unity
             }
 
             _agentRenderer.Select(null);
+            _jobRenderer.Select(null);
             _renderer.Select(cell);
             _hud.SetSelection(cell.Model);
             if (updateCell)
