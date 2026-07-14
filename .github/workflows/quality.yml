@@ -5,52 +5,9 @@ on:
   pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  migrate-unity-csharp9:
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.head_ref == 'agent/unity-csharp9-compatibility' &&
-      github.actor != 'github-actions[bot]'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout PR branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 0
-
-      - name: Convert source to C# 9
-        shell: bash
-        run: |
-          set -o pipefail
-          python tools/migrations/convert_to_unity_csharp9.py 2>&1 | tee migration.log
-
-      - name: Upload migration log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: unity-csharp9-migration-log
-          path: migration.log
-          if-no-files-found: warn
-          retention-days: 7
-
-      - name: Commit migration
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Directory.Build.props src tests unity
-          if git diff --cached --quiet; then
-            echo "No migration changes were required."
-            exit 0
-          fi
-          git commit -m "Convert source to Unity-compatible C# 9"
-          git push origin HEAD:${{ github.head_ref }}
-
   build-and-test:
     runs-on: ubuntu-latest
 
@@ -65,20 +22,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Run architecture and file-size checks
-        shell: bash
-        run: |
-          set -o pipefail
-          python tools/quality/check_quality.py 2>&1 | tee quality.log
-
-      - name: Upload quality log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: quality-log
-          path: quality.log
-          if-no-files-found: warn
-          retention-days: 7
+      - name: Run architecture, file-size and C# compatibility checks
+        run: python tools/quality/check_quality.py
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
