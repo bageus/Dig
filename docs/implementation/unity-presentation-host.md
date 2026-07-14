@@ -21,6 +21,12 @@ At runtime the bootstrap creates a deterministic demonstration cavern and render
 
 See [`unity-world-vertical-slice.md`](unity-world-vertical-slice.md) for controls, state ownership, visual conventions and the query-command-refresh flow.
 
+## Interactive resident slice
+
+The same scene creates four authoritative resident aggregates with logical cell positions. Their needs and Utility AI decisions advance on fixed demo ticks, movement is committed through Application commands, and rebuildable Unity visuals interpolate between confirmed cells.
+
+Left-click a resident to inspect its needs, active action, decision reason and all Utility AI alternatives. See [`unity-resident-presentation.md`](unity-resident-presentation.md) for ownership, interpolation and current demo limitations.
+
 ## Core integration
 
 `unity/Dig.Unity/Packages/manifest.json` references `src/` as a local UPM package:

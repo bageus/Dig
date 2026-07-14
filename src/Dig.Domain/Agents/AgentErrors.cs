@@ -21,6 +21,10 @@ public static class AgentErrors
         "agents.player_order.inactive",
         "The player order is not active at the requested tick.");
 
+    public static readonly DomainError InvalidPosition = new DomainError(
+        "agents.position.invalid",
+        "Agent positions must use non-negative logical cell coordinates.");
+
     public static readonly DomainError TargetedActionRequired = new DomainError(
         "agents.action.target_required",
         "The active action does not have a reserved settlement target.");

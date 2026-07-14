@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
+using Dig.Domain.World;
 
 namespace Dig.Domain.Agents
 {
@@ -21,7 +22,8 @@ public sealed class AgentSnapshot
         long lastActionSwitchTick,
         AgentDecision? lastDecision,
         IReadOnlyCollection<AgentSkillValue> skills,
-        IReadOnlyCollection<AgentTraitId> traits)
+        IReadOnlyCollection<AgentTraitId> traits,
+        CellId? position = null)
         : this(
             id,
             name,
@@ -34,7 +36,8 @@ public sealed class AgentSnapshot
             lastActionSwitchTick,
             lastDecision,
             CopySkills(skills),
-            CopyTraits(traits))
+            CopyTraits(traits),
+            position ?? new CellId(0, 0))
     {
     }
 
@@ -50,7 +53,8 @@ public sealed class AgentSnapshot
         long lastActionSwitchTick,
         AgentDecision? lastDecision,
         IReadOnlyList<AgentSkillValue> skills,
-        IReadOnlyList<AgentTraitId> traits)
+        IReadOnlyList<AgentTraitId> traits,
+        CellId position)
     {
         if (id.IsEmpty)
         {
@@ -72,6 +76,11 @@ public sealed class AgentSnapshot
             throw new ArgumentOutOfRangeException(nameof(lastActionSwitchTick));
         }
 
+        if (position.X < 0 || position.Y < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(position));
+        }
+
         Skills = skills ?? throw new ArgumentNullException(nameof(skills));
         Traits = traits ?? throw new ArgumentNullException(nameof(traits));
         Id = id;
@@ -84,6 +93,7 @@ public sealed class AgentSnapshot
         PlayerOrder = playerOrder;
         LastActionSwitchTick = lastActionSwitchTick;
         LastDecision = lastDecision;
+        Position = position;
     }
 
     public EntityId Id { get; }
@@ -98,6 +108,7 @@ public sealed class AgentSnapshot
     public AgentDecision? LastDecision { get; }
     public IReadOnlyList<AgentSkillValue> Skills { get; }
     public IReadOnlyList<AgentTraitId> Traits { get; }
+    public CellId Position { get; }
 
     public int GetSkillLevel(AgentSkillId skillId)
     {
@@ -137,7 +148,8 @@ public sealed class AgentSnapshot
         long lastActionSwitchTick,
         AgentDecision? lastDecision,
         IReadOnlyList<AgentSkillValue> skills,
-        IReadOnlyList<AgentTraitId> traits)
+        IReadOnlyList<AgentTraitId> traits,
+        CellId position)
     {
         return new AgentSnapshot(
             id,
@@ -151,7 +163,8 @@ public sealed class AgentSnapshot
             lastActionSwitchTick,
             lastDecision,
             skills,
-            traits);
+            traits,
+            position);
     }
 
     private static IReadOnlyList<AgentSkillValue> CopySkills(

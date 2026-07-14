@@ -10,7 +10,7 @@ The logical world foundation provides authoritative cells, immutable material de
 
 Navigation derives versioned walkability caches and regions from world snapshots, refreshes changed chunks locally, supports multiple traversal profiles plus ladder and elevator links, and returns diagnosable paths with stale-result validation.
 
-Residents own needs, schedules, skills, traits, player orders and one active action. Deterministic Utility AI explains every option and keeps critical survival above ordinary work. Real settlement actions reserve and consume food, reserve building-owned beds and leisure places, apply need effects only after successful completion, and expose blocked-target diagnostics for multiple residents.
+Residents own logical cell positions, needs, schedules, skills, traits, player orders and one active action. Deterministic Utility AI explains every option and keeps critical survival above ordinary work. Real settlement actions reserve and consume food, reserve building-owned beds and leisure places, apply need effects only after successful completion, and expose blocked-target diagnostics for multiple residents.
 
 Jobs own their complete lifecycle from creation through completion, cancellation or failure. Typed digging, hauling and building-work jobs use deterministic worker scoring, dependency checks, bounded retries and a single worker and position reservation ledger.
 
@@ -20,7 +20,7 @@ Buildings own immutable definitions, validated footprints, projects, constructio
 
 The scheduler records per-system execution time and allocations. A deterministic replay soak runs multiple residents and hauling for thousands of ticks, checks cross-system invariants, enforces conservative CI budgets and retains a JSON report with the most expensive systems.
 
-Unity is the selected presentation host. Engine-specific scenes, rendering, input and editor tooling live under `unity/Dig.Unity`; authoritative simulation rules remain usable without Unity.
+Unity is the selected presentation host. The current Play Mode slice renders the logical cavern and residents, supports 2.5D camera controls and selection, sends digging and movement changes through Application commands, interpolates resident visuals, and exposes cell plus Utility AI diagnostics. Authoritative simulation rules remain usable without Unity.
 
 ## Repository structure
 
@@ -81,7 +81,7 @@ See [`docs/implementation/quality-soak-performance.md`](docs/implementation/qual
 
 For an existing checkout that previously showed CS8773, pull the latest `main`, reopen the project and allow the local package to reimport. If the Console still contains stale compiler output, run **Assets > Reimport All** or close Unity and remove the generated `unity/Dig.Unity/Library` directory before reopening.
 
-See [`docs/implementation/unity-presentation-host.md`](docs/implementation/unity-presentation-host.md) for the integration details and [`docs/implementation/unity-csharp-compatibility.md`](docs/implementation/unity-csharp-compatibility.md) for the compiler baseline and compatibility rules.
+See [`docs/implementation/unity-presentation-host.md`](docs/implementation/unity-presentation-host.md) for the integration overview, [`docs/implementation/unity-world-vertical-slice.md`](docs/implementation/unity-world-vertical-slice.md) for world interaction, [`docs/implementation/unity-resident-presentation.md`](docs/implementation/unity-resident-presentation.md) for resident visuals and AI diagnostics, and [`docs/implementation/unity-csharp-compatibility.md`](docs/implementation/unity-csharp-compatibility.md) for compiler rules.
 
 ## Architectural rules
 
