@@ -81,8 +81,9 @@ public sealed class JobSystemTests
         Assert.True(jobs.AdvanceStage(FirstJobId, tick: 5).IsSuccess);
 
         JobSnapshot completed = jobs.Get(FirstJobId)!;
+        DigJobDefinition definition = Assert.IsType<DigJobDefinition>(completed.Definition);
         Assert.Equal(JobStatus.Completed, completed.Status);
-        Assert.Equal(target, completed.Definition.Target.CellId);
+        Assert.Equal(target, definition.Target.CellId);
         Assert.Empty(jobs.GetReservations());
     }
 

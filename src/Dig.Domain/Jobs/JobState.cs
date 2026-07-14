@@ -5,7 +5,7 @@ namespace Dig.Domain.Jobs;
 public sealed class JobSnapshot
 {
     public JobSnapshot(
-        DigJobDefinition definition,
+        JobDefinition definition,
         JobStatus status,
         JobStageKind stage,
         EntityId? assignedAgentId,
@@ -24,7 +24,7 @@ public sealed class JobSnapshot
         Reason = reason;
     }
 
-    public DigJobDefinition Definition { get; }
+    public JobDefinition Definition { get; }
 
     public EntityId Id => Definition.Id;
 
@@ -49,14 +49,16 @@ public sealed class JobSnapshot
 
 public sealed class JobState
 {
-    internal JobState(DigJobDefinition definition)
+    private int _stageIndex = -1;
+
+    internal JobState(JobDefinition definition)
     {
         Definition = definition ?? throw new ArgumentNullException(nameof(definition));
         Status = JobStatus.Created;
         Stage = JobStageKind.None;
     }
 
-    public DigJobDefinition Definition { get; }
+    public JobDefinition Definition { get; }
 
     public EntityId Id => Definition.Id;
 
@@ -77,8 +79,7 @@ public sealed class JobState
     internal void MakeAvailable()
     {
         Status = JobStatus.Available;
-        Stage = JobStageKind.None;
-        AssignedAgentId = null;
+        ResetExecution();
         Reason = null;
         IncrementVersion();
     }
@@ -88,6 +89,7 @@ public sealed class JobState
         Status = JobStatus.Claimed;
         AssignedAgentId = agentId;
         Stage = JobStageKind.None;
+        _stageIndex = -1;
         Reason = null;
         IncrementVersion();
     }
@@ -95,36 +97,36 @@ public sealed class JobState
     internal void Start()
     {
         Status = JobStatus.InProgress;
-        Stage = JobStageKind.TravelToTarget;
+        _stageIndex = 0;
+        Stage = Definition.Stages[_stageIndex];
         Reason = null;
         IncrementVersion();
     }
 
     internal bool AdvanceStage()
     {
-        switch (Stage)
+        if (_stageIndex < 0 || Status != JobStatus.InProgress)
         {
-            case JobStageKind.TravelToTarget:
-                Stage = JobStageKind.PerformWork;
-                IncrementVersion();
-                return false;
-            case JobStageKind.PerformWork:
-                Stage = JobStageKind.Finalize;
-                IncrementVersion();
-                return false;
-            case JobStageKind.Finalize:
-                Complete();
-                return true;
-            default:
-                throw new InvalidOperationException("Only an in-progress job can advance a stage.");
+            throw new InvalidOperationException("Only an in-progress job can advance a stage.");
         }
+
+        int nextIndex = _stageIndex + 1;
+        if (nextIndex >= Definition.Stages.Count)
+        {
+            Complete();
+            return true;
+        }
+
+        _stageIndex = nextIndex;
+        Stage = Definition.Stages[_stageIndex];
+        IncrementVersion();
+        return false;
     }
 
     internal void Block(JobBlockReason reason, long nextRetryTick)
     {
         Status = JobStatus.Blocked;
-        Stage = JobStageKind.None;
-        AssignedAgentId = null;
+        ResetExecution();
         RetryCount = checked(RetryCount + 1);
         NextRetryTick = nextRetryTick;
         Reason = reason ?? throw new ArgumentNullException(nameof(reason));
@@ -134,8 +136,7 @@ public sealed class JobState
     internal void Complete()
     {
         Status = JobStatus.Completed;
-        Stage = JobStageKind.None;
-        AssignedAgentId = null;
+        ResetExecution();
         Reason = null;
         IncrementVersion();
     }
@@ -143,8 +144,7 @@ public sealed class JobState
     internal void Cancel(JobBlockReason reason)
     {
         Status = JobStatus.Cancelled;
-        Stage = JobStageKind.None;
-        AssignedAgentId = null;
+        ResetExecution();
         Reason = reason ?? throw new ArgumentNullException(nameof(reason));
         IncrementVersion();
     }
@@ -152,8 +152,7 @@ public sealed class JobState
     internal void Fail(JobBlockReason reason)
     {
         Status = JobStatus.Failed;
-        Stage = JobStageKind.None;
-        AssignedAgentId = null;
+        ResetExecution();
         Reason = reason ?? throw new ArgumentNullException(nameof(reason));
         IncrementVersion();
     }
@@ -169,6 +168,13 @@ public sealed class JobState
             NextRetryTick,
             Version,
             Reason);
+    }
+
+    private void ResetExecution()
+    {
+        Stage = JobStageKind.None;
+        AssignedAgentId = null;
+        _stageIndex = -1;
     }
 
     private void IncrementVersion()

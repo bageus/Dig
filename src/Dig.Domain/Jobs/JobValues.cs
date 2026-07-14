@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 
@@ -22,6 +21,9 @@ public enum JobStageKind
     TravelToTarget = 1,
     PerformWork = 2,
     Finalize = 3,
+    AcquireItem = 4,
+    TravelToDestination = 5,
+    DepositItem = 6,
 }
 
 public enum ReservationKind
@@ -32,6 +34,7 @@ public enum ReservationKind
     Tool = 3,
     Position = 4,
     Designation = 5,
+    Destination = 6,
 }
 
 public readonly struct JobRetryPolicy
@@ -96,6 +99,11 @@ public readonly struct ReservationKey : IEquatable<ReservationKey>, IComparable<
         return ForEntity(ReservationKind.Tool, toolId);
     }
 
+    public static ReservationKey ForDestination(EntityId destinationId)
+    {
+        return ForEntity(ReservationKind.Destination, destinationId);
+    }
+
     public static ReservationKey ForPosition(CellId cellId)
     {
         return new ReservationKey(ReservationKind.Position, cellId.ToString());
@@ -154,90 +162,6 @@ public readonly struct ReservationKey : IEquatable<ReservationKey>, IComparable<
 
         return new ReservationKey(kind, entityId.ToString());
     }
-}
-
-public sealed class DigJobTarget
-{
-    public DigJobTarget(CellId cellId)
-    {
-        CellId = cellId;
-    }
-
-    public CellId CellId { get; }
-
-    public IReadOnlyList<ReservationKey> CreateReservationKeys()
-    {
-        return new ReadOnlyCollection<ReservationKey>(new[]
-        {
-            ReservationKey.ForPosition(CellId),
-            ReservationKey.ForDesignation(CellId),
-        });
-    }
-
-    public override string ToString()
-    {
-        return $"Dig:{CellId}";
-    }
-}
-
-public sealed class DigJobDefinition
-{
-    private readonly EntityId[] _dependencies;
-
-    public DigJobDefinition(
-        EntityId id,
-        DigJobTarget target,
-        int priority,
-        long createdTick,
-        JobRetryPolicy retryPolicy,
-        IEnumerable<EntityId>? dependencies = null)
-    {
-        if (id.IsEmpty)
-        {
-            throw new ArgumentException("Job id cannot be empty.", nameof(id));
-        }
-
-        if (priority < 0 || priority > 1000)
-        {
-            throw new ArgumentOutOfRangeException(nameof(priority));
-        }
-
-        if (createdTick < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(createdTick));
-        }
-
-        Id = id;
-        Target = target ?? throw new ArgumentNullException(nameof(target));
-        Priority = priority;
-        CreatedTick = createdTick;
-        RetryPolicy = retryPolicy;
-        _dependencies = (dependencies ?? Array.Empty<EntityId>())
-            .OrderBy(value => value.ToString(), StringComparer.Ordinal)
-            .ToArray();
-
-        if (_dependencies.Any(value => value.IsEmpty || value == id))
-        {
-            throw new ArgumentException("Dependencies must contain valid other job ids.", nameof(dependencies));
-        }
-
-        if (_dependencies.Distinct().Count() != _dependencies.Length)
-        {
-            throw new ArgumentException("Dependencies cannot contain duplicates.", nameof(dependencies));
-        }
-    }
-
-    public EntityId Id { get; }
-
-    public DigJobTarget Target { get; }
-
-    public int Priority { get; }
-
-    public long CreatedTick { get; }
-
-    public JobRetryPolicy RetryPolicy { get; }
-
-    public IReadOnlyList<EntityId> Dependencies => new ReadOnlyCollection<EntityId>(_dependencies);
 }
 
 public sealed class JobBlockReason
