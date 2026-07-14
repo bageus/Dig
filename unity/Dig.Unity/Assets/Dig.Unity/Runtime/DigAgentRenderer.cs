@@ -66,6 +66,18 @@ namespace Dig.Unity
             return agent != null;
         }
 
+        public bool TryGetWorldPosition(string agentId, out Vector3 position)
+        {
+            if (_agents.TryGetValue(agentId, out DigAgentVisual? agent))
+            {
+                position = agent.transform.position;
+                return true;
+            }
+
+            position = default;
+            return false;
+        }
+
         public DigAgentVisual? Select(DigAgentVisual? agent)
         {
             if (_selected != null)
