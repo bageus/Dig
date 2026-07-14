@@ -54,18 +54,34 @@ jobs:
       - name: Run headless smoke test
         run: dotnet run --project src/Dig.Headless/Dig.Headless.csproj --configuration Release --no-build
 
-      - name: Run deterministic soak and performance budgets
+      - name: Run standard deterministic soak
         run: >-
           dotnet run --project src/Dig.Headless/Dig.Headless.csproj
           --configuration Release --no-build --
-          --soak --ticks 2000 --residents 8
-          --max-seconds 30 --report soak-report.json
+          --soak --profile standard
+          --report soak-report-standard.json
 
-      - name: Upload soak report
+      - name: Run large settlement deterministic soak
+        run: >-
+          dotnet run --project src/Dig.Headless/Dig.Headless.csproj
+          --configuration Release --no-build --
+          --soak --profile large
+          --report soak-report-large.json
+
+      - name: Upload standard soak report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: soak-report
-          path: soak-report.json
+          name: soak-report-standard
+          path: soak-report-standard.json
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload large soak report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: soak-report-large
+          path: soak-report-large.json
           if-no-files-found: warn
           retention-days: 14
