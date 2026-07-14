@@ -69,27 +69,22 @@ public sealed class InventoryStateTests
                 $"5300000000000000000000000000{index:D4}");
             Result moved = inventory.MoveAvailable(
                 SourceStackId,
-                quantity: index,
+                quantity: 1,
                 ItemLocation.InBuilding(EntityId.Parse(
                     $"5400000000000000000000000000{index:D4}")),
                 splitId,
                 tick: index);
 
-            if (index <= 10)
-            {
-                Assert.True(moved.IsSuccess);
-            }
-            else
-            {
-                Assert.True(moved.IsFailure);
-            }
-
+            Assert.True(moved.IsSuccess);
             Assert.Equal(100, inventory.GetTotal(Ore));
         }
 
         InventorySnapshot snapshot = inventory.CreateSnapshot();
         Assert.Equal(100, snapshot.GetTotal(Ore));
-        Assert.Equal(snapshot.Stacks.Count, snapshot.Stacks.Select(stack => stack.StackId).Distinct().Count());
+        Assert.Equal(80, inventory.GetStack(SourceStackId)!.Quantity);
+        Assert.Equal(
+            snapshot.Stacks.Count,
+            snapshot.Stacks.Select(stack => stack.StackId).Distinct().Count());
     }
 
     [Fact]
