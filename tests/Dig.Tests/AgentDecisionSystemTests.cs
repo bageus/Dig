@@ -131,6 +131,26 @@ public sealed class AgentDecisionSystemTests
                 StringComparison.Ordinal));
     }
 
+    [Fact]
+    public void Decision_preserves_tie_break_order_and_caches_explanation()
+    {
+        AgentDecision decision = Decide(AgentTestFactory.CreateAgent(), tick: 0);
+        AgentIntentKind[] actualOrder = decision.Options
+            .Select(option => option.IntentKind)
+            .ToArray();
+        AgentIntentKind[] expectedOrder = actualOrder
+            .OrderBy(value => (int)value)
+            .ToArray();
+
+        Assert.Equal(expectedOrder, actualOrder);
+        string explanation = decision.Explanation;
+        Assert.Equal(
+            $"{decision.SelectedIntent} selected with score {decision.SelectedScore} "
+                + $"({decision.ReasonCode}).",
+            explanation);
+        Assert.Same(explanation, decision.Explanation);
+    }
+
     private AgentDecision Decide(AgentState agent, long tick)
     {
         return _decisionSystem.Decide(
