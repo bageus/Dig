@@ -27,13 +27,33 @@ internal sealed class ItemStackState
 
     public ItemLocation Location { get; private set; }
 
-    public int ReservedQuantity => _reservations.Values.Sum();
+    public int ReservedQuantity
+    {
+        get
+        {
+            int quantity = 0;
+            foreach (int reserved in _reservations.Values)
+            {
+                quantity = checked(quantity + reserved);
+            }
+
+            return quantity;
+        }
+    }
 
     public int AvailableQuantity => Quantity - ReservedQuantity;
 
     public int GetReservedQuantity(EntityId jobId)
     {
         return _reservations.TryGetValue(jobId, out int quantity) ? quantity : 0;
+    }
+
+    public void VisitReservations(IInventoryInspectionVisitor visitor)
+    {
+        foreach (KeyValuePair<EntityId, int> reservation in _reservations)
+        {
+            visitor.VisitReservation(Id, reservation.Key, reservation.Value);
+        }
     }
 
     public void Reserve(EntityId jobId, int quantity)
