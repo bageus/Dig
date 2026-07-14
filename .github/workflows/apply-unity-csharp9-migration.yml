@@ -1,0 +1,37 @@
+name: Apply Unity C# 9 migration
+
+on:
+  push:
+    branches:
+      - agent/unity-csharp9-compatibility
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Convert source to C# 9
+        run: python tools/migrations/convert_to_unity_csharp9.py
+
+      - name: Commit migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Directory.Build.props src tests unity
+          if git diff --cached --quiet; then
+            echo "No migration changes were required."
+            exit 0
+          fi
+          git commit -m "Convert source to Unity-compatible C# 9"
+          git push
