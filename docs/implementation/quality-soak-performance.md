@@ -75,9 +75,9 @@ The report orders systems by total elapsed time and contains:
 - total allocated bytes;
 - average allocated bytes.
 
-## Initial budgets
+## Budgets
 
-The first CI budgets are deliberately conservative:
+Global CI budgets are deliberately conservative:
 
 | Metric | Budget |
 |---|---:|
@@ -88,6 +88,16 @@ The first CI budgets are deliberately conservative:
 | Average system execution | 10000 microseconds |
 | Average allocation per execution | 2000000 bytes |
 | Maximum single execution | 500 milliseconds |
+
+`SimulationPerformanceBudget` also supports stable-name overrides. A system override replaces all three global execution limits only for that system.
+
+The settlement system has a dedicated regression budget:
+
+| `agents.settlement` metric | Budget |
+|---|---:|
+| Average execution | 500 microseconds |
+| Average allocation | 50000 bytes |
+| Maximum single execution | 100 milliseconds |
 
 Budgets must be tightened from retained reports rather than guessed. A budget increase requires a documented reason and should not be used to hide a regression.
 
@@ -117,7 +127,37 @@ System baseline:
 | `soak.hauling` | 96.77 us | 23.01 ms | 60767 bytes |
 | `soak.resource_spawn` | 8.39 us | 0.35 ms | 580 bytes |
 
-The settlement system is the current primary optimization candidate. This is an observed baseline, not evidence that its allocations are acceptable for release scale.
+The baseline identified settlement snapshot and collection creation as the first Alpha optimization target.
+
+## Settlement allocation optimization
+
+Issue #32 replaced repeated full-state reads with owner-owned point queries:
+
+- Inventory category availability scans authoritative stacks without creating an `InventorySnapshot`;
+- food target selection returns only the stable winning stack id;
+- reservation validation reads the requested stack directly;
+- Facilities availability and target selection scan authoritative definitions without result arrays;
+- release and resident-reservation checks avoid temporary LINQ collections;
+- the in-memory agent repository caches stable resident iteration order;
+- settlement reuses one decision snapshot on the normal path.
+
+The first optimized Linux CI soak produced:
+
+| Result | Before | After | Change |
+|---|---:|---:|---:|
+| Overall wall-clock | 1643.38 ms | 1286.58 ms | -21.7% |
+| Settlement average time | 570.62 us | 213.73 us | -62.5% |
+| Settlement maximum time | 39.88 ms | 30.16 ms | -24.4% |
+| Settlement average allocations | 295927 bytes | 34517 bytes | -88.3% |
+| Settlement total allocations | 597773120 bytes | 69724984 bytes | -88.3% |
+
+Authoritative behavior did not change. Both baselines produced state hash:
+
+```text
+B315282B332B67B4EEE68D3B3C59D997013C014A947B534106DA7FD75EC04480
+```
+
+The optimized result is below the dedicated 500 microsecond and 50000 byte budgets while retaining substantial CI-runner variance margin.
 
 ## Bounded diagnostics
 
