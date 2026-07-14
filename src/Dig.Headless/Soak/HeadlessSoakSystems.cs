@@ -3,7 +3,6 @@ using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Messaging;
 using Dig.Application.Runtime;
-using Dig.Domain.Agents;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
@@ -149,7 +148,7 @@ internal sealed class SoakHaulingSystem : ISimulationSystem
         _planner.Handle(new PlanHaulingCommand(
             maximumJobs: _workers.Length,
             priority: 500,
-            context.Tick));
+            tick: context.Tick));
         SetCandidatesForAvailableJobs();
         _assign.Handle(new AssignAvailableJobsCommand(context.Tick));
 
@@ -171,7 +170,7 @@ internal sealed class SoakHaulingSystem : ISimulationSystem
                 result = _complete.Handle(new CompleteHaulingJobCommand(
                     job.Id,
                     splitStackId: default,
-                    context.Tick));
+                    tick: context.Tick));
                 if (result.IsSuccess)
                 {
                     CompletedJobCount = checked(CompletedJobCount + 1);
