@@ -10,13 +10,13 @@ The logical world foundation provides authoritative cells, immutable material de
 
 Navigation derives versioned walkability caches and regions from world snapshots, refreshes changed chunks locally, supports multiple traversal profiles plus ladder and elevator links, and returns diagnosable paths with stale-result validation.
 
-Residents own needs, schedules, skills, traits, player orders and one active action. Deterministic Utility AI explains every selected and rejected intent, uses hysteresis and cooldown against oscillation, and keeps critical survival above ordinary work or direct orders.
+Residents own needs, schedules, skills, traits, player orders and one active action. Deterministic Utility AI explains every option and keeps critical survival above ordinary work. Real settlement actions reserve and consume food, reserve building-owned beds and leisure places, apply need effects only after successful completion, and expose blocked-target diagnostics for multiple residents.
 
 Jobs own their complete lifecycle from creation through completion, cancellation or failure. Typed digging, hauling and building-work jobs use deterministic worker scoring, dependency checks, bounded retries and a single worker and position reservation ledger.
 
 Inventory owns immutable item definitions plus authoritative stack quantities, partial reservations and typed locations. Storage owns filters, priorities and incoming capacity. A deterministic planner creates hauling work from available world stacks, while retry and reconciliation preserve or release external reservations without duplicating item quantity.
 
-Buildings own immutable definitions, validated footprints, projects, construction progress and durability. Placement reads World and Navigation-derived reachability, materials remain in Inventory, and final construction atomically consumes delivered resources before emitting one completed building.
+Buildings own immutable definitions, validated footprints, projects, construction progress, durability and functional resident places. Placement reads World and Navigation-derived reachability, materials remain in Inventory, and final construction atomically consumes delivered resources before emitting one completed building.
 
 Unity is the selected presentation host. Engine-specific scenes, rendering, input and editor tooling live under `unity/Dig.Unity`; authoritative simulation rules remain usable without Unity.
 
@@ -90,7 +90,7 @@ The authoritative development rules are in [`docs/development-rules.md`](docs/de
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) and the [roadmap issue](https://github.com/bageus/Dig/issues/16).
 
-Architecture foundation is tracked by issue [#1](https://github.com/bageus/Dig/issues/1). The deterministic simulation runtime is tracked by issue [#2](https://github.com/bageus/Dig/issues/2). The logical world and chunk model is tracked by issue [#3](https://github.com/bageus/Dig/issues/3). Navigation in the changing world is tracked by issue [#4](https://github.com/bageus/Dig/issues/4). Residents, needs and Utility AI are tracked by issue [#5](https://github.com/bageus/Dig/issues/5). Jobs and reservations are tracked by issue [#6](https://github.com/bageus/Dig/issues/6). Inventory, storage and hauling are tracked by issues [#7](https://github.com/bageus/Dig/issues/7) and [#27](https://github.com/bageus/Dig/issues/27). Buildings and construction are tracked by issue [#8](https://github.com/bageus/Dig/issues/8). Production and technology are tracked by issue [#9](https://github.com/bageus/Dig/issues/9). Unity presentation work is tracked by issue [#14](https://github.com/bageus/Dig/issues/14).
+Architecture foundation is tracked by issue [#1](https://github.com/bageus/Dig/issues/1). The deterministic simulation runtime is tracked by issue [#2](https://github.com/bageus/Dig/issues/2). The logical world and chunk model is tracked by issue [#3](https://github.com/bageus/Dig/issues/3). Navigation in the changing world is tracked by issue [#4](https://github.com/bageus/Dig/issues/4). Residents, needs and Utility AI are tracked by issues [#5](https://github.com/bageus/Dig/issues/5) and [#28](https://github.com/bageus/Dig/issues/28). Jobs and reservations are tracked by issue [#6](https://github.com/bageus/Dig/issues/6). Inventory, storage and hauling are tracked by issues [#7](https://github.com/bageus/Dig/issues/7) and [#27](https://github.com/bageus/Dig/issues/27). Buildings and construction are tracked by issue [#8](https://github.com/bageus/Dig/issues/8). Production and technology are tracked by issue [#9](https://github.com/bageus/Dig/issues/9). Unity presentation work is tracked by issue [#14](https://github.com/bageus/Dig/issues/14).
 
 ## License
 
