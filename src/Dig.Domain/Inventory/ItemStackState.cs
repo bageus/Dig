@@ -72,6 +72,16 @@ internal sealed class ItemStackState
         }
     }
 
+    public void ConsumeAvailable(int quantity)
+    {
+        if (quantity <= 0 || quantity > AvailableQuantity)
+        {
+            throw new ArgumentOutOfRangeException(nameof(quantity));
+        }
+
+        Quantity = checked(Quantity - quantity);
+    }
+
     public void MoveFull(ItemLocation destination)
     {
         Location = destination;
