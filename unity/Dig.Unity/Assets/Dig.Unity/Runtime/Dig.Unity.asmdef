@@ -1,0 +1,11 @@
+{
+  "name": "Dig.Unity",
+  "rootNamespace": "Dig.Unity",
+  "references": [
+    "Dig.Application",
+    "Dig.Domain",
+    "Dig.Infrastructure",
+    "Dig.Presentation.Abstractions"
+  ],
+  "autoReferenced": true
+}
