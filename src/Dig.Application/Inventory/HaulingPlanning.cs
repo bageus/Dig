@@ -129,14 +129,14 @@ public sealed class PlanHaulingHandler
     private readonly IInventoryRepository _inventoryRepository;
     private readonly IStorageRepository _storageRepository;
     private readonly Dig.Application.Jobs.IJobRepository _jobRepository;
-    private readonly IHaulingJobSource _jobIds;
+    private readonly IHaulingJobIdSource _jobIds;
     private readonly IEventSink _eventSink;
 
     public PlanHaulingHandler(
         IInventoryRepository inventoryRepository,
         IStorageRepository storageRepository,
         Dig.Application.Jobs.IJobRepository jobRepository,
-        IHaulingJobSource jobIds,
+        IHaulingJobIdSource jobIds,
         IEventSink eventSink)
     {
         _inventoryRepository = inventoryRepository
