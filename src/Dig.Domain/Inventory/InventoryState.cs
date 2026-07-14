@@ -169,6 +169,13 @@ public sealed partial class InventoryState : AggregateRoot
             .Sum(stack => stack.Quantity);
     }
 
+    public int GetAvailableQuantityAt(ItemId itemId, ItemLocation location)
+    {
+        return _stacks.Values
+            .Where(stack => stack.ItemId == itemId && stack.Location == location)
+            .Sum(stack => stack.AvailableQuantity);
+    }
+
     public InventorySnapshot CreateSnapshot()
     {
         return new InventorySnapshot(

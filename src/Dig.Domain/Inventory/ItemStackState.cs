@@ -72,6 +72,17 @@ internal sealed class ItemStackState
         }
     }
 
+    public void ConsumeReservedQuantity(EntityId jobId, int quantity)
+    {
+        if (quantity <= 0 || quantity > Quantity)
+        {
+            throw new ArgumentOutOfRangeException(nameof(quantity));
+        }
+
+        ConsumeReservation(jobId, quantity);
+        Quantity = checked(Quantity - quantity);
+    }
+
     public void ConsumeAvailable(int quantity)
     {
         if (quantity <= 0 || quantity > AvailableQuantity)
