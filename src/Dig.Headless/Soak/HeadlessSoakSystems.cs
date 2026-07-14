@@ -238,7 +238,7 @@ internal sealed class SoakHaulingSystem : ISimulationSystem
             Result completed = _complete.Handle(new CompleteHaulingJobCommand(
                 job.Id,
                 splitStackId: default,
-                tick));
+                tick: tick));
             if (completed.IsSuccess)
             {
                 CompletedJobCount = checked(CompletedJobCount + 1);
