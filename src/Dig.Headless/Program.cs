@@ -208,6 +208,10 @@ internal static class Program
             state,
             journal,
             startTick: 42);
+        int settledResidents = HeadlessResidentSettlementScenario.Run(
+            state,
+            journal,
+            startTick: 61);
 
         List<TerrainChange> corridor = new List<TerrainChange>();
         for (int x = 0; x < world.Size.Width; x++)
@@ -253,9 +257,9 @@ internal static class Program
             + $"with {state.Entities.Count} entities, resident intent "
             + $"{residentSnapshot.LastDecision.SelectedIntent}, dig {completedDig.Status}, "
             + $"haul {completedHaul.Status}, automatic hauls {automaticHauls}, "
-            + $"building {completedBuilding.Status}, remaining resources {inventory.GetTotal(rockChunk)}, "
-            + $"world version {world.Version}, {navigationSnapshot.Regions.Count} regions and "
-            + $"a {route.Path!.Cells.Count}-cell route.");
+            + $"settled residents {settledResidents}, building {completedBuilding.Status}, "
+            + $"remaining resources {inventory.GetTotal(rockChunk)}, world version {world.Version}, "
+            + $"{navigationSnapshot.Regions.Count} regions and a {route.Path!.Cells.Count}-cell route.");
         return 0;
     }
 

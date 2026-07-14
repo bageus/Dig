@@ -64,6 +64,34 @@ public sealed class AgentActionCompleted : IDomainEvent
     public AgentIntentKind IntentKind { get; }
 }
 
+public sealed class AgentActionBlocked : IDomainEvent
+{
+    public AgentActionBlocked(
+        long tick,
+        EntityId agentId,
+        AgentIntentKind intentKind,
+        string reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new ArgumentException("Blocked action reason is required.", nameof(reason));
+        }
+
+        Tick = tick;
+        AgentId = agentId;
+        IntentKind = intentKind;
+        Reason = reason.Trim();
+    }
+
+    public long Tick { get; }
+
+    public EntityId AgentId { get; }
+
+    public AgentIntentKind IntentKind { get; }
+
+    public string Reason { get; }
+}
+
 public sealed class AgentPlayerOrderChanged : IDomainEvent
 {
     public AgentPlayerOrderChanged(long tick, EntityId agentId, string? playerOrderId)

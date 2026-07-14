@@ -2,7 +2,7 @@ using Dig.Domain.Core;
 
 namespace Dig.Domain.Agents;
 
-public sealed class AgentState : AggregateRoot
+public sealed partial class AgentState : AggregateRoot
 {
     private readonly AgentNeedsState _needs;
     private readonly AgentSkillSet _skills;
@@ -54,6 +54,8 @@ public sealed class AgentState : AggregateRoot
     public long LastActionSwitchTick { get; private set; } = -1;
 
     public AgentDecision? LastDecision { get; private set; }
+
+    public string? LastActionBlockReason { get; private set; }
 
     public Result SetSkillLevel(AgentSkillId skillId, int level)
     {
@@ -128,104 +130,6 @@ public sealed class AgentState : AggregateRoot
         _lastNeedsTick = tick;
         Version = checked(Version + 1);
         HandleDeath(tick);
-        return Result.Success();
-    }
-
-    public Result ApplyDecision(
-        AgentDecision decision,
-        AgentBehaviorPolicy policy,
-        long tick)
-    {
-        if (decision is null)
-        {
-            throw new ArgumentNullException(nameof(decision));
-        }
-
-        if (policy is null)
-        {
-            throw new ArgumentNullException(nameof(policy));
-        }
-
-        ValidateTick(tick);
-        if (!IsAlive)
-        {
-            return Result.Failure(AgentErrors.AgentDead);
-        }
-
-        if (decision.Tick != tick)
-        {
-            return Result.Failure(AgentErrors.DecisionTickMismatch);
-        }
-
-        LastDecision = decision;
-        bool sameAction = _activeAction is not null
-            && _activeAction.IntentKind == decision.SelectedIntent
-            && string.Equals(
-                _activeAction.PlayerOrderId,
-                decision.SelectedPlayerOrderId,
-                StringComparison.Ordinal);
-        if (sameAction)
-        {
-            Version = checked(Version + 1);
-            return Result.Success();
-        }
-
-        if (_activeAction is not null)
-        {
-            Raise(new AgentActionInterrupted(
-                tick,
-                Id,
-                _activeAction.IntentKind,
-                decision.SelectedIntent));
-        }
-
-        AgentActionEffect effect = policy.Actions.Get(decision.SelectedIntent);
-        _activeAction = new ActiveAgentAction(
-            decision.SelectedIntent,
-            decision.SelectedPlayerOrderId,
-            tick,
-            effect.DurationTicks);
-        LastActionSwitchTick = tick;
-        Version = checked(Version + 1);
-        Raise(new AgentActionStarted(
-            tick,
-            Id,
-            decision.SelectedIntent,
-            decision.SelectedPlayerOrderId));
-        return Result.Success();
-    }
-
-    public Result AdvanceAction(AgentBehaviorPolicy policy, long tick)
-    {
-        if (policy is null)
-        {
-            throw new ArgumentNullException(nameof(policy));
-        }
-
-        ValidateTick(tick);
-        if (!IsAlive)
-        {
-            return Result.Failure(AgentErrors.AgentDead);
-        }
-
-        if (_activeAction is null)
-        {
-            return Result.Success();
-        }
-
-        AgentIntentKind completedIntent = _activeAction.IntentKind;
-        AgentActionEffect effect = policy.Actions.Get(completedIntent);
-        _needs.Apply(effect.NeedDelta);
-        bool completed = _activeAction.Advance();
-        Version = checked(Version + 1);
-        HandleDeath(tick);
-
-        if (IsAlive && completed)
-        {
-            _activeAction = null;
-            Raise(new AgentActionCompleted(tick, Id, completedIntent));
-        }
-
         return Result.Success();
     }
 
