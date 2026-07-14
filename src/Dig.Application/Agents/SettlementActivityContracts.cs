@@ -12,7 +12,7 @@ public interface IBuildingFacilitiesRepository
     void Save(BuildingFacilitiesState facilities);
 }
 
-public sealed class SettlementAgentDiagnostic
+public readonly struct SettlementAgentDiagnostic
 {
     public SettlementAgentDiagnostic(
         EntityId agentId,
