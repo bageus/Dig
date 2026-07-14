@@ -5,8 +5,7 @@
     "Dig.Application",
     "Dig.Domain",
     "Dig.Infrastructure",
-    "Dig.Presentation.Abstractions",
-    "UnityEngine.PhysicsModule"
+    "Dig.Presentation.Abstractions"
   ],
   "autoReferenced": true
 }
