@@ -1,3 +1,5 @@
+using Dig.Domain.Core;
+
 namespace Dig.Domain.Agents;
 
 public enum AgentIntentKind
@@ -9,6 +11,66 @@ public enum AgentIntentKind
     Work = 4,
     Rest = 5,
     Idle = 6,
+}
+
+public enum AgentActivityTargetKind
+{
+    Food = 0,
+    Bed = 1,
+    Leisure = 2,
+}
+
+public readonly struct AgentActivityTarget : IEquatable<AgentActivityTarget>
+{
+    public AgentActivityTarget(AgentActivityTargetKind kind, EntityId entityId)
+    {
+        if (!Enum.IsDefined(typeof(AgentActivityTargetKind), kind))
+        {
+            throw new ArgumentOutOfRangeException(nameof(kind));
+        }
+
+        if (entityId.IsEmpty)
+        {
+            throw new ArgumentException("Activity target id cannot be empty.", nameof(entityId));
+        }
+
+        Kind = kind;
+        EntityId = entityId;
+    }
+
+    public AgentActivityTargetKind Kind { get; }
+
+    public EntityId EntityId { get; }
+
+    public bool Equals(AgentActivityTarget other)
+    {
+        return Kind == other.Kind && EntityId == other.EntityId;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is AgentActivityTarget other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Kind, EntityId);
+    }
+
+    public override string ToString()
+    {
+        return $"{Kind}:{EntityId}";
+    }
+
+    public static bool operator ==(AgentActivityTarget left, AgentActivityTarget right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(AgentActivityTarget left, AgentActivityTarget right)
+    {
+        return !left.Equals(right);
+    }
 }
 
 public sealed class PlayerOrder
@@ -76,12 +138,30 @@ public readonly struct AgentActionSnapshot
         long startedTick,
         int requiredTicks,
         int elapsedTicks)
+        : this(
+            intentKind,
+            playerOrderId,
+            startedTick,
+            requiredTicks,
+            elapsedTicks,
+            target: null)
+    {
+    }
+
+    public AgentActionSnapshot(
+        AgentIntentKind intentKind,
+        string? playerOrderId,
+        long startedTick,
+        int requiredTicks,
+        int elapsedTicks,
+        AgentActivityTarget? target)
     {
         IntentKind = intentKind;
         PlayerOrderId = playerOrderId;
         StartedTick = startedTick;
         RequiredTicks = requiredTicks;
         ElapsedTicks = elapsedTicks;
+        Target = target;
     }
 
     public AgentIntentKind IntentKind { get; }
@@ -93,6 +173,10 @@ public readonly struct AgentActionSnapshot
     public int RequiredTicks { get; }
 
     public int ElapsedTicks { get; }
+
+    public AgentActivityTarget? Target { get; }
+
+    public bool IsReadyToComplete => ElapsedTicks >= RequiredTicks;
 }
 
 internal sealed class ActiveAgentAction
@@ -101,7 +185,8 @@ internal sealed class ActiveAgentAction
         AgentIntentKind intentKind,
         string? playerOrderId,
         long startedTick,
-        int requiredTicks)
+        int requiredTicks,
+        AgentActivityTarget? target = null)
     {
         if (!Enum.IsDefined(typeof(AgentIntentKind), intentKind))
         {
@@ -122,6 +207,7 @@ internal sealed class ActiveAgentAction
         PlayerOrderId = playerOrderId;
         StartedTick = startedTick;
         RequiredTicks = requiredTicks;
+        Target = target;
     }
 
     public AgentIntentKind IntentKind { get; }
@@ -134,10 +220,19 @@ internal sealed class ActiveAgentAction
 
     public int ElapsedTicks { get; private set; }
 
+    public AgentActivityTarget? Target { get; }
+
+    public bool IsReadyToComplete => ElapsedTicks >= RequiredTicks;
+
     public bool Advance()
     {
+        if (IsReadyToComplete)
+        {
+            throw new InvalidOperationException("The action is already ready to complete.");
+        }
+
         ElapsedTicks = checked(ElapsedTicks + 1);
-        return ElapsedTicks >= RequiredTicks;
+        return IsReadyToComplete;
     }
 
     public AgentActionSnapshot CreateSnapshot()
@@ -147,6 +242,7 @@ internal sealed class ActiveAgentAction
             PlayerOrderId,
             StartedTick,
             RequiredTicks,
-            ElapsedTicks);
+            ElapsedTicks,
+            Target);
     }
 }
