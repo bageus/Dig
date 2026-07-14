@@ -87,7 +87,7 @@ public sealed class AgentPositionPresentationTests
         Assert.Equal(4, first.CellX);
         Assert.Equal(6, first.CellY);
         Assert.Equal(7, first.UtilityOptions.Count);
-        Assert.Single(first.UtilityOptions.Where(option => option.Selected));
+        Assert.Single(first.UtilityOptions, option => option.Selected);
         Assert.NotEqual("agents.decision.pending", first.DecisionReason);
         Assert.Contains(first.ActiveIntent, first.DecisionExplanation);
     }
