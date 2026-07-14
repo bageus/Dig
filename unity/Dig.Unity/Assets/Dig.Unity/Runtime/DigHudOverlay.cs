@@ -63,7 +63,8 @@ namespace Dig.Unity
 
             GUILayout.Label($"Residents: {_agents.Count} | jobs: {JobCount} | tick: {_tick}");
             GUILayout.Space(6f);
-            GUILayout.Label("WASD pan | wheel zoom | Q/E rotate | F3 job overlay");
+            GUILayout.Label("WASD pan | wheel zoom | Q/E rotate");
+            GUILayout.Label("F3 jobs/reservations | F4 navigation routes");
             GUILayout.Label("Left click select | right click toggle digging");
             GUILayout.Space(8f);
             DrawCellSelection();

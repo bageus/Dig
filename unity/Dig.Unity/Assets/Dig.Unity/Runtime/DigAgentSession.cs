@@ -102,6 +102,16 @@ namespace Dig.Unity
 
         public Result Advance()
         {
+            return Advance(new Dictionary<string, CellId>(StringComparer.Ordinal));
+        }
+
+        public Result Advance(IReadOnlyDictionary<string, CellId> movementTargets)
+        {
+            if (movementTargets == null)
+            {
+                throw new ArgumentNullException(nameof(movementTargets));
+            }
+
             _tick = checked(_tick + 1);
             _autonomy.Execute(new SimulationContext(_tick, _simulationState));
             IReadOnlyList<AgentState> agents = _repository.GetAll();
@@ -113,11 +123,17 @@ namespace Dig.Unity
                     continue;
                 }
 
-                int routeIndex = SelectNextRouteIndex(agent);
-                WorldCellViewModel cell = _walkableCells[routeIndex];
+                CellId destination;
+                if (!movementTargets.TryGetValue(agent.Id.ToString(), out destination))
+                {
+                    int routeIndex = SelectNextRouteIndex(agent);
+                    WorldCellViewModel cell = _walkableCells[routeIndex];
+                    destination = new CellId(cell.X, cell.Y);
+                }
+
                 Result result = _movementHandler.Handle(new MoveAgentCommand(
                     agent.Id,
-                    new CellId(cell.X, cell.Y),
+                    destination,
                     _tick));
                 if (result.IsFailure)
                 {
