@@ -156,7 +156,8 @@ public sealed partial class AgentState : AggregateRoot
             LastActionSwitchTick,
             LastDecision,
             _skills.CreateSnapshot(),
-            _traits.CreateSnapshot());
+            _traits.CreateSnapshot(),
+            Position);
     }
 
     private void ExpirePlayerOrder(long tick)
