@@ -58,6 +58,36 @@ public sealed class SimulationQualityTests
     }
 
     [Fact]
+    public void Per_system_budget_can_be_stricter_than_global_budget()
+    {
+        InMemorySimulationPerformance performance = new InMemorySimulationPerformance();
+        performance.Record(new SystemPerformanceSample(
+            tick: 1,
+            systemName: "agents.settlement",
+            elapsedTimestampTicks: 0,
+            allocatedBytes: 40_000));
+        SimulationPerformanceBudget budget = new SimulationPerformanceBudget(
+            maximumAverageMicroseconds: 1_000_000,
+            maximumAverageAllocatedBytes: 2_000_000,
+            maximumSingleExecutionMilliseconds: 10_000,
+            overrides: new[]
+            {
+                new SystemPerformanceBudgetLimit(
+                    "agents.settlement",
+                    maximumAverageMicroseconds: 500,
+                    maximumAverageAllocatedBytes: 30_000,
+                    maximumSingleExecutionMilliseconds: 100),
+            });
+
+        SimulationPerformanceReport report = performance.CreateReport(budget);
+
+        PerformanceBudgetViolation violation = Assert.Single(report.Violations);
+        Assert.Equal("agents.settlement", violation.SystemName);
+        Assert.Equal("average_allocations", violation.Metric);
+        Assert.Equal(2_000_000, budget.GetLimit("other.system").MaximumAverageAllocatedBytes);
+    }
+
+    [Fact]
     public void Bounded_journal_retains_latest_events_and_counts_dropped_entries()
     {
         InMemoryExecutionJournal journal = new InMemoryExecutionJournal(
