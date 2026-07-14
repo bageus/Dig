@@ -1,0 +1,9 @@
+{
+  "name": "Dig.Presentation.Abstractions",
+  "rootNamespace": "Dig.Presentation",
+  "references": [
+    "Dig.Application",
+    "Dig.Domain"
+  ],
+  "autoReferenced": true
+}
