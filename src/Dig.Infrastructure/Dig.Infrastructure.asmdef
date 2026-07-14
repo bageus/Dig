@@ -1,0 +1,9 @@
+{
+  "name": "Dig.Infrastructure",
+  "rootNamespace": "Dig.Infrastructure",
+  "references": [
+    "Dig.Application",
+    "Dig.Domain"
+  ],
+  "autoReferenced": true
+}

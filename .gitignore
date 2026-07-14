@@ -17,8 +17,20 @@ TestResults/
 coverage/
 *.trx
 
+# Unity project generated files
+unity/Dig.Unity/[Ll]ibrary/
+unity/Dig.Unity/[Tt]emp/
+unity/Dig.Unity/[Oo]bj/
+unity/Dig.Unity/[Bb]uild/
+unity/Dig.Unity/[Bb]uilds/
+unity/Dig.Unity/[Ll]ogs/
+unity/Dig.Unity/[Uu]ser[Ss]ettings/
+unity/Dig.Unity/[Mm]emoryCaptures/
+unity/Dig.Unity/[Rr]ecordings/
+unity/Dig.Unity/*.csproj
+unity/Dig.Unity/*.sln
+unity/Dig.Unity/*.user
+
 # OS
 .DS_Store
 Thumbs.db
-
-# Engine-generated directories are added when an engine adapter is introduced.

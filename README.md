@@ -10,9 +10,9 @@ The logical world foundation provides authoritative cells, immutable material de
 
 Navigation derives versioned walkability caches and regions from world snapshots, refreshes changed chunks locally, supports multiple traversal profiles plus ladder and elevator links, and returns diagnosable paths with stale-result validation.
 
-Residents now own needs, schedules, skills, traits, player orders and one active action. Deterministic Utility AI explains every selected and rejected intent, uses hysteresis and cooldown against oscillation, and keeps critical survival above ordinary work or direct orders.
+Residents own needs, schedules, skills, traits, player orders and one active action. Deterministic Utility AI explains every selected and rejected intent, uses hysteresis and cooldown against oscillation, and keeps critical survival above ordinary work or direct orders.
 
-The concrete Unity or Godot adapter has not been selected yet. Domain rules must remain usable without either engine.
+Unity is the selected presentation host. Engine-specific scenes, rendering, input and editor tooling live under `unity/Dig.Unity`; authoritative simulation rules remain usable without Unity.
 
 ## Repository structure
 
@@ -23,9 +23,13 @@ src/
   Dig.Infrastructure/            Technical adapter implementations
   Dig.Presentation.Abstractions/ Read models and presentation contracts
   Dig.Headless/                  Engine-free simulation bootstrap
+  package.json                   Local Unity Package Manager entry point
 
 tests/
   Dig.Tests/                     Domain and cross-layer tests
+
+unity/
+  Dig.Unity/                     Unity 6 presentation host and editor tooling
 
 tools/quality/                   Architecture and file-size checks
 
@@ -38,9 +42,10 @@ docs/
 ## Requirements
 
 - .NET 8 SDK for build and tests;
-- Python 3.12+ for local quality checks.
+- Python 3.12+ for local quality checks;
+- Unity `6000.0.71f1` or a compatible Unity 6 LTS patch for the presentation host.
 
-The core libraries target `netstandard2.1` so they can be integrated into a future engine adapter.
+The core libraries target `netstandard2.1` and are shared with Unity through a local UPM package.
 
 ## Build and test
 
@@ -53,6 +58,16 @@ dotnet run --project src/Dig.Headless/Dig.Headless.csproj
 ```
 
 GitHub Actions runs the quality, build, test and headless smoke checks for pushes and pull requests.
+
+## Open in Unity
+
+1. Clone the repository.
+2. In Unity Hub, choose **Add project from disk**.
+3. Select `unity/Dig.Unity`, not the repository root.
+4. Open the project and wait for the local core package to compile.
+5. Run **Tools > Dig > Create Bootstrap Scene**.
+
+See [`docs/implementation/unity-presentation-host.md`](docs/implementation/unity-presentation-host.md) for the integration details.
 
 ## Architectural rules
 
@@ -69,7 +84,7 @@ The authoritative development rules are in [`docs/development-rules.md`](docs/de
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) and the [roadmap issue](https://github.com/bageus/Dig/issues/16).
 
-Architecture foundation is tracked by issue [#1](https://github.com/bageus/Dig/issues/1). The deterministic simulation runtime is tracked by issue [#2](https://github.com/bageus/Dig/issues/2). The logical world and chunk model is tracked by issue [#3](https://github.com/bageus/Dig/issues/3). Navigation in the changing world is tracked by issue [#4](https://github.com/bageus/Dig/issues/4). Residents, needs and Utility AI are tracked by issue [#5](https://github.com/bageus/Dig/issues/5). The next gameplay stage is jobs and reservations in issue [#6](https://github.com/bageus/Dig/issues/6).
+Architecture foundation is tracked by issue [#1](https://github.com/bageus/Dig/issues/1). The deterministic simulation runtime is tracked by issue [#2](https://github.com/bageus/Dig/issues/2). The logical world and chunk model is tracked by issue [#3](https://github.com/bageus/Dig/issues/3). Navigation in the changing world is tracked by issue [#4](https://github.com/bageus/Dig/issues/4). Residents, needs and Utility AI are tracked by issue [#5](https://github.com/bageus/Dig/issues/5). The next gameplay stage is jobs and reservations in issue [#6](https://github.com/bageus/Dig/issues/6). Unity presentation work is tracked by issue [#14](https://github.com/bageus/Dig/issues/14).
 
 ## License
 
