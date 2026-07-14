@@ -12,7 +12,9 @@ Navigation derives versioned walkability caches and regions from world snapshots
 
 Residents own needs, schedules, skills, traits, player orders and one active action. Deterministic Utility AI explains every selected and rejected intent, uses hysteresis and cooldown against oscillation, and keeps critical survival above ordinary work or direct orders.
 
-Jobs own their complete lifecycle from creation through completion, cancellation or failure. Typed digging jobs use deterministic worker scoring, dependency checks, bounded retries and a single reservation ledger for workers, work positions and designations.
+Jobs own their complete lifecycle from creation through completion, cancellation or failure. Typed digging and hauling jobs use deterministic worker scoring, dependency checks, bounded retries and a single worker reservation ledger.
+
+Inventory owns immutable item definitions plus authoritative stack quantities, partial reservations and typed locations. Storage owns filters, priorities and incoming capacity. Transactional hauling conserves item quantity from a world cell to a stockpile and releases all reservations on completion or cancellation.
 
 Unity is the selected presentation host. Engine-specific scenes, rendering, input and editor tooling live under `unity/Dig.Unity`; authoritative simulation rules remain usable without Unity.
 
@@ -86,7 +88,7 @@ The authoritative development rules are in [`docs/development-rules.md`](docs/de
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) and the [roadmap issue](https://github.com/bageus/Dig/issues/16).
 
-Architecture foundation is tracked by issue [#1](https://github.com/bageus/Dig/issues/1). The deterministic simulation runtime is tracked by issue [#2](https://github.com/bageus/Dig/issues/2). The logical world and chunk model is tracked by issue [#3](https://github.com/bageus/Dig/issues/3). Navigation in the changing world is tracked by issue [#4](https://github.com/bageus/Dig/issues/4). Residents, needs and Utility AI are tracked by issue [#5](https://github.com/bageus/Dig/issues/5). Jobs and reservations are tracked by issue [#6](https://github.com/bageus/Dig/issues/6). The next gameplay stage is inventory, storage and hauling in issue [#7](https://github.com/bageus/Dig/issues/7). Unity presentation work is tracked by issue [#14](https://github.com/bageus/Dig/issues/14).
+Architecture foundation is tracked by issue [#1](https://github.com/bageus/Dig/issues/1). The deterministic simulation runtime is tracked by issue [#2](https://github.com/bageus/Dig/issues/2). The logical world and chunk model is tracked by issue [#3](https://github.com/bageus/Dig/issues/3). Navigation in the changing world is tracked by issue [#4](https://github.com/bageus/Dig/issues/4). Residents, needs and Utility AI are tracked by issue [#5](https://github.com/bageus/Dig/issues/5). Jobs and reservations are tracked by issue [#6](https://github.com/bageus/Dig/issues/6). Inventory, storage and hauling are tracked by issue [#7](https://github.com/bageus/Dig/issues/7). The next settlement stage is buildings and construction in issue [#8](https://github.com/bageus/Dig/issues/8). Unity presentation work is tracked by issue [#14](https://github.com/bageus/Dig/issues/14).
 
 ## License
 
