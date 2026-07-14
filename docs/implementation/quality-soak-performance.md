@@ -2,30 +2,47 @@
 
 ## Purpose
 
-The quality soak is a deterministic headless scenario for detecting cross-system regressions before UI or content scale hides them. It is not a benchmark of final release hardware. It establishes a reproducible CI baseline, identifies expensive systems and fails on structural corruption.
+The quality soak is a deterministic headless scenario for detecting cross-system regressions before UI or content scale hides them. It is not a benchmark of final release hardware. It establishes reproducible CI baselines, identifies expensive systems and fails on structural corruption.
 
 The implementation completes issue #15 and extends the normal quality workflow rather than creating a separate test pipeline.
 
-## Command
+## Profiles and commands
 
-Run the default scenario locally:
+Run the standard profile locally:
 
 ```bash
 dotnet run --project src/Dig.Headless/Dig.Headless.csproj \
   --configuration Release -- \
-  --soak --ticks 2000 --residents 8 \
-  --max-seconds 30 --report soak-report.json
+  --soak --profile standard \
+  --report soak-report-standard.json
 ```
+
+Run the large settlement profile:
+
+```bash
+dotnet run --project src/Dig.Headless/Dig.Headless.csproj \
+  --configuration Release -- \
+  --soak --profile large \
+  --report soak-report-large.json
+```
+
+Named defaults:
+
+| Profile | Main ticks | Residents | Food | Hauling workers | One-run time budget |
+|---|---:|---:|---:|---:|---:|
+| `standard` | 2000 | 8 | 5000 | 4 | 30 seconds |
+| `large` | 1000 | 64 | 64000 | 16 | 10 seconds |
 
 Supported arguments:
 
+- `--profile`: `standard` or `large`, default `standard`;
 - `--seed`: deterministic 32-bit input seed, default `4242`;
-- `--ticks`: main simulation duration, minimum `100`, default `2000`;
-- `--residents`: resident count from `2` to `64`, default `8`;
-- `--max-seconds`: wall-clock budget for one run, default `30`;
-- `--report`: JSON report path, default `soak-report.json`.
+- `--ticks`: overrides the profile main duration, minimum `100`;
+- `--residents`: overrides the profile population from `2` to `64`;
+- `--max-seconds`: overrides the one-run wall-clock budget;
+- `--report`: JSON report path, default `soak-report-<profile>.json`.
 
-The command runs the scenario twice with identical parameters and compares a SHA-256 hash of authoritative state. Timing data is excluded from the hash.
+The command runs the selected scenario twice with identical parameters and compares a SHA-256 hash of authoritative state. Timing data and the profile name are excluded from the hash.
 
 ## Scenario
 
@@ -36,7 +53,7 @@ One run contains:
 - a bounded execution journal;
 - recurring world item creation;
 - deterministic automatic hauling;
-- several independent hauling workers;
+- profile-scaled independent hauling workers;
 - per-tick cross-system invariant validation;
 - a final twenty-tick drain after resource spawning stops.
 
@@ -66,32 +83,13 @@ Performance samples, wall-clock time and retained event ordering outside authori
 
 `InMemorySimulationPerformance` aggregates samples online. It does not retain every tick, so profiling memory remains bounded as simulation duration grows.
 
-The report orders systems by total elapsed time and contains:
+The report orders systems by total elapsed time and contains execution count, total and average time, maximum execution time and total and average allocated bytes.
 
-- execution count;
-- total milliseconds;
-- average microseconds;
-- maximum execution milliseconds;
-- total allocated bytes;
-- average allocated bytes.
+## Profile budgets
 
-## Budgets
+Global budgets and stable-name overrides belong to the selected profile. A system override replaces all three global execution limits only for that system.
 
-Global CI budgets are deliberately conservative:
-
-| Metric | Budget |
-|---|---:|
-| Main simulation duration | 2000 ticks |
-| Drain duration | 20 ticks |
-| Residents | 8 |
-| Wall-clock time for one run | 30 seconds |
-| Average system execution | 10000 microseconds |
-| Average allocation per execution | 2000000 bytes |
-| Maximum single execution | 500 milliseconds |
-
-`SimulationPerformanceBudget` also supports stable-name overrides. A system override replaces all three global execution limits only for that system.
-
-Dedicated regression budgets:
+Standard dedicated budgets:
 
 | System | Average execution | Average allocation | Maximum execution |
 |---|---:|---:|---:|
@@ -99,11 +97,19 @@ Dedicated regression budgets:
 | `soak.hauling` | 100 microseconds | 25000 bytes | 100 milliseconds |
 | `soak.invariants` | 150 microseconds | 25000 bytes | 50 milliseconds |
 
+Large dedicated budgets:
+
+| System | Average execution | Average allocation | Maximum execution |
+|---|---:|---:|---:|
+| `agents.settlement` | 1800 microseconds | 325000 bytes | 100 milliseconds |
+| `soak.hauling` | 150 microseconds | 20000 bytes | 100 milliseconds |
+| `soak.invariants` | 500 microseconds | 175000 bytes | 50 milliseconds |
+
 Budgets must be tightened from retained reports rather than guessed. A budget increase requires a documented reason and should not be used to hide a regression.
 
 ## First Linux CI baseline
 
-The first successful GitHub Actions run on July 14, 2026 produced:
+The first successful standard GitHub Actions run on July 14, 2026 produced:
 
 | Result | Value |
 |---|---:|
@@ -118,7 +124,7 @@ The first successful GitHub Actions run on July 14, 2026 produced:
 | Retained / dropped events | 5000 / 23350 |
 | Deterministic replay | matched |
 
-System baseline:
+Original system baseline:
 
 | System | Average time | Maximum time | Average allocations |
 |---|---:|---:|---:|
@@ -127,25 +133,14 @@ System baseline:
 | `soak.hauling` | 96.77 us | 23.01 ms | 60767 bytes |
 | `soak.resource_spawn` | 8.39 us | 0.35 ms | 580 bytes |
 
-The baseline identified settlement snapshot and collection creation as the first Alpha optimization target.
-
 ## Settlement allocation optimization
 
-Issue #32 replaced repeated full-state reads with owner-owned point queries:
+Issue #32 replaced repeated full-state reads with owner-owned point queries. Inventory and Facilities no longer create full result arrays for each resident, the agent repository caches stable iteration order and settlement reuses one decision snapshot on the normal path.
 
-- Inventory category availability scans authoritative stacks without creating an `InventorySnapshot`;
-- food target selection returns only the stable winning stack id;
-- reservation validation reads the requested stack directly;
-- Facilities availability and target selection scan authoritative definitions without result arrays;
-- release and resident-reservation checks avoid temporary LINQ collections;
-- the in-memory agent repository caches stable resident iteration order;
-- settlement reuses one decision snapshot on the normal path.
-
-The first optimized Linux CI soak produced:
+Measured result:
 
 | Result | Before | After | Change |
 |---|---:|---:|---:|
-| Overall wall-clock | 1643.38 ms | 1286.58 ms | -21.7% |
 | Settlement average time | 570.62 us | 213.73 us | -62.5% |
 | Settlement maximum time | 39.88 ms | 30.16 ms | -24.4% |
 | Settlement average allocations | 295927 bytes | 34517 bytes | -88.3% |
@@ -153,20 +148,12 @@ The first optimized Linux CI soak produced:
 
 ## Hauling allocation optimization
 
-Issue #34 completed the planner optimization that PR #35 had only started. The final implementation:
+Issue #34 completed the planner optimization that PR #35 had only started. It snapshots only available world stacks, computes destination occupancy directly, returns only the winning Storage zone, avoids empty planning collections and tracks soak-created jobs by id.
 
-- snapshots only world stacks with available quantity;
-- computes one storage occupancy directly from Inventory;
-- returns only the winning Storage destination;
-- avoids empty planning lists and sorted wrappers;
-- uses the same point occupancy query during hauling job creation;
-- tracks soak-created jobs by id instead of materializing complete terminal job history multiple times per tick.
-
-The budget-enforced Linux CI soak produced:
+Measured result:
 
 | Result | Before | After | Change |
 |---|---:|---:|---:|
-| Overall wall-clock | 1286.58 ms | 679.28 ms | -47.2% |
 | Hauling average time | 162.24 us | 35.30 us | -78.2% |
 | Hauling maximum time | 23.11 ms | 15.97 ms | -30.9% |
 | Hauling average allocations | 60767 bytes | 13114 bytes | -78.4% |
@@ -174,74 +161,67 @@ The budget-enforced Linux CI soak produced:
 
 ## Invariant checker allocation optimization
 
-Issue #37 replaces full diagnostic snapshots with owner-owned inspection visitors:
+Issue #37 replaced full diagnostic snapshots with owner-owned inspection visitors. Inventory, Jobs, Storage and Facilities traverse their authoritative collections directly; lookup buffers are reused and valid reports share an empty result.
 
-- Inventory visits stack quantities and reservations directly;
-- Jobs visits lifecycle state and reservation ledger entries without creating `JobSnapshot` history;
-- Storage and Facilities visit only current reservations;
-- cross-system hauling links use point quantity and reservation lookups;
-- job-by-agent and facility-agent validation buffers are reused across ticks;
-- valid reports share the empty violation array;
-- violation objects and formatted details are created only when a rule actually fails.
-
-The first optimized Linux CI soak produced:
+Measured result:
 
 | Result | Before | After | Change |
 |---|---:|---:|---:|
-| Invariant average time | 165.69 us | 84.93 us | -48.7% |
-| Invariant maximum time | 19.02 ms | 7.26 ms | -61.8% |
+| Invariant average time | 165.69 us | 68.31 us | -58.8% |
+| Invariant maximum time | 19.02 ms | 7.67 ms | -59.7% |
 | Invariant average allocations | 84509 bytes | 16875 bytes | -80.0% |
 | Invariant total allocations | 170710016 bytes | 34088096 bytes | -80.0% |
 
-Authoritative behavior did not change across the optimizations. The retained state hash is:
+## Large settlement baseline
+
+Issue #39 adds a second CI profile rather than replacing the fast standard regression. The first 64-resident Linux run produced:
+
+| Result | Value |
+|---|---:|
+| Final tick | 1020 |
+| Wall-clock time | 1398.87 ms |
+| Residents / hauling workers | 64 / 16 |
+| Initial / remaining food | 64000 / 55487 |
+| Spawned / total / stored ore | 250 / 250 / 250 |
+| Completed hauling jobs | 50 |
+| Active hauling jobs | 0 |
+| Jobs / Storage reservations | 0 / 0 |
+| Retained / dropped events | 5000 / 105803 |
+| Deterministic replay | matched |
+
+Large system baseline:
+
+| System | Average time | Maximum time | Average allocations |
+|---|---:|---:|---:|
+| `agents.settlement` | 1064.00 us | 29.47 ms | 270800 bytes |
+| `soak.invariants` | 239.79 us | 5.07 ms | 134433 bytes |
+| `soak.hauling` | 62.79 us | 26.56 ms | 7769 bytes |
+| `soak.resource_spawn` | 19.28 us | 0.62 ms | 360 bytes |
+
+The large profile exposes population-scale costs while retaining the same authoritative mechanics. Its state hash is expected to differ from standard because load parameters and initial state differ, but repeated large runs must match each other.
+
+The standard state hash remains:
 
 ```text
 B315282B332B67B4EEE68D3B3C59D997013C014A947B534106DA7FD75EC04480
 ```
 
-The optimized runs retain 500 / 500 / 500 spawned, total and stored ore, complete 100 hauling jobs and end with zero active hauling jobs, Jobs reservations, Storage reservations, invariant violations or budget violations.
+The first large state hash is:
+
+```text
+42B798277A05A1099E5C8DF3EC59F0B8931AE8C49BB6C10AD11238F2B8D0CC99
+```
 
 ## Bounded diagnostics
 
-`InMemoryExecutionJournal` accepts optional command and event capacities. When a capacity is reached, it removes the oldest entries and increments dropped-entry counters.
-
-The soak uses:
-
-- up to `1000` retained commands;
-- up to `5000` retained events.
-
-The JSON report exposes retained and dropped totals so diagnostic pressure remains visible without unbounded memory growth.
+`InMemoryExecutionJournal` retains up to `1000` commands and `5000` events. When a capacity is reached, it removes the oldest entries and increments dropped-entry counters. Both JSON reports expose retained and dropped totals.
 
 ## Invariants
 
-`SettlementInvariantChecker` is reusable outside the soak host. It checks:
-
-- positive item quantities and reservations;
-- reserved quantity not exceeding stack quantity;
-- one reservation record per owner and stack;
-- Jobs reservations referencing an active job and its assigned worker;
-- one active reserved job per worker;
-- active hauling jobs owning exact Inventory and Storage reservations;
-- terminal hauling jobs owning no external reservations;
-- Storage incoming reservations referencing active hauling jobs;
-- food actions owning an item reservation;
-- sleep and leisure actions owning the correct facility reservation;
-- facility reservations referencing the matching active resident target.
-
-The checker returns an immutable report. Valid checks use the shared empty result, while failed checks retain deterministic sorting by code, entity and detail and can throw with the complete report in debug, test or soak modes.
+`SettlementInvariantChecker` checks positive quantities and reservations, reservation capacity, Jobs worker ownership, hauling external links, terminal cleanup, Storage incoming links and resident food/facility targets. Failed checks retain deterministic sorting by code, entity and detail.
 
 ## CI artifacts
 
-GitHub Actions runs the standard headless smoke first, then the deterministic soak. `soak-report.json` is uploaded even when the soak step fails and is retained for fourteen days.
+GitHub Actions runs the normal headless smoke, then both deterministic profiles. `soak-report-standard.json` and `soak-report-large.json` are uploaded even when a profile fails and are retained for fourteen days.
 
-The report contains:
-
-- state hash and replay result;
-- quantity conservation totals;
-- active and completed hauling counts;
-- reservation counts;
-- journal retention pressure;
-- per-system performance summaries;
-- budget violations;
-- invariant violations;
-- overall success.
+Each report contains profile identity, load parameters, state hash and replay result, quantity conservation, active/completed hauling counts, reservation counts, journal pressure, per-system performance summaries, budget violations, invariant violations and overall success.

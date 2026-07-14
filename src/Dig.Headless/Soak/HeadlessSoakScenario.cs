@@ -20,7 +20,6 @@ internal static class HeadlessSoakScenario
 {
     private static readonly ItemId FoodItemId = new ItemId("soak.food");
     private static readonly ItemId OreItemId = new ItemId("soak.ore");
-    private const int InitialFoodQuantity = 5_000;
     private const int DrainTicks = 20;
 
     public static HeadlessSoakReport Execute(HeadlessSoakConfiguration configuration)
@@ -43,7 +42,7 @@ internal static class HeadlessSoakScenario
             StorageFilter.All())));
         InMemoryStorageRepository storageRepository = new InMemoryStorageRepository(storage);
 
-        InventoryState inventory = CreateInventory(state, storageId);
+        InventoryState inventory = CreateInventory(state, storageId, configuration);
         InMemoryInventoryRepository inventoryRepository =
             new InMemoryInventoryRepository(inventory);
         InMemoryAgentRepository agentRepository = CreateAgents(
@@ -54,7 +53,7 @@ internal static class HeadlessSoakScenario
             configuration.ResidentCount);
         InMemoryJobRepository jobRepository = new InMemoryJobRepository();
 
-        EntityId[] haulingWorkers = Enumerable.Range(0, Math.Min(4, configuration.ResidentCount))
+        EntityId[] haulingWorkers = Enumerable.Range(0, configuration.HaulingWorkerCount)
             .Select(_ => Register(state))
             .ToArray();
         ResidentSettlementSystem settlement = new ResidentSettlementSystem(
@@ -85,8 +84,7 @@ internal static class HeadlessSoakScenario
             facilitiesRepository);
         SoakInvariantSystem invariants = new SoakInvariantSystem(checker);
 
-        SimulationScheduler scheduler = new SimulationScheduler(
-            performance: performance);
+        SimulationScheduler scheduler = new SimulationScheduler(performance: performance);
         scheduler.Register(spawner);
         scheduler.Register(settlement);
         scheduler.Register(hauling);
@@ -98,29 +96,8 @@ internal static class HeadlessSoakScenario
         runner.Step(DrainTicks);
         elapsed.Stop();
 
-        SimulationPerformanceBudget budget = new SimulationPerformanceBudget(
-            maximumAverageMicroseconds: 10_000,
-            maximumAverageAllocatedBytes: 2_000_000,
-            maximumSingleExecutionMilliseconds: 500,
-            overrides: new[]
-            {
-                new SystemPerformanceBudgetLimit(
-                    "agents.settlement",
-                    maximumAverageMicroseconds: 500,
-                    maximumAverageAllocatedBytes: 50_000,
-                    maximumSingleExecutionMilliseconds: 100),
-                new SystemPerformanceBudgetLimit(
-                    "soak.hauling",
-                    maximumAverageMicroseconds: 100,
-                    maximumAverageAllocatedBytes: 25_000,
-                    maximumSingleExecutionMilliseconds: 100),
-                new SystemPerformanceBudgetLimit(
-                    "soak.invariants",
-                    maximumAverageMicroseconds: 150,
-                    maximumAverageAllocatedBytes: 25_000,
-                    maximumSingleExecutionMilliseconds: 50),
-            });
-        SimulationPerformanceReport performanceReport = performance.CreateReport(budget);
+        SimulationPerformanceReport performanceReport = performance.CreateReport(
+            configuration.PerformanceBudget);
         SimulationInvariantReport invariantReport = checker.Check(state.Clock.TickIndex);
         JobSnapshot[] jobs = jobRepository.Get().GetAll().ToArray();
         int activeHauling = jobs.Count(value =>
@@ -164,10 +141,13 @@ internal static class HeadlessSoakScenario
             && budgetViolations.Count == 0;
         return new HeadlessSoakReport
         {
+            Profile = configuration.Profile.Name,
             Seed = configuration.Seed,
             RequestedTicks = configuration.TickCount,
             FinalTick = state.Clock.TickIndex,
             ResidentCount = configuration.ResidentCount,
+            HaulingWorkerCount = configuration.HaulingWorkerCount,
+            InitialFoodQuantity = configuration.InitialFoodQuantity,
             EntityCount = state.Entities.Count,
             SpawnedOre = spawner.SpawnedQuantity,
             TotalOre = totalOre,
@@ -195,14 +175,15 @@ internal static class HeadlessSoakScenario
 
     private static InventoryState CreateInventory(
         SimulationState state,
-        EntityId storageId)
+        EntityId storageId,
+        HeadlessSoakConfiguration configuration)
     {
         ItemCatalog catalog = new ItemCatalog(new[]
         {
             new ItemDefinition(
                 FoodItemId,
                 "Soak meal",
-                maximumStackSize: 10_000,
+                maximumStackSize: configuration.InitialFoodQuantity,
                 isTool: false,
                 new[] { new ItemCategoryId("food") }),
             new ItemDefinition(
@@ -216,7 +197,7 @@ internal static class HeadlessSoakScenario
         Require(inventory.AddStack(
             Register(state),
             FoodItemId,
-            InitialFoodQuantity,
+            configuration.InitialFoodQuantity,
             ItemLocation.InStorage(storageId),
             tick: 0));
         return inventory;

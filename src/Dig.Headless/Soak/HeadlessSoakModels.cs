@@ -5,12 +5,14 @@ namespace Dig.Headless.Soak;
 internal sealed class HeadlessSoakConfiguration
 {
     public HeadlessSoakConfiguration(
+        HeadlessSoakProfile profile,
         int seed,
         int tickCount,
         int residentCount,
         string reportPath,
         double maximumElapsedSeconds)
     {
+        Profile = profile ?? throw new ArgumentNullException(nameof(profile));
         if (tickCount < 100)
         {
             throw new ArgumentOutOfRangeException(nameof(tickCount));
@@ -38,6 +40,8 @@ internal sealed class HeadlessSoakConfiguration
         MaximumElapsedSeconds = maximumElapsedSeconds;
     }
 
+    public HeadlessSoakProfile Profile { get; }
+
     public int Seed { get; }
 
     public int TickCount { get; }
@@ -48,14 +52,31 @@ internal sealed class HeadlessSoakConfiguration
 
     public double MaximumElapsedSeconds { get; }
 
+    public int InitialFoodQuantity => Profile.InitialFoodQuantity;
+
+    public int HaulingWorkerCount => Math.Min(
+        Profile.MaximumHaulingWorkers,
+        ResidentCount);
+
+    public SimulationPerformanceBudget PerformanceBudget => Profile.PerformanceBudget;
+
     public static HeadlessSoakConfiguration Parse(string[] args)
     {
+        HeadlessSoakProfile profile = HeadlessSoakProfile.Parse(
+            FindValue(args, "--profile"));
         return new HeadlessSoakConfiguration(
+            profile,
             seed: ReadInt(args, "--seed", 4242),
-            tickCount: ReadInt(args, "--ticks", 2_000),
-            residentCount: ReadInt(args, "--residents", 8),
-            reportPath: ReadString(args, "--report", "soak-report.json"),
-            maximumElapsedSeconds: ReadDouble(args, "--max-seconds", 30));
+            tickCount: ReadInt(args, "--ticks", profile.DefaultTickCount),
+            residentCount: ReadInt(args, "--residents", profile.DefaultResidentCount),
+            reportPath: ReadString(
+                args,
+                "--report",
+                $"soak-report-{profile.Name}.json"),
+            maximumElapsedSeconds: ReadDouble(
+                args,
+                "--max-seconds",
+                profile.DefaultMaximumElapsedSeconds));
     }
 
     private static int ReadInt(string[] args, string name, int defaultValue)
@@ -126,6 +147,8 @@ internal sealed class HeadlessSoakSystemReport
 
 internal sealed class HeadlessSoakReport
 {
+    public string Profile { get; init; } = string.Empty;
+
     public int Seed { get; init; }
 
     public int RequestedTicks { get; init; }
@@ -133,6 +156,10 @@ internal sealed class HeadlessSoakReport
     public long FinalTick { get; init; }
 
     public int ResidentCount { get; init; }
+
+    public int HaulingWorkerCount { get; init; }
+
+    public int InitialFoodQuantity { get; init; }
 
     public int EntityCount { get; init; }
 
