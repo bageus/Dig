@@ -107,6 +107,46 @@ def check_compiler_baseline(config: dict[str, object]) -> list[str]:
     return errors
 
 
+def check_unity_compiler_configuration(config: dict[str, object]) -> list[str]:
+    del config
+    errors: list[str] = []
+    response_path = ROOT / "unity" / "Dig.Unity" / "Assets" / "csc.rsp"
+    if not response_path.exists():
+        errors.append("unity/Dig.Unity/Assets/csc.rsp is required")
+    else:
+        flags = {
+            line.strip()
+            for line in response_path.read_text(encoding="utf-8-sig").splitlines()
+            if line.strip()
+        }
+        if "-nullable:enable" not in flags:
+            errors.append(
+                "unity/Dig.Unity/Assets/csc.rsp must enable nullable annotations"
+            )
+
+    asmdef_path = (
+        ROOT
+        / "unity"
+        / "Dig.Unity"
+        / "Assets"
+        / "Dig.Unity"
+        / "Runtime"
+        / "Dig.Unity.asmdef"
+    )
+    if not asmdef_path.exists():
+        errors.append("Dig.Unity runtime assembly definition is missing")
+    else:
+        assembly = json.loads(asmdef_path.read_text(encoding="utf-8-sig"))
+        references = {str(reference) for reference in assembly.get("references", [])}
+        required_module = "UnityEngine.PhysicsModule"
+        if required_module not in references:
+            errors.append(
+                f"Dig.Unity.asmdef must reference {required_module} for raycast input"
+            )
+
+    return errors
+
+
 def project_name(project_path: Path) -> str:
     tree = ET.parse(project_path)
     root = tree.getroot()
@@ -213,6 +253,7 @@ def main() -> int:
         ("file length", check_file_lengths),
         ("C# 9 compatibility", check_csharp9_compatibility),
         ("compiler baseline", check_compiler_baseline),
+        ("Unity compiler configuration", check_unity_compiler_configuration),
         ("project dependencies", check_project_dependencies),
         ("domain boundaries", check_domain_boundaries),
     ]
