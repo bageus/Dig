@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.World;
+namespace Dig.Domain.World
+{
 
 public enum CellDesignation
 {
@@ -186,4 +190,5 @@ public static class WorldErrors
     public static readonly DomainError InvalidDesignation = new DomainError(
         "world.designation.invalid",
         "The requested cell designation is invalid for the target material.");
+}
 }

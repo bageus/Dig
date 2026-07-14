@@ -1,8 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
 
-namespace Dig.Application.Agents;
+namespace Dig.Application.Agents
+{
 
 public static class AgentApplicationErrors
 {
@@ -66,4 +70,5 @@ public sealed class AgentTickReport
     public long Tick { get; }
 
     public IReadOnlyList<AgentTickDecision> Decisions { get; }
+}
 }

@@ -1,8 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
 
-namespace Dig.Domain.Buildings;
+namespace Dig.Domain.Buildings
+{
 
 public readonly struct BuildingDefinitionId
     : IEquatable<BuildingDefinitionId>, IComparable<BuildingDefinitionId>
@@ -284,4 +288,5 @@ public sealed class BuildingCatalog
             ? value
             : throw new KeyNotFoundException($"Unknown building definition '{id}'.");
     }
+}
 }

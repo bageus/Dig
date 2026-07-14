@@ -1,6 +1,8 @@
+using System;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Colonies;
+namespace Dig.Domain.Colonies
+{
 
 public sealed class ColonyState : AggregateRoot
 {
@@ -133,4 +135,5 @@ public static class ColonyErrors
     public static readonly DomainError NotFound = new DomainError(
         "colony.not_found",
         "Colony was not found.");
+}
 }

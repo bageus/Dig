@@ -1,9 +1,11 @@
+using System.Collections.Generic;
 using Dig.Application.Agents;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class SettlementTickReportTests
 {
@@ -28,4 +30,5 @@ public sealed class SettlementTickReportTests
         Assert.Equal(first, report.Agents[0].AgentId);
         Assert.Equal(second, report.Agents[1].AgentId);
     }
+}
 }

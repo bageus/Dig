@@ -1,8 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 
-namespace Dig.Domain.Storage;
+namespace Dig.Domain.Storage
+{
 
 public sealed class StorageFilter
 {
@@ -99,4 +103,5 @@ public sealed class StorageZoneDefinition
     public int Capacity { get; }
 
     public StorageFilter Filter { get; }
+}
 }

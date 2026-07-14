@@ -1,9 +1,13 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Application.Jobs;
 using Dig.Domain.Core;
 using Dig.Domain.Jobs;
 
-namespace Dig.Infrastructure.InMemory;
+namespace Dig.Infrastructure.InMemory
+{
 
 public sealed class InMemoryJobRepository : IJobRepository
 {
@@ -64,4 +68,5 @@ public sealed class InMemoryJobCandidateProvider : IJobCandidateProvider
             : Array.Empty<JobCandidate>();
         return new ReadOnlyCollection<JobCandidate>(values);
     }
+}
 }

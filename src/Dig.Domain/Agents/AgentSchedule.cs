@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 
-namespace Dig.Domain.Agents;
+namespace Dig.Domain.Agents
+{
 
 public enum ScheduleActivity
 {
@@ -156,4 +160,5 @@ public sealed class DailySchedule
                 nameof(segments));
         }
     }
+}
 }

@@ -3,7 +3,8 @@ using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 
-namespace Dig.Application.Diagnostics;
+namespace Dig.Application.Diagnostics
+{
 
 public sealed partial class SettlementInvariantChecker
 {
@@ -73,4 +74,5 @@ public sealed partial class SettlementInvariantChecker
                 reservation.FacilityId);
         }
     }
+}
 }

@@ -1,4 +1,6 @@
-namespace Dig.Domain.Agents;
+using System;
+namespace Dig.Domain.Agents
+{
 
 public sealed partial class AgentState
 {
@@ -14,4 +16,5 @@ public sealed partial class AgentState
         Version = checked(Version + 1);
         Raise(new AgentActionBlocked(tick, Id, intentKind, LastActionBlockReason));
     }
+}
 }

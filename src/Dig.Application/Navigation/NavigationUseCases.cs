@@ -1,9 +1,12 @@
+using System;
+using System.Collections.Generic;
 using Dig.Application.Messaging;
 using Dig.Domain.Core;
 using Dig.Domain.Navigation;
 using Dig.Domain.World;
 
-namespace Dig.Application.Navigation;
+namespace Dig.Application.Navigation
+{
 
 public interface INavigationRepository
 {
@@ -227,4 +230,5 @@ public sealed class GetNavigationSnapshotQueryHandler
             ? Result<NavigationSnapshot>.Failure(NavigationErrors.MapNotFound)
             : map.GetSnapshot();
     }
+}
 }

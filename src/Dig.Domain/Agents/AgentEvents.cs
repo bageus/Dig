@@ -1,6 +1,8 @@
+using System;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Agents;
+namespace Dig.Domain.Agents
+{
 
 public sealed class AgentActionStarted : IDomainEvent
 {
@@ -119,4 +121,5 @@ public sealed class AgentDied : IDomainEvent
     public long Tick { get; }
 
     public EntityId AgentId { get; }
+}
 }

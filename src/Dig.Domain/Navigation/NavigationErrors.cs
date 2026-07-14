@@ -1,6 +1,7 @@
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Navigation;
+namespace Dig.Domain.Navigation
+{
 
 public static class NavigationErrors
 {
@@ -31,4 +32,5 @@ public static class NavigationErrors
     public static readonly DomainError LinkOutOfBounds = new DomainError(
         "navigation.link.out_of_bounds",
         "A traversal link endpoint is outside the world bounds.");
+}
 }

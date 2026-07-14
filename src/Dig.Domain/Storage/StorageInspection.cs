@@ -1,4 +1,6 @@
-namespace Dig.Domain.Storage;
+using System;
+namespace Dig.Domain.Storage
+{
 
 public interface IStorageInspectionVisitor
 {
@@ -19,4 +21,5 @@ public sealed partial class StorageState
             visitor.VisitStorageReservation(reservation);
         }
     }
+}
 }

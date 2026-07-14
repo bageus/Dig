@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Dig.Application.Messaging;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
@@ -5,7 +7,8 @@ using Dig.Domain.Inventory;
 using Dig.Domain.Production;
 using Dig.Domain.World;
 
-namespace Dig.Application.Production;
+namespace Dig.Application.Production
+{
 
 public interface IProductionRepository
 {
@@ -189,4 +192,5 @@ public sealed class UnlockTechnologyCommand : ICommand<Result>
 public sealed class GetProductionOrdersQuery
     : IQuery<IReadOnlyList<ProductionOrderSnapshot>>
 {
+}
 }

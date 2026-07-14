@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using Dig.Application.Runtime;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
@@ -5,7 +7,8 @@ using Dig.Domain.Runtime;
 using Dig.Infrastructure.InMemory;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class SimulationQualityTests
 {
@@ -124,4 +127,5 @@ public sealed class SimulationQualityTests
             _ = new byte[32];
         }
     }
+}
 }

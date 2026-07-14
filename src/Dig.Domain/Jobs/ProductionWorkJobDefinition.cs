@@ -1,9 +1,12 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 
-namespace Dig.Domain.Jobs;
+namespace Dig.Domain.Jobs
+{
 
 public sealed class ProductionWorkJobDefinition : JobDefinition
 {
@@ -54,4 +57,5 @@ public sealed class ProductionWorkJobDefinition : JobDefinition
             ReservationKey.ForPosition(WorkPosition),
         });
     }
+}
 }

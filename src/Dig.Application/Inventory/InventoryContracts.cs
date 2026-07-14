@@ -1,10 +1,13 @@
+using System;
+using System.Collections.Generic;
 using Dig.Application.Messaging;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.Storage;
 
-namespace Dig.Application.Inventory;
+namespace Dig.Application.Inventory
+{
 
 public interface IInventoryRepository
 {
@@ -121,4 +124,5 @@ public static class HaulingErrors
     public static readonly DomainError InvalidStage = new DomainError(
         "hauling.invalid_stage",
         "The hauling job is not ready to deposit its reserved items.");
+}
 }

@@ -1,7 +1,8 @@
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 internal static class AgentTestFactory
 {
@@ -88,4 +89,5 @@ internal static class AgentTestFactory
             "Forced test decision.",
             new[] { option });
     }
+}
 }

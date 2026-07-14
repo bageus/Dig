@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Application.Jobs;
 using Dig.Application.Messaging;
@@ -6,7 +9,8 @@ using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.Storage;
 
-namespace Dig.Application.Inventory;
+namespace Dig.Application.Inventory
+{
 
 public sealed class BlockHaulingJobCommand : ICommand<Result>
 {
@@ -331,4 +335,5 @@ public sealed class ReconcileHaulingHandler
         int releasedStorage = storage.ReleaseIncoming(jobId, tick);
         return checked(releasedItems + releasedStorage);
     }
+}
 }

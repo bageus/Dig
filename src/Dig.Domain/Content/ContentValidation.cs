@@ -1,6 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Collections.ObjectModel;
 
-namespace Dig.Domain.Content;
+namespace Dig.Domain.Content
+{
 
 public sealed class ContentValidationIssue
 {
@@ -53,4 +58,5 @@ public sealed class ContentValidationResult
     public IReadOnlyList<ContentValidationIssue> Issues { get; }
 
     public bool Succeeded => Catalog is not null && Issues.Count == 0;
+}
 }

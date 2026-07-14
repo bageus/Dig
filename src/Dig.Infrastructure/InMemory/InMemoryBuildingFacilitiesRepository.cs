@@ -1,7 +1,9 @@
+using System;
 using Dig.Application.Agents;
 using Dig.Domain.Buildings;
 
-namespace Dig.Infrastructure.InMemory;
+namespace Dig.Infrastructure.InMemory
+{
 
 public sealed class InMemoryBuildingFacilitiesRepository
     : IBuildingFacilitiesRepository
@@ -23,4 +25,5 @@ public sealed class InMemoryBuildingFacilitiesRepository
     {
         _facilities = facilities ?? throw new ArgumentNullException(nameof(facilities));
     }
+}
 }

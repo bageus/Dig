@@ -1,8 +1,10 @@
+using System;
 using Dig.Application.Diagnostics;
 using Dig.Domain.Core;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class SimulationInvariantReportTests
 {
@@ -57,4 +59,5 @@ public sealed class SimulationInvariantReportTests
             },
             value => Assert.Equal("z.code", value.Code));
     }
+}
 }

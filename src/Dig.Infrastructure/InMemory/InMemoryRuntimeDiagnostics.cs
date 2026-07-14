@@ -1,8 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Messaging;
 using Dig.Application.Runtime;
 using Dig.Domain.Core;
 
-namespace Dig.Infrastructure.InMemory;
+namespace Dig.Infrastructure.InMemory
+{
 
 public sealed class InMemoryExecutionJournal : IExecutionJournal
 {
@@ -117,4 +121,5 @@ public sealed class InMemorySimulationTrace : ISimulationTrace
             _executions.Add(execution);
         }
     }
+}
 }

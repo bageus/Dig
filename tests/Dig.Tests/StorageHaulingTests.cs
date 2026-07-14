@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Domain.Core;
@@ -8,7 +10,8 @@ using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class StorageHaulingTests
 {
@@ -246,4 +249,5 @@ public sealed class StorageHaulingTests
                 Journal);
         }
     }
+}
 }

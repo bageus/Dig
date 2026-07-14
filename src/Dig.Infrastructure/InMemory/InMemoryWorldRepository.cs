@@ -1,7 +1,9 @@
+using System;
 using Dig.Application.World;
 using Dig.Domain.World;
 
-namespace Dig.Infrastructure.InMemory;
+namespace Dig.Infrastructure.InMemory
+{
 
 public sealed class InMemoryWorldRepository : IWorldRepository
 {
@@ -33,4 +35,5 @@ public sealed class InMemoryWorldRepository : IWorldRepository
             _world = world;
         }
     }
+}
 }

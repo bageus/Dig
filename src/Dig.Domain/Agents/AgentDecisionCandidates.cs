@@ -1,4 +1,6 @@
-namespace Dig.Domain.Agents;
+using System;
+namespace Dig.Domain.Agents
+{
 
 public sealed partial class AgentDecisionSystem
 {
@@ -158,4 +160,5 @@ public sealed partial class AgentDecisionSystem
         public bool ReceivedHysteresis;
         public bool BlockedByCooldown;
     }
+}
 }

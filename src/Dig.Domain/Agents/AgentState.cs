@@ -1,6 +1,9 @@
+using System;
+using System.Collections.Generic;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Agents;
+namespace Dig.Domain.Agents
+{
 
 public sealed partial class AgentState : AggregateRoot
 {
@@ -184,4 +187,5 @@ public sealed partial class AgentState : AggregateRoot
             throw new ArgumentOutOfRangeException(nameof(tick));
         }
     }
+}
 }

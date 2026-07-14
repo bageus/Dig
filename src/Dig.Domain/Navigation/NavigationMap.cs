@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 
-namespace Dig.Domain.Navigation;
+namespace Dig.Domain.Navigation
+{
 
 public sealed class NavigationMap
 {
@@ -331,4 +335,5 @@ public sealed class NavigationMap
 
         return true;
     }
+}
 }

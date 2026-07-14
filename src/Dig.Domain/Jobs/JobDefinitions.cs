@@ -1,8 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 
-namespace Dig.Domain.Jobs;
+namespace Dig.Domain.Jobs
+{
 
 public abstract class JobDefinition
 {
@@ -134,4 +138,5 @@ public sealed class DigJobDefinition : JobDefinition
             ReservationKey.ForDesignation(Target.CellId),
         });
     }
+}
 }

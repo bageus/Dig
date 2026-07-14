@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Messaging;
@@ -6,7 +8,8 @@ using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.Production;
 
-namespace Dig.Application.Production;
+namespace Dig.Application.Production
+{
 
 public sealed class BeginProductionWorkHandler
     : ICommandHandler<BeginProductionWorkCommand, Result>
@@ -232,4 +235,5 @@ public sealed class CompleteProductionOrderHandler
         _eventSink.Append(jobs.DequeueUncommittedEvents());
         return Result.Success();
     }
+}
 }

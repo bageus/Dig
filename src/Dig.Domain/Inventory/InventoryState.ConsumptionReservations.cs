@@ -1,6 +1,7 @@
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Inventory;
+namespace Dig.Domain.Inventory
+{
 
 public sealed class ReservedItemConsumed : IDomainEvent
 {
@@ -76,4 +77,5 @@ public sealed partial class InventoryState
             quantity));
         return Result.Success();
     }
+}
 }

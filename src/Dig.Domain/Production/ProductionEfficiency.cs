@@ -1,4 +1,7 @@
-namespace Dig.Domain.Production;
+using System;
+using System.Linq;
+namespace Dig.Domain.Production
+{
 
 public readonly struct ProductionWorkContext
 {
@@ -45,4 +48,5 @@ public static class ProductionEfficiency
             skillAdjusted * context.ConditionEfficiencyBasisPoints / 10_000L);
         return Math.Max(1, checked((int)conditionAdjusted));
     }
+}
 }

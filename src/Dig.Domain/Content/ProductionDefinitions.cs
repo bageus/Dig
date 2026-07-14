@@ -1,8 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Buildings;
 using Dig.Domain.Inventory;
 
-namespace Dig.Domain.Content;
+namespace Dig.Domain.Content
+{
 
 public readonly struct RecipeId : IEquatable<RecipeId>, IComparable<RecipeId>
 {
@@ -294,4 +298,5 @@ public sealed class TechnologyDefinition
 
         return result;
     }
+}
 }

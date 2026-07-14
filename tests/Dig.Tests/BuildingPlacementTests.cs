@@ -1,10 +1,12 @@
+using System;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class BuildingPlacementTests
 {
@@ -140,4 +142,5 @@ public sealed class BuildingPlacementTests
         Assert.True(result.IsSuccess, result.Error?.ToString());
         return result.Value;
     }
+}
 }

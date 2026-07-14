@@ -1,9 +1,13 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Colonies;
 using Dig.Application.Messaging;
 using Dig.Domain.Colonies;
 using Dig.Domain.Core;
 
-namespace Dig.Infrastructure.InMemory;
+namespace Dig.Infrastructure.InMemory
+{
 
 public sealed class InMemoryColonyRepository : IColonyRepository
 {
@@ -62,4 +66,5 @@ public sealed class InMemoryEventJournal : IEventSink
             _events.AddRange(events);
         }
     }
+}
 }

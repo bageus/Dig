@@ -1,3 +1,4 @@
+using System;
 using Dig.Application.Buildings;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
@@ -6,7 +7,8 @@ using Dig.Domain.Jobs;
 using Dig.Domain.World;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class BuildingConstructionTests
 {
@@ -255,4 +257,5 @@ public sealed class BuildingConstructionTests
             SourceStackId,
             WorkerId);
     }
+}
 }

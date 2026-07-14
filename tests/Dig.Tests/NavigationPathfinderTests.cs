@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using Dig.Application.Navigation;
 using Dig.Domain.Core;
 using Dig.Domain.Navigation;
@@ -5,7 +7,8 @@ using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class NavigationPathfinderTests
 {
@@ -232,4 +235,5 @@ public sealed class NavigationPathfinderTests
             new CellId(x, y),
             NavigationTestFactory.CreateState(NavigationTestFactory.Air));
     }
+}
 }

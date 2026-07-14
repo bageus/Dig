@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using Dig.Application.Agents;
@@ -7,7 +9,8 @@ using Dig.Domain.Buildings;
 using Dig.Domain.Inventory;
 using Dig.Domain.Storage;
 
-namespace Dig.Headless.Soak;
+namespace Dig.Headless.Soak
+{
 
 internal static class HeadlessSoakStateHasher
 {
@@ -95,4 +98,5 @@ internal static class HeadlessSoakStateHasher
         byte[] bytes = Encoding.UTF8.GetBytes(value.ToString());
         return Convert.ToHexString(SHA256.HashData(bytes));
     }
+}
 }

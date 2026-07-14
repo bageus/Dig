@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Runtime;
 
-namespace Dig.Headless.Soak;
+namespace Dig.Headless.Soak
+{
 
 internal sealed class HeadlessSoakConfiguration
 {
@@ -203,4 +207,5 @@ internal sealed class HeadlessSoakReport
     public bool DeterministicReplayMatched { get; set; }
 
     public bool Succeeded { get; set; }
+}
 }

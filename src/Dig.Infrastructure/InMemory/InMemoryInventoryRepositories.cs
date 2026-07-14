@@ -1,8 +1,10 @@
+using System;
 using Dig.Application.Inventory;
 using Dig.Domain.Inventory;
 using Dig.Domain.Storage;
 
-namespace Dig.Infrastructure.InMemory;
+namespace Dig.Infrastructure.InMemory
+{
 
 public sealed class InMemoryInventoryRepository : IInventoryRepository
 {
@@ -42,4 +44,5 @@ public sealed class InMemoryStorageRepository : IStorageRepository
     {
         _storage = storage ?? throw new ArgumentNullException(nameof(storage));
     }
+}
 }

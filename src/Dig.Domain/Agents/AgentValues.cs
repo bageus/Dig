@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Agents;
+namespace Dig.Domain.Agents
+{
 
 public readonly struct AgentSkillId : IEquatable<AgentSkillId>, IComparable<AgentSkillId>
 {
@@ -236,4 +240,5 @@ internal sealed class AgentTraitSet
     {
         return _snapshot;
     }
+}
 }

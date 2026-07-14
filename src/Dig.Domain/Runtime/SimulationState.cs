@@ -1,4 +1,6 @@
-namespace Dig.Domain.Runtime;
+using System;
+namespace Dig.Domain.Runtime
+{
 
 public sealed class SimulationState
 {
@@ -29,4 +31,5 @@ public sealed class SimulationState
             randomStreams,
             new EntityRegistry(randomStreams));
     }
+}
 }

@@ -1,9 +1,13 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Application.Messaging;
 using Dig.Domain.Core;
 using Dig.Domain.Jobs;
 
-namespace Dig.Application.Jobs;
+namespace Dig.Application.Jobs
+{
 
 public interface IJobRepository
 {
@@ -120,4 +124,5 @@ public sealed class GetJobQuery : IQuery<JobSnapshot?>
 
 public sealed class GetJobsQuery : IQuery<IReadOnlyList<JobSnapshot>>
 {
+}
 }

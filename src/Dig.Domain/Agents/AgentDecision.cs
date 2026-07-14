@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 
-namespace Dig.Domain.Agents;
+namespace Dig.Domain.Agents
+{
 
 public sealed class AgentDecisionContext
 {
@@ -207,4 +211,5 @@ public sealed class AgentDecision
             throw new ArgumentNullException(nameof(options));
         }
     }
+}
 }

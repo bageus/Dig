@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using System.Text;
 
-namespace Dig.Domain.Runtime;
+namespace Dig.Domain.Runtime
+{
 
 public readonly struct RandomStreamSnapshot
 {
@@ -157,4 +161,5 @@ public sealed class RandomStreamCatalog
             throw new ArgumentException("Random stream name is required.", nameof(name));
         }
     }
+}
 }

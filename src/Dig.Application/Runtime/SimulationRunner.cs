@@ -1,6 +1,8 @@
+using System;
 using Dig.Domain.Runtime;
 
-namespace Dig.Application.Runtime;
+namespace Dig.Application.Runtime
+{
 
 public sealed class SimulationRunner
 {
@@ -74,4 +76,5 @@ public sealed class SimulationRunner
         long tick = _state.Clock.AdvanceOneTick();
         _scheduler.ExecuteTick(new SimulationContext(tick, _state));
     }
+}
 }

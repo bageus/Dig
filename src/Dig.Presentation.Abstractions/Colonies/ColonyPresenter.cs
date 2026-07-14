@@ -1,8 +1,10 @@
+using System;
 using Dig.Application.Colonies;
 using Dig.Application.Messaging;
 using Dig.Domain.Core;
 
-namespace Dig.Presentation.Colonies;
+namespace Dig.Presentation.Colonies
+{
 
 public sealed class ColonyPresenter
 {
@@ -48,4 +50,5 @@ public sealed class ColonyViewModel
     public string DisplayName { get; }
 
     public long Version { get; }
+}
 }

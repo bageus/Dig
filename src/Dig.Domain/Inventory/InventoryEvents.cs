@@ -1,6 +1,7 @@
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Inventory;
+namespace Dig.Domain.Inventory
+{
 
 public sealed class ItemStackMoved : IDomainEvent
 {
@@ -58,4 +59,5 @@ public sealed class ItemQuantityReservationChanged : IDomainEvent
     public EntityId JobId { get; }
 
     public int ReservedQuantity { get; }
+}
 }

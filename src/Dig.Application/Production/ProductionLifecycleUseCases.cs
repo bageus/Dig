@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Messaging;
@@ -8,7 +11,8 @@ using Dig.Domain.Jobs;
 using Dig.Domain.Production;
 using Dig.Domain.Technology;
 
-namespace Dig.Application.Production;
+namespace Dig.Application.Production
+{
 
 public sealed class CancelProductionOrderHandler
     : ICommandHandler<CancelProductionOrderCommand, Result>
@@ -155,4 +159,5 @@ public sealed class GetProductionOrdersHandler
 
         return _repository.Get().GetAll();
     }
+}
 }

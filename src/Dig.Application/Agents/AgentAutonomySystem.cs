@@ -1,9 +1,12 @@
+using System;
+using System.Collections.Generic;
 using Dig.Application.Messaging;
 using Dig.Application.Runtime;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
 
-namespace Dig.Application.Agents;
+namespace Dig.Application.Agents
+{
 
 public sealed class AgentAutonomySystem : ISimulationSystem
 {
@@ -94,4 +97,5 @@ public sealed class AgentAutonomySystem : ISimulationSystem
             throw new InvalidOperationException(result.Error!.ToString());
         }
     }
+}
 }

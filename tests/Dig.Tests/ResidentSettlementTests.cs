@@ -1,10 +1,12 @@
+using System.Linq;
 using Dig.Domain.Agents;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class ResidentSettlementTests
 {
@@ -127,4 +129,5 @@ public sealed class ResidentSettlementTests
             value => value is AgentActionBlocked blocked
                 && blocked.AgentId == FirstAgent);
     }
+}
 }

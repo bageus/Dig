@@ -1,6 +1,7 @@
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Inventory;
+namespace Dig.Domain.Inventory
+{
 
 public static class InventoryErrors
 {
@@ -35,4 +36,5 @@ public static class InventoryErrors
     public static readonly DomainError ToolRequired = new DomainError(
         "inventory.tool_required",
         "Only a single unreserved tool can be equipped.");
+}
 }

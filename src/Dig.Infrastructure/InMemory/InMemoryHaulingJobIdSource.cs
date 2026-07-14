@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Inventory;
 using Dig.Domain.Core;
 
-namespace Dig.Infrastructure.InMemory;
+namespace Dig.Infrastructure.InMemory
+{
 
 public sealed class InMemoryHaulingJobIdSource : IHaulingJobIdSource
 {
@@ -34,4 +38,5 @@ public sealed class InMemoryHaulingJobIdSource : IHaulingJobIdSource
 
         return _ids.Dequeue();
     }
+}
 }

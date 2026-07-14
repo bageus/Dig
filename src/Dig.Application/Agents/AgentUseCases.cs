@@ -1,8 +1,10 @@
+using System;
 using Dig.Application.Messaging;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
 
-namespace Dig.Application.Agents;
+namespace Dig.Application.Agents
+{
 
 public sealed class SetAgentPlayerOrderCommand : ICommand<Result>
 {
@@ -149,4 +151,5 @@ public sealed class GetAgentSnapshotQueryHandler
             ? Result<AgentSnapshot>.Failure(AgentApplicationErrors.NotFound)
             : Result<AgentSnapshot>.Success(agent.CreateSnapshot(query.Tick));
     }
+}
 }

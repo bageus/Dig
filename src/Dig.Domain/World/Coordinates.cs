@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 
-namespace Dig.Domain.World;
+namespace Dig.Domain.World
+{
 
 public readonly struct CellId : IEquatable<CellId>, IComparable<CellId>
 {
@@ -253,4 +257,5 @@ public sealed class ChunkLayout
     {
         return checked((value + divisor - 1) / divisor);
     }
+}
 }

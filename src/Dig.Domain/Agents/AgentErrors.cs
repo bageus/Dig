@@ -1,6 +1,7 @@
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Agents;
+namespace Dig.Domain.Agents
+{
 
 public static class AgentErrors
 {
@@ -31,4 +32,5 @@ public static class AgentErrors
     public static readonly DomainError TargetedActionAlreadyReady = new DomainError(
         "agents.action.already_ready",
         "The targeted action is already waiting for external completion.");
+}
 }

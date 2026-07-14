@@ -1,7 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.World;
 
-namespace Dig.Domain.Navigation;
+namespace Dig.Domain.Navigation
+{
 
 public enum PathFailureReason
 {
@@ -221,4 +226,5 @@ public sealed class PathResult
             null,
             diagnostics ?? throw new ArgumentNullException(nameof(diagnostics)));
     }
+}
 }

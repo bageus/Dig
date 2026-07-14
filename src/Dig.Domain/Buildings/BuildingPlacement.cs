@@ -1,8 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 
-namespace Dig.Domain.Buildings;
+namespace Dig.Domain.Buildings
+{
 
 public static class BuildingErrors
 {
@@ -158,4 +162,5 @@ public sealed class BuildingPlacementValidator
 
         return BuildingPlacementResult.Success(footprint, workPosition.Value);
     }
+}
 }

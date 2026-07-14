@@ -1,9 +1,11 @@
+using System.Linq;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class InventoryStateTests
 {
@@ -150,4 +152,5 @@ public sealed class InventoryStateTests
         });
         return new InventoryState(catalog);
     }
+}
 }

@@ -1,6 +1,8 @@
+using System;
 using Dig.Domain.Jobs;
 
-namespace Dig.Presentation.Jobs;
+namespace Dig.Presentation.Jobs
+{
 
 public sealed class JobDiagnosticView
 {
@@ -60,4 +62,5 @@ public sealed class JobPresenter
             snapshot.NextRetryTick,
             snapshot.Reason?.ToString());
     }
+}
 }

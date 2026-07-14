@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.World;
 
-namespace Dig.Domain.Navigation;
+namespace Dig.Domain.Navigation
+{
 
 public readonly struct NavigationChunkStamp : IEquatable<NavigationChunkStamp>
 {
@@ -186,4 +190,5 @@ public sealed class NavigationUpdateDiagnostics
     public int RegionCount { get; }
 
     public IReadOnlyList<ChunkId> RebuiltChunks { get; }
+}
 }

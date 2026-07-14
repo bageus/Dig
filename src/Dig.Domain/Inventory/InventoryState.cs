@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Inventory;
+namespace Dig.Domain.Inventory
+{
 
 public sealed partial class InventoryState : AggregateRoot
 {
@@ -213,4 +217,5 @@ public sealed partial class InventoryState : AggregateRoot
             throw new ArgumentOutOfRangeException(nameof(tick));
         }
     }
+}
 }

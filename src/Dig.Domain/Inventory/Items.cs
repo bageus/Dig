@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 
-namespace Dig.Domain.Inventory;
+namespace Dig.Domain.Inventory
+{
 
 public readonly struct ItemId : IEquatable<ItemId>, IComparable<ItemId>
 {
@@ -186,4 +190,5 @@ public sealed class ItemCatalog
     {
         return _definitions.ContainsKey(itemId);
     }
+}
 }

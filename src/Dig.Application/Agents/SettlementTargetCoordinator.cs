@@ -1,10 +1,12 @@
+using System;
 using Dig.Application.Inventory;
 using Dig.Domain.Agents;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 
-namespace Dig.Application.Agents;
+namespace Dig.Application.Agents
+{
 
 internal sealed class SettlementTargetCoordinator
 {
@@ -244,4 +246,5 @@ public static class AgentSettlementErrors
     public static readonly DomainError TargetReservationMissing = new DomainError(
         "agents.settlement.target_reservation_missing",
         "The resident activity target reservation disappeared.");
+}
 }

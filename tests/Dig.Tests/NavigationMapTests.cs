@@ -1,9 +1,12 @@
+using System;
+using System.IO;
 using Dig.Domain.Core;
 using Dig.Domain.Navigation;
 using Dig.Domain.World;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class NavigationMapTests
 {
@@ -234,4 +237,5 @@ public sealed class NavigationMapTests
             new CellId(x, y),
             NavigationTestFactory.CreateState(NavigationTestFactory.Air));
     }
+}
 }

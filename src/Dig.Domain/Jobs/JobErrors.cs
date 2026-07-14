@@ -1,6 +1,7 @@
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Jobs;
+namespace Dig.Domain.Jobs
+{
 
 public static class JobErrors
 {
@@ -39,4 +40,5 @@ public static class JobErrors
     public static readonly DomainError CandidateUnavailable = new DomainError(
         "jobs.candidate_unavailable",
         "No eligible candidate is available for the job.");
+}
 }

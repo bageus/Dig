@@ -1,3 +1,4 @@
+using System.Linq;
 using Dig.Application.Inventory;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -7,7 +8,8 @@ using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class RobustHaulingTests
 {
@@ -237,4 +239,5 @@ public sealed class RobustHaulingTests
                     tick));
         }
     }
+}
 }

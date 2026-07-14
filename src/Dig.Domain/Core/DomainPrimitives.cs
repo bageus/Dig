@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 
-namespace Dig.Domain.Core;
+namespace Dig.Domain.Core
+{
 
 public readonly struct EntityId : IEquatable<EntityId>
 {
@@ -229,4 +233,5 @@ public abstract class AggregateRoot
         _uncommittedEvents.Clear();
         return events;
     }
+}
 }

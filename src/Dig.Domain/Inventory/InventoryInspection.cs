@@ -1,6 +1,8 @@
+using System;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Inventory;
+namespace Dig.Domain.Inventory
+{
 
 public readonly struct InventoryStackInspection
 {
@@ -49,4 +51,5 @@ public sealed partial class InventoryState
         ItemStackState? stack = Find(stackId);
         return stack?.GetReservedQuantity(ownerId) ?? 0;
     }
+}
 }

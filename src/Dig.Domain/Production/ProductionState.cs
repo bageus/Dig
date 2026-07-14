@@ -1,9 +1,13 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 
-namespace Dig.Domain.Production;
+namespace Dig.Domain.Production
+{
 
 public sealed class ProductionState : AggregateRoot
 {
@@ -255,4 +259,5 @@ public sealed class ProductionState : AggregateRoot
             throw new ArgumentOutOfRangeException(nameof(tick));
         }
     }
+}
 }

@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 
-namespace Dig.Domain.World;
+namespace Dig.Domain.World
+{
 
 public readonly struct CellSnapshot
 {
@@ -117,4 +121,5 @@ public sealed class WorldSnapshot
     public long Version { get; }
 
     public IReadOnlyList<ChunkSnapshot> Chunks { get; }
+}
 }

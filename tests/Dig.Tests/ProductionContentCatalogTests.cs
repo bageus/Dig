@@ -1,9 +1,12 @@
+using System;
+using System.Linq;
 using Dig.Domain.Buildings;
 using Dig.Domain.Content;
 using Dig.Domain.Inventory;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class ProductionContentCatalogTests
 {
@@ -168,4 +171,5 @@ public sealed class ProductionContentCatalogTests
             requiredToolItemId: Tool,
             requiredTechnologyId: requiredTechnology);
     }
+}
 }

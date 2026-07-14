@@ -1,8 +1,10 @@
+using System;
 using Dig.Application.Messaging;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 
-namespace Dig.Application.World;
+namespace Dig.Application.World
+{
 
 public interface IWorldRepository
 {
@@ -180,4 +182,5 @@ public sealed class GetChunkSnapshotQueryHandler
 
         return _repository.Get().CreateChunkSnapshot(query.ChunkId);
     }
+}
 }

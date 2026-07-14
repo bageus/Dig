@@ -1,7 +1,9 @@
+using System;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 
-namespace Dig.Domain.Inventory;
+namespace Dig.Domain.Inventory
+{
 
 public enum ItemLocationKind
 {
@@ -146,4 +148,5 @@ public readonly struct ItemLocation : IEquatable<ItemLocation>, IComparable<Item
 
         return new ItemLocation(kind, ownerId, true, default, false);
     }
+}
 }

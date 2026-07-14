@@ -1,8 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 
-namespace Dig.Domain.Storage;
+namespace Dig.Domain.Storage
+{
 
 public static class StorageErrors
 {
@@ -271,4 +275,5 @@ public sealed partial class StorageState : AggregateRoot
             throw new ArgumentOutOfRangeException(nameof(tick));
         }
     }
+}
 }

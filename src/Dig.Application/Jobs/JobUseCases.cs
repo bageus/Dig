@@ -1,8 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Messaging;
 using Dig.Domain.Core;
 using Dig.Domain.Jobs;
 
-namespace Dig.Application.Jobs;
+namespace Dig.Application.Jobs
+{
 
 public sealed class CreateDigJobHandler : ICommandHandler<CreateDigJobCommand, Result>
 {
@@ -191,4 +195,5 @@ public sealed class GetJobsHandler : IQueryHandler<GetJobsQuery, IReadOnlyList<J
 
         return _repository.Get().GetAll();
     }
+}
 }

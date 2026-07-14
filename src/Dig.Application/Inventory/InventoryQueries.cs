@@ -1,8 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Messaging;
 using Dig.Domain.Inventory;
 using Dig.Domain.Storage;
 
-namespace Dig.Application.Inventory;
+namespace Dig.Application.Inventory
+{
 
 public sealed class FindAvailableItemsHandler
     : IQueryHandler<FindAvailableItemsQuery, IReadOnlyList<ItemStackSnapshot>>
@@ -58,4 +62,5 @@ public sealed class FindStorageDestinationsHandler
                 .Where(stack => stack.Location == ItemLocation.InStorage(zoneId))
                 .Sum(stack => stack.Quantity));
     }
+}
 }

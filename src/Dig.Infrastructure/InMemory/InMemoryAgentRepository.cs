@@ -1,9 +1,13 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Application.Agents;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
 
-namespace Dig.Infrastructure.InMemory;
+namespace Dig.Infrastructure.InMemory
+{
 
 public sealed class InMemoryAgentRepository : IAgentRepository
 {
@@ -79,4 +83,5 @@ public sealed class InMemoryAgentRepository : IAgentRepository
         throw new InvalidOperationException(
             $"Cached agent '{agent.Id}' was not found in repository order.");
     }
+}
 }

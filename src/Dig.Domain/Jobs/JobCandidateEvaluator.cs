@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Jobs;
+namespace Dig.Domain.Jobs
+{
 
 public sealed class JobCandidate
 {
@@ -79,4 +83,5 @@ public static class JobCandidateEvaluator
         long skillScore = checked((long)candidate.SkillLevel * 100L);
         return checked(priorityScore + skillScore - candidate.DistanceCost);
     }
+}
 }
