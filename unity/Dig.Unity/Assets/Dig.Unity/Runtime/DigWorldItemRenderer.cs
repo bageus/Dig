@@ -29,6 +29,7 @@ namespace Dig.Unity
                 if (!_visuals.TryGetValue(item.StackId, out GameObject? visual))
                 {
                     visual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                    visual.layer = 2;
                     visual.transform.SetParent(_root, worldPositionStays: false);
                     visual.GetComponent<Renderer>().sharedMaterial = _material;
                     _visuals.Add(item.StackId, visual);
