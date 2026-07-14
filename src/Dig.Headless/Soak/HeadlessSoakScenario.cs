@@ -109,6 +109,11 @@ internal static class HeadlessSoakScenario
                     maximumAverageMicroseconds: 500,
                     maximumAverageAllocatedBytes: 50_000,
                     maximumSingleExecutionMilliseconds: 100),
+                new SystemPerformanceBudgetLimit(
+                    "soak.hauling",
+                    maximumAverageMicroseconds: 100,
+                    maximumAverageAllocatedBytes: 25_000,
+                    maximumSingleExecutionMilliseconds: 100),
             });
         SimulationPerformanceReport performanceReport = performance.CreateReport(budget);
         SimulationInvariantReport invariantReport = checker.Check(state.Clock.TickIndex);
