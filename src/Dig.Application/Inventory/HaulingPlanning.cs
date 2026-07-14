@@ -217,7 +217,9 @@ public sealed class PlanHaulingHandler
 
         return new HaulingPlanningReport(
             command.Tick,
-            created ?? Array.Empty<PlannedHaulingJob>(),
-            skipped ?? Array.Empty<SkippedHaulingStack>());
+            (IReadOnlyCollection<PlannedHaulingJob>?)created
+                ?? Array.Empty<PlannedHaulingJob>(),
+            (IReadOnlyCollection<SkippedHaulingStack>?)skipped
+                ?? Array.Empty<SkippedHaulingStack>());
     }
 }
