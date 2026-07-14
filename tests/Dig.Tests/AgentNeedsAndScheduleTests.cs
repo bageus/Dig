@@ -70,6 +70,77 @@ public sealed class AgentNeedsAndScheduleTests
     }
 
     [Fact]
+    public void Agent_state_reuses_sorted_capability_views_until_skill_change()
+    {
+        AgentState agent = new AgentState(
+            AgentTestFactory.DefaultAgentId,
+            "Capability Test",
+            AgentTestFactory.CreateNeeds(8_000, 8_000, 8_000, 10_000),
+            AgentTestFactory.CreateWorkSchedule(),
+            new[]
+            {
+                new AgentSkillValue(new AgentSkillId("mining"), 3_000),
+                new AgentSkillValue(new AgentSkillId("building"), 5_000),
+            },
+            new[]
+            {
+                new AgentTraitId("steady"),
+                new AgentTraitId("careful"),
+            });
+        AgentSnapshot first = agent.CreateSnapshot(0);
+        AgentSnapshot second = agent.CreateSnapshot(0);
+
+        Assert.Same(first.Skills, second.Skills);
+        Assert.Same(first.Traits, second.Traits);
+        Assert.Equal(
+            new[] { "building", "mining" },
+            first.Skills.Select(value => value.Id.ToString()).ToArray());
+        Assert.Equal(
+            new[] { "careful", "steady" },
+            first.Traits.Select(value => value.ToString()).ToArray());
+
+        Assert.True(agent.SetSkillLevel(new AgentSkillId("mining"), 7_000).IsSuccess);
+        AgentSnapshot changed = agent.CreateSnapshot(0);
+
+        Assert.NotSame(first.Skills, changed.Skills);
+        Assert.Same(first.Traits, changed.Traits);
+        Assert.Equal(3_000, first.GetSkillLevel(new AgentSkillId("mining")));
+        Assert.Equal(7_000, changed.GetSkillLevel(new AgentSkillId("mining")));
+    }
+
+    [Fact]
+    public void Public_snapshot_constructor_defensively_copies_capabilities()
+    {
+        List<AgentSkillValue> skills = new List<AgentSkillValue>
+        {
+            new AgentSkillValue(new AgentSkillId("mining"), 3_000),
+        };
+        List<AgentTraitId> traits = new List<AgentTraitId>
+        {
+            new AgentTraitId("steady"),
+        };
+        AgentSnapshot snapshot = new AgentSnapshot(
+            AgentTestFactory.DefaultAgentId,
+            "Public Snapshot",
+            version: 0,
+            isAlive: true,
+            AgentTestFactory.CreateNeeds(8_000, 8_000, 8_000, 10_000),
+            ScheduleActivity.Work,
+            activeAction: null,
+            playerOrder: null,
+            lastActionSwitchTick: -1,
+            lastDecision: null,
+            skills,
+            traits);
+
+        skills[0] = new AgentSkillValue(new AgentSkillId("mining"), 9_000);
+        traits.Clear();
+
+        Assert.Equal(3_000, snapshot.GetSkillLevel(new AgentSkillId("mining")));
+        Assert.True(snapshot.HasTrait(new AgentTraitId("steady")));
+    }
+
+    [Fact]
     public void Switching_intent_keeps_exactly_one_active_action()
     {
         AgentState agent = AgentTestFactory.CreateAgent();

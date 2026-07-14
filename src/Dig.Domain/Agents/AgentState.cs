@@ -141,7 +141,7 @@ public sealed partial class AgentState : AggregateRoot
             : null;
         AgentActionSnapshot? action = _activeAction?.CreateSnapshot();
 
-        return new AgentSnapshot(
+        return AgentSnapshot.FromNormalizedCapabilities(
             Id,
             Name,
             Version,
