@@ -1,3 +1,4 @@
+using System.Linq;
 using Dig.Application.Diagnostics;
 using Dig.Application.Inventory;
 using Dig.Domain.Core;
@@ -7,7 +8,8 @@ using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class SettlementInvariantCheckerTests
 {
@@ -71,4 +73,5 @@ public sealed class SettlementInvariantCheckerTests
             value => value.Code == "hauling.item_reservation_mismatch"
                 && value.EntityId == jobId);
     }
+}
 }

@@ -1,6 +1,8 @@
+using System;
 using Dig.Domain.Runtime;
 
-namespace Dig.Application.Runtime;
+namespace Dig.Application.Runtime
+{
 
 public readonly struct SimulationContext
 {
@@ -58,4 +60,5 @@ public sealed class NullSimulationTrace : ISimulationTrace
     public void Record(SystemExecution execution)
     {
     }
+}
 }

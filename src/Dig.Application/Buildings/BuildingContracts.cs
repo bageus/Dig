@@ -1,9 +1,12 @@
+using System;
+using System.Collections.Generic;
 using Dig.Application.Messaging;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 
-namespace Dig.Application.Buildings;
+namespace Dig.Application.Buildings
+{
 
 public interface IBuildingsRepository
 {
@@ -221,4 +224,5 @@ public sealed class GetBuildingQuery : IQuery<BuildingSnapshot?>
     }
 
     public EntityId BuildingId { get; }
+}
 }

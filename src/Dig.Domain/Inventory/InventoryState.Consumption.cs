@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Inventory;
+namespace Dig.Domain.Inventory
+{
 
 public readonly struct ItemConsumptionRequest
 {
@@ -139,4 +143,5 @@ public sealed partial class InventoryState
 
         return stacks.Length;
     }
+}
 }

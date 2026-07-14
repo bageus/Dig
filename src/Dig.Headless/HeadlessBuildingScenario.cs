@@ -1,3 +1,4 @@
+using System;
 using Dig.Application.Buildings;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
@@ -10,7 +11,8 @@ using Dig.Domain.Runtime;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 
-namespace Dig.Headless;
+namespace Dig.Headless
+{
 
 internal static class HeadlessBuildingScenario
 {
@@ -191,4 +193,5 @@ internal static class HeadlessBuildingScenario
             throw new InvalidOperationException(result.Error!.ToString());
         }
     }
+}
 }

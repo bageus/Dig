@@ -1,8 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Buildings;
 using Dig.Domain.Inventory;
 
-namespace Dig.Domain.Content;
+namespace Dig.Domain.Content
+{
 
 public sealed class ProductionContentCatalog
 {
@@ -290,4 +294,5 @@ public sealed class ProductionContentCatalog
             return false;
         }
     }
+}
 }

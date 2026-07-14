@@ -1,9 +1,11 @@
+using System.Collections.Generic;
 using Dig.Domain.Core;
 using Dig.Domain.Navigation;
 using Dig.Domain.World;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 internal static class NavigationTestFactory
 {
@@ -94,4 +96,5 @@ internal static class NavigationTestFactory
         Assert.True(result.IsSuccess);
         return result.Value;
     }
+}
 }

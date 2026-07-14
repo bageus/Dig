@@ -1,6 +1,8 @@
+using System.Collections.Generic;
 using Dig.Domain.Core;
 
-namespace Dig.Application.Messaging;
+namespace Dig.Application.Messaging
+{
 
 public interface ICommand<TResult>
 {
@@ -25,4 +27,5 @@ public interface IQueryHandler<TQuery, TResult>
 public interface IEventSink
 {
     void Append(IReadOnlyCollection<IDomainEvent> events);
+}
 }

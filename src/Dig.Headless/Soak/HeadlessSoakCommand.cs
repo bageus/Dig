@@ -1,6 +1,10 @@
+using System;
+using System.IO;
+using System.Linq;
 using System.Text.Json;
 
-namespace Dig.Headless.Soak;
+namespace Dig.Headless.Soak
+{
 
 internal static class HeadlessSoakCommand
 {
@@ -109,4 +113,5 @@ internal static class HeadlessSoakCommand
             Directory.CreateDirectory(directory);
         }
     }
+}
 }

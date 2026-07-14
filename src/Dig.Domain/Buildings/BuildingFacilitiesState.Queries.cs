@@ -1,6 +1,8 @@
+using System;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Buildings;
+namespace Dig.Domain.Buildings
+{
 
 public sealed partial class BuildingFacilitiesState
 {
@@ -106,4 +108,5 @@ public sealed partial class BuildingFacilitiesState
                 right.Id.ToString(),
                 StringComparison.Ordinal);
     }
+}
 }

@@ -1,8 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Technology;
+namespace Dig.Domain.Technology
+{
 
 public static class TechnologyErrors
 {
@@ -106,4 +110,5 @@ public sealed class TechnologyState : AggregateRoot
     {
         return new TechnologySnapshot(Version, _unlocked);
     }
+}
 }

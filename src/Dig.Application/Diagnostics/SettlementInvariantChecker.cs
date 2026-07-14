@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
@@ -8,7 +10,8 @@ using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.Storage;
 
-namespace Dig.Application.Diagnostics;
+namespace Dig.Application.Diagnostics
+{
 
 public sealed partial class SettlementInvariantChecker :
     IInventoryInspectionVisitor,
@@ -224,4 +227,5 @@ public sealed partial class SettlementInvariantChecker :
         return value ?? throw new InvalidOperationException(
             "Invariant inspection state is not initialized.");
     }
+}
 }

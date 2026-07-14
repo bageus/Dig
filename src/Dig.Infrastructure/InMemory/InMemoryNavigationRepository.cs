@@ -1,7 +1,10 @@
+using System;
+using System.Collections.Generic;
 using Dig.Application.Navigation;
 using Dig.Domain.Navigation;
 
-namespace Dig.Infrastructure.InMemory;
+namespace Dig.Infrastructure.InMemory
+{
 
 public sealed class InMemoryNavigationRepository : INavigationRepository
 {
@@ -31,4 +34,5 @@ public sealed class InMemoryNavigationRepository : INavigationRepository
             _maps[map.Profile.Id] = map;
         }
     }
+}
 }

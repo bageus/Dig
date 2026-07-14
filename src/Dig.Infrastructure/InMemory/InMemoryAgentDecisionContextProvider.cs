@@ -1,8 +1,11 @@
+using System;
+using System.Collections.Generic;
 using Dig.Application.Agents;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
 
-namespace Dig.Infrastructure.InMemory;
+namespace Dig.Infrastructure.InMemory
+{
 
 public sealed class InMemoryAgentDecisionContextProvider
     : IAgentDecisionContextProvider
@@ -48,4 +51,5 @@ public sealed class InMemoryAgentDecisionContextProvider
             ? context
             : _defaultContext;
     }
+}
 }

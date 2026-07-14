@@ -1,9 +1,12 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 
-namespace Dig.Domain.Jobs;
+namespace Dig.Domain.Jobs
+{
 
 public enum BuildingWorkKind
 {
@@ -58,4 +61,5 @@ public sealed class BuildingWorkJobDefinition : JobDefinition
             ReservationKey.ForPosition(WorkPosition),
         });
     }
+}
 }

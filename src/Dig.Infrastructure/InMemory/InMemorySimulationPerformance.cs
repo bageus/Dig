@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Diagnostics;
 using Dig.Application.Runtime;
 
-namespace Dig.Infrastructure.InMemory;
+namespace Dig.Infrastructure.InMemory
+{
 
 public sealed class InMemorySimulationPerformance : ISimulationPerformanceSink
 {
@@ -124,4 +128,5 @@ public sealed class InMemorySimulationPerformance : ISimulationPerformanceSink
             return ticks * 1000d / Stopwatch.Frequency;
         }
     }
+}
 }

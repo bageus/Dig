@@ -1,3 +1,5 @@
+using System.Linq;
+using System;
 using Dig.Application.Agents;
 using Dig.Application.Runtime;
 using Dig.Domain.Agents;
@@ -8,7 +10,8 @@ using Dig.Domain.Runtime;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 
-namespace Dig.Headless;
+namespace Dig.Headless
+{
 
 internal static class HeadlessResidentSettlementScenario
 {
@@ -164,4 +167,5 @@ internal static class HeadlessResidentSettlementScenario
             throw new InvalidOperationException(result.Error!.ToString());
         }
     }
+}
 }

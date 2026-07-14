@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Buildings;
 
-namespace Dig.Presentation.Buildings;
+namespace Dig.Presentation.Buildings
+{
 
 public sealed class BuildingDiagnosticView
 {
@@ -76,4 +80,5 @@ public sealed class BuildingPresenter
             snapshot.Footprint.Select(cell => cell.ToString()).ToArray(),
             snapshot.DiagnosticReason);
     }
+}
 }

@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Inventory;
+namespace Dig.Domain.Inventory
+{
 
 public readonly struct ItemQuantityReservationSnapshot
 {
@@ -113,4 +117,5 @@ public sealed class InventorySnapshot
             .Where(stack => stack.ItemId == itemId && stack.Location == location)
             .Sum(stack => stack.Quantity);
     }
+}
 }

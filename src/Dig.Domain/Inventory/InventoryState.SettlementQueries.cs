@@ -1,6 +1,8 @@
+using System;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Inventory;
+namespace Dig.Domain.Inventory
+{
 
 public sealed partial class InventoryState
 {
@@ -90,4 +92,5 @@ public sealed partial class InventoryState
             throw new ArgumentException("Category id cannot be empty.", nameof(categoryId));
         }
     }
+}
 }

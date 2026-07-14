@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Messaging;
@@ -6,7 +8,8 @@ using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 
-namespace Dig.Application.Buildings;
+namespace Dig.Application.Buildings
+{
 
 public static class BuildingUseCaseErrors
 {
@@ -256,4 +259,5 @@ public sealed class RefreshBuildingMaterialsHandler
         _eventSink.Append(buildings.DequeueUncommittedEvents());
         return Result.Success();
     }
+}
 }

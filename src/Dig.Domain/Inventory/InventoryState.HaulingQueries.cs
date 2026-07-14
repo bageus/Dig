@@ -1,6 +1,9 @@
+using System;
+using System.Collections.Generic;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Inventory;
+namespace Dig.Domain.Inventory
+{
 
 public sealed partial class InventoryState
 {
@@ -61,4 +64,5 @@ public sealed partial class InventoryState
             right.Id.ToString(),
             StringComparison.Ordinal);
     }
+}
 }

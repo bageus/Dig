@@ -1,4 +1,6 @@
-namespace Dig.Domain.Runtime;
+using System;
+namespace Dig.Domain.Runtime
+{
 
 public enum SimulationRate
 {
@@ -99,4 +101,5 @@ public sealed class SimulationClock
             throw new ArgumentOutOfRangeException(nameof(rate));
         }
     }
+}
 }

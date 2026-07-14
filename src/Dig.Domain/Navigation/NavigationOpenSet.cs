@@ -1,6 +1,9 @@
+using System;
+using System.Collections.Generic;
 using Dig.Domain.World;
 
-namespace Dig.Domain.Navigation;
+namespace Dig.Domain.Navigation
+{
 
 internal readonly struct NavigationOpenNode
 {
@@ -112,4 +115,5 @@ internal sealed class NavigationOpenSet
         _heap[left] = _heap[right];
         _heap[right] = value;
     }
+}
 }

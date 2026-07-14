@@ -1,8 +1,10 @@
+using System;
 using Dig.Application.Messaging;
 using Dig.Domain.Colonies;
 using Dig.Domain.Core;
 
-namespace Dig.Application.Colonies;
+namespace Dig.Application.Colonies
+{
 
 public interface IColonyRepository
 {
@@ -122,4 +124,5 @@ public sealed class ColonySummary
     public string Name { get; }
 
     public long Version { get; }
+}
 }

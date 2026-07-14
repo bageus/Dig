@@ -1,9 +1,13 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 
-namespace Dig.Domain.Production;
+namespace Dig.Domain.Production
+{
 
 public enum ProductionOrderStatus
 {
@@ -156,4 +160,5 @@ public sealed class ProductionWorkApplied : IDomainEvent
     public int EffectiveWork { get; }
 
     public int CompletedWork { get; }
+}
 }

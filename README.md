@@ -53,7 +53,7 @@ docs/
 - Python 3.12+ for local quality checks;
 - Unity `6000.0.71f1` or a compatible Unity 6 LTS patch for the presentation host.
 
-The core libraries target `netstandard2.1` and are shared with Unity through a local UPM package.
+The core libraries target `netstandard2.1` and are shared with Unity through a local UPM package. All Unity-visible source is compiled with the C# 9 language baseline and SDK implicit usings disabled, so the normal .NET build detects compiler incompatibilities before the package is opened in Unity.
 
 ## Build and test
 
@@ -79,7 +79,9 @@ See [`docs/implementation/quality-soak-performance.md`](docs/implementation/qual
 4. Open the project and wait for the local core package to compile.
 5. Run **Tools > Dig > Create Bootstrap Scene**.
 
-See [`docs/implementation/unity-presentation-host.md`](docs/implementation/unity-presentation-host.md) for the integration details.
+For an existing checkout that previously showed CS8773, pull the latest `main`, reopen the project and allow the local package to reimport. If the Console still contains stale compiler output, run **Assets > Reimport All** or close Unity and remove the generated `unity/Dig.Unity/Library` directory before reopening.
+
+See [`docs/implementation/unity-presentation-host.md`](docs/implementation/unity-presentation-host.md) for the integration details and [`docs/implementation/unity-csharp-compatibility.md`](docs/implementation/unity-csharp-compatibility.md) for the compiler baseline and compatibility rules.
 
 ## Architectural rules
 
@@ -89,6 +91,7 @@ The authoritative development rules are in [`docs/development-rules.md`](docs/de
 - Domain does not depend on the game engine, UI or file system;
 - commands, events and queries are different contracts;
 - handwritten source files cannot exceed 350 lines;
+- Unity-visible C# source remains compatible with the C# 9 host baseline;
 - system behavior must be testable and diagnosable;
 - original game code and data are references only and are not part of the new implementation.
 

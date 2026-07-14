@@ -1,6 +1,8 @@
+using System;
 using Dig.Domain.World;
 
-namespace Dig.Domain.Navigation;
+namespace Dig.Domain.Navigation
+{
 
 public readonly struct TraversalProfileId : IEquatable<TraversalProfileId>
 {
@@ -220,4 +222,5 @@ public sealed class TraversalLink
     public bool Bidirectional { get; }
 
     public long SourceVersion { get; }
+}
 }

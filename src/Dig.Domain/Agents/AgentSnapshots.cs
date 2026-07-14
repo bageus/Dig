@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Agents;
+namespace Dig.Domain.Agents
+{
 
 public sealed class AgentSnapshot
 {
@@ -173,4 +177,5 @@ public sealed class AgentSnapshot
         AgentTraitId[] ordered = traits.OrderBy(trait => trait).ToArray();
         return new ReadOnlyCollection<AgentTraitId>(ordered);
     }
+}
 }

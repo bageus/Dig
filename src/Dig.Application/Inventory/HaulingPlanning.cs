@@ -1,10 +1,14 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Application.Messaging;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Storage;
 
-namespace Dig.Application.Inventory;
+namespace Dig.Application.Inventory
+{
 
 public interface IHaulingJobIdSource
 {
@@ -222,4 +226,5 @@ public sealed class PlanHaulingHandler
             (IReadOnlyCollection<SkippedHaulingStack>?)skipped
                 ?? Array.Empty<SkippedHaulingStack>());
     }
+}
 }

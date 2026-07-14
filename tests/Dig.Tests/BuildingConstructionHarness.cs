@@ -1,3 +1,4 @@
+using System.Linq;
 using Dig.Application.Buildings;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
@@ -9,7 +10,8 @@ using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 internal sealed class BuildingConstructionHarness
 {
@@ -134,4 +136,5 @@ internal sealed class BuildingConstructionHarness
             new JobCandidate(_workerId, 5000, distanceCost: 1, isAvailable: true),
         });
     }
+}
 }

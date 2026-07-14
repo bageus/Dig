@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Jobs;
+namespace Dig.Domain.Jobs
+{
 
 public sealed class ReservationSnapshot
 {
@@ -150,4 +154,5 @@ public sealed class ReservationLedger
             .ToArray();
         return new ReadOnlyCollection<ReservationSnapshot>(snapshot);
     }
+}
 }

@@ -1,6 +1,8 @@
+using System;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Jobs;
+namespace Dig.Domain.Jobs
+{
 
 public readonly struct JobInspection
 {
@@ -64,4 +66,5 @@ public sealed partial class JobSystem
         inspection = new JobInspection(job.Definition, job.Status, job.AssignedAgentId);
         return true;
     }
+}
 }

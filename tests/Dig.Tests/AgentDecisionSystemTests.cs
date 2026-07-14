@@ -1,7 +1,10 @@
+using System;
+using System.Linq;
 using Dig.Domain.Agents;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class AgentDecisionSystemTests
 {
@@ -159,4 +162,5 @@ public sealed class AgentDecisionSystemTests
             _policy,
             tick);
     }
+}
 }

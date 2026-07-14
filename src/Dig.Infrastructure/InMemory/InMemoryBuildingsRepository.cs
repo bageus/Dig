@@ -1,7 +1,9 @@
+using System;
 using Dig.Application.Buildings;
 using Dig.Domain.Buildings;
 
-namespace Dig.Infrastructure.InMemory;
+namespace Dig.Infrastructure.InMemory
+{
 
 public sealed class InMemoryBuildingsRepository : IBuildingsRepository
 {
@@ -21,4 +23,5 @@ public sealed class InMemoryBuildingsRepository : IBuildingsRepository
     {
         _buildings = buildings ?? throw new ArgumentNullException(nameof(buildings));
     }
+}
 }

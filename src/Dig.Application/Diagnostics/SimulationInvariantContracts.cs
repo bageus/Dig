@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 
-namespace Dig.Application.Diagnostics;
+namespace Dig.Application.Diagnostics
+{
 
 public sealed class SimulationInvariantViolation
 {
@@ -78,4 +82,5 @@ public sealed class SimulationInvariantReport
         throw new InvalidOperationException(
             $"Simulation invariants failed at tick {Tick}:{Environment.NewLine}{details}");
     }
+}
 }

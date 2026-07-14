@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Diagnostics;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
@@ -10,7 +13,8 @@ using Dig.Domain.Runtime;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 
-namespace Dig.Headless.Soak;
+namespace Dig.Headless.Soak
+{
 
 internal sealed class SimulationEntityHaulingJobIdSource : IHaulingJobIdSource
 {
@@ -286,4 +290,5 @@ internal sealed class SoakInvariantSystem : ISimulationSystem
         CheckCount = checked(CheckCount + 1);
         LastReport.ThrowIfInvalid();
     }
+}
 }

@@ -1,4 +1,6 @@
-namespace Dig.Domain.Agents;
+using System;
+namespace Dig.Domain.Agents
+{
 
 public sealed partial class AgentDecisionSystem
 {
@@ -210,4 +212,5 @@ public sealed partial class AgentDecisionSystem
             "Agent is dead and remains idle.",
             new[] { option });
     }
+}
 }

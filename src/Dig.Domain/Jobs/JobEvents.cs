@@ -1,6 +1,8 @@
+using System;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Jobs;
+namespace Dig.Domain.Jobs
+{
 
 public sealed class JobStatusChanged : IDomainEvent
 {
@@ -72,4 +74,5 @@ public sealed class JobReservationsReleased : IDomainEvent
     public EntityId JobId { get; }
 
     public int ReservationCount { get; }
+}
 }

@@ -1,6 +1,8 @@
+using System;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.World;
+namespace Dig.Domain.World
+{
 
 public sealed class CellChanged : IDomainEvent
 {
@@ -75,4 +77,5 @@ public sealed class ChunkInvalidated : IDomainEvent
     public ChunkId ChunkId { get; }
 
     public long ChunkVersion { get; }
+}
 }

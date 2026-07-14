@@ -1,6 +1,8 @@
+using System;
 using Dig.Domain.Core;
 
-namespace Dig.Application.Messaging;
+namespace Dig.Application.Messaging
+{
 
 public readonly struct CommandJournalEntry
 {
@@ -89,4 +91,5 @@ public sealed class QueryPipeline
 
         return handler.Handle(query);
     }
+}
 }

@@ -1,3 +1,4 @@
+using System;
 using Dig.Application.Jobs;
 using Dig.Application.Messaging;
 using Dig.Domain.Core;
@@ -5,7 +6,8 @@ using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.Storage;
 
-namespace Dig.Application.Inventory;
+namespace Dig.Application.Inventory
+{
 
 public sealed class CreateHaulingJobHandler
     : ICommandHandler<CreateHaulingJobCommand, Result>
@@ -266,4 +268,5 @@ public sealed class CompleteHaulingJobHandler
         _eventSink.Append(jobs.DequeueUncommittedEvents());
         return Result.Success();
     }
+}
 }

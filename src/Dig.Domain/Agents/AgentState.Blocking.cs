@@ -1,6 +1,8 @@
+using System;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Agents;
+namespace Dig.Domain.Agents
+{
 
 public sealed partial class AgentState
 {
@@ -23,4 +25,5 @@ public sealed partial class AgentState
         Raise(new AgentActionBlocked(tick, Id, intent, LastActionBlockReason));
         return Result.Success();
     }
+}
 }

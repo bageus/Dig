@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Buildings;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
@@ -13,7 +16,8 @@ using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 internal sealed class ProductionTestHarness
 {
@@ -195,4 +199,5 @@ internal sealed class ProductionTestHarness
         buildings.DequeueUncommittedEvents();
         return buildings;
     }
+}
 }

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Jobs;
 using Dig.Domain.Core;
 using Dig.Domain.Jobs;
@@ -5,7 +7,8 @@ using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class JobSystemTests
 {
@@ -230,4 +233,5 @@ public sealed class JobSystemTests
         Assert.True(jobs.Add(job).IsSuccess);
         Assert.True(jobs.MakeAvailable(job.Id, tick).IsSuccess);
     }
+}
 }

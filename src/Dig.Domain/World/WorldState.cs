@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.World;
+namespace Dig.Domain.World
+{
 
 public sealed partial class WorldState : AggregateRoot
 {
@@ -174,4 +178,5 @@ public sealed partial class WorldState : AggregateRoot
         ChunkId[] ordered = chunks.OrderBy(chunk => chunk).ToArray();
         return new ReadOnlyCollection<ChunkId>(ordered);
     }
+}
 }

@@ -1,6 +1,8 @@
+using System;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Agents;
+namespace Dig.Domain.Agents
+{
 
 public enum AgentIntentKind
 {
@@ -245,4 +247,5 @@ internal sealed class ActiveAgentAction
             ElapsedTicks,
             Target);
     }
+}
 }

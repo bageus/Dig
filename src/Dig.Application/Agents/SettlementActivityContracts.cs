@@ -1,8 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Domain.Agents;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 
-namespace Dig.Application.Agents;
+namespace Dig.Application.Agents
+{
 
 public interface IBuildingFacilitiesRepository
 {
@@ -94,4 +98,5 @@ public sealed class SettlementTickReport
             .OrderBy(value => value.AgentId.ToString(), StringComparer.Ordinal)
             .ToArray();
     }
+}
 }

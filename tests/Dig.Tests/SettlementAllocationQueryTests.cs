@@ -4,7 +4,8 @@ using Dig.Domain.Inventory;
 using Dig.Domain.World;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class SettlementAllocationQueryTests
 {
@@ -70,4 +71,5 @@ public sealed class SettlementAllocationQueryTests
             agent,
             BuildingFacilityKind.Bed));
     }
+}
 }

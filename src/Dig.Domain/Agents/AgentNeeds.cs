@@ -1,4 +1,6 @@
-namespace Dig.Domain.Agents;
+using System;
+namespace Dig.Domain.Agents
+{
 
 public readonly struct NeedValue : IEquatable<NeedValue>, IComparable<NeedValue>
 {
@@ -159,4 +161,5 @@ internal sealed class AgentNeedsState
     {
         return new AgentNeedsSnapshot(Nutrition, Alertness, Mood, Health);
     }
+}
 }

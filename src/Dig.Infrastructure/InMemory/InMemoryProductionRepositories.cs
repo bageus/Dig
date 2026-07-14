@@ -1,9 +1,12 @@
+using System;
+using System.Collections.Generic;
 using Dig.Application.Production;
 using Dig.Domain.Core;
 using Dig.Domain.Production;
 using Dig.Domain.Technology;
 
-namespace Dig.Infrastructure.InMemory;
+namespace Dig.Infrastructure.InMemory
+{
 
 public sealed class InMemoryProductionRepository : IProductionRepository
 {
@@ -88,4 +91,5 @@ public sealed class FixedEnergyAvailability : IEnergyAvailability
         return energyPerWorkTick == 0
             || (SuppliesEnergy && !_disabledBuildings.Contains(buildingId));
     }
+}
 }

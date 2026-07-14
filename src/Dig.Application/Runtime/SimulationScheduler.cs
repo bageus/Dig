@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 
-namespace Dig.Application.Runtime;
+namespace Dig.Application.Runtime
+{
 
 public sealed class SimulationScheduler
 {
@@ -127,4 +131,5 @@ public sealed class SimulationScheduler
             ? orderComparison
             : StringComparer.Ordinal.Compare(left.Name, right.Name);
     }
+}
 }

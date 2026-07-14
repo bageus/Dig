@@ -1,7 +1,10 @@
+using System;
+using System.Collections.Generic;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 
-namespace Dig.Domain.Navigation;
+namespace Dig.Domain.Navigation
+{
 
 internal sealed class NavigationWorldIndex
 {
@@ -80,4 +83,5 @@ internal sealed class NavigationWorldIndex
     {
         return _cells.TryGetValue(cellId, out cell);
     }
+}
 }

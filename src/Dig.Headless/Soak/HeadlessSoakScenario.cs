@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Diagnostics;
 using Dig.Application.Agents;
 using Dig.Application.Diagnostics;
@@ -14,7 +17,8 @@ using Dig.Domain.Storage;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 
-namespace Dig.Headless.Soak;
+namespace Dig.Headless.Soak
+{
 
 internal static class HeadlessSoakScenario
 {
@@ -308,4 +312,5 @@ internal static class HeadlessSoakScenario
             throw new InvalidOperationException(result.Error!.ToString());
         }
     }
+}
 }

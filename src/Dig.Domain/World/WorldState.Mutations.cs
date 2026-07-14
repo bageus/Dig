@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.World;
+namespace Dig.Domain.World
+{
 
 public sealed partial class WorldState
 {
@@ -207,4 +211,5 @@ public sealed partial class WorldState
 
         public CellState CurrentState { get; }
     }
+}
 }

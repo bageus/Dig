@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.World;
 
-namespace Dig.Domain.Navigation;
+namespace Dig.Domain.Navigation
+{
 
 public sealed class NavigationPathfinder
 {
@@ -231,4 +235,5 @@ public sealed class NavigationPathfinder
                 snapshot.NavigationVersion,
                 detail));
     }
+}
 }

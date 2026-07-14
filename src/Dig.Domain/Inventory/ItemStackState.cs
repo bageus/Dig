@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Inventory;
+namespace Dig.Domain.Inventory
+{
 
 internal sealed class ItemStackState
 {
@@ -131,4 +135,5 @@ internal sealed class ItemStackState
             .ToArray();
         return new ItemStackSnapshot(Id, ItemId, Quantity, Location, reservations);
     }
+}
 }

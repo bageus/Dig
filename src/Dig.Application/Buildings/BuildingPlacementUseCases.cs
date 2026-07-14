@@ -1,9 +1,11 @@
+using System;
 using Dig.Application.Messaging;
 using Dig.Application.World;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 
-namespace Dig.Application.Buildings;
+namespace Dig.Application.Buildings
+{
 
 public sealed class PlaceBuildingHandler : ICommandHandler<PlaceBuildingCommand, Result>
 {
@@ -81,4 +83,5 @@ public sealed class GetBuildingHandler : IQueryHandler<GetBuildingQuery, Buildin
 
         return _repository.Get().Get(query.BuildingId);
     }
+}
 }

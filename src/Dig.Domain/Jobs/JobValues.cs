@@ -1,7 +1,9 @@
+using System;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 
-namespace Dig.Domain.Jobs;
+namespace Dig.Domain.Jobs
+{
 
 public enum JobStatus
 {
@@ -190,4 +192,5 @@ public sealed class JobBlockReason
     {
         return $"{Code}: {Message}";
     }
+}
 }

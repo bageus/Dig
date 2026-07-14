@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 
-namespace Dig.Application.Runtime;
+namespace Dig.Application.Runtime
+{
 
 public readonly struct SystemPerformanceSample
 {
@@ -241,4 +245,5 @@ public sealed class SimulationPerformanceReport
     public IReadOnlyList<PerformanceBudgetViolation> Violations { get; }
 
     public bool IsWithinBudget => Violations.Count == 0;
+}
 }

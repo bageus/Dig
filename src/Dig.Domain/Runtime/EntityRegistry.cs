@@ -1,8 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Buffers.Binary;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Runtime;
+namespace Dig.Domain.Runtime
+{
 
 public static class EntityRegistryErrors
 {
@@ -146,4 +150,5 @@ public sealed class EntityRegistry
             ? GenerateId()
             : new EntityId(value);
     }
+}
 }

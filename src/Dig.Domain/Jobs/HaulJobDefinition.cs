@@ -1,8 +1,11 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 
-namespace Dig.Domain.Jobs;
+namespace Dig.Domain.Jobs
+{
 
 public sealed class HaulJobDefinition : JobDefinition
 {
@@ -94,4 +97,5 @@ public sealed class HaulJobDefinition : JobDefinition
     {
         return new ReadOnlyCollection<ReservationKey>(Array.Empty<ReservationKey>());
     }
+}
 }

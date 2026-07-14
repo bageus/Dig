@@ -1,3 +1,4 @@
+using System.Linq;
 using Dig.Application.Colonies;
 using Dig.Domain.Colonies;
 using Dig.Domain.Core;
@@ -5,7 +6,8 @@ using Dig.Infrastructure.InMemory;
 using Dig.Presentation.Colonies;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class ArchitectureFoundationTests
 {
@@ -103,4 +105,5 @@ public sealed class ArchitectureFoundationTests
         Assert.True(result.IsSuccess);
         return result.Value;
     }
+}
 }

@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Dig.Application.Inventory;
 using Dig.Application.Messaging;
 using Dig.Application.Runtime;
@@ -6,7 +8,8 @@ using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 
-namespace Dig.Application.Agents;
+namespace Dig.Application.Agents
+{
 
 public sealed class ResidentSettlementSystem : ISimulationSystem
 {
@@ -281,4 +284,5 @@ public sealed class ResidentSettlementSystem : ISimulationSystem
             throw new InvalidOperationException(result.Error!.ToString());
         }
     }
+}
 }

@@ -1,3 +1,4 @@
+using System;
 using Dig.Application.Agents;
 using Dig.Application.Runtime;
 using Dig.Domain.Agents;
@@ -9,7 +10,8 @@ using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 internal sealed class ResidentSettlementHarness
 {
@@ -136,4 +138,5 @@ internal sealed class ResidentSettlementHarness
     {
         return Agents.Get(agentId)!.CreateSnapshot(tick);
     }
+}
 }

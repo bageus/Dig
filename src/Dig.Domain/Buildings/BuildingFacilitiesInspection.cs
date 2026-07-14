@@ -1,6 +1,8 @@
+using System;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Buildings;
+namespace Dig.Domain.Buildings
+{
 
 public readonly struct BuildingFacilityInspection
 {
@@ -55,4 +57,5 @@ public sealed partial class BuildingFacilitiesState
             visitor.VisitFacilityReservation(reservation);
         }
     }
+}
 }

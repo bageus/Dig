@@ -7,7 +7,8 @@ using Dig.Domain.Production;
 using Dig.Domain.Technology;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class ProductionIntegrationTests
 {
@@ -204,4 +205,5 @@ public sealed class ProductionIntegrationTests
             ProductionContentCatalogTests.CreateRecipe(requiredTechnology: null),
         });
     }
+}
 }

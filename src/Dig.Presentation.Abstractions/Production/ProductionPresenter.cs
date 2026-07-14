@@ -1,8 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Production;
 using Dig.Domain.Technology;
 
-namespace Dig.Presentation.Production;
+namespace Dig.Presentation.Production
+{
 
 public sealed class ProductionOrderView
 {
@@ -89,4 +93,5 @@ public sealed class ProductionPresenter
             snapshot.Version,
             snapshot.UnlockedTechnologies.Select(value => value.ToString()).ToArray());
     }
+}
 }

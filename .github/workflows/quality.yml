@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Run architecture and file-size checks
+      - name: Run architecture, file-size and C# compatibility checks
         run: python tools/quality/check_quality.py
 
       - name: Set up .NET

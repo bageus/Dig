@@ -1,7 +1,8 @@
 using Dig.Domain.Agents;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class UtilityTieBreakTests
 {
@@ -28,4 +29,5 @@ public sealed class UtilityTieBreakTests
             decision.Options[1].FinalScore,
             decision.Options[2].FinalScore);
     }
+}
 }

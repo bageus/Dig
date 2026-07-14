@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Messaging;
@@ -9,7 +11,8 @@ using Dig.Domain.Storage;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 
-namespace Dig.Headless;
+namespace Dig.Headless
+{
 
 internal static class HeadlessAutomaticHaulingScenario
 {
@@ -148,4 +151,5 @@ internal static class HeadlessAutomaticHaulingScenario
             throw new InvalidOperationException(result.Error!.ToString());
         }
     }
+}
 }

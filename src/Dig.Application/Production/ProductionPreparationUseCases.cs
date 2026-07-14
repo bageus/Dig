@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Buildings;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
@@ -10,7 +13,8 @@ using Dig.Domain.Jobs;
 using Dig.Domain.Production;
 using Dig.Domain.Technology;
 
-namespace Dig.Application.Production;
+namespace Dig.Application.Production
+{
 
 public sealed class EnqueueProductionOrderHandler
     : ICommandHandler<EnqueueProductionOrderCommand, Result>
@@ -215,4 +219,5 @@ public sealed class PrepareProductionOrderHandler
         _eventSink.Append(inventory.DequeueUncommittedEvents());
         _eventSink.Append(jobs.DequeueUncommittedEvents());
     }
+}
 }

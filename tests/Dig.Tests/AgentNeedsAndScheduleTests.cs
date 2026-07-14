@@ -1,8 +1,11 @@
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class AgentNeedsAndScheduleTests
 {
@@ -177,4 +180,5 @@ public sealed class AgentNeedsAndScheduleTests
         Assert.True(repeated.IsFailure);
         Assert.Equal(AgentErrors.TickNotIncreasing, repeated.Error);
     }
+}
 }

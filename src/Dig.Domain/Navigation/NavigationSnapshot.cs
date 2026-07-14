@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.World;
 
-namespace Dig.Domain.Navigation;
+namespace Dig.Domain.Navigation
+{
 
 public readonly struct NavigationTransition
 {
@@ -342,4 +346,5 @@ public sealed class NavigationSnapshot
 
         list.Add(new NavigationTransition(to, link.Cost, link.Kind));
     }
+}
 }

@@ -1,7 +1,9 @@
+using System;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 
-namespace Dig.Domain.Storage;
+namespace Dig.Domain.Storage
+{
 
 public sealed partial class StorageState
 {
@@ -71,4 +73,5 @@ public sealed partial class StorageState
             right.Id.ToString(),
             StringComparison.Ordinal);
     }
+}
 }

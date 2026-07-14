@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Colonies;
 using Dig.Application.Messaging;
 using Dig.Domain.Colonies;
@@ -6,7 +9,8 @@ using Dig.Domain.Runtime;
 using Dig.Infrastructure.InMemory;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class RuntimeIdentityAndPipelineTests
 {
@@ -144,4 +148,5 @@ public sealed class RuntimeIdentityAndPipelineTests
         Assert.True(result.IsSuccess);
         return result.Value;
     }
+}
 }

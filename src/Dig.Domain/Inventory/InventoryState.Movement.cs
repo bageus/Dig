@@ -1,6 +1,7 @@
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Inventory;
+namespace Dig.Domain.Inventory
+{
 
 public sealed partial class InventoryState
 {
@@ -165,4 +166,5 @@ public sealed partial class InventoryState
             ? Result.Failure(InventoryErrors.StackAlreadyExists)
             : Result.Success();
     }
+}
 }

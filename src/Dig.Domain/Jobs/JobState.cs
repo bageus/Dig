@@ -1,6 +1,8 @@
+using System;
 using Dig.Domain.Core;
 
-namespace Dig.Domain.Jobs;
+namespace Dig.Domain.Jobs
+{
 
 public sealed class JobSnapshot
 {
@@ -181,4 +183,5 @@ public sealed class JobState
     {
         Version = checked(Version + 1);
     }
+}
 }

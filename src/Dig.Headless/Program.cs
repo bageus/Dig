@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
@@ -17,7 +21,8 @@ using Dig.Domain.World;
 using Dig.Headless.Soak;
 using Dig.Infrastructure.InMemory;
 
-namespace Dig.Headless;
+namespace Dig.Headless
+{
 
 internal static class Program
 {
@@ -330,4 +335,5 @@ internal static class Program
             Require(context.State.Entities.RegisterNew());
         }
     }
+}
 }

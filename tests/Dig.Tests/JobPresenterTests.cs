@@ -4,7 +4,8 @@ using Dig.Domain.World;
 using Dig.Presentation.Jobs;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class JobPresenterTests
 {
@@ -37,4 +38,5 @@ public sealed class JobPresenterTests
         Assert.Contains("path_missing", view.Reason!);
         Assert.Equal("Dig:5,6", view.Target);
     }
+}
 }

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Messaging;
 using Dig.Application.World;
 using Dig.Domain.Core;
@@ -5,7 +7,8 @@ using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class WorldStateTests
 {
@@ -241,4 +244,5 @@ public sealed class WorldStateTests
         Assert.True(result.IsSuccess);
         return result.Value;
     }
+}
 }

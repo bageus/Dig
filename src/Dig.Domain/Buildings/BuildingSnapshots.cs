@@ -1,8 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 
-namespace Dig.Domain.Buildings;
+namespace Dig.Domain.Buildings
+{
 
 public enum BuildingStatus
 {
@@ -129,4 +133,5 @@ public sealed class BuildingDamaged : IDomainEvent
     public EntityId BuildingId { get; }
 
     public int Durability { get; }
+}
 }

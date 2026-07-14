@@ -1,6 +1,8 @@
+using System;
 using Dig.Application.Runtime;
 
-namespace Dig.Headless.Soak;
+namespace Dig.Headless.Soak
+{
 
 internal sealed class HeadlessSoakProfile
 {
@@ -115,4 +117,5 @@ internal sealed class HeadlessSoakProfile
                         maximumSingleExecutionMilliseconds: 50),
                 }));
     }
+}
 }

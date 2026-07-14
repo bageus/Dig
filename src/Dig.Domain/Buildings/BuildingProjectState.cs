@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 
-namespace Dig.Domain.Buildings;
+namespace Dig.Domain.Buildings
+{
 
 internal sealed class BuildingProjectState
 {
@@ -137,4 +141,5 @@ internal sealed class BuildingProjectState
     {
         Version = checked(Version + 1);
     }
+}
 }

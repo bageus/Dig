@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Agents;
 using Dig.Application.Runtime;
 using Dig.Domain.Agents;
@@ -6,7 +9,8 @@ using Dig.Domain.Runtime;
 using Dig.Infrastructure.InMemory;
 using Xunit;
 
-namespace Dig.Tests;
+namespace Dig.Tests
+{
 
 public sealed class AgentAutonomySystemTests
 {
@@ -195,4 +199,5 @@ public sealed class AgentAutonomySystemTests
 
         public SimulationState Simulation { get; }
     }
+}
 }
