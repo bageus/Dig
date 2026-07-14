@@ -1,0 +1,11 @@
+{
+  "name": "Dig.Unity.Editor",
+  "rootNamespace": "Dig.Unity.Editor",
+  "references": [
+    "Dig.Unity"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": true
+}
