@@ -39,32 +39,33 @@ public sealed class InMemorySimulationPerformance : ISimulationPerformanceSink
                 new List<PerformanceBudgetViolation>();
             foreach (SystemPerformanceSummary summary in summaries)
             {
-                if (summary.AverageMicroseconds > budget.MaximumAverageMicroseconds)
+                SystemPerformanceBudgetLimit limit = budget.GetLimit(summary.SystemName);
+                if (summary.AverageMicroseconds > limit.MaximumAverageMicroseconds)
                 {
                     violations.Add(new PerformanceBudgetViolation(
                         summary.SystemName,
                         "average_time",
                         $"{summary.AverageMicroseconds:F2} us exceeds "
-                        + $"{budget.MaximumAverageMicroseconds:F2} us."));
+                        + $"{limit.MaximumAverageMicroseconds:F2} us."));
                 }
 
-                if (summary.AverageAllocatedBytes > budget.MaximumAverageAllocatedBytes)
+                if (summary.AverageAllocatedBytes > limit.MaximumAverageAllocatedBytes)
                 {
                     violations.Add(new PerformanceBudgetViolation(
                         summary.SystemName,
                         "average_allocations",
                         $"{summary.AverageAllocatedBytes} bytes exceeds "
-                        + $"{budget.MaximumAverageAllocatedBytes} bytes."));
+                        + $"{limit.MaximumAverageAllocatedBytes} bytes."));
                 }
 
                 if (summary.MaximumMilliseconds
-                    > budget.MaximumSingleExecutionMilliseconds)
+                    > limit.MaximumSingleExecutionMilliseconds)
                 {
                     violations.Add(new PerformanceBudgetViolation(
                         summary.SystemName,
                         "maximum_time",
                         $"{summary.MaximumMilliseconds:F3} ms exceeds "
-                        + $"{budget.MaximumSingleExecutionMilliseconds:F3} ms."));
+                        + $"{limit.MaximumSingleExecutionMilliseconds:F3} ms."));
                 }
             }
 
