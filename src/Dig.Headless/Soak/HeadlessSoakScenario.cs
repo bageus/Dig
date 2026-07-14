@@ -26,7 +26,7 @@ internal static class HeadlessSoakScenario
     public static HeadlessSoakReport Execute(HeadlessSoakConfiguration configuration)
     {
         SimulationState state = SimulationState.Create(
-            configuration.Seed,
+            unchecked((ulong)(uint)configuration.Seed),
             TimeSpan.FromMilliseconds(100));
         InMemoryExecutionJournal journal = new InMemoryExecutionJournal(
             maximumCommands: 1_000,
