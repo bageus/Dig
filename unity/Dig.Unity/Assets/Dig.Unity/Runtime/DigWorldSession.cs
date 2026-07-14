@@ -12,21 +12,31 @@ namespace Dig.Unity
     {
         private readonly DesignateDiggingCommandHandler _designationHandler;
         private readonly WorldPresenter _presenter;
+        private readonly InMemoryWorldRepository _repository;
+        private readonly MaterialId _emptyMaterialId;
         private long _tick;
 
         private DigWorldSession(
             DesignateDiggingCommandHandler designationHandler,
             WorldPresenter presenter,
+            InMemoryWorldRepository repository,
+            MaterialId emptyMaterialId,
             InMemoryExecutionJournal journal,
             long tick)
         {
             _designationHandler = designationHandler;
             _presenter = presenter;
+            _repository = repository;
+            _emptyMaterialId = emptyMaterialId;
             Journal = journal;
             _tick = tick;
         }
 
         public InMemoryExecutionJournal Journal { get; }
+
+        internal InMemoryWorldRepository Repository => _repository;
+
+        internal MaterialId EmptyMaterialId => _emptyMaterialId;
 
         public static DigWorldSession CreateDemo(int width, int height, int chunkSize)
         {
@@ -65,6 +75,8 @@ namespace Dig.Unity
             return new DigWorldSession(
                 new DesignateDiggingCommandHandler(repository, journal),
                 new WorldPresenter(new GetWorldSnapshotQueryHandler(repository)),
+                repository,
+                air,
                 journal,
                 tick: 3);
         }
@@ -72,6 +84,16 @@ namespace Dig.Unity
         public WorldViewModel LoadView()
         {
             return _presenter.Load();
+        }
+
+        internal WorldSnapshot LoadSnapshot()
+        {
+            return _repository.Get().CreateSnapshot();
+        }
+
+        internal IReadOnlyList<ChunkId> DrainDirtyChunks()
+        {
+            return _repository.Get().DrainDirtyChunks();
         }
 
         public Result ToggleDesignation(WorldCellViewModel cell)
