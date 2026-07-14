@@ -17,6 +17,11 @@ namespace Dig.Unity
         public IReadOnlyDictionary<string, CellId> PlanMovement(
             IReadOnlyList<AgentViewModel> agents)
         {
+            if (agents == null)
+            {
+                throw new ArgumentNullException(nameof(agents));
+            }
+
             Result refresh = RefreshNavigation();
             if (refresh.IsFailure)
             {
@@ -25,7 +30,13 @@ namespace Dig.Unity
 
             NavigationMap map = _navigationRepository.Get(_profile.Id)
                 ?? throw new InvalidOperationException("Navigation map not available.");
-            NavigationSnapshot navigation = map.GetSnapshot().Value;
+            Result<NavigationSnapshot> snapshotResult = map.GetSnapshot();
+            if (snapshotResult.IsFailure)
+            {
+                throw new InvalidOperationException(snapshotResult.Error!.ToString());
+            }
+
+            NavigationSnapshot navigation = snapshotResult.Value;
             Dictionary<string, AgentViewModel> agentsById = agents.ToDictionary(
                 agent => agent.Id,
                 StringComparer.Ordinal);
@@ -77,14 +88,14 @@ namespace Dig.Unity
                 .OrderBy(item => item.Key.ToString(), StringComparer.Ordinal))
             {
                 JobSnapshot? job = _jobRepository.Get().Get(pair.Key);
-                if (!job?.AssignedAgentId.HasValue ?? true)
+                if (job is null || !job.AssignedAgentId.HasValue)
                 {
                     continue;
                 }
 
                 routes.Add(_routePresenter.Present(
                     pair.Value,
-                    job!.AssignedAgentId!.Value));
+                    job.AssignedAgentId.Value));
             }
 
             return routes;
