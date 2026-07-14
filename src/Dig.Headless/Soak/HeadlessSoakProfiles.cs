@@ -91,28 +91,28 @@ internal sealed class HeadlessSoakProfile
             defaultResidentCount: 64,
             initialFoodQuantity: 64_000,
             maximumHaulingWorkers: 16,
-            defaultMaximumElapsedSeconds: 30,
+            defaultMaximumElapsedSeconds: 10,
             performanceBudget: new SimulationPerformanceBudget(
-                maximumAverageMicroseconds: 20_000,
-                maximumAverageAllocatedBytes: 4_000_000,
-                maximumSingleExecutionMilliseconds: 500,
+                maximumAverageMicroseconds: 5_000,
+                maximumAverageAllocatedBytes: 500_000,
+                maximumSingleExecutionMilliseconds: 250,
                 overrides: new[]
                 {
                     new SystemPerformanceBudgetLimit(
                         "agents.settlement",
-                        maximumAverageMicroseconds: 4_000,
-                        maximumAverageAllocatedBytes: 400_000,
-                        maximumSingleExecutionMilliseconds: 200),
+                        maximumAverageMicroseconds: 1_800,
+                        maximumAverageAllocatedBytes: 325_000,
+                        maximumSingleExecutionMilliseconds: 100),
                     new SystemPerformanceBudgetLimit(
                         "soak.hauling",
-                        maximumAverageMicroseconds: 500,
-                        maximumAverageAllocatedBytes: 125_000,
-                        maximumSingleExecutionMilliseconds: 150),
+                        maximumAverageMicroseconds: 150,
+                        maximumAverageAllocatedBytes: 20_000,
+                        maximumSingleExecutionMilliseconds: 100),
                     new SystemPerformanceBudgetLimit(
                         "soak.invariants",
-                        maximumAverageMicroseconds: 1_500,
-                        maximumAverageAllocatedBytes: 200_000,
-                        maximumSingleExecutionMilliseconds: 150),
+                        maximumAverageMicroseconds: 500,
+                        maximumAverageAllocatedBytes: 175_000,
+                        maximumSingleExecutionMilliseconds: 50),
                 }));
     }
 }
