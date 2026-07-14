@@ -14,14 +14,20 @@ using Dig.Domain.Navigation;
 using Dig.Domain.Runtime;
 using Dig.Domain.Storage;
 using Dig.Domain.World;
+using Dig.Headless.Soak;
 using Dig.Infrastructure.InMemory;
 
 namespace Dig.Headless;
 
 internal static class Program
 {
-    public static int Main()
+    public static int Main(string[] args)
     {
+        if (args.Any(value => string.Equals(value, "--soak", StringComparison.Ordinal)))
+        {
+            return HeadlessSoakCommand.Run(args);
+        }
+
         SimulationState state = SimulationState.Create(
             worldSeed: 42,
             tickDuration: TimeSpan.FromMilliseconds(100));

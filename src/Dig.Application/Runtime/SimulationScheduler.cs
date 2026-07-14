@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 namespace Dig.Application.Runtime;
 
@@ -7,11 +8,15 @@ public sealed class SimulationScheduler
     private readonly List<ISimulationSystem> _systems = new List<ISimulationSystem>();
     private readonly HashSet<string> _systemNames = new HashSet<string>(StringComparer.Ordinal);
     private readonly ISimulationTrace _trace;
+    private readonly ISimulationPerformanceSink _performance;
     private bool _isSealed;
 
-    public SimulationScheduler(ISimulationTrace? trace = null)
+    public SimulationScheduler(
+        ISimulationTrace? trace = null,
+        ISimulationPerformanceSink? performance = null)
     {
         _trace = trace ?? NullSimulationTrace.Instance;
+        _performance = performance ?? NullSimulationPerformanceSink.Instance;
     }
 
     public bool IsSealed => _isSealed;
@@ -87,7 +92,25 @@ public sealed class SimulationScheduler
                 continue;
             }
 
-            system.Execute(context);
+            long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+            long timestampBefore = Stopwatch.GetTimestamp();
+            try
+            {
+                system.Execute(context);
+            }
+            finally
+            {
+                long elapsed = Stopwatch.GetTimestamp() - timestampBefore;
+                long allocated = Math.Max(
+                    0,
+                    GC.GetAllocatedBytesForCurrentThread() - allocatedBefore);
+                _performance.Record(new SystemPerformanceSample(
+                    context.Tick,
+                    system.Name,
+                    elapsed,
+                    allocated));
+            }
+
             _trace.Record(new SystemExecution(
                 context.Tick,
                 system.Name,
