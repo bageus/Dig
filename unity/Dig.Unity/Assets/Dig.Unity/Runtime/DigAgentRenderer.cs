@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Dig.Presentation.Agents;
 using UnityEngine;
@@ -13,6 +14,10 @@ namespace Dig.Unity
         private Material? _normalMaterial;
         private Material? _selectedMaterial;
         private DigAgentVisual? _selected;
+
+        public string? SelectedAgentId => _selected?.Model.Id;
+
+        public AgentViewModel? SelectedModel => _selected?.Model;
 
         public void Render(IReadOnlyList<AgentViewModel> agents, float movementDuration)
         {
@@ -112,6 +117,11 @@ namespace Dig.Unity
             if (shader == null)
             {
                 shader = Shader.Find("Standard");
+            }
+
+            if (shader == null)
+            {
+                throw new InvalidOperationException("No supported resident shader was found.");
             }
 
             _normalMaterial = new Material(shader)
