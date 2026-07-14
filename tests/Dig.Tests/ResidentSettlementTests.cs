@@ -38,7 +38,7 @@ public sealed class ResidentSettlementTests
     }
 
     [Fact]
-    public void One_bed_cannot_be_reserved_by_two_exhausted_agents()
+    public void One_bed_is_used_sequentially_without_double_reservation()
     {
         ResidentSettlementHarness harness = new ResidentSettlementHarness();
         harness.AddAgent(FirstAgent.ToString(), nutrition: 9_000, alertness: 500, mood: 8_000);
@@ -50,17 +50,24 @@ public sealed class ResidentSettlementTests
 
         harness.Execute(tick: 0);
 
-        BuildingFacilityReservation reservation = Assert.Single(
+        BuildingFacilityReservation firstReservation = Assert.Single(
             harness.Facilities.GetReservations());
-        Assert.Equal(FirstAgent, reservation.AgentId);
+        Assert.Equal(FirstAgent, firstReservation.AgentId);
         Assert.Equal("bed_unavailable", harness.Agents.Get(SecondAgent)!.LastActionBlockReason);
 
         harness.Execute(tick: 1);
         harness.Execute(tick: 2);
 
-        Assert.Empty(harness.Facilities.GetReservations());
+        BuildingFacilityReservation secondReservation = Assert.Single(
+            harness.Facilities.GetReservations());
+        Assert.Equal(SecondAgent, secondReservation.AgentId);
         Assert.True(harness.Snapshot(FirstAgent, 2).Needs.Alertness.Points >= 2_000);
-        Assert.True(harness.Snapshot(SecondAgent, 2).Needs.Alertness.Points < 1_000);
+
+        harness.Execute(tick: 3);
+        harness.Execute(tick: 4);
+
+        Assert.Empty(harness.Facilities.GetReservations());
+        Assert.True(harness.Snapshot(SecondAgent, 4).Needs.Alertness.Points >= 2_000);
     }
 
     [Fact]
