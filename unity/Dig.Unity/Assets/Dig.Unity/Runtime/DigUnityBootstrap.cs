@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using Dig.Presentation.Agents;
+using Dig.Presentation.Inventory;
 using Dig.Presentation.Jobs;
+using Dig.Presentation.Navigation;
 using Dig.Presentation.World;
 using UnityEngine;
 
@@ -33,15 +35,22 @@ namespace Dig.Unity
                 world,
                 worldSession.Journal);
             IReadOnlyList<AgentViewModel> agents = agentSession.LoadView();
-            DigJobSession jobSession = DigJobSession.CreateDemo(
-                world,
+            DigTerrainWorkSession terrainSession = DigTerrainWorkSession.CreateDemo(
+                worldSession,
                 agents,
                 worldSession.Journal);
-            IReadOnlyList<JobOverlayViewModel> jobs = jobSession.LoadView();
+            terrainSession.PlanMovement(agents);
+            IReadOnlyList<JobOverlayViewModel> jobs = terrainSession.LoadJobs();
+            IReadOnlyList<WorldItemViewModel> items = terrainSession.LoadItems();
+            IReadOnlyList<RouteViewModel> routes = terrainSession.LoadRoutes();
+
             Camera targetCamera = EnsureCamera();
             DigWorldRenderer worldRenderer = GetOrAdd<DigWorldRenderer>(gameObject);
             DigAgentRenderer agentRenderer = GetOrAdd<DigAgentRenderer>(gameObject);
             DigJobRenderer jobRenderer = GetOrAdd<DigJobRenderer>(gameObject);
+            DigWorldItemRenderer itemRenderer = GetOrAdd<DigWorldItemRenderer>(gameObject);
+            DigNavigationRouteRenderer routeRenderer =
+                GetOrAdd<DigNavigationRouteRenderer>(gameObject);
             DigHudOverlay hud = GetOrAdd<DigHudOverlay>(gameObject);
             DigWorldInteraction interaction = GetOrAdd<DigWorldInteraction>(gameObject);
             DigAgentSimulationDriver simulation =
@@ -54,9 +63,12 @@ namespace Dig.Unity
             agentRenderer.Render(agents, movementDuration: 0f);
             jobRenderer.Initialize(agentRenderer);
             jobRenderer.Render(jobs);
+            itemRenderer.Render(items);
+            routeRenderer.Render(routes);
             hud.SetWorld(world);
             hud.SetAgents(agents, agentSession.Tick);
             hud.SetJobs(jobs);
+            hud.SetTerrainDiagnostics(items, routes);
             cameraController.Initialize(targetCamera, world);
             interaction.Initialize(
                 targetCamera,
@@ -66,17 +78,21 @@ namespace Dig.Unity
                 jobRenderer,
                 hud);
             simulation.Initialize(
+                worldSession,
+                worldRenderer,
                 agentSession,
                 agentRenderer,
-                jobSession,
+                terrainSession,
                 jobRenderer,
+                itemRenderer,
+                routeRenderer,
                 hud);
 
             if (logStartup)
             {
                 Debug.Log(
-                    "Dig Unity settlement slice started. World, Agents, Jobs and " +
-                    "ReservationLedger remain authoritative; overlays are rebuildable views.",
+                    "Dig Unity terrain work slice started. Authoritative state stays " +
+                    "outside Unity scene objects; visuals are rebuildable views.",
                     this);
             }
         }
