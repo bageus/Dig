@@ -1,154 +1,121 @@
 # Материалы, руды и ингредиенты
 
-Этот файл фиксирует названия ресурсов, встречающиеся в текущих design-рецептах и системе добычи. Он не утверждает, что перечислены все ресурсы игры.
+Этот файл фиксирует authoritative каталог известных ресурсов, руд и типов грунта. Системные правила случайной добычи и переработки подробно описаны в [`../terrain-resource-output-and-processing.md`](../terrain-resource-output-and-processing.md).
 
-Блокирующие терминологические решения находятся в [`../open-questions.md`](../open-questions.md), прежде всего Q-007, Q-008, Q-009 и Q-013.
+## 1. Разделение типов
 
-## 1. Разделение terrain и item definitions
+- `MaterialId` — грунт/порода клетки World;
+- `DepositDefinitionId` — ресурсная жила, заменяющая обычную клетку;
+- `ItemId` — предмет или stack Inventory;
+- `AgentSkillId` — навык; он никогда не совпадает с ItemId.
 
-Нельзя использовать один display name как неявную ссылку между породой мира и предметом в Inventory.
+Пример: `terrain.stone_rock`, `deposit.stone`, `material.stone` и `skill.stonework` — четыре разные сущности.
 
-- `MaterialId` описывает terrain/породу клетки World: solidity, hardness и визуальный профиль.
-- `ItemId` описывает добытый предмет/стек Inventory: количество, категории, stack size и рецепты.
-- `DepositDefinitionId` описывает жилу или ресурсное включение и связывает host terrain с item outputs.
+## 2. Обработанные материалы и ингредиенты
 
-Пример: `terrain.rock` может быть твёрдой породой, а `material.stone` — предметом, выпавшим после разработки. Эти определения связаны data-driven output rule, но не являются одной сущностью.
-
-## 2. Известные definitions из рецептов
-
-| Предлагаемый ItemId | Display name | Предлагаемые категории | Подтверждённые применения |
+| ItemId | Название | Категории | Подтверждённые применения |
 |---|---|---|---|
-| `material.mushroom_leg` | Ножка гриба / ножка | `Organic`, `MushroomPart`, `CraftingIngredient` | комплекты зданий, эль, сидр, винокурня, университет, кинотеатр |
-| `material.mushroom_cap` | Шляпка гриба / шляпка | `Organic`, `MushroomPart`, `CraftingIngredient` | игровые комнаты, эль, сидр, глипнир, огненная вода, университет |
-| `material.stone` | Камень | `Mineral`, `BuildingMaterial` | игровые комнаты, винокурня; добыча — точное правило Q-009 |
-| `material.hamster` | Хомяк | `Organic`, `CraftingIngredient` | комплекты зданий и экипировки |
-| `material.iron` | Железо | `Metal`, `BuildingMaterial`, `WeaponMaterial` | индустриальная и люкс-комнаты, кинотеатр, ножны, разгрузка; связь с рудой Q-008 |
-| `material.metal` | Металл | `Metal`, `BuildingMaterial` | винокурня, университет; связь с железом Q-008/Q-013 |
-| `material.crystal` | Кристалл | `Mineral`, `Crystal`, `AlchemyIngredient` | люкс-комната, кинотеатр, глипнир, огненная вода; добывается из crystal deposit |
-| `material.gold` | Золото | `Metal`, `Precious`, `AlchemyIngredient` | люкс-комната, кинотеатр, винокурня, огненная вода, разгрузка; связь с золотой рудой Q-007 |
-| `material.larva` | Личинка | `Organic`, `BrewingIngredient` | эль |
-| `material.coal` | Уголь | `Mineral`, `Fuel` | университет; добывается из coal deposit |
+| `material.mushroom_leg` | Ножка гриба | `Organic`, `MushroomPart`, `CraftingIngredient`, `FuelIngredient` | здания, еда, напитки, горн |
+| `material.mushroom_cap` | Шляпка гриба | `Organic`, `MushroomPart`, `CraftingIngredient` | здания, еда, напитки |
+| `material.stone` | Камень | `Mineral`, `BuildingMaterial` | строительство и рецепты |
+| `material.hamster` | Хомяк | `Organic`, `CraftingIngredient`, `FoodIngredient` | здания, экипировка, еда |
+| `material.larva` | Личинка | `Organic`, `BrewingIngredient`, `FoodIngredient` | еда и эль |
+| `material.iron` | Железо / железный слиток / металл | `Metal`, `BuildingMaterial`, `WeaponMaterial` | все прежние рецепты «железа» и «металла» |
+| `material.gold` | Золото | `Metal`, `Precious`, `AlchemyIngredient` | здания, экипировка, напитки |
+| `material.crystal` | Кристалл | `Mineral`, `Crystal`, `AlchemyIngredient` | здания, алхимия, напитки |
+| `material.coal` | Уголь | `Mineral`, `Fuel`, `AlchemyIngredient` | литейный цех, университет, алхимия |
 
-## 3. Кандидаты raw extraction content
+### 2.1 Железо и металл
 
-Следующие IDs являются предлагаемыми и не должны считаться финальными до ответов на открытые вопросы.
+`material.metal` больше не является отдельным предметом. «Металл» — допустимое общее/display название железного слитка `material.iron` и/или категория `Metal`.
 
-| Предлагаемый ID | Display name | Тип | Возможный выход/назначение | Статус |
-|---|---|---|---|---|
-| `terrain.rock` | Каменная порода | `MaterialId` | host terrain, hardness, возможный выход `material.stone` | schema proposal |
-| `deposit.stone` | Каменное включение | `DepositDefinitionId` | дополнительный/одиночный камень | смысл Q-009 |
-| `deposit.crystal` | Кристаллическая жила | `DepositDefinitionId` | `material.crystal` | подтверждён тип, yield TBD |
-| `ore.iron` | Железная руда | `ItemId` | переплавка в `material.iron` | Q-008 |
-| `deposit.iron_ore` | Жила железной руды | `DepositDefinitionId` | `ore.iron` | подтверждён тип, yield TBD |
-| `ore.gold` | Золотая руда | `ItemId` | переплавка в `material.gold` | Q-007 |
-| `deposit.gold_ore` | Жила золотой руды | `DepositDefinitionId` | `ore.gold` | подтверждён тип, yield TBD |
-| `deposit.native_gold` | Самородное золото | `DepositDefinitionId` | возможно `material.gold` напрямую | Q-007 |
-| `deposit.coal` | Угольный пласт | `DepositDefinitionId` | `material.coal` | подтверждён тип, yield TBD |
+Все ранее описанные рецепты винокурни и университета, использовавшие `material.metal`, должны использовать `material.iron`. Изменение требует миграции ссылок до стабилизации save schema.
 
-## 4. Железная руда, железо и металл
+## 3. Руды
 
-До реализации запрещено молча объединять или подменять эти definitions.
+| ItemId | Название | Переработка |
+|---|---|---|
+| `ore.iron` | Железная руда | горн или литейный цех -> `material.iron` |
+| `ore.gold` | Золотая руда | литейный цех -> `material.gold` |
+| `ore.crystal` | Кристаллическая руда | crystal processor -> `material.crystal` |
 
-Нужно решить:
+Отдельное самородное золото текущим design не требуется.
 
-1. `ore.iron -> smelting -> material.iron`;
-2. является ли `material.metal` отдельным обработанным ресурсом;
-3. является ли `Metal` только категорией, а не предметом;
-4. какие existing recipes должны использовать raw ore, iron или generic metal.
+## 4. Типы грунта
 
-Решение фиксируется в Q-008/Q-013 до появления production/save data.
+| MaterialId | Название | Добываемость | Допустимые случайные outputs |
+|---|---|---:|---|
+| `terrain.sand` | Песчаный грунт | да | нет |
+| `terrain.stone_rock` | Каменная порода | да | только камень |
+| `terrain.metal_bearing_rock` | Металлосодержащая / «серная» порода | да | камень; немного железной руды; очень мало золотой руды; мало угля |
+| `terrain.crystalline_rock` | Кристаллическая порода | да | мало камня; железная руда; кристаллическая руда; мало золотой руды |
+| `terrain.lava_rock` | Лавовая порода | да | золотая руда; мало камня; мало кристаллической руды; железная руда; уголь |
+| `terrain.unmineable` | Недобываемая порода | нет | нет |
 
-## 5. Золото и золотая руда
+Точные вероятности и количества — data-driven `BALANCE_TBD`. Точное display name металлосодержащей/«серной» породы блокировано Q-024.
 
-Новый design одновременно перечисляет золото и золотую руду. Возможные модели:
+## 5. Жилы
 
-- только `ore.gold`, которое переплавляется в `material.gold`;
-- `ore.gold` плюс редкий `native_gold`, сразу выдающий `material.gold`;
-- слово «золото» в списке жил было синонимом/дубликатом золотой руды.
+| DepositDefinitionId | Название | Output |
+|---|---|---|
+| `deposit.iron_ore` | Жила железной руды | `ore.iron` |
+| `deposit.gold_ore` | Жила золотой руды | `ore.gold` |
+| `deposit.crystal_ore` | Жила кристаллической руды | `ore.crystal` |
+| `deposit.coal` | Угольная жила | `material.coal` |
+| `deposit.stone` | Каменная жила/глыба | `material.stone` |
 
-Финальная модель блокирована Q-007.
+Жила заменяет клетку обычного грунта и выдаёт только свой output. После истощения клетка становится пустой и расширяет проход/помещение.
 
-## 6. Камень
+Несколько deposit cells могут находиться рядом, но каждая имеет собственные id, output и depletion state.
 
-`Камень` используется минимум в трёх разных смыслах, которые должны иметь разные IDs:
+## 6. Переработка
 
-- terrain material/порода;
-- добытый item `material.stone`;
-- возможно название навыка, блокирующего шаблоны комнат.
+| RecipeDefinitionId | Здание | Вход | Выход |
+|---|---|---|---|
+| `recipe.furnace.iron` | Горн | 3 железной руды + 2 ножки гриба | 2 железа |
+| `recipe.foundry.iron` | Литейный цех | 3 железной руды + 2 угля | 2 железа |
+| `recipe.foundry.gold` | Литейный цех | 3 золотой руды + 2 угля | 2 золота |
+| `recipe.crystal_processor.crystal` | Crystal processor, display name Q-023 | 1 кристаллическая руда | 1 кристалл |
 
-Если пороги 20/40/60 относятся к навыку, рекомендуется stable id вроде `skill.stonework`, а не строка `stone`, общая с предметом. См. Q-003.
+Плавка железа/золота развивает `skill.metallurgy`. Обработка кристаллической руды развивает `skill.alchemy`.
 
-Точное правило выхода камня из обычной породы блокировано Q-009.
+## 7. Правила definitions
 
-## 7. Ножка и шляпка
+Каждый ItemDefinition определяет stable ID, localization, категории, stack size, visual, storage filters и источники/рецепты.
 
-Короткие названия `ножка` и `шляпка` в рецептах интерпретируются как части гриба. В UI допустимы полные display names «ножка гриба» и «шляпка гриба», но ссылки используют стабильные ItemId.
+Каждый terrain profile определяет solidity, hardness, mineability, visual и deterministic output table.
 
-## 8. Хомяк и личинка
+Каждый deposit определяет output, work effort, reveal, visual и depleted behavior.
 
-Названия сохраняются без переосмысления. Каталог не утверждает, что эти предметы являются едой. Они считаются ингредиентами/материалами, пока отдельное food definition не укажет иное.
+## 8. Validation
 
-## 9. Правила ItemDefinition
+До запуска проверяется:
 
-Каждый материал/руда должен определять:
+- уникальность IDs в своих каталогах;
+- существование recipe inputs/outputs;
+- отсутствие отдельного `material.metal`;
+- отсутствие output у `terrain.unmineable`;
+- валидность вероятностей/количеств;
+- невозможность одновременного terrain и deposit output одной клетки;
+- deterministic generation/output versions;
+- миграция при изменении stable IDs.
 
-- stable ItemId;
-- display name и localization key;
-- категории;
-- `MaxStackSize`;
-- массу/объём, если такие ограничения войдут в scope;
-- visual definition;
-- допустимость прямого использования;
-- storage filters;
-- technology/source definition;
-- spoilage, если применимо.
+## 9. Матрица использования
 
-## 10. Правила DepositDefinition
+| Ресурс | Основное назначение |
+|---|---|
+| Ножка гриба | строительство, еда, напитки, топливо горна |
+| Шляпка гриба | строительство, еда, напитки |
+| Камень | строительство |
+| Железо | здания, оружие, экипировка, прежние рецепты «металла» |
+| Золото | дорогие здания, экипировка, алхимия |
+| Кристалл | дорогие здания и алхимия |
+| Уголь | литейный цех, университет, алхимия |
+| Железная/золотая/кристаллическая руда | входы переработки |
 
-Каждая жила должна определять:
+## 10. Открытые вопросы
 
-- stable `DepositDefinitionId`;
-- допустимые host terrain categories;
-- output ItemId или набор outputs;
-- yield/range;
-- work effort/hardness modifier;
-- cluster size/shape policy;
-- reveal conditions;
-- visual profile для hidden/revealed/depleted состояния;
-- biome/layer generation weights;
-- depleted behavior.
-
-Одна deposit cell не должна повторно выдавать output после depletion. Несколько клеток одной жилы связываются stable `DepositId`.
-
-## 11. Content validation
-
-Проверки до запуска симуляции:
-
-- MaterialId, ItemId и DepositDefinitionId уникальны в своих каталогах;
-- recipe input ссылается на существующий ItemId;
-- deposit output ссылается на существующий ItemId;
-- host terrain category существует;
-- количество и yield положительны;
-- категории существуют;
-- stack size положителен;
-- building kit recipe не использует неразрешённый ingredient;
-- `железо`/`металл` и `золото`/`золотая руда` не разрешаются через display-name comparison;
-- изменение стабильного ID требует save migration;
-- одинаковый seed/version создаёт одинаковые deposit IDs и locations.
-
-## 12. Матрица использования в текущих рецептах
-
-| Ресурс | Игровые комнаты | Кинотеатр | Винокурня | Университет | Алкоголь | Инвентарь/экипировка |
-|---|---:|---:|---:|---:|---:|---:|
-| Ножка | да | да | да | да | эль, сидр | разгрузка |
-| Шляпка | да | нет | нет | да | эль, сидр, глипнир, огненная вода | нет |
-| Камень | да | нет | да | нет | нет | нет |
-| Хомяк | да | да | да | да | нет | ножны, разгрузка |
-| Железо | индустриальная, люкс | да | нет | нет | нет | ножны, разгрузка |
-| Металл | нет | нет | да | да | нет | нет |
-| Кристалл | люкс | да | нет | нет | глипнир, огненная вода | нет |
-| Золото | люкс | да | да | нет | огненная вода | разгрузка |
-| Личинка | нет | нет | нет | нет | эль | нет |
-| Уголь | нет | нет | нет | да | нет | нет |
-
-Матрица является навигационной и не заменяет RecipeDefinition.
+- Q-023 — официальное имя crystal processor;
+- Q-024 — официальное имя «серной» породы;
+- Q-026 — стоимость/работники новых производственных зданий;
+- Q-014 — точные вероятности, yields и трудоёмкость.
