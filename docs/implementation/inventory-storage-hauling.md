@@ -119,3 +119,11 @@ Tests cover:
 - complete hauling preserving total quantity;
 - tool equipment;
 - the deterministic headless automatic multi-stack, multi-worker hauling scenario.
+
+## Planned resident slot inventory expansion
+
+The implemented authoritative ownership and reservation model remains the foundation for the planned resident slot inventory. The extension adds six fixed adult resident slots, typed `Main`, `Cargo` and `Weapon` compartments, basket and weapon expansions, slot reservations, speed modifiers, transactional content spilling, inventory use/drop commands and a `HeldItemReference` that keeps a temporarily held item in its original slot.
+
+The complete design and acceptance criteria are documented in [`docs/design/resident-inventory-expansion.md`](../design/resident-inventory-expansion.md) and tracked by #64 with implementation tasks #65, #67, #68, #69, #70 and #71.
+
+Until those tasks are complete, the existing `Equipped` location and resident inventory behavior described above remain the implemented runtime behavior.
