@@ -18,6 +18,31 @@ public enum BuildingStatus
     Damaged = 5,
     Cancelled = 6,
     Removed = 7,
+    AwaitingBox = 8,
+}
+
+public sealed class BuildingBoxPlanSnapshot
+{
+    public BuildingBoxPlanSnapshot(
+        EntityId sourceStackId,
+        EntityId jobId,
+        BuildingBoxCommitState commitState)
+    {
+        if (sourceStackId.IsEmpty || jobId.IsEmpty)
+        {
+            throw new ArgumentException("Box plan ids cannot be empty.");
+        }
+
+        SourceStackId = sourceStackId;
+        JobId = jobId;
+        CommitState = commitState;
+    }
+
+    public EntityId SourceStackId { get; }
+
+    public EntityId JobId { get; }
+
+    public BuildingBoxCommitState CommitState { get; }
 }
 
 public sealed class BuildingSnapshot
@@ -33,7 +58,8 @@ public sealed class BuildingSnapshot
         int completedWork,
         int durability,
         long version,
-        string? diagnosticReason)
+        string? diagnosticReason,
+        BuildingBoxPlanSnapshot? boxPlan = null)
     {
         Id = id;
         Definition = definition ?? throw new ArgumentNullException(nameof(definition));
@@ -46,6 +72,7 @@ public sealed class BuildingSnapshot
         Durability = durability;
         Version = version;
         DiagnosticReason = diagnosticReason;
+        BoxPlan = boxPlan;
     }
 
     public EntityId Id { get; }
@@ -70,6 +97,8 @@ public sealed class BuildingSnapshot
 
     public string? DiagnosticReason { get; }
 
+    public BuildingBoxPlanSnapshot? BoxPlan { get; }
+
     public bool IsActive => Status != BuildingStatus.Cancelled
         && Status != BuildingStatus.Removed;
 }
@@ -88,6 +117,49 @@ public sealed class BuildingPlaced : IDomainEvent
     public EntityId BuildingId { get; }
 
     public BuildingDefinitionId DefinitionId { get; }
+}
+
+public sealed class BuildingBoxPlanCreated : IDomainEvent
+{
+    public BuildingBoxPlanCreated(
+        long tick,
+        EntityId buildingId,
+        EntityId sourceStackId,
+        EntityId jobId,
+        BuildingDefinitionId definitionId)
+    {
+        Tick = tick;
+        BuildingId = buildingId;
+        SourceStackId = sourceStackId;
+        JobId = jobId;
+        DefinitionId = definitionId;
+    }
+
+    public long Tick { get; }
+    public EntityId BuildingId { get; }
+    public EntityId SourceStackId { get; }
+    public EntityId JobId { get; }
+    public BuildingDefinitionId DefinitionId { get; }
+}
+
+public sealed class BuildingBoxCommitChanged : IDomainEvent
+{
+    public BuildingBoxCommitChanged(
+        long tick,
+        EntityId buildingId,
+        BuildingBoxCommitState previous,
+        BuildingBoxCommitState current)
+    {
+        Tick = tick;
+        BuildingId = buildingId;
+        Previous = previous;
+        Current = current;
+    }
+
+    public long Tick { get; }
+    public EntityId BuildingId { get; }
+    public BuildingBoxCommitState Previous { get; }
+    public BuildingBoxCommitState Current { get; }
 }
 
 public sealed class BuildingCompleted : IDomainEvent
