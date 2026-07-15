@@ -5,6 +5,7 @@ using Dig.Presentation.Agents;
 using Dig.Presentation.Inventory;
 using Dig.Presentation.Jobs;
 using Dig.Presentation.Navigation;
+using Dig.Presentation.Runtime;
 using Dig.Presentation.World;
 using UnityEngine;
 
@@ -13,6 +14,8 @@ namespace Dig.Unity
     [DisallowMultipleComponent]
     public sealed class DigAgentSimulationDriver : MonoBehaviour
     {
+        private const int MaximumTicksPerFrame = 8;
+
         [SerializeField]
         private float tickIntervalSeconds = 0.8f;
 
@@ -26,7 +29,14 @@ namespace Dig.Unity
         private DigStockpileRenderer? _stockpileRenderer;
         private DigNavigationRouteRenderer? _routeRenderer;
         private DigHudOverlay? _hud;
-        private float _elapsed;
+        private SimulationPlaybackState? _playback;
+
+        internal bool IsPaused => Playback.IsPaused;
+
+        internal string PlaybackLabel => Playback.Label;
+
+        private SimulationPlaybackState Playback =>
+            _playback ??= new SimulationPlaybackState();
 
         internal void Initialize(
             DigWorldSession worldSession,
@@ -52,6 +62,21 @@ namespace Dig.Unity
             _hud = hud;
         }
 
+        internal void TogglePause()
+        {
+            Playback.TogglePause();
+        }
+
+        internal void StepOnce()
+        {
+            Playback.StepOnce();
+        }
+
+        internal void SetSpeed(SimulationPlaybackSpeed speed)
+        {
+            Playback.SetSpeed(speed);
+        }
+
         private void Update()
         {
             if (!IsInitialized())
@@ -59,14 +84,41 @@ namespace Dig.Unity
                 return;
             }
 
-            _elapsed += Time.deltaTime;
-            if (_elapsed < tickIntervalSeconds)
+            HandlePlaybackInput();
+            int dueTicks = Playback.ConsumeDueTicks(
+                Time.unscaledDeltaTime,
+                tickIntervalSeconds,
+                MaximumTicksPerFrame);
+            for (int index = 0; index < dueTicks && enabled; index++)
             {
-                return;
+                AdvanceOneTick();
+            }
+        }
+
+        private void HandlePlaybackInput()
+        {
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                TogglePause();
             }
 
-            _elapsed -= tickIntervalSeconds;
-            AdvanceOneTick();
+            if (Input.GetKeyDown(KeyCode.Period)
+                || Input.GetKeyDown(KeyCode.KeypadPeriod))
+            {
+                StepOnce();
+            }
+
+            if (Input.GetKeyDown(KeyCode.Minus)
+                || Input.GetKeyDown(KeyCode.KeypadMinus))
+            {
+                Playback.SlowDown();
+            }
+
+            if (Input.GetKeyDown(KeyCode.Equals)
+                || Input.GetKeyDown(KeyCode.KeypadPlus))
+            {
+                Playback.SpeedUp();
+            }
         }
 
         private void AdvanceOneTick()
@@ -104,7 +156,13 @@ namespace Dig.Unity
                 _hud!.SetWorld(world);
             }
 
-            _agentRenderer.Render(agents, tickIntervalSeconds * 0.82f);
+            float movementDuration = tickIntervalSeconds * 0.82f;
+            if (!Playback.IsPaused)
+            {
+                movementDuration /= Playback.SpeedMultiplier;
+            }
+
+            _agentRenderer.Render(agents, movementDuration);
             _jobRenderer.Render(jobs);
             _itemRenderer!.Render(items);
             _stockpileRenderer!.Render(storage);
