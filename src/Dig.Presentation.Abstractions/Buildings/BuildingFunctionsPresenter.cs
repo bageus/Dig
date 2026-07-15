@@ -26,7 +26,9 @@ public sealed class BuildingFunctionsPresenter
         bool isPacking = snapshot.PackingPlan?.CommitState
             == BuildingPackingCommitState.Active;
         int packingRequiredWork = policy?.PackingWork ?? 0;
-        int packingCompletedWork = snapshot.PackingPlan?.CompletedWork ?? 0;
+        int packingCompletedWork = isPacking
+            ? snapshot.PackingPlan!.CompletedWork
+            : 0;
         string? disabledReason = ResolvePackDisabledReason(snapshot, policy, isPacking);
         BuildingFunctionActionViewModel pack = new BuildingFunctionActionViewModel(
             BuildingFunctionActionKind.Pack,
