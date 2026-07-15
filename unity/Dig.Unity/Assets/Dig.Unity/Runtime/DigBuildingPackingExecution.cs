@@ -92,6 +92,40 @@ internal sealed partial class DigTerrainWorkSession
         }
     }
 
+    public Result AdvanceBuildingPacking(
+        long tick,
+        IReadOnlyList<AgentViewModel> agents)
+    {
+        if (agents == null)
+        {
+            throw new ArgumentNullException(nameof(agents));
+        }
+
+        Dictionary<string, AgentViewModel> agentsById = agents.ToDictionary(
+            agent => agent.Id,
+            StringComparer.Ordinal);
+        foreach (JobSnapshot job in _jobRepository.Get().GetAll())
+        {
+            if (!IsActive(job)
+                || job.Definition is not BuildingBoxPackingJobDefinition
+                || !job.AssignedAgentId.HasValue
+                || !agentsById.TryGetValue(
+                    job.AssignedAgentId.Value.ToString(),
+                    out AgentViewModel? agent))
+            {
+                continue;
+            }
+
+            TryAdvanceBuildingPacking(job, agent, tick, out Result result);
+            if (result.IsFailure)
+            {
+                return result;
+            }
+        }
+
+        return Result.Success();
+    }
+
     internal bool TryPlanBuildingPackingMovement(
         JobSnapshot job,
         AgentViewModel agent,
