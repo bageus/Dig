@@ -65,6 +65,12 @@ public sealed partial class SaveGameLoader
                 return Result<LoadedGameState>.Failure(jobs.Error!);
             }
 
+            Result references = ValidateCrossReferences(inventory.Value, jobs.Value);
+            if (references.IsFailure)
+            {
+                return Result<LoadedGameState>.Failure(references.Error!);
+            }
+
             return Result<LoadedGameState>.Success(new LoadedGameState(
                 CopyMetadata(document.Metadata),
                 world.Value,
@@ -229,6 +235,25 @@ public sealed partial class SaveGameLoader
         }
 
         return data.OwnerId;
+    }
+
+    private static Result ValidateCrossReferences(
+        InventoryState inventory,
+        JobSystem jobs)
+    {
+        foreach (ItemStackSnapshot stack in inventory.CreateSnapshot().Stacks)
+        {
+            foreach (ItemQuantityReservationSnapshot reservation in stack.Reservations)
+            {
+                JobSnapshot? job = jobs.Get(reservation.JobId);
+                if (job is null || job.IsTerminal)
+                {
+                    return Result.Failure(SaveErrors.InvalidDocument);
+                }
+            }
+        }
+
+        return Result.Success();
     }
 
     private static void ValidateMetadata(SaveMetadataData metadata)
