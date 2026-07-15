@@ -105,6 +105,7 @@ namespace Dig.Unity
             hud.SetAgents(agents, agentSession.Tick);
             hud.SetJobs(jobs);
             hud.SetStorageStatus(storage);
+            hud.SetSimulationControls(simulation);
             hud.SetStatus("Starting renderers...");
 
             _startupStage = "rendering world";
