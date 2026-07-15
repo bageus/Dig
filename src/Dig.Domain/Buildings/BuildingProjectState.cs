@@ -158,6 +158,23 @@ internal sealed class BuildingProjectState
         IncrementVersion();
     }
 
+    public void StartPacking()
+    {
+        DiagnosticReason = null;
+        IncrementVersion();
+    }
+
+    public void RecordPackingWork()
+    {
+        IncrementVersion();
+    }
+
+    public void CancelPacking(string reason)
+    {
+        DiagnosticReason = reason;
+        IncrementVersion();
+    }
+
     public void Cancel(string reason)
     {
         Status = BuildingStatus.Cancelled;
