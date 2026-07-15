@@ -19,6 +19,10 @@ public static class SaveErrors
     public static readonly DomainError UnknownJobType = new DomainError(
         "save.job_type.unknown",
         "The save references a job type without a registered codec.");
+
+    public static readonly DomainError UnknownBuildingDefinition = new DomainError(
+        "save.building_definition.unknown",
+        "The save references a building definition missing from the current catalog.");
 }
 
 public sealed class SaveMigrationPipeline
@@ -119,6 +123,29 @@ public sealed class LegacySaveVersionZeroMigration : ISaveMigration
             document.Metadata.DisplayName = document.Metadata.SlotId;
         }
 
+        document.FormatVersion = ToVersion;
+    }
+}
+
+public sealed class SaveVersionOneBuildingsMigration : ISaveMigration
+{
+    public string Id => "save.v1_to_v2.buildings";
+    public int FromVersion => 1;
+    public int ToVersion => 2;
+
+    public void Apply(SaveGameDocument document)
+    {
+        if (document is null)
+        {
+            throw new ArgumentNullException(nameof(document));
+        }
+
+        if (document.FormatVersion != FromVersion)
+        {
+            throw new InvalidOperationException("Migration received the wrong source version.");
+        }
+
+        document.Buildings ??= new BuildingsSaveData();
         document.FormatVersion = ToVersion;
     }
 }
