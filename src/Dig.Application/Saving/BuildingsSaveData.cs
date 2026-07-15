@@ -53,6 +53,9 @@ public sealed class BuildingSaveData
 
     [DataMember(Order = 13, EmitDefaultValue = false)]
     public BuildingBoxPlanSaveData? BoxPlan { get; set; }
+
+    [DataMember(Order = 14, EmitDefaultValue = false)]
+    public BuildingPackingPlanSaveData? PackingPlan { get; set; }
 }
 
 [DataContract]
@@ -65,6 +68,22 @@ public sealed class BuildingBoxPlanSaveData
     public string JobId { get; set; } = string.Empty;
 
     [DataMember(Order = 3)]
+    public int CommitState { get; set; }
+}
+
+[DataContract]
+public sealed class BuildingPackingPlanSaveData
+{
+    [DataMember(Order = 1)]
+    public string JobId { get; set; } = string.Empty;
+
+    [DataMember(Order = 2)]
+    public string OutputStackId { get; set; } = string.Empty;
+
+    [DataMember(Order = 3)]
+    public int CompletedWork { get; set; }
+
+    [DataMember(Order = 4)]
     public int CommitState { get; set; }
 }
 }
