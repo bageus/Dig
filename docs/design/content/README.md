@@ -2,203 +2,122 @@
 
 ## Назначение
 
-Каталог хранит согласованные design-правила зданий, продукции, оружия, материалов, еды, алкоголя, навыков, дерева технологий, HUD и размещения. Runtime-реализация остаётся в Domain/Application системах.
+Индекс authoritative design-документов. Runtime state остаётся в Domain/Application владельцах.
 
-Главные feature-задачи:
+## Главные feature-задачи
 
-- здания и сервисы — #74;
-- универсальные коробки зданий — #118;
+- здания/сервисы — #74;
+- universal BuildingBox — #118;
 - питание — #96;
-- непрерывные действия потребностей — #159;
+- continuous needs — #159;
 - навыки — #103;
-- копание и ресурсы — #87;
-- HUD гномов, выбор и уведомления — #113;
-- полное дерево технологий — #126;
-- системы, найденные в legacy scripts, — #127–#147 и #149–#152.
+- копание/ресурсы — #87;
+- HUD/selection/notifications — #113;
+- technology tree — #126;
+- exploration implementation — #165;
+- systems from legacy scripts — #127–#147 и #149–#152.
 
 ## Файлы
 
-- [`buildings.md`](buildings.md) — здания, сервисы, кухни и production capabilities;
-- [`products.md`](products.md) — physical outputs и переработка;
-- [`weapons-and-shields.md`](weapons-and-shields.md) — боевое снаряжение;
-- [`materials.md`](materials.md) — материалы, руды, terrain и deposits;
-- [`food.md`](food.md) — блюда, bites, желаемая еда и история 10 трапез;
-- [`alcohol.md`](alcohol.md) — напитки, бар и effects;
-- [`skills.md`](skills.md) — skill IDs;
-- [`../needs-continuous-actions.md`](../needs-continuous-actions.md) — постепенное восстановление Nutrition/Alertness/Mood;
-- [`../technology-tree.md`](../technology-tree.md) — authoritative согласованная часть дерева технологий;
-- [`../scripts-system-gap-backlog.md`](../scripts-system-gap-backlog.md) — индекс найденных систем и созданных issues;
-- [`../skills-and-progression.md`](../skills-and-progression.md) — 12 навыков, grants и формула capacity;
-- [`../resident-inventory-expansion.md`](../resident-inventory-expansion.md) — личный inventory, expansions и BuildingBox input;
-- [`../resident-hud-selection-and-notifications.md`](../resident-hud-selection-and-notifications.md) — roster, panels, input и notifications;
-- [`../building-box-placement-and-packing.md`](../building-box-placement-and-packing.md) — universal box placement, assembly и packing;
-- [`../world-3d-depth.md`](../world-3d-depth.md) — authoritative X,Y,Z;
-- [`../excavation-room-templates-and-deposits.md`](../excavation-room-templates-and-deposits.md) — tunnels, rooms и deposits;
-- [`../terrain-resource-output-and-processing.md`](../terrain-resource-output-and-processing.md) — terrain outputs;
-- [`../material-demand-and-hauling.md`](../material-demand-and-hauling.md) — demand/filter/fog hauling;
-- [`../open-questions.md`](../open-questions.md) — реестр решений.
+- [`buildings.md`](buildings.md) — здания, кухни и services;
+- [`products.md`](products.md) — physical outputs;
+- [`weapons-and-shields.md`](weapons-and-shields.md) — equipment;
+- [`materials.md`](materials.md) — materials, ores, terrain/deposits;
+- [`food.md`](food.md) — dishes, bites, desired food и history 10;
+- [`alcohol.md`](alcohol.md) — drinks/bar/effects;
+- [`skills.md`](skills.md) — stable skill IDs;
+- [`../needs-continuous-actions.md`](../needs-continuous-actions.md) — gradual Need effects;
+- [`../technology-tree.md`](../technology-tree.md) — approved technology graph;
+- [`../scripts-system-gap-backlog.md`](../scripts-system-gap-backlog.md) — recovered systems/issues;
+- [`../skills-and-progression.md`](../skills-and-progression.md) — grants/capacity/redistribution;
+- [`../resident-inventory-expansion.md`](../resident-inventory-expansion.md) — personal inventory;
+- [`../resident-hud-selection-and-notifications.md`](../resident-hud-selection-and-notifications.md) — HUD/input/ticker;
+- [`../building-box-placement-and-packing.md`](../building-box-placement-and-packing.md) — box lifecycle;
+- [`../world-3d-depth.md`](../world-3d-depth.md) — X,Y,Z world;
+- [`../exploration-fog-of-war.md`](../exploration-fog-of-war.md) — 3-state fog, vision sources и remembered items;
+- [`../excavation-room-templates-and-deposits.md`](../excavation-room-templates-and-deposits.md) — tunnels/rooms/deposits;
+- [`../terrain-resource-output-and-processing.md`](../terrain-resource-output-and-processing.md) — terrain output;
+- [`../material-demand-and-hauling.md`](../material-demand-and-hauling.md) — demand/filter/visibility hauling;
+- [`../open-questions.md`](../open-questions.md) — decisions and unresolved questions.
 
 ## Правила ведения
 
-1. Display name не используется как ссылка; definitions получают stable IDs.
+1. Display names не являются IDs.
 2. Явно заданные числа считаются исходным балансом.
-3. Непредоставленные числа остаются data-driven TBD.
-4. World владеет terrain/deposit state.
-5. Inventory владеет items, quantities, locations и boxes.
-6. Buildings владеет plans/buildings/functions, но не копирует items.
-7. Production владеет orders; RecipeDefinition — inputs/outputs.
-8. Technology владеет состоянием исследований и открытиями.
-9. Agents/Skills владеет needs, 12 skill values и TotalSkillCapacity.
-10. Jobs владеет work lifecycle и reservations.
-11. Society/Lifecycle владеет sex, age, birth/death и family rules.
-12. Presentation хранит только local selection, panels, hover, preview, scroll и ticker animation.
-13. Localized strings не являются state keys.
-14. Typed IDs разных систем не смешиваются.
-15. Изменение stable ID требует migration.
-16. Конфликты фиксируются как Q-XXX.
-17. UI не зависит только от цвета.
-18. Один BuildingDefinition использует только одну construction policy.
-19. Legacy scripts являются источником кандидатов, но не автоматически утверждённым balance/content.
-20. Animation callbacks не начисляют needs, skill experience или items.
+3. Остальные коэффициенты data-driven/BALANCE_TBD.
+4. World владеет terrain/deposits; Exploration — fog/visibility.
+5. Inventory владеет items/locations/boxes.
+6. Buildings владеет buildings/functions/places, но не копирует items.
+7. Production владеет orders; recipes — inputs/outputs.
+8. Technology владеет unlock/research state.
+9. Agents владеет needs/actions/skills/history.
+10. Jobs владеет lifecycle/reservations.
+11. Society/Lifecycle владеет family/age/birth/death.
+12. Presentation хранит только local view state.
+13. Изменение stable IDs требует migration.
+14. Animation callbacks не начисляют effects/items/experience.
+15. Legacy scripts дают candidates, а не автоматически утверждённый content.
 
-## Принятые решения
+## Ключевые решения
 
-### Мир и ресурсы
+### Мир
 
-- world — X,Y,Z, depth 0..3;
-- Stonework thresholds 20/40/60;
-- existing excavation plan survives later skill loss;
-- room trapezoid repeated on Z layers, no mirror;
-- deposits replace terrain cells;
-- terrain-specific output tables;
-- hauling only by demand/filter and revealed source;
-- iron/metal = material.iron;
-- official names «Песчаник» and «Рудная порода».
+- X,Y,Z, depth `0..3`;
+- fog states: Unexplored / ExploredNotVisible / Visible;
+- vision блокируется стенами, потолками и закрытыми дверями;
+- explored сохраняется после ухода source;
+- world items не дают vision, но могут иметь last-known marker;
+- hauling требует authoritative visibility policy.
 
-### Технологии
+### Еда
 
-- skill threshold не открывает technology автоматически;
-- eligibility появляется, когда один живой гном одновременно удовлетворяет всем требованиям;
-- игрок запускает изучение иконкой в соответствующей постройке;
-- недоступная иконка оранжевая, доступная белая, status дублируется текстом;
-- Лесопилка и Пилорама — разные узлы;
-- Пилорама производит Винокурню и Университет;
-- Мебельная мастерская производит три игровые комнаты;
-- Оружейная кузница изучает и производит Арсенал;
-- Плавильня из scripts = Горн;
-- Литейный цех — продвинутая плавка железа/золота на угле;
-- Песчаник обрабатывает кристаллическую руду;
-- водолазный колокол исключён;
-- `Dojo` трактуется как направление «Кулачный бой»;
-- «Грибной самогон» = legacy name Огненной воды;
-- продолжение дерева остаётся `TBD_OWNER`.
-
-### Еда и потребности
-
-- Nutrition design scale `0..100` переводится в Domain `0..10000` через `×100`;
-- meal состоит из трёх bites;
-- Eat восстанавливает Nutrition/Mood по bites;
-- Sleep восстанавливает Alertness/Mood, пока resident спит;
-- Leisure восстанавливает Mood, пока действие активно;
-- interruption сохраняет уже применённые effects;
-- desired dish выбирается среди исследованных блюд;
-- сначала ищется desired dish, затем любая видимая еда;
-- fallback даёт Nutrition, но не положительный базовый food Mood;
-- история хранит 10 трапез и match flag;
-- `>=6` matches даёт `+UnlockedDishCount`, `>=6` mismatches даёт `-UnlockedDishCount`;
-- кухня не удерживает постоянного worker: worker нужен только для cooking order.
-
-### HUD и resident
-
-- no selection panel: tunnel, room templates, eraser;
-- resident panel: Weapon → Main → Cargo;
-- building panel: functions + packing button;
-- BuildingBox panel: placement preview;
-- selected resident synchronized HUD/world;
-- direct display name «Бодрость» for Alertness;
-- Mood sad 0–25, neutral 26–75, joy 76–100;
-- status text built from typed descriptors.
+- Nutrition `0..100` -> Domain `×100`;
+- meal = 3 bites;
+- desired dish from researched catalog, затем fallback;
+- history = последние 10 meals;
+- `>=6 matches -> +UnlockedDishCount`, `>=6 mismatches -> -UnlockedDishCount`;
+- personal taste profiles не используются;
+- worker только для active cooking order;
+- Cooking влияет только на скорость, не на output/effects;
+- kitchen output `2/2/3/3`.
 
 ### Навыки
 
-- one pool contains all 12 skills;
-- TotalSkillCapacity base 100, university max 200;
-- individual max 100;
-- mixed work может начислять несколько skills одним bundle;
-- Production grants — per produced unit after output commit;
-- Jobs grants — after JobCompleted;
-- Combat grants — per confirmed combat event;
-- one-handed hit и shield defense могут начисляться в одном бою;
-- overflow снимается с donors пропорционально их текущим значениям;
-- все получатели mixed bundle исключаются из donor pool;
-- fixed-point largest-remainder rounding сохраняет точную сумму.
+- 12 skills в одном pool;
+- capacity 100 -> 200, individual max 100;
+- mixed grants atomic;
+- Production per produced unit, Jobs after completion, Combat per result event;
+- overflow losses proportional to donor values with deterministic largest remainder.
 
-### Buildings
+### Здания
 
-- every placeable building has a physical BuildingBox;
-- Production recipe is the building cost;
-- LMB world/inventory box enters placement;
-- Alt+LMB world box assigns pickup;
-- valid plan reserves one box;
-- worker carries and assembles it;
-- packing creates exactly one box;
-- no simultaneous box and full-material consumption for one definition.
+- каждое placeable building имеет физический BuildingBox;
+- recipe коробки является стоимостью здания;
+- placement резервирует одну box;
+- packing возвращает одну box;
+- коробка и полный material-site cost одновременно не применяются.
 
-### Notifications
+## Актуальные открытые решения
 
-- hunger threshold Nutrition <15 UI / <1500 Domain;
-- event on downward crossing;
-- repeat allowed after recovery and another crossing;
-- simultaneous messages remain separate;
-- active until LMB view/focus or RMB dismiss;
-- no history.
+См. `../open-questions.md`:
 
-## Открытые решения
-
-Актуальный реестр: [`../open-questions.md`](../open-questions.md).
-
-Основные оставшиеся вопросы:
-
-- Q-014 — непредоставленные balance values;
-- Q-039 — влияние Cooking на speed/output/effects;
-- Q-034–Q-037 — research lifecycle и модель фермы.
+- Q-014 — balance values;
+- Q-034–Q-037 — research/farm lifecycle;
+- Q-040 — food Mood cap 50;
+- Q-041 — leisure repetition penalty;
+- Q-042 — partnership/pregnancy details;
+- Q-043 — school/inheritance details;
+- Q-044 — sleep comfort/personal beds;
+- Q-045 — ecology special cases;
+- Q-046 — doors/liquids/stone variant.
 
 ## Связанные issues
 
-### Технологии и новые system specs
-
-- #126 — authoritative дерево технологий;
-- #127 — энергия;
-- #128 — skill eligibility и запуск исследования;
-- #129–#147, #149–#152 — отдельные функции и системы из legacy scripts;
-- полный индекс — [`../scripts-system-gap-backlog.md`](../scripts-system-gap-backlog.md).
-
-### Здания и сервисы
-
-- #75 — BuildingBox recipes и подтверждённые мастерские;
-- #76–#82 — guard, arsenal, leisure, cinema, alcohol, bar, university;
-- #108 — furnace/foundry/crystal processor;
-- #118 — universal box placement/packing.
-
-### Еда и Needs
-
-- #97–#101;
-- #144 — вкусовые профили;
-- #159 — continuous effects.
-
-### Навыки
-
-- #103–#107;
-- #117;
-- #128.
-
-### Копание и ресурсы
-
-- #88–#94;
-- #109–#110.
-
-### HUD
-
-- #113–#117;
-- #70;
-- #118.
+- technology/system specs: #126–#147, #149–#152;
+- exploration design closed #147, implementation #165;
+- taste profiles rejected/closed #144;
+- food #96–#101, #159;
+- skills #103–#107, #117;
+- buildings #74–#82, #108, #118;
+- excavation/resources #87–#94, #109–#110;
+- HUD #113–#117.
