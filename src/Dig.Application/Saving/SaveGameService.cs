@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
@@ -50,7 +51,8 @@ public sealed class SaveGameService
             metadata,
             context.World,
             context.Inventory,
-            context.Jobs));
+            context.Jobs,
+            context.Buildings));
     }
 
     public Result<LoadedGameState> Load(
@@ -60,6 +62,21 @@ public sealed class SaveGameService
     {
         SaveGameDocument document = _store.Load(slotId);
         return _loader.Load(document, materials, items);
+    }
+
+    public Result<LoadedGameState> Load(
+        string slotId,
+        MaterialCatalog materials,
+        ItemCatalog items,
+        BuildingCatalog buildingCatalog)
+    {
+        if (buildingCatalog is null)
+        {
+            throw new ArgumentNullException(nameof(buildingCatalog));
+        }
+
+        SaveGameDocument document = _store.Load(slotId);
+        return _loader.Load(document, materials, items, buildingCatalog);
     }
 
     public IReadOnlyList<SaveSlotInfo> ListSlots()
