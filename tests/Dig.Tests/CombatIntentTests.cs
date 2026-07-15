@@ -45,7 +45,7 @@ public sealed class CombatIntentTests
             targetCell: new CellId(0, 0)));
 
         Assert.Equal(first.IntentId, replay.IntentId);
-        Assert.Equal(eventCount, 1);
+        Assert.Equal(1, eventCount);
         Assert.Equal(CombatIntentKind.Retreat, retreat.Kind);
         Assert.Equal(retreat.IntentId, combat.GetActiveIntent(ActorId)!.IntentId);
         CombatIntentSnapshot previous = combat.CreateIntentSnapshot()
