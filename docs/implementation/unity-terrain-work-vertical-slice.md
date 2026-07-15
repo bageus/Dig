@@ -64,7 +64,7 @@ Excavation invalidates the affected World chunks. The terrain work session drain
 
 Designation-only updates also refresh the affected chunk version. The next fixed tick reconciles the new designation into Jobs before assignment and movement planning.
 
-## Visuals and controls
+## Visuals and current controls
 
 - cyan lines show current successful Navigation routes;
 - `F4` hides or restores the route root without changing the simulation;
@@ -72,15 +72,33 @@ Designation-only updates also refresh the affected chunk version. The next fixed
 - grey-blue spheres show authoritative world item stacks created by excavation;
 - completed and cancelled job markers remain diagnostic history, while reservation links disappear after release;
 - the excavated cell is rebuilt from the refreshed immutable world view;
-- right-click designation changes become real jobs on the next fixed simulation tick.
+- current right-click designation changes become real jobs on the next fixed simulation tick.
+
+## Target contextual input routing
+
+The resident HUD/selection design in [`../design/resident-hud-selection-and-notifications.md`](../design/resident-hud-selection-and-notifications.md) and #115 extends, rather than removes, the existing designation control.
+
+Target rules:
+
+- a click consumed by HUD never reaches the world;
+- while a resident is selected, right-click clears that resident selection and does **not** create a digging designation with the same click;
+- without a selected resident, right-click designation remains available when the current input mode permits digging;
+- a selected inventory stack plus left-click ground drop has priority over resident movement;
+- hostile, world-item and free-ground left clicks are routed by one context selector so a physical click creates at most one Application command;
+- Presentation selection and input modes do not become authoritative World or Agent state.
+
+Until #115 is implemented, the current vertical slice keeps its existing right-click designation behavior. This section is the migration contract, not a claim that contextual routing already exists.
 
 ## Current limitations
 
 - resource output is a fixed demo rock item and quantity;
-- dropped resources are not yet connected to the Unity storage/hauling scenario;
+- dropped resources are not yet connected to the final demand/fog-aware storage policy;
 - residents without an assigned terrain job continue using the earlier deterministic demo movement;
+- contextual resident input from #115 is not yet implemented;
 - Unity Play Mode still needs local verification because CI validates the shared C# contracts and compatibility baseline without launching the editor.
 
 ## Validation
 
-Engine-independent tests cover designation reconciliation, repeated-sync idempotence, cancellation reservation cleanup, successful three-owner completion, rejected-command atomicity, cheapest adjacent work-cell selection and stable world-item presentation. The normal quality workflow also runs architecture checks, the C# 9 compatibility gate, Release build, all tests, headless smoke and both deterministic soak profiles.
+Engine-independent tests cover planning, source and capacity reservations, worker assignment, all hauling stages, final stored quantity and complete reservation cleanup. The normal workflow also runs architecture checks, Unity C# 9 and module gates, Release build, all tests, headless smoke and standard/large deterministic soak profiles.
+
+Future input tests must additionally cover HUD shielding, selected-resident right-click clearing, no-resident designation, selected-stack drop priority and the rule that one pointer event produces no more than one command.
