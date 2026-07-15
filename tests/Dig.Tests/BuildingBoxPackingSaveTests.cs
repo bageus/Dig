@@ -1,3 +1,4 @@
+using System.Linq;
 using Dig.Application.Buildings;
 using Dig.Application.Jobs;
 using Dig.Application.Saving;
@@ -51,7 +52,16 @@ public sealed class BuildingBoxPackingSaveTests
         Assert.Equal(JobStatus.InProgress, restoredJob.Status);
         Assert.Equal(JobStageKind.PerformWork, restoredJob.Stage);
         Assert.Equal(original.WorkerId, restoredJob.AssignedAgentId);
-        Assert.Equal(3, loaded.Jobs.GetReservations().Count);
+        Assert.Equal(new[]
+        {
+            ReservationKey.ForJob(original.PackingJobId),
+            ReservationKey.ForAgent(original.WorkerId),
+            ReservationKey.ForPosition(restored.WorkPosition),
+            ReservationKey.ForDestination(original.BuildingId),
+        }, loaded.Jobs.GetReservations().Select(item => item.Key).ToArray());
+        Assert.All(
+            loaded.Jobs.GetReservations(),
+            item => Assert.Equal(original.WorkerId, item.AgentId));
         Assert.Null(loaded.Inventory.GetStack(original.OutputStackId));
 
         CompleteLoadedPacking(loaded, original);
