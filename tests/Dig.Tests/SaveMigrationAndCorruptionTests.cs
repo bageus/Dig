@@ -37,6 +37,7 @@ public sealed class SaveMigrationAndCorruptionTests
         {
             "save.v0_to_v1.metadata",
             "save.v1_to_v2.buildings",
+            "save.v2_to_v3.packing",
         }, first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
         Assert.Equal(1, document.Metadata.GeneratorVersion);
@@ -250,6 +251,7 @@ public sealed class SaveMigrationAndCorruptionTests
         {
             new LegacySaveVersionZeroMigration(),
             new SaveVersionOneBuildingsMigration(),
+            new SaveVersionTwoPackingMigration(),
         });
     }
 
