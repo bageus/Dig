@@ -15,6 +15,9 @@ namespace Dig.Unity
     public sealed class DigAgentSimulationDriver : MonoBehaviour
     {
         private const int MaximumTicksPerFrame = 8;
+        private static readonly DomainError NotInitialized = new DomainError(
+            "unity.agent_simulation.not_initialized",
+            "The resident simulation driver is not initialized.");
 
         [SerializeField]
         private float tickIntervalSeconds = 0.8f;
@@ -77,6 +80,27 @@ namespace Dig.Unity
         internal void SetSpeed(SimulationPlaybackSpeed speed)
         {
             Playback.SetSpeed(speed);
+        }
+
+        internal Result MoveResident(string residentId, CellId destination)
+        {
+            if (_agentSession == null || _agentRenderer == null || _hud == null)
+            {
+                return Result.Failure(NotInitialized);
+            }
+
+            Result result = _agentSession.MoveResident(residentId, destination);
+            if (result.IsFailure)
+            {
+                return result;
+            }
+
+            IReadOnlyList<AgentViewModel> agents = _agentSession.LoadView();
+            _agentRenderer.Render(agents, movementDuration: 0.25f);
+            DigAgentVisual? selected = _agentRenderer.SelectById(residentId);
+            _hud.SetAgents(agents, _agentSession.Tick);
+            _hud.SetAgentSelection(selected?.Model);
+            return Result.Success();
         }
 
         private void Update()
