@@ -190,7 +190,8 @@ public sealed class ContextPointerTarget
         EntityId? entityId = null,
         CellId? cell = null,
         bool reachable = false,
-        bool supportsAltInteraction = false)
+        bool supportsAltInteraction = false,
+        bool isAlive = true)
     {
         if (!Enum.IsDefined(typeof(ContextWorldTargetKind), kind))
         {
@@ -207,6 +208,7 @@ public sealed class ContextPointerTarget
         Cell = cell;
         Reachable = reachable;
         SupportsAltInteraction = supportsAltInteraction;
+        IsAlive = isAlive;
     }
 
     public ContextWorldTargetKind Kind { get; }
@@ -214,6 +216,7 @@ public sealed class ContextPointerTarget
     public CellId? Cell { get; }
     public bool Reachable { get; }
     public bool SupportsAltInteraction { get; }
+    public bool IsAlive { get; }
 }
 
 public sealed class ContextInputDecision
