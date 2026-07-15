@@ -164,9 +164,15 @@ namespace Dig.Unity
 
         private CellId FindDemoBuildingOrigin()
         {
-            WorldCellViewModel? cell = _worldSession.LoadView().Chunks
+            WorldCellViewModel[] openCells = _worldSession.LoadView().Chunks
                 .SelectMany(chunk => chunk.Cells)
-                .Where(value => !value.IsSolid && value.Y > 0)
+                .Where(value => !value.IsSolid)
+                .ToArray();
+            HashSet<CellId> open = new HashSet<CellId>(openCells.Select(
+                value => new CellId(value.X, value.Y)));
+            WorldCellViewModel? cell = openCells
+                .Where(value => value.Y > 0
+                    && open.Contains(new CellId(value.X, value.Y - 1)))
                 .OrderByDescending(value => value.X)
                 .ThenByDescending(value => value.Y)
                 .Select(value => (WorldCellViewModel?)value)
@@ -174,7 +180,7 @@ namespace Dig.Unity
             if (!cell.HasValue)
             {
                 throw new InvalidOperationException(
-                    "The demo world has no open cell for the completed building.");
+                    "The demo world has no open building and work-cell pair.");
             }
 
             return new CellId(cell.Value.X, cell.Value.Y);
