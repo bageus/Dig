@@ -159,6 +159,7 @@ namespace Dig.Unity
             long nextTick = checked(_agentSession.Tick + 1);
             _terrainSession!.SynchronizeDesignations(nextTick, before);
             _terrainSession.SynchronizeHauling(nextTick, before);
+            _terrainSession.SynchronizeBuildingPacking(nextTick, before);
             IReadOnlyDictionary<string, CellId> movement =
                 _terrainSession.PlanMovement(before);
             Result result = _agentSession.Advance(movement);
@@ -166,6 +167,13 @@ namespace Dig.Unity
             if (result.IsSuccess)
             {
                 result = _terrainSession.Advance(_agentSession.Tick, agents);
+            }
+
+            if (result.IsSuccess)
+            {
+                result = _terrainSession.AdvanceBuildingPacking(
+                    _agentSession.Tick,
+                    agents);
             }
 
             if (result.IsFailure)
@@ -176,7 +184,7 @@ namespace Dig.Unity
             }
 
             IReadOnlyList<JobOverlayViewModel> jobs = _terrainSession.LoadJobs();
-            IReadOnlyList<WorldItemViewModel> items = _terrainSession.LoadItems();
+            IReadOnlyList<WorldItemViewModel> items = _terrainSession.LoadAllWorldItems();
             IReadOnlyList<RouteViewModel> routes = _terrainSession.LoadRoutes();
             DigStorageStatus storage = _terrainSession.GetStorageStatus();
             if (_terrainSession.ConsumeWorldChanged())
