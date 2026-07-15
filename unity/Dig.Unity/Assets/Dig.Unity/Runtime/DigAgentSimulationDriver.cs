@@ -35,6 +35,8 @@ namespace Dig.Unity
 
         internal string PlaybackLabel => Playback.Label;
 
+        internal long CurrentTick => _agentSession?.Tick ?? 0;
+
         private SimulationPlaybackState Playback =>
             _playback ??= new SimulationPlaybackState();
 

@@ -50,8 +50,8 @@ namespace Dig.Unity
         private InMemoryJobCandidateProvider? _haulingCandidates;
         private DemoHaulingJobIdSource? _haulingIds;
         private NavigationPathfinder? _haulingPathfinder;
+        private MoveStorageZoneHandler? _moveStorageZone;
         private EntityId _storageId;
-        private CellId _storageCell;
 
         internal void InitializeHauling(InMemoryExecutionJournal journal)
         {
@@ -61,7 +61,7 @@ namespace Dig.Unity
             }
 
             _storageId = EntityId.Parse("60000000000000000000000000000001");
-            _storageCell = SelectStorageCell();
+            CellId storageCell = SelectStorageCell();
             StorageState storage = new StorageState();
             Require(storage.AddZone(new StorageZoneDefinition(
                 _storageId,
@@ -70,7 +70,8 @@ namespace Dig.Unity
                 capacity: 500,
                 new StorageFilter(
                     acceptsAll: false,
-                    allowedItems: new[] { _outputItemId }))));
+                    allowedItems: new[] { _outputItemId }),
+                storageCell)));
             _storageRepository = new InMemoryStorageRepository(storage);
             _haulingIds = new DemoHaulingJobIdSource();
             _haulingCandidates = new InMemoryJobCandidateProvider();
@@ -90,6 +91,24 @@ namespace Dig.Unity
                 _haulingCandidates,
                 journal);
             _haulingPathfinder = new NavigationPathfinder();
+            _moveStorageZone = new MoveStorageZoneHandler(
+                _storageRepository,
+                _inventoryRepository,
+                _worldSession.Repository,
+                journal);
+        }
+
+        internal Result MoveStorageZone(CellId cell, long tick)
+        {
+            EnsureHaulingInitialized();
+            Result result = _moveStorageZone!.Handle(
+                new MoveStorageZoneCommand(_storageId, cell, tick));
+            if (result.IsSuccess)
+            {
+                _haulingRoutes.Clear();
+            }
+
+            return result;
         }
 
         public void SynchronizeHauling(
@@ -235,7 +254,7 @@ namespace Dig.Unity
             int reserved = _storageRepository.Get().GetReservations()
                 .Where(value => value.ZoneId == _storageId)
                 .Sum(value => value.Quantity);
-            return new DigStorageStatus(_storageCell, stored, reserved, zone.Capacity);
+            return new DigStorageStatus(zone.Cell, stored, reserved, zone.Capacity);
         }
 
         private CellId? ResolveHaulingTarget(JobSnapshot job, HaulJobDefinition hauling)
@@ -243,7 +262,7 @@ namespace Dig.Unity
             if (job.Status != JobStatus.Claimed
                 && job.Stage != JobStageKind.AcquireItem)
             {
-                return _storageCell;
+                return _storageRepository!.Get().GetZone(_storageId)?.Cell;
             }
 
             ItemStackSnapshot? stack = _inventoryRepository.Get().GetStack(
@@ -291,7 +310,8 @@ namespace Dig.Unity
                 || _haulingAssignment == null
                 || _haulingCandidates == null
                 || _haulingIds == null
-                || _haulingPathfinder == null)
+                || _haulingPathfinder == null
+                || _moveStorageZone == null)
             {
                 throw new InvalidOperationException("Hauling is not initialized.");
             }

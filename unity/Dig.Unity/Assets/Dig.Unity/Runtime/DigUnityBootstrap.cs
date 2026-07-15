@@ -131,6 +131,9 @@ namespace Dig.Unity
                 worldRenderer,
                 agentRenderer,
                 jobRenderer,
+                terrainSession,
+                stockpileRenderer,
+                simulation,
                 hud);
             simulation.Initialize(
                 worldSession,

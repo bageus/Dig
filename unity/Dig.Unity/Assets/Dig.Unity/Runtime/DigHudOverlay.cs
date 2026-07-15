@@ -95,6 +95,7 @@ namespace Dig.Unity
             GUILayout.Label("WASD / arrows pan | wheel zoom | Q/E rotate");
             GUILayout.Label("Space pause/resume | . step | -/+ speed");
             GUILayout.Label("3 jobs/reservations | 4 navigation routes");
+            GUILayout.Label("5 place empty stockpile on selected open cell");
             GUILayout.Label("Left click select | right click toggle digging");
             GUILayout.Space(8f);
             DrawCellSelection();

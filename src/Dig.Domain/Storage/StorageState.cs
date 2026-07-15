@@ -4,6 +4,7 @@ using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
+using Dig.Domain.World;
 
 namespace Dig.Domain.Storage
 {
@@ -17,6 +18,10 @@ public static class StorageErrors
     public static readonly DomainError ZoneNotFound = new DomainError(
         "storage.zone_not_found",
         "The requested storage zone does not exist.");
+
+    public static readonly DomainError ZoneHasIncomingReservations = new DomainError(
+        "storage.zone_has_incoming_reservations",
+        "A storage zone with incoming reservations cannot be moved.");
 
     public static readonly DomainError ItemRejected = new DomainError(
         "storage.item_rejected",
@@ -99,6 +104,29 @@ public sealed class StorageReservationChanged : IDomainEvent
     public int ReservedQuantity { get; }
 }
 
+public sealed class StorageZoneMoved : IDomainEvent
+{
+    public StorageZoneMoved(
+        long tick,
+        EntityId zoneId,
+        CellId previousCell,
+        CellId cell)
+    {
+        Tick = tick;
+        ZoneId = zoneId;
+        PreviousCell = previousCell;
+        Cell = cell;
+    }
+
+    public long Tick { get; }
+
+    public EntityId ZoneId { get; }
+
+    public CellId PreviousCell { get; }
+
+    public CellId Cell { get; }
+}
+
 public sealed partial class StorageState : AggregateRoot
 {
     private readonly Dictionary<EntityId, StorageZoneDefinition> _zones =
@@ -121,6 +149,35 @@ public sealed partial class StorageState : AggregateRoot
         }
 
         IncrementVersion();
+        return Result.Success();
+    }
+
+    public Result MoveZone(EntityId zoneId, CellId cell, long tick)
+    {
+        if (zoneId.IsEmpty)
+        {
+            throw new ArgumentException("Storage id cannot be empty.", nameof(zoneId));
+        }
+
+        ValidateTick(tick);
+        if (!_zones.TryGetValue(zoneId, out StorageZoneDefinition? zone))
+        {
+            return Result.Failure(StorageErrors.ZoneNotFound);
+        }
+
+        if (_reservations.Values.Any(value => value.ZoneId == zoneId))
+        {
+            return Result.Failure(StorageErrors.ZoneHasIncomingReservations);
+        }
+
+        if (zone.Cell.Equals(cell))
+        {
+            return Result.Success();
+        }
+
+        _zones[zoneId] = zone.MoveTo(cell);
+        IncrementVersion();
+        Raise(new StorageZoneMoved(tick, zoneId, zone.Cell, cell));
         return Result.Success();
     }
 
