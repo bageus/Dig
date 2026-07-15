@@ -4,26 +4,30 @@
 
 ## Общие правила
 
-- каждый продукт имеет стабильный `ItemId`;
-- output создаётся только после успешного завершения production order;
+- каждый продукт имеет stable `ItemId`;
+- output создаётся только после successful production commit;
 - inputs резервируются и списываются транзакционно;
-- один order не может выдать output дважды;
-- количество задаётся RecipeDefinition или data-driven building/tier profile;
+- один order не выдаёт output дважды;
+- quantity задаётся RecipeDefinition или building/tier profile;
 - display name не используется как ссылка;
-- `material.metal` не является отдельным предметом: все такие ссылки заменяются на `material.iron`.
+- `material.metal` мигрирует в `material.iron`;
+- production skill experience начисляется за каждую committed produced unit;
+- один result может выдать mixed skill bundle;
+- worker reservation существует только у active order и освобождается terminal policy.
 
 ## Комплекты зданий
 
 | ItemId | Продукт | Производитель | Входы | Выход |
 |---|---|---|---|---:|
-| `building_kit.game_room.basic` | Обычная игровая комната | Пилорама | 4 ножки, 4 шляпки, 4 камня, 1 хомяк | 1 |
-| `building_kit.game_room.industrial` | Индустриальная игровая комната | Пилорама | 4 ножки, 2 шляпки, 2 камня, 2 хомяка, 4 железа | 1 |
-| `building_kit.game_room.luxury` | Игровая комната «Люкс» | Пилорама | 6 ножек, 6 кристаллов, 2 камня, 2 золота, 6 железа | 1 |
+| `building_kit.game_room.basic` | Обычная игровая комната | Мебельная мастерская | 4 ножки, 4 шляпки, 4 камня, 1 хомяк | 1 |
+| `building_kit.game_room.industrial` | Индустриальная игровая комната | Мебельная мастерская | 4 ножки, 2 шляпки, 2 камня, 2 хомяка, 4 железа | 1 |
+| `building_kit.game_room.luxury` | Игровая комната «Люкс» | Мебельная мастерская | 6 ножек, 6 кристаллов, 2 камня, 2 золота, 6 железа | 1 |
 | `building_kit.cinema` | Кинотеатр | Кристаллическая кузня | 8 ножек, 4 кристалла, 2 хомяка, 4 золота, 4 железа | 1 |
 | `building_kit.distillery` | Винокурня | Пилорама | 4 ножки, 4 хомяка, 3 камня, 4 железа, 1 золото | 1 |
 | `building_kit.university` | Университет | Пилорама | 4 ножки, 4 железа, 2 хомяка, 2 угля, 4 шляпки | 1 |
+| `building_kit.arsenal` | Арсенал | Оружейная кузница | data-driven/TBD | 1 |
 
-Системная реализация комплектов: #75. Параметры строительства горна, литейного цеха и Песчаника берутся из существующих BuildingDefinition/content data и не дублируются здесь.
+Системная реализация комплектов: #75. Полные source-workshop связи принадлежат `technology-tree.md`.
 
 ## Переработка руд
 
@@ -34,16 +38,16 @@
 | `recipe.foundry.gold` | Золото | Литейный цех | 3 `ore.gold`, 2 угля | 2 `material.gold` | `skill.metallurgy` |
 | `recipe.crystal_processor.crystal` | Кристалл | Песчаник | 1 `ore.crystal` | 1 `material.crystal` | `skill.alchemy` |
 
-Официальное display name здания `building.crystal_processor` — «Песчаник». Реализация: #108.
+Каждая produced unit умножает per-unit grant recipe profile. Например, output 2 может выдать двойной per-unit Metallurgy amount.
 
 ## Готовые блюда
 
-Выход разрешённого рецепта зависит от кухни:
+Выход разрешённого recipe зависит от кухни:
 
-- костёр — 2 порции;
-- средневековая кухня — 2;
-- индустриальная кухня — 3;
-- люксовая кухня — 3.
+- костёр — 2;
+- средневековая — 2;
+- индустриальная — 3;
+- люксовая — 3.
 
 | ItemId | Продукт | Входы | Разрешённые кухни |
 |---|---|---|---|
@@ -63,37 +67,39 @@
 
 | ItemId | Продукт | Производитель | Входы | Выход |
 |---|---|---|---|---:|
-| `alcohol.beer.barrel` | Пиво | Пивоварня | существующее/TBD | TBD |
+| `alcohol.beer.barrel` | Пиво | Пивоварня | existing/TBD | TBD |
 | `alcohol.ale.barrel` | Эль | Пивоварня | 2 ножки, 2 шляпки, 1 личинка | 2 |
 | `alcohol.cider.barrel` | Сидр | Пивоварня | 3 ножки, 3 шляпки | 3 |
 | `alcohol.glipnir.bottle` | Глипнир | Винокурня | 2 кристалла, 2 шляпки | 1 |
 | `alcohol.firewater.bottle` | Огненная вода | Винокурня | 3 кристалла, 2 шляпки, 1 золото | 1 |
 
-Реализация: #80.
+«Грибной самогон» — legacy name Огненной воды, не отдельный ItemId.
 
 ## Единицы продукции
 
-- готовая порция, бочонок, бутылка, руда и слиток — одна единица ItemStack.Quantity;
-- начатая трапеза списывает одну готовую порцию;
-- тара/тарелка/форма слитка не создаёт вложенного authoritative предмета;
-- совместимые outputs могут складываться только по правилам Inventory.
+- порция, бочонок, бутылка, руда и слиток — одна единица `ItemStack.Quantity`;
+- начатая meal списывает одну порцию;
+- тара/тарелка/форма не создаёт nested authoritative item;
+- compatible outputs складываются только по Inventory rules.
 
-## Сервисные outputs
+## Сервисные результаты
 
-Игровая комната, кинотеатр, бар и университет создают доменные эффекты, а не физические ItemStack:
+Игровая комната, кинотеатр, бар и Университет создают domain effects, а не ItemStack:
 
-- настроение/досуг;
-- fertility modifier кинотеатра;
-- эффекты напитков и опыт услуг;
-- увеличение TotalSkillCapacity.
+- Mood/Leisure;
+- fertility modifier;
+- drink/service effects и skill grants;
+- TotalSkillCapacity increase.
 
 ## Validation
 
-- recipe inputs/outputs существуют;
-- building предоставляет нужную capability;
+- inputs/outputs существуют;
+- building предоставляет capability;
+- source workshop соответствует tree;
 - output quantity положителен;
 - один order коммитится один раз;
 - `material.metal` не используется;
-- skill profile ссылается на существующий skill;
-- Песчаник определяется через `building.crystal_processor`, а не display name;
+- skill profile references валидны;
+- produced-unit experience совпадает с quantity;
+- worker освобождается после terminal order;
 - изменение stable ID требует migration.
