@@ -1,339 +1,181 @@
-# HUD гномов, выбор, контекстная панель и системные уведомления
+# HUD гномов, выбор, контекстная панель и уведомления
 
-Статус: целевая спецификация. Главная feature-задача: #113.
+Статус: целевая спецификация. Главная задача: #113. Связи: #70, #89, #93, #107, #114–#118, #159.
 
-Связанные задачи: #114–#118, #70, #89, #93 и #107.
+## Владение состоянием
 
-## 1. Назначение
+Agents владеет identity, needs, schedule и active action. Skills владеет 12 характеристиками, capacity и gain/loss reports. Jobs, Inventory, Buildings, World, Society, Combat и Technology сохраняют свои существующие ownership boundaries. Presentation хранит только selection, hover, panel mode, preview, scroll и анимацию ticker.
 
-Система объединяет:
+## Верхний HUD
 
-- постоянный список гномов в правом верхнем углу;
-- раскрытую строку выбранного гнома;
-- выбор гнома через HUD или мир;
-- контекстные команды мышью;
-- взаимозаменяемую нижнюю панель копки, инвентаря, здания и placement mode;
-- верхнюю очередь системных уведомлений.
+Справа сверху расположен полупрозрачный resident roster. По центру верхней части находится notification ticker, отдельно от time controls и roster. UI click всегда блокирует world input.
 
-Presentation читает immutable snapshots и отправляет Application commands. Готовый текст, цвет, cursor и подсветка не являются источником игрового состояния.
+### Compact row
 
-## 2. Владение состоянием
+Строка показывает:
 
-- Agents владеет identity, needs, schedule, player order, active action и skills.
-- Jobs владеет работами, стадиями, исполнителями и reservations.
-- Inventory владеет предметами, количеством, locations и личными slots.
-- Buildings владеет plans, completed buildings, functions и durability.
-- World владеет terrain и dig designations.
-- Society/Lifecycle владеет полом, возрастом, рождением, смертью и условиями размножения.
-- Combat владеет attack state и местом столкновения.
-- Technology владеет открытиями.
-- Presentation владеет selection, hover, scroll, раскрытием строки, placement preview и анимацией ticker.
+- имя и пол;
+- mood face;
+- Health bar;
+- рабочее или свободное время;
+- красный idle-at-work marker.
 
-## 3. Верхний HUD
+Мужские имена синие, женские розовые. Пол также дублируется icon/label.
 
-Верхняя часть делится на неперекрывающиеся зоны:
+Idle marker включён только при Work schedule, если resident способен действовать, но не имеет action, job, order, emergency или объяснимого blocked state.
 
-- существующее управление временем;
-- notification ticker по центру;
-- resident roster справа.
+### Expanded row
 
-Любой UI click блокирует world input.
+ЛКМ выбирает resident и раскрывает одну строку. Порядок:
 
-## 4. Resident roster
-
-Roster — полупрозрачная вертикальная панель в правом верхнем углу.
-
-Требования:
-
-- одна строка на каждого текущего гнома;
-- stable ordering;
-- scrolling и virtualization для больших поселений;
-- выбранная строка автоматически остаётся в viewport;
-- одновременно раскрывается только одна строка;
-- HUD и world view используют один `SelectedResidentId`;
-- renderer rebuild не изменяет Domain и не создаёт второго selected state.
-
-### 4.1 Компактная строка
-
-Показывает:
-
-1. имя;
-2. пол;
-3. mood face;
-4. компактную Health bar;
-5. рабочее/свободное состояние;
-6. красный индикатор безделья в рабочее время.
-
-Мужские имена отображаются синим, женские — розовым. Пол также обозначается иконкой или accessible label; UI не определяет пол из текста имени.
-
-### 4.2 Рабочий индикатор
-
-Строка подсвечивается как безделье, если одновременно:
-
-- текущий schedule segment — `Work`;
-- гном жив и способен действовать;
-- нет active action;
-- нет claimed/in-progress job;
-- нет emergency intent;
-- нет ожидаемой внешней reservation/blocked операции, которая объясняет простой.
-
-Во время `Free` status отображается «Свободное время», а красный idle-at-work marker не включается.
-
-## 5. Раскрытая строка
-
-ЛКМ по строке выбирает гнома и раскрывает её по высоте.
-
-Порядок данных:
-
-1. текущий статус;
+1. current typed status;
 2. Health;
-3. Nutrition/Сытость;
-4. Alertness с названием **«Бодрость»**;
-5. Mood/Настроение;
-6. пять навыков с наибольшим текущим значением.
+3. Nutrition;
+4. Alertness с названием «Бодрость»;
+5. Mood;
+6. пять наибольших skills.
 
-Top-5 выбирается из всех 12 навыков: семи рабочих и пяти боевых. Сортировка — level descending, затем stable `AgentSkillId` ascending.
+Top-5 выбирается среди всех 12: value descending, затем stable AgentSkillId.
 
-## 6. Шкалы состояния
+## Needs
 
-Domain хранит Health, Nutrition, Alertness и Mood в диапазоне `0..10000`. UI нормализует их в `0..100`.
+Domain использует `0..10000`, HUD — `0..100`.
 
-Цветовые диапазоны:
+- 51–100: зелёный;
+- 26–50: оранжевый;
+- 0–25: красный.
 
-- `51..100` — зелёный;
-- `26..50` — оранжевый;
-- `0..25` — красный.
+Mood face:
 
-Каждая шкала также показывает icon, число или tooltip; цвет не является единственным носителем информации.
+- 0–25: грусть;
+- 26–75: нейтральное;
+- 76–100: радость.
 
-### 6.1 Mood face
+Цвет дополняется числом, icon и accessible label.
 
-- грусть: `0..25`;
-- нейтральное: `26..75`;
-- радость: `76..100`.
+Для active actions HUD показывает накопленный эффект:
 
-Радость сообщает, что mood-условие размножения выполнено, но Society всё равно проверяет возраст, партнёра, родство, здоровье и modifiers.
+- Eat: desired/consumed dish, matched/fallback, bites, Nutrition/Mood и lost remainder;
+- Sleep: накопленные Alertness/Mood и следующий interval;
+- Leisure: накопленный Mood и следующий interval.
 
-## 7. Навыки
+Interruption не откатывает уже показанный authoritative effect.
 
-Один общий pool включает 12 навыков.
+## Skills и capacity
 
-- базовый `TotalSkillCapacity = 100`;
-- университет расширяет его до `200`;
-- максимум одного навыка — `100`;
-- шкала навыка идёт градиентом от тёмно-синего к зелёному;
-- число и максимум показываются явно;
-- значение `120` не используется.
+- один pool содержит 12 skills;
+- base TotalSkillCapacity = 100;
+- University max = 200;
+- individual max = 100;
+- значение 120 не используется;
+- шкала: градиент тёмно-синий → зелёный.
 
-Точный алгоритм уменьшения других навыков после заполнения capacity остаётся Q-029. Проверка `scripts` показала только вызовы встроенной `add_expattrib`; сама формула в TCL отсутствует.
-
-## 8. Типизированные статусы
-
-Domain не хранит готовую локализованную строку. Read model передаёт `ResidentActivityDescriptor`:
-
-- kind;
-- resident id;
-- subject entity/content id;
-- destination/building/cell id;
-- job/action/order id;
-- progress и block reason;
-- localization arguments.
-
-Поддерживаемые статусы:
-
-- `FreeTime` — «Свободное время»;
-- `Move` — «Идёт»;
-- `Attack` — «Атакует {target}»;
-- `Cook` — «Готовит {dish} на {place}»;
-- `UnpackBuilding` — «Распаковывает {building}»;
-- `PackBuilding` — «Упаковывает {building}»;
-- `Dig` — «Копает»;
-- `Craft` — «Создаёт {product} в {building}»;
-- `Pickup` — «Подбирает {item}»;
-- `Service` — «Обслуживает {place}»;
-- `Train` — «Тренируется в {place}»;
-- `Study` — «Обучается в {place}»;
-- `Logistics` — «Доставка для {destination}»;
-- Eat, Sleep, Rest, Flee, Idle, Work и Blocked используют тот же typed contract.
-
-Missing/stale target не ломает строку: используется безопасный локализованный fallback и diagnostics ID.
-
-## 9. Выбор и камера
-
-- ЛКМ по HUD row выбирает resident.
-- ЛКМ по модели гнома выбирает того же resident.
-- выбранный гном подсвечивается в HUD и мире;
-- новый выбор заменяет прежний;
-- ПКМ при выбранном гноме снимает selection;
-- двойной ЛКМ по HUD row центрирует камеру на гноме;
-- camera focus не меняет logical position;
-- умерший/удалённый target обрабатывается безопасно.
-
-## 10. Нижняя контекстная панель
-
-В один момент отображается ровно один режим.
-
-### 10.1 Нет выбранного объекта — ExcavationPalette
-
-На месте инвентаря показывается меню:
-
-- свободный тоннель;
-- шаблоны комнат;
-- ластик.
-
-Ластик удаляет нарисованные designation и незавершённые части tunnel/room plans. Он отменяет связанные незавершённые jobs и reservations, но не восстанавливает уже выкопанный terrain.
-
-### 10.2 Выбран гном — ResidentInventory
-
-Панель находится в нижней части левее центра:
+При overflow остальные skills уменьшаются пропорционально текущему значению:
 
 ```text
-[ Weapon: ножны/разгрузка ] [ Main: 6 slots ] [ Cargo: корзина ]
+Loss_j = Overflow × DonorValue_j / SumDonorValues
 ```
 
-Weapon визуально отделён слева, Cargo — справа. Подробности: `resident-inventory-expansion.md`, #70.
+Все skills, растущие в одном mixed bundle, исключаются из donor pool. Расчёт fixed-point; после floor остаток распределяется largest-remainder method, tie-break — stable AgentSkillId. UI читает готовый Domain report и не пересчитывает формулу.
 
-### 10.3 Выбрано здание — BuildingFunctions
+Inspector показывает requested/applied gains, free capacity, overflow, donor weights/losses, rounding, values before/after и source result.
 
-В той же области показываются capabilities выбранного здания:
+## Typed statuses
 
-- производство;
-- исследования;
-- storage/service modes;
-- workers/visitors;
-- active orders;
-- другие функции из definition/runtime snapshot.
+`ResidentActivityDescriptor` содержит kind, IDs цели/места, source action/job/order, progress и block reason. Domain не хранит локализованный текст.
 
-Справа находится кнопка упаковки, если здание поддерживает packing. Она создаёт typed command/job и не удаляет здание напрямую из UI.
+Поддерживаются: свободное время, движение, действие в игровом столкновении, готовка, упаковка/распаковка, копка, создание, подбор, сервис, тренировка/обучение, логистика, еда, сон, досуг, бегство, idle, work и blocked.
 
-### 10.4 Активна коробка — BuildingPlacement
+## Выбор и камера
 
-Показывается название здания, orientation, валидность позиции, reason code и отмена preview. Курсор отображает здание, мир — его призрачный footprint.
+- ЛКМ по HUD row или world resident выбирает того же resident;
+- выбранный resident подсвечивается в HUD и мире;
+- новый выбор заменяет прежний;
+- ПКМ снимает selection;
+- двойной ЛКМ по row центрирует camera;
+- camera focus не меняет logical position.
 
-Полная модель: `building-box-placement-and-packing.md`, #118.
+## Нижняя контекстная панель
 
-## 11. Контекстный ввод
+Одновременно отображается один режим.
 
-UI shielding выполняется первым. Затем один pointer event проходит строгий router:
+### Нет selection
 
-1. активный placement mode + ЛКМ — подтвердить valid ghost plan;
-2. `Alt + ЛКМ` по Inventory consumable/tool — использовать предмет;
-3. выбранный Inventory stack + ЛКМ по земле — targeted drop;
-4. `Alt + ЛКМ` по world BuildingBox — приказ выбранному гному подобрать коробку;
-5. обычный ЛКМ по world BuildingBox — включить placement mode;
-6. ЛКМ по BuildingBox в resident inventory — включить placement mode;
-7. выбранный resident + hostile target — attack order;
-8. выбранный resident + свободная reachable ground — move order;
-9. без выбранного resident gameplay использует активный excavation tool.
+Показываются tunnel, room templates и eraser. Eraser удаляет designations и незавершённые plan cells/jobs/reservations, но не восстанавливает выкопанный terrain.
 
-Если `Alt + ЛКМ` попал по предмету без поддерживаемого действия или действие невозможно, специальная команда не создаётся: событие трактуется как ground click и выбранный гном идёт к месту клика.
+### Выбран resident
 
-Обычный ЛКМ по generic world item не означает автоматический pickup, если у предмета нет отдельного LMB interaction contract.
+```text
+[ Weapon ] [ Main: 6 slots ] [ Cargo ]
+```
 
-ПКМ:
+Weapon отделён слева, Cargo справа.
 
-- при resident selection снимает selection и не создаёт dig designation тем же click;
-- в placement mode отменяет preview;
-- по notification удаляет его;
-- в остальных режимах следует текущему tool contract.
+### Выбрано completed building
 
-## 12. Коробки зданий
+Показываются production, research, storage/service modes, workers/visitors, active orders, progress и diagnostics. Справа — packing button.
 
-Подтверждённый flow:
+### Активна BuildingBox
 
-1. Production создаёт физическую коробку здания.
-2. Игрок кликает коробку в мире или inventory и включает placement mode.
-3. ЛКМ ставит призрачный plan.
-4. Plan резервирует одну конкретную коробку.
-5. Свободный гном забирает её, несёт к месту и собирает здание.
-6. Выбор построенного здания показывает функции и кнопку упаковки.
-7. Упаковка выполняется работой и создаёт одну коробку после commit.
+Показываются building name, orientation, ghost preview, valid state и reason code.
 
-Коробка не существует одновременно в inventory, на площадке и как завершённое здание.
+## Input routing
 
-## 13. Notification ticker
+После UI shielding один click создаёт не более одной command:
 
-Ticker находится в верхней части, показывает очередь отдельных активных сообщений и не перекрывает roster/time controls.
+1. placement LMB;
+2. Alt+LMB use item;
+3. selected inventory stack drop;
+4. Alt+LMB world BuildingBox — pickup order;
+5. LMB BuildingBox — placement mode;
+6. selected resident + hostile target — соответствующий игровой приказ;
+7. selected resident + reachable ground — move;
+8. no resident selection — active excavation tool.
 
-`GameNotification` содержит:
+Unsupported Alt interaction трактуется как ground click. Generic world item не подбирается обычным LMB без отдельного interaction contract.
 
-- stable id;
-- kind;
-- source event/idempotency key;
-- simulation tick;
-- priority;
-- localization key + typed args;
-- navigation target;
-- active/dismissed state.
+ПКМ снимает resident selection, отменяет placement либо dismiss notification согласно текущему контексту.
 
-### 13.1 Виды
+## BuildingBox flow
 
-- нападение на гномов;
-- рождение гнома;
+Production создаёт физическую коробку. Placement резервирует конкретную коробку. Свободный resident доставляет её и собирает building. Packing job после commit создаёт ровно одну коробку. UI не создаёт и не удаляет quantity.
+
+## Notifications
+
+`GameNotification` содержит stable id, kind, source event key, tick, priority, localization args, navigation target и active state.
+
+Виды:
+
+- нападение на residents;
+- рождение;
 - голод;
-- переход в старость;
-- Mood `<5`;
+- старость;
+- Mood ниже 5;
 - смерть;
-- изобретение технологии;
-- выполнение задания.
+- изобретение;
+- завершение задания.
 
-### 13.2 Голод
+Голод создаёт сообщение при переходе Nutrition ниже 15 UI / 1500 Domain. После восстановления и нового пересечения сообщение может повториться. Одновременные сообщения не объединяются.
 
-- порог: Nutrition `<15` в UI, то есть `<1500` в Domain;
-- событие создаётся только при пересечении порога сверху вниз;
-- после восстановления до `>=15` новое падение может создать новое уведомление;
-- сообщения разных гномов не объединяются.
+ЛКМ просматривает уведомление и открывает/focus source. ПКМ удаляет его. Сообщение активно до обработки, отдельная история не требуется. Duplicate source event не создаёт второе сообщение.
 
-### 13.3 Жизненный цикл сообщения
+## Save/Load
 
-- уведомление остаётся активным, пока игрок не обработает его;
-- ЛКМ просматривает сообщение и выполняет focus/open action;
-- ПКМ удаляет сообщение без перехода;
-- отдельная история уведомлений не требуется;
-- просмотр/удаление не меняют source Domain event;
-- duplicate event id не создаёт второе сообщение.
+Selection, hover, camera focus, uncommitted preview и ticker animation не являются simulation state. Owners сохраняют needs/actions, skill values/capacity, items/reservations, confirmed plans/jobs и lifecycle data. Continuous action progress и skill fixed-point values восстанавливаются без повторного effect/grant.
 
-Death notification хранит последнюю известную позицию только для focus. Technology notification открывает описание без выдуманной world cell.
+## Производительность и accessibility
 
-## 14. Save/Load
+Roster virtualized; изменение одной row не пересоздаёт весь список. Цвет не является единственным сигналом. Localization не влияет на identity, sorting и commands. Formula рассчитывается в Domain, а не каждый UI frame.
 
-Не сохраняются как authoritative simulation state:
-
-- selected row;
-- panel expansion;
-- hover;
-- camera focus;
-- placement preview до подтверждения;
-- ticker animation.
-
-Сохраняются владельцами:
-
-- needs, skills, actions и schedule;
-- items/slots/boxes/reservations;
-- confirmed building plans и jobs;
-- lifecycle и source events, если они входят в save contract.
-
-Активная notification queue может сохраняться как UI/profile state только отдельным решением; история не требуется.
-
-## 15. Производительность и accessibility
-
-- roster virtualized;
-- одна изменившаяся строка не пересоздаёт весь список;
-- 64+ residents не создают GameObject/allocations на каждый simulation tick;
-- цвет всегда дублируется формой, icon, числом или label;
-- click targets имеют доступный размер;
-- localization не влияет на identity, sorting или commands.
-
-## 16. Критерии приёмки
+## Acceptance
 
 - HUD/world selection синхронны;
-- collapsed/expanded rows строятся из snapshots;
-- Mood ranges и «Бодрость» соблюдаются точно;
-- top-5 выбирается из всех 12 навыков;
-- без selection отображается tunnel/rooms/eraser menu;
-- resident/building/placement modes взаимоисключающие;
-- один click создаёт не более одной command;
-- BuildingBox flow сохраняет количество;
-- notifications используют events, threshold crossing и persistent lifecycle;
-- UI click-through отсутствует;
-- deterministic/read-model/input/Play Mode tests покрывают status, panel modes, routing и notifications.
+- exact needs/Mood boundaries;
+- top-5 включает боевые skills;
+- UI gain/loss report совпадает с Domain;
+- continuous effects отображаются без double application;
+- panel modes взаимоисключающие;
+- no click-through/double command;
+- BuildingBox quantity сохраняется;
+- notifications используют typed events и установленный lifecycle;
+- deterministic read-model/input/Play Mode tests проходят.
