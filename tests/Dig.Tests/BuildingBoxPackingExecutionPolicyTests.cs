@@ -38,16 +38,47 @@ public sealed class BuildingBoxPackingExecutionPolicyTests
         CellId workPosition = harness.Buildings.Get(harness.BuildingId)!.WorkPosition;
 
         Assert.Equal(BuildingBoxPackingExecutionStepKind.StartJob, Evaluate(harness, workPosition));
-        Advance(harness);
+        Advance(harness, tick: 501);
         Assert.Equal(BuildingBoxPackingExecutionStepKind.AdvanceStage, Evaluate(harness, workPosition));
-        Advance(harness);
+        Advance(harness, tick: 502);
         Assert.Equal(BuildingBoxPackingExecutionStepKind.AddWork, Evaluate(harness, workPosition));
         Assert.True(harness.AddWork(amount: 1).IsSuccess);
         Assert.Equal(BuildingBoxPackingExecutionStepKind.AddWork, Evaluate(harness, workPosition));
         Assert.True(harness.AddWork(amount: 1).IsSuccess);
         Assert.Equal(BuildingBoxPackingExecutionStepKind.AdvanceStage, Evaluate(harness, workPosition));
-        Advance(harness);
+        Advance(harness, tick: 503);
         Assert.Equal(BuildingBoxPackingExecutionStepKind.CompletePacking, Evaluate(harness, workPosition));
+    }
+
+    [Fact]
+    public void Policy_driven_execution_completes_once_and_creates_one_box()
+    {
+        BuildingBoxPackingHarness harness = new BuildingBoxPackingHarness();
+        Assert.True(harness.Start().IsSuccess);
+        Assign(harness);
+        CellId workPosition = harness.Buildings.Get(harness.BuildingId)!.WorkPosition;
+
+        for (long tick = 600; tick < 610; tick++)
+        {
+            BuildingBoxPackingExecutionStepKind step = Evaluate(harness, workPosition);
+            Result result = Execute(harness, step, tick);
+            Assert.True(result.IsSuccess, result.Error?.ToString());
+            if (harness.Jobs.Get(harness.PackingJobId)!.IsTerminal)
+            {
+                break;
+            }
+        }
+
+        Assert.Equal(
+            BuildingStatus.Removed,
+            harness.Buildings.Get(harness.BuildingId)!.Status);
+        Assert.Equal(JobStatus.Completed, harness.Jobs.Get(harness.PackingJobId)!.Status);
+        Assert.NotNull(harness.Inventory.GetStack(harness.OutputStackId));
+        Assert.Equal(1, harness.Inventory.GetTotal(harness.BoxItemId));
+        Assert.Empty(harness.Jobs.GetReservations());
+        Assert.Equal(
+            BuildingBoxPackingExecutionStepKind.None,
+            Evaluate(harness, workPosition));
     }
 
     [Fact]
@@ -79,6 +110,37 @@ public sealed class BuildingBoxPackingExecutionPolicyTests
         return result.Value;
     }
 
+    private static Result Execute(
+        BuildingBoxPackingHarness harness,
+        BuildingBoxPackingExecutionStepKind step,
+        long tick)
+    {
+        return step switch
+        {
+            BuildingBoxPackingExecutionStepKind.StartJob => AdvanceResult(harness, tick),
+            BuildingBoxPackingExecutionStepKind.AdvanceStage => AdvanceResult(harness, tick),
+            BuildingBoxPackingExecutionStepKind.AddWork =>
+                new AddBuildingBoxPackingWorkHandler(
+                    harness.Assembly.BuildingsRepository,
+                    harness.Assembly.JobRepository,
+                    harness.Assembly.Journal).Handle(new AddBuildingBoxPackingWorkCommand(
+                        harness.BuildingId,
+                        harness.PackingJobId,
+                        workAmount: 1,
+                        tick: tick)),
+            BuildingBoxPackingExecutionStepKind.CompletePacking =>
+                new CompleteBuildingBoxPackingHandler(
+                    harness.Assembly.BuildingsRepository,
+                    harness.Assembly.InventoryRepository,
+                    harness.Assembly.JobRepository,
+                    harness.Assembly.Journal).Handle(new CompleteBuildingBoxPackingCommand(
+                        harness.BuildingId,
+                        harness.PackingJobId,
+                        tick)),
+            _ => Result.Success(),
+        };
+    }
+
     private static void Assign(BuildingBoxPackingHarness harness)
     {
         InMemoryJobCandidateProvider candidates = new InMemoryJobCandidateProvider();
@@ -97,14 +159,19 @@ public sealed class BuildingBoxPackingExecutionPolicyTests
         Assert.Single(report.Assignments);
     }
 
-    private static void Advance(BuildingBoxPackingHarness harness)
+    private static void Advance(BuildingBoxPackingHarness harness, long tick)
     {
-        Result result = new AdvanceJobHandler(
+        Result result = AdvanceResult(harness, tick);
+        Assert.True(result.IsSuccess, result.Error?.ToString());
+    }
+
+    private static Result AdvanceResult(BuildingBoxPackingHarness harness, long tick)
+    {
+        return new AdvanceJobHandler(
             harness.Assembly.JobRepository,
             harness.Assembly.Journal).Handle(new AdvanceJobCommand(
                 harness.PackingJobId,
-                tick: 501));
-        Assert.True(result.IsSuccess, result.Error?.ToString());
+                tick));
     }
 }
 }
