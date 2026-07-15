@@ -44,7 +44,7 @@ namespace Dig.Unity
 
             bool select = Input.GetMouseButtonDown(0);
             bool updateCell = Input.GetMouseButtonDown(1);
-            if (!select && !updateCell)
+            if ((!select && !updateCell) || _hud.ContainsScreenPoint(Input.mousePosition))
             {
                 return;
             }
