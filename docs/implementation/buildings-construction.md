@@ -1,103 +1,203 @@
 # Buildings and construction
 
-## State ownership
+## 1. State ownership
 
-`BuildingsState` is the only authoritative owner of building projects, construction progress, completed-building durability and lifecycle status. It does not own terrain, item stacks, worker claims or paths.
+`BuildingsState` is the authoritative owner of building projects, construction progress, completed-building durability and lifecycle status. It does not own terrain, item stacks, workers or paths.
 
-The surrounding systems keep their existing ownership:
+- World owns terrain and exploration;
+- Inventory owns material and BuildingBox stacks, locations and reservations;
+- Jobs owns delivery, construction, packing, workers and position reservations;
+- Navigation supplies reachable positions;
+- Production creates BuildingBox outputs;
+- Presentation receives immutable snapshots and owns only preview/selection.
 
-- World owns terrain cells and exploration state;
-- Inventory owns delivered material stacks and their locations;
-- Jobs owns delivery and construction work status plus worker and position reservations;
-- Navigation supplies reachable work positions;
-- Presentation receives immutable snapshots and never becomes a second source of truth.
+## 2. Current implemented model
 
-## Building definitions
+The currently implemented flow is material-site construction.
 
-`BuildingDefinition` is immutable and identified by a stable `BuildingDefinitionId`. It defines:
+`BuildingDefinition` defines footprint, work positions, material requirements, work cost and durability.
 
-- footprint offsets;
-- candidate work-position offsets;
-- material requirements;
-- required construction work;
-- maximum durability.
+Placement validates:
 
-Offsets rotate deterministically around the placement origin for north, east, south and west orientations. Material requirements with the same item id are normalized into one quantity.
+- world bounds;
+- empty explored terrain;
+- overlap;
+- reachable work position.
 
-## Placement validation
-
-`BuildingPlacementValidator` evaluates a `WorldSnapshot`, the occupied cells of active building projects and a caller-supplied set of reachable cells. Placement fails with a stable diagnostic error when:
-
-- any footprint cell is outside the world;
-- terrain is solid;
-- terrain is unexplored;
-- the footprint overlaps another active project or building;
-- no configured empty and explored work position is reachable.
-
-A successful result contains the resolved footprint and one deterministic work position. Only this validated result can create a project.
-
-## Project lifecycle
-
-A project follows explicit status transitions:
+The current lifecycle is:
 
 ```text
 AwaitingMaterials -> ReadyToBuild -> UnderConstruction
-    -> ReadyToComplete -> Completed -> Damaged -> Completed
-
-AwaitingMaterials / ReadyToBuild / UnderConstruction / ReadyToComplete
-    -> Cancelled
-
-Completed / Damaged -> Removed
+-> ReadyToComplete -> Completed -> Damaged -> Completed
 ```
 
-Construction progress is capped at the definition requirement. Reaching the required work changes the project to `ReadyToComplete`; it does not create the final building by itself. Final completion is a separate validated operation and emits `BuildingCompleted` once.
+Typed hauling delivers required quantities to `ItemLocation.InBuilding(buildingId)`. Final completion prevalidates and atomically consumes the full material batch, completes the building and finalizes the job.
 
-## Material delivery
+Cancellation closes jobs, releases reservations, returns delivered unreserved stacks to the world and releases the footprint.
 
-Building material delivery reuses typed hauling jobs. A delivery job targets `ItemLocation.InBuilding(buildingId)` and reserves an exact quantity from its source stack.
+This remains the factual code contract until #118 is implemented.
 
-Creation checks that:
+## 3. Target universal BuildingBox model
 
-- the project is awaiting materials;
-- the item is required by the definition;
-- delivered plus active incoming quantity does not exceed the requirement;
-- the source stack has enough unreserved quantity.
+The accepted target design is documented in `docs/design/building-box-placement-and-packing.md`.
 
-A completed delivery moves only the quantity reserved by that job. `RefreshBuildingMaterialsHandler` derives readiness from Inventory rather than storing a duplicate delivered-material counter in Buildings.
+Every normally placeable building is produced as one physical `BuildingBox` item. The target flow is:
 
-## Construction work
+```text
+Box in Inventory/World
+-> local placement preview
+-> validated ghost plan + box reservation
+-> pickup/delivery job
+-> box committed at site
+-> assembly work
+-> completed building
+```
 
-`BuildingWorkJobDefinition` is a typed Jobs definition for construction, repair or demolition work. Construction reserves the selected work position through the common Jobs reservation ledger.
+Packing reverses the completed building into one box after a confirmed demolition/packing job.
 
-Before creating construction work, the application checks that the current Navigation-derived reachable set still contains the project's work position. If not, the project retains a human-readable diagnostic reason and no job is created.
+## 4. Migration rule
 
-Construction work advances only while its matching job is in `PerformWork`. When the work requirement is reached, the job advances to `Finalize` and the project becomes `ReadyToComplete`.
+`BuildingDefinition` receives one explicit construction policy:
 
-## Transactional completion
+```text
+ConstructionPolicy
+- UniversalBox
+- LegacyMaterialSite
+```
 
-Final construction performs these steps in order:
+At runtime one definition may use only one policy.
 
-1. validate the matching project and job states;
-2. prevalidate every required material at the construction-site Inventory location;
-3. atomically consume the complete material batch;
-4. complete the authoritative building state;
-5. advance the work job through its final stage.
+- `UniversalBox` consumes one produced box and never asks the site for the same recipe materials again.
+- `LegacyMaterialSite` retains the implemented material delivery flow until migrated.
+- content validation rejects ambiguous definitions that specify both box and full site requirements.
 
-Inventory prevalidates the full batch before changing any stack. A missing material therefore cannot cause partial consumption.
+Existing saves/projects keep their original policy/version. Migration must not transform an in-progress material site into a box plan without a deterministic conversion report.
 
-## Cancellation, damage and removal
+## 5. Target placement validation
 
-Cancelling an unfinished project:
+Preview is Presentation-only. Confirmation repeats authoritative validation:
 
-- cancels every active delivery or building-work job associated with it;
-- releases item and job reservations;
-- returns already delivered unreserved stacks from the site to the world at the project origin;
-- marks the project cancelled and releases its footprint.
+- footprint in bounds;
+- terrain valid and explored;
+- no overlap;
+- reachable work position;
+- selected box exists;
+- box is accessible and not reserved by another plan;
+- box matches BuildingDefinition/version.
 
-Completed buildings support damage and repair through durability. A completed or damaged building can be removed, emitting `BuildingRemoved` and releasing its occupied cells. Scene objects are disposable visual representations of these snapshots.
+Only after all checks succeed does one Application transaction reserve the box and create the plan.
 
-## Diagnostics and validation
+## 6. Target box lifecycle
 
-`BuildingSnapshot` exposes definition, origin, orientation, footprint, selected work position, status, work progress, durability and the latest diagnostic reason. `BuildingPresenter` maps it to a read-only inspector model for Unity.
+Before site commit, the box remains at its original Inventory location with a plan reservation.
 
-Tests cover placement failures, overlap, reachability, delivery limits, exact material consumption, completion exactly once, cancellation and material return, reservation release, damage, repair and removal. The headless smoke scenario now runs digging, resource creation, stockpile hauling, building delivery and final construction in one deterministic chain.
+Pickup/delivery:
+
+1. Jobs claims a worker and box;
+2. Inventory moves the box to the worker;
+3. movement reaches the site;
+4. Inventory moves the box to a typed site location;
+5. the plan records box commit;
+6. assembly advances.
+
+Final assembly:
+
+1. validate plan/job/site box state;
+2. consume exactly one committed box;
+3. complete authoritative building state;
+4. finalize the job;
+5. publish events after commit.
+
+No step creates a second copy of the box.
+
+## 7. Target packing lifecycle
+
+Selecting a building opens its functional panel. The right-side pack button sends an Application command.
+
+The command validates:
+
+- building exists and supports packing;
+- no non-cancellable operation blocks packing;
+- functional places/orders can be closed by policy;
+- a reachable packing work position exists;
+- output box definition is valid.
+
+A packing job then performs work. At final commit:
+
+1. close/reconcile building functions and reservations;
+2. remove the building and release footprint;
+3. create exactly one BuildingBox at the site;
+4. finalize the job and publish events.
+
+Until final commit the building remains authoritative and no box exists.
+
+## 8. Cancellation and failures
+
+### UniversalBox plan before delivery
+
+- cancel jobs;
+- release box reservation;
+- leave box in original location;
+- release footprint.
+
+### After box delivery but before completion
+
+- cancel jobs and claims;
+- convert the committed site payload back into exactly one world/site box;
+- release footprint;
+- preserve quantity.
+
+Retry cannot reserve the box twice. Missing/stale box creates a typed blocked/failure reason.
+
+## 9. Context UI compatibility
+
+The lower panel is mutually exclusive:
+
+- no selection: excavation palette;
+- resident selected: resident inventory;
+- building selected: functions and pack button;
+- placement active: BuildingPlacement panel.
+
+UI clicks are shielded from world routing. Preview cannot mutate Buildings/Inventory.
+
+## 10. Save/Load
+
+Current saves retain material-site fields. Target saves add:
+
+- construction policy/version;
+- BuildingBox ItemId/location;
+- box reservation and plan owner;
+- box site commit state;
+- delivery/assembly/packing stages;
+- packing preconditions and reconciliation report.
+
+Presentation preview and selected panel are not authoritative save state.
+
+## 11. Diagnostics
+
+Snapshots/read models expose:
+
+- definition and policy;
+- origin/orientation/footprint/work positions;
+- status/progress/durability;
+- required materials for legacy policy;
+- box item/location/reservation/commit for universal policy;
+- active jobs and workers;
+- last reason/cancellation;
+- quantity conservation report.
+
+## 12. Validation
+
+Existing tests continue to cover material delivery, overlap, reachability, atomic material consumption, cancellation, damage and repair.
+
+#118 adds tests for:
+
+- placement from world and resident inventory boxes;
+- one box competing between plans;
+- invalid preview/confirmation;
+- delivery and assembly;
+- cancellation before/after site commit;
+- packing and repeated placement;
+- save/load on every stage;
+- deterministic replay and box quantity conservation;
+- Unity context panel, preview and input shielding.
