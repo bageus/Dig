@@ -57,6 +57,7 @@ namespace Dig.Unity
             _selectedCell = selected;
             _selectedAgent = null;
             ClearJobSelection();
+            ClearBuildingSelection();
         }
 
         public void SetAgentSelection(AgentViewModel? selected)
@@ -64,6 +65,7 @@ namespace Dig.Unity
             _selectedAgent = selected;
             _selectedCell = null;
             ClearJobSelection();
+            ClearBuildingSelection();
         }
 
         public void SetCommandResult(Result result)
@@ -101,6 +103,7 @@ namespace Dig.Unity
             DrawCellSelection();
             DrawAgentSelection();
             DrawJobSelection();
+            DrawBuildingSelection();
             GUILayout.Space(8f);
             GUILayout.Label(_status);
             GUILayout.EndArea();
@@ -177,7 +180,7 @@ namespace Dig.Unity
         {
             if (_selectedAgent == null)
             {
-                if (!_selectedCell.HasValue && !HasJobSelection)
+                if (!_selectedCell.HasValue && !HasJobSelection && !HasBuildingSelection)
                 {
                     GUILayout.Label("Selected object: none");
                 }
