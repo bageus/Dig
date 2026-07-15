@@ -43,6 +43,7 @@ namespace Dig.Unity
             Dictionary<string, CellId> movement =
                 new Dictionary<string, CellId>(StringComparer.Ordinal);
             _routePlans.Clear();
+            _haulingRoutes.Clear();
             foreach (JobSnapshot job in _jobRepository.Get().GetAll())
             {
                 if (!IsActive(job) || !job.AssignedAgentId.HasValue)
@@ -52,6 +53,11 @@ namespace Dig.Unity
 
                 string agentId = job.AssignedAgentId.Value.ToString();
                 if (!agentsById.TryGetValue(agentId, out AgentViewModel? agent))
+                {
+                    continue;
+                }
+
+                if (TryPlanHaulingMovement(job, agent, navigation, movement))
                 {
                     continue;
                 }
@@ -98,6 +104,7 @@ namespace Dig.Unity
                     job.AssignedAgentId.Value));
             }
 
+            routes.AddRange(LoadHaulingRoutes());
             return routes;
         }
 

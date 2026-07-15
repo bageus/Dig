@@ -23,6 +23,7 @@ namespace Dig.Unity
         private DigTerrainWorkSession? _terrainSession;
         private DigJobRenderer? _jobRenderer;
         private DigWorldItemRenderer? _itemRenderer;
+        private DigStockpileRenderer? _stockpileRenderer;
         private DigNavigationRouteRenderer? _routeRenderer;
         private DigHudOverlay? _hud;
         private float _elapsed;
@@ -35,6 +36,7 @@ namespace Dig.Unity
             DigTerrainWorkSession terrainSession,
             DigJobRenderer jobRenderer,
             DigWorldItemRenderer itemRenderer,
+            DigStockpileRenderer stockpileRenderer,
             DigNavigationRouteRenderer routeRenderer,
             DigHudOverlay hud)
         {
@@ -45,6 +47,7 @@ namespace Dig.Unity
             _terrainSession = terrainSession;
             _jobRenderer = jobRenderer;
             _itemRenderer = itemRenderer;
+            _stockpileRenderer = stockpileRenderer;
             _routeRenderer = routeRenderer;
             _hud = hud;
         }
@@ -71,9 +74,9 @@ namespace Dig.Unity
             string? selectedAgentId = _agentRenderer!.SelectedAgentId;
             string? selectedJobId = _jobRenderer!.SelectedJobId;
             IReadOnlyList<AgentViewModel> before = _agentSession!.LoadView();
-            _terrainSession!.SynchronizeDesignations(
-                checked(_agentSession.Tick + 1),
-                before);
+            long nextTick = checked(_agentSession.Tick + 1);
+            _terrainSession!.SynchronizeDesignations(nextTick, before);
+            _terrainSession.SynchronizeHauling(nextTick, before);
             IReadOnlyDictionary<string, CellId> movement =
                 _terrainSession.PlanMovement(before);
             Result result = _agentSession.Advance(movement);
@@ -93,6 +96,7 @@ namespace Dig.Unity
             IReadOnlyList<JobOverlayViewModel> jobs = _terrainSession.LoadJobs();
             IReadOnlyList<WorldItemViewModel> items = _terrainSession.LoadItems();
             IReadOnlyList<RouteViewModel> routes = _terrainSession.LoadRoutes();
+            DigStorageStatus storage = _terrainSession.GetStorageStatus();
             if (_terrainSession.ConsumeWorldChanged())
             {
                 WorldViewModel world = _worldSession!.LoadView();
@@ -103,9 +107,11 @@ namespace Dig.Unity
             _agentRenderer.Render(agents, tickIntervalSeconds * 0.82f);
             _jobRenderer.Render(jobs);
             _itemRenderer!.Render(items);
+            _stockpileRenderer!.Render(storage);
             _routeRenderer!.Render(routes);
             _hud!.SetAgents(agents, _agentSession.Tick);
             _hud.SetJobs(jobs);
+            _hud.SetStorageStatus(storage);
             RestoreSelection(selectedAgentId, selectedJobId);
         }
 
@@ -134,6 +140,7 @@ namespace Dig.Unity
                 && _terrainSession != null
                 && _jobRenderer != null
                 && _itemRenderer != null
+                && _stockpileRenderer != null
                 && _routeRenderer != null
                 && _hud != null;
         }

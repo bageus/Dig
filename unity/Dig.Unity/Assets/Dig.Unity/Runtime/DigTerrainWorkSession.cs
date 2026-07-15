@@ -26,6 +26,7 @@ namespace Dig.Unity
         private readonly InventoryWorldPresenter _inventoryPresenter;
         private readonly NavigationRoutePresenter _routePresenter;
         private readonly InMemoryJobRepository _jobRepository;
+        private readonly InMemoryInventoryRepository _inventoryRepository;
         private readonly InMemoryNavigationRepository _navigationRepository;
         private readonly DigWorldSession _worldSession;
         private readonly TerrainWorkRoutePlanner _routePlanner;
@@ -43,6 +44,7 @@ namespace Dig.Unity
             InventoryWorldPresenter inventoryPresenter,
             NavigationRoutePresenter routePresenter,
             InMemoryJobRepository jobRepository,
+            InMemoryInventoryRepository inventoryRepository,
             InMemoryNavigationRepository navigationRepository,
             DigWorldSession worldSession,
             TerrainWorkRoutePlanner routePlanner,
@@ -56,6 +58,7 @@ namespace Dig.Unity
             _inventoryPresenter = inventoryPresenter;
             _routePresenter = routePresenter;
             _jobRepository = jobRepository;
+            _inventoryRepository = inventoryRepository;
             _navigationRepository = navigationRepository;
             _worldSession = worldSession;
             _routePlanner = routePlanner;
@@ -167,6 +170,7 @@ namespace Dig.Unity
                     new GetInventorySnapshotQueryHandler(inventoryRepository)),
                 new NavigationRoutePresenter(),
                 jobs,
+                inventoryRepository,
                 navigation,
                 worldSession,
                 new TerrainWorkRoutePlanner(new NavigationPathfinder()),
@@ -196,17 +200,31 @@ namespace Dig.Unity
                     || !job.AssignedAgentId.HasValue
                     || !agentsById.TryGetValue(
                         job.AssignedAgentId.Value.ToString(),
-                        out AgentViewModel? agent)
-                    || !_routePlans.TryGetValue(job.Id, out TerrainWorkRoutePlan? route)
-                    || !route.Succeeded
-                    || !route.WorkCell.HasValue
-                    || agent.CellX != route.WorkCell.Value.X
-                    || agent.CellY != route.WorkCell.Value.Y)
+                        out AgentViewModel? agent))
                 {
                     continue;
                 }
 
-                Result result = AdvanceAtWorkCell(job, tick);
+                Result result;
+                if (job.Definition is HaulJobDefinition)
+                {
+                    result = AdvanceHaulingAtTarget(job, agent, tick);
+                }
+                else if (_routePlans.TryGetValue(
+                        job.Id,
+                        out TerrainWorkRoutePlan? route)
+                    && route.Succeeded
+                    && route.WorkCell.HasValue
+                    && agent.CellX == route.WorkCell.Value.X
+                    && agent.CellY == route.WorkCell.Value.Y)
+                {
+                    result = AdvanceAtWorkCell(job, tick);
+                }
+                else
+                {
+                    continue;
+                }
+
                 if (result.IsFailure)
                 {
                     return result;
