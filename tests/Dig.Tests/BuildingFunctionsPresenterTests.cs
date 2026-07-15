@@ -57,7 +57,7 @@ public sealed class BuildingFunctionsPresenterTests
             PackingJobId,
             OutputStackId,
             completedWork: 1,
-            BuildingPackingCommitState.Active);
+            commitState: BuildingPackingCommitState.Active);
 
         BuildingFunctionsViewModel model = presenter.Present(
             Snapshot(BuildingStatus.Completed, packingPlan: packing));
@@ -131,7 +131,7 @@ public sealed class BuildingFunctionsPresenterTests
             PackingJobId,
             OutputStackId,
             completedWork: 1,
-            BuildingPackingCommitState.Cancelled);
+            commitState: BuildingPackingCommitState.Cancelled);
 
         BuildingFunctionsViewModel model = new BuildingFunctionsPresenter().Present(
             Snapshot(BuildingStatus.Completed, packingPlan: cancelled));
@@ -154,7 +154,7 @@ public sealed class BuildingFunctionsPresenterTests
             Array.Empty<BuildingMaterialRequirement>(),
             requiredWork: 3,
             maximumDurability: 100,
-            new BuildingBoxPolicy(BoxItemId, packingWork: 2));
+            boxPolicy: new BuildingBoxPolicy(BoxItemId, packingWork: 2));
         int durability = status switch
         {
             BuildingStatus.Completed => 100,
@@ -185,16 +185,16 @@ public sealed class BuildingFunctionsPresenterTests
                 or BuildingStatus.Removed
                 ? definition.RequiredWork
                 : 0,
-            durability,
+            durability: durability,
             version: 1,
             diagnosticReason: null,
-            definition.BoxPolicy is null
+            boxPlan: definition.BoxPolicy is null
                 ? null
                 : new BuildingBoxPlanSnapshot(
                     AssemblyStackId,
                     AssemblyJobId,
                     BuildingBoxCommitState.Consumed),
-            packingPlan);
+            packingPlan: packingPlan);
     }
 
     private static EntityId Id(int value)
