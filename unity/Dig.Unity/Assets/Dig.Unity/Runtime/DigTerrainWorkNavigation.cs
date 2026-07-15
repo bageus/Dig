@@ -44,6 +44,7 @@ namespace Dig.Unity
                 new Dictionary<string, CellId>(StringComparer.Ordinal);
             _routePlans.Clear();
             _haulingRoutes.Clear();
+            _buildingPackingRoutes.Clear();
             foreach (JobSnapshot job in _jobRepository.Get().GetAll())
             {
                 if (!IsActive(job) || !job.AssignedAgentId.HasValue)
@@ -58,6 +59,11 @@ namespace Dig.Unity
                 }
 
                 if (TryPlanHaulingMovement(job, agent, navigation, movement))
+                {
+                    continue;
+                }
+
+                if (TryPlanBuildingPackingMovement(job, agent, navigation, movement))
                 {
                     continue;
                 }
@@ -105,6 +111,7 @@ namespace Dig.Unity
             }
 
             routes.AddRange(LoadHaulingRoutes());
+            routes.AddRange(LoadBuildingPackingRoutes());
             return routes;
         }
 

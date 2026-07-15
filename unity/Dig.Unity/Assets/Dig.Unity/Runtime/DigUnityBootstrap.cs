@@ -78,7 +78,7 @@ namespace Dig.Unity
             terrainSession.PlanMovement(agents);
             terrainSession.InitializeBuildingDemo(worldSession.Journal);
             IReadOnlyList<JobOverlayViewModel> jobs = terrainSession.LoadJobs();
-            IReadOnlyList<WorldItemViewModel> items = terrainSession.LoadItems();
+            IReadOnlyList<WorldItemViewModel> items = terrainSession.LoadAllWorldItems();
             IReadOnlyList<RouteViewModel> routes = terrainSession.LoadRoutes();
             IReadOnlyList<BuildingWorldViewModel> buildings = terrainSession.LoadBuildings();
             DigStorageStatus storage = terrainSession.GetStorageStatus();
