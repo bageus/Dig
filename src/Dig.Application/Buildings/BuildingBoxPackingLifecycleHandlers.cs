@@ -133,8 +133,8 @@ public sealed class CompleteBuildingBoxPackingHandler
             packing.OutputStackId,
             policy.BoxItemId,
             quantity: 1,
-            ItemLocation.InWorld(building.Origin),
-            command.Tick);
+            location: ItemLocation.InWorld(building.Origin),
+            tick: command.Tick);
         if (added.IsFailure)
         {
             return added;
