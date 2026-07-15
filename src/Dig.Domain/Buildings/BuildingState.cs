@@ -183,8 +183,9 @@ public sealed partial class BuildingsState : AggregateRoot
             return Result.Failure(BuildingErrors.NotFound);
         }
 
-        if (project.Status != BuildingStatus.Completed
-            && project.Status != BuildingStatus.Damaged)
+        if (HasActivePackingPlan(id)
+            || (project.Status != BuildingStatus.Completed
+                && project.Status != BuildingStatus.Damaged))
         {
             return Result.Failure(BuildingErrors.InvalidStatus);
         }
@@ -219,13 +220,13 @@ public sealed partial class BuildingsState : AggregateRoot
     public BuildingSnapshot? Get(EntityId id)
     {
         BuildingProjectState? project = Find(id);
-        return project is null ? null : CreateSnapshot(project);
+        return project is null ? null : CreateCombinedSnapshot(project);
     }
 
     public IReadOnlyList<BuildingSnapshot> GetAll()
     {
         return new ReadOnlyCollection<BuildingSnapshot>(_buildings.Values
-            .Select(CreateSnapshot)
+            .Select(CreateCombinedSnapshot)
             .OrderBy(value => value.Id.ToString(), StringComparer.Ordinal)
             .ToArray());
     }
@@ -260,7 +261,9 @@ public sealed partial class BuildingsState : AggregateRoot
             or BuildingStatus.UnderConstruction
             or BuildingStatus.ReadyToComplete;
         bool canRemove = project.Status is BuildingStatus.Completed or BuildingStatus.Damaged;
-        if ((cancel && !canCancel) || (!cancel && !canRemove))
+        if ((!cancel && HasActivePackingPlan(id))
+            || (cancel && !canCancel)
+            || (!cancel && !canRemove))
         {
             return Result.Failure(BuildingErrors.InvalidStatus);
         }
