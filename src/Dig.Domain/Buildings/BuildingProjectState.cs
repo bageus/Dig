@@ -15,15 +15,22 @@ internal sealed class BuildingProjectState
         CellId origin,
         BuildingOrientation orientation,
         IReadOnlyCollection<CellId> footprint,
-        CellId workPosition)
+        CellId workPosition,
+        BuildingStatus initialStatus = BuildingStatus.AwaitingMaterials)
     {
+        if (initialStatus != BuildingStatus.AwaitingMaterials
+            && initialStatus != BuildingStatus.AwaitingBox)
+        {
+            throw new ArgumentOutOfRangeException(nameof(initialStatus));
+        }
+
         Id = id;
         Definition = definition;
         Origin = origin;
         Orientation = orientation;
         Footprint = footprint.OrderBy(cell => cell).ToArray();
         WorkPosition = workPosition;
-        Status = BuildingStatus.AwaitingMaterials;
+        Status = initialStatus;
     }
 
     public EntityId Id { get; }
