@@ -16,12 +16,14 @@ namespace Dig.Unity
         private InMemoryJobCandidateProvider? _candidateProvider;
         private DemoDigJobIdSource? _dynamicIds;
 
-        private void InitializeDynamicDesignations(
-            InMemoryJobCandidateProvider candidateProvider,
-            InMemoryExecutionJournal journal)
+        internal void InitializeDynamicDesignations(InMemoryExecutionJournal journal)
         {
-            _candidateProvider = candidateProvider
-                ?? throw new ArgumentNullException(nameof(candidateProvider));
+            if (journal == null)
+            {
+                throw new ArgumentNullException(nameof(journal));
+            }
+
+            _candidateProvider = new InMemoryJobCandidateProvider();
             _dynamicIds = new DemoDigJobIdSource();
             _designationSync = new SyncDigDesignationJobsHandler(
                 _worldSession.Repository,
@@ -30,7 +32,7 @@ namespace Dig.Unity
                 journal);
             _assignmentHandler = new AssignAvailableJobsHandler(
                 _jobRepository,
-                candidateProvider,
+                _candidateProvider,
                 journal);
         }
 
