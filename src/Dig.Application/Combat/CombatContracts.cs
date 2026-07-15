@@ -37,7 +37,7 @@ public static class CombatApplicationErrors
 
     public static readonly DomainError HealingJobInvalid = new DomainError(
         "combat.application.healing_job_invalid",
-        "The job is not a completed healing job for the requested patient.");
+        "The job is not an active healing job for the requested patient.");
 }
 
 public readonly struct CombatantModifiers
@@ -94,6 +94,42 @@ public sealed class ResolveCombatAttackCommand
     public long Tick { get; }
     public CombatantModifiers AttackerModifiers { get; }
     public CombatantModifiers TargetModifiers { get; }
+}
+
+public sealed class AdvanceCombatStatusesCommand
+    : ICommand<Result<CombatStatusAdvanceReport>>
+{
+    public AdvanceCombatStatusesCommand(long tick)
+    {
+        if (tick < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(tick));
+        }
+
+        Tick = tick;
+    }
+
+    public long Tick { get; }
+}
+
+public sealed class CombatStatusAdvanceReport
+{
+    public CombatStatusAdvanceReport(
+        long tick,
+        int statusCount,
+        int targetCount,
+        int totalDamage)
+    {
+        Tick = tick;
+        StatusCount = statusCount;
+        TargetCount = targetCount;
+        TotalDamage = totalDamage;
+    }
+
+    public long Tick { get; }
+    public int StatusCount { get; }
+    public int TargetCount { get; }
+    public int TotalDamage { get; }
 }
 
 public sealed class CompleteHealingJobCommand : ICommand<Result>
