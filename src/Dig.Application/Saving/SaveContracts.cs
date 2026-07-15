@@ -14,6 +14,11 @@ public static class SaveFormat
     public const int CurrentVersion = 1;
 }
 
+public static class SaveSlotNames
+{
+    public const string Autosave = "autosave";
+}
+
 [DataContract]
 public sealed class SaveMetadataData
 {
