@@ -14,8 +14,8 @@ public sealed partial class SocietyState
         long tick)
     {
         ValidateTick(tick);
-        if (!TryGetLivingResident(firstResidentId, out ResidentSocialState? first)
-            || !TryGetLivingResident(secondResidentId, out ResidentSocialState? second))
+        if (!TryGetLivingResident(firstResidentId, out ResidentSocialState first)
+            || !TryGetLivingResident(secondResidentId, out ResidentSocialState second))
         {
             return Result.Failure(SocietyErrors.UnknownResident);
         }
@@ -38,7 +38,7 @@ public sealed partial class SocietyState
         }
 
         SocialBondKey key = new SocialBondKey(first.Id, second.Id);
-        if (!_bonds.TryGetValue(key, out SocialBond? bond)
+        if (!_bonds.TryGetValue(key, out SocialBond bond)
             || bond.Sympathy < Policy.MinimumPartnershipSympathy
             || bond.Trust < Policy.MinimumPartnershipTrust)
         {
@@ -55,7 +55,7 @@ public sealed partial class SocietyState
     public Result EndPartnership(EntityId residentId, long tick)
     {
         ValidateTick(tick);
-        if (!TryGetResident(residentId, out ResidentSocialState? resident))
+        if (!TryGetResident(residentId, out ResidentSocialState resident))
         {
             return Result.Failure(SocietyErrors.UnknownResident);
         }
@@ -67,7 +67,7 @@ public sealed partial class SocietyState
 
         EntityId partnerId = resident.PartnerId.Value;
         resident.PartnerId = null;
-        if (_residents.TryGetValue(partnerId, out ResidentSocialState? partner)
+        if (_residents.TryGetValue(partnerId, out ResidentSocialState partner)
             && partner.PartnerId == resident.Id)
         {
             partner.PartnerId = null;
@@ -117,8 +117,8 @@ public sealed partial class SocietyState
         }
 
         List<ReproductionBlockReason> reasons = new List<ReproductionBlockReason>();
-        if (!_residents.TryGetValue(motherId, out ResidentSocialState? mother)
-            || !_residents.TryGetValue(fatherId, out ResidentSocialState? father))
+        if (!_residents.TryGetValue(motherId, out ResidentSocialState mother)
+            || !_residents.TryGetValue(fatherId, out ResidentSocialState father))
         {
             reasons.Add(ReproductionBlockReason.UnknownResident);
             return new ReproductionEvaluation(reasons);
@@ -214,7 +214,7 @@ public sealed partial class SocietyState
         {
             KeyValuePair<EntityId, int> current = pending.Dequeue();
             if (current.Value >= maximumDepth
-                || !_residents.TryGetValue(current.Key, out ResidentSocialState? resident))
+                || !_residents.TryGetValue(current.Key, out ResidentSocialState resident))
             {
                 continue;
             }
