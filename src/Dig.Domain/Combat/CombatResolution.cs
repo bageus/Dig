@@ -71,9 +71,9 @@ public sealed class CombatAttackResolution
             throw new ArgumentOutOfRangeException(nameof(distance));
         }
 
-        ValidateChance(hitChance, nameof(hitChance));
-        ValidateChance(hitRoll, nameof(hitRoll));
-        ValidateChance(blockRoll, nameof(blockRoll));
+        ValidateProbability(hitChance, nameof(hitChance));
+        ValidateRoll(hitRoll, nameof(hitRoll));
+        ValidateRoll(blockRoll, nameof(blockRoll));
         if (damage < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(damage));
@@ -123,7 +123,15 @@ public sealed class CombatAttackResolution
             wasAlreadyProcessed: true);
     }
 
-    private static void ValidateChance(int value, string parameterName)
+    private static void ValidateProbability(int value, string parameterName)
+    {
+        if (value < 0 || value > 10_000)
+        {
+            throw new ArgumentOutOfRangeException(parameterName);
+        }
+    }
+
+    private static void ValidateRoll(int value, string parameterName)
     {
         if (value < 0 || value > 9_999)
         {
