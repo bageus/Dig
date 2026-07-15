@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Agents;
@@ -6,6 +7,7 @@ using Dig.Domain.Core;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Dig.Presentation.Agents;
+using Dig.Presentation.Runtime;
 using Xunit;
 
 namespace Dig.Tests
@@ -111,6 +113,89 @@ public sealed class AgentPositionPresentationTests
 
         Assert.Equal(expectedX, position.X, precision: 6);
         Assert.Equal(expectedY, position.Y, precision: 6);
+    }
+
+    [Fact]
+    public void Playback_pause_blocks_ticks_and_step_consumes_exactly_one()
+    {
+        SimulationPlaybackState playback = new SimulationPlaybackState();
+
+        playback.TogglePause();
+
+        Assert.True(playback.IsPaused);
+        Assert.Equal(0, playback.ConsumeDueTicks(10d, 0.8d));
+
+        playback.StepOnce();
+
+        Assert.Equal(1, playback.ConsumeDueTicks(0d, 0.8d));
+        Assert.Equal(0, playback.ConsumeDueTicks(10d, 0.8d));
+        Assert.True(playback.IsPaused);
+    }
+
+    [Theory]
+    [InlineData(SimulationPlaybackSpeed.Normal, 1)]
+    [InlineData(SimulationPlaybackSpeed.Fast, 2)]
+    [InlineData(SimulationPlaybackSpeed.VeryFast, 4)]
+    public void Playback_speed_controls_due_tick_count(
+        SimulationPlaybackSpeed speed,
+        int expectedTicks)
+    {
+        SimulationPlaybackState playback = new SimulationPlaybackState();
+        playback.SetSpeed(speed);
+
+        int due = playback.ConsumeDueTicks(0.8d, 0.8d);
+
+        Assert.Equal(expectedTicks, due);
+    }
+
+    [Fact]
+    public void Playback_speed_changes_are_bounded_and_reversible()
+    {
+        SimulationPlaybackState playback = new SimulationPlaybackState();
+
+        playback.SpeedUp();
+        Assert.Equal(SimulationPlaybackSpeed.Fast, playback.Speed);
+        playback.SpeedUp();
+        Assert.Equal(SimulationPlaybackSpeed.VeryFast, playback.Speed);
+        playback.SpeedUp();
+        Assert.Equal(SimulationPlaybackSpeed.VeryFast, playback.Speed);
+
+        playback.SlowDown();
+        Assert.Equal(SimulationPlaybackSpeed.Fast, playback.Speed);
+        playback.SlowDown();
+        Assert.Equal(SimulationPlaybackSpeed.Normal, playback.Speed);
+        playback.SlowDown();
+        Assert.True(playback.IsPaused);
+        playback.SpeedUp();
+        Assert.False(playback.IsPaused);
+        Assert.Equal(SimulationPlaybackSpeed.Normal, playback.Speed);
+    }
+
+    [Fact]
+    public void Playback_catch_up_is_bounded_per_frame()
+    {
+        SimulationPlaybackState playback = new SimulationPlaybackState();
+        playback.SetSpeed(SimulationPlaybackSpeed.VeryFast);
+
+        int due = playback.ConsumeDueTicks(100d, 0.8d, maximumTicksPerFrame: 3);
+
+        Assert.Equal(3, due);
+        Assert.Equal(0, playback.ConsumeDueTicks(0d, 0.8d, maximumTicksPerFrame: 3));
+    }
+
+    [Fact]
+    public void Playback_rejects_invalid_arguments()
+    {
+        SimulationPlaybackState playback = new SimulationPlaybackState();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            playback.SetSpeed((SimulationPlaybackSpeed)3));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            playback.ConsumeDueTicks(-1d, 0.8d));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            playback.ConsumeDueTicks(0d, 0d));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            playback.ConsumeDueTicks(0d, 0.8d, 0));
     }
 
     private static AgentState CreateAgent(string id, string name, CellId position)
