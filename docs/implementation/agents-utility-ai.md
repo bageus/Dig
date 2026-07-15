@@ -13,6 +13,7 @@
 - `BuildingFacilitiesState` владеет кроватями, досуговыми позициями и их занятостью.
 - `ResidentSettlementSystem` оркестрирует состояния, но не хранит копии предметов, мест или needs.
 - `IAgentDecisionContextProvider` продолжает сообщать доступность работы, путь отхода и угрозу.
+- Presentation владеет только локальным выбором гнома, раскрытием HUD-строки и визуальным состоянием.
 
 UI, игровой движок и навигация не могут напрямую изменять потребности или активное действие.
 
@@ -52,6 +53,18 @@ UI, игровой движок и навигация не могут напря
 
 Design-значения новых блюд заданы в шкале `15–33`; способ перевода в доменный диапазон `0–10000` открыт в `docs/design/open-questions.md`, Q-015.
 
+### HUD-нормализация
+
+HUD из [`../design/resident-hud-selection-and-notifications.md`](../design/resident-hud-selection-and-notifications.md) нормализует needs в `0..100` только для отображения:
+
+- `51..100` — зелёный;
+- `26..50` — оранжевый;
+- `0..25` — красный.
+
+Цвет дополняется числом, icon и accessible label.
+
+`Alertness` является прямой положительной шкалой: высокое значение означает высокую бодрость. Термин «Усталость» потребовал бы обратной шкалы `100 - Alertness`. До ответа Q-030 Domain и read models продолжают использовать `Alertness/Бодрость` и не создают второй показатель усталости.
+
 ## Расписание
 
 `DailySchedule` состоит из непрерывных неперекрывающихся сегментов. Сегменты обязаны покрывать полный игровой день.
@@ -64,6 +77,14 @@ Design-значения новых блюд заданы в шкале `15–33`
 - `Free`.
 
 Расписание влияет на utility score, но не блокирует критические действия. Критический голод или усталость могут прервать обычную работу и прямой приказ.
+
+### HUD-состояния расписания
+
+- `Free` без более важного действия отображается как «Свободное время»;
+- `Work` без active action, claimed/in-progress job, player order или emergency intent отображается как безделье в рабочее время;
+- красный idle-at-work marker является производным read model и не записывает новое состояние в `AgentState`;
+- критический голод, сон, бегство, бой и blocked action не должны ошибочно классифицироваться как обычное безделье;
+- причина отсутствия работы берётся из authoritative decision/job diagnostics.
 
 ## Намерения и utility
 
@@ -197,6 +218,37 @@ Settlement не строит полный `InventorySnapshot` и списки fa
 
 CI закрепляет отдельный budget: 500 microseconds average, 50000 average allocated bytes и 100 milliseconds maximum execution.
 
+## Resident HUD read path — целевой design
+
+HUD не должен собирать готовые строки из Domain. Для #114 формируется immutable read model из:
+
+- identity/lifecycle data;
+- needs;
+- schedule phase;
+- current intent/action/player order;
+- current claimed/in-progress job;
+- top skills;
+- block reasons;
+- logical/interpolated position reference для camera focus.
+
+`ResidentActivityDescriptor` содержит typed `Kind`, subject/destination IDs, source action/job/order ID, schedule phase, progress и block reason. Presentation локализует:
+
+- движение;
+- атаку;
+- готовку;
+- упаковку/распаковку;
+- копание;
+- создание;
+- подбор;
+- сервис;
+- тренировку/обучение;
+- логистику;
+- существующие Eat/Sleep/Rest/Flee/Idle.
+
+Готовый display text не сохраняется и не используется как ключ. Top-5 skills сортируются по значению, затем stable `AgentSkillId`.
+
+Roster на 64+ жителях должен использовать stable order, virtualization и incremental row updates, а не материализовывать полный новый GameObject/list graph каждый simulation tick.
+
 ## Разнообразие питания — целевой design
 
 После реализации #99 Agents хранит ограниченную индивидуальную историю `FoodVarietyId`.
@@ -231,6 +283,15 @@ CI закрепляет отдельный budget: 500 microseconds average, 500
 
 После #97–#101 диагностика еды дополнительно показывает committed state, bite progress, применённую сытость, потерянный остаток, историю рациона и monotony penalty.
 
+После #113/#114 диагностика HUD дополнительно показывает:
+
+- descriptor kind и source IDs;
+- schedule/activity classification;
+- idle-at-work reason;
+- raw и normalized needs;
+- top-5 sort keys;
+- selection/focus state только на Presentation side.
+
 ## Реализованные события
 
 - `AgentPlayerOrderChanged`;
@@ -243,6 +304,8 @@ CI закрепляет отдельный budget: 500 microseconds average, 500
 - `BuildingFacilityReservationChanged`.
 
 Meal-specific events пока не реализованы и входят в #97.
+
+Notification ticker из #116 должен использовать подтверждённые events. Для hunger threshold crossing, birth, old-age transition, technology discovery и task completion недостающие typed events добавляются владельцам соответствующих систем; UI не имитирует их polling-ом каждый frame.
 
 ## Проверки
 
@@ -261,3 +324,5 @@ Meal-specific events пока не реализованы и входят в #97
 - headless-сценарий двух жителей, которые независимо едят и спят без нарушения reservations.
 
 Новые обязательные тесты bite progress, interruption, recipes, variety и save/load перечислены в #97–#101.
+
+HUD/input/notification tests перечислены в #113–#117 и должны покрывать границы needs, Work+Idle classification, typed status mapping, top-5 ordering, event threshold crossing, UI shielding и renderer rebuild без изменения AgentState.
