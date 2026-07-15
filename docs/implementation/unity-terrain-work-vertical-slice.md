@@ -17,6 +17,18 @@ Unity remains a presentation and composition host. None of the scene objects own
 
 Deleting and rebuilding every renderer does not change any of these authoritative owners.
 
+## Dynamic designation reconciliation
+
+`SyncDigDesignationJobsHandler` is the Application boundary between World designations and Jobs. On each fixed Unity simulation tick it reads an immutable World snapshot and the authoritative job list, then:
+
+1. keeps the stable lowest-id nonterminal digging job for every still-designated solid cell;
+2. cancels jobs whose designation was removed;
+3. cancels deterministic duplicate jobs for the same target;
+4. creates and makes available one job for every designation without active work;
+5. publishes normal job events and lets `AssignAvailableJobsHandler` reserve a free resident.
+
+Cancellation uses the ordinary `JobSystem.Cancel` path, so Agent, Position and Designation reservations are released by the existing ledger. Runtime-generated job and output-stack ids come from a deterministic monotonic demo source. Unity does not invent lifecycle state.
+
 ## Completion use case
 
 `CompleteTerrainWorkCommandHandler` is the Application boundary for the final stage. Before changing state it verifies:
@@ -50,7 +62,7 @@ A job can leave `TravelToTarget` only when its assigned resident is at the selec
 
 Excavation invalidates the affected World chunks. The terrain work session drains those dirty chunk ids and calls `RefreshNavigationCommandHandler` with the new world snapshot. Only changed chunks are rebuilt by `NavigationMap`; later routes use the new navigation version.
 
-Designation-only updates can also refresh a chunk version, but do not create new demo jobs. Dynamic designation-to-job creation is a later command workflow.
+Designation-only updates also refresh the affected chunk version. The next fixed tick reconciles the new designation into Jobs before assignment and movement planning.
 
 ## Visuals and controls
 
@@ -58,12 +70,12 @@ Designation-only updates can also refresh a chunk version, but do not create new
 - `F4` hides or restores the route root without changing the simulation;
 - job markers and reservation links remain controlled by `F3`;
 - grey-blue spheres show authoritative world item stacks created by excavation;
-- completed job markers remain visible, while reservation links disappear after release;
-- the excavated cell is rebuilt from the refreshed immutable world view.
+- completed and cancelled job markers remain diagnostic history, while reservation links disappear after release;
+- the excavated cell is rebuilt from the refreshed immutable world view;
+- right-click designation changes become real jobs on the next fixed simulation tick.
 
 ## Current limitations
 
-- only the two initial demo designations become jobs;
 - resource output is a fixed demo rock item and quantity;
 - dropped resources are not yet connected to the Unity storage/hauling scenario;
 - residents without an assigned terrain job continue using the earlier deterministic demo movement;
@@ -71,4 +83,4 @@ Designation-only updates can also refresh a chunk version, but do not create new
 
 ## Validation
 
-Engine-independent tests cover successful three-owner completion, rejected-command atomicity, reservation cleanup, cheapest adjacent work-cell selection and stable world-item presentation. The normal quality workflow also runs architecture checks, the C# 9 compatibility gate, Release build, all tests, headless smoke and both deterministic soak profiles.
+Engine-independent tests cover designation reconciliation, repeated-sync idempotence, cancellation reservation cleanup, successful three-owner completion, rejected-command atomicity, cheapest adjacent work-cell selection and stable world-item presentation. The normal quality workflow also runs architecture checks, the C# 9 compatibility gate, Release build, all tests, headless smoke and both deterministic soak profiles.
