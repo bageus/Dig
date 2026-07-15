@@ -149,4 +149,27 @@ public sealed class SaveVersionOneBuildingsMigration : ISaveMigration
         document.FormatVersion = ToVersion;
     }
 }
+
+public sealed class SaveVersionTwoPackingMigration : ISaveMigration
+{
+    public string Id => "save.v2_to_v3.packing";
+    public int FromVersion => 2;
+    public int ToVersion => 3;
+
+    public void Apply(SaveGameDocument document)
+    {
+        if (document is null)
+        {
+            throw new ArgumentNullException(nameof(document));
+        }
+
+        if (document.FormatVersion != FromVersion)
+        {
+            throw new InvalidOperationException("Migration received the wrong source version.");
+        }
+
+        document.Buildings ??= new BuildingsSaveData();
+        document.FormatVersion = ToVersion;
+    }
+}
 }
