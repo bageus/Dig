@@ -69,7 +69,7 @@ public sealed class JobDefinitionSaveRegistry
 
         if (!_byType.TryGetValue(data.TypeId, out IJobDefinitionSaveCodec? codec))
         {
-            throw new InvalidOperationException(
+            throw new KeyNotFoundException(
                 $"Unknown saved job definition type '{data.TypeId}'.");
         }
 
