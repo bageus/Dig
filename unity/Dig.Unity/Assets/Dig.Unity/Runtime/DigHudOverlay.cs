@@ -14,6 +14,7 @@ namespace Dig.Unity
             System.Array.Empty<AgentViewModel>();
         private WorldCellViewModel? _selectedCell;
         private AgentViewModel? _selectedAgent;
+        private DigStorageStatus? _storageStatus;
         private long _tick;
         private string _status = "Ready";
 
@@ -26,6 +27,11 @@ namespace Dig.Unity
         {
             _agents = agents;
             _tick = tick;
+        }
+
+        internal void SetStorageStatus(DigStorageStatus status)
+        {
+            _storageStatus = status;
         }
 
         public void SetSelection(WorldCellViewModel? selected)
@@ -62,6 +68,7 @@ namespace Dig.Unity
             }
 
             GUILayout.Label($"Residents: {_agents.Count} | jobs: {JobCount} | tick: {_tick}");
+            DrawStorageStatus();
             GUILayout.Space(6f);
             GUILayout.Label("WASD pan | wheel zoom | Q/E rotate");
             GUILayout.Label("F3 jobs/reservations | F4 navigation routes");
@@ -73,6 +80,20 @@ namespace Dig.Unity
             GUILayout.Space(8f);
             GUILayout.Label(_status);
             GUILayout.EndArea();
+        }
+
+        private void DrawStorageStatus()
+        {
+            if (!_storageStatus.HasValue)
+            {
+                return;
+            }
+
+            DigStorageStatus value = _storageStatus.Value;
+            GUILayout.Label(
+                $"Stockpile {value.Cell.X},{value.Cell.Y}: " +
+                $"{value.StoredQuantity}/{value.Capacity} stored | " +
+                $"{value.ReservedIncomingQuantity} incoming");
         }
 
         private void DrawCellSelection()
