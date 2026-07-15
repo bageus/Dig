@@ -19,21 +19,14 @@ public sealed class SaveMigrationAndCorruptionTests
     private static readonly EntityId JobId = Id("fb000000000000000000000000000002");
 
     [Fact]
-    public void Version_zero_migration_is_ordered_and_idempotent()
+    public void Version_zero_fixture_migrates_in_order_and_is_idempotent()
     {
-        SaveGameDocument document = new SaveGameDocument
-        {
-            FormatVersion = 0,
-            Metadata = new SaveMetadataData
-            {
-                SlotId = "legacy",
-                DisplayName = string.Empty,
-                SavedAtUtc = "2026-07-15T15:00:00Z",
-                SimulationTick = 5,
-                WorldSeed = 11,
-                GeneratorVersion = 0,
-            },
-        };
+        string fixturePath = Path.Combine(
+            AppContext.BaseDirectory,
+            "Fixtures",
+            "save-v0.json");
+        SaveGameDocument document = new DataContractJsonSaveCodec().Deserialize(
+            File.ReadAllBytes(fixturePath));
         SaveMigrationPipeline pipeline = CreateMigrations();
 
         Result<SaveMigrationReport> first = pipeline.Apply(document);
@@ -79,6 +72,24 @@ public sealed class SaveMigrationAndCorruptionTests
         Assert.Equal(SaveErrors.UnknownJobType, jobResult.Error);
         Assert.True(itemResult.IsFailure);
         Assert.Equal("inventory.restore.unknown_item", itemResult.Error!.Code);
+    }
+
+    [Fact]
+    public void Dangling_inventory_reservation_is_rejected()
+    {
+        MaterialCatalog materials = CreateMaterials();
+        ItemCatalog items = CreateItems();
+        SaveGameDocument document = CreateValidDocument(materials, items);
+        document.Inventory.Stacks[0].Reservations.Add(new ItemReservationSaveData
+        {
+            JobId = "fc000000000000000000000000000003",
+            Quantity = 1,
+        });
+
+        Result<LoadedGameState> result = CreateLoader().Load(document, materials, items);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(SaveErrors.InvalidDocument, result.Error);
     }
 
     [Fact]
