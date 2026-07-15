@@ -17,6 +17,7 @@ namespace Dig.Unity
         private DigWorldRenderer? _renderer;
         private DigAgentRenderer? _agentRenderer;
         private DigJobRenderer? _jobRenderer;
+        private DigBuildingRenderer? _buildingRenderer;
         private DigTerrainWorkSession? _terrainSession;
         private DigStockpileRenderer? _stockpileRenderer;
         private DigAgentSimulationDriver? _simulation;
@@ -32,6 +33,7 @@ namespace Dig.Unity
             DigWorldRenderer renderer,
             DigAgentRenderer agentRenderer,
             DigJobRenderer jobRenderer,
+            DigBuildingRenderer buildingRenderer,
             DigTerrainWorkSession terrainSession,
             DigStockpileRenderer stockpileRenderer,
             DigAgentSimulationDriver simulation,
@@ -43,6 +45,7 @@ namespace Dig.Unity
             _renderer = renderer;
             _agentRenderer = agentRenderer;
             _jobRenderer = jobRenderer;
+            _buildingRenderer = buildingRenderer;
             _terrainSession = terrainSession;
             _stockpileRenderer = stockpileRenderer;
             _simulation = simulation;
@@ -120,6 +123,23 @@ namespace Dig.Unity
                 return;
             }
 
+            if (_buildingRenderer!.TryGetBuilding(hit, out DigBuildingVisual building))
+            {
+                ContextWorldTargetKind kind = building.Model.IsSelectable
+                    ? ContextWorldTargetKind.CompletedBuilding
+                    : ContextWorldTargetKind.None;
+                ContextPointerTarget target = new ContextPointerTarget(
+                    kind,
+                    EntityId.Parse(building.Model.Id),
+                    new CellId(building.Model.OriginX, building.Model.OriginY));
+                ApplyDecision(_inputRouter.Route(
+                    Pointer(button),
+                    BuildState(button),
+                    target),
+                    building: building);
+                return;
+            }
+
             if (!_renderer!.TryGetCell(hit, out DigCellVisual cell))
             {
                 ApplyDecision(_inputRouter.Route(
@@ -146,6 +166,10 @@ namespace Dig.Unity
             EntityId? selectedResident = selectedId == null
                 ? null
                 : EntityId.Parse(selectedId);
+            string? selectedBuildingId = _buildingRenderer!.SelectedBuildingId;
+            EntityId? selectedBuilding = selectedBuildingId == null
+                ? null
+                : EntityId.Parse(selectedBuildingId);
             bool selectedAlive = _agentRenderer.SelectedModel?.IsAlive ?? true;
             ExcavationToolKind tool = button == PointerButtonKind.Right
                 ? ExcavationToolKind.Tunnel
@@ -153,6 +177,7 @@ namespace Dig.Unity
             return new ContextInputState(
                 selectedResidentId: selectedResident,
                 selectedResidentAlive: selectedAlive,
+                selectedCompletedBuildingId: selectedBuilding,
                 excavationTool: tool);
         }
 
@@ -187,6 +212,7 @@ namespace Dig.Unity
                 && _renderer != null
                 && _agentRenderer != null
                 && _jobRenderer != null
+                && _buildingRenderer != null
                 && _terrainSession != null
                 && _stockpileRenderer != null
                 && _simulation != null
