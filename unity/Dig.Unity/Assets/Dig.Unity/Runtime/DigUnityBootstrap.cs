@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Dig.Presentation.Agents;
+using Dig.Presentation.Buildings;
 using Dig.Presentation.Inventory;
 using Dig.Presentation.Jobs;
 using Dig.Presentation.Navigation;
@@ -75,9 +76,11 @@ namespace Dig.Unity
             terrainSession.InitializeDynamicDesignations(worldSession.Journal);
             terrainSession.InitializeHauling(worldSession.Journal);
             terrainSession.PlanMovement(agents);
+            terrainSession.InitializeBuildingDemo(worldSession.Journal);
             IReadOnlyList<JobOverlayViewModel> jobs = terrainSession.LoadJobs();
             IReadOnlyList<WorldItemViewModel> items = terrainSession.LoadItems();
             IReadOnlyList<RouteViewModel> routes = terrainSession.LoadRoutes();
+            IReadOnlyList<BuildingWorldViewModel> buildings = terrainSession.LoadBuildings();
             DigStorageStatus storage = terrainSession.GetStorageStatus();
 
             _startupStage = "creating Unity adapters";
@@ -85,6 +88,7 @@ namespace Dig.Unity
             DigWorldRenderer worldRenderer = GetOrAdd<DigWorldRenderer>(gameObject);
             DigAgentRenderer agentRenderer = GetOrAdd<DigAgentRenderer>(gameObject);
             DigJobRenderer jobRenderer = GetOrAdd<DigJobRenderer>(gameObject);
+            DigBuildingRenderer buildingRenderer = GetOrAdd<DigBuildingRenderer>(gameObject);
             DigWorldItemRenderer itemRenderer = GetOrAdd<DigWorldItemRenderer>(gameObject);
             DigStockpileRenderer stockpileRenderer =
                 GetOrAdd<DigStockpileRenderer>(gameObject);
@@ -106,6 +110,7 @@ namespace Dig.Unity
             hud.SetJobs(jobs);
             hud.SetStorageStatus(storage);
             hud.SetSimulationControls(simulation);
+            hud.SetBuildingControls(terrainSession, buildingRenderer, jobRenderer);
             hud.SetStatus("Starting renderers...");
 
             _startupStage = "rendering world";
@@ -115,9 +120,10 @@ namespace Dig.Unity
             _startupStage = "rendering residents";
             agentRenderer.Render(agents, movementDuration: 0f);
 
-            _startupStage = "rendering jobs";
+            _startupStage = "rendering jobs and buildings";
             jobRenderer.Initialize(agentRenderer);
             jobRenderer.Render(jobs);
+            buildingRenderer.Render(buildings);
 
             _startupStage = "rendering inventory and routes";
             itemRenderer.Render(items);
@@ -132,6 +138,7 @@ namespace Dig.Unity
                 worldRenderer,
                 agentRenderer,
                 jobRenderer,
+                buildingRenderer,
                 terrainSession,
                 stockpileRenderer,
                 simulation,
@@ -143,19 +150,21 @@ namespace Dig.Unity
                 agentRenderer,
                 terrainSession,
                 jobRenderer,
+                buildingRenderer,
                 itemRenderer,
                 stockpileRenderer,
                 routeRenderer,
                 hud);
             interaction.enabled = true;
             simulation.enabled = true;
-            hud.SetStatus("Running. Click the Game view to use keyboard and mouse controls.");
+            hud.SetStatus("Running. Select the workshop to open Building Functions.");
 
             if (logStartup)
             {
                 Debug.Log(
                     $"Dig Unity runtime started with {agents.Count} residents, " +
-                    $"{jobs.Count} jobs and a {world.Width}x{world.Height} world.",
+                    $"{jobs.Count} jobs, {buildings.Count} buildings and a " +
+                    $"{world.Width}x{world.Height} world.",
                     this);
             }
         }
