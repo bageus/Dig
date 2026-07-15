@@ -30,6 +30,16 @@ public sealed partial class ContextInputRouter
                     ?? "input.building_placement.invalid");
         }
 
+        if (state.SelectedResidentId.HasValue && !state.SelectedResidentAlive)
+        {
+            return Local(
+                PresentationInputEffect.DeselectResident
+                    | PresentationInputEffect.ShowReason,
+                consumesPointer: true,
+                actorId: state.SelectedResidentId,
+                reasonCode: "input.selected_resident.stale_or_dead");
+        }
+
         if (state.SelectedInventoryStackId.HasValue
             && target.Kind == ContextWorldTargetKind.Ground
             && target.Cell.HasValue)
@@ -91,6 +101,18 @@ public sealed partial class ContextInputRouter
         if (move.ConsumesPointer)
         {
             return move;
+        }
+
+        if (state.HasUsableResidentSelection
+            && target.Kind == ContextWorldTargetKind.Ground
+            && target.Cell.HasValue)
+        {
+            return Local(
+                PresentationInputEffect.ShowReason,
+                consumesPointer: true,
+                actorId: state.SelectedResidentId,
+                targetCell: target.Cell,
+                reasonCode: "input.move.unreachable");
         }
 
         if (!state.SelectedResidentId.HasValue
@@ -155,7 +177,11 @@ public sealed partial class ContextInputRouter
         ContextInputState state,
         ContextPointerTarget target)
     {
-        if (!state.HasUsableResidentSelection
+        bool movementTarget = target.Kind == ContextWorldTargetKind.Ground
+            || target.Kind == ContextWorldTargetKind.GenericItem
+            || target.Kind == ContextWorldTargetKind.BuildingBox;
+        if (!movementTarget
+            || !state.HasUsableResidentSelection
             || !target.Reachable
             || !target.Cell.HasValue)
         {
