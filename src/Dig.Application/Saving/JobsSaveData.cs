@@ -103,6 +103,6 @@ public sealed class JobReservationSaveData
     public string Value { get; set; } = string.Empty;
 
     [DataMember(Order = 5)]
-    public long CreatedTick { get; set; }
+    public long AcquiredTick { get; set; }
 }
 }
