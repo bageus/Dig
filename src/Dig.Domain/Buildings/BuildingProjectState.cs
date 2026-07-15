@@ -55,6 +55,68 @@ internal sealed class BuildingProjectState
 
     public string? DiagnosticReason { get; private set; }
 
+    internal static Result<BuildingProjectState> Restore(BuildingSnapshot snapshot)
+    {
+        if (snapshot is null)
+        {
+            throw new ArgumentNullException(nameof(snapshot));
+        }
+
+        CellId[] expectedFootprint = snapshot.Definition
+            .ResolveFootprint(snapshot.Origin, snapshot.Orientation)
+            .OrderBy(cell => cell)
+            .ToArray();
+        CellId[] savedFootprint = snapshot.Footprint.OrderBy(cell => cell).ToArray();
+        bool validWorkPosition = snapshot.Definition
+            .ResolveWorkPositions(snapshot.Origin, snapshot.Orientation)
+            .Contains(snapshot.WorkPosition);
+        if (!expectedFootprint.SequenceEqual(savedFootprint)
+            || !validWorkPosition
+            || snapshot.CompletedWork < 0
+            || snapshot.CompletedWork > snapshot.Definition.RequiredWork
+            || snapshot.Durability < 0
+            || snapshot.Durability > snapshot.Definition.MaximumDurability
+            || snapshot.Version < 0)
+        {
+            return Invalid("Saved building geometry or numeric state is inconsistent.");
+        }
+
+        BuildingConstructionPolicyKind policy = snapshot.Definition.ConstructionPolicy;
+        if ((snapshot.Status == BuildingStatus.AwaitingMaterials
+                && policy != BuildingConstructionPolicyKind.LegacyMaterials)
+            || (snapshot.Status == BuildingStatus.AwaitingBox
+                && policy != BuildingConstructionPolicyKind.BuildingBox)
+            || (snapshot.Status == BuildingStatus.ReadyToComplete
+                && snapshot.CompletedWork != snapshot.Definition.RequiredWork)
+            || (snapshot.Status == BuildingStatus.Completed
+                && snapshot.Durability != snapshot.Definition.MaximumDurability)
+            || (snapshot.Status == BuildingStatus.Damaged
+                && snapshot.Durability >= snapshot.Definition.MaximumDurability))
+        {
+            return Invalid("Saved building status does not match its policy or progress.");
+        }
+
+        BuildingStatus initial = policy == BuildingConstructionPolicyKind.BuildingBox
+            ? BuildingStatus.AwaitingBox
+            : BuildingStatus.AwaitingMaterials;
+        BuildingProjectState restored = new BuildingProjectState(
+            snapshot.Id,
+            snapshot.Definition,
+            snapshot.Origin,
+            snapshot.Orientation,
+            snapshot.Footprint,
+            snapshot.WorkPosition,
+            initial)
+        {
+            Status = snapshot.Status,
+            CompletedWork = snapshot.CompletedWork,
+            Durability = snapshot.Durability,
+            Version = snapshot.Version,
+            DiagnosticReason = snapshot.DiagnosticReason,
+        };
+        return Result<BuildingProjectState>.Success(restored);
+    }
+
     public void MarkMaterialsReady()
     {
         Status = BuildingStatus.ReadyToBuild;
@@ -142,6 +204,13 @@ internal sealed class BuildingProjectState
             Durability,
             Version,
             DiagnosticReason);
+    }
+
+    private static Result<BuildingProjectState> Invalid(string message)
+    {
+        return Result<BuildingProjectState>.Failure(new DomainError(
+            "buildings.restore.invalid_project",
+            message));
     }
 
     private void IncrementVersion()

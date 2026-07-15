@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
+using Dig.Domain.Buildings;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.World;
@@ -11,7 +12,7 @@ namespace Dig.Application.Saving
 
 public static class SaveFormat
 {
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
 }
 
 public static class SaveSlotNames
@@ -97,6 +98,9 @@ public sealed class SaveGameDocument
 
     [DataMember(Order = 5)]
     public JobsSaveData Jobs { get; set; } = new JobsSaveData();
+
+    [DataMember(Order = 6)]
+    public BuildingsSaveData Buildings { get; set; } = new BuildingsSaveData();
 }
 
 public sealed class LoadedGameState
@@ -106,12 +110,14 @@ public sealed class LoadedGameState
         WorldState world,
         InventoryState inventory,
         JobSystem jobs,
+        BuildingsState buildings,
         SaveMigrationReport migrationReport)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
         Inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
         Jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
+        Buildings = buildings ?? throw new ArgumentNullException(nameof(buildings));
         MigrationReport = migrationReport ?? throw new ArgumentNullException(nameof(migrationReport));
     }
 
@@ -119,6 +125,7 @@ public sealed class LoadedGameState
     public WorldState World { get; }
     public InventoryState Inventory { get; }
     public JobSystem Jobs { get; }
+    public BuildingsState Buildings { get; }
     public SaveMigrationReport MigrationReport { get; }
 }
 
@@ -182,16 +189,28 @@ public sealed class SaveGameContext
         WorldState world,
         InventoryState inventory,
         JobSystem jobs)
+        : this(metadata, world, inventory, jobs, new BuildingsState())
+    {
+    }
+
+    public SaveGameContext(
+        SaveMetadataData metadata,
+        WorldState world,
+        InventoryState inventory,
+        JobSystem jobs,
+        BuildingsState buildings)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
         Inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
         Jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
+        Buildings = buildings ?? throw new ArgumentNullException(nameof(buildings));
     }
 
     public SaveMetadataData Metadata { get; }
     public WorldState World { get; }
     public InventoryState Inventory { get; }
     public JobSystem Jobs { get; }
+    public BuildingsState Buildings { get; }
 }
 }

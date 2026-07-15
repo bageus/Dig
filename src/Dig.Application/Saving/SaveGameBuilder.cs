@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dig.Domain.Buildings;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.World;
@@ -33,6 +34,7 @@ public sealed class SaveGameBuilder
             World = BuildWorld(context.World.CreateSnapshot()),
             Inventory = BuildInventory(context.Inventory.CreateSnapshot()),
             Jobs = BuildJobs(context.Jobs),
+            Buildings = BuildBuildings(context.Buildings),
         };
     }
 
@@ -137,6 +139,43 @@ public sealed class SaveGameBuilder
                 Value = reservation.Key.Value,
                 AcquiredTick = reservation.AcquiredTick,
             });
+        }
+
+        return data;
+    }
+
+    private static BuildingsSaveData BuildBuildings(BuildingsState buildings)
+    {
+        BuildingsSaveData data = new BuildingsSaveData();
+        foreach (BuildingSnapshot building in buildings.GetAll()
+            .OrderBy(item => item.Id.ToString(), StringComparer.Ordinal))
+        {
+            BuildingSaveData saved = new BuildingSaveData
+            {
+                BuildingId = building.Id.ToString(),
+                DefinitionId = building.Definition.Id.ToString(),
+                OriginX = building.Origin.X,
+                OriginY = building.Origin.Y,
+                Orientation = (int)building.Orientation,
+                WorkPositionX = building.WorkPosition.X,
+                WorkPositionY = building.WorkPosition.Y,
+                Status = (int)building.Status,
+                CompletedWork = building.CompletedWork,
+                Durability = building.Durability,
+                Version = building.Version,
+                DiagnosticReason = building.DiagnosticReason,
+            };
+            if (building.BoxPlan is not null)
+            {
+                saved.BoxPlan = new BuildingBoxPlanSaveData
+                {
+                    SourceStackId = building.BoxPlan.SourceStackId.ToString(),
+                    JobId = building.BoxPlan.JobId.ToString(),
+                    CommitState = (int)building.BoxPlan.CommitState,
+                };
+            }
+
+            data.Buildings.Add(saved);
         }
 
         return data;
