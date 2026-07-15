@@ -33,10 +33,16 @@ public sealed class SaveMigrationAndCorruptionTests
         Result<SaveMigrationReport> replay = pipeline.Apply(document);
 
         Assert.True(first.IsSuccess);
-        Assert.Equal(new[] { "save.v0_to_v1.metadata" }, first.Value.AppliedSteps);
+        Assert.Equal(new[]
+        {
+            "save.v0_to_v1.metadata",
+            "save.v1_to_v2.buildings",
+        }, first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
         Assert.Equal(1, document.Metadata.GeneratorVersion);
         Assert.Equal("legacy", document.Metadata.DisplayName);
+        Assert.NotNull(document.Buildings);
+        Assert.Empty(document.Buildings.Buildings);
         Assert.True(replay.IsSuccess);
         Assert.Empty(replay.Value.AppliedSteps);
     }
@@ -243,6 +249,7 @@ public sealed class SaveMigrationAndCorruptionTests
         return new SaveMigrationPipeline(new ISaveMigration[]
         {
             new LegacySaveVersionZeroMigration(),
+            new SaveVersionOneBuildingsMigration(),
         });
     }
 
