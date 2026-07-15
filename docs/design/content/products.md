@@ -23,7 +23,7 @@
 | `building_kit.distillery` | Винокурня | Пилорама | 4 ножки, 4 хомяка, 3 камня, 4 железа, 1 золото | 1 |
 | `building_kit.university` | Университет | Пилорама | 4 ножки, 4 железа, 2 хомяка, 2 угля, 4 шляпки | 1 |
 
-Системная реализация комплектов: #75. Стоимость и источник комплектов горна, литейного цеха и crystal processor открыты в Q-026.
+Системная реализация комплектов: #75. Параметры строительства горна, литейного цеха и Песчаника берутся из существующих BuildingDefinition/content data и не дублируются здесь.
 
 ## Переработка руд
 
@@ -32,9 +32,9 @@
 | `recipe.furnace.iron` | Железный слиток | Горн | 3 `ore.iron`, 2 ножки гриба | 2 `material.iron` | `skill.metallurgy` |
 | `recipe.foundry.iron` | Железный слиток | Литейный цех | 3 `ore.iron`, 2 угля | 2 `material.iron` | `skill.metallurgy` |
 | `recipe.foundry.gold` | Золото | Литейный цех | 3 `ore.gold`, 2 угля | 2 `material.gold` | `skill.metallurgy` |
-| `recipe.crystal_processor.crystal` | Кристалл | Crystal processor | 1 `ore.crystal` | 1 `material.crystal` | `skill.alchemy` |
+| `recipe.crystal_processor.crystal` | Кристалл | Песчаник | 1 `ore.crystal` | 1 `material.crystal` | `skill.alchemy` |
 
-Официальное display name crystal processor блокировано Q-023. Реализация: #108.
+Официальное display name здания `building.crystal_processor` — «Песчаник». Реализация: #108.
 
 ## Готовые блюда
 
@@ -95,4 +95,5 @@
 - один order коммитится один раз;
 - `material.metal` не используется;
 - skill profile ссылается на существующий skill;
+- Песчаник определяется через `building.crystal_processor`, а не display name;
 - изменение stable ID требует migration.
