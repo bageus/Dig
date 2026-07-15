@@ -26,6 +26,7 @@ namespace Dig.Unity
         private readonly InventoryWorldPresenter _inventoryPresenter;
         private readonly NavigationRoutePresenter _routePresenter;
         private readonly InMemoryJobRepository _jobRepository;
+        private readonly InMemoryInventoryRepository _inventoryRepository;
         private readonly InMemoryNavigationRepository _navigationRepository;
         private readonly DigWorldSession _worldSession;
         private readonly TerrainWorkRoutePlanner _routePlanner;
@@ -43,6 +44,7 @@ namespace Dig.Unity
             InventoryWorldPresenter inventoryPresenter,
             NavigationRoutePresenter routePresenter,
             InMemoryJobRepository jobRepository,
+            InMemoryInventoryRepository inventoryRepository,
             InMemoryNavigationRepository navigationRepository,
             DigWorldSession worldSession,
             TerrainWorkRoutePlanner routePlanner,
@@ -56,6 +58,7 @@ namespace Dig.Unity
             _inventoryPresenter = inventoryPresenter;
             _routePresenter = routePresenter;
             _jobRepository = jobRepository;
+            _inventoryRepository = inventoryRepository;
             _navigationRepository = navigationRepository;
             _worldSession = worldSession;
             _routePlanner = routePlanner;
@@ -167,6 +170,7 @@ namespace Dig.Unity
                     new GetInventorySnapshotQueryHandler(inventoryRepository)),
                 new NavigationRoutePresenter(),
                 jobs,
+                inventoryRepository,
                 navigation,
                 worldSession,
                 new TerrainWorkRoutePlanner(new NavigationPathfinder()),
