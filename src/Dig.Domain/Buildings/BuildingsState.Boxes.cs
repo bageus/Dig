@@ -116,7 +116,7 @@ public sealed partial class BuildingsState
     public Result MarkBoxAtSite(EntityId id, long tick)
     {
         ValidateTick(tick);
-        if (!TryGetBoxProject(id, out BuildingProjectState? project, out BuildingBoxPlanState? box))
+        if (!TryGetBoxProject(id, out BuildingProjectState project, out BuildingBoxPlanState box))
         {
             return Result.Failure(BuildingErrors.BoxPlanNotFound);
         }
@@ -137,7 +137,7 @@ public sealed partial class BuildingsState
     public Result CompleteBoxConstruction(EntityId id, long tick)
     {
         ValidateTick(tick);
-        if (!TryGetBoxProject(id, out BuildingProjectState? project, out BuildingBoxPlanState? box))
+        if (!TryGetBoxProject(id, out BuildingProjectState project, out BuildingBoxPlanState box))
         {
             return Result.Failure(BuildingErrors.BoxPlanNotFound);
         }
@@ -196,17 +196,25 @@ public sealed partial class BuildingsState
 
     private bool TryGetBoxProject(
         EntityId id,
-        out BuildingProjectState? project,
-        out BuildingBoxPlanState? box)
+        out BuildingProjectState project,
+        out BuildingBoxPlanState box)
     {
         if (id.IsEmpty)
         {
             throw new ArgumentException("Building id cannot be empty.", nameof(id));
         }
 
-        bool hasProject = _buildings.TryGetValue(id, out project);
-        bool hasBox = _boxPlans.TryGetValue(id, out box);
-        return hasProject && hasBox;
+        if (_buildings.TryGetValue(id, out BuildingProjectState? foundProject)
+            && _boxPlans.TryGetValue(id, out BuildingBoxPlanState? foundBox))
+        {
+            project = foundProject;
+            box = foundBox;
+            return true;
+        }
+
+        project = null!;
+        box = null!;
+        return false;
     }
 }
 }
