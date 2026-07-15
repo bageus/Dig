@@ -143,19 +143,31 @@ public sealed partial class ContextInputRouter
         ContextInputState state,
         ContextPointerTarget target)
     {
+        if (state.SelectedResidentId.HasValue && !state.SelectedResidentAlive)
+        {
+            return Local(
+                PresentationInputEffect.DeselectResident
+                    | PresentationInputEffect.ShowReason,
+                consumesPointer: true,
+                actorId: state.SelectedResidentId,
+                reasonCode: "input.selected_resident.stale_or_dead");
+        }
+
         if (pointer.AltPressed
+            && state.HasUsableResidentSelection
             && state.SelectedInventoryStackId.HasValue
             && state.SelectedInventoryItemUsable
             && state.CanUseSelectedInventoryItem)
         {
             return Command(
                 ApplicationInputCommandKind.UseInventoryItem,
-                state.SelectedResidentId,
-                state.SelectedInventoryStackId,
-                target.Cell);
+                actorId: state.SelectedResidentId,
+                targetEntityId: state.SelectedInventoryStackId,
+                targetCell: target.Cell);
         }
 
-        if (state.SelectedInventoryStackId.HasValue
+        if (state.HasUsableResidentSelection
+            && state.SelectedInventoryStackId.HasValue
             && state.SelectedInventoryItemIsBuildingBox)
         {
             return Local(
@@ -176,13 +188,13 @@ public sealed partial class ContextInputRouter
         ExcavationToolKind excavationTool = ExcavationToolKind.None)
     {
         return new ContextInputDecision(
-            PresentationInputEffect.None,
-            kind,
+            effects: PresentationInputEffect.None,
+            commandKind: kind,
             consumesPointer: true,
-            actorId,
-            targetEntityId,
-            targetCell,
-            excavationTool);
+            actorId: actorId,
+            targetEntityId: targetEntityId,
+            targetCell: targetCell,
+            excavationTool: excavationTool);
     }
 
     private static ContextInputDecision Local(
@@ -194,12 +206,12 @@ public sealed partial class ContextInputRouter
         string? reasonCode = null)
     {
         return new ContextInputDecision(
-            effects,
-            ApplicationInputCommandKind.None,
-            consumesPointer,
-            actorId,
-            targetEntityId,
-            targetCell,
+            effects: effects,
+            commandKind: ApplicationInputCommandKind.None,
+            consumesPointer: consumesPointer,
+            actorId: actorId,
+            targetEntityId: targetEntityId,
+            targetCell: targetCell,
             reasonCode: reasonCode);
     }
 
