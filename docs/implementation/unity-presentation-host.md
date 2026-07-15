@@ -31,13 +31,25 @@ Left-click a resident to inspect its needs, active action, decision reason and a
 
 Initially designated cavern cells receive real digging jobs. The scene assigns residents through the common candidate scorer, advances job stages through Application handlers and renders target markers plus active worker links from immutable snapshots.
 
-Left-click a marker to inspect lifecycle and reservation ownership. Press `F3` to hide or restore the complete diagnostic layer without changing simulation state. See [`unity-job-overlay.md`](unity-job-overlay.md) for colors, ownership and current orchestration limitations.
+Left-click a marker to inspect lifecycle and reservation ownership. Press `3` to hide or restore the complete diagnostic layer without changing simulation state. See [`unity-job-overlay.md`](unity-job-overlay.md) for colors, ownership and current orchestration limitations.
 
 ## Terrain work completion
 
 Assigned residents now follow real Navigation paths to adjacent work cells. A final Application coordinator excavates the authoritative World cell, creates an Inventory resource stack and completes the Job only after all inputs pass preflight validation. Dirty world chunks refresh Navigation before later routes are calculated.
 
-Cyan route lines can be toggled with `F4`. Excavated output appears as a rebuildable world-item visual. See [`unity-terrain-work-vertical-slice.md`](unity-terrain-work-vertical-slice.md) for the commit order, ownership rules, route selection and current demo limitations.
+Cyan route lines can be toggled with `4`. Excavated output appears as a rebuildable world-item visual. See [`unity-terrain-work-vertical-slice.md`](unity-terrain-work-vertical-slice.md) for the commit order, ownership rules, route selection and current demo limitations.
+
+## Simulation time controls
+
+`SimulationPlaybackState` belongs to Presentation and controls only when Unity asks the existing simulation driver to execute another authoritative tick. It never changes action durations, job stages or need effects measured in ticks.
+
+- `Space` pauses or resumes the current speed;
+- `.` executes one tick and remains paused;
+- `-` reduces speed from `4x` to `2x`, then `1x`, then pause;
+- `+` resumes from pause and increases speed up to `4x`;
+- HUD buttons provide Pause/Resume, Step, `1x`, `2x` and `4x`.
+
+The driver uses unscaled frame time and limits catch-up work to eight ticks per frame. Resident interpolation duration is shortened for faster playback, but logical movement remains one confirmed simulation transition at a time. Clicks inside the HUD are not forwarded to world selection.
 
 ## Core integration
 
