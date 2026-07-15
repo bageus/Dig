@@ -22,7 +22,8 @@ public sealed partial class InventoryState
         }
 
         InventoryState inventory = new InventoryState(catalog);
-        foreach (ItemStackSnapshot stack in snapshot.Stacks.OrderBy(item => item.StackId.ToString(), StringComparer.Ordinal))
+        foreach (ItemStackSnapshot stack in snapshot.Stacks
+            .OrderBy(item => item.StackId.ToString(), StringComparer.Ordinal))
         {
             if (!catalog.Contains(stack.ItemId))
             {
@@ -42,7 +43,7 @@ public sealed partial class InventoryState
                 return Result<InventoryState>.Failure(added.Error!);
             }
 
-            foreach (ItemReservationSnapshot reservation in stack.Reservations)
+            foreach (ItemQuantityReservationSnapshot reservation in stack.Reservations)
             {
                 Result reserved = inventory.ReserveQuantity(
                     stack.StackId,
