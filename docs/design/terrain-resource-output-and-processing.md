@@ -7,7 +7,7 @@
 1. случайные outputs обычной клетки грунта при excavation;
 2. явную ресурсную жилу, заменяющую клетку породы.
 
-Он также фиксирует цепочки `руда -> обработанный материал` и здания переработки.
+Он также фиксирует цепочки `руда -> обработанный материал` и производственные capabilities зданий переработки.
 
 ## 2. Разделение сущностей
 
@@ -23,16 +23,16 @@ Display name не используется как ссылка между эти
 
 Обычная excavation использует `TerrainOutputProfile`. Таблица определяет только допустимые outputs и относительную редкость. Точные вероятности и количества остаются data-driven `BALANCE_TBD`.
 
-| Предлагаемый MaterialId | Название | Добываемость | Возможные outputs |
+| MaterialId | Название | Добываемость | Возможные outputs |
 |---|---|---:|---|
 | `terrain.sand` | Песчаный грунт | да | ничего |
 | `terrain.stone_rock` | Каменная порода | да | только `material.stone` |
-| `terrain.metal_bearing_rock` | Металлосодержащая / «серная» порода | да | камень; немного железной руды; очень мало золотой руды; мало угля |
+| `terrain.metal_bearing_rock` | Рудная порода | да | камень; немного железной руды; очень мало золотой руды; мало угля |
 | `terrain.crystalline_rock` | Кристаллическая порода | да | мало камня; железная руда; кристаллическая руда; мало золотой руды |
 | `terrain.lava_rock` | Лавовая порода | да | золотая руда; мало камня; мало кристаллической руды; железная руда; уголь |
 | `terrain.unmineable` | Недобываемая порода | нет | ничего |
 
-Точное display name `terrain.metal_bearing_rock` блокировано Q-024.
+Официальное display name `terrain.metal_bearing_rock` — **«Рудная порода»**.
 
 ### 3.1 Правила roll
 
@@ -59,9 +59,7 @@ Display name не используется как ссылка между эти
 
 Жила заменяет обычную клетку породы. Она не является overlay, который одновременно выдаёт базовый loot грунта.
 
-Поддерживаемые текущим design типы:
-
-| Предлагаемый DepositDefinitionId | Output ItemId |
+| DepositDefinitionId | Output ItemId |
 |---|---|
 | `deposit.iron_ore` | `ore.iron` |
 | `deposit.gold_ore` | `ore.gold` |
@@ -71,13 +69,13 @@ Display name не используется как ссылка между эти
 
 ### 4.1 Соседство
 
-Фраза «жила занимает 1–4 клетки» означает, что generation может разместить рядом несколько deposit cells. Это не требует общей cluster-сущности:
+Generation может разместить рядом несколько deposit cells:
 
 - каждая клетка имеет собственный stable `DepositId`;
 - каждая клетка истощается отдельно;
-- соседние клетки могут иметь одинаковый тип и визуально выглядеть как одна жила;
-- общий shared yield/depletion между соседями не создаётся;
-- генератор может иметь правило группового размещения 1–4 клеток, но runtime semantics остаётся per-cell.
+- соседние клетки могут визуально выглядеть как одна жила;
+- общий shared yield/depletion не создаётся;
+- генератор может использовать шаблон размещения 1–4 клеток, но runtime semantics остаётся per-cell.
 
 ### 4.2 Разработка и геометрия
 
@@ -106,9 +104,11 @@ Display name не используется как ссылка между эти
 
 ## 6. Здания переработки
 
+Строительная стоимость, способ получения, число работников и prerequisites не дублируются в этом документе. Источником истины являются уже существующие `BuildingDefinition` и связанные content data. Дальнейшая доработка этих параметров выполняется в той же системе.
+
 ### 6.1 Горн
 
-Предлагаемый ID: `building.furnace`.
+BuildingDefinitionId: `building.furnace`.
 
 Capability:
 
@@ -118,7 +118,7 @@ Capability:
 
 ### 6.2 Литейный цех
 
-Предлагаемый ID: `building.foundry`.
+BuildingDefinitionId: `building.foundry`.
 
 Capabilities:
 
@@ -131,23 +131,25 @@ Capabilities:
 - `3 ore.iron + 2 material.coal -> 2 material.iron`;
 - `3 ore.gold + 2 material.coal -> 2 material.gold`.
 
-### 6.3 Переработчик кристаллической руды
+### 6.3 Песчаник
 
-Технический ID до ответа Q-023: `building.crystal_processor`.
+Официальное display name: **«Песчаник»**.
+
+Технический BuildingDefinitionId: `building.crystal_processor`.
 
 Capability:
 
 - обрабатывает кристаллическую руду;
-- успешная работа развивает `skill.alchemy`, поскольку она относится к кристаллам;
+- успешная работа развивает `skill.alchemy`;
 - рецепт: `1 ore.crystal -> 1 material.crystal`.
 
-Официальное display name «Песчанник/Песчаник/другое» остаётся открытым.
+Название здания не меняет stable ID и не используется для поиска recipe capability.
 
 ## 7. Общий производственный поток
 
 1. Production order резервирует все inputs.
 2. Hauling доставляет раскрытые и доступные inputs согласно demand policy.
-3. Worker резервирует рабочее место.
+3. Worker резервирует рабочее место согласно существующему BuildingDefinition.
 4. Work progress использует skill и building profile.
 5. При успешном commit inputs списываются один раз.
 6. Outputs создаются один раз в building inventory/output location.
@@ -159,8 +161,7 @@ Capability:
 - точные drop probabilities и количества для каждого terrain profile;
 - частота появления типов грунта и deposit cells;
 - work effort обычного грунта и жил;
-- стоимость строительства, источник building kits и число работников горна, литейного цеха и crystal processor — Q-026;
-- официальные названия «Песчанник» и «серная порода» — Q-023/Q-024.
+- будущие изменения строительных параметров через существующие BuildingDefinition/content data.
 
 ## 9. Save/Load и validation
 
@@ -180,7 +181,8 @@ Validation запрещает:
 - mineable output у `terrain.unmineable`;
 - одновременный terrain и deposit output одной клетки;
 - повторный roll/depletion;
-- недетерминированный Unity random как источник game rules.
+- недетерминированный Unity random как источник game rules;
+- поиск `Песчаника` или `Рудной породы` по display name вместо stable ID.
 
 ## 10. Связанные issues
 
@@ -188,6 +190,6 @@ Validation запрещает:
 - #91 — генерация жил;
 - #92 — output resolver;
 - #103/#105 — навыки работ;
-- #108 — металлургические здания и рецепты;
+- #108 — горн, литейный цех и Песчаник;
 - #109 — terrain profiles и случайные outputs;
 - #110 — demand/fog-aware hauling.
