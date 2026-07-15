@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Collections.ObjectModel;
+using System.Linq;
 using Dig.Domain.Core;
 
 namespace Dig.Domain.Jobs
@@ -104,6 +104,25 @@ public sealed class ReservationLedger
             }
         }
 
+        return Result.Success();
+    }
+
+    internal Result Restore(ReservationSnapshot reservation)
+    {
+        if (reservation is null)
+        {
+            throw new ArgumentNullException(nameof(reservation));
+        }
+
+        if (_reservations.ContainsKey(reservation.Key))
+        {
+            return Result.Failure(
+                reservation.Key.Kind == ReservationKind.Agent
+                    ? JobErrors.AgentUnavailable
+                    : JobErrors.ReservationConflict);
+        }
+
+        _reservations.Add(reservation.Key, reservation);
         return Result.Success();
     }
 

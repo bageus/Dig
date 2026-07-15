@@ -49,7 +49,7 @@ public sealed class JobSnapshot
         || Status == JobStatus.Failed;
 }
 
-public sealed class JobState
+public sealed partial class JobState
 {
     private int _stageIndex = -1;
 
