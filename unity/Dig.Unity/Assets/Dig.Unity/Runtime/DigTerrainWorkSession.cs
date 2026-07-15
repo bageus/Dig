@@ -200,17 +200,31 @@ namespace Dig.Unity
                     || !job.AssignedAgentId.HasValue
                     || !agentsById.TryGetValue(
                         job.AssignedAgentId.Value.ToString(),
-                        out AgentViewModel? agent)
-                    || !_routePlans.TryGetValue(job.Id, out TerrainWorkRoutePlan? route)
-                    || !route.Succeeded
-                    || !route.WorkCell.HasValue
-                    || agent.CellX != route.WorkCell.Value.X
-                    || agent.CellY != route.WorkCell.Value.Y)
+                        out AgentViewModel? agent))
                 {
                     continue;
                 }
 
-                Result result = AdvanceAtWorkCell(job, tick);
+                Result result;
+                if (job.Definition is HaulJobDefinition)
+                {
+                    result = AdvanceHaulingAtTarget(job, agent, tick);
+                }
+                else if (_routePlans.TryGetValue(
+                        job.Id,
+                        out TerrainWorkRoutePlan? route)
+                    && route.Succeeded
+                    && route.WorkCell.HasValue
+                    && agent.CellX == route.WorkCell.Value.X
+                    && agent.CellY == route.WorkCell.Value.Y)
+                {
+                    result = AdvanceAtWorkCell(job, tick);
+                }
+                else
+                {
+                    continue;
+                }
+
                 if (result.IsFailure)
                 {
                     return result;
