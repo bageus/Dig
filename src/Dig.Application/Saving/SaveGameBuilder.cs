@@ -175,6 +175,17 @@ public sealed class SaveGameBuilder
                 };
             }
 
+            if (building.PackingPlan is not null)
+            {
+                saved.PackingPlan = new BuildingPackingPlanSaveData
+                {
+                    JobId = building.PackingPlan.JobId.ToString(),
+                    OutputStackId = building.PackingPlan.OutputStackId.ToString(),
+                    CompletedWork = building.PackingPlan.CompletedWork,
+                    CommitState = (int)building.PackingPlan.CommitState,
+                };
+            }
+
             data.Buildings.Add(saved);
         }
 
