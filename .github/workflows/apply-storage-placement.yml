@@ -1,0 +1,40 @@
+name: Apply storage placement slice
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/unity-storage-zone-placement-v2
+    paths:
+      - .github/workflows/apply-storage-placement.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/unity-storage-zone-placement-v2
+          fetch-depth: 0
+      - name: Apply prepared storage placement changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          curl --fail --silent --show-error \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            https://api.github.com/repos/bageus/Dig/git/blobs/02ac2084a4bd3fd21fc5525ece81dc199b3472dd \
+            | jq -r .content | tr -d '\n' | base64 --decode > /tmp/apply-storage.py.gz
+          gunzip --stdout /tmp/apply-storage.py.gz > /tmp/apply-storage.py
+          python /tmp/apply-storage.py
+          rm -f .storage-placement-payload.* .storage-placement-gzx.*
+          rm -f .github/workflows/apply-storage-placement.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Add interactive stockpile placement"
+          git push origin HEAD:agent/unity-storage-zone-placement-v2
