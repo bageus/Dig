@@ -44,15 +44,30 @@ public sealed partial class WorldState
                     "A world chunk is duplicated or has inconsistent metadata."));
             }
 
+            CellBounds bounds = layout.GetBounds(chunk.Id);
             foreach (CellSnapshot cell in chunk.Cells)
             {
+                bool belongsToChunk = cell.Id.X >= bounds.MinX
+                    && cell.Id.X < bounds.MaxXExclusive
+                    && cell.Id.Y >= bounds.MinY
+                    && cell.Id.Y < bounds.MaxYExclusive;
                 if (!snapshot.Size.Contains(cell.Id)
+                    || !belongsToChunk
                     || !materials.Contains(cell.State.MaterialId))
                 {
-                    return Result<WorldState>.Failure(
-                        !snapshot.Size.Contains(cell.Id)
-                            ? WorldErrors.CellOutOfBounds
-                            : WorldErrors.UnknownMaterial);
+                    if (!snapshot.Size.Contains(cell.Id))
+                    {
+                        return Result<WorldState>.Failure(WorldErrors.CellOutOfBounds);
+                    }
+
+                    if (!belongsToChunk)
+                    {
+                        return Result<WorldState>.Failure(new DomainError(
+                            "world.restore.cell_wrong_chunk",
+                            "A saved cell is stored under the wrong chunk."));
+                    }
+
+                    return Result<WorldState>.Failure(WorldErrors.UnknownMaterial);
                 }
 
                 int index = checked((cell.Id.Y * snapshot.Size.Width) + cell.Id.X);
