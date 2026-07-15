@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Каталог хранит согласованные design-правила зданий, продукции, оружия, материалов, еды, алкоголя, навыков, HUD и размещения. Runtime-реализация остаётся в Domain/Application системах.
+Каталог хранит согласованные design-правила зданий, продукции, оружия, материалов, еды, алкоголя, навыков, дерева технологий, HUD и размещения. Runtime-реализация остаётся в Domain/Application системах.
 
 Главные feature-задачи:
 
@@ -11,17 +11,21 @@
 - питание — #96;
 - навыки — #103;
 - копание и ресурсы — #87;
-- HUD гномов, выбор и уведомления — #113.
+- HUD гномов, выбор и уведомления — #113;
+- полное дерево технологий — #126;
+- системы, найденные в legacy scripts, — #127–#147 и #149–#152.
 
 ## Файлы
 
 - [`buildings.md`](buildings.md) — здания, сервисы, кухни и production capabilities;
 - [`products.md`](products.md) — physical outputs и переработка;
-- [`weapons-and-shields.md`](weapons-and-shields.md) — оружие и щиты;
+- [`weapons-and-shields.md`](weapons-and-shields.md) — боевое снаряжение;
 - [`materials.md`](materials.md) — материалы, руды, terrain и deposits;
 - [`food.md`](food.md) — блюда, укусы и разнообразие;
 - [`alcohol.md`](alcohol.md) — напитки, бар и effects;
 - [`skills.md`](skills.md) — skill IDs;
+- [`../technology-tree.md`](../technology-tree.md) — authoritative согласованная часть дерева технологий;
+- [`../scripts-system-gap-backlog.md`](../scripts-system-gap-backlog.md) — индекс найденных систем и созданных issues;
 - [`../skills-and-progression.md`](../skills-and-progression.md) — каталог 12 навыков, capacity 100→200 и grants;
 - [`../resident-inventory-expansion.md`](../resident-inventory-expansion.md) — личный inventory, expansions и BuildingBox input;
 - [`../resident-hud-selection-and-notifications.md`](../resident-hud-selection-and-notifications.md) — roster, panels, input и notifications;
@@ -41,16 +45,18 @@
 5. Inventory владеет items, quantities, locations и boxes.
 6. Buildings владеет plans/buildings/functions, но не копирует items.
 7. Production владеет orders; RecipeDefinition — inputs/outputs.
-8. Agents/Skills владеет 12 skill values и TotalSkillCapacity.
-9. Jobs владеет work lifecycle и reservations.
-10. Society/Lifecycle владеет sex, age, birth/death и family rules.
-11. Presentation хранит только local selection, panels, hover, preview, scroll и ticker animation.
-12. Localized strings не являются state keys.
-13. Typed IDs разных систем не смешиваются.
-14. Изменение stable ID требует migration.
-15. Конфликты фиксируются как Q-XXX.
-16. UI не зависит только от цвета.
-17. Один BuildingDefinition использует только одну construction policy.
+8. Technology владеет состоянием исследований и открытиями.
+9. Agents/Skills владеет 12 skill values и TotalSkillCapacity.
+10. Jobs владеет work lifecycle и reservations.
+11. Society/Lifecycle владеет sex, age, birth/death и family rules.
+12. Presentation хранит только local selection, panels, hover, preview, scroll и ticker animation.
+13. Localized strings не являются state keys.
+14. Typed IDs разных систем не смешиваются.
+15. Изменение stable ID требует migration.
+16. Конфликты фиксируются как Q-XXX.
+17. UI не зависит только от цвета.
+18. Один BuildingDefinition использует только одну construction policy.
+19. Legacy scripts являются источником кандидатов, но не автоматически утверждённым balance/content.
 
 ## Принятые решения
 
@@ -65,6 +71,24 @@
 - hauling only by demand/filter and revealed source;
 - iron/metal = material.iron;
 - official names «Песчаник» and «Рудная порода».
+
+### Технологии
+
+- skill threshold не открывает technology автоматически;
+- eligibility появляется, когда один живой гном одновременно удовлетворяет всем требованиям;
+- игрок запускает изучение иконкой в соответствующей постройке;
+- недоступная иконка оранжевая, доступная белая, но status дублируется текстом;
+- Лесопилка и Пилорама — разные узлы;
+- Пилорама производит Винокурню и Университет;
+- Мебельная мастерская производит три игровые комнаты;
+- Оружейная кузница изучает и производит Арсенал;
+- Плавильня из scripts = Горн;
+- Литейный цех — продвинутая плавка железа/золота на угле;
+- Песчаник обрабатывает кристаллическую руду;
+- водолазный колокол исключён;
+- `Dojo` трактуется как направление «Кулачный бой»;
+- «Грибной самогон» = legacy name Огненной воды, отдельного ItemId нет;
+- продолжение дерева после согласованного участка остаётся `TBD_OWNER`.
 
 ### HUD и resident
 
@@ -113,26 +137,37 @@
 
 - Q-014 — balance values;
 - Q-015–Q-018 — food scaling, variety, interruption и kitchen workers;
-- Q-019–Q-021 — mixed grants, weapon/defense и timing;
-- Q-029 — deterministic skill redistribution formula.
+- Q-019–Q-021 — mixed grants, equipment/defense и timing;
+- Q-029 — deterministic skill redistribution formula;
+- research duration/cost/worker и policy потери requirements во время progress — описаны как TBD в `technology-tree.md`/#128.
 
 ## Связанные issues
 
+### Технологии и новые system specs
+
+- #126 — authoritative дерево технологий;
+- #127 — энергия;
+- #128 — skill eligibility и запуск исследования;
+- #129–#147, #149–#152 — отдельные функции и системы из legacy scripts;
+- полный индекс — [`../scripts-system-gap-backlog.md`](../scripts-system-gap-backlog.md).
+
 ### Здания и сервисы
 
-- #75 — BuildingBox recipes;
+- #75 — BuildingBox recipes и подтверждённые мастерские;
 - #76–#82 — guard, arsenal, leisure, cinema, alcohol, bar, university;
 - #108 — furnace/foundry/crystal processor;
 - #118 — universal box placement/packing.
 
 ### Еда
 
-- #97–#101.
+- #97–#101;
+- #144 — вкусовые профили и выбор еды.
 
 ### Навыки
 
 - #103–#107;
-- #117.
+- #117;
+- #128.
 
 ### Копание и ресурсы
 
