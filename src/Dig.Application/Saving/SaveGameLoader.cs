@@ -169,9 +169,9 @@ public sealed partial class SaveGameLoader
             }
 
             EntityId stackId = EntityId.Parse(savedStack.StackId);
-            List<ItemReservationSnapshot> reservations = savedStack.Reservations
+            List<ItemQuantityReservationSnapshot> reservations = savedStack.Reservations
                 .OrderBy(item => item.JobId, StringComparer.Ordinal)
-                .Select(item => new ItemReservationSnapshot(
+                .Select(item => new ItemQuantityReservationSnapshot(
                     EntityId.Parse(item.JobId),
                     item.Quantity))
                 .ToList();
@@ -199,13 +199,11 @@ public sealed partial class SaveGameLoader
             ItemLocationKind.World => ItemLocation.InWorld(ParseCell(data)),
             ItemLocationKind.AgentInventory => ItemLocation.InAgent(
                 EntityId.Parse(RequireOwner(data))),
+            ItemLocationKind.BuildingInventory => ItemLocation.InBuilding(
+                EntityId.Parse(RequireOwner(data))),
             ItemLocationKind.Storage => ItemLocation.InStorage(
                 EntityId.Parse(RequireOwner(data))),
-            ItemLocationKind.Building => ItemLocation.InBuilding(
-                EntityId.Parse(RequireOwner(data))),
             ItemLocationKind.Equipped => ItemLocation.EquippedBy(
-                EntityId.Parse(RequireOwner(data))),
-            ItemLocationKind.Transit => ItemLocation.InTransit(
                 EntityId.Parse(RequireOwner(data))),
             _ => throw new InvalidOperationException("Unsupported item location kind."),
         };
