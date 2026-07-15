@@ -116,6 +116,7 @@ internal static class HeadlessResidentSettlementScenario
                 "Headless residents did not complete deterministic food and sleep cycles.");
         }
 
+        HeadlessCombatScenario.Run(journal, startTick + 7);
         return 2;
     }
 
