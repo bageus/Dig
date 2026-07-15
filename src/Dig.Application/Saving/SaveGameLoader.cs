@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
@@ -28,6 +29,15 @@ public sealed partial class SaveGameLoader
         SaveGameDocument document,
         MaterialCatalog materials,
         ItemCatalog items)
+    {
+        return Load(document, materials, items, buildingCatalog: null);
+    }
+
+    public Result<LoadedGameState> Load(
+        SaveGameDocument document,
+        MaterialCatalog materials,
+        ItemCatalog items,
+        BuildingCatalog? buildingCatalog)
     {
         if (document is null)
         {
@@ -65,7 +75,24 @@ public sealed partial class SaveGameLoader
                 return Result<LoadedGameState>.Failure(jobs.Error!);
             }
 
+            Result<BuildingsState> buildings = BuildBuildingsState(
+                document.Buildings,
+                buildingCatalog);
+            if (buildings.IsFailure)
+            {
+                return Result<LoadedGameState>.Failure(buildings.Error!);
+            }
+
             Result references = ValidateCrossReferences(inventory.Value, jobs.Value);
+            if (references.IsFailure)
+            {
+                return Result<LoadedGameState>.Failure(references.Error!);
+            }
+
+            references = ValidateBuildingReferences(
+                inventory.Value,
+                jobs.Value,
+                buildings.Value);
             if (references.IsFailure)
             {
                 return Result<LoadedGameState>.Failure(references.Error!);
@@ -76,6 +103,7 @@ public sealed partial class SaveGameLoader
                 world.Value,
                 inventory.Value,
                 jobs.Value,
+                buildings.Value,
                 migration.Value));
         }
         catch (KeyNotFoundException)
