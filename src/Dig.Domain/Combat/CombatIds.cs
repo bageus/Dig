@@ -43,6 +43,16 @@ public readonly struct CombatActionId : IEquatable<CombatActionId>, IComparable<
     {
         return _value ?? string.Empty;
     }
+
+    public static bool operator ==(CombatActionId left, CombatActionId right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(CombatActionId left, CombatActionId right)
+    {
+        return !left.Equals(right);
+    }
 }
 
 public readonly struct WeaponProfileId : IEquatable<WeaponProfileId>, IComparable<WeaponProfileId>
@@ -85,6 +95,16 @@ public readonly struct WeaponProfileId : IEquatable<WeaponProfileId>, IComparabl
     {
         return _value ?? string.Empty;
     }
+
+    public static bool operator ==(WeaponProfileId left, WeaponProfileId right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(WeaponProfileId left, WeaponProfileId right)
+    {
+        return !left.Equals(right);
+    }
 }
 
 public readonly struct CombatStatusId : IEquatable<CombatStatusId>, IComparable<CombatStatusId>
@@ -126,6 +146,16 @@ public readonly struct CombatStatusId : IEquatable<CombatStatusId>, IComparable<
     public override string ToString()
     {
         return _value ?? string.Empty;
+    }
+
+    public static bool operator ==(CombatStatusId left, CombatStatusId right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(CombatStatusId left, CombatStatusId right)
+    {
+        return !left.Equals(right);
     }
 }
 }
