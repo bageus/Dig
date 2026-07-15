@@ -12,6 +12,7 @@ using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Navigation;
+using Dig.Presentation.World;
 
 namespace Dig.Unity
 {
