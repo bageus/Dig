@@ -89,7 +89,7 @@ public sealed class SaveGameBuilder
                 Quantity = stack.Quantity,
                 Location = BuildLocation(stack.Location),
             };
-            foreach (ItemReservationSnapshot reservation in stack.Reservations
+            foreach (ItemQuantityReservationSnapshot reservation in stack.Reservations
                 .OrderBy(item => item.JobId.ToString(), StringComparer.Ordinal))
             {
                 saved.Reservations.Add(new ItemReservationSaveData
@@ -135,7 +135,7 @@ public sealed class SaveGameBuilder
                 AgentId = reservation.AgentId.ToString(),
                 Kind = (int)reservation.Key.Kind,
                 Value = reservation.Key.Value,
-                CreatedTick = reservation.CreatedTick,
+                AcquiredTick = reservation.AcquiredTick,
             });
         }
 
@@ -147,9 +147,9 @@ public sealed class SaveGameBuilder
         return new ItemLocationSaveData
         {
             Kind = (int)location.Kind,
-            OwnerId = location.OwnerId?.ToString(),
-            CellX = location.CellId?.X,
-            CellY = location.CellId?.Y,
+            OwnerId = location.HasOwner ? location.OwnerId.ToString() : null,
+            CellX = location.HasCell ? location.CellId.X : (int?)null,
+            CellY = location.HasCell ? location.CellId.Y : (int?)null,
         };
     }
 
