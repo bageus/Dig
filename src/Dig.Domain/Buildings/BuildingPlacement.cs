@@ -22,6 +22,14 @@ public static class BuildingErrors
         "buildings.invalid_status",
         "The building cannot perform that transition from its current status.");
 
+    public static readonly DomainError WrongConstructionPolicy = new DomainError(
+        "buildings.construction_policy.invalid",
+        "The requested operation does not match the building construction policy.");
+
+    public static readonly DomainError BoxPlanNotFound = new DomainError(
+        "buildings.box_plan.not_found",
+        "The requested building has no box construction plan.");
+
     public static readonly DomainError PlacementOutOfBounds = new DomainError(
         "buildings.placement.out_of_bounds",
         "Part of the building footprint is outside the world.");
@@ -126,7 +134,9 @@ public sealed class BuildingPlacementValidator
             .ToDictionary(cell => cell.Id);
         if (footprint.Any(cell => cells[cell].IsSolid))
         {
-            return BuildingPlacementResult.Failure(BuildingErrors.PlacementSolid, footprint);
+            return BuildingPlacementResult.Failure(
+                BuildingErrors.PlacementSolid,
+                footprint);
         }
 
         if (footprint.Any(cell => !cells[cell].State.IsExplored))
@@ -139,7 +149,9 @@ public sealed class BuildingPlacementValidator
         HashSet<CellId> occupied = new HashSet<CellId>(occupiedCells);
         if (footprint.Any(occupied.Contains))
         {
-            return BuildingPlacementResult.Failure(BuildingErrors.PlacementOccupied, footprint);
+            return BuildingPlacementResult.Failure(
+                BuildingErrors.PlacementOccupied,
+                footprint);
         }
 
         HashSet<CellId> reachable = new HashSet<CellId>(reachableCells);

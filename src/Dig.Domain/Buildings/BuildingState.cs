@@ -8,7 +8,7 @@ using Dig.Domain.World;
 namespace Dig.Domain.Buildings
 {
 
-public sealed class BuildingsState : AggregateRoot
+public sealed partial class BuildingsState : AggregateRoot
 {
     private readonly Dictionary<EntityId, BuildingProjectState> _buildings =
         new Dictionary<EntityId, BuildingProjectState>();
@@ -30,6 +30,11 @@ public sealed class BuildingsState : AggregateRoot
         if (definition is null || placement is null)
         {
             throw new ArgumentNullException(nameof(definition));
+        }
+
+        if (definition.ConstructionPolicy != BuildingConstructionPolicyKind.LegacyMaterials)
+        {
+            return Result.Failure(BuildingErrors.WrongConstructionPolicy);
         }
 
         if (!placement.Succeeded)
@@ -117,6 +122,11 @@ public sealed class BuildingsState : AggregateRoot
         if (project is null)
         {
             return Result.Failure(BuildingErrors.NotFound);
+        }
+
+        if (project.Definition.ConstructionPolicy != BuildingConstructionPolicyKind.LegacyMaterials)
+        {
+            return Result.Failure(BuildingErrors.WrongConstructionPolicy);
         }
 
         if (project.Status != BuildingStatus.ReadyToComplete)
@@ -208,21 +218,21 @@ public sealed class BuildingsState : AggregateRoot
 
     public BuildingSnapshot? Get(EntityId id)
     {
-        return Find(id)?.CreateSnapshot();
+        BuildingProjectState? project = Find(id);
+        return project is null ? null : CreateSnapshot(project);
     }
 
     public IReadOnlyList<BuildingSnapshot> GetAll()
     {
         return new ReadOnlyCollection<BuildingSnapshot>(_buildings.Values
-            .Select(value => value.CreateSnapshot())
+            .Select(CreateSnapshot)
             .OrderBy(value => value.Id.ToString(), StringComparer.Ordinal)
             .ToArray());
     }
 
     public IReadOnlyList<CellId> GetOccupiedCells()
     {
-        return new ReadOnlyCollection<CellId>(_buildings.Values
-            .Select(value => value.CreateSnapshot())
+        return new ReadOnlyCollection<CellId>(GetAll()
             .Where(value => value.IsActive)
             .SelectMany(value => value.Footprint)
             .Distinct()
@@ -245,6 +255,7 @@ public sealed class BuildingsState : AggregateRoot
         }
 
         bool canCancel = project.Status is BuildingStatus.AwaitingMaterials
+            or BuildingStatus.AwaitingBox
             or BuildingStatus.ReadyToBuild
             or BuildingStatus.UnderConstruction
             or BuildingStatus.ReadyToComplete;
