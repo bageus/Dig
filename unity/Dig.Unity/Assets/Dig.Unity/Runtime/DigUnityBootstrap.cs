@@ -90,6 +90,7 @@ namespace Dig.Unity
                 GetOrAdd<DigStockpileRenderer>(gameObject);
             DigNavigationRouteRenderer routeRenderer =
                 GetOrAdd<DigNavigationRouteRenderer>(gameObject);
+            GetOrAdd<DigOverlayHotkeys>(gameObject);
             DigWorldInteraction interaction = GetOrAdd<DigWorldInteraction>(gameObject);
             DigAgentSimulationDriver simulation =
                 GetOrAdd<DigAgentSimulationDriver>(gameObject);
