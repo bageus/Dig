@@ -74,14 +74,13 @@ public sealed partial class JobSystem
                 return Invalid("Assigned job reservations must contain job and agent keys.");
             }
 
-            Result reserved = system._reservations.ReserveAll(
-                job.Id,
-                job.AssignedAgentId.Value,
-                values.Select(item => item.Key),
-                values.Min(item => item.CreatedTick));
-            if (reserved.IsFailure)
+            foreach (ReservationSnapshot reservation in values)
             {
-                return Result<JobSystem>.Failure(reserved.Error!);
+                Result restoredReservation = system._reservations.Restore(reservation);
+                if (restoredReservation.IsFailure)
+                {
+                    return Result<JobSystem>.Failure(restoredReservation.Error!);
+                }
             }
         }
 
