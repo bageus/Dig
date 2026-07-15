@@ -23,7 +23,7 @@ public sealed class SaveGameRoundTripTests
     private static readonly CellId Target = new CellId(1, 1);
 
     [Fact]
-    public void Round_trip_restores_world_inventory_jobs_and_next_transition()
+    public void Round_trip_completes_the_same_digging_vertical_slice()
     {
         MaterialCatalog materials = CreateMaterials();
         ItemCatalog items = CreateItems();
@@ -54,14 +54,18 @@ public sealed class SaveGameRoundTripTests
         byte[] secondBytes = codec.Serialize(rebuilt);
         Assert.Equal(firstBytes, secondBytes);
 
-        Assert.True(context.Jobs.Start(JobId, tick: 11).IsSuccess);
-        Assert.True(loaded.Jobs.Start(JobId, tick: 11).IsSuccess);
-        Assert.Equal(
-            context.Jobs.Get(JobId)!.Stage,
-            loaded.Jobs.Get(JobId)!.Stage);
-        Assert.Equal(
-            context.Jobs.Get(JobId)!.Status,
-            loaded.Jobs.Get(JobId)!.Status);
+        CompleteDigging(context.World, context.Inventory, context.Jobs);
+        CompleteDigging(loaded.World, loaded.Inventory, loaded.Jobs);
+
+        AssertWorldEqual(context.World.CreateSnapshot(), loaded.World.CreateSnapshot());
+        AssertInventoryEqual(
+            context.Inventory.CreateSnapshot(),
+            loaded.Inventory.CreateSnapshot());
+        AssertJobsEqual(context.Jobs, loaded.Jobs);
+        Assert.Equal(Air, loaded.World.GetCell(Target).Value.State.MaterialId);
+        Assert.Equal(JobStatus.Completed, loaded.Jobs.Get(JobId)!.Status);
+        Assert.Empty(loaded.Jobs.GetReservations());
+        Assert.Equal(0, loaded.Inventory.GetStack(StackId)!.ReservedQuantity);
     }
 
     [Fact]
@@ -97,6 +101,30 @@ public sealed class SaveGameRoundTripTests
         {
             Directory.Delete(directory, recursive: true);
         }
+    }
+
+    private static void CompleteDigging(
+        WorldState world,
+        InventoryState inventory,
+        JobSystem jobs)
+    {
+        Assert.True(jobs.Start(JobId, tick: 11).IsSuccess);
+        Assert.True(jobs.AdvanceStage(JobId, tick: 12).IsSuccess);
+        CellSnapshot current = world.GetCell(Target).Value;
+        Assert.True(world.ApplyTerrainChanges(new[]
+        {
+            new TerrainChange(
+                Target,
+                new CellState(
+                    Air,
+                    CellDesignation.None,
+                    current.State.IsExplored,
+                    damage: 0,
+                    current.State.Temperature)),
+        }, tick: 13).IsSuccess);
+        Assert.True(jobs.AdvanceStage(JobId, tick: 13).IsSuccess);
+        Assert.True(jobs.AdvanceStage(JobId, tick: 14).IsSuccess);
+        inventory.ReleaseReservations(JobId, tick: 14);
     }
 
     private static SaveGameContext CreateContext(
@@ -220,6 +248,9 @@ public sealed class SaveGameRoundTripTests
             expected.Stacks[0].Reservations.Select(item => item.JobId).ToArray(),
             actual.Stacks[0].Reservations.Select(item => item.JobId).ToArray());
         Assert.Equal(
+            expected.Stacks[0].Reservations.Select(item => item.Quantity).ToArray(),
+            actual.Stacks[0].Reservations.Select(item => item.Quantity).ToArray());
+        Assert.Equal(
             expected.Stacks[0].ReservedQuantity,
             actual.Stacks[0].ReservedQuantity);
     }
@@ -237,6 +268,12 @@ public sealed class SaveGameRoundTripTests
         Assert.Equal(
             expected.GetReservations().Select(item => item.Key).ToArray(),
             actual.GetReservations().Select(item => item.Key).ToArray());
+        Assert.Equal(
+            expected.GetReservations().Select(item => item.AgentId).ToArray(),
+            actual.GetReservations().Select(item => item.AgentId).ToArray());
+        Assert.Equal(
+            expected.GetReservations().Select(item => item.AcquiredTick).ToArray(),
+            actual.GetReservations().Select(item => item.AcquiredTick).ToArray());
     }
 
     private static string CreateTempDirectory()
