@@ -46,6 +46,14 @@ public sealed class SaveGameRoundTripTests
             loaded.Inventory.CreateSnapshot());
         AssertJobsEqual(context.Jobs, loaded.Jobs);
 
+        SaveGameDocument rebuilt = builder.Build(new SaveGameContext(
+            loaded.Metadata,
+            loaded.World,
+            loaded.Inventory,
+            loaded.Jobs));
+        byte[] secondBytes = codec.Serialize(rebuilt);
+        Assert.Equal(firstBytes, secondBytes);
+
         Assert.True(context.Jobs.Start(JobId, tick: 11).IsSuccess);
         Assert.True(loaded.Jobs.Start(JobId, tick: 11).IsSuccess);
         Assert.Equal(
@@ -54,14 +62,6 @@ public sealed class SaveGameRoundTripTests
         Assert.Equal(
             context.Jobs.Get(JobId)!.Status,
             loaded.Jobs.Get(JobId)!.Status);
-
-        SaveGameDocument rebuilt = builder.Build(new SaveGameContext(
-            loaded.Metadata,
-            loaded.World,
-            loaded.Inventory,
-            loaded.Jobs));
-        byte[] secondBytes = codec.Serialize(rebuilt);
-        Assert.Equal(firstBytes, secondBytes);
     }
 
     [Fact]
