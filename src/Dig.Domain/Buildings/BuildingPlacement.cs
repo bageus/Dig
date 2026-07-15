@@ -88,13 +88,91 @@ public sealed class BuildingPlacementResult
         return new BuildingPlacementResult(true, null, footprint, workPosition);
     }
 
-    public static BuildingPlacementResult Failure(DomainError error)
+    public static BuildingPlacementResult Failure(
+        DomainError error,
+        IReadOnlyCollection<CellId> footprint)
     {
-        return new BuildingPlacementResult(
-            false,
-            error ?? throw new ArgumentNullException(nameof(error)),
-            Array.Empty<CellId>(),
-            default);
+        return new BuildingPlacementResult(false, error, footprint, default);
+    }
+}
+
+public sealed class BuildingPlacementValidator
+{
+    public BuildingPlacementResult Validate(
+        BuildingDefinition definition,
+        CellId origin,
+        BuildingOrientation orientation,
+        WorldSnapshot world,
+        IReadOnlyCollection<CellId> occupiedCells,
+        IReadOnlyCollection<CellId> reachableCells)
+    {
+        if (definition is null)
+        {
+            throw new ArgumentNullException(nameof(definition));
+        }
+
+        if (world is null)
+        {
+            throw new ArgumentNullException(nameof(world));
+        }
+
+        if (occupiedCells is null || reachableCells is null)
+        {
+            throw new ArgumentNullException(nameof(occupiedCells));
+        }
+
+        IReadOnlyList<CellId> footprint = definition.ResolveFootprint(origin, orientation);
+        if (footprint.Any(cell => !world.Size.Contains(cell)))
+        {
+            return BuildingPlacementResult.Failure(
+                BuildingErrors.PlacementOutOfBounds,
+                footprint);
+        }
+
+        Dictionary<CellId, CellSnapshot> cells = world.Chunks
+            .SelectMany(chunk => chunk.Cells)
+            .ToDictionary(cell => cell.Id);
+        if (footprint.Any(cell => cells[cell].IsSolid))
+        {
+            return BuildingPlacementResult.Failure(
+                BuildingErrors.PlacementSolid,
+                footprint);
+        }
+
+        if (footprint.Any(cell => !cells[cell].State.IsExplored))
+        {
+            return BuildingPlacementResult.Failure(
+                BuildingErrors.PlacementUnexplored,
+                footprint);
+        }
+
+        HashSet<CellId> occupied = new HashSet<CellId>(occupiedCells);
+        if (footprint.Any(occupied.Contains))
+        {
+            return BuildingPlacementResult.Failure(
+                BuildingErrors.PlacementOccupied,
+                footprint);
+        }
+
+        HashSet<CellId> reachable = new HashSet<CellId>(reachableCells);
+        CellId? workPosition = definition
+            .ResolveWorkPositions(origin, orientation)
+            .Where(world.Size.Contains)
+            .Where(cell => cells.TryGetValue(cell, out CellSnapshot snapshot)
+                && !snapshot.IsSolid
+                && snapshot.State.IsExplored)
+            .Where(reachable.Contains)
+            .OrderBy(cell => cell)
+            .Cast<CellId?>()
+            .FirstOrDefault();
+        if (!workPosition.HasValue)
+        {
+            return BuildingPlacementResult.Failure(
+                BuildingErrors.NoReachableWorkPosition,
+                footprint);
+        }
+
+        return BuildingPlacementResult.Success(footprint, workPosition.Value);
     }
 }
 }
