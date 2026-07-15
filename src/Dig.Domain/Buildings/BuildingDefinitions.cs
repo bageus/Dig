@@ -156,7 +156,8 @@ public sealed class BuildingDefinition
         IEnumerable<CellOffset> workPositions,
         IEnumerable<BuildingMaterialRequirement> materials,
         int requiredWork,
-        int maximumDurability)
+        int maximumDurability,
+        BuildingBoxPolicy? boxPolicy = null)
     {
         if (id.IsEmpty)
         {
@@ -170,7 +171,14 @@ public sealed class BuildingDefinition
 
         _footprint = NormalizeOffsets(footprint, nameof(footprint));
         _workPositions = NormalizeOffsets(workPositions, nameof(workPositions));
-        _materials = NormalizeMaterials(materials);
+        _materials = NormalizeMaterials(materials, requireMaterials: boxPolicy is null);
+        if (boxPolicy is not null && _materials.Length != 0)
+        {
+            throw new ArgumentException(
+                "A building cannot use box and legacy material construction together.",
+                nameof(materials));
+        }
+
         if (requiredWork <= 0 || maximumDurability <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(requiredWork));
@@ -180,6 +188,7 @@ public sealed class BuildingDefinition
         Name = name.Trim();
         RequiredWork = requiredWork;
         MaximumDurability = maximumDurability;
+        BoxPolicy = boxPolicy;
     }
 
     public BuildingDefinitionId Id { get; }
@@ -189,6 +198,12 @@ public sealed class BuildingDefinition
     public int RequiredWork { get; }
 
     public int MaximumDurability { get; }
+
+    public BuildingBoxPolicy? BoxPolicy { get; }
+
+    public BuildingConstructionPolicyKind ConstructionPolicy => BoxPolicy is null
+        ? BuildingConstructionPolicyKind.LegacyMaterials
+        : BuildingConstructionPolicyKind.BuildingBox;
 
     public IReadOnlyList<CellOffset> Footprint =>
         new ReadOnlyCollection<CellOffset>(_footprint);
@@ -238,7 +253,8 @@ public sealed class BuildingDefinition
     }
 
     private static BuildingMaterialRequirement[] NormalizeMaterials(
-        IEnumerable<BuildingMaterialRequirement> values)
+        IEnumerable<BuildingMaterialRequirement> values,
+        bool requireMaterials)
     {
         if (values is null)
         {
@@ -252,9 +268,9 @@ public sealed class BuildingDefinition
                 checked(group.Sum(value => value.Quantity))))
             .OrderBy(value => value.ItemId)
             .ToArray();
-        if (result.Length == 0)
+        if (requireMaterials && result.Length == 0)
         {
-            throw new ArgumentException("A building needs at least one material.", nameof(values));
+            throw new ArgumentException("A legacy building needs at least one material.", nameof(values));
         }
 
         return result;
