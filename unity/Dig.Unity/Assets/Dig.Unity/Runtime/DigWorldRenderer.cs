@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Dig.Presentation.World;
 using UnityEngine;
@@ -9,33 +10,55 @@ namespace Dig.Unity
     {
         private readonly Dictionary<Vector2Int, DigCellVisual> _cells =
             new Dictionary<Vector2Int, DigCellVisual>();
+        private readonly Dictionary<Vector2Int, Transform> _chunks =
+            new Dictionary<Vector2Int, Transform>();
+        private readonly HashSet<Vector2Int> _visibleCells =
+            new HashSet<Vector2Int>();
+        private readonly HashSet<Vector2Int> _visibleChunks =
+            new HashSet<Vector2Int>();
+        private readonly List<Vector2Int> _removedCells =
+            new List<Vector2Int>();
+        private readonly List<Vector2Int> _removedChunks =
+            new List<Vector2Int>();
         private Transform? _visualRoot;
         private DigCellVisual? _selected;
 
         public void Render(WorldViewModel world)
         {
+            if (world == null)
+            {
+                throw new ArgumentNullException(nameof(world));
+            }
+
             Vector2Int? selectedCoordinates = _selected == null
                 ? (Vector2Int?)null
                 : new Vector2Int(_selected.Model.X, _selected.Model.Y);
-            ClearVisuals();
-            _visualRoot = new GameObject("World Visuals").transform;
-            _visualRoot.SetParent(transform, worldPositionStays: false);
+            EnsureRoot();
+            _visibleCells.Clear();
+            _visibleChunks.Clear();
 
             foreach (WorldChunkViewModel chunk in world.Chunks)
             {
-                Transform chunkRoot = new GameObject(
-                    $"Chunk {chunk.X},{chunk.Y} v{chunk.Version}").transform;
-                chunkRoot.SetParent(_visualRoot, worldPositionStays: false);
+                Vector2Int chunkKey = new Vector2Int(chunk.X, chunk.Y);
+                _visibleChunks.Add(chunkKey);
+                Transform chunkRoot = GetOrCreateChunkRoot(chunkKey, chunk.Version);
                 foreach (WorldCellViewModel cell in chunk.Cells)
                 {
-                    CreateCell(chunkRoot, cell);
+                    Vector2Int cellKey = new Vector2Int(cell.X, cell.Y);
+                    _visibleCells.Add(cellKey);
+                    if (!_cells.TryGetValue(cellKey, out DigCellVisual? visual))
+                    {
+                        visual = CreateCell(chunkRoot);
+                        _cells.Add(cellKey, visual);
+                    }
+
+                    ApplyCell(visual, cell);
                 }
             }
 
-            if (selectedCoordinates.HasValue)
-            {
-                SelectAt(selectedCoordinates.Value.x, selectedCoordinates.Value.y);
-            }
+            RemoveMissingCells();
+            RemoveMissingChunks();
+            RestoreSelection(selectedCoordinates);
         }
 
         public bool TryGetCell(RaycastHit hit, out DigCellVisual cell)
@@ -69,17 +92,95 @@ namespace Dig.Unity
                 : Select(null);
         }
 
-        private void CreateCell(Transform parent, WorldCellViewModel cell)
+        private void EnsureRoot()
+        {
+            if (_visualRoot != null)
+            {
+                return;
+            }
+
+            _visualRoot = new GameObject("World Visuals").transform;
+            _visualRoot.SetParent(transform, worldPositionStays: false);
+        }
+
+        private Transform GetOrCreateChunkRoot(Vector2Int key, long version)
+        {
+            if (!_chunks.TryGetValue(key, out Transform? root))
+            {
+                root = new GameObject().transform;
+                root.SetParent(_visualRoot, worldPositionStays: false);
+                _chunks.Add(key, root);
+            }
+
+            root.name = $"Chunk {key.x},{key.y} v{version}";
+            return root;
+        }
+
+        private static DigCellVisual CreateCell(Transform parent)
         {
             GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            visual.name = $"Cell {cell.X},{cell.Y} [{cell.MaterialId}]";
             visual.transform.SetParent(parent, worldPositionStays: false);
+            return visual.AddComponent<DigCellVisual>();
+        }
+
+        private static void ApplyCell(DigCellVisual visual, WorldCellViewModel cell)
+        {
+            visual.name = $"Cell {cell.X},{cell.Y} [{cell.MaterialId}]";
             float height = cell.IsSolid ? 0.82f : 0.08f;
             visual.transform.localPosition = new Vector3(cell.X, height * 0.5f, cell.Y);
             visual.transform.localScale = new Vector3(0.94f, height, 0.94f);
-            DigCellVisual cellVisual = visual.AddComponent<DigCellVisual>();
-            cellVisual.Configure(cell, ResolveColor(cell));
-            _cells.Add(new Vector2Int(cell.X, cell.Y), cellVisual);
+            visual.Configure(cell, ResolveColor(cell));
+        }
+
+        private void RemoveMissingCells()
+        {
+            _removedCells.Clear();
+            foreach (KeyValuePair<Vector2Int, DigCellVisual> pair in _cells)
+            {
+                if (!_visibleCells.Contains(pair.Key))
+                {
+                    _removedCells.Add(pair.Key);
+                }
+            }
+
+            foreach (Vector2Int key in _removedCells)
+            {
+                DigCellVisual visual = _cells[key];
+                if (_selected == visual)
+                {
+                    _selected = null;
+                }
+
+                _cells.Remove(key);
+                Destroy(visual.gameObject);
+            }
+        }
+
+        private void RemoveMissingChunks()
+        {
+            _removedChunks.Clear();
+            foreach (KeyValuePair<Vector2Int, Transform> pair in _chunks)
+            {
+                if (!_visibleChunks.Contains(pair.Key))
+                {
+                    _removedChunks.Add(pair.Key);
+                }
+            }
+
+            foreach (Vector2Int key in _removedChunks)
+            {
+                Transform root = _chunks[key];
+                _chunks.Remove(key);
+                Destroy(root.gameObject);
+            }
+        }
+
+        private void RestoreSelection(Vector2Int? selectedCoordinates)
+        {
+            if (selectedCoordinates.HasValue)
+            {
+                SelectAt(selectedCoordinates.Value.x, selectedCoordinates.Value.y);
+            }
         }
 
         private static Color ResolveColor(WorldCellViewModel cell)
@@ -104,17 +205,6 @@ namespace Dig.Unity
             }
 
             return new Color(0.35f, 0.40f, 0.30f, 1f);
-        }
-
-        private void ClearVisuals()
-        {
-            _cells.Clear();
-            _selected = null;
-            if (_visualRoot != null)
-            {
-                Destroy(_visualRoot.gameObject);
-                _visualRoot = null;
-            }
         }
     }
 }
