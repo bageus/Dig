@@ -40,6 +40,7 @@ namespace Dig.Unity
                 agents,
                 worldSession.Journal);
             terrainSession.InitializeDynamicDesignations(worldSession.Journal);
+            terrainSession.InitializeHauling(worldSession.Journal);
             terrainSession.PlanMovement(agents);
             IReadOnlyList<JobOverlayViewModel> jobs = terrainSession.LoadJobs();
             IReadOnlyList<WorldItemViewModel> items = terrainSession.LoadItems();
