@@ -55,7 +55,7 @@ public sealed partial class SocietyState : AggregateRoot
 
     public Result UpdateLastKnownPosition(EntityId residentId, CellId position)
     {
-        if (!TryGetResident(residentId, out ResidentSocialState? resident))
+        if (!TryGetResident(residentId, out ResidentSocialState resident))
         {
             return Result.Failure(SocietyErrors.UnknownResident);
         }
@@ -125,7 +125,7 @@ public sealed partial class SocietyState : AggregateRoot
 
     public ResidentSocietySnapshot? GetResident(EntityId residentId)
     {
-        return _residents.TryGetValue(residentId, out ResidentSocialState? resident)
+        return _residents.TryGetValue(residentId, out ResidentSocialState resident)
             ? resident.CreateSnapshot()
             : null;
     }
@@ -146,17 +146,23 @@ public sealed partial class SocietyState : AggregateRoot
 
     internal bool TryGetResident(
         EntityId residentId,
-        out ResidentSocialState? resident)
+        out ResidentSocialState resident)
     {
-        return _residents.TryGetValue(residentId, out resident);
+        if (_residents.TryGetValue(residentId, out ResidentSocialState? found))
+        {
+            resident = found;
+            return true;
+        }
+
+        resident = null!;
+        return false;
     }
 
     internal bool TryGetLivingResident(
         EntityId residentId,
-        out ResidentSocialState? resident)
+        out ResidentSocialState resident)
     {
-        return _residents.TryGetValue(residentId, out resident)
-            && resident.IsAlive;
+        return TryGetResident(residentId, out resident) && resident.IsAlive;
     }
 
     private bool HasAncestorCycle(EntityId residentId, HashSet<EntityId> visiting)
@@ -166,7 +172,7 @@ public sealed partial class SocietyState : AggregateRoot
             return true;
         }
 
-        if (_residents.TryGetValue(residentId, out ResidentSocialState? resident))
+        if (_residents.TryGetValue(residentId, out ResidentSocialState resident))
         {
             if (resident.MotherId.HasValue
                 && HasAncestorCycle(resident.MotherId.Value, visiting))
