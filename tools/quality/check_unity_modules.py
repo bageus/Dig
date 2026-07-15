@@ -9,7 +9,9 @@ LOCK_PATH = ROOT / "unity" / "Dig.Unity" / "Packages" / "packages-lock.json"
 ASMDEF_PATH = ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" / "Runtime" / "Dig.Unity.asmdef"
 
 REQUIRED_MODULES = {
+    "com.unity.modules.audio": "UnityEngine.AudioModule",
     "com.unity.modules.imgui": "UnityEngine.IMGUIModule",
+    "com.unity.modules.inputlegacy": "UnityEngine.InputLegacyModule",
     "com.unity.modules.physics": "UnityEngine.PhysicsModule",
 }
 

@@ -6,7 +6,9 @@
     "Dig.Domain",
     "Dig.Infrastructure",
     "Dig.Presentation.Abstractions",
+    "UnityEngine.AudioModule",
     "UnityEngine.IMGUIModule",
+    "UnityEngine.InputLegacyModule",
     "UnityEngine.PhysicsModule"
   ],
   "autoReferenced": true
