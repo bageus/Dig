@@ -25,6 +25,9 @@ jobs:
       - name: Run architecture, file-size and C# compatibility checks
         run: python tools/quality/check_quality.py
 
+      - name: Validate Unity built-in modules
+        run: python tools/quality/check_unity_modules.py
+
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
