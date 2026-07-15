@@ -2,106 +2,115 @@
 
 ## Назначение
 
-Этот каталог хранит согласованные design-правила для зданий, продукции, оружия, материалов, еды, алкоголя и навыков. Он описывает **что должно происходить в игре**, а runtime-реализация остаётся в соответствующих Domain/Application системах.
+Каталог хранит согласованные design-правила зданий, продукции, оружия, материалов, еды, алкоголя и навыков. Он описывает **что должно происходить в игре**; runtime-реализация остаётся в Domain/Application системах.
 
-Главная рабочая задача расширения зданий и сервисов: [#74](https://github.com/bageus/Dig/issues/74).
+Главные feature-задачи:
 
-Поэтапное питание, рецепты кухонь и разнообразие рациона: [#96](https://github.com/bageus/Dig/issues/96).
-
-Навыки гномов и прогрессия за деятельность: [#103](https://github.com/bageus/Dig/issues/103).
-
-Система копания, шаблонных пещер и ресурсных жил описана в [`../excavation-room-templates-and-deposits.md`](../excavation-room-templates-and-deposits.md). Принятая модель полноценного 3D-мира находится в [`../world-3d-depth.md`](../world-3d-depth.md). Все неоднозначности и решения ведутся в постоянном [`../open-questions.md`](../open-questions.md).
+- здания и сервисы — #74;
+- питание — #96;
+- навыки — #103;
+- копание и ресурсы — #87.
 
 ## Файлы
 
-- [`buildings.md`](buildings.md) — здания, вместимость, работники, кухни и функциональное поведение;
-- [`products.md`](products.md) — производимые предметы, готовые блюда, комплекты зданий и выходы рецептов;
-- [`weapons-and-shields.md`](weapons-and-shields.md) — категории оружия, хранение и аварийная выдача;
-- [`materials.md`](materials.md) — известные материалы, руды, terrain/item/deposit separation;
-- [`food.md`](food.md) — блюда, три укуса, interruption, кухни и разнообразие рациона;
-- [`alcohol.md`](alcohol.md) — напитки, производство, бар и эффекты;
-- [`skills.md`](skills.md) — стабильные идентификаторы навыков и основные источники опыта;
-- [`../skills-and-progression.md`](../skills-and-progression.md) — полная система практического развития и связь с университетом;
-- [`../world-3d-depth.md`](../world-3d-depth.md) — authoritative `X,Y,Z`, глубина `0..3` и миграция 2D;
-- [`../excavation-room-templates-and-deposits.md`](../excavation-room-templates-and-deposits.md) — тоннели, шаблонные пещеры, своды, жилы и выдача добычи;
-- [`../open-questions.md`](../open-questions.md) — вопросы, ответы, статусы и журнал решений.
+- [`buildings.md`](buildings.md) — здания, сервисы, кухни, горн, литейный цех и crystal processor;
+- [`products.md`](products.md) — физические outputs, блюда, алкоголь и переработка руд;
+- [`weapons-and-shields.md`](weapons-and-shields.md) — оружие, щиты и специализированное хранение;
+- [`materials.md`](materials.md) — материалы, руды, грунт и deposits;
+- [`food.md`](food.md) — блюда, укусы и разнообразие рациона;
+- [`alcohol.md`](alcohol.md) — напитки, бар и эффекты;
+- [`skills.md`](skills.md) — skill IDs и источники опыта;
+- [`../skills-and-progression.md`](../skills-and-progression.md) — полная система развития;
+- [`../world-3d-depth.md`](../world-3d-depth.md) — authoritative `X,Y,Z`, глубина `0..3`;
+- [`../excavation-room-templates-and-deposits.md`](../excavation-room-templates-and-deposits.md) — свободная копка, шаблоны и жилы;
+- [`../terrain-resource-output-and-processing.md`](../terrain-resource-output-and-processing.md) — terrain loot tables, руды и переработка;
+- [`../material-demand-and-hauling.md`](../material-demand-and-hauling.md) — спрос, фильтры складов и fog-aware hauling;
+- [`../open-questions.md`](../open-questions.md) — вопросы, ответы и журнал решений.
 
-## Правила ведения каталога
+## Правила ведения
 
-1. Display name не используется как ссылка. Каждое определение получает стабильный content ID.
-2. Числа, явно заданные в design, считаются исходным балансом.
-3. Непредоставленные числа помечаются `TBD` и остаются data-driven. Их нельзя молча придумывать в runtime-коде.
-4. Inventory остаётся единственным владельцем предметов, количества и местоположения.
-5. Buildings владеет runtime-состоянием здания и функциональными местами, но не копирует предметы из Inventory.
-6. World владеет terrain cells `X,Y,Z`, designations и resource-deposit state; visual wall tiles не являются источником истины.
-7. Agents/Skills владеет значениями навыков и capacity; Jobs/Production/Combat публикуют типизированные grants, но не изменяют навыки напрямую.
-8. Production владеет заказами и прогрессом, а RecipeDefinition — входами и выходами.
-9. Jobs/Hauling используют обычные reservations и не создают отдельную систему доставки для конкретного здания или ресурса.
-10. Presentation отображает authoritative snapshots. Полки, стойки, бутылки, оружие, своды, жилы и еда в руках не являются источником истины.
-11. MaterialId terrain, ItemId предмета, AgentSkillId и DepositDefinitionId являются разными типами ссылок.
-12. Начатая трапеза не создаёт второй ItemStack: meal progress принадлежит active action.
-13. Любое изменение content ID, категории, рецепта или ссылки проходит content validation до запуска симуляции.
-14. Новые идеи добавляются сначала в соответствующий файл каталога, затем связываются с GitHub issue.
-15. При обнаружении двойного смысла или конфликта создаётся запись `Q-XXX` в `open-questions.md`; блокирующая schema не утверждается до ответа.
-
-## Статусы данных
-
-- **Подтверждено** — правило или число явно задано и должно быть реализовано;
-- **TBD** — требуется отдельное решение по балансу или UX;
-- **Существующее** — должно использовать уже реализованное определение без дублирования;
-- **Предлагаемый ID** — рекомендуемый стабильный идентификатор, который можно скорректировать до появления сохранений;
-- **Blocked by Q-XXX** — реализация/схема ожидает ответа в реестре вопросов.
+1. Display name не используется как ссылка; определения получают stable IDs.
+2. Явно заданные числа считаются исходным балансом.
+3. Непредоставленные числа остаются data-driven `TBD`.
+4. World владеет terrain/deposit state и координатами `X,Y,Z`.
+5. Inventory владеет предметами, quantities и locations.
+6. Buildings владеет runtime-состоянием здания и functional places, но не копирует предметы.
+7. Production владеет orders/progress; RecipeDefinition — inputs/outputs.
+8. Agents/Skills владеет значениями навыков и capacity.
+9. Jobs/Hauling владеет работами и reservations, но не создаёт отдельные предметы.
+10. Presentation отображает snapshots и не является источником terrain, предметов, еды, оружия или навыков.
+11. `MaterialId`, `DepositDefinitionId`, `ItemId`, `BuildingDefinitionId` и `AgentSkillId` являются разными typed ссылками.
+12. Изменение stable ID требует content migration.
+13. Конфликты и двойные смыслы фиксируются как `Q-XXX`.
 
 ## Принятые решения
 
-- мир является полноценной сеткой `X,Y,Z`;
-- доступная глубина ограничена четырьмя клетками: `Z = 0..3`;
-- «Камень» — навык каменного дела `skill.stonework`, а не предмет или запас ресурса;
-- шаблоны средней, большой и высокой пещеры используют пороги stonework 20/40/60;
-- skill IDs, material IDs и item IDs не сравниваются по display name.
+- мир — полноценная сетка `X,Y,Z`, глубина `Z=0..3`;
+- `Камень` — `skill.stonework`;
+- доступ к шаблонам пещер динамический по текущему максимальному Stonework;
+- трапеция пещеры одинаково проецируется на каждый Z-слой и не зеркалируется;
+- пещеры проходные и имеют два входа/выхода;
+- жила заменяет клетку породы; depletion открывает пространство;
+- соседние жилы не обязаны быть одной runtime cluster-сущностью;
+- `ore.iron -> material.iron`;
+- `ore.gold -> material.gold`;
+- `ore.crystal -> material.crystal`;
+- «металл» и «железо» — один предмет `material.iron`;
+- обычная добыча использует terrain-specific random output tables;
+- hauling создаётся только по demand/filter и для раскрытого source.
 
 ## Открытые решения
 
-Актуальный список находится в [`../open-questions.md`](../open-questions.md). Блокирующими остаются:
+Актуальный реестр: [`../open-questions.md`](../open-questions.md).
 
-- постоянство открытия шаблонов после потери квалифицированного гнома;
-- объёмная форма трапециевидных комнат;
-- `железная руда -> железо -> металл`;
-- `золотая руда -> золото` и возможное самородное золото;
-- правило выхода камня;
-- автоматический hauling добычи;
-- перевод design-сытости в доменную шкалу `Nutrition 0–10000`;
-- точные правила разнообразия рациона;
-- полный перечень interruption, уничтожающих остаток еды;
-- работник кухни и влияние кулинарного навыка;
-- несколько навыков за смешанную работу;
-- опыт щита и оружия в одном боевом цикле;
-- момент начисления опыта и шкала capacity 100/200.
+Основные оставшиеся вопросы:
 
-Непредоставленные числовые значения остаются data-driven `BALANCE_TBD`.
+- Q-015–Q-018 — шкала сытости, разнообразие, interruption и работники кухни;
+- Q-019–Q-022 — mixed skills, combat grants, timing и capacity;
+- Q-023 — официальное имя «Песчанник»;
+- Q-024 — официальное имя «серной» породы;
+- Q-025 — судьба активного плана пещеры после падения Stonework;
+- Q-026 — стоимость/работники processing buildings;
+- Q-027 — расположение двух входов пещеры;
+- Q-014 — числовой баланс terrain drops и других систем.
 
-## Связанные issues зданий и сервисов
+## Связанные issues
 
-- [#75](https://github.com/bageus/Dig/issues/75) — комплекты зданий;
-- [#76](https://github.com/bageus/Dig/issues/76) — пост часового;
-- [#77](https://github.com/bageus/Dig/issues/77) — арсенал;
-- [#78](https://github.com/bageus/Dig/issues/78) — игровые комнаты;
-- [#79](https://github.com/bageus/Dig/issues/79) — кинотеатр;
-- [#80](https://github.com/bageus/Dig/issues/80) — винокурня и рецепты алкоголя;
-- [#81](https://github.com/bageus/Dig/issues/81) — бар;
-- [#82](https://github.com/bageus/Dig/issues/82) — университет.
+### Здания и сервисы
 
-## Связанные issues еды
+- #75 — building kits;
+- #76 — пост часового;
+- #77 — арсенал;
+- #78 — игровые комнаты;
+- #79 — кинотеатр;
+- #80 — винокурня;
+- #81 — бар;
+- #82 — университет;
+- #108 — горн, литейный цех и crystal processor.
 
-- [#97](https://github.com/bageus/Dig/issues/97) — три укуса и interruption;
-- [#98](https://github.com/bageus/Dig/issues/98) — блюда и kitchen tiers;
-- [#99](https://github.com/bageus/Dig/issues/99) — разнообразие питания;
-- [#100](https://github.com/bageus/Dig/issues/100) — UI и анимации;
-- [#101](https://github.com/bageus/Dig/issues/101) — Save/Load и тесты.
+### Еда
 
-## Связанные issues навыков
+- #97 — укусы/interruption;
+- #98 — блюда и кухни;
+- #99 — разнообразие;
+- #100 — UI/анимации;
+- #101 — Save/Load.
 
-- [#104](https://github.com/bageus/Dig/issues/104) — каталог, grants и capacity;
-- [#105](https://github.com/bageus/Dig/issues/105) — опыт за работы и производство;
-- [#106](https://github.com/bageus/Dig/issues/106) — боевые навыки;
-- [#107](https://github.com/bageus/Dig/issues/107) — UI, Save/Load и diagnostics.
+### Навыки
+
+- #104 — каталог/grants/capacity;
+- #105 — опыт работ/производства;
+- #106 — боевые навыки;
+- #107 — UI/Save.
+
+### Копание и ресурсы
+
+- #88 — 3D coordinates;
+- #89 — templates/Stonework;
+- #90 — plans/provenance;
+- #91 — deposits/generation;
+- #92 — outputs/hauling;
+- #93 — Presentation;
+- #94 — Save/Load;
+- #109 — terrain output profiles;
+- #110 — demand/fog-aware hauling.
