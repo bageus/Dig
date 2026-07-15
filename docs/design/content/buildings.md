@@ -1,25 +1,17 @@
 # Здания и сервисы поселения
 
-Главные задачи: #74 — здания/сервисы, #118 — universal BuildingBox, #108 — металлургия/Песчаник, #126 — дерево технологий.
+Главные задачи: здания #74, универсальные коробки #118, металлургия #108, технологии #126.
 
-## 1. Общая модель
+## Общая модель
 
-Здания используют `BuildingDefinition`, Construction, Production, Inventory, Jobs и resident places.
+Все размещаемые здания используют физический `BuildingBox`:
 
-Для всех размещаемых зданий целевая policy — физический `BuildingBox`:
-
-- стоимость находится в recipe коробки;
-- Production создаёт один non-stackable item;
+- стоимость находится в production recipe коробки;
+- одна коробка представляет одно non-stackable здание;
 - placement резервирует конкретную коробку;
-- resident доставляет её к ghost plan и собирает building;
-- packing возвращает одну коробку;
-- display name не является ID.
-
-До #118 существующий legacy material-site path остаётся фактическим кодом. Один BuildingDefinition не может одновременно использовать обе construction policies.
-
-Полная модель: [`../building-box-placement-and-packing.md`](../building-box-placement-and-packing.md).
-
-## 2. BuildingDefinition
+- worker доставляет её к ghost plan и выполняет assembly;
+- completed building можно упаковать обратно в одну коробку;
+- для одного BuildingDefinition запрещено одновременно применять box policy и legacy full-material site policy.
 
 ```text
 BuildingDefinition
@@ -32,219 +24,165 @@ BuildingDefinition
 - FunctionalCapabilities
 - Worker / Visitor Places
 - Technology prerequisites
-- SourceWorkshopId
 ```
 
-Content validation проверяет Building ↔ Box ↔ Recipe ↔ Workshop ↔ Technology references.
+## Контекстная панель
 
-## 3. Контекстная панель
+При выборе здания нижняя панель показывает его capabilities: production, research, storage/service modes, workers/visitors, orders, progress, durability и diagnostics. Справа находится кнопка упаковки, если definition её поддерживает.
 
-При выборе completed building нижняя панель показывает:
+## Сводная таблица
 
-- production recipes/orders;
-- research;
-- storage filters/modes;
-- service modes;
-- worker/visitor places;
-- progress;
-- durability/repair;
-- diagnostics;
-- кнопку packing справа, если функция разрешена.
+| Здание | Источник коробки | Работник | Вместимость | Назначение |
+|---|---|---:|---:|---|
+| Пост часового | data-driven | 1 | 1 | тревога и запас снаряжения |
+| Арсенал | Оружейная кузница | data-driven | 26 slots | хранение снаряжения |
+| Обычная игровая комната | Мебельная мастерская | нет | 3 | шахматы/дартс |
+| Индустриальная игровая комната | Мебельная мастерская | нет | 4 | бильярд |
+| Люксовая игровая комната | Мебельная мастерская | нет | 4 | мини-гольф |
+| Кинотеатр | Кристаллическая кузня | 1 | 4 зрителя | Mood/fertility/service |
+| Винокурня | Пилорама | order worker | Production | глипнир/огненная вода |
+| Университет | Пилорама | 1 | 2 students | capacity 100→200 |
+| Бар | data-driven | бармен | data-driven | хранение/подача алкоголя |
+| Пивоварня | Лесопилка | order worker | Production | пиво/эль/сидр |
+| Костёр | старт | order worker | Production | кухня tier 1 |
+| Средневековая кухня | data-driven | order worker | Production | кухня tier 2 |
+| Индустриальная кухня | data-driven | order worker | Production | кухня tier 3 |
+| Люксовая кухня | data-driven | order worker | Production | кухня tier 4 |
+| Горн | Мастерская каменщика | order worker | Production | ранняя плавка железа |
+| Литейный цех | data-driven | order worker | Production | железо/золото на угле |
+| Песчаник | data-driven | order worker | Production | обработка кристаллической руды |
 
-UI отправляет Application commands и не изменяет building snapshot напрямую.
+## Пост часового
 
-## 4. Сводная таблица
+- максимум 4 единицы снаряжения;
+- target stock 1, 2 или 4;
+- недостающее снаряжение создаёт hauling demand;
+- shelf отображает authoritative inventory;
+- пост является protected source;
+- тревога создаёт защитное намерение у допустимых гномов;
+- после тревоги снаряжение остаётся у resident.
 
-| Здание | Источник коробки | Worker policy | Вместимость/назначение |
-|---|---|---|---|
-| Пост часового | data-driven | 1 assigned guard | тревога, stock 1/2/4 |
-| Арсенал | Оружейная кузница | по definition | 20 основных + 6 защитных slots |
-| Игровая комната — обычная | Мебельная мастерская | нет постоянного | 3 посетителя |
-| Игровая комната — индустриальная | Мебельная мастерская | нет постоянного | 4 посетителя |
-| Игровая комната — люкс | Мебельная мастерская | нет постоянного | 4 посетителя |
-| Кинотеатр | Кристаллическая кузня | 1 на сеанс | 4 зрителя |
-| Винокурня | Пилорама | worker только на order | глипнир/огненная вода |
-| Университет | Пилорама | 1 преподаватель при cycle | 2 студента |
-| Бар | data-driven | бармен для service order | drinks/service |
-| Пивоварня | Лесопилка | worker только на order | пиво/эль/сидр |
-| Костёр | стартовое производство | worker только на cooking order | kitchen tier 1 |
-| Средневековая кухня | data-driven | worker только на cooking order | tier 2 |
-| Индустриальная кухня | data-driven | worker только на cooking order | tier 3 |
-| Люксовая кухня | data-driven | worker только на cooking order | tier 4 |
-| Горн | Мастерская каменщика | worker только на production order | раннее железо |
-| Литейный цех | data-driven | worker только на production order | железо/золото на угле |
-| Песчаник | data-driven | worker только на production order | кристаллическая руда |
+Связь: #76.
 
-Подтверждённые источники мастерских не заменяются расположением legacy scripts. Authoritative tree: [`../technology-tree.md`](../technology-tree.md).
+## Арсенал
 
-## 5. Пост часового
+- technology и box производятся Оружейной кузницей;
+- 20 main slots и 6 defense slots;
+- stable slot indices/anchors;
+- собирает только раскрытые доступные equipment stacks;
+- personal inventories и посты часового не являются источниками;
+- ручной pickup разрешён.
 
-Связанная задача: #76.
+Связь: #77.
 
-- stock target: 1, 2 или 4;
-- недостающее снаряжение создаёт demand;
-- visual shelf читает building inventory;
-- post является protected source;
-- guard публикует alarm event;
-- после события снаряжение остаётся у resident.
+## Игровые комнаты
 
-## 6. Арсенал
+Все три коробки производит Мебельная мастерская. Постоянного worker нет. После открытия игровых комнат generic rest ограничивается data-driven Mood cap; специальные activities позволяют превысить его.
 
-Связанная задача: #77.
+Связи: #78, #143.
 
-- technology и box находятся в Оружейной кузнице;
-- 10 main slots слева;
-- 10 main slots справа;
-- 6 defensive slots по центру;
-- stable visual anchors;
-- `CollectVisibleEquipment` использует раскрытые world stacks;
-- personal inventories и guard posts не являются автоматическими sources;
-- ручное изъятие использует Inventory transfer.
+## Кинотеатр
 
-## 7. Игровые комнаты
+- 4 spectator places, 1 worker place;
+- без worker session не начинается;
+- session повышает Mood и может выдавать fertility modifier;
+- worker получает Service experience;
+- числовая сила/длительность BALANCE_TBD.
 
-Связанная задача: #78.
+Связь: #79.
 
-- все три boxes производит Мебельная мастерская;
-- Пилорама игровые комнаты не производит;
-- постоянный worker не нужен;
-- места резервируются посетителями;
-- после открытия technology обычный отдых ограничивается `MoodWithoutGameRoomCap`;
-- успешная game activity позволяет превысить cap;
-- Mood восстанавливается постепенно согласно [`../needs-continuous-actions.md`](../needs-continuous-actions.md).
-
-## 8. Кинотеатр
-
-Связанная задача: #79.
-
-- 4 spectator places;
-- 1 worker place;
-- сеанс не начинается без worker и зрителя;
-- successful session повышает Mood;
-- Society получает temporary fertility modifier;
-- worker получает `skill.service`;
-- balance values data-driven.
-
-## 9. Винокурня
-
-Связанная задача: #80.
+## Винокурня
 
 - box производится Пилорамой;
-- recipes: глипнир и огненная вода;
-- «Грибной самогон» — legacy name огненной воды, не отдельный ItemId;
-- successful production развивает `skill.alchemy`;
-- `металл` в старых данных означает `material.iron`.
+- производит глипнир и огненную воду;
+- «Грибной самогон» — legacy display name Огненной воды, не отдельный ItemId;
+- cycles развивают Alchemy;
+- металл в старых стоимостях означает `material.iron`.
 
-## 10. Бар
+Связь: #80.
 
-Связанная задача: #81.
+## Бар
 
-Бар хранит пиво, эль, сидр, глипнир и огненную воду. Serving modes:
+Хранит пиво, эль, сидр, глипнир и огненную воду. Режимы `Light`, `Glipnir`, `Firewater`, `Mixed`. Недоступный без stock режим блокируется с reason. Inventory является владельцем содержимого.
 
-- `Light`;
-- `Glipnir`;
-- `Firewater`;
-- `Mixed`.
+Связь: #81.
 
-Кнопка недоступна без подходящего authoritative stock. Visual bottles являются rebuildable view.
-
-## 11. Университет
-
-Связанная задача: #82.
+## Университет
 
 - box производится Пилорамой;
-- 2 student places;
-- 1 worker place при active study cycle;
+- 2 student places, 1 active-cycle worker;
 - работает в Work schedule;
-- TotalSkillCapacity повышается 100 → 200;
-- один pool содержит 12 skills;
-- university не выдаёт скрытый experience конкретного skill;
-- worker получает `skill.service`.
+- повышает тот же TotalSkillCapacity с 100 до 200;
+- один pool включает 12 skills;
+- не выдаёт скрытый опыт конкретного skill;
+- worker получает Service experience.
 
-## 12. Кухни
+Связь: #82.
 
-Связанная задача: #98.
+## Кухни
 
-Tier output:
+Tier output одного разрешённого recipe:
 
 - Campfire — 2;
 - Medieval — 2;
 - Industrial — 3;
 - Luxury — 3.
 
-Костёр готовит только гриль-гриб из утверждённого набора. Более высокие tiers открывают recipes согласно [`food.md`](food.md).
+Worker lifecycle:
 
-### Worker lifecycle
+- постоянного повара нет;
+- worker назначается только на active cooking order;
+- completion/cancel/terminal block освобождают worker;
+- пустая кухня resident не удерживает.
 
-Постоянный повар не закрепляется.
+`skill.cooking` влияет **только на скорость приготовления**. Он не изменяет ingredients, output quantity, Nutrition, Mood, bites, quality или extra results. Speed curve data-driven.
 
-- worker нужен только при наличии cooking order;
-- Production/Jobs claim допустимого resident;
-- no-order kitchen не удерживает worker;
-- completion/cancel/terminal block освобождает worker reservation;
-- active worker и progress показываются в building panel;
-- влияние уровня `skill.cooking` на speed/output/effect остаётся Q-039.
+Полный каталог: `food.md`, #96, #98.
 
-## 13. Металлургия и кристаллы
+## Металлургия и кристаллы
 
 ### Горн
 
-- legacy `Schmelze/Плавильня` = Горн;
 - ID `building.furnace`;
-- `3 ore.iron + 2 material.mushroom_leg -> 2 material.iron`;
-- skill `metallurgy`;
+- legacy «Плавильня» соответствует Горну;
+- `3 ore.iron + 2 mushroom_leg -> 2 material.iron`;
+- развивает Metallurgy;
 - золото не плавит.
 
 ### Литейный цех
 
 - ID `building.foundry`;
-- `3 ore.iron + 2 coal -> 2 material.iron`;
-- `3 ore.gold + 2 coal -> 2 material.gold`;
-- advanced coal smelting;
-- skill `metallurgy`.
+- `3 ore.iron + 2 coal -> 2 iron`;
+- `3 ore.gold + 2 coal -> 2 gold`;
+- развивает Metallurgy.
 
 ### Песчаник
 
-- display name «Песчаник»;
 - ID `building.crystal_processor`;
 - `1 ore.crystal -> 1 material.crystal`;
-- skill `alchemy`.
+- развивает Alchemy.
 
-## 14. Технологические исключения
+## Технологические исключения
 
 - водолазный колокол исключён;
-- `Dojo` трактуется как направление «Кулачный бой»;
-- отдельный ItemId «Грибной самогон» не создаётся;
-- Лесопилка и Пилорама — разные узлы;
-- Театр, Боулинг, Дискотека, Тренажёрный зал и Бордель остаются `TBD_OWNER` candidates.
+- Dojo трактуется как направление «Кулачный бой»;
+- отдельного ItemId «Грибной самогон» нет;
+- Лесопилка и Пилорама — разные technology nodes;
+- театр, боулинг, дискотека, тренажёрный зал и бордель остаются future content candidates.
 
-## 15. Placement и packing
+## Placement и packing
 
-- LMB world/inventory box → placement mode;
-- `Alt+LMB` world box → pickup order;
-- valid placement создаёт ghost plan и резервирует коробку;
-- free resident доставляет коробку и собирает building;
-- packing создаёт disassembly job;
-- после commit появляется ровно одна box;
-- preview/panel принадлежат Presentation.
+- LMB по world/inventory BuildingBox включает placement;
+- Alt+LMB по world box назначает pickup;
+- valid LMB создаёт ghost plan и резервирует коробку;
+- worker доставляет box и собирает здание;
+- packing выполняется job и создаёт одну box после commit;
+- preview принадлежит Presentation.
 
-## 16. Demand и hauling
+## Demand и доставка
 
-Production создаёт demand на recipe inputs. Universal box construction требует конкретную коробку, а не повторно полный список materials. Source обязан быть revealed согласно `material-demand-and-hauling.md`.
+Production создаёт demand на recipe inputs. Universal construction site требует одну конкретную box. Source обязан быть раскрыт согласно `material-demand-and-hauling.md` и `exploration-fog-of-war.md`.
 
-## 17. Диагностика
+## Диагностика
 
-Inspector здания показывает:
-
-- definition/box/source workshop IDs;
-- construction policy;
-- technology/research state;
-- functional/block state;
-- worker/visitor places;
-- input/output inventories;
-- demands/reservations;
-- active recipe/mode;
-- assembly/packing stage;
-- progress/durability;
-- cancellation/error;
-- quantity conservation report.
+Inspector показывает definition/box IDs, construction policy, technology/research state, source workshop, function/block reason, places, inventories, demands/reservations, recipe/mode, worker, effective speed, assembly/packing stage, durability и quantity-conservation report.
