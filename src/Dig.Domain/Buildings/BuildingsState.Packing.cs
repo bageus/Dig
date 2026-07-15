@@ -254,6 +254,31 @@ public sealed partial class BuildingsState
             : null;
     }
 
+    private BuildingSnapshot CreateCombinedSnapshot(BuildingProjectState project)
+    {
+        BuildingSnapshot snapshot = project.CreateSnapshot();
+        BuildingBoxPlanSnapshot? box = GetBoxPlan(project.Id);
+        BuildingPackingPlanSnapshot? packing = _packingPlans.TryGetValue(
+            project.Id,
+            out BuildingPackingPlanState? state)
+            ? state.CreateSnapshot()
+            : null;
+        return new BuildingSnapshot(
+            snapshot.Id,
+            snapshot.Definition,
+            snapshot.Origin,
+            snapshot.Orientation,
+            snapshot.Footprint,
+            snapshot.WorkPosition,
+            snapshot.Status,
+            snapshot.CompletedWork,
+            snapshot.Durability,
+            snapshot.Version,
+            snapshot.DiagnosticReason,
+            box,
+            packing);
+    }
+
     private bool HasActivePackingPlan(EntityId id)
     {
         return _packingPlans.TryGetValue(id, out BuildingPackingPlanState? packing)
