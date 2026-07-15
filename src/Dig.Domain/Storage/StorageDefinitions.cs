@@ -4,6 +4,7 @@ using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
+using Dig.Domain.World;
 
 namespace Dig.Domain.Storage
 {
@@ -66,6 +67,17 @@ public sealed class StorageZoneDefinition
         int priority,
         int capacity,
         StorageFilter filter)
+        : this(id, name, priority, capacity, filter, new CellId(0, 0))
+    {
+    }
+
+    public StorageZoneDefinition(
+        EntityId id,
+        string name,
+        int priority,
+        int capacity,
+        StorageFilter filter,
+        CellId cell)
     {
         if (id.IsEmpty)
         {
@@ -92,6 +104,7 @@ public sealed class StorageZoneDefinition
         Priority = priority;
         Capacity = capacity;
         Filter = filter ?? throw new ArgumentNullException(nameof(filter));
+        Cell = cell;
     }
 
     public EntityId Id { get; }
@@ -103,5 +116,18 @@ public sealed class StorageZoneDefinition
     public int Capacity { get; }
 
     public StorageFilter Filter { get; }
+
+    public CellId Cell { get; }
+
+    public StorageZoneDefinition MoveTo(CellId cell)
+    {
+        return new StorageZoneDefinition(
+            Id,
+            Name,
+            Priority,
+            Capacity,
+            Filter,
+            cell);
+    }
 }
 }

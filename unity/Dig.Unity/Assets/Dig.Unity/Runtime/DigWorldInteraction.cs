@@ -1,4 +1,5 @@
 using Dig.Domain.Core;
+using Dig.Domain.World;
 using Dig.Presentation.World;
 using UnityEngine;
 
@@ -12,7 +13,11 @@ namespace Dig.Unity
         private DigWorldRenderer? _renderer;
         private DigAgentRenderer? _agentRenderer;
         private DigJobRenderer? _jobRenderer;
+        private DigTerrainWorkSession? _terrainSession;
+        private DigStockpileRenderer? _stockpileRenderer;
+        private DigAgentSimulationDriver? _simulation;
         private DigHudOverlay? _hud;
+        private DigCellVisual? _selectedCell;
 
         internal void Initialize(
             Camera targetCamera,
@@ -20,6 +25,9 @@ namespace Dig.Unity
             DigWorldRenderer renderer,
             DigAgentRenderer agentRenderer,
             DigJobRenderer jobRenderer,
+            DigTerrainWorkSession terrainSession,
+            DigStockpileRenderer stockpileRenderer,
+            DigAgentSimulationDriver simulation,
             DigHudOverlay hud)
         {
             _camera = targetCamera;
@@ -27,6 +35,9 @@ namespace Dig.Unity
             _renderer = renderer;
             _agentRenderer = agentRenderer;
             _jobRenderer = jobRenderer;
+            _terrainSession = terrainSession;
+            _stockpileRenderer = stockpileRenderer;
+            _simulation = simulation;
             _hud = hud;
         }
 
@@ -37,11 +48,15 @@ namespace Dig.Unity
                 || _renderer == null
                 || _agentRenderer == null
                 || _jobRenderer == null
+                || _terrainSession == null
+                || _stockpileRenderer == null
+                || _simulation == null
                 || _hud == null)
             {
                 return;
             }
 
+            HandleStoragePlacement();
             bool select = Input.GetMouseButtonDown(0);
             bool updateCell = Input.GetMouseButtonDown(1);
             if ((!select && !updateCell) || _hud.ContainsScreenPoint(Input.mousePosition))
@@ -59,6 +74,7 @@ namespace Dig.Unity
             {
                 if (select)
                 {
+                    _selectedCell = null;
                     _renderer.Select(null);
                     _jobRenderer.Select(null);
                     _agentRenderer.Select(agent);
@@ -72,6 +88,7 @@ namespace Dig.Unity
             {
                 if (select)
                 {
+                    _selectedCell = null;
                     _renderer.Select(null);
                     _agentRenderer.Select(null);
                     _jobRenderer.Select(job);
@@ -86,6 +103,7 @@ namespace Dig.Unity
                 return;
             }
 
+            _selectedCell = cell;
             _agentRenderer.Select(null);
             _jobRenderer.Select(null);
             _renderer.Select(cell);
@@ -96,23 +114,50 @@ namespace Dig.Unity
             }
         }
 
-        private void ToggleDesignation(WorldCellViewModel selected)
+        private void HandleStoragePlacement()
         {
-            if (_session == null || _renderer == null || _hud == null)
+            bool requested = Input.GetKeyDown(KeyCode.Alpha5)
+                || Input.GetKeyDown(KeyCode.Keypad5);
+            if (!requested)
             {
                 return;
             }
 
-            Result result = _session.ToggleDesignation(selected);
-            _hud.SetCommandResult(result);
+            if (_selectedCell == null)
+            {
+                _hud!.SetStatus("Select an open cell before placing the stockpile.");
+                return;
+            }
+
+            WorldCellViewModel selected = _selectedCell.Model;
+            Result result = _terrainSession!.MoveStorageZone(
+                new CellId(selected.X, selected.Y),
+                _simulation!.CurrentTick);
+            if (result.IsFailure)
+            {
+                _hud!.SetCommandResult(result);
+                return;
+            }
+
+            DigStorageStatus storage = _terrainSession.GetStorageStatus();
+            _stockpileRenderer!.Render(storage);
+            _hud!.SetStorageStatus(storage);
+            _hud.SetStatus($"Stockpile moved to {storage.Cell.X},{storage.Cell.Y}.");
+        }
+
+        private void ToggleDesignation(WorldCellViewModel selected)
+        {
+            Result result = _session!.ToggleDesignation(selected);
+            _hud!.SetCommandResult(result);
             if (result.IsFailure)
             {
                 return;
             }
 
             WorldViewModel world = _session.LoadView();
-            _renderer.Render(world);
+            _renderer!.Render(world);
             DigCellVisual? refreshed = _renderer.SelectAt(selected.X, selected.Y);
+            _selectedCell = refreshed;
             _hud.SetWorld(world);
             _hud.SetSelection(refreshed == null ? null : refreshed.Model);
         }
