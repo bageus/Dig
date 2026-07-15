@@ -45,12 +45,15 @@ namespace Dig.Unity
             IReadOnlyList<JobOverlayViewModel> jobs = terrainSession.LoadJobs();
             IReadOnlyList<WorldItemViewModel> items = terrainSession.LoadItems();
             IReadOnlyList<RouteViewModel> routes = terrainSession.LoadRoutes();
+            DigStorageStatus storage = terrainSession.GetStorageStatus();
 
             Camera targetCamera = EnsureCamera();
             DigWorldRenderer worldRenderer = GetOrAdd<DigWorldRenderer>(gameObject);
             DigAgentRenderer agentRenderer = GetOrAdd<DigAgentRenderer>(gameObject);
             DigJobRenderer jobRenderer = GetOrAdd<DigJobRenderer>(gameObject);
             DigWorldItemRenderer itemRenderer = GetOrAdd<DigWorldItemRenderer>(gameObject);
+            DigStockpileRenderer stockpileRenderer =
+                GetOrAdd<DigStockpileRenderer>(gameObject);
             DigNavigationRouteRenderer routeRenderer =
                 GetOrAdd<DigNavigationRouteRenderer>(gameObject);
             DigHudOverlay hud = GetOrAdd<DigHudOverlay>(gameObject);
@@ -66,10 +69,12 @@ namespace Dig.Unity
             jobRenderer.Initialize(agentRenderer);
             jobRenderer.Render(jobs);
             itemRenderer.Render(items);
+            stockpileRenderer.Render(storage);
             routeRenderer.Render(routes);
             hud.SetWorld(world);
             hud.SetAgents(agents, agentSession.Tick);
             hud.SetJobs(jobs);
+            hud.SetStorageStatus(storage);
             cameraController.Initialize(targetCamera, world);
             interaction.Initialize(
                 targetCamera,
@@ -86,6 +91,7 @@ namespace Dig.Unity
                 terrainSession,
                 jobRenderer,
                 itemRenderer,
+                stockpileRenderer,
                 routeRenderer,
                 hud);
 
