@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Inventory;
@@ -27,18 +28,46 @@ namespace Dig.Unity
         [SerializeField]
         private bool logStartup = true;
 
+        private string _startupStage = "not started";
+
         private void Awake()
         {
+            DigHudOverlay hud = GetOrAdd<DigHudOverlay>(gameObject);
+            hud.SetStatus("Starting runtime...");
+            try
+            {
+                StartRuntime(hud);
+            }
+            catch (Exception exception)
+            {
+                DisableRuntimeDrivers();
+                string message =
+                    $"STARTUP FAILED [{_startupStage}] " +
+                    $"{exception.GetType().Name}: {exception.Message}";
+                hud.SetStatus(message);
+                Debug.LogException(exception, this);
+            }
+        }
+
+        private void StartRuntime(DigHudOverlay hud)
+        {
+            _startupStage = "validating demo configuration";
             ClampDemoConfiguration();
+
+            _startupStage = "creating world";
             DigWorldSession worldSession = DigWorldSession.CreateDemo(
                 demoWidth,
                 demoHeight,
                 chunkSize);
             WorldViewModel world = worldSession.LoadView();
+
+            _startupStage = "creating residents";
             DigAgentSession agentSession = DigAgentSession.CreateDemo(
                 world,
                 worldSession.Journal);
             IReadOnlyList<AgentViewModel> agents = agentSession.LoadView();
+
+            _startupStage = "creating work systems";
             DigTerrainWorkSession terrainSession = DigTerrainWorkSession.CreateDemo(
                 worldSession,
                 agents,
@@ -51,6 +80,7 @@ namespace Dig.Unity
             IReadOnlyList<RouteViewModel> routes = terrainSession.LoadRoutes();
             DigStorageStatus storage = terrainSession.GetStorageStatus();
 
+            _startupStage = "creating Unity adapters";
             Camera targetCamera = EnsureCamera();
             DigWorldRenderer worldRenderer = GetOrAdd<DigWorldRenderer>(gameObject);
             DigAgentRenderer agentRenderer = GetOrAdd<DigAgentRenderer>(gameObject);
@@ -60,26 +90,40 @@ namespace Dig.Unity
                 GetOrAdd<DigStockpileRenderer>(gameObject);
             DigNavigationRouteRenderer routeRenderer =
                 GetOrAdd<DigNavigationRouteRenderer>(gameObject);
-            DigHudOverlay hud = GetOrAdd<DigHudOverlay>(gameObject);
+            GetOrAdd<DigOverlayHotkeys>(gameObject);
             DigWorldInteraction interaction = GetOrAdd<DigWorldInteraction>(gameObject);
             DigAgentSimulationDriver simulation =
                 GetOrAdd<DigAgentSimulationDriver>(gameObject);
             DigCameraController cameraController =
                 GetOrAdd<DigCameraController>(targetCamera.gameObject);
+            interaction.enabled = false;
+            simulation.enabled = false;
 
-            RenderSettings.ambientLight = new Color(0.58f, 0.60f, 0.66f, 1f);
-            worldRenderer.Render(world);
-            agentRenderer.Render(agents, movementDuration: 0f);
-            jobRenderer.Initialize(agentRenderer);
-            jobRenderer.Render(jobs);
-            itemRenderer.Render(items);
-            stockpileRenderer.Render(storage);
-            routeRenderer.Render(routes);
+            _startupStage = "framing camera and HUD";
+            cameraController.Initialize(targetCamera, world);
             hud.SetWorld(world);
             hud.SetAgents(agents, agentSession.Tick);
             hud.SetJobs(jobs);
             hud.SetStorageStatus(storage);
-            cameraController.Initialize(targetCamera, world);
+            hud.SetStatus("Starting renderers...");
+
+            _startupStage = "rendering world";
+            RenderSettings.ambientLight = new Color(0.58f, 0.60f, 0.66f, 1f);
+            worldRenderer.Render(world);
+
+            _startupStage = "rendering residents";
+            agentRenderer.Render(agents, movementDuration: 0f);
+
+            _startupStage = "rendering jobs";
+            jobRenderer.Initialize(agentRenderer);
+            jobRenderer.Render(jobs);
+
+            _startupStage = "rendering inventory and routes";
+            itemRenderer.Render(items);
+            stockpileRenderer.Render(storage);
+            routeRenderer.Render(routes);
+
+            _startupStage = "enabling interaction";
             interaction.Initialize(
                 targetCamera,
                 worldSession,
@@ -98,13 +142,31 @@ namespace Dig.Unity
                 stockpileRenderer,
                 routeRenderer,
                 hud);
+            interaction.enabled = true;
+            simulation.enabled = true;
+            hud.SetStatus("Running. Click the Game view to use keyboard and mouse controls.");
 
             if (logStartup)
             {
                 Debug.Log(
-                    "Dig Unity terrain work slice started. Authoritative state stays " +
-                    "outside Unity scene objects; visuals are rebuildable views.",
+                    $"Dig Unity runtime started with {agents.Count} residents, " +
+                    $"{jobs.Count} jobs and a {world.Width}x{world.Height} world.",
                     this);
+            }
+        }
+
+        private void DisableRuntimeDrivers()
+        {
+            DigWorldInteraction interaction = GetComponent<DigWorldInteraction>();
+            if (interaction != null)
+            {
+                interaction.enabled = false;
+            }
+
+            DigAgentSimulationDriver simulation = GetComponent<DigAgentSimulationDriver>();
+            if (simulation != null)
+            {
+                simulation.enabled = false;
             }
         }
 

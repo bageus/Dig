@@ -16,7 +16,7 @@ namespace Dig.Unity
         private AgentViewModel? _selectedAgent;
         private DigStorageStatus? _storageStatus;
         private long _tick;
-        private string _status = "Ready";
+        private string _status = "Starting runtime...";
 
         public void SetWorld(WorldViewModel world)
         {
@@ -60,7 +60,7 @@ namespace Dig.Unity
 
         private void OnGUI()
         {
-            GUILayout.BeginArea(new Rect(16f, 16f, 500f, 760f), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(16f, 16f, 540f, 780f), GUI.skin.box);
             GUILayout.Label("DIG — Interactive Settlement Slice");
             if (_world != null)
             {
@@ -70,8 +70,9 @@ namespace Dig.Unity
             GUILayout.Label($"Residents: {_agents.Count} | jobs: {JobCount} | tick: {_tick}");
             DrawStorageStatus();
             GUILayout.Space(6f);
-            GUILayout.Label("WASD pan | wheel zoom | Q/E rotate");
-            GUILayout.Label("F3 jobs/reservations | F4 navigation routes");
+            GUILayout.Label("Click inside Game view before using controls");
+            GUILayout.Label("WASD / arrows pan | wheel zoom | Q/E rotate");
+            GUILayout.Label("3 jobs/reservations | 4 navigation routes");
             GUILayout.Label("Left click select | right click toggle digging");
             GUILayout.Space(8f);
             DrawCellSelection();
