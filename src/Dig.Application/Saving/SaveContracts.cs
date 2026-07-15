@@ -36,6 +36,45 @@ public sealed class SaveMetadataData
     public int GeneratorVersion { get; set; }
 }
 
+public sealed class SaveSlotInfo
+{
+    public SaveSlotInfo(
+        string slotId,
+        SaveMetadataData? metadata,
+        bool isCorrupted,
+        string? errorMessage)
+    {
+        if (string.IsNullOrWhiteSpace(slotId))
+        {
+            throw new ArgumentException("Save slot id is required.", nameof(slotId));
+        }
+
+        if (isCorrupted && string.IsNullOrWhiteSpace(errorMessage))
+        {
+            throw new ArgumentException(
+                "A corrupted save slot requires an error message.",
+                nameof(errorMessage));
+        }
+
+        if (!isCorrupted && metadata is null)
+        {
+            throw new ArgumentException(
+                "A healthy save slot requires metadata.",
+                nameof(metadata));
+        }
+
+        SlotId = slotId;
+        Metadata = metadata;
+        IsCorrupted = isCorrupted;
+        ErrorMessage = errorMessage;
+    }
+
+    public string SlotId { get; }
+    public SaveMetadataData? Metadata { get; }
+    public bool IsCorrupted { get; }
+    public string? ErrorMessage { get; }
+}
+
 [DataContract]
 public sealed class SaveGameDocument
 {
@@ -108,7 +147,7 @@ public interface ISaveSlotStore
 
     SaveGameDocument Load(string slotId);
 
-    IReadOnlyList<SaveMetadataData> List();
+    IReadOnlyList<SaveSlotInfo> List();
 }
 
 public interface ISaveMigration
