@@ -263,7 +263,7 @@ internal sealed partial class DigTerrainWorkSession
                     buildingId,
                     jobId,
                     workAmount: 1,
-                    tick)),
+                    tick: tick)),
             BuildingBoxPackingExecutionStepKind.CompletePacking =>
                 _buildingPackingCompletion!.Handle(new CompleteBuildingBoxPackingCommand(
                     buildingId,
