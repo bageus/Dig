@@ -127,6 +127,7 @@ namespace Dig.Unity
             _startupStage = "enabling interaction";
             interaction.Initialize(
                 targetCamera,
+                cameraController,
                 worldSession,
                 worldRenderer,
                 agentRenderer,

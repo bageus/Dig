@@ -100,6 +100,19 @@ namespace Dig.Unity
             return _presenter.Load(_tick);
         }
 
+        public Result MoveResident(string residentId, CellId destination)
+        {
+            if (string.IsNullOrWhiteSpace(residentId))
+            {
+                throw new ArgumentException("Resident id is required.", nameof(residentId));
+            }
+
+            return _movementHandler.Handle(new MoveAgentCommand(
+                EntityId.Parse(residentId),
+                destination,
+                _tick));
+        }
+
         public Result Advance()
         {
             return Advance(new Dictionary<string, CellId>(StringComparer.Ordinal));

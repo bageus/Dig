@@ -48,6 +48,12 @@ namespace Dig.Unity
             ApplyPose();
         }
 
+        internal void Focus(Vector3 worldPosition)
+        {
+            _focus = new Vector3(worldPosition.x, 0f, worldPosition.z);
+            ApplyPose();
+        }
+
         private void Update()
         {
             if (_camera == null)

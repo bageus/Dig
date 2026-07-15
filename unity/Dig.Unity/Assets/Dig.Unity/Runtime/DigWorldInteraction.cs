@@ -1,14 +1,18 @@
+using System;
 using Dig.Domain.Core;
 using Dig.Domain.World;
-using Dig.Presentation.World;
+using Dig.Presentation.Input;
 using UnityEngine;
 
 namespace Dig.Unity
 {
     [DisallowMultipleComponent]
-    public sealed class DigWorldInteraction : MonoBehaviour
+    public sealed partial class DigWorldInteraction : MonoBehaviour
     {
+        private const float DoubleClickSeconds = 0.35f;
+        private readonly ContextInputRouter _inputRouter = new ContextInputRouter();
         private Camera? _camera;
+        private DigCameraController? _cameraController;
         private DigWorldSession? _session;
         private DigWorldRenderer? _renderer;
         private DigAgentRenderer? _agentRenderer;
@@ -18,9 +22,12 @@ namespace Dig.Unity
         private DigAgentSimulationDriver? _simulation;
         private DigHudOverlay? _hud;
         private DigCellVisual? _selectedCell;
+        private string? _lastResidentClickId;
+        private float _lastResidentClickTime = float.NegativeInfinity;
 
         internal void Initialize(
             Camera targetCamera,
+            DigCameraController cameraController,
             DigWorldSession session,
             DigWorldRenderer renderer,
             DigAgentRenderer agentRenderer,
@@ -31,6 +38,7 @@ namespace Dig.Unity
             DigHudOverlay hud)
         {
             _camera = targetCamera;
+            _cameraController = cameraController;
             _session = session;
             _renderer = renderer;
             _agentRenderer = agentRenderer;
@@ -43,123 +51,146 @@ namespace Dig.Unity
 
         private void Update()
         {
-            if (_camera == null
-                || _session == null
-                || _renderer == null
-                || _agentRenderer == null
-                || _jobRenderer == null
-                || _terrainSession == null
-                || _stockpileRenderer == null
-                || _simulation == null
-                || _hud == null)
+            if (!IsInitialized())
             {
                 return;
             }
 
             HandleStoragePlacement();
-            bool select = Input.GetMouseButtonDown(0);
-            bool updateCell = Input.GetMouseButtonDown(1);
-            if ((!select && !updateCell) || _hud.ContainsScreenPoint(Input.mousePosition))
+            bool left = Input.GetMouseButtonDown(0);
+            bool right = Input.GetMouseButtonDown(1);
+            if (!left && !right)
             {
                 return;
             }
 
-            Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
+            PointerButtonKind button = left
+                ? PointerButtonKind.Left
+                : PointerButtonKind.Right;
+            if (_hud!.ContainsScreenPoint(Input.mousePosition))
+            {
+                _inputRouter.Route(
+                    new ContextPointerEvent(
+                        PointerInputSurface.World,
+                        button,
+                        isPointerOverBlockingUi: true),
+                    BuildState(button),
+                    new ContextPointerTarget(ContextWorldTargetKind.None));
+                return;
+            }
+
+            Ray ray = _camera!.ScreenPointToRay(Input.mousePosition);
             if (!Physics.Raycast(ray, out RaycastHit hit, 500f))
             {
+                ApplyDecision(_inputRouter.Route(
+                    Pointer(button),
+                    BuildState(button),
+                    new ContextPointerTarget(ContextWorldTargetKind.None)));
                 return;
             }
 
-            if (_agentRenderer.TryGetAgent(hit, out DigAgentVisual agent))
+            if (_agentRenderer!.TryGetAgent(hit, out DigAgentVisual agent))
             {
-                if (select)
+                int clickCount = left ? RegisterResidentClick(agent.Model.Id) : 1;
+                ContextPointerTarget target = new ContextPointerTarget(
+                    ContextWorldTargetKind.Resident,
+                    EntityId.Parse(agent.Model.Id),
+                    new CellId(agent.Model.CellX, agent.Model.CellY),
+                    isAlive: agent.Model.IsAlive);
+                ApplyDecision(_inputRouter.Route(
+                    Pointer(button, clickCount),
+                    BuildState(button),
+                    target),
+                    agent: agent);
+                return;
+            }
+
+            if (_jobRenderer!.TryGetJob(hit, out DigJobVisual job))
+            {
+                if (left)
                 {
-                    _selectedCell = null;
-                    _renderer.Select(null);
-                    _jobRenderer.Select(null);
-                    _agentRenderer.Select(agent);
-                    _hud.SetAgentSelection(agent.Model);
+                    SelectJob(job);
+                    return;
                 }
 
+                ApplyDecision(_inputRouter.Route(
+                    Pointer(button),
+                    BuildState(button),
+                    new ContextPointerTarget(ContextWorldTargetKind.None)));
                 return;
             }
 
-            if (_jobRenderer.TryGetJob(hit, out DigJobVisual job))
+            if (!_renderer!.TryGetCell(hit, out DigCellVisual cell))
             {
-                if (select)
-                {
-                    _selectedCell = null;
-                    _renderer.Select(null);
-                    _agentRenderer.Select(null);
-                    _jobRenderer.Select(job);
-                    _hud.SetJobSelection(job.Model);
-                }
-
+                ApplyDecision(_inputRouter.Route(
+                    Pointer(button),
+                    BuildState(button),
+                    new ContextPointerTarget(ContextWorldTargetKind.None)));
                 return;
             }
 
-            if (!_renderer.TryGetCell(hit, out DigCellVisual cell))
-            {
-                return;
-            }
-
-            _selectedCell = cell;
-            _agentRenderer.Select(null);
-            _jobRenderer.Select(null);
-            _renderer.Select(cell);
-            _hud.SetSelection(cell.Model);
-            if (updateCell)
-            {
-                ToggleDesignation(cell.Model);
-            }
+            ContextPointerTarget ground = new ContextPointerTarget(
+                ContextWorldTargetKind.Ground,
+                cell: new CellId(cell.Model.X, cell.Model.Y),
+                reachable: !cell.Model.IsSolid);
+            ApplyDecision(_inputRouter.Route(
+                Pointer(button),
+                BuildState(button),
+                ground),
+                cell: cell);
         }
 
-        private void HandleStoragePlacement()
+        private ContextInputState BuildState(PointerButtonKind button)
         {
-            bool requested = Input.GetKeyDown(KeyCode.Alpha5)
-                || Input.GetKeyDown(KeyCode.Keypad5);
-            if (!requested)
-            {
-                return;
-            }
-
-            if (_selectedCell == null)
-            {
-                _hud!.SetStatus("Select an open cell before placing the stockpile.");
-                return;
-            }
-
-            WorldCellViewModel selected = _selectedCell.Model;
-            Result result = _terrainSession!.MoveStorageZone(
-                new CellId(selected.X, selected.Y),
-                _simulation!.CurrentTick);
-            if (result.IsFailure)
-            {
-                _hud!.SetCommandResult(result);
-                return;
-            }
-
-            DigStorageStatus storage = _terrainSession.GetStorageStatus();
-            _stockpileRenderer!.Render(storage);
-            _hud!.SetStorageStatus(storage);
-            _hud.SetStatus($"Stockpile moved to {storage.Cell.X},{storage.Cell.Y}.");
+            string? selectedId = _agentRenderer!.SelectedAgentId;
+            EntityId? selectedResident = selectedId == null
+                ? null
+                : EntityId.Parse(selectedId);
+            bool selectedAlive = _agentRenderer.SelectedModel?.IsAlive ?? true;
+            ExcavationToolKind tool = button == PointerButtonKind.Right
+                ? ExcavationToolKind.Tunnel
+                : ExcavationToolKind.None;
+            return new ContextInputState(
+                selectedResidentId: selectedResident,
+                selectedResidentAlive: selectedAlive,
+                excavationTool: tool);
         }
 
-        private void ToggleDesignation(WorldCellViewModel selected)
+        private int RegisterResidentClick(string residentId)
         {
-            Result result = _session!.ToggleDesignation(selected);
-            _hud!.SetCommandResult(result);
-            if (result.IsFailure)
-            {
-                return;
-            }
+            float now = Time.unscaledTime;
+            bool doubleClick = string.Equals(
+                    _lastResidentClickId,
+                    residentId,
+                    StringComparison.Ordinal)
+                && now - _lastResidentClickTime <= DoubleClickSeconds;
+            _lastResidentClickId = residentId;
+            _lastResidentClickTime = now;
+            return doubleClick ? 2 : 1;
+        }
 
-            WorldViewModel world = _session.LoadView();
-            _renderer!.Render(world);
-            DigCellVisual? refreshed = _renderer.SelectAt(selected.X, selected.Y);
-            _selectedCell = refreshed;
-            _hud.SetWorld(world);
-            _hud.SetSelection(refreshed == null ? null : refreshed.Model);
+        private static ContextPointerEvent Pointer(
+            PointerButtonKind button,
+            int clickCount = 1)
+        {
+            return new ContextPointerEvent(
+                PointerInputSurface.World,
+                button,
+                clickCount);
+        }
+
+        private bool IsInitialized()
+        {
+            return _camera != null
+                && _cameraController != null
+                && _session != null
+                && _renderer != null
+                && _agentRenderer != null
+                && _jobRenderer != null
+                && _terrainSession != null
+                && _stockpileRenderer != null
+                && _simulation != null
+                && _hud != null;
         }
     }
 }

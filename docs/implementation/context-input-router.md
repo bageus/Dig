@@ -96,6 +96,22 @@ Unity should render panels from this enum rather than independently toggling sev
 
 Local effects include selection, focus, placement preview/cancel and reason display. Selection and camera focus never mutate Domain state.
 
+## Unity adapter
+
+`DigWorldInteraction` now converts existing resident, Job and cell raycasts into router facts. The current demo slice wires:
+
+- resident single-click selection;
+- resident double-click camera focus;
+- selected resident movement to an open logical cell through `MoveAgentCommandHandler`;
+- right-click resident deselection without a second terrain command;
+- right-click digging designation when no resident is selected;
+- ground and Job local selection;
+- blocking HUD pointer shielding.
+
+`DigAgentSession.MoveResident` is a thin Application adapter. `DigAgentSimulationDriver.MoveResident` refreshes immutable Agent views, visuals and HUD after the accepted command. Camera focus changes only `DigCameraController` presentation state.
+
+The existing demo has no BuildingBox, resident-inventory or faction combat raycast visuals yet. Those command kinds remain explicit unsupported adapter cases; the router never substitutes a different mutation. Later slices add typed target adapters and matching Application handlers without changing the priority matrix.
+
 ## Validation
 
 Regression tests cover:
@@ -111,4 +127,4 @@ Regression tests cover:
 - completed-building and ground selection;
 - mutually exclusive panel modes.
 
-The next integration slice adapts existing `DigWorldInteraction` raycasts and HUD selection to this router before adding BuildingBox and resident-inventory Application handlers.
+Quality also validates C# 9 compatibility for the Unity adapter, normal headless smoke and both deterministic simulation soak profiles.
