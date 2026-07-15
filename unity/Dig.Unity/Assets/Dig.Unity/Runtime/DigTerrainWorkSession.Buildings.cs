@@ -92,6 +92,7 @@ namespace Dig.Unity
                     _buildingInventoryRepository,
                     _jobRepository,
                     journal));
+            InitializeBuildingPackingExecution(journal);
         }
 
         public IReadOnlyList<BuildingWorldViewModel> LoadBuildings()
