@@ -61,7 +61,7 @@ public sealed class StrategicPlanIntegrationTests
         StrategicExecutionJobDefinition definition =
             Assert.IsType<StrategicExecutionJobDefinition>(job.Definition);
         Assert.Equal(planId, definition.PlanId);
-        Assert.Equal(target, definition.TargetCell);
+        Assert.Equal(target, definition.TargetCell!.Value);
         Assert.True(jobs.Claim(JobId, WorkerId, tick: 2).IsSuccess);
         Assert.Contains(
             jobs.GetReservations(),
@@ -79,10 +79,12 @@ public sealed class StrategicPlanIntegrationTests
 
         StrategicExecutionPlanSnapshot completed = strategy.GetExecutionPlan(planId)!;
         Assert.Equal(StrategicExecutionPlanStatus.Completed, completed.Status);
-        Assert.Equal(JobId, completed.JobId);
+        Assert.Equal(JobId, completed.JobId!.Value);
         Assert.Null(strategy.GetActiveExecutionPlan(Player));
         Assert.Empty(jobs.GetReservations());
-        Assert.Contains(events.Events, item => item is JobAdded);
+        Assert.Contains(
+            events.Events.OfType<JobStatusChanged>(),
+            item => item.JobId == JobId && item.CurrentStatus == JobStatus.Available);
         Assert.Contains(events.Events, item => item is StrategicExecutionPlanChanged);
     }
 
@@ -120,7 +122,7 @@ public sealed class StrategicPlanIntegrationTests
         StrategicExecutionJobDefinition job =
             Assert.IsType<StrategicExecutionJobDefinition>(jobs.Get(JobId)!.Definition);
         Assert.Equal(StrategicGoalKind.Attack, job.Goal);
-        Assert.Equal(Raiders, job.TargetFactionId);
+        Assert.Equal(Raiders, job.TargetFactionId!.Value);
         Assert.Null(job.TargetCell);
     }
 
