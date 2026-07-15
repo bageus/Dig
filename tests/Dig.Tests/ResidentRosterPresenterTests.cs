@@ -227,7 +227,7 @@ public sealed class ResidentRosterPresenterTests
             retryCount: 1,
             nextRetryTick: 10,
             version: 4,
-            new JobBlockReason("path_missing", "Path is unavailable."));
+            reason: new JobBlockReason("path_missing", "Path is unavailable."));
 
         ResidentActivityDescriptor activity = Assert.Single(
             new ResidentRosterPresenter().Present(new[]
@@ -269,21 +269,21 @@ public sealed class ResidentRosterPresenterTests
         AgentActionSnapshot? action = null)
     {
         return new AgentSnapshot(
-            id,
-            name,
+            id: id,
+            name: name,
             version: 1,
             isAlive: true,
-            new AgentNeedsSnapshot(
+            needs: new AgentNeedsSnapshot(
                 new NeedValue(6000),
                 new NeedValue(5100),
                 new NeedValue(7600),
                 new NeedValue(5000)),
-            schedule,
-            action,
+            scheduledActivity: schedule,
+            activeAction: action,
             playerOrder: null,
             lastActionSwitchTick: -1,
             lastDecision: null,
-            skills ?? Array.Empty<AgentSkillValue>(),
+            skills: skills ?? Array.Empty<AgentSkillValue>(),
             traits: Array.Empty<AgentTraitId>(),
             position: new CellId(1, 1));
     }
@@ -293,20 +293,20 @@ public sealed class ResidentRosterPresenterTests
         ResidentSex sex)
     {
         return new ResidentSocietySnapshot(
-            agent.Id,
-            agent.Name,
-            sex,
+            id: agent.Id,
+            name: agent.Name,
+            sex: sex,
             birthTick: 0,
-            ResidentLifeStage.Adult,
+            lifeStage: ResidentLifeStage.Adult,
             isAlive: true,
             motherId: null,
             fatherId: null,
             partnerId: null,
             pregnancy: null,
-            agent.Position,
+            lastKnownPosition: agent.Position,
             deathCause: null,
             deathTick: null,
-            new ResidentHeritage(5000));
+            heritage: new ResidentHeritage(5000));
     }
 
     private static AgentSkillValue Skill(string id, int level)
