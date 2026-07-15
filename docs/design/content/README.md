@@ -9,6 +9,7 @@
 - здания и сервисы — #74;
 - универсальные коробки зданий — #118;
 - питание — #96;
+- непрерывные действия потребностей — #159;
 - навыки — #103;
 - копание и ресурсы — #87;
 - HUD гномов, выбор и уведомления — #113;
@@ -21,12 +22,13 @@
 - [`products.md`](products.md) — physical outputs и переработка;
 - [`weapons-and-shields.md`](weapons-and-shields.md) — боевое снаряжение;
 - [`materials.md`](materials.md) — материалы, руды, terrain и deposits;
-- [`food.md`](food.md) — блюда, укусы и разнообразие;
+- [`food.md`](food.md) — блюда, bites, желаемая еда и история 10 трапез;
 - [`alcohol.md`](alcohol.md) — напитки, бар и effects;
 - [`skills.md`](skills.md) — skill IDs;
+- [`../needs-continuous-actions.md`](../needs-continuous-actions.md) — постепенное восстановление Nutrition/Alertness/Mood;
 - [`../technology-tree.md`](../technology-tree.md) — authoritative согласованная часть дерева технологий;
 - [`../scripts-system-gap-backlog.md`](../scripts-system-gap-backlog.md) — индекс найденных систем и созданных issues;
-- [`../skills-and-progression.md`](../skills-and-progression.md) — каталог 12 навыков, capacity 100→200 и grants;
+- [`../skills-and-progression.md`](../skills-and-progression.md) — 12 навыков, grants и формула capacity;
 - [`../resident-inventory-expansion.md`](../resident-inventory-expansion.md) — личный inventory, expansions и BuildingBox input;
 - [`../resident-hud-selection-and-notifications.md`](../resident-hud-selection-and-notifications.md) — roster, panels, input и notifications;
 - [`../building-box-placement-and-packing.md`](../building-box-placement-and-packing.md) — universal box placement, assembly и packing;
@@ -46,7 +48,7 @@
 6. Buildings владеет plans/buildings/functions, но не копирует items.
 7. Production владеет orders; RecipeDefinition — inputs/outputs.
 8. Technology владеет состоянием исследований и открытиями.
-9. Agents/Skills владеет 12 skill values и TotalSkillCapacity.
+9. Agents/Skills владеет needs, 12 skill values и TotalSkillCapacity.
 10. Jobs владеет work lifecycle и reservations.
 11. Society/Lifecycle владеет sex, age, birth/death и family rules.
 12. Presentation хранит только local selection, panels, hover, preview, scroll и ticker animation.
@@ -57,6 +59,7 @@
 17. UI не зависит только от цвета.
 18. Один BuildingDefinition использует только одну construction policy.
 19. Legacy scripts являются источником кандидатов, но не автоматически утверждённым balance/content.
+20. Animation callbacks не начисляют needs, skill experience или items.
 
 ## Принятые решения
 
@@ -77,7 +80,7 @@
 - skill threshold не открывает technology автоматически;
 - eligibility появляется, когда один живой гном одновременно удовлетворяет всем требованиям;
 - игрок запускает изучение иконкой в соответствующей постройке;
-- недоступная иконка оранжевая, доступная белая, но status дублируется текстом;
+- недоступная иконка оранжевая, доступная белая, status дублируется текстом;
 - Лесопилка и Пилорама — разные узлы;
 - Пилорама производит Винокурню и Университет;
 - Мебельная мастерская производит три игровые комнаты;
@@ -87,8 +90,23 @@
 - Песчаник обрабатывает кристаллическую руду;
 - водолазный колокол исключён;
 - `Dojo` трактуется как направление «Кулачный бой»;
-- «Грибной самогон» = legacy name Огненной воды, отдельного ItemId нет;
-- продолжение дерева после согласованного участка остаётся `TBD_OWNER`.
+- «Грибной самогон» = legacy name Огненной воды;
+- продолжение дерева остаётся `TBD_OWNER`.
+
+### Еда и потребности
+
+- Nutrition design scale `0..100` переводится в Domain `0..10000` через `×100`;
+- meal состоит из трёх bites;
+- Eat восстанавливает Nutrition/Mood по bites;
+- Sleep восстанавливает Alertness/Mood, пока resident спит;
+- Leisure восстанавливает Mood, пока действие активно;
+- interruption сохраняет уже применённые effects;
+- desired dish выбирается среди исследованных блюд;
+- сначала ищется desired dish, затем любая видимая еда;
+- fallback даёт Nutrition, но не положительный базовый food Mood;
+- история хранит 10 трапез и match flag;
+- `>=6` matches даёт `+UnlockedDishCount`, `>=6` mismatches даёт `-UnlockedDishCount`;
+- кухня не удерживает постоянного worker: worker нужен только для cooking order.
 
 ### HUD и resident
 
@@ -106,8 +124,14 @@
 - one pool contains all 12 skills;
 - TotalSkillCapacity base 100, university max 200;
 - individual max 100;
-- value 120 removed as erroneous;
-- exact redistribution formula remains Q-029.
+- mixed work может начислять несколько skills одним bundle;
+- Production grants — per produced unit after output commit;
+- Jobs grants — after JobCompleted;
+- Combat grants — per confirmed combat event;
+- one-handed hit и shield defense могут начисляться в одном бою;
+- overflow снимается с donors пропорционально их текущим значениям;
+- все получатели mixed bundle исключаются из donor pool;
+- fixed-point largest-remainder rounding сохраняет точную сумму.
 
 ### Buildings
 
@@ -135,11 +159,9 @@
 
 Основные оставшиеся вопросы:
 
-- Q-014 — balance values;
-- Q-015–Q-018 — food scaling, variety, interruption и kitchen workers;
-- Q-019–Q-021 — mixed grants, equipment/defense и timing;
-- Q-029 — deterministic skill redistribution formula;
-- research duration/cost/worker и policy потери requirements во время progress — описаны как TBD в `technology-tree.md`/#128.
+- Q-014 — непредоставленные balance values;
+- Q-039 — влияние Cooking на speed/output/effects;
+- Q-034–Q-037 — research lifecycle и модель фермы.
 
 ## Связанные issues
 
@@ -158,10 +180,11 @@
 - #108 — furnace/foundry/crystal processor;
 - #118 — universal box placement/packing.
 
-### Еда
+### Еда и Needs
 
 - #97–#101;
-- #144 — вкусовые профили и выбор еды.
+- #144 — вкусовые профили;
+- #159 — continuous effects.
 
 ### Навыки
 
