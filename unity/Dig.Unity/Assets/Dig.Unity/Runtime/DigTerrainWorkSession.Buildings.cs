@@ -22,6 +22,7 @@ namespace Dig.Unity
             "The demo building runtime is not initialized.");
 
         private InMemoryBuildingsRepository? _buildingsRepository;
+        private InMemoryInventoryRepository? _buildingInventoryRepository;
         private BuildingWorldPresenter? _buildingPresenter;
         private BuildingFunctionsCommandAdapter? _buildingCommands;
         private long _nextPackingSequence;
@@ -65,13 +66,22 @@ namespace Dig.Unity
                 definition.MaximumDurability,
                 version: 1,
                 diagnosticReason: null,
-                new BuildingBoxPlanSnapshot(
+                boxPlan: new BuildingBoxPlanSnapshot(
                     sourceStackId,
                     assemblyJobId,
                     BuildingBoxCommitState.Consumed));
             BuildingsState buildings = BuildingsState.RestoreWithPacking(
                 new[] { snapshot }).Value;
             _buildingsRepository = new InMemoryBuildingsRepository(buildings);
+            _buildingInventoryRepository = new InMemoryInventoryRepository(
+                new InventoryState(new ItemCatalog(new[]
+                {
+                    new ItemDefinition(
+                        DemoBuildingBoxItemId,
+                        "Workshop BuildingBox",
+                        maximumStackSize: 1,
+                        isTool: false),
+                })));
 
             BuildingFunctionsPresenter functions = new BuildingFunctionsPresenter();
             _buildingPresenter = new BuildingWorldPresenter(functions);
@@ -79,7 +89,7 @@ namespace Dig.Unity
                 functions,
                 new StartBuildingBoxPackingHandler(
                     _buildingsRepository,
-                    _inventoryRepository,
+                    _buildingInventoryRepository,
                     _jobRepository,
                     journal));
         }
@@ -120,7 +130,7 @@ namespace Dig.Unity
                 DemoId('e', sequence),
                 DemoId('f', sequence),
                 priority: 650,
-                tick);
+                tick: tick);
         }
 
         private void CreateCompletedAssemblyJob(
@@ -141,7 +151,7 @@ namespace Dig.Unity
                     workPosition,
                     priority: 600,
                     createdTick: 0,
-                    JobRetryPolicy.Default);
+                    retryPolicy: JobRetryPolicy.Default);
             Require(jobs.Add(definition));
             Require(jobs.MakeAvailable(assemblyJobId, tick: 0));
             Require(jobs.Claim(assemblyJobId, DemoId('a', 1), tick: 0));
@@ -158,6 +168,7 @@ namespace Dig.Unity
                 .Where(value => !value.IsSolid && value.Y > 0)
                 .OrderByDescending(value => value.X)
                 .ThenByDescending(value => value.Y)
+                .Select(value => (WorldCellViewModel?)value)
                 .FirstOrDefault();
             if (!cell.HasValue)
             {
