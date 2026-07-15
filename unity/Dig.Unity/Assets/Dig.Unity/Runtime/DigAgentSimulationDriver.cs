@@ -71,9 +71,9 @@ namespace Dig.Unity
             string? selectedAgentId = _agentRenderer!.SelectedAgentId;
             string? selectedJobId = _jobRenderer!.SelectedJobId;
             IReadOnlyList<AgentViewModel> before = _agentSession!.LoadView();
-            _terrainSession!.SynchronizeDesignations(
-                checked(_agentSession.Tick + 1),
-                before);
+            long nextTick = checked(_agentSession.Tick + 1);
+            _terrainSession!.SynchronizeDesignations(nextTick, before);
+            _terrainSession.SynchronizeHauling(nextTick, before);
             IReadOnlyDictionary<string, CellId> movement =
                 _terrainSession.PlanMovement(before);
             Result result = _agentSession.Advance(movement);
