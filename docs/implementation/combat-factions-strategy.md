@@ -4,11 +4,19 @@
 
 The implementation keeps three independent authoritative owners:
 
-- `CombatState` owns resolved attacks, weapon cooldown facts and active combat statuses;
+- `CombatState` owns combat intentions, resolved attacks, weapon cooldown facts and active statuses;
 - `FactionState` owns memberships, diplomacy scores and territory claims;
-- `StrategicAiState` owns each AI faction's current strategic goal and next planning tick.
+- `StrategicAiState` owns each AI faction's current goal, planning cadence and execution plans.
 
-Agents continue to own Health and life/death. Jobs owns healing work and all worker/position reservations. Presentation may animate typed events, but an animation callback cannot resolve an attack or apply damage.
+Agents continue to own Health and life/death. Jobs owns healing and strategic work plus all worker/position reservations. Presentation may animate typed events, but an animation callback cannot issue an intent, resolve an attack or apply damage.
+
+## Combat intentions
+
+Every combat order has a stable `CombatIntentId`, actor, kind, source, lifetime and optional entity/cell target. Sources distinguish autonomous behavior, Strategic AI, player orders and alarms.
+
+`CombatState` keeps one active intent per actor. Reissuing the same intent id is idempotent. A new intent cancels the previous one with `replaced_by_new_intent`; completion, explicit cancellation and expiry publish typed facts. Immutable snapshots preserve both active and historical intent state for diagnostics and Presentation.
+
+Application sends intents through `IssueCombatIntentCommand` and `FinishCombatIntentCommand`; UI code never owns a parallel attack/retreat selection state.
 
 ## Factions and territory
 
@@ -61,25 +69,27 @@ Healing is not an instantaneous combat side effect. `HealingJobDefinition` is a 
 
 `CompleteHealingJobHandler` restores Health and completes the Job in one validated path. Job completion releases reservations, and a repeated completion command cannot heal the patient again.
 
-## Strategic AI
+## Strategic goals and plans
 
-`StrategicAiState` evaluates candidates for:
+`StrategicAiState` evaluates candidates for resource development, housing development, territory expansion, defense, attack and retreat. Candidates include stable scores and reason codes. The highest score wins with `StrategicGoalKind` as the deterministic tie-break.
 
-- resource development;
-- housing development;
-- territory expansion;
-- defense;
-- attack;
-- retreat.
+Evaluation before `NextPlanningTick` returns a skipped report without recalculating the plan or changing state, so strategic AI does not run an expensive full pass every frame.
 
-Candidates include stable scores and reason codes. The highest score wins with `StrategicGoalKind` as the deterministic tie-break. Evaluation before `NextPlanningTick` returns a skipped report without recalculating the plan or changing state, so strategic AI does not run an expensive full pass every frame.
+A selected goal is converted into a `StrategicExecutionPlan` with a stable id, target cell/faction, reason and lifecycle:
+
+```text
+Proposed -> Materialized -> Completed
+                     \-> Cancelled
+```
+
+Only a plan matching the faction's current goal can be created. A new plan cancels the previous active plan deterministically. `MaterializeStrategicPlanHandler` creates a typed `StrategicExecutionJobDefinition` in the common JobSystem. Positioned development/defense/retreat plans reserve the target cell when claimed; attack plans retain the target faction. `SynchronizeStrategicPlanJobHandler` completes or cancels the plan from the terminal Job status.
 
 ## Headless validation
 
-The normal headless smoke now executes a hostile deterministic encounter, verifies that replay does not apply damage twice, and confirms that Strategic AI retreats from an overwhelming threat.
+The normal headless smoke executes a hostile deterministic encounter, verifies that replay does not apply damage twice, and confirms that Strategic AI retreats from an overwhelming threat.
 
-Automated tests additionally cover faction territory violations, range/cooldown/hostility rejection, status expiry, tactical threat selection, application damage idempotency, healing reservations and sparse strategic planning.
+Automated tests additionally cover combat intent replacement/expiry, faction territory violations, range/cooldown/hostility rejection, status expiry, tactical threat selection, application damage idempotency, healing reservations, sparse strategic planning and plan-to-Job lifecycle synchronization.
 
 ## Follow-up integration
 
-Content-specific weapon and shield catalogs, combat skill grants, sentry/arsenal buildings, player attack orders and Unity combat visuals build on these contracts. They must consume `CombatAttackResolved` and other typed facts rather than creating a parallel combat state.
+Content-specific weapon and shield catalogs, combat skill grants, sentry/arsenal buildings and Unity combat visuals build on these contracts. They must consume combat intentions, `CombatAttackResolved` and strategic Job facts rather than creating parallel combat or planning state.
