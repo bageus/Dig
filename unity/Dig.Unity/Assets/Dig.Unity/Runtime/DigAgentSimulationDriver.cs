@@ -28,6 +28,7 @@ namespace Dig.Unity
         private DigAgentRenderer? _agentRenderer;
         private DigTerrainWorkSession? _terrainSession;
         private DigJobRenderer? _jobRenderer;
+        private DigBuildingRenderer? _buildingRenderer;
         private DigWorldItemRenderer? _itemRenderer;
         private DigStockpileRenderer? _stockpileRenderer;
         private DigNavigationRouteRenderer? _routeRenderer;
@@ -50,6 +51,7 @@ namespace Dig.Unity
             DigAgentRenderer agentRenderer,
             DigTerrainWorkSession terrainSession,
             DigJobRenderer jobRenderer,
+            DigBuildingRenderer buildingRenderer,
             DigWorldItemRenderer itemRenderer,
             DigStockpileRenderer stockpileRenderer,
             DigNavigationRouteRenderer routeRenderer,
@@ -61,6 +63,7 @@ namespace Dig.Unity
             _agentRenderer = agentRenderer;
             _terrainSession = terrainSession;
             _jobRenderer = jobRenderer;
+            _buildingRenderer = buildingRenderer;
             _itemRenderer = itemRenderer;
             _stockpileRenderer = stockpileRenderer;
             _routeRenderer = routeRenderer;
@@ -151,6 +154,7 @@ namespace Dig.Unity
         {
             string? selectedAgentId = _agentRenderer!.SelectedAgentId;
             string? selectedJobId = _jobRenderer!.SelectedJobId;
+            string? selectedBuildingId = _buildingRenderer!.SelectedBuildingId;
             IReadOnlyList<AgentViewModel> before = _agentSession!.LoadView();
             long nextTick = checked(_agentSession.Tick + 1);
             _terrainSession!.SynchronizeDesignations(nextTick, before);
@@ -190,16 +194,20 @@ namespace Dig.Unity
 
             _agentRenderer.Render(agents, movementDuration);
             _jobRenderer.Render(jobs);
+            _buildingRenderer.Render(_terrainSession.LoadBuildings());
             _itemRenderer!.Render(items);
             _stockpileRenderer!.Render(storage);
             _routeRenderer!.Render(routes);
             _hud!.SetAgents(agents, _agentSession.Tick);
             _hud.SetJobs(jobs);
             _hud.SetStorageStatus(storage);
-            RestoreSelection(selectedAgentId, selectedJobId);
+            RestoreSelection(selectedAgentId, selectedJobId, selectedBuildingId);
         }
 
-        private void RestoreSelection(string? selectedAgentId, string? selectedJobId)
+        private void RestoreSelection(
+            string? selectedAgentId,
+            string? selectedJobId,
+            string? selectedBuildingId)
         {
             if (selectedAgentId != null)
             {
@@ -212,6 +220,14 @@ namespace Dig.Unity
             {
                 DigJobVisual? selectedJob = _jobRenderer!.SelectById(selectedJobId);
                 _hud!.SetJobSelection(selectedJob?.Model);
+                return;
+            }
+
+            if (selectedBuildingId != null)
+            {
+                DigBuildingVisual? selectedBuilding =
+                    _buildingRenderer!.SelectById(selectedBuildingId);
+                _hud!.SetBuildingSelection(selectedBuilding?.Model);
             }
         }
 
@@ -223,6 +239,7 @@ namespace Dig.Unity
                 && _agentRenderer != null
                 && _terrainSession != null
                 && _jobRenderer != null
+                && _buildingRenderer != null
                 && _itemRenderer != null
                 && _stockpileRenderer != null
                 && _routeRenderer != null

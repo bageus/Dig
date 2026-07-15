@@ -24,6 +24,7 @@ namespace Dig.Unity
             _selectedJob = selected;
             _selectedCell = null;
             _selectedAgent = null;
+            ClearBuildingSelection();
         }
 
         private void ClearJobSelection()
