@@ -45,7 +45,7 @@ public sealed class CombatStateSnapshot
     public IReadOnlyList<CombatStatusSnapshot> Statuses { get; }
 }
 
-public sealed class CombatState : AggregateRoot
+public sealed partial class CombatState : AggregateRoot
 {
     private readonly Dictionary<CombatActionId, CombatAttackResolution> _resolutions =
         new Dictionary<CombatActionId, CombatAttackResolution>();

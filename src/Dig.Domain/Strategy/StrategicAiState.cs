@@ -41,7 +41,7 @@ public sealed class StrategicGoalChanged : IDomainEvent
     public string ReasonCode { get; }
 }
 
-public sealed class StrategicAiState : AggregateRoot
+public sealed partial class StrategicAiState : AggregateRoot
 {
     private readonly Dictionary<FactionId, StrategicPlanState> _plans =
         new Dictionary<FactionId, StrategicPlanState>();
