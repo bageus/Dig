@@ -12,6 +12,9 @@ namespace Dig.Unity
     [DisallowMultipleComponent]
     public sealed class DigUnityBootstrap : MonoBehaviour
     {
+        private const int MinimumDemoDimension = 8;
+        private const int MaximumDemoDimension = 64;
+
         [SerializeField]
         private int demoWidth = 20;
 
@@ -26,6 +29,7 @@ namespace Dig.Unity
 
         private void Awake()
         {
+            ClampDemoConfiguration();
             DigWorldSession worldSession = DigWorldSession.CreateDemo(
                 demoWidth,
                 demoHeight,
@@ -129,11 +133,25 @@ namespace Dig.Unity
             return component == null ? target.AddComponent<T>() : component;
         }
 
+        private void ClampDemoConfiguration()
+        {
+            demoWidth = Mathf.Clamp(
+                demoWidth,
+                MinimumDemoDimension,
+                MaximumDemoDimension);
+            demoHeight = Mathf.Clamp(
+                demoHeight,
+                MinimumDemoDimension,
+                MaximumDemoDimension);
+            chunkSize = Mathf.Clamp(
+                chunkSize,
+                1,
+                Mathf.Min(demoWidth, demoHeight));
+        }
+
         private void OnValidate()
         {
-            demoWidth = Mathf.Max(8, demoWidth);
-            demoHeight = Mathf.Max(8, demoHeight);
-            chunkSize = Mathf.Clamp(chunkSize, 1, Mathf.Min(demoWidth, demoHeight));
+            ClampDemoConfiguration();
         }
     }
 }
