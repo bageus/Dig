@@ -54,7 +54,7 @@ public sealed partial class SaveGameLoader
         {
             if (saved is null
                 || !Enum.IsDefined(typeof(ReservationKind), saved.Kind)
-                || saved.CreatedTick < 0)
+                || saved.AcquiredTick < 0)
             {
                 throw new InvalidOperationException("Saved reservation is invalid.");
             }
@@ -63,7 +63,7 @@ public sealed partial class SaveGameLoader
                 ParseReservationKey((ReservationKind)saved.Kind, saved.Value),
                 EntityId.Parse(saved.JobId),
                 EntityId.Parse(saved.AgentId),
-                saved.CreatedTick));
+                saved.AcquiredTick));
         }
 
         return JobSystem.Restore(jobs, reservations);
@@ -96,9 +96,10 @@ public sealed partial class SaveGameLoader
         {
             ReservationKind.Job => ReservationKey.ForJob(EntityId.Parse(value)),
             ReservationKind.Agent => ReservationKey.ForAgent(EntityId.Parse(value)),
+            ReservationKind.Item => ReservationKey.ForItem(EntityId.Parse(value)),
+            ReservationKind.Tool => ReservationKey.ForTool(EntityId.Parse(value)),
             ReservationKind.Position => ReservationKey.ForPosition(ParseCell(value)),
             ReservationKind.Designation => ReservationKey.ForDesignation(ParseCell(value)),
-            ReservationKind.Quantity => ReservationKey.ForQuantity(EntityId.Parse(value)),
             ReservationKind.Destination => ReservationKey.ForDestination(EntityId.Parse(value)),
             _ => throw new InvalidOperationException("Unsupported reservation kind."),
         };
