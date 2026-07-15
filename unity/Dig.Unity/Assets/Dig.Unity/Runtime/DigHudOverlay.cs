@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Dig.Domain.Core;
 using Dig.Presentation.Agents;
+using Dig.Presentation.Runtime;
 using Dig.Presentation.World;
 using UnityEngine;
 
@@ -9,12 +10,18 @@ namespace Dig.Unity
     [DisallowMultipleComponent]
     public sealed partial class DigHudOverlay : MonoBehaviour
     {
+        private const float HudX = 16f;
+        private const float HudY = 16f;
+        private const float HudWidth = 540f;
+        private const float HudHeight = 800f;
+
         private WorldViewModel? _world;
         private IReadOnlyList<AgentViewModel> _agents =
             System.Array.Empty<AgentViewModel>();
         private WorldCellViewModel? _selectedCell;
         private AgentViewModel? _selectedAgent;
         private DigStorageStatus? _storageStatus;
+        private DigAgentSimulationDriver? _simulation;
         private long _tick;
         private string _status = "Starting runtime...";
 
@@ -32,6 +39,17 @@ namespace Dig.Unity
         internal void SetStorageStatus(DigStorageStatus status)
         {
             _storageStatus = status;
+        }
+
+        internal void SetSimulationControls(DigAgentSimulationDriver simulation)
+        {
+            _simulation = simulation;
+        }
+
+        internal bool ContainsScreenPoint(Vector3 screenPoint)
+        {
+            Vector2 guiPoint = new Vector2(screenPoint.x, Screen.height - screenPoint.y);
+            return new Rect(HudX, HudY, HudWidth, HudHeight).Contains(guiPoint);
         }
 
         public void SetSelection(WorldCellViewModel? selected)
@@ -60,7 +78,9 @@ namespace Dig.Unity
 
         private void OnGUI()
         {
-            GUILayout.BeginArea(new Rect(16f, 16f, 540f, 780f), GUI.skin.box);
+            GUILayout.BeginArea(
+                new Rect(HudX, HudY, HudWidth, HudHeight),
+                GUI.skin.box);
             GUILayout.Label("DIG — Interactive Settlement Slice");
             if (_world != null)
             {
@@ -68,10 +88,12 @@ namespace Dig.Unity
             }
 
             GUILayout.Label($"Residents: {_agents.Count} | jobs: {JobCount} | tick: {_tick}");
+            DrawTimeControls();
             DrawStorageStatus();
             GUILayout.Space(6f);
             GUILayout.Label("Click inside Game view before using controls");
             GUILayout.Label("WASD / arrows pan | wheel zoom | Q/E rotate");
+            GUILayout.Label("Space pause/resume | . step | -/+ speed");
             GUILayout.Label("3 jobs/reservations | 4 navigation routes");
             GUILayout.Label("Left click select | right click toggle digging");
             GUILayout.Space(8f);
@@ -81,6 +103,45 @@ namespace Dig.Unity
             GUILayout.Space(8f);
             GUILayout.Label(_status);
             GUILayout.EndArea();
+        }
+
+        private void DrawTimeControls()
+        {
+            if (_simulation == null)
+            {
+                return;
+            }
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label($"Time: {_simulation.PlaybackLabel}", GUILayout.Width(92f));
+            if (GUILayout.Button(
+                _simulation.IsPaused ? "Resume" : "Pause",
+                GUILayout.Width(68f)))
+            {
+                _simulation.TogglePause();
+            }
+
+            if (GUILayout.Button("Step", GUILayout.Width(52f)))
+            {
+                _simulation.StepOnce();
+            }
+
+            if (GUILayout.Button("1x", GUILayout.Width(42f)))
+            {
+                _simulation.SetSpeed(SimulationPlaybackSpeed.Normal);
+            }
+
+            if (GUILayout.Button("2x", GUILayout.Width(42f)))
+            {
+                _simulation.SetSpeed(SimulationPlaybackSpeed.Fast);
+            }
+
+            if (GUILayout.Button("4x", GUILayout.Width(42f)))
+            {
+                _simulation.SetSpeed(SimulationPlaybackSpeed.VeryFast);
+            }
+
+            GUILayout.EndHorizontal();
         }
 
         private void DrawStorageStatus()
