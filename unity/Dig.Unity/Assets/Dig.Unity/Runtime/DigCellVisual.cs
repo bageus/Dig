@@ -7,8 +7,8 @@ namespace Dig.Unity
     public sealed class DigCellVisual : MonoBehaviour
     {
         private Renderer? _renderer;
+        private MaterialPropertyBlock? _properties;
         private Color _baseColor;
-        private readonly MaterialPropertyBlock _properties = new MaterialPropertyBlock();
 
         public WorldCellViewModel Model { get; private set; }
 
@@ -16,7 +16,7 @@ namespace Dig.Unity
         {
             Model = model;
             _baseColor = baseColor;
-            _renderer = GetComponent<Renderer>();
+            EnsureRenderState();
             ApplyColor(_baseColor);
         }
 
@@ -28,9 +28,23 @@ namespace Dig.Unity
             ApplyColor(color);
         }
 
-        private void ApplyColor(Color color)
+        private void EnsureRenderState()
         {
             if (_renderer == null)
+            {
+                _renderer = GetComponent<Renderer>();
+            }
+
+            if (_properties == null)
+            {
+                _properties = new MaterialPropertyBlock();
+            }
+        }
+
+        private void ApplyColor(Color color)
+        {
+            EnsureRenderState();
+            if (_renderer == null || _properties == null)
             {
                 return;
             }
