@@ -4,74 +4,143 @@
 
 ## Назначение
 
-Этот файл является authoritative design-каталогом готовой еды. Он описывает блюда, рецепты, кухонные уровни, поэтапное употребление и влияние разнообразия питания.
+Этот файл является authoritative design-каталогом готовой еды. Он описывает блюда, рецепты, кухонные уровни, поэтапное употребление, выбор желаемого блюда и влияние последних трапез на настроение.
 
-Реализованная система уже содержит потребность `Nutrition`, Utility AI intent `Eat`, резервирование еды и атомарное списание порции. Новое правило **заменяет** существующее применение полного эффекта только после завершения действия: трапеза должна состоять из отдельных укусов.
+Текущая реализация содержит `Nutrition`, Utility AI intent `Eat`, резервирование еды и complete-only consumption. Целевая модель заменяет её тремя simulation bites и непрерывными effects согласно #97 и #159.
 
 ## Владение состоянием
 
-- `AgentState` / Needs владеют `Nutrition`, текущим действием еды, прогрессом укусов и историей рациона;
-- `InventoryState` владеет количеством готовых блюд до начала трапезы;
-- `Production` владеет cooking orders, входами и выходами;
-- kitchen definition определяет tier и допустимые рецепты;
-- Society использует итоговое настроение в правилах рождаемости и не копирует food history;
-- Presentation только отображает authoritative meal snapshot и animation profile.
+- Agents владеет `Nutrition`, `Mood`, active `Eat` action, bite progress, выбранным желаемым блюдом и diet history;
+- Inventory владеет количеством готовой еды до commit начала трапезы;
+- Production владеет cooking orders, ingredients и output;
+- Technology предоставляет список исследованных блюд;
+- World/Exploration предоставляет visibility query;
+- Society использует итоговый Mood и не копирует diet history;
+- Presentation отображает snapshots и animation profile, но не начисляет effects.
 
 ## Масштаб сытости
 
-Значения блюд ниже заданы в design-единицах `15–33`. Текущая доменная потребность `Nutrition` хранится в диапазоне `0–10000`.
+Design/UI значения блюд заданы в шкале `0..100`. Текущий Domain хранит needs в `0..10000`.
 
-До ответа на [Q-015](../open-questions.md#q-015--масштаб-единиц-сытости) запрещено молча считать `15` доменными единицами или автоматически умножать значения. Рекомендуемая интерпретация для обсуждения: UI-шкала `0–100`, где одна design-единица равна 100 доменным единицам.
+```text
+DomainNutrition = DesignNutrition × 100
+```
+
+Примеры:
+
+- блюдо `15` даёт `1500` Domain units;
+- при трёх укусах один укус даёт `5` UI units или `500` Domain units;
+- блюдо `33` даёт `3300`, по `1100` за укус.
+
+Content definitions сохраняют design value и заранее вычисленный/валидируемый domain value либо используют единый converter. Разные системы не реализуют собственные коэффициенты.
+
+## Выбор желаемого блюда
+
+Когда resident принимает намерение поесть:
+
+1. из всех **исследованных** `FoodDefinition` выбирается одно желаемое блюдо;
+2. выбор использует отдельный детерминированный random stream и сохраняется в action, поэтому Save/Load не выполняет reroll;
+3. сначала система ищет незарезервированную порцию желаемого блюда в текущей видимой зоне;
+4. если такая порция найдена, она резервируется и resident идёт к ней;
+5. если желаемого блюда нет, система ищет любую другую видимую незарезервированную еду;
+6. если нет никакой доступной еды, intent получает `food_unavailable`.
+
+Критический голод не отменяет выбор желаемого блюда, но разрешает fallback на любую еду.
 
 ## Модель трапезы
 
 ### Резервирование и старт
 
-1. Utility AI выбирает доступный ItemStack категории `food`.
-2. Одна порция резервируется за конкретным гномом.
-3. До фактического старта трапезы interruption освобождает reservation без потери еды.
-4. При подтверждённом старте одна quantity атомарно списывается из Inventory.
-5. Списанная порция становится payload текущего `Eat` action, но не новым ItemStack и не вторым inventory.
+1. Одна порция резервируется за конкретным resident.
+2. До commit начала interruption освобождает reservation без потери еды.
+3. При commit начала одна quantity атомарно списывается из Inventory.
+4. Порция становится payload единственного active `Eat` action, а не новым ItemStack.
+5. Action хранит desired FoodId, consumed FoodId и `Matched = desired == consumed`.
 
 ### Три укуса
 
 - стандартная трапеза состоит из `3` укусов;
-- каждый завершённый укус немедленно восстанавливает одну треть полной сытости блюда;
-- все заданные значения блюд делятся на 3 без остатка;
-- после третьего укуса действие завершается без повторного начисления полного эффекта;
-- simulation определяет момент укуса; animation event не изменяет потребности и количество предметов.
+- каждый завершённый simulation bite немедленно восстанавливает одну треть Nutrition;
+- каждый bite может восстановить data-driven базовый Mood;
+- положительный базовый Mood еды применяется только для matched meal;
+- fallback meal восстанавливает Nutrition, но его положительный food Mood равен нулю;
+- третий bite завершает action без повторного полного эффекта;
+- animation event только отображает authoritative bite index.
+
+Точные значения базового Mood еды остаются balance data и не выводятся из Nutrition автоматически.
 
 ### Прерывание
 
-Если начатая трапеза прервана срочным действием:
+Если начатая трапеза прервана:
 
-- уже применённая сытость сохраняется;
+- Nutrition и Mood завершённых укусов сохраняются;
 - оставшиеся укусы не применяются;
-- остаток порции пропадает;
+- остаток порции исчезает;
 - еда не возвращается в Inventory и не падает на землю;
-- диагностический отчёт показывает число съеденных и потерянных укусов.
+- диагностический отчёт показывает completed/wasted bites;
+- completion effect не применяется повторно.
 
-Пример: гриль-гриб даёт `15`. После одного укуса гном получает `5`. Если трапеза прервана, оставшиеся `10` теряются.
+Пример: гриль-гриб даёт `15`. После одного укуса resident получает `5` Nutrition UI units. При interruption оставшиеся `10` теряются.
 
-Полный список interruption classes уточняется в [Q-017](../open-questions.md#q-017--какие-прерывания-уничтожают-остаток-трапезы).
+## История последних трапез
+
+Для каждого resident хранится ring buffer из последних `10` фактически начатых трапез.
+
+`DietHistoryEntry` содержит:
+
+- desired `FoodVarietyId`;
+- consumed `FoodVarietyId`;
+- `Matched`;
+- первый committed bite tick;
+- число исследованных блюд на момент расчёта;
+- source meal action id.
+
+Запись создаётся после первого завершённого укуса. Трапеза, прерванная до первого укуса, не входит в историю. Повторные укусы не создают новые записи.
+
+## Формула разнообразия
+
+После добавления текущей записи система оставляет последние десять и считает `Matches`/`Mismatches`.
+
+Пока записей меньше десяти, diversity Mood delta равна нулю.
+
+Для полного окна:
+
+```text
+U = число исследованных блюд на момент завершённого укуса/трапезы
+
+если Mismatches >= 6:
+    DiversityMoodDelta = -U
+иначе если Matches >= 6 и текущая трапеза Matched:
+    DiversityMoodDelta = +U
+иначе:
+    DiversityMoodDelta = 0
+```
+
+Следствия:
+
+- окно `5/5` не изменяет Mood;
+- текущий fallback meal никогда не создаёт положительный delta;
+- плохая история продолжает давать отрицательный delta, пока окно не улучшится;
+- чем больше исследованных блюд, тем сильнее положительное или отрицательное влияние;
+- Mood clamp применяется после delta;
+- рождаемость меняется только косвенно через Mood;
+- алкоголь не входит в выбор без `Food`/`FoodVarietyId`.
 
 ## FoodDefinition
 
-Каждое блюдо должно определять:
+Каждое блюдо определяет:
 
 - stable `ItemId`;
-- localization key и display name;
-- категории `Food` и дополнительные tags;
-- `TotalNutritionDesignUnits`;
-- `BiteCount = 3`;
-- `AnimationProfileId`;
 - `FoodVarietyId`;
-- размер stack;
-- допустимость хранения и hauling;
-- spoilage, если войдёт в scope;
-- возрастные/состояниевые ограничения, если появятся;
+- localization key;
+- `TotalNutritionDesignUnits`;
+- `TotalNutritionDomainUnits` или единый conversion contract;
+- `BiteCount = 3`;
+- `BaseMoodPerBite`;
+- `AnimationProfileId`;
+- stack/storage/hauling rules;
 - recipe reference;
-- content version для save migration.
+- content version.
 
 ## Уровни кухни
 
@@ -82,97 +151,111 @@
 | Индустриальная кухня | `kitchen.industrial` | 3 порции |
 | Люксовая кухня | `kitchen.luxury` | 3 порции |
 
-Выход зависит от уровня кухни, а не от названия конкретного блюда. Недоступный на tier рецепт не может быть запущен через UI или прямую Application command.
+Выход зависит от kitchen tier, а не от display name блюда.
+
+## Работник кухни
+
+Кухня не требует постоянного закреплённого работника.
+
+- worker нужен только при наличии cooking order;
+- Production/Jobs выбирают и резервируют допустимого resident;
+- после completion, cancellation или terminal block worker reservation освобождается;
+- пустая очередь готовки не удерживает resident у кухни;
+- количество worker places определяется BuildingDefinition;
+- влияние уровня `skill.cooking` на скорость/output/effects остаётся Q-039.
 
 ## Каталог блюд
 
-Обозначения кухонь: `К` — костёр, `С` — средневековая, `И` — индустриальная, `Л` — люксовая.
+Обозначения: `К` — костёр, `С` — средневековая, `И` — индустриальная, `Л` — люксовая.
 
-| Предлагаемый ItemId | Блюдо | Ингредиенты | Полная сытость | За укус | К | С | И | Л |
-|---|---|---|---:|---:|---:|---:|---:|---:|
-| `food.grilled_mushroom` | Гриль-гриб | 1 шляпка гриба | 15 | 5 | 2 | 2 | 3 | 3 |
-| `food.roasted_hamster` | Жареный хомяк | 1 хомяк | 18 | 6 | — | 2 | 3 | 3 |
-| `food.hamster_stew` | Рагу из хомяка | 1 хомяк, 1 ножка гриба | 24 | 8 | — | 2 | 3 | 3 |
-| `food.mushroom_stew` | Рагу из грибов | 1 шляпка, 1 ножка | 21 | 7 | — | 2 | 3 | 3 |
-| `food.larva_soup` | Суп из личинок | 1 личинка, 1 ножка | 24 | 8 | — | 2 | 3 | 3 |
-| `food.mushroom_bread` | Грибной хлеб | 2 шляпки | 27 | 9 | — | — | 3 | 3 |
-| `food.larva_jelly` | Желе из личинок | 1 шляпка, 1 личинка | 27 | 9 | — | — | 3 | 3 |
-| `food.meat_pie` | Мясной пирог | 1 шляпка, 1 хомяк | 27 | 9 | — | — | 3 | 3 |
-| `food.larva_foie_gras` | Фуагра из личинок | 1 шляпка, 2 личинки | 33 | 11 | — | — | — | 3 |
+| ItemId | Блюдо | Ингредиенты | Сытость UI | Domain | За укус UI | К | С | И | Л |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|
+| `food.grilled_mushroom` | Гриль-гриб | 1 шляпка гриба | 15 | 1500 | 5 | 2 | 2 | 3 | 3 |
+| `food.roasted_hamster` | Жареный хомяк | 1 хомяк | 18 | 1800 | 6 | — | 2 | 3 | 3 |
+| `food.hamster_stew` | Рагу из хомяка | 1 хомяк, 1 ножка | 24 | 2400 | 8 | — | 2 | 3 | 3 |
+| `food.mushroom_stew` | Рагу из грибов | 1 шляпка, 1 ножка | 21 | 2100 | 7 | — | 2 | 3 | 3 |
+| `food.larva_soup` | Суп из личинок | 1 личинка, 1 ножка | 24 | 2400 | 8 | — | 2 | 3 | 3 |
+| `food.mushroom_bread` | Грибной хлеб | 2 шляпки | 27 | 2700 | 9 | — | — | 3 | 3 |
+| `food.larva_jelly` | Желе из личинок | 1 шляпка, 1 личинка | 27 | 2700 | 9 | — | — | 3 | 3 |
+| `food.meat_pie` | Мясной пирог | 1 шляпка, 1 хомяк | 27 | 2700 | 9 | — | — | 3 | 3 |
+| `food.larva_foie_gras` | Фуагра из личинок | 1 шляпка, 2 личинки | 33 | 3300 | 11 | — | — | — | 3 |
 
-Число в столбце кухни — количество готовых порций за один успешный production cycle. `—` означает, что рецепт на этом уровне запрещён.
-
-## Разнообразие питания
-
-После появления реального выбора блюд гномы начинают ожидать разнообразный рацион.
-
-Подтверждённые правила:
-
-- при единственном доступном блюде штрафа за однообразие нет;
-- после активации системы повторение одного и того же блюда ухудшает настроение;
-- новое блюдо обновляет индивидуальную историю рациона;
-- критический голод важнее предпочтения разнообразия;
-- снижение рождаемости происходит косвенно через ухудшение настроения;
-- отдельный прямой fertility penalty за однообразие не создаётся;
-- алкоголь не считается блюдом для разнообразия без явного food tag.
-
-Неопределённые параметры перечислены в [Q-016](../open-questions.md#q-016--правила-разнообразия-рациона): окно истории, минимальное число уникальных блюд, условие доступности, скорость штрафа и восстановления.
+Число в столбце кухни — output quantity одного production cycle.
 
 ## Utility AI
 
-При выборе еды система должна учитывать:
+Food choice учитывает:
 
 1. критичность голода;
-2. доступность и reservation порции;
-3. путь;
-4. ожидаемую сытость;
-5. разнообразие рациона;
-6. риск переполнения шкалы;
-7. текущие срочные действия.
+2. сохранённый desired dish roll;
+3. visibility;
+4. незарезервированный stock;
+5. путь;
+6. fallback availability;
+7. риск переполнения Nutrition;
+8. срочные действия.
 
-Разнообразие влияет на выбор между доступными блюдами, но не должно заставлять критически голодного гнома отказаться от единственной еды.
+После выбора target reservation выполняется атомарно. Несколько residents не могут выбрать одну quantity.
 
 ## Анимации
 
-Разные блюда могут иметь разные `AnimationProfileId`, props и визуальную продолжительность фаз. При этом:
+Разные блюда могут использовать разные `AnimationProfileId`, но:
 
-- число укусов и их completion принадлежат simulation;
-- Presentation читает текущий bite index;
-- потерянный или повторный animation callback не меняет результат;
-- interruption немедленно переключает визуальное действие после authoritative command result.
+- число укусов задаёт simulation;
+- Presentation читает bite index;
+- потерянный callback не задерживает authoritative effect бесконечно;
+- повторный callback не создаёт второй effect;
+- interruption немедленно переключает view после command result.
+
+## Save/Load
+
+Сохраняются:
+
+- active meal desired/consumed IDs;
+- match flag;
+- committed payload;
+- completed bites;
+- уже применённые Nutrition/Mood;
+- diet ring buffer из 10 entries;
+- deterministic random state/id для следующего выбора;
+- content/schema version.
+
+Load не выбирает желаемое блюдо заново и не добавляет history entry повторно.
 
 ## Инварианты
 
-- одна quantity еды не кормит двух гномов;
-- после commit старта порция не существует одновременно в Inventory и meal payload;
-- каждый укус применяется максимум один раз;
-- сумма эффектов трёх укусов равна полной сытости блюда;
-- interruption не откатывает уже применённую сытость;
-- остаток прерванной трапезы не возвращается и не дублируется;
-- один production order создаёт output ровно один раз;
-- kitchen tier restriction проверяется в Domain/Application, а не только скрытием кнопки;
-- history разнообразия обновляется детерминированно.
+- одна food quantity не кормит двух residents;
+- после commit порция не существует одновременно в Inventory и meal payload;
+- каждый bite применяется один раз;
+- сумма трёх Nutrition bites равна полному значению;
+- fallback не даёт положительный базовый food Mood;
+- history содержит максимум 10 entries;
+- одна meal action создаёт максимум одну entry;
+- diversity delta использует authoritative Technology snapshot/count;
+- worker существует только для активного order;
+- kitchen tier restriction проверяется вне UI.
 
 ## Диагностика
 
-Inspector должен показывать:
+Inspector показывает:
 
-- FoodItemId и FoodVarietyId;
+- desired/consumed FoodId и match;
+- random stream/source decision id;
 - source stack/reservation;
-- committed meal state;
-- `completed bites / 3`;
-- сытость на укус и уже применённый эффект;
-- потерянный остаток;
-- interruption reason;
-- animation profile;
-- kitchen tier, recipe inputs и output;
-- последние блюда жителя;
-- monotony state, penalty и причину выбора текущей еды.
+- completed bites;
+- Nutrition/Mood per bite и accumulated effect;
+- lost remainder;
+- последние 10 entries;
+- Matches/Mismatches;
+- `UnlockedDishCount`;
+- base и diversity Mood deltas;
+- kitchen tier, worker, order и block reason.
 
 ## Связанные issues
 
-- [#97](https://github.com/bageus/Dig/issues/97) — bite-based трапеза и interruption;
-- [#98](https://github.com/bageus/Dig/issues/98) — блюда, рецепты и kitchen tiers;
-- [#99](https://github.com/bageus/Dig/issues/99) — разнообразие и настроение;
-- [#100](https://github.com/bageus/Dig/issues/100) — UI и анимации;
-- [#101](https://github.com/bageus/Dig/issues/101) — Save/Load и тесты.
+- [#97](https://github.com/bageus/Dig/issues/97) — bite-based meal;
+- [#98](https://github.com/bageus/Dig/issues/98) — recipes, tiers и cooking worker;
+- [#99](https://github.com/bageus/Dig/issues/99) — desired dish и history formula;
+- [#100](https://github.com/bageus/Dig/issues/100) — UI/animations;
+- [#101](https://github.com/bageus/Dig/issues/101) — Save/Load/tests;
+- [#159](https://github.com/bageus/Dig/issues/159) — continuous need effects.
