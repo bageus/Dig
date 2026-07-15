@@ -1,23 +1,14 @@
 # Личный инвентарь гномов и его расширения
 
-Статус: проектная спецификация, реализация отслеживается в #64.
+Статус: проектная спецификация. Реализация отслеживается в #64–#71. Контекстная панель и BuildingBox integration: #113/#115/#118.
 
-## 1. Контекст существующей системы
+## 1. Владение состоянием
 
-`InventoryState` уже является единственным авторитетным владельцем `ItemStack`, количества, частичных резервов и текущего `ItemLocation`. Storage владеет фильтрами и входящей ёмкостью, Jobs — lifecycle hauling. Новая система расширяет эту модель слотами личного инвентаря и не создаёт второй источник истины.
+`InventoryState` остаётся единственным владельцем ItemStack, quantity, reservation и ItemLocation. Storage владеет filters/capacity, Jobs — lifecycle работ, Presentation — только selection/preview.
 
-## 2. Базовый инвентарь
+## 2. Базовый layout
 
-Каждый взрослый гном имеет 6 универсальных основных ячеек.
-
-- одна ячейка содержит не более одного stack;
-- количество ограничено `MaxStackSize`;
-- совместимые stacks объединяются до максимума;
-- расширения разрешены только в основном отсеке;
-- контейнеры нельзя вкладывать друг в друга;
-- детский инвентарь находится вне текущего scope.
-
-Предлагаемое местоположение:
+Каждый взрослый гном имеет 6 универсальных Main slots.
 
 ```text
 ResidentInventoryLocation(
@@ -27,32 +18,35 @@ ResidentInventoryLocation(
 )
 ```
 
-## 3. Грузовые расширения
+Правила:
+
+- один slot содержит не более одного stack;
+- stack quantity ограничен MaxStackSize;
+- compatible stacks объединяются;
+- expansions разрешены только в Main;
+- nested containers запрещены;
+- BuildingBox является обычным неstackable item, а не вложенным зданием/контейнером.
+
+## 3. Cargo expansions
 
 ### Корзина
 
 - занимает 1 Main slot;
 - добавляет 4 Cargo slots;
-- дубликаты не добавляют ёмкость;
-- пустой Cargo не снижает скорость;
-- при наличии предметов в Cargo скорость равна 75% базовой;
-- визуальная корзина на модели скрыта, пока Cargo пуст.
+- при непустом Cargo скорость = 75%;
+- пустой Cargo не штрафует скорость;
+- model attachment скрыт, пока Cargo пуст.
 
 ### Большая корзина
 
 - занимает 1 Main slot;
 - добавляет 6 Cargo slots;
-- имеет приоритет над обычной корзиной;
-- при наличии предметов в Cargo скорость равна 65% базовой;
-- визуальная большая корзина скрыта, пока Cargo пуст.
+- при непустом Cargo скорость = 65%;
+- имеет приоритет над корзиной.
 
-При наличии обеих корзин обе занимают Main slots, но активна только большая. Ёмкость не суммируется.
+Обе корзины могут занимать Main slots, но capacity/speed не суммируются.
 
-```text
-Большая корзина > Корзина > Нет Cargo expansion
-```
-
-## 4. Оружейные расширения
+## 4. Weapon expansions
 
 ### Ножны
 
@@ -60,151 +54,150 @@ ResidentInventoryLocation(
 - добавляют 2 Weapon slots;
 - принимают оружие и щиты;
 - не меняют скорость;
-- создаются в кузнице;
-- рецепт: 2 железа, 2 хомяка.
+- рецепт: 2 железа, 2 хомяка в кузнице.
 
 ### Разгрузка
 
 - занимает 1 Main slot;
 - добавляет 4 Weapon slots;
-- является улучшенной версией ножен;
 - принимает оружие и щиты;
+- имеет приоритет над ножнами;
 - не меняет скорость;
-- создаётся в арсенале;
-- рецепт: 3 железа, 2 хомяка, 1 золото, 2 ножки.
+- рецепт: 3 железа, 2 хомяка, 1 золото, 2 ножки в арсенале.
 
-При наличии ножен и разгрузки обе занимают Main slots, но активна только разгрузка.
+Cargo и Weapon groups работают одновременно.
+
+## 5. Визуальный порядок
+
+При выбранном resident нижняя context panel показывает:
 
 ```text
-Разгрузка > Ножны > Нет Weapon expansion
+[ Weapon ] [ Main: 6 ] [ Cargo ]
 ```
 
-Cargo и Weapon expansion могут работать одновременно.
+- Weapon слева;
+- Main по центру;
+- Cargo справа;
+- группы разделены рамкой, spacing и icon/title;
+- при отсутствии resident эта область показывает ExcavationPalette;
+- building selection и BuildingPlacement заменяют Inventory panel, а не накладываются поверх неё.
 
-## 5. Эффективная ёмкость
-
-| Cargo | Weapon | Cargo slots | Weapon slots | Main slots занято | Скорость при непустом Cargo |
-|---|---|---:|---:|---:|---:|
-| нет | нет | 0 | 0 | 0 | 100% |
-| корзина | нет | 4 | 0 | 1 | 75% |
-| большая корзина | нет | 6 | 0 | 1 | 65% |
-| нет | ножны | 0 | 2 | 1 | 100% |
-| нет | разгрузка | 0 | 4 | 1 | 100% |
-| корзина | ножны | 4 | 2 | 2 | 75% |
-| большая корзина | разгрузка | 6 | 4 | 2 | 65% |
-
-Штрафы корзин не складываются. Используется только активное Cargo expansion максимального tier.
+## 6. Эффективная скорость
 
 ```text
 EffectiveMoveSpeed = BaseMoveSpeed * CargoSpeedMultiplier
 ```
 
-Модификатор учитывается симуляцией движения, ETA пути, Utility AI и стоимостью jobs, а не только анимацией.
+- empty Cargo: 1.00;
+- occupied basket: 0.75;
+- occupied large basket: 0.65;
+- Weapon expansions: 1.00.
 
-## 6. Переключение расширений
+Multiplier влияет на simulation movement, ETA, Utility AI и job cost, не только на animation.
 
-При добавлении улучшенной версии layout пересчитывается атомарно.
+## 7. Layout changes и spill
 
-- переход 4 -> 6 Cargo slots сохраняет содержимое первых четырёх ячеек;
-- переход 2 -> 4 Weapon slots сохраняет содержимое первых двух ячеек;
-- при уменьшении ёмкости лишние slots выбираются с наибольшими индексами;
-- предметы из лишних slots выбрасываются в клетку удаления расширения;
-- количество не может частично потеряться или продублироваться.
+При смене active tier layout пересчитывается атомарно.
 
-## 7. Выбрасывание расширения
+- 4→6 Cargo и 2→4 Weapon сохраняют существующие low-index slots;
+- при уменьшении capacity лишними считаются highest-index slots;
+- лишние items проливаются в cell удаления expansion;
+- ручное удаление active expansion проливает весь связанный compartment;
+- lower-tier expansion активируется только после spill;
+- автоматический перенос contents в lower tier не выполняется;
+- операция полностью rollback при ошибке.
 
-Выбрасывание активной корзины, большой корзины, ножен или разгрузки всегда означает пролив содержимого.
-
-- расширение перемещается в мир;
-- всё содержимое его активного отсека перемещается в ту же клетку;
-- оставшееся expansion меньшего tier активируется только после пролива;
-- содержимое не переносится автоматически в оставшееся expansion;
-- операция выполняется одной Application-транзакцией;
-- ошибка полностью откатывает операцию.
-
-При объединении с мировыми stacks соблюдается `MaxStackSize`; остатки создают новые stacks в стабильном порядке.
+Quantity не теряется и не дублируется.
 
 ## 8. Предмет в руках
 
-Предмет в руках остаётся в исходной ячейке. Для действия создаётся ссылка:
+Предмет остаётся в исходном slot. Действие использует ссылку:
 
 ```text
-HeldItemReference(
-    ResidentId,
-    StackId,
-    Quantity = 1,
-    Purpose
-)
+HeldItemReference(ResidentId, StackId, Quantity = 1, Purpose)
 ```
 
-- ссылка не создаёт копию количества;
-- предмет резервируется для действия;
-- UI продолжает показывать его в исходной ячейке;
-- Agent View отображает предмет в руке по ссылке;
-- ссылка очищается при завершении, отмене, уничтожении или полном расходовании stack;
-- временное местоположение `Equipped` больше не используется для предмета в руках.
+- ссылка не создаёт quantity;
+- необходимая quantity резервируется;
+- UI сохраняет icon в slot;
+- Agent View показывает held representation;
+- ссылка очищается при completion, cancel, destruction или consumption;
+- временный Equipped location для предмета в руках не используется.
 
-## 9. Управление
+## 9. Контекстный input предметов
 
-### Целевой drop
+После UI shielding применяется типизированный приоритет.
 
-1. ЛКМ по предмету выбирает stack.
-2. UI подсвечивает валидные открытые клетки земли.
-3. ЛКМ по земле отправляет команду drop в выбранную клетку.
-4. Domain меняется только после успешной Application-команды.
+### 9.1 BuildingBox в Inventory
 
-### Быстрый drop
+ЛКМ по BuildingBox **не** выбирает stack для drop. Он включает `BuildingPlacement` для соответствующего BuildingDefinition.
 
-Двойной ЛКМ по предмету выбрасывает stack в текущую логическую клетку гнома. Для expansion проливается весь связанный отсек.
+- box остаётся в исходном slot во время preview;
+- valid placement atomically создаёт plan и reservation;
+- invalid/cancel preview не меняет Inventory;
+- после plan creation UI показывает reservation owner/state.
 
-### Использование
+Полная модель: `building-box-placement-and-packing.md`.
 
-`Alt + ЛКМ` отправляет `UseInventoryItem`.
+### 9.2 Обычный предмет
+
+ЛКМ по обычному stack выбирает его для targeted drop.
+
+1. UI подсвечивает valid open ground cells.
+2. ЛКМ по valid cell отправляет drop command.
+3. Domain меняется только после успешной команды.
+
+### 9.3 Quick drop
+
+Double LMB по обычному stack выбрасывает его в current logical resident cell. Для expansion выполняется spill.
+
+BuildingBox double click не должен обходить placement priority; quick drop доступен только через явно выбранное drop action/context menu либо после отдельного stack-selection режима.
+
+### 9.4 Use
+
+`Alt + ЛКМ` по usable inventory item отправляет UseInventoryItem.
 
 - consumable уменьшает quantity;
-- tool/weapon создаёт `HeldItemReference`;
-- последний использованный предмет освобождает slot;
-- недоступный, зарезервированный или неиспользуемый предмет возвращает диагностическую причину.
+- tool/weapon создаёт HeldItemReference;
+- unavailable/reserved/unusable item возвращает reason;
+- box placement использует обычный LMB, не Alt use.
 
-## 10. UI и визуализация
+## 10. World interaction fallback
 
-Инспектор взрослого гнома показывает:
+Для world items правила принадлежат context router #115.
 
-- 6 Main slots всегда;
-- Cargo и Weapon compartments при наличии expansion;
-- active и inactive expansion;
-- допустимые категории;
-- reserved и available quantity;
-- текущий speed penalty;
-- held item без дублирования иконки.
+- обычный LMB по world BuildingBox включает placement mode;
+- Alt+LMB по world BuildingBox назначает pickup выбранному resident;
+- generic world item без LMB interaction не подбирается автоматически;
+- unsupported/невозможный Alt interaction трактуется как ground click: выбранный resident идёт к позиции;
+- full Inventory не уничтожает item и не создаёт скрытый pickup.
 
-Визуальные правила:
+## 11. BuildingBox category
 
-- active expansion имеет явный marker;
-- inactive expansion сообщает, что не добавляет slots;
-- Cargo и Weapon различаются не только цветом;
-- перед drop expansion показывается предупреждение о проливе;
-- пустая корзина на модели скрыта, непустая отображается;
-- большая корзина имеет отдельный attachment;
-- скорость анимации соответствует фактической скорости симуляции.
+BuildingBox:
 
-## 11. Интеграция с hauling
+- имеет MaxStackSize 1;
+- допускается в Main/Cargo согласно item category policy, но не в Weapon;
+- не является active expansion;
+- сохраняет stable BuildingDefinitionId/version reference;
+- одна коробка резервируется не более чем одним building plan;
+- сама коробка остаётся authoritative Inventory item до site/final commit.
 
-- hauling учитывает stack merging и свободные slots;
-- обычные ресурсы не используют Weapon compartment;
-- planner не назначает quantity сверх реальной вместимости жителя;
-- назначение резервируется как `ResidentInventoryLocation` или slot claim;
-- два jobs не резервируют один slot;
-- cancel/failure/retry exhaustion освобождают quantity и slot reservations;
-- retry не резервирует внешние ресурсы повторно;
-- layout change не оставляет job со ссылкой на несуществующий slot;
-- reconciliation закрывает повреждённую связку с диагностикой.
+## 12. Hauling integration
 
-## 12. Content definitions
+- planner учитывает merge и free slots;
+- ordinary resources/boxes не используют Weapon;
+- destination slot или slot claim резервируется;
+- два jobs не резервируют одну capacity;
+- cancel/failure/retry exhaustion освобождают quantity/slot claims;
+- layout change не оставляет job со stale slot;
+- BuildingBox plan reservation и resident slot reservation согласуются одной Application orchestration.
+
+## 13. Content definitions
 
 ```text
 InventoryExpansionDefinition
-- ExpansionGroup: Cargo | Weapon
+- ExpansionGroup
 - Tier
 - AddedSlots
 - AcceptedCategories
@@ -213,65 +206,54 @@ InventoryExpansionDefinition
 - IsMainCompartmentOnly
 ```
 
-Расширения должны иметь `MaxStackSize = 1` или эквивалентный запрет stack. Content validation проверяет ID, категории, ёмкость, множитель скорости, здания и ингредиенты рецептов.
+```text
+BuildingBoxDefinition
+- ItemId
+- BuildingDefinitionId
+- DefinitionVersion
+- PlacementActionId
+- MaxStackSize = 1
+```
 
-## 13. Save/Load и миграция
+Content validation проверяет IDs, categories, slots, speed, recipes и building references.
+
+## 14. Save/Load
 
 Сохраняются:
 
-- compartment и slot index каждого resident stack;
-- expansion items и данные для детерминированного выбора active tier;
-- slot reservations;
-- held reference и текущее действие;
-- связанные внешние reservations.
+- compartment/slot index каждого resident stack;
+- active expansion selection data;
+- slot/quantity reservations;
+- HeldItemReference и active action;
+- BuildingBox definition/version и plan reservation;
+- external job/storage/building links.
 
-Миграция старых сохранений:
+Миграция старого resident inventory сортирует stacks по stable StackId, заполняет Main, активирует expansions, затем Cargo/Weapon; остаток выбрасывается в resident cell с report.
 
-1. stacks сортируются по стабильному `StackId`;
-2. первые подходящие stacks заполняют 6 Main slots;
-3. expansions активируются по tier;
-4. остаток заполняет Cargo/Weapon;
-5. предметы без места выбрасываются в клетке жителя и записываются в migration report;
-6. временный `Equipped` преобразуется в исходный slot + `HeldItemReference`, либо безопасно возвращается в инвентарь/мир.
+## 15. Инварианты
 
-## 14. Инварианты
-
-- stack имеет одно авторитетное location;
-- количество сохраняется при move, spill и layout change;
-- slot содержит не более одного stack;
-- slot index находится в диапазоне активной ёмкости;
+- stack имеет одно authoritative location;
+- slot index валиден;
 - expansion находится только в Main;
 - containers не вложены;
-- активно не более одного expansion каждой группы;
-- ёмкость группы не суммируется;
-- Weapon содержит только разрешённые категории;
-- speed penalty зависит только от активного непустого Cargo;
-- held reference ссылается на существующий stack и не увеличивает quantity;
-- удаление expansion не оставляет items в несуществующих slots;
-- зарезервированное количество нельзя использовать или выбросить сверх доступного.
+- active tier один на group;
+- speed зависит только от active occupied Cargo;
+- HeldItemReference не увеличивает quantity;
+- spill сохраняет total quantity;
+- BuildingBox preview не резервирует/расходует item;
+- одна BuildingBox не принадлежит двум plans;
+- BuildingBox LMB не создаёт одновременно drop и placement;
+- reserved quantity нельзя использовать/выбросить сверх available.
 
-## 15. Критерии приёмки
+## 16. Критерии приёмки
 
-- взрослый гном без expansions имеет 6 slots;
-- корзина даёт 4 Cargo slots, большая — 6;
-- ножны дают 2 Weapon slots, разгрузка — 4;
-- tier priority работает без суммирования;
-- Cargo и Weapon работают одновременно;
-- непустая корзина даёт 75% скорости, большая — 65%;
-- пустая корзина не влияет на скорость и скрыта на модели;
-- выбрасывание expansion проливает содержимое без потерь и дубликатов;
+- base 6 slots;
+- cargo 4/6 и weapon 2/4 работают с tier priority;
+- empty/occupied speed rules точны;
+- spill quantity-safe и rollback-safe;
 - held item остаётся в slot;
-- LMB ground drop, double-click drop и `Alt + ЛКМ` работают через Application commands;
-- hauling учитывает реальную slot capacity;
-- Save/Load восстанавливает тот же layout;
-- unit, integration, migration, soak и Unity Play Mode tests покрывают все правила.
-
-## 16. Issues
-
-- #64 — feature/epic;
-- #65 — slot layout и active expansions;
-- #67 — held item, use/drop и spill;
-- #68 — hauling, slot reservations и speed;
-- #69 — content, recipes и attachments;
-- #70 — Unity UI/input;
-- #71 — Save/Load, diagnostics и tests.
+- Weapon→Main→Cargo layout;
+- ordinary drop/use и BuildingBox placement имеют правильный priority;
+- hauling учитывает real slots;
+- save/load восстанавливает layout, boxes и reservations;
+- unit, integration, migration, soak и Play Mode tests покрывают все правила.
