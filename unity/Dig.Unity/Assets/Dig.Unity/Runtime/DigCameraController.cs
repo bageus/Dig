@@ -88,8 +88,16 @@ namespace Dig.Unity
 
         private void HandlePan()
         {
-            float horizontal = Input.GetAxisRaw("Horizontal");
-            float vertical = Input.GetAxisRaw("Vertical");
+            float horizontal = ReadAxis(
+                KeyCode.A,
+                KeyCode.LeftArrow,
+                KeyCode.D,
+                KeyCode.RightArrow);
+            float vertical = ReadAxis(
+                KeyCode.S,
+                KeyCode.DownArrow,
+                KeyCode.W,
+                KeyCode.UpArrow);
             Quaternion heading = Quaternion.Euler(0f, _yaw, 0f);
             Vector3 movement = (heading * Vector3.right * horizontal)
                 + (heading * Vector3.forward * vertical);
@@ -99,6 +107,19 @@ namespace Dig.Unity
             }
 
             _focus += movement * (panSpeed * Time.unscaledDeltaTime);
+        }
+
+        private static float ReadAxis(
+            KeyCode negativePrimary,
+            KeyCode negativeSecondary,
+            KeyCode positivePrimary,
+            KeyCode positiveSecondary)
+        {
+            bool negative = Input.GetKey(negativePrimary)
+                || Input.GetKey(negativeSecondary);
+            bool positive = Input.GetKey(positivePrimary)
+                || Input.GetKey(positiveSecondary);
+            return (positive ? 1f : 0f) - (negative ? 1f : 0f);
         }
 
         private void ApplyPose()
