@@ -11,9 +11,10 @@ namespace Dig.Unity
         private void ApplyDecision(
             ContextInputDecision decision,
             DigAgentVisual? agent = null,
-            DigCellVisual? cell = null)
+            DigCellVisual? cell = null,
+            DigBuildingVisual? building = null)
         {
-            ApplyEffects(decision, agent, cell);
+            ApplyEffects(decision, agent, cell, building);
             if (!decision.HasApplicationCommand)
             {
                 return;
@@ -37,7 +38,8 @@ namespace Dig.Unity
         private void ApplyEffects(
             ContextInputDecision decision,
             DigAgentVisual? agent,
-            DigCellVisual? cell)
+            DigCellVisual? cell,
+            DigBuildingVisual? building)
         {
             if (decision.Effects.HasFlag(PresentationInputEffect.DeselectResident))
             {
@@ -61,7 +63,28 @@ namespace Dig.Unity
                 _selectedCell = null;
                 _renderer!.Select(null);
                 _jobRenderer!.Select(null);
+                _buildingRenderer!.Select(null);
                 _hud!.SetAgentSelection(selected?.Model);
+            }
+
+            if (decision.Effects.HasFlag(PresentationInputEffect.SelectBuilding))
+            {
+                DigBuildingVisual? selected = building;
+                if (selected == null && decision.TargetEntityId.HasValue)
+                {
+                    selected = _buildingRenderer!.SelectById(
+                        decision.TargetEntityId.Value.ToString());
+                }
+                else
+                {
+                    _buildingRenderer!.Select(selected);
+                }
+
+                _selectedCell = null;
+                _renderer!.Select(null);
+                _agentRenderer!.Select(null);
+                _jobRenderer!.Select(null);
+                _hud!.SetBuildingSelection(selected?.Model);
             }
 
             if (decision.Effects.HasFlag(PresentationInputEffect.SelectGround)
@@ -128,6 +151,7 @@ namespace Dig.Unity
             _selectedCell = cell;
             _agentRenderer!.Select(null);
             _jobRenderer!.Select(null);
+            _buildingRenderer!.Select(null);
             _renderer!.Select(cell);
             _hud!.SetSelection(cell.Model);
         }
@@ -137,6 +161,7 @@ namespace Dig.Unity
             _selectedCell = null;
             _renderer!.Select(null);
             _agentRenderer!.Select(null);
+            _buildingRenderer!.Select(null);
             _jobRenderer!.Select(job);
             _hud!.SetJobSelection(job.Model);
         }
