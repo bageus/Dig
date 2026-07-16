@@ -30,12 +30,12 @@
 - [`../technology-tree.md`](../technology-tree.md) — дерево технологий;
 - [`../research-availability-duration-and-ui.md`](../research-availability-duration-and-ui.md) — research queue, UI, duration и slots;
 - [`../energy-generation-and-production-pausing.md`](../energy-generation-and-production-pausing.md) — энергия;
-- [`../health-hospital-and-treatment.md`](../health-hospital-and-treatment.md) — Health, больница и поэтапное лечение;
+- [`../health-hospital-and-treatment.md`](../health-hospital-and-treatment.md) — Health, admission, очередь, энергия и continuous treatment;
 - [`../ladders-and-elevators.md`](../ladders-and-elevators.md) — лестницы, лифты и mobility tools;
 - [`../partnership-pregnancy-and-birth.md`](../partnership-pregnancy-and-birth.md) — связи жителей и lifecycle семьи;
 - [`../death-graves-resurrection-and-rejuvenation.md`](../death-graves-resurrection-and-rejuvenation.md) — смерть, могилы и возвращение;
 - [`../resident-role-headwear.md`](../resident-role-headwear.md) — внешний вид;
-- [`../needs-continuous-actions.md`](../needs-continuous-actions.md) — Needs;
+- [`../needs-continuous-actions.md`](../needs-continuous-actions.md) — Needs и natural Health regeneration;
 - [`../leisure-variety-and-selection.md`](../leisure-variety-and-selection.md) — досуг;
 - [`../childhood-school-and-inheritance.md`](../childhood-school-and-inheritance.md) — школа;
 - [`../sleep-comfort-and-bed-assignment.md`](../sleep-comfort-and-bed-assignment.md) — сон;
@@ -52,7 +52,7 @@
 - [`../scripts-system-gap-backlog.md`](../scripts-system-gap-backlog.md) — backlog scripts;
 - [`../open-questions.md`](../open-questions.md) — основной реестр;
 - [`../open-questions-047-051.md`](../open-questions-047-051.md) — Q-047–Q-052;
-- [`../open-questions-054-hospital.md`](../open-questions-054-hospital.md) — открытые решения Hospital lifecycle.
+- [`../open-questions-054-hospital.md`](../open-questions-054-hospital.md) — закрытые решения Hospital lifecycle.
 
 ## Правила ведения
 
@@ -71,12 +71,12 @@
 - Q-051: emergency exit идёт к целевой площадке; Reithamster/Hoverboard используют legacy `speedtype 3/2`; отдельных числовых скоростей в TCL нет.
 - Q-052: новая текущая связь сохраняется; прежняя остаётся исторической.
 - Q-053: основной каталог ограничен десятью предметами; skill/slot/ammo/no-wear policies утверждены; 32 fantasy classes перенесены в #177; modern special-mode content исключён.
+- Q-054: hospital threshold 80/25, one patient, temporary adult doctor, deterministic queue, continuous partial healing, natural regeneration, energy class 2 и patient eligibility утверждены.
 
 ## Актуальные открытые решения
 
-- Q-014 — balance values, включая combat coefficients и числовой mobility multiplier;
-- Q-037 — runtime model действий фермы;
-- Q-054 — hospital admission, capacity, doctor eligibility, queue, interruptions, energy и patient mobility.
+- Q-014 — balance values, включая combat coefficients, числовой mobility multiplier, Health regeneration rates, Hospital energy consumption и Service grant;
+- Q-037 — runtime model действий фермы.
 
 ## Связанные issues
 
