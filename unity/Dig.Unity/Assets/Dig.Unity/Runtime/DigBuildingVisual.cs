@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Domain.Buildings;
 using Dig.Presentation.Buildings;
 using UnityEngine;
 
@@ -104,20 +105,50 @@ namespace Dig.Unity
                 return;
             }
 
-            float height = _selected ? 0.62f : 0.42f;
-            float width = _selected ? 0.92f : 0.82f;
+            float height = ResolveHeight(Model.Status) + (_selected ? 0.20f : 0f);
+            float width = ResolveWidth(Model.Status) + (_selected ? 0.10f : 0f);
+            bool plan = Model.Status == BuildingStatus.AwaitingBox;
             for (int index = 0; index < _parts.Count; index++)
             {
                 Transform part = _parts[index];
                 Vector2Int cell = _cells[index];
                 part.localPosition = new Vector3(cell.x, height * 0.5f, cell.y);
                 part.localScale = new Vector3(width, height, width);
+                part.localRotation = plan
+                    ? Quaternion.Euler(0f, 45f, 0f)
+                    : Quaternion.identity;
                 part.GetComponent<Renderer>().sharedMaterial = _selected
                     ? _selectedMaterial
                     : _normalMaterial;
             }
 
             gameObject.name = $"Building {Model.Name} [{Model.Status}]";
+        }
+
+        private static float ResolveHeight(BuildingStatus status)
+        {
+            return status switch
+            {
+                BuildingStatus.AwaitingBox => 0.08f,
+                BuildingStatus.ReadyToBuild => 0.16f,
+                BuildingStatus.UnderConstruction => 0.27f,
+                BuildingStatus.ReadyToComplete => 0.36f,
+                BuildingStatus.Completed => 0.42f,
+                BuildingStatus.Damaged => 0.38f,
+                _ => 0.10f,
+            };
+        }
+
+        private static float ResolveWidth(BuildingStatus status)
+        {
+            return status switch
+            {
+                BuildingStatus.AwaitingBox => 0.58f,
+                BuildingStatus.ReadyToBuild => 0.66f,
+                BuildingStatus.UnderConstruction => 0.74f,
+                BuildingStatus.ReadyToComplete => 0.80f,
+                _ => 0.82f,
+            };
         }
     }
 }
