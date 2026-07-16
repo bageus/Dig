@@ -51,6 +51,8 @@ public sealed class BuildingBoxPackingJobDefinition : JobDefinition
 
     public override string Description => $"Pack building {BuildingId} into a box";
 
+    public override JobToolKind? PreferredToolKind => JobToolKind.Construction;
+
     public override IReadOnlyList<ReservationKey> CreateReservationKeys()
     {
         return new ReadOnlyCollection<ReservationKey>(new[]

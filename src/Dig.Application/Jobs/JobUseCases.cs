@@ -50,16 +50,19 @@ public sealed class AssignAvailableJobsHandler
     private readonly IJobRepository _repository;
     private readonly IJobCandidateProvider _candidateProvider;
     private readonly IEventSink _eventSink;
+    private readonly IJobToolPreparationService? _toolPreparationService;
 
     public AssignAvailableJobsHandler(
         IJobRepository repository,
         IJobCandidateProvider candidateProvider,
-        IEventSink eventSink)
+        IEventSink eventSink,
+        IJobToolPreparationService? toolPreparationService = null)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _candidateProvider = candidateProvider
             ?? throw new ArgumentNullException(nameof(candidateProvider));
         _eventSink = eventSink ?? throw new ArgumentNullException(nameof(eventSink));
+        _toolPreparationService = toolPreparationService;
     }
 
     public JobAssignmentReport Handle(AssignAvailableJobsCommand command)
@@ -93,19 +96,69 @@ public sealed class AssignAvailableJobsHandler
             bool assigned = false;
             foreach (JobCandidate candidate in candidates)
             {
-                Result claim = jobs.Claim(job.Id, candidate.AgentId, command.Tick);
+                Result canClaim = jobs.CanClaim(
+                    job.Id,
+                    candidate.AgentId,
+                    candidate.ToolStackId,
+                    command.Tick);
+                if (canClaim.IsFailure)
+                {
+                    failure = canClaim.Error!;
+                    if (canClaim.Error != JobErrors.AgentUnavailable
+                        && canClaim.Error != JobErrors.ReservationConflict)
+                    {
+                        break;
+                    }
+
+                    continue;
+                }
+
+                JobToolPreparationOutcome preparation = ResolvePreparation(
+                    candidate,
+                    command.ToolPreparationMode);
+                if (candidate.ToolReadiness == JobToolReadiness.SwitchAvailable
+                    && command.ToolPreparationMode == JobToolPreparationMode.Automatic)
+                {
+                    if (_toolPreparationService is null)
+                    {
+                        failure = JobErrors.ToolPreparationUnavailable;
+                        continue;
+                    }
+
+                    EntityId toolStackId = candidate.ToolStackId
+                        ?? throw new InvalidOperationException(
+                            "Switchable candidates require a tool stack id.");
+                    Result prepared = _toolPreparationService.Prepare(
+                        candidate.AgentId,
+                        toolStackId,
+                        command.Tick);
+                    if (prepared.IsFailure)
+                    {
+                        failure = prepared.Error!;
+                        continue;
+                    }
+                }
+
+                Result claim = jobs.Claim(
+                    job.Id,
+                    candidate.AgentId,
+                    candidate.ToolStackId,
+                    command.Tick);
                 if (claim.IsSuccess)
                 {
                     assignments.Add(new JobAssignment(
                         job.Id,
                         candidate.AgentId,
-                        JobCandidateEvaluator.Score(job, candidate)));
+                        JobCandidateEvaluator.Score(job, candidate),
+                        preparation,
+                        candidate.ToolStackId));
                     assigned = true;
                     break;
                 }
 
                 failure = claim.Error!;
-                if (claim.Error != JobErrors.AgentUnavailable)
+                if (claim.Error != JobErrors.AgentUnavailable
+                    && claim.Error != JobErrors.ReservationConflict)
                 {
                     break;
                 }
@@ -120,6 +173,20 @@ public sealed class AssignAvailableJobsHandler
         _repository.Save(jobs);
         _eventSink.Append(jobs.DequeueUncommittedEvents());
         return new JobAssignmentReport(command.Tick, assignments, failures);
+    }
+
+    private static JobToolPreparationOutcome ResolvePreparation(
+        JobCandidate candidate,
+        JobToolPreparationMode mode)
+    {
+        return candidate.ToolReadiness switch
+        {
+            JobToolReadiness.Equipped => JobToolPreparationOutcome.AlreadyEquipped,
+            JobToolReadiness.SwitchAvailable when mode == JobToolPreparationMode.Automatic =>
+                JobToolPreparationOutcome.Switched,
+            JobToolReadiness.SwitchAvailable => JobToolPreparationOutcome.Suggested,
+            _ => JobToolPreparationOutcome.None,
+        };
     }
 }
 

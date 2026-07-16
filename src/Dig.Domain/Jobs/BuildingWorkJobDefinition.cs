@@ -54,6 +54,8 @@ public sealed class BuildingWorkJobDefinition : JobDefinition
     public override string Description =>
         $"{Kind}:{BuildingId}@{WorkPosition}";
 
+    public override JobToolKind? PreferredToolKind => JobToolKind.Construction;
+
     public override IReadOnlyList<ReservationKey> CreateReservationKeys()
     {
         return new ReadOnlyCollection<ReservationKey>(new[]

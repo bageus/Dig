@@ -21,6 +21,20 @@ public interface IJobCandidateProvider
     IReadOnlyCollection<JobCandidate> GetCandidates(JobSnapshot job, long tick);
 }
 
+public enum JobToolPreparationMode
+{
+    Suggest = 0,
+    Automatic = 1,
+}
+
+public enum JobToolPreparationOutcome
+{
+    None = 0,
+    AlreadyEquipped = 1,
+    Suggested = 2,
+    Switched = 3,
+}
+
 public sealed class CreateDigJobCommand : ICommand<Result>
 {
     public CreateDigJobCommand(DigJobDefinition definition, bool makeAvailable)
@@ -36,17 +50,27 @@ public sealed class CreateDigJobCommand : ICommand<Result>
 
 public sealed class AssignAvailableJobsCommand : ICommand<JobAssignmentReport>
 {
-    public AssignAvailableJobsCommand(long tick)
+    public AssignAvailableJobsCommand(
+        long tick,
+        JobToolPreparationMode toolPreparationMode = JobToolPreparationMode.Automatic)
     {
         if (tick < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(tick));
         }
 
+        if (!Enum.IsDefined(typeof(JobToolPreparationMode), toolPreparationMode))
+        {
+            throw new ArgumentOutOfRangeException(nameof(toolPreparationMode));
+        }
+
         Tick = tick;
+        ToolPreparationMode = toolPreparationMode;
     }
 
     public long Tick { get; }
+
+    public JobToolPreparationMode ToolPreparationMode { get; }
 }
 
 public sealed class AdvanceJobCommand : ICommand<Result>
@@ -64,11 +88,32 @@ public sealed class AdvanceJobCommand : ICommand<Result>
 
 public sealed class JobAssignment
 {
-    public JobAssignment(EntityId jobId, EntityId agentId, long score)
+    public JobAssignment(
+        EntityId jobId,
+        EntityId agentId,
+        long score,
+        JobToolPreparationOutcome toolPreparation = JobToolPreparationOutcome.None,
+        EntityId? toolStackId = null)
     {
+        if (!Enum.IsDefined(typeof(JobToolPreparationOutcome), toolPreparation))
+        {
+            throw new ArgumentOutOfRangeException(nameof(toolPreparation));
+        }
+
+        bool needsTool = toolPreparation != JobToolPreparationOutcome.None;
+        if (needsTool != toolStackId.HasValue
+            || (toolStackId.HasValue && toolStackId.Value.IsEmpty))
+        {
+            throw new ArgumentException(
+                "Tool preparation outcomes require a valid tool stack id.",
+                nameof(toolStackId));
+        }
+
         JobId = jobId;
         AgentId = agentId;
         Score = score;
+        ToolPreparation = toolPreparation;
+        ToolStackId = toolStackId;
     }
 
     public EntityId JobId { get; }
@@ -76,6 +121,10 @@ public sealed class JobAssignment
     public EntityId AgentId { get; }
 
     public long Score { get; }
+
+    public JobToolPreparationOutcome ToolPreparation { get; }
+
+    public EntityId? ToolStackId { get; }
 }
 
 public sealed class JobAssignmentFailure

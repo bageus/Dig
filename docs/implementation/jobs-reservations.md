@@ -36,10 +36,11 @@ Claiming a digging job atomically reserves:
 
 - the job itself;
 - the assigned `AgentId`;
+- the selected tool stack when tool-aware assignment chose one;
 - the target work position;
 - the target digging designation.
 
-Reserving the worker enforces at most one active job per resident. Reserving the target prevents two workers from claiming the same cell. If any key conflicts, no partial reservation is retained.
+Reserving the worker enforces at most one active job per resident. Reserving the target prevents two workers from claiming the same cell. Reserving the selected tool prevents another assignment from planning the same carried or equipped item. If any key conflicts, no partial reservation is retained.
 
 Completion, blocking, cancellation and failure release every reservation owned by the job. A blocked job must be claimed again after retry.
 
@@ -48,10 +49,20 @@ Completion, blocking, cancellation and failure release every reservation owned b
 `AssignAvailableJobsHandler` processes jobs in deterministic order by priority, creation tick and job id. Candidate scores combine:
 
 - job priority;
+- matching-tool readiness;
 - worker skill;
 - path or distance cost supplied by the candidate provider.
 
-Ties are resolved by stable `AgentId` ordering. If the best worker is already reserved, assignment tries the next eligible candidate. The resulting report records both successful assignments and stable failure reasons.
+A resident already holding the preferred tool ranks above one who can safely switch to it; both rank above candidates without a matching usable tool. Digging prefers mining equipment and building work prefers construction equipment. Ties are resolved by stable `AgentId` ordering.
+
+`InventoryAwareJobCandidateProvider` derives tool readiness from authoritative inventory snapshots and immutable equipment profiles. It does not copy inventory state. A switch is offered only when the matching tool is a single unreserved carried item and the current equipped item can be safely returned to the resident inventory.
+
+Assignment supports two preparation modes:
+
+- `Suggest` claims the job, reserves the selected tool and reports that a switch is recommended without mutating inventory;
+- `Automatic` performs the validated inventory switch before the atomic job claim and reports the completed switch.
+
+If the best worker or selected tool is already reserved, assignment tries the next eligible candidate. The resulting report records the selected tool, preparation outcome, successful assignments and stable failure reasons.
 
 ## Dependencies and retries
 
@@ -63,10 +74,10 @@ Blocked jobs use `JobRetryPolicy` with a maximum retry count and delay in simula
 
 `JobSnapshot` exposes status, typed stage, assigned worker, retry count, next retry tick and reason. `JobPresenter` converts this snapshot into a read-only diagnostic view suitable for Unity inspectors and debug overlays.
 
-Domain events record status changes and reservation releases. Application handlers publish them through the shared `IEventSink`.
+Domain events record status changes and reservation releases. Application handlers publish them through the shared `IEventSink`. Tool-aware assignment reports whether the preferred tool was already equipped, suggested for switching or switched automatically.
 
 ## Current integration boundary
 
-The jobs module does not duplicate navigation, world or resident state. Candidate distance and availability are supplied through `IJobCandidateProvider`. Future simulation integration will use Navigation to reach the work position and World commands to excavate the target during `PerformWork`.
+The jobs module does not duplicate navigation, world, inventory or resident state. Candidate distance and availability are supplied through `IJobCandidateProvider`. Tool suitability is declared by a small Jobs-owned `JobToolKind` contract and resolved by an Application adapter against authoritative Inventory snapshots and `EquipmentRates`.
 
-Inventory, produced resources, tools and hauling remain part of issue #7. Their identifiers already have dedicated reservation kinds so they can join the same atomic claim model without creating a second reservation owner.
+Future simulation integration will use Navigation to reach the work position and World commands to excavate the target during `PerformWork`. Inventory remains the only owner of item location and performs safe tool switching transactionally; Jobs owns only the selected tool reservation for the active assignment.
