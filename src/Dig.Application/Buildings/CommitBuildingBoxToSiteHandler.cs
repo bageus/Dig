@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Messaging;
@@ -56,14 +57,27 @@ public sealed class CommitBuildingBoxToSiteHandler
 
         if (job!.Status != JobStatus.InProgress
             || job.Stage != JobStageKind.DepositItem
+            || !job.AssignedAgentId.HasValue
             || building.BoxPlan.CommitState != BuildingBoxCommitState.Reserved)
         {
             return Result.Failure(BuildingBoxErrors.InvalidJobStage);
         }
 
         InventoryState inventory = _inventoryRepository.Get();
+        ItemStackSnapshot? box = inventory.GetStack(building.BoxPlan.SourceStackId);
+        bool ownsReservation = box?.Reservations.Any(
+            value => value.JobId == job.Id && value.Quantity == 1) ?? false;
+        if (box is null
+            || box.Location != ItemLocation.InAgent(job.AssignedAgentId.Value)
+            || box.ItemId != building.Definition.BoxPolicy!.BoxItemId
+            || box.Quantity != 1
+            || !ownsReservation)
+        {
+            return Result.Failure(BuildingBoxErrors.SourceStackMissing);
+        }
+
         Result moved = inventory.MoveReserved(
-            building.BoxPlan.SourceStackId,
+            box.StackId,
             command.JobId,
             quantity: 1,
             ItemLocation.InBuilding(command.BuildingId),
