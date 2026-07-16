@@ -26,8 +26,9 @@
 | `building_kit.distillery` | Винокурня | Пилорама | 4 ножки, 4 хомяка, 3 камня, 4 железа, 1 золото | 1 |
 | `building_kit.university` | Университет | Пилорама | 4 ножки, 4 железа, 2 хомяка, 2 угля, 4 шляпки | 1 |
 | `building_kit.arsenal` | Арсенал | Оружейная кузница | data-driven/TBD | 1 |
+| `building_kit.grave` | Могила конкретного гнома | Мастерская каменщика | 3 камня, identity-linked колпак умершего | 1 |
 
-Системная реализация комплектов: #75. Полные source-workshop связи принадлежат `technology-tree.md`.
+После placement могила получает permanent/non-packable policy. Она не возвращает колпак и не может быть источником храмового возвращения.
 
 ## Переработка руд
 
@@ -38,7 +39,7 @@
 | `recipe.foundry.gold` | Золото | Литейный цех | 3 `ore.gold`, 2 угля | 2 `material.gold` | `skill.metallurgy` |
 | `recipe.crystal_processor.crystal` | Кристалл | Песчаник | 1 `ore.crystal` | 1 `material.crystal` | `skill.alchemy` |
 
-Каждая produced unit умножает per-unit grant recipe profile. Например, output 2 может выдать двойной per-unit Metallurgy amount.
+Каждая produced unit умножает per-unit grant recipe profile.
 
 ## Готовые блюда
 
@@ -75,21 +76,34 @@
 
 «Грибной самогон» — legacy name Огненной воды, не отдельный ItemId.
 
+## Алхимия и lifecycle
+
+Рецепты подтверждены по `scripts/misc/techtreetunes.tcl` владельцем дизайна.
+
+| RecipeDefinitionId | Результат | Здание | Входы | Выход/эффект |
+|---|---|---|---|---|
+| `recipe.alchemy.rejuvenation_potion` | Зелье омоложения | Храм/утверждённый алхимический производитель | 1 хомяк, 1 кристалл, 1 железная руда, 2 золота | 1 consumable |
+| `recipe.temple.resurrection` | Возвращение конкретного гнома | Храм | identity-linked колпак, 1 хомяк, 4 золота, 2 кристаллические руды | lifecycle effect |
+
+`recipe.temple.resurrection` не создаёт ItemStack: после transactional commit он возвращает identity и расходует inputs. Колпак, встроенный в могилу, не считается доступным input.
+
 ## Единицы продукции
 
 - порция, бочонок, бутылка, руда и слиток — одна единица `ItemStack.Quantity`;
 - начатая meal списывает одну порцию;
 - тара/тарелка/форма не создаёт nested authoritative item;
-- compatible outputs складываются только по Inventory rules.
+- compatible outputs складываются только по Inventory rules;
+- identity-linked cap не stackable и хранит ResidentId/DeathInstanceId.
 
 ## Сервисные результаты
 
-Игровая комната, кинотеатр, бар и Университет создают domain effects, а не ItemStack:
+Игровая комната, кинотеатр, бар, Университет и храмовое возвращение могут создавать domain effects, а не ItemStack:
 
 - Mood/Leisure;
 - fertility modifier;
 - drink/service effects и skill grants;
-- TotalSkillCapacity increase.
+- TotalSkillCapacity increase;
+- lifecycle return.
 
 ## Validation
 
@@ -102,4 +116,6 @@
 - skill profile references валидны;
 - produced-unit experience совпадает с quantity;
 - worker освобождается после terminal order;
+- identity cap нельзя использовать одновременно в grave и temple action;
+- grave не имеет packing recipe;
 - изменение stable ID требует migration.
