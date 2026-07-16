@@ -90,6 +90,8 @@ namespace Dig.Unity
             DigJobRenderer jobRenderer = GetOrAdd<DigJobRenderer>(gameObject);
             DigBuildingRenderer buildingRenderer = GetOrAdd<DigBuildingRenderer>(gameObject);
             DigWorldItemRenderer itemRenderer = GetOrAdd<DigWorldItemRenderer>(gameObject);
+            DigBuildingBoxGhostRenderer ghostRenderer =
+                GetOrAdd<DigBuildingBoxGhostRenderer>(gameObject);
             DigStockpileRenderer stockpileRenderer =
                 GetOrAdd<DigStockpileRenderer>(gameObject);
             DigNavigationRouteRenderer routeRenderer =
@@ -127,6 +129,7 @@ namespace Dig.Unity
 
             _startupStage = "rendering inventory and routes";
             itemRenderer.Render(items);
+            ghostRenderer.Clear();
             stockpileRenderer.Render(storage);
             routeRenderer.Render(routes);
 
@@ -139,6 +142,8 @@ namespace Dig.Unity
                 agentRenderer,
                 jobRenderer,
                 buildingRenderer,
+                itemRenderer,
+                ghostRenderer,
                 terrainSession,
                 stockpileRenderer,
                 simulation,
@@ -157,7 +162,8 @@ namespace Dig.Unity
                 hud);
             interaction.enabled = true;
             simulation.enabled = true;
-            hud.SetStatus("Running. Select the workshop to open Building Functions.");
+            hud.SetStatus(
+                "Running. Pack the workshop, then use LMB or Alt+LMB on its BuildingBox.");
 
             if (logStartup)
             {

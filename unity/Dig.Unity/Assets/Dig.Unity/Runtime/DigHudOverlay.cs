@@ -98,12 +98,18 @@ namespace Dig.Unity
             GUILayout.Label("Space pause/resume | . step | -/+ speed");
             GUILayout.Label("3 jobs/reservations | 4 navigation routes");
             GUILayout.Label("5 place empty stockpile on selected open cell");
+            GUILayout.Label("Box: LMB placement | Alt+LMB pickup | RMB cancel preview");
             GUILayout.Label("Left click select | right click toggle digging");
             GUILayout.Space(8f);
-            DrawCellSelection();
-            DrawAgentSelection();
-            DrawJobSelection();
-            DrawBuildingSelection();
+            DrawBuildingPlacement();
+            if (!HasBuildingPlacement)
+            {
+                DrawCellSelection();
+                DrawAgentSelection();
+                DrawJobSelection();
+                DrawBuildingSelection();
+            }
+
             GUILayout.Space(8f);
             GUILayout.Label(_status);
             GUILayout.EndArea();
@@ -180,7 +186,10 @@ namespace Dig.Unity
         {
             if (_selectedAgent == null)
             {
-                if (!_selectedCell.HasValue && !HasJobSelection && !HasBuildingSelection)
+                if (!_selectedCell.HasValue
+                    && !HasJobSelection
+                    && !HasBuildingSelection
+                    && !HasBuildingPlacement)
                 {
                     GUILayout.Label("Selected object: none");
                 }

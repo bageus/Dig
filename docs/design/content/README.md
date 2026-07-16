@@ -27,6 +27,12 @@
 - [`alcohol.md`](alcohol.md) — drinks/bar/effects;
 - [`skills.md`](skills.md) — stable skill IDs;
 - [`../needs-continuous-actions.md`](../needs-continuous-actions.md) — gradual Need effects;
+- [`../leisure-variety-and-selection.md`](../leisure-variety-and-selection.md) — выбор досуга, история 10 и repeat penalty;
+- [`../partnership-pregnancy-and-birth.md`](../partnership-pregnancy-and-birth.md) — пары, зачатие, беременность и рождение;
+- [`../childhood-school-and-inheritance.md`](../childhood-school-and-inheritance.md) — детство, школа и наследование;
+- [`../sleep-comfort-and-bed-assignment.md`](../sleep-comfort-and-bed-assignment.md) — sleep tiers и личные кровати;
+- [`../ecology-creatures-and-special-drops.md`](../ecology-creatures-and-special-drops.md) — существа, reproduction, eggs и drops;
+- [`../doors-access-and-lifecycle.md`](../doors-access-and-lifecycle.md) — режимы дверей и automatic lifecycle;
 - [`../technology-tree.md`](../technology-tree.md) — approved technology graph;
 - [`../scripts-system-gap-backlog.md`](../scripts-system-gap-backlog.md) — recovered systems/issues;
 - [`../skills-and-progression.md`](../skills-and-progression.md) — grants/capacity/redistribution;
@@ -76,10 +82,47 @@
 - desired dish from researched catalog, затем fallback;
 - history = последние 10 meals;
 - `>=6 matches -> +UnlockedDishCount`, `>=6 mismatches -> -UnlockedDishCount`;
+- matched food Mood и positive diversity bonus могут поднимать Mood выше 50;
+- оба эффекта ограничиваются только текущим `MoodMaximum`;
+- fallback не даёт положительный базовый food Mood;
 - personal taste profiles не используются;
 - worker только для active cooking order;
 - Cooking влияет только на скорость, не на output/effects;
 - kitchen output `2/2/3/3`.
+
+### Досуг и сон
+
+- leisure использует weighted random по редкости активности;
+- 5 повторений одного вида в предыдущих 10 уменьшают Mood gain до 50%;
+- current leisure добавляется в history после расчёта и первого effect interval;
+- sleep tier gaps `0/1/2/3+` используют multipliers `1.00/0.75/0.50/0.25`;
+- lower sleep tier имеет Mood cap 50;
+- Floor имеет Alertness cap 75 и Mood gain 0;
+- каждая кровать имеет два связанных slots;
+- personal bed недоступна при отсутствии пути или path length >30.
+
+### Общество и образование
+
+- пары только мужчина+женщина, эксклюзивны до смерти партнёра;
+- successful eligible meeting гарантирует conception;
+- pregnancy длится 1 день, postpartum cooldown 2 дня, child count без лимита;
+- childhood длится 2 дня;
+- школа: 1 teacher, 4 students, 24/7;
+- curriculum поддерживает все 12 навыков;
+- inheritance выполняет отдельный random penalty 10–20% для каждого skill;
+- повышенная TotalSkillCapacity наследуется и не может быть ниже суммы inherited skills.
+
+### Экология и двери
+
+- creature populations имеют обязательные data-driven caps;
+- tamed Vuker не размножается;
+- swallowed demon item выпадает после смерти;
+- spider egg может вылупиться внутри inventory/storage;
+- omelet permanently/stackably повышает один случайный Need maximum на 10 и может превысить 100;
+- door variants: wooden/metal/crystal, stone excluded;
+- AutomaticOwnOnly закрывается после 2 clear simulation ticks;
+- liquids/switches не входят в первый scope;
+- destroyed door оставляет свободный проход.
 
 ### Навыки
 
@@ -102,14 +145,9 @@
 См. `../open-questions.md`:
 
 - Q-014 — balance values;
-- Q-034–Q-037 — research/farm lifecycle;
-- Q-040 — food Mood cap 50;
-- Q-041 — leisure repetition penalty;
-- Q-042 — partnership/pregnancy details;
-- Q-043 — school/inheritance details;
-- Q-044 — sleep comfort/personal beds;
-- Q-045 — ecology special cases;
-- Q-046 — doors/liquids/stone variant.
+- Q-034–Q-037 — research/farm lifecycle.
+
+Q-039–Q-046 закрыты и перенесены в соответствующие design-файлы.
 
 ## Связанные issues
 
@@ -117,6 +155,9 @@
 - exploration design closed #147, implementation #165;
 - taste profiles rejected/closed #144;
 - food #96–#101, #159;
+- leisure/sleep/society/education #142–#146;
+- ecology #149;
+- doors #136;
 - skills #103–#107, #117;
 - buildings #74–#82, #108, #118;
 - excavation/resources #87–#94, #109–#110;
