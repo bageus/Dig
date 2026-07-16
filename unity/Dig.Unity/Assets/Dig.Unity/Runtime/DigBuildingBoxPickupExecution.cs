@@ -56,13 +56,13 @@ namespace Dig.Unity
             long sequence = checked(_nextPickupSequence + 1);
             _nextPickupSequence = sequence;
             return _buildingBoxPickupCreate!.Handle(new CreateBuildingBoxPickupCommand(
-                DemoId('6', sequence),
+                DemoId('2', sequence),
                 EntityId.Parse(stackId),
                 EntityId.Parse(residentId),
                 _buildingBoxDefinition!.BoxPolicy!.BoxItemId,
                 sourceCell,
                 priority: 700,
-                tick));
+                tick: tick));
         }
 
         internal bool TryPlanBuildingBoxPickupMovement(
