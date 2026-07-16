@@ -29,6 +29,22 @@ public sealed class BuildingBoxAssemblyExecutionPolicyTests
     }
 
     [Fact]
+    public void Box_already_carried_by_worker_skips_external_pickup()
+    {
+        BuildingBoxHarness harness = CreateAssigned(carriedByResident: true);
+        CellId arbitraryWorkerCell = new CellId(0, 0);
+
+        Assert.Equal(
+            BuildingBoxAssemblyExecutionStepKind.StartJob,
+            Evaluate(harness, Building(harness), Box(harness), arbitraryWorkerCell));
+        Assert.True(Advance(harness, tick: 450).IsSuccess);
+        Assert.Equal(
+            BuildingBoxAssemblyExecutionStepKind.AdvanceStage,
+            Evaluate(harness, Building(harness), Box(harness), arbitraryWorkerCell));
+        Assert.Equal(1, Box(harness).ReservedQuantity);
+    }
+
+    [Fact]
     public void Policy_drives_box_to_completed_building_without_duplication()
     {
         BuildingBoxHarness harness = CreateAssigned();
@@ -56,9 +72,9 @@ public sealed class BuildingBoxAssemblyExecutionPolicyTests
             Evaluate(harness, Building(harness), null, Building(harness).WorkPosition));
     }
 
-    private static BuildingBoxHarness CreateAssigned()
+    private static BuildingBoxHarness CreateAssigned(bool carriedByResident = false)
     {
-        BuildingBoxHarness harness = new BuildingBoxHarness();
+        BuildingBoxHarness harness = new BuildingBoxHarness(carriedByResident);
         Assert.True(harness.Confirm(
             harness.BuildingId,
             harness.JobId,
