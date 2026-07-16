@@ -159,6 +159,7 @@ namespace Dig.Unity
             long nextTick = checked(_agentSession.Tick + 1);
             _terrainSession!.SynchronizeDesignations(nextTick, before);
             _terrainSession.SynchronizeHauling(nextTick, before);
+            _terrainSession.SynchronizeBuildingBoxAssembly(nextTick, before);
             _terrainSession.SynchronizeBuildingPacking(nextTick, before);
             IReadOnlyDictionary<string, CellId> movement =
                 _terrainSession.PlanMovement(before);
@@ -172,6 +173,13 @@ namespace Dig.Unity
             if (result.IsSuccess)
             {
                 result = _terrainSession.AdvanceBuildingBoxPickup(
+                    _agentSession.Tick,
+                    agents);
+            }
+
+            if (result.IsSuccess)
+            {
+                result = _terrainSession.AdvanceBuildingBoxAssembly(
                     _agentSession.Tick,
                     agents);
             }
