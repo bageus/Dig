@@ -120,6 +120,7 @@ public sealed class ContextInputState
         bool selectedInventoryItemUsable = false,
         bool selectedInventoryItemIsBuildingBox = false,
         bool canUseSelectedInventoryItem = false,
+        bool canDropSelectedInventoryItem = false,
         bool buildingPlacementActive = false,
         bool buildingPlacementValid = false,
         string? buildingPlacementReasonCode = null,
@@ -156,6 +157,7 @@ public sealed class ContextInputState
         SelectedInventoryItemUsable = selectedInventoryItemUsable;
         SelectedInventoryItemIsBuildingBox = selectedInventoryItemIsBuildingBox;
         CanUseSelectedInventoryItem = canUseSelectedInventoryItem;
+        CanDropSelectedInventoryItem = canDropSelectedInventoryItem;
         BuildingPlacementActive = buildingPlacementActive;
         BuildingPlacementValid = buildingPlacementValid;
         BuildingPlacementReasonCode = Normalize(buildingPlacementReasonCode);
@@ -169,6 +171,7 @@ public sealed class ContextInputState
     public bool SelectedInventoryItemUsable { get; }
     public bool SelectedInventoryItemIsBuildingBox { get; }
     public bool CanUseSelectedInventoryItem { get; }
+    public bool CanDropSelectedInventoryItem { get; }
     public bool BuildingPlacementActive { get; }
     public bool BuildingPlacementValid { get; }
     public string? BuildingPlacementReasonCode { get; }

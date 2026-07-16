@@ -11,7 +11,8 @@ namespace Dig.Presentation.Inventory
 public enum ResidentInventoryItemKind
 {
     Generic = 0,
-    BuildingBox = 1,
+    Tool = 1,
+    BuildingBox = 2,
 }
 
 public sealed class ResidentInventorySlotViewModel
@@ -52,9 +53,12 @@ public sealed class ResidentInventorySlotViewModel
     public int AvailableQuantity => Quantity - ReservedQuantity;
     public ResidentInventoryItemKind ItemKind { get; }
     public bool IsBuildingBox => ItemKind == ResidentInventoryItemKind.BuildingBox;
+    public bool IsTool => ItemKind == ResidentInventoryItemKind.Tool;
     public bool CanStartPlacement => IsBuildingBox
         && Quantity == 1
         && AvailableQuantity == 1;
+    public bool CanUse => IsTool && Quantity == 1 && AvailableQuantity == 1;
+    public bool CanDrop => ReservedQuantity == 0;
 }
 
 public sealed class ResidentInventoryViewModel
@@ -79,6 +83,7 @@ public sealed class ResidentInventoryViewModel
         Slots = new ReadOnlyCollection<ResidentInventorySlotViewModel>(
             (slots ?? throw new ArgumentNullException(nameof(slots)))
                 .OrderByDescending(slot => slot.IsBuildingBox)
+                .ThenByDescending(slot => slot.IsTool)
                 .ThenBy(slot => slot.ItemId, StringComparer.Ordinal)
                 .ThenBy(slot => slot.StackId, StringComparer.Ordinal)
                 .ToArray());
@@ -92,8 +97,14 @@ public sealed class ResidentInventoryViewModel
 public sealed class ResidentInventoryPresenter
 {
     private readonly ItemId _buildingBoxItemId;
+    private readonly ItemCatalog? _catalog;
 
     public ResidentInventoryPresenter(ItemId buildingBoxItemId)
+        : this(buildingBoxItemId, catalog: null)
+    {
+    }
+
+    public ResidentInventoryPresenter(ItemId buildingBoxItemId, ItemCatalog? catalog)
     {
         if (buildingBoxItemId.IsEmpty)
         {
@@ -101,6 +112,7 @@ public sealed class ResidentInventoryPresenter
         }
 
         _buildingBoxItemId = buildingBoxItemId;
+        _catalog = catalog;
     }
 
     public ResidentInventoryViewModel Present(
@@ -126,14 +138,24 @@ public sealed class ResidentInventoryPresenter
                 stack.ItemId.ToString(),
                 stack.Quantity,
                 stack.ReservedQuantity,
-                stack.ItemId == _buildingBoxItemId
-                    ? ResidentInventoryItemKind.BuildingBox
-                    : ResidentInventoryItemKind.Generic))
+                ResolveKind(stack.ItemId)))
             .ToArray();
         return new ResidentInventoryViewModel(
             residentId.ToString(),
             snapshot.Version,
             slots);
+    }
+
+    private ResidentInventoryItemKind ResolveKind(ItemId itemId)
+    {
+        if (itemId == _buildingBoxItemId)
+        {
+            return ResidentInventoryItemKind.BuildingBox;
+        }
+
+        return _catalog?.Get(itemId).IsTool == true
+            ? ResidentInventoryItemKind.Tool
+            : ResidentInventoryItemKind.Generic;
     }
 }
 }

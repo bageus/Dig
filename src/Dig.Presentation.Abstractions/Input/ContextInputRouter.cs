@@ -35,14 +35,14 @@ public sealed partial class ContextInputRouter
             return RouteRoster(pointer, target);
         }
 
-        if (pointer.Button == PointerButtonKind.Right)
-        {
-            return RouteRightClick(pointer, state, target);
-        }
-
         if (pointer.Surface == PointerInputSurface.ResidentInventory)
         {
             return RouteInventory(pointer, state, target);
+        }
+
+        if (pointer.Button == PointerButtonKind.Right)
+        {
+            return RouteRightClick(pointer, state, target);
         }
 
         return RouteWorldLeftClick(pointer, state, target);
@@ -151,6 +151,28 @@ public sealed partial class ContextInputRouter
                 consumesPointer: true,
                 actorId: state.SelectedResidentId,
                 reasonCode: "input.selected_resident.stale_or_dead");
+        }
+
+        if (pointer.Button == PointerButtonKind.Right)
+        {
+            if (state.HasUsableResidentSelection
+                && state.SelectedInventoryStackId.HasValue
+                && state.CanDropSelectedInventoryItem
+                && target.Cell.HasValue)
+            {
+                return Command(
+                    ApplicationInputCommandKind.DropInventoryStack,
+                    actorId: state.SelectedResidentId,
+                    targetEntityId: state.SelectedInventoryStackId,
+                    targetCell: target.Cell);
+            }
+
+            return Local(
+                PresentationInputEffect.ShowReason,
+                consumesPointer: true,
+                actorId: state.SelectedResidentId,
+                targetEntityId: state.SelectedInventoryStackId,
+                reasonCode: "input.inventory.stack_unavailable");
         }
 
         if (pointer.AltPressed
