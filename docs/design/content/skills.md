@@ -18,19 +18,25 @@
 | `skill.defense` | Защита | входящие удары, обработанные щитом |
 | `skill.ranged_combat` | Дальнобойное оружие | подтверждённые дальнобойные попадания |
 | `skill.unarmed_combat` | Кулачный бой | подтверждённые удары без оружия |
-| `skill.two_handed_combat` | Двуручный бой | подтверждённые удары двуручным оружием |
-| `skill.one_handed_combat` | Одноручный бой | подтверждённые удары одноручным оружием |
+| `skill.two_handed_combat` | Двуручный бой | подтверждённые удары назначенным двуручным skill profile |
+| `skill.one_handed_combat` | Одноручный бой | подтверждённые удары назначенным одноручным skill profile |
 
-## Legacy combat mapping
+## Combat equipment mapping
 
-- `exp_F_Kungfu` → `skill.unarmed_combat`;
-- `exp_F_Sword` → `skill.one_handed_combat`;
-- `exp_F_Twohanded` → `skill.two_handed_combat`;
-- `exp_F_Ballistic` → `skill.ranged_combat`;
-- `exp_F_Defense` → `skill.defense`;
-- old generic `exp_Kampf` не создаётся как отдельный `AgentSkillId`.
+Подтверждённое Q-053 соответствие производимого снаряжения:
 
-Перевод generic `exp_Kampf` requirements предметов и смешанных buildings остаётся Q-053 и описан в `weapons-and-shields.md`.
+| Equipment | AgentSkillId |
+|---|---|
+| Меч (`weapon.sword`; в ответе владельца назван «Палаш»), Боевой топор | `skill.two_handed_combat` |
+| Рогатка, Лук, Ружьё | `skill.ranged_combat` |
+| Металлический щит, Кристаллический щит | `skill.defense` |
+| Дубина, Световой меч | `skill.one_handed_combat` |
+
+Простой щит не имеет отдельного Combat research threshold, но успешный shield-processed result начисляет `skill.defense`.
+
+У Оружейной кузницы, Оружейной фабрики и Dojo legacy generic Combat requirement удовлетворяется, если хотя бы один из пяти combat skills достиг threshold. Общий `exp_Kampf` не добавляется как отдельный навык.
+
+Skill profile и физическое число занятых рук независимы: `AllowsShield` определяется equipment definition, а не названием skill.
 
 ## Grants
 
@@ -63,8 +69,9 @@
 - изменение stable ID/precision требует migration;
 - `skill.stonework` и `material.stone` не смешиваются;
 - `skill.metallurgy` и material ItemIds не смешиваются;
-- legacy `exp_Kampf` в runtime content запрещён.
+- generic Combat requirement не создаёт тринадцатый skill и проверяет максимум пяти combat skills.
 
 ## Открыто
 
-- Q-053 — конкретный combat skill для generic legacy requirements и equipment compatibility.
+- Q-014 — точные combat coefficients и другие balance values.
+- Q-053 — только выбор loot-only fantasy/creature classes и подтверждение special-mode exclusions.
