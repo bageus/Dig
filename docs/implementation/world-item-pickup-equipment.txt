@@ -1,1 +1,0 @@
-World item pickup and resident equipment are implemented in the corresponding source and tests. See world-item-pickup-equipment.md.
