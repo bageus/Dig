@@ -1,8 +1,8 @@
 # Реестр проектных вопросов Dig
 
-Вопросы не удаляются: после ответа меняется статус и сохраняется решение. Детали новых Q-047–Q-051: [`open-questions-047-051.md`](open-questions-047-051.md).
+Вопросы не удаляются: после ответа меняется статус и сохраняется решение. Детали Q-047–Q-052: [`open-questions-047-051.md`](open-questions-047-051.md).
 
-Статусы: `OPEN`, `ANSWERED`, `SUPERSEDED`, `BALANCE_TBD`.
+Статусы: `OPEN`, `ANSWERED`, `PARTIALLY_ANSWERED`, `SUPERSEDED`, `BALANCE_TBD`.
 
 ## Q-001–Q-012 — мир, копание и ресурсы
 
@@ -61,18 +61,18 @@
 
 ### Q-034 — Research duration/cost
 - **Статус:** `OPEN`
-- **Подтверждено:** duration = сумма количества ingredients × minutes per item.
-- **Weights:** шляпка, ножка, хомяк, камень, личинка = 1; iron = 2; gold = 4; crystal = 5 игровых минут.
-- **Открыто:** реальный расход materials, coal/ore weights, recipes без materials, slots/queue.
+- **Подтверждено:** материалы не расходуются; duration = сумма количества ingredients × minutes per item.
+- **Weights:** шляпка, ножка, хомяк, камень, личинка = 1; все руды и iron = 2; gold = 4; crystal = 5 игровых минут.
+- **Открыто:** вес угля, recipes без materials, число slots/queue policy.
 
 ### Q-035 — Qualified researcher
 - **Статус:** `ANSWERED`
-- **Дата:** 2026-07-16
 - **Решение:** job лично выполняет гном, удовлетворяющий всем requirements, в Work schedule.
 
 ### Q-036 — Requirements lost during research
 - **Статус:** `OPEN`
-- **Вопрос:** pause/continue/cancel и сохранение progress.
+- **Подтверждено:** до старта queued job становится оранжевой и ждёт нового qualified resident; после completion падение skills ничего не отменяет.
+- **Открыто:** active progress pause/continue/cancel при потере requirements, смерти или уходе worker.
 
 ### Q-037 — Farm actions
 - **Статус:** `OPEN`
@@ -91,15 +91,16 @@
 - **Q-045 — ANSWERED:** ecology special items/caps policy утверждена, числовой balance TBD.
 - **Q-046 — ANSWERED:** wooden/metal/crystal doors, 2-tick auto close, no liquids/switches.
 
-## Q-047–Q-051 — текущие вопросы
+## Q-047–Q-052 — Appearance, Lifecycle, Energy, Research, Transport
 
 Подробный текст находится в [`open-questions-047-051.md`](open-questions-047-051.md).
 
-- **Q-047 — OPEN:** role headwear, cosmetic/effects и identity cap.
-- **Q-048 — OPEN:** grave, return и rejuvenation lifecycle.
+- **Q-047 — ANSWERED:** cosmetic role hats, identity cap, aging hair и обязательная смена перед работой.
+- **Q-048 — ANSWERED:** grave/return/rejuvenation rules и recipes подтверждены.
 - **Q-049 — OPEN:** Energy allocation, class compatibility и source lifecycle.
-- **Q-050 — OPEN:** yellow Research state, queue и experience.
-- **Q-051 — OPEN:** ladder variants и elevator runtime policy.
+- **Q-050 — OPEN:** цвет занятого qualified researcher, coal weight и связанные research edge cases.
+- **Q-051 — PARTIALLY_ANSWERED:** ladder/elevator policy утверждена, emergency climb destination остаётся открытым.
+- **Q-052 — OPEN:** active partnership conflict после возвращения умершего партнёра.
 
 ## Журнал
 
@@ -108,3 +109,5 @@
 | 2026-07-15 | Q-001–Q-033, Q-038 | базовые world/content/needs/skills/HUD решения |
 | 2026-07-16 | Q-039–Q-046 | cooking, food Mood, leisure, society, school, sleep, ecology, doors |
 | 2026-07-16 | Q-035 | qualified resident лично выполняет Research job |
+| 2026-07-16 | Q-047–Q-048 | role appearance, grave, return, rejuvenation и recipes |
+| 2026-07-16 | Q-050–Q-051 | queued research, ore weights, no XP/material cost, ladders/elevators |
