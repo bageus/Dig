@@ -17,6 +17,8 @@ namespace Dig.Unity
     {
         private static readonly ItemId DemoBuildingBoxItemId =
             new ItemId("demo.building_box.workshop");
+        private static readonly ItemId DemoResidentToolItemId =
+            new ItemId("demo.tool.pickaxe");
         private static readonly DomainError BuildingsNotInitialized = new DomainError(
             "unity.buildings.not_initialized",
             "The demo building runtime is not initialized.");
@@ -73,15 +75,26 @@ namespace Dig.Unity
             BuildingsState buildings = BuildingsState.RestoreWithPacking(
                 new[] { snapshot }).Value;
             _buildingsRepository = new InMemoryBuildingsRepository(buildings);
-            _buildingInventoryRepository = new InMemoryInventoryRepository(
-                new InventoryState(new ItemCatalog(new[]
-                {
-                    new ItemDefinition(
-                        DemoBuildingBoxItemId,
-                        "Workshop BuildingBox",
-                        maximumStackSize: 1,
-                        isTool: false),
-                })));
+            InventoryState buildingInventory = new InventoryState(new ItemCatalog(new[]
+            {
+                new ItemDefinition(
+                    DemoBuildingBoxItemId,
+                    "Workshop BuildingBox",
+                    maximumStackSize: 1,
+                    isTool: false),
+                new ItemDefinition(
+                    DemoResidentToolItemId,
+                    "Resident pickaxe",
+                    maximumStackSize: 1,
+                    isTool: true),
+            }));
+            Require(buildingInventory.AddStack(
+                DemoId('1', 1),
+                DemoResidentToolItemId,
+                quantity: 1,
+                ItemLocation.InAgent(DemoId('a', 1)),
+                tick: 0));
+            _buildingInventoryRepository = new InMemoryInventoryRepository(buildingInventory);
 
             BuildingFunctionsPresenter functions = new BuildingFunctionsPresenter();
             _buildingPresenter = new BuildingWorldPresenter(functions);
