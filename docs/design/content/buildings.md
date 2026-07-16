@@ -51,6 +51,7 @@ BuildingDefinition
 | Горн | Мастерская каменщика | order worker | Production | ранняя плавка железа |
 | Литейный цех | data-driven | order worker | Production | железо/золото на угле |
 | Песчаник | data-driven | order worker | Production | обработка кристаллической руды |
+| Больница | Токарная мастерская (`Dreherei`) | 1 врач | candidate: 4 пациента, 1 active | поэтапное восстановление Health |
 
 ## Пост часового
 
@@ -138,6 +139,34 @@ Worker lifecycle:
 `skill.cooking` влияет **только на скорость приготовления**. Он не изменяет ingredients, output quantity, Nutrition, Mood, bites, quality или extra results. Speed curve data-driven.
 
 Полный каталог: `food.md`, #96, #98.
+
+## Больница
+
+Authoritative Health/treatment specification: [`../health-hospital-and-treatment.md`](../health-hospital-and-treatment.md), issue #130.
+
+Подтверждено:
+
+- отдельных травм и severity-каталога нет;
+- один врач обязателен для лечения;
+- материалы и лекарства не требуются;
+- врач получает `skill.service`;
+- один committed этап длится один игровой час и восстанавливает до 25 Health;
+- при `Health < 25` создаётся уведомление «при смерти».
+
+Legacy content definition:
+
+```text
+BuildingBox recipe:
+3 stone + 3 iron + 3 crystal + 1 gold
+
+Research:
+Service 7 + Food 2
+
+Construction grants:
+Metallurgy 7 + Service 3
+```
+
+Scripts содержат четыре patient places, одного врача и один active treatment workflow. Эти значения, порог автоматического обращения, очередь, требования врача, частичный прогресс и энергия ожидают Q-054.
 
 ## Металлургия и кристаллы
 
