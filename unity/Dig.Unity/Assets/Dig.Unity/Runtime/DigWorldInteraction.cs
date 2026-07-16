@@ -34,6 +34,8 @@ namespace Dig.Unity
             DigAgentRenderer agentRenderer,
             DigJobRenderer jobRenderer,
             DigBuildingRenderer buildingRenderer,
+            DigWorldItemRenderer itemRenderer,
+            DigBuildingBoxGhostRenderer buildingBoxGhostRenderer,
             DigTerrainWorkSession terrainSession,
             DigStockpileRenderer stockpileRenderer,
             DigAgentSimulationDriver simulation,
@@ -46,10 +48,13 @@ namespace Dig.Unity
             _agentRenderer = agentRenderer;
             _jobRenderer = jobRenderer;
             _buildingRenderer = buildingRenderer;
+            _itemRenderer = itemRenderer;
+            _buildingBoxGhostRenderer = buildingBoxGhostRenderer;
             _terrainSession = terrainSession;
             _stockpileRenderer = stockpileRenderer;
             _simulation = simulation;
             _hud = hud;
+            hud.SetBuildingPlacementControls(this);
         }
 
         private void Update()
@@ -60,6 +65,7 @@ namespace Dig.Unity
             }
 
             HandleStoragePlacement();
+            UpdateBuildingPlacementHover();
             bool left = Input.GetMouseButtonDown(0);
             bool right = Input.GetMouseButtonDown(1);
             if (!left && !right)
@@ -76,6 +82,7 @@ namespace Dig.Unity
                     new ContextPointerEvent(
                         PointerInputSurface.World,
                         button,
+                        altPressed: IsAltPressed(),
                         isPointerOverBlockingUi: true),
                     BuildState(button),
                     new ContextPointerTarget(ContextWorldTargetKind.None));
@@ -110,7 +117,7 @@ namespace Dig.Unity
 
             if (_jobRenderer!.TryGetJob(hit, out DigJobVisual job))
             {
-                if (left)
+                if (left && !_buildingPlacementMode.HasValue)
                 {
                     SelectJob(job);
                     return;
@@ -120,6 +127,22 @@ namespace Dig.Unity
                     Pointer(button),
                     BuildState(button),
                     new ContextPointerTarget(ContextWorldTargetKind.None)));
+                return;
+            }
+
+            if (_itemRenderer!.TryGetItem(hit, out DigWorldItemVisual item))
+            {
+                ContextPointerTarget target = new ContextPointerTarget(
+                    ContextWorldTargetKind.BuildingBox,
+                    EntityId.Parse(item.Model.StackId),
+                    new CellId(item.Model.CellX, item.Model.CellY),
+                    reachable: true,
+                    supportsAltInteraction: item.Model.AvailableQuantity == 1);
+                ApplyDecision(_inputRouter.Route(
+                    Pointer(button),
+                    BuildState(button),
+                    target),
+                    item: item);
                 return;
             }
 
@@ -178,6 +201,11 @@ namespace Dig.Unity
                 selectedResidentId: selectedResident,
                 selectedResidentAlive: selectedAlive,
                 selectedCompletedBuildingId: selectedBuilding,
+                selectedInventoryStackId: _buildingPlacementMode?.SourceStackId,
+                selectedInventoryItemIsBuildingBox: _buildingPlacementMode.HasValue,
+                buildingPlacementActive: _buildingPlacementMode.HasValue,
+                buildingPlacementValid: _buildingPlacementPreview?.IsValid ?? false,
+                buildingPlacementReasonCode: _buildingPlacementPreview?.ReasonCode,
                 excavationTool: tool);
         }
 
@@ -201,7 +229,13 @@ namespace Dig.Unity
             return new ContextPointerEvent(
                 PointerInputSurface.World,
                 button,
-                clickCount);
+                clickCount,
+                altPressed: IsAltPressed());
+        }
+
+        private static bool IsAltPressed()
+        {
+            return Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
         }
 
         private bool IsInitialized()
@@ -213,6 +247,8 @@ namespace Dig.Unity
                 && _agentRenderer != null
                 && _jobRenderer != null
                 && _buildingRenderer != null
+                && _itemRenderer != null
+                && _buildingBoxGhostRenderer != null
                 && _terrainSession != null
                 && _stockpileRenderer != null
                 && _simulation != null
