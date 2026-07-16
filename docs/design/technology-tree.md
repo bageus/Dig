@@ -135,7 +135,7 @@ Runtime model этих действий остаётся Q-037.
 
 Для mixed building requirement «любой combat skill N» используется максимум из `skill.unarmed_combat`, `skill.one_handed_combat`, `skill.two_handed_combat`, `skill.ranged_combat`, `skill.defense`.
 
-Название «Палаш» из ответа владельца трактуется как `weapon.sword` / legacy `Schwert`; display name «Меч» пока не переименован.
+Название «Палаш» трактуется как `weapon.sword` / legacy `Schwert`; stable ItemId остаётся `weapon.sword`.
 
 ## 8. Подтверждённые поздние размещения
 
@@ -170,9 +170,9 @@ Runtime model этих действий остаётся Q-037.
 
 Театр, Боулинг, Дискотека, Тренажёрный зал и Бордель остаются `TBD_OWNER`.
 
-Ездовой хомяк и Ховерборд остаются в игре; их mobility parameters должны быть описаны отдельно.
+Ездовой хомяк и Ховерборд остаются в игре; числовые mobility parameters относятся к Q-014.
 
-32 дополнительных fantasy/creature combat class candidates ожидают Q-053 loot-only/excluded selection. Восемь special-mode classes и `Bombe` ожидают подтверждения исключения из colony mode.
+32 дополнительных fantasy/creature combat classes не входят в текущее дерево и имеют `ContentPolicy = DeferredBacklog`; их возможное будущее использование вынесено в [#177](https://github.com/bageus/Dig/issues/177).
 
 ## 11. Явные исключения
 
@@ -181,13 +181,17 @@ Runtime model этих действий остаётся Q-037.
 - вагонетки, рельсы, стрелки и тачки;
 - автоматическое completion технологии только от skill threshold;
 - старый общий `exp_Kampf` как тринадцатый навык;
-- сюжетное/campaign дерево.
+- сюжетное/campaign дерево;
+- современные special-mode classes `AK47`, `MP5`, `M4`, `Para`, `M3_super_90`, `Duals`, `Awp`, `Deagle`;
+- `Bombe` как multiplayer-only object.
+
+Последние девять IDs имеют `ContentPolicy = ExcludedFromColonyMode` и не разрешены в technology, loot, colony registry или saves.
 
 ## 12. Требования к content model
 
 Каждый узел должен иметь stable ID, localization key, research building, prerequisites, skill requirements, recipe-derived research duration, unlock IDs и version. Validation обнаруживает missing refs, cycles, duplicate unlocks, unreachable nodes и запрещённые legacy IDs.
 
-Combat equipment дополнительно имеет `RequiredSkillId`, `AllowsShield`, `AmmoPolicy`, `DurabilityPolicy` и explicit loot/exclusion policy.
+Combat equipment дополнительно имеет `RequiredSkillId`, `AllowsShield`, `AmmoPolicy`, `DurabilityPolicy` и explicit deferred/exclusion policy.
 
 ## 13. Связанные задачи
 
@@ -196,6 +200,7 @@ Combat equipment дополнительно имеет `RequiredSkillId`, `Allow
 - #126 — полное дерево;
 - #127 — энергия;
 - #128 — research lifecycle;
-- #129 — боевое снаряжение;
+- #129 — основной боевой каталог;
 - #137 — лестницы и лифты;
-- #150 — могилы, return и rejuvenation.
+- #150 — могилы, return и rejuvenation;
+- #177 — deferred fantasy/creature equipment.
