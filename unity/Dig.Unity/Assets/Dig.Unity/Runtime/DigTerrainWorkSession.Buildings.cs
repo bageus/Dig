@@ -92,6 +92,7 @@ namespace Dig.Unity
                     _buildingInventoryRepository,
                     _jobRepository,
                     journal));
+            InitializeBuildingBoxWorldInput(catalog, definition, journal);
             InitializeBuildingPackingExecution(journal);
         }
 
