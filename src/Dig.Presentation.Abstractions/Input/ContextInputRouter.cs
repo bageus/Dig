@@ -174,7 +174,8 @@ public sealed partial class ContextInputRouter
                 PresentationInputEffect.StartBuildingPlacement,
                 consumesPointer: true,
                 actorId: state.SelectedResidentId,
-                targetEntityId: state.SelectedInventoryStackId);
+                targetEntityId: state.SelectedInventoryStackId,
+                targetCell: target.Cell);
         }
 
         return None();
