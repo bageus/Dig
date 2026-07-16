@@ -159,6 +159,7 @@ internal sealed class BuildingBoxHarness
         JobId = Id(11);
         SourceStackId = Id(12);
         WorkerId = Id(13);
+        SourceCell = new CellId(1, 1);
         BoxItemId = new ItemId("building_box.workshop");
         ItemCatalog items = new ItemCatalog(new[]
         {
@@ -175,7 +176,7 @@ internal sealed class BuildingBoxHarness
             quantity: 1,
             carriedByResident
                 ? ItemLocation.InAgent(WorkerId)
-                : ItemLocation.InWorld(new CellId(1, 1)),
+                : ItemLocation.InWorld(SourceCell),
             tick: 0);
         Buildings = new BuildingsState();
         Jobs = new JobSystem();
@@ -191,6 +192,7 @@ internal sealed class BuildingBoxHarness
     public EntityId JobId { get; }
     public EntityId SourceStackId { get; }
     public EntityId WorkerId { get; }
+    public CellId SourceCell { get; }
     public ItemId BoxItemId { get; }
     public InventoryState Inventory { get; }
     public BuildingsState Buildings { get; }
@@ -234,6 +236,20 @@ internal sealed class BuildingBoxHarness
             _candidates,
             Journal).Handle(new AssignAvailableJobsCommand(_tick++)).Assignments);
         Advance();
+        Assert.Equal(JobStageKind.AcquireItem, Jobs.Get(JobId)!.Stage);
+        Result acquired = new AcquireBuildingBoxForAssemblyHandler(
+            BuildingsRepository,
+            InventoryRepository,
+            JobRepository,
+            Journal).Handle(new AcquireBuildingBoxForAssemblyCommand(
+                BuildingId,
+                JobId,
+                SourceCell,
+                _tick++));
+        Assert.True(acquired.IsSuccess, acquired.Error?.ToString());
+        ItemStackSnapshot carried = Inventory.GetStack(SourceStackId)!;
+        Assert.Equal(ItemLocation.InAgent(WorkerId), carried.Location);
+        Assert.Equal(1, carried.ReservedQuantity);
         Advance();
         Advance();
         Assert.Equal(JobStageKind.DepositItem, Jobs.Get(JobId)!.Stage);
