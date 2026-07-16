@@ -53,6 +53,7 @@ namespace Dig.Unity
                 new GetInventorySnapshotQueryHandler(_buildingInventoryRepository),
                 WorldItemInteractionKind.BuildingBox);
             InitializeBuildingBoxPickupExecution(journal);
+            InitializeBuildingBoxAssemblyExecution(journal);
         }
 
         internal Result<BuildingBoxPlacementModeState> BeginBuildingBoxPlacement(
