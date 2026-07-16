@@ -14,6 +14,7 @@
 - копание/ресурсы — #87;
 - HUD/selection/notifications — #113;
 - technology tree — #126;
+- combat equipment — #129;
 - exploration implementation — #165;
 - systems from legacy scripts — #127–#147 и #149–#152.
 
@@ -21,7 +22,8 @@
 
 - [`buildings.md`](buildings.md) — здания и функции;
 - [`products.md`](products.md) — производственные выходы;
-- [`weapons-and-shields.md`](weapons-and-shields.md) — экипировка;
+- [`weapons-and-shields.md`](weapons-and-shields.md) — производимое боевое снаряжение, recipes, technologies и slots;
+- [`legacy-combat-equipment-appendix.md`](legacy-combat-equipment-appendix.md) — дополнительные legacy loot/special class candidates;
 - [`materials.md`](materials.md) — материалы и руды;
 - [`food.md`](food.md) — питание;
 - [`alcohol.md`](alcohol.md) — напитки;
@@ -68,12 +70,13 @@
 
 ## Актуальные открытые решения
 
-- Q-014 — balance values, включая числовой mobility multiplier;
-- Q-037 — runtime model действий фермы.
+- Q-014 — balance values, включая combat coefficients и personal mobility multiplier;
+- Q-037 — runtime model действий фермы;
+- Q-053 — loot/exclusion, combat-skill mapping, shield compatibility и ammo/durability policy для equipment catalog.
 
 ## Связанные issues
 
-- technology/energy/research: #126–#128;
+- technology/energy/research/combat content: #126–#129;
 - transport/doors: #136–#137;
 - lifecycle/appearance: #145, #150–#151;
 - food #96–#101, #159;
