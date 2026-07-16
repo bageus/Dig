@@ -51,7 +51,7 @@ BuildingDefinition
 | Горн | Мастерская каменщика | order worker | Production | ранняя плавка железа |
 | Литейный цех | data-driven | order worker | Production | железо/золото на угле |
 | Песчаник | data-driven | order worker | Production | обработка кристаллической руды |
-| Больница | Токарная мастерская (`Dreherei`) | 1 врач | candidate: 4 пациента, 1 active | поэтапное восстановление Health |
+| Больница | Токарная мастерская (`Dreherei`) | временный взрослый врач | 1 пациент, 1 active | continuous Health treatment, energy class 2 |
 
 ## Пост часового
 
@@ -142,18 +142,9 @@ Worker lifecycle:
 
 ## Больница
 
-Authoritative Health/treatment specification: [`../health-hospital-and-treatment.md`](../health-hospital-and-treatment.md), issue #130.
+Authoritative specification: [`../health-hospital-and-treatment.md`](../health-hospital-and-treatment.md), issue #130.
 
-Подтверждено:
-
-- отдельных травм и severity-каталога нет;
-- один врач обязателен для лечения;
-- материалы и лекарства не требуются;
-- врач получает `skill.service`;
-- один committed этап длится один игровой час и восстанавливает до 25 Health;
-- при `Health < 25` создаётся уведомление «при смерти».
-
-Legacy content definition:
+### Content
 
 ```text
 BuildingBox recipe:
@@ -164,9 +155,42 @@ Service 7 + Food 2
 
 Construction grants:
 Metallurgy 7 + Service 3
+
+Service:
+_Heilen — pre-invented
 ```
 
-Scripts содержат четыре patient places, одного врача и один active treatment workflow. Эти значения, порог автоматического обращения, очередь, требования врача, частичный прогресс и энергия ожидают Q-054.
+### Functional definition
+
+```text
+PatientPlaceCount = 1
+DoctorPlaceCount = 1
+ActiveTreatmentSlots = 1
+RequiredEnergyClass = 2
+DoctorAssignment = Temporary
+MinimumDoctorService = none
+MedicalMaterials = none
+```
+
+### Admission
+
+- automatic intent при `Health < 80`;
+- при `Health < 25` resident немедленно прерывает работу;
+- при `25 <= Health < 80` лечение выполняется только в свободное время;
+- дети исключены;
+- беременные используют обычные правила взрослых;
+- любой живой взрослый пациент самостоятельно идёт в больницу.
+
+### Treatment
+
+- очередь: `Health asc -> WaitingSince asc -> ResidentId asc`;
+- один игровой час восстанавливает максимум 25 Health;
+- Health начисляется постепенно;
+- partial Health/progress сохраняются при interruption;
+- потеря врача или энергии ставит лечение на паузу;
+- этапы автоматически повторяются до Health 100;
+- врач получает `skill.service`;
+- точный energy consumption, natural regeneration rates и Service grant относятся к Q-014.
 
 ## Металлургия и кристаллы
 
