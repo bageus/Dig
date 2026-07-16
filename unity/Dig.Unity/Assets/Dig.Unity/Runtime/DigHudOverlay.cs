@@ -56,6 +56,7 @@ namespace Dig.Unity
         {
             _selectedCell = selected;
             _selectedAgent = null;
+            _residentInventory = null;
             ClearJobSelection();
             ClearBuildingSelection();
         }
@@ -64,6 +65,16 @@ namespace Dig.Unity
         {
             _selectedAgent = selected;
             _selectedCell = null;
+            if (selected == null
+                || _residentInventory == null
+                || !string.Equals(
+                    _residentInventory.ResidentId,
+                    selected.Id,
+                    System.StringComparison.Ordinal))
+            {
+                _residentInventory = null;
+            }
+
             ClearJobSelection();
             ClearBuildingSelection();
         }
@@ -204,6 +215,7 @@ namespace Dig.Unity
             GUILayout.Label($"Intent: {agent.ActiveIntent} | action {agent.ActionElapsedTicks}/{agent.ActionRequiredTicks}");
             GUILayout.Label($"Nutrition {agent.Nutrition} | alertness {agent.Alertness}");
             GUILayout.Label($"Mood {agent.Mood} | health {agent.Health}");
+            DrawResidentInventory();
             GUILayout.Space(5f);
             GUILayout.Label($"Decision: {agent.DecisionReason}");
             GUILayout.Label(agent.DecisionExplanation);
