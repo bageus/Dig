@@ -6,108 +6,71 @@
 
 **Статус:** `ANSWERED`
 
-- все рабочие шапки только визуальные;
-- после смерти создаётся отдельный identity-linked обычный колпак конкретного гнома;
-- одежда постоянна;
-- при старости волосы седеют, у мужчин появляется лысина;
-- любая работа начинается только после проверки или смены нужной шапки;
-- доставка имеет приоритет Logistics и использует фуражку, даже при переноске металла;
-- точная длительность переодевания остаётся balance data Q-014.
-
-Связи: `resident-role-headwear.md`, #151, #150.
+Рабочие шапки только визуальные; death создаёт отдельный identity cap; одежда постоянна; старость меняет волосы; любая работа ждёт проверки/смены role hat; Logistics имеет приоритет для доставки. Точная длительность переодевания относится к Q-014.
 
 ## Q-048 — Могила, возвращение и омоложение
 
 **Статус:** `ANSWERED`
 
-- могила использует `3 камня + identity cap`;
-- cap становится частью могилы;
-- могилу нельзя переносить или упаковывать;
-- воскресить из могилы нельзя;
-- возвращение сохраняет skills, capacity, family, partnership и appearance, сбрасывая возраст до young adult;
-- омоложение длится стандартные 2 дня детства;
-- омоложённый child не выполняет adult jobs, но может учиться;
-- repeated rejuvenation и repeated death/return разрешены;
-- temple recipe: cap + 1 hamster + 4 gold + 2 crystal ore;
-- rejuvenation potion: 1 hamster + 1 crystal + 1 iron ore + 2 gold.
-
-Отдельный конфликт партнёрства после возвращения вынесен в Q-052.
-
-Связи: `death-graves-resurrection-and-rejuvenation.md`, `content/products.md`, #150.
+- могила: `3 камня + identity cap`;
+- grave permanent/non-packable, return из grave невозможен;
+- temple return: cap + hamster + 4 gold + 2 crystal ore;
+- rejuvenation potion: hamster + crystal + iron ore + 2 gold;
+- return сохраняет identity/skills/capacity/family/history/appearance и сбрасывает возраст;
+- rejuvenated child учится, но не выполняет adult jobs;
+- repeated lifecycle cycles разрешены.
 
 ## Q-049 — Распределение энергии
 
 **Статус:** `ANSWERED`
 
-- один consumer одновременно подключается к одному source; перекрывающиеся зоны не создают общий pool;
-- сначала выбирается источник точного требуемого класса;
-- если его нет, используется минимальный доступный более высокий класс;
-- источники класса 2/3 могут питать потребителей младших классов;
-- среди источников одного класса выбирается ближайший; равенство разрешается stable `EnergySourceId`;
-- fuel-based генераторы сразу создают stock `100/400/600`, который тратится только при фактическом demand;
-- Ручной генератор не хранит запас и выдаёт энергию только пока гном выполняет работу;
-- прерывание ручного цикла немедленно прекращает генерацию, незавершённая часть не создаёт stock;
-- официальное имя источника класса 3 — **«Реактор»**;
-- хомяк является встроенной частью Хомячкового генератора и упаковывается вместе со зданием.
+Один consumer использует один source. Приоритет: exact class, затем минимальный более высокий, затем ближайший и stable ID. Higher class питает lower consumer. Fuel batches сразу создают stock `100/400/600`, расходуемый по demand. Ручной генератор работает без stock. Реактор — официальное имя. Хомяк встроен в генератор и упаковывается вместе с ним.
 
-Связи: `energy-generation-and-production-pausing.md`, #127.
+## Q-050 — Research UI и lifecycle
 
-## Q-050 — Research UI
+**Статус:** `ANSWERED`
 
-**Статус:** `OPEN`
+- `EligibleBusy` имеет белый цвет, как `EligibleAvailable`, но отдельный текст/status icon;
+- coal research weight = 2 игровые минуты;
+- все руды и iron также имеют weight 2;
+- active research продолжается и завершается, даже если worker после старта потерял required skill;
+- одно здание выполняет одно active research одновременно;
+- queued nodes ждут своей очереди;
+- technology recipe без inputs считается invalid content, но runtime fallback имеет duration 0 и мгновенный idempotent completion;
+- materials не расходуются;
+- Research не начисляет XP;
+- completed technology не relock.
 
-Подтверждено:
+Связи: `research-availability-duration-and-ui.md`, #128.
 
-- orange и yellow icon можно нажать заранее;
-- orange job ждёт появления qualified resident;
-- любой свободный qualified resident может получить claim;
-- research не начисляет experience;
-- материалы не расходуются и только определяют duration;
-- все руды имеют weight 2;
-- completed technology не блокируется после последующего падения skills.
+## Q-051 — Лестницы, лифты и mobility tools
 
-Открыто:
+**Статус:** `ANSWERED`
 
-1. Какой color/state используется для qualified resident, который находится в Work schedule, но занят другой работой?
-2. Какой research-minute weight имеет уголь?
-3. Что происходит при потере requirements во время уже начатого progress — pause и ожидание, продолжение текущим worker или cancel?
-4. Сколько одновременных research slots имеет одно здание и как обрабатывается recipe без ingredients?
+- лестницы: wooden 12, metal 16, crystal 24;
+- лифты: capacity 4, energy classes 1/2/3;
+- ожидание пассажиров radius 1, без timeout;
+- autonomous stops требуют примыкаемую площадку, manual control допускает любую высоту;
+- cargo только в personal Inventory;
+- при power loss жители ползут по стенам к **целевой** площадке;
+- Reithamster и Hoverboard остаются;
+- legacy scripts автоматически используют их при наличии в Inventory;
+- обычный дальний путь использует engine `speedtype 3 (autodist)`, forced/repeated fast move — `speedtype 2`;
+- Hoverboard имеет приоритет, если оба предмета находятся в Inventory;
+- перенос BuildingBox отключает fast mobility;
+- TCL не содержит отдельных числовых speed multipliers: оба используют одинаковые speedtype, поэтому конкретный multiplier остаётся data-driven Q-014.
 
-Связи: `research-availability-duration-and-ui.md`, #128, Q-034, Q-036.
-
-## Q-051 — Лестницы и лифты
-
-**Статус:** `PARTIALLY_ANSWERED`
-
-- ездовой хомяк и ховерборд остаются;
-- лестницы имеют фиксированные длины: wooden 12, metal 16, crystal 24;
-- capacity каждого лифта = 4;
-- лифт ждёт всех подошедших в радиус 1 при наличии мест;
-- timeout отсутствует;
-- при потере энергии кабина останавливается, пассажиры выбираются по стенам;
-- elevator classes: ordinary 1, steam 2, crystal 3;
-- manual control допускает любую высоту шахты;
-- automatic routing использует только этажи с примыкаемой доступной площадкой;
-- отдельного cargo mode нет.
-
-Открыто:
-
-1. К какой площадке ползут пассажиры после power loss: ближайшей, исходной или целевой?
-2. Нужны отдельные design-параметры скорости, технологии и управления ездового хомяка и ховерборда.
-
-Связи: `ladders-and-elevators.md`, #137.
+Связи: `ladders-and-elevators.md`, `scripts/classes/zwerg/z_dignwalk.tcl`, #137.
 
 ## Q-052 — Партнёрство после возвращения жителя
 
-**Статус:** `OPEN`
+**Статус:** `ANSWERED`
 
-При return сохраняется прежнее partnership record. Однако по Q-042 переживший партнёр после смерти мог создать новую эксклюзивную пару.
-
-Нужно определить:
-
-1. Если прежний партнёр уже состоит в новой паре, восстанавливается ли старая пара?
-2. Какая пара прекращается, если одновременно нельзя сохранить обе?
-3. Или прежняя связь остаётся только family/history relation, а active partnership восстанавливается лишь когда оба свободны?
+- если surviving partner создал новую active pair, новая пара сохраняется;
+- return не разрывает её и не создаёт вторую pair;
+- прежняя связь остаётся historical family/social relation;
+- бывшие партнёры могут снова образовать active pair только через normal matching, если оба позднее свободны;
+- return сам по себе не восстанавливает старую пару.
 
 Связи: `death-graves-resurrection-and-rejuvenation.md`, `partnership-pregnancy-and-birth.md`, #145, #150.
 
@@ -115,8 +78,9 @@
 
 | Дата | Вопрос | Решение |
 |---|---|---|
-| 2026-07-16 | Q-047 | cosmetic role hats, identity cap, aging hair, work waits for headwear |
-| 2026-07-16 | Q-048 | grave/temple/potion recipes and repeat lifecycle policy |
-| 2026-07-16 | Q-049 | single-source binding, exact/minimum higher class, stored fuel batches, live manual output, embedded hamster |
-| 2026-07-16 | Q-050 | queued orange/yellow research, no XP or material consumption, ore weight 2 |
-| 2026-07-16 | Q-051 | ladder lengths, elevator capacity/classes/boarding and emergency climb |
+| 2026-07-16 | Q-047 | cosmetic role hats, identity cap и aging hair |
+| 2026-07-16 | Q-048 | grave/return/rejuvenation recipes и lifecycle |
+| 2026-07-16 | Q-049 | deterministic single-source energy binding |
+| 2026-07-16 | Q-050 | white busy state, coal 2, one slot, active skill-loss continues, zero-input instant fallback |
+| 2026-07-16 | Q-051 | target emergency climb и recovered automatic mobility-tool behavior |
+| 2026-07-16 | Q-052 | new active pair survives return; old pair remains historical |
