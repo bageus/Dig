@@ -72,7 +72,7 @@ namespace Dig.Unity
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
             if (result.IsSuccess)
             {
-                result = TerrainSession.Advance(AgentSession.Tick, agents);
+                result = AdvanceTerrainForAgents(AgentSession.Tick, agents);
             }
 
             if (result.IsSuccess)
