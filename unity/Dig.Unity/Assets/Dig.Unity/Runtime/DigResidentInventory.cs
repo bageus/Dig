@@ -1,4 +1,5 @@
 using System;
+using Dig.Application.Inventory;
 using Dig.Domain.Core;
 using Dig.Presentation.Inventory;
 
@@ -10,7 +11,18 @@ namespace Dig.Unity
 
         private void InitializeResidentInventoryPresentation()
         {
+            if (_buildingInventoryRepository == null)
+            {
+                throw new InvalidOperationException(
+                    "Building inventory must be initialized first.");
+            }
+
             _residentInventoryPresenter = new ResidentInventoryPresenter(
+                DemoBuildingBoxItemId,
+                _buildingInventoryRepository.Get().Catalog);
+            _buildingInventoryPresenter = new InventoryWorldPresenter(
+                new GetInventorySnapshotQueryHandler(_buildingInventoryRepository),
+                WorldItemInteractionKind.BuildingBox,
                 DemoBuildingBoxItemId);
         }
 
