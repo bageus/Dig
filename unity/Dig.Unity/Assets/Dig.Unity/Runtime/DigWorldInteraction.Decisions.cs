@@ -26,6 +26,12 @@ namespace Dig.Unity
                 case ApplicationInputCommandKind.ConfirmBuildingPlacement:
                     ConfirmBuildingPlacement();
                     break;
+                case ApplicationInputCommandKind.UseInventoryItem:
+                    ApplyResidentInventoryUse(decision);
+                    break;
+                case ApplicationInputCommandKind.DropInventoryStack:
+                    ApplyResidentInventoryDrop(decision);
+                    break;
                 case ApplicationInputCommandKind.PickupBuildingBox:
                     CreateBuildingBoxPickup(decision);
                     break;
