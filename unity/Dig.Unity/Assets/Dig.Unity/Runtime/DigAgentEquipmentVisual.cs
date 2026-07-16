@@ -61,6 +61,7 @@ namespace Dig.Unity
         {
             GameObject part = GameObject.CreatePrimitive(PrimitiveType.Cube);
             part.name = partName;
+            part.layer = 2;
             part.transform.SetParent(transform, worldPositionStays: false);
             part.transform.localPosition = localPosition;
             part.transform.localScale = localScale;
