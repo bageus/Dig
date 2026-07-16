@@ -13,7 +13,7 @@ namespace Dig.Unity
                 return;
             }
 
-            Result result = _terrainSession!.UseResidentInventoryItem(
+            Result result = _terrainSession!.UseResidentInventoryItemWithSlotGuard(
                 decision.ActorId.Value.ToString(),
                 decision.TargetEntityId.Value.ToString(),
                 _simulation!.CurrentTick);
@@ -21,6 +21,7 @@ namespace Dig.Unity
             if (result.IsSuccess)
             {
                 _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
+                _agentRenderer!.RenderEquipment(_terrainSession.LoadResidentEquipment());
                 _hud.SetStatus("Inventory item equipped.");
             }
         }
@@ -44,6 +45,7 @@ namespace Dig.Unity
             if (result.IsSuccess)
             {
                 _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
+                _agentRenderer!.RenderEquipment(_terrainSession.LoadResidentEquipment());
                 _hud.SetStatus("Inventory stack moved to resident cell.");
             }
         }
