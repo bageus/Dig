@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Dig.Presentation.Agents;
+using Dig.Presentation.Inventory;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -10,9 +11,12 @@ namespace Dig.Unity
     {
         private readonly Dictionary<string, DigAgentVisual> _agents =
             new Dictionary<string, DigAgentVisual>();
+        private readonly Dictionary<string, ResidentEquipmentViewModel> _equipment =
+            new Dictionary<string, ResidentEquipmentViewModel>(StringComparer.Ordinal);
         private Transform? _visualRoot;
         private Material? _normalMaterial;
         private Material? _selectedMaterial;
+        private Material? _equipmentMaterial;
         private DigAgentVisual? _selected;
 
         public string? SelectedAgentId => _selected?.Model.Id;
@@ -55,6 +59,34 @@ namespace Dig.Unity
 
                 _agents.Remove(id);
                 Destroy(visual.gameObject);
+            }
+        }
+
+        public void RenderEquipment(IReadOnlyList<ResidentEquipmentViewModel> equipment)
+        {
+            if (equipment == null)
+            {
+                throw new ArgumentNullException(nameof(equipment));
+            }
+
+            EnsureResources();
+            _equipment.Clear();
+            for (int index = 0; index < equipment.Count; index++)
+            {
+                ResidentEquipmentViewModel model = equipment[index];
+                if (_equipment.ContainsKey(model.ResidentId))
+                {
+                    throw new InvalidOperationException(
+                        "A resident cannot have more than one equipment visual.");
+                }
+
+                _equipment.Add(model.ResidentId, model);
+            }
+
+            foreach (KeyValuePair<string, DigAgentVisual> pair in _agents)
+            {
+                _equipment.TryGetValue(pair.Key, out ResidentEquipmentViewModel? model);
+                pair.Value.SetEquipment(model, _equipmentMaterial!);
             }
         }
 
@@ -109,6 +141,8 @@ namespace Dig.Unity
             visual.transform.localScale = new Vector3(0.48f, 0.62f, 0.48f);
             DigAgentVisual agentVisual = visual.AddComponent<DigAgentVisual>();
             agentVisual.Initialize(model, _normalMaterial!, _selectedMaterial!);
+            _equipment.TryGetValue(model.Id, out ResidentEquipmentViewModel? equipment);
+            agentVisual.SetEquipment(equipment, _equipmentMaterial!);
             _agents.Add(model.Id, agentVisual);
         }
 
@@ -146,6 +180,11 @@ namespace Dig.Unity
                 name = "Dig Resident Selected",
                 color = new Color(1f, 0.78f, 0.22f, 1f),
             };
+            _equipmentMaterial = new Material(shader)
+            {
+                name = "Dig Resident Equipment",
+                color = new Color(0.38f, 0.28f, 0.18f, 1f),
+            };
         }
 
         private void OnDestroy()
@@ -158,6 +197,11 @@ namespace Dig.Unity
             if (_selectedMaterial != null)
             {
                 Destroy(_selectedMaterial);
+            }
+
+            if (_equipmentMaterial != null)
+            {
+                Destroy(_equipmentMaterial);
             }
         }
     }
