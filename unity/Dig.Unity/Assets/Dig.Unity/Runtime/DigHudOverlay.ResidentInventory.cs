@@ -67,19 +67,34 @@ namespace Dig.Unity
                 GUILayout.Label(
                     $"{slot.ItemId} ×{slot.Quantity} | "
                     + $"available {slot.AvailableQuantity} | {reservation}",
-                    GUILayout.Width(370f));
+                    GUILayout.Width(300f));
+
+                bool previousEnabled = GUI.enabled;
                 if (slot.IsBuildingBox)
                 {
-                    bool previousEnabled = GUI.enabled;
                     GUI.enabled = previousEnabled && slot.CanStartPlacement;
-                    if (GUILayout.Button("Place", GUILayout.Width(70f)))
+                    if (GUILayout.Button("Place", GUILayout.Width(60f)))
                     {
                         _residentInventoryInteraction?.ActivateResidentInventorySlot(slot);
                     }
-
-                    GUI.enabled = previousEnabled;
                 }
 
+                if (slot.IsTool)
+                {
+                    GUI.enabled = previousEnabled && slot.CanUse;
+                    if (GUILayout.Button("Use", GUILayout.Width(60f)))
+                    {
+                        _residentInventoryInteraction?.UseResidentInventorySlot(slot);
+                    }
+                }
+
+                GUI.enabled = previousEnabled && slot.CanDrop;
+                if (GUILayout.Button("Put down", GUILayout.Width(78f)))
+                {
+                    _residentInventoryInteraction?.DropResidentInventorySlot(slot);
+                }
+
+                GUI.enabled = previousEnabled;
                 GUILayout.EndHorizontal();
             }
         }
