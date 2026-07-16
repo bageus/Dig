@@ -11,6 +11,7 @@ namespace Dig.Tests
 public sealed class ResidentEquipmentDomainTests
 {
     private static readonly ItemId ToolItemId = new ItemId("tool.pickaxe");
+    private static readonly ItemId HammerItemId = new ItemId("tool.hammer");
     private static readonly EntityId ResidentId = Id(1);
     private static readonly EntityId OtherResidentId = Id(4);
     private static readonly EntityId FirstStackId = Id(2);
@@ -38,7 +39,7 @@ public sealed class ResidentEquipmentDomainTests
     public void Foreign_carried_tool_cannot_be_equipped()
     {
         InventoryState inventory = CreateInventory();
-        AddCarriedTool(inventory, FirstStackId, OtherResidentId);
+        AddCarriedTool(inventory, FirstStackId, ResidentId: OtherResidentId);
 
         Result result = inventory.EquipTool(FirstStackId, ResidentId, tick: 1);
 
@@ -81,16 +82,103 @@ public sealed class ResidentEquipmentDomainTests
                 second.CreateSnapshot()));
     }
 
+    [Fact]
+    public void Equipped_mining_profile_reduces_work_interval()
+    {
+        InventoryState inventory = CreateInventory();
+        AddCarriedTool(inventory, FirstStackId, ResidentId);
+        Assert.True(inventory.EquipTool(FirstStackId, ResidentId, tick: 1).IsSuccess);
+        EquipmentRates rates = CreateRates();
+
+        int interval = rates.ResolveIntervalTicks(
+            ResidentId,
+            EquipmentWorkKind.Mining,
+            baseIntervalTicks: 3,
+            inventory.CreateSnapshot());
+
+        Assert.Equal(1, interval);
+        Assert.Equal(
+            EquipmentAppearanceKind.Mining,
+            rates.ResolveAppearance(ToolItemId));
+    }
+
+    [Fact]
+    public void Mismatched_profile_keeps_base_interval()
+    {
+        InventoryState inventory = CreateInventory();
+        AddCarriedTool(inventory, FirstStackId, ResidentId);
+        Assert.True(inventory.EquipTool(FirstStackId, ResidentId, tick: 1).IsSuccess);
+
+        int interval = CreateRates().ResolveIntervalTicks(
+            ResidentId,
+            EquipmentWorkKind.Construction,
+            baseIntervalTicks: 3,
+            inventory.CreateSnapshot());
+
+        Assert.Equal(3, interval);
+        Assert.Equal(
+            EquipmentAppearanceKind.Construction,
+            CreateRates().ResolveAppearance(HammerItemId));
+    }
+
+    [Fact]
+    public void Empty_equipment_keeps_base_interval()
+    {
+        int interval = CreateRates().ResolveIntervalTicks(
+            ResidentId,
+            EquipmentWorkKind.Mining,
+            baseIntervalTicks: 3,
+            CreateInventory().CreateSnapshot());
+
+        Assert.Equal(3, interval);
+    }
+
+    [Fact]
+    public void Rates_reject_duplicate_slots_across_inventory_snapshots()
+    {
+        InventoryState first = CreateInventory();
+        InventoryState second = CreateInventory();
+        AddCarriedTool(first, FirstStackId, ResidentId);
+        AddCarriedTool(second, SecondStackId, ResidentId);
+        Assert.True(first.EquipTool(FirstStackId, ResidentId, tick: 1).IsSuccess);
+        Assert.True(second.EquipTool(SecondStackId, ResidentId, tick: 1).IsSuccess);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            CreateRates().ResolveIntervalTicks(
+                ResidentId,
+                EquipmentWorkKind.Mining,
+                baseIntervalTicks: 3,
+                first.CreateSnapshot(),
+                second.CreateSnapshot()));
+    }
+
+    private static EquipmentRates CreateRates()
+    {
+        return new EquipmentRates(new[]
+        {
+            new EquipmentProfile(
+                ToolItemId,
+                EquipmentAppearanceKind.Mining,
+                EquipmentWorkKind.Mining,
+                workIntervalTicks: 1),
+            new EquipmentProfile(
+                HammerItemId,
+                EquipmentAppearanceKind.Construction,
+                EquipmentWorkKind.Construction,
+                workIntervalTicks: 1),
+        });
+    }
+
     private static void AddCarriedTool(
         InventoryState inventory,
         EntityId stackId,
-        EntityId residentId)
+        EntityId ResidentId)
     {
         Assert.True(inventory.AddStack(
             stackId,
             ToolItemId,
             1,
-            ItemLocation.InAgent(residentId),
+            ItemLocation.InAgent(ResidentId),
             tick: 0).IsSuccess);
     }
 
