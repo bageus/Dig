@@ -2,12 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Buildings;
+using Dig.Application.Inventory;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Dig.Presentation.Buildings;
+using Dig.Presentation.Inventory;
 using Dig.Presentation.World;
 
 namespace Dig.Unity
@@ -47,6 +49,9 @@ namespace Dig.Unity
                 _jobRepository,
                 validator,
                 journal ?? throw new ArgumentNullException(nameof(journal)));
+            _buildingInventoryPresenter = new InventoryWorldPresenter(
+                new GetInventorySnapshotQueryHandler(_buildingInventoryRepository),
+                WorldItemInteractionKind.BuildingBox);
             InitializeBuildingBoxPickupExecution(journal);
         }
 
