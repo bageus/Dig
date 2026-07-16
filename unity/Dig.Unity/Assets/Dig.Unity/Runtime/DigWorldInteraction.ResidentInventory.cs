@@ -10,6 +10,35 @@ namespace Dig.Unity
         internal void ActivateResidentInventorySlot(
             ResidentInventorySlotViewModel slot)
         {
+            RouteResidentInventorySlot(
+                slot,
+                PointerButtonKind.Left,
+                altPressed: false);
+        }
+
+        internal void UseResidentInventorySlot(
+            ResidentInventorySlotViewModel slot)
+        {
+            RouteResidentInventorySlot(
+                slot,
+                PointerButtonKind.Left,
+                altPressed: true);
+        }
+
+        internal void DropResidentInventorySlot(
+            ResidentInventorySlotViewModel slot)
+        {
+            RouteResidentInventorySlot(
+                slot,
+                PointerButtonKind.Right,
+                altPressed: false);
+        }
+
+        private void RouteResidentInventorySlot(
+            ResidentInventorySlotViewModel slot,
+            PointerButtonKind button,
+            bool altPressed)
+        {
             if (slot == null)
             {
                 throw new System.ArgumentNullException(nameof(slot));
@@ -21,12 +50,6 @@ namespace Dig.Unity
                 return;
             }
 
-            if (!slot.CanStartPlacement)
-            {
-                _hud.SetStatus("input.inventory.stack_unavailable");
-                return;
-            }
-
             var resident = _agentRenderer.SelectedModel;
             EntityId residentId = EntityId.Parse(resident.Id);
             EntityId stackId = EntityId.Parse(slot.StackId);
@@ -34,7 +57,10 @@ namespace Dig.Unity
                 selectedResidentId: residentId,
                 selectedResidentAlive: resident.IsAlive,
                 selectedInventoryStackId: stackId,
-                selectedInventoryItemIsBuildingBox: slot.IsBuildingBox);
+                selectedInventoryItemUsable: slot.IsTool,
+                selectedInventoryItemIsBuildingBox: slot.IsBuildingBox,
+                canUseSelectedInventoryItem: slot.CanUse,
+                canDropSelectedInventoryItem: slot.CanDrop);
             ContextPointerTarget target = new ContextPointerTarget(
                 ContextWorldTargetKind.GenericItem,
                 stackId,
@@ -42,7 +68,8 @@ namespace Dig.Unity
             ContextInputDecision decision = _inputRouter.Route(
                 new ContextPointerEvent(
                     PointerInputSurface.ResidentInventory,
-                    PointerButtonKind.Left),
+                    button,
+                    altPressed: altPressed),
                 state,
                 target);
             ApplyDecision(decision);
