@@ -39,6 +39,7 @@ namespace Dig.Unity
                 return;
             }
 
+            DrawResidentWorkRates();
             GUILayout.Space(6f);
             GUILayout.Label("INVENTORY");
             if (_residentInventory == null

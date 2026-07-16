@@ -15,6 +15,7 @@ public sealed class AddBuildingBoxAssemblyWorkHandler
 {
     private readonly IBuildingsRepository _buildingsRepository;
     private readonly IJobRepository _jobRepository;
+    private Func<EntityId, long, bool>? _workDuePolicy;
 
     public AddBuildingBoxAssemblyWorkHandler(
         IBuildingsRepository buildingsRepository,
@@ -24,6 +25,12 @@ public sealed class AddBuildingBoxAssemblyWorkHandler
             ?? throw new ArgumentNullException(nameof(buildingsRepository));
         _jobRepository = jobRepository
             ?? throw new ArgumentNullException(nameof(jobRepository));
+    }
+
+    public void SetWorkDuePolicy(Func<EntityId, long, bool> workDuePolicy)
+    {
+        _workDuePolicy = workDuePolicy
+            ?? throw new ArgumentNullException(nameof(workDuePolicy));
     }
 
     public Result Handle(AddBuildingBoxAssemblyWorkCommand command)
@@ -51,6 +58,13 @@ public sealed class AddBuildingBoxAssemblyWorkHandler
             || building!.BoxPlan!.CommitState != BuildingBoxCommitState.AtSite)
         {
             return Result.Failure(BuildingBoxErrors.InvalidJobStage);
+        }
+
+        if (_workDuePolicy != null
+            && job.AssignedAgentId.HasValue
+            && !_workDuePolicy(job.AssignedAgentId.Value, command.Tick))
+        {
+            return Result.Success();
         }
 
         if (building.Status == BuildingStatus.ReadyToBuild)
@@ -180,4 +194,5 @@ internal static class BuildingBoxJobValidation
             && definition.SourceStackId == building.BoxPlan.SourceStackId;
     }
 }
+
 }

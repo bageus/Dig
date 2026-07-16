@@ -16,6 +16,7 @@ public sealed class AddBuildingBoxPackingWorkHandler
     private readonly IBuildingsRepository _buildingsRepository;
     private readonly IJobRepository _jobRepository;
     private readonly IEventSink _eventSink;
+    private Func<EntityId, long, bool>? _workDuePolicy;
 
     public AddBuildingBoxPackingWorkHandler(
         IBuildingsRepository buildingsRepository,
@@ -27,6 +28,12 @@ public sealed class AddBuildingBoxPackingWorkHandler
         _jobRepository = jobRepository
             ?? throw new ArgumentNullException(nameof(jobRepository));
         _eventSink = eventSink ?? throw new ArgumentNullException(nameof(eventSink));
+    }
+
+    public void SetWorkDuePolicy(Func<EntityId, long, bool> workDuePolicy)
+    {
+        _workDuePolicy = workDuePolicy
+            ?? throw new ArgumentNullException(nameof(workDuePolicy));
     }
 
     public Result Handle(AddBuildingBoxPackingWorkCommand command)
@@ -50,6 +57,13 @@ public sealed class AddBuildingBoxPackingWorkHandler
             || building.PackingPlan!.CommitState != BuildingPackingCommitState.Active)
         {
             return Result.Failure(BuildingBoxPackingErrors.InvalidJobStage);
+        }
+
+        if (_workDuePolicy != null
+            && job.AssignedAgentId.HasValue
+            && !_workDuePolicy(job.AssignedAgentId.Value, command.Tick))
+        {
+            return Result.Success();
         }
 
         Result worked = buildings.AddBoxPackingWork(
@@ -245,4 +259,5 @@ internal static class BuildingBoxPackingJobValidation
             && definition.OutputStackId == building.PackingPlan.OutputStackId;
     }
 }
+
 }

@@ -19,6 +19,8 @@ namespace Dig.Unity
             new ItemId("demo.building_box.workshop");
         private static readonly ItemId DemoResidentToolItemId =
             new ItemId("demo.tool.pickaxe");
+        private static readonly ItemId DemoResidentHammerItemId =
+            new ItemId("demo.tool.hammer");
         private static readonly DomainError BuildingsNotInitialized = new DomainError(
             "unity.buildings.not_initialized",
             "The demo building runtime is not initialized.");
@@ -87,10 +89,21 @@ namespace Dig.Unity
                     "Resident pickaxe",
                     maximumStackSize: 1,
                     isTool: true),
+                new ItemDefinition(
+                    DemoResidentHammerItemId,
+                    "Resident hammer",
+                    maximumStackSize: 1,
+                    isTool: true),
             }));
             Require(buildingInventory.AddStack(
                 DemoId('1', 1),
                 DemoResidentToolItemId,
+                quantity: 1,
+                ItemLocation.InAgent(DemoId('a', 1)),
+                tick: 0));
+            Require(buildingInventory.AddStack(
+                DemoId('2', 1),
+                DemoResidentHammerItemId,
                 quantity: 1,
                 ItemLocation.InAgent(DemoId('a', 1)),
                 tick: 0));
