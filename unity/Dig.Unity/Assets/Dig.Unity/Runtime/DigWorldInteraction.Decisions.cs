@@ -12,9 +12,10 @@ namespace Dig.Unity
             ContextInputDecision decision,
             DigAgentVisual? agent = null,
             DigCellVisual? cell = null,
-            DigBuildingVisual? building = null)
+            DigBuildingVisual? building = null,
+            DigWorldItemVisual? item = null)
         {
-            ApplyEffects(decision, agent, cell, building);
+            ApplyEffects(decision, agent, cell, building, item);
             if (!decision.HasApplicationCommand)
             {
                 return;
@@ -22,6 +23,12 @@ namespace Dig.Unity
 
             switch (decision.CommandKind)
             {
+                case ApplicationInputCommandKind.ConfirmBuildingPlacement:
+                    ConfirmBuildingPlacement();
+                    break;
+                case ApplicationInputCommandKind.PickupBuildingBox:
+                    CreateBuildingBoxPickup(decision);
+                    break;
                 case ApplicationInputCommandKind.MoveResident:
                     ApplyMove(decision);
                     break;
@@ -39,8 +46,19 @@ namespace Dig.Unity
             ContextInputDecision decision,
             DigAgentVisual? agent,
             DigCellVisual? cell,
-            DigBuildingVisual? building)
+            DigBuildingVisual? building,
+            DigWorldItemVisual? item)
         {
+            if (decision.Effects.HasFlag(PresentationInputEffect.CancelBuildingPlacement))
+            {
+                CancelBuildingPlacement();
+            }
+
+            if (decision.Effects.HasFlag(PresentationInputEffect.StartBuildingPlacement))
+            {
+                StartBuildingPlacement(decision, item);
+            }
+
             if (decision.Effects.HasFlag(PresentationInputEffect.DeselectResident))
             {
                 _agentRenderer!.Select(null);

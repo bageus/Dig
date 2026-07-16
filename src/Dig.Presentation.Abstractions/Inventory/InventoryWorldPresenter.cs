@@ -11,10 +11,19 @@ namespace Dig.Presentation.Inventory
 public sealed class InventoryWorldPresenter
 {
     private readonly GetInventorySnapshotQueryHandler _queryHandler;
+    private readonly WorldItemInteractionKind _interactionKind;
 
-    public InventoryWorldPresenter(GetInventorySnapshotQueryHandler queryHandler)
+    public InventoryWorldPresenter(
+        GetInventorySnapshotQueryHandler queryHandler,
+        WorldItemInteractionKind interactionKind = WorldItemInteractionKind.None)
     {
         _queryHandler = queryHandler ?? throw new ArgumentNullException(nameof(queryHandler));
+        if (!Enum.IsDefined(typeof(WorldItemInteractionKind), interactionKind))
+        {
+            throw new ArgumentOutOfRangeException(nameof(interactionKind));
+        }
+
+        _interactionKind = interactionKind;
     }
 
     public IReadOnlyList<WorldItemViewModel> Load()
@@ -28,7 +37,8 @@ public sealed class InventoryWorldPresenter
                 stack.Quantity,
                 stack.ReservedQuantity,
                 stack.Location.CellId.X,
-                stack.Location.CellId.Y))
+                stack.Location.CellId.Y,
+                _interactionKind))
             .OrderBy(item => item.CellY)
             .ThenBy(item => item.CellX)
             .ThenBy(item => item.StackId, StringComparer.Ordinal)

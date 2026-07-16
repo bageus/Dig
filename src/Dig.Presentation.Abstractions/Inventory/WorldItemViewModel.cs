@@ -1,5 +1,13 @@
+using System;
+
 namespace Dig.Presentation.Inventory
 {
+
+public enum WorldItemInteractionKind
+{
+    None = 0,
+    BuildingBox = 1,
+}
 
 public sealed class WorldItemViewModel
 {
@@ -9,14 +17,21 @@ public sealed class WorldItemViewModel
         int quantity,
         int reservedQuantity,
         int cellX,
-        int cellY)
+        int cellY,
+        WorldItemInteractionKind interactionKind = WorldItemInteractionKind.None)
     {
+        if (!Enum.IsDefined(typeof(WorldItemInteractionKind), interactionKind))
+        {
+            throw new ArgumentOutOfRangeException(nameof(interactionKind));
+        }
+
         StackId = stackId;
         ItemId = itemId;
         Quantity = quantity;
         ReservedQuantity = reservedQuantity;
         CellX = cellX;
         CellY = cellY;
+        InteractionKind = interactionKind;
     }
 
     public string StackId { get; }
@@ -26,6 +41,8 @@ public sealed class WorldItemViewModel
     public int AvailableQuantity => Quantity - ReservedQuantity;
     public int CellX { get; }
     public int CellY { get; }
+    public WorldItemInteractionKind InteractionKind { get; }
+    public bool IsBuildingBox => InteractionKind == WorldItemInteractionKind.BuildingBox;
 }
 
 }

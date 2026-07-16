@@ -45,6 +45,7 @@ namespace Dig.Unity
             _routePlans.Clear();
             _haulingRoutes.Clear();
             _buildingPackingRoutes.Clear();
+            _buildingBoxPickupRoutes.Clear();
             foreach (JobSnapshot job in _jobRepository.Get().GetAll())
             {
                 if (!IsActive(job) || !job.AssignedAgentId.HasValue)
@@ -54,6 +55,11 @@ namespace Dig.Unity
 
                 string agentId = job.AssignedAgentId.Value.ToString();
                 if (!agentsById.TryGetValue(agentId, out AgentViewModel? agent))
+                {
+                    continue;
+                }
+
+                if (TryPlanBuildingBoxPickupMovement(job, agent, navigation, movement))
                 {
                     continue;
                 }
@@ -112,6 +118,7 @@ namespace Dig.Unity
 
             routes.AddRange(LoadHaulingRoutes());
             routes.AddRange(LoadBuildingPackingRoutes());
+            routes.AddRange(LoadBuildingBoxPickupRoutes());
             return routes;
         }
 

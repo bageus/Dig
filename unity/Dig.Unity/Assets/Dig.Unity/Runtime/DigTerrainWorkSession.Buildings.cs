@@ -93,6 +93,7 @@ namespace Dig.Unity
                     _jobRepository,
                     journal));
             InitializeBuildingPackingExecution(journal);
+            InitializeBuildingBoxWorldInput(catalog, definition, journal);
         }
 
         public IReadOnlyList<BuildingWorldViewModel> LoadBuildings()
