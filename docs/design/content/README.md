@@ -14,7 +14,6 @@
 - копание/ресурсы — #87;
 - HUD/selection/notifications — #113;
 - technology tree — #126;
-- combat equipment — #129;
 - exploration implementation — #165;
 - systems from legacy scripts — #127–#147 и #149–#152.
 
@@ -22,8 +21,8 @@
 
 - [`buildings.md`](buildings.md) — здания и функции;
 - [`products.md`](products.md) — производственные выходы;
-- [`weapons-and-shields.md`](weapons-and-shields.md) — производимое боевое снаряжение, recipes, technologies и slots;
-- [`legacy-combat-equipment-appendix.md`](legacy-combat-equipment-appendix.md) — дополнительные legacy loot/special class candidates;
+- [`weapons-and-shields.md`](weapons-and-shields.md) — производимое боевое снаряжение, recipes, skills и slots;
+- [`legacy-combat-equipment-appendix.md`](legacy-combat-equipment-appendix.md) — 32 fantasy/creature candidates и special-mode exclusions;
 - [`materials.md`](materials.md) — материалы и руды;
 - [`food.md`](food.md) — питание;
 - [`alcohol.md`](alcohol.md) — напитки;
@@ -67,16 +66,18 @@
 - Q-034/Q-036/Q-050: research materials не расходуются; уголь и руды имеют вес 2; одно здание имеет один active slot; busy state белый; начатая работа продолжается после снижения skill; zero-input fallback мгновенный.
 - Q-051: emergency exit идёт к целевой площадке; Reithamster/Hoverboard автоматически используют legacy `speedtype 3/2`; отдельных числовых скоростей в TCL нет.
 - Q-052: новая текущая связь сохраняется; прежняя остаётся исторической и может возникнуть снова только обычным matching.
+- Q-053 partial: combat skill mapping, mixed-building `any combat skill` threshold, weapon/shield compatibility, no-ammo и no-wear policy подтверждены.
 
 ## Актуальные открытые решения
 
-- Q-014 — balance values, включая combat coefficients и personal mobility multiplier;
+- Q-014 — balance values, включая combat coefficients и числовой mobility multiplier;
 - Q-037 — runtime model действий фермы;
-- Q-053 — loot/exclusion, combat-skill mapping, shield compatibility и ammo/durability policy для equipment catalog.
+- Q-053 — выбрать loot-only fantasy/creature classes и подтвердить special-mode exclusions.
 
 ## Связанные issues
 
-- technology/energy/research/combat content: #126–#129;
+- technology/energy/research: #126–#128;
+- combat equipment: #129;
 - transport/doors: #136–#137;
 - lifecycle/appearance: #145, #150–#151;
 - food #96–#101, #159;
