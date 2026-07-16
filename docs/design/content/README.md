@@ -15,14 +15,14 @@
 - HUD/selection/notifications — #113;
 - technology tree — #126;
 - exploration implementation — #165;
-- systems from legacy scripts — #127–#147 и #149–#152.
+- systems from legacy scripts — #127–#147, #149–#152 и deferred #177.
 
 ## Файлы
 
 - [`buildings.md`](buildings.md) — здания и функции;
 - [`products.md`](products.md) — производственные выходы;
-- [`weapons-and-shields.md`](weapons-and-shields.md) — производимое боевое снаряжение, recipes, skills и slots;
-- [`legacy-combat-equipment-appendix.md`](legacy-combat-equipment-appendix.md) — 32 fantasy/creature candidates и special-mode exclusions;
+- [`weapons-and-shields.md`](weapons-and-shields.md) — основной colony-mode equipment catalog, recipes, skills и slots;
+- [`legacy-combat-equipment-appendix.md`](legacy-combat-equipment-appendix.md) — deferred fantasy classes и окончательные special-mode exclusions;
 - [`materials.md`](materials.md) — материалы и руды;
 - [`food.md`](food.md) — питание;
 - [`alcohol.md`](alcohol.md) — напитки;
@@ -60,24 +60,26 @@
 4. Legacy scripts дают candidates; принятыми становятся только явно согласованные правила.
 5. Animation callback не создаёт authoritative result.
 6. Изменение stable IDs требует migration.
+7. Deferred content не входит в runtime до отдельного owner decision.
+8. Excluded content является validation error при colony reference.
 
 ## Последние закрытые решения
 
 - Q-034/Q-036/Q-050: research materials не расходуются; уголь и руды имеют вес 2; одно здание имеет один active slot; busy state белый; начатая работа продолжается после снижения skill; zero-input fallback мгновенный.
-- Q-051: emergency exit идёт к целевой площадке; Reithamster/Hoverboard автоматически используют legacy `speedtype 3/2`; отдельных числовых скоростей в TCL нет.
-- Q-052: новая текущая связь сохраняется; прежняя остаётся исторической и может возникнуть снова только обычным matching.
-- Q-053 partial: combat skill mapping, mixed-building `any combat skill` threshold, weapon/shield compatibility, no-ammo и no-wear policy подтверждены.
+- Q-051: emergency exit идёт к целевой площадке; Reithamster/Hoverboard используют legacy `speedtype 3/2`; отдельных числовых скоростей в TCL нет.
+- Q-052: новая текущая связь сохраняется; прежняя остаётся исторической.
+- Q-053: основной каталог ограничен десятью предметами; skill/slot/ammo/no-wear policies утверждены; 32 fantasy classes перенесены в #177; modern special-mode content исключён.
 
 ## Актуальные открытые решения
 
 - Q-014 — balance values, включая combat coefficients и числовой mobility multiplier;
-- Q-037 — runtime model действий фермы;
-- Q-053 — выбрать loot-only fantasy/creature classes и подтвердить special-mode exclusions.
+- Q-037 — runtime model действий фермы.
 
 ## Связанные issues
 
 - technology/energy/research: #126–#128;
-- combat equipment: #129;
+- основной combat equipment: #129;
+- deferred fantasy equipment: #177;
 - transport/doors: #136–#137;
 - lifecycle/appearance: #145, #150–#151;
 - food #96–#101, #159;
