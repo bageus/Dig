@@ -7,6 +7,7 @@ public enum WorldItemInteractionKind
 {
     None = 0,
     BuildingBox = 1,
+    Pickup = 2,
 }
 
 public sealed class WorldItemViewModel
@@ -43,6 +44,10 @@ public sealed class WorldItemViewModel
     public int CellY { get; }
     public WorldItemInteractionKind InteractionKind { get; }
     public bool IsBuildingBox => InteractionKind == WorldItemInteractionKind.BuildingBox;
+    public bool CanPickup => InteractionKind == WorldItemInteractionKind.Pickup
+        && Quantity > 0
+        && ReservedQuantity == 0;
+    public bool IsInteractive => IsBuildingBox || InteractionKind == WorldItemInteractionKind.Pickup;
 }
 
 }
