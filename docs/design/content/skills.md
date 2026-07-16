@@ -21,6 +21,17 @@
 | `skill.two_handed_combat` | Двуручный бой | подтверждённые удары двуручным оружием |
 | `skill.one_handed_combat` | Одноручный бой | подтверждённые удары одноручным оружием |
 
+## Legacy combat mapping
+
+- `exp_F_Kungfu` → `skill.unarmed_combat`;
+- `exp_F_Sword` → `skill.one_handed_combat`;
+- `exp_F_Twohanded` → `skill.two_handed_combat`;
+- `exp_F_Ballistic` → `skill.ranged_combat`;
+- `exp_F_Defense` → `skill.defense`;
+- old generic `exp_Kampf` не создаётся как отдельный `AgentSkillId`.
+
+Перевод generic `exp_Kampf` requirements предметов и смешанных buildings остаётся Q-053 и описан в `weapons-and-shields.md`.
+
 ## Grants
 
 - один result может содержать несколько skills;
@@ -51,8 +62,9 @@
 - donor loss report сохраняет capacity;
 - изменение stable ID/precision требует migration;
 - `skill.stonework` и `material.stone` не смешиваются;
-- `skill.metallurgy` и material ItemIds не смешиваются.
+- `skill.metallurgy` и material ItemIds не смешиваются;
+- legacy `exp_Kampf` в runtime content запрещён.
 
 ## Открыто
 
-- Q-039 — влияет ли Cooking только на speed или также на output/effects.
+- Q-053 — конкретный combat skill для generic legacy requirements и equipment compatibility.
