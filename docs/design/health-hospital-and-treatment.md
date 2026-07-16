@@ -4,20 +4,32 @@
 
 ## 1. Статус
 
-Документ фиксирует подтверждённые владельцем правила и результаты аудита legacy `scripts`.
+Authoritative design закрыт ответом Q-054. Issue #130 остаётся открытой до реализации.
 
 Подтверждено владельцем дизайна:
 
 - отдельных травм, ранений и severity-каталога у гнома нет;
-- authoritative состоянием является только числовой `Health`;
-- для лечения в больнице нужен второй гном, выполняющий работу врача;
+- authoritative medical state — только числовой `Health`;
+- автоматическое обращение в больницу создаётся при `Health < 80`;
+- при `Health < 25` гном немедленно прерывает текущую работу и идёт лечиться;
+- при `25 <= Health < 80` больница посещается только в свободное время;
+- лечение требует второго взрослого гнома, временно выполняющего работу врача;
+- минимальный `skill.service` для допуска врача не требуется;
 - лечение не требует и не резервирует материалы или лекарства;
-- врач получает опыт `skill.service`;
-- при `Health < 25` создаётся уведомление в бегущей строке о том, что гном при смерти;
-- лечение выполняется этапами;
-- один завершённый этап длится один игровой час и восстанавливает 25 Health.
+- врач получает опыт `skill.service` за лечебную работу;
+- одна больница имеет одно место пациента, одно место врача и один active treatment;
+- очередь сортируется по минимальному Health, затем по большему времени ожидания, затем по меньшему `ResidentId`;
+- лечение восстанавливает Health постепенно со скоростью до 25 за один игровой час;
+- уже восстановленная часть Health сохраняется при прерывании;
+- лечение автоматически продолжается этапами до Health 100;
+- при `Health < 25` создаётся одно уведомление о том, что гном при смерти;
+- любой живой взрослый гном с `Health > 0` способен самостоятельно дойти до больницы;
+- вне больницы Health постепенно восстанавливается во время еды, сна и отдыха;
+- больница требует источник энергии класса 2;
+- детей в больнице не лечат;
+- беременные лечатся по обычным правилам взрослых.
 
-Оставшиеся решения собраны в Q-054.
+Точные коэффициенты естественной регенерации, расход энергии и Service experience являются data-driven balance values и относятся к Q-014.
 
 ## 2. Script audit
 
@@ -48,57 +60,27 @@ service:
 _Heilen — pre-invented
 ```
 
-Больница открывается от `Dreherei` — поздней металлообрабатывающей мастерской.
+Больница открывается от `Dreherei` — поздней Токарной/металлообрабатывающей мастерской.
 
-### 2.2. Functional places
+### 2.2. Что superseded
 
-Legacy building создаёт:
+Scripts содержали четыре patient places, automatic intent при Health ниже 97%, уведомление ниже 50%, две лечебные процедуры и service-dependent duration. Для Dig эти значения superseded решениями Q-054:
 
-- один worker/doctor;
-- четыре guest/patient места;
-- один `current_patient`;
-- один active treatment workflow;
-- exclusive production mode.
-
-То есть одновременно ожидать могут до четырёх пациентов, но лечение выполняется только для одного пациента одним врачом.
-
-### 2.3. Legacy patient selection
-
-Legacy пациент:
-
-- самостоятельно ищет построенную больницу;
-- рассматривает больницу в пределах range 40;
-- требует свободное patient place;
-- требует включённый service `_Heilen`;
-- начинает искать лечение уже при Health ниже 97%;
-- добавляет waiting order каждый цикл ожидания.
-
-Legacy врач выбирает пациента по отношению waiting order к текущему Health. Это сочетает время ожидания и тяжесть состояния, но точный алгоритм не переносится автоматически.
-
-### 2.4. Legacy treatment
-
-В старом коде существовали две presentation-ветви:
-
-- тяжёлое состояние — постепенное восстановление с электрической процедурой;
-- более лёгкое состояние — последовательные лечебные анимации и финальный укол.
-
-Продолжительность зависела от недостающего Health и `exp_Service`, а один из путей в конце устанавливал Health сразу в максимум.
-
-Эта механика **не является authoritative для Dig**, потому что владелец уже установил единое правило: один час работы = один committed этап = +25 Health.
-
-### 2.5. Legacy notifications
-
-Legacy newsticker создавал сообщение «почти мёртв» при Health ниже 50% и удалял его после восстановления выше порога.
-
-Для Dig этот порог superseded решением владельца: уведомление создаётся при `Health < 25`.
+- один patient place;
+- admission threshold 80;
+- near-death threshold 25;
+- единая скорость лечения 25 Health за игровой час;
+- Service не изменяет скорость лечения;
+- один active treatment.
 
 ## 3. Target domain model
 
 ```text
 ResidentHealthState
 - ResidentId
-- Health                 // 0..100
+- Health                         // 0..100
 - IsAlive
+- HospitalIntentState?           // None, NonCritical, Critical
 - ActiveHospitalVisitId?
 - Version
 
@@ -107,150 +89,188 @@ HospitalTreatment
 - HospitalId
 - PatientResidentId
 - DoctorResidentId?
-- StageIndex
-- StageProgress
-- State                  // Waiting, Active, Paused, Completed, Cancelled
+- RestoredHealth                 // уже применённая часть текущего этапа
+- StageProgress                  // 0..1
+- State                          // Waiting, Active, Paused, Completed, Cancelled
 - BlockReason?
 - Version
 ```
 
 Отдельные `InjuryId`, wound slots, severity и medical status stacks не создаются.
 
-## 4. Treatment stage
-
-Подтверждённая единица работы:
+## 4. Admission и schedule policy
 
 ```text
-duration = 1 game hour
-committed Health gain = min(25, 100 - current Health)
-materials = none
-worker = one doctor resident
-patient = one living resident
+Health >= 80:
+  automatic hospital intent отсутствует
+
+25 <= Health < 80:
+  NonCritical intent
+  лечение выполняется только в FreeTime schedule
+
+0 < Health < 25:
+  Critical intent
+  текущая работа немедленно прерывается
+  hospital intent имеет emergency priority
+
+Health <= 0:
+  death lifecycle
 ```
 
-Health изменяется только при подтверждённом completion этапа. Animation callback не применяет лечение.
+Игрок может назначить лечение вручную, пока resident является допустимым пациентом. Автоматический и ручной intents используют одну очередь и не создают дубликаты.
 
-Врач получает `skill.service` только за committed treatment stage. Точное количество опыта относится к Q-014, если владелец не задаст его отдельно.
+Дети не являются допустимыми пациентами. Беременность не меняет admission, priority или treatment rate.
 
-## 5. Places and reservations
+## 5. Places, worker и concurrency
 
-Script-faithful candidate:
+```text
+DoctorPlaceCount = 1
+PatientPlaceCount = 1
+ActiveTreatmentSlots = 1
+RequiredEnergyClass = 2
+```
 
-- `DoctorPlaceCount = 1`;
-- `PatientPlaceCount = 4`;
-- `ActiveTreatmentSlots = 1`;
-- waiting patient place и active patient place имеют stable indices;
-- один patient place не может быть зарезервирован двумя жителями;
-- один resident не может одновременно ожидать в двух больницах;
-- врач резервируется только для active stage;
-- упаковка здания блокируется при doctor/patient/treatment reservations.
+- единственное patient place принадлежит выбранному пациенту;
+- остальные кандидаты остаются в логической очереди и не резервируют физическое место;
+- один resident не может одновременно ожидать в нескольких больницах;
+- врачом может быть любой живой взрослый гном, кроме самого пациента;
+- минимальный Service threshold отсутствует;
+- врач выбирается временно для active treatment и освобождается при паузе, завершении или отмене;
+- постоянной должности врача у больницы нет;
+- упаковка здания блокируется при patient/doctor/treatment reservation.
 
-Количество мест требует подтверждения в Q-054.
+## 6. Deterministic queue
 
-## 6. Job lifecycle
+Кандидаты сортируются по ключу:
 
-Candidate lifecycle:
+```text
+1. Health ascending
+2. WaitingSince ascending
+3. ResidentId ascending
+```
 
-1. Пациент получает hospital intent автоматически или по команде игрока.
-2. Выбирается доступная больница и резервируется patient place.
-3. Пациент самостоятельно идёт в больницу.
-4. Treatment ожидает подходящего врача.
-5. Врач резервирует doctor place и начинает один час работы.
-6. На completion Health увеличивается максимум на 25.
-7. Если Health ниже 100, следующий этап может быть поставлен автоматически.
-8. При достижении 100 visit завершается и reservations освобождаются.
+То есть сначала лечится гном с самым низким Health; при равном Health — ожидающий дольше; при полном равенстве — с меньшим stable `ResidentId`.
 
-Переноса недееспособного resident в текущем подтверждённом scope нет: отдельного состояния недееспособности также нет. Окончательное правило движения при критическом Health требует ответа Q-054.
+Critical intent участвует в той же сортировке и естественно получает преимущество благодаря более низкому Health. При освобождении patient place очередь пересчитывается детерминированно.
 
-## 7. Interruptions and failures
+## 7. Treatment flow
 
-Обязательные инварианты:
+1. Выбирается первый допустимый кандидат очереди.
+2. Он резервирует единственное patient place и самостоятельно идёт в больницу.
+3. Больница ожидает временного взрослого врача и источник энергии класса 2.
+4. После резервирования врача начинается continuous treatment.
+5. За один полный игровой час может быть восстановлено максимум 25 Health.
+6. Health применяется постепенно в течение часа, а не одним callback в конце.
+7. При достижении Health 100 visit завершается и все reservations освобождаются.
+8. Если после часа Health ниже 100, следующий этап начинается автоматически без выхода пациента из больницы.
 
-- завершённый этап не применяется повторно после Save/Load;
-- отменённый незавершённый этап не выдаёт Health и Service experience;
-- смерть пациента отменяет visit и освобождает doctor/patient reservations;
-- исчезновение или смерть врача переводит active stage в определённое owner policy состояние;
-- разрушение/упаковка больницы не должно оставлять dangling reservations;
-- Health не превышает 100;
-- лечение не создаёт, не резервирует и не расходует items.
+Формула накопления:
 
-Сохранение или сброс частичного прогресса требует ответа Q-054.
+```text
+rate = 25 Health / 1 game hour
+appliedDelta = min(rate * activeDeltaTime, 100 - Health)
+```
 
-## 8. Notification
+Начисление должно быть interval/idempotency-safe. Presentation animation не является владельцем Health result.
 
-Подтверждённое условие:
+## 8. Interruption и pause
+
+Treatment переходит в `Paused`, когда:
+
+- врач ушёл, умер или стал недоступен;
+- пропала энергия подходящего класса;
+- active job был прерван;
+- больница временно перестала быть функциональной.
+
+При паузе:
+
+- уже применённый Health не откатывается;
+- `StageProgress` и `RestoredHealth` сохраняются;
+- patient place остаётся за пациентом, пока visit не отменён;
+- doctor reservation освобождается, если врач больше не выполняет работу;
+- после появления нового врача и энергии лечение продолжается с сохранённого прогресса.
+
+Смерть пациента отменяет visit и освобождает все reservations. Разрушение или принудительное удаление больницы отменяет visit без отката уже восстановленного Health.
+
+## 9. Natural Health regeneration
+
+Вне Hospital и зелий Health постепенно восстанавливается только во время:
+
+- еды;
+- сна;
+- отдыха.
+
+Работа, перемещение, бой и обычное бездействие сами по себе Health не восстанавливают. Каждое подходящее действие применяет data-driven regeneration rate через continuous Needs/Activity owner. Уже применённая регенерация сохраняется при прерывании действия.
+
+Natural regeneration может изменить hospital priority. При достижении Health 100 visit/intention завершается; точные rates относятся к Q-014.
+
+## 10. Notification
 
 ```text
 Health < 25 -> one active near-death notification for this resident
+Health >= 25 -> notification cleared
 ```
 
-Candidate clear policy:
+Уведомление также удаляется при смерти/удалении resident и не создаётся повторно, пока существует активная notification с тем же stable key.
 
-- удалить уведомление при `Health >= 25`;
-- удалить при смерти/удалении resident;
-- повторно не создавать, пока уже существует активная notification с тем же stable key.
+## 11. Energy
 
-Текст, click-focus и presentation принадлежат HUD/notification layer; условие принадлежит Health owner.
+- `RequiredEnergyClass = 2`;
+- источник выбирается по общей single-source energy policy;
+- без подходящего источника лечение не начинается;
+- потеря энергии ставит active treatment на паузу;
+- уже восстановленный Health сохраняется;
+- точное потребление энергии является data-driven balance value Q-014.
 
-## 9. Save/Load
+## 12. Save/Load
 
 Сохраняются:
 
 - Health;
+- hospital intent и `WaitingSince`;
 - hospital visit и patient place;
 - doctor reservation;
-- stage index/progress/state;
-- committed stage IDs или idempotency key;
+- stage progress и уже применённый `RestoredHealth`;
+- treatment state/block reason;
+- interval/idempotency state;
 - near-death notification logical state;
 - definition versions.
 
-Load не должен повторно применять +25 или повторно начислять Service.
+Load не должен повторно применять уже начисленное Health или Service experience.
 
-## 10. UI and diagnostics
+## 13. UI and diagnostics
 
 Resident HUD показывает:
 
 - текущий Health;
-- состояние `NeedsHospital`, `WaitingForHospital`, `WaitingForDoctor`, `BeingTreated`;
-- progress текущего часового этапа;
-- следующий ожидаемый Health;
+- `NeedsHospital`, `WaitingForHospital`, `WaitingForDoctor`, `WaitingForEnergy`, `BeingTreated`, `TreatmentPaused`;
+- critical/non-critical admission mode;
+- progress текущего часа;
+- уже восстановленный Health и следующий ожидаемый Health;
 - block reason.
 
 Hospital inspector показывает:
 
-- четыре patient places или подтверждённое другое количество;
+- одно patient place;
 - active patient;
-- current doctor;
+- current temporary doctor;
 - очередь и priority key;
 - stage progress;
-- причины ожидания;
+- required energy class 2 и energy block reason;
 - отсутствие medical item requirements.
 
-## 11. Q-054 — оставшиеся решения
+## 14. Definition of Done
 
-1. При каком Health гном автоматически направляется в больницу?
-2. Прерывает ли критическое лечение Work schedule немедленно, или больница посещается только в свободное время?
-3. Подтвердить `4 patient places / 1 doctor / 1 active treatment`.
-4. Кто может быть врачом: любой взрослый гном или требуется минимальный `skill.service`?
-5. Врач выбирается как обычный временный worker или назначается больнице постоянно?
-6. Как сортируется очередь: lowest Health, longest waiting либо legacy combined priority?
-7. После завершения +25 пациент автоматически остаётся на следующий этап до 100 или может уйти после каждого этапа?
-8. Что происходит с частичным прогрессом часа при прерывании, смерти/уходе врача или потере питания?
-9. Может ли любой живой гном самостоятельно идти при Health 1..24, или появляется состояние недееспособности и перенос другим гномом?
-10. Есть ли естественное восстановление Health вне больницы, или только hospital/potions?
-11. Требует ли больница энергию; если да, какой класс и расход на этап?
-12. Можно ли лечить детей и беременных без дополнительных ограничений?
-
-## 12. Definition of Done
-
-- один authoritative Health owner без отдельного injury catalog;
-- Hospital definition и places соответствуют закрытому Q-054;
-- treatment stage commit даёт ровно до +25 Health;
-- stage длится один игровой час;
-- врач обязателен и получает Service grant;
-- medical materials отсутствуют;
-- очередь и selection deterministic;
+- один authoritative Health owner без injury catalog;
+- admission thresholds 80/25 и schedule policy реализованы;
+- Hospital имеет 1 patient place, 1 temporary doctor и 1 active treatment;
+- очередь использует `Health -> WaitingSince -> ResidentId`;
+- лечение непрерывно восстанавливает максимум 25 Health за игровой час;
+- partial Health и progress сохраняются при interruption/SaveLoad;
+- этапы автоматически повторяются до Health 100;
+- взрослые и беременные допустимы, дети исключены;
+- больница требует энергию класса 2;
+- natural regeneration работает только при еде, сне и отдыхе;
 - near-death notification использует threshold 25;
-- interruption/death/building removal освобождают reservations;
-- Save/Load не дублирует stage result;
+- cancellation/death/building removal освобождают reservations;
 - Domain, integration и Play Mode tests покрывают основной workflow и edge cases.
