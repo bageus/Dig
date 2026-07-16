@@ -1,4 +1,6 @@
+using System;
 using Dig.Presentation.Agents;
+using Dig.Presentation.Inventory;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -8,6 +10,7 @@ namespace Dig.Unity
     {
         private Material? _normalMaterial;
         private Material? _selectedMaterial;
+        private DigAgentEquipmentVisual? _equipmentVisual;
         private int _previousX;
         private int _previousY;
         private int _currentX;
@@ -52,6 +55,33 @@ namespace Dig.Unity
             {
                 transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
             }
+        }
+
+        internal void SetEquipment(
+            ResidentEquipmentViewModel? equipment,
+            Material equipmentMaterial)
+        {
+            if (equipment == null)
+            {
+                _equipmentVisual?.Clear();
+                return;
+            }
+
+            if (!string.Equals(equipment.ResidentId, Model.Id, StringComparison.Ordinal))
+            {
+                throw new ArgumentException(
+                    "Equipment does not belong to this resident.",
+                    nameof(equipment));
+            }
+
+            if (_equipmentVisual == null)
+            {
+                GameObject root = new GameObject("Equipment");
+                root.transform.SetParent(transform, worldPositionStays: false);
+                _equipmentVisual = root.AddComponent<DigAgentEquipmentVisual>();
+            }
+
+            _equipmentVisual.Configure(equipment.ItemId, equipmentMaterial);
         }
 
         internal void SetSelected(bool selected)
