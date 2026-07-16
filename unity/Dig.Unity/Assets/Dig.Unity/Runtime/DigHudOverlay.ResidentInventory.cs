@@ -64,10 +64,11 @@ namespace Dig.Unity
                 string reservation = slot.ReservedQuantity == 0
                     ? "free"
                     : $"reserved {slot.ReservedQuantity}";
+                string location = slot.IsEquipped ? "equipped" : "carried";
                 GUILayout.Label(
-                    $"{slot.ItemId} ×{slot.Quantity} | "
+                    $"{slot.ItemId} ×{slot.Quantity} | {location} | "
                     + $"available {slot.AvailableQuantity} | {reservation}",
-                    GUILayout.Width(300f));
+                    GUILayout.Width(330f));
 
                 bool previousEnabled = GUI.enabled;
                 if (slot.IsBuildingBox)
@@ -79,7 +80,7 @@ namespace Dig.Unity
                     }
                 }
 
-                if (slot.IsTool)
+                if (slot.IsTool && !slot.IsEquipped)
                 {
                     GUI.enabled = previousEnabled && slot.CanUse;
                     if (GUILayout.Button("Use", GUILayout.Width(60f)))
