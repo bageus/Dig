@@ -52,6 +52,7 @@ namespace Dig.Unity
             _buildingInventoryPresenter = new InventoryWorldPresenter(
                 new GetInventorySnapshotQueryHandler(_buildingInventoryRepository),
                 WorldItemInteractionKind.BuildingBox);
+            InitializeResidentInventoryPresentation();
             InitializeBuildingBoxPickupExecution(journal);
             InitializeBuildingBoxAssemblyExecution(journal);
         }
