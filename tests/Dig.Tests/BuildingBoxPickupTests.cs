@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Saving;
@@ -85,14 +84,15 @@ public sealed class BuildingBoxPickupTests
     {
         EntityId jobId = Id('3');
         EntityId stackId = Id('1');
+        EntityId dependencyId = Id('9');
         BuildingBoxPickupJobDefinition definition = new BuildingBoxPickupJobDefinition(
             jobId,
             stackId,
             new CellId(4, 5),
             priority: 700,
             createdTick: 12,
-            new JobRetryPolicy(maximumRetries: 2, retryDelayTicks: 9),
-            new[] { Id('9') });
+            retryPolicy: new JobRetryPolicy(maximumRetries: 2, retryDelayTicks: 9),
+            dependencies: new[] { dependencyId });
         BuildingBoxPickupJobSaveCodec codec = new BuildingBoxPickupJobSaveCodec();
 
         JobDefinitionSaveData encoded = codec.Encode(definition);
@@ -108,7 +108,8 @@ public sealed class BuildingBoxPickupTests
         Assert.Equal(12, decoded.CreatedTick);
         Assert.Equal(2, decoded.RetryPolicy.MaximumRetries);
         Assert.Equal(9, decoded.RetryPolicy.RetryDelayTicks);
-        Assert.Equal(new List<EntityId> { Id('9') }, decoded.Dependencies);
+        Assert.Single(decoded.Dependencies);
+        Assert.Equal(dependencyId, decoded.Dependencies[0]);
     }
 
     internal static EntityId Id(char prefix)
