@@ -120,6 +120,7 @@ namespace Dig.Unity
             }
 
             AgentRenderer.Render(agents, movementDuration);
+            RefreshEquipmentVisuals();
             JobRenderer.Render(jobs);
             BuildingRenderer.Render(TerrainSession.LoadBuildings());
             ItemRenderer!.Render(items);
