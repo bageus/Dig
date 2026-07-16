@@ -70,6 +70,7 @@ public enum ApplicationInputCommandKind
     AttackTarget = 5,
     MoveResident = 6,
     ApplyExcavation = 7,
+    PickupWorldItem = 8,
 }
 
 public readonly struct ContextPointerEvent
