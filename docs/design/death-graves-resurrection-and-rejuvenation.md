@@ -6,25 +6,43 @@
 
 После смерти гнома:
 
-- предметы личного Inventory переходят в world locations рядом с местом смерти;
-- появляется identity-linked предмет `Колпак {ИмяГнома}`;
-- колпак связан с `ResidentId` и не зависит от рабочей шапки;
+- все stacks личного Inventory переходят в одну world cell — логическую клетку смерти;
+- в этой же клетке может находиться любое количество разных предметов/stacks;
+- временный death container не создаётся;
+- появляется отдельный identity-linked предмет `Колпак {ИмяГнома}`;
+- колпак связан с `ResidentId` и `DeathInstanceId` и не зависит от рабочей шапки;
 - identity, имя, пол, family graph, historical relations, внешность, skills, capacity и lifecycle record сохраняются;
 - jobs/reservations освобождаются без дублирования предметов.
 
-Видимый незахороненный колпак создаёт отрицательный Mood modifier. Его числовые параметры остаются balance data.
+## Глобальный штраф от незахороненного колпака
+
+Активным источником считается хотя бы один именной колпак, который:
+
+- лежит в world cell, видимой колонии в текущий момент; или
+- находится в личном Inventory живого гнома.
+
+При наличии хотя бы одного такого колпака одинаковый отрицательный Mood modifier получают все живые гномы колонии.
+
+- штраф глобальный, а не только для гнома, который лично видит колпак;
+- несколько колпаков не складываются и не усиливают штраф;
+- перенос колпака в Inventory не убирает штраф;
+- точная величина modifier остаётся data-driven balance value;
+- после исчезновения последнего активного источника modifier снимается.
 
 ## Могила
 
 ```text
-3 камня + Колпак конкретного гнома -> Могила {ИмяГнома}
+3 камня + Колпак конкретного гнома -> GraveBox {ИмяГнома}
 ```
 
 - производится в Мастерской каменщика;
-- cap становится неотделимой частью могилы;
+- до завершения производственного цикла отмена возвращает зарезервированные материалы по общей production policy;
+- при завершении `GraveBox` колпак окончательно consumed и больше не может использоваться Храмом;
+- `GraveBox` сохраняет `ResidentId` и `DeathInstanceId`;
+- после размещения и сборки создаётся `Могила {ИмяГнома}`;
 - размещённую могилу нельзя переносить, упаковывать или разобрать;
 - из могилы воскресить нельзя;
-- имя и связь с ResidentId сохраняются независимо от локализации.
+- имя и связь с resident сохраняются независимо от локализации.
 
 ## Возвращение в Храме
 
@@ -36,8 +54,13 @@
 -> возвращение гнома
 ```
 
-- нужен свободный cap, не использованный могилой;
-- возвращается тот же identity молодым взрослым;
+- нужен свободный cap, не использованный завершённым `GraveBox`;
+- действие требует работника Храма;
+- храмовая работа использует два навыка: `skill.alchemy` и `skill.service`;
+- eligibility и начисление опыта используют общий mixed-skill contract; точные requirements/grants задаются data-driven;
+- после завершения возвращается тот же identity молодым взрослым;
+- гном появляется в ближайшей свободной допустимой клетке возле Храма;
+- если свободной клетки нет, completion ждёт появления клетки и не расходует ингредиенты повторно;
 - сохраняются skills, TotalSkillCapacity, family graph, historical partnership records и внешность;
 - прежний Inventory не восстанавливается повторно;
 - одна death instance применяется один раз;
@@ -57,29 +80,39 @@
 -> Зелье омоложения
 ```
 
-- взрослый становится ребёнком на стандартные 2 игровых дня;
+- применимо к любому живому resident, кроме текущей стадии `Child`;
+- Adult и Old могут использовать зелье;
+- resident становится ребёнком на стандартные 2 игровых дня;
 - adult jobs временно недоступны;
 - обучение в школе доступно;
 - skills, capacity, identity, family graph, relations и внешность сохраняются;
 - inheritance повторно не начисляется;
+- если target беременна, pregnancy state атомарно очищается при commit употребления;
+- отменённая таким образом беременность не создаёт ребёнка и не запускает postpartum cooldown, поскольку родов не было;
+- после нового взросления обычные reproduction rules снова применяются;
 - повторное омоложение разрешено после нового взросления;
 - consumable расходуется один раз.
 
 ## Владение состояния
 
-- Lifecycle/Society: death instance, identity, family/relations, age и return/rejuvenation;
-- Inventory: dropped items и identity cap;
-- Buildings/Production: grave recipe и temple action;
-- Needs: Mood modifier;
+- Lifecycle/Society: death instance, identity, family/relations, age, pregnancy cancellation, return и rejuvenation;
+- Inventory: dropped stacks и identity cap;
+- Buildings/Production: `GraveBox`, permanent grave и temple action;
+- Skills: mixed Alchemy/Service work contract;
+- Needs: global non-stacking Mood modifier;
 - Presentation: имя могилы, visuals и notifications.
 
 ## Инварианты
 
-- cap находится ровно в одном состоянии: world, reserved, grave-consumed или temple-consumed;
+- все предметы умершего могут находиться в одной world cell без потери количества;
+- cap находится ровно в одном состоянии: world, carried, reserved, grave-consumed или temple-consumed;
+- completed `GraveBox` необратимо consumes cap;
 - grave non-packable;
+- глобальный cap penalty применяется не более одного раза независимо от количества источников;
 - return не дублирует Inventory;
 - return не создаёт вторую active pair;
-- rejuvenation не повторяет inheritance;
-- Save/Load не повторяет lifecycle commits.
+- rejuvenation не применяется к Child и не повторяет inheritance;
+- rejuvenation беременной атомарно отменяет pregnancy;
+- Save/Load не повторяет production, lifecycle или consumable commits.
 
-Q-048 и Q-052 закрыты.
+Q-048 и Q-052 закрыты. Design #150 полностью определён.
