@@ -11,62 +11,72 @@
 | 1 | Полное technology tree | #126 | согласованный участок описан, продолжение открыто |
 | 2 | Энергия | #127 | Q-049 закрыт; implementation открыта |
 | 3 | Research eligibility/UI | #128 | Q-034/Q-036/Q-050 закрыты; implementation открыта |
-| 4 | Боевой equipment catalog | #129 | skills/slots/no-ammo/no-wear решены; loot/exclusions pending Q-053 |
-| 5 | Травмы/больница | #130 | открыто |
-| 6 | Зелья | #131 | открыто; rejuvenation recipe подтверждён |
-| 7 | Status Effects | #132 | открыто |
-| 8 | Ловушки | #133 | открыто |
-| 9 | Жидкости | #134 | закрыто not planned |
-| 10 | Подводная работа | #135 | закрыто not planned |
-| 11 | Двери/access | #136 | design решён; implementation открыта |
-| 12 | Лестницы/лифты/mobility | #137 | Q-051 закрыт; numerical mobility multiplier — balance Q-014 |
-| 13 | Combat lifecycle | #138 | открыто |
-| 14 | Strategic AI | #139 | открыто |
-| 15 | Кланы | #140 | открыто |
-| 16 | Ownership/theft | #141 | открыто |
-| 17 | Sleep comfort | #142 | design решён; implementation открыта |
-| 18 | Leisure variety | #143 | design решён; implementation открыта |
-| 19 | Personal food tastes | #144 | закрыто not planned |
-| 20 | Partnership | #145 | Q-042/Q-052 закрыты; implementation открыта |
-| 21 | Childhood/school | #146 | design решён; implementation открыта |
-| 22 | Fog/vision | #147 | design закрыт; implementation #165 |
-| 23 | Campaign/world sequence | — | исключено из scope |
-| 24 | Creatures/ecology | #149 | design решён; balance TBD |
-| 25 | Graves/rejuvenation/return | #150 | Q-048/Q-052 закрыты; implementation открыта |
-| 26 | Clothing/appearance | #151 | design описан; implementation открыта |
-| 27 | Conversation/social memory | #152 | открыто |
+| 4 | Основной боевой equipment catalog | #129 | Q-053 закрыт; implementation открыта |
+| 5 | Дополнительное fantasy/creature equipment | #177 | deferred backlog; вне текущего runtime scope |
+| 6 | Травмы/больница | #130 | открыто |
+| 7 | Зелья | #131 | открыто; rejuvenation recipe подтверждён |
+| 8 | Status Effects | #132 | открыто |
+| 9 | Ловушки | #133 | открыто |
+| 10 | Жидкости | #134 | закрыто not planned |
+| 11 | Подводная работа | #135 | закрыто not planned |
+| 12 | Двери/access | #136 | design решён; implementation открыта |
+| 13 | Лестницы/лифты/mobility | #137 | Q-051 закрыт; numerical mobility multiplier — Q-014 |
+| 14 | Combat lifecycle | #138 | открыто |
+| 15 | Strategic AI | #139 | открыто |
+| 16 | Кланы | #140 | открыто |
+| 17 | Ownership/theft | #141 | открыто |
+| 18 | Sleep comfort | #142 | design решён; implementation открыта |
+| 19 | Leisure variety | #143 | design решён; implementation открыта |
+| 20 | Personal food tastes | #144 | закрыто not planned |
+| 21 | Partnership | #145 | Q-042/Q-052 закрыты; implementation открыта |
+| 22 | Childhood/school | #146 | design решён; implementation открыта |
+| 23 | Fog/vision | #147 | design закрыт; implementation #165 |
+| 24 | Campaign/world sequence | — | исключено из scope |
+| 25 | Creatures/ecology | #149 | design решён; balance TBD |
+| 26 | Graves/rejuvenation/return | #150 | Q-048/Q-052 закрыты; implementation открыта |
+| 27 | Clothing/appearance | #151 | design описан; implementation открыта |
+| 28 | Conversation/social memory | #152 | открыто |
 
-## Подтверждённые решения последней синхронизации
+## Подтверждённые combat-content решения
 
-- research busy state белый и объясняется текстом;
+- основной colony catalog ограничен десятью производимыми предметами;
+- Оружейная кузница, Оружейная фабрика и Dojo принимают любой один из пяти combat skills на threshold;
+- Меч/Палаш и Боевой топор используют `skill.two_handed_combat`;
+- Рогатка, Лук и Ружьё используют `skill.ranged_combat`;
+- Дубина и Световой меч используют `skill.one_handed_combat`;
+- щиты используют `skill.defense` для confirmed defense results;
+- щит совместим только с Мечом, Световым мечом и Рогаткой;
+- ranged equipment не расходует ammo;
+- все десять предметов не изнашиваются;
+- 32 fantasy/creature classes имеют `DeferredBacklog` и вынесены в #177;
+- современные special-mode classes и `Bombe` имеют `ExcludedFromColonyMode`.
+
+## Другие подтверждённые решения
+
+- research busy state белый;
 - уголь/руды/iron имеют research weight 2;
 - одно здание имеет один active research slot;
 - начатый research завершается после снижения skill;
 - zero-input fallback мгновенный;
 - elevator emergency climb идёт к target platform;
 - Reithamster/Hoverboard автоматически активируются из Inventory на дальнем пути;
-- legacy использует одинаковые engine `speedtype 3/2`, Hoverboard имеет приоритет;
+- legacy использует engine `speedtype 3/2`, Hoverboard имеет приоритет;
 - numeric personal-mobility speed в TCL отсутствует;
-- новая active pair сохраняется после return прежнего партнёра, старая relation остаётся historical;
-- Оружейная кузница, Оружейная фабрика и Dojo принимают любой один из пяти combat skills на threshold;
-- Меч и Боевой топор используют `skill.two_handed_combat`;
-- Рогатка, Лук и Ружьё используют `skill.ranged_combat`;
-- Дубина и Световой меч используют `skill.one_handed_combat`;
-- Металлический и Кристаллический щиты используют `skill.defense`;
-- щит совместим только с Мечом, Световым мечом и Рогаткой;
-- производимое ranged equipment не расходует ammo, все десять предметов не изнашиваются.
+- новая active pair сохраняется после return прежнего партнёра.
 
-## Открытая часть Q-053
+## Источники
 
-- выбрать `loot-only` или `excluded` для 32 fantasy/creature classes;
-- подтвердить исключение восьми special-mode classes и `Bombe` из colony mode.
+Combat:
 
-Полные списки: `content/legacy-combat-equipment-appendix.md`.
+- `scripts/misc/techtreetunes.tcl`;
+- `scripts/classes/items/waffen.tcl`;
+- `scripts/misc/genericfight.tcl`;
+- `scripts/misc/genattribs.tcl`;
+- `scripts/classes/zwerg/zwerg.tcl`.
 
-## Источники mobility recovery
+Mobility:
 
 - `scripts/classes/zwerg/z_dignwalk.tcl`;
-- `scripts/classes/zwerg/z_dignwalk.tcl_copy`;
 - `scripts/classes/items/transport.tcl`;
 - `scripts/classes/zwerg/z_anims.tcl`.
 
@@ -76,8 +86,9 @@
 2. #127 — energy runtime.
 3. #136/#137 — doors/transport runtime.
 4. #150/#151 — lifecycle/appearance.
-5. Закрыть Q-053 selection, затем #129/#138/#132 — combat.
+5. #129/#138/#132 — основной combat scope.
 6. #130–#133 — health/effects/traps.
 7. #139–#141/#152 — factions/social.
+8. #177 — только после отдельного решения вернуть deferred fantasy content в scope.
 
 Непредоставленные числа остаются data-driven `BALANCE_TBD`.
