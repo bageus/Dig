@@ -96,34 +96,25 @@ Q-040–Q-046 закрыты и описаны в соответствующих
 
 ## Q-053 — Combat equipment migration
 
-- **Статус:** `OPEN` — закрыты системные правила, ожидается только content selection.
-- Scripts подтверждают 10 производимых предметов: Рогатка, Дубина, Простой щит, Боевой топор, Меч, Лук, Металлический щит, Ружьё, Световой меч, Кристаллический щит.
-- Дополнительно найдены 40 equipment class candidates без production technology: 32 fantasy/creature candidates и 8 special-mode classes; `Bombe` учитывается отдельно.
+- **Статус:** `ANSWERED`.
+- Текущий colony catalog содержит 10 производимых предметов: Рогатка, Дубина, Простой щит, Боевой топор, Меч, Лук, Металлический щит, Ружьё, Световой меч, Кристаллический щит.
+- Skill mapping:
+  - Меч/«Палаш» и Боевой топор → `skill.two_handed_combat`;
+  - Рогатка, Лук и Ружьё → `skill.ranged_combat`;
+  - Металлический и Кристаллический щиты → `skill.defense`;
+  - Дубина и Световой меч → `skill.one_handed_combat`;
+  - Простой щит использует `skill.defense` для confirmed defense grants.
+- Для Оружейной кузницы, Оружейной фабрики и Dojo generic Combat threshold выполнен, если хотя бы один из пяти combat skills достиг threshold.
+- `AllowsShield=true` у Меча, Светового меча и Рогатки.
+- Дубина, Боевой топор, Лук и Ружьё блокируют `Shield` slot.
+- Рогатка, Лук и Ружьё не расходуют ammo items.
+- Все десять предметов имеют `DurabilityPolicy = NoWear`.
+- 32 fantasy/creature класса не применяются сейчас и перенесены в backlog [#177](https://github.com/bageus/Dig/issues/177); production, loot и runtime registration выключены.
+- `AK47`, `MP5`, `M4`, `Para`, `M3_super_90`, `Duals`, `Awp`, `Deagle` и `Bombe` окончательно исключены из colony mode.
+- Название «Палаш» пока трактуется как ссылка на `weapon.sword` / legacy `Schwert`; stable ItemId не меняется.
+- Точные damage/range/cooldown/block values относятся к Q-014.
 
-Подтверждено 2026-07-16:
-
-1. skill mapping:
-   - Меч (`weapon.sword`; в ответе владельца назван «Палаш») и Боевой топор → `skill.two_handed_combat`;
-   - Рогатка, Лук и Ружьё → `skill.ranged_combat`;
-   - Металлический и Кристаллический щиты → `skill.defense`;
-   - Дубина и Световой меч → `skill.one_handed_combat`;
-   - Простой щит не имеет Combat research threshold, но shield-processed combat result начисляет `skill.defense`.
-2. Для Оружейной кузницы, Оружейной фабрики и Dojo generic Combat threshold выполнен, если хотя бы один из пяти combat skills достиг threshold.
-3. `AllowsShield=true` только у Меча, Светового меча и Рогатки.
-4. Дубина, Боевой топор, Лук и Ружьё занимают обе руки и блокируют `Shield` slot.
-5. Рогатка, Лук и Ружьё не расходуют отдельные боеприпасы.
-6. Все десять производимых предметов не имеют износа.
-
-Осталось решить:
-
-1. какие из 32 fantasy/creature classes сохранить как loot-only;
-2. исключаются ли восемь special-mode classes и `Bombe` из colony mode.
-
-Название «Палаш» временно трактуется как ссылка на `weapon.sword` / legacy `Schwert`; текущий display name «Меч» и stable ItemId не меняются без отдельного решения.
-
-Точные damage/range/cooldown/block values относятся к Q-014.
-
-Спецификация: `content/weapons-and-shields.md`; полный legacy appendix: `content/legacy-combat-equipment-appendix.md`.
+Спецификация: `content/weapons-and-shields.md`; legacy policies: `content/legacy-combat-equipment-appendix.md`.
 
 ## Журнал
 
@@ -134,4 +125,4 @@ Q-040–Q-046 закрыты и описаны в соответствующих
 | 2026-07-16 | Q-034, Q-036, Q-050 | research weights, slots, busy state и active skill-loss policy |
 | 2026-07-16 | Q-051 | target emergency climb и legacy mobility-tool behavior |
 | 2026-07-16 | Q-052 | active pair после return |
-| 2026-07-16 | Q-053 | script audit; skills, mixed requirements, slots, ammo и no-wear подтверждены; loot/exclusions pending |
+| 2026-07-16 | Q-053 | основной equipment catalog утверждён; fantasy deferred to #177; modern special-mode excluded |
