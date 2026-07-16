@@ -132,12 +132,17 @@ namespace Dig.Unity
 
             if (_itemRenderer!.TryGetItem(hit, out DigWorldItemVisual item))
             {
+                ContextWorldTargetKind kind = item.Model.IsBuildingBox
+                    ? ContextWorldTargetKind.BuildingBox
+                    : ContextWorldTargetKind.GenericItem;
                 ContextPointerTarget target = new ContextPointerTarget(
-                    ContextWorldTargetKind.BuildingBox,
+                    kind,
                     EntityId.Parse(item.Model.StackId),
                     new CellId(item.Model.CellX, item.Model.CellY),
                     reachable: true,
-                    supportsAltInteraction: item.Model.AvailableQuantity == 1);
+                    supportsAltInteraction: item.Model.IsBuildingBox
+                        ? item.Model.AvailableQuantity == 1
+                        : item.Model.CanPickup);
                 ApplyDecision(_inputRouter.Route(
                     Pointer(button),
                     BuildState(button),
