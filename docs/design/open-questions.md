@@ -29,7 +29,7 @@
 ## Q-013–Q-014 — контент и баланс
 
 - **Q-013 — ANSWERED:** один ItemId `material.iron`.
-- **Q-014 — BALANCE_TBD:** непредоставленные коэффициенты хранятся в definitions; включая combat coefficients и numeric personal-mobility multiplier.
+- **Q-014 — BALANCE_TBD:** непредоставленные коэффициенты хранятся в definitions; включая combat coefficients, numeric personal-mobility multiplier, natural Health regeneration rates, Hospital energy consumption и Service grant.
 
 ## Q-015–Q-018 — еда и Needs
 
@@ -86,15 +86,18 @@ Q-040–Q-046 закрыты и описаны в соответствующих
 
 ## Q-054 — Hospital treatment lifecycle
 
-- **Статус:** `OPEN`.
-- Подтверждено:
-  - отдельных травм и severity нет;
-  - Health — единственное medical state;
-  - лечение требует врача, но не материалов;
-  - врач получает `skill.service`;
-  - один этап длится один игровой час и восстанавливает до 25 Health;
-  - near-death notification создаётся при `Health < 25`.
-- Открыто: admission threshold, schedule interruption, capacity, doctor eligibility, queue priority, stage repetition, partial progress, critical-patient mobility, natural regeneration, energy и лечение детей/беременных.
+- **Статус:** `ANSWERED`.
+- admission threshold — `Health < 80`;
+- при `Health < 25` работа немедленно прерывается, иначе лечение идёт только в свободное время;
+- одна больница: 1 patient place, 1 temporary adult doctor, 1 active treatment;
+- minimum Service threshold отсутствует;
+- очередь: Health ascending, WaitingSince ascending, ResidentId ascending;
+- лечение непрерывно восстанавливает до 25 Health за игровой час и автоматически продолжается до 100;
+- partial Health/progress сохраняются при interruption, doctor loss и energy loss;
+- любой живой взрослый самостоятельно идёт в больницу; дети исключены, беременные лечатся обычно;
+- natural regeneration действует при еде, сне и отдыхе;
+- больница требует энергию класса 2;
+- near-death notification действует при `Health < 25`.
 - Подробности: `health-hospital-and-treatment.md`, `open-questions-054-hospital.md`, issue #130.
 
 ## Журнал
@@ -107,4 +110,4 @@ Q-040–Q-046 закрыты и описаны в соответствующих
 | 2026-07-16 | Q-051 | elevator target emergency exit и legacy mobility behavior |
 | 2026-07-16 | Q-052 | active pair after return |
 | 2026-07-16 | Q-053 | core equipment approved; fantasy deferred; special-mode excluded |
-| 2026-07-16 | Q-054 | hospital script audit; core rules confirmed, lifecycle decisions open |
+| 2026-07-16 | Q-054 | hospital admission, capacity, doctor, queue, continuous partial healing, regeneration, energy и eligibility утверждены |
