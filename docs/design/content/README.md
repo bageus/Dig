@@ -35,7 +35,7 @@
 - [`../doors-access-and-lifecycle.md`](../doors-access-and-lifecycle.md) — двери;
 - [`../resident-role-headwear.md`](../resident-role-headwear.md) — cosmetic role hats и aging hair;
 - [`../death-graves-resurrection-and-rejuvenation.md`](../death-graves-resurrection-and-rejuvenation.md) — identity cap, graves, return и rejuvenation;
-- [`../energy-generation-and-production-pausing.md`](../energy-generation-and-production-pausing.md) — energy sources и paused Production;
+- [`../energy-generation-and-production-pausing.md`](../energy-generation-and-production-pausing.md) — source selection, stored batches, manual generation и paused Production;
 - [`../research-availability-duration-and-ui.md`](../research-availability-duration-and-ui.md) — queued research, duration и UI;
 - [`../ladders-and-elevators.md`](../ladders-and-elevators.md) — ladder tiers и elevator queue;
 - [`../technology-tree.md`](../technology-tree.md) — approved technology graph;
@@ -65,9 +65,10 @@
 9. Agents владеет needs/actions/skills/history/appearance state.
 10. Jobs владеет lifecycle/reservations.
 11. Society/Lifecycle владеет family/age/birth/death/return.
-12. Presentation хранит только local view state.
-13. Animation callbacks не начисляют effects/items/experience.
-14. Legacy scripts дают candidates; явно принятые recipes становятся approved content.
+12. Energy владеет source stock, class compatibility и source-consumer binding.
+13. Presentation хранит только local view state.
+14. Animation callbacks не начисляют effects/items/experience.
+15. Legacy scripts дают candidates; явно принятые recipes становятся approved content.
 
 ## Ключевые решения
 
@@ -100,6 +101,18 @@
 - rejuvenation potion = hamster + crystal + iron ore + 2 gold;
 - repeated rejuvenation/return cycles разрешены.
 
+### Энергия
+
+- один consumer подключается к одному source; zones не объединяются в pool;
+- exact required class имеет приоритет, затем минимальный более высокий класс;
+- среди источников одного класса выбирается ближайший с stable-ID tie-break;
+- higher class может питать lower-class consumer;
+- fuel-based generators сразу создают stock `100/400/600`, расходуемый только по demand;
+- Ручной генератор работает без stock только во время работы гнома;
+- прерывание ручной итерации не оставляет запас;
+- официальный display name class-3 source — «Реактор»;
+- хомяк встроен в механизм и упаковывается вместе с генератором.
+
 ### Research
 
 - orange/yellow research можно queue заранее;
@@ -124,7 +137,6 @@
 - Q-034 — coal weight, no-material recipe и research slots;
 - Q-036 — requirements lost during active research;
 - Q-037 — farm action model;
-- Q-049 — Energy allocation/source lifecycle;
 - Q-050 — busy researcher color;
 - Q-051 — emergency elevator climb destination;
 - Q-052 — partnership conflict after return.
