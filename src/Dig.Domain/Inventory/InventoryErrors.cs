@@ -36,5 +36,10 @@ public static class InventoryErrors
     public static readonly DomainError ToolRequired = new DomainError(
         "inventory.tool_required",
         "Only a single unreserved tool can be equipped.");
+
+    public static readonly DomainError ToolSlotOccupied = new DomainError(
+        "inventory.tool_slot_occupied",
+        "The resident already has an equipped tool.");
 }
+
 }

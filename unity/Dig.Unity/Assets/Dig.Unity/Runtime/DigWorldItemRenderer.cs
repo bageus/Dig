@@ -45,7 +45,7 @@ namespace Dig.Unity
         {
             DigWorldItemVisual? candidate = hit.collider.GetComponentInParent<DigWorldItemVisual>();
             if (candidate != null
-                && candidate.Model.IsBuildingBox
+                && candidate.Model.IsInteractive
                 && _visuals.TryGetValue(candidate.Model.StackId, out DigWorldItemVisual? tracked)
                 && ReferenceEquals(candidate, tracked))
             {

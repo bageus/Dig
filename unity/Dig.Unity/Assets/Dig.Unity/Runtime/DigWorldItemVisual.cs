@@ -19,7 +19,7 @@ namespace Dig.Unity
 
             Renderer targetRenderer = GetComponent<Renderer>();
             targetRenderer.sharedMaterial = material;
-            gameObject.layer = model.IsBuildingBox ? 0 : 2;
+            gameObject.layer = model.IsInteractive ? 0 : 2;
             float scale = model.IsBuildingBox
                 ? 0.58f
                 : 0.22f + (Mathf.Clamp(model.Quantity, 1, 50) * 0.006f);

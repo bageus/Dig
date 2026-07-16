@@ -13,14 +13,17 @@ public sealed class InventoryWorldPresenter
     private readonly GetInventorySnapshotQueryHandler _queryHandler;
     private readonly WorldItemInteractionKind _interactionKind;
     private readonly ItemId? _interactiveItemId;
+    private readonly WorldItemInteractionKind _fallbackInteractionKind;
 
     public InventoryWorldPresenter(
         GetInventorySnapshotQueryHandler queryHandler,
         WorldItemInteractionKind interactionKind = WorldItemInteractionKind.None,
-        ItemId? interactiveItemId = null)
+        ItemId? interactiveItemId = null,
+        WorldItemInteractionKind fallbackInteractionKind = WorldItemInteractionKind.None)
     {
         _queryHandler = queryHandler ?? throw new ArgumentNullException(nameof(queryHandler));
-        if (!Enum.IsDefined(typeof(WorldItemInteractionKind), interactionKind))
+        if (!Enum.IsDefined(typeof(WorldItemInteractionKind), interactionKind)
+            || !Enum.IsDefined(typeof(WorldItemInteractionKind), fallbackInteractionKind))
         {
             throw new ArgumentOutOfRangeException(nameof(interactionKind));
         }
@@ -34,6 +37,7 @@ public sealed class InventoryWorldPresenter
 
         _interactionKind = interactionKind;
         _interactiveItemId = interactiveItemId;
+        _fallbackInteractionKind = fallbackInteractionKind;
     }
 
     public IReadOnlyList<WorldItemViewModel> Load()
@@ -58,9 +62,15 @@ public sealed class InventoryWorldPresenter
 
     private WorldItemInteractionKind ResolveInteraction(ItemId itemId)
     {
-        return !_interactiveItemId.HasValue || _interactiveItemId.Value == itemId
+        if (!_interactiveItemId.HasValue)
+        {
+            return _interactionKind;
+        }
+
+        return _interactiveItemId.Value == itemId
             ? _interactionKind
-            : WorldItemInteractionKind.None;
+            : _fallbackInteractionKind;
     }
 }
+
 }

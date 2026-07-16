@@ -67,6 +67,22 @@ public sealed partial class ContextInputRouter
             return MoveFallback(state, target);
         }
 
+        if (pointer.AltPressed && target.Kind == ContextWorldTargetKind.GenericItem)
+        {
+            if (state.HasUsableResidentSelection
+                && target.SupportsAltInteraction
+                && target.EntityId.HasValue)
+            {
+                return Command(
+                    ApplicationInputCommandKind.PickupWorldItem,
+                    state.SelectedResidentId,
+                    target.EntityId,
+                    target.Cell);
+            }
+
+            return MoveFallback(state, target);
+        }
+
         if (target.Kind == ContextWorldTargetKind.BuildingBox)
         {
             return Local(

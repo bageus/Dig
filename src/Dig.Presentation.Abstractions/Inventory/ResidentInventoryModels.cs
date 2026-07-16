@@ -22,7 +22,8 @@ public sealed class ResidentInventorySlotViewModel
         string itemId,
         int quantity,
         int reservedQuantity,
-        ResidentInventoryItemKind itemKind)
+        ResidentInventoryItemKind itemKind,
+        bool isEquipped = false)
     {
         if (string.IsNullOrWhiteSpace(stackId) || string.IsNullOrWhiteSpace(itemId))
         {
@@ -44,6 +45,7 @@ public sealed class ResidentInventorySlotViewModel
         Quantity = quantity;
         ReservedQuantity = reservedQuantity;
         ItemKind = itemKind;
+        IsEquipped = isEquipped;
     }
 
     public string StackId { get; }
@@ -52,12 +54,17 @@ public sealed class ResidentInventorySlotViewModel
     public int ReservedQuantity { get; }
     public int AvailableQuantity => Quantity - ReservedQuantity;
     public ResidentInventoryItemKind ItemKind { get; }
+    public bool IsEquipped { get; }
     public bool IsBuildingBox => ItemKind == ResidentInventoryItemKind.BuildingBox;
     public bool IsTool => ItemKind == ResidentInventoryItemKind.Tool;
-    public bool CanStartPlacement => IsBuildingBox
+    public bool CanStartPlacement => !IsEquipped
+        && IsBuildingBox
         && Quantity == 1
         && AvailableQuantity == 1;
-    public bool CanUse => IsTool && Quantity == 1 && AvailableQuantity == 1;
+    public bool CanUse => !IsEquipped
+        && IsTool
+        && Quantity == 1
+        && AvailableQuantity == 1;
     public bool CanDrop => ReservedQuantity == 0;
 }
 
@@ -82,7 +89,8 @@ public sealed class ResidentInventoryViewModel
         InventoryVersion = inventoryVersion;
         Slots = new ReadOnlyCollection<ResidentInventorySlotViewModel>(
             (slots ?? throw new ArgumentNullException(nameof(slots)))
-                .OrderByDescending(slot => slot.IsBuildingBox)
+                .OrderByDescending(slot => slot.IsEquipped)
+                .ThenByDescending(slot => slot.IsBuildingBox)
                 .ThenByDescending(slot => slot.IsTool)
                 .ThenBy(slot => slot.ItemId, StringComparer.Ordinal)
                 .ThenBy(slot => slot.StackId, StringComparer.Ordinal)
@@ -130,20 +138,27 @@ public sealed class ResidentInventoryPresenter
         }
 
         ResidentInventorySlotViewModel[] slots = snapshot.Stacks
-            .Where(stack => stack.Location.Kind == ItemLocationKind.AgentInventory
-                && stack.Location.HasOwner
-                && stack.Location.OwnerId == residentId)
+            .Where(stack => IsOwnedByResident(stack.Location, residentId))
             .Select(stack => new ResidentInventorySlotViewModel(
                 stack.StackId.ToString(),
                 stack.ItemId.ToString(),
                 stack.Quantity,
                 stack.ReservedQuantity,
-                ResolveKind(stack.ItemId)))
+                ResolveKind(stack.ItemId),
+                isEquipped: stack.Location.Kind == ItemLocationKind.Equipped))
             .ToArray();
         return new ResidentInventoryViewModel(
             residentId.ToString(),
             snapshot.Version,
             slots);
+    }
+
+    private static bool IsOwnedByResident(ItemLocation location, EntityId residentId)
+    {
+        return location.HasOwner
+            && location.OwnerId == residentId
+            && (location.Kind == ItemLocationKind.AgentInventory
+                || location.Kind == ItemLocationKind.Equipped);
     }
 
     private ResidentInventoryItemKind ResolveKind(ItemId itemId)

@@ -167,7 +167,8 @@ namespace Dig.Unity
                     new GetJobsHandler(jobs),
                     new GetJobReservationsHandler(jobs)),
                 new InventoryWorldPresenter(
-                    new GetInventorySnapshotQueryHandler(inventoryRepository)),
+                    new GetInventorySnapshotQueryHandler(inventoryRepository),
+                    WorldItemInteractionKind.Pickup),
                 new NavigationRoutePresenter(),
                 jobs,
                 inventoryRepository,
