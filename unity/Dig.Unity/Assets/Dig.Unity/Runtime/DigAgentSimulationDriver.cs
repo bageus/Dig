@@ -171,6 +171,13 @@ namespace Dig.Unity
 
             if (result.IsSuccess)
             {
+                result = _terrainSession.AdvanceBuildingBoxPickup(
+                    _agentSession.Tick,
+                    agents);
+            }
+
+            if (result.IsSuccess)
+            {
                 result = _terrainSession.AdvanceBuildingPacking(
                     _agentSession.Tick,
                     agents);
