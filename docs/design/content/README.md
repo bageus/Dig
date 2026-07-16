@@ -30,6 +30,7 @@
 - [`../technology-tree.md`](../technology-tree.md) — дерево технологий;
 - [`../research-availability-duration-and-ui.md`](../research-availability-duration-and-ui.md) — research queue, UI, duration и slots;
 - [`../energy-generation-and-production-pausing.md`](../energy-generation-and-production-pausing.md) — энергия;
+- [`../health-hospital-and-treatment.md`](../health-hospital-and-treatment.md) — Health, больница и поэтапное лечение;
 - [`../ladders-and-elevators.md`](../ladders-and-elevators.md) — лестницы, лифты и mobility tools;
 - [`../partnership-pregnancy-and-birth.md`](../partnership-pregnancy-and-birth.md) — связи жителей и lifecycle семьи;
 - [`../death-graves-resurrection-and-rejuvenation.md`](../death-graves-resurrection-and-rejuvenation.md) — смерть, могилы и возвращение;
@@ -50,7 +51,8 @@
 - [`../material-demand-and-hauling.md`](../material-demand-and-hauling.md) — доставка;
 - [`../scripts-system-gap-backlog.md`](../scripts-system-gap-backlog.md) — backlog scripts;
 - [`../open-questions.md`](../open-questions.md) — основной реестр;
-- [`../open-questions-047-051.md`](../open-questions-047-051.md) — Q-047–Q-052.
+- [`../open-questions-047-051.md`](../open-questions-047-051.md) — Q-047–Q-052;
+- [`../open-questions-054-hospital.md`](../open-questions-054-hospital.md) — открытые решения Hospital lifecycle.
 
 ## Правила ведения
 
@@ -73,12 +75,14 @@
 ## Актуальные открытые решения
 
 - Q-014 — balance values, включая combat coefficients и числовой mobility multiplier;
-- Q-037 — runtime model действий фермы.
+- Q-037 — runtime model действий фермы;
+- Q-054 — hospital admission, capacity, doctor eligibility, queue, interruptions, energy и patient mobility.
 
 ## Связанные issues
 
 - technology/energy/research: #126–#128;
 - основной combat equipment: #129;
+- health/hospital: #130;
 - deferred fantasy equipment: #177;
 - transport/doors: #136–#137;
 - lifecycle/appearance: #145, #150–#151;
