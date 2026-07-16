@@ -21,6 +21,7 @@ namespace Dig.Unity
             if (result.IsSuccess)
             {
                 _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
+                _agentRenderer!.RenderEquipment(_terrainSession.LoadResidentEquipment());
                 _hud.SetStatus("Inventory item equipped.");
             }
         }
@@ -44,6 +45,7 @@ namespace Dig.Unity
             if (result.IsSuccess)
             {
                 _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
+                _agentRenderer!.RenderEquipment(_terrainSession.LoadResidentEquipment());
                 _hud.SetStatus("Inventory stack moved to resident cell.");
             }
         }
