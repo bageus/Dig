@@ -1,303 +1,110 @@
-# Реестр открытых проектных вопросов Dig
+# Реестр проектных вопросов Dig
 
-## Назначение
+Вопросы не удаляются: после ответа меняется статус и сохраняется решение. Детали новых Q-047–Q-051: [`open-questions-047-051.md`](open-questions-047-051.md).
 
-Постоянный реестр неоднозначностей, конфликтов и решений. После ответа вопрос не удаляется: меняются статус, решение и ссылки.
+Статусы: `OPEN`, `ANSWERED`, `SUPERSEDED`, `BALANCE_TBD`.
 
-## Статусы
+## Q-001–Q-012 — мир, копание и ресурсы
 
-- `OPEN` — требуется решение владельца дизайна;
-- `ANSWERED` — решение подтверждено и перенесено в документы/issues;
-- `SUPERSEDED` — вопрос заменён более новым решением;
-- `BALANCE_TBD` — архитектура определена, числовой баланс будет настроен позже.
-
----
-
-## Копание и ресурсы
-
-### Q-001 — Логическая глубина мира
-- **Статус:** `ANSWERED`
-- **Решение:** authoritative мир — сетка `X,Y,Z`; глубина ограничена четырьмя клетками.
-- **Связи:** `world-3d-depth.md`, #87, #88.
-
-### Q-002 — Значение глубины «4 клетки»
-- **Статус:** `ANSWERED`
-- **Решение:** `Z = 0..3`; отдельный тоннель может занимать меньше четырёх слоёв.
-
-### Q-003 — Показатель «Камень» 20/40/60
-- **Статус:** `ANSWERED`
-- **Решение:** `skill.stonework`; средняя/большая/высокая пещеры требуют 20/40/60.
-
-### Q-004 — Потеря доступа к шаблону
-- **Статус:** `ANSWERED`
-- **Решение:** новые placement блокируются; уже подтверждённый plan продолжается.
-
-### Q-005 — Геометрия пещеры
-- **Статус:** `ANSWERED`
-- **Решение:** фронтальная трапеция повторяется на каждом Z-слое; mirror запрещён; входы слева/справа по X.
-
-### Q-006 — Модель resource deposit
-- **Статус:** `ANSWERED`
-- **Решение:** жила заменяет клетку породы; depletion открывает пространство и не выдаёт terrain loot второй раз.
-
-### Q-007 — Золотая руда и золото
-- **Статус:** `ANSWERED`
-- **Решение:** `ore.gold` и `material.gold` различаются; рецепт `3 ore.gold + 2 coal -> 2 gold`.
-
-### Q-008 — Железо и металл
-- **Статус:** `ANSWERED`
-- **Решение:** металл/железный слиток — один `material.iron`; `material.metal` мигрирует в него.
-
-### Q-009 — Output грунта
-- **Статус:** `ANSWERED`
-- **Решение:** output зависит от terrain profile; пустой output допустим; вероятности data-driven.
-
-### Q-010 — Жила 1–4 клетки
-- **Статус:** `ANSWERED`
-- **Решение:** соседние deposit cells могут выглядеть одной жилой, но имеют собственное depletion state.
-
-### Q-011 — Доставка добычи
-- **Статус:** `ANSWERED`
-- **Решение:** hauling создаётся только по building demand/storage filter и для раскрытого source.
-
-### Q-012 — Жила в стене
-- **Статус:** `ANSWERED`
-- **Решение:** depletion изменяет геометрию как excavation клетки.
-
----
-
-## Контент и баланс
-
-### Q-013 — Железо/металл в каталоге
-- **Статус:** `ANSWERED`
-- **Решение:** один ItemId `material.iron`; Metal может быть категорией, но не отдельным предметом.
-
-### Q-014 — Непредоставленные числа
-- **Статус:** `BALANCE_TBD`
-- **Область:** alarm, leisure, cinema, university, service, skills, terrain, deposits, notifications, cooking speed curves, creature population caps, drop probabilities и другие явно не заданные коэффициенты.
-- **Решение:** хранить в definitions, не фиксировать в универсальном коде.
-
----
-
-## Еда, сон и досуг
-
-### Q-015 — Масштаб сытости
-- **Статус:** `ANSWERED`
-- **Решение:** UI/design `0..100`, Domain `0..10000`, коэффициент `×100`; `15 -> 1500`.
-
-### Q-016 — Разнообразие рациона
-- **Статус:** `ANSWERED`
-- **Решение:** desired dish детерминированно выбирается из исследованных блюд; сначала ищется оно, затем любая видимая еда.
-- **Fallback:** восстанавливает Nutrition, но не даёт положительный базовый food Mood.
-- **История:** последние 10 трапез, запись после первого укуса: desired/consumed/matched.
-- **Формула:** `Mismatches >= 6 -> -UnlockedDishCount`; `Matches >= 6` и current matched -> `+UnlockedDishCount`; `5/5 -> 0`.
-
-### Q-017 — Прерывание еды, сна и досуга
-- **Статус:** `ANSWERED`
-- **Еда:** завершённые укусы сохраняются, остаток уничтожается.
-- **Сон:** Alertness и Mood восстанавливаются по интервалам; пробуждение прекращает дальнейший gain.
-- **Досуг:** Mood восстанавливается по интервалам; interruption сохраняет полученный эффект.
-
-### Q-018 — Работник кухни
-- **Статус:** `ANSWERED`
-- **Решение:** постоянного повара нет; worker нужен только при active cooking order и освобождается после completion/cancel/block.
-- **Влияние Cooking:** определено Q-039.
-
----
-
-## Навыки и опыт
-
-### Q-019 — Несколько grants за смешанную работу
-- **Статус:** `ANSWERED`
-- **Решение:** один result может атомарно начислять несколько `(AgentSkillId, Amount)`; получатели исключаются из donor pool.
-
-### Q-020 — Щит и оружие
-- **Статус:** `ANSWERED`
-- **Решение:** каждый подтверждённый удар оружием выдаёт weapon grant; каждый входящий удар, обработанный щитом, выдаёт defense grant. Оба возможны в одном бою.
-
-### Q-021 — Момент начисления опыта
-- **Статус:** `ANSWERED`
-- **Production:** за каждую committed produced unit.
-- **Combat:** за каждый confirmed result event.
-- **Jobs:** после `JobCompleted`.
-
-### Q-022 — Шкала и capacity
-- **Статус:** `ANSWERED`
-- **Решение:** skill `0..100`; общий pool всех 12; base capacity 100; University max 200.
-
----
-
-## Термины и lifecycle
-
-### Q-023 — «Песчанник»
-- **Статус:** `ANSWERED`
-- **Решение:** display name «Песчаник», ID `building.crystal_processor`.
-
-### Q-024 — Металлосодержащая порода
-- **Статус:** `ANSWERED`
-- **Решение:** «Рудная порода», ID `terrain.metal_bearing_rock`.
-
-### Q-025 — Пещера после падения Stonework
-- **Статус:** `ANSWERED`
-- **Решение:** существующий plan продолжается.
-
-### Q-026 — Параметры металлургических зданий
-- **Статус:** `ANSWERED`
-- **Решение:** единственный source — BuildingDefinition/content data.
-
-### Q-027 — Входы пещеры
-- **Статус:** `ANSWERED`
-- **Решение:** слева и справа по X.
-
----
-
-## HUD, навыки и уведомления
-
-### Q-028 — Capacity 120 против 100/200
-- **Статус:** `ANSWERED`
-- **Решение:** 120 было ошибкой; base 100, University 200; все 12 навыков входят в pool.
-
-### Q-029 — Перераспределение навыков
-- **Статус:** `ANSWERED`
-- **Решение:** overflow снимается с доноров пропорционально текущим значениям: `Loss_j = R × N_j / ΣN`.
-- **Точность:** fixed-point, floor + largest remainder; tie-break stable AgentSkillId.
-- **Атомарность:** mixed recipients исключаются из donors; gain/loss — одна транзакция.
-
-### Q-030 — Бодрость или усталость
-- **Статус:** `ANSWERED`
-- **Решение:** UI показывает прямую «Бодрость» из Alertness.
-
-### Q-031 — Mood 75
-- **Статус:** `ANSWERED`
-- **Решение:** 75 нейтрально; радость с 76.
-
-### Q-032 — World items и Alt interaction
-- **Статус:** `ANSWERED`
-- **Решение:** unsupported Alt+LMB ведёт себя как ground move; BuildingBox имеет отдельные pickup/placement actions.
-
-### Q-033 — Уведомление о голоде
-- **Статус:** `ANSWERED`
-- **Решение:** Nutrition `<15` UI / `<1500` Domain; событие при downward crossing; повтор после восстановления; LMB view, RMB dismiss; истории нет.
-
----
-
-## Технологии и исследования
-
-### Q-034 — Стоимость и длительность исследования
-- **Статус:** `OPEN`
-- **Вопрос:** материалы, длительность, building slot и очередь.
-
-### Q-035 — Квалифицированный исследователь
-- **Статус:** `OPEN`
-- **Вопрос:** обязан ли подходящий по thresholds гном лично выполнять research work?
-
-### Q-036 — Потеря requirements во время research
-- **Статус:** `OPEN`
-- **Вопрос:** продолжение, пауза или отмена; refund/reservation policy.
-
-### Q-037 — Действия Обычной фермы
-- **Статус:** `OPEN`
-- **Вопрос:** Production recipes, длительные growth orders или Ecology actions?
-
-### Q-038 — Мастерские и legacy-названия
-- **Статус:** `ANSWERED`
-- **Решение:** Пилорама -> Винокурня/Университет; Мебельная мастерская -> игровые комнаты; Оружейная кузница -> Арсенал; Плавильня = Горн; Грибной самогон = Огненная вода; водолазный колокол исключён.
-
-### Q-039 — Влияние Cooking
-- **Статус:** `ANSWERED`
-- **Дата:** 2026-07-16
-- **Решение:** `skill.cooking` влияет только на скорость приготовления.
-- **Не влияет:** ingredients, output quantity, Nutrition, Mood, число укусов, качество и дополнительные результаты.
-- **Баланс:** точная speed curve остаётся `BALANCE_TBD`.
-
----
-
-## Питание, досуг, общество, образование, экология и двери
-
-### Q-040 — Базовый Mood от еды и предел 50
-- **Статус:** `ANSWERED`
-- **Дата:** 2026-07-16
-- **Решение:** положительный базовый Mood подходящей еды может поднимать настроение выше 50; отдельного food cap `50` нет.
-- **Разнообразие:** положительный diversity bonus использует то же правило и также может поднимать Mood выше 50.
-- **Ограничение:** оба положительных эффекта ограничиваются только текущим `MoodMaximum` resident.
-- **Fallback:** по-прежнему восстанавливает Nutrition, но не даёт положительный базовый food Mood и не создаёт положительный diversity bonus для текущей трапезы.
-- **Связи:** `content/food.md`, #96, #99, #144.
-
-### Q-041 — Повторение досуга
-- **Статус:** `ANSWERED`
-- **Дата:** 2026-07-16
-- **История:** проверяются предыдущие 10 записей.
-- **Порог:** штраф действует, если текущий `LeisureVarietyId` встречается в предыдущем окне 5 или более раз.
-- **Эффект:** `MoodGainMultiplier = 0.5`.
-- **Порядок:** текущая активность добавляется в историю после расчёта штрафа и после первого confirmed Mood interval.
-- **Выбор:** deterministic weighted random с `NoveltyWeight = max(1, 11 - occurrencesInLast10)`.
-- **Связи:** `leisure-variety-and-selection.md`, #143, #159.
-
-### Q-042 — Партнёрство и беременность
-- **Статус:** `ANSWERED`
-- **Дата:** 2026-07-16
-- **Пара:** только мужчина+женщина, эксклюзивная и постоянная до смерти партнёра.
-- **После смерти:** surviving resident может создать новую пару.
-- **Зачатие:** гарантировано после успешной встречи и выполнения eligibility.
-- **Беременность:** 1 игровой день.
-- **Дети:** максимального числа нет.
-- **Место:** достаточно свободной достижимой клетки; отдельное здание не требуется.
-- **Cooldown:** 2 игровых дня после родов.
-- **Связи:** `partnership-pregnancy-and-birth.md`, #145.
-
-### Q-043 — Школа и наследование
-- **Статус:** `ANSWERED`
-- **Дата:** 2026-07-16
-- **Curriculum:** доступны все 12 навыков.
-- **Inheritance:** отдельный deterministic random penalty 10–20% для каждого навыка.
-- **Capacity:** повышенная parental capacity наследуется тем же способом; итоговая child capacity не может быть ниже суммы inherited skills и не превышает 200.
-- **Термин:** после каждого часа создаётся новое учебное **задание**, не здание.
-- **Вместимость:** 1 учитель и 4 ученика.
-- **Расписание:** школа работает круглосуточно при наличии свободного подходящего учителя.
-- **Связи:** `childhood-school-and-inheritance.md`, #146.
-
-### Q-044 — Качество сна и личные кровати
-- **Статус:** `ANSWERED`
-- **Дата:** 2026-07-16
-- **Rate multipliers:** gap 0/1/2/3+ = `1.00/0.75/0.50/0.25`.
-- **Mood:** любой actual tier ниже expected ограничивает Mood от сна значением 50.
-- **Floor:** Alertness cap 75, Mood gain 0.
-- **Assignment:** снимается при destruction, packing, отсутствии пути или path length больше 30 клеток; затем выбирается ближайшее свободное место, иначе Floor.
-- **Пары:** каждая кровать имеет два связанных slots.
-- **Scope:** пока только Sleep; кухня, ванная и гостиная не входят.
-- **Связи:** `sleep-comfort-and-bed-assignment.md`, #142, #159.
-
-### Q-045 — Экология и особые предметы существ
-- **Статус:** `ANSWERED`
-- **Дата:** 2026-07-16
-- **Омлет:** повышает один случайный maximum Health/Alertness/Nutrition/Mood на 10; эффект постоянный, stackable и может превышать 100; текущий value не повышается автоматически.
-- **Демон:** проглоченный предмет не уничтожается и выпадает после смерти.
-- **Яйцо:** может вылупиться в world/personal/storage/building inventory; паук создаётся рядом с world anchor, а при отсутствии клетки hatch ожидает без duplicate spawn.
-- **Приручённый Вукер:** не размножается.
-- **Population caps:** обязательны, точные значения `BALANCE_TBD`.
-- **Drops:** вероятности `BALANCE_TBD`.
-- **Связи:** `ecology-creatures-and-special-drops.md`, #149, #131, #132.
-
-### Q-046 — Двери и закрытый проход
-- **Статус:** `ANSWERED`
-- **Дата:** 2026-07-16
-- **Материалы:** деревянная, металлическая, кристаллическая; каменная исключена, её раннюю роль выполняет деревянная.
-- **Жидкости:** не входят в текущий scope и door-fluid contract не создаётся.
-- **Автоматизация:** buttons/switches не входят в первую версию.
-- **Закрытие:** AutomaticOwnOnly начинает closing через 2 simulation ticks после освобождения; любой occupant сбрасывает отсчёт.
-- **Разрушение:** дверь исчезает как blocker и оставляет свободный проход без repairable rubble.
-- **Связи:** `doors-access-and-lifecycle.md`, #136, #147, #165.
-
----
-
-## Журнал ответов
-
-| Дата | Вопрос | Решение |
+| Q | Статус | Решение |
 |---|---|---|
-| 2026-07-15 | Q-001–Q-013 | 3D-мир, excavation, deposits, terrain output и material IDs |
-| 2026-07-15 | Q-015–Q-021 | scaling еды, рацион, continuous effects и experience events |
-| 2026-07-15 | Q-023–Q-033 | lifecycle, HUD, capacity, redistribution и notifications |
-| 2026-07-15 | Q-038 | мастерские, legacy-названия и исключения technology tree |
-| 2026-07-16 | Q-039 | Cooking влияет только на скорость приготовления |
-| 2026-07-16 | Q-040 | food Mood и diversity bonus могут поднимать Mood выше 50 до текущего MoodMaximum |
-| 2026-07-16 | Q-041–Q-046 | досуг, пары, школа, сон, экология и двери |
+| Q-001 | ANSWERED | Мир `X,Y,Z`, глубина четыре клетки |
+| Q-002 | ANSWERED | `Z=0..3` |
+| Q-003 | ANSWERED | Камень = `skill.stonework`, thresholds 20/40/60 |
+| Q-004 | ANSWERED | Потеря skill блокирует новые plans, но не текущий |
+| Q-005 | ANSWERED | Трапеция повторяется по Z, без mirror, входы по X |
+| Q-006 | ANSWERED | Deposit заменяет terrain cell |
+| Q-007 | ANSWERED | Gold ore и gold — разные IDs |
+| Q-008 | ANSWERED | Metal = iron ingot |
+| Q-009 | ANSWERED | Terrain output определяется profile |
+| Q-010 | ANSWERED | Соседние deposit cells имеют отдельный depletion |
+| Q-011 | ANSWERED | Hauling требует demand/filter и visibility |
+| Q-012 | ANSWERED | Deposit depletion меняет geometry как excavation |
+
+## Q-013–Q-014 — контент и баланс
+
+- **Q-013 — ANSWERED:** один ItemId `material.iron`.
+- **Q-014 — BALANCE_TBD:** непредоставленные коэффициенты хранятся в definitions.
+
+## Q-015–Q-018 — еда и Needs
+
+- **Q-015 — ANSWERED:** Nutrition UI `0..100`, Domain `0..10000`, `×100`.
+- **Q-016 — ANSWERED:** desired dish, fallback и история 10 трапез.
+- **Q-017 — ANSWERED:** прерывание сохраняет уже применённые интервалы.
+- **Q-018 — ANSWERED:** worker кухни нужен только для active order.
+
+## Q-019–Q-022 — навыки
+
+- **Q-019 — ANSWERED:** mixed result может начислять несколько skills.
+- **Q-020 — ANSWERED:** weapon и shield grants возможны в одном combat cycle.
+- **Q-021 — ANSWERED:** Production per unit, Combat per event, Jobs on completion.
+- **Q-022 — ANSWERED:** 12 skills, individual max 100, capacity 100→200.
+
+## Q-023–Q-027 — термины
+
+- **Q-023 — ANSWERED:** «Песчаник».
+- **Q-024 — ANSWERED:** «Рудная порода».
+- **Q-025 — ANSWERED:** существующий cave plan продолжается.
+- **Q-026 — ANSWERED:** building parameters берутся из definitions.
+- **Q-027 — ANSWERED:** входы пещеры слева/справа по X.
+
+## Q-028–Q-033 — HUD и формулы
+
+- **Q-028 — ANSWERED:** значение 120 было ошибкой; используется 100→200.
+- **Q-029 — ANSWERED:** proportional donor loss с deterministic rounding.
+- **Q-030 — ANSWERED:** UI показывает «Бодрость».
+- **Q-031 — ANSWERED:** Mood 75 нейтрален, радость с 76.
+- **Q-032 — ANSWERED:** unsupported Alt action обрабатывается как ground command.
+- **Q-033 — ANSWERED:** hunger event при Nutrition `<15`.
+
+## Q-034–Q-039 — исследования и производство
+
+### Q-034 — Research duration/cost
+- **Статус:** `OPEN`
+- **Подтверждено:** duration = сумма количества ingredients × minutes per item.
+- **Weights:** шляпка, ножка, хомяк, камень, личинка = 1; iron = 2; gold = 4; crystal = 5 игровых минут.
+- **Открыто:** реальный расход materials, coal/ore weights, recipes без materials, slots/queue.
+
+### Q-035 — Qualified researcher
+- **Статус:** `ANSWERED`
+- **Дата:** 2026-07-16
+- **Решение:** job лично выполняет гном, удовлетворяющий всем requirements, в Work schedule.
+
+### Q-036 — Requirements lost during research
+- **Статус:** `OPEN`
+- **Вопрос:** pause/continue/cancel и сохранение progress.
+
+### Q-037 — Farm actions
+- **Статус:** `OPEN`
+- **Вопрос:** recipes, growth orders или Ecology actions.
+
+- **Q-038 — ANSWERED:** подтверждены workshops, legacy names и exclusions.
+- **Q-039 — ANSWERED:** Cooking влияет только на скорость.
+
+## Q-040–Q-046 — Needs, Society, Ecology, Doors
+
+- **Q-040 — ANSWERED:** matched food и diversity могут поднимать Mood выше 50 до MoodMaximum.
+- **Q-041 — ANSWERED:** 5 повторений в предыдущих 10 → Mood multiplier 0.5.
+- **Q-042 — ANSWERED:** exclusive male/female pair, guaranteed conception, pregnancy 1 day, cooldown 2 days.
+- **Q-043 — ANSWERED:** 12-school curriculum, per-skill inheritance roll, 1 teacher/4 students, 24/7.
+- **Q-044 — ANSWERED:** sleep multipliers `1/.75/.5/.25`, personal beds, 2 slots.
+- **Q-045 — ANSWERED:** ecology special items/caps policy утверждена, числовой balance TBD.
+- **Q-046 — ANSWERED:** wooden/metal/crystal doors, 2-tick auto close, no liquids/switches.
+
+## Q-047–Q-051 — текущие вопросы
+
+Подробный текст находится в [`open-questions-047-051.md`](open-questions-047-051.md).
+
+- **Q-047 — OPEN:** role headwear, cosmetic/effects и identity cap.
+- **Q-048 — OPEN:** grave, return и rejuvenation lifecycle.
+- **Q-049 — OPEN:** Energy allocation, class compatibility и source lifecycle.
+- **Q-050 — OPEN:** yellow Research state, queue и experience.
+- **Q-051 — OPEN:** ladder variants и elevator runtime policy.
+
+## Журнал
+
+| Дата | Вопросы | Решение |
+|---|---|---|
+| 2026-07-15 | Q-001–Q-033, Q-038 | базовые world/content/needs/skills/HUD решения |
+| 2026-07-16 | Q-039–Q-046 | cooking, food Mood, leisure, society, school, sleep, ecology, doors |
+| 2026-07-16 | Q-035 | qualified resident лично выполняет Research job |
