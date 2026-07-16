@@ -24,7 +24,7 @@
 ## Q-013–Q-014 — контент и баланс
 
 - **Q-013 — ANSWERED:** один ItemId `material.iron`.
-- **Q-014 — BALANCE_TBD:** непредоставленные коэффициенты хранятся в definitions; сюда относится числовой multiplier personal mobility.
+- **Q-014 — BALANCE_TBD:** непредоставленные коэффициенты хранятся в definitions; сюда относятся combat damage/range/cooldown/block coefficients и числовой multiplier personal mobility.
 
 ## Q-015–Q-018 — еда и Needs
 
@@ -94,6 +94,21 @@ Q-040–Q-046 закрыты и описаны в соответствующих
 - **Q-051 — ANSWERED:** emergency climb идёт к target; Reithamster/Hoverboard автоматически используют одинаковые legacy speedtypes `3/2`, numeric multiplier относится к Q-014.
 - **Q-052 — ANSWERED:** новая pair сохраняется; старая остаётся historical и может возникнуть снова только через normal matching, если оба свободны.
 
+## Q-053 — Combat equipment migration
+
+- **Статус:** `OPEN`
+- Scripts подтверждают 10 производимых предметов: Рогатка, Дубина, Простой щит, Боевой топор, Меч, Лук, Металлический щит, Ружьё, Световой меч, Кристаллический щит.
+- Дополнительно найдены 40 equipment class candidates без production technology.
+- Нужно решить:
+  1. какие fantasy/creature classes сохранить как loot-only;
+  2. исключаются ли special-mode classes из colony mode;
+  3. как generic `exp_Kampf` переводится в пять конкретных combat skills для items и mixed buildings;
+  4. какие weapon types совместимы со щитом;
+  5. подтверждается ли policy без расходуемых боеприпасов и без item durability.
+- Точные damage/range/cooldown/block values после решения относятся к Q-014.
+
+Спецификация: `content/weapons-and-shields.md`; полный legacy appendix: `content/legacy-combat-equipment-appendix.md`.
+
 ## Журнал
 
 | Дата | Вопросы | Решение |
@@ -103,3 +118,4 @@ Q-040–Q-046 закрыты и описаны в соответствующих
 | 2026-07-16 | Q-034, Q-036, Q-050 | research weights, slots, busy state и active skill-loss policy |
 | 2026-07-16 | Q-051 | target emergency climb и legacy mobility-tool behavior |
 | 2026-07-16 | Q-052 | active pair после return |
+| 2026-07-16 | Q-053 | script audit combat equipment; owner decisions pending |
