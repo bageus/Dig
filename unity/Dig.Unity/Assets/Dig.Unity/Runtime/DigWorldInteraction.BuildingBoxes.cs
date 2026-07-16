@@ -127,6 +127,7 @@ namespace Dig.Unity
             }
 
             _buildingRenderer!.Render(_terrainSession.LoadBuildings());
+            _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
             var jobs = _terrainSession.LoadJobs();
             _jobRenderer!.Render(jobs);
             _hud.SetJobs(jobs);
