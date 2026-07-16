@@ -35,6 +35,7 @@ Research duration и UI описаны в `research-availability-duration-and-ui
 - **Грибной самогон** — legacy name **Огненной воды**.
 - `Dojo` трактуется как направление **Кулачный бой**.
 - водолазный колокол исключён.
+- legacy `Dreherei` трактуется как поздняя Токарная/металлообрабатывающая мастерская и является источником Больницы.
 
 ## 4. Согласованная структура
 
@@ -149,7 +150,24 @@ Runtime model этих действий остаётся Q-037.
 | Горн | ранняя переработка железной руды |
 | Литейный цех | продвинутая переработка железа и золота на угле |
 | Песчаник | обработка кристаллической руды |
+| Токарная мастерская (`Dreherei`) | Больница |
+| Больница | услуга лечения `_Heilen`, доступна сразу после здания |
 | Храм | возвращение умершего гнома, Зелье омоложения |
+
+### Больница
+
+```text
+BuildingBox recipe:
+3 stone + 3 iron + 3 crystal + 1 gold
+
+Research:
+Service 7 + Food 2
+
+Construction grants:
+Metallurgy 7 + Service 3
+```
+
+Treatment service не требует материалов. Один committed этап занимает один игровой час, восстанавливает до 25 Health и выдаёт врачу `skill.service`. Вместимость, очередь, doctor eligibility и energy policy ожидают Q-054.
 
 ## 9. Подтверждённые lifecycle recipes из scripts
 
@@ -193,6 +211,8 @@ Runtime model этих действий остаётся Q-037.
 
 Combat equipment дополнительно имеет `RequiredSkillId`, `AllowsShield`, `AmmoPolicy`, `DurabilityPolicy` и explicit deferred/exclusion policy.
 
+Hospital дополнительно имеет stable doctor/patient places, treatment stage definition, queue policy, notification threshold и Save/Load version.
+
 ## 13. Связанные задачи
 
 - #9 — Production/Technology contract;
@@ -201,6 +221,7 @@ Combat equipment дополнительно имеет `RequiredSkillId`, `Allow
 - #127 — энергия;
 - #128 — research lifecycle;
 - #129 — основной боевой каталог;
+- #130 — Health и Больница;
 - #137 — лестницы и лифты;
 - #150 — могилы, return и rejuvenation;
 - #177 — deferred fantasy/creature equipment.
