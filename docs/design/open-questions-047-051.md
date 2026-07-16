@@ -35,27 +35,20 @@
 
 Связи: `death-graves-resurrection-and-rejuvenation.md`, `content/products.md`, #150.
 
-## Q-049 — Energy allocation
+## Q-049 — Распределение энергии
 
-**Статус:** `OPEN`
+**Статус:** `ANSWERED`
 
-Подтверждено:
-
-- четыре sources и три classes;
-- radii `20/20/60/120`;
-- outputs `10/100/400/600`;
-- refill threshold `<15%`;
-- enable/disable;
-- Production сохраняет progress при отсутствии питания.
-
-Нужно уточнить:
-
-1. Перекрывающиеся zones образуют общий pool или consumer выбирает один source?
-2. Может ли class 2/3 питать consumers младшего класса?
-3. Output хранится как stock или производится постепенно?
-4. Что происходит с незавершённой часовой итерацией ручного source?
-5. Официальные display names ручного и class-3 sources.
-6. Lifecycle хомяка при выключении, упаковке и демонтаже.
+- один consumer одновременно подключается к одному source; перекрывающиеся зоны не создают общий pool;
+- сначала выбирается источник точного требуемого класса;
+- если его нет, используется минимальный доступный более высокий класс;
+- источники класса 2/3 могут питать потребителей младших классов;
+- среди источников одного класса выбирается ближайший; равенство разрешается stable `EnergySourceId`;
+- fuel-based генераторы сразу создают stock `100/400/600`, который тратится только при фактическом demand;
+- Ручной генератор не хранит запас и выдаёт энергию только пока гном выполняет работу;
+- прерывание ручного цикла немедленно прекращает генерацию, незавершённая часть не создаёт stock;
+- официальное имя источника класса 3 — **«Реактор»**;
+- хомяк является встроенной частью Хомячкового генератора и упаковывается вместе со зданием.
 
 Связи: `energy-generation-and-production-pausing.md`, #127.
 
@@ -124,5 +117,6 @@
 |---|---|---|
 | 2026-07-16 | Q-047 | cosmetic role hats, identity cap, aging hair, work waits for headwear |
 | 2026-07-16 | Q-048 | grave/temple/potion recipes and repeat lifecycle policy |
+| 2026-07-16 | Q-049 | single-source binding, exact/minimum higher class, stored fuel batches, live manual output, embedded hamster |
 | 2026-07-16 | Q-050 | queued orange/yellow research, no XP or material consumption, ore weight 2 |
 | 2026-07-16 | Q-051 | ladder lengths, elevator capacity/classes/boarding and emergency climb |
