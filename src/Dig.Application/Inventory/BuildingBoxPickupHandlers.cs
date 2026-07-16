@@ -53,7 +53,7 @@ public sealed class CreateBuildingBoxPickupHandler
             command.StackId,
             command.JobId,
             quantity: 1,
-            command.Tick);
+            tick: command.Tick);
         if (reserved.IsFailure)
         {
             return reserved;
@@ -197,9 +197,9 @@ public sealed class CompleteBuildingBoxPickupHandler
             pickup.StackId,
             job.Id,
             quantity: 1,
-            ItemLocation.InAgent(job.AssignedAgentId.Value),
+            destination: ItemLocation.InAgent(job.AssignedAgentId.Value),
             splitStackId: default,
-            command.Tick);
+            tick: command.Tick);
         if (moved.IsFailure)
         {
             return moved;
