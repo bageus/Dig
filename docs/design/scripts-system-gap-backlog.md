@@ -2,82 +2,71 @@
 
 ## Назначение
 
-Сопоставление legacy gameplay scripts с текущими design-документами и issues Dig. Campaign/world sequence сейчас не рассматривается.
+Сопоставление legacy gameplay scripts с текущими design-документами и GitHub issues Dig. Сюжетная кампания/последовательность миров сейчас не рассматриваются.
 
 ## Backlog
 
-| № | Система | Issue | Текущий design status |
+| № | Система | Issue | Текущий статус design |
 |---:|---|---|---|
-| 1 | Technology tree | #126 | согласованный участок описан, продолжение открыто |
-| 2 | Energy | #127 | источники/классы описаны; Q-049 |
-| 3 | Research eligibility/UI | #128 | основные правила описаны; Q-034, Q-036, Q-050 |
-| 4 | Combat equipment | #129 | открыто |
-| 5 | Treatment/hospital | #130 | открыто |
-| 6 | Consumables | #131 | открыто |
+| 1 | Полное technology tree | #126 | открыто, согласованный участок описан |
+| 2 | Энергия | #127 | частично описано; Q-049 остаётся open |
+| 3 | Research eligibility/UI | #128 | основа описана; Q-034/Q-036/Q-050 остаются open |
+| 4 | Боевой equipment catalog | #129 | открыто |
+| 5 | Травмы/больница | #130 | открыто |
+| 6 | Зелья | #131 | открыто; rejuvenation recipe подтверждён |
 | 7 | Status Effects | #132 | открыто |
-| 8 | Traps | #133 | открыто |
-| 9 | Liquids | #134 | закрыто not planned |
-| 10 | Underwater work | #135 | закрыто not planned |
-| 11 | Doors | #136 | design решён, implementation открыта |
-| 12 | Ladders/elevators | #137 | базовый dispatch описан; Q-051 |
+| 8 | Ловушки | #133 | открыто |
+| 9 | Жидкости | #134 | закрыто not planned |
+| 10 | Подводная работа | #135 | закрыто not planned |
+| 11 | Двери/access | #136 | design решён Q-046; implementation открыта |
+| 12 | Лестницы/лифты/мобильность | #137 | основа описана; emergency climb и mount/hoverboard details open |
 | 13 | Combat lifecycle | #138 | открыто |
 | 14 | Strategic AI | #139 | открыто |
-| 15 | Clans | #140 | открыто |
+| 15 | Кланы | #140 | открыто |
 | 16 | Ownership/theft | #141 | открыто |
-| 17 | Sleep comfort | #142 | design решён, implementation открыта |
-| 18 | Leisure variety | #143 | design решён, implementation открыта |
+| 17 | Sleep comfort/personal beds | #142 | design решён Q-044; implementation открыта |
+| 18 | Leisure variety/history | #143 | design решён Q-041; implementation открыта |
 | 19 | Personal food tastes | #144 | закрыто not planned; используется #99 |
-| 20 | Partnership | #145 | design решён, implementation открыта |
-| 21 | Childhood/school | #146 | design решён, implementation открыта |
-| 22 | Fog/vision | #147 | design закрыт, implementation #165 |
-| 23 | Campaign | — | исключено из scope |
-| 24 | Creatures/ecology | #149 | design решён, balance TBD |
-| 25 | Grave/return/rejuvenation | #150 | базовые rules описаны; Q-048 |
-| 26 | Role appearance | #151 | role headwear описан; Q-047 |
+| 20 | Partnership/reproduction | #145 | design решён Q-042; return conflict Q-052 |
+| 21 | Childhood/school/inheritance | #146 | design решён Q-043; implementation открыта |
+| 22 | Fog/vision | #147 | design закрыт; implementation #165 |
+| 23 | Campaign/world sequence | — | исключено из текущего scope |
+| 24 | Creatures/ecology | #149 | design решён Q-045; balance TBD |
+| 25 | Graves/rejuvenation/return | #150 | основа и recipes описаны; Q-052 open |
+| 26 | Clothing/appearance | #151 | role hats и aging appearance описаны; implementation open |
 | 27 | Conversation/social memory | #152 | открыто |
 
-## Authoritative документы
+## Новые authoritative документы
 
-- `technology-tree.md`;
-- `research-availability-duration-and-ui.md`;
-- `energy-generation-and-production-pausing.md`;
-- `ladders-and-elevators.md`;
 - `resident-role-headwear.md`;
 - `death-graves-resurrection-and-rejuvenation.md`;
-- `leisure-variety-and-selection.md`;
-- `partnership-pregnancy-and-birth.md`;
-- `childhood-school-and-inheritance.md`;
-- `sleep-comfort-and-bed-assignment.md`;
-- `ecology-creatures-and-special-drops.md`;
-- `doors-access-and-lifecycle.md`;
-- `exploration-fog-of-war.md`.
+- `energy-generation-and-production-pausing.md`;
+- `research-availability-duration-and-ui.md`;
+- `ladders-and-elevators.md`.
 
 ## Подтверждённые решения
 
-- Пилорама -> Винокурня и Университет.
-- Мебельная мастерская -> три игровые комнаты.
-- Оружейная кузница -> Арсенал.
-- Плавильня = Горн; Литейный цех = advanced coal smelting; Песчаник = crystal processing.
-- Diving bell, liquids, underwater gameplay, carts и rails исключены.
-- Qualified resident лично выполняет Research job в Work schedule.
-- Research duration выводится из weighted production recipe.
-- Energy: два class-1, один class-2 и один class-3 source; refill ниже 15%.
-- Production progress сохраняется при временном отсутствии питания.
-- Ladders отличаются длиной; elevator обслуживает same-direction requests.
-- Role headwear отражает current/last work role.
-- Identity-linked cap участвует в grave/lifecycle system.
-- Cooking влияет только на скорость.
-- Leisure repeat 5/10 -> Mood multiplier 0.5.
-- Pair/reproduction, school, sleep, ecology и doors описаны в отдельных documents.
+- role hats cosmetic only; work waits for headwear state;
+- identity cap after death is separate from current role hat;
+- grave = 3 stone + cap, non-packable;
+- temple return = cap + hamster + 4 gold + 2 crystal ore;
+- rejuvenation potion = hamster + crystal + iron ore + 2 gold;
+- research can be queued from orange/yellow state;
+- research uses recipe only for duration and consumes no materials;
+- all ores have research weight 2; research grants no XP;
+- ladders spans 12/16/24 by material;
+- elevators capacity 4 and energy classes 1/2/3;
+- carts, rails and wheelbarrows excluded;
+- riding hamster and hoverboard remain future mobility content.
 
 ## Рекомендуемый порядок
 
-1. Закрыть Q-034, Q-036, Q-050 и завершить #126/#128.
-2. Закрыть Q-049 и реализовать #127.
-3. Закрыть Q-051 и реализовать #137.
-4. Закрыть Q-047/Q-048 и реализовать #150/#151.
-5. #129/#138/#132, затем #130–#133.
-6. Реализация #142/#143/#145/#146/#149/#165.
-7. #139–#141 и #152.
+1. #126/#128 — research graph/lifecycle.
+2. #127 — energy allocation.
+3. #136/#137 — doors and elevator runtime.
+4. #150/#151 — death identity and appearance.
+5. #129/#138/#132 — combat content/contracts.
+6. #130–#133 — health/consumables/statuses/traps.
+7. #139–#141/#152 — factions/social systems.
 
-Непредоставленные числа остаются data-driven `BALANCE_TBD`.
+Непредоставленные числовые коэффициенты остаются data-driven `BALANCE_TBD`.
