@@ -13,7 +13,7 @@
 | 3 | Research eligibility/UI | #128 | Q-034/Q-036/Q-050 закрыты; implementation открыта |
 | 4 | Основной боевой equipment catalog | #129 | Q-053 закрыт; implementation открыта |
 | 5 | Дополнительное fantasy/creature equipment | #177 | deferred backlog; вне текущего runtime scope |
-| 6 | Травмы/больница | #130 | открыто |
+| 6 | Health/больница | #130 | core rules подтверждены; Q-054 lifecycle/edge cases открыты |
 | 7 | Зелья | #131 | открыто; rejuvenation recipe подтверждён |
 | 8 | Status Effects | #132 | открыто |
 | 9 | Ловушки | #133 | открыто |
@@ -36,6 +36,22 @@
 | 26 | Graves/rejuvenation/return | #150 | Q-048/Q-052 закрыты; implementation открыта |
 | 27 | Clothing/appearance | #151 | design описан; implementation открыта |
 | 28 | Conversation/social memory | #152 | открыто |
+
+## Подтверждённые hospital решения
+
+- отдельных травм, ранений и severity нет; Health является единственным medical state;
+- лечение требует одного врача;
+- материалы и лекарства не расходуются;
+- врач получает `skill.service`;
+- один этап длится один игровой час и восстанавливает до 25 Health;
+- near-death notification создаётся при `Health < 25`;
+- legacy recipe Hospital: 3 stone + 3 iron + 3 crystal + 1 gold;
+- legacy research: Service 7 + Food 2;
+- legacy construction grants: Metallurgy 7 + Service 3;
+- scripts содержат четыре patient places, одного doctor и один active treatment;
+- старые automatic threshold 97%, notification threshold 50% и service-dependent treatment не переносятся автоматически.
+
+Открытые admission/capacity/doctor/queue/interruption/energy rules: Q-054, `health-hospital-and-treatment.md`, `open-questions-054-hospital.md`.
 
 ## Подтверждённые combat-content решения
 
@@ -66,6 +82,15 @@
 
 ## Источники
 
+Hospital:
+
+- `scripts/misc/techtreetunes.tcl`;
+- `scripts/classes/work/krankenhaus.tcl`;
+- `scripts/classes/zwerg/z_work_prod.tcl`;
+- `scripts/classes/zwerg/z_spare_main.tcl`;
+- `scripts/classes/zwerg/z_spare_procs.tcl`;
+- `scripts/classes/zwerg/z_events.tcl`.
+
 Combat:
 
 - `scripts/misc/techtreetunes.tcl`;
@@ -87,7 +112,7 @@ Mobility:
 3. #136/#137 — doors/transport runtime.
 4. #150/#151 — lifecycle/appearance.
 5. #129/#138/#132 — основной combat scope.
-6. #130–#133 — health/effects/traps.
+6. Закрыть Q-054, затем реализовать #130; после этого #131–#133.
 7. #139–#141/#152 — factions/social.
 8. #177 — только после отдельного решения вернуть deferred fantasy content в scope.
 
