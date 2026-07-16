@@ -82,6 +82,9 @@
 - desired dish from researched catalog, затем fallback;
 - history = последние 10 meals;
 - `>=6 matches -> +UnlockedDishCount`, `>=6 mismatches -> -UnlockedDishCount`;
+- matched food Mood и positive diversity bonus могут поднимать Mood выше 50;
+- оба эффекта ограничиваются только текущим `MoodMaximum`;
+- fallback не даёт положительный базовый food Mood;
 - personal taste profiles не используются;
 - worker только для active cooking order;
 - Cooking влияет только на скорость, не на output/effects;
@@ -142,10 +145,9 @@
 См. `../open-questions.md`:
 
 - Q-014 — balance values;
-- Q-034–Q-037 — research/farm lifecycle;
-- Q-040 — food Mood cap 50.
+- Q-034–Q-037 — research/farm lifecycle.
 
-Q-041–Q-046 закрыты и перенесены в соответствующие design-файлы.
+Q-039–Q-046 закрыты и перенесены в соответствующие design-файлы.
 
 ## Связанные issues
 
