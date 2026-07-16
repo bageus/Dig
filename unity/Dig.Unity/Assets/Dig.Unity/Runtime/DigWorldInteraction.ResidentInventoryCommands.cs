@@ -13,7 +13,7 @@ namespace Dig.Unity
                 return;
             }
 
-            Result result = _terrainSession!.UseResidentInventoryItem(
+            Result result = _terrainSession!.UseResidentInventoryItemWithSlotGuard(
                 decision.ActorId.Value.ToString(),
                 decision.TargetEntityId.Value.ToString(),
                 _simulation!.CurrentTick);
