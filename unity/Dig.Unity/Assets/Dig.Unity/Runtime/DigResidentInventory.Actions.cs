@@ -7,8 +7,10 @@ namespace Dig.Unity
 {
     internal sealed partial class DigTerrainWorkSession
     {
-        private DropResidentInventoryStackHandler? _residentInventoryDrop;
-        private UseResidentInventoryItemHandler? _residentInventoryUse;
+        private DropResidentInventoryStackHandler? _residentBuildingInventoryDrop;
+        private DropResidentInventoryStackHandler? _residentTerrainInventoryDrop;
+        private UseResidentInventoryItemHandler? _residentBuildingInventoryUse;
+        private UseResidentInventoryItemHandler? _residentTerrainInventoryUse;
 
         internal Result DropResidentInventoryStack(
             string residentId,
@@ -17,11 +19,16 @@ namespace Dig.Unity
             long tick)
         {
             EnsureResidentInventoryActionsInitialized();
-            return _residentInventoryDrop!.Handle(new DropResidentInventoryStackCommand(
-                ParseInventoryEntityId(residentId, nameof(residentId)),
-                ParseInventoryEntityId(stackId, nameof(stackId)),
-                destination,
-                tick));
+            EntityId actor = ParseInventoryEntityId(residentId, nameof(residentId));
+            EntityId stack = ParseInventoryEntityId(stackId, nameof(stackId));
+            DropResidentInventoryStackHandler? handler = ResolveResidentInventoryDrop(stack);
+            return handler == null
+                ? Result.Failure(InventoryErrors.StackNotFound)
+                : handler.Handle(new DropResidentInventoryStackCommand(
+                    actor,
+                    stack,
+                    destination,
+                    tick));
         }
 
         internal Result UseResidentInventoryItem(
@@ -30,15 +37,23 @@ namespace Dig.Unity
             long tick)
         {
             EnsureResidentInventoryActionsInitialized();
-            return _residentInventoryUse!.Handle(new UseResidentInventoryItemCommand(
-                ParseInventoryEntityId(residentId, nameof(residentId)),
-                ParseInventoryEntityId(stackId, nameof(stackId)),
-                tick));
+            EntityId actor = ParseInventoryEntityId(residentId, nameof(residentId));
+            EntityId stack = ParseInventoryEntityId(stackId, nameof(stackId));
+            UseResidentInventoryItemHandler? handler = ResolveResidentInventoryUse(stack);
+            return handler == null
+                ? Result.Failure(InventoryErrors.StackNotFound)
+                : handler.Handle(new UseResidentInventoryItemCommand(
+                    actor,
+                    stack,
+                    tick));
         }
 
         private void EnsureResidentInventoryActionsInitialized()
         {
-            if (_residentInventoryDrop != null && _residentInventoryUse != null)
+            if (_residentBuildingInventoryDrop != null
+                && _residentTerrainInventoryDrop != null
+                && _residentBuildingInventoryUse != null
+                && _residentTerrainInventoryUse != null)
             {
                 return;
             }
@@ -49,12 +64,44 @@ namespace Dig.Unity
                     "Resident inventory actions require building inventory state.");
             }
 
-            _residentInventoryDrop = new DropResidentInventoryStackHandler(
+            _residentBuildingInventoryDrop = new DropResidentInventoryStackHandler(
                 _buildingInventoryRepository,
                 _worldSession.Journal);
-            _residentInventoryUse = new UseResidentInventoryItemHandler(
+            _residentTerrainInventoryDrop = new DropResidentInventoryStackHandler(
+                _inventoryRepository,
+                _worldSession.Journal);
+            _residentBuildingInventoryUse = new UseResidentInventoryItemHandler(
                 _buildingInventoryRepository,
                 _worldSession.Journal);
+            _residentTerrainInventoryUse = new UseResidentInventoryItemHandler(
+                _inventoryRepository,
+                _worldSession.Journal);
+        }
+
+        private DropResidentInventoryStackHandler? ResolveResidentInventoryDrop(
+            EntityId stackId)
+        {
+            if (_buildingInventoryRepository?.Get().GetStack(stackId) != null)
+            {
+                return _residentBuildingInventoryDrop;
+            }
+
+            return _inventoryRepository.Get().GetStack(stackId) != null
+                ? _residentTerrainInventoryDrop
+                : null;
+        }
+
+        private UseResidentInventoryItemHandler? ResolveResidentInventoryUse(
+            EntityId stackId)
+        {
+            if (_buildingInventoryRepository?.Get().GetStack(stackId) != null)
+            {
+                return _residentBuildingInventoryUse;
+            }
+
+            return _inventoryRepository.Get().GetStack(stackId) != null
+                ? _residentTerrainInventoryUse
+                : null;
         }
 
         private static EntityId ParseInventoryEntityId(
