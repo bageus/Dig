@@ -97,7 +97,7 @@
 
 - **Q-047 — ANSWERED:** cosmetic role hats, identity cap, aging hair и обязательная смена перед работой.
 - **Q-048 — ANSWERED:** grave/return/rejuvenation rules и recipes подтверждены.
-- **Q-049 — OPEN:** Energy allocation, class compatibility и source lifecycle.
+- **Q-049 — ANSWERED:** один source на consumer; exact/minimum higher class; nearest tie-break; fuel stock по demand; ручная генерация без stock; встроенный хомяк.
 - **Q-050 — OPEN:** цвет занятого qualified researcher, coal weight и связанные research edge cases.
 - **Q-051 — PARTIALLY_ANSWERED:** ladder/elevator policy утверждена, emergency climb destination остаётся открытым.
 - **Q-052 — OPEN:** active partnership conflict после возвращения умершего партнёра.
@@ -110,4 +110,5 @@
 | 2026-07-16 | Q-039–Q-046 | cooking, food Mood, leisure, society, school, sleep, ecology, doors |
 | 2026-07-16 | Q-035 | qualified resident лично выполняет Research job |
 | 2026-07-16 | Q-047–Q-048 | role appearance, grave, return, rejuvenation и recipes |
+| 2026-07-16 | Q-049 | deterministic source binding, class fallback, stored fuel batches, live manual source и embedded hamster |
 | 2026-07-16 | Q-050–Q-051 | queued research, ore weights, no XP/material cost, ladders/elevators |
