@@ -13,7 +13,7 @@
 | 3 | Research eligibility/UI | #128 | Q-034/Q-036/Q-050 закрыты; implementation открыта |
 | 4 | Основной боевой equipment catalog | #129 | Q-053 закрыт; implementation открыта |
 | 5 | Дополнительное fantasy/creature equipment | #177 | deferred backlog; вне текущего runtime scope |
-| 6 | Health/больница | #130 | core rules подтверждены; Q-054 lifecycle/edge cases открыты |
+| 6 | Health/больница | #130 | Q-054 закрыт; implementation открыта |
 | 7 | Зелья | #131 | открыто; rejuvenation recipe подтверждён |
 | 8 | Status Effects | #132 | открыто |
 | 9 | Ловушки | #133 | открыто |
@@ -40,18 +40,26 @@
 ## Подтверждённые hospital решения
 
 - отдельных травм, ранений и severity нет; Health является единственным medical state;
-- лечение требует одного врача;
+- automatic admission создаётся при `Health < 80`;
+- при `Health < 25` resident немедленно прерывает работу;
+- при некритическом Health лечение выполняется только в свободное время;
+- одна больница имеет 1 patient place, 1 temporary adult doctor и 1 active treatment;
+- minimum doctor Service threshold отсутствует;
+- очередь: `Health asc -> WaitingSince asc -> ResidentId asc`;
 - материалы и лекарства не расходуются;
-- врач получает `skill.service`;
-- один этап длится один игровой час и восстанавливает до 25 Health;
+- лечение непрерывно восстанавливает максимум 25 Health за игровой час;
+- partial Health/progress сохраняются при interruption, doctor loss и energy loss;
+- stages автоматически повторяются до Health 100;
+- любой живой взрослый самостоятельно идёт в больницу;
+- дети исключены, беременные лечатся по обычным правилам;
+- natural Health regeneration действует при еде, сне и отдыхе;
+- Hospital требует энергию класса 2;
 - near-death notification создаётся при `Health < 25`;
-- legacy recipe Hospital: 3 stone + 3 iron + 3 crystal + 1 gold;
+- legacy recipe: 3 stone + 3 iron + 3 crystal + 1 gold;
 - legacy research: Service 7 + Food 2;
-- legacy construction grants: Metallurgy 7 + Service 3;
-- scripts содержат четыре patient places, одного doctor и один active treatment;
-- старые automatic threshold 97%, notification threshold 50% и service-dependent treatment не переносятся автоматически.
+- legacy construction grants: Metallurgy 7 + Service 3.
 
-Открытые admission/capacity/doctor/queue/interruption/energy rules: Q-054, `health-hospital-and-treatment.md`, `open-questions-054-hospital.md`.
+Точные regeneration rates, energy consumption и Service grant относятся к Q-014. Полная спецификация: `health-hospital-and-treatment.md`.
 
 ## Подтверждённые combat-content решения
 
@@ -112,7 +120,7 @@ Mobility:
 3. #136/#137 — doors/transport runtime.
 4. #150/#151 — lifecycle/appearance.
 5. #129/#138/#132 — основной combat scope.
-6. Закрыть Q-054, затем реализовать #130; после этого #131–#133.
+6. #130 — Health/Hospital implementation; затем #131–#133.
 7. #139–#141/#152 — factions/social.
 8. #177 — только после отдельного решения вернуть deferred fantasy content в scope.
 
