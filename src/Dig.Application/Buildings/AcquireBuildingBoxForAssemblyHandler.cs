@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Dig.Application.Inventory;
+using Dig.Application.Jobs;
 using Dig.Application.Messaging;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
