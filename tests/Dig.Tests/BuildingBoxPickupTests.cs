@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
+using Dig.Application.Saving;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
@@ -78,6 +80,37 @@ public sealed class BuildingBoxPickupTests
         Assert.Equal(ItemLocation.InWorld(harness.SourceCell), stack.Location);
     }
 
+    [Fact]
+    public void Pickup_job_definition_round_trips_through_stable_save_codec()
+    {
+        EntityId jobId = Id('3');
+        EntityId stackId = Id('1');
+        BuildingBoxPickupJobDefinition definition = new BuildingBoxPickupJobDefinition(
+            jobId,
+            stackId,
+            new CellId(4, 5),
+            priority: 700,
+            createdTick: 12,
+            new JobRetryPolicy(maximumRetries: 2, retryDelayTicks: 9),
+            new[] { Id('9') });
+        BuildingBoxPickupJobSaveCodec codec = new BuildingBoxPickupJobSaveCodec();
+
+        JobDefinitionSaveData encoded = codec.Encode(definition);
+        encoded.TypeId = codec.TypeId;
+        BuildingBoxPickupJobDefinition decoded =
+            Assert.IsType<BuildingBoxPickupJobDefinition>(codec.Decode(encoded));
+
+        Assert.Equal("job.building_box_pickup.v1", codec.TypeId);
+        Assert.Equal(jobId, decoded.Id);
+        Assert.Equal(stackId, decoded.StackId);
+        Assert.Equal(new CellId(4, 5), decoded.SourceCell);
+        Assert.Equal(700, decoded.Priority);
+        Assert.Equal(12, decoded.CreatedTick);
+        Assert.Equal(2, decoded.RetryPolicy.MaximumRetries);
+        Assert.Equal(9, decoded.RetryPolicy.RetryDelayTicks);
+        Assert.Equal(new List<EntityId> { Id('9') }, decoded.Dependencies);
+    }
+
     internal static EntityId Id(char prefix)
     {
         return EntityId.Parse(prefix + new string('0', 30) + "1");
@@ -107,7 +140,7 @@ internal sealed class BuildingBoxPickupHarness
             StackId,
             BoxItemId,
             quantity: 1,
-            ItemLocation.InWorld(SourceCell),
+            location: ItemLocation.InWorld(SourceCell),
             tick: 0).IsSuccess);
         InventoryRepository = new InMemoryInventoryRepository(Inventory);
         JobRepository = new InMemoryJobRepository();
