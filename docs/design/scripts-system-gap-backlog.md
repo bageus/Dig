@@ -11,7 +11,7 @@
 | 1 | Полное technology tree | #126 | согласованный участок описан, продолжение открыто |
 | 2 | Энергия | #127 | Q-049 закрыт; implementation открыта |
 | 3 | Research eligibility/UI | #128 | Q-034/Q-036/Q-050 закрыты; implementation открыта |
-| 4 | Боевой equipment catalog | #129 | открыто |
+| 4 | Боевой equipment catalog | #129 | skills/slots/no-ammo/no-wear решены; loot/exclusions pending Q-053 |
 | 5 | Травмы/больница | #130 | открыто |
 | 6 | Зелья | #131 | открыто; rejuvenation recipe подтверждён |
 | 7 | Status Effects | #132 | открыто |
@@ -47,7 +47,21 @@
 - Reithamster/Hoverboard автоматически активируются из Inventory на дальнем пути;
 - legacy использует одинаковые engine `speedtype 3/2`, Hoverboard имеет приоритет;
 - numeric personal-mobility speed в TCL отсутствует;
-- новая active pair сохраняется после return прежнего партнёра, старая relation остаётся historical.
+- новая active pair сохраняется после return прежнего партнёра, старая relation остаётся historical;
+- Оружейная кузница, Оружейная фабрика и Dojo принимают любой один из пяти combat skills на threshold;
+- Меч и Боевой топор используют `skill.two_handed_combat`;
+- Рогатка, Лук и Ружьё используют `skill.ranged_combat`;
+- Дубина и Световой меч используют `skill.one_handed_combat`;
+- Металлический и Кристаллический щиты используют `skill.defense`;
+- щит совместим только с Мечом, Световым мечом и Рогаткой;
+- производимое ranged equipment не расходует ammo, все десять предметов не изнашиваются.
+
+## Открытая часть Q-053
+
+- выбрать `loot-only` или `excluded` для 32 fantasy/creature classes;
+- подтвердить исключение восьми special-mode classes и `Bombe` из colony mode.
+
+Полные списки: `content/legacy-combat-equipment-appendix.md`.
 
 ## Источники mobility recovery
 
@@ -62,7 +76,7 @@
 2. #127 — energy runtime.
 3. #136/#137 — doors/transport runtime.
 4. #150/#151 — lifecycle/appearance.
-5. #129/#138/#132 — combat.
+5. Закрыть Q-053 selection, затем #129/#138/#132 — combat.
 6. #130–#133 — health/effects/traps.
 7. #139–#141/#152 — factions/social.
 
