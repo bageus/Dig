@@ -5,6 +5,11 @@ namespace Dig.Unity
 {
     public abstract partial class DigAgentSimulationDriverBase
     {
+        internal void RefreshEquipmentPresentation()
+        {
+            RefreshEquipmentVisuals();
+        }
+
         protected void RefreshEquipmentVisuals()
         {
             if (AgentRenderer == null
