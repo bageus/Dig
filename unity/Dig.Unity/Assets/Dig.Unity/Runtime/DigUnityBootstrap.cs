@@ -100,6 +100,8 @@ namespace Dig.Unity
                 GetOrAdd<DigStockpileRenderer>(gameObject);
             DigNavigationRouteRenderer routeRenderer =
                 GetOrAdd<DigNavigationRouteRenderer>(gameObject);
+            DigTunnelDemoRenderer tunnelRenderer =
+                GetOrAdd<DigTunnelDemoRenderer>(gameObject);
             GetOrAdd<DigOverlayHotkeys>(gameObject);
             DigWorldInteraction interaction = GetOrAdd<DigWorldInteraction>(gameObject);
             DigAgentSimulationDriver simulation =
@@ -120,9 +122,10 @@ namespace Dig.Unity
             hud.SetBuildingControls(terrainSession, buildingRenderer, jobRenderer);
             hud.SetStatus("Starting renderers...");
 
-            _startupStage = "rendering world";
+            _startupStage = "rendering world and layered tunnels";
             RenderSettings.ambientLight = new Color(0.58f, 0.60f, 0.66f, 1f);
             worldRenderer.Render(world);
+            tunnelRenderer.Initialize(agentSession.TunnelVolume);
 
             _startupStage = "rendering residents";
             agentRenderer.Render(agents, movementDuration: 0f);
@@ -153,6 +156,7 @@ namespace Dig.Unity
                 stockpileRenderer,
                 simulation,
                 hud);
+            interaction.SetTunnelMovement(tunnelRenderer);
             simulation.Initialize(
                 worldSession,
                 worldRenderer,
@@ -168,13 +172,13 @@ namespace Dig.Unity
             interaction.enabled = true;
             simulation.enabled = true;
             hud.SetStatus(
-                "Running. Ctrl+mouse orbits, wheel zooms, WASD pans, Home resets view.");
+                "Select a dwarf, then click a tunnel cell. Ctrl+mouse orbits; Z has four layers.");
             if (logStartup)
             {
                 Debug.Log(
                     $"Dig Unity runtime started with {agents.Count} residents, " +
                     $"{jobs.Count} jobs, {buildings.Count} buildings and a " +
-                    $"{world.Width}x{world.Height} world.",
+                    $"{world.Width}x{world.Height}x4 tunnel volume.",
                     this);
             }
         }
