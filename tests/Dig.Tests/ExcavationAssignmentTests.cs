@@ -1,4 +1,3 @@
-using System.Linq;
 using Dig.Application.Jobs;
 using Dig.Domain.Core;
 using Dig.Domain.Jobs;
@@ -94,8 +93,9 @@ public sealed class ExcavationAssignmentTests
         Assert.Equal(JobStatus.Available, job.Status);
         Assert.Equal(JobStageKind.None, job.Stage);
         Assert.Null(job.AssignedAgentId);
-        Assert.Empty(repository.Get().GetReservations()
-            .Where(value => value.JobId == jobId));
+        Assert.DoesNotContain(
+            repository.Get().GetReservations(),
+            value => value.JobId == jobId);
     }
 
     private static void AddAvailable(JobSystem jobs, EntityId id, CellId cell)
