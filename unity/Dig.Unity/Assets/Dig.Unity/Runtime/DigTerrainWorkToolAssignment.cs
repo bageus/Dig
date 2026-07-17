@@ -2,12 +2,25 @@ using System;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Infrastructure.InMemory;
+using Dig.Presentation.Jobs;
 
 namespace Dig.Unity
 {
     internal sealed partial class DigTerrainWorkSession
     {
+        private readonly JobToolPreparationModeControl _toolPreparationModeControl =
+            new JobToolPreparationModeControl();
         private bool _toolAwareJobAssignmentInitialized;
+
+        internal JobToolPreparationMode SelectedToolPreparationMode =>
+            _toolPreparationModeControl.Mode;
+
+        internal string ToolPreparationModeLabel => _toolPreparationModeControl.Label;
+
+        internal bool SelectToolPreparationMode(JobToolPreparationMode mode)
+        {
+            return _toolPreparationModeControl.Select(mode);
+        }
 
         internal void InitializeToolAwareJobAssignment(InMemoryExecutionJournal journal)
         {
@@ -64,7 +77,8 @@ namespace Dig.Unity
                 inventoryAware,
                 journal,
                 preparation,
-                journal);
+                journal,
+                _toolPreparationModeControl);
         }
     }
 }
