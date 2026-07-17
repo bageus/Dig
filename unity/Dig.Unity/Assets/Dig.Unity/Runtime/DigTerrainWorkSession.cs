@@ -128,7 +128,10 @@ namespace Dig.Unity
                 journal,
                 assignmentReportSink: journal)
                 .Handle(new AssignAvailableJobsCommand(tick: 0));
-            AdvanceJobHandler advance = new AdvanceJobHandler(jobs, journal);
+            AdvanceJobHandler advance = new AdvanceJobHandler(
+                jobs,
+                journal,
+                new SuggestedToolJobExecutionReadinessPolicy(journal));
             foreach (JobSnapshot job in jobs.Get().GetAll())
             {
                 if (job.Status == JobStatus.Claimed)
