@@ -14,6 +14,7 @@ namespace Dig.Unity
         private const float HudY = 16f;
         private const float HudWidth = 420f;
         private const float HudHeight = 280f;
+        private const float CollapsedHudHeight = 34f;
 
         private WorldViewModel? _world;
         private IReadOnlyList<AgentViewModel> _agents =
@@ -23,6 +24,7 @@ namespace Dig.Unity
         private DigStorageStatus? _storageStatus;
         private DigAgentSimulationDriver? _simulation;
         private Vector2 _scrollPosition;
+        private bool _isCollapsed;
         private long _tick;
         private string _status = "Starting runtime...";
 
@@ -50,7 +52,7 @@ namespace Dig.Unity
         internal bool ContainsScreenPoint(Vector3 screenPoint)
         {
             Vector2 guiPoint = new Vector2(screenPoint.x, Screen.height - screenPoint.y);
-            return new Rect(HudX, HudY, HudWidth, HudHeight).Contains(guiPoint);
+            return new Rect(HudX, HudY, HudWidth, CurrentHudHeight).Contains(guiPoint);
         }
 
         public void SetSelection(WorldCellViewModel? selected)
@@ -90,19 +92,28 @@ namespace Dig.Unity
             _status = status;
         }
 
+        private float CurrentHudHeight => _isCollapsed
+            ? CollapsedHudHeight
+            : HudHeight;
+
         private void OnGUI()
         {
             GUILayout.BeginArea(
-                new Rect(HudX, HudY, HudWidth, HudHeight),
+                new Rect(HudX, HudY, HudWidth, CurrentHudHeight),
                 GUI.skin.box);
+            DrawHudHeader();
+            if (_isCollapsed)
+            {
+                GUILayout.EndArea();
+                return;
+            }
+
             _scrollPosition = GUILayout.BeginScrollView(_scrollPosition);
-            GUILayout.Label("DIG");
             if (_world != null)
             {
                 GUILayout.Label($"World: {_world.Width}×{_world.Height}×4 | v{_world.Version}");
             }
 
-            GUILayout.Label($"Residents: {_agents.Count} | jobs: {JobCount} | tick: {_tick}");
             DrawTimeControls();
             DrawToolAssignmentControls();
             DrawJobAttentionSummary();
@@ -120,6 +131,19 @@ namespace Dig.Unity
             GUILayout.Label(_status);
             GUILayout.EndScrollView();
             GUILayout.EndArea();
+        }
+
+        private void DrawHudHeader()
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(
+                $"DIG | residents {_agents.Count} | jobs {JobCount} | tick {_tick}");
+            if (GUILayout.Button(_isCollapsed ? "+" : "-", GUILayout.Width(28f)))
+            {
+                _isCollapsed = !_isCollapsed;
+            }
+
+            GUILayout.EndHorizontal();
         }
 
         private void DrawTimeControls()
