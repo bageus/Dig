@@ -4,7 +4,7 @@ namespace Dig.Unity
 {
     public sealed partial class DigHudOverlay
     {
-        private void LateUpdate()
+        private void RefreshResidentInventorySelection()
         {
             if (_selectedAgent == null)
             {
