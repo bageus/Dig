@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Domain.World;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Inventory;
 using UnityEngine;
@@ -108,6 +109,20 @@ namespace Dig.Unity
 
             position = default;
             return false;
+        }
+
+        internal bool AnimateRoute(
+            string agentId,
+            IReadOnlyList<SpatialCellId> route,
+            float stepDuration)
+        {
+            if (!_agents.TryGetValue(agentId, out DigAgentVisual? agent))
+            {
+                return false;
+            }
+
+            agent.PlayRoute(route, stepDuration);
+            return true;
         }
 
         public DigAgentVisual? Select(DigAgentVisual? agent)
