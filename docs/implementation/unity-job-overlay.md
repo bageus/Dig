@@ -80,6 +80,8 @@ Left-clicking a marker or choosing an attention row selects the job and shows:
 - retry state and failure reason;
 - all active reservation keys and acquisition ticks.
 
+`JobSelectionProjection` rebinds the selected stable Job id to the latest immutable model whenever the jobs collection is replaced. The HUD therefore follows status, stage, readiness and reservation refreshes instead of retaining an older snapshot; selection is cleared when the Job is no longer projected. The Unity adapter performs this scan only when the collection reference changes and does not allocate per frame.
+
 The diagnostic is textual and does not rely on color alone. Selecting a cell or resident clears job selection. Selecting a job clears cell and resident selection.
 
 ## Validation
@@ -93,6 +95,7 @@ Engine-independent tests verify:
 - attention rows filter ready Jobs and use stable priority/id ordering;
 - the attention summary is bounded and reports hidden rows;
 - compact readiness, worker and reason details are preserved;
+- stable Job selection rebinds to the latest immutable model and clears when removed;
 - claimed jobs expose Job, Agent, Tool, Position and Designation reservations;
 - completed jobs expose no active ledger entries.
 
