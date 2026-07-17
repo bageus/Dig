@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Dig.Application.World;
 using Dig.Domain.Core;
+using Dig.Domain.Navigation;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Dig.Presentation.World;
@@ -63,9 +64,8 @@ namespace Dig.Unity
                 materials,
                 rock,
                 explored: true).Value;
-            CarveDemoCavern(world, air, width, height);
-            world.SetDigDesignation(new CellId(width - 1, 3), true, tick: 2);
-            world.SetDigDesignation(new CellId(width - 1, 4), true, tick: 3);
+            TunnelNavigationVolume tunnel = TunnelNavigationVolume.CreateDemo(width, height);
+            CarveDemoAir(world, air, tunnel);
             world.DequeueUncommittedEvents();
 
             InMemoryWorldRepository repository = new InMemoryWorldRepository(world);
@@ -78,7 +78,7 @@ namespace Dig.Unity
                 repository,
                 air,
                 journal,
-                tick: 3);
+                tick: 1);
         }
 
         public WorldViewModel LoadView()
@@ -98,37 +98,60 @@ namespace Dig.Unity
 
         public Result ToggleDesignation(WorldCellViewModel cell)
         {
+            return SetDesignation(new CellId(cell.X, cell.Y), !cell.IsDesignated);
+        }
+
+        internal Result SetDesignation(CellId cell, bool active)
+        {
             _tick = checked(_tick + 1);
             return _designationHandler.Handle(new DesignateDiggingCommand(
-                new CellId(cell.X, cell.Y),
-                !cell.IsDesignated,
+                cell,
+                active,
                 _tick));
         }
 
-        private static void CarveDemoCavern(
+        private static void CarveDemoAir(
             WorldState world,
             MaterialId air,
-            int width,
-            int height)
+            TunnelNavigationVolume tunnel)
         {
+            TunnelDemoLayout layout = tunnel.DemoLayout
+                ?? throw new InvalidOperationException("The tunnel demo layout is required.");
             CellState empty = new CellState(
                 air,
                 CellDesignation.None,
                 isExplored: true,
                 damage: 0,
                 temperature: 20);
-            List<TerrainChange> changes = new List<TerrainChange>();
-            for (int y = 1; y < height - 1; y++)
+            HashSet<CellId> airCells = new HashSet<CellId>();
+            for (int y = 0; y < layout.SurfaceY; y++)
             {
-                for (int x = 1; x < width - 1; x++)
+                for (int x = 0; x < tunnel.Width; x++)
                 {
-                    if (IsRockFeature(x, y, width, height))
-                    {
-                        continue;
-                    }
-
-                    changes.Add(new TerrainChange(new CellId(x, y), empty));
+                    airCells.Add(new CellId(x, y));
                 }
+            }
+
+            foreach (SpatialCellId cell in tunnel.Cells)
+            {
+                if (cell.Z == 0)
+                {
+                    airCells.Add(cell.Projection);
+                }
+            }
+
+            for (int y = layout.CaveCeilingY + 1; y <= layout.CaveFloorY; y++)
+            {
+                for (int x = layout.CaveMinX; x <= layout.CaveMaxX; x++)
+                {
+                    airCells.Add(new CellId(x, y));
+                }
+            }
+
+            List<TerrainChange> changes = new List<TerrainChange>(airCells.Count);
+            foreach (CellId cell in airCells)
+            {
+                changes.Add(new TerrainChange(cell, empty));
             }
 
             Result<WorldMutationResult> result = world.ApplyTerrainChanges(changes, tick: 1);
@@ -136,14 +159,6 @@ namespace Dig.Unity
             {
                 throw new InvalidOperationException(result.Error!.ToString());
             }
-        }
-
-        private static bool IsRockFeature(int x, int y, int width, int height)
-        {
-            bool centralPillar = x == width / 2 && y >= 3 && y <= height - 4;
-            bool leftPillar = x == width / 3 && y == height / 2;
-            bool rightPillar = x == (width * 2) / 3 && y == (height / 2) + 1;
-            return centralPillar || leftPillar || rightPillar;
         }
     }
 }
