@@ -6,43 +6,75 @@ namespace Dig.Unity
     [DisallowMultipleComponent]
     public sealed class DigCameraController : MonoBehaviour
     {
+        private const float SideViewYaw = 180f;
+
         [SerializeField]
         private float panSpeed = 8f;
 
         [SerializeField]
-        private float zoomSpeed = 4f;
+        private float zoomSpeed = 3f;
 
         [SerializeField]
-        private float minimumZoom = 4f;
+        private float minimumDistance = 6f;
 
         [SerializeField]
-        private float maximumZoom = 30f;
+        private float maximumDistance = 80f;
+
+        [SerializeField]
+        private float verticalFieldOfView = 42f;
+
+        [SerializeField]
+        private float framingPadding = 1.18f;
+
+        [SerializeField]
+        private float orbitDegreesPerPixel = 0.18f;
+
+        [SerializeField]
+        private float minimumYaw = -32f;
+
+        [SerializeField]
+        private float maximumYaw = 32f;
+
+        [SerializeField]
+        private float minimumPitch = -22f;
+
+        [SerializeField]
+        private float maximumPitch = 28f;
 
         private Camera? _camera;
+        private SideViewCameraOrbitState? _orbit;
         private Vector3 _focus;
-        private float _yaw;
-        private const float Pitch = 55f;
-        private const float Distance = 25f;
+        private Vector3 _previousMousePosition;
+        private float _distance = 25f;
+        private bool _orbitInputActive;
 
         public void Initialize(Camera targetCamera, WorldViewModel world)
         {
             _camera = targetCamera;
-            _camera.orthographic = true;
+            _camera.orthographic = false;
+            _camera.fieldOfView = verticalFieldOfView;
+            _orbit = CreateOrbit();
             Frame(world);
+            _previousMousePosition = Input.mousePosition;
         }
 
         public void Frame(WorldViewModel world)
         {
-            _focus = new Vector3(
-                (world.Width - 1) * 0.5f,
-                0f,
-                (world.Height - 1) * 0.5f);
+            _focus = DigSideViewProjection.WorldCenter(world.Width, world.Height);
+            EnsureOrbit().Reset();
             if (_camera != null)
             {
-                _camera.orthographicSize = Mathf.Clamp(
-                    Mathf.Max(world.Width, world.Height) * 0.58f,
-                    minimumZoom,
-                    maximumZoom);
+                _camera.orthographic = false;
+                _camera.fieldOfView = verticalFieldOfView;
+                _distance = Mathf.Clamp(
+                    SideViewCameraFraming.CalculateDistance(
+                        world.Width,
+                        world.Height,
+                        Mathf.Max(0.1f, _camera.aspect),
+                        verticalFieldOfView,
+                        framingPadding),
+                    minimumDistance,
+                    maximumDistance);
             }
 
             ApplyPose();
@@ -50,7 +82,7 @@ namespace Dig.Unity
 
         internal void Focus(Vector3 worldPosition)
         {
-            _focus = new Vector3(worldPosition.x, 0f, worldPosition.z);
+            _focus = new Vector3(worldPosition.x, worldPosition.y, 0f);
             ApplyPose();
         }
 
@@ -61,34 +93,47 @@ namespace Dig.Unity
                 return;
             }
 
-            HandleRotation();
+            Vector3 mousePosition = Input.mousePosition;
+            HandleOrbit(mousePosition);
+            HandleReset();
             HandleZoom();
             HandlePan();
+            _previousMousePosition = mousePosition;
             ApplyPose();
         }
 
-        private void HandleRotation()
+        private void HandleOrbit(Vector3 mousePosition)
         {
-            if (Input.GetKeyDown(KeyCode.Q))
+            bool controlPressed = IsControlPressed();
+            if (controlPressed && _orbitInputActive)
             {
-                _yaw -= 90f;
+                Vector3 delta = mousePosition - _previousMousePosition;
+                EnsureOrbit().Rotate(
+                    delta.x,
+                    delta.y,
+                    orbitDegreesPerPixel);
             }
 
-            if (Input.GetKeyDown(KeyCode.E))
+            _orbitInputActive = controlPressed;
+        }
+
+        private void HandleReset()
+        {
+            if (Input.GetKeyDown(KeyCode.Home))
             {
-                _yaw += 90f;
+                EnsureOrbit().Reset();
             }
         }
 
         private void HandleZoom()
         {
             float wheel = Input.mouseScrollDelta.y;
-            if (Mathf.Abs(wheel) > 0.001f && _camera != null)
+            if (Mathf.Abs(wheel) > 0.001f)
             {
-                _camera.orthographicSize = Mathf.Clamp(
-                    _camera.orthographicSize - (wheel * zoomSpeed),
-                    minimumZoom,
-                    maximumZoom);
+                _distance = Mathf.Clamp(
+                    _distance - (wheel * zoomSpeed),
+                    minimumDistance,
+                    maximumDistance);
             }
         }
 
@@ -104,15 +149,36 @@ namespace Dig.Unity
                 KeyCode.DownArrow,
                 KeyCode.W,
                 KeyCode.UpArrow);
-            Quaternion heading = Quaternion.Euler(0f, _yaw, 0f);
-            Vector3 movement = (heading * Vector3.right * horizontal)
-                + (heading * Vector3.forward * vertical);
+            Vector3 movement = new Vector3(horizontal, vertical, 0f);
             if (movement.sqrMagnitude > 1f)
             {
                 movement.Normalize();
             }
 
-            _focus += movement * (panSpeed * Time.unscaledDeltaTime);
+            float distanceScale = Mathf.Max(0.4f, _distance / 25f);
+            _focus += movement
+                * (panSpeed * distanceScale * Time.unscaledDeltaTime);
+        }
+
+        private SideViewCameraOrbitState EnsureOrbit()
+        {
+            _orbit ??= CreateOrbit();
+            return _orbit;
+        }
+
+        private SideViewCameraOrbitState CreateOrbit()
+        {
+            return new SideViewCameraOrbitState(
+                minimumYaw,
+                maximumYaw,
+                minimumPitch,
+                maximumPitch);
+        }
+
+        private static bool IsControlPressed()
+        {
+            return Input.GetKey(KeyCode.LeftControl)
+                || Input.GetKey(KeyCode.RightControl);
         }
 
         private static float ReadAxis(
@@ -135,9 +201,29 @@ namespace Dig.Unity
                 return;
             }
 
-            Quaternion rotation = Quaternion.Euler(Pitch, _yaw, 0f);
+            SideViewCameraOrbitState orbit = EnsureOrbit();
+            Quaternion rotation = Quaternion.Euler(
+                orbit.Pitch,
+                SideViewYaw + orbit.Yaw,
+                0f);
             _camera.transform.rotation = rotation;
-            _camera.transform.position = _focus - (rotation * Vector3.forward * Distance);
+            _camera.transform.position = _focus
+                - (rotation * Vector3.forward * _distance);
+        }
+
+        private void OnValidate()
+        {
+            panSpeed = Mathf.Max(0.1f, panSpeed);
+            zoomSpeed = Mathf.Max(0.1f, zoomSpeed);
+            minimumDistance = Mathf.Max(1f, minimumDistance);
+            maximumDistance = Mathf.Max(minimumDistance + 1f, maximumDistance);
+            verticalFieldOfView = Mathf.Clamp(verticalFieldOfView, 20f, 80f);
+            framingPadding = Mathf.Max(1f, framingPadding);
+            orbitDegreesPerPixel = Mathf.Max(0.01f, orbitDegreesPerPixel);
+            minimumYaw = Mathf.Min(minimumYaw, maximumYaw - 1f);
+            maximumYaw = Mathf.Max(maximumYaw, minimumYaw + 1f);
+            minimumPitch = Mathf.Min(minimumPitch, maximumPitch - 1f);
+            maximumPitch = Mathf.Max(maximumPitch, minimumPitch + 1f);
         }
     }
 }

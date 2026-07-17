@@ -55,6 +55,47 @@ def runtime_files() -> list[Path]:
     return sorted(RUNTIME_ROOT.rglob("*.cs"))
 
 
+def check_side_view_contracts(texts: dict[Path, str]) -> list[str]:
+    camera_path = RUNTIME_ROOT / "DigCameraController.cs"
+    bootstrap_path = RUNTIME_ROOT / "DigUnityBootstrap.cs"
+    errors: list[str] = []
+    camera = texts.get(camera_path, "")
+    bootstrap = texts.get(bootstrap_path, "")
+
+    required_camera_fragments = (
+        "_camera.orthographic = false;",
+        "SideViewYaw + orbit.Yaw",
+        "KeyCode.LeftControl",
+        "KeyCode.RightControl",
+        "SideViewCameraFraming.CalculateDistance",
+    )
+    for fragment in required_camera_fragments:
+        if fragment not in camera:
+            errors.append(
+                f"{camera_path.relative_to(ROOT)}: missing side-view camera contract "
+                f"fragment {fragment!r}"
+            )
+
+    if "_camera.orthographic = true;" in camera:
+        errors.append(
+            f"{camera_path.relative_to(ROOT)}: side-view camera must remain perspective"
+        )
+
+    required_bootstrap_fragments = (
+        "ConfigureSideViewRoot();",
+        "Quaternion.Euler(90f, 0f, 0f)",
+        "Ctrl+mouse orbits",
+    )
+    for fragment in required_bootstrap_fragments:
+        if fragment not in bootstrap:
+            errors.append(
+                f"{bootstrap_path.relative_to(ROOT)}: missing side-view world contract "
+                f"fragment {fragment!r}"
+            )
+
+    return errors
+
+
 def main() -> int:
     files = runtime_files()
     if not files:
@@ -71,7 +112,7 @@ def main() -> int:
         for match in INTERNAL_TYPE_DECLARATION.finditer(text)
     }
 
-    errors: list[str] = []
+    errors: list[str] = check_side_view_contracts(texts)
     messages: dict[tuple[str, str], list[Path]] = {}
     for path, text in texts.items():
         relative = path.relative_to(ROOT)
