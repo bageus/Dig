@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Domain.Navigation;
 using Dig.Presentation.World;
 using UnityEngine;
 
@@ -15,6 +16,8 @@ namespace Dig.Unity
         private readonly HashSet<Vector2Int> _visibleCells =
             new HashSet<Vector2Int>();
         private readonly HashSet<Vector2Int> _visibleChunks =
+            new HashSet<Vector2Int>();
+        private readonly HashSet<Vector2Int> _tunnelCutaway =
             new HashSet<Vector2Int>();
         private readonly List<Vector2Int> _removedCells =
             new List<Vector2Int>();
@@ -59,6 +62,35 @@ namespace Dig.Unity
             RemoveMissingCells();
             RemoveMissingChunks();
             RestoreSelection(selectedCoordinates);
+            ApplyTunnelCutaway();
+        }
+
+        internal void SetTunnelCutaway(TunnelNavigationVolume volume)
+        {
+            if (volume == null)
+            {
+                throw new ArgumentNullException(nameof(volume));
+            }
+
+            _tunnelCutaway.Clear();
+            foreach (Dig.Domain.World.SpatialCellId cell in volume.Cells)
+            {
+                _tunnelCutaway.Add(new Vector2Int(cell.X, cell.Y));
+            }
+
+            TunnelDemoLayout? layout = volume.DemoLayout;
+            if (layout != null)
+            {
+                for (int x = layout.CaveMinX; x <= layout.CaveMaxX; x++)
+                {
+                    for (int y = layout.CaveCeilingY; y <= layout.CaveFloorY; y++)
+                    {
+                        _tunnelCutaway.Add(new Vector2Int(x, y));
+                    }
+                }
+            }
+
+            ApplyTunnelCutaway();
         }
 
         public bool TryGetCell(RaycastHit hit, out DigCellVisual cell)
@@ -130,6 +162,19 @@ namespace Dig.Unity
             visual.transform.localPosition = new Vector3(cell.X, height * 0.5f, cell.Y);
             visual.transform.localScale = new Vector3(0.94f, height, 0.94f);
             visual.Configure(cell, ResolveColor(cell));
+        }
+
+        private void ApplyTunnelCutaway()
+        {
+            foreach (KeyValuePair<Vector2Int, DigCellVisual> pair in _cells)
+            {
+                bool visible = !_tunnelCutaway.Contains(pair.Key);
+                pair.Value.gameObject.SetActive(visible);
+                if (!visible && _selected == pair.Value)
+                {
+                    _selected = null;
+                }
+            }
         }
 
         private void RemoveMissingCells()

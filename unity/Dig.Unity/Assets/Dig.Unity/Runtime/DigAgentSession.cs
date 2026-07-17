@@ -5,6 +5,7 @@ using Dig.Application.Agents;
 using Dig.Application.Runtime;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
+using Dig.Domain.Navigation;
 using Dig.Domain.Runtime;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
@@ -70,9 +71,12 @@ namespace Dig.Unity
                     "The resident demo requires at least eight walkable cells.");
             }
 
+            TunnelNavigationVolume tunnelVolume = TunnelNavigationVolume.CreateDemo(
+                world.Width,
+                world.Height);
             InMemoryAgentRepository repository = new InMemoryAgentRepository();
             Dictionary<EntityId, int> routeIndices = new Dictionary<EntityId, int>();
-            AddDemoAgents(repository, routeIndices, walkable);
+            AddDemoAgents(repository, routeIndices, walkable, tunnelVolume);
             AgentBehaviorPolicy policy = AgentBehaviorPolicy.CreateDefault();
             InMemoryAgentDecisionContextProvider contexts =
                 new InMemoryAgentDecisionContextProvider(
@@ -93,7 +97,7 @@ namespace Dig.Unity
                     tickDuration: TimeSpan.FromMilliseconds(500)),
                 walkable,
                 routeIndices);
-            session.InitializeTunnelMovement(world.Width, world.Height, journal);
+            session.InitializeTunnelMovement(tunnelVolume, journal);
             return session;
         }
 
@@ -177,8 +181,11 @@ namespace Dig.Unity
         private static void AddDemoAgents(
             InMemoryAgentRepository repository,
             Dictionary<EntityId, int> routeIndices,
-            IReadOnlyList<WorldCellViewModel> walkable)
+            IReadOnlyList<WorldCellViewModel> walkable,
+            TunnelNavigationVolume tunnelVolume)
         {
+            TunnelDemoLayout layout = tunnelVolume.DemoLayout
+                ?? throw new InvalidOperationException("The tunnel demo layout is required.");
             string[] ids =
             {
                 "10000000000000000000000000000001",
@@ -187,10 +194,13 @@ namespace Dig.Unity
                 "10000000000000000000000000000004",
             };
             string[] names = { "Borin", "Dora", "Einar", "Fara" };
+            int surfaceWidth = layout.SurfaceMaxX - layout.SurfaceMinX + 1;
             for (int index = 0; index < names.Length; index++)
             {
                 int routeIndex = (index * walkable.Count) / names.Length;
-                WorldCellViewModel cell = walkable[routeIndex];
+                int x = layout.SurfaceMinX
+                    + (((index + 1) * surfaceWidth) / (names.Length + 1));
+                int z = index % tunnelVolume.Depth;
                 AgentState agent = new AgentState(
                     EntityId.Parse(ids[index]),
                     names[index],
@@ -202,7 +212,7 @@ namespace Dig.Unity
                     DailySchedule.CreateBalanced(24),
                     skills: null,
                     traits: null,
-                    initialPosition: new CellId(cell.X, cell.Y));
+                    initialPosition: new SpatialCellId(x, layout.SurfaceY, z));
                 Result added = repository.Add(agent);
                 if (added.IsFailure)
                 {

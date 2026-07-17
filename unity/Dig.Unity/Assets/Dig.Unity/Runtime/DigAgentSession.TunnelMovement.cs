@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Dig.Application.Agents;
-using Dig.Domain.Agents;
 using Dig.Domain.Core;
 using Dig.Domain.Navigation;
 using Dig.Domain.World;
@@ -44,53 +43,14 @@ namespace Dig.Unity
         }
 
         private void InitializeTunnelMovement(
-            int width,
-            int height,
+            TunnelNavigationVolume volume,
             InMemoryExecutionJournal journal)
         {
-            TunnelNavigationVolume demo = TunnelNavigationVolume.CreateDemo(width, height);
-            HashSet<SpatialCellId> open = new HashSet<SpatialCellId>(demo.Cells);
-            HashSet<SpatialCellId> vertical = new HashSet<SpatialCellId>(demo.VerticalCells);
-            int shaftX = width / 2;
-            const int shaftZ = 1;
-            for (int y = 0; y < height; y++)
-            {
-                SpatialCellId shaft = new SpatialCellId(shaftX, y, shaftZ);
-                open.Add(shaft);
-                vertical.Add(shaft);
-            }
-
-            IReadOnlyList<AgentState> agents = _repository.GetAll();
-            for (int index = 0; index < agents.Count; index++)
-            {
-                SpatialCellId start = agents[index].SpatialPosition;
-                open.Add(start);
-                int direction = start.X <= shaftX ? 1 : -1;
-                for (int x = start.X; x != shaftX; x += direction)
-                {
-                    open.Add(new SpatialCellId(x, start.Y, start.Z));
-                }
-
-                open.Add(new SpatialCellId(shaftX, start.Y, start.Z));
-                int depthDirection = start.Z <= shaftZ ? 1 : -1;
-                for (int z = start.Z; z != shaftZ; z += depthDirection)
-                {
-                    open.Add(new SpatialCellId(shaftX, start.Y, z));
-                }
-
-                open.Add(new SpatialCellId(shaftX, start.Y, shaftZ));
-            }
-
-            _tunnelVolume = new TunnelNavigationVolume(
-                width,
-                height,
-                depth: 4,
-                open,
-                vertical);
+            _tunnelVolume = volume ?? throw new ArgumentNullException(nameof(volume));
             _tunnelMovement = new MoveAgentThroughTunnelCommandHandler(
                 _repository,
                 _tunnelVolume,
-                journal);
+                journal ?? throw new ArgumentNullException(nameof(journal)));
         }
 
         private bool HasManualTunnelOrder(EntityId agentId)

@@ -78,7 +78,7 @@ public sealed class TunnelPathResult
     }
 }
 
-public sealed class TunnelNavigationVolume
+public sealed partial class TunnelNavigationVolume
 {
     private readonly HashSet<SpatialCellId> _openCells;
     private readonly HashSet<SpatialCellId> _verticalCells;
@@ -88,7 +88,8 @@ public sealed class TunnelNavigationVolume
         int height,
         int depth,
         IReadOnlyCollection<SpatialCellId> openCells,
-        IReadOnlyCollection<SpatialCellId> verticalCells)
+        IReadOnlyCollection<SpatialCellId> verticalCells,
+        TunnelDemoLayout? demoLayout = null)
     {
         if (width <= 0)
         {
@@ -118,6 +119,7 @@ public sealed class TunnelNavigationVolume
         Width = width;
         Height = height;
         Depth = depth;
+        DemoLayout = demoLayout;
         _openCells = new HashSet<SpatialCellId>(openCells);
         _verticalCells = new HashSet<SpatialCellId>(verticalCells);
         ValidateCells(_openCells, nameof(openCells));
@@ -129,7 +131,8 @@ public sealed class TunnelNavigationVolume
                 nameof(verticalCells));
         }
 
-        Cells = new ReadOnlyCollection<SpatialCellId>(_openCells.OrderBy(cell => cell).ToArray());
+        Cells = new ReadOnlyCollection<SpatialCellId>(
+            _openCells.OrderBy(cell => cell).ToArray());
         VerticalCells = new ReadOnlyCollection<SpatialCellId>(
             _verticalCells.OrderBy(cell => cell).ToArray());
     }
@@ -139,6 +142,8 @@ public sealed class TunnelNavigationVolume
     public int Height { get; }
 
     public int Depth { get; }
+
+    public TunnelDemoLayout? DemoLayout { get; }
 
     public IReadOnlyList<SpatialCellId> Cells { get; }
 
@@ -230,54 +235,6 @@ public sealed class TunnelNavigationVolume
             "No route connects the resident to the requested tunnel cell.");
     }
 
-    public static TunnelNavigationVolume CreateDemo(int width, int height, int depth = 4)
-    {
-        if (width < 8)
-        {
-            throw new ArgumentOutOfRangeException(nameof(width));
-        }
-
-        if (height < 8)
-        {
-            throw new ArgumentOutOfRangeException(nameof(height));
-        }
-
-        if (depth != 4)
-        {
-            throw new ArgumentOutOfRangeException(nameof(depth), "The demo uses exactly four depth cells.");
-        }
-
-        int minX = 2;
-        int maxX = width - 3;
-        int shaftX = width / 2;
-        int shaftZ = 1;
-        int[] levels = new[] { 2, height / 2, height - 3 }
-            .Distinct()
-            .OrderBy(value => value)
-            .ToArray();
-        HashSet<SpatialCellId> open = new HashSet<SpatialCellId>();
-        foreach (int level in levels)
-        {
-            for (int x = minX; x <= maxX; x++)
-            {
-                for (int z = 0; z < depth; z++)
-                {
-                    open.Add(new SpatialCellId(x, level, z));
-                }
-            }
-        }
-
-        HashSet<SpatialCellId> vertical = new HashSet<SpatialCellId>();
-        for (int y = levels[0]; y <= levels[levels.Length - 1]; y++)
-        {
-            SpatialCellId shaft = new SpatialCellId(shaftX, y, shaftZ);
-            open.Add(shaft);
-            vertical.Add(shaft);
-        }
-
-        return new TunnelNavigationVolume(width, height, depth, open, vertical);
-    }
-
     private IEnumerable<SpatialCellId> GetNeighbors(SpatialCellId cell)
     {
         SpatialCellId[] horizontal =
@@ -313,7 +270,7 @@ public sealed class TunnelNavigationVolume
         }
     }
 
-    private IReadOnlyList<SpatialCellId> Reconstruct(
+    private static IReadOnlyList<SpatialCellId> Reconstruct(
         IReadOnlyDictionary<SpatialCellId, SpatialCellId> previous,
         SpatialCellId start,
         SpatialCellId goal)

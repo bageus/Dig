@@ -12,8 +12,8 @@ namespace Dig.Unity
     {
         private const float HudX = 16f;
         private const float HudY = 16f;
-        private const float HudWidth = 540f;
-        private const float HudHeight = 800f;
+        private const float HudWidth = 420f;
+        private const float HudHeight = 280f;
 
         private WorldViewModel? _world;
         private IReadOnlyList<AgentViewModel> _agents =
@@ -22,6 +22,7 @@ namespace Dig.Unity
         private AgentViewModel? _selectedAgent;
         private DigStorageStatus? _storageStatus;
         private DigAgentSimulationDriver? _simulation;
+        private Vector2 _scrollPosition;
         private long _tick;
         private string _status = "Starting runtime...";
 
@@ -94,7 +95,8 @@ namespace Dig.Unity
             GUILayout.BeginArea(
                 new Rect(HudX, HudY, HudWidth, HudHeight),
                 GUI.skin.box);
-            GUILayout.Label("DIG — Interactive Settlement Slice");
+            _scrollPosition = GUILayout.BeginScrollView(_scrollPosition);
+            GUILayout.Label("DIG");
             if (_world != null)
             {
                 GUILayout.Label($"World: {_world.Width}×{_world.Height}×4 | v{_world.Version}");
@@ -105,16 +107,6 @@ namespace Dig.Unity
             DrawToolAssignmentControls();
             DrawJobAttentionSummary();
             DrawStorageStatus();
-            GUILayout.Space(6f);
-            GUILayout.Label("Click inside Game view before using controls");
-            GUILayout.Label("WASD / arrows pan | wheel zoom | Ctrl+mouse orbit | Home reset");
-            GUILayout.Label("Select dwarf, then LMB tunnel destination (X/Y/Z)");
-            GUILayout.Label("Space pause/resume | . step | -/+ speed");
-            GUILayout.Label("3 jobs/reservations | 4 navigation routes");
-            GUILayout.Label("5 place empty stockpile on selected open cell");
-            GUILayout.Label("Box: LMB placement | Alt+LMB pickup | RMB cancel preview");
-            GUILayout.Label("RMB terrain toggles digging");
-            GUILayout.Space(8f);
             DrawBuildingPlacement();
             if (!HasBuildingPlacement)
             {
@@ -124,8 +116,9 @@ namespace Dig.Unity
                 DrawBuildingSelection();
             }
 
-            GUILayout.Space(8f);
+            GUILayout.Space(6f);
             GUILayout.Label(_status);
+            GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
 
@@ -214,7 +207,7 @@ namespace Dig.Unity
             AgentViewModel agent = _selectedAgent;
             GUILayout.Label("SELECTED RESIDENT");
             GUILayout.Label(
-                $"{agent.Name} | cell X={agent.CellX}, Y={agent.CellY}, Z={agent.CellZ} " +
+                $"{agent.Name} | X={agent.CellX}, Y={agent.CellY}, Z={agent.CellZ} " +
                 $"| v{agent.Version}");
             GUILayout.Label($"Alive: {agent.IsAlive} | schedule: {agent.ScheduledActivity}");
             GUILayout.Label($"Intent: {agent.ActiveIntent} | action {agent.ActionElapsedTicks}/{agent.ActionRequiredTicks}");

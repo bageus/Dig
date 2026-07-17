@@ -89,6 +89,11 @@ namespace Dig.Unity
                 return;
             }
 
+            if (TryClearResidentSelection(right))
+            {
+                return;
+            }
+
             Ray ray = _camera!.ScreenPointToRay(Input.mousePosition);
             if (!Physics.Raycast(ray, out RaycastHit hit, 500f))
             {

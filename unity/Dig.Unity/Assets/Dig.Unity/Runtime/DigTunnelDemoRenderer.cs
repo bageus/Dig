@@ -14,10 +14,12 @@ namespace Dig.Unity
         private readonly Material?[] _depthMaterials = new Material?[4];
         private Transform? _root;
         private Material? _verticalMaterial;
+        private Material? _caveMaterial;
         private Material? _selectedMaterial;
         private Material? _routeMaterial;
         private LineRenderer? _route;
         private DigTunnelCellVisual? _selected;
+        private bool _caveShellCreated;
 
         internal void Initialize(TunnelNavigationVolume volume)
         {
@@ -34,18 +36,31 @@ namespace Dig.Unity
                     continue;
                 }
 
+                bool vertical = volume.IsVerticalTunnel(cell);
                 GameObject target = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                target.name = vertical
+                    ? $"Shaft {cell}"
+                    : $"Walkable plane {cell}";
                 target.transform.SetParent(_root, worldPositionStays: false);
                 target.transform.localPosition = DigTunnelProjection.CellLocalPosition(cell);
-                target.transform.localScale = volume.IsVerticalTunnel(cell)
-                    ? new Vector3(0.42f, 0.12f, 0.84f)
-                    : new Vector3(0.84f, 0.08f, 0.84f);
+                target.transform.localScale = vertical
+                    ? new Vector3(0.38f, 0.38f, 0.88f)
+                    : new Vector3(
+                        0.84f,
+                        Mathf.Abs(DigTunnelProjection.DepthSpacing) * 0.82f,
+                        0.10f);
                 DigTunnelCellVisual visual = target.AddComponent<DigTunnelCellVisual>();
                 visual.Configure(
                     cell,
-                    volume.IsVerticalTunnel(cell),
-                    ResolveMaterial(cell, volume.IsVerticalTunnel(cell)));
+                    vertical,
+                    ResolveMaterial(cell, vertical));
                 _cells.Add(cell, visual);
+            }
+
+            if (!_caveShellCreated && volume.DemoLayout != null)
+            {
+                CreateCaveShell(volume.DemoLayout, volume.Depth);
+                _caveShellCreated = true;
             }
         }
 
@@ -88,7 +103,7 @@ namespace Dig.Unity
             for (int index = 0; index < path.Cells.Count; index++)
             {
                 Vector3 position = DigTunnelProjection.CellLocalPosition(path.Cells[index]);
-                position.z -= 0.08f;
+                position.z -= 0.14f;
                 _route.SetPosition(index, position);
             }
         }
@@ -96,6 +111,53 @@ namespace Dig.Unity
         private Material ResolveMaterial(SpatialCellId cell, bool vertical)
         {
             return vertical ? _verticalMaterial! : _depthMaterials[cell.Z]!;
+        }
+
+        private void CreateCaveShell(TunnelDemoLayout layout, int depth)
+        {
+            Vector3 front = DigTunnelProjection.CellLocalPosition(
+                new SpatialCellId(layout.CaveMinX, layout.CaveFloorY, 0));
+            Vector3 back = DigTunnelProjection.CellLocalPosition(
+                new SpatialCellId(layout.CaveMinX, layout.CaveFloorY, depth - 1));
+            float centerX = (layout.CaveMinX + layout.CaveMaxX) * 0.5f;
+            float centerDepth = (front.y + back.y) * 0.5f;
+            float depthSpan = Mathf.Abs(front.y - back.y)
+                + (Mathf.Abs(DigTunnelProjection.DepthSpacing) * 0.82f);
+            float centerY = (layout.CaveCeilingY + layout.CaveFloorY) * 0.5f;
+            float caveWidth = layout.CaveWidth;
+            float caveHeight = layout.CaveHeight;
+
+            CreateShellPart(
+                "Cave ceiling",
+                new Vector3(centerX, centerDepth, layout.CaveCeilingY),
+                new Vector3(caveWidth, depthSpan, 0.12f));
+            CreateShellPart(
+                "Cave left wall",
+                new Vector3(layout.CaveMinX - 0.48f, centerDepth, centerY),
+                new Vector3(0.12f, depthSpan, caveHeight));
+            CreateShellPart(
+                "Cave right wall",
+                new Vector3(layout.CaveMaxX + 0.48f, centerDepth, centerY),
+                new Vector3(0.12f, depthSpan, caveHeight));
+            CreateShellPart(
+                "Cave back wall",
+                new Vector3(centerX, Mathf.Min(front.y, back.y) - 0.30f, centerY),
+                new Vector3(caveWidth, 0.10f, caveHeight));
+        }
+
+        private void CreateShellPart(string name, Vector3 position, Vector3 scale)
+        {
+            GameObject part = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            part.name = name;
+            part.transform.SetParent(_root, worldPositionStays: false);
+            part.transform.localPosition = position;
+            part.transform.localScale = scale;
+            part.GetComponent<Renderer>().sharedMaterial = _caveMaterial;
+            Collider collider = part.GetComponent<Collider>();
+            if (collider != null)
+            {
+                Destroy(collider);
+            }
         }
 
         private void EnsureResources()
@@ -147,6 +209,10 @@ namespace Dig.Unity
                 lit,
                 "Vertical tunnel",
                 new Color(0.92f, 0.72f, 0.18f, 1f));
+            _caveMaterial = CreateMaterial(
+                lit,
+                "Lower cave shell",
+                new Color(0.24f, 0.21f, 0.20f, 1f));
             _selectedMaterial = CreateMaterial(
                 lit,
                 "Selected tunnel destination",
@@ -188,19 +254,17 @@ namespace Dig.Unity
                 }
             }
 
-            if (_verticalMaterial != null)
-            {
-                Destroy(_verticalMaterial);
-            }
+            DestroyMaterial(_verticalMaterial);
+            DestroyMaterial(_caveMaterial);
+            DestroyMaterial(_selectedMaterial);
+            DestroyMaterial(_routeMaterial);
+        }
 
-            if (_selectedMaterial != null)
+        private void DestroyMaterial(Material? material)
+        {
+            if (material != null)
             {
-                Destroy(_selectedMaterial);
-            }
-
-            if (_routeMaterial != null)
-            {
-                Destroy(_routeMaterial);
+                Destroy(material);
             }
         }
     }

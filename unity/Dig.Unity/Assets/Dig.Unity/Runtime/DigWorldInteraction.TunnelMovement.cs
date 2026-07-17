@@ -12,6 +12,24 @@ namespace Dig.Unity
             _tunnelRenderer = tunnelRenderer;
         }
 
+        private bool TryClearResidentSelection(bool rightButton)
+        {
+            if (!rightButton
+                || _buildingPlacementMode.HasValue
+                || _agentRenderer == null
+                || _agentRenderer.SelectedAgentId == null)
+            {
+                return false;
+            }
+
+            _agentRenderer.Select(null);
+            _hud!.SetAgentSelection(null);
+            _tunnelRenderer?.Select(null);
+            _tunnelRenderer?.ShowRoute(null);
+            _hud.SetStatus("Resident selection cleared.");
+            return true;
+        }
+
         private bool TryApplyTunnelMove(RaycastHit hit, bool leftButton)
         {
             if (!leftButton
@@ -25,7 +43,7 @@ namespace Dig.Unity
             string? residentId = _agentRenderer!.SelectedAgentId;
             if (residentId == null)
             {
-                _hud!.SetStatus("Select a dwarf, then click an open tunnel cell.");
+                _hud!.SetStatus("Select a dwarf, then click a walkable destination.");
                 return true;
             }
 
@@ -37,7 +55,7 @@ namespace Dig.Unity
             if (result.IsSuccess)
             {
                 _hud.SetStatus(
-                    $"Moving selected dwarf to X={cell.Cell.X}, Y={cell.Cell.Y}, Z={cell.Cell.Z}.");
+                    $"Moving to X={cell.Cell.X}, Y={cell.Cell.Y}, Z={cell.Cell.Z}.");
             }
 
             return true;
