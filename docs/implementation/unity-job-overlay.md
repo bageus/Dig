@@ -46,12 +46,13 @@ The bootstrap creates real digging jobs for the initially designated cavern cell
 
 1. `CreateDigJobHandler` adds and makes each job available.
 2. `AssignAvailableJobsHandler` scores deterministic resident candidates and claims jobs.
-3. `AdvanceJobHandler` starts and advances work stages every third resident demo tick.
-4. The presenter reloads immutable jobs and reservations after each advance.
+3. The initial immutable `JobAssignmentReport` is retained by the session for overlay refreshes.
+4. `AdvanceJobHandler` starts and advances work stages every third resident demo tick.
+5. The presenter reloads immutable jobs, reservations and assignment diagnostics after each advance.
 
 When a job reaches `Completed`, `JobSystem` releases all ledger entries. The marker remains as a terminal diagnostic, while its worker link disappears because no active reservations remain.
 
-The demonstration does not yet retain assignment reports across every later reassignment pass. Callers that need the preparation outcome pass the latest immutable report to `JobOverlayPresenter.Load`; absence of that report leaves the diagnostic empty rather than reconstructing history from UI state.
+A future reassignment pass must replace the retained report with its new command result. Presentation never reconstructs preparation history from current equipment or UI state.
 
 ## Selection and HUD
 
