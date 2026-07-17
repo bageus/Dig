@@ -33,7 +33,7 @@ internal static class HeadlessSoakStateHasher
         {
             value.Append("agent|").Append(agent.Id)
                 .Append('|').Append(agent.IsAlive)
-                .Append('|').Append(agent.Position)
+                .Append('|').Append(agent.SpatialPosition)
                 .Append('|').Append(agent.Needs.Nutrition.Points)
                 .Append('|').Append(agent.Needs.Alertness.Points)
                 .Append('|').Append(agent.Needs.Mood.Points)
@@ -100,4 +100,5 @@ internal static class HeadlessSoakStateHasher
         return Convert.ToHexString(SHA256.HashData(bytes));
     }
 }
+
 }
