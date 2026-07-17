@@ -115,7 +115,7 @@ namespace Dig.Unity
             }
 
             DrawJobAssignmentDiagnostic(job.AssignmentDiagnostic);
-            DrawSuggestedToolAction(job);
+            DrawJobActions(job);
             GUILayout.Label($"Retries: {job.RetryCount} | next: {job.NextRetryTick}");
             if (job.Reason != null)
             {
@@ -131,20 +131,39 @@ namespace Dig.Unity
             }
         }
 
-        private void DrawSuggestedToolAction(JobOverlayViewModel job)
+        private void DrawJobActions(JobOverlayViewModel job)
         {
-            JobAssignmentDiagnosticViewModel? diagnostic = job.AssignmentDiagnostic;
-            if (_toolAssignmentSession == null
-                || diagnostic?.ToolPreparation != JobToolPreparationOutcome.Suggested
-                || string.IsNullOrWhiteSpace(diagnostic.ToolStackId)
-                || string.IsNullOrWhiteSpace(job.AssignedAgentId))
+            foreach (JobActionViewModel action in job.Actions)
             {
-                return;
+                switch (action.Kind)
+                {
+                    case JobActionKind.PrepareSuggestedTool:
+                        DrawPrepareSuggestedToolAction(job.Id, action);
+                        break;
+                    default:
+                        throw new InvalidOperationException(
+                            $"Unsupported Job action kind: {action.Kind}.");
+                }
+            }
+        }
+
+        private void DrawPrepareSuggestedToolAction(
+            string jobId,
+            JobActionViewModel action)
+        {
+            bool previousEnabled = GUI.enabled;
+            GUI.enabled = action.IsEnabled;
+            if (GUILayout.Button(action.Label, GUILayout.Width(190f)))
+            {
+                ExecuteSuggestedToolPreparation(jobId);
             }
 
-            if (GUILayout.Button("Equip suggested tool", GUILayout.Width(190f)))
+            GUI.enabled = previousEnabled;
+            if (!action.IsEnabled)
             {
-                ExecuteSuggestedToolPreparation(job.Id);
+                GUILayout.Label(
+                    $"Unavailable: {action.DisabledReasonCode} | " +
+                    action.DisabledReasonMessage);
             }
         }
 
