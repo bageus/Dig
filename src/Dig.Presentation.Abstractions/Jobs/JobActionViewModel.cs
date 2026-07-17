@@ -6,6 +6,7 @@ namespace Dig.Presentation.Jobs
 public enum JobActionKind
 {
     PrepareSuggestedTool = 0,
+    BypassSuggestedTool = 1,
 }
 
 public sealed class JobActionViewModel
