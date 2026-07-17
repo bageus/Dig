@@ -97,7 +97,7 @@ namespace Dig.Unity
             GUILayout.Label("DIG — Interactive Settlement Slice");
             if (_world != null)
             {
-                GUILayout.Label($"World: {_world.Width}×{_world.Height} | v{_world.Version}");
+                GUILayout.Label($"World: {_world.Width}×{_world.Height}×4 | v{_world.Version}");
             }
 
             GUILayout.Label($"Residents: {_agents.Count} | jobs: {JobCount} | tick: {_tick}");
@@ -107,12 +107,13 @@ namespace Dig.Unity
             DrawStorageStatus();
             GUILayout.Space(6f);
             GUILayout.Label("Click inside Game view before using controls");
-            GUILayout.Label("WASD / arrows pan | wheel zoom | Q/E rotate");
+            GUILayout.Label("WASD / arrows pan | wheel zoom | Ctrl+mouse orbit | Home reset");
+            GUILayout.Label("Select dwarf, then LMB tunnel destination (X/Y/Z)");
             GUILayout.Label("Space pause/resume | . step | -/+ speed");
             GUILayout.Label("3 jobs/reservations | 4 navigation routes");
             GUILayout.Label("5 place empty stockpile on selected open cell");
             GUILayout.Label("Box: LMB placement | Alt+LMB pickup | RMB cancel preview");
-            GUILayout.Label("Left click select | right click toggle digging");
+            GUILayout.Label("RMB terrain toggles digging");
             GUILayout.Space(8f);
             DrawBuildingPlacement();
             if (!HasBuildingPlacement)
@@ -212,7 +213,9 @@ namespace Dig.Unity
 
             AgentViewModel agent = _selectedAgent;
             GUILayout.Label("SELECTED RESIDENT");
-            GUILayout.Label($"{agent.Name} | cell {agent.CellX},{agent.CellY} | v{agent.Version}");
+            GUILayout.Label(
+                $"{agent.Name} | cell X={agent.CellX}, Y={agent.CellY}, Z={agent.CellZ} " +
+                $"| v{agent.Version}");
             GUILayout.Label($"Alive: {agent.IsAlive} | schedule: {agent.ScheduledActivity}");
             GUILayout.Label($"Intent: {agent.ActiveIntent} | action {agent.ActionElapsedTicks}/{agent.ActionRequiredTicks}");
             GUILayout.Label($"Nutrition {agent.Nutrition} | alertness {agent.Alertness}");
