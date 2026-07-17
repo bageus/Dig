@@ -12,7 +12,8 @@ namespace Dig.Infrastructure.InMemory
 
 public sealed class InMemoryExecutionJournal
     : IExecutionJournal,
-      IJobAssignmentReportSink
+      IJobAssignmentReportSink,
+      IJobAssignmentReportSource
 {
     private readonly object _gate = new object();
     private readonly List<CommandJournalEntry> _commands = new List<CommandJournalEntry>();
@@ -111,6 +112,21 @@ public sealed class InMemoryExecutionJournal
                     new[] { assignment },
                     Array.Empty<JobAssignmentFailure>());
             }
+        }
+    }
+
+    public JobAssignmentReport? Find(EntityId jobId)
+    {
+        if (jobId.IsEmpty)
+        {
+            throw new ArgumentException("Job id cannot be empty.", nameof(jobId));
+        }
+
+        lock (_gate)
+        {
+            return _jobAssignmentReports.TryGetValue(jobId, out JobAssignmentReport? report)
+                ? report
+                : null;
         }
     }
 
