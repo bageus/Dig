@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Dig.Application.Jobs;
 using Dig.Domain.Core;
 using Dig.Domain.Jobs;
@@ -125,7 +124,7 @@ public sealed class JobActionPresentationTests
         IReadOnlyList<JobActionViewModel> actions,
         JobActionKind kind)
     {
-        return Assert.Single(actions.Where(value => value.Kind == kind));
+        return Assert.Single(actions, value => value.Kind == kind);
     }
 
     private static IReadOnlyList<JobActionViewModel> PresentActions(
