@@ -91,10 +91,10 @@ namespace Dig.Unity
                 .OrderBy(cell => cell.Y)
                 .ThenBy(cell => cell.X)
                 .ToArray();
-            if (targets.Length == 0 || agents.Count == 0)
+            if (agents.Count == 0)
             {
                 throw new InvalidOperationException(
-                    "The terrain work demo requires targets and residents.");
+                    "The terrain work demo requires at least one resident.");
             }
 
             InMemoryJobRepository jobs = new InMemoryJobRepository();
