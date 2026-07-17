@@ -12,6 +12,8 @@ namespace Dig.Unity
     {
         private IReadOnlyList<JobOverlayViewModel> _jobs =
             Array.Empty<JobOverlayViewModel>();
+        private JobAttentionSummaryViewModel _jobAttention =
+            JobAttentionProjection.Project(Array.Empty<JobOverlayViewModel>());
         private JobOverlayViewModel? _selectedJob;
         private DigTerrainWorkSession? _toolAssignmentSession;
         private DigJobRenderer? _toolJobRenderer;
@@ -34,7 +36,8 @@ namespace Dig.Unity
 
         public void SetJobs(IReadOnlyList<JobOverlayViewModel> jobs)
         {
-            _jobs = jobs;
+            _jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
+            _jobAttention = JobAttentionProjection.Project(jobs);
         }
 
         internal void SetToolAssignmentControls(
@@ -102,6 +105,50 @@ namespace Dig.Unity
             SetStatus(
                 $"Tool policy set to {_toolAssignmentSession.ToolPreparationModeLabel}. " +
                 "Applies to future Job assignments.");
+        }
+
+        private void DrawJobAttentionSummary()
+        {
+            if (!_jobAttention.HasAttention)
+            {
+                return;
+            }
+
+            GUILayout.Space(4f);
+            GUILayout.Label($"JOB ATTENTION ({_jobAttention.TotalCount})");
+            foreach (JobAttentionItemViewModel item in _jobAttention.Items)
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.Label(
+                    $"{item.Description} | {item.ReadinessLabel}",
+                    GUILayout.Width(410f));
+                if (GUILayout.Button("Select", GUILayout.Width(70f)))
+                {
+                    SelectJobFromAttention(item.JobId);
+                }
+
+                GUILayout.EndHorizontal();
+                GUILayout.Label(
+                    $"Worker: {item.AssignedAgentId ?? "unassigned"} | {item.ReasonCode}");
+            }
+
+            if (_jobAttention.HiddenCount > 0)
+            {
+                GUILayout.Label($"+ {_jobAttention.HiddenCount} more Jobs need attention");
+            }
+        }
+
+        private void SelectJobFromAttention(string jobId)
+        {
+            JobOverlayViewModel? model = _jobs.FirstOrDefault(
+                value => string.Equals(value.Id, jobId, StringComparison.Ordinal));
+            if (model == null)
+            {
+                return;
+            }
+
+            DigJobVisual? selected = _toolJobRenderer?.SelectById(jobId);
+            SetJobSelection(selected?.Model ?? model);
         }
 
         private void DrawJobSelection()
