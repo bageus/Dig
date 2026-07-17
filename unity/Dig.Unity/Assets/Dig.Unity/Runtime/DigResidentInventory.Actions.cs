@@ -1,6 +1,7 @@
 using System;
 using Dig.Application.Inventory;
 using Dig.Domain.Core;
+using Dig.Domain.Inventory;
 using Dig.Domain.World;
 
 namespace Dig.Unity

@@ -20,7 +20,8 @@ namespace Dig.Unity
 
             if (_residentInventoryInteraction == null)
             {
-                _residentInventoryInteraction = FindObjectOfType<DigWorldInteraction>();
+                _residentInventoryInteraction =
+                    FindFirstObjectByType<DigWorldInteraction>();
             }
         }
     }

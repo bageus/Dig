@@ -2,6 +2,7 @@ using System;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Domain.Core;
+using Dig.Domain.Jobs;
 using Dig.Infrastructure.InMemory;
 using Dig.Presentation.Jobs;
 
