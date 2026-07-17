@@ -81,6 +81,39 @@ public sealed partial class JobSystem
         return Result.Success();
     }
 
+    public Result ReleaseToolReservation(
+        EntityId jobId,
+        EntityId toolStackId,
+        long tick)
+    {
+        ValidateTick(tick);
+        if (toolStackId.IsEmpty)
+        {
+            throw new ArgumentException("Tool stack id cannot be empty.", nameof(toolStackId));
+        }
+
+        JobState? job = FindState(jobId);
+        if (job is null)
+        {
+            return Result.Failure(JobErrors.NotFound);
+        }
+
+        if (job.Status != JobStatus.Claimed && job.Status != JobStatus.InProgress)
+        {
+            return Result.Failure(JobErrors.InvalidStatus);
+        }
+
+        bool released = _reservations.Release(
+            ReservationKey.ForTool(toolStackId),
+            jobId);
+        if (released)
+        {
+            Raise(new JobReservationsReleased(tick, jobId, releasedCount: 1));
+        }
+
+        return Result.Success();
+    }
+
     private static IReadOnlyCollection<ReservationKey> CreateClaimKeys(
         JobState job,
         EntityId agentId,
