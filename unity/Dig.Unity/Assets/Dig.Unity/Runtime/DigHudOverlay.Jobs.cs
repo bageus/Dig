@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Jobs;
+using Dig.Domain.Core;
 using Dig.Presentation.Jobs;
 using UnityEngine;
 
@@ -12,6 +14,7 @@ namespace Dig.Unity
             Array.Empty<JobOverlayViewModel>();
         private JobOverlayViewModel? _selectedJob;
         private DigTerrainWorkSession? _toolAssignmentSession;
+        private DigJobRenderer? _toolJobRenderer;
 
         private int JobCount => _jobs.Count;
 
@@ -22,10 +25,14 @@ namespace Dig.Unity
             _jobs = jobs;
         }
 
-        internal void SetToolAssignmentControls(DigTerrainWorkSession session)
+        internal void SetToolAssignmentControls(
+            DigTerrainWorkSession session,
+            DigJobRenderer jobRenderer)
         {
             _toolAssignmentSession = session
                 ?? throw new ArgumentNullException(nameof(session));
+            _toolJobRenderer = jobRenderer
+                ?? throw new ArgumentNullException(nameof(jobRenderer));
         }
 
         public void SetJobSelection(JobOverlayViewModel? selected)
@@ -108,6 +115,7 @@ namespace Dig.Unity
             }
 
             DrawJobAssignmentDiagnostic(job.AssignmentDiagnostic);
+            DrawSuggestedToolAction(job);
             GUILayout.Label($"Retries: {job.RetryCount} | next: {job.NextRetryTick}");
             if (job.Reason != null)
             {
@@ -121,6 +129,54 @@ namespace Dig.Unity
                 GUILayout.Label(
                     $"{reservation.Kind}: {reservation.Value} | tick {reservation.AcquiredTick}");
             }
+        }
+
+        private void DrawSuggestedToolAction(JobOverlayViewModel job)
+        {
+            JobAssignmentDiagnosticViewModel? diagnostic = job.AssignmentDiagnostic;
+            if (_toolAssignmentSession == null
+                || diagnostic?.ToolPreparation != JobToolPreparationOutcome.Suggested
+                || string.IsNullOrWhiteSpace(diagnostic.ToolStackId)
+                || string.IsNullOrWhiteSpace(job.AssignedAgentId))
+            {
+                return;
+            }
+
+            if (GUILayout.Button("Equip suggested tool", GUILayout.Width(190f)))
+            {
+                ExecuteSuggestedToolPreparation(job.Id);
+            }
+        }
+
+        private void ExecuteSuggestedToolPreparation(string jobId)
+        {
+            if (_toolAssignmentSession == null)
+            {
+                SetStatus("unity.tool_assignment.not_initialized");
+                return;
+            }
+
+            long tick = _simulation?.CurrentTick ?? _tick;
+            Result result = _toolAssignmentSession.PrepareSuggestedJobTool(jobId, tick);
+            SetCommandResult(result);
+            if (result.IsFailure)
+            {
+                return;
+            }
+
+            IReadOnlyList<JobOverlayViewModel> jobs = _toolAssignmentSession.LoadJobs();
+            SetJobs(jobs);
+            _toolJobRenderer?.Render(jobs);
+            _selectedJob = jobs.FirstOrDefault(
+                value => string.Equals(value.Id, jobId, StringComparison.Ordinal));
+            if (_toolJobRenderer != null)
+            {
+                DigJobVisual? selected = _toolJobRenderer.SelectById(jobId);
+                _selectedJob = selected?.Model ?? _selectedJob;
+            }
+
+            _simulation?.RefreshEquipmentPresentation();
+            SetStatus("Suggested tool equipped. The active Job and reservations were preserved.");
         }
 
         private static void DrawJobAssignmentDiagnostic(
