@@ -23,7 +23,8 @@ public sealed class JobOverlayViewModel
         string? reason,
         IReadOnlyList<JobReservationViewModel> reservations,
         JobToolKind? preferredToolKind = null,
-        JobAssignmentDiagnosticViewModel? assignmentDiagnostic = null)
+        JobAssignmentDiagnosticViewModel? assignmentDiagnostic = null,
+        IReadOnlyList<JobActionViewModel>? actions = null)
     {
         if (string.IsNullOrWhiteSpace(id)
             || string.IsNullOrWhiteSpace(description)
@@ -50,6 +51,16 @@ public sealed class JobOverlayViewModel
             throw new ArgumentOutOfRangeException(nameof(preferredToolKind));
         }
 
+        JobActionViewModel[] actionValues = (actions ?? Array.Empty<JobActionViewModel>())
+            .ToArray();
+        if (actionValues.Any(action => action is null)
+            || actionValues.Select(action => action.Kind).Distinct().Count() != actionValues.Length)
+        {
+            throw new ArgumentException(
+                "Job actions must be non-null and unique by kind.",
+                nameof(actions));
+        }
+
         Id = id.Trim();
         Description = description.Trim();
         Status = status.Trim();
@@ -66,6 +77,7 @@ public sealed class JobOverlayViewModel
                 .ToArray());
         PreferredToolKind = preferredToolKind;
         AssignmentDiagnostic = assignmentDiagnostic;
+        Actions = new ReadOnlyCollection<JobActionViewModel>(actionValues);
     }
 
     public string Id { get; }
@@ -82,6 +94,7 @@ public sealed class JobOverlayViewModel
     public IReadOnlyList<JobReservationViewModel> Reservations { get; }
     public JobToolKind? PreferredToolKind { get; }
     public JobAssignmentDiagnosticViewModel? AssignmentDiagnostic { get; }
+    public IReadOnlyList<JobActionViewModel> Actions { get; }
     public bool HasTarget => TargetX.HasValue && TargetY.HasValue;
 }
 }
