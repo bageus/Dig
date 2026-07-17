@@ -49,7 +49,7 @@ public sealed class JobActionDispatcherTests
         ArgumentException exception = Assert.Throws<ArgumentException>(
             () => new JobActionDispatcher(new[] { first, second }));
 
-        Assert.Contains("already registered", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("already registered", exception.Message);
     }
 
     [Fact]
@@ -65,10 +65,7 @@ public sealed class JobActionDispatcherTests
         InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
             () => dispatcher.Dispatch("20000000000000000000000000000001", action));
 
-        Assert.Contains(
-            JobActionKind.PrepareSuggestedTool.ToString(),
-            exception.Message,
-            StringComparison.Ordinal);
+        Assert.Contains(JobActionKind.PrepareSuggestedTool.ToString(), exception.Message);
     }
 
     [Fact]
