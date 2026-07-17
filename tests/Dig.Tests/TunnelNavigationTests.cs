@@ -36,19 +36,21 @@ public sealed class TunnelNavigationTests
     }
 
     [Fact]
-    public void Demo_shaft_and_connector_are_only_one_cell_deep()
+    public void Demo_shaft_and_connector_use_only_the_nearest_depth_cell()
     {
         TunnelNavigationVolume volume = TunnelNavigationVolume.CreateDemo(20, 14);
         TunnelDemoLayout layout = volume.DemoLayout!;
         int shaftY = layout.SurfaceY + 1;
 
+        Assert.Equal(0, layout.ShaftZ);
         Assert.True(volume.IsVerticalTunnel(new SpatialCellId(
             layout.ShaftX,
             shaftY,
-            layout.ShaftZ)));
-        Assert.False(volume.IsOpen(new SpatialCellId(layout.ShaftX, shaftY, 0)));
-        Assert.False(volume.IsOpen(new SpatialCellId(layout.ShaftX, shaftY, 2)));
-        Assert.False(volume.IsOpen(new SpatialCellId(layout.ShaftX, shaftY, 3)));
+            0)));
+        for (int z = 1; z < volume.Depth; z++)
+        {
+            Assert.False(volume.IsOpen(new SpatialCellId(layout.ShaftX, shaftY, z)));
+        }
 
         if (layout.CaveMinX - layout.ShaftX > 1)
         {
@@ -56,20 +58,59 @@ public sealed class TunnelNavigationTests
             Assert.True(volume.IsOpen(new SpatialCellId(
                 corridorX,
                 layout.CaveFloorY,
-                layout.ShaftZ)));
-            Assert.False(volume.IsOpen(new SpatialCellId(
-                corridorX,
-                layout.CaveFloorY,
                 0)));
-            Assert.False(volume.IsOpen(new SpatialCellId(
-                corridorX,
-                layout.CaveFloorY,
-                2)));
-            Assert.False(volume.IsOpen(new SpatialCellId(
-                corridorX,
-                layout.CaveFloorY,
-                3)));
+            for (int z = 1; z < volume.Depth; z++)
+            {
+                Assert.False(volume.IsOpen(new SpatialCellId(
+                    corridorX,
+                    layout.CaveFloorY,
+                    z)));
+            }
         }
+    }
+
+    [Fact]
+    public void Surface_route_walks_on_the_xz_plane_without_changing_y()
+    {
+        TunnelNavigationVolume volume = TunnelNavigationVolume.CreateDemo(20, 14);
+        TunnelDemoLayout layout = volume.DemoLayout!;
+        SpatialCellId start = new SpatialCellId(
+            layout.SurfaceMinX,
+            layout.SurfaceY,
+            0);
+        SpatialCellId goal = new SpatialCellId(
+            layout.SurfaceMinX + 3,
+            layout.SurfaceY,
+            3);
+
+        TunnelPathResult result = volume.FindPath(start, goal);
+
+        Assert.True(result.Succeeded, result.Detail);
+        Assert.All(result.Path!.Cells, cell => Assert.Equal(layout.SurfaceY, cell.Y));
+        Assert.Contains(result.Path.Cells, cell => cell.Z == 3);
+        Assert.Contains(result.Path.Cells, cell => cell.X == goal.X);
+    }
+
+    [Fact]
+    public void Shaft_route_climbs_on_the_xy_plane_at_nearest_z()
+    {
+        TunnelNavigationVolume volume = TunnelNavigationVolume.CreateDemo(20, 14);
+        TunnelDemoLayout layout = volume.DemoLayout!;
+        SpatialCellId start = new SpatialCellId(
+            layout.ShaftX,
+            layout.SurfaceY,
+            layout.ShaftZ);
+        SpatialCellId goal = new SpatialCellId(
+            layout.ShaftX,
+            layout.CaveFloorY,
+            layout.ShaftZ);
+
+        TunnelPathResult result = volume.FindPath(start, goal);
+
+        Assert.True(result.Succeeded, result.Detail);
+        Assert.All(result.Path!.Cells, cell => Assert.Equal(layout.ShaftX, cell.X));
+        Assert.All(result.Path.Cells, cell => Assert.Equal(0, cell.Z));
+        Assert.Contains(result.Path.Cells, cell => cell.Y == layout.CaveFloorY);
     }
 
     [Fact]
@@ -84,7 +125,7 @@ public sealed class TunnelNavigationTests
         SpatialCellId goal = new SpatialCellId(
             layout.CaveMaxX,
             layout.CaveFloorY,
-            0);
+            3);
 
         TunnelPathResult result = volume.FindPath(start, goal);
 
@@ -117,8 +158,8 @@ public sealed class TunnelNavigationTests
     [Fact]
     public void Vertical_motion_succeeds_when_both_cells_are_in_the_shaft()
     {
-        SpatialCellId lower = new SpatialCellId(1, 1, 1);
-        SpatialCellId upper = new SpatialCellId(1, 2, 1);
+        SpatialCellId lower = new SpatialCellId(1, 1, 0);
+        SpatialCellId upper = new SpatialCellId(1, 2, 0);
         TunnelNavigationVolume volume = new TunnelNavigationVolume(
             width: 4,
             height: 4,

@@ -61,14 +61,11 @@ def require_fragments(
     contract_name: str,
     fragments: tuple[str, ...],
 ) -> list[str]:
-    errors: list[str] = []
-    for fragment in fragments:
-        if fragment not in text:
-            errors.append(
-                f"{path.relative_to(ROOT)}: missing {contract_name} contract "
-                f"fragment {fragment!r}"
-            )
-    return errors
+    return [
+        f"{path.relative_to(ROOT)}: missing {contract_name} contract fragment {fragment!r}"
+        for fragment in fragments
+        if fragment not in text
+    ]
 
 
 def reject_fragments(
@@ -77,21 +74,17 @@ def reject_fragments(
     contract_name: str,
     fragments: tuple[str, ...],
 ) -> list[str]:
-    errors: list[str] = []
-    for fragment in fragments:
-        if fragment in text:
-            errors.append(
-                f"{path.relative_to(ROOT)}: forbidden {contract_name} fragment "
-                f"{fragment!r}"
-            )
-    return errors
+    return [
+        f"{path.relative_to(ROOT)}: forbidden {contract_name} fragment {fragment!r}"
+        for fragment in fragments
+        if fragment in text
+    ]
 
 
 def check_side_view_contracts(texts: dict[Path, str]) -> list[str]:
     camera_path = RUNTIME_ROOT / "DigCameraController.cs"
     bootstrap_path = RUNTIME_ROOT / "DigUnityBootstrap.cs"
     camera = texts.get(camera_path, "")
-    bootstrap = texts.get(bootstrap_path, "")
     errors = require_fragments(
         camera_path,
         camera,
@@ -108,10 +101,9 @@ def check_side_view_contracts(texts: dict[Path, str]) -> list[str]:
         errors.append(
             f"{camera_path.relative_to(ROOT)}: side-view camera must remain perspective"
         )
-
     errors.extend(require_fragments(
         bootstrap_path,
-        bootstrap,
+        texts.get(bootstrap_path, ""),
         "side-view world",
         (
             "ConfigureSideViewRoot();",
@@ -133,16 +125,24 @@ def check_tunnel_contracts(texts: dict[Path, str]) -> list[str]:
     composition_path = RUNTIME_ROOT / "DigAgentSession.TunnelMovement.cs"
     session_path = RUNTIME_ROOT / "DigAgentSession.cs"
     errors: list[str] = []
+    agent = texts.get(agent_path, "")
     errors.extend(require_fragments(
         agent_path,
-        texts.get(agent_path, ""),
-        "spatial resident",
+        agent,
+        "world-axis resident movement",
         (
             "model.CellZ",
-            "transform.localPosition",
-            "DigTunnelProjection.ResidentLocalPosition",
+            "transform.position",
+            "DigTunnelProjection.ResidentWorldPosition",
+            "Quaternion.LookRotation(Vector3.back, Vector3.up)",
             "PlayRoute(",
         ),
+    ))
+    errors.extend(reject_fragments(
+        agent_path,
+        agent,
+        "rotated-root resident movement",
+        ("transform.localPosition", "ResidentLocalPosition"),
     ))
     errors.extend(require_fragments(
         bootstrap_path,
@@ -159,10 +159,7 @@ def check_tunnel_contracts(texts: dict[Path, str]) -> list[str]:
         interaction_path,
         texts.get(interaction_path, ""),
         "tunnel input",
-        (
-            "TryClearResidentSelection(right)",
-            "TryApplyTunnelMove(hit, left)",
-        ),
+        ("TryClearResidentSelection(right)", "TryApplyTunnelMove(hit, left)"),
     ))
     errors.extend(require_fragments(
         interaction_partial_path,
@@ -177,33 +174,32 @@ def check_tunnel_contracts(texts: dict[Path, str]) -> list[str]:
     errors.extend(require_fragments(
         projection_path,
         texts.get(projection_path, ""),
-        "tunnel depth projection",
+        "explicit XYZ world projection",
         (
-            "DepthSpacing",
-            "ResidentDepthOffset",
+            "CellWorldPosition",
+            "ResidentWorldPosition",
+            "-cell.Y",
             "cell.Z * DepthSpacing",
         ),
     ))
     errors.extend(require_fragments(
         renderer_path,
         texts.get(renderer_path, ""),
-        "platform cave rendering",
+        "XZ platforms and XY shaft rendering",
         (
             "Walkable plane",
             "Cave ceiling",
             "Cave back wall",
-            "Mathf.Abs(DigTunnelProjection.DepthSpacing)",
+            "SetPositionAndRotation",
+            "_route.useWorldSpace = true",
+            "DigTunnelProjection.CellWorldPosition",
         ),
     ))
     errors.extend(require_fragments(
         world_renderer_path,
         texts.get(world_renderer_path, ""),
         "terrain cutaway",
-        (
-            "SetTunnelCutaway",
-            "CaveCeilingY",
-            "ApplyTunnelCutaway();",
-        ),
+        ("SetTunnelCutaway", "CaveCeilingY", "ApplyTunnelCutaway();"),
     ))
     errors.extend(require_fragments(
         composition_path,
@@ -235,10 +231,14 @@ def check_hud_contracts(texts: dict[Path, str]) -> list[str]:
     errors = require_fragments(
         hud_path,
         hud,
-        "compact HUD",
+        "collapsible compact HUD",
         (
             "HudWidth = 420f",
             "HudHeight = 280f",
+            "CollapsedHudHeight = 34f",
+            "CurrentHudHeight",
+            "_isCollapsed ? \"+\" : \"-\"",
+            "if (_isCollapsed)",
             "GUILayout.BeginScrollView",
         ),
     )
@@ -262,28 +262,24 @@ def main() -> int:
         print("Unity source contract checks failed: runtime sources are missing.", file=sys.stderr)
         return 1
 
-    texts = {
-        path: path.read_text(encoding="utf-8-sig")
-        for path in files
-    }
+    texts = {path: path.read_text(encoding="utf-8-sig") for path in files}
     internal_types = {
         match.group("name")
         for text in texts.values()
         for match in INTERNAL_TYPE_DECLARATION.finditer(text)
     }
-
     errors: list[str] = check_side_view_contracts(texts)
     errors.extend(check_tunnel_contracts(texts))
     errors.extend(check_hud_contracts(texts))
     messages: dict[tuple[str, str], list[Path]] = {}
+
     for path, text in texts.items():
         relative = path.relative_to(ROOT)
         partial = PARTIAL_CLASS_DECLARATION.search(text)
         if partial is not None:
             class_name = partial.group("name")
             for match in UNITY_MESSAGE_METHOD.finditer(text):
-                key = (class_name, match.group("name"))
-                messages.setdefault(key, []).append(relative)
+                messages.setdefault((class_name, match.group("name")), []).append(relative)
 
         for symbol, namespace in KNOWN_SYMBOL_IMPORTS.items():
             if f"{symbol}." not in text:
@@ -314,13 +310,12 @@ def main() -> int:
                 )
 
     for (class_name, method_name), paths in sorted(messages.items()):
-        if len(paths) <= 1:
-            continue
-        locations = ", ".join(str(path) for path in paths)
-        errors.append(
-            f"partial class {class_name} declares Unity message {method_name}() "
-            f"more than once: {locations}"
-        )
+        if len(paths) > 1:
+            locations = ", ".join(str(path) for path in paths)
+            errors.append(
+                f"partial class {class_name} declares Unity message {method_name}() "
+                f"more than once: {locations}"
+            )
 
     if errors:
         print("Unity source contract checks failed:", file=sys.stderr)

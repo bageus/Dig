@@ -84,7 +84,7 @@ public sealed partial class TunnelNavigationVolume
         }
 
         const int surfaceY = 2;
-        const int shaftZ = 1;
+        const int nearestDepthZ = 0;
         int caveFloorY = surfaceY + 4;
         int caveCeilingY = caveFloorY - 3;
         int surfaceMinX = 1;
@@ -100,7 +100,7 @@ public sealed partial class TunnelNavigationVolume
             surfaceMaxX,
             surfaceY,
             shaftX,
-            shaftZ,
+            nearestDepthZ,
             caveMinX,
             caveMaxX,
             caveCeilingY,
@@ -123,7 +123,7 @@ public sealed partial class TunnelNavigationVolume
         HashSet<SpatialCellId> vertical = new HashSet<SpatialCellId>();
         for (int y = surfaceY; y <= caveFloorY; y++)
         {
-            SpatialCellId shaft = new SpatialCellId(shaftX, y, shaftZ);
+            SpatialCellId shaft = new SpatialCellId(shaftX, y, nearestDepthZ);
             open.Add(shaft);
             vertical.Add(shaft);
         }
@@ -132,7 +132,7 @@ public sealed partial class TunnelNavigationVolume
         int corridorMaxX = Math.Max(shaftX, caveMinX);
         for (int x = corridorMinX; x <= corridorMaxX; x++)
         {
-            open.Add(new SpatialCellId(x, caveFloorY, shaftZ));
+            open.Add(new SpatialCellId(x, caveFloorY, nearestDepthZ));
         }
 
         return new TunnelNavigationVolume(

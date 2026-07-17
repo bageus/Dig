@@ -6,16 +6,33 @@ The Unity settlement slice models resident movement in three logical axes:
 - `Y` is vertical position;
 - `Z` is depth, limited to four cells (`0..3`).
 
+## Movement planes
+
+Walking and climbing use different planes.
+
+- Surface and cave-floor movement happens on the `XZ` plane. `Y` remains constant while a resident walks across a level.
+- Shaft movement happens on the `XY` plane. `Z` remains fixed while the resident climbs vertically.
+- The demo shaft and its horizontal connector use the nearest depth cell, `Z=0`.
+- A route may change `Y` only between adjacent cells that are both marked as shaft cells.
+
+The Unity adapter projects these coordinates directly into world space:
+
+- logical `X` maps to world `X`;
+- logical `Y` maps to world vertical position;
+- logical `Z` maps to world depth.
+
+Resident and tunnel visuals do not derive their positions from the rotated legacy terrain root. This keeps the resident upright and prevents `Y` and `Z` movement from being visually exchanged.
+
 ## Demo topology
 
-`TunnelNavigationVolume.CreateDemo` now creates two broad walkable planes instead of duplicating every tunnel across all depth layers.
+`TunnelNavigationVolume.CreateDemo` creates two broad walkable planes.
 
 - The upper surface spans four `Z` cells.
 - The lower cave floor spans four `Z` cells and is exactly four `Y` cells below the upper surface.
 - The lower cave is at least three cells high and at least four cells wide.
-- The vertical shaft occupies one `Z` cell.
-- The horizontal connector between the shaft and cave occupies one `Z` cell.
-- Demo residents start on the upper surface rather than receiving arbitrary corridors from unrelated terrain positions.
+- The vertical shaft occupies one cell at `Z=0`.
+- The horizontal connector between the shaft and cave occupies one cell at `Z=0`.
+- Demo residents start on the upper surface.
 
 The Unity terrain renderer applies a projected cutaway mask for the shaft and cave interior. This keeps the authoritative two-dimensional terrain available to older systems while preventing the background terrain wall from visually filling the cave.
 
@@ -39,8 +56,8 @@ Unity owns only disposable presentation state:
 - horizontal surface and cave-floor slabs;
 - a non-interactive cave shell;
 - selectable shaft and connector cells;
-- route line rendering;
-- interpolation through validated route cells;
+- world-space route rendering;
+- interpolation through validated `X/Y/Z` route cells;
 - terrain cutaway visibility.
 
 ## Input
@@ -56,7 +73,7 @@ The route is rendered and the selected dwarf animates through each route cell. A
 
 ## HUD
 
-The always-visible help block was removed. The runtime HUD is a small scrollable status and selection panel, so it no longer covers most of the Game view.
+The runtime HUD is a small scrollable status and selection panel. Its `-` button collapses it to a single summary row; the `+` button restores the settings and selection panel. The collapsed panel also reduces its pointer-blocking rectangle to one-row height.
 
 ## Scope boundary
 

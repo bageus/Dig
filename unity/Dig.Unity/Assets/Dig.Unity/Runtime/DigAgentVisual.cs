@@ -42,7 +42,9 @@ namespace Dig.Unity
             _currentX = model.CellX;
             _currentY = model.CellY;
             _currentZ = model.CellZ;
-            transform.localPosition = ToLocal(model.CellX, model.CellY, model.CellZ);
+            transform.SetPositionAndRotation(
+                ToWorld(model.CellX, model.CellY, model.CellZ),
+                Quaternion.identity);
             SetSelected(false);
         }
 
@@ -64,7 +66,7 @@ namespace Dig.Unity
             _currentZ = model.CellZ;
             _elapsed = 0f;
             _duration = Mathf.Max(0.01f, duration);
-            Face(ToLocal(_currentX, _currentY, _currentZ) - transform.localPosition);
+            Face(ToWorld(_currentX, _currentY, _currentZ) - transform.position);
         }
 
         internal void PlayRoute(
@@ -86,10 +88,10 @@ namespace Dig.Unity
             _routeElapsed = 0f;
             _routeStepDuration = Mathf.Max(0.03f, stepDuration);
             _duration = 0f;
-            transform.localPosition = ToLocal(cells[0]);
+            transform.position = ToWorld(cells[0]);
             if (cells.Count > 1)
             {
-                Face(ToLocal(cells[1]) - transform.localPosition);
+                Face(ToWorld(cells[1]) - transform.position);
             }
         }
 
@@ -150,7 +152,7 @@ namespace Dig.Unity
                     _currentY,
                     _currentZ,
                     progress);
-            transform.localPosition = ToLocal(
+            transform.position = ToWorld(
                 (float)position.X,
                 (float)position.Y,
                 (float)position.Z);
@@ -174,7 +176,7 @@ namespace Dig.Unity
                 _routeStepDuration,
                 _routeElapsed + Time.deltaTime);
             float progress = _routeElapsed / _routeStepDuration;
-            transform.localPosition = Vector3.Lerp(ToLocal(from), ToLocal(to), progress);
+            transform.position = Vector3.Lerp(ToWorld(from), ToWorld(to), progress);
             if (_routeElapsed < _routeStepDuration)
             {
                 return;
@@ -184,33 +186,40 @@ namespace Dig.Unity
             _routeElapsed = 0f;
             if (_routeIndex + 1 < _route.Count)
             {
-                Face(ToLocal(_route[_routeIndex + 1]) - transform.localPosition);
+                Face(ToWorld(_route[_routeIndex + 1]) - transform.position);
             }
             else
             {
-                transform.localPosition = ToLocal(_route[_route.Count - 1]);
+                transform.position = ToWorld(_route[_route.Count - 1]);
                 _route = null;
             }
         }
 
         private void Face(Vector3 direction)
         {
-            if (direction.sqrMagnitude > 0.001f)
+            if (Mathf.Abs(direction.y) > 0.001f
+                && Mathf.Abs(direction.x) < 0.001f
+                && Mathf.Abs(direction.z) < 0.001f)
             {
-                transform.localRotation = Quaternion.LookRotation(
-                    direction.normalized,
-                    Vector3.up);
+                transform.rotation = Quaternion.LookRotation(Vector3.back, Vector3.up);
+                return;
+            }
+
+            Vector3 planar = new Vector3(direction.x, 0f, direction.z);
+            if (planar.sqrMagnitude > 0.001f)
+            {
+                transform.rotation = Quaternion.LookRotation(planar.normalized, Vector3.up);
             }
         }
 
-        private static Vector3 ToLocal(SpatialCellId cell)
+        private static Vector3 ToWorld(SpatialCellId cell)
         {
-            return ToLocal(cell.X, cell.Y, cell.Z);
+            return ToWorld(cell.X, cell.Y, cell.Z);
         }
 
-        private static Vector3 ToLocal(float cellX, float cellY, float cellZ)
+        private static Vector3 ToWorld(float cellX, float cellY, float cellZ)
         {
-            return DigTunnelProjection.ResidentLocalPosition(cellX, cellY, cellZ);
+            return DigTunnelProjection.ResidentWorldPosition(cellX, cellY, cellZ);
         }
     }
 }
