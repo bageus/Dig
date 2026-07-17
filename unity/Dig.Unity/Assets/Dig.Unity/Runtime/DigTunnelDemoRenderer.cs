@@ -42,13 +42,15 @@ namespace Dig.Unity
                     ? $"Shaft {cell}"
                     : $"Walkable plane {cell}";
                 target.transform.SetParent(_root, worldPositionStays: false);
-                target.transform.localPosition = DigTunnelProjection.CellLocalPosition(cell);
+                target.transform.SetPositionAndRotation(
+                    DigTunnelProjection.CellWorldPosition(cell),
+                    Quaternion.identity);
                 target.transform.localScale = vertical
-                    ? new Vector3(0.38f, 0.38f, 0.88f)
+                    ? new Vector3(0.38f, 0.88f, 0.38f)
                     : new Vector3(
                         0.84f,
-                        Mathf.Abs(DigTunnelProjection.DepthSpacing) * 0.82f,
-                        0.10f);
+                        0.10f,
+                        Mathf.Abs(DigTunnelProjection.DepthSpacing) * 0.82f);
                 DigTunnelCellVisual visual = target.AddComponent<DigTunnelCellVisual>();
                 visual.Configure(
                     cell,
@@ -102,9 +104,9 @@ namespace Dig.Unity
             _route.positionCount = path.Cells.Count;
             for (int index = 0; index < path.Cells.Count; index++)
             {
-                Vector3 position = DigTunnelProjection.CellLocalPosition(path.Cells[index]);
-                position.z -= 0.14f;
-                _route.SetPosition(index, position);
+                _route.SetPosition(
+                    index,
+                    DigTunnelProjection.RouteWorldPosition(path.Cells[index]));
             }
         }
 
@@ -115,34 +117,36 @@ namespace Dig.Unity
 
         private void CreateCaveShell(TunnelDemoLayout layout, int depth)
         {
-            Vector3 front = DigTunnelProjection.CellLocalPosition(
+            Vector3 front = DigTunnelProjection.CellWorldPosition(
                 new SpatialCellId(layout.CaveMinX, layout.CaveFloorY, 0));
-            Vector3 back = DigTunnelProjection.CellLocalPosition(
+            Vector3 back = DigTunnelProjection.CellWorldPosition(
                 new SpatialCellId(layout.CaveMinX, layout.CaveFloorY, depth - 1));
             float centerX = (layout.CaveMinX + layout.CaveMaxX) * 0.5f;
-            float centerDepth = (front.y + back.y) * 0.5f;
-            float depthSpan = Mathf.Abs(front.y - back.y)
+            float centerDepth = (front.z + back.z) * 0.5f;
+            float depthSpan = Mathf.Abs(front.z - back.z)
                 + (Mathf.Abs(DigTunnelProjection.DepthSpacing) * 0.82f);
-            float centerY = (layout.CaveCeilingY + layout.CaveFloorY) * 0.5f;
+            float ceilingY = -layout.CaveCeilingY;
+            float floorY = -layout.CaveFloorY;
+            float centerY = (ceilingY + floorY) * 0.5f;
             float caveWidth = layout.CaveWidth;
             float caveHeight = layout.CaveHeight;
 
             CreateShellPart(
                 "Cave ceiling",
-                new Vector3(centerX, centerDepth, layout.CaveCeilingY),
-                new Vector3(caveWidth, depthSpan, 0.12f));
+                new Vector3(centerX, ceilingY, centerDepth),
+                new Vector3(caveWidth, 0.12f, depthSpan));
             CreateShellPart(
                 "Cave left wall",
-                new Vector3(layout.CaveMinX - 0.48f, centerDepth, centerY),
-                new Vector3(0.12f, depthSpan, caveHeight));
+                new Vector3(layout.CaveMinX - 0.48f, centerY, centerDepth),
+                new Vector3(0.12f, caveHeight, depthSpan));
             CreateShellPart(
                 "Cave right wall",
-                new Vector3(layout.CaveMaxX + 0.48f, centerDepth, centerY),
-                new Vector3(0.12f, depthSpan, caveHeight));
+                new Vector3(layout.CaveMaxX + 0.48f, centerY, centerDepth),
+                new Vector3(0.12f, caveHeight, depthSpan));
             CreateShellPart(
                 "Cave back wall",
-                new Vector3(centerX, Mathf.Min(front.y, back.y) - 0.30f, centerY),
-                new Vector3(caveWidth, 0.10f, caveHeight));
+                new Vector3(centerX, centerY, Mathf.Min(front.z, back.z) - 0.30f),
+                new Vector3(caveWidth, caveHeight, 0.10f));
         }
 
         private void CreateShellPart(string name, Vector3 position, Vector3 scale)
@@ -150,7 +154,7 @@ namespace Dig.Unity
             GameObject part = GameObject.CreatePrimitive(PrimitiveType.Cube);
             part.name = name;
             part.transform.SetParent(_root, worldPositionStays: false);
-            part.transform.localPosition = position;
+            part.transform.SetPositionAndRotation(position, Quaternion.identity);
             part.transform.localScale = scale;
             part.GetComponent<Renderer>().sharedMaterial = _caveMaterial;
             Collider collider = part.GetComponent<Collider>();
@@ -187,7 +191,8 @@ namespace Dig.Unity
 
             if (lit == null || unlit == null)
             {
-                throw new InvalidOperationException("Tunnel rendering requires lit and unlit shaders.");
+                throw new InvalidOperationException(
+                    "Tunnel rendering requires lit and unlit shaders.");
             }
 
             Color[] colors =
@@ -225,7 +230,7 @@ namespace Dig.Unity
             routeObject.transform.SetParent(_root, worldPositionStays: false);
             _route = routeObject.AddComponent<LineRenderer>();
             _route.sharedMaterial = _routeMaterial;
-            _route.useWorldSpace = false;
+            _route.useWorldSpace = true;
             _route.widthMultiplier = 0.09f;
             _route.numCapVertices = 3;
             _route.numCornerVertices = 3;
