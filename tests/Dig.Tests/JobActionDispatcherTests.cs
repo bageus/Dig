@@ -8,16 +8,14 @@ namespace Dig.Tests
 public sealed class JobActionDispatcherTests
 {
     [Fact]
-    public void Dispatcher_routes_action_to_registered_handler()
+    public void Dispatcher_routes_enabled_action_to_registered_handler()
     {
         string? dispatchedJobId = null;
         JobActionViewModel? dispatchedAction = null;
         JobActionViewModel action = new JobActionViewModel(
             JobActionKind.PrepareSuggestedTool,
             "Equip suggested tool",
-            isEnabled: false,
-            disabledReasonCode: "jobs.tool_reservation_missing",
-            disabledReasonMessage: "The suggested tool is no longer reserved.");
+            isEnabled: true);
         JobActionDispatcher dispatcher = new JobActionDispatcher(new[]
         {
             new JobActionRoute(
@@ -33,7 +31,32 @@ public sealed class JobActionDispatcherTests
 
         Assert.Equal("20000000000000000000000000000001", dispatchedJobId);
         Assert.Same(action, dispatchedAction);
-        Assert.False(dispatchedAction!.IsEnabled);
+        Assert.True(dispatchedAction!.IsEnabled);
+    }
+
+    [Fact]
+    public void Dispatcher_rejects_disabled_action_before_handler()
+    {
+        int callCount = 0;
+        JobActionViewModel action = new JobActionViewModel(
+            JobActionKind.PrepareSuggestedTool,
+            "Equip suggested tool",
+            isEnabled: false,
+            disabledReasonCode: "jobs.tool_reservation_missing",
+            disabledReasonMessage: "The suggested tool is no longer reserved.");
+        JobActionDispatcher dispatcher = new JobActionDispatcher(new[]
+        {
+            new JobActionRoute(
+                JobActionKind.PrepareSuggestedTool,
+                (_, _) => callCount++),
+        });
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => dispatcher.Dispatch("20000000000000000000000000000001", action));
+
+        Assert.Contains("cannot be dispatched", exception.Message);
+        Assert.Contains("jobs.tool_reservation_missing", exception.Message);
+        Assert.Equal(0, callCount);
     }
 
     [Fact]
