@@ -13,20 +13,87 @@ namespace Dig.Tests
 public sealed class TunnelNavigationTests
 {
     [Fact]
-    public void Demo_uses_four_depth_cells_and_multiple_connected_levels()
+    public void Demo_has_two_four_depth_platforms_four_cells_apart()
     {
         TunnelNavigationVolume volume = TunnelNavigationVolume.CreateDemo(20, 14);
-        SpatialCellId start = new SpatialCellId(3, 2, 0);
-        SpatialCellId goal = new SpatialCellId(16, 11, 3);
+        TunnelDemoLayout layout = Assert.IsType<TunnelDemoLayout>(volume.DemoLayout);
+
+        Assert.Equal(4, volume.Depth);
+        Assert.Equal(4, layout.CaveFloorY - layout.SurfaceY);
+        Assert.True(layout.CaveHeight >= 3);
+        Assert.True(layout.CaveWidth >= 4);
+        for (int z = 0; z < volume.Depth; z++)
+        {
+            Assert.True(volume.IsOpen(new SpatialCellId(
+                layout.SurfaceMinX + 1,
+                layout.SurfaceY,
+                z)));
+            Assert.True(volume.IsOpen(new SpatialCellId(
+                layout.CaveMinX,
+                layout.CaveFloorY,
+                z)));
+        }
+    }
+
+    [Fact]
+    public void Demo_shaft_and_connector_are_only_one_cell_deep()
+    {
+        TunnelNavigationVolume volume = TunnelNavigationVolume.CreateDemo(20, 14);
+        TunnelDemoLayout layout = volume.DemoLayout!;
+        int shaftY = layout.SurfaceY + 1;
+
+        Assert.True(volume.IsVerticalTunnel(new SpatialCellId(
+            layout.ShaftX,
+            shaftY,
+            layout.ShaftZ)));
+        Assert.False(volume.IsOpen(new SpatialCellId(layout.ShaftX, shaftY, 0)));
+        Assert.False(volume.IsOpen(new SpatialCellId(layout.ShaftX, shaftY, 2)));
+        Assert.False(volume.IsOpen(new SpatialCellId(layout.ShaftX, shaftY, 3)));
+
+        if (layout.CaveMinX - layout.ShaftX > 1)
+        {
+            int corridorX = layout.ShaftX + 1;
+            Assert.True(volume.IsOpen(new SpatialCellId(
+                corridorX,
+                layout.CaveFloorY,
+                layout.ShaftZ)));
+            Assert.False(volume.IsOpen(new SpatialCellId(
+                corridorX,
+                layout.CaveFloorY,
+                0)));
+            Assert.False(volume.IsOpen(new SpatialCellId(
+                corridorX,
+                layout.CaveFloorY,
+                2)));
+            Assert.False(volume.IsOpen(new SpatialCellId(
+                corridorX,
+                layout.CaveFloorY,
+                3)));
+        }
+    }
+
+    [Fact]
+    public void Demo_connects_surface_to_every_depth_of_the_lower_cave()
+    {
+        TunnelNavigationVolume volume = TunnelNavigationVolume.CreateDemo(20, 14);
+        TunnelDemoLayout layout = volume.DemoLayout!;
+        SpatialCellId start = new SpatialCellId(
+            layout.SurfaceMinX,
+            layout.SurfaceY,
+            3);
+        SpatialCellId goal = new SpatialCellId(
+            layout.CaveMaxX,
+            layout.CaveFloorY,
+            0);
 
         TunnelPathResult result = volume.FindPath(start, goal);
 
-        Assert.Equal(4, volume.Depth);
         Assert.True(result.Succeeded, result.Detail);
         Assert.Equal(start, result.Path!.Cells[0]);
         Assert.Equal(goal, result.Path.Cells[result.Path.Cells.Count - 1]);
-        Assert.Contains(result.Path.Cells, cell => cell.Z == 3);
         Assert.Contains(result.Path.Cells, cell => volume.IsVerticalTunnel(cell));
+        Assert.Contains(result.Path.Cells, cell => cell.Z == 0);
+        Assert.Contains(result.Path.Cells, cell => cell.Z == 3);
     }
 
     [Fact]
