@@ -1,6 +1,7 @@
 using System;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
+using Dig.Domain.Core;
 using Dig.Infrastructure.InMemory;
 using Dig.Presentation.Jobs;
 
@@ -10,6 +11,7 @@ namespace Dig.Unity
     {
         private readonly JobToolPreparationModeControl _toolPreparationModeControl =
             new JobToolPreparationModeControl();
+        private PrepareSuggestedJobToolHandler? _prepareSuggestedTool;
         private bool _toolAwareJobAssignmentInitialized;
 
         internal JobToolPreparationMode SelectedToolPreparationMode =>
@@ -20,6 +22,23 @@ namespace Dig.Unity
         internal bool SelectToolPreparationMode(JobToolPreparationMode mode)
         {
             return _toolPreparationModeControl.Select(mode);
+        }
+
+        internal Result PrepareSuggestedJobTool(string jobId, long tick)
+        {
+            if (string.IsNullOrWhiteSpace(jobId))
+            {
+                throw new ArgumentException("Job id is required.", nameof(jobId));
+            }
+
+            if (_prepareSuggestedTool == null)
+            {
+                return Result.Failure(JobErrors.ToolPreparationUnavailable);
+            }
+
+            return _prepareSuggestedTool.Handle(new PrepareSuggestedJobToolCommand(
+                EntityId.Parse(jobId),
+                tick));
         }
 
         internal void InitializeToolAwareJobAssignment(InMemoryExecutionJournal journal)
@@ -58,6 +77,11 @@ namespace Dig.Unity
             _buildingBoxAssemblyAssignment = CreateToolAwareAssignmentHandler(
                 _buildingBoxAssemblyCandidates,
                 preparation,
+                journal);
+            _prepareSuggestedTool = new PrepareSuggestedJobToolHandler(
+                _jobRepository,
+                preparation,
+                journal,
                 journal);
             _toolAwareJobAssignmentInitialized = true;
         }
