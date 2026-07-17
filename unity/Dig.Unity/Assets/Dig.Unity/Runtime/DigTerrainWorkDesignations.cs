@@ -93,7 +93,7 @@ namespace Dig.Unity
             CellId target,
             IReadOnlyDictionary<CellId, CellSnapshot> cells)
         {
-            if (!cells.TryGetValue(target, out CellSnapshot? cell)
+            if (!cells.TryGetValue(target, out CellSnapshot cell)
                 || !cell.IsSolid
                 || cell.State.Designation != CellDesignation.Dig)
             {
@@ -110,7 +110,7 @@ namespace Dig.Unity
             for (int index = 0; index < neighbors.Length; index++)
             {
                 if (neighbors[index] != target
-                    && cells.TryGetValue(neighbors[index], out CellSnapshot? neighbor)
+                    && cells.TryGetValue(neighbors[index], out CellSnapshot neighbor)
                     && !neighbor.IsSolid)
                 {
                     return true;
