@@ -8,11 +8,24 @@ MANIFEST_PATH = ROOT / "unity" / "Dig.Unity" / "Packages" / "manifest.json"
 LOCK_PATH = ROOT / "unity" / "Dig.Unity" / "Packages" / "packages-lock.json"
 ASMDEF_PATH = ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" / "Runtime" / "Dig.Unity.asmdef"
 
-REQUIRED_MODULES = {
-    "com.unity.modules.audio": "UnityEngine.AudioModule",
-    "com.unity.modules.imgui": "UnityEngine.IMGUIModule",
-    "com.unity.modules.inputlegacy": "UnityEngine.InputLegacyModule",
-    "com.unity.modules.physics": "UnityEngine.PhysicsModule",
+REQUIRED_PACKAGES = {
+    "com.unity.modules.audio",
+    "com.unity.modules.imgui",
+    "com.unity.modules.physics",
+}
+
+REQUIRED_ASSEMBLIES = {
+    "UnityEngine.AudioModule",
+    "UnityEngine.IMGUIModule",
+    "UnityEngine.InputLegacyModule",
+    "UnityEngine.PhysicsModule",
+}
+
+FORBIDDEN_PACKAGES = {
+    "com.unity.modules.inputlegacy": (
+        "legacy input is exposed by UnityEngine.InputLegacyModule and is not "
+        "a resolvable Unity 6 package"
+    ),
 }
 
 
@@ -36,7 +49,7 @@ def main() -> int:
     lock_dependencies = package_lock.get("dependencies", {})
     assembly_references = set(assembly.get("references", []))
 
-    for package_name, assembly_name in REQUIRED_MODULES.items():
+    for package_name in sorted(REQUIRED_PACKAGES):
         if manifest_dependencies.get(package_name) != "1.0.0":
             errors.append(f"manifest must include {package_name} 1.0.0")
 
@@ -49,6 +62,13 @@ def main() -> int:
             if lock_entry.get("source") != "builtin":
                 errors.append(f"packages-lock must mark {package_name} as builtin")
 
+    for package_name, reason in FORBIDDEN_PACKAGES.items():
+        if package_name in manifest_dependencies:
+            errors.append(f"manifest must not include {package_name}: {reason}")
+        if package_name in lock_dependencies:
+            errors.append(f"packages-lock must not include {package_name}: {reason}")
+
+    for assembly_name in sorted(REQUIRED_ASSEMBLIES):
         if assembly_name not in assembly_references:
             errors.append(f"Dig.Unity.asmdef must reference {assembly_name}")
 
@@ -58,7 +78,7 @@ def main() -> int:
             print(f"- {error}", file=sys.stderr)
         return 1
 
-    print("PASS: Unity built-in modules")
+    print("PASS: Unity built-in modules and assembly references")
     return 0
 
 
