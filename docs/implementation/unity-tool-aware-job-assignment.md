@@ -45,6 +45,8 @@ The journal keeps successful assignment decisions only. A specialized Unity assi
 - `AlreadyEquipped`, `Suggested`, `Switched`, or `None` preparation outcome;
 - selected tool stack id.
 
+For retained `Suggested` assignments, the presenter also maps a typed immutable `PrepareSuggestedTool` action. Presentation owns its enabled state and stable disabled reason. Unity renders the action and dispatches the typed command without reinterpreting diagnostic or reservation text.
+
 Deleting or rebuilding the HUD, resident models, job markers, or equipment visuals cannot change Inventory locations, Job reservations, the selected future policy, or the recorded assignment result.
 
 ## Validation
@@ -56,6 +58,7 @@ Engine-independent tests verify that:
 - the indexed presentation path shows the retained tool preparation outcome and tool stack;
 - the policy control defaults to `Automatic` and changes explicitly;
 - a live `Suggest` source suppresses switching even for an automatic command;
-- a live `Automatic` source performs preparation even for a suggest command.
+- a live `Automatic` source performs preparation even for a suggest command;
+- typed Job actions expose enabled and disabled states without Unity-side inference.
 
 The normal Quality workflow validates architecture boundaries, file sizes, C# 9 compatibility, Release build, all tests, headless smoke, and deterministic soak profiles. Unity Editor behavior still requires a local Play Mode check.
