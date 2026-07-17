@@ -108,7 +108,7 @@ public sealed partial class JobSystem
             jobId);
         if (released)
         {
-            Raise(new JobReservationsReleased(tick, jobId, releasedCount: 1));
+            Raise(new JobReservationsReleased(tick, jobId, reservationCount: 1));
         }
 
         return Result.Success();
