@@ -70,6 +70,13 @@ public sealed class JobActionDispatcher
             throw new ArgumentNullException(nameof(action));
         }
 
+        if (!action.IsEnabled)
+        {
+            throw new InvalidOperationException(
+                $"Disabled Job action {action.Kind} cannot be dispatched: " +
+                $"{action.DisabledReasonCode} | {action.DisabledReasonMessage}");
+        }
+
         if (!_handlers.TryGetValue(action.Kind, out JobActionHandler? handler))
         {
             throw new InvalidOperationException(
