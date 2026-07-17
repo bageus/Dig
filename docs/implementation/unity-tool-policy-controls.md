@@ -33,17 +33,17 @@ A retained `Suggested` assignment produces `PrepareSuggestedTool`. Presentation 
 
 The action therefore remains visible when a suggestion becomes stale, but is disabled with a stable code and message. Assignments already marked `Switched` do not expose the manual action.
 
-## Action dispatch
+## Generic rendering and action dispatch
 
-`JobActionDispatcher` is an immutable routing table from `JobActionKind` to a typed handler. It rejects duplicate registrations, validates the Job id and fails explicitly when no handler is registered.
+`DigHudOverlay.DrawJobAction` is the single renderer for every typed Job action. It renders the supplied label, combines `action.IsEnabled` with the surrounding `GUI.enabled` state, restores the previous GUI state, and shows the supplied disabled reason. The common rendering path has no action-specific drawing method or `switch`.
 
-`DigHudOverlay.DrawJobActions` only iterates the immutable action models and dispatches them. It contains no `switch` and does not know which concrete actions exist. Unity registers `PrepareSuggestedTool` with its drawing handler in one lazy composition point. Adding another action requires a new route and handler, not a change to the common rendering loop.
+Only a successful button click calls `JobActionDispatcher`. The dispatcher is an immutable execution routing table from `JobActionKind` to a typed handler. It rejects duplicate registrations, validates the Job id, rejects disabled actions before invoking a handler, and fails explicitly when no route is registered.
 
-The dispatcher deliberately does not interpret `IsEnabled` or disabled reasons. Those values remain Presentation decisions and are passed unchanged to the registered Unity handler.
+Unity registers `PrepareSuggestedTool` with its execution handler in one lazy composition point. Adding another action requires only a new typed model from Presentation and a registered execution route; common button rendering remains unchanged.
 
 ## Equip suggested tool action
 
-When `PrepareSuggestedTool` is enabled, the HUD sends only the Job id and current simulation tick to `PrepareSuggestedJobToolHandler`; it does not trust or mutate rendered Inventory state.
+When `PrepareSuggestedTool` is enabled and clicked, the HUD sends only the Job id and current simulation tick to `PrepareSuggestedJobToolHandler`; it does not trust or mutate rendered Inventory state.
 
 Before switching, the Application use case verifies all authoritative conditions again:
 
@@ -68,6 +68,6 @@ Engine-independent tests verify:
 - missing Tool reservation and stale resident data reject the command before Inventory mutation;
 - Presentation enables a valid typed action and exposes stable disabled reasons for invalid status, stale resident and missing Tool reservation;
 - non-suggested assignments expose no manual preparation action;
-- the dispatcher routes the exact immutable action, rejects duplicate and missing routes, and validates the Job id before handler invocation.
+- the dispatcher routes the exact enabled immutable action, rejects disabled actions, rejects duplicate and missing routes, and validates the Job id before handler invocation.
 
 The normal Quality workflow validates architecture boundaries, file sizes, C# 9 compatibility, Release build, all tests, headless smoke and deterministic soak profiles. Unity Editor button interaction remains a local Play Mode check.
