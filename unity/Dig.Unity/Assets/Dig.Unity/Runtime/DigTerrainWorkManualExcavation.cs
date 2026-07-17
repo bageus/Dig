@@ -62,6 +62,11 @@ namespace Dig.Unity
                 return Result.Failure(JobErrors.NotFound);
             }
 
+            for (int index = 0; index < jobIds.Count; index++)
+            {
+                RemoveJobFromExistingManualGroup(jobIds[index]);
+            }
+
             EntityId groupId = jobIds[0];
             ManualExcavationGroup group = new ManualExcavationGroup(
                 groupId,
@@ -71,7 +76,6 @@ namespace Dig.Unity
             for (int index = 0; index < jobIds.Count; index++)
             {
                 EntityId jobId = jobIds[index];
-                RemoveJobFromExistingManualGroup(jobId);
                 _manualGroupByJob[jobId] = groupId;
                 _candidateProvider!.SetCandidates(jobId, NoCandidates);
                 JobSnapshot? job = _jobRepository.Get().Get(jobId);
@@ -83,12 +87,19 @@ namespace Dig.Unity
                         new ReleaseJobAssignmentCommand(jobId, tick));
                     if (released.IsFailure)
                     {
+                        ClearManualGroup(group);
                         return released;
                     }
                 }
             }
 
-            return AssignNextManualExcavation(group, seed, tick);
+            Result assigned = AssignNextManualExcavation(group, seed, tick);
+            if (assigned.IsFailure)
+            {
+                ClearManualGroup(group);
+            }
+
+            return assigned;
         }
 
         internal Result ContinueManualExcavation(
@@ -142,6 +153,17 @@ namespace Dig.Unity
                 next.Id,
                 group.AgentId,
                 tick));
+        }
+
+        private void ClearManualGroup(ManualExcavationGroup group)
+        {
+            EntityId[] jobIds = group.JobIds.ToArray();
+            for (int index = 0; index < jobIds.Length; index++)
+            {
+                _manualGroupByJob.Remove(jobIds[index]);
+            }
+
+            _manualGroups.Remove(group.Id);
         }
 
         private void RequireManualExcavationInitialized()
