@@ -55,44 +55,112 @@ def runtime_files() -> list[Path]:
     return sorted(RUNTIME_ROOT.rglob("*.cs"))
 
 
+def require_fragments(
+    path: Path,
+    text: str,
+    contract_name: str,
+    fragments: tuple[str, ...],
+) -> list[str]:
+    errors: list[str] = []
+    for fragment in fragments:
+        if fragment not in text:
+            errors.append(
+                f"{path.relative_to(ROOT)}: missing {contract_name} contract "
+                f"fragment {fragment!r}"
+            )
+    return errors
+
+
 def check_side_view_contracts(texts: dict[Path, str]) -> list[str]:
     camera_path = RUNTIME_ROOT / "DigCameraController.cs"
     bootstrap_path = RUNTIME_ROOT / "DigUnityBootstrap.cs"
-    errors: list[str] = []
     camera = texts.get(camera_path, "")
     bootstrap = texts.get(bootstrap_path, "")
-
-    required_camera_fragments = (
-        "_camera.orthographic = false;",
-        "SideViewYaw + orbit.Yaw",
-        "KeyCode.LeftControl",
-        "KeyCode.RightControl",
-        "SideViewCameraFraming.CalculateDistance",
+    errors = require_fragments(
+        camera_path,
+        camera,
+        "side-view camera",
+        (
+            "_camera.orthographic = false;",
+            "SideViewYaw + orbit.Yaw",
+            "KeyCode.LeftControl",
+            "KeyCode.RightControl",
+            "SideViewCameraFraming.CalculateDistance",
+        ),
     )
-    for fragment in required_camera_fragments:
-        if fragment not in camera:
-            errors.append(
-                f"{camera_path.relative_to(ROOT)}: missing side-view camera contract "
-                f"fragment {fragment!r}"
-            )
-
     if "_camera.orthographic = true;" in camera:
         errors.append(
             f"{camera_path.relative_to(ROOT)}: side-view camera must remain perspective"
         )
 
-    required_bootstrap_fragments = (
-        "ConfigureSideViewRoot();",
-        "Quaternion.Euler(90f, 0f, 0f)",
-        "Ctrl+mouse orbits",
-    )
-    for fragment in required_bootstrap_fragments:
-        if fragment not in bootstrap:
-            errors.append(
-                f"{bootstrap_path.relative_to(ROOT)}: missing side-view world contract "
-                f"fragment {fragment!r}"
-            )
+    errors.extend(require_fragments(
+        bootstrap_path,
+        bootstrap,
+        "side-view world",
+        (
+            "ConfigureSideViewRoot();",
+            "Quaternion.Euler(90f, 0f, 0f)",
+            "Ctrl+mouse orbits",
+        ),
+    ))
+    return errors
 
+
+def check_tunnel_contracts(texts: dict[Path, str]) -> list[str]:
+    agent_path = RUNTIME_ROOT / "DigAgentVisual.cs"
+    bootstrap_path = RUNTIME_ROOT / "DigUnityBootstrap.cs"
+    interaction_path = RUNTIME_ROOT / "DigWorldInteraction.cs"
+    projection_path = RUNTIME_ROOT / "DigTunnelProjection.cs"
+    session_path = RUNTIME_ROOT / "DigAgentSession.TunnelMovement.cs"
+    errors: list[str] = []
+    errors.extend(require_fragments(
+        agent_path,
+        texts.get(agent_path, ""),
+        "spatial resident",
+        (
+            "model.CellZ",
+            "transform.localPosition",
+            "DigTunnelProjection.ResidentLocalPosition",
+            "PlayRoute(",
+        ),
+    ))
+    errors.extend(require_fragments(
+        bootstrap_path,
+        texts.get(bootstrap_path, ""),
+        "layered tunnel bootstrap",
+        (
+            "DigTunnelDemoRenderer",
+            "agentSession.TunnelVolume",
+            "interaction.SetTunnelMovement",
+            "x4 tunnel volume",
+        ),
+    ))
+    errors.extend(require_fragments(
+        interaction_path,
+        texts.get(interaction_path, ""),
+        "tunnel input",
+        ("TryApplyTunnelMove(hit, left)",),
+    ))
+    errors.extend(require_fragments(
+        projection_path,
+        texts.get(projection_path, ""),
+        "tunnel depth projection",
+        (
+            "DepthSpacing",
+            "ResidentDepthOffset",
+            "cell.Z * DepthSpacing",
+        ),
+    ))
+    errors.extend(require_fragments(
+        session_path,
+        texts.get(session_path, ""),
+        "tunnel movement composition",
+        (
+            "depth: 4",
+            "MoveAgentThroughTunnelCommandHandler",
+            "_manualTunnelOrders",
+        ),
+    ))
     return errors
 
 
@@ -113,6 +181,7 @@ def main() -> int:
     }
 
     errors: list[str] = check_side_view_contracts(texts)
+    errors.extend(check_tunnel_contracts(texts))
     messages: dict[tuple[str, str], list[Path]] = {}
     for path, text in texts.items():
         relative = path.relative_to(ROOT)
