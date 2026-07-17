@@ -23,7 +23,8 @@ public sealed class AgentSnapshot
         AgentDecision? lastDecision,
         IReadOnlyCollection<AgentSkillValue> skills,
         IReadOnlyCollection<AgentTraitId> traits,
-        CellId? position = null)
+        CellId? position = null,
+        int positionZ = 0)
         : this(
             id,
             name,
@@ -37,7 +38,10 @@ public sealed class AgentSnapshot
             lastDecision,
             CopySkills(skills),
             CopyTraits(traits),
-            position ?? new CellId(0, 0))
+            new SpatialCellId(
+                (position ?? new CellId(0, 0)).X,
+                (position ?? new CellId(0, 0)).Y,
+                positionZ))
     {
     }
 
@@ -54,7 +58,7 @@ public sealed class AgentSnapshot
         AgentDecision? lastDecision,
         IReadOnlyList<AgentSkillValue> skills,
         IReadOnlyList<AgentTraitId> traits,
-        CellId position)
+        SpatialCellId position)
     {
         if (id.IsEmpty)
         {
@@ -76,7 +80,10 @@ public sealed class AgentSnapshot
             throw new ArgumentOutOfRangeException(nameof(lastActionSwitchTick));
         }
 
-        if (position.X < 0 || position.Y < 0)
+        if (position.X < 0
+            || position.Y < 0
+            || position.Z < 0
+            || position.Z > AgentState.MaximumDepthIndex)
         {
             throw new ArgumentOutOfRangeException(nameof(position));
         }
@@ -93,7 +100,7 @@ public sealed class AgentSnapshot
         PlayerOrder = playerOrder;
         LastActionSwitchTick = lastActionSwitchTick;
         LastDecision = lastDecision;
-        Position = position;
+        SpatialPosition = position;
     }
 
     public EntityId Id { get; }
@@ -108,7 +115,9 @@ public sealed class AgentSnapshot
     public AgentDecision? LastDecision { get; }
     public IReadOnlyList<AgentSkillValue> Skills { get; }
     public IReadOnlyList<AgentTraitId> Traits { get; }
-    public CellId Position { get; }
+    public CellId Position => SpatialPosition.Projection;
+    public SpatialCellId SpatialPosition { get; }
+    public int PositionZ => SpatialPosition.Z;
 
     public int GetSkillLevel(AgentSkillId skillId)
     {
@@ -151,6 +160,37 @@ public sealed class AgentSnapshot
         IReadOnlyList<AgentTraitId> traits,
         CellId position)
     {
+        return FromNormalizedCapabilities(
+            id,
+            name,
+            version,
+            isAlive,
+            needs,
+            scheduledActivity,
+            activeAction,
+            playerOrder,
+            lastActionSwitchTick,
+            lastDecision,
+            skills,
+            traits,
+            new SpatialCellId(position.X, position.Y, 0));
+    }
+
+    internal static AgentSnapshot FromNormalizedCapabilities(
+        EntityId id,
+        string name,
+        long version,
+        bool isAlive,
+        AgentNeedsSnapshot needs,
+        ScheduleActivity scheduledActivity,
+        AgentActionSnapshot? activeAction,
+        PlayerOrder? playerOrder,
+        long lastActionSwitchTick,
+        AgentDecision? lastDecision,
+        IReadOnlyList<AgentSkillValue> skills,
+        IReadOnlyList<AgentTraitId> traits,
+        SpatialCellId position)
+    {
         return new AgentSnapshot(
             id,
             name,
@@ -191,4 +231,5 @@ public sealed class AgentSnapshot
         return new ReadOnlyCollection<AgentTraitId>(ordered);
     }
 }
+
 }
