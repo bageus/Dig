@@ -28,6 +28,9 @@ jobs:
       - name: Validate Unity built-in modules
         run: python tools/quality/check_unity_modules.py
 
+      - name: Validate Unity source contracts
+        run: python tools/quality/check_unity_source_contracts.py
+
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
