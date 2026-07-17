@@ -8,7 +8,9 @@ namespace Dig.Domain.Agents
 
 public sealed partial class AgentState
 {
-    private CellId _position = new CellId(0, 0);
+    public const int MaximumDepthIndex = 3;
+
+    private SpatialCellId _spatialPosition = new SpatialCellId(0, 0, 0);
 
     public AgentState(
         EntityId id,
@@ -18,15 +20,45 @@ public sealed partial class AgentState
         IEnumerable<AgentSkillValue>? skills,
         IEnumerable<AgentTraitId>? traits,
         CellId initialPosition)
+        : this(
+            id,
+            name,
+            initialNeeds,
+            schedule,
+            skills,
+            traits,
+            new SpatialCellId(initialPosition.X, initialPosition.Y, 0))
+    {
+    }
+
+    public AgentState(
+        EntityId id,
+        string name,
+        AgentNeedsSnapshot initialNeeds,
+        DailySchedule schedule,
+        IEnumerable<AgentSkillValue>? skills,
+        IEnumerable<AgentTraitId>? traits,
+        SpatialCellId initialPosition)
         : this(id, name, initialNeeds, schedule, skills, traits)
     {
         RequireValidPosition(initialPosition);
-        _position = initialPosition;
+        _spatialPosition = initialPosition;
     }
 
-    public CellId Position => _position;
+    public CellId Position => _spatialPosition.Projection;
+
+    public SpatialCellId SpatialPosition => _spatialPosition;
+
+    public int Depth => _spatialPosition.Z;
 
     public Result MoveTo(CellId targetPosition, long tick)
+    {
+        return MoveTo(
+            new SpatialCellId(targetPosition.X, targetPosition.Y, _spatialPosition.Z),
+            tick);
+    }
+
+    public Result MoveTo(SpatialCellId targetPosition, long tick)
     {
         ValidateTick(tick);
         if (!IsAlive)
@@ -39,24 +71,27 @@ public sealed partial class AgentState
             return Result.Failure(AgentErrors.InvalidPosition);
         }
 
-        if (_position == targetPosition)
+        if (_spatialPosition == targetPosition)
         {
             return Result.Success();
         }
 
-        CellId previousPosition = _position;
-        _position = targetPosition;
+        SpatialCellId previousPosition = _spatialPosition;
+        _spatialPosition = targetPosition;
         Version = checked(Version + 1);
         Raise(new AgentMoved(tick, Id, previousPosition, targetPosition));
         return Result.Success();
     }
 
-    private static bool IsValidPosition(CellId position)
+    private static bool IsValidPosition(SpatialCellId position)
     {
-        return position.X >= 0 && position.Y >= 0;
+        return position.X >= 0
+            && position.Y >= 0
+            && position.Z >= 0
+            && position.Z <= MaximumDepthIndex;
     }
 
-    private static void RequireValidPosition(CellId position)
+    private static void RequireValidPosition(SpatialCellId position)
     {
         if (!IsValidPosition(position))
         {
@@ -64,4 +99,5 @@ public sealed partial class AgentState
         }
     }
 }
+
 }

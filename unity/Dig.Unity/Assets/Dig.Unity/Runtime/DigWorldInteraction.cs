@@ -99,6 +99,11 @@ namespace Dig.Unity
                 return;
             }
 
+            if (TryApplyTunnelMove(hit, left))
+            {
+                return;
+            }
+
             if (_agentRenderer!.TryGetAgent(hit, out DigAgentVisual agent))
             {
                 int clickCount = left ? RegisterResidentClick(agent.Model.Id) : 1;

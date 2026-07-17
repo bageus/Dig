@@ -13,7 +13,7 @@ using Dig.Presentation.World;
 
 namespace Dig.Unity
 {
-    internal sealed class DigAgentSession
+    internal sealed partial class DigAgentSession
     {
         private readonly AgentAutonomySystem _autonomy;
         private readonly MoveAgentCommandHandler _movementHandler;
@@ -83,7 +83,7 @@ namespace Dig.Unity
                 journal,
                 new AgentDecisionSystem(),
                 policy);
-            return new DigAgentSession(
+            DigAgentSession session = new DigAgentSession(
                 autonomy,
                 new MoveAgentCommandHandler(repository, journal),
                 new AgentPresenter(new GetAgentSnapshotsQueryHandler(repository)),
@@ -93,6 +93,8 @@ namespace Dig.Unity
                     tickDuration: TimeSpan.FromMilliseconds(500)),
                 walkable,
                 routeIndices);
+            session.InitializeTunnelMovement(world.Width, world.Height, journal);
+            return session;
         }
 
         public IReadOnlyList<AgentViewModel> LoadView()
@@ -131,7 +133,7 @@ namespace Dig.Unity
             for (int index = 0; index < agents.Count; index++)
             {
                 AgentState agent = agents[index];
-                if (!agent.IsAlive)
+                if (!agent.IsAlive || HasManualTunnelOrder(agent.Id))
                 {
                     continue;
                 }
@@ -139,6 +141,11 @@ namespace Dig.Unity
                 CellId destination;
                 if (!movementTargets.TryGetValue(agent.Id.ToString(), out destination))
                 {
+                    if (_tunnelVolume != null)
+                    {
+                        continue;
+                    }
+
                     int routeIndex = SelectNextRouteIndex(agent);
                     WorldCellViewModel cell = _walkableCells[routeIndex];
                     destination = new CellId(cell.X, cell.Y);

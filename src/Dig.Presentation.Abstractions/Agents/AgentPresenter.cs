@@ -69,7 +69,9 @@ public sealed class AgentPresenter
             action?.RequiredTicks ?? 0,
             decision?.ReasonCode ?? "agents.decision.pending",
             decision?.Explanation ?? "No utility decision has been recorded yet.",
-            options);
+            options,
+            snapshot.PositionZ);
     }
 }
+
 }

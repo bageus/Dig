@@ -157,7 +157,7 @@ public sealed partial class AgentState : AggregateRoot
             LastDecision,
             _skills.CreateSnapshot(),
             _traits.CreateSnapshot(),
-            Position);
+            SpatialPosition);
     }
 
     private void ExpirePlayerOrder(long tick)
@@ -189,4 +189,5 @@ public sealed partial class AgentState : AggregateRoot
         }
     }
 }
+
 }
