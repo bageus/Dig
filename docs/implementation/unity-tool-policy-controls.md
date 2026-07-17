@@ -32,6 +32,14 @@ HUD policy buttons update only the selection state. They do not execute a Job co
 
 The gate is resolved when the retained outcome changes to `Switched` or `Bypassed`. Unity composes the policy with the same indexed assignment report source used by the HUD.
 
+Presentation maps the resolved Job and retained report into an always-present immutable `JobExecutionReadinessViewModel`:
+
+- normal, resolved and terminal Jobs are `Ready` and carry no reason;
+- an active Job with a retained `Suggested` outcome is `WaitingForToolDecision`;
+- the waiting state exposes the stable code `jobs.waiting_for_tool_decision` and an explanatory message.
+
+Unity renders only non-ready readiness states. It does not derive waiting from action labels, disabled reasons or diagnostic text. The existing projection refresh after prepare or bypass removes the waiting notice immediately.
+
 ## Typed Job actions
 
 `JobOverlayViewModel.Actions` contains immutable `JobActionViewModel` values keyed by `JobActionKind`. Unity renders the supplied label, enabled state and disabled reason; it does not infer action availability from assignment diagnostics, resident text or reservation rows.
@@ -89,6 +97,7 @@ Engine-independent tests verify:
 - bypass releases only the Tool reservation and emits the bounded reservation-release event;
 - bypass recovers stale-resident and missing-reservation suggestions;
 - Presentation exposes prepare and bypass with distinct enabled-state rules;
+- Presentation exposes waiting readiness only for active retained suggestions and returns to `Ready` after resolution;
 - resolved assignments expose no manual tool actions;
 - the dispatcher routes exact enabled actions and rejects disabled, duplicate or missing routes.
 
