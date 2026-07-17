@@ -12,6 +12,7 @@ namespace Dig.Presentation.Jobs
 
 public sealed class JobOverlayPresenter
 {
+    private const string PrepareSuggestedToolLabel = "Equip suggested tool";
     private readonly IQueryHandler<GetJobsQuery, IReadOnlyList<JobSnapshot>> _jobs;
     private readonly IQueryHandler<GetJobReservationsQuery, IReadOnlyList<ReservationSnapshot>> _reservations;
 
@@ -50,13 +51,16 @@ public sealed class JobOverlayPresenter
         JobOverlayViewModel[] models = new JobOverlayViewModel[jobs.Count];
         for (int index = 0; index < jobs.Count; index++)
         {
+            JobSnapshot job = jobs[index];
+            JobAssignmentReport? report = ResolveReport(
+                job.Id,
+                latestAssignmentReport,
+                assignmentReports);
             models[index] = Map(
-                jobs[index],
+                job,
                 reservations,
-                MapAssignment(
-                    jobs[index].Id,
-                    latestAssignmentReport,
-                    assignmentReports));
+                MapAssignment(job.Id, report),
+                MapActions(job, reservations, report));
         }
 
         return new ReadOnlyCollection<JobOverlayViewModel>(models);
@@ -65,7 +69,8 @@ public sealed class JobOverlayPresenter
     private static JobOverlayViewModel Map(
         JobSnapshot job,
         IReadOnlyList<ReservationSnapshot> reservations,
-        JobAssignmentDiagnosticViewModel? assignmentDiagnostic)
+        JobAssignmentDiagnosticViewModel? assignmentDiagnostic,
+        IReadOnlyList<JobActionViewModel> actions)
     {
         JobReservationViewModel[] values = reservations
             .Where(item => item.JobId == job.Id)
@@ -100,21 +105,68 @@ public sealed class JobOverlayPresenter
             job.Reason?.ToString(),
             new ReadOnlyCollection<JobReservationViewModel>(values),
             job.Definition.PreferredToolKind,
-            assignmentDiagnostic);
+            assignmentDiagnostic,
+            actions);
+    }
+
+    private static IReadOnlyList<JobActionViewModel> MapActions(
+        JobSnapshot job,
+        IReadOnlyList<ReservationSnapshot> reservations,
+        JobAssignmentReport? report)
+    {
+        JobAssignment? suggestion = report?.Assignments.SingleOrDefault(
+            item => item.JobId == job.Id);
+        if (suggestion is null
+            || suggestion.ToolPreparation != JobToolPreparationOutcome.Suggested
+            || !suggestion.ToolStackId.HasValue)
+        {
+            return Array.Empty<JobActionViewModel>();
+        }
+
+        DomainError? disabledReason = ResolveSuggestedToolDisabledReason(
+            job,
+            suggestion,
+            reservations);
+        return new[]
+        {
+            new JobActionViewModel(
+                JobActionKind.PrepareSuggestedTool,
+                PrepareSuggestedToolLabel,
+                isEnabled: disabledReason is null,
+                disabledReasonCode: disabledReason?.Code,
+                disabledReasonMessage: disabledReason?.Message),
+        };
+    }
+
+    private static DomainError? ResolveSuggestedToolDisabledReason(
+        JobSnapshot job,
+        JobAssignment suggestion,
+        IReadOnlyList<ReservationSnapshot> reservations)
+    {
+        if ((job.Status != JobStatus.Claimed && job.Status != JobStatus.InProgress)
+            || !job.AssignedAgentId.HasValue)
+        {
+            return JobErrors.InvalidStatus;
+        }
+
+        if (suggestion.AgentId != job.AssignedAgentId.Value)
+        {
+            return PrepareSuggestedJobToolErrors.SuggestionStale;
+        }
+
+        EntityId toolStackId = suggestion.ToolStackId!.Value;
+        ReservationSnapshot? reservation = reservations.SingleOrDefault(
+            value => value.JobId == job.Id
+                && value.Key == ReservationKey.ForTool(toolStackId));
+        return reservation is null || reservation.AgentId != suggestion.AgentId
+            ? PrepareSuggestedJobToolErrors.ToolReservationMissing
+            : null;
     }
 
     private static JobAssignmentDiagnosticViewModel? MapAssignment(
         EntityId jobId,
-        JobAssignmentReport? latestAssignmentReport,
-        IReadOnlyDictionary<EntityId, JobAssignmentReport>? assignmentReports)
+        JobAssignmentReport? report)
     {
-        JobAssignmentReport? report = latestAssignmentReport;
-        if (assignmentReports != null
-            && assignmentReports.TryGetValue(jobId, out JobAssignmentReport? indexedReport))
-        {
-            report = indexedReport;
-        }
-
         if (report is null)
         {
             return null;
@@ -144,6 +196,20 @@ public sealed class JobOverlayPresenter
                 toolStackId: null,
                 failureCode: failure.Error.Code,
                 failureMessage: failure.Error.Message);
+    }
+
+    private static JobAssignmentReport? ResolveReport(
+        EntityId jobId,
+        JobAssignmentReport? latestAssignmentReport,
+        IReadOnlyDictionary<EntityId, JobAssignmentReport>? assignmentReports)
+    {
+        if (assignmentReports != null
+            && assignmentReports.TryGetValue(jobId, out JobAssignmentReport? indexedReport))
+        {
+            return indexedReport;
+        }
+
+        return latestAssignmentReport;
     }
 }
 }
