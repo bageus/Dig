@@ -6,6 +6,8 @@ namespace Dig.Unity
     [DisallowMultipleComponent]
     public sealed class DigCameraController : MonoBehaviour
     {
+        private const float SideViewYaw = 180f;
+
         [SerializeField]
         private float panSpeed = 8f;
 
@@ -200,7 +202,10 @@ namespace Dig.Unity
             }
 
             SideViewCameraOrbitState orbit = EnsureOrbit();
-            Quaternion rotation = Quaternion.Euler(orbit.Pitch, orbit.Yaw, 0f);
+            Quaternion rotation = Quaternion.Euler(
+                orbit.Pitch,
+                SideViewYaw + orbit.Yaw,
+                0f);
             _camera.transform.rotation = rotation;
             _camera.transform.position = _focus
                 - (rotation * Vector3.forward * _distance);
