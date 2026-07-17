@@ -220,11 +220,16 @@ public sealed class AdvanceJobHandler : ICommandHandler<AdvanceJobCommand, Resul
 {
     private readonly IJobRepository _repository;
     private readonly IEventSink _eventSink;
+    private readonly IJobExecutionReadinessPolicy? _readinessPolicy;
 
-    public AdvanceJobHandler(IJobRepository repository, IEventSink eventSink)
+    public AdvanceJobHandler(
+        IJobRepository repository,
+        IEventSink eventSink,
+        IJobExecutionReadinessPolicy? readinessPolicy = null)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _eventSink = eventSink ?? throw new ArgumentNullException(nameof(eventSink));
+        _readinessPolicy = readinessPolicy;
     }
 
     public Result Handle(AdvanceJobCommand command)
@@ -236,6 +241,14 @@ public sealed class AdvanceJobHandler : ICommandHandler<AdvanceJobCommand, Resul
 
         JobSystem jobs = _repository.Get();
         JobSnapshot? job = jobs.Get(command.JobId);
+        if (job != null
+            && (job.Status == JobStatus.Claimed || job.Status == JobStatus.InProgress)
+            && _readinessPolicy != null
+            && !_readinessPolicy.CanAdvance(job))
+        {
+            return Result.Success();
+        }
+
         Result result = job?.Status switch
         {
             JobStatus.Claimed => jobs.Start(command.JobId, command.Tick),
