@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using Dig.Application.Jobs;
 using Dig.Presentation.Jobs;
 using UnityEngine;
 
@@ -7,8 +9,9 @@ namespace Dig.Unity
     public sealed partial class DigHudOverlay
     {
         private IReadOnlyList<JobOverlayViewModel> _jobs =
-            System.Array.Empty<JobOverlayViewModel>();
+            Array.Empty<JobOverlayViewModel>();
         private JobOverlayViewModel? _selectedJob;
+        private DigTerrainWorkSession? _toolAssignmentSession;
 
         private int JobCount => _jobs.Count;
 
@@ -17,6 +20,12 @@ namespace Dig.Unity
         public void SetJobs(IReadOnlyList<JobOverlayViewModel> jobs)
         {
             _jobs = jobs;
+        }
+
+        internal void SetToolAssignmentControls(DigTerrainWorkSession session)
+        {
+            _toolAssignmentSession = session
+                ?? throw new ArgumentNullException(nameof(session));
         }
 
         public void SetJobSelection(JobOverlayViewModel? selected)
@@ -31,6 +40,49 @@ namespace Dig.Unity
         private void ClearJobSelection()
         {
             _selectedJob = null;
+        }
+
+        private void DrawToolAssignmentControls()
+        {
+            if (_toolAssignmentSession == null)
+            {
+                return;
+            }
+
+            JobToolPreparationMode selected =
+                _toolAssignmentSession.SelectedToolPreparationMode;
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(
+                $"Tool policy: {_toolAssignmentSession.ToolPreparationModeLabel}",
+                GUILayout.Width(180f));
+            bool previousEnabled = GUI.enabled;
+            GUI.enabled = selected != JobToolPreparationMode.Automatic;
+            if (GUILayout.Button("Automatic", GUILayout.Width(90f)))
+            {
+                SelectToolPreparationMode(JobToolPreparationMode.Automatic);
+            }
+
+            GUI.enabled = selected != JobToolPreparationMode.Suggest;
+            if (GUILayout.Button("Suggest only", GUILayout.Width(95f)))
+            {
+                SelectToolPreparationMode(JobToolPreparationMode.Suggest);
+            }
+
+            GUI.enabled = previousEnabled;
+            GUILayout.EndHorizontal();
+        }
+
+        private void SelectToolPreparationMode(JobToolPreparationMode mode)
+        {
+            if (_toolAssignmentSession == null
+                || !_toolAssignmentSession.SelectToolPreparationMode(mode))
+            {
+                return;
+            }
+
+            SetStatus(
+                $"Tool policy set to {_toolAssignmentSession.ToolPreparationModeLabel}. " +
+                "Applies to future Job assignments.");
         }
 
         private void DrawJobSelection()
