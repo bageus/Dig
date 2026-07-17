@@ -141,6 +141,11 @@ namespace Dig.Unity
                 CellId destination;
                 if (!movementTargets.TryGetValue(agent.Id.ToString(), out destination))
                 {
+                    if (_tunnelVolume != null)
+                    {
+                        continue;
+                    }
+
                     int routeIndex = SelectNextRouteIndex(agent);
                     WorldCellViewModel cell = _walkableCells[routeIndex];
                     destination = new CellId(cell.X, cell.Y);
