@@ -33,6 +33,7 @@ public enum JobToolPreparationOutcome
     AlreadyEquipped = 1,
     Suggested = 2,
     Switched = 3,
+    Bypassed = 4,
 }
 
 public sealed class CreateDigJobCommand : ICommand<Result>
