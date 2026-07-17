@@ -5,9 +5,10 @@ namespace Dig.Unity
 {
     internal static class DigTunnelProjection
     {
-        internal const float DepthOrigin = 0.26f;
-        internal const float DepthSpacing = 0.48f;
+        internal const float DepthOrigin = -1.10f;
+        internal const float DepthSpacing = 0.45f;
         internal const float ResidentHeight = 0.68f;
+        internal const float ResidentDepthOffset = -0.10f;
 
         internal static Vector3 CellLocalPosition(SpatialCellId cell)
         {
@@ -24,7 +25,7 @@ namespace Dig.Unity
         {
             return new Vector3(
                 cellX,
-                DepthOrigin + (cellZ * DepthSpacing),
+                DepthOrigin + (cellZ * DepthSpacing) + ResidentDepthOffset,
                 cellY - ResidentHeight);
         }
     }
