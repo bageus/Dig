@@ -55,6 +55,9 @@ namespace Dig.Unity
             _startupStage = "validating demo configuration";
             ClampDemoConfiguration();
 
+            _startupStage = "configuring side-view world root";
+            ConfigureSideViewRoot();
+
             _startupStage = "creating world";
             DigWorldSession worldSession = DigWorldSession.CreateDemo(
                 demoWidth,
@@ -165,8 +168,7 @@ namespace Dig.Unity
             interaction.enabled = true;
             simulation.enabled = true;
             hud.SetStatus(
-                "Running. Pack the workshop, then use LMB or Alt+LMB on its BuildingBox.");
-
+                "Running. Ctrl+mouse orbits, wheel zooms, WASD pans, Home resets view.");
             if (logStartup)
             {
                 Debug.Log(
@@ -175,6 +177,11 @@ namespace Dig.Unity
                     $"{world.Width}x{world.Height} world.",
                     this);
             }
+        }
+
+        private void ConfigureSideViewRoot()
+        {
+            transform.rotation = Quaternion.Euler(90f, 0f, 0f);
         }
 
         private void DisableRuntimeDrivers()
