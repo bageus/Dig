@@ -51,18 +51,21 @@ public sealed class AssignAvailableJobsHandler
     private readonly IJobCandidateProvider _candidateProvider;
     private readonly IEventSink _eventSink;
     private readonly IJobToolPreparationService? _toolPreparationService;
+    private readonly IJobAssignmentReportSink? _assignmentReportSink;
 
     public AssignAvailableJobsHandler(
         IJobRepository repository,
         IJobCandidateProvider candidateProvider,
         IEventSink eventSink,
-        IJobToolPreparationService? toolPreparationService = null)
+        IJobToolPreparationService? toolPreparationService = null,
+        IJobAssignmentReportSink? assignmentReportSink = null)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _candidateProvider = candidateProvider
             ?? throw new ArgumentNullException(nameof(candidateProvider));
         _eventSink = eventSink ?? throw new ArgumentNullException(nameof(eventSink));
         _toolPreparationService = toolPreparationService;
+        _assignmentReportSink = assignmentReportSink;
     }
 
     public JobAssignmentReport Handle(AssignAvailableJobsCommand command)
@@ -172,7 +175,12 @@ public sealed class AssignAvailableJobsHandler
 
         _repository.Save(jobs);
         _eventSink.Append(jobs.DequeueUncommittedEvents());
-        return new JobAssignmentReport(command.Tick, assignments, failures);
+        JobAssignmentReport report = new JobAssignmentReport(
+            command.Tick,
+            assignments,
+            failures);
+        _assignmentReportSink?.Record(report);
+        return report;
     }
 
     private static JobToolPreparationOutcome ResolvePreparation(

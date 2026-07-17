@@ -26,6 +26,24 @@ public sealed class JobOverlayPresenter
     public IReadOnlyList<JobOverlayViewModel> Load(
         JobAssignmentReport? latestAssignmentReport = null)
     {
+        return LoadCore(latestAssignmentReport, assignmentReports: null);
+    }
+
+    public IReadOnlyList<JobOverlayViewModel> LoadIndexed(
+        IReadOnlyDictionary<EntityId, JobAssignmentReport> assignmentReports)
+    {
+        if (assignmentReports is null)
+        {
+            throw new ArgumentNullException(nameof(assignmentReports));
+        }
+
+        return LoadCore(latestAssignmentReport: null, assignmentReports);
+    }
+
+    private IReadOnlyList<JobOverlayViewModel> LoadCore(
+        JobAssignmentReport? latestAssignmentReport,
+        IReadOnlyDictionary<EntityId, JobAssignmentReport>? assignmentReports)
+    {
         IReadOnlyList<JobSnapshot> jobs = _jobs.Handle(new GetJobsQuery());
         IReadOnlyList<ReservationSnapshot> reservations = _reservations.Handle(
             new GetJobReservationsQuery());
@@ -35,7 +53,10 @@ public sealed class JobOverlayPresenter
             models[index] = Map(
                 jobs[index],
                 reservations,
-                MapAssignment(jobs[index].Id, latestAssignmentReport));
+                MapAssignment(
+                    jobs[index].Id,
+                    latestAssignmentReport,
+                    assignmentReports));
         }
 
         return new ReadOnlyCollection<JobOverlayViewModel>(models);
@@ -84,8 +105,16 @@ public sealed class JobOverlayPresenter
 
     private static JobAssignmentDiagnosticViewModel? MapAssignment(
         EntityId jobId,
-        JobAssignmentReport? report)
+        JobAssignmentReport? latestAssignmentReport,
+        IReadOnlyDictionary<EntityId, JobAssignmentReport>? assignmentReports)
     {
+        JobAssignmentReport? report = latestAssignmentReport;
+        if (assignmentReports != null
+            && assignmentReports.TryGetValue(jobId, out JobAssignmentReport? indexedReport))
+        {
+            report = indexedReport;
+        }
+
         if (report is null)
         {
             return null;

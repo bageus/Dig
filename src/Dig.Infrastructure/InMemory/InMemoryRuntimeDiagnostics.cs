@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
+using Dig.Application.Jobs;
 using Dig.Application.Messaging;
 using Dig.Application.Runtime;
 using Dig.Domain.Core;
@@ -8,11 +10,15 @@ using Dig.Domain.Core;
 namespace Dig.Infrastructure.InMemory
 {
 
-public sealed class InMemoryExecutionJournal : IExecutionJournal
+public sealed class InMemoryExecutionJournal
+    : IExecutionJournal,
+      IJobAssignmentReportSink
 {
     private readonly object _gate = new object();
     private readonly List<CommandJournalEntry> _commands = new List<CommandJournalEntry>();
     private readonly List<IDomainEvent> _events = new List<IDomainEvent>();
+    private readonly Dictionary<EntityId, JobAssignmentReport> _jobAssignmentReports =
+        new Dictionary<EntityId, JobAssignmentReport>();
     private readonly int? _maximumCommands;
     private readonly int? _maximumEvents;
 
@@ -52,6 +58,18 @@ public sealed class InMemoryExecutionJournal : IExecutionJournal
         }
     }
 
+    public IReadOnlyDictionary<EntityId, JobAssignmentReport> JobAssignmentReports
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return new ReadOnlyDictionary<EntityId, JobAssignmentReport>(
+                    new Dictionary<EntityId, JobAssignmentReport>(_jobAssignmentReports));
+            }
+        }
+    }
+
     public void RecordCommand(CommandJournalEntry entry)
     {
         lock (_gate)
@@ -74,6 +92,25 @@ public sealed class InMemoryExecutionJournal : IExecutionJournal
             _events.AddRange(events);
             DroppedEventCount = checked(DroppedEventCount
                 + TrimOldest(_events, _maximumEvents));
+        }
+    }
+
+    public void Record(JobAssignmentReport report)
+    {
+        if (report is null)
+        {
+            throw new ArgumentNullException(nameof(report));
+        }
+
+        lock (_gate)
+        {
+            foreach (JobAssignment assignment in report.Assignments)
+            {
+                _jobAssignmentReports[assignment.JobId] = new JobAssignmentReport(
+                    report.Tick,
+                    new[] { assignment },
+                    Array.Empty<JobAssignmentFailure>());
+            }
         }
     }
 
