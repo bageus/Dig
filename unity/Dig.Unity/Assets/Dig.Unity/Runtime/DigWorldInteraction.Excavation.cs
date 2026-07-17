@@ -154,9 +154,17 @@ namespace Dig.Unity
                 return hit;
             }
 
-            return _excavationMode == DigExcavationDrawingMode.Horizontal
-                ? new CellId(hit.X, _excavationAnchor.Value.Y)
-                : new CellId(_excavationAnchor.Value.X, hit.Y);
+            if (_excavationMode == DigExcavationDrawingMode.Horizontal)
+            {
+                return new CellId(hit.X, _excavationAnchor.Value.Y);
+            }
+
+            if (_excavationMode == DigExcavationDrawingMode.Vertical)
+            {
+                return new CellId(_excavationAnchor.Value.X, hit.Y);
+            }
+
+            return hit;
         }
     }
 }
