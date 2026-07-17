@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Dig.Domain.Core;
 using Dig.Domain.World;
@@ -52,6 +51,7 @@ namespace Dig.Unity
             }
 
             IReadOnlyList<AgentViewModel> agents = AgentSession!.LoadView();
+            TerrainSession.SynchronizeDesignations(CurrentTick, agents);
             RefreshExcavationPresentation(agents);
             DigAgentVisual? selected = AgentRenderer!.SelectById(residentId);
             Hud!.SetAgentSelection(selected?.Model);
