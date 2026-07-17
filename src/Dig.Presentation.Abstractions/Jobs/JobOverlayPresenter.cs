@@ -13,6 +13,7 @@ namespace Dig.Presentation.Jobs
 public sealed class JobOverlayPresenter
 {
     private const string PrepareSuggestedToolLabel = "Equip suggested tool";
+    private const string BypassSuggestedToolLabel = "Proceed without suggested tool";
     private readonly IQueryHandler<GetJobsQuery, IReadOnlyList<JobSnapshot>> _jobs;
     private readonly IQueryHandler<GetJobReservationsQuery, IReadOnlyList<ReservationSnapshot>> _reservations;
 
@@ -123,33 +124,40 @@ public sealed class JobOverlayPresenter
             return Array.Empty<JobActionViewModel>();
         }
 
-        DomainError? disabledReason = ResolveSuggestedToolDisabledReason(
+        DomainError? prepareDisabledReason = ResolvePrepareDisabledReason(
             job,
             suggestion,
             reservations);
+        DomainError? bypassDisabledReason = ResolveBypassDisabledReason(job);
         return new[]
         {
             new JobActionViewModel(
                 JobActionKind.PrepareSuggestedTool,
                 PrepareSuggestedToolLabel,
-                isEnabled: disabledReason is null,
-                disabledReasonCode: disabledReason?.Code,
-                disabledReasonMessage: disabledReason?.Message),
+                isEnabled: prepareDisabledReason is null,
+                disabledReasonCode: prepareDisabledReason?.Code,
+                disabledReasonMessage: prepareDisabledReason?.Message),
+            new JobActionViewModel(
+                JobActionKind.BypassSuggestedTool,
+                BypassSuggestedToolLabel,
+                isEnabled: bypassDisabledReason is null,
+                disabledReasonCode: bypassDisabledReason?.Code,
+                disabledReasonMessage: bypassDisabledReason?.Message),
         };
     }
 
-    private static DomainError? ResolveSuggestedToolDisabledReason(
+    private static DomainError? ResolvePrepareDisabledReason(
         JobSnapshot job,
         JobAssignment suggestion,
         IReadOnlyList<ReservationSnapshot> reservations)
     {
-        if ((job.Status != JobStatus.Claimed && job.Status != JobStatus.InProgress)
-            || !job.AssignedAgentId.HasValue)
+        DomainError? statusReason = ResolveBypassDisabledReason(job);
+        if (statusReason != null)
         {
-            return JobErrors.InvalidStatus;
+            return statusReason;
         }
 
-        if (suggestion.AgentId != job.AssignedAgentId.Value)
+        if (suggestion.AgentId != job.AssignedAgentId!.Value)
         {
             return PrepareSuggestedJobToolErrors.SuggestionStale;
         }
@@ -160,6 +168,14 @@ public sealed class JobOverlayPresenter
                 && value.Key == ReservationKey.ForTool(toolStackId));
         return reservation is null || reservation.AgentId != suggestion.AgentId
             ? PrepareSuggestedJobToolErrors.ToolReservationMissing
+            : null;
+    }
+
+    private static DomainError? ResolveBypassDisabledReason(JobSnapshot job)
+    {
+        return (job.Status != JobStatus.Claimed && job.Status != JobStatus.InProgress)
+            || !job.AssignedAgentId.HasValue
+            ? JobErrors.InvalidStatus
             : null;
     }
 
