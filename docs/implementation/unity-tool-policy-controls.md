@@ -40,6 +40,15 @@ Presentation maps the resolved Job and retained report into an always-present im
 
 Unity renders only non-ready readiness states. It does not derive waiting from action labels, disabled reasons or diagnostic text. The existing projection refresh after prepare or bypass removes the waiting notice immediately.
 
+## Discoverability
+
+Waiting Jobs are visible before selection in two ways:
+
+1. `JobAttentionProjection` creates a bounded priority-ordered HUD summary with at most three rows and a hidden-row count.
+2. `DigJobRenderer` uses a dedicated waiting material whenever the immutable readiness model is non-ready.
+
+The attention summary supplies description, readiness label, resident and stable reason code. Selecting a row selects the existing marker and opens the normal Job panel; it does not resolve or mutate the Job.
+
 ## Typed Job actions
 
 `JobOverlayViewModel.Actions` contains immutable `JobActionViewModel` values keyed by `JobActionKind`. Unity renders the supplied label, enabled state and disabled reason; it does not infer action availability from assignment diagnostics, resident text or reservation rows.
@@ -98,6 +107,7 @@ Engine-independent tests verify:
 - bypass recovers stale-resident and missing-reservation suggestions;
 - Presentation exposes prepare and bypass with distinct enabled-state rules;
 - Presentation exposes waiting readiness only for active retained suggestions and returns to `Ready` after resolution;
+- attention projection filters, orders and bounds waiting rows while preserving compact details;
 - resolved assignments expose no manual tool actions;
 - the dispatcher routes exact enabled actions and rejects disabled, duplicate or missing routes.
 
