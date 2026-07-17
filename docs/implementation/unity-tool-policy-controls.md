@@ -21,9 +21,21 @@ Unity passes the same control to the tool-aware assignment handlers for dynamic 
 
 HUD policy buttons update only the selection state. They do not execute a Job command, mutate Inventory or rewrite retained assignment diagnostics.
 
+## Typed Job actions
+
+`JobOverlayViewModel.Actions` contains immutable `JobActionViewModel` values keyed by `JobActionKind`. Unity renders the supplied label, enabled state and disabled reason; it does not infer action availability from assignment diagnostics, resident text or reservation rows.
+
+A retained `Suggested` assignment produces `PrepareSuggestedTool`. Presentation evaluates disabled reasons in the same order as the Application use case:
+
+1. the Job must be `Claimed` or `InProgress` with an assigned resident;
+2. the retained assignment resident must match the current Job resident;
+3. the suggested stack must still have the matching Tool reservation.
+
+The action therefore remains visible when a suggestion becomes stale, but is disabled with a stable code and message. Assignments already marked `Switched` do not expose the manual action.
+
 ## Equip suggested tool action
 
-A selected Job with a retained `Suggested` assignment exposes an `Equip suggested tool` button. The HUD sends only the Job id and current simulation tick to `PrepareSuggestedJobToolHandler`; it does not trust or mutate rendered Inventory state.
+When `PrepareSuggestedTool` is enabled, the HUD sends only the Job id and current simulation tick to `PrepareSuggestedJobToolHandler`; it does not trust or mutate rendered Inventory state.
 
 Before switching, the Application use case verifies all authoritative conditions again:
 
@@ -45,6 +57,8 @@ Engine-independent tests verify:
 - a live `Automatic` source overrides a suggest command and invokes tool preparation;
 - the reported preparation outcome matches the effective mode;
 - a valid suggested action switches Inventory and updates the retained diagnostic;
-- missing Tool reservation and stale resident data reject the action before Inventory mutation.
+- missing Tool reservation and stale resident data reject the command before Inventory mutation;
+- Presentation enables a valid typed action and exposes stable disabled reasons for invalid status, stale resident and missing Tool reservation;
+- non-suggested assignments expose no manual preparation action.
 
 The normal Quality workflow validates architecture boundaries, file sizes, C# 9 compatibility, Release build, all tests, headless smoke and deterministic soak profiles. Unity Editor button interaction remains a local Play Mode check.
