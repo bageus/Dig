@@ -61,7 +61,8 @@ public sealed class JobOverlayPresenter
                 job,
                 reservations,
                 MapAssignment(job.Id, report),
-                MapActions(job, reservations, report));
+                MapActions(job, reservations, report),
+                JobExecutionReadinessProjection.Map(job, report));
         }
 
         return new ReadOnlyCollection<JobOverlayViewModel>(models);
@@ -71,7 +72,8 @@ public sealed class JobOverlayPresenter
         JobSnapshot job,
         IReadOnlyList<ReservationSnapshot> reservations,
         JobAssignmentDiagnosticViewModel? assignmentDiagnostic,
-        IReadOnlyList<JobActionViewModel> actions)
+        IReadOnlyList<JobActionViewModel> actions,
+        JobExecutionReadinessViewModel executionReadiness)
     {
         JobReservationViewModel[] values = reservations
             .Where(item => item.JobId == job.Id)
@@ -107,7 +109,8 @@ public sealed class JobOverlayPresenter
             new ReadOnlyCollection<JobReservationViewModel>(values),
             job.Definition.PreferredToolKind,
             assignmentDiagnostic,
-            actions);
+            actions,
+            executionReadiness);
     }
 
     private static IReadOnlyList<JobActionViewModel> MapActions(
