@@ -45,14 +45,14 @@ namespace Dig.Unity
                 seed,
                 residentId,
                 CurrentTick);
+            IReadOnlyList<AgentViewModel> agents = AgentSession!.LoadView();
+            TerrainSession.SynchronizeDesignations(CurrentTick, agents);
+            RefreshExcavationPresentation(agents);
             if (result.IsFailure)
             {
                 return result;
             }
 
-            IReadOnlyList<AgentViewModel> agents = AgentSession!.LoadView();
-            TerrainSession.SynchronizeDesignations(CurrentTick, agents);
-            RefreshExcavationPresentation(agents);
             DigAgentVisual? selected = AgentRenderer!.SelectById(residentId);
             Hud!.SetAgentSelection(selected?.Model);
             return Result.Success();
