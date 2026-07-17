@@ -4,7 +4,7 @@
 
 The Unity runtime now composes digging and construction assignment with the same authoritative Inventory and Jobs services used by engine-independent tests.
 
-The runtime does not infer a tool from a rendered model. It reads immutable Inventory snapshots through `InventoryAwareJobCandidateProvider`, asks `AssignAvailableJobsHandler` to choose a resident, and performs safe automatic switching through `InventoryJobToolPreparationService` before the Job claim.
+The runtime does not infer a tool from a rendered model. It reads immutable Inventory snapshots through `InventoryAwareJobCandidateProvider`, asks `AssignAvailableJobsHandler` to choose a resident, and resolves the selected automatic or suggest-only policy before the Job claim.
 
 ## Runtime composition
 
@@ -23,6 +23,14 @@ Each handler keeps its existing candidate source and execution lifecycle. The wr
 
 Mining prefers the pickaxe profile. Packing and assembly prefer the construction hammer profile.
 
+## Runtime policy selection
+
+The HUD exposes `Automatic` and `Suggest only` buttons. The runtime starts in `Automatic` mode.
+
+The selected policy applies only to future assignment attempts. Existing claimed or in-progress Jobs keep their resident, tool reservation and Inventory state. `Suggest only` still selects and reserves the matching carried tool, but leaves Inventory locations unchanged and reports `Suggested` instead of `Switched`.
+
+`JobToolPreparationModeControl` implements the optional Application `IJobToolPreparationModeSource`. Unity passes the same live source to all three tool-aware handlers. Command-only callers without a source continue to use `AssignAvailableJobsCommand.ToolPreparationMode` unchanged.
+
 ## Diagnostic ownership
 
 `AssignAvailableJobsHandler` can publish its immutable `JobAssignmentReport` to an optional `IJobAssignmentReportSink`.
@@ -37,7 +45,7 @@ The journal keeps successful assignment decisions only. A specialized Unity assi
 - `AlreadyEquipped`, `Suggested`, `Switched`, or `None` preparation outcome;
 - selected tool stack id.
 
-Deleting or rebuilding the HUD, resident models, job markers, or equipment visuals cannot change Inventory locations, Job reservations, or the recorded assignment result.
+Deleting or rebuilding the HUD, resident models, job markers, or equipment visuals cannot change Inventory locations, Job reservations, the selected future policy, or the recorded assignment result.
 
 ## Validation
 
@@ -45,6 +53,9 @@ Engine-independent tests verify that:
 
 - `AssignAvailableJobsHandler` records a successful decision through the optional sink;
 - the journal replaces the prior diagnostic for the same Job instead of growing per tick;
-- the indexed presentation path shows the retained tool preparation outcome and tool stack.
+- the indexed presentation path shows the retained tool preparation outcome and tool stack;
+- the policy control defaults to `Automatic` and changes explicitly;
+- a live `Suggest` source suppresses switching even for an automatic command;
+- a live `Automatic` source performs preparation even for a suggest command.
 
 The normal Quality workflow validates architecture boundaries, file sizes, C# 9 compatibility, Release build, all tests, headless smoke, and deterministic soak profiles. Unity Editor behavior still requires a local Play Mode check.
