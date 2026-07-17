@@ -125,6 +125,7 @@ namespace Dig.Unity
             _startupStage = "rendering world and layered tunnels";
             RenderSettings.ambientLight = new Color(0.58f, 0.60f, 0.66f, 1f);
             worldRenderer.Render(world);
+            worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume);
             tunnelRenderer.Initialize(agentSession.TunnelVolume);
 
             _startupStage = "rendering residents";
@@ -171,8 +172,7 @@ namespace Dig.Unity
                 hud);
             interaction.enabled = true;
             simulation.enabled = true;
-            hud.SetStatus(
-                "Select a dwarf, then click a tunnel cell. Ctrl+mouse orbits; Z has four layers.");
+            hud.SetStatus("LMB selects and moves a dwarf. RMB clears selection.");
             if (logStartup)
             {
                 Debug.Log(
