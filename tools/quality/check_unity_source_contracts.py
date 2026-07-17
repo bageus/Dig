@@ -5,6 +5,8 @@ import re
 import sys
 from pathlib import Path
 
+from unity_excavation_contracts import check_excavation_contracts
+
 ROOT = Path(__file__).resolve().parents[2]
 RUNTIME_ROOT = (
     ROOT
@@ -225,104 +227,6 @@ def check_tunnel_contracts(texts: dict[Path, str]) -> list[str]:
     return errors
 
 
-def check_excavation_contracts(texts: dict[Path, str]) -> list[str]:
-    rock_path = RUNTIME_ROOT / "DigRockVolumeRenderer.cs"
-    interaction_path = RUNTIME_ROOT / "DigWorldInteraction.cs"
-    drawing_path = RUNTIME_ROOT / "DigWorldInteraction.Excavation.cs"
-    designations_path = RUNTIME_ROOT / "DigTerrainWorkDesignations.cs"
-    manual_path = RUNTIME_ROOT / "DigTerrainWorkManualExcavation.cs"
-    driver_path = RUNTIME_ROOT / "DigAgentSimulationDriverBase.Excavation.cs"
-    hud_path = RUNTIME_ROOT / "DigHudOverlay.Excavation.cs"
-    bootstrap_path = RUNTIME_ROOT / "DigUnityBootstrap.cs"
-    errors: list[str] = []
-    errors.extend(require_fragments(
-        rock_path,
-        texts.get(rock_path, ""),
-        "solid rock volume",
-        (
-            "for (int z = 1; z < volume.Depth; z++)",
-            "IsSolidRock",
-            "volume.IsOpen(cell)",
-            "MeshFilter",
-            "IndexFormat.UInt32",
-        ),
-    ))
-    errors.extend(require_fragments(
-        drawing_path,
-        texts.get(drawing_path, ""),
-        "explicit Z0 excavation drawing",
-        (
-            "DigExcavationDrawingMode.Horizontal",
-            "DigExcavationDrawingMode.Vertical",
-            "CanActivateExcavationDrawing",
-            "active: leftButton",
-            "AssignExcavationCluster",
-            "new SpatialCellId(selected.CellX, selected.CellY, 0)",
-        ),
-    ))
-    errors.extend(require_fragments(
-        interaction_path,
-        texts.get(interaction_path, ""),
-        "explicit excavation routing",
-        (
-            "TryHandleExcavationInput(hit, left, right)",
-            "excavationTool: ExcavationToolKind.None",
-            "hud.SetExcavationControls(this)",
-        ),
-    ))
-    errors.extend(reject_fragments(
-        interaction_path,
-        texts.get(interaction_path, ""),
-        "implicit RMB excavation",
-        ("ExcavationToolKind.Tunnel",),
-    ))
-    errors.extend(require_fragments(
-        designations_path,
-        texts.get(designations_path, ""),
-        "frontier-only automatic excavation",
-        (
-            "IsExcavationFrontier",
-            "NoCandidates",
-            "agent.CellZ == 0",
-            "IsManualExcavationJob(job.Id)",
-        ),
-    ))
-    errors.extend(require_fragments(
-        manual_path,
-        texts.get(manual_path, ""),
-        "manual excavation cluster",
-        (
-            "radius: 4",
-            "AssignSpecificJobCommand",
-            "ContinueManualExcavation",
-            "AssignNextManualExcavation",
-        ),
-    ))
-    errors.extend(require_fragments(
-        driver_path,
-        texts.get(driver_path, ""),
-        "excavation application adapter",
-        (
-            "ApplyExcavationDesignation",
-            "SynchronizeDesignations",
-            "RefreshExcavationPresentation",
-        ),
-    ))
-    errors.extend(require_fragments(
-        hud_path,
-        texts.get(hud_path, ""),
-        "excavation HUD controls",
-        ("Horizontal", "Vertical", "P-", "P+"),
-    ))
-    errors.extend(require_fragments(
-        bootstrap_path,
-        texts.get(bootstrap_path, ""),
-        "rock volume composition",
-        ("DigRockVolumeRenderer", "rockRenderer.Initialize"),
-    ))
-    return errors
-
-
 def check_hud_contracts(texts: dict[Path, str]) -> list[str]:
     hud_path = RUNTIME_ROOT / "DigHudOverlay.cs"
     hud = texts.get(hud_path, "")
@@ -369,7 +273,13 @@ def main() -> int:
     }
     errors: list[str] = check_side_view_contracts(texts)
     errors.extend(check_tunnel_contracts(texts))
-    errors.extend(check_excavation_contracts(texts))
+    errors.extend(check_excavation_contracts(
+        ROOT,
+        RUNTIME_ROOT,
+        texts,
+        require_fragments,
+        reject_fragments,
+    ))
     errors.extend(check_hud_contracts(texts))
     messages: dict[tuple[str, str], list[Path]] = {}
 
