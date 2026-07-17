@@ -111,7 +111,8 @@ def check_tunnel_contracts(texts: dict[Path, str]) -> list[str]:
     bootstrap_path = RUNTIME_ROOT / "DigUnityBootstrap.cs"
     interaction_path = RUNTIME_ROOT / "DigWorldInteraction.cs"
     projection_path = RUNTIME_ROOT / "DigTunnelProjection.cs"
-    session_path = RUNTIME_ROOT / "DigAgentSession.TunnelMovement.cs"
+    composition_path = RUNTIME_ROOT / "DigAgentSession.TunnelMovement.cs"
+    session_path = RUNTIME_ROOT / "DigAgentSession.cs"
     errors: list[str] = []
     errors.extend(require_fragments(
         agent_path,
@@ -152,13 +153,22 @@ def check_tunnel_contracts(texts: dict[Path, str]) -> list[str]:
         ),
     ))
     errors.extend(require_fragments(
-        session_path,
-        texts.get(session_path, ""),
+        composition_path,
+        texts.get(composition_path, ""),
         "tunnel movement composition",
         (
             "depth: 4",
             "MoveAgentThroughTunnelCommandHandler",
             "_manualTunnelOrders",
+        ),
+    ))
+    errors.extend(require_fragments(
+        session_path,
+        texts.get(session_path, ""),
+        "tunnel movement priority",
+        (
+            "HasManualTunnelOrder(agent.Id)",
+            "_tunnelVolume != null",
         ),
     ))
     return errors
