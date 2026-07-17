@@ -6,9 +6,9 @@ The job overlay makes work lifecycle and reservation ownership visible in the Un
 
 ## State ownership
 
-`JobSystem` remains the only owner of job status, assigned worker, current stage, retries and terminal state. Its `ReservationLedger` remains the only owner of active Job, Agent, Position and Designation claims.
+`JobSystem` remains the only owner of job status, assigned worker, current stage, retries and terminal state. Its `ReservationLedger` remains the only owner of active Job, Agent, Tool, Position and Designation claims.
 
-Unity receives immutable `JobOverlayViewModel` values. A marker, line renderer or HUD panel can be deleted and rebuilt without changing jobs or reservations.
+Unity receives immutable `JobOverlayViewModel` values. A marker, line renderer or HUD panel can be deleted and rebuilt without changing jobs, inventory or reservations.
 
 ## Read path
 
@@ -18,10 +18,12 @@ Unity receives immutable `JobOverlayViewModel` values. A marker, line renderer o
 - status, stage and priority;
 - assigned resident id;
 - digging target cell when the definition is a `DigJobDefinition`;
+- preferred typed tool kind declared by the job;
+- optional immutable assignment diagnostics from `JobAssignmentReport`;
 - retry state and diagnostic reason;
 - every active reservation kind, value, owner and acquired tick.
 
-The presentation model copies its reservation list and does not expose the repository or mutable domain objects.
+The assignment diagnostic preserves typed `AlreadyEquipped`, `Suggested`, `Switched` or `None` preparation outcomes. A failed assignment exposes the stable domain error code and message instead of inventing a UI-only reason. The presentation model copies its reservation list and does not expose repositories or mutable domain objects.
 
 ## Unity representation
 
@@ -49,7 +51,7 @@ The bootstrap creates real digging jobs for the initially designated cavern cell
 
 When a job reaches `Completed`, `JobSystem` releases all ledger entries. The marker remains as a terminal diagnostic, while its worker link disappears because no active reservations remain.
 
-The demonstration does not yet excavate the target cell on job completion. Connecting job finalization to World excavation and produced Inventory resources belongs to the full playable digging orchestration slice.
+The demonstration does not yet retain assignment reports across every later reassignment pass. Callers that need the preparation outcome pass the latest immutable report to `JobOverlayPresenter.Load`; absence of that report leaves the diagnostic empty rather than reconstructing history from UI state.
 
 ## Selection and HUD
 
@@ -58,10 +60,13 @@ Left-clicking a marker selects the job and shows:
 - description and priority;
 - status and stage;
 - worker and target cell;
+- preferred tool kind;
+- assignment score and preparation outcome when supplied;
+- stable assignment failure code and message when assignment failed;
 - retry state and failure reason;
 - all active reservation keys and acquisition ticks.
 
-Selecting a cell or resident clears job selection. Selecting a job clears cell and resident selection.
+The diagnostic is textual and does not rely on color alone. Selecting a cell or resident clears job selection. Selecting a job clears cell and resident selection.
 
 ## Validation
 
@@ -69,7 +74,10 @@ Engine-independent tests verify:
 
 - digging target coordinates are mapped correctly;
 - status, stage, priority and assigned resident are preserved;
-- claimed jobs expose Job, Agent, Position and Designation reservations;
+- preferred mining tool kind is projected from a digging job;
+- a switched tool assignment maps score, tick, outcome and tool stack;
+- an assignment failure maps its stable error code and message;
+- claimed jobs expose Job, Agent, Tool, Position and Designation reservations;
 - reservation order is stable;
 - completed jobs expose no active ledger entries.
 

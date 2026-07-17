@@ -50,6 +50,12 @@ namespace Dig.Unity
                 GUILayout.Label($"Target cell: {job.TargetX},{job.TargetY}");
             }
 
+            if (job.PreferredToolKind.HasValue)
+            {
+                GUILayout.Label($"Preferred tool: {job.PreferredToolKind.Value}");
+            }
+
+            DrawJobAssignmentDiagnostic(job.AssignmentDiagnostic);
             GUILayout.Label($"Retries: {job.RetryCount} | next: {job.NextRetryTick}");
             if (job.Reason != null)
             {
@@ -63,6 +69,28 @@ namespace Dig.Unity
                 GUILayout.Label(
                     $"{reservation.Kind}: {reservation.Value} | tick {reservation.AcquiredTick}");
             }
+        }
+
+        private static void DrawJobAssignmentDiagnostic(
+            JobAssignmentDiagnosticViewModel? diagnostic)
+        {
+            if (diagnostic == null)
+            {
+                return;
+            }
+
+            if (diagnostic.IsFailure)
+            {
+                GUILayout.Label(
+                    $"Assignment failed: {diagnostic.FailureCode} | {diagnostic.FailureMessage}");
+                return;
+            }
+
+            string tool = diagnostic.ToolStackId ?? "none";
+            GUILayout.Label(
+                $"Tool preparation: {diagnostic.ToolPreparation} | stack {tool}");
+            GUILayout.Label(
+                $"Assignment score: {diagnostic.Score} | tick {diagnostic.Tick}");
         }
     }
 }

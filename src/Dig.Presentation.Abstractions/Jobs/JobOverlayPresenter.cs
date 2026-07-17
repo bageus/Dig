@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Dig.Application.Jobs;
 using Dig.Application.Messaging;
+using Dig.Domain.Core;
 using Dig.Domain.Jobs;
 
 namespace Dig.Presentation.Jobs
@@ -22,7 +23,8 @@ public sealed class JobOverlayPresenter
         _reservations = reservations ?? throw new ArgumentNullException(nameof(reservations));
     }
 
-    public IReadOnlyList<JobOverlayViewModel> Load()
+    public IReadOnlyList<JobOverlayViewModel> Load(
+        JobAssignmentReport? latestAssignmentReport = null)
     {
         IReadOnlyList<JobSnapshot> jobs = _jobs.Handle(new GetJobsQuery());
         IReadOnlyList<ReservationSnapshot> reservations = _reservations.Handle(
@@ -30,7 +32,10 @@ public sealed class JobOverlayPresenter
         JobOverlayViewModel[] models = new JobOverlayViewModel[jobs.Count];
         for (int index = 0; index < jobs.Count; index++)
         {
-            models[index] = Map(jobs[index], reservations);
+            models[index] = Map(
+                jobs[index],
+                reservations,
+                MapAssignment(jobs[index].Id, latestAssignmentReport));
         }
 
         return new ReadOnlyCollection<JobOverlayViewModel>(models);
@@ -38,7 +43,8 @@ public sealed class JobOverlayPresenter
 
     private static JobOverlayViewModel Map(
         JobSnapshot job,
-        IReadOnlyList<ReservationSnapshot> reservations)
+        IReadOnlyList<ReservationSnapshot> reservations,
+        JobAssignmentDiagnosticViewModel? assignmentDiagnostic)
     {
         JobReservationViewModel[] values = reservations
             .Where(item => item.JobId == job.Id)
@@ -71,7 +77,44 @@ public sealed class JobOverlayPresenter
             job.RetryCount,
             job.NextRetryTick,
             job.Reason?.ToString(),
-            new ReadOnlyCollection<JobReservationViewModel>(values));
+            new ReadOnlyCollection<JobReservationViewModel>(values),
+            job.Definition.PreferredToolKind,
+            assignmentDiagnostic);
+    }
+
+    private static JobAssignmentDiagnosticViewModel? MapAssignment(
+        EntityId jobId,
+        JobAssignmentReport? report)
+    {
+        if (report is null)
+        {
+            return null;
+        }
+
+        JobAssignment? assignment = report.Assignments
+            .FirstOrDefault(item => item.JobId == jobId);
+        if (assignment != null)
+        {
+            return new JobAssignmentDiagnosticViewModel(
+                report.Tick,
+                assignment.Score,
+                assignment.ToolPreparation,
+                assignment.ToolStackId?.ToString(),
+                failureCode: null,
+                failureMessage: null);
+        }
+
+        JobAssignmentFailure? failure = report.Failures
+            .FirstOrDefault(item => item.JobId == jobId);
+        return failure is null
+            ? null
+            : new JobAssignmentDiagnosticViewModel(
+                report.Tick,
+                score: null,
+                toolPreparation: null,
+                toolStackId: null,
+                failureCode: failure.Error.Code,
+                failureMessage: failure.Error.Message);
     }
 }
 }
