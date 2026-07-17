@@ -12,6 +12,7 @@ namespace Dig.Unity
         private readonly JobToolPreparationModeControl _toolPreparationModeControl =
             new JobToolPreparationModeControl();
         private PrepareSuggestedJobToolHandler? _prepareSuggestedTool;
+        private BypassSuggestedJobToolHandler? _bypassSuggestedTool;
         private bool _toolAwareJobAssignmentInitialized;
 
         internal JobToolPreparationMode SelectedToolPreparationMode =>
@@ -37,6 +38,23 @@ namespace Dig.Unity
             }
 
             return _prepareSuggestedTool.Handle(new PrepareSuggestedJobToolCommand(
+                EntityId.Parse(jobId),
+                tick));
+        }
+
+        internal Result BypassSuggestedJobTool(string jobId, long tick)
+        {
+            if (string.IsNullOrWhiteSpace(jobId))
+            {
+                throw new ArgumentException("Job id is required.", nameof(jobId));
+            }
+
+            if (_bypassSuggestedTool == null)
+            {
+                return Result.Failure(JobErrors.ToolPreparationUnavailable);
+            }
+
+            return _bypassSuggestedTool.Handle(new BypassSuggestedJobToolCommand(
                 EntityId.Parse(jobId),
                 tick));
         }
@@ -81,6 +99,11 @@ namespace Dig.Unity
             _prepareSuggestedTool = new PrepareSuggestedJobToolHandler(
                 _jobRepository,
                 preparation,
+                journal,
+                journal);
+            _bypassSuggestedTool = new BypassSuggestedJobToolHandler(
+                _jobRepository,
+                journal,
                 journal,
                 journal);
             _toolAwareJobAssignmentInitialized = true;
