@@ -9,6 +9,12 @@ namespace Dig.Unity
 
         private void LateUpdate()
         {
+            RefreshJobSelection();
+            RefreshResidentInventorySelection();
+        }
+
+        private void RefreshJobSelection()
+        {
             if (object.ReferenceEquals(_jobSelectionSource, _jobs))
             {
                 return;
