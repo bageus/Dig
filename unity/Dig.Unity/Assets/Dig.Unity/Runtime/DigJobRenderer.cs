@@ -15,6 +15,7 @@ namespace Dig.Unity
         private Transform? _visualRoot;
         private DigAgentRenderer? _agents;
         private Material? _selectedMaterial;
+        private Material? _attentionMaterial;
         private Material? _lineMaterial;
         private DigJobVisual? _selected;
         private bool _overlayVisible = true;
@@ -36,7 +37,7 @@ namespace Dig.Unity
             {
                 JobOverlayViewModel model = jobs[index];
                 visibleIds.Add(model.Id);
-                Material statusMaterial = ResolveMaterial(model.Status);
+                Material statusMaterial = ResolveMaterial(model);
                 if (_jobs.TryGetValue(model.Id, out DigJobVisual? visual))
                 {
                     visual.ApplyModel(model, statusMaterial);
@@ -173,6 +174,10 @@ namespace Dig.Unity
             }
 
             _selectedMaterial = CreateMaterial(shader, "Job Selected", Color.white);
+            _attentionMaterial = CreateMaterial(
+                shader,
+                "Job Waiting For Decision",
+                new Color(1f, 0.32f, 0.78f, 1f));
             _lineMaterial = CreateMaterial(
                 shader,
                 "Job Worker Link",
@@ -207,9 +212,14 @@ namespace Dig.Unity
                 new Color(0.82f, 0.18f, 0.18f, 1f)));
         }
 
-        private Material ResolveMaterial(string status)
+        private Material ResolveMaterial(JobOverlayViewModel model)
         {
-            return _statusMaterials.TryGetValue(status, out Material? material)
+            if (!model.ExecutionReadiness.IsReady)
+            {
+                return _attentionMaterial!;
+            }
+
+            return _statusMaterials.TryGetValue(model.Status, out Material? material)
                 ? material
                 : _statusMaterials["Available"];
         }
@@ -233,6 +243,11 @@ namespace Dig.Unity
             if (_selectedMaterial != null)
             {
                 Destroy(_selectedMaterial);
+            }
+
+            if (_attentionMaterial != null)
+            {
+                Destroy(_attentionMaterial);
             }
 
             if (_lineMaterial != null)
