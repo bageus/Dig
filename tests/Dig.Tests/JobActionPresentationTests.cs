@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Jobs;
 using Dig.Domain.Core;
 using Dig.Domain.Jobs;
@@ -18,76 +20,86 @@ public sealed class JobActionPresentationTests
     private static readonly EntityId ToolStackId = Id(4);
 
     [Fact]
-    public void Suggested_tool_action_is_enabled_for_matching_active_reservation()
+    public void Suggested_tool_actions_are_enabled_for_matching_active_reservation()
     {
         JobSystem jobs = CreateAvailableJob();
         Assert.True(jobs.Claim(JobId, FirstAgentId, ToolStackId, tick: 2).IsSuccess);
 
-        JobActionViewModel action = PresentAction(
+        IReadOnlyList<JobActionViewModel> actions = PresentActions(
             jobs,
             CreateSuggestion(FirstAgentId));
 
-        Assert.Equal(JobActionKind.PrepareSuggestedTool, action.Kind);
-        Assert.Equal("Equip suggested tool", action.Label);
-        Assert.True(action.IsEnabled);
-        Assert.Null(action.DisabledReasonCode);
-        Assert.Null(action.DisabledReasonMessage);
+        JobActionViewModel prepare = Action(actions, JobActionKind.PrepareSuggestedTool);
+        Assert.Equal("Equip suggested tool", prepare.Label);
+        Assert.True(prepare.IsEnabled);
+        Assert.Null(prepare.DisabledReasonCode);
+        JobActionViewModel bypass = Action(actions, JobActionKind.BypassSuggestedTool);
+        Assert.Equal("Proceed without suggested tool", bypass.Label);
+        Assert.True(bypass.IsEnabled);
+        Assert.Null(bypass.DisabledReasonCode);
     }
 
     [Fact]
-    public void Suggested_tool_action_reports_invalid_status_before_missing_reservation()
+    public void Suggested_tool_actions_report_invalid_status()
     {
         JobSystem jobs = CreateAvailableJob();
 
-        JobActionViewModel action = PresentAction(
+        IReadOnlyList<JobActionViewModel> actions = PresentActions(
             jobs,
             CreateSuggestion(FirstAgentId));
 
-        Assert.False(action.IsEnabled);
-        Assert.Equal(JobErrors.InvalidStatus.Code, action.DisabledReasonCode);
-        Assert.Equal(JobErrors.InvalidStatus.Message, action.DisabledReasonMessage);
+        foreach (JobActionViewModel action in actions)
+        {
+            Assert.False(action.IsEnabled);
+            Assert.Equal(JobErrors.InvalidStatus.Code, action.DisabledReasonCode);
+            Assert.Equal(JobErrors.InvalidStatus.Message, action.DisabledReasonMessage);
+        }
     }
 
     [Fact]
-    public void Suggested_tool_action_reports_stale_resident_before_reservation_mismatch()
+    public void Stale_resident_disables_prepare_but_keeps_bypass_available()
     {
         JobSystem jobs = CreateAvailableJob();
         Assert.True(jobs.Claim(JobId, SecondAgentId, ToolStackId, tick: 2).IsSuccess);
 
-        JobActionViewModel action = PresentAction(
+        IReadOnlyList<JobActionViewModel> actions = PresentActions(
             jobs,
             CreateSuggestion(FirstAgentId));
 
-        Assert.False(action.IsEnabled);
+        JobActionViewModel prepare = Action(actions, JobActionKind.PrepareSuggestedTool);
+        Assert.False(prepare.IsEnabled);
         Assert.Equal(
             PrepareSuggestedJobToolErrors.SuggestionStale.Code,
-            action.DisabledReasonCode);
-        Assert.Equal(
-            PrepareSuggestedJobToolErrors.SuggestionStale.Message,
-            action.DisabledReasonMessage);
+            prepare.DisabledReasonCode);
+        JobActionViewModel bypass = Action(actions, JobActionKind.BypassSuggestedTool);
+        Assert.True(bypass.IsEnabled);
     }
 
     [Fact]
-    public void Suggested_tool_action_reports_missing_tool_reservation()
+    public void Missing_tool_reservation_disables_prepare_but_keeps_bypass_available()
     {
         JobSystem jobs = CreateAvailableJob();
         Assert.True(jobs.Claim(JobId, FirstAgentId, tick: 2).IsSuccess);
 
-        JobActionViewModel action = PresentAction(
+        IReadOnlyList<JobActionViewModel> actions = PresentActions(
             jobs,
             CreateSuggestion(FirstAgentId));
 
-        Assert.False(action.IsEnabled);
+        JobActionViewModel prepare = Action(actions, JobActionKind.PrepareSuggestedTool);
+        Assert.False(prepare.IsEnabled);
         Assert.Equal(
             PrepareSuggestedJobToolErrors.ToolReservationMissing.Code,
-            action.DisabledReasonCode);
-        Assert.Equal(
-            PrepareSuggestedJobToolErrors.ToolReservationMissing.Message,
-            action.DisabledReasonMessage);
+            prepare.DisabledReasonCode);
+        JobActionViewModel bypass = Action(actions, JobActionKind.BypassSuggestedTool);
+        Assert.True(bypass.IsEnabled);
     }
 
-    [Fact]
-    public void Non_suggested_assignment_has_no_manual_tool_action()
+    [Theory]
+    [InlineData(JobToolPreparationOutcome.Switched)]
+    [InlineData(JobToolPreparationOutcome.Bypassed)]
+    [InlineData(JobToolPreparationOutcome.AlreadyEquipped)]
+    public void Resolved_assignment_has_no_manual_tool_actions(
+        JobToolPreparationOutcome outcome)
     {
         JobSystem jobs = CreateAvailableJob();
         Assert.True(jobs.Claim(JobId, FirstAgentId, ToolStackId, tick: 2).IsSuccess);
@@ -99,7 +111,7 @@ public sealed class JobActionPresentationTests
                     JobId,
                     FirstAgentId,
                     score: 500,
-                    toolPreparation: JobToolPreparationOutcome.Switched,
+                    toolPreparation: outcome,
                     toolStackId: ToolStackId),
             },
             failures: Array.Empty<JobAssignmentFailure>());
@@ -109,11 +121,20 @@ public sealed class JobActionPresentationTests
         Assert.Empty(model.Actions);
     }
 
-    private static JobActionViewModel PresentAction(
+    private static JobActionViewModel Action(
+        IReadOnlyList<JobActionViewModel> actions,
+        JobActionKind kind)
+    {
+        return Assert.Single(actions.Where(value => value.Kind == kind));
+    }
+
+    private static IReadOnlyList<JobActionViewModel> PresentActions(
         JobSystem jobs,
         JobAssignmentReport report)
     {
-        return Assert.Single(Present(jobs, report).Actions);
+        IReadOnlyList<JobActionViewModel> actions = Present(jobs, report).Actions;
+        Assert.Equal(2, actions.Count);
+        return actions;
     }
 
     private static JobOverlayViewModel Present(
