@@ -25,7 +25,8 @@ public sealed class AgentViewModel
         int actionRequiredTicks,
         string decisionReason,
         string decisionExplanation,
-        IReadOnlyCollection<AgentUtilityOptionViewModel> utilityOptions)
+        IReadOnlyCollection<AgentUtilityOptionViewModel> utilityOptions,
+        int cellZ = 0)
     {
         if (string.IsNullOrWhiteSpace(id))
         {
@@ -47,6 +48,11 @@ public sealed class AgentViewModel
             throw new ArgumentOutOfRangeException(nameof(cellX));
         }
 
+        if (cellZ < 0 || cellZ > 3)
+        {
+            throw new ArgumentOutOfRangeException(nameof(cellZ));
+        }
+
         if (utilityOptions is null)
         {
             throw new ArgumentNullException(nameof(utilityOptions));
@@ -58,6 +64,7 @@ public sealed class AgentViewModel
         IsAlive = isAlive;
         CellX = cellX;
         CellY = cellY;
+        CellZ = cellZ;
         Nutrition = nutrition;
         Alertness = alertness;
         Mood = mood;
@@ -68,8 +75,7 @@ public sealed class AgentViewModel
         ActionRequiredTicks = actionRequiredTicks;
         DecisionReason = decisionReason;
         DecisionExplanation = decisionExplanation;
-        UtilityOptions = new ReadOnlyCollection<AgentUtilityOptionViewModel>(
-            utilityOptions.ToArray());
+        UtilityOptions = new ReadOnlyCollection<AgentUtilityOptionViewModel>(utilityOptions.ToArray());
     }
 
     public string Id { get; }
@@ -78,6 +84,7 @@ public sealed class AgentViewModel
     public bool IsAlive { get; }
     public int CellX { get; }
     public int CellY { get; }
+    public int CellZ { get; }
     public int Nutrition { get; }
     public int Alertness { get; }
     public int Mood { get; }
@@ -94,4 +101,5 @@ public sealed class AgentViewModel
         ? 0d
         : Math.Min(1d, (double)ActionElapsedTicks / ActionRequiredTicks);
 }
+
 }
