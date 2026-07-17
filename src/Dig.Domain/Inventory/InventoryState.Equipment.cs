@@ -46,6 +46,110 @@ public sealed partial class InventoryState
             splitStackId: default,
             tick);
     }
-}
 
+    public Result CanSwitchTool(EntityId stackId, EntityId agentId, long tick)
+    {
+        ValidateTick(tick);
+        if (agentId.IsEmpty)
+        {
+            throw new ArgumentException("Agent id cannot be empty.", nameof(agentId));
+        }
+
+        ItemStackState? target = Find(stackId);
+        if (target is null)
+        {
+            return Result.Failure(InventoryErrors.StackNotFound);
+        }
+
+        ItemDefinition targetDefinition = Catalog.Get(target.ItemId);
+        if (!targetDefinition.IsTool
+            || target.Quantity != 1
+            || target.ReservedQuantity != 0)
+        {
+            return Result.Failure(InventoryErrors.ToolRequired);
+        }
+
+        ItemLocation equippedLocation = ItemLocation.EquippedBy(agentId);
+        if (target.Location == equippedLocation)
+        {
+            return Result.Success();
+        }
+
+        if (target.Location != ItemLocation.InAgent(agentId))
+        {
+            return Result.Failure(InventoryErrors.ToolNotCarried);
+        }
+
+        ItemStackState[] equipped = _stacks.Values
+            .Where(candidate => candidate.Location == equippedLocation)
+            .ToArray();
+        if (equipped.Length > 1)
+        {
+            throw new InvalidOperationException(
+                "A resident cannot have more than one equipped item.");
+        }
+
+        if (equipped.Length == 1)
+        {
+            ItemStackState current = equipped[0];
+            ItemDefinition currentDefinition = Catalog.Get(current.ItemId);
+            if (!currentDefinition.IsTool
+                || current.Quantity != 1
+                || current.ReservedQuantity != 0)
+            {
+                return Result.Failure(InventoryErrors.ToolSwitchUnsafe);
+            }
+        }
+
+        return Result.Success();
+    }
+
+    public Result SwitchTool(EntityId stackId, EntityId agentId, long tick)
+    {
+        Result validation = CanSwitchTool(stackId, agentId, tick);
+        if (validation.IsFailure)
+        {
+            return validation;
+        }
+
+        ItemStackState target = Find(stackId)!;
+        ItemLocation equippedLocation = ItemLocation.EquippedBy(agentId);
+        if (target.Location == equippedLocation)
+        {
+            return Result.Success();
+        }
+
+        ItemLocation carriedLocation = ItemLocation.InAgent(agentId);
+        ItemStackState? current = _stacks.Values.SingleOrDefault(
+            candidate => candidate.Location == equippedLocation);
+        if (current is not null)
+        {
+            current.MoveFull(carriedLocation);
+        }
+
+        target.MoveFull(equippedLocation);
+        IncrementVersion();
+        if (current is not null)
+        {
+            Raise(new ItemStackMoved(
+                tick,
+                current.Id,
+                current.Id,
+                current.ItemId,
+                1,
+                equippedLocation,
+                carriedLocation));
+        }
+
+        Raise(new ItemStackMoved(
+            tick,
+            target.Id,
+            target.Id,
+            target.ItemId,
+            1,
+            carriedLocation,
+            equippedLocation));
+        return Result.Success();
+    }
+}
 }

@@ -50,16 +50,25 @@ public sealed class AssignAvailableJobsHandler
     private readonly IJobRepository _repository;
     private readonly IJobCandidateProvider _candidateProvider;
     private readonly IEventSink _eventSink;
+    private readonly IJobToolPreparationService? _toolPreparationService;
+    private readonly IJobAssignmentReportSink? _assignmentReportSink;
+    private readonly IJobToolPreparationModeSource? _toolPreparationModeSource;
 
     public AssignAvailableJobsHandler(
         IJobRepository repository,
         IJobCandidateProvider candidateProvider,
-        IEventSink eventSink)
+        IEventSink eventSink,
+        IJobToolPreparationService? toolPreparationService = null,
+        IJobAssignmentReportSink? assignmentReportSink = null,
+        IJobToolPreparationModeSource? toolPreparationModeSource = null)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _candidateProvider = candidateProvider
             ?? throw new ArgumentNullException(nameof(candidateProvider));
         _eventSink = eventSink ?? throw new ArgumentNullException(nameof(eventSink));
+        _toolPreparationService = toolPreparationService;
+        _assignmentReportSink = assignmentReportSink;
+        _toolPreparationModeSource = toolPreparationModeSource;
     }
 
     public JobAssignmentReport Handle(AssignAvailableJobsCommand command)
@@ -69,6 +78,7 @@ public sealed class AssignAvailableJobsHandler
             throw new ArgumentNullException(nameof(command));
         }
 
+        JobToolPreparationMode preparationMode = ResolvePreparationMode(command);
         JobSystem jobs = _repository.Get();
         List<JobAssignment> assignments = new List<JobAssignment>();
         List<JobAssignmentFailure> failures = new List<JobAssignmentFailure>();
@@ -93,19 +103,69 @@ public sealed class AssignAvailableJobsHandler
             bool assigned = false;
             foreach (JobCandidate candidate in candidates)
             {
-                Result claim = jobs.Claim(job.Id, candidate.AgentId, command.Tick);
+                Result canClaim = jobs.CanClaim(
+                    job.Id,
+                    candidate.AgentId,
+                    candidate.ToolStackId,
+                    command.Tick);
+                if (canClaim.IsFailure)
+                {
+                    failure = canClaim.Error!;
+                    if (canClaim.Error != JobErrors.AgentUnavailable
+                        && canClaim.Error != JobErrors.ReservationConflict)
+                    {
+                        break;
+                    }
+
+                    continue;
+                }
+
+                JobToolPreparationOutcome preparation = ResolvePreparation(
+                    candidate,
+                    preparationMode);
+                if (candidate.ToolReadiness == JobToolReadiness.SwitchAvailable
+                    && preparationMode == JobToolPreparationMode.Automatic)
+                {
+                    if (_toolPreparationService is null)
+                    {
+                        failure = JobErrors.ToolPreparationUnavailable;
+                        continue;
+                    }
+
+                    EntityId toolStackId = candidate.ToolStackId
+                        ?? throw new InvalidOperationException(
+                            "Switchable candidates require a tool stack id.");
+                    Result prepared = _toolPreparationService.Prepare(
+                        candidate.AgentId,
+                        toolStackId,
+                        command.Tick);
+                    if (prepared.IsFailure)
+                    {
+                        failure = prepared.Error!;
+                        continue;
+                    }
+                }
+
+                Result claim = jobs.Claim(
+                    job.Id,
+                    candidate.AgentId,
+                    candidate.ToolStackId,
+                    command.Tick);
                 if (claim.IsSuccess)
                 {
                     assignments.Add(new JobAssignment(
                         job.Id,
                         candidate.AgentId,
-                        JobCandidateEvaluator.Score(job, candidate)));
+                        JobCandidateEvaluator.Score(job, candidate),
+                        preparation,
+                        candidate.ToolStackId));
                     assigned = true;
                     break;
                 }
 
                 failure = claim.Error!;
-                if (claim.Error != JobErrors.AgentUnavailable)
+                if (claim.Error != JobErrors.AgentUnavailable
+                    && claim.Error != JobErrors.ReservationConflict)
                 {
                     break;
                 }
@@ -119,7 +179,40 @@ public sealed class AssignAvailableJobsHandler
 
         _repository.Save(jobs);
         _eventSink.Append(jobs.DequeueUncommittedEvents());
-        return new JobAssignmentReport(command.Tick, assignments, failures);
+        JobAssignmentReport report = new JobAssignmentReport(
+            command.Tick,
+            assignments,
+            failures);
+        _assignmentReportSink?.Record(report);
+        return report;
+    }
+
+    private JobToolPreparationMode ResolvePreparationMode(
+        AssignAvailableJobsCommand command)
+    {
+        JobToolPreparationMode mode = _toolPreparationModeSource?.Mode
+            ?? command.ToolPreparationMode;
+        if (!Enum.IsDefined(typeof(JobToolPreparationMode), mode))
+        {
+            throw new InvalidOperationException(
+                "The tool preparation mode source returned an invalid mode.");
+        }
+
+        return mode;
+    }
+
+    private static JobToolPreparationOutcome ResolvePreparation(
+        JobCandidate candidate,
+        JobToolPreparationMode mode)
+    {
+        return candidate.ToolReadiness switch
+        {
+            JobToolReadiness.Equipped => JobToolPreparationOutcome.AlreadyEquipped,
+            JobToolReadiness.SwitchAvailable when mode == JobToolPreparationMode.Automatic =>
+                JobToolPreparationOutcome.Switched,
+            JobToolReadiness.SwitchAvailable => JobToolPreparationOutcome.Suggested,
+            _ => JobToolPreparationOutcome.None,
+        };
     }
 }
 
@@ -127,11 +220,16 @@ public sealed class AdvanceJobHandler : ICommandHandler<AdvanceJobCommand, Resul
 {
     private readonly IJobRepository _repository;
     private readonly IEventSink _eventSink;
+    private readonly IJobExecutionReadinessPolicy? _readinessPolicy;
 
-    public AdvanceJobHandler(IJobRepository repository, IEventSink eventSink)
+    public AdvanceJobHandler(
+        IJobRepository repository,
+        IEventSink eventSink,
+        IJobExecutionReadinessPolicy? readinessPolicy = null)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _eventSink = eventSink ?? throw new ArgumentNullException(nameof(eventSink));
+        _readinessPolicy = readinessPolicy;
     }
 
     public Result Handle(AdvanceJobCommand command)
@@ -143,6 +241,14 @@ public sealed class AdvanceJobHandler : ICommandHandler<AdvanceJobCommand, Resul
 
         JobSystem jobs = _repository.Get();
         JobSnapshot? job = jobs.Get(command.JobId);
+        if (job != null
+            && (job.Status == JobStatus.Claimed || job.Status == JobStatus.InProgress)
+            && _readinessPolicy != null
+            && !_readinessPolicy.CanAdvance(job))
+        {
+            return Result.Success();
+        }
+
         Result result = job?.Status switch
         {
             JobStatus.Claimed => jobs.Start(command.JobId, command.Tick),

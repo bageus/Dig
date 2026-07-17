@@ -1,4 +1,8 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using Dig.Application.Jobs;
+using Dig.Domain.Core;
 using Dig.Presentation.Jobs;
 using UnityEngine;
 
@@ -7,16 +11,43 @@ namespace Dig.Unity
     public sealed partial class DigHudOverlay
     {
         private IReadOnlyList<JobOverlayViewModel> _jobs =
-            System.Array.Empty<JobOverlayViewModel>();
+            Array.Empty<JobOverlayViewModel>();
+        private JobAttentionSummaryViewModel _jobAttention =
+            JobAttentionProjection.Project(Array.Empty<JobOverlayViewModel>());
         private JobOverlayViewModel? _selectedJob;
+        private DigTerrainWorkSession? _toolAssignmentSession;
+        private DigJobRenderer? _toolJobRenderer;
+        private JobActionDispatcher? _jobActionDispatcher;
 
         private int JobCount => _jobs.Count;
 
         private bool HasJobSelection => _selectedJob != null;
 
+        private JobActionDispatcher JobActions =>
+            _jobActionDispatcher ??= new JobActionDispatcher(new[]
+            {
+                new JobActionRoute(
+                    JobActionKind.PrepareSuggestedTool,
+                    ExecutePrepareSuggestedToolAction),
+                new JobActionRoute(
+                    JobActionKind.BypassSuggestedTool,
+                    ExecuteBypassSuggestedToolAction),
+            });
+
         public void SetJobs(IReadOnlyList<JobOverlayViewModel> jobs)
         {
-            _jobs = jobs;
+            _jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
+            _jobAttention = JobAttentionProjection.Project(jobs);
+        }
+
+        internal void SetToolAssignmentControls(
+            DigTerrainWorkSession session,
+            DigJobRenderer jobRenderer)
+        {
+            _toolAssignmentSession = session
+                ?? throw new ArgumentNullException(nameof(session));
+            _toolJobRenderer = jobRenderer
+                ?? throw new ArgumentNullException(nameof(jobRenderer));
         }
 
         public void SetJobSelection(JobOverlayViewModel? selected)
@@ -31,6 +62,93 @@ namespace Dig.Unity
         private void ClearJobSelection()
         {
             _selectedJob = null;
+        }
+
+        private void DrawToolAssignmentControls()
+        {
+            if (_toolAssignmentSession == null)
+            {
+                return;
+            }
+
+            JobToolPreparationMode selected =
+                _toolAssignmentSession.SelectedToolPreparationMode;
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(
+                $"Tool policy: {_toolAssignmentSession.ToolPreparationModeLabel}",
+                GUILayout.Width(180f));
+            bool previousEnabled = GUI.enabled;
+            GUI.enabled = selected != JobToolPreparationMode.Automatic;
+            if (GUILayout.Button("Automatic", GUILayout.Width(90f)))
+            {
+                SelectToolPreparationMode(JobToolPreparationMode.Automatic);
+            }
+
+            GUI.enabled = selected != JobToolPreparationMode.Suggest;
+            if (GUILayout.Button("Suggest only", GUILayout.Width(95f)))
+            {
+                SelectToolPreparationMode(JobToolPreparationMode.Suggest);
+            }
+
+            GUI.enabled = previousEnabled;
+            GUILayout.EndHorizontal();
+        }
+
+        private void SelectToolPreparationMode(JobToolPreparationMode mode)
+        {
+            if (_toolAssignmentSession == null
+                || !_toolAssignmentSession.SelectToolPreparationMode(mode))
+            {
+                return;
+            }
+
+            SetStatus(
+                $"Tool policy set to {_toolAssignmentSession.ToolPreparationModeLabel}. " +
+                "Applies to future Job assignments.");
+        }
+
+        private void DrawJobAttentionSummary()
+        {
+            if (!_jobAttention.HasAttention)
+            {
+                return;
+            }
+
+            GUILayout.Space(4f);
+            GUILayout.Label($"JOB ATTENTION ({_jobAttention.TotalCount})");
+            foreach (JobAttentionItemViewModel item in _jobAttention.Items)
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.Label(
+                    $"{item.Description} | {item.ReadinessLabel}",
+                    GUILayout.Width(410f));
+                if (GUILayout.Button("Select", GUILayout.Width(70f)))
+                {
+                    SelectJobFromAttention(item.JobId);
+                }
+
+                GUILayout.EndHorizontal();
+                GUILayout.Label(
+                    $"Worker: {item.AssignedAgentId ?? "unassigned"} | {item.ReasonCode}");
+            }
+
+            if (_jobAttention.HiddenCount > 0)
+            {
+                GUILayout.Label($"+ {_jobAttention.HiddenCount} more Jobs need attention");
+            }
+        }
+
+        private void SelectJobFromAttention(string jobId)
+        {
+            JobOverlayViewModel? model = _jobs.FirstOrDefault(
+                value => string.Equals(value.Id, jobId, StringComparison.Ordinal));
+            if (model == null)
+            {
+                return;
+            }
+
+            DigJobVisual? selected = _toolJobRenderer?.SelectById(jobId);
+            SetJobSelection(selected?.Model ?? model);
         }
 
         private void DrawJobSelection()
@@ -50,6 +168,14 @@ namespace Dig.Unity
                 GUILayout.Label($"Target cell: {job.TargetX},{job.TargetY}");
             }
 
+            if (job.PreferredToolKind.HasValue)
+            {
+                GUILayout.Label($"Preferred tool: {job.PreferredToolKind.Value}");
+            }
+
+            DrawJobExecutionReadiness(job.ExecutionReadiness);
+            DrawJobAssignmentDiagnostic(job.AssignmentDiagnostic);
+            DrawJobActions(job);
             GUILayout.Label($"Retries: {job.RetryCount} | next: {job.NextRetryTick}");
             if (job.Reason != null)
             {
@@ -63,6 +189,139 @@ namespace Dig.Unity
                 GUILayout.Label(
                     $"{reservation.Kind}: {reservation.Value} | tick {reservation.AcquiredTick}");
             }
+        }
+
+        private static void DrawJobExecutionReadiness(
+            JobExecutionReadinessViewModel readiness)
+        {
+            if (readiness.IsReady)
+            {
+                return;
+            }
+
+            GUILayout.Label($"Execution: {readiness.Label}");
+            GUILayout.Label($"{readiness.ReasonCode} | {readiness.ReasonMessage}");
+        }
+
+        private void DrawJobActions(JobOverlayViewModel job)
+        {
+            foreach (JobActionViewModel action in job.Actions)
+            {
+                DrawJobAction(job.Id, action);
+            }
+        }
+
+        private void DrawJobAction(string jobId, JobActionViewModel action)
+        {
+            bool previousEnabled = GUI.enabled;
+            GUI.enabled = previousEnabled && action.IsEnabled;
+            bool invoked = GUILayout.Button(action.Label, GUILayout.Width(220f));
+            GUI.enabled = previousEnabled;
+
+            if (invoked)
+            {
+                JobActions.Dispatch(jobId, action);
+            }
+
+            if (!action.IsEnabled)
+            {
+                GUILayout.Label(
+                    $"Unavailable: {action.DisabledReasonCode} | " +
+                    action.DisabledReasonMessage);
+            }
+        }
+
+        private void ExecutePrepareSuggestedToolAction(
+            string jobId,
+            JobActionViewModel _)
+        {
+            ExecuteSuggestedToolPreparation(jobId);
+        }
+
+        private void ExecuteBypassSuggestedToolAction(
+            string jobId,
+            JobActionViewModel _)
+        {
+            ExecuteSuggestedToolBypass(jobId);
+        }
+
+        private void ExecuteSuggestedToolPreparation(string jobId)
+        {
+            if (_toolAssignmentSession == null)
+            {
+                SetStatus("unity.tool_assignment.not_initialized");
+                return;
+            }
+
+            long tick = _simulation?.CurrentTick ?? _tick;
+            Result result = _toolAssignmentSession.PrepareSuggestedJobTool(jobId, tick);
+            SetCommandResult(result);
+            if (result.IsFailure)
+            {
+                return;
+            }
+
+            RefreshSelectedJob(jobId);
+            _simulation?.RefreshEquipmentPresentation();
+            SetStatus("Suggested tool equipped. The active Job and reservations were preserved.");
+        }
+
+        private void ExecuteSuggestedToolBypass(string jobId)
+        {
+            if (_toolAssignmentSession == null)
+            {
+                SetStatus("unity.tool_assignment.not_initialized");
+                return;
+            }
+
+            long tick = _simulation?.CurrentTick ?? _tick;
+            Result result = _toolAssignmentSession.BypassSuggestedJobTool(jobId, tick);
+            SetCommandResult(result);
+            if (result.IsFailure)
+            {
+                return;
+            }
+
+            RefreshSelectedJob(jobId);
+            SetStatus(
+                "Tool suggestion bypassed. The Job kept its resident and target reservations " +
+                "and can now advance.");
+        }
+
+        private void RefreshSelectedJob(string jobId)
+        {
+            IReadOnlyList<JobOverlayViewModel> jobs = _toolAssignmentSession!.LoadJobs();
+            SetJobs(jobs);
+            _toolJobRenderer?.Render(jobs);
+            _selectedJob = jobs.FirstOrDefault(
+                value => string.Equals(value.Id, jobId, StringComparison.Ordinal));
+            if (_toolJobRenderer != null)
+            {
+                DigJobVisual? selected = _toolJobRenderer.SelectById(jobId);
+                _selectedJob = selected?.Model ?? _selectedJob;
+            }
+        }
+
+        private static void DrawJobAssignmentDiagnostic(
+            JobAssignmentDiagnosticViewModel? diagnostic)
+        {
+            if (diagnostic == null)
+            {
+                return;
+            }
+
+            if (diagnostic.IsFailure)
+            {
+                GUILayout.Label(
+                    $"Assignment failed: {diagnostic.FailureCode} | {diagnostic.FailureMessage}");
+                return;
+            }
+
+            string tool = diagnostic.ToolStackId ?? "none";
+            GUILayout.Label(
+                $"Tool preparation: {diagnostic.ToolPreparation} | stack {tool}");
+            GUILayout.Label(
+                $"Assignment score: {diagnostic.Score} | tick {diagnostic.Tick}");
         }
     }
 }

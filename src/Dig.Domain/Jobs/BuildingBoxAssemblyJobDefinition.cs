@@ -57,6 +57,8 @@ public sealed class BuildingBoxAssemblyJobDefinition : JobDefinition
 
     public override string Description => $"Deliver and assemble building box for {BuildingId}";
 
+    public override JobToolKind? PreferredToolKind => JobToolKind.Construction;
+
     public override IReadOnlyList<ReservationKey> CreateReservationKeys()
     {
         return new ReadOnlyCollection<ReservationKey>(new[]

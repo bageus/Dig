@@ -77,6 +77,7 @@ namespace Dig.Unity
             terrainSession.InitializeHauling(worldSession.Journal);
             terrainSession.PlanMovement(agents);
             terrainSession.InitializeBuildingDemo(worldSession.Journal);
+            terrainSession.InitializeToolAwareJobAssignment(worldSession.Journal);
             IReadOnlyList<JobOverlayViewModel> jobs = terrainSession.LoadJobs();
             IReadOnlyList<WorldItemViewModel> items = terrainSession.LoadAllWorldItems();
             IReadOnlyList<RouteViewModel> routes = terrainSession.LoadRoutes();
@@ -112,6 +113,7 @@ namespace Dig.Unity
             hud.SetJobs(jobs);
             hud.SetStorageStatus(storage);
             hud.SetSimulationControls(simulation);
+            hud.SetToolAssignmentControls(terrainSession, jobRenderer);
             hud.SetBuildingControls(terrainSession, buildingRenderer, jobRenderer);
             hud.SetStatus("Starting renderers...");
 

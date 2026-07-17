@@ -8,6 +8,12 @@ using Dig.Domain.World;
 namespace Dig.Domain.Jobs
 {
 
+public enum JobToolKind
+{
+    Mining = 0,
+    Construction = 1,
+}
+
 public abstract class JobDefinition
 {
     private readonly EntityId[] _dependencies;
@@ -87,6 +93,8 @@ public abstract class JobDefinition
 
     public abstract string Description { get; }
 
+    public virtual JobToolKind? PreferredToolKind => null;
+
     public abstract IReadOnlyList<ReservationKey> CreateReservationKeys();
 }
 
@@ -129,6 +137,8 @@ public sealed class DigJobDefinition : JobDefinition
     public DigJobTarget Target { get; }
 
     public override string Description => Target.ToString();
+
+    public override JobToolKind? PreferredToolKind => JobToolKind.Mining;
 
     public override IReadOnlyList<ReservationKey> CreateReservationKeys()
     {

@@ -126,6 +126,22 @@ public sealed class ReservationLedger
         return Result.Success();
     }
 
+    public bool Release(ReservationKey key, EntityId jobId)
+    {
+        if (jobId.IsEmpty)
+        {
+            throw new ArgumentException("Job id cannot be empty.", nameof(jobId));
+        }
+
+        if (!_reservations.TryGetValue(key, out ReservationSnapshot? reservation)
+            || reservation.JobId != jobId)
+        {
+            return false;
+        }
+
+        return _reservations.Remove(key);
+    }
+
     public int ReleaseForJob(EntityId jobId)
     {
         if (jobId.IsEmpty)

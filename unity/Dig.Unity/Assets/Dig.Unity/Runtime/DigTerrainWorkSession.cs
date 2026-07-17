@@ -23,6 +23,7 @@ namespace Dig.Unity
         private readonly AdvanceJobHandler _advanceHandler;
         private readonly CompleteTerrainWorkCommandHandler _completionHandler;
         private readonly JobOverlayPresenter _jobPresenter;
+        private readonly InMemoryExecutionJournal _journal;
         private readonly InventoryWorldPresenter _inventoryPresenter;
         private readonly NavigationRoutePresenter _routePresenter;
         private readonly InMemoryJobRepository _jobRepository;
@@ -41,6 +42,7 @@ namespace Dig.Unity
             AdvanceJobHandler advanceHandler,
             CompleteTerrainWorkCommandHandler completionHandler,
             JobOverlayPresenter jobPresenter,
+            InMemoryExecutionJournal journal,
             InventoryWorldPresenter inventoryPresenter,
             NavigationRoutePresenter routePresenter,
             InMemoryJobRepository jobRepository,
@@ -55,6 +57,7 @@ namespace Dig.Unity
             _advanceHandler = advanceHandler;
             _completionHandler = completionHandler;
             _jobPresenter = jobPresenter;
+            _journal = journal ?? throw new ArgumentNullException(nameof(journal));
             _inventoryPresenter = inventoryPresenter;
             _routePresenter = routePresenter;
             _jobRepository = jobRepository;
@@ -119,9 +122,16 @@ namespace Dig.Unity
                 candidates.SetCandidates(jobId, CreateCandidates(agents, target));
             }
 
-            new AssignAvailableJobsHandler(jobs, candidates, journal)
+            new AssignAvailableJobsHandler(
+                jobs,
+                candidates,
+                journal,
+                assignmentReportSink: journal)
                 .Handle(new AssignAvailableJobsCommand(tick: 0));
-            AdvanceJobHandler advance = new AdvanceJobHandler(jobs, journal);
+            AdvanceJobHandler advance = new AdvanceJobHandler(
+                jobs,
+                journal,
+                new SuggestedToolJobExecutionReadinessPolicy(journal));
             foreach (JobSnapshot job in jobs.Get().GetAll())
             {
                 if (job.Status == JobStatus.Claimed)
@@ -166,6 +176,7 @@ namespace Dig.Unity
                 new JobOverlayPresenter(
                     new GetJobsHandler(jobs),
                     new GetJobReservationsHandler(jobs)),
+                journal,
                 new InventoryWorldPresenter(
                     new GetInventorySnapshotQueryHandler(inventoryRepository),
                     WorldItemInteractionKind.Pickup),
@@ -182,7 +193,7 @@ namespace Dig.Unity
 
         public IReadOnlyList<JobOverlayViewModel> LoadJobs()
         {
-            return _jobPresenter.Load();
+            return _jobPresenter.LoadIndexed(_journal.JobAssignmentReports);
         }
 
         public IReadOnlyList<WorldItemViewModel> LoadItems()

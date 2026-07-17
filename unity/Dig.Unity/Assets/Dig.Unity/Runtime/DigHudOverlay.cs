@@ -102,6 +102,8 @@ namespace Dig.Unity
 
             GUILayout.Label($"Residents: {_agents.Count} | jobs: {JobCount} | tick: {_tick}");
             DrawTimeControls();
+            DrawToolAssignmentControls();
+            DrawJobAttentionSummary();
             DrawStorageStatus();
             GUILayout.Space(6f);
             GUILayout.Label("Click inside Game view before using controls");

@@ -25,6 +25,11 @@ public sealed class EquipmentRates
         return profile?.AppearanceKind ?? EquipmentAppearanceKind.Generic;
     }
 
+    public EquipmentWorkKind? ResolveWorkKind(ItemId itemId)
+    {
+        return Find(itemId)?.WorkKind;
+    }
+
     public int ResolveIntervalTicks(
         EntityId residentId,
         EquipmentWorkKind workKind,
