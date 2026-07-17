@@ -105,8 +105,8 @@ namespace Dig.Unity
             _jobRenderer!.Select(null);
             _buildingRenderer!.Select(null);
             _buildingBoxGhostRenderer!.Render(preview);
-            _hud.SetBuildingPlacement(mode, preview);
-            _hud.SetStatus("Building placement active.");
+            _hud!.SetBuildingPlacement(mode, preview);
+            _hud!.SetStatus("Building placement active.");
         }
 
         private void ConfirmBuildingPlacement()
@@ -130,9 +130,9 @@ namespace Dig.Unity
             _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
             var jobs = _terrainSession.LoadJobs();
             _jobRenderer!.Render(jobs);
-            _hud.SetJobs(jobs);
+            _hud!.SetJobs(jobs);
             CancelBuildingPlacement();
-            _hud.SetStatus("BuildingBox plan created.");
+            _hud!.SetStatus("BuildingBox plan created.");
         }
 
         private void CreateBuildingBoxPickup(ContextInputDecision decision)
@@ -158,9 +158,9 @@ namespace Dig.Unity
 
             var jobs = _terrainSession.LoadJobs();
             _jobRenderer!.Render(jobs);
-            _hud.SetJobs(jobs);
+            _hud!.SetJobs(jobs);
             _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
-            _hud.SetStatus("BuildingBox pickup order created.");
+            _hud!.SetStatus("BuildingBox pickup order created.");
         }
     }
 }
