@@ -243,6 +243,11 @@ namespace Dig.Unity
                 }
             }
 
+            if (_worldChanged)
+            {
+                SynchronizeDesignations(tick, agents);
+            }
+
             return Result.Success();
         }
 
@@ -276,6 +281,7 @@ namespace Dig.Unity
                 return Result.Success();
             }
 
+            EntityId worker = job.AssignedAgentId!.Value;
             Result<TerrainWorkCompletionResult> completion = _completionHandler.Handle(
                 new CompleteTerrainWorkCommand(
                     job.Id,
@@ -297,7 +303,7 @@ namespace Dig.Unity
             }
 
             _worldChanged = true;
-            return Result.Success();
+            return ContinueManualExcavation(job.Id, worker, tick);
         }
 
         private static bool IsActive(JobSnapshot job)
