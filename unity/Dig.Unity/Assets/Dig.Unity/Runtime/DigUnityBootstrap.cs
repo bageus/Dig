@@ -113,6 +113,7 @@ namespace Dig.Unity
             hud.SetJobs(jobs);
             hud.SetStorageStatus(storage);
             hud.SetSimulationControls(simulation);
+            hud.SetToolAssignmentControls(terrainSession);
             hud.SetBuildingControls(terrainSession, buildingRenderer, jobRenderer);
             hud.SetStatus("Starting renderers...");
 
