@@ -77,8 +77,8 @@ public sealed class JobToolPreparationModeControlTests
                 skillLevel: 5_000,
                 distanceCost: 1,
                 isAvailable: true,
-                JobToolReadiness.SwitchAvailable,
-                toolStackId),
+                toolReadiness: JobToolReadiness.SwitchAvailable,
+                toolStackId: toolStackId),
         });
         JobToolPreparationModeControl control = new JobToolPreparationModeControl(selectedMode);
         JobAssignmentReport report = new AssignAvailableJobsHandler(
@@ -88,7 +88,9 @@ public sealed class JobToolPreparationModeControlTests
             preparation,
             assignmentReportSink: null,
             toolPreparationModeSource: control).Handle(
-                new AssignAvailableJobsCommand(tick: 5, commandMode));
+                new AssignAvailableJobsCommand(
+                    tick: 5,
+                    toolPreparationMode: commandMode));
 
         return Assert.Single(report.Assignments);
     }
