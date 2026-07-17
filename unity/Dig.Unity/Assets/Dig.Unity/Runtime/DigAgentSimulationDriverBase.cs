@@ -17,11 +17,11 @@ namespace Dig.Unity
         [SerializeField]
         private float tickIntervalSeconds = 0.8f;
 
-        protected DigWorldSession? WorldSession;
+        private protected DigWorldSession? WorldSession;
         protected DigWorldRenderer? WorldRenderer;
-        protected DigAgentSession? AgentSession;
+        private protected DigAgentSession? AgentSession;
         protected DigAgentRenderer? AgentRenderer;
-        protected DigTerrainWorkSession? TerrainSession;
+        private protected DigTerrainWorkSession? TerrainSession;
         protected DigJobRenderer? JobRenderer;
         protected DigBuildingRenderer? BuildingRenderer;
         protected DigWorldItemRenderer? ItemRenderer;
