@@ -27,6 +27,9 @@ namespace Dig.Unity
                 new JobActionRoute(
                     JobActionKind.PrepareSuggestedTool,
                     ExecutePrepareSuggestedToolAction),
+                new JobActionRoute(
+                    JobActionKind.BypassSuggestedTool,
+                    ExecuteBypassSuggestedToolAction),
             });
 
         public void SetJobs(IReadOnlyList<JobOverlayViewModel> jobs)
@@ -152,7 +155,7 @@ namespace Dig.Unity
         {
             bool previousEnabled = GUI.enabled;
             GUI.enabled = previousEnabled && action.IsEnabled;
-            bool invoked = GUILayout.Button(action.Label, GUILayout.Width(190f));
+            bool invoked = GUILayout.Button(action.Label, GUILayout.Width(220f));
             GUI.enabled = previousEnabled;
 
             if (invoked)
@@ -175,6 +178,13 @@ namespace Dig.Unity
             ExecuteSuggestedToolPreparation(jobId);
         }
 
+        private void ExecuteBypassSuggestedToolAction(
+            string jobId,
+            JobActionViewModel _)
+        {
+            ExecuteSuggestedToolBypass(jobId);
+        }
+
         private void ExecuteSuggestedToolPreparation(string jobId)
         {
             if (_toolAssignmentSession == null)
@@ -191,7 +201,36 @@ namespace Dig.Unity
                 return;
             }
 
-            IReadOnlyList<JobOverlayViewModel> jobs = _toolAssignmentSession.LoadJobs();
+            RefreshSelectedJob(jobId);
+            _simulation?.RefreshEquipmentPresentation();
+            SetStatus("Suggested tool equipped. The active Job and reservations were preserved.");
+        }
+
+        private void ExecuteSuggestedToolBypass(string jobId)
+        {
+            if (_toolAssignmentSession == null)
+            {
+                SetStatus("unity.tool_assignment.not_initialized");
+                return;
+            }
+
+            long tick = _simulation?.CurrentTick ?? _tick;
+            Result result = _toolAssignmentSession.BypassSuggestedJobTool(jobId, tick);
+            SetCommandResult(result);
+            if (result.IsFailure)
+            {
+                return;
+            }
+
+            RefreshSelectedJob(jobId);
+            SetStatus(
+                "Tool suggestion bypassed. The Job kept its resident and target reservations " +
+                "and can now advance.");
+        }
+
+        private void RefreshSelectedJob(string jobId)
+        {
+            IReadOnlyList<JobOverlayViewModel> jobs = _toolAssignmentSession!.LoadJobs();
             SetJobs(jobs);
             _toolJobRenderer?.Render(jobs);
             _selectedJob = jobs.FirstOrDefault(
@@ -201,9 +240,6 @@ namespace Dig.Unity
                 DigJobVisual? selected = _toolJobRenderer.SelectById(jobId);
                 _selectedJob = selected?.Model ?? _selectedJob;
             }
-
-            _simulation?.RefreshEquipmentPresentation();
-            SetStatus("Suggested tool equipped. The active Job and reservations were preserved.");
         }
 
         private static void DrawJobAssignmentDiagnostic(
