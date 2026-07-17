@@ -52,13 +52,15 @@ public sealed class AssignAvailableJobsHandler
     private readonly IEventSink _eventSink;
     private readonly IJobToolPreparationService? _toolPreparationService;
     private readonly IJobAssignmentReportSink? _assignmentReportSink;
+    private readonly IJobToolPreparationModeSource? _toolPreparationModeSource;
 
     public AssignAvailableJobsHandler(
         IJobRepository repository,
         IJobCandidateProvider candidateProvider,
         IEventSink eventSink,
         IJobToolPreparationService? toolPreparationService = null,
-        IJobAssignmentReportSink? assignmentReportSink = null)
+        IJobAssignmentReportSink? assignmentReportSink = null,
+        IJobToolPreparationModeSource? toolPreparationModeSource = null)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _candidateProvider = candidateProvider
@@ -66,6 +68,7 @@ public sealed class AssignAvailableJobsHandler
         _eventSink = eventSink ?? throw new ArgumentNullException(nameof(eventSink));
         _toolPreparationService = toolPreparationService;
         _assignmentReportSink = assignmentReportSink;
+        _toolPreparationModeSource = toolPreparationModeSource;
     }
 
     public JobAssignmentReport Handle(AssignAvailableJobsCommand command)
@@ -75,6 +78,7 @@ public sealed class AssignAvailableJobsHandler
             throw new ArgumentNullException(nameof(command));
         }
 
+        JobToolPreparationMode preparationMode = ResolvePreparationMode(command);
         JobSystem jobs = _repository.Get();
         List<JobAssignment> assignments = new List<JobAssignment>();
         List<JobAssignmentFailure> failures = new List<JobAssignmentFailure>();
@@ -118,9 +122,9 @@ public sealed class AssignAvailableJobsHandler
 
                 JobToolPreparationOutcome preparation = ResolvePreparation(
                     candidate,
-                    command.ToolPreparationMode);
+                    preparationMode);
                 if (candidate.ToolReadiness == JobToolReadiness.SwitchAvailable
-                    && command.ToolPreparationMode == JobToolPreparationMode.Automatic)
+                    && preparationMode == JobToolPreparationMode.Automatic)
                 {
                     if (_toolPreparationService is null)
                     {
@@ -181,6 +185,20 @@ public sealed class AssignAvailableJobsHandler
             failures);
         _assignmentReportSink?.Record(report);
         return report;
+    }
+
+    private JobToolPreparationMode ResolvePreparationMode(
+        AssignAvailableJobsCommand command)
+    {
+        JobToolPreparationMode mode = _toolPreparationModeSource?.Mode
+            ?? command.ToolPreparationMode;
+        if (!Enum.IsDefined(typeof(JobToolPreparationMode), mode))
+        {
+            throw new InvalidOperationException(
+                "The tool preparation mode source returned an invalid mode.");
+        }
+
+        return mode;
     }
 
     private static JobToolPreparationOutcome ResolvePreparation(
