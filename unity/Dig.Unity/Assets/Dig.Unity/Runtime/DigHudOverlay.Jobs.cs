@@ -126,6 +126,7 @@ namespace Dig.Unity
                 GUILayout.Label($"Preferred tool: {job.PreferredToolKind.Value}");
             }
 
+            DrawJobExecutionReadiness(job.ExecutionReadiness);
             DrawJobAssignmentDiagnostic(job.AssignmentDiagnostic);
             DrawJobActions(job);
             GUILayout.Label($"Retries: {job.RetryCount} | next: {job.NextRetryTick}");
@@ -141,6 +142,18 @@ namespace Dig.Unity
                 GUILayout.Label(
                     $"{reservation.Kind}: {reservation.Value} | tick {reservation.AcquiredTick}");
             }
+        }
+
+        private static void DrawJobExecutionReadiness(
+            JobExecutionReadinessViewModel readiness)
+        {
+            if (readiness.IsReady)
+            {
+                return;
+            }
+
+            GUILayout.Label($"Execution: {readiness.Label}");
+            GUILayout.Label($"{readiness.ReasonCode} | {readiness.ReasonMessage}");
         }
 
         private void DrawJobActions(JobOverlayViewModel job)
