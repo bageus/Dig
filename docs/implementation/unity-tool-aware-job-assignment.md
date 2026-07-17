@@ -31,7 +31,7 @@ The selected policy applies only to future assignment attempts. Existing claimed
 
 `JobToolPreparationModeControl` implements the optional Application `IJobToolPreparationModeSource`. Unity passes the same live source to all three tool-aware handlers. Command-only callers without a source continue to use `AssignAvailableJobsCommand.ToolPreparationMode` unchanged.
 
-## Diagnostic ownership
+## Diagnostic and readiness ownership
 
 `AssignAvailableJobsHandler` can publish its immutable `JobAssignmentReport` to an optional `IJobAssignmentReportSink`.
 
@@ -42,12 +42,14 @@ The journal keeps successful assignment decisions only. A specialized Unity assi
 `JobOverlayPresenter.LoadIndexed` maps the per-Job reports into immutable HUD diagnostics containing:
 
 - assignment tick and score;
-- `AlreadyEquipped`, `Suggested`, `Switched`, or `None` preparation outcome;
+- `AlreadyEquipped`, `Suggested`, `Switched`, `Bypassed`, or `None` preparation outcome;
 - selected tool stack id.
 
-For retained `Suggested` assignments, the presenter also maps a typed immutable `PrepareSuggestedTool` action. Presentation owns its enabled state and stable disabled reason. Unity renders the action and dispatches the typed command without reinterpreting diagnostic or reservation text.
+The same resolved report produces an always-present `JobExecutionReadinessViewModel`. Active retained suggestions are `WaitingForToolDecision` with stable code `jobs.waiting_for_tool_decision`; resolved, unrelated and terminal Jobs are `Ready`. Unity renders only the non-ready state and never derives readiness from diagnostic text.
 
-Deleting or rebuilding the HUD, resident models, job markers, or equipment visuals cannot change Inventory locations, Job reservations, the selected future policy, or the recorded assignment result.
+For retained `Suggested` assignments, the presenter also maps typed immutable prepare and bypass actions. Presentation owns their enabled states and stable disabled reasons. Unity generically renders the actions and dispatches typed commands without reinterpreting diagnostic or reservation text.
+
+Deleting or rebuilding the HUD, resident models, job markers, or equipment visuals cannot change Inventory locations, Job reservations, the selected future policy, execution readiness, or the recorded assignment result.
 
 ## Validation
 
@@ -56,6 +58,7 @@ Engine-independent tests verify that:
 - `AssignAvailableJobsHandler` records a successful decision through the optional sink;
 - the journal replaces the prior diagnostic for the same Job instead of growing per tick;
 - the indexed presentation path shows the retained tool preparation outcome and tool stack;
+- active suggestions project `WaitingForToolDecision` while resolved and terminal Jobs project `Ready`;
 - the policy control defaults to `Automatic` and changes explicitly;
 - a live `Suggest` source suppresses switching even for an automatic command;
 - a live `Automatic` source performs preparation even for a suggest command;
