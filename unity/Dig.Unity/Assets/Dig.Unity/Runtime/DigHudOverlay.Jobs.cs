@@ -26,7 +26,7 @@ namespace Dig.Unity
             {
                 new JobActionRoute(
                     JobActionKind.PrepareSuggestedTool,
-                    DrawPrepareSuggestedToolAction),
+                    ExecutePrepareSuggestedToolAction),
             });
 
         public void SetJobs(IReadOnlyList<JobOverlayViewModel> jobs)
@@ -144,28 +144,35 @@ namespace Dig.Unity
         {
             foreach (JobActionViewModel action in job.Actions)
             {
-                JobActions.Dispatch(job.Id, action);
+                DrawJobAction(job.Id, action);
             }
         }
 
-        private void DrawPrepareSuggestedToolAction(
-            string jobId,
-            JobActionViewModel action)
+        private void DrawJobAction(string jobId, JobActionViewModel action)
         {
             bool previousEnabled = GUI.enabled;
-            GUI.enabled = action.IsEnabled;
-            if (GUILayout.Button(action.Label, GUILayout.Width(190f)))
+            GUI.enabled = previousEnabled && action.IsEnabled;
+            bool invoked = GUILayout.Button(action.Label, GUILayout.Width(190f));
+            GUI.enabled = previousEnabled;
+
+            if (invoked)
             {
-                ExecuteSuggestedToolPreparation(jobId);
+                JobActions.Dispatch(jobId, action);
             }
 
-            GUI.enabled = previousEnabled;
             if (!action.IsEnabled)
             {
                 GUILayout.Label(
                     $"Unavailable: {action.DisabledReasonCode} | " +
                     action.DisabledReasonMessage);
             }
+        }
+
+        private void ExecutePrepareSuggestedToolAction(
+            string jobId,
+            JobActionViewModel _)
+        {
+            ExecuteSuggestedToolPreparation(jobId);
         }
 
         private void ExecuteSuggestedToolPreparation(string jobId)
