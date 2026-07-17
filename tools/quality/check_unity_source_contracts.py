@@ -39,6 +39,14 @@ PROTECTED_MEMBER = re.compile(
     r"(?P<type>[A-Za-z_][A-Za-z0-9_.]*)\??"
     r"(?:\s*<[^>\n]+>)?\s+[A-Za-z_][A-Za-z0-9_]*"
 )
+KNOWN_SYMBOL_IMPORTS = {
+    "InventoryErrors": "Dig.Domain.Inventory",
+    "JobErrors": "Dig.Domain.Jobs",
+}
+OBSOLETE_OBJECT_LOOKUPS = (
+    "FindObjectOfType<",
+    "FindObjectsOfType<",
+)
 
 
 def runtime_files() -> list[Path]:
@@ -73,6 +81,23 @@ def main() -> int:
             for match in UNITY_MESSAGE_METHOD.finditer(text):
                 key = (class_name, match.group("name"))
                 messages.setdefault(key, []).append(relative)
+
+        for symbol, namespace in KNOWN_SYMBOL_IMPORTS.items():
+            if f"{symbol}." not in text:
+                continue
+            if f"using {namespace};" in text or f"{namespace}.{symbol}." in text:
+                continue
+            errors.append(
+                f"{relative}: {symbol} requires 'using {namespace};' "
+                "or a fully qualified reference"
+            )
+
+        for obsolete_lookup in OBSOLETE_OBJECT_LOOKUPS:
+            if obsolete_lookup in text:
+                errors.append(
+                    f"{relative}: Unity 6 runtime must not use obsolete "
+                    f"{obsolete_lookup[:-1]}"
+                )
 
         for line_number, line in enumerate(text.splitlines(), start=1):
             member = PROTECTED_MEMBER.match(line)
