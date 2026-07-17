@@ -15,10 +15,19 @@ namespace Dig.Unity
         private JobOverlayViewModel? _selectedJob;
         private DigTerrainWorkSession? _toolAssignmentSession;
         private DigJobRenderer? _toolJobRenderer;
+        private JobActionDispatcher? _jobActionDispatcher;
 
         private int JobCount => _jobs.Count;
 
         private bool HasJobSelection => _selectedJob != null;
+
+        private JobActionDispatcher JobActions =>
+            _jobActionDispatcher ??= new JobActionDispatcher(new[]
+            {
+                new JobActionRoute(
+                    JobActionKind.PrepareSuggestedTool,
+                    DrawPrepareSuggestedToolAction),
+            });
 
         public void SetJobs(IReadOnlyList<JobOverlayViewModel> jobs)
         {
@@ -135,15 +144,7 @@ namespace Dig.Unity
         {
             foreach (JobActionViewModel action in job.Actions)
             {
-                switch (action.Kind)
-                {
-                    case JobActionKind.PrepareSuggestedTool:
-                        DrawPrepareSuggestedToolAction(job.Id, action);
-                        break;
-                    default:
-                        throw new InvalidOperationException(
-                            $"Unsupported Job action kind: {action.Kind}.");
-                }
+                JobActions.Dispatch(job.Id, action);
             }
         }
 
