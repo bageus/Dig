@@ -33,6 +33,14 @@ A retained `Suggested` assignment produces `PrepareSuggestedTool`. Presentation 
 
 The action therefore remains visible when a suggestion becomes stale, but is disabled with a stable code and message. Assignments already marked `Switched` do not expose the manual action.
 
+## Action dispatch
+
+`JobActionDispatcher` is an immutable routing table from `JobActionKind` to a typed handler. It rejects duplicate registrations, validates the Job id and fails explicitly when no handler is registered.
+
+`DigHudOverlay.DrawJobActions` only iterates the immutable action models and dispatches them. It contains no `switch` and does not know which concrete actions exist. Unity registers `PrepareSuggestedTool` with its drawing handler in one lazy composition point. Adding another action requires a new route and handler, not a change to the common rendering loop.
+
+The dispatcher deliberately does not interpret `IsEnabled` or disabled reasons. Those values remain Presentation decisions and are passed unchanged to the registered Unity handler.
+
 ## Equip suggested tool action
 
 When `PrepareSuggestedTool` is enabled, the HUD sends only the Job id and current simulation tick to `PrepareSuggestedJobToolHandler`; it does not trust or mutate rendered Inventory state.
@@ -59,6 +67,7 @@ Engine-independent tests verify:
 - a valid suggested action switches Inventory and updates the retained diagnostic;
 - missing Tool reservation and stale resident data reject the command before Inventory mutation;
 - Presentation enables a valid typed action and exposes stable disabled reasons for invalid status, stale resident and missing Tool reservation;
-- non-suggested assignments expose no manual preparation action.
+- non-suggested assignments expose no manual preparation action;
+- the dispatcher routes the exact immutable action, rejects duplicate and missing routes, and validates the Job id before handler invocation.
 
 The normal Quality workflow validates architecture boundaries, file sizes, C# 9 compatibility, Release build, all tests, headless smoke and deterministic soak profiles. Unity Editor button interaction remains a local Play Mode check.
