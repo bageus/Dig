@@ -24,7 +24,8 @@ public sealed class JobOverlayViewModel
         IReadOnlyList<JobReservationViewModel> reservations,
         JobToolKind? preferredToolKind = null,
         JobAssignmentDiagnosticViewModel? assignmentDiagnostic = null,
-        IReadOnlyList<JobActionViewModel>? actions = null)
+        IReadOnlyList<JobActionViewModel>? actions = null,
+        JobExecutionReadinessViewModel? executionReadiness = null)
     {
         if (string.IsNullOrWhiteSpace(id)
             || string.IsNullOrWhiteSpace(description)
@@ -78,6 +79,9 @@ public sealed class JobOverlayViewModel
         PreferredToolKind = preferredToolKind;
         AssignmentDiagnostic = assignmentDiagnostic;
         Actions = new ReadOnlyCollection<JobActionViewModel>(actionValues);
+        ExecutionReadiness = executionReadiness ?? new JobExecutionReadinessViewModel(
+            JobExecutionReadinessKind.Ready,
+            "Ready");
     }
 
     public string Id { get; }
@@ -95,6 +99,7 @@ public sealed class JobOverlayViewModel
     public JobToolKind? PreferredToolKind { get; }
     public JobAssignmentDiagnosticViewModel? AssignmentDiagnostic { get; }
     public IReadOnlyList<JobActionViewModel> Actions { get; }
+    public JobExecutionReadinessViewModel ExecutionReadiness { get; }
     public bool HasTarget => TargetX.HasValue && TargetY.HasValue;
 }
 }
