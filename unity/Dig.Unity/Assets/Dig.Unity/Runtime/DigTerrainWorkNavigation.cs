@@ -56,7 +56,8 @@ namespace Dig.Unity
                 }
 
                 string agentId = job.AssignedAgentId.Value.ToString();
-                if (!agentsById.TryGetValue(agentId, out AgentViewModel? agent))
+                if (IsDirectMovementControlled(agentId)
+                    || !agentsById.TryGetValue(agentId, out AgentViewModel? agent))
                 {
                     continue;
                 }
