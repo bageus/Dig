@@ -7,6 +7,10 @@ from pathlib import Path
 
 from unity_cave_room_contracts import check_cave_room_runtime_contracts
 from unity_excavation_contracts import check_excavation_contracts
+from unity_group_input_contracts import (
+    check_group_hud_contracts,
+    check_tunnel_and_group_contracts,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 RUNTIME_ROOT = (
@@ -117,231 +121,12 @@ def check_side_view_contracts(texts: dict[Path, str]) -> list[str]:
     return errors
 
 
-def check_tunnel_and_group_contracts(texts: dict[Path, str]) -> list[str]:
-    agent_visual_path = RUNTIME_ROOT / "DigAgentVisual.cs"
-    agent_renderer_path = RUNTIME_ROOT / "DigAgentRenderer.cs"
-    bootstrap_path = RUNTIME_ROOT / "DigUnityBootstrap.cs"
-    interaction_path = RUNTIME_ROOT / "DigWorldInteraction.cs"
-    movement_path = RUNTIME_ROOT / "DigWorldInteraction.TunnelMovement.cs"
-    selection_path = RUNTIME_ROOT / "DigWorldInteraction.Selection.cs"
-    projection_path = RUNTIME_ROOT / "DigTunnelProjection.cs"
-    tunnel_renderer_path = RUNTIME_ROOT / "DigTunnelDemoRenderer.cs"
-    world_renderer_path = RUNTIME_ROOT / "DigWorldRenderer.cs"
-    agent_session_path = RUNTIME_ROOT / "DigAgentSession.TunnelMovement.cs"
-    driver_path = RUNTIME_ROOT / "DigAgentSimulationDriverBase.TunnelMovement.cs"
-    session_path = RUNTIME_ROOT / "DigAgentSession.cs"
+def check_generic_source_contracts(
+    texts: dict[Path, str],
+    internal_types: set[str],
+) -> list[str]:
     errors: list[str] = []
-
-    agent_visual = texts.get(agent_visual_path, "")
-    errors.extend(require_fragments(
-        agent_visual_path,
-        agent_visual,
-        "world-axis resident movement",
-        (
-            "model.CellZ",
-            "transform.position",
-            "DigTunnelProjection.ResidentWorldPosition",
-            "Quaternion.LookRotation(Vector3.back, Vector3.up)",
-            "PlayRoute(",
-        ),
-    ))
-    errors.extend(reject_fragments(
-        agent_visual_path,
-        agent_visual,
-        "rotated-root resident movement",
-        ("transform.localPosition", "ResidentLocalPosition"),
-    ))
-    errors.extend(require_fragments(
-        agent_renderer_path,
-        texts.get(agent_renderer_path, ""),
-        "multi-resident selection ownership",
-        (
-            "_selectedIds",
-            "_selectionOrder",
-            "SelectedAgentIds",
-            "SelectedCount",
-            "ToggleSelection",
-            "ClearSelection",
-            "PublishSelectionSnapshot",
-        ),
-    ))
-    errors.extend(require_fragments(
-        interaction_path,
-        texts.get(interaction_path, ""),
-        "global cancel and additive selection routing",
-        (
-            "Input.GetMouseButtonDown(1)",
-            "CancelCurrentInteraction();",
-            "IsAdditiveResidentSelectionPressed()",
-            "ToggleResidentSelection(agent)",
-            "TryApplyTunnelMove(hit, left)",
-        ),
-    ))
-    errors.extend(require_fragments(
-        selection_path,
-        texts.get(selection_path, ""),
-        "global interaction cancellation",
-        (
-            "KeyCode.LeftShift",
-            "KeyCode.RightShift",
-            "DisableExcavationDrawing();",
-            "DisableCaveRoomPlanning();",
-            "CancelBuildingPlacement();",
-            "_agentRenderer!.ClearSelection();",
-            "_jobRenderer!.Select(null);",
-            "_buildingRenderer!.Select(null);",
-            "_tunnelRenderer?.ShowRoute(null);",
-        ),
-    ))
-    errors.extend(require_fragments(
-        movement_path,
-        texts.get(movement_path, ""),
-        "group destination movement",
-        (
-            "SelectedAgentIds",
-            "MoveResidentsThroughTunnel",
-            "residentIds.Count",
-            "SpatialCellId destination",
-        ),
-    ))
-    errors.extend(require_fragments(
-        agent_session_path,
-        texts.get(agent_session_path, ""),
-        "group movement composition",
-        (
-            "MoveAgentsThroughTunnelCommandHandler",
-            "MoveResidentsThroughTunnel",
-            "_groupTunnelMovement",
-            "_manualTunnelOrders.Add",
-        ),
-    ))
-    errors.extend(require_fragments(
-        driver_path,
-        texts.get(driver_path, ""),
-        "group route animation",
-        (
-            "MoveAgentsThroughTunnelReport",
-            "report.Entries",
-            "AgentRenderer.AnimateRoute",
-            "AgentRenderer.SelectedCount",
-        ),
-    ))
-    errors.extend(require_fragments(
-        bootstrap_path,
-        texts.get(bootstrap_path, ""),
-        "platform cave bootstrap",
-        (
-            "DigTunnelDemoRenderer",
-            "worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume)",
-            "interaction.SetTunnelMovement",
-            "x4 rock volume",
-        ),
-    ))
-    errors.extend(require_fragments(
-        projection_path,
-        texts.get(projection_path, ""),
-        "explicit XYZ world projection",
-        (
-            "CellWorldPosition",
-            "ResidentWorldPosition",
-            "-cell.Y",
-            "cell.Z * DepthSpacing",
-        ),
-    ))
-    errors.extend(require_fragments(
-        tunnel_renderer_path,
-        texts.get(tunnel_renderer_path, ""),
-        "XZ platforms and XY shaft rendering",
-        (
-            "Walkable plane",
-            "Cave ceiling",
-            "Cave back wall",
-            "SetPositionAndRotation",
-            "_route.useWorldSpace = true",
-            "DigTunnelProjection.CellWorldPosition",
-        ),
-    ))
-    errors.extend(require_fragments(
-        world_renderer_path,
-        texts.get(world_renderer_path, ""),
-        "terrain cutaway",
-        ("SetTunnelCutaway", "CaveCeilingY", "ApplyTunnelCutaway();"),
-    ))
-    errors.extend(require_fragments(
-        session_path,
-        texts.get(session_path, ""),
-        "platform resident composition",
-        (
-            "TunnelNavigationVolume.CreateDemo",
-            "initialPosition: new SpatialCellId",
-            "HasManualTunnelOrder(agent.Id)",
-            "_tunnelVolume != null",
-        ),
-    ))
-    return errors
-
-
-def check_hud_contracts(texts: dict[Path, str]) -> list[str]:
-    hud_path = RUNTIME_ROOT / "DigHudOverlay.cs"
-    hud = texts.get(hud_path, "")
-    errors = require_fragments(
-        hud_path,
-        hud,
-        "collapsible multi-selection HUD",
-        (
-            "HudWidth = 420f",
-            "CollapsedHudHeight = 34f",
-            "CurrentHudHeight",
-            "_isCollapsed ? \"+\" : \"-\"",
-            "GUILayout.BeginScrollView",
-            "_selectedAgentCount",
-            "SELECTED RESIDENTS:",
-            "SetAgentSelection(AgentViewModel? selected, int selectedCount)",
-        ),
-    )
-    errors.extend(reject_fragments(
-        hud_path,
-        hud,
-        "full-screen help overlay",
-        (
-            "Click inside Game view before using controls",
-            "WASD / arrows pan",
-            "Select dwarf, then LMB tunnel destination",
-            "RMB terrain toggles digging",
-        ),
-    ))
-    return errors
-
-
-def main() -> int:
-    files = runtime_files()
-    if not files:
-        print("Unity source contract checks failed: runtime sources are missing.", file=sys.stderr)
-        return 1
-
-    texts = {path: path.read_text(encoding="utf-8-sig") for path in files}
-    internal_types = {
-        match.group("name")
-        for text in texts.values()
-        for match in INTERNAL_TYPE_DECLARATION.finditer(text)
-    }
-    errors: list[str] = check_side_view_contracts(texts)
-    errors.extend(check_tunnel_and_group_contracts(texts))
-    errors.extend(check_excavation_contracts(
-        ROOT,
-        RUNTIME_ROOT,
-        texts,
-        require_fragments,
-        reject_fragments,
-    ))
-    errors.extend(check_cave_room_runtime_contracts(
-        RUNTIME_ROOT,
-        texts,
-        require_fragments,
-    ))
-    errors.extend(check_hud_contracts(texts))
     messages: dict[tuple[str, str], list[Path]] = {}
-
     for path, text in texts.items():
         relative = path.relative_to(ROOT)
         partial = PARTIAL_CLASS_DECLARATION.search(text)
@@ -379,12 +164,54 @@ def main() -> int:
                 )
 
     for (class_name, method_name), paths in sorted(messages.items()):
-        if len(paths) > 1:
-            locations = ", ".join(str(path) for path in paths)
-            errors.append(
-                f"partial class {class_name} declares Unity message {method_name}() "
-                f"more than once: {locations}"
-            )
+        if len(paths) <= 1:
+            continue
+        locations = ", ".join(str(path) for path in paths)
+        errors.append(
+            f"partial class {class_name} declares Unity message {method_name}() "
+            f"more than once: {locations}"
+        )
+    return errors
+
+
+def main() -> int:
+    files = runtime_files()
+    if not files:
+        print("Unity source contract checks failed: runtime sources are missing.", file=sys.stderr)
+        return 1
+
+    texts = {path: path.read_text(encoding="utf-8-sig") for path in files}
+    internal_types = {
+        match.group("name")
+        for text in texts.values()
+        for match in INTERNAL_TYPE_DECLARATION.finditer(text)
+    }
+    errors: list[str] = check_side_view_contracts(texts)
+    errors.extend(check_tunnel_and_group_contracts(
+        RUNTIME_ROOT,
+        texts,
+        require_fragments,
+        reject_fragments,
+    ))
+    errors.extend(check_excavation_contracts(
+        ROOT,
+        RUNTIME_ROOT,
+        texts,
+        require_fragments,
+        reject_fragments,
+    ))
+    errors.extend(check_cave_room_runtime_contracts(
+        RUNTIME_ROOT,
+        texts,
+        require_fragments,
+    ))
+    errors.extend(check_group_hud_contracts(
+        RUNTIME_ROOT,
+        texts,
+        require_fragments,
+        reject_fragments,
+    ))
+    errors.extend(check_generic_source_contracts(texts, internal_types))
 
     if errors:
         print("Unity source contract checks failed:", file=sys.stderr)
