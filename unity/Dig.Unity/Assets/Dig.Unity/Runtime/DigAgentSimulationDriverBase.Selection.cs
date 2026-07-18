@@ -1,16 +1,23 @@
+using System.Collections.Generic;
+
 namespace Dig.Unity
 {
     public abstract partial class DigAgentSimulationDriverBase
     {
         private void RestoreSelection(
-            string? selectedAgentId,
+            IReadOnlyList<string> selectedAgentIds,
+            string? primarySelectedAgentId,
             string? selectedJobId,
             string? selectedBuildingId)
         {
-            if (selectedAgentId != null)
+            if (selectedAgentIds.Count > 0)
             {
-                DigAgentVisual? selectedAgent = AgentRenderer!.SelectById(selectedAgentId);
-                Hud!.SetAgentSelection(selectedAgent?.Model);
+                AgentRenderer!.RestoreSelection(
+                    selectedAgentIds,
+                    primarySelectedAgentId);
+                Hud!.SetAgentSelection(
+                    AgentRenderer.SelectedModel,
+                    AgentRenderer.SelectedCount);
                 return;
             }
 
