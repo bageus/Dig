@@ -38,6 +38,27 @@ public static class InventoryErrors
     public static readonly DomainError ToolSwitchUnsafe = new DomainError(
         "inventory.tool_switch_unsafe",
         "The currently equipped item cannot be safely returned to the resident inventory.");
+    public static readonly DomainError ResidentSlotOccupied = new DomainError(
+        "inventory.resident.slot_occupied",
+        "The selected resident inventory slot already contains another stack.");
+    public static readonly DomainError ResidentSlotOutOfRange = new DomainError(
+        "inventory.resident.slot_out_of_range",
+        "The selected slot does not exist in the resident's active inventory layout.");
+    public static readonly DomainError ResidentSlotCategoryRejected = new DomainError(
+        "inventory.resident.slot_category_rejected",
+        "The item category is not accepted by the selected inventory compartment.");
+    public static readonly DomainError InventoryExpansionMainOnly = new DomainError(
+        "inventory.resident.expansion_main_only",
+        "Inventory expansions can only occupy a resident Main slot.");
+    public static readonly DomainError ResidentInventoryCapacityExceeded = new DomainError(
+        "inventory.resident.capacity_exceeded",
+        "The resident inventory does not have a compatible free slot.");
+    public static readonly DomainError ResidentInventoryLayoutInvalid = new DomainError(
+        "inventory.resident.layout_invalid",
+        "The resident inventory contains duplicate or invalid slot locations.");
+    public static readonly DomainError ResidentInventorySpillRequired = new DomainError(
+        "inventory.resident.spill_required",
+        "Removing this active expansion requires a transactional compartment spill.");
 }
 
 }
