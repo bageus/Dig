@@ -63,6 +63,8 @@ A legacy two-dimensional move changes `X/Y` while preserving the current `Z` lay
 
 Group movement uses one Application command. The handler first resolves every selected resident and validates every route to the shared destination. No resident position is mutated until all routes are valid. If one selected resident cannot reach the destination, the whole group command fails without moving anyone. A one-resident selection keeps the dedicated single-resident command path.
 
+After a direct route validates, the terrain-work adapter releases every active Job owned by the ordered residents. Job, agent, target, and tool reservations are released through `ReleaseJobAssignmentHandler`, stale work routes are discarded, and the residents enter persistent direct-movement ownership. The automatic candidate provider excludes these residents until the player explicitly assigns an excavation group, which returns them to work ownership.
+
 Unity owns only disposable presentation state:
 
 - horizontal surface and cave-floor slabs;
@@ -81,9 +83,11 @@ Unity owns only disposable presentation state:
 3. Press and hold LMB on the world, then drag beyond the selection threshold to select every visible dwarf whose projected center lies inside the rectangle.
 4. A drag without Shift replaces the current resident selection; `Shift + drag` adds residents that are not already selected.
 5. A short LMB click without a drag keeps its normal action. On a walkable destination it sends the current group; on a terrain cell it keeps terrain selection behavior.
-6. LMB on any reachable surface, connector, shaft, or cave-floor cell sends every selected dwarf to the same destination cell.
+6. LMB on any reachable surface, horizontal tunnel, vertical shaft, original layered floor, or completed-room floor sends every selected dwarf to the same destination cell.
 7. RMB in the world is the global cancel action. It clears the active marquee, excavation or cave-room mode, building preview, route, selected residents, selected Job, selected building, and selected terrain cell.
 8. `Ctrl + mouse` orbits the side-view camera when depth separation is needed.
+
+The movement resolver checks `DigTunnelDemoRenderer`, `DigCaveRoomFloorRenderer`, and `DigWorldRenderer` in one path. A deferred short click from the marquee input follows that same resolver, so enabling drag selection cannot swallow a normal movement click.
 
 The marquee does not start from resident, Job, building, or world-item colliders, so normal object clicks are not stolen. RMB over the HUD is shielded from world input. The cancel path is resolved before excavation, cave placement, or building placement can consume the pointer event.
 
@@ -93,7 +97,7 @@ Every selected resident receives its own validated route and route animation. Th
 
 The runtime HUD is a small scrollable status and selection panel. Its `-` button collapses it to a single summary row; the `+` button restores the settings and selection panel. The collapsed panel also reduces its pointer-blocking rectangle to one-row height.
 
-For a group selection, the HUD reports the selected resident count and keeps the most recently selected resident as the primary details/inventory view. The complete group remains selected across normal simulation rendering and movement refreshes.
+For a group selection, the HUD reports the selected resident count and keeps the most recently selected resident as the primary details/inventory view. The complete group remains selected across normal simulation rendering and movement refreshes. Each render reapplies the selected material from the immutable selected-ID set, so an agent model refresh cannot visually clear the selection.
 
 ## Scope boundary
 

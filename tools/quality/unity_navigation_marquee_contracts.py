@@ -19,6 +19,12 @@ def check_navigation_and_marquee_contracts(
     agent_session = runtime_root / "DigAgentSession.TunnelMovement.cs"
     navigation_sync = runtime_root / "DigAgentSimulationDriverBase.NavigationSync.cs"
     movement = runtime_root / "DigAgentSimulationDriverBase.TunnelMovement.cs"
+    movement_input = runtime_root / "DigWorldInteraction.TunnelMovement.cs"
+    room_floor = runtime_root / "DigCaveRoomFloorRenderer.cs"
+    agent_renderer = runtime_root / "DigAgentRenderer.cs"
+    direct_control = runtime_root / "DigTerrainWorkDirectMovement.cs"
+    designations = runtime_root / "DigTerrainWorkDesignations.cs"
+    manual_excavation = runtime_root / "DigTerrainWorkManualExcavation.cs"
     errors: list[str] = []
     errors.extend(require_fragments(
         interaction,
@@ -41,7 +47,7 @@ def check_navigation_and_marquee_contracts(
             "CreateScreenRect",
             "IsMarqueeBlockingTarget",
             "SelectResidentsInsideMarquee",
-            "SelectCell(cell)",
+            "TryApplyTunnelMove(_marqueeStartHit, leftButton: true)",
         ),
     ))
     errors.extend(require_fragments(
@@ -98,12 +104,69 @@ def check_navigation_and_marquee_contracts(
     errors.extend(require_fragments(
         movement,
         texts.get(movement, ""),
-        "fresh single and group navigation",
+        "fresh single and group navigation with work interruption",
         (
             "SynchronizeExcavatedTunnelNavigation();",
             "MoveResidentThroughTunnel",
             "MoveResidentsThroughTunnel",
             "residentIds.Count == 1",
+            "TerrainSession.InterruptForDirectMovement",
         ),
+    ))
+    errors.extend(require_fragments(
+        movement_input,
+        texts.get(movement_input, ""),
+        "all walkable destination renderers",
+        (
+            "_tunnelRenderer.TryGetCell",
+            "_caveRoomFloorRenderer.TryGetCell",
+            "_renderer.TryGetWalkSurface",
+        ),
+    ))
+    errors.extend(require_fragments(
+        room_floor,
+        texts.get(room_floor, ""),
+        "completed room destination lookup",
+        (
+            "internal bool TryGetCell",
+            "GetComponent<DigTunnelCellVisual>()",
+            "_cells.Contains(cell.Cell)",
+        ),
+    ))
+    errors.extend(require_fragments(
+        agent_renderer,
+        texts.get(agent_renderer, ""),
+        "selection material persistence",
+        (
+            "visual.SetSelected(_selectedIds.Contains(model.Id))",
+            "agentVisual.SetSelected(_selectedIds.Contains(model.Id))",
+        ),
+    ))
+    errors.extend(require_fragments(
+        direct_control,
+        texts.get(direct_control, ""),
+        "direct movement job ownership",
+        (
+            "InterruptForDirectMovement",
+            "ReleaseJobAssignmentCommand",
+            "_routePlans.Remove",
+            "_directMovementAgents.Add",
+            "ClearManualGroupForAgent",
+        ),
+    ))
+    errors.extend(require_fragments(
+        designations,
+        texts.get(designations, ""),
+        "directly controlled candidate suppression",
+        (
+            "!IsDirectMovementControlled(agent.Id)",
+            "CreateDynamicCandidates",
+        ),
+    ))
+    errors.extend(require_fragments(
+        manual_excavation,
+        texts.get(manual_excavation, ""),
+        "explicit return to work ownership",
+        ("ReleaseDirectMovementControl(residentId);",),
     ))
     return errors

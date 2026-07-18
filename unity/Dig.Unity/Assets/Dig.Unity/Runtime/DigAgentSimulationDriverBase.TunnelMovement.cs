@@ -14,7 +14,10 @@ namespace Dig.Unity
             SpatialCellId destination,
             DigTunnelDemoRenderer tunnelRenderer)
         {
-            if (AgentSession == null || AgentRenderer == null || Hud == null)
+            if (AgentSession == null
+                || AgentRenderer == null
+                || TerrainSession == null
+                || Hud == null)
             {
                 return NotInitializedResult();
             }
@@ -25,6 +28,14 @@ namespace Dig.Unity
             if (report.Result.IsFailure)
             {
                 return report.Result;
+            }
+
+            Result interrupted = TerrainSession.InterruptForDirectMovement(
+                new[] { residentId },
+                CurrentTick);
+            if (interrupted.IsFailure)
+            {
+                return interrupted;
             }
 
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
@@ -43,7 +54,10 @@ namespace Dig.Unity
             SpatialCellId destination,
             DigTunnelDemoRenderer tunnelRenderer)
         {
-            if (AgentSession == null || AgentRenderer == null || Hud == null)
+            if (AgentSession == null
+                || AgentRenderer == null
+                || TerrainSession == null
+                || Hud == null)
             {
                 return NotInitializedResult();
             }
@@ -72,6 +86,14 @@ namespace Dig.Unity
             if (report.Result.IsFailure)
             {
                 return report.Result;
+            }
+
+            Result interrupted = TerrainSession.InterruptForDirectMovement(
+                residentIds,
+                CurrentTick);
+            if (interrupted.IsFailure)
+            {
+                return interrupted;
             }
 
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();

@@ -44,6 +44,7 @@ namespace Dig.Unity
                 if (_agents.TryGetValue(model.Id, out DigAgentVisual? visual))
                 {
                     visual.SetModel(model, movementDuration);
+                    visual.SetSelected(_selectedIds.Contains(model.Id));
                     continue;
                 }
 
@@ -79,7 +80,7 @@ namespace Dig.Unity
                 Destroy(visual.gameObject);
             }
 
-            if (selectionChanged)
+            if (selectionChanged || (_primarySelected == null && _selectedIds.Count > 0))
             {
                 ResolvePrimarySelection();
                 PublishSelectionSnapshot();
@@ -256,6 +257,7 @@ namespace Dig.Unity
             visual.transform.localScale = new Vector3(0.48f, 0.62f, 0.48f);
             DigAgentVisual agentVisual = visual.AddComponent<DigAgentVisual>();
             agentVisual.Initialize(model, _normalMaterial!, _selectedMaterial!);
+            agentVisual.SetSelected(_selectedIds.Contains(model.Id));
             _equipment.TryGetValue(model.Id, out ResidentEquipmentViewModel? equipment);
             agentVisual.SetEquipment(equipment, _equipmentMaterial!);
             _agents.Add(model.Id, agentVisual);
