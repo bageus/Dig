@@ -50,6 +50,12 @@ public sealed class ItemLocationSaveData
 
     [DataMember(Order = 4, EmitDefaultValue = false)]
     public int? CellY { get; set; }
+
+    [DataMember(Order = 5, EmitDefaultValue = false)]
+    public int? ResidentCompartment { get; set; }
+
+    [DataMember(Order = 6, EmitDefaultValue = false)]
+    public int? ResidentSlotIndex { get; set; }
 }
 
 [DataContract]
@@ -61,4 +67,5 @@ public sealed class ItemReservationSaveData
     [DataMember(Order = 2)]
     public int Quantity { get; set; }
 }
+
 }
