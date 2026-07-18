@@ -11,6 +11,8 @@ public sealed partial class InventoryState : AggregateRoot
 {
     private readonly Dictionary<EntityId, ItemStackState> _stacks =
         new Dictionary<EntityId, ItemStackState>();
+    private readonly Dictionary<EntityId, HeldItemReferenceSnapshot> _heldItems =
+        new Dictionary<EntityId, HeldItemReferenceSnapshot>();
 
     public InventoryState(ItemCatalog catalog)
     {
@@ -164,7 +166,8 @@ public sealed partial class InventoryState : AggregateRoot
     {
         return new InventorySnapshot(
             Version,
-            _stacks.Values.Select(stack => stack.CreateSnapshot()).ToArray());
+            _stacks.Values.Select(stack => stack.CreateSnapshot()).ToArray(),
+            _heldItems.Values.ToArray());
     }
 
     private ItemStackState? Find(EntityId stackId)
