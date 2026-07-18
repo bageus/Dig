@@ -117,6 +117,16 @@ internal sealed class ItemStackState
         Quantity = checked(Quantity - quantity);
     }
 
+    public void AddQuantity(int quantity)
+    {
+        if (quantity <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(quantity));
+        }
+
+        Quantity = checked(Quantity + quantity);
+    }
+
     public void MoveFull(ItemLocation destination)
     {
         Location = destination;
@@ -136,4 +146,5 @@ internal sealed class ItemStackState
         return new ItemStackSnapshot(Id, ItemId, Quantity, Location, reservations);
     }
 }
+
 }
