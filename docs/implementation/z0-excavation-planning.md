@@ -21,6 +21,27 @@ A walkable cell represents empty space above a supporting rock cell. Floor geome
 
 Combined meshes are used instead of one GameObject per rock cell to keep Unity startup and rendering bounded.
 
+## Direct resident movement
+
+Direct movement accepts both renderer types that own walkable destinations:
+
+- `DigTunnelDemoRenderer` supplies `SpatialCellId` values for layered cells at `Z=1..3` and shaft cells;
+- `DigWorldRenderer.TryGetWalkSurface` supplies `SpatialCellId(X,Y,0)` for supported front-floor cells;
+- both routes execute through the same `MoveResidentThroughTunnel` application command;
+- moving a floor from the layered renderer into the authoritative front renderer must not remove click-to-move support.
+
+## Protected rock
+
+`ExcavationBoundaryPolicy` owns the non-excavatable demo boundary.
+
+- the left and right world edges are protected;
+- the bottom edge is protected;
+- the first solid row below the upper surface is protected;
+- protected cells are returned in deterministic coordinate order;
+- designation commands reject protected cells before mutating `WorldState`;
+- protected solid rock uses a darker visual treatment;
+- an attempted LMB designation highlights the rejected cell red and leaves it undesignated.
+
 ## Tunnel and delete tools
 
 Excavation editing is explicit and can only be enabled while no resident is selected.
@@ -67,6 +88,12 @@ Selecting a resident disables drawing mode. Left-clicking a designated cell or i
 Releasing the manual tunnel-order is required because manual movement intentionally suppresses simulation movement targets. The explicit Dig assignment becomes the new movement owner immediately after that release.
 
 Assignment changes use the existing Job reservation ledger. Releasing an assignment returns the Job to `Available`, clears its execution stage, and releases Job, Agent, target, and Tool reservations.
+
+## Cave-room specification boundary
+
+No repository or File Library document currently defines the cell dimensions for the requested small, medium, large, and high cave presets. The original-game reference confirms four cave sizes but does not provide grid dimensions. Room buttons, preview footprints, and bulk room designations must therefore wait for an explicit width/height catalog rather than embedding guessed dimensions.
+
+The next room-planning slice also requires a stable definition of where the tunnel entrance attaches to each footprint.
 
 ## Scope boundary
 
