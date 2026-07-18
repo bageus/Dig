@@ -126,6 +126,24 @@ namespace Dig.Unity
             return cell != null;
         }
 
+        internal bool TryGetWalkSurface(RaycastHit hit, out SpatialCellId cell)
+        {
+            cell = default;
+            if (!TryGetCell(hit, out DigCellVisual visual))
+            {
+                return false;
+            }
+
+            Vector2Int key = new Vector2Int(visual.Model.X, visual.Model.Y);
+            if (!_walkSurfaceCells.Contains(key))
+            {
+                return false;
+            }
+
+            cell = new SpatialCellId(visual.Model.X, visual.Model.Y, 0);
+            return true;
+        }
+
         public DigCellVisual? Select(DigCellVisual? cell)
         {
             if (_selected != null)
