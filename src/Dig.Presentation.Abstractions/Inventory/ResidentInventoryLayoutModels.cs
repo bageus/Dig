@@ -28,6 +28,7 @@ public sealed class ResidentInventoryLayoutSlotViewModel
         string displayName,
         int quantity,
         int reservedQuantity,
+        int heldQuantity,
         ResidentInventorySlotVisualKind visualKind,
         bool isActiveExpansion)
     {
@@ -36,7 +37,10 @@ public sealed class ResidentInventoryLayoutSlotViewModel
             throw new ArgumentOutOfRangeException(nameof(slotIndex));
         }
 
-        if (quantity < 0 || reservedQuantity < 0 || reservedQuantity > quantity)
+        if (quantity < 0
+            || reservedQuantity < 0
+            || heldQuantity < 0
+            || reservedQuantity + heldQuantity > quantity)
         {
             throw new ArgumentOutOfRangeException(nameof(quantity));
         }
@@ -48,6 +52,11 @@ public sealed class ResidentInventoryLayoutSlotViewModel
             throw new ArgumentException("Empty slot identifiers and visual kind are inconsistent.");
         }
 
+        if (empty && (quantity != 0 || reservedQuantity != 0 || heldQuantity != 0))
+        {
+            throw new ArgumentException("An empty slot cannot contain quantity state.");
+        }
+
         Compartment = compartment;
         SlotIndex = slotIndex;
         StackId = empty ? null : stackId!.Trim();
@@ -55,6 +64,7 @@ public sealed class ResidentInventoryLayoutSlotViewModel
         DisplayName = displayName?.Trim() ?? string.Empty;
         Quantity = quantity;
         ReservedQuantity = reservedQuantity;
+        HeldQuantity = heldQuantity;
         VisualKind = visualKind;
         IsActiveExpansion = isActiveExpansion;
     }
@@ -73,7 +83,9 @@ public sealed class ResidentInventoryLayoutSlotViewModel
 
     public int ReservedQuantity { get; }
 
-    public int AvailableQuantity => Quantity - ReservedQuantity;
+    public int HeldQuantity { get; }
+
+    public int AvailableQuantity => Quantity - ReservedQuantity - HeldQuantity;
 
     public ResidentInventorySlotVisualKind VisualKind { get; }
 
@@ -81,7 +93,11 @@ public sealed class ResidentInventoryLayoutSlotViewModel
 
     public bool IsEmpty => StackId is null;
 
-    public bool CanDrop => !IsEmpty && ReservedQuantity == 0;
+    public bool IsHeld => HeldQuantity > 0;
+
+    public bool CanDrop => !IsEmpty
+        && ReservedQuantity == 0
+        && HeldQuantity == 0;
 
     public bool CanUse => VisualKind == ResidentInventorySlotVisualKind.Tool
         && Quantity == 1
@@ -190,8 +206,9 @@ public sealed class ResidentInventoryLayoutPresenter
 
         ResidentInventoryLayoutSnapshot layout =
             inventory.GetResidentInventoryLayout(residentId);
+        HeldItemReferenceSnapshot? held = inventory.GetHeldItem(residentId);
         ResidentInventoryLayoutSlotViewModel[] slots = layout.Slots
-            .Select(slot => PresentSlot(inventory.Catalog, slot))
+            .Select(slot => PresentSlot(inventory.Catalog, slot, held))
             .ToArray();
         return new ResidentInventoryLayoutViewModel(
             residentId.ToString(),
@@ -205,7 +222,8 @@ public sealed class ResidentInventoryLayoutPresenter
 
     private ResidentInventoryLayoutSlotViewModel PresentSlot(
         ItemCatalog catalog,
-        ResidentInventorySlotSnapshot slot)
+        ResidentInventorySlotSnapshot slot,
+        HeldItemReferenceSnapshot? held)
     {
         if (slot.IsEmpty)
         {
@@ -217,19 +235,24 @@ public sealed class ResidentInventoryLayoutPresenter
                 displayName: string.Empty,
                 quantity: 0,
                 reservedQuantity: 0,
+                heldQuantity: 0,
                 ResidentInventorySlotVisualKind.Empty,
                 isActiveExpansion: false);
         }
 
         ItemDefinition definition = catalog.Get(slot.ItemId!.Value);
+        int heldQuantity = held.HasValue && held.Value.StackId == slot.StackId!.Value
+            ? held.Value.Quantity
+            : 0;
         return new ResidentInventoryLayoutSlotViewModel(
             slot.Slot.Compartment,
             slot.Slot.Index,
-            slot.StackId!.Value.ToString(),
+            slot.StackId.Value.ToString(),
             definition.Id.ToString(),
             definition.DisplayName,
             slot.Quantity,
             slot.ReservedQuantity,
+            heldQuantity,
             ResolveVisualKind(definition),
             slot.IsActiveExpansion);
     }
