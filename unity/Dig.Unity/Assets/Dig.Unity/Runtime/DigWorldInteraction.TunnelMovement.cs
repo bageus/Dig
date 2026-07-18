@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 using UnityEngine;
@@ -11,24 +12,6 @@ namespace Dig.Unity
         internal void SetTunnelMovement(DigTunnelDemoRenderer tunnelRenderer)
         {
             _tunnelRenderer = tunnelRenderer;
-        }
-
-        private bool TryClearResidentSelection(bool rightButton)
-        {
-            if (!rightButton
-                || _buildingPlacementMode.HasValue
-                || _agentRenderer == null
-                || _agentRenderer.SelectedAgentId == null)
-            {
-                return false;
-            }
-
-            _agentRenderer.Select(null);
-            _hud!.SetAgentSelection(null);
-            _tunnelRenderer?.Select(null);
-            _tunnelRenderer?.ShowRoute(null);
-            _hud.SetStatus("Resident selection cleared.");
-            return true;
         }
 
         private bool TryApplyTunnelMove(RaycastHit hit, bool leftButton)
@@ -55,22 +38,23 @@ namespace Dig.Unity
                 return false;
             }
 
-            string? residentId = _agentRenderer!.SelectedAgentId;
-            if (residentId == null)
+            IReadOnlyList<string> residentIds = _agentRenderer!.SelectedAgentIds;
+            if (residentIds.Count == 0)
             {
-                _hud!.SetStatus("Select a dwarf, then click a walkable destination.");
+                _hud!.SetStatus("Select one or more dwarfs, then click a walkable destination.");
                 return true;
             }
 
-            Result result = _simulation!.MoveResidentThroughTunnel(
-                residentId,
+            Result result = _simulation!.MoveResidentsThroughTunnel(
+                residentIds,
                 destination,
                 _tunnelRenderer);
             _hud!.SetCommandResult(result);
             if (result.IsSuccess)
             {
                 _hud.SetStatus(
-                    $"Moving to X={destination.X}, Y={destination.Y}, Z={destination.Z}.");
+                    $"Moving {residentIds.Count} dwarf(s) to " +
+                    $"X={destination.X}, Y={destination.Y}, Z={destination.Z}.");
             }
 
             return true;
