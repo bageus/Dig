@@ -23,8 +23,11 @@ def check_excavation_contracts(
     cell_visual_path = runtime_root / "DigCellVisual.cs"
     movement_path = runtime_root / "DigWorldInteraction.TunnelMovement.cs"
     world_session_path = runtime_root / "DigWorldSession.cs"
+    room_session_path = runtime_root / "DigWorldSession.CaveRooms.cs"
     interaction_path = runtime_root / "DigWorldInteraction.cs"
     drawing_path = runtime_root / "DigWorldInteraction.Excavation.cs"
+    room_interaction_path = runtime_root / "DigWorldInteraction.CaveRooms.cs"
+    room_preview_path = runtime_root / "DigCaveRoomPreviewRenderer.cs"
     designations_path = runtime_root / "DigTerrainWorkDesignations.cs"
     manual_path = runtime_root / "DigTerrainWorkManualExcavation.cs"
     driver_path = runtime_root / "DigAgentSimulationDriverBase.Excavation.cs"
@@ -115,11 +118,24 @@ def check_excavation_contracts(
         texts.get(world_session_path, ""),
         "protected excavation boundary",
         (
+            "partial class DigWorldSession",
             "ExcavationBoundaryPolicy",
             "topRockY: layout.SurfaceY + 1",
             "ProtectedCells",
             "world.excavation.protected_rock",
             "_boundaryPolicy.IsProtected(cell)",
+        ),
+    ))
+    errors.extend(require_fragments(
+        room_session_path,
+        texts.get(room_session_path, ""),
+        "cave room designation transaction",
+        (
+            "CaveRoomPlanner",
+            "PlanCaveRoom",
+            "ApplyCaveRoomPlan",
+            "FrontExcavationCells",
+            "RollBackDesignations",
         ),
     ))
     errors.extend(require_fragments(
@@ -136,6 +152,7 @@ def check_excavation_contracts(
             "new SpatialCellId(selected.CellX, selected.CellY, 0)",
             "_session!.IsProtected(target)",
             "_renderer!.HighlightRejected(target)",
+            "DisableCaveRoomPlanning",
         ),
     ))
     errors.extend(reject_fragments(
@@ -147,12 +164,41 @@ def check_excavation_contracts(
             "DigExcavationDrawingMode.Vertical",
         ),
     ))
+    errors.extend(require_fragments(
+        room_interaction_path,
+        texts.get(room_interaction_path, ""),
+        "cave room hover and placement",
+        (
+            "CaveRoomPresetKind?",
+            "SetCaveRoomPlanningPreset",
+            "UpdateCaveRoomPreview",
+            "PlanCaveRoom",
+            "TryHandleCaveRoomPlacement",
+            "ApplyCaveRoomPlan",
+        ),
+    ))
+    errors.extend(require_fragments(
+        room_preview_path,
+        texts.get(room_preview_path, ""),
+        "volumetric trapezoid preview",
+        (
+            "EdgeCount = 12",
+            "CreateCorners",
+            "preset.BaseWidth",
+            "preset.TopWidth",
+            "preset.Depth - 1",
+            "_validMaterial",
+            "_invalidMaterial",
+        ),
+    ))
     interaction = texts.get(interaction_path, "")
     errors.extend(require_fragments(
         interaction_path,
         interaction,
         "explicit excavation routing",
         (
+            "UpdateCaveRoomPreview()",
+            "TryHandleCaveRoomPlacement()",
             "TryHandleExcavationStroke()",
             "TryAssignSelectedResidentToExcavation(hit, left)",
             "excavationTool: ExcavationToolKind.None",
@@ -193,6 +239,7 @@ def check_excavation_contracts(
         "excavation application adapter",
         (
             "ApplyExcavationDesignation",
+            "ApplyCaveRoomPlan",
             "ReleaseManualTunnelOrder(residentId)",
             "SynchronizeDesignations",
             "RefreshExcavationPresentation",
@@ -207,8 +254,17 @@ def check_excavation_contracts(
     errors.extend(require_fragments(
         hud_path,
         texts.get(hud_path, ""),
-        "excavation HUD controls",
-        ("Tunnel", "Delete", "P-", "P+"),
+        "excavation and cave room HUD controls",
+        (
+            "Tunnel",
+            "Delete",
+            "Small Cave",
+            "CaveRoomPresetKind.Medium",
+            "CaveRoomPresetKind.Large",
+            "CaveRoomPresetKind.Tall",
+            "P-",
+            "P+",
+        ),
     ))
     errors.extend(reject_fragments(
         hud_path,
@@ -222,11 +278,13 @@ def check_excavation_contracts(
     errors.extend(require_fragments(
         bootstrap_path,
         texts.get(bootstrap_path, ""),
-        "rock volume composition",
+        "rock volume and room preview composition",
         (
             "DigRockVolumeRenderer",
             "rockRenderer.Initialize",
             "worldRenderer.SetProtectedCells(worldSession.ProtectedCells)",
+            "DigCaveRoomPreviewRenderer",
+            "SetCaveRoomPreviewRenderer",
         ),
     ))
     return errors
