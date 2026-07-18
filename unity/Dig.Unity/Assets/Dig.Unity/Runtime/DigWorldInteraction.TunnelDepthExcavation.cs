@@ -25,17 +25,11 @@ namespace Dig.Unity
                 return false;
             }
 
-            Ray ray = _camera!.ScreenPointToRay(Input.mousePosition);
-            if (!Physics.Raycast(ray, out RaycastHit hit, 500f))
-            {
-                _hud.SetStatus("Select an open horizontal tunnel cell.");
-                return true;
-            }
-
-            SpatialCellId? source = ResolveTunnelDepthSource(hit);
+            SpatialCellId? source = ResolveTunnelDepthSource();
             if (!source.HasValue)
             {
-                _hud.SetStatus("Depth excavation can start only from a tunnel floor.");
+                _hud.SetStatus(
+                    "Depth excavation requires an open horizontal tunnel cell under the cursor.");
                 return true;
             }
 
@@ -51,25 +45,36 @@ namespace Dig.Unity
             SpatialCellId target = result.Plan!.Target;
             _hud.SetStatus(
                 $"Tunnel depth excavated at X={target.X}, Y={target.Y}, Z={target.Z}. " +
-                "Select the new cell to continue one layer deeper.");
+                "The new deepest tunnel cell is selected for the next step.");
             return true;
         }
 
-        private SpatialCellId? ResolveTunnelDepthSource(RaycastHit hit)
+        private SpatialCellId? ResolveTunnelDepthSource()
         {
-            if (_tunnelRenderer != null
-                && _tunnelRenderer.TryGetCell(hit, out DigTunnelCellVisual tunnelCell))
+            RaycastHit[] hits = GetPointerHits();
+            SpatialCellId? selected = null;
+            for (int index = 0; index < hits.Length; index++)
             {
-                return tunnelCell.Cell;
+                RaycastHit hit = hits[index];
+                if (_tunnelRenderer!.TryGetCell(hit, out DigTunnelCellVisual tunnelCell)
+                    && !tunnelCell.IsVerticalTunnel
+                    && tunnelCell.CanExcavateDepth
+                    && (!selected.HasValue || tunnelCell.Cell.Z > selected.Value.Z))
+                {
+                    selected = tunnelCell.Cell;
+                    continue;
+                }
+
+                if (_renderer!.TryGetWalkSurface(hit, out SpatialCellId walkSurface)
+                    && walkSurface.Z == 0
+                    && _session!.IsPlannedHorizontalTunnel(walkSurface.Projection)
+                    && !selected.HasValue)
+                {
+                    selected = walkSurface;
+                }
             }
 
-            if (_renderer != null
-                && _renderer.TryGetWalkSurface(hit, out SpatialCellId walkSurface))
-            {
-                return walkSurface;
-            }
-
-            return null;
+            return selected;
         }
     }
 }
