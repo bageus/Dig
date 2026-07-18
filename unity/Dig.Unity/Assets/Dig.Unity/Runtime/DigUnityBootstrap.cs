@@ -105,6 +105,8 @@ namespace Dig.Unity
                 GetOrAdd<DigTunnelDemoRenderer>(gameObject);
             DigCaveRoomPreviewRenderer caveRoomPreviewRenderer =
                 GetOrAdd<DigCaveRoomPreviewRenderer>(gameObject);
+            DigCaveRoomFloorRenderer caveRoomFloorRenderer =
+                GetOrAdd<DigCaveRoomFloorRenderer>(gameObject);
             GetOrAdd<DigOverlayHotkeys>(gameObject);
             DigWorldInteraction interaction = GetOrAdd<DigWorldInteraction>(gameObject);
             DigAgentSimulationDriver simulation =
@@ -164,7 +166,10 @@ namespace Dig.Unity
                 simulation,
                 hud);
             interaction.SetTunnelMovement(tunnelRenderer);
-            interaction.SetCaveRoomPreviewRenderer(caveRoomPreviewRenderer);
+            interaction.SetCaveRoomRenderers(
+                caveRoomPreviewRenderer,
+                caveRoomFloorRenderer,
+                rockRenderer);
             simulation.Initialize(
                 worldSession,
                 worldRenderer,
