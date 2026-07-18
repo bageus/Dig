@@ -5,6 +5,7 @@ import re
 import sys
 from pathlib import Path
 
+from unity_cave_room_contracts import check_cave_room_runtime_contracts
 from unity_excavation_contracts import check_excavation_contracts
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -116,21 +117,25 @@ def check_side_view_contracts(texts: dict[Path, str]) -> list[str]:
     return errors
 
 
-def check_tunnel_contracts(texts: dict[Path, str]) -> list[str]:
-    agent_path = RUNTIME_ROOT / "DigAgentVisual.cs"
+def check_tunnel_and_group_contracts(texts: dict[Path, str]) -> list[str]:
+    agent_visual_path = RUNTIME_ROOT / "DigAgentVisual.cs"
+    agent_renderer_path = RUNTIME_ROOT / "DigAgentRenderer.cs"
     bootstrap_path = RUNTIME_ROOT / "DigUnityBootstrap.cs"
     interaction_path = RUNTIME_ROOT / "DigWorldInteraction.cs"
-    interaction_partial_path = RUNTIME_ROOT / "DigWorldInteraction.TunnelMovement.cs"
+    movement_path = RUNTIME_ROOT / "DigWorldInteraction.TunnelMovement.cs"
+    selection_path = RUNTIME_ROOT / "DigWorldInteraction.Selection.cs"
     projection_path = RUNTIME_ROOT / "DigTunnelProjection.cs"
-    renderer_path = RUNTIME_ROOT / "DigTunnelDemoRenderer.cs"
+    tunnel_renderer_path = RUNTIME_ROOT / "DigTunnelDemoRenderer.cs"
     world_renderer_path = RUNTIME_ROOT / "DigWorldRenderer.cs"
-    composition_path = RUNTIME_ROOT / "DigAgentSession.TunnelMovement.cs"
+    agent_session_path = RUNTIME_ROOT / "DigAgentSession.TunnelMovement.cs"
+    driver_path = RUNTIME_ROOT / "DigAgentSimulationDriverBase.TunnelMovement.cs"
     session_path = RUNTIME_ROOT / "DigAgentSession.cs"
     errors: list[str] = []
-    agent = texts.get(agent_path, "")
+
+    agent_visual = texts.get(agent_visual_path, "")
     errors.extend(require_fragments(
-        agent_path,
-        agent,
+        agent_visual_path,
+        agent_visual,
         "world-axis resident movement",
         (
             "model.CellZ",
@@ -141,10 +146,85 @@ def check_tunnel_contracts(texts: dict[Path, str]) -> list[str]:
         ),
     ))
     errors.extend(reject_fragments(
-        agent_path,
-        agent,
+        agent_visual_path,
+        agent_visual,
         "rotated-root resident movement",
         ("transform.localPosition", "ResidentLocalPosition"),
+    ))
+    errors.extend(require_fragments(
+        agent_renderer_path,
+        texts.get(agent_renderer_path, ""),
+        "multi-resident selection ownership",
+        (
+            "_selectedIds",
+            "_selectionOrder",
+            "SelectedAgentIds",
+            "SelectedCount",
+            "ToggleSelection",
+            "ClearSelection",
+            "PublishSelectionSnapshot",
+        ),
+    ))
+    errors.extend(require_fragments(
+        interaction_path,
+        texts.get(interaction_path, ""),
+        "global cancel and additive selection routing",
+        (
+            "Input.GetMouseButtonDown(1)",
+            "CancelCurrentInteraction();",
+            "IsAdditiveResidentSelectionPressed()",
+            "ToggleResidentSelection(agent)",
+            "TryApplyTunnelMove(hit, left)",
+        ),
+    ))
+    errors.extend(require_fragments(
+        selection_path,
+        texts.get(selection_path, ""),
+        "global interaction cancellation",
+        (
+            "KeyCode.LeftShift",
+            "KeyCode.RightShift",
+            "DisableExcavationDrawing();",
+            "DisableCaveRoomPlanning();",
+            "CancelBuildingPlacement();",
+            "_agentRenderer!.ClearSelection();",
+            "_jobRenderer!.Select(null);",
+            "_buildingRenderer!.Select(null);",
+            "_tunnelRenderer?.ShowRoute(null);",
+        ),
+    ))
+    errors.extend(require_fragments(
+        movement_path,
+        texts.get(movement_path, ""),
+        "group destination movement",
+        (
+            "SelectedAgentIds",
+            "MoveResidentsThroughTunnel",
+            "residentIds.Count",
+            "SpatialCellId destination",
+        ),
+    ))
+    errors.extend(require_fragments(
+        agent_session_path,
+        texts.get(agent_session_path, ""),
+        "group movement composition",
+        (
+            "MoveAgentsThroughTunnelCommandHandler",
+            "MoveResidentsThroughTunnel",
+            "_groupTunnelMovement",
+            "_manualTunnelOrders.Add",
+        ),
+    ))
+    errors.extend(require_fragments(
+        driver_path,
+        texts.get(driver_path, ""),
+        "group route animation",
+        (
+            "MoveAgentsThroughTunnelReport",
+            "report.Entries",
+            "AgentRenderer.AnimateRoute",
+            "AgentRenderer.SelectedCount",
+        ),
     ))
     errors.extend(require_fragments(
         bootstrap_path,
@@ -155,22 +235,6 @@ def check_tunnel_contracts(texts: dict[Path, str]) -> list[str]:
             "worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume)",
             "interaction.SetTunnelMovement",
             "x4 rock volume",
-        ),
-    ))
-    errors.extend(require_fragments(
-        interaction_path,
-        texts.get(interaction_path, ""),
-        "tunnel input",
-        ("TryClearResidentSelection(right)", "TryApplyTunnelMove(hit, left)"),
-    ))
-    errors.extend(require_fragments(
-        interaction_partial_path,
-        texts.get(interaction_partial_path, ""),
-        "resident selection",
-        (
-            "_agentRenderer.Select(null)",
-            "_tunnelRenderer?.ShowRoute(null)",
-            "Resident selection cleared.",
         ),
     ))
     errors.extend(require_fragments(
@@ -185,8 +249,8 @@ def check_tunnel_contracts(texts: dict[Path, str]) -> list[str]:
         ),
     ))
     errors.extend(require_fragments(
-        renderer_path,
-        texts.get(renderer_path, ""),
+        tunnel_renderer_path,
+        texts.get(tunnel_renderer_path, ""),
         "XZ platforms and XY shaft rendering",
         (
             "Walkable plane",
@@ -202,16 +266,6 @@ def check_tunnel_contracts(texts: dict[Path, str]) -> list[str]:
         texts.get(world_renderer_path, ""),
         "terrain cutaway",
         ("SetTunnelCutaway", "CaveCeilingY", "ApplyTunnelCutaway();"),
-    ))
-    errors.extend(require_fragments(
-        composition_path,
-        texts.get(composition_path, ""),
-        "tunnel movement composition",
-        (
-            "TunnelNavigationVolume volume",
-            "MoveAgentThroughTunnelCommandHandler",
-            "_manualTunnelOrders",
-        ),
     ))
     errors.extend(require_fragments(
         session_path,
@@ -233,16 +287,16 @@ def check_hud_contracts(texts: dict[Path, str]) -> list[str]:
     errors = require_fragments(
         hud_path,
         hud,
-        "collapsible compact HUD",
+        "collapsible multi-selection HUD",
         (
             "HudWidth = 420f",
-            "HudHeight = 280f",
             "CollapsedHudHeight = 34f",
             "CurrentHudHeight",
             "_isCollapsed ? \"+\" : \"-\"",
-            "if (_isCollapsed)",
             "GUILayout.BeginScrollView",
-            "DrawExcavationControls();",
+            "_selectedAgentCount",
+            "SELECTED RESIDENTS:",
+            "SetAgentSelection(AgentViewModel? selected, int selectedCount)",
         ),
     )
     errors.extend(reject_fragments(
@@ -272,13 +326,18 @@ def main() -> int:
         for match in INTERNAL_TYPE_DECLARATION.finditer(text)
     }
     errors: list[str] = check_side_view_contracts(texts)
-    errors.extend(check_tunnel_contracts(texts))
+    errors.extend(check_tunnel_and_group_contracts(texts))
     errors.extend(check_excavation_contracts(
         ROOT,
         RUNTIME_ROOT,
         texts,
         require_fragments,
         reject_fragments,
+    ))
+    errors.extend(check_cave_room_runtime_contracts(
+        RUNTIME_ROOT,
+        texts,
+        require_fragments,
     ))
     errors.extend(check_hud_contracts(texts))
     messages: dict[tuple[str, str], list[Path]] = {}
