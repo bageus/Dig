@@ -4,6 +4,7 @@ using System.Linq;
 using Dig.Application.Jobs;
 using Dig.Domain.Core;
 using Dig.Domain.Jobs;
+using Dig.Presentation.Agents;
 
 namespace Dig.Unity
 {
@@ -51,7 +52,7 @@ namespace Dig.Unity
                     return released;
                 }
 
-                _routePlans.Remove(assignments[index].Id);
+                RemoveAllRoutePlans(assignments[index].Id);
             }
 
             foreach (EntityId agentId in agents)
@@ -76,6 +77,21 @@ namespace Dig.Unity
         private bool IsDirectMovementControlled(string residentId)
         {
             return _directMovementAgents.Contains(EntityId.Parse(residentId));
+        }
+
+        private bool IsAvailableForAutomaticWork(AgentViewModel agent)
+        {
+            return agent.IsAlive && !IsDirectMovementControlled(agent.Id);
+        }
+
+        private void RemoveAllRoutePlans(EntityId jobId)
+        {
+            _routePlans.Remove(jobId);
+            _haulingRoutes.Remove(jobId);
+            _buildingPackingRoutes.Remove(jobId);
+            _buildingBoxPickupRoutes.Remove(jobId);
+            _worldItemPickupRoutes.Remove(jobId);
+            _buildingBoxAssemblyRoutes.Remove(jobId);
         }
     }
 }
