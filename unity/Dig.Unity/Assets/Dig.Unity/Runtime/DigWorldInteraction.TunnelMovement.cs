@@ -21,27 +21,19 @@ namespace Dig.Unity
                 return false;
             }
 
-            SpatialCellId destination;
-            if (_tunnelRenderer.TryGetCell(hit, out DigTunnelCellVisual tunnelCell))
+            DigSelectedResidentTarget target = ResolveSelectedResidentTarget();
+            if (target.Kind != DigSelectedResidentTargetKind.Movement)
             {
-                destination = tunnelCell.Cell;
-                _tunnelRenderer.Select(tunnelCell);
+                return false;
             }
-            else if (_caveRoomFloorRenderer != null
-                && _caveRoomFloorRenderer.TryGetCell(hit, out DigTunnelCellVisual roomCell))
+
+            if (target.Visual != null)
             {
-                destination = roomCell.Cell;
-                _tunnelRenderer.Select(null);
-            }
-            else if (_renderer != null
-                && _renderer.TryGetWalkSurface(hit, out SpatialCellId walkSurface))
-            {
-                destination = walkSurface;
-                _tunnelRenderer.Select(null);
+                _tunnelRenderer.Select(target.Visual);
             }
             else
             {
-                return false;
+                _tunnelRenderer.Select(null);
             }
 
             IReadOnlyList<string> residentIds = _agentRenderer!.SelectedAgentIds;
@@ -51,6 +43,7 @@ namespace Dig.Unity
                 return true;
             }
 
+            SpatialCellId destination = target.MovementCell;
             Result result = residentIds.Count == 1
                 ? _simulation!.MoveResidentThroughTunnel(
                     residentIds[0],
@@ -69,6 +62,40 @@ namespace Dig.Unity
             }
 
             return true;
+        }
+
+        private bool TryResolveTunnelDestination(
+            RaycastHit hit,
+            out SpatialCellId destination,
+            out DigTunnelCellVisual? visual)
+        {
+            if (_tunnelRenderer != null
+                && _tunnelRenderer.TryGetCell(hit, out DigTunnelCellVisual tunnelCell))
+            {
+                destination = tunnelCell.Cell;
+                visual = tunnelCell;
+                return true;
+            }
+
+            if (_caveRoomFloorRenderer != null
+                && _caveRoomFloorRenderer.TryGetCell(hit, out DigTunnelCellVisual roomCell))
+            {
+                destination = roomCell.Cell;
+                visual = null;
+                return true;
+            }
+
+            if (_renderer != null
+                && _renderer.TryGetWalkSurface(hit, out SpatialCellId walkSurface))
+            {
+                destination = walkSurface;
+                visual = null;
+                return true;
+            }
+
+            destination = default;
+            visual = null;
+            return false;
         }
     }
 }
