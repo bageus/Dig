@@ -9,14 +9,21 @@ namespace Dig.Unity
     {
         private CaveRoomPresetKind? _caveRoomPreset;
         private DigCaveRoomPreviewRenderer? _caveRoomPreviewRenderer;
+        private DigCaveRoomFloorRenderer? _caveRoomFloorRenderer;
+        private DigRockVolumeRenderer? _caveRoomRockRenderer;
         private CaveRoomPlanResult? _hoveredCaveRoomPlan;
+        private long _lastCaveRoomRuntimeTick = -1;
 
         internal CaveRoomPresetKind? CaveRoomPreset => _caveRoomPreset;
 
-        internal void SetCaveRoomPreviewRenderer(
-            DigCaveRoomPreviewRenderer previewRenderer)
+        internal void SetCaveRoomRenderers(
+            DigCaveRoomPreviewRenderer previewRenderer,
+            DigCaveRoomFloorRenderer floorRenderer,
+            DigRockVolumeRenderer rockRenderer)
         {
             _caveRoomPreviewRenderer = previewRenderer;
+            _caveRoomFloorRenderer = floorRenderer;
+            _caveRoomRockRenderer = rockRenderer;
         }
 
         internal void SetCaveRoomPlanningPreset(CaveRoomPresetKind kind)
@@ -47,6 +54,7 @@ namespace Dig.Unity
 
         private void UpdateCaveRoomPreview()
         {
+            RefreshCompletedCaveRooms();
             _hoveredCaveRoomPlan = null;
             if (!_caveRoomPreset.HasValue || _caveRoomPreviewRenderer == null)
             {
@@ -80,6 +88,29 @@ namespace Dig.Unity
                 CaveRoomPresetCatalog.Get(_caveRoomPreset.Value),
                 entrance,
                 result.Succeeded);
+        }
+
+        private void RefreshCompletedCaveRooms()
+        {
+            if (_simulation == null
+                || _session == null
+                || _caveRoomRockRenderer == null
+                || _caveRoomFloorRenderer == null)
+            {
+                return;
+            }
+
+            long tick = _simulation.CurrentTick;
+            if (_lastCaveRoomRuntimeTick == tick)
+            {
+                return;
+            }
+
+            _lastCaveRoomRuntimeTick = tick;
+            _simulation.RefreshCaveRoomRuntime(
+                _session.LoadCompletedCaveRoomPlans(),
+                _caveRoomRockRenderer,
+                _caveRoomFloorRenderer);
         }
 
         private bool TryHandleCaveRoomPlacement()
