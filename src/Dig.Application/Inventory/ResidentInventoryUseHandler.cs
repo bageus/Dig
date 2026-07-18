@@ -35,7 +35,10 @@ public sealed class UseResidentInventoryItemHandler
             return Result.Failure(InventoryErrors.StackNotFound);
         }
 
-        if (stack.Location != ItemLocation.InAgent(command.ActorId))
+        if (!DropResidentInventoryStackHandler.IsOwnedByResident(
+                stack.Location,
+                command.ActorId)
+            || stack.Location.Kind == ItemLocationKind.Equipped)
         {
             return Result.Failure(ResidentInventoryActionErrors.StackNotCarriedByActor);
         }
