@@ -10,6 +10,31 @@ namespace Dig.Unity
         private readonly HashSet<string> _activatedCaveRooms =
             new HashSet<string>(StringComparer.Ordinal);
 
+        internal TunnelDepthExcavationPlanResult ExcavateTunnelDepth(
+            SpatialCellId source,
+            DigTunnelDemoRenderer tunnelRenderer)
+        {
+            if (AgentSession == null)
+            {
+                throw new InvalidOperationException(
+                    "Tunnel depth excavation is not initialized.");
+            }
+
+            if (tunnelRenderer == null)
+            {
+                throw new ArgumentNullException(nameof(tunnelRenderer));
+            }
+
+            TunnelDepthExcavationPlanResult result =
+                AgentSession.ExcavateTunnelDepth(source);
+            if (result.Succeeded)
+            {
+                tunnelRenderer.Initialize(AgentSession.TunnelVolume);
+            }
+
+            return result;
+        }
+
         internal void RefreshCaveRoomRuntime(
             IReadOnlyList<CaveRoomPlan> completedPlans,
             DigRockVolumeRenderer rockRenderer,
@@ -35,7 +60,8 @@ namespace Dig.Unity
                 return;
             }
 
-            HashSet<SpatialCellId> excavatedVolume = new HashSet<SpatialCellId>();
+            HashSet<SpatialCellId> excavatedVolume = new HashSet<SpatialCellId>(
+                AgentSession.TunnelDepthExcavations);
             for (int index = 0; index < completedPlans.Count; index++)
             {
                 CaveRoomPlan plan = completedPlans[index];
