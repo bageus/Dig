@@ -38,12 +38,22 @@ The Unity terrain renderer applies a projected cutaway mask for the shaft and ca
 
 ## Traversal rules
 
-`TunnelNavigationVolume` owns the immutable topology used by the demo.
+`TunnelNavigationVolume` owns the current layered topology.
 
 - A resident may move to an orthogonally adjacent open cell on `X`.
 - A resident may move to an orthogonally adjacent open cell on `Z`.
 - A resident may change `Y` only when both source and destination are marked shaft cells.
 - Routes are deterministic and are validated before the resident aggregate is moved.
+
+Before direct movement, `WithSynchronizedFrontLayer` derives new `Z=0` navigation from the authoritative `WorldSnapshot`.
+
+- An excavated cell with solid support directly below becomes a horizontal walkable cell.
+- A cell recorded by a vertical tunnel stroke becomes an open shaft cell even when it has no floor support.
+- Existing demo and deep-room cells remain in the immutable volume projection.
+- Unsupported open air above a room floor is not added, so the room wall does not become a climbable or floating surface.
+- Movement handlers are rebuilt only when the synchronized topology actually changes.
+
+This refresh runs after excavation presentation changes and immediately before both single-resident and group movement commands. A newly excavated floor therefore cannot be visible while remaining blocked in the pathfinder.
 
 ## Ownership
 
@@ -51,7 +61,7 @@ The Unity terrain renderer applies a projected cutaway mask for the shaft and ca
 
 A legacy two-dimensional move changes `X/Y` while preserving the current `Z` layer. A tunnel movement command validates the full `SpatialCellId` route and then writes the final destination through the aggregate.
 
-Group movement uses one Application command. The handler first resolves every selected resident and validates every route to the shared destination. No resident position is mutated until all routes are valid. If one selected resident cannot reach the destination, the whole group command fails without moving anyone.
+Group movement uses one Application command. The handler first resolves every selected resident and validates every route to the shared destination. No resident position is mutated until all routes are valid. If one selected resident cannot reach the destination, the whole group command fails without moving anyone. A one-resident selection keeps the dedicated single-resident command path.
 
 Unity owns only disposable presentation state:
 
@@ -61,17 +71,21 @@ Unity owns only disposable presentation state:
 - world-space route rendering;
 - interpolation through validated `X/Y/Z` route cells;
 - resident selection visuals and an immutable ordered selection-id snapshot;
+- the drag-selection rectangle;
 - terrain cutaway visibility.
 
 ## Input
 
 1. LMB on a dwarf selects only that dwarf.
 2. `Shift + LMB` on a dwarf adds it to the current group or removes it from that group.
-3. LMB on any reachable surface, connector, shaft, or cave-floor cell sends every selected dwarf to the same destination cell.
-4. RMB in the world is the global cancel action. It clears the active excavation or cave-room mode, building preview, route, selected residents, selected Job, selected building, and selected terrain cell.
-5. `Ctrl + mouse` orbits the side-view camera when depth separation is needed.
+3. Press and hold LMB on the world, then drag beyond the selection threshold to select every visible dwarf whose projected center lies inside the rectangle.
+4. A drag without Shift replaces the current resident selection; `Shift + drag` adds residents that are not already selected.
+5. A short LMB click without a drag keeps its normal action. On a walkable destination it sends the current group; on a terrain cell it keeps terrain selection behavior.
+6. LMB on any reachable surface, connector, shaft, or cave-floor cell sends every selected dwarf to the same destination cell.
+7. RMB in the world is the global cancel action. It clears the active marquee, excavation or cave-room mode, building preview, route, selected residents, selected Job, selected building, and selected terrain cell.
+8. `Ctrl + mouse` orbits the side-view camera when depth separation is needed.
 
-RMB over the HUD is shielded from world input. The cancel path is resolved before excavation, cave placement, or building placement can consume the pointer event, so one RMB cannot also execute another world command.
+The marquee does not start from resident, Job, building, or world-item colliders, so normal object clicks are not stolen. RMB over the HUD is shielded from world input. The cancel path is resolved before excavation, cave placement, or building placement can consume the pointer event.
 
 Every selected resident receives its own validated route and route animation. The shared route overlay displays one representative path, while all selected resident visuals move. A player-issued tunnel order suppresses old random demo movement for each member of the group, so the command is not overwritten by the next simulation tick.
 
