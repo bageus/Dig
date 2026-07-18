@@ -12,7 +12,8 @@ public sealed class CaveRoomPlanner
         WorldSnapshot world,
         ExcavationBoundaryPolicy boundary,
         CaveRoomPresetKind kind,
-        CellId entrance)
+        CellId entrance,
+        IReadOnlyCollection<CaveRoomPlan>? completedPlans = null)
     {
         if (world is null)
         {
@@ -53,6 +54,9 @@ public sealed class CaveRoomPlanner
                 "Cave rooms can only be attached to a horizontal tunnel.");
         }
 
+        HashSet<CellId> upgradeOpenCells = BuildUpgradeOpenCells(
+            completedPlans,
+            entrance);
         CaveRoomPreset preset = CaveRoomPresetCatalog.Get(kind);
         List<CellId> front = new List<CellId>();
         List<SpatialCellId> volume = new List<SpatialCellId>();
@@ -62,6 +66,7 @@ public sealed class CaveRoomPlanner
                 world,
                 boundary,
                 cells,
+                upgradeOpenCells,
                 preset,
                 entrance,
                 level,
@@ -136,10 +141,41 @@ public sealed class CaveRoomPlanner
         return (int)Math.Round(width, MidpointRounding.AwayFromZero);
     }
 
+    private static HashSet<CellId> BuildUpgradeOpenCells(
+        IReadOnlyCollection<CaveRoomPlan>? completedPlans,
+        CellId entrance)
+    {
+        HashSet<CellId> cells = new HashSet<CellId>();
+        if (completedPlans == null)
+        {
+            return cells;
+        }
+
+        foreach (CaveRoomPlan plan in completedPlans)
+        {
+            if (plan.Entrance != entrance)
+            {
+                continue;
+            }
+
+            for (int index = 0; index < plan.VolumeCells.Count; index++)
+            {
+                SpatialCellId cell = plan.VolumeCells[index];
+                if (cell.Z == 0)
+                {
+                    cells.Add(new CellId(cell.X, cell.Y));
+                }
+            }
+        }
+
+        return cells;
+    }
+
     private static CaveRoomPlanResult? AddRow(
         WorldSnapshot world,
         ExcavationBoundaryPolicy boundary,
         IReadOnlyDictionary<CellId, CellSnapshot> cells,
+        ISet<CellId> upgradeOpenCells,
         CaveRoomPreset preset,
         CellId entrance,
         int level,
@@ -174,11 +210,13 @@ public sealed class CaveRoomPlanner
                     "The room overlaps a protected rock cell.");
             }
 
-            if (level > 0 && !snapshot.IsSolid)
+            if (level > 0
+                && !snapshot.IsSolid
+                && !upgradeOpenCells.Contains(cell))
             {
                 return CaveRoomPlanResult.Failure(
                     CaveRoomPlanFailureReason.RoomObstructed,
-                    "Only the entrance row may overlap an existing tunnel.");
+                    "Only a completed room at the same entrance may overlap the new room.");
             }
 
             if (snapshot.IsSolid)
