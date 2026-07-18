@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Dig.Application.World;
 using Dig.Domain.Core;
@@ -56,6 +57,13 @@ namespace Dig.Unity
 
         internal Result AssignExcavationCluster(CellId seed, string residentId)
         {
+            return AssignExcavationCluster(seed, new[] { residentId });
+        }
+
+        internal Result AssignExcavationCluster(
+            CellId seed,
+            IReadOnlyList<string> residentIds)
+        {
             if (!IsInitialized())
             {
                 return Result.Failure(new DomainError(
@@ -63,22 +71,28 @@ namespace Dig.Unity
                     "Excavation controls are not initialized."));
             }
 
-            AgentSession!.ReleaseManualTunnelOrder(residentId);
-            Result result = TerrainSession!.AssignExcavationCluster(
-                seed,
-                residentId,
-                CurrentTick);
-            IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
-            TerrainSession.SynchronizeDesignations(CurrentTick, agents);
-            RefreshExcavationPresentation(agents);
-            if (result.IsFailure)
+            if (residentIds == null)
             {
-                return result;
+                throw new ArgumentNullException(nameof(residentIds));
             }
 
-            DigAgentVisual? selected = AgentRenderer!.SelectById(residentId);
-            Hud!.SetAgentSelection(selected?.Model);
-            return Result.Success();
+            for (int index = 0; index < residentIds.Count; index++)
+            {
+                AgentSession!.ReleaseManualTunnelOrder(residentIds[index]);
+                TerrainSession!.ReleaseDirectMovementControl(residentIds[index]);
+            }
+
+            Result result = TerrainSession!.AssignExcavationClusterToResidents(
+                seed,
+                residentIds,
+                CurrentTick);
+            IReadOnlyList<AgentViewModel> agents = AgentSession!.LoadView();
+            TerrainSession.SynchronizeDesignations(CurrentTick, agents);
+            RefreshExcavationPresentation(agents);
+            Hud!.SetAgentSelection(
+                AgentRenderer!.SelectedModel,
+                AgentRenderer.SelectedCount);
+            return result;
         }
 
         private void RefreshExcavationPresentation(
