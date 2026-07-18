@@ -131,6 +131,27 @@ namespace Dig.Unity
             CreateTunnelMovementHandlers();
         }
 
+        internal void SynchronizeFrontNavigation(
+            WorldSnapshot world,
+            IReadOnlyCollection<CellId> plannedVerticalCells)
+        {
+            if (_tunnelVolume == null || _tunnelJournal == null)
+            {
+                throw new InvalidOperationException("Tunnel movement is not initialized.");
+            }
+
+            TunnelNavigationVolume next = _tunnelVolume.WithSynchronizedFrontLayer(
+                world,
+                plannedVerticalCells);
+            if (ReferenceEquals(next, _tunnelVolume))
+            {
+                return;
+            }
+
+            _tunnelVolume = next;
+            CreateTunnelMovementHandlers();
+        }
+
         private void InitializeTunnelMovement(
             TunnelNavigationVolume volume,
             InMemoryExecutionJournal journal)
