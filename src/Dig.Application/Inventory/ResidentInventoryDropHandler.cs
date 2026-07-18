@@ -44,11 +44,9 @@ public sealed class DropResidentInventoryStackHandler
             return Result.Failure(ResidentInventoryActionErrors.StackReserved);
         }
 
-        Result moved = inventory.MoveAvailable(
+        Result moved = inventory.DropResidentStackWithSpill(
             command.StackId,
-            stack.Quantity,
             ItemLocation.InWorld(command.Destination),
-            splitStackId: default,
             command.Tick);
         if (moved.IsFailure)
         {
