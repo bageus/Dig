@@ -67,6 +67,11 @@ namespace Dig.Unity
 
             HandleStoragePlacement();
             UpdateBuildingPlacementHover();
+            if (TryHandleExcavationStroke())
+            {
+                return;
+            }
+
             bool left = Input.GetMouseButtonDown(0);
             bool right = Input.GetMouseButtonDown(1);
             if (!left && !right)
@@ -105,7 +110,7 @@ namespace Dig.Unity
                 return;
             }
 
-            if (TryHandleExcavationInput(hit, left, right)
+            if (TryAssignSelectedResidentToExcavation(hit, left)
                 || TryApplyTunnelMove(hit, left))
             {
                 return;
