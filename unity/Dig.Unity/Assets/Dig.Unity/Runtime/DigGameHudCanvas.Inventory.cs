@@ -99,10 +99,11 @@ public sealed partial class DigGameHudCanvas
         string reservation = slot.ReservedQuantity > 0
             ? $"\nR:{slot.ReservedQuantity}"
             : string.Empty;
+        string held = slot.IsHeld ? $"\nВ руках:{slot.HeldQuantity}" : string.Empty;
         string active = slot.IsActiveExpansion ? " ★" : string.Empty;
         string name = slot.IsEmpty
             ? $"{slot.SlotIndex + 1}\n·"
-            : $"{marker}{active}\n{ShortName(slot.DisplayName)}{quantity}{reservation}";
+            : $"{marker}{active}\n{ShortName(slot.DisplayName)}{quantity}{reservation}{held}";
         Text label = CreateText(
             "Slot Label",
             rect,
@@ -139,19 +140,41 @@ public sealed partial class DigGameHudCanvas
         if (eventData.button == PointerEventData.InputButton.Right
             || eventData.clickCount >= 2)
         {
-            _interaction!.DropResidentInventoryLayoutSlot(slot);
+            if (slot.CanDrop)
+            {
+                _interaction!.DropResidentInventoryLayoutSlot(slot);
+            }
+            else
+            {
+                SetStatus(slot.IsHeld
+                    ? "Предмет используется и остаётся в исходном слоте."
+                    : "Зарезервированный предмет нельзя выбросить.");
+            }
         }
         else if (altPressed)
         {
-            _interaction!.UseResidentInventoryLayoutSlot(slot);
+            if (slot.CanUse)
+            {
+                _interaction!.UseResidentInventoryLayoutSlot(slot);
+            }
+            else
+            {
+                SetStatus(slot.IsHeld
+                    ? "Этот предмет уже находится в руках."
+                    : "Предмет сейчас нельзя использовать.");
+            }
         }
         else if (slot.CanStartPlacement)
         {
             _interaction!.ActivateResidentInventoryLayoutSlot(slot);
         }
-        else
+        else if (!slot.IsHeld)
         {
             _interaction!.SelectResidentInventoryLayoutSlot(slot);
+        }
+        else
+        {
+            SetStatus("Предмет в руках остаётся в исходном слоте.");
         }
 
         InvalidateAll();
@@ -163,6 +186,11 @@ public sealed partial class DigGameHudCanvas
         if (slot.IsEmpty)
         {
             return new Color(0.06f, 0.07f, 0.09f, 0.72f);
+        }
+
+        if (slot.IsHeld)
+        {
+            return new Color(0.12f, 0.34f, 0.48f, 0.96f);
         }
 
         if (slot.ReservedQuantity > 0)
