@@ -55,6 +55,7 @@ namespace Dig.Unity
             _simulation = simulation;
             _hud = hud;
             hud.SetBuildingPlacementControls(this);
+            hud.SetExcavationControls(this);
         }
 
         private void Update()
@@ -104,7 +105,8 @@ namespace Dig.Unity
                 return;
             }
 
-            if (TryApplyTunnelMove(hit, left))
+            if (TryHandleExcavationInput(hit, left, right)
+                || TryApplyTunnelMove(hit, left))
             {
                 return;
             }
@@ -209,9 +211,6 @@ namespace Dig.Unity
                 ? null
                 : EntityId.Parse(selectedBuildingId);
             bool selectedAlive = _agentRenderer.SelectedModel?.IsAlive ?? true;
-            ExcavationToolKind tool = button == PointerButtonKind.Right
-                ? ExcavationToolKind.Tunnel
-                : ExcavationToolKind.None;
             return new ContextInputState(
                 selectedResidentId: selectedResident,
                 selectedResidentAlive: selectedAlive,
@@ -221,7 +220,7 @@ namespace Dig.Unity
                 buildingPlacementActive: _buildingPlacementMode.HasValue,
                 buildingPlacementValid: _buildingPlacementPreview?.IsValid ?? false,
                 buildingPlacementReasonCode: _buildingPlacementPreview?.ReasonCode,
-                excavationTool: tool);
+                excavationTool: ExcavationToolKind.None);
         }
 
         private int RegisterResidentClick(string residentId)

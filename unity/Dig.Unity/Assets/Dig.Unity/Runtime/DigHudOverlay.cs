@@ -115,6 +115,7 @@ namespace Dig.Unity
             }
 
             DrawTimeControls();
+            DrawExcavationControls();
             DrawToolAssignmentControls();
             DrawJobAttentionSummary();
             DrawStorageStatus();

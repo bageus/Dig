@@ -5,6 +5,8 @@ import re
 import sys
 from pathlib import Path
 
+from unity_excavation_contracts import check_excavation_contracts
+
 ROOT = Path(__file__).resolve().parents[2]
 RUNTIME_ROOT = (
     ROOT
@@ -152,7 +154,7 @@ def check_tunnel_contracts(texts: dict[Path, str]) -> list[str]:
             "DigTunnelDemoRenderer",
             "worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume)",
             "interaction.SetTunnelMovement",
-            "x4 tunnel volume",
+            "x4 rock volume",
         ),
     ))
     errors.extend(require_fragments(
@@ -240,6 +242,7 @@ def check_hud_contracts(texts: dict[Path, str]) -> list[str]:
             "_isCollapsed ? \"+\" : \"-\"",
             "if (_isCollapsed)",
             "GUILayout.BeginScrollView",
+            "DrawExcavationControls();",
         ),
     )
     errors.extend(reject_fragments(
@@ -270,6 +273,13 @@ def main() -> int:
     }
     errors: list[str] = check_side_view_contracts(texts)
     errors.extend(check_tunnel_contracts(texts))
+    errors.extend(check_excavation_contracts(
+        ROOT,
+        RUNTIME_ROOT,
+        texts,
+        require_fragments,
+        reject_fragments,
+    ))
     errors.extend(check_hud_contracts(texts))
     messages: dict[tuple[str, str], list[Path]] = {}
 

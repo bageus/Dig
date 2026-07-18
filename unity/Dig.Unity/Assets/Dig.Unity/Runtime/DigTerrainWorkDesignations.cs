@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Jobs;
 using Dig.Domain.Core;
 using Dig.Domain.Jobs;
@@ -11,6 +12,7 @@ namespace Dig.Unity
 {
     internal sealed partial class DigTerrainWorkSession
     {
+        private static readonly JobCandidate[] NoCandidates = Array.Empty<JobCandidate>();
         private SyncDigDesignationJobsHandler? _designationSync;
         private AssignAvailableJobsHandler? _assignmentHandler;
         private InMemoryJobCandidateProvider? _candidateProvider;
@@ -34,11 +36,13 @@ namespace Dig.Unity
                 _jobRepository,
                 _candidateProvider,
                 journal);
+            InitializeManualExcavation(journal);
         }
 
         public void SynchronizeDesignations(
             long tick,
-            IReadOnlyList<AgentViewModel> agents)
+            IReadOnlyList<AgentViewModel> agents,
+            int priority = 750)
         {
             if (_designationSync == null
                 || _assignmentHandler == null
@@ -50,22 +54,70 @@ namespace Dig.Unity
             }
 
             DigDesignationJobSyncReport report = _designationSync.Handle(
-                new SyncDigDesignationJobsCommand(priority: 750, tick));
+                new SyncDigDesignationJobsCommand(priority, tick));
             foreach (EntityId cancelledJobId in report.Cancelled)
             {
                 _routePlans.Remove(cancelledJobId);
                 _outputStackIds.Remove(cancelledJobId);
+                RemoveManualExcavationJob(cancelledJobId);
             }
 
             foreach (CreatedDigDesignationJob created in report.Created)
             {
                 _outputStackIds.Add(created.JobId, _dynamicIds.NextStackId());
+            }
+
+            Dictionary<CellId, CellSnapshot> cells = _worldSession.LoadSnapshot().Chunks
+                .SelectMany(chunk => chunk.Cells)
+                .ToDictionary(cell => cell.Id);
+            foreach (JobSnapshot job in _jobRepository.Get().GetAll()
+                .Where(value => value.Definition is DigJobDefinition && !value.IsTerminal))
+            {
+                DigJobDefinition definition = (DigJobDefinition)job.Definition;
+                if (IsManualExcavationJob(job.Id)
+                    || !IsExcavationFrontier(definition.Target.CellId, cells))
+                {
+                    _candidateProvider.SetCandidates(job.Id, NoCandidates);
+                    continue;
+                }
+
                 _candidateProvider.SetCandidates(
-                    created.JobId,
-                    CreateDynamicCandidates(agents, created.CellId));
+                    job.Id,
+                    CreateDynamicCandidates(agents, definition.Target.CellId));
             }
 
             _assignmentHandler.Handle(new AssignAvailableJobsCommand(tick));
+        }
+
+        private static bool IsExcavationFrontier(
+            CellId target,
+            IReadOnlyDictionary<CellId, CellSnapshot> cells)
+        {
+            if (!cells.TryGetValue(target, out CellSnapshot cell)
+                || !cell.IsSolid
+                || cell.State.Designation != CellDesignation.Dig)
+            {
+                return false;
+            }
+
+            CellId[] neighbors =
+            {
+                target.X > 0 ? new CellId(target.X - 1, target.Y) : target,
+                new CellId(target.X + 1, target.Y),
+                target.Y > 0 ? new CellId(target.X, target.Y - 1) : target,
+                new CellId(target.X, target.Y + 1),
+            };
+            for (int index = 0; index < neighbors.Length; index++)
+            {
+                if (neighbors[index] != target
+                    && cells.TryGetValue(neighbors[index], out CellSnapshot neighbor)
+                    && !neighbor.IsSolid)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static IReadOnlyList<JobCandidate> CreateDynamicCandidates(
@@ -77,12 +129,13 @@ namespace Dig.Unity
             {
                 AgentViewModel agent = agents[index];
                 int distance = Math.Abs(agent.CellX - target.X)
-                    + Math.Abs(agent.CellY - target.Y);
+                    + Math.Abs(agent.CellY - target.Y)
+                    + Math.Abs(agent.CellZ);
                 values[index] = new JobCandidate(
                     EntityId.Parse(agent.Id),
                     skillLevel: 5_000 - (index * 250),
                     distanceCost: distance,
-                    isAvailable: agent.IsAlive);
+                    isAvailable: agent.IsAlive && agent.CellZ == 0);
             }
 
             return values;

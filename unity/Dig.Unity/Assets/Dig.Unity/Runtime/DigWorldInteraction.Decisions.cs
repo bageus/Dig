@@ -73,6 +73,7 @@ namespace Dig.Unity
 
             if (decision.Effects.HasFlag(PresentationInputEffect.SelectResident))
             {
+                DisableExcavationDrawing();
                 DigAgentVisual? selected = agent;
                 if (selected == null && decision.TargetEntityId.HasValue)
                 {

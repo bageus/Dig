@@ -1,3 +1,4 @@
+using Dig.Domain.World;
 using Dig.Presentation.Jobs;
 using UnityEngine;
 
@@ -40,10 +41,14 @@ namespace Dig.Unity
             _statusMaterial = statusMaterial;
             if (model.HasTarget)
             {
-                transform.position = new Vector3(
-                    model.TargetX!.Value,
-                    1.05f,
-                    model.TargetY!.Value);
+                Vector3 position = DigTunnelProjection.CellWorldPosition(
+                    new SpatialCellId(
+                        model.TargetX!.Value,
+                        model.TargetY!.Value,
+                        0));
+                position.y += 0.72f;
+                position.z += 0.18f;
+                transform.position = position;
             }
 
             RefreshMaterial();

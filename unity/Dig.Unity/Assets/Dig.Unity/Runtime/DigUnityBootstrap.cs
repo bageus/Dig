@@ -90,6 +90,7 @@ namespace Dig.Unity
             _startupStage = "creating Unity adapters";
             Camera targetCamera = EnsureCamera();
             DigWorldRenderer worldRenderer = GetOrAdd<DigWorldRenderer>(gameObject);
+            DigRockVolumeRenderer rockRenderer = GetOrAdd<DigRockVolumeRenderer>(gameObject);
             DigAgentRenderer agentRenderer = GetOrAdd<DigAgentRenderer>(gameObject);
             DigJobRenderer jobRenderer = GetOrAdd<DigJobRenderer>(gameObject);
             DigBuildingRenderer buildingRenderer = GetOrAdd<DigBuildingRenderer>(gameObject);
@@ -126,6 +127,7 @@ namespace Dig.Unity
             RenderSettings.ambientLight = new Color(0.58f, 0.60f, 0.66f, 1f);
             worldRenderer.Render(world);
             worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume);
+            rockRenderer.Initialize(agentSession.TunnelVolume);
             tunnelRenderer.Initialize(agentSession.TunnelVolume);
 
             _startupStage = "rendering residents";
@@ -172,13 +174,14 @@ namespace Dig.Unity
                 hud);
             interaction.enabled = true;
             simulation.enabled = true;
-            hud.SetStatus("LMB selects and moves a dwarf. RMB clears selection.");
+            hud.SetStatus(
+                "Clear dwarf selection, choose a tunnel mode, then LMB draw / RMB erase on Z=0.");
             if (logStartup)
             {
                 Debug.Log(
                     $"Dig Unity runtime started with {agents.Count} residents, " +
                     $"{jobs.Count} jobs, {buildings.Count} buildings and a " +
-                    $"{world.Width}x{world.Height}x4 tunnel volume.",
+                    $"{world.Width}x{world.Height}x4 rock volume.",
                     this);
             }
         }
