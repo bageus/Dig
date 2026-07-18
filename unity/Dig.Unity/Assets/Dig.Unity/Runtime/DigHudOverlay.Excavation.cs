@@ -29,16 +29,16 @@ namespace Dig.Unity
             }
 
             GUI.enabled = _excavationControls.CanActivateExcavationDrawing;
-            if (GUILayout.Button("Horizontal", GUILayout.Width(92f)))
+            if (GUILayout.Button("Tunnel", GUILayout.Width(76f)))
             {
                 _excavationControls.SetExcavationDrawingMode(
-                    DigExcavationDrawingMode.Horizontal);
+                    DigExcavationDrawingMode.Tunnel);
             }
 
-            if (GUILayout.Button("Vertical", GUILayout.Width(76f)))
+            if (GUILayout.Button("Delete", GUILayout.Width(68f)))
             {
                 _excavationControls.SetExcavationDrawingMode(
-                    DigExcavationDrawingMode.Vertical);
+                    DigExcavationDrawingMode.Delete);
             }
 
             GUI.enabled = true;
@@ -55,7 +55,11 @@ namespace Dig.Unity
             GUILayout.EndHorizontal();
             if (!_excavationControls.CanActivateExcavationDrawing)
             {
-                GUILayout.Label("Clear the dwarf selection to draw or erase tunnels.");
+                GUILayout.Label("Clear the dwarf selection to draw or delete tunnels.");
+            }
+            else
+            {
+                GUILayout.Label("Tunnel/Delete: hold LMB and move over cells.");
             }
         }
     }
