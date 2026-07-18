@@ -99,9 +99,10 @@ namespace Dig.Unity
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
             AgentRenderer.Render(agents, movementDuration: 0.25f);
             RefreshEquipmentVisuals();
-            DigAgentVisual? selected = AgentRenderer.SelectById(residentId);
             Hud.SetAgents(agents, AgentSession.Tick);
-            Hud.SetAgentSelection(selected?.Model);
+            Hud.SetAgentSelection(
+                AgentRenderer.SelectedModel,
+                AgentRenderer.SelectedCount);
             return Result.Success();
         }
 

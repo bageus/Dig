@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Inventory;
@@ -14,15 +15,23 @@ namespace Dig.Unity
             new Dictionary<string, DigAgentVisual>();
         private readonly Dictionary<string, ResidentEquipmentViewModel> _equipment =
             new Dictionary<string, ResidentEquipmentViewModel>(StringComparer.Ordinal);
+        private readonly HashSet<string> _selectedIds =
+            new HashSet<string>(StringComparer.Ordinal);
+        private readonly List<string> _selectionOrder = new List<string>();
+        private IReadOnlyList<string> _selectedSnapshot = Array.Empty<string>();
         private Transform? _visualRoot;
         private Material? _normalMaterial;
         private Material? _selectedMaterial;
         private Material? _equipmentMaterial;
-        private DigAgentVisual? _selected;
+        private DigAgentVisual? _primarySelected;
 
-        public string? SelectedAgentId => _selected?.Model.Id;
+        public string? SelectedAgentId => _primarySelected?.Model.Id;
 
-        public AgentViewModel? SelectedModel => _selected?.Model;
+        public IReadOnlyList<string> SelectedAgentIds => _selectedSnapshot;
+
+        public int SelectedCount => _selectedSnapshot.Count;
+
+        public AgentViewModel? SelectedModel => _primarySelected?.Model;
 
         public void Render(IReadOnlyList<AgentViewModel> agents, float movementDuration)
         {
@@ -50,16 +59,30 @@ namespace Dig.Unity
                 }
             }
 
+            bool selectionChanged = false;
             foreach (string id in removed)
             {
                 DigAgentVisual visual = _agents[id];
-                if (_selected == visual)
+                if (_selectedIds.Remove(id))
                 {
-                    _selected = null;
+                    _selectionOrder.Remove(id);
+                    selectionChanged = true;
+                }
+
+                if (_primarySelected == visual)
+                {
+                    _primarySelected = null;
+                    selectionChanged = true;
                 }
 
                 _agents.Remove(id);
                 Destroy(visual.gameObject);
+            }
+
+            if (selectionChanged)
+            {
+                ResolvePrimarySelection();
+                PublishSelectionSnapshot();
             }
         }
 
@@ -127,18 +150,59 @@ namespace Dig.Unity
 
         public DigAgentVisual? Select(DigAgentVisual? agent)
         {
-            if (_selected != null)
+            ClearSelection();
+            if (agent == null)
             {
-                _selected.SetSelected(false);
+                return null;
             }
 
-            _selected = agent;
-            if (_selected != null)
+            AddSelection(agent);
+            return _primarySelected;
+        }
+
+        public DigAgentVisual? ToggleSelection(DigAgentVisual agent)
+        {
+            if (agent == null)
             {
-                _selected.SetSelected(true);
+                throw new ArgumentNullException(nameof(agent));
             }
 
-            return _selected;
+            string id = agent.Model.Id;
+            if (_selectedIds.Remove(id))
+            {
+                _selectionOrder.Remove(id);
+                agent.SetSelected(false);
+                if (_primarySelected == agent)
+                {
+                    _primarySelected = null;
+                    ResolvePrimarySelection();
+                }
+            }
+            else
+            {
+                AddSelection(agent);
+            }
+
+            PublishSelectionSnapshot();
+            return _primarySelected;
+        }
+
+        public void ClearSelection()
+        {
+            for (int index = 0; index < _selectionOrder.Count; index++)
+            {
+                if (_agents.TryGetValue(
+                    _selectionOrder[index],
+                    out DigAgentVisual? selected))
+                {
+                    selected.SetSelected(false);
+                }
+            }
+
+            _selectedIds.Clear();
+            _selectionOrder.Clear();
+            _primarySelected = null;
+            PublishSelectionSnapshot();
         }
 
         public DigAgentVisual? SelectById(string id)
@@ -146,6 +210,42 @@ namespace Dig.Unity
             return _agents.TryGetValue(id, out DigAgentVisual? agent)
                 ? Select(agent)
                 : Select(null);
+        }
+
+        private void AddSelection(DigAgentVisual agent)
+        {
+            string id = agent.Model.Id;
+            if (_selectedIds.Add(id))
+            {
+                _selectionOrder.Add(id);
+                agent.SetSelected(true);
+            }
+
+            _primarySelected = agent;
+            PublishSelectionSnapshot();
+        }
+
+        private void ResolvePrimarySelection()
+        {
+            for (int index = _selectionOrder.Count - 1; index >= 0; index--)
+            {
+                if (_agents.TryGetValue(
+                    _selectionOrder[index],
+                    out DigAgentVisual? selected))
+                {
+                    _primarySelected = selected;
+                    return;
+                }
+            }
+
+            _primarySelected = null;
+        }
+
+        private void PublishSelectionSnapshot()
+        {
+            _selectedSnapshot = _selectionOrder.Count == 0
+                ? Array.Empty<string>()
+                : new ReadOnlyCollection<string>(_selectionOrder.ToArray());
         }
 
         private void CreateAgent(AgentViewModel model)

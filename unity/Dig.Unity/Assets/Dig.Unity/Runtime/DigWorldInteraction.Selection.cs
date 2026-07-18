@@ -65,6 +65,55 @@ namespace Dig.Unity
             _hud!.SetJobSelection(job.Model);
         }
 
+        private static bool IsAdditiveResidentSelectionPressed()
+        {
+            return Input.GetKey(KeyCode.LeftShift)
+                || Input.GetKey(KeyCode.RightShift);
+        }
+
+        private void ToggleResidentSelection(DigAgentVisual agent)
+        {
+            if (_buildingPlacementMode.HasValue)
+            {
+                CancelBuildingPlacement();
+            }
+
+            DisableExcavationDrawing();
+            DisableCaveRoomPlanning();
+            _selectedCell = null;
+            _renderer!.Select(null);
+            _jobRenderer!.Select(null);
+            _buildingRenderer!.Select(null);
+            _tunnelRenderer?.Select(null);
+            DigAgentVisual? primary = _agentRenderer!.ToggleSelection(agent);
+            _hud!.SetAgentSelection(primary?.Model, _agentRenderer.SelectedCount);
+            _hud.SetStatus(_agentRenderer.SelectedCount == 0
+                ? "Resident selection cleared."
+                : $"{_agentRenderer.SelectedCount} resident(s) selected. " +
+                    "Shift+LMB toggles the group; LMB on a destination moves everyone.");
+        }
+
+        private void CancelCurrentInteraction()
+        {
+            if (_buildingPlacementMode.HasValue)
+            {
+                CancelBuildingPlacement();
+            }
+
+            DisableExcavationDrawing();
+            DisableCaveRoomPlanning();
+            _selectedCell = null;
+            _renderer!.Select(null);
+            _agentRenderer!.ClearSelection();
+            _jobRenderer!.Select(null);
+            _buildingRenderer!.Select(null);
+            _tunnelRenderer?.Select(null);
+            _tunnelRenderer?.ShowRoute(null);
+            _buildingBoxGhostRenderer?.Clear();
+            _hud!.SetSelection(null);
+            _hud.SetStatus("Current mode, action, route, and selection cancelled.");
+        }
+
         private void HandleStoragePlacement()
         {
             bool requested = Input.GetKeyDown(KeyCode.Alpha5)

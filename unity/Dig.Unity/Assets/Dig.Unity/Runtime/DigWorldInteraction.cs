@@ -65,6 +65,13 @@ namespace Dig.Unity
                 return;
             }
 
+            bool right = Input.GetMouseButtonDown(1);
+            if (right && !_hud!.ContainsScreenPoint(Input.mousePosition))
+            {
+                CancelCurrentInteraction();
+                return;
+            }
+
             HandleStoragePlacement();
             UpdateBuildingPlacementHover();
             UpdateCaveRoomPreview();
@@ -74,7 +81,6 @@ namespace Dig.Unity
             }
 
             bool left = Input.GetMouseButtonDown(0);
-            bool right = Input.GetMouseButtonDown(1);
             if (!left && !right)
             {
                 return;
@@ -83,7 +89,7 @@ namespace Dig.Unity
             PointerButtonKind button = left
                 ? PointerButtonKind.Left
                 : PointerButtonKind.Right;
-            if (_hud!.ContainsScreenPoint(Input.mousePosition))
+            if (_hud.ContainsScreenPoint(Input.mousePosition))
             {
                 _inputRouter.Route(
                     new ContextPointerEvent(
@@ -93,11 +99,6 @@ namespace Dig.Unity
                         isPointerOverBlockingUi: true),
                     BuildState(button),
                     new ContextPointerTarget(ContextWorldTargetKind.None));
-                return;
-            }
-
-            if (TryClearResidentSelection(right))
-            {
                 return;
             }
 
@@ -119,6 +120,12 @@ namespace Dig.Unity
 
             if (_agentRenderer!.TryGetAgent(hit, out DigAgentVisual agent))
             {
+                if (left && IsAdditiveResidentSelectionPressed())
+                {
+                    ToggleResidentSelection(agent);
+                    return;
+                }
+
                 int clickCount = left ? RegisterResidentClick(agent.Model.Id) : 1;
                 ContextPointerTarget target = new ContextPointerTarget(
                     ContextWorldTargetKind.Resident,
