@@ -84,6 +84,7 @@ namespace Dig.Unity
         private void RefreshExcavationPresentation(
             IReadOnlyList<AgentViewModel> agents)
         {
+            SynchronizeExcavatedTunnelNavigation();
             var world = WorldSession!.LoadView();
             IReadOnlyList<JobOverlayViewModel> jobs = TerrainSession!.LoadJobs();
             WorldRenderer!.Render(world);
