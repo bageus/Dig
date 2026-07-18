@@ -240,14 +240,22 @@ public sealed class ResidentInventoryLayoutPresenter
                 isActiveExpansion: false);
         }
 
-        ItemDefinition definition = catalog.Get(slot.ItemId!.Value);
-        int heldQuantity = held.HasValue && held.Value.StackId == slot.StackId!.Value
+        EntityId stackId = slot.StackId.GetValueOrDefault();
+        ItemId itemId = slot.ItemId.GetValueOrDefault();
+        if (stackId.IsEmpty || itemId.IsEmpty)
+        {
+            throw new InvalidOperationException(
+                "A nonempty resident inventory slot requires stack and item ids.");
+        }
+
+        ItemDefinition definition = catalog.Get(itemId);
+        int heldQuantity = held.HasValue && held.Value.StackId == stackId
             ? held.Value.Quantity
             : 0;
         return new ResidentInventoryLayoutSlotViewModel(
             slot.Slot.Compartment,
             slot.Slot.Index,
-            slot.StackId.Value.ToString(),
+            stackId.ToString(),
             definition.Id.ToString(),
             definition.DisplayName,
             slot.Quantity,
