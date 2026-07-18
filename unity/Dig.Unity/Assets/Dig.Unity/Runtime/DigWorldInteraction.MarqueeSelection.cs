@@ -10,6 +10,8 @@ namespace Dig.Unity
         private DigSelectionMarqueeRenderer? _marqueeRenderer;
         private bool _marqueePending;
         private bool _marqueeActive;
+        private bool _marqueeHasStartHit;
+        private RaycastHit _marqueeStartHit;
         private Vector2 _marqueeStart;
         private Vector2 _marqueeCurrent;
 
@@ -38,9 +40,13 @@ namespace Dig.Unity
                 }
 
                 Ray ray = _camera!.ScreenPointToRay(Input.mousePosition);
-                if (Physics.Raycast(ray, out RaycastHit hit, 500f)
-                    && _agentRenderer!.TryGetAgent(hit, out _))
+                _marqueeHasStartHit = Physics.Raycast(
+                    ray,
+                    out _marqueeStartHit,
+                    500f);
+                if (_marqueeHasStartHit && IsMarqueeBlockingTarget(_marqueeStartHit))
                 {
+                    _marqueeHasStartHit = false;
                     return false;
                 }
 
@@ -85,6 +91,11 @@ namespace Dig.Unity
                     CreateScreenRect(_marqueeStart, _marqueeCurrent),
                     additive: IsAdditiveResidentSelectionPressed());
             }
+            else if (_marqueeHasStartHit
+                && _renderer!.TryGetCell(_marqueeStartHit, out DigCellVisual cell))
+            {
+                SelectCell(cell);
+            }
             else
             {
                 _hud!.SetStatus("Drag LMB to select multiple dwarfs.");
@@ -92,6 +103,14 @@ namespace Dig.Unity
 
             CancelResidentMarquee();
             return true;
+        }
+
+        private bool IsMarqueeBlockingTarget(RaycastHit hit)
+        {
+            return _agentRenderer!.TryGetAgent(hit, out _)
+                || _jobRenderer!.TryGetJob(hit, out _)
+                || _buildingRenderer!.TryGetBuilding(hit, out _)
+                || _itemRenderer!.TryGetItem(hit, out _);
         }
 
         private bool CanUseResidentMarquee()
@@ -161,6 +180,7 @@ namespace Dig.Unity
         {
             _marqueePending = false;
             _marqueeActive = false;
+            _marqueeHasStartHit = false;
             _marqueeRenderer?.Clear();
         }
 
