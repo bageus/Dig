@@ -5,18 +5,35 @@ namespace Dig.Unity
 {
     internal static class DigTunnelProjection
     {
-        internal const float DepthOrigin = 0.90f;
+        internal const float DepthOrigin = 0.41f;
         internal const float DepthSpacing = -0.55f;
-        internal const float ResidentHeight = 0.68f;
-        internal const float ResidentDepthOffset = 0.12f;
-        internal const float RouteHeight = 0.16f;
-        internal const float RouteDepthOffset = 0.08f;
+        internal const float RockCellHalfExtent = 0.48f;
+        internal const float FloorThickness = 0.08f;
+        internal const float FloorDepth = 0.45f;
+        internal const float ResidentHalfHeight = 0.62f;
+        internal const float ResidentFootSink = 0.02f;
+        internal const float ResidentDepthOffset = 0f;
+        internal const float RouteHeight = 0.10f;
+        internal const float RouteDepthOffset = 0.02f;
 
         internal static Vector3 CellWorldPosition(SpatialCellId cell)
         {
             return new Vector3(
                 cell.X,
                 -cell.Y,
+                DepthOrigin + (cell.Z * DepthSpacing));
+        }
+
+        internal static float WalkSurfaceY(float cellY)
+        {
+            return -(cellY + 1f) + RockCellHalfExtent;
+        }
+
+        internal static Vector3 FloorWorldPosition(SpatialCellId cell)
+        {
+            return new Vector3(
+                cell.X,
+                WalkSurfaceY(cell.Y) - (FloorThickness * 0.5f),
                 DepthOrigin + (cell.Z * DepthSpacing));
         }
 
@@ -27,16 +44,16 @@ namespace Dig.Unity
         {
             return new Vector3(
                 cellX,
-                -cellY + ResidentHeight,
+                WalkSurfaceY(cellY) + ResidentHalfHeight - ResidentFootSink,
                 DepthOrigin + (cellZ * DepthSpacing) + ResidentDepthOffset);
         }
 
         internal static Vector3 RouteWorldPosition(SpatialCellId cell)
         {
-            Vector3 position = CellWorldPosition(cell);
-            position.y += RouteHeight;
-            position.z += RouteDepthOffset;
-            return position;
+            return new Vector3(
+                cell.X,
+                WalkSurfaceY(cell.Y) + RouteHeight,
+                DepthOrigin + (cell.Z * DepthSpacing) + RouteDepthOffset);
         }
     }
 }
