@@ -27,7 +27,7 @@ public sealed partial class InventoryState
             return Result.Failure(InventoryErrors.ToolRequired);
         }
 
-        if (stack.Location != ItemLocation.InAgent(agentId))
+        if (!IsCarriedBy(stack.Location, agentId))
         {
             return Result.Failure(InventoryErrors.ToolNotCarried);
         }
@@ -75,7 +75,7 @@ public sealed partial class InventoryState
             return Result.Success();
         }
 
-        if (target.Location != ItemLocation.InAgent(agentId))
+        if (!IsCarriedBy(target.Location, agentId))
         {
             return Result.Failure(InventoryErrors.ToolNotCarried);
         }
@@ -119,12 +119,12 @@ public sealed partial class InventoryState
             return Result.Success();
         }
 
-        ItemLocation carriedLocation = ItemLocation.InAgent(agentId);
+        ItemLocation targetCarriedLocation = target.Location;
         ItemStackState? current = _stacks.Values.SingleOrDefault(
             candidate => candidate.Location == equippedLocation);
         if (current is not null)
         {
-            current.MoveFull(carriedLocation);
+            current.MoveFull(targetCarriedLocation);
         }
 
         target.MoveFull(equippedLocation);
@@ -138,7 +138,7 @@ public sealed partial class InventoryState
                 current.ItemId,
                 1,
                 equippedLocation,
-                carriedLocation));
+                targetCarriedLocation));
         }
 
         Raise(new ItemStackMoved(
@@ -147,9 +147,17 @@ public sealed partial class InventoryState
             target.Id,
             target.ItemId,
             1,
-            carriedLocation,
+            targetCarriedLocation,
             equippedLocation));
         return Result.Success();
     }
+
+    private static bool IsCarriedBy(ItemLocation location, EntityId agentId)
+    {
+        return location.Kind == ItemLocationKind.AgentInventory
+            && location.HasOwner
+            && location.OwnerId == agentId;
+    }
 }
+
 }
