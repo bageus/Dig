@@ -42,7 +42,7 @@ def check_excavation_contracts(
         texts.get(rock_path, ""),
         "solid rock volume",
         (
-            "for (int z = 1; z < volume.Depth; z++)",
+            "for (int z = 1; z < _volume.Depth; z++)",
             "IsSolidRock",
             "volume.IsOpen(cell)",
             "MeshFilter",
