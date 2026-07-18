@@ -8,7 +8,7 @@ using UnityEngine;
 namespace Dig.Unity
 {
     [DisallowMultipleComponent]
-    public sealed class DigWorldRenderer : MonoBehaviour
+    public sealed partial class DigWorldRenderer : MonoBehaviour
     {
         private readonly Dictionary<Vector2Int, DigCellVisual> _cells =
             new Dictionary<Vector2Int, DigCellVisual>();
@@ -81,6 +81,7 @@ namespace Dig.Unity
                     }
 
                     ApplyCell(visual, cell, walkSurface);
+                    ApplyProtectedVisual(visual, cellKey);
                 }
             }
 
