@@ -59,6 +59,14 @@ namespace Dig.Unity
             ReplaceBackWall(plan);
         }
 
+        internal bool TryGetCell(RaycastHit hit, out DigTunnelCellVisual cell)
+        {
+            cell = hit.collider == null
+                ? null!
+                : hit.collider.GetComponent<DigTunnelCellVisual>();
+            return cell != null && _cells.Contains(cell.Cell);
+        }
+
         private void ReplaceBackWall(CaveRoomPlan plan)
         {
             string key = $"{plan.Entrance.X}:{plan.Entrance.Y}";
