@@ -58,7 +58,8 @@ namespace Dig.Unity
 
         private void AdvanceOneTick()
         {
-            string? selectedAgentId = AgentRenderer!.SelectedAgentId;
+            IReadOnlyList<string> selectedAgentIds = AgentRenderer!.SelectedAgentIds;
+            string? primarySelectedAgentId = AgentRenderer.SelectedAgentId;
             string? selectedJobId = JobRenderer!.SelectedJobId;
             string? selectedBuildingId = BuildingRenderer!.SelectedBuildingId;
             IReadOnlyList<AgentViewModel> before = AgentSession!.LoadView();
@@ -129,7 +130,11 @@ namespace Dig.Unity
             Hud!.SetAgents(agents, AgentSession.Tick);
             Hud.SetJobs(jobs);
             Hud.SetStorageStatus(storage);
-            RestoreSelection(selectedAgentId, selectedJobId, selectedBuildingId);
+            RestoreSelection(
+                selectedAgentIds,
+                primarySelectedAgentId,
+                selectedJobId,
+                selectedBuildingId);
         }
     }
 }
