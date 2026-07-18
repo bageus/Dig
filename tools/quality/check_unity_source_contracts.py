@@ -11,6 +11,7 @@ from unity_group_input_contracts import (
     check_group_hud_contracts,
     check_tunnel_and_group_contracts,
 )
+from unity_navigation_marquee_contracts import check_navigation_and_marquee_contracts
 from unity_tunnel_depth_contracts import check_tunnel_depth_contracts
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -207,6 +208,11 @@ def main() -> int:
         require_fragments,
     ))
     errors.extend(check_tunnel_depth_contracts(
+        RUNTIME_ROOT,
+        texts,
+        require_fragments,
+    ))
+    errors.extend(check_navigation_and_marquee_contracts(
         RUNTIME_ROOT,
         texts,
         require_fragments,
