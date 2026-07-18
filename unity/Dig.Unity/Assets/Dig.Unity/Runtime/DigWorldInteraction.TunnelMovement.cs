@@ -45,10 +45,15 @@ namespace Dig.Unity
                 return true;
             }
 
-            Result result = _simulation!.MoveResidentsThroughTunnel(
-                residentIds,
-                destination,
-                _tunnelRenderer);
+            Result result = residentIds.Count == 1
+                ? _simulation!.MoveResidentThroughTunnel(
+                    residentIds[0],
+                    destination,
+                    _tunnelRenderer)
+                : _simulation!.MoveResidentsThroughTunnel(
+                    residentIds,
+                    destination,
+                    _tunnelRenderer);
             _hud!.SetCommandResult(result);
             if (result.IsSuccess)
             {
