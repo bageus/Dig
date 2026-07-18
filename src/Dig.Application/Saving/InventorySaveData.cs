@@ -13,6 +13,10 @@ public sealed class InventorySaveData
     [DataMember(Order = 2)]
     public List<ItemStackSaveData> Stacks { get; set; } =
         new List<ItemStackSaveData>();
+
+    [DataMember(Order = 3)]
+    public List<HeldItemReferenceSaveData> HeldItems { get; set; } =
+        new List<HeldItemReferenceSaveData>();
 }
 
 [DataContract]
@@ -66,6 +70,22 @@ public sealed class ItemReservationSaveData
 
     [DataMember(Order = 2)]
     public int Quantity { get; set; }
+}
+
+[DataContract]
+public sealed class HeldItemReferenceSaveData
+{
+    [DataMember(Order = 1)]
+    public string ResidentId { get; set; } = string.Empty;
+
+    [DataMember(Order = 2)]
+    public string StackId { get; set; } = string.Empty;
+
+    [DataMember(Order = 3)]
+    public int Quantity { get; set; }
+
+    [DataMember(Order = 4)]
+    public int Purpose { get; set; }
 }
 
 }
