@@ -10,6 +10,7 @@ internal sealed class ItemStackState
 {
     private readonly Dictionary<EntityId, int> _reservations =
         new Dictionary<EntityId, int>();
+    private int _heldQuantity;
 
     public ItemStackState(
         EntityId id,
@@ -31,6 +32,8 @@ internal sealed class ItemStackState
 
     public ItemLocation Location { get; private set; }
 
+    public int HeldQuantity => _heldQuantity;
+
     public int ReservedQuantity
     {
         get
@@ -45,7 +48,7 @@ internal sealed class ItemStackState
         }
     }
 
-    public int AvailableQuantity => Quantity - ReservedQuantity;
+    public int AvailableQuantity => Quantity - ReservedQuantity - HeldQuantity;
 
     public int GetReservedQuantity(EntityId jobId)
     {
@@ -77,6 +80,26 @@ internal sealed class ItemStackState
         return quantity;
     }
 
+    public void Hold(int quantity)
+    {
+        if (quantity <= 0 || quantity > AvailableQuantity)
+        {
+            throw new ArgumentOutOfRangeException(nameof(quantity));
+        }
+
+        _heldQuantity = checked(_heldQuantity + quantity);
+    }
+
+    public void ReleaseHeld(int quantity)
+    {
+        if (quantity <= 0 || quantity > _heldQuantity)
+        {
+            throw new ArgumentOutOfRangeException(nameof(quantity));
+        }
+
+        _heldQuantity -= quantity;
+    }
+
     public void ConsumeReservation(EntityId jobId, int quantity)
     {
         int reserved = GetReservedQuantity(jobId);
@@ -98,7 +121,7 @@ internal sealed class ItemStackState
 
     public void ConsumeReservedQuantity(EntityId jobId, int quantity)
     {
-        if (quantity <= 0 || quantity > Quantity)
+        if (quantity <= 0 || quantity > Quantity - HeldQuantity)
         {
             throw new ArgumentOutOfRangeException(nameof(quantity));
         }
@@ -129,6 +152,11 @@ internal sealed class ItemStackState
 
     public void MoveFull(ItemLocation destination)
     {
+        if (HeldQuantity != 0)
+        {
+            throw new InvalidOperationException("A held stack cannot change location.");
+        }
+
         Location = destination;
     }
 
@@ -143,7 +171,13 @@ internal sealed class ItemStackState
         ItemQuantityReservationSnapshot[] reservations = _reservations
             .Select(pair => new ItemQuantityReservationSnapshot(pair.Key, pair.Value))
             .ToArray();
-        return new ItemStackSnapshot(Id, ItemId, Quantity, Location, reservations);
+        return new ItemStackSnapshot(
+            Id,
+            ItemId,
+            Quantity,
+            Location,
+            reservations,
+            HeldQuantity);
     }
 }
 
