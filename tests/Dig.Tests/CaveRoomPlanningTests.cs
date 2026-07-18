@@ -91,7 +91,7 @@ public sealed class CaveRoomPlanningTests
     {
         WorldSnapshot world = CreateWorld(
             horizontalTunnelY: 9,
-            additionalAir: new[] { new CellId(10, 5) });
+            additionalAir: new[] { new CellId(10, 6) });
         ExcavationBoundaryPolicy boundary = new ExcavationBoundaryPolicy(20, 14, 2);
 
         CaveRoomPlanResult result = new CaveRoomPlanner().Plan(
