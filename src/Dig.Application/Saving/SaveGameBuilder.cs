@@ -200,6 +200,12 @@ public sealed class SaveGameBuilder
             OwnerId = location.HasOwner ? location.OwnerId.ToString() : null,
             CellX = location.HasCell ? location.CellId.X : (int?)null,
             CellY = location.HasCell ? location.CellId.Y : (int?)null,
+            ResidentCompartment = location.HasResidentSlot
+                ? (int)location.ResidentCompartment
+                : (int?)null,
+            ResidentSlotIndex = location.HasResidentSlot
+                ? location.ResidentSlotIndex
+                : (int?)null,
         };
     }
 
@@ -228,4 +234,5 @@ public sealed class SaveGameBuilder
         }
     }
 }
+
 }
