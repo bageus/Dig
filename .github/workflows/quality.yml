@@ -29,7 +29,19 @@ jobs:
         run: python tools/quality/check_unity_modules.py
 
       - name: Validate Unity source contracts
-        run: python tools/quality/check_unity_source_contracts.py
+        shell: bash
+        run: |
+          set -o pipefail
+          python tools/quality/check_unity_source_contracts.py 2>&1 | tee unity-source-contracts.log
+
+      - name: Upload Unity source contract log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-source-contracts-log
+          path: unity-source-contracts.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
