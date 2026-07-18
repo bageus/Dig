@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Dig.Domain.Navigation;
+using Dig.Domain.World;
 using Dig.Presentation.World;
 using UnityEngine;
 
@@ -16,6 +17,10 @@ namespace Dig.Unity
         private readonly HashSet<Vector2Int> _visibleCells =
             new HashSet<Vector2Int>();
         private readonly HashSet<Vector2Int> _visibleChunks =
+            new HashSet<Vector2Int>();
+        private readonly HashSet<Vector2Int> _solidCells =
+            new HashSet<Vector2Int>();
+        private readonly HashSet<Vector2Int> _walkSurfaceCells =
             new HashSet<Vector2Int>();
         private readonly HashSet<Vector2Int> _tunnelCutaway =
             new HashSet<Vector2Int>();
@@ -39,6 +44,19 @@ namespace Dig.Unity
             EnsureRoot();
             _visibleCells.Clear();
             _visibleChunks.Clear();
+            _solidCells.Clear();
+            _walkSurfaceCells.Clear();
+
+            foreach (WorldChunkViewModel chunk in world.Chunks)
+            {
+                foreach (WorldCellViewModel cell in chunk.Cells)
+                {
+                    if (cell.IsSolid)
+                    {
+                        _solidCells.Add(new Vector2Int(cell.X, cell.Y));
+                    }
+                }
+            }
 
             foreach (WorldChunkViewModel chunk in world.Chunks)
             {
@@ -49,13 +67,20 @@ namespace Dig.Unity
                 {
                     Vector2Int cellKey = new Vector2Int(cell.X, cell.Y);
                     _visibleCells.Add(cellKey);
+                    bool walkSurface = !cell.IsSolid
+                        && _solidCells.Contains(new Vector2Int(cell.X, cell.Y + 1));
+                    if (walkSurface)
+                    {
+                        _walkSurfaceCells.Add(cellKey);
+                    }
+
                     if (!_cells.TryGetValue(cellKey, out DigCellVisual? visual))
                     {
                         visual = CreateCell(chunkRoot);
                         _cells.Add(cellKey, visual);
                     }
 
-                    ApplyCell(visual, cell);
+                    ApplyCell(visual, cell, walkSurface);
                 }
             }
 
@@ -73,7 +98,7 @@ namespace Dig.Unity
             }
 
             _tunnelCutaway.Clear();
-            foreach (Dig.Domain.World.SpatialCellId cell in volume.Cells)
+            foreach (SpatialCellId cell in volume.Cells)
             {
                 _tunnelCutaway.Add(new Vector2Int(cell.X, cell.Y));
             }
@@ -155,12 +180,40 @@ namespace Dig.Unity
             return visual.AddComponent<DigCellVisual>();
         }
 
-        private static void ApplyCell(DigCellVisual visual, WorldCellViewModel cell)
+        private static void ApplyCell(
+            DigCellVisual visual,
+            WorldCellViewModel cell,
+            bool walkSurface)
         {
             visual.name = $"Cell {cell.X},{cell.Y} [{cell.MaterialId}]";
-            float height = cell.IsSolid ? 0.82f : 0.08f;
-            visual.transform.localPosition = new Vector3(cell.X, height * 0.5f, cell.Y);
-            visual.transform.localScale = new Vector3(0.94f, height, 0.94f);
+            if (cell.IsSolid)
+            {
+                const float height = 0.82f;
+                visual.transform.localPosition = new Vector3(
+                    cell.X,
+                    height * 0.5f,
+                    cell.Y);
+                visual.transform.localScale = new Vector3(0.94f, height, 0.94f);
+            }
+            else if (walkSurface)
+            {
+                Vector3 floor = DigTunnelProjection.FloorWorldPosition(
+                    new SpatialCellId(cell.X, cell.Y, 0));
+                visual.transform.localPosition = new Vector3(
+                    cell.X,
+                    floor.z,
+                    -floor.y);
+                visual.transform.localScale = new Vector3(
+                    0.94f,
+                    DigTunnelProjection.FloorDepth,
+                    DigTunnelProjection.FloorThickness);
+            }
+            else
+            {
+                visual.transform.localPosition = new Vector3(cell.X, 0f, cell.Y);
+                visual.transform.localScale = Vector3.zero;
+            }
+
             visual.Configure(cell, ResolveColor(cell));
         }
 
@@ -168,7 +221,11 @@ namespace Dig.Unity
         {
             foreach (KeyValuePair<Vector2Int, DigCellVisual> pair in _cells)
             {
-                bool visible = !_tunnelCutaway.Contains(pair.Key);
+                bool renderable = pair.Value.Model.IsSolid
+                    || _walkSurfaceCells.Contains(pair.Key);
+                bool hiddenByCutaway = pair.Value.Model.IsSolid
+                    && _tunnelCutaway.Contains(pair.Key);
+                bool visible = renderable && !hiddenByCutaway;
                 pair.Value.gameObject.SetActive(visible);
                 if (!visible && _selected == pair.Value)
                 {
@@ -249,7 +306,7 @@ namespace Dig.Unity
                     hardness);
             }
 
-            return new Color(0.35f, 0.40f, 0.30f, 1f);
+            return new Color(0.20f, 0.52f, 0.66f, 1f);
         }
     }
 }

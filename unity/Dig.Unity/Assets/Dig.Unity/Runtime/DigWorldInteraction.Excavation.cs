@@ -1,3 +1,5 @@
+using System;
+using Dig.Application.Jobs;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 using UnityEngine;
@@ -7,14 +9,18 @@ namespace Dig.Unity
     internal enum DigExcavationDrawingMode
     {
         None = 0,
-        Horizontal = 1,
-        Vertical = 2,
+        Tunnel = 1,
+        Delete = 2,
     }
 
     public sealed partial class DigWorldInteraction
     {
+        private readonly ExcavationStrokePlanner _excavationStrokePlanner =
+            new ExcavationStrokePlanner();
         private DigExcavationDrawingMode _excavationMode;
+        private ExcavationStrokeAxis _excavationAxis;
         private CellId? _excavationAnchor;
+        private CellId? _lastExcavationPaintCell;
         private int _excavationPriority = 750;
 
         internal string ExcavationModeLabel => _excavationMode.ToString();
@@ -24,18 +30,29 @@ namespace Dig.Unity
 
         internal void SetExcavationDrawingMode(DigExcavationDrawingMode mode)
         {
+            if (!Enum.IsDefined(typeof(DigExcavationDrawingMode), mode))
+            {
+                throw new ArgumentOutOfRangeException(nameof(mode));
+            }
+
             if (mode != DigExcavationDrawingMode.None
                 && !CanActivateExcavationDrawing)
             {
-                _hud!.SetStatus("Clear the dwarf selection before drawing tunnels.");
+                _hud!.SetStatus("Clear the dwarf selection before editing tunnels.");
                 return;
             }
 
             _excavationMode = mode;
-            _excavationAnchor = null;
-            _hud!.SetStatus(mode == DigExcavationDrawingMode.None
-                ? "Excavation drawing disabled."
-                : $"{mode} excavation drawing active on Z=0.");
+            ResetExcavationStroke();
+            _hud!.SetStatus(mode switch
+            {
+                DigExcavationDrawingMode.None => "Excavation editing disabled.",
+                DigExcavationDrawingMode.Tunnel =>
+                    "Tunnel tool active on Z=0. Hold LMB and move horizontally or vertically.",
+                DigExcavationDrawingMode.Delete =>
+                    "Delete tool active. Hold LMB over marked cells.",
+                _ => throw new InvalidOperationException("Unknown excavation mode."),
+            });
         }
 
         internal void AdjustExcavationPriority(int delta)
@@ -46,46 +63,115 @@ namespace Dig.Unity
         private void DisableExcavationDrawing()
         {
             _excavationMode = DigExcavationDrawingMode.None;
-            _excavationAnchor = null;
+            ResetExcavationStroke();
         }
 
-        private bool TryHandleExcavationInput(
-            RaycastHit hit,
-            bool leftButton,
-            bool rightButton)
+        private bool TryHandleExcavationStroke()
         {
-            if (TryAssignSelectedResidentToExcavation(hit, leftButton))
+            if (Input.GetMouseButtonUp(0))
             {
-                return true;
+                bool wasEditing = _excavationMode != DigExcavationDrawingMode.None;
+                ResetExcavationStroke();
+                return wasEditing;
             }
 
             if (_excavationMode == DigExcavationDrawingMode.None
-                || (!leftButton && !rightButton)
-                || !CanActivateExcavationDrawing
-                || !_renderer!.TryGetCell(hit, out DigCellVisual cell))
+                || !Input.GetMouseButton(0))
             {
                 return false;
             }
 
-            CellId target = ResolveDrawingCell(new CellId(cell.Model.X, cell.Model.Y));
-            Result result = _simulation!.ApplyExcavationDesignation(
-                target,
-                active: leftButton,
-                _excavationPriority);
-            _hud!.SetCommandResult(result);
-            if (result.IsSuccess)
+            if (!CanActivateExcavationDrawing
+                || _buildingPlacementMode.HasValue
+                || _hud!.ContainsScreenPoint(Input.mousePosition))
             {
-                if (leftButton && !_excavationAnchor.HasValue)
+                return true;
+            }
+
+            Ray ray = _camera!.ScreenPointToRay(Input.mousePosition);
+            if (!Physics.Raycast(ray, out RaycastHit hit, 500f))
+            {
+                return true;
+            }
+
+            CellId? rawTarget = ResolveExcavationPaintTarget(hit);
+            if (!rawTarget.HasValue)
+            {
+                return true;
+            }
+
+            CellId target = rawTarget.Value;
+            bool active = _excavationMode == DigExcavationDrawingMode.Tunnel;
+            if (active)
+            {
+                if (!_excavationAnchor.HasValue)
                 {
                     _excavationAnchor = target;
                 }
 
-                _hud.SetStatus(leftButton
-                    ? $"Dig Job created at X={target.X}, Y={target.Y}, Z=0."
-                    : $"Excavation designation removed at X={target.X}, Y={target.Y}, Z=0.");
+                ExcavationStrokeDecision decision = _excavationStrokePlanner.Resolve(
+                    _excavationAnchor.Value,
+                    target,
+                    _excavationAxis);
+                _excavationAxis = decision.Axis;
+                target = decision.Cell;
+            }
+
+            if (_lastExcavationPaintCell.HasValue
+                && _lastExcavationPaintCell.Value == target)
+            {
+                return true;
+            }
+
+            Result result = ApplyExcavationStroke(target, active);
+            _hud.SetCommandResult(result);
+            if (result.IsSuccess)
+            {
+                _hud.SetStatus(active
+                    ? $"Tunnel marked through X={target.X}, Y={target.Y}, Z=0."
+                    : $"Tunnel mark removed at X={target.X}, Y={target.Y}, Z=0.");
             }
 
             return true;
+        }
+
+        private Result ApplyExcavationStroke(CellId target, bool active)
+        {
+            if (!active
+                || !_lastExcavationPaintCell.HasValue
+                || _excavationAxis == ExcavationStrokeAxis.None)
+            {
+                Result single = _simulation!.ApplyExcavationDesignation(
+                    target,
+                    active,
+                    _excavationPriority);
+                if (single.IsSuccess)
+                {
+                    _lastExcavationPaintCell = target;
+                }
+
+                return single;
+            }
+
+            CellId current = _lastExcavationPaintCell.Value;
+            int xStep = Math.Sign(target.X - current.X);
+            int yStep = Math.Sign(target.Y - current.Y);
+            while (current != target)
+            {
+                current = new CellId(current.X + xStep, current.Y + yStep);
+                Result applied = _simulation!.ApplyExcavationDesignation(
+                    current,
+                    active: true,
+                    _excavationPriority);
+                if (applied.IsFailure)
+                {
+                    return applied;
+                }
+
+                _lastExcavationPaintCell = current;
+            }
+
+            return Result.Success();
         }
 
         private bool TryAssignSelectedResidentToExcavation(
@@ -147,24 +233,28 @@ namespace Dig.Unity
             return null;
         }
 
-        private CellId ResolveDrawingCell(CellId hit)
+        private CellId? ResolveExcavationPaintTarget(RaycastHit hit)
         {
-            if (!_excavationAnchor.HasValue)
+            if (_jobRenderer!.TryGetJob(hit, out DigJobVisual job)
+                && job.Model.TargetX.HasValue
+                && job.Model.TargetY.HasValue)
             {
-                return hit;
+                return new CellId(job.Model.TargetX.Value, job.Model.TargetY.Value);
             }
 
-            if (_excavationMode == DigExcavationDrawingMode.Horizontal)
+            if (_renderer!.TryGetCell(hit, out DigCellVisual cell))
             {
-                return new CellId(hit.X, _excavationAnchor.Value.Y);
+                return new CellId(cell.Model.X, cell.Model.Y);
             }
 
-            if (_excavationMode == DigExcavationDrawingMode.Vertical)
-            {
-                return new CellId(_excavationAnchor.Value.X, hit.Y);
-            }
+            return null;
+        }
 
-            return hit;
+        private void ResetExcavationStroke()
+        {
+            _excavationAxis = ExcavationStrokeAxis.None;
+            _excavationAnchor = null;
+            _lastExcavationPaintCell = null;
         }
     }
 }

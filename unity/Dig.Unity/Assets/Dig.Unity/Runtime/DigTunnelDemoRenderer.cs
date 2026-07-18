@@ -31,26 +31,33 @@ namespace Dig.Unity
             EnsureResources();
             foreach (SpatialCellId cell in volume.Cells)
             {
+                bool vertical = volume.IsVerticalTunnel(cell);
+                if (!vertical && cell.Z == 0)
+                {
+                    continue;
+                }
+
                 if (_cells.ContainsKey(cell))
                 {
                     continue;
                 }
 
-                bool vertical = volume.IsVerticalTunnel(cell);
                 GameObject target = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 target.name = vertical
                     ? $"Shaft {cell}"
                     : $"Walkable plane {cell}";
                 target.transform.SetParent(_root, worldPositionStays: false);
                 target.transform.SetPositionAndRotation(
-                    DigTunnelProjection.CellWorldPosition(cell),
+                    vertical
+                        ? DigTunnelProjection.CellWorldPosition(cell)
+                        : DigTunnelProjection.FloorWorldPosition(cell),
                     Quaternion.identity);
                 target.transform.localScale = vertical
                     ? new Vector3(0.38f, 0.88f, 0.38f)
                     : new Vector3(
                         0.84f,
-                        0.10f,
-                        Mathf.Abs(DigTunnelProjection.DepthSpacing) * 0.82f);
+                        DigTunnelProjection.FloorThickness,
+                        DigTunnelProjection.FloorDepth);
                 DigTunnelCellVisual visual = target.AddComponent<DigTunnelCellVisual>();
                 visual.Configure(
                     cell,
@@ -124,12 +131,12 @@ namespace Dig.Unity
             float centerX = (layout.CaveMinX + layout.CaveMaxX) * 0.5f;
             float centerDepth = (front.z + back.z) * 0.5f;
             float depthSpan = Mathf.Abs(front.z - back.z)
-                + (Mathf.Abs(DigTunnelProjection.DepthSpacing) * 0.82f);
-            float ceilingY = -layout.CaveCeilingY;
-            float floorY = -layout.CaveFloorY;
+                + DigTunnelProjection.FloorDepth;
+            float ceilingY = DigTunnelProjection.WalkSurfaceY(layout.CaveCeilingY);
+            float floorY = DigTunnelProjection.WalkSurfaceY(layout.CaveFloorY);
             float centerY = (ceilingY + floorY) * 0.5f;
             float caveWidth = layout.CaveWidth;
-            float caveHeight = layout.CaveHeight;
+            float caveHeight = Mathf.Abs(ceilingY - floorY);
 
             CreateShellPart(
                 "Cave ceiling",

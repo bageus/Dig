@@ -16,11 +16,15 @@ def check_excavation_contracts(
 ) -> list[str]:
     del root
     rock_path = runtime_root / "DigRockVolumeRenderer.cs"
+    projection_path = runtime_root / "DigTunnelProjection.cs"
+    tunnel_renderer_path = runtime_root / "DigTunnelDemoRenderer.cs"
+    world_renderer_path = runtime_root / "DigWorldRenderer.cs"
     interaction_path = runtime_root / "DigWorldInteraction.cs"
     drawing_path = runtime_root / "DigWorldInteraction.Excavation.cs"
     designations_path = runtime_root / "DigTerrainWorkDesignations.cs"
     manual_path = runtime_root / "DigTerrainWorkManualExcavation.cs"
     driver_path = runtime_root / "DigAgentSimulationDriverBase.Excavation.cs"
+    session_path = runtime_root / "DigAgentSession.TunnelMovement.cs"
     hud_path = runtime_root / "DigHudOverlay.Excavation.cs"
     bootstrap_path = runtime_root / "DigUnityBootstrap.cs"
     errors: list[str] = []
@@ -37,16 +41,61 @@ def check_excavation_contracts(
         ),
     ))
     errors.extend(require_fragments(
+        projection_path,
+        texts.get(projection_path, ""),
+        "embedded walk-surface projection",
+        (
+            "RockCellHalfExtent",
+            "FloorThickness",
+            "FloorWorldPosition",
+            "WalkSurfaceY",
+            "ResidentHalfHeight",
+            "ResidentFootSink",
+        ),
+    ))
+    errors.extend(require_fragments(
+        tunnel_renderer_path,
+        texts.get(tunnel_renderer_path, ""),
+        "layered floor rendering",
+        (
+            "if (!vertical && cell.Z == 0)",
+            "DigTunnelProjection.FloorWorldPosition(cell)",
+            "DigTunnelProjection.FloorThickness",
+            "DigTunnelProjection.FloorDepth",
+        ),
+    ))
+    errors.extend(require_fragments(
+        world_renderer_path,
+        texts.get(world_renderer_path, ""),
+        "dynamic Z0 floor rendering",
+        (
+            "_walkSurfaceCells",
+            "cell.Y + 1",
+            "DigTunnelProjection.FloorWorldPosition",
+            "renderable && !hiddenByCutaway",
+        ),
+    ))
+    errors.extend(require_fragments(
         drawing_path,
         texts.get(drawing_path, ""),
-        "explicit Z0 excavation drawing",
+        "unified Z0 excavation drawing",
+        (
+            "DigExcavationDrawingMode.Tunnel",
+            "DigExcavationDrawingMode.Delete",
+            "ExcavationStrokePlanner",
+            "Input.GetMouseButton(0)",
+            "TryHandleExcavationStroke",
+            "AssignExcavationCluster",
+            "new SpatialCellId(selected.CellX, selected.CellY, 0)",
+        ),
+    ))
+    errors.extend(reject_fragments(
+        drawing_path,
+        texts.get(drawing_path, ""),
+        "separate horizontal and vertical tools",
         (
             "DigExcavationDrawingMode.Horizontal",
             "DigExcavationDrawingMode.Vertical",
-            "CanActivateExcavationDrawing",
-            "active: leftButton",
-            "AssignExcavationCluster",
-            "new SpatialCellId(selected.CellX, selected.CellY, 0)",
         ),
     ))
     interaction = texts.get(interaction_path, "")
@@ -55,7 +104,8 @@ def check_excavation_contracts(
         interaction,
         "explicit excavation routing",
         (
-            "TryHandleExcavationInput(hit, left, right)",
+            "TryHandleExcavationStroke()",
+            "TryAssignSelectedResidentToExcavation(hit, left)",
             "excavationTool: ExcavationToolKind.None",
             "hud.SetExcavationControls(this)",
         ),
@@ -94,15 +144,31 @@ def check_excavation_contracts(
         "excavation application adapter",
         (
             "ApplyExcavationDesignation",
+            "ReleaseManualTunnelOrder(residentId)",
             "SynchronizeDesignations",
             "RefreshExcavationPresentation",
         ),
     ))
     errors.extend(require_fragments(
+        session_path,
+        texts.get(session_path, ""),
+        "manual movement release",
+        ("ReleaseManualTunnelOrder", "_manualTunnelOrders.Remove"),
+    ))
+    errors.extend(require_fragments(
         hud_path,
         texts.get(hud_path, ""),
         "excavation HUD controls",
-        ("Horizontal", "Vertical", "P-", "P+"),
+        ("Tunnel", "Delete", "P-", "P+"),
+    ))
+    errors.extend(reject_fragments(
+        hud_path,
+        texts.get(hud_path, ""),
+        "separate axis buttons",
+        (
+            'GUILayout.Button("Horizontal"',
+            'GUILayout.Button("Vertical"',
+        ),
     ))
     errors.extend(require_fragments(
         bootstrap_path,
