@@ -120,7 +120,7 @@ namespace Dig.Unity
             return false;
         }
 
-        private static IReadOnlyList<JobCandidate> CreateDynamicCandidates(
+        private IReadOnlyList<JobCandidate> CreateDynamicCandidates(
             IReadOnlyList<AgentViewModel> agents,
             CellId target)
         {
@@ -135,7 +135,9 @@ namespace Dig.Unity
                     EntityId.Parse(agent.Id),
                     skillLevel: 5_000 - (index * 250),
                     distanceCost: distance,
-                    isAvailable: agent.IsAlive && agent.CellZ == 0);
+                    isAvailable: agent.IsAlive
+                        && agent.CellZ == 0
+                        && !IsDirectMovementControlled(agent.Id));
             }
 
             return values;
