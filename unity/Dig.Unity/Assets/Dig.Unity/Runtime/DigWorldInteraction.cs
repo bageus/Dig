@@ -67,7 +67,8 @@ namespace Dig.Unity
 
             HandleStoragePlacement();
             UpdateBuildingPlacementHover();
-            if (TryHandleExcavationStroke())
+            UpdateCaveRoomPreview();
+            if (TryHandleCaveRoomPlacement() || TryHandleExcavationStroke())
             {
                 return;
             }
