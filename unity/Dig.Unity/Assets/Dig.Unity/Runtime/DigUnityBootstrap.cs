@@ -182,10 +182,25 @@ namespace Dig.Unity
                 stockpileRenderer,
                 routeRenderer,
                 hud);
+
+            _startupStage = "creating uGUI game HUD";
+            GameObject canvasObject = new GameObject(
+                "Dig Game HUD Canvas",
+                typeof(RectTransform));
+            DigGameHudCanvas gameHud = canvasObject.AddComponent<DigGameHudCanvas>();
+            gameHud.Initialize(
+                terrainSession,
+                agentRenderer,
+                buildingRenderer,
+                interaction,
+                simulation,
+                hud);
+            hud.AttachGameHudCanvas(gameHud);
+
             interaction.enabled = true;
             simulation.enabled = true;
             hud.SetStatus(
-                "Select a dwarf for movement, or clear selection and choose Tunnel, Delete, or a Cave preset.");
+                "Выберите гнома или строение; без выбора доступна панель копки.");
             if (logStartup)
             {
                 Debug.Log(
