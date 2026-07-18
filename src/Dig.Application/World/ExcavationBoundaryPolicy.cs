@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using Dig.Domain.World;
 
 namespace Dig.Application.World
@@ -35,7 +36,7 @@ public sealed class ExcavationBoundaryPolicy
         TopRockY = topRockY;
         _protected = CreateProtectedCells(width, height, topRockY);
         ProtectedCells = new ReadOnlyCollection<CellId>(
-            new List<CellId>(_protected));
+            _protected.OrderBy(cell => cell).ToArray());
     }
 
     public int Width { get; }
