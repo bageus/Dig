@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Agents;
+using Dig.Application.World;
 using Dig.Domain.Core;
 using Dig.Domain.Navigation;
 using Dig.Domain.World;
@@ -11,6 +13,10 @@ namespace Dig.Unity
     internal sealed partial class DigAgentSession
     {
         private readonly HashSet<EntityId> _manualTunnelOrders = new HashSet<EntityId>();
+        private readonly HashSet<SpatialCellId> _tunnelDepthExcavations =
+            new HashSet<SpatialCellId>();
+        private readonly TunnelDepthExcavationPolicy _tunnelDepthExcavation =
+            new TunnelDepthExcavationPolicy();
         private TunnelNavigationVolume? _tunnelVolume;
         private MoveAgentThroughTunnelCommandHandler? _tunnelMovement;
         private MoveAgentsThroughTunnelCommandHandler? _groupTunnelMovement;
@@ -18,6 +24,9 @@ namespace Dig.Unity
 
         internal TunnelNavigationVolume TunnelVolume => _tunnelVolume
             ?? throw new InvalidOperationException("Tunnel movement is not initialized.");
+
+        internal IReadOnlyCollection<SpatialCellId> TunnelDepthExcavations =>
+            _tunnelDepthExcavations.OrderBy(cell => cell).ToArray();
 
         internal MoveAgentThroughTunnelReport MoveResidentThroughTunnel(
             string residentId,
@@ -82,6 +91,22 @@ namespace Dig.Unity
             }
 
             return report;
+        }
+
+        internal TunnelDepthExcavationPlanResult ExcavateTunnelDepth(
+            SpatialCellId source)
+        {
+            TunnelDepthExcavationPlanResult result =
+                _tunnelDepthExcavation.Plan(TunnelVolume, source);
+            if (!result.Succeeded)
+            {
+                return result;
+            }
+
+            SpatialCellId target = result.Plan!.Target;
+            _tunnelDepthExcavations.Add(target);
+            ExpandTunnelVolume(new[] { target });
+            return result;
         }
 
         internal bool ReleaseManualTunnelOrder(string residentId)
