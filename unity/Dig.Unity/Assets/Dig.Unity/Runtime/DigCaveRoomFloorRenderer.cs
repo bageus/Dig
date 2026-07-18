@@ -46,7 +46,10 @@ namespace Dig.Unity
                         DigTunnelProjection.FloorThickness,
                         DigTunnelProjection.FloorDepth);
                     DigTunnelCellVisual visual = floor.AddComponent<DigTunnelCellVisual>();
-                    visual.Configure(cell, vertical: false, _materials[z]!);
+                    visual.Configure(
+                        cell,
+                        isVerticalTunnel: false,
+                        material: _materials[z]!);
                 }
             }
         }
