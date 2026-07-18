@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.World;
 using Dig.Domain.Core;
 using Dig.Domain.World;
@@ -9,6 +10,7 @@ namespace Dig.Unity
     internal sealed partial class DigWorldSession
     {
         private readonly CaveRoomPlanner _caveRoomPlanner = new CaveRoomPlanner();
+        private readonly List<CaveRoomPlan> _caveRoomPlans = new List<CaveRoomPlan>();
 
         internal CaveRoomPlanResult PlanCaveRoom(
             CaveRoomPresetKind kind,
@@ -28,6 +30,14 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(plan));
             }
 
+            bool alreadyPlaced = _caveRoomPlans.Any(existing =>
+                existing.Entrance == plan.Entrance
+                && existing.Preset.Kind == plan.Preset.Kind);
+            if (alreadyPlaced)
+            {
+                return Result.Success();
+            }
+
             List<CellId> applied = new List<CellId>();
             for (int index = 0; index < plan.FrontExcavationCells.Count; index++)
             {
@@ -42,7 +52,20 @@ namespace Dig.Unity
                 applied.Add(cell);
             }
 
+            _caveRoomPlans.Add(plan);
             return Result.Success();
+        }
+
+        internal IReadOnlyList<CaveRoomPlan> LoadCompletedCaveRoomPlans()
+        {
+            Dictionary<CellId, CellSnapshot> cells = LoadSnapshot().Chunks
+                .SelectMany(chunk => chunk.Cells)
+                .ToDictionary(cell => cell.Id);
+            return _caveRoomPlans
+                .Where(plan => plan.FrontExcavationCells.All(cell =>
+                    cells.TryGetValue(cell, out CellSnapshot snapshot)
+                    && !snapshot.IsSolid))
+                .ToArray();
         }
 
         private void RollBackDesignations(IReadOnlyList<CellId> cells)
