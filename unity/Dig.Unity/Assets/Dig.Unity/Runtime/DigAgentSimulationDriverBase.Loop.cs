@@ -68,8 +68,14 @@ namespace Dig.Unity
             TerrainSession.SynchronizeHauling(nextTick, before);
             TerrainSession.SynchronizeBuildingBoxAssembly(nextTick, before);
             TerrainSession.SynchronizeBuildingPacking(nextTick, before);
-            IReadOnlyDictionary<string, CellId> movement = TerrainSession.PlanMovement(before);
-            Result result = AgentSession.Advance(movement);
+            Result result = TerrainSession.EnforceDirectMovementOwnership(nextTick);
+            if (result.IsSuccess)
+            {
+                IReadOnlyDictionary<string, CellId> movement =
+                    TerrainSession.PlanMovement(before);
+                result = AgentSession.Advance(movement);
+            }
+
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
             if (result.IsSuccess)
             {
