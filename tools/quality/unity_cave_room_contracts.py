@@ -65,6 +65,8 @@ def check_cave_room_runtime_contracts(
             "plan.Preset.Depth",
             "DigTunnelCellVisual",
             "FloorWorldPosition",
+            "isVerticalTunnel: false",
+            "material: _materials[z]!",
         ),
     ))
     errors.extend(require_fragments(
