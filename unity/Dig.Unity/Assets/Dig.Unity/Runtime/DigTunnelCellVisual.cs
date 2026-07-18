@@ -26,5 +26,10 @@ namespace Dig.Unity
                 : $"Tunnel {cell}";
             GetComponent<Renderer>().sharedMaterial = material;
         }
+
+        internal void SetCanExcavateDepth(bool canExcavateDepth)
+        {
+            CanExcavateDepth = canExcavateDepth;
+        }
     }
 }
