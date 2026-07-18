@@ -90,7 +90,7 @@ namespace Dig.Unity
                 result.Succeeded);
         }
 
-        private void RefreshCompletedCaveRooms()
+        private void RefreshCompletedCaveRooms(bool force = false)
         {
             if (_simulation == null
                 || _session == null
@@ -101,7 +101,7 @@ namespace Dig.Unity
             }
 
             long tick = _simulation.CurrentTick;
-            if (_lastCaveRoomRuntimeTick == tick)
+            if (!force && _lastCaveRoomRuntimeTick == tick)
             {
                 return;
             }
