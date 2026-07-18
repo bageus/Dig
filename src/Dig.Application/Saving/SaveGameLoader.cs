@@ -186,40 +186,6 @@ public sealed partial class SaveGameLoader
             new ReadOnlyCollection<ChunkSnapshot>(chunks));
     }
 
-    private static InventorySnapshot BuildInventorySnapshot(InventorySaveData data)
-    {
-        if (data is null || data.Stacks is null)
-        {
-            throw new InvalidOperationException("Inventory save data is missing.");
-        }
-
-        List<ItemStackSnapshot> stacks = new List<ItemStackSnapshot>();
-        foreach (ItemStackSaveData savedStack in data.Stacks
-            .OrderBy(item => item.StackId, StringComparer.Ordinal))
-        {
-            if (savedStack is null || savedStack.Reservations is null)
-            {
-                throw new InvalidOperationException("Inventory stack save data is missing.");
-            }
-
-            EntityId stackId = EntityId.Parse(savedStack.StackId);
-            List<ItemQuantityReservationSnapshot> reservations = savedStack.Reservations
-                .OrderBy(item => item.JobId, StringComparer.Ordinal)
-                .Select(item => new ItemQuantityReservationSnapshot(
-                    EntityId.Parse(item.JobId),
-                    item.Quantity))
-                .ToList();
-            stacks.Add(new ItemStackSnapshot(
-                stackId,
-                new ItemId(savedStack.ItemId),
-                savedStack.Quantity,
-                ParseLocation(savedStack.Location),
-                reservations));
-        }
-
-        return new InventorySnapshot(data.Version, stacks);
-    }
-
     private static Result ValidateCrossReferences(
         InventoryState inventory,
         JobSystem jobs)
