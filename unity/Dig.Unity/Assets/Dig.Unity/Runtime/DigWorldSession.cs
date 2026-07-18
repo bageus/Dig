@@ -9,7 +9,7 @@ using Dig.Presentation.World;
 
 namespace Dig.Unity
 {
-    internal sealed class DigWorldSession
+    internal sealed partial class DigWorldSession
     {
         internal static readonly DomainError ProtectedRock = new DomainError(
             "world.excavation.protected_rock",
