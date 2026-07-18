@@ -50,6 +50,14 @@ public sealed partial class InventoryState : AggregateRoot
             return Result.Failure(InventoryErrors.StackSizeExceeded);
         }
 
+        Result locationValidation = ValidateResidentLocationForNewStack(
+            definition,
+            location);
+        if (locationValidation.IsFailure)
+        {
+            return locationValidation;
+        }
+
         _stacks.Add(stackId, new ItemStackState(stackId, itemId, quantity, location));
         IncrementVersion();
         return Result.Success();
