@@ -60,4 +60,36 @@ public sealed class ItemQuantityReservationChanged : IDomainEvent
 
     public int ReservedQuantity { get; }
 }
+
+public sealed class HeldItemReferenceChanged : IDomainEvent
+{
+    public HeldItemReferenceChanged(
+        long tick,
+        EntityId residentId,
+        EntityId stackId,
+        int quantity,
+        HeldItemPurpose purpose,
+        bool isActive)
+    {
+        Tick = tick;
+        ResidentId = residentId;
+        StackId = stackId;
+        Quantity = quantity;
+        Purpose = purpose;
+        IsActive = isActive;
+    }
+
+    public long Tick { get; }
+
+    public EntityId ResidentId { get; }
+
+    public EntityId StackId { get; }
+
+    public int Quantity { get; }
+
+    public HeldItemPurpose Purpose { get; }
+
+    public bool IsActive { get; }
+}
+
 }
