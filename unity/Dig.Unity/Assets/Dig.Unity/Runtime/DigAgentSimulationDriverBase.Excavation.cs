@@ -41,11 +41,12 @@ namespace Dig.Unity
                     "Excavation controls are not initialized."));
             }
 
+            AgentSession!.ReleaseManualTunnelOrder(residentId);
             Result result = TerrainSession!.AssignExcavationCluster(
                 seed,
                 residentId,
                 CurrentTick);
-            IReadOnlyList<AgentViewModel> agents = AgentSession!.LoadView();
+            IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
             TerrainSession.SynchronizeDesignations(CurrentTick, agents);
             RefreshExcavationPresentation(agents);
             if (result.IsFailure)
