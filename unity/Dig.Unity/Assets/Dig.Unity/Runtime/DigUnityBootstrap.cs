@@ -125,6 +125,7 @@ namespace Dig.Unity
 
             _startupStage = "rendering world and layered tunnels";
             RenderSettings.ambientLight = new Color(0.58f, 0.60f, 0.66f, 1f);
+            worldRenderer.SetProtectedCells(worldSession.ProtectedCells);
             worldRenderer.Render(world);
             worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume);
             rockRenderer.Initialize(agentSession.TunnelVolume);
@@ -175,7 +176,7 @@ namespace Dig.Unity
             interaction.enabled = true;
             simulation.enabled = true;
             hud.SetStatus(
-                "Clear dwarf selection, choose a tunnel mode, then LMB draw / RMB erase on Z=0.");
+                "Select a dwarf for direct movement, or clear selection and choose Tunnel/Delete.");
             if (logStartup)
             {
                 Debug.Log(
