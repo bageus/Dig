@@ -104,6 +104,18 @@ public sealed class SaveGameBuilder
             data.Stacks.Add(saved);
         }
 
+        foreach (HeldItemReferenceSnapshot held in snapshot.HeldItems
+            .OrderBy(item => item.ResidentId.ToString(), StringComparer.Ordinal))
+        {
+            data.HeldItems.Add(new HeldItemReferenceSaveData
+            {
+                ResidentId = held.ResidentId.ToString(),
+                StackId = held.StackId.ToString(),
+                Quantity = held.Quantity,
+                Purpose = (int)held.Purpose,
+            });
+        }
+
         return data;
     }
 
