@@ -190,10 +190,23 @@ namespace Dig.Unity
                 return Result.Failure(DigWorldSession.ProtectedRock);
             }
 
-            return _simulation!.ApplyExcavationDesignation(
+            Result result = _simulation!.ApplyExcavationDesignation(
                 target,
                 active,
                 _excavationPriority);
+            if (result.IsFailure)
+            {
+                return result;
+            }
+
+            bool vertical = active && _excavationAxis == ExcavationStrokeAxis.Vertical;
+            if (vertical && _excavationAnchor.HasValue)
+            {
+                _session!.SetVerticalTunnelPlan(_excavationAnchor.Value, active: true);
+            }
+
+            _session!.SetVerticalTunnelPlan(target, vertical);
+            return Result.Success();
         }
 
         private bool TryAssignSelectedResidentToExcavation(
