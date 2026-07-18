@@ -103,6 +103,8 @@ namespace Dig.Unity
                 GetOrAdd<DigNavigationRouteRenderer>(gameObject);
             DigTunnelDemoRenderer tunnelRenderer =
                 GetOrAdd<DigTunnelDemoRenderer>(gameObject);
+            DigCaveRoomPreviewRenderer caveRoomPreviewRenderer =
+                GetOrAdd<DigCaveRoomPreviewRenderer>(gameObject);
             GetOrAdd<DigOverlayHotkeys>(gameObject);
             DigWorldInteraction interaction = GetOrAdd<DigWorldInteraction>(gameObject);
             DigAgentSimulationDriver simulation =
@@ -130,6 +132,7 @@ namespace Dig.Unity
             worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume);
             rockRenderer.Initialize(agentSession.TunnelVolume);
             tunnelRenderer.Initialize(agentSession.TunnelVolume);
+            caveRoomPreviewRenderer.Clear();
 
             _startupStage = "rendering residents";
             agentRenderer.Render(agents, movementDuration: 0f);
@@ -161,6 +164,7 @@ namespace Dig.Unity
                 simulation,
                 hud);
             interaction.SetTunnelMovement(tunnelRenderer);
+            interaction.SetCaveRoomPreviewRenderer(caveRoomPreviewRenderer);
             simulation.Initialize(
                 worldSession,
                 worldRenderer,
@@ -176,7 +180,7 @@ namespace Dig.Unity
             interaction.enabled = true;
             simulation.enabled = true;
             hud.SetStatus(
-                "Select a dwarf for direct movement, or clear selection and choose Tunnel/Delete.");
+                "Select a dwarf for movement, or clear selection and choose Tunnel, Delete, or a Cave preset.");
             if (logStartup)
             {
                 Debug.Log(
