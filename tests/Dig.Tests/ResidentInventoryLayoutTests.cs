@@ -51,7 +51,7 @@ public sealed class ResidentInventoryLayoutTests
         Assert.Equal(LargeBasket, layout.ActiveCargoExpansion!.Value.ItemId);
         Assert.Equal(Harness, layout.ActiveWeaponExpansion!.Value.ItemId);
         Assert.Equal(16, layout.Slots.Count);
-        Assert.Equal(4, layout.Slots.Count(slot => slot.IsActiveExpansion));
+        Assert.Equal(2, layout.Slots.Count(slot => slot.IsActiveExpansion));
     }
 
     [Fact]
