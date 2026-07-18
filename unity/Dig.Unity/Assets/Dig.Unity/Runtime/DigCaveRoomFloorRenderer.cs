@@ -10,8 +10,11 @@ namespace Dig.Unity
     public sealed class DigCaveRoomFloorRenderer : MonoBehaviour
     {
         private readonly HashSet<SpatialCellId> _cells = new HashSet<SpatialCellId>();
+        private readonly Dictionary<string, GameObject> _backWalls =
+            new Dictionary<string, GameObject>(StringComparer.Ordinal);
         private readonly Material?[] _materials = new Material?[4];
         private Transform? _root;
+        private Material? _backWallMaterial;
 
         internal void AddRoomFloor(CaveRoomPlan plan)
         {
@@ -52,6 +55,50 @@ namespace Dig.Unity
                         material: _materials[z]!);
                 }
             }
+
+            ReplaceBackWall(plan);
+        }
+
+        private void ReplaceBackWall(CaveRoomPlan plan)
+        {
+            string key = $"{plan.Entrance.X}:{plan.Entrance.Y}";
+            if (_backWalls.TryGetValue(key, out GameObject? existing))
+            {
+                Destroy(existing);
+            }
+
+            int minX = plan.Entrance.X - ((plan.Preset.BaseWidth - 1) / 2);
+            float centerX = minX + ((plan.Preset.BaseWidth - 1) * 0.5f);
+            float floorY = DigTunnelProjection.WalkSurfaceY(plan.Entrance.Y);
+            float ceilingY = DigTunnelProjection.WalkSurfaceY(
+                plan.Entrance.Y - plan.Preset.Height);
+            float centerY = (floorY + ceilingY) * 0.5f;
+            float wallHeight = Mathf.Abs(floorY - ceilingY);
+            Vector3 deepest = DigTunnelProjection.CellWorldPosition(
+                new SpatialCellId(
+                    plan.Entrance.X,
+                    plan.Entrance.Y,
+                    plan.Preset.Depth - 1));
+            float backZ = deepest.z + (DigTunnelProjection.DepthSpacing * 0.55f);
+
+            GameObject wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            wall.name = $"Cave room back wall {key}";
+            wall.transform.SetParent(_root, worldPositionStays: true);
+            wall.transform.SetPositionAndRotation(
+                new Vector3(centerX, centerY, backZ),
+                Quaternion.identity);
+            wall.transform.localScale = new Vector3(
+                plan.Preset.BaseWidth,
+                wallHeight,
+                0.10f);
+            wall.GetComponent<Renderer>().sharedMaterial = _backWallMaterial;
+            Collider collider = wall.GetComponent<Collider>();
+            if (collider != null)
+            {
+                Destroy(collider);
+            }
+
+            _backWalls[key] = wall;
         }
 
         private void EnsureResources()
@@ -95,6 +142,12 @@ namespace Dig.Unity
                     color = colors[index],
                 };
             }
+
+            _backWallMaterial = new Material(shader)
+            {
+                name = "Excavated cave room back wall",
+                color = new Color(0.30f, 0.27f, 0.25f, 1f),
+            };
         }
 
         private void OnDestroy()
@@ -105,6 +158,11 @@ namespace Dig.Unity
                 {
                     Destroy(_materials[index]);
                 }
+            }
+
+            if (_backWallMaterial != null)
+            {
+                Destroy(_backWallMaterial);
             }
         }
     }
