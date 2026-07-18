@@ -27,6 +27,12 @@ namespace Dig.Unity
                 destination = tunnelCell.Cell;
                 _tunnelRenderer.Select(tunnelCell);
             }
+            else if (_caveRoomFloorRenderer != null
+                && _caveRoomFloorRenderer.TryGetCell(hit, out DigTunnelCellVisual roomCell))
+            {
+                destination = roomCell.Cell;
+                _tunnelRenderer.Select(null);
+            }
             else if (_renderer != null
                 && _renderer.TryGetWalkSurface(hit, out SpatialCellId walkSurface))
             {
