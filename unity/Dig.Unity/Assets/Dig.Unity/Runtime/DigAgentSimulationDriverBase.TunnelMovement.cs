@@ -14,6 +14,17 @@ namespace Dig.Unity
             SpatialCellId destination,
             DigTunnelDemoRenderer tunnelRenderer)
         {
+            return MoveResidentsThroughTunnel(
+                new[] { residentId },
+                destination,
+                tunnelRenderer);
+        }
+
+        internal Result MoveResidentsThroughTunnel(
+            IReadOnlyList<string> residentIds,
+            SpatialCellId destination,
+            DigTunnelDemoRenderer tunnelRenderer)
+        {
             if (AgentSession == null || AgentRenderer == null || Hud == null)
             {
                 return Result.Failure(new DomainError(
@@ -21,13 +32,18 @@ namespace Dig.Unity
                     "The layered tunnel movement runtime is not initialized."));
             }
 
+            if (residentIds == null)
+            {
+                throw new ArgumentNullException(nameof(residentIds));
+            }
+
             if (tunnelRenderer == null)
             {
                 throw new ArgumentNullException(nameof(tunnelRenderer));
             }
 
-            MoveAgentThroughTunnelReport report =
-                AgentSession.MoveResidentThroughTunnel(residentId, destination);
+            MoveAgentsThroughTunnelReport report =
+                AgentSession.MoveResidentsThroughTunnel(residentIds, destination);
             if (report.Result.IsFailure)
             {
                 return report.Result;
@@ -35,15 +51,22 @@ namespace Dig.Unity
 
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
             AgentRenderer.Render(agents, movementDuration: 0.01f);
-            AgentRenderer.AnimateRoute(
-                residentId,
-                report.Path!.Cells,
-                stepDuration: 0.12f);
-            tunnelRenderer.ShowRoute(report.Path);
+            for (int index = 0; index < report.Entries.Count; index++)
+            {
+                MoveAgentThroughTunnelEntry entry = report.Entries[index];
+                AgentRenderer.AnimateRoute(
+                    entry.AgentId.ToString(),
+                    entry.Path.Cells,
+                    stepDuration: 0.12f);
+            }
+
+            tunnelRenderer.ShowRoute(
+                report.Entries.Count == 0 ? null : report.Entries[0].Path);
             RefreshEquipmentVisuals();
-            DigAgentVisual? selected = AgentRenderer.SelectById(residentId);
             Hud.SetAgents(agents, AgentSession.Tick);
-            Hud.SetAgentSelection(selected?.Model);
+            Hud.SetAgentSelection(
+                AgentRenderer.SelectedModel,
+                AgentRenderer.SelectedCount);
             return Result.Success();
         }
     }
