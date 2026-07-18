@@ -28,16 +28,28 @@ public static class InventoryErrors
         "A unique stack id is required for a partial move.");
     public static readonly DomainError ToolRequired = new DomainError(
         "inventory.tool_required",
-        "Only a single unreserved tool can be equipped.");
+        "Only a single available tool can be held.");
     public static readonly DomainError ToolNotCarried = new DomainError(
         "inventory.tool_not_carried",
-        "The tool must be carried by the acting resident before it can be equipped.");
+        "The tool must remain in the acting resident inventory.");
     public static readonly DomainError ToolSlotOccupied = new DomainError(
         "inventory.tool_slot_occupied",
-        "The resident already has an equipped tool.");
+        "The resident already holds another item.");
     public static readonly DomainError ToolSwitchUnsafe = new DomainError(
         "inventory.tool_switch_unsafe",
-        "The currently equipped item cannot be safely returned to the resident inventory.");
+        "The currently held item cannot be safely released.");
+    public static readonly DomainError HeldItemAlreadyExists = new DomainError(
+        "inventory.held.already_exists",
+        "The resident already has a held item reference.");
+    public static readonly DomainError HeldItemNotFound = new DomainError(
+        "inventory.held.not_found",
+        "The resident does not have a held item reference.");
+    public static readonly DomainError HeldItemStackNotCarried = new DomainError(
+        "inventory.held.stack_not_carried",
+        "The held stack must stay in the resident inventory.");
+    public static readonly DomainError HeldItemReferenceInvalid = new DomainError(
+        "inventory.held.reference_invalid",
+        "The held item reference is stale or inconsistent with the stack.");
     public static readonly DomainError ResidentSlotOccupied = new DomainError(
         "inventory.resident.slot_occupied",
         "The selected resident inventory slot already contains another stack.");
