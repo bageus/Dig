@@ -19,6 +19,10 @@ def check_excavation_contracts(
     projection_path = runtime_root / "DigTunnelProjection.cs"
     tunnel_renderer_path = runtime_root / "DigTunnelDemoRenderer.cs"
     world_renderer_path = runtime_root / "DigWorldRenderer.cs"
+    protection_path = runtime_root / "DigWorldRenderer.Protection.cs"
+    cell_visual_path = runtime_root / "DigCellVisual.cs"
+    movement_path = runtime_root / "DigWorldInteraction.TunnelMovement.cs"
+    world_session_path = runtime_root / "DigWorldSession.cs"
     interaction_path = runtime_root / "DigWorldInteraction.cs"
     drawing_path = runtime_root / "DigWorldInteraction.Excavation.cs"
     designations_path = runtime_root / "DigTerrainWorkDesignations.cs"
@@ -67,12 +71,55 @@ def check_excavation_contracts(
     errors.extend(require_fragments(
         world_renderer_path,
         texts.get(world_renderer_path, ""),
-        "dynamic Z0 floor rendering",
+        "dynamic Z0 floor rendering and movement",
         (
             "_walkSurfaceCells",
             "cell.Y + 1",
             "DigTunnelProjection.FloorWorldPosition",
             "renderable && !hiddenByCutaway",
+            "TryGetWalkSurface",
+            "new SpatialCellId(visual.Model.X, visual.Model.Y, 0)",
+            "ApplyProtectedVisual",
+        ),
+    ))
+    errors.extend(require_fragments(
+        movement_path,
+        texts.get(movement_path, ""),
+        "direct layered movement",
+        (
+            "_tunnelRenderer.TryGetCell",
+            "_renderer.TryGetWalkSurface",
+            "SpatialCellId destination",
+            "MoveResidentThroughTunnel",
+        ),
+    ))
+    errors.extend(require_fragments(
+        protection_path,
+        texts.get(protection_path, ""),
+        "protected rock presentation",
+        (
+            "SetProtectedCells",
+            "HighlightRejected",
+            "SetRejected(true)",
+            "visual.Model.IsSolid",
+        ),
+    ))
+    errors.extend(require_fragments(
+        cell_visual_path,
+        texts.get(cell_visual_path, ""),
+        "rejected cell feedback",
+        ("SetRejected", "Color.red", "_rejected"),
+    ))
+    errors.extend(require_fragments(
+        world_session_path,
+        texts.get(world_session_path, ""),
+        "protected excavation boundary",
+        (
+            "ExcavationBoundaryPolicy",
+            "topRockY: layout.SurfaceY + 1",
+            "ProtectedCells",
+            "world.excavation.protected_rock",
+            "_boundaryPolicy.IsProtected(cell)",
         ),
     ))
     errors.extend(require_fragments(
@@ -87,6 +134,8 @@ def check_excavation_contracts(
             "TryHandleExcavationStroke",
             "AssignExcavationCluster",
             "new SpatialCellId(selected.CellX, selected.CellY, 0)",
+            "_session!.IsProtected(target)",
+            "_renderer!.HighlightRejected(target)",
         ),
     ))
     errors.extend(reject_fragments(
@@ -174,6 +223,10 @@ def check_excavation_contracts(
         bootstrap_path,
         texts.get(bootstrap_path, ""),
         "rock volume composition",
-        ("DigRockVolumeRenderer", "rockRenderer.Initialize"),
+        (
+            "DigRockVolumeRenderer",
+            "rockRenderer.Initialize",
+            "worldRenderer.SetProtectedCells(worldSession.ProtectedCells)",
+        ),
     ))
     return errors
