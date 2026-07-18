@@ -165,7 +165,10 @@ def check_excavation_contracts(
         hud_path,
         texts.get(hud_path, ""),
         "separate axis buttons",
-        ("Horizontal", "Vertical"),
+        (
+            'GUILayout.Button("Horizontal"',
+            'GUILayout.Button("Vertical"',
+        ),
     ))
     errors.extend(require_fragments(
         bootstrap_path,
