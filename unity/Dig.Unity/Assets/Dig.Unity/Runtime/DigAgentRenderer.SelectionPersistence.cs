@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Presentation.Agents;
 
 namespace Dig.Unity
 {
@@ -45,6 +46,23 @@ namespace Dig.Unity
             }
 
             PublishSelectionSnapshot();
+        }
+
+        internal IReadOnlyList<AgentViewModel> GetSelectedModels()
+        {
+            List<AgentViewModel> models = new List<AgentViewModel>(_selectionOrder.Count);
+            for (int index = 0; index < _selectionOrder.Count; index++)
+            {
+                if (_agents.TryGetValue(
+                    _selectionOrder[index],
+                    out DigAgentVisual? visual)
+                    && visual.Model.IsAlive)
+                {
+                    models.Add(visual.Model);
+                }
+            }
+
+            return models;
         }
     }
 }
