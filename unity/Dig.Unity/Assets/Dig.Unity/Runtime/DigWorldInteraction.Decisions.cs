@@ -67,13 +67,14 @@ namespace Dig.Unity
 
             if (decision.Effects.HasFlag(PresentationInputEffect.DeselectResident))
             {
-                _agentRenderer!.Select(null);
-                _hud!.SetAgentSelection(null);
+                _agentRenderer!.ClearSelection();
+                _hud!.SetAgentSelection(null, 0);
             }
 
             if (decision.Effects.HasFlag(PresentationInputEffect.SelectResident))
             {
                 DisableExcavationDrawing();
+                DisableCaveRoomPlanning();
                 DigAgentVisual? selected = agent;
                 if (selected == null && decision.TargetEntityId.HasValue)
                 {
@@ -89,7 +90,9 @@ namespace Dig.Unity
                 _renderer!.Select(null);
                 _jobRenderer!.Select(null);
                 _buildingRenderer!.Select(null);
-                _hud!.SetAgentSelection(selected?.Model);
+                _hud!.SetAgentSelection(
+                    selected?.Model,
+                    _agentRenderer.SelectedCount);
             }
 
             if (decision.Effects.HasFlag(PresentationInputEffect.SelectBuilding))
@@ -107,7 +110,7 @@ namespace Dig.Unity
 
                 _selectedCell = null;
                 _renderer!.Select(null);
-                _agentRenderer!.Select(null);
+                _agentRenderer!.ClearSelection();
                 _jobRenderer!.Select(null);
                 _hud!.SetBuildingSelection(selected?.Model);
             }
