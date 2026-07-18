@@ -42,8 +42,10 @@ public sealed class CaveRoomPlanner
                 "The room entrance must be an excavated tunnel cell.");
         }
 
-        bool horizontalTunnel = IsOpen(cells, new CellId(entrance.X - 1, entrance.Y))
-            || IsOpen(cells, new CellId(entrance.X + 1, entrance.Y));
+        bool horizontalTunnel = entrance.X > 0
+                && IsOpen(cells, new CellId(entrance.X - 1, entrance.Y))
+            || entrance.X + 1 < world.Size.Width
+                && IsOpen(cells, new CellId(entrance.X + 1, entrance.Y));
         if (!horizontalTunnel)
         {
             return CaveRoomPlanResult.Failure(
@@ -76,9 +78,16 @@ public sealed class CaveRoomPlanner
         int roofMinX = entrance.X - ((preset.TopWidth - 1) / 2);
         for (int offset = 0; offset < preset.TopWidth; offset++)
         {
-            CellId roofCell = new CellId(roofMinX + offset, roofY);
-            if (!world.Size.Contains(roofCell)
-                || !cells.TryGetValue(roofCell, out CellSnapshot roofSnapshot)
+            int x = roofMinX + offset;
+            if (!Contains(world.Size, x, roofY))
+            {
+                return CaveRoomPlanResult.Failure(
+                    CaveRoomPlanFailureReason.MissingRoof,
+                    "One complete row of solid rock must remain above the room.");
+            }
+
+            CellId roofCell = new CellId(x, roofY);
+            if (!cells.TryGetValue(roofCell, out CellSnapshot roofSnapshot)
                 || !roofSnapshot.IsSolid)
             {
                 return CaveRoomPlanResult.Failure(
@@ -142,9 +151,16 @@ public sealed class CaveRoomPlanner
         int minX = entrance.X - ((rowWidth - 1) / 2);
         for (int offset = 0; offset < rowWidth; offset++)
         {
-            CellId cell = new CellId(minX + offset, y);
-            if (!world.Size.Contains(cell)
-                || !cells.TryGetValue(cell, out CellSnapshot snapshot))
+            int x = minX + offset;
+            if (!Contains(world.Size, x, y))
+            {
+                return CaveRoomPlanResult.Failure(
+                    CaveRoomPlanFailureReason.RoomOutOfBounds,
+                    "The room outline leaves the world bounds.");
+            }
+
+            CellId cell = new CellId(x, y);
+            if (!cells.TryGetValue(cell, out CellSnapshot snapshot))
             {
                 return CaveRoomPlanResult.Failure(
                     CaveRoomPlanFailureReason.RoomOutOfBounds,
@@ -177,6 +193,11 @@ public sealed class CaveRoomPlanner
         }
 
         return null;
+    }
+
+    private static bool Contains(WorldSize size, int x, int y)
+    {
+        return x >= 0 && y >= 0 && x < size.Width && y < size.Height;
     }
 
     private static bool IsOpen(
