@@ -9,7 +9,8 @@
     "UnityEngine.AudioModule",
     "UnityEngine.IMGUIModule",
     "UnityEngine.InputLegacyModule",
-    "UnityEngine.PhysicsModule"
+    "UnityEngine.PhysicsModule",
+    "UnityEngine.UI"
   ],
   "autoReferenced": true
 }
