@@ -42,6 +42,16 @@ namespace Dig.Unity
             return report;
         }
 
+        internal bool ReleaseManualTunnelOrder(string residentId)
+        {
+            if (string.IsNullOrWhiteSpace(residentId))
+            {
+                throw new ArgumentException("Resident id is required.", nameof(residentId));
+            }
+
+            return _manualTunnelOrders.Remove(EntityId.Parse(residentId));
+        }
+
         private void InitializeTunnelMovement(
             TunnelNavigationVolume volume,
             InMemoryExecutionJournal journal)
