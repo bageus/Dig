@@ -55,33 +55,25 @@ public sealed class InventoryAwareJobCandidateProvider : IJobCandidateProvider
         JobToolKind preferredKind,
         InventorySnapshot snapshot)
     {
-        ItemStackSnapshot[] equipped = snapshot.Stacks
-            .Where(stack => stack.Location == ItemLocation.EquippedBy(candidate.AgentId))
-            .ToArray();
-        if (equipped.Length > 1)
-        {
-            throw new InvalidOperationException(
-                "A resident cannot have more than one equipped item.");
-        }
-
-        ItemStackSnapshot? current = equipped.SingleOrDefault();
-        if (IsSafeMatchingTool(current, preferredKind))
+        ItemStackSnapshot? current = ResolveCurrentTool(snapshot, candidate.AgentId);
+        if (IsMatchingTool(current, preferredKind))
         {
             return candidate.WithToolReadiness(
                 JobToolReadiness.Equipped,
                 current!.StackId);
         }
 
-        bool currentCanBeStored = current is null
+        bool currentCanBeReleased = current is null
             || (current.Quantity == 1 && current.ReservedQuantity == 0);
-        if (!currentCanBeStored)
+        if (!currentCanBeReleased)
         {
             return candidate.WithToolReadiness(JobToolReadiness.Unavailable);
         }
 
         ItemStackSnapshot? carried = snapshot.Stacks
-            .Where(stack => stack.Location == ItemLocation.InAgent(candidate.AgentId))
-            .Where(stack => IsSafeMatchingTool(stack, preferredKind))
+            .Where(stack => IsCarriedBy(stack.Location, candidate.AgentId))
+            .Where(stack => stack.HeldQuantity == 0)
+            .Where(stack => IsMatchingTool(stack, preferredKind))
             .OrderBy(stack => stack.StackId.ToString(), StringComparer.Ordinal)
             .FirstOrDefault();
         return carried is null
@@ -91,15 +83,51 @@ public sealed class InventoryAwareJobCandidateProvider : IJobCandidateProvider
                 carried.StackId);
     }
 
-    private bool IsSafeMatchingTool(
+    private ItemStackSnapshot? ResolveCurrentTool(
+        InventorySnapshot snapshot,
+        EntityId residentId)
+    {
+        HeldItemReferenceSnapshot[] held = snapshot.HeldItems
+            .Where(item => item.ResidentId == residentId)
+            .ToArray();
+        ItemStackSnapshot[] legacy = snapshot.Stacks
+            .Where(stack => stack.Location == ItemLocation.EquippedBy(residentId))
+            .ToArray();
+        if (held.Length + legacy.Length > 1)
+        {
+            throw new InvalidOperationException(
+                "A resident cannot have more than one held or legacy equipped item.");
+        }
+
+        if (held.Length == 1)
+        {
+            EntityId stackId = held[0].StackId;
+            return snapshot.Stacks.SingleOrDefault(stack => stack.StackId == stackId)
+                ?? throw new InvalidOperationException(
+                    "A held item reference points to a missing stack.");
+        }
+
+        return legacy.SingleOrDefault();
+    }
+
+    private bool IsMatchingTool(
         ItemStackSnapshot? stack,
         JobToolKind preferredKind)
     {
         return stack is not null
             && stack.Quantity == 1
             && stack.ReservedQuantity == 0
+            && (stack.AvailableQuantity == 1 || stack.HeldQuantity == 1)
             && Matches(preferredKind, _equipmentRates.ResolveWorkKind(stack.ItemId));
     }
+
+    private static bool IsCarriedBy(ItemLocation location, EntityId residentId)
+    {
+        return location.Kind == ItemLocationKind.AgentInventory
+            && location.HasOwner
+            && location.OwnerId == residentId;
+    }
+
     private static bool Matches(
         JobToolKind preferredKind,
         EquipmentWorkKind? equipmentWorkKind)
@@ -141,4 +169,5 @@ public sealed class InventoryJobToolPreparationService : IJobToolPreparationServ
         return Result.Success();
     }
 }
+
 }
