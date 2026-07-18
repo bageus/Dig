@@ -23,17 +23,55 @@ namespace Dig.Unity
             }
 
             RequireManualExcavationInitialized();
-            HashSet<EntityId> agents = new HashSet<EntityId>();
-            foreach (string residentId in residentIds)
+            HashSet<EntityId> agents = ParseResidentIds(residentIds);
+            Result released = ReleaseAssignmentsForAgents(agents, tick);
+            if (released.IsFailure)
             {
-                if (string.IsNullOrWhiteSpace(residentId))
-                {
-                    throw new ArgumentException(
-                        "Resident ids cannot contain an empty value.",
-                        nameof(residentIds));
-                }
+                return released;
+            }
 
-                agents.Add(EntityId.Parse(residentId));
+            foreach (EntityId agentId in agents)
+            {
+                ClearManualGroupForAgent(agentId);
+                _directMovementAgents.Add(agentId);
+            }
+
+            return Result.Success();
+        }
+
+        internal Result EnforceDirectMovementOwnership(long tick)
+        {
+            RequireManualExcavationInitialized();
+            return ReleaseAssignmentsForAgents(_directMovementAgents, tick);
+        }
+
+        internal void ReleaseDirectMovementControl(string residentId)
+        {
+            if (string.IsNullOrWhiteSpace(residentId))
+            {
+                throw new ArgumentException("Resident id is required.", nameof(residentId));
+            }
+
+            _directMovementAgents.Remove(EntityId.Parse(residentId));
+        }
+
+        private bool IsDirectMovementControlled(string residentId)
+        {
+            return _directMovementAgents.Contains(EntityId.Parse(residentId));
+        }
+
+        private bool IsAvailableForAutomaticWork(AgentViewModel agent)
+        {
+            return agent.IsAlive && !IsDirectMovementControlled(agent.Id);
+        }
+
+        private Result ReleaseAssignmentsForAgents(
+            IReadOnlyCollection<EntityId> agents,
+            long tick)
+        {
+            if (agents.Count == 0)
+            {
+                return Result.Success();
             }
 
             JobSnapshot[] assignments = _jobRepository.Get().GetAll()
@@ -55,33 +93,26 @@ namespace Dig.Unity
                 RemoveAllRoutePlans(assignments[index].Id);
             }
 
-            foreach (EntityId agentId in agents)
-            {
-                ClearManualGroupForAgent(agentId);
-                _directMovementAgents.Add(agentId);
-            }
-
             return Result.Success();
         }
 
-        internal void ReleaseDirectMovementControl(string residentId)
+        private static HashSet<EntityId> ParseResidentIds(
+            IReadOnlyCollection<string> residentIds)
         {
-            if (string.IsNullOrWhiteSpace(residentId))
+            HashSet<EntityId> agents = new HashSet<EntityId>();
+            foreach (string residentId in residentIds)
             {
-                throw new ArgumentException("Resident id is required.", nameof(residentId));
+                if (string.IsNullOrWhiteSpace(residentId))
+                {
+                    throw new ArgumentException(
+                        "Resident ids cannot contain an empty value.",
+                        nameof(residentIds));
+                }
+
+                agents.Add(EntityId.Parse(residentId));
             }
 
-            _directMovementAgents.Remove(EntityId.Parse(residentId));
-        }
-
-        private bool IsDirectMovementControlled(string residentId)
-        {
-            return _directMovementAgents.Contains(EntityId.Parse(residentId));
-        }
-
-        private bool IsAvailableForAutomaticWork(AgentViewModel agent)
-        {
-            return agent.IsAlive && !IsDirectMovementControlled(agent.Id);
+            return agents;
         }
 
         private void RemoveAllRoutePlans(EntityId jobId)
