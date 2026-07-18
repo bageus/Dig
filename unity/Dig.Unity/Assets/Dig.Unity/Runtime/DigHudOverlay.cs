@@ -21,6 +21,7 @@ namespace Dig.Unity
             System.Array.Empty<AgentViewModel>();
         private WorldCellViewModel? _selectedCell;
         private AgentViewModel? _selectedAgent;
+        private int _selectedAgentCount;
         private DigStorageStatus? _storageStatus;
         private DigAgentSimulationDriver? _simulation;
         private Vector2 _scrollPosition;
@@ -59,6 +60,7 @@ namespace Dig.Unity
         {
             _selectedCell = selected;
             _selectedAgent = null;
+            _selectedAgentCount = 0;
             _residentInventory = null;
             ClearJobSelection();
             ClearBuildingSelection();
@@ -66,7 +68,13 @@ namespace Dig.Unity
 
         public void SetAgentSelection(AgentViewModel? selected)
         {
+            SetAgentSelection(selected, selected == null ? 0 : 1);
+        }
+
+        internal void SetAgentSelection(AgentViewModel? selected, int selectedCount)
+        {
             _selectedAgent = selected;
+            _selectedAgentCount = selected == null ? 0 : System.Math.Max(1, selectedCount);
             _selectedCell = null;
             if (selected == null
                 || _residentInventory == null
@@ -230,9 +238,11 @@ namespace Dig.Unity
             }
 
             AgentViewModel agent = _selectedAgent;
-            GUILayout.Label("SELECTED RESIDENT");
+            GUILayout.Label(_selectedAgentCount > 1
+                ? $"SELECTED RESIDENTS: {_selectedAgentCount}"
+                : "SELECTED RESIDENT");
             GUILayout.Label(
-                $"{agent.Name} | X={agent.CellX}, Y={agent.CellY}, Z={agent.CellZ} " +
+                $"Primary: {agent.Name} | X={agent.CellX}, Y={agent.CellY}, Z={agent.CellZ} " +
                 $"| v{agent.Version}");
             GUILayout.Label($"Alive: {agent.IsAlive} | schedule: {agent.ScheduledActivity}");
             GUILayout.Label($"Intent: {agent.ActiveIntent} | action {agent.ActionElapsedTicks}/{agent.ActionRequiredTicks}");
