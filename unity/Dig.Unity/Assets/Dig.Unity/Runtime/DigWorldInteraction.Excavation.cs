@@ -23,7 +23,9 @@ namespace Dig.Unity
         private CellId? _lastExcavationPaintCell;
         private int _excavationPriority = 750;
 
-        internal string ExcavationModeLabel => _excavationMode.ToString();
+        internal string ExcavationModeLabel => _caveRoomPreset.HasValue
+            ? $"{_caveRoomPreset.Value} Cave"
+            : _excavationMode.ToString();
         internal int ExcavationPriority => _excavationPriority;
         internal bool CanActivateExcavationDrawing =>
             _agentRenderer != null && _agentRenderer.SelectedAgentId == null;
@@ -42,6 +44,7 @@ namespace Dig.Unity
                 return;
             }
 
+            DisableCaveRoomPlanning();
             _excavationMode = mode;
             ResetExcavationStroke();
             _hud!.SetStatus(mode switch
@@ -64,6 +67,7 @@ namespace Dig.Unity
         {
             _excavationMode = DigExcavationDrawingMode.None;
             ResetExcavationStroke();
+            DisableCaveRoomPlanning();
         }
 
         private bool TryHandleExcavationStroke()
