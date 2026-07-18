@@ -36,6 +36,12 @@ namespace Dig.Unity
                     DigExcavationDrawingMode.Tunnel);
             }
 
+            if (GUILayout.Button("Depth", GUILayout.Width(66f)))
+            {
+                _excavationControls.SetExcavationDrawingMode(
+                    DigExcavationDrawingMode.Depth);
+            }
+
             if (GUILayout.Button("Delete", GUILayout.Width(68f)))
             {
                 _excavationControls.SetExcavationDrawingMode(
@@ -88,7 +94,11 @@ namespace Dig.Unity
             }
             else if (_excavationControls.CaveRoomPreset.HasValue)
             {
-                GUILayout.Label("Move over a horizontal tunnel; LMB places the room plan.");
+                GUILayout.Label("Move over a horizontal tunnel; LMB places or expands the room plan.");
+            }
+            else if (_excavationControls.ExcavationModeLabel == "Depth")
+            {
+                GUILayout.Label("Depth: click one open tunnel cell; each click opens only Z+1, up to Z=3.");
             }
             else
             {

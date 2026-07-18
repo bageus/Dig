@@ -11,6 +11,8 @@ from unity_group_input_contracts import (
     check_group_hud_contracts,
     check_tunnel_and_group_contracts,
 )
+from unity_navigation_marquee_contracts import check_navigation_and_marquee_contracts
+from unity_tunnel_depth_contracts import check_tunnel_depth_contracts
 
 ROOT = Path(__file__).resolve().parents[2]
 RUNTIME_ROOT = (
@@ -201,6 +203,16 @@ def main() -> int:
         reject_fragments,
     ))
     errors.extend(check_cave_room_runtime_contracts(
+        RUNTIME_ROOT,
+        texts,
+        require_fragments,
+    ))
+    errors.extend(check_tunnel_depth_contracts(
+        RUNTIME_ROOT,
+        texts,
+        require_fragments,
+    ))
+    errors.extend(check_navigation_and_marquee_contracts(
         RUNTIME_ROOT,
         texts,
         require_fragments,

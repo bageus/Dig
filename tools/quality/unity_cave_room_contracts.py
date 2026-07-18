@@ -15,6 +15,7 @@ def check_cave_room_runtime_contracts(
     room_interaction = runtime_root / "DigWorldInteraction.CaveRooms.cs"
     room_runtime = runtime_root / "DigAgentSimulationDriverBase.CaveRooms.cs"
     room_floor = runtime_root / "DigCaveRoomFloorRenderer.cs"
+    tunnel_renderer = runtime_root / "DigTunnelDemoRenderer.cs"
     rock_renderer = runtime_root / "DigRockVolumeRenderer.cs"
     agent_session = runtime_root / "DigAgentSession.TunnelMovement.cs"
     bootstrap = runtime_root / "DigUnityBootstrap.cs"
@@ -22,12 +23,14 @@ def check_cave_room_runtime_contracts(
     errors.extend(require_fragments(
         room_session,
         texts.get(room_session, ""),
-        "completed cave room tracking",
+        "completed cave room tracking and expansion",
         (
             "_caveRoomPlans",
             "LoadCompletedCaveRoomPlans",
+            "GetCompletedCaveRoomPlans",
             "FrontExcavationCells.All",
-            "!snapshot.IsSolid",
+            "!value.IsSolid",
+            "GetCompletedCaveRoomPlans(snapshot)",
         ),
     ))
     errors.extend(require_fragments(
@@ -37,6 +40,7 @@ def check_cave_room_runtime_contracts(
         (
             "SetCaveRoomRenderers",
             "RefreshCompletedCaveRooms",
+            "bool force = false",
             "_lastCaveRoomRuntimeTick",
             "LoadCompletedCaveRoomPlans",
             "RefreshCaveRoomRuntime",
@@ -45,9 +49,11 @@ def check_cave_room_runtime_contracts(
     errors.extend(require_fragments(
         room_runtime,
         texts.get(room_runtime, ""),
-        "completed cave room runtime activation",
+        "completed cave room and depth runtime activation",
         (
             "_activatedCaveRooms",
+            "ExcavateTunnelDepth",
+            "TunnelDepthExcavations",
             "RefreshCaveRoomRuntime",
             "CreateFloorCells",
             "ExpandTunnelVolume",
@@ -58,7 +64,7 @@ def check_cave_room_runtime_contracts(
     errors.extend(require_fragments(
         room_floor,
         texts.get(room_floor, ""),
-        "completed cave room floor rendering",
+        "completed cave room floor and back wall rendering",
         (
             "AddRoomFloor",
             "plan.Preset.BaseWidth",
@@ -67,6 +73,20 @@ def check_cave_room_runtime_contracts(
             "FloorWorldPosition",
             "isVerticalTunnel: false",
             "material: _materials[z]!",
+            "_backWalls",
+            "ReplaceBackWall",
+            "Cave room back wall",
+            "DepthSpacing * 0.55f",
+            "Destroy(collider)",
+        ),
+    ))
+    errors.extend(require_fragments(
+        tunnel_renderer,
+        texts.get(tunnel_renderer, ""),
+        "optional generated cave back wall",
+        (
+            "layout.CaveHasBackWall",
+            "Cave back wall",
         ),
     ))
     errors.extend(require_fragments(

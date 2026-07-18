@@ -11,6 +11,7 @@ namespace Dig.Unity
         None = 0,
         Tunnel = 1,
         Delete = 2,
+        Depth = 3,
     }
 
     public sealed partial class DigWorldInteraction
@@ -54,6 +55,8 @@ namespace Dig.Unity
                     "Tunnel tool active on Z=0. Hold LMB and move horizontally or vertically.",
                 DigExcavationDrawingMode.Delete =>
                     "Delete tool active. Hold LMB over marked cells.",
+                DigExcavationDrawingMode.Depth =>
+                    "Depth tool active. LMB an open horizontal tunnel cell to excavate one deeper layer.",
                 _ => throw new InvalidOperationException("Unknown excavation mode."),
             });
         }
@@ -72,6 +75,11 @@ namespace Dig.Unity
 
         private bool TryHandleExcavationStroke()
         {
+            if (_excavationMode == DigExcavationDrawingMode.Depth)
+            {
+                return false;
+            }
+
             if (Input.GetMouseButtonUp(0))
             {
                 bool wasEditing = _excavationMode != DigExcavationDrawingMode.None;
@@ -182,10 +190,23 @@ namespace Dig.Unity
                 return Result.Failure(DigWorldSession.ProtectedRock);
             }
 
-            return _simulation!.ApplyExcavationDesignation(
+            Result result = _simulation!.ApplyExcavationDesignation(
                 target,
                 active,
                 _excavationPriority);
+            if (result.IsFailure)
+            {
+                return result;
+            }
+
+            bool vertical = active && _excavationAxis == ExcavationStrokeAxis.Vertical;
+            if (vertical && _excavationAnchor.HasValue)
+            {
+                _session!.SetVerticalTunnelPlan(_excavationAnchor.Value, active: true);
+            }
+
+            _session!.SetVerticalTunnelPlan(target, vertical);
+            return Result.Success();
         }
 
         private bool TryAssignSelectedResidentToExcavation(

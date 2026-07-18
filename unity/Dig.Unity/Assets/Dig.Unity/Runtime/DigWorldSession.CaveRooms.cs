@@ -16,11 +16,13 @@ namespace Dig.Unity
             CaveRoomPresetKind kind,
             CellId entrance)
         {
+            WorldSnapshot snapshot = LoadSnapshot();
             return _caveRoomPlanner.Plan(
-                LoadSnapshot(),
+                snapshot,
                 _boundaryPolicy,
                 kind,
-                entrance);
+                entrance,
+                GetCompletedCaveRoomPlans(snapshot));
         }
 
         internal Result ApplyCaveRoomPlan(CaveRoomPlan plan)
@@ -58,13 +60,19 @@ namespace Dig.Unity
 
         internal IReadOnlyList<CaveRoomPlan> LoadCompletedCaveRoomPlans()
         {
-            Dictionary<CellId, CellSnapshot> cells = LoadSnapshot().Chunks
+            return GetCompletedCaveRoomPlans(LoadSnapshot());
+        }
+
+        private IReadOnlyList<CaveRoomPlan> GetCompletedCaveRoomPlans(
+            WorldSnapshot snapshot)
+        {
+            Dictionary<CellId, CellSnapshot> cells = snapshot.Chunks
                 .SelectMany(chunk => chunk.Cells)
                 .ToDictionary(cell => cell.Id);
             return _caveRoomPlans
                 .Where(plan => plan.FrontExcavationCells.All(cell =>
-                    cells.TryGetValue(cell, out CellSnapshot snapshot)
-                    && !snapshot.IsSolid))
+                    cells.TryGetValue(cell, out CellSnapshot value)
+                    && !value.IsSolid))
                 .ToArray();
         }
 

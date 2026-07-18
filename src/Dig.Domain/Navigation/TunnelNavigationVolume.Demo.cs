@@ -16,7 +16,8 @@ public sealed class TunnelDemoLayout
         int caveMinX,
         int caveMaxX,
         int caveCeilingY,
-        int caveFloorY)
+        int caveFloorY,
+        bool caveHasBackWall = true)
     {
         if (surfaceMinX < 0 || surfaceMaxX < surfaceMinX)
         {
@@ -47,6 +48,7 @@ public sealed class TunnelDemoLayout
         CaveMaxX = caveMaxX;
         CaveCeilingY = caveCeilingY;
         CaveFloorY = caveFloorY;
+        CaveHasBackWall = caveHasBackWall;
     }
 
     public int SurfaceMinX { get; }
@@ -58,13 +60,18 @@ public sealed class TunnelDemoLayout
     public int CaveMaxX { get; }
     public int CaveCeilingY { get; }
     public int CaveFloorY { get; }
+    public bool CaveHasBackWall { get; }
     public int CaveWidth => CaveMaxX - CaveMinX + 1;
     public int CaveHeight => CaveFloorY - CaveCeilingY;
 }
 
 public sealed partial class TunnelNavigationVolume
 {
-    public static TunnelNavigationVolume CreateDemo(int width, int height, int depth = 4)
+    public static TunnelNavigationVolume CreateDemo(
+        int width,
+        int height,
+        int depth = 4,
+        bool naturalCaveHasBackWall = true)
     {
         if (width < 8)
         {
@@ -104,7 +111,8 @@ public sealed partial class TunnelNavigationVolume
             caveMinX,
             caveMaxX,
             caveCeilingY,
-            caveFloorY);
+            caveFloorY,
+            naturalCaveHasBackWall);
 
         HashSet<SpatialCellId> open = new HashSet<SpatialCellId>();
         AddPlatform(

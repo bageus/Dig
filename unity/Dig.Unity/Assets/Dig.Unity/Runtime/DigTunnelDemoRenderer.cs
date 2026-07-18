@@ -150,10 +150,13 @@ namespace Dig.Unity
                 "Cave right wall",
                 new Vector3(layout.CaveMaxX + 0.48f, centerY, centerDepth),
                 new Vector3(0.12f, caveHeight, depthSpan));
-            CreateShellPart(
-                "Cave back wall",
-                new Vector3(centerX, centerY, Mathf.Min(front.z, back.z) - 0.30f),
-                new Vector3(caveWidth, caveHeight, 0.10f));
+            if (layout.CaveHasBackWall)
+            {
+                CreateShellPart(
+                    "Cave back wall",
+                    new Vector3(centerX, centerY, Mathf.Min(front.z, back.z) - 0.30f),
+                    new Vector3(caveWidth, caveHeight, 0.10f));
+            }
         }
 
         private void CreateShellPart(string name, Vector3 position, Vector3 scale)

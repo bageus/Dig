@@ -14,10 +14,28 @@ namespace Dig.Unity
             SpatialCellId destination,
             DigTunnelDemoRenderer tunnelRenderer)
         {
-            return MoveResidentsThroughTunnel(
-                new[] { residentId },
-                destination,
-                tunnelRenderer);
+            if (AgentSession == null || AgentRenderer == null || Hud == null)
+            {
+                return NotInitializedResult();
+            }
+
+            SynchronizeExcavatedTunnelNavigation();
+            MoveAgentThroughTunnelReport report =
+                AgentSession.MoveResidentThroughTunnel(residentId, destination);
+            if (report.Result.IsFailure)
+            {
+                return report.Result;
+            }
+
+            IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
+            AgentRenderer.Render(agents, movementDuration: 0.01f);
+            AgentRenderer.AnimateRoute(
+                residentId,
+                report.Path!.Cells,
+                stepDuration: 0.12f);
+            tunnelRenderer.ShowRoute(report.Path);
+            RefreshTunnelMovementPresentation(agents);
+            return Result.Success();
         }
 
         internal Result MoveResidentsThroughTunnel(
@@ -27,9 +45,7 @@ namespace Dig.Unity
         {
             if (AgentSession == null || AgentRenderer == null || Hud == null)
             {
-                return Result.Failure(new DomainError(
-                    "unity.tunnel.not_initialized",
-                    "The layered tunnel movement runtime is not initialized."));
+                return NotInitializedResult();
             }
 
             if (residentIds == null)
@@ -42,6 +58,15 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(tunnelRenderer));
             }
 
+            if (residentIds.Count == 1)
+            {
+                return MoveResidentThroughTunnel(
+                    residentIds[0],
+                    destination,
+                    tunnelRenderer);
+            }
+
+            SynchronizeExcavatedTunnelNavigation();
             MoveAgentsThroughTunnelReport report =
                 AgentSession.MoveResidentsThroughTunnel(residentIds, destination);
             if (report.Result.IsFailure)
@@ -62,12 +87,25 @@ namespace Dig.Unity
 
             tunnelRenderer.ShowRoute(
                 report.Entries.Count == 0 ? null : report.Entries[0].Path);
-            RefreshEquipmentVisuals();
-            Hud.SetAgents(agents, AgentSession.Tick);
-            Hud.SetAgentSelection(
-                AgentRenderer.SelectedModel,
-                AgentRenderer.SelectedCount);
+            RefreshTunnelMovementPresentation(agents);
             return Result.Success();
+        }
+
+        private void RefreshTunnelMovementPresentation(
+            IReadOnlyList<AgentViewModel> agents)
+        {
+            RefreshEquipmentVisuals();
+            Hud!.SetAgents(agents, AgentSession!.Tick);
+            Hud.SetAgentSelection(
+                AgentRenderer!.SelectedModel,
+                AgentRenderer.SelectedCount);
+        }
+
+        private static Result NotInitializedResult()
+        {
+            return Result.Failure(new DomainError(
+                "unity.tunnel.not_initialized",
+                "The layered tunnel movement runtime is not initialized."));
         }
     }
 }

@@ -56,6 +56,7 @@ namespace Dig.Unity
             _hud = hud;
             hud.SetBuildingPlacementControls(this);
             hud.SetExcavationControls(this);
+            InitializeResidentMarquee();
         }
 
         private void Update()
@@ -68,6 +69,7 @@ namespace Dig.Unity
             bool right = Input.GetMouseButtonDown(1);
             if (right && !_hud!.ContainsScreenPoint(Input.mousePosition))
             {
+                CancelResidentMarquee();
                 CancelCurrentInteraction();
                 return;
             }
@@ -75,7 +77,10 @@ namespace Dig.Unity
             HandleStoragePlacement();
             UpdateBuildingPlacementHover();
             UpdateCaveRoomPreview();
-            if (TryHandleCaveRoomPlacement() || TryHandleExcavationStroke())
+            if (TryHandleResidentMarqueeSelection()
+                || TryHandleCaveRoomPlacement()
+                || TryHandleTunnelDepthExcavation()
+                || TryHandleExcavationStroke())
             {
                 return;
             }

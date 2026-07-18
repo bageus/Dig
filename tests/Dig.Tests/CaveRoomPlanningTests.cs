@@ -69,6 +69,61 @@ public sealed class CaveRoomPlanningTests
     }
 
     [Fact]
+    public void Larger_room_can_expand_a_completed_small_room_at_the_same_entrance()
+    {
+        ExcavationBoundaryPolicy boundary = new ExcavationBoundaryPolicy(20, 14, 2);
+        CaveRoomPlanner planner = new CaveRoomPlanner();
+        CellId entrance = new CellId(10, 9);
+        CaveRoomPlan small = planner.Plan(
+            CreateWorld(horizontalTunnelY: 9),
+            boundary,
+            CaveRoomPresetKind.Small,
+            entrance).Plan!;
+        WorldSnapshot expandedWorld = CreateWorld(
+            horizontalTunnelY: 9,
+            additionalAir: small.FrontExcavationCells);
+
+        CaveRoomPlanResult result = planner.Plan(
+            expandedWorld,
+            boundary,
+            CaveRoomPresetKind.Large,
+            entrance,
+            new[] { small });
+
+        Assert.True(result.Succeeded, result.Detail);
+        Assert.NotEmpty(result.Plan!.FrontExcavationCells);
+        Assert.DoesNotContain(
+            result.Plan.FrontExcavationCells,
+            cell => small.FrontExcavationCells.Contains(cell));
+        Assert.Equal(new[] { 9, 8, 7, 6, 5 }, RowWidths(result.Plan));
+    }
+
+    [Fact]
+    public void Open_room_shape_is_not_an_upgrade_without_a_completed_plan()
+    {
+        ExcavationBoundaryPolicy boundary = new ExcavationBoundaryPolicy(20, 14, 2);
+        CaveRoomPlanner planner = new CaveRoomPlanner();
+        CellId entrance = new CellId(10, 9);
+        CaveRoomPlan small = planner.Plan(
+            CreateWorld(horizontalTunnelY: 9),
+            boundary,
+            CaveRoomPresetKind.Small,
+            entrance).Plan!;
+        WorldSnapshot expandedWorld = CreateWorld(
+            horizontalTunnelY: 9,
+            additionalAir: small.FrontExcavationCells);
+
+        CaveRoomPlanResult result = planner.Plan(
+            expandedWorld,
+            boundary,
+            CaveRoomPresetKind.Large,
+            entrance);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(CaveRoomPlanFailureReason.RoomObstructed, result.FailureReason);
+    }
+
+    [Fact]
     public void Room_requires_an_open_horizontal_tunnel_entrance()
     {
         WorldSnapshot world = CreateWorld(horizontalTunnelY: null, verticalTunnelX: 10);
