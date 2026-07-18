@@ -91,18 +91,36 @@ namespace Dig.Unity
                     CreateScreenRect(_marqueeStart, _marqueeCurrent),
                     additive: IsAdditiveResidentSelectionPressed());
             }
-            else if (_marqueeHasStartHit
-                && _renderer!.TryGetCell(_marqueeStartHit, out DigCellVisual cell))
-            {
-                SelectCell(cell);
-            }
             else
             {
-                _hud!.SetStatus("Drag LMB to select multiple dwarfs.");
+                ApplyDeferredMarqueeClick();
             }
 
             CancelResidentMarquee();
             return true;
+        }
+
+        private void ApplyDeferredMarqueeClick()
+        {
+            if (!_marqueeHasStartHit)
+            {
+                _hud!.SetStatus("Drag LMB to select multiple dwarfs.");
+                return;
+            }
+
+            if (TryAssignSelectedResidentToExcavation(_marqueeStartHit, leftButton: true)
+                || TryApplyTunnelMove(_marqueeStartHit, leftButton: true))
+            {
+                return;
+            }
+
+            if (_renderer!.TryGetCell(_marqueeStartHit, out DigCellVisual cell))
+            {
+                SelectCell(cell);
+                return;
+            }
+
+            _hud!.SetStatus("Drag LMB to select multiple dwarfs.");
         }
 
         private bool IsMarqueeBlockingTarget(RaycastHit hit)
@@ -115,18 +133,11 @@ namespace Dig.Unity
 
         private bool CanUseResidentMarquee()
         {
-            if (_agentRenderer == null
-                || _camera == null
-                || _buildingPlacementMode.HasValue
-                || _excavationMode != DigExcavationDrawingMode.None
-                || _caveRoomPreset.HasValue)
-            {
-                return false;
-            }
-
-            return _agentRenderer.SelectedCount == 0
-                || IsAdditiveResidentSelectionPressed()
-                || _marqueePending;
+            return _agentRenderer != null
+                && _camera != null
+                && !_buildingPlacementMode.HasValue
+                && _excavationMode == DigExcavationDrawingMode.None
+                && !_caveRoomPreset.HasValue;
         }
 
         private void SelectResidentsInsideMarquee(Rect screenRect, bool additive)
