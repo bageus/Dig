@@ -9,6 +9,8 @@ namespace Dig.Unity
         private Renderer? _renderer;
         private MaterialPropertyBlock? _properties;
         private Color _baseColor;
+        private bool _selected;
+        private bool _rejected;
 
         public WorldCellViewModel Model { get; private set; }
 
@@ -16,15 +18,30 @@ namespace Dig.Unity
         {
             Model = model;
             _baseColor = baseColor;
+            _rejected = false;
             EnsureRenderState();
-            ApplyColor(_baseColor);
+            RefreshColor();
         }
 
         public void SetSelected(bool selected)
         {
-            Color color = selected
-                ? Color.Lerp(_baseColor, Color.white, 0.45f)
-                : _baseColor;
+            _selected = selected;
+            RefreshColor();
+        }
+
+        internal void SetRejected(bool rejected)
+        {
+            _rejected = rejected;
+            RefreshColor();
+        }
+
+        private void RefreshColor()
+        {
+            Color color = _rejected
+                ? Color.Lerp(_baseColor, Color.red, 0.82f)
+                : _selected
+                    ? Color.Lerp(_baseColor, Color.white, 0.45f)
+                    : _baseColor;
             ApplyColor(color);
         }
 

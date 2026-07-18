@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Dig.Application.World;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
@@ -21,6 +22,27 @@ namespace Dig.Unity
             }
 
             Result changed = WorldSession!.SetDesignation(cell, active);
+            if (changed.IsFailure)
+            {
+                return changed;
+            }
+
+            IReadOnlyList<AgentViewModel> agents = AgentSession!.LoadView();
+            TerrainSession!.SynchronizeDesignations(CurrentTick, agents, priority);
+            RefreshExcavationPresentation(agents);
+            return Result.Success();
+        }
+
+        internal Result ApplyCaveRoomPlan(CaveRoomPlan plan, int priority)
+        {
+            if (!IsInitialized())
+            {
+                return Result.Failure(new DomainError(
+                    "unity.excavation.not_initialized",
+                    "Excavation controls are not initialized."));
+            }
+
+            Result changed = WorldSession!.ApplyCaveRoomPlan(plan);
             if (changed.IsFailure)
             {
                 return changed;

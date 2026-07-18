@@ -1,3 +1,4 @@
+using Dig.Application.World;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -53,9 +54,41 @@ namespace Dig.Unity
             }
 
             GUILayout.EndHorizontal();
+            GUI.enabled = _excavationControls.CanActivateExcavationDrawing;
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Small Cave", GUILayout.Width(88f)))
+            {
+                _excavationControls.SetCaveRoomPlanningPreset(
+                    CaveRoomPresetKind.Small);
+            }
+
+            if (GUILayout.Button("Medium", GUILayout.Width(76f)))
+            {
+                _excavationControls.SetCaveRoomPlanningPreset(
+                    CaveRoomPresetKind.Medium);
+            }
+
+            if (GUILayout.Button("Large", GUILayout.Width(68f)))
+            {
+                _excavationControls.SetCaveRoomPlanningPreset(
+                    CaveRoomPresetKind.Large);
+            }
+
+            if (GUILayout.Button("Tall", GUILayout.Width(58f)))
+            {
+                _excavationControls.SetCaveRoomPlanningPreset(
+                    CaveRoomPresetKind.Tall);
+            }
+
+            GUILayout.EndHorizontal();
+            GUI.enabled = true;
             if (!_excavationControls.CanActivateExcavationDrawing)
             {
-                GUILayout.Label("Clear the dwarf selection to draw or delete tunnels.");
+                GUILayout.Label("Clear the dwarf selection to edit excavation plans.");
+            }
+            else if (_excavationControls.CaveRoomPreset.HasValue)
+            {
+                GUILayout.Label("Move over a horizontal tunnel; LMB places the room plan.");
             }
             else
             {

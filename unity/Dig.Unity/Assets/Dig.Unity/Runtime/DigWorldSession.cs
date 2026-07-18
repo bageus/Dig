@@ -9,12 +9,17 @@ using Dig.Presentation.World;
 
 namespace Dig.Unity
 {
-    internal sealed class DigWorldSession
+    internal sealed partial class DigWorldSession
     {
+        internal static readonly DomainError ProtectedRock = new DomainError(
+            "world.excavation.protected_rock",
+            "The border and first upper rock row cannot be excavated.");
+
         private readonly DesignateDiggingCommandHandler _designationHandler;
         private readonly WorldPresenter _presenter;
         private readonly InMemoryWorldRepository _repository;
         private readonly MaterialId _emptyMaterialId;
+        private readonly ExcavationBoundaryPolicy _boundaryPolicy;
         private long _tick;
 
         private DigWorldSession(
@@ -22,6 +27,7 @@ namespace Dig.Unity
             WorldPresenter presenter,
             InMemoryWorldRepository repository,
             MaterialId emptyMaterialId,
+            ExcavationBoundaryPolicy boundaryPolicy,
             InMemoryExecutionJournal journal,
             long tick)
         {
@@ -29,6 +35,7 @@ namespace Dig.Unity
             _presenter = presenter;
             _repository = repository;
             _emptyMaterialId = emptyMaterialId;
+            _boundaryPolicy = boundaryPolicy;
             Journal = journal;
             _tick = tick;
         }
@@ -38,6 +45,8 @@ namespace Dig.Unity
         internal InMemoryWorldRepository Repository => _repository;
 
         internal MaterialId EmptyMaterialId => _emptyMaterialId;
+
+        internal IReadOnlyList<CellId> ProtectedCells => _boundaryPolicy.ProtectedCells;
 
         public static DigWorldSession CreateDemo(int width, int height, int chunkSize)
         {
@@ -65,6 +74,12 @@ namespace Dig.Unity
                 rock,
                 explored: true).Value;
             TunnelNavigationVolume tunnel = TunnelNavigationVolume.CreateDemo(width, height);
+            TunnelDemoLayout layout = tunnel.DemoLayout
+                ?? throw new InvalidOperationException("The tunnel demo layout is required.");
+            ExcavationBoundaryPolicy boundaryPolicy = new ExcavationBoundaryPolicy(
+                width,
+                height,
+                topRockY: layout.SurfaceY + 1);
             CarveDemoAir(world, air, tunnel);
             world.DequeueUncommittedEvents();
 
@@ -77,6 +92,7 @@ namespace Dig.Unity
                 new WorldPresenter(new GetWorldSnapshotQueryHandler(repository)),
                 repository,
                 air,
+                boundaryPolicy,
                 journal,
                 tick: 1);
         }
@@ -96,6 +112,11 @@ namespace Dig.Unity
             return _repository.Get().DrainDirtyChunks();
         }
 
+        internal bool IsProtected(CellId cell)
+        {
+            return _boundaryPolicy.IsProtected(cell);
+        }
+
         public Result ToggleDesignation(WorldCellViewModel cell)
         {
             return SetDesignation(new CellId(cell.X, cell.Y), !cell.IsDesignated);
@@ -103,6 +124,11 @@ namespace Dig.Unity
 
         internal Result SetDesignation(CellId cell, bool active)
         {
+            if (active && _boundaryPolicy.IsProtected(cell))
+            {
+                return Result.Failure(ProtectedRock);
+            }
+
             _tick = checked(_tick + 1);
             return _designationHandler.Handle(new DesignateDiggingCommand(
                 cell,

@@ -10,25 +10,72 @@ namespace Dig.Unity
     public sealed class DigRockVolumeRenderer : MonoBehaviour
     {
         private readonly List<Mesh> _meshes = new List<Mesh>();
+        private readonly List<GameObject> _layers = new List<GameObject>();
+        private readonly HashSet<SpatialCellId> _excavatedCells =
+            new HashSet<SpatialCellId>();
         private Transform? _root;
         private Material? _material;
+        private TunnelNavigationVolume? _volume;
 
         internal void Initialize(TunnelNavigationVolume volume)
         {
-            if (volume == null)
+            _volume = volume ?? throw new ArgumentNullException(nameof(volume));
+            EnsureResources();
+            Rebuild();
+        }
+
+        internal void SetExcavatedCells(
+            IReadOnlyCollection<SpatialCellId> excavatedCells)
+        {
+            if (excavatedCells == null)
             {
-                throw new ArgumentNullException(nameof(volume));
+                throw new ArgumentNullException(nameof(excavatedCells));
             }
 
-            EnsureResources();
-            if (_root!.childCount > 0)
+            HashSet<SpatialCellId> next = new HashSet<SpatialCellId>();
+            foreach (SpatialCellId cell in excavatedCells)
+            {
+                if (cell.Z > 0)
+                {
+                    next.Add(cell);
+                }
+            }
+
+            if (_excavatedCells.SetEquals(next))
             {
                 return;
             }
 
-            for (int z = 1; z < volume.Depth; z++)
+            _excavatedCells.Clear();
+            _excavatedCells.UnionWith(next);
+            if (_volume != null)
             {
-                CreateDepthMesh(volume, z);
+                Rebuild();
+            }
+        }
+
+        private void Rebuild()
+        {
+            if (_volume == null)
+            {
+                return;
+            }
+
+            for (int index = 0; index < _layers.Count; index++)
+            {
+                Destroy(_layers[index]);
+            }
+
+            for (int index = 0; index < _meshes.Count; index++)
+            {
+                Destroy(_meshes[index]);
+            }
+
+            _layers.Clear();
+            _meshes.Clear();
+            for (int z = 1; z < _volume.Depth; z++)
+            {
+                CreateDepthMesh(_volume, z);
             }
         }
 
@@ -76,13 +123,19 @@ namespace Dig.Unity
             mesh.RecalculateBounds();
             layer.AddComponent<MeshFilter>().sharedMesh = mesh;
             layer.AddComponent<MeshRenderer>().sharedMaterial = _material;
+            _layers.Add(layer);
             _meshes.Add(mesh);
         }
 
-        private static bool IsSolidRock(
+        private bool IsSolidRock(
             TunnelNavigationVolume volume,
             SpatialCellId cell)
         {
+            if (_excavatedCells.Contains(cell))
+            {
+                return false;
+            }
+
             TunnelDemoLayout layout = volume.DemoLayout
                 ?? throw new InvalidOperationException("The tunnel demo layout is required.");
             if (cell.Y < layout.SurfaceY || volume.IsOpen(cell))

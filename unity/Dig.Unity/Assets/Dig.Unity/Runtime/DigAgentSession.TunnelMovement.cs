@@ -13,6 +13,7 @@ namespace Dig.Unity
         private readonly HashSet<EntityId> _manualTunnelOrders = new HashSet<EntityId>();
         private TunnelNavigationVolume? _tunnelVolume;
         private MoveAgentThroughTunnelCommandHandler? _tunnelMovement;
+        private InMemoryExecutionJournal? _tunnelJournal;
 
         internal TunnelNavigationVolume TunnelVolume => _tunnelVolume
             ?? throw new InvalidOperationException("Tunnel movement is not initialized.");
@@ -52,15 +53,31 @@ namespace Dig.Unity
             return _manualTunnelOrders.Remove(EntityId.Parse(residentId));
         }
 
+        internal void ExpandTunnelVolume(
+            IReadOnlyCollection<SpatialCellId> additionalOpenCells)
+        {
+            if (_tunnelVolume == null || _tunnelJournal == null)
+            {
+                throw new InvalidOperationException("Tunnel movement is not initialized.");
+            }
+
+            _tunnelVolume = _tunnelVolume.WithAdditionalOpenCells(additionalOpenCells);
+            _tunnelMovement = new MoveAgentThroughTunnelCommandHandler(
+                _repository,
+                _tunnelVolume,
+                _tunnelJournal);
+        }
+
         private void InitializeTunnelMovement(
             TunnelNavigationVolume volume,
             InMemoryExecutionJournal journal)
         {
             _tunnelVolume = volume ?? throw new ArgumentNullException(nameof(volume));
+            _tunnelJournal = journal ?? throw new ArgumentNullException(nameof(journal));
             _tunnelMovement = new MoveAgentThroughTunnelCommandHandler(
                 _repository,
                 _tunnelVolume,
-                journal ?? throw new ArgumentNullException(nameof(journal)));
+                _tunnelJournal);
         }
 
         private bool HasManualTunnelOrder(EntityId agentId)

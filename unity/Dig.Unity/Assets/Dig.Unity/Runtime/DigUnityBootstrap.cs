@@ -103,6 +103,10 @@ namespace Dig.Unity
                 GetOrAdd<DigNavigationRouteRenderer>(gameObject);
             DigTunnelDemoRenderer tunnelRenderer =
                 GetOrAdd<DigTunnelDemoRenderer>(gameObject);
+            DigCaveRoomPreviewRenderer caveRoomPreviewRenderer =
+                GetOrAdd<DigCaveRoomPreviewRenderer>(gameObject);
+            DigCaveRoomFloorRenderer caveRoomFloorRenderer =
+                GetOrAdd<DigCaveRoomFloorRenderer>(gameObject);
             GetOrAdd<DigOverlayHotkeys>(gameObject);
             DigWorldInteraction interaction = GetOrAdd<DigWorldInteraction>(gameObject);
             DigAgentSimulationDriver simulation =
@@ -125,10 +129,12 @@ namespace Dig.Unity
 
             _startupStage = "rendering world and layered tunnels";
             RenderSettings.ambientLight = new Color(0.58f, 0.60f, 0.66f, 1f);
+            worldRenderer.SetProtectedCells(worldSession.ProtectedCells);
             worldRenderer.Render(world);
             worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume);
             rockRenderer.Initialize(agentSession.TunnelVolume);
             tunnelRenderer.Initialize(agentSession.TunnelVolume);
+            caveRoomPreviewRenderer.Clear();
 
             _startupStage = "rendering residents";
             agentRenderer.Render(agents, movementDuration: 0f);
@@ -160,6 +166,10 @@ namespace Dig.Unity
                 simulation,
                 hud);
             interaction.SetTunnelMovement(tunnelRenderer);
+            interaction.SetCaveRoomRenderers(
+                caveRoomPreviewRenderer,
+                caveRoomFloorRenderer,
+                rockRenderer);
             simulation.Initialize(
                 worldSession,
                 worldRenderer,
@@ -175,7 +185,7 @@ namespace Dig.Unity
             interaction.enabled = true;
             simulation.enabled = true;
             hud.SetStatus(
-                "Clear dwarf selection, choose a tunnel mode, then LMB draw / RMB erase on Z=0.");
+                "Select a dwarf for movement, or clear selection and choose Tunnel, Delete, or a Cave preset.");
             if (logStartup)
             {
                 Debug.Log(

@@ -1,4 +1,5 @@
 using Dig.Domain.Core;
+using Dig.Domain.World;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -32,14 +33,28 @@ namespace Dig.Unity
 
         private bool TryApplyTunnelMove(RaycastHit hit, bool leftButton)
         {
-            if (!leftButton
-                || _tunnelRenderer == null
-                || !_tunnelRenderer.TryGetCell(hit, out DigTunnelCellVisual cell))
+            if (!leftButton || _tunnelRenderer == null)
             {
                 return false;
             }
 
-            _tunnelRenderer.Select(cell);
+            SpatialCellId destination;
+            if (_tunnelRenderer.TryGetCell(hit, out DigTunnelCellVisual tunnelCell))
+            {
+                destination = tunnelCell.Cell;
+                _tunnelRenderer.Select(tunnelCell);
+            }
+            else if (_renderer != null
+                && _renderer.TryGetWalkSurface(hit, out SpatialCellId walkSurface))
+            {
+                destination = walkSurface;
+                _tunnelRenderer.Select(null);
+            }
+            else
+            {
+                return false;
+            }
+
             string? residentId = _agentRenderer!.SelectedAgentId;
             if (residentId == null)
             {
@@ -49,13 +64,13 @@ namespace Dig.Unity
 
             Result result = _simulation!.MoveResidentThroughTunnel(
                 residentId,
-                cell.Cell,
+                destination,
                 _tunnelRenderer);
             _hud!.SetCommandResult(result);
             if (result.IsSuccess)
             {
                 _hud.SetStatus(
-                    $"Moving to X={cell.Cell.X}, Y={cell.Cell.Y}, Z={cell.Cell.Z}.");
+                    $"Moving to X={destination.X}, Y={destination.Y}, Z={destination.Z}.");
             }
 
             return true;

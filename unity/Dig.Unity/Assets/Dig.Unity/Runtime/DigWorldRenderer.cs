@@ -8,7 +8,7 @@ using UnityEngine;
 namespace Dig.Unity
 {
     [DisallowMultipleComponent]
-    public sealed class DigWorldRenderer : MonoBehaviour
+    public sealed partial class DigWorldRenderer : MonoBehaviour
     {
         private readonly Dictionary<Vector2Int, DigCellVisual> _cells =
             new Dictionary<Vector2Int, DigCellVisual>();
@@ -81,6 +81,7 @@ namespace Dig.Unity
                     }
 
                     ApplyCell(visual, cell, walkSurface);
+                    ApplyProtectedVisual(visual, cellKey);
                 }
             }
 
@@ -124,6 +125,24 @@ namespace Dig.Unity
                 ? null!
                 : hit.collider.GetComponent<DigCellVisual>();
             return cell != null;
+        }
+
+        internal bool TryGetWalkSurface(RaycastHit hit, out SpatialCellId cell)
+        {
+            cell = default;
+            if (!TryGetCell(hit, out DigCellVisual visual))
+            {
+                return false;
+            }
+
+            Vector2Int key = new Vector2Int(visual.Model.X, visual.Model.Y);
+            if (!_walkSurfaceCells.Contains(key))
+            {
+                return false;
+            }
+
+            cell = new SpatialCellId(visual.Model.X, visual.Model.Y, 0);
+            return true;
         }
 
         public DigCellVisual? Select(DigCellVisual? cell)

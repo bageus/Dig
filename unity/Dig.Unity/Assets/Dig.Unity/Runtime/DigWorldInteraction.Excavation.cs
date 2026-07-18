@@ -23,7 +23,9 @@ namespace Dig.Unity
         private CellId? _lastExcavationPaintCell;
         private int _excavationPriority = 750;
 
-        internal string ExcavationModeLabel => _excavationMode.ToString();
+        internal string ExcavationModeLabel => _caveRoomPreset.HasValue
+            ? $"{_caveRoomPreset.Value} Cave"
+            : _excavationMode.ToString();
         internal int ExcavationPriority => _excavationPriority;
         internal bool CanActivateExcavationDrawing =>
             _agentRenderer != null && _agentRenderer.SelectedAgentId == null;
@@ -42,6 +44,7 @@ namespace Dig.Unity
                 return;
             }
 
+            DisableCaveRoomPlanning();
             _excavationMode = mode;
             ResetExcavationStroke();
             _hud!.SetStatus(mode switch
@@ -64,6 +67,7 @@ namespace Dig.Unity
         {
             _excavationMode = DigExcavationDrawingMode.None;
             ResetExcavationStroke();
+            DisableCaveRoomPlanning();
         }
 
         private bool TryHandleExcavationStroke()
@@ -141,10 +145,7 @@ namespace Dig.Unity
                 || !_lastExcavationPaintCell.HasValue
                 || _excavationAxis == ExcavationStrokeAxis.None)
             {
-                Result single = _simulation!.ApplyExcavationDesignation(
-                    target,
-                    active,
-                    _excavationPriority);
+                Result single = ApplyExcavationCell(target, active);
                 if (single.IsSuccess)
                 {
                     _lastExcavationPaintCell = target;
@@ -159,10 +160,7 @@ namespace Dig.Unity
             while (current != target)
             {
                 current = new CellId(current.X + xStep, current.Y + yStep);
-                Result applied = _simulation!.ApplyExcavationDesignation(
-                    current,
-                    active: true,
-                    _excavationPriority);
+                Result applied = ApplyExcavationCell(current, active: true);
                 if (applied.IsFailure)
                 {
                     return applied;
@@ -172,6 +170,22 @@ namespace Dig.Unity
             }
 
             return Result.Success();
+        }
+
+        private Result ApplyExcavationCell(CellId target, bool active)
+        {
+            if (active && _session!.IsProtected(target))
+            {
+                _renderer!.HighlightRejected(target);
+                _hud!.SetStatus(
+                    "Protected rock cannot be excavated. Borders and the first upper rock row must remain intact.");
+                return Result.Failure(DigWorldSession.ProtectedRock);
+            }
+
+            return _simulation!.ApplyExcavationDesignation(
+                target,
+                active,
+                _excavationPriority);
         }
 
         private bool TryAssignSelectedResidentToExcavation(
