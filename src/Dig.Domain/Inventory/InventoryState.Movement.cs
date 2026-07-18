@@ -61,6 +61,12 @@ public sealed partial class InventoryState
             return Result.Failure(InventoryErrors.InsufficientAvailableQuantity);
         }
 
+        Result residentValidation = ValidateResidentMove(stack, destination);
+        if (residentValidation.IsFailure)
+        {
+            return residentValidation;
+        }
+
         bool partial = quantity < stack.Quantity;
         Result splitValidation = ValidateSplit(stack, quantity, splitStackId, partial);
         if (splitValidation.IsFailure)
@@ -107,6 +113,12 @@ public sealed partial class InventoryState
         EntityId splitStackId,
         long tick)
     {
+        Result residentValidation = ValidateResidentMove(stack, destination);
+        if (residentValidation.IsFailure)
+        {
+            return residentValidation;
+        }
+
         bool partial = quantity < stack.Quantity;
         Result splitValidation = ValidateSplit(stack, quantity, splitStackId, partial);
         if (splitValidation.IsFailure)
@@ -167,4 +179,5 @@ public sealed partial class InventoryState
             : Result.Success();
     }
 }
+
 }
