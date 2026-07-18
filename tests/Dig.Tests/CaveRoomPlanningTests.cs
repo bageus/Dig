@@ -114,7 +114,7 @@ public sealed class CaveRoomPlanningTests
             world,
             boundary,
             CaveRoomPresetKind.Small,
-            new CellId(1, 9));
+            new CellId(2, 9));
 
         Assert.False(result.Succeeded);
         Assert.Equal(CaveRoomPlanFailureReason.ProtectedRock, result.FailureReason);
