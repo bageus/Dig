@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable
 
+from unity_cave_room_contracts import check_cave_room_runtime_contracts
+
 RequireFragments = Callable[[Path, str, str, tuple[str, ...]], list[str]]
 RejectFragments = Callable[[Path, str, str, tuple[str, ...]], list[str]]
 
@@ -284,7 +286,12 @@ def check_excavation_contracts(
             "rockRenderer.Initialize",
             "worldRenderer.SetProtectedCells(worldSession.ProtectedCells)",
             "DigCaveRoomPreviewRenderer",
-            "SetCaveRoomPreviewRenderer",
+            "SetCaveRoomRenderers",
         ),
+    ))
+    errors.extend(check_cave_room_runtime_contracts(
+        runtime_root,
+        texts,
+        require_fragments,
     ))
     return errors
