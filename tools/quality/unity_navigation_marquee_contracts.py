@@ -119,11 +119,10 @@ def check_navigation_and_marquee_contracts(
     errors.extend(require_fragments(
         movement_input,
         texts.get(movement_input, ""),
-        "all walkable destination renderers",
+        "explicit tunnel destination renderers",
         (
             "_tunnelRenderer.TryGetCell",
             "_caveRoomFloorRenderer.TryGetCell",
-            "_renderer.TryGetWalkSurface",
         ),
     ))
     errors.extend(require_fragments(
