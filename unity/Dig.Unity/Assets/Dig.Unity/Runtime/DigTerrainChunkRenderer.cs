@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Dig.Presentation.World;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -8,18 +7,14 @@ namespace Dig.Unity
     [DisallowMultipleComponent]
     internal sealed class DigTerrainChunkRenderer : MonoBehaviour
     {
-        private readonly Dictionary<Vector2Int, DigTerrainChunkVisual> _visuals =
-            new Dictionary<Vector2Int, DigTerrainChunkVisual>();
-        private readonly Dictionary<Vector2Int, List<DigCellVisual>> _cellsByChunk =
-            new Dictionary<Vector2Int, List<DigCellVisual>>();
-        private readonly Dictionary<Transform, Vector2Int> _chunkByRoot =
-            new Dictionary<Transform, Vector2Int>();
+        private readonly Dictionary<DigTerrainChunkKey, DigTerrainChunkVisual> _visuals =
+            new Dictionary<DigTerrainChunkKey, DigTerrainChunkVisual>();
         private readonly Dictionary<DigTerrainMaterialKey, Material> _fallbackMaterials =
             new Dictionary<DigTerrainMaterialKey, Material>();
-        private readonly HashSet<Vector2Int> _visibleChunks =
-            new HashSet<Vector2Int>();
-        private readonly List<Vector2Int> _removedChunks =
-            new List<Vector2Int>();
+        private readonly HashSet<DigTerrainChunkKey> _visibleChunks =
+            new HashSet<DigTerrainChunkKey>();
+        private readonly List<DigTerrainChunkKey> _removedChunks =
+            new List<DigTerrainChunkKey>();
         private Transform? _root;
         private Shader? _fallbackShader;
 
@@ -36,133 +31,78 @@ namespace Dig.Unity
         }
 
         internal void Render(
-            IReadOnlyDictionary<Vector2Int, DigCellVisual> cells,
-            IReadOnlyDictionary<Vector2Int, Transform> chunks,
-            ISet<Vector2Int> solidCells,
-            ISet<Vector2Int> cutawayCells,
-            ISet<Vector2Int> protectedCells,
+            DigTerrainRenderSnapshot snapshot,
             DigTerrainVisualCatalog? catalog)
         {
+            if (snapshot == null)
+            {
+                throw new ArgumentNullException(nameof(snapshot));
+            }
+
             EnsureRoot();
-            PrepareChunkCells(cells, chunks);
             _visibleChunks.Clear();
             VertexCount = 0;
             TriangleCount = 0;
 
-            foreach (KeyValuePair<Vector2Int, Transform> pair in chunks)
+            for (int index = 0; index < snapshot.Chunks.Count; index++)
             {
-                Vector2Int chunk = pair.Key;
-                _visibleChunks.Add(chunk);
-                List<DigCellVisual> chunkCells = _cellsByChunk[chunk];
-                chunkCells.Sort(CompareCells);
-                ulong signature = CalculateSignature(
-                    chunkCells,
-                    solidCells,
-                    cutawayCells,
-                    protectedCells);
-                DigTerrainChunkVisual visual = GetOrCreateVisual(chunk);
-                if (visual.Signature != signature)
+                DigTerrainRenderChunk chunk = snapshot.Chunks[index];
+                _visibleChunks.Add(chunk.Key);
+                DigTerrainChunkVisual visual = GetOrCreateVisual(chunk.Key);
+                if (snapshot.IsDirty(chunk.Key)
+                    || !visual.IsInitialized
+                    || visual.Signature == ulong.MaxValue)
                 {
-                    DigTerrainChunkMeshData data = DigTerrainChunkMeshBuilder.Build(
-                        chunkCells,
-                        solidCells,
-                        cutawayCells,
-                        protectedCells);
-                    Material[] materials = ResolveMaterials(data.MaterialKeys, catalog);
-                    visual.Apply(chunk, signature, data, materials);
-                    RebuildCount++;
-                }
-
-                MeshFilter? filter = visual.GetComponent<MeshFilter>();
-                Mesh? mesh = filter == null ? null : filter.sharedMesh;
-                if (mesh != null)
-                {
-                    VertexCount += mesh.vertexCount;
-                    for (int submesh = 0; submesh < mesh.subMeshCount; submesh++)
+                    ulong signature = CalculateSignature(chunk, snapshot);
+                    if (!visual.IsInitialized || visual.Signature != signature)
                     {
-                        TriangleCount += (int)mesh.GetIndexCount(submesh) / 3;
+                        DigTerrainChunkMeshData data = DigTerrainChunkMeshBuilder.Build(
+                            chunk,
+                            snapshot);
+                        Material[] materials = ResolveMaterials(
+                            data.MaterialKeys,
+                            catalog);
+                        visual.Apply(chunk.Key, signature, data, materials);
+                        RebuildCount++;
                     }
                 }
+
+                CountVisual(visual);
             }
 
             RemoveMissingChunks();
         }
 
-        private void PrepareChunkCells(
-            IReadOnlyDictionary<Vector2Int, DigCellVisual> cells,
-            IReadOnlyDictionary<Vector2Int, Transform> chunks)
-        {
-            _chunkByRoot.Clear();
-            foreach (KeyValuePair<Vector2Int, Transform> pair in chunks)
-            {
-                _chunkByRoot[pair.Value] = pair.Key;
-                if (!_cellsByChunk.TryGetValue(pair.Key, out List<DigCellVisual>? list))
-                {
-                    list = new List<DigCellVisual>();
-                    _cellsByChunk.Add(pair.Key, list);
-                }
-
-                list.Clear();
-            }
-
-            foreach (DigCellVisual cell in cells.Values)
-            {
-                Transform? parent = cell.transform.parent;
-                if (parent != null
-                    && _chunkByRoot.TryGetValue(parent, out Vector2Int chunk))
-                {
-                    _cellsByChunk[chunk].Add(cell);
-                }
-            }
-        }
-
-        private static int CompareCells(DigCellVisual left, DigCellVisual right)
-        {
-            int y = left.Model.Y.CompareTo(right.Model.Y);
-            return y != 0 ? y : left.Model.X.CompareTo(right.Model.X);
-        }
-
         private static ulong CalculateSignature(
-            IReadOnlyList<DigCellVisual> cells,
-            ISet<Vector2Int> solidCells,
-            ISet<Vector2Int> cutawayCells,
-            ISet<Vector2Int> protectedCells)
+            DigTerrainRenderChunk chunk,
+            DigTerrainRenderSnapshot snapshot)
         {
             const ulong offset = 1469598103934665603UL;
             const ulong prime = 1099511628211UL;
             ulong hash = offset;
-            for (int index = 0; index < cells.Count; index++)
+            Mix(ref hash, (ulong)(uint)chunk.Key.X, prime);
+            Mix(ref hash, (ulong)(uint)chunk.Key.Y, prime);
+            Mix(ref hash, (ulong)(uint)chunk.Key.Z, prime);
+            Mix(ref hash, (ulong)chunk.Version, prime);
+
+            for (int index = 0; index < chunk.Cells.Count; index++)
             {
-                WorldCellViewModel cell = cells[index].Model;
-                Vector2Int key = new Vector2Int(cell.X, cell.Y);
-                Mix(ref hash, (ulong)(uint)cell.X, prime);
-                Mix(ref hash, (ulong)(uint)cell.Y, prime);
+                DigTerrainRenderCell cell = chunk.Cells[index];
+                Mix(ref hash, (ulong)(uint)cell.Key.X, prime);
+                Mix(ref hash, (ulong)(uint)cell.Key.Y, prime);
+                Mix(ref hash, (ulong)(uint)cell.Key.Z, prime);
                 Mix(ref hash, cell.IsSolid ? 1UL : 0UL, prime);
                 Mix(ref hash, cell.IsExplored ? 1UL : 0UL, prime);
                 Mix(ref hash, cell.IsDesignated ? 1UL : 0UL, prime);
                 Mix(ref hash, (ulong)(uint)cell.Hardness, prime);
-                Mix(ref hash, cutawayCells.Contains(key) ? 1UL : 0UL, prime);
-                Mix(ref hash, protectedCells.Contains(key) ? 1UL : 0UL, prime);
-                Mix(ref hash, IsRenderedSolid(
-                    cell.X - 1,
-                    cell.Y,
-                    solidCells,
-                    cutawayCells) ? 1UL : 0UL, prime);
-                Mix(ref hash, IsRenderedSolid(
-                    cell.X + 1,
-                    cell.Y,
-                    solidCells,
-                    cutawayCells) ? 1UL : 0UL, prime);
-                Mix(ref hash, IsRenderedSolid(
-                    cell.X,
-                    cell.Y - 1,
-                    solidCells,
-                    cutawayCells) ? 1UL : 0UL, prime);
-                Mix(ref hash, IsRenderedSolid(
-                    cell.X,
-                    cell.Y + 1,
-                    solidCells,
-                    cutawayCells) ? 1UL : 0UL, prime);
+                Mix(ref hash, snapshot.IsCutaway(cell.Key) ? 1UL : 0UL, prime);
+                Mix(ref hash, snapshot.IsProtected(cell.Key) ? 1UL : 0UL, prime);
+                MixNeighbour(ref hash, cell.Key.Offset(-1, 0, 0), snapshot, prime);
+                MixNeighbour(ref hash, cell.Key.Offset(1, 0, 0), snapshot, prime);
+                MixNeighbour(ref hash, cell.Key.Offset(0, -1, 0), snapshot, prime);
+                MixNeighbour(ref hash, cell.Key.Offset(0, 1, 0), snapshot, prime);
+                MixNeighbour(ref hash, cell.Key.Offset(0, 0, -1), snapshot, prime);
+                MixNeighbour(ref hash, cell.Key.Offset(0, 0, 1), snapshot, prime);
                 for (int character = 0; character < cell.MaterialId.Length; character++)
                 {
                     Mix(ref hash, cell.MaterialId[character], prime);
@@ -172,14 +112,13 @@ namespace Dig.Unity
             return hash;
         }
 
-        private static bool IsRenderedSolid(
-            int x,
-            int y,
-            ISet<Vector2Int> solidCells,
-            ISet<Vector2Int> cutawayCells)
+        private static void MixNeighbour(
+            ref ulong hash,
+            DigTerrainCellKey cell,
+            DigTerrainRenderSnapshot snapshot,
+            ulong prime)
         {
-            Vector2Int cell = new Vector2Int(x, y);
-            return solidCells.Contains(cell) && !cutawayCells.Contains(cell);
+            Mix(ref hash, snapshot.IsRenderedSolid(cell) ? 1UL : 0UL, prime);
         }
 
         private static void Mix(ref ulong hash, ulong value, ulong prime)
@@ -188,14 +127,14 @@ namespace Dig.Unity
             hash *= prime;
         }
 
-        private DigTerrainChunkVisual GetOrCreateVisual(Vector2Int chunk)
+        private DigTerrainChunkVisual GetOrCreateVisual(DigTerrainChunkKey chunk)
         {
             if (_visuals.TryGetValue(chunk, out DigTerrainChunkVisual? visual))
             {
                 return visual;
             }
 
-            GameObject target = new GameObject($"Terrain chunk {chunk.x},{chunk.y}");
+            GameObject target = new GameObject($"Terrain chunk {chunk}");
             target.transform.SetParent(_root, worldPositionStays: false);
             visual = target.AddComponent<DigTerrainChunkVisual>();
             _visuals.Add(chunk, visual);
@@ -258,6 +197,21 @@ namespace Dig.Unity
             }
         }
 
+        private void CountVisual(DigTerrainChunkVisual visual)
+        {
+            Mesh? mesh = visual.ResolveMesh();
+            if (mesh == null)
+            {
+                return;
+            }
+
+            VertexCount += mesh.vertexCount;
+            for (int submesh = 0; submesh < mesh.subMeshCount; submesh++)
+            {
+                TriangleCount += (int)mesh.GetIndexCount(submesh) / 3;
+            }
+        }
+
         private void EnsureRoot()
         {
             if (_root != null)
@@ -292,7 +246,7 @@ namespace Dig.Unity
         private void RemoveMissingChunks()
         {
             _removedChunks.Clear();
-            foreach (Vector2Int chunk in _visuals.Keys)
+            foreach (DigTerrainChunkKey chunk in _visuals.Keys)
             {
                 if (!_visibleChunks.Contains(chunk))
                 {
@@ -302,7 +256,7 @@ namespace Dig.Unity
 
             for (int index = 0; index < _removedChunks.Count; index++)
             {
-                Vector2Int chunk = _removedChunks[index];
+                DigTerrainChunkKey chunk = _removedChunks[index];
                 DigTerrainChunkVisual visual = _visuals[chunk];
                 _visuals.Remove(chunk);
                 Destroy(visual.gameObject);

@@ -46,18 +46,28 @@ def main() -> int:
         chunk_path,
         chunk,
         (
+            "DigTerrainRenderSnapshot snapshot",
+            "snapshot.IsDirty(chunk.Key)",
             "DigTerrainChunkMeshBuilder.Build(",
             "CalculateSignature(",
             "RebuildCount",
             "VertexCount",
             "TriangleCount",
-            "MeshFilter",
+            "visual.ResolveMesh()",
         ),
     ))
     errors.extend(reject(
         chunk_path,
         chunk,
-        ("MeshCollider", "BoxCollider", "AddComponent<Collider"),
+        (
+            "DigCellVisual",
+            "Vector2Int",
+            "_cellsByChunk",
+            "PrepareChunkCells",
+            "MeshCollider",
+            "BoxCollider",
+            "AddComponent<Collider",
+        ),
     ))
 
     mesh_path, mesh = read("DigTerrainChunkMeshBuilder.cs")
@@ -65,17 +75,55 @@ def main() -> int:
         mesh_path,
         mesh,
         (
-            "IsRenderedSolid",
+            "DigTerrainRenderChunk chunk",
+            "DigTerrainRenderSnapshot snapshot",
+            "DigTunnelProjection.DepthSpacing",
+            "cell.Offset(-1, 0, 0)",
+            "cell.Offset(1, 0, 0)",
+            "cell.Offset(0, -1, 0)",
+            "cell.Offset(0, 1, 0)",
+            "cell.Offset(0, 0, -1)",
+            "cell.Offset(0, 0, 1)",
             "ResolveOffset",
-            "solidCells",
-            "cutawayCells",
-            "protectedCells",
         ),
     ))
     errors.extend(reject(
         mesh_path,
         mesh,
-        ("UnityEngine.Random", "MeshCollider", "BoxCollider"),
+        ("UnityEngine.Random", "MeshCollider", "BoxCollider", "DigCellVisual"),
+    ))
+
+    snapshot_path, snapshot = read("DigTerrainRenderSnapshot.cs")
+    errors.extend(require(
+        snapshot_path,
+        snapshot,
+        (
+            "IsRenderedSolid",
+            "IsDirty",
+            "DigTerrainChunkKey",
+            "DigTerrainCellKey",
+        ),
+    ))
+
+    builder_path, builder = read("DigTerrainRenderSnapshotBuilder.cs")
+    errors.extend(require(
+        builder_path,
+        builder,
+        (
+            "CurrentAuthoritativeDepth = 1",
+            "WorldViewModel world",
+            "DigTerrainRenderCell.FromWorld(",
+            "z: 0",
+            "MarkChangedCells",
+            "MarkChunkAndNeighbours",
+            "chunk.Offset(-1, 0, 0)",
+            "chunk.Offset(1, 0, 0)",
+            "chunk.Offset(0, -1, 0)",
+            "chunk.Offset(0, 1, 0)",
+            "chunk.Offset(0, 0, -1)",
+            "chunk.Offset(0, 0, 1)",
+            "FloorDivide",
+        ),
     ))
 
     cell_path, cell = read("DigCellVisual.cs")
@@ -93,10 +141,30 @@ def main() -> int:
         adapter_path,
         adapter,
         (
+            "RefreshChunkedTerrain(WorldViewModel world)",
+            "_terrainSnapshotBuilder.Build(",
+            "EnsureTerrainChunkRenderer().Render(snapshot, terrainVisualCatalog)",
             "SetTunnelDigInteractionActive",
             "renderer.enabled = _tunnelDigInteractionActive",
             "collider.enabled = _tunnelDigInteractionActive",
-            "EnsureTerrainChunkRenderer().Render(",
+        ),
+    ))
+    errors.extend(reject(
+        adapter_path,
+        adapter,
+        (
+            "private void LateUpdate()",
+            "EnsureTerrainChunkRenderer().Render(\n                _cells",
+        ),
+    ))
+
+    world_path, world = read("DigWorldRenderer.cs")
+    errors.extend(require(
+        world_path,
+        world,
+        (
+            "RefreshChunkedTerrain(world);",
+            "RefreshChunkedTerrain();",
         ),
     ))
 

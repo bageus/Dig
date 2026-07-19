@@ -1,3 +1,4 @@
+using Dig.Presentation.World;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -10,7 +11,10 @@ namespace Dig.Unity
         [SerializeField]
         private DigTerrainVisualCatalog? terrainVisualCatalog;
 
+        private readonly DigTerrainRenderSnapshotBuilder _terrainSnapshotBuilder =
+            new DigTerrainRenderSnapshotBuilder();
         private DigTerrainChunkRenderer? _terrainChunkRenderer;
+        private WorldViewModel? _terrainWorld;
         private bool _tunnelDigInteractionActive;
 
         public void SetVisualCatalog(DigTerrainVisualCatalog? catalog)
@@ -21,6 +25,7 @@ namespace Dig.Unity
                 terrainVisualCatalog,
                 this,
                 "Terrain");
+            RefreshChunkedTerrain();
         }
 
         internal void SetTunnelDigInteractionActive(bool active)
@@ -43,21 +48,23 @@ namespace Dig.Unity
                 "Terrain");
         }
 
-        private void LateUpdate()
+        private void RefreshChunkedTerrain(WorldViewModel world)
         {
+            _terrainWorld = world;
             ApplyCellProxyState();
-            if (_cells.Count == 0 || _chunks.Count == 0)
-            {
-                return;
-            }
-
-            EnsureTerrainChunkRenderer().Render(
-                _cells,
-                _chunks,
-                _solidCells,
+            DigTerrainRenderSnapshot snapshot = _terrainSnapshotBuilder.Build(
+                world,
                 _tunnelCutaway,
-                _protectedCells,
-                terrainVisualCatalog);
+                _protectedCells);
+            EnsureTerrainChunkRenderer().Render(snapshot, terrainVisualCatalog);
+        }
+
+        private void RefreshChunkedTerrain()
+        {
+            if (_terrainWorld != null)
+            {
+                RefreshChunkedTerrain(_terrainWorld);
+            }
         }
 
         private DigTerrainChunkRenderer EnsureTerrainChunkRenderer()

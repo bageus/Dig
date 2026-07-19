@@ -24,16 +24,32 @@ Presentation read model
 
 A prefab entry must contain `DigVisualPrefabRoot`. Missing, duplicate or invalid entries are reported by catalog validation. Runtime lookup keeps the first serialized duplicate deterministically and returns the configured fallback for an invalid or unknown id.
 
-## Current integration
+## Current terrain integration
 
 `DigTerrainVisualCatalog` is loaded from `Resources/Dig/VisualCatalogs/Terrain` when it is not assigned explicitly.
 
-The terrain presentation now has two separate layers:
+The terrain presentation has three separate responsibilities:
 
-1. `DigTerrainChunkRenderer` creates visible collider-free meshes per existing world chunk.
-2. Existing per-cell primitives are hidden and retained only as bounded tunnel-dig interaction proxies.
+1. `DigTerrainRenderSnapshotBuilder` converts the latest presentation read model and current presentation-only cutaway/protected sets into an immutable snapshot.
+2. `DigTerrainChunkRenderer` consumes that snapshot and creates collider-free meshes per dirty world chunk.
+3. Existing per-cell primitives stay hidden and are retained only as bounded tunnel-dig interaction proxies.
 
-Chunk signatures include cell visual state, cutaway state, protected state and neighbouring solid exposure. A changed boundary therefore rebuilds the affected adjacent chunk on the next presentation pass. The mesh builder emits only exposed faces and uses deterministic face offsets without `UnityEngine.Random`.
+The renderer no longer walks hidden `DigCellVisual` objects in `LateUpdate`. A world refresh, cutaway change, protected-cell change or catalog change explicitly refreshes the terrain projection.
+
+### Snapshot contract
+
+`DigTerrainCellKey` and `DigTerrainChunkKey` contain `X`, `Y` and `Z`. Mesh generation and exposure checks already evaluate all six neighbours.
+
+The current `WorldViewModel` still exposes only the authoritative front layer, so `DigTerrainRenderSnapshotBuilder` publishes those cells at `Z=0` and reports `Depth=1`. It does not infer deeper materials, hardness, exploration or deposits from the front layer. The depth-ready contract is intended to accept the unified `Z=0..3` read model from #88 without changing the renderer API.
+
+Dirty chunks are derived from:
+
+- new, removed or version-changed source chunks;
+- changed cutaway cells;
+- changed protected cells;
+- a changed chunk layout.
+
+Every dirty origin also marks its four `X/Y` neighbours and the two adjacent `Z` layers. This conservative invalidation keeps exposed faces correct across chunk and layer boundaries. Chunk signatures provide a second check, so an invalidated neighbour is rebuilt only when its resulting visual state actually changed.
 
 ## Terrain interaction boundary
 
@@ -43,10 +59,11 @@ The ordinary world surface has no cell picking.
 - hidden cell proxy colliders are disabled by default;
 - `DigWorldInteraction` does not route ordinary clicks to `ContextWorldTargetKind.Ground`;
 - entering Tunnel, Delete or Depth excavation mode enables proxy colliders;
-- leaving excavation mode disables them again;
-- exact `CellId` resolution remains limited to the tunnel excavation flow.
+- cave-room planning uses the same bounded excavation proxy path;
+- leaving excavation mode disables proxies again;
+- exact `CellId` resolution remains limited to tunnel excavation flows.
 
-Objects, residents, jobs, buildings and items continue to use their own interaction components. Tunnel depth navigation continues to use the dedicated layered tunnel renderer.
+Objects, residents, jobs, buildings and items continue to use their own interaction components. Tunnel navigation continues to use the dedicated layered tunnel and completed-room floor renderers.
 
 ## Prefab contract
 
@@ -93,13 +110,13 @@ Fallbacks are presentation-only. They must never change gameplay state or infer 
 
 ## Current limitations
 
-This slice converts the current Z0 world projection to chunk meshes. The deeper authoritative `Z=0..3` rock volume remains rendered by the existing tunnel/rock presentation until the unified 3D read model and dirty-chunk feed are connected.
+The immutable snapshot currently contains only authoritative `Z=0` cells. The deeper `Z=1..3` rock volume remains rendered by the existing tunnel/rock presentation until #88 exposes material and state data for every spatial cell.
 
 Texture UV conventions, greedy meshing, production terrain materials, deposits and template cave trim remain part of #206.
 
 ## Next steps
 
-- #205: connect the unified 3D terrain snapshot and dirty-chunk diagnostics;
+- #205: feed authoritative `Z=0..3` terrain chunks into `DigTerrainRenderSnapshot` and retire duplicate deeper rock geometry;
 - #206: production terrain/deposit/template-cave assets;
 - #207–#210: typed prefab integrations for buildings, items, residents and creatures;
 - #211: unified overlay styles;
