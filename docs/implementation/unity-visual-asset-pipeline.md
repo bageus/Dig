@@ -26,9 +26,27 @@ A prefab entry must contain `DigVisualPrefabRoot`. Missing, duplicate or invalid
 
 ## Current integration
 
-The first slice integrates `DigTerrainVisualCatalog` with `DigWorldRenderer`. The renderer loads an optional catalog from `Resources/Dig/VisualCatalogs/Terrain`. Existing scenes without a catalog continue to use primitive fallback visuals and the established debug colors.
+`DigTerrainVisualCatalog` is loaded from `Resources/Dig/VisualCatalogs/Terrain` when it is not assigned explicitly.
 
-The transition adapter applies catalog materials only when a cell presentation version changes. This phase does not replace the per-cell prototype renderer. Chunked terrain and direct prefab creation are tracked separately in #205.
+The terrain presentation now has two separate layers:
+
+1. `DigTerrainChunkRenderer` creates visible collider-free meshes per existing world chunk.
+2. Existing per-cell primitives are hidden and retained only as bounded tunnel-dig interaction proxies.
+
+Chunk signatures include cell visual state, cutaway state, protected state and neighbouring solid exposure. A changed boundary therefore rebuilds the affected adjacent chunk on the next presentation pass. The mesh builder emits only exposed faces and uses deterministic face offsets without `UnityEngine.Random`.
+
+## Terrain interaction boundary
+
+The ordinary world surface has no cell picking.
+
+- chunk meshes contain no `MeshCollider` or `BoxCollider`;
+- hidden cell proxy colliders are disabled by default;
+- `DigWorldInteraction` does not route ordinary clicks to `ContextWorldTargetKind.Ground`;
+- entering Tunnel, Delete or Depth excavation mode enables proxy colliders;
+- leaving excavation mode disables them again;
+- exact `CellId` resolution remains limited to the tunnel excavation flow.
+
+Objects, residents, jobs, buildings and items continue to use their own interaction components. Tunnel depth navigation continues to use the dedicated layered tunnel renderer.
 
 ## Prefab contract
 
@@ -68,14 +86,20 @@ VFX_Excavation_Stone
 
 Fallbacks are presentation-only. They must never change gameplay state or infer missing definitions.
 
-- missing catalog: existing primitive and debug-color path;
-- unknown id: catalog fallback prefab/material/tint;
+- missing catalog: cached debug materials on chunk submeshes;
+- unknown id: catalog fallback material;
 - invalid prefab root: catalog fallback;
 - validation errors: logged during renderer startup.
 
+## Current limitations
+
+This slice converts the current Z0 world projection to chunk meshes. The deeper authoritative `Z=0..3` rock volume remains rendered by the existing tunnel/rock presentation until the unified 3D read model and dirty-chunk feed are connected.
+
+Texture UV conventions, greedy meshing, production terrain materials, deposits and template cave trim remain part of #206.
+
 ## Next steps
 
-- #205: chunked low-poly terrain mesh and cell picking;
+- #205: connect the unified 3D terrain snapshot and dirty-chunk diagnostics;
 - #206: production terrain/deposit/template-cave assets;
 - #207–#210: typed prefab integrations for buildings, items, residents and creatures;
 - #211: unified overlay styles;
