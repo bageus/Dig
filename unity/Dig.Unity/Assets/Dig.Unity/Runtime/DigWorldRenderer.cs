@@ -89,6 +89,7 @@ namespace Dig.Unity
             RemoveMissingChunks();
             RestoreSelection(selectedCoordinates);
             ApplyTunnelCutaway();
+            RefreshChunkedTerrain(world);
         }
 
         internal void SetTunnelCutaway(TunnelNavigationVolume volume)
@@ -117,6 +118,7 @@ namespace Dig.Unity
             }
 
             ApplyTunnelCutaway();
+            RefreshChunkedTerrain();
         }
 
         public bool TryGetCell(RaycastHit hit, out DigCellVisual cell)
