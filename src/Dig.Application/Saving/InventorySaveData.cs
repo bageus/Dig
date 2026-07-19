@@ -17,6 +17,10 @@ public sealed class InventorySaveData
     [DataMember(Order = 3)]
     public List<HeldItemReferenceSaveData> HeldItems { get; set; } =
         new List<HeldItemReferenceSaveData>();
+
+    [DataMember(Order = 4)]
+    public List<ResidentSlotClaimSaveData> ResidentSlotClaims { get; set; } =
+        new List<ResidentSlotClaimSaveData>();
 }
 
 [DataContract]
@@ -86,6 +90,28 @@ public sealed class HeldItemReferenceSaveData
 
     [DataMember(Order = 4)]
     public int Purpose { get; set; }
+}
+
+[DataContract]
+public sealed class ResidentSlotClaimSaveData
+{
+    [DataMember(Order = 1)]
+    public string JobId { get; set; } = string.Empty;
+
+    [DataMember(Order = 2)]
+    public string ResidentId { get; set; } = string.Empty;
+
+    [DataMember(Order = 3)]
+    public string ItemId { get; set; } = string.Empty;
+
+    [DataMember(Order = 4)]
+    public int Compartment { get; set; }
+
+    [DataMember(Order = 5)]
+    public int SlotIndex { get; set; }
+
+    [DataMember(Order = 6)]
+    public int Quantity { get; set; }
 }
 
 }
