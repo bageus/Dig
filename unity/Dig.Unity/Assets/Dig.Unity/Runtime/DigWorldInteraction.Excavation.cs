@@ -230,18 +230,19 @@ namespace Dig.Unity
                 return false;
             }
 
-            IReadOnlyList<AgentViewModel> selected = _agentRenderer.GetSelectedModels();
-            for (int index = 0; index < selected.Count; index++)
+            IReadOnlyList<AgentViewModel> selectedResidents =
+                _agentRenderer.GetSelectedModels();
+            for (int index = 0; index < selectedResidents.Count; index++)
             {
-                AgentViewModel resident = selected[index];
-                if (resident.CellZ == 0)
+                AgentViewModel selected = selectedResidents[index];
+                if (selected.CellZ == 0)
                 {
                     continue;
                 }
 
                 Result moved = _simulation!.MoveResidentThroughTunnel(
-                    resident.Id,
-                    new SpatialCellId(resident.CellX, resident.CellY, 0),
+                    selected.Id,
+                    new SpatialCellId(selected.CellX, selected.CellY, 0),
                     _tunnelRenderer!);
                 if (moved.IsFailure)
                 {
