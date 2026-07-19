@@ -143,17 +143,30 @@ def check_tunnel_and_group_contracts(
             "cell.Z * DepthSpacing",
         ),
     ))
+    tunnel_renderer = texts.get(tunnel_renderer_path, "")
     errors.extend(require_fragments(
         tunnel_renderer_path,
-        texts.get(tunnel_renderer_path, ""),
-        "XZ platforms and XY shaft rendering",
+        tunnel_renderer,
+        "XZ depth platforms with logical XY shafts",
         (
             "Walkable plane",
-            "Cave ceiling",
-            "Cave back wall",
+            "DigTunnelProjection.FloorWorldPosition",
+            "if (vertical || cell.Z == 0",
+            "Layered Tunnel Floors",
             "SetPositionAndRotation",
             "_route.useWorldSpace = true",
-            "DigTunnelProjection.CellWorldPosition",
+        ),
+    ))
+    errors.extend(reject_fragments(
+        tunnel_renderer_path,
+        tunnel_renderer,
+        "synthetic shaft and cave frame geometry",
+        (
+            '"Shaft {cell}"',
+            "Cave ceiling",
+            "Cave back wall",
+            "CreateCaveShell",
+            "_verticalMaterial",
         ),
     ))
     errors.extend(require_fragments(
@@ -192,7 +205,7 @@ def check_group_hud_contracts(
             "HudWidth = 420f",
             "CollapsedHudHeight = 34f",
             "CurrentHudHeight",
-            "_isCollapsed ? \"+\" : \"-\"",
+            '_isCollapsed ? "+" : "-"',
             "GUILayout.BeginScrollView",
             "_selectedAgentCount",
             "SELECTED RESIDENTS:",
