@@ -45,7 +45,7 @@ namespace Dig.Unity
             SpatialCellId target = result.Plan!.Target;
             _hud.SetStatus(
                 $"Tunnel depth excavated at X={target.X}, Y={target.Y}, Z={target.Z}. " +
-                "The new deepest tunnel cell is selected for the next step.");
+                "Select the new cell to continue one layer deeper; it is already highlighted.");
             return true;
         }
 
