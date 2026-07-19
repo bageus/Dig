@@ -110,8 +110,11 @@ public sealed class JobToolAssignmentTests
             ItemLocation.InAgent(FirstAgentId),
             inventory.GetStack(FirstToolStackId)!.Location);
         Assert.Equal(
-            ItemLocation.EquippedBy(FirstAgentId),
+            ItemLocation.InAgent(FirstAgentId),
             inventory.GetStack(SecondToolStackId)!.Location);
+        Assert.Equal(
+            SecondToolStackId,
+            inventory.GetHeldItem(FirstAgentId)!.Value.StackId);
         Assert.Equal(JobStatus.Claimed, harness.Jobs.Get().Get(JobId)!.Status);
     }
 
@@ -138,11 +141,14 @@ public sealed class JobToolAssignmentTests
         Assert.Equal(JobToolPreparationOutcome.Suggested, assignment.ToolPreparation);
         Assert.Equal(SecondToolStackId, assignment.ToolStackId);
         Assert.Equal(
-            ItemLocation.EquippedBy(FirstAgentId),
+            ItemLocation.InAgent(FirstAgentId),
             inventory.GetStack(FirstToolStackId)!.Location);
         Assert.Equal(
             ItemLocation.InAgent(FirstAgentId),
             inventory.GetStack(SecondToolStackId)!.Location);
+        Assert.Equal(
+            FirstToolStackId,
+            inventory.GetHeldItem(FirstAgentId)!.Value.StackId);
         Assert.Contains(
             harness.Jobs.Get().GetReservations(),
             value => value.Key == ReservationKey.ForTool(SecondToolStackId));
@@ -176,11 +182,14 @@ public sealed class JobToolAssignmentTests
         Assert.Equal(JobToolPreparationOutcome.None, assignment.ToolPreparation);
         Assert.Null(assignment.ToolStackId);
         Assert.Equal(
-            ItemLocation.EquippedBy(FirstAgentId),
+            ItemLocation.InAgent(FirstAgentId),
             inventory.GetStack(FirstToolStackId)!.Location);
         Assert.Equal(
             ItemLocation.InAgent(FirstAgentId),
             inventory.GetStack(SecondToolStackId)!.Location);
+        Assert.Equal(
+            FirstToolStackId,
+            inventory.GetHeldItem(FirstAgentId)!.Value.StackId);
     }
 
     [Fact]
@@ -343,4 +352,5 @@ public sealed class JobToolAssignmentTests
         }
     }
 }
+
 }
