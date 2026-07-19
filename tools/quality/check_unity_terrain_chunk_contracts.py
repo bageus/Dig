@@ -111,6 +111,24 @@ def main() -> int:
         ),
     ))
 
+    movement_path, movement = read("DigWorldInteraction.TunnelMovement.cs")
+    errors.extend(reject(
+        movement_path,
+        movement,
+        ("_renderer.TryGetWalkSurface", "_renderer!.TryGetWalkSurface"),
+    ))
+
+    room_path, room = read("DigWorldInteraction.CaveRooms.cs")
+    errors.extend(require(
+        room_path,
+        room,
+        (
+            "SetCaveRoomPlanningPreset",
+            "SetTunnelDigInteractionActive(active: true)",
+            "_renderer!.TryGetCell",
+        ),
+    ))
+
     drawing_path, drawing = read("DigWorldInteraction.Excavation.cs")
     errors.extend(require(
         drawing_path,
