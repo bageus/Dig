@@ -115,11 +115,10 @@ def check_runtime_regression_contracts(
     errors.extend(require_fragments(
         movement_input,
         texts.get(movement_input, ""),
-        "all tunnel destination surfaces",
+        "explicit tunnel destination surfaces",
         (
             "_tunnelRenderer.TryGetCell",
             "_caveRoomFloorRenderer.TryGetCell",
-            "_renderer.TryGetWalkSurface",
             "MoveResidentsThroughTunnel",
         ),
     ))

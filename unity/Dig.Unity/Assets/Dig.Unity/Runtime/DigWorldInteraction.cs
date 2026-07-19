@@ -54,6 +54,7 @@ namespace Dig.Unity
             _stockpileRenderer = stockpileRenderer;
             _simulation = simulation;
             _hud = hud;
+            renderer.SetTunnelDigInteractionActive(active: false);
             hud.SetBuildingPlacementControls(this);
             hud.SetExcavationControls(this);
             InitializeResidentMarquee();
@@ -198,24 +199,10 @@ namespace Dig.Unity
                 return;
             }
 
-            if (!_renderer!.TryGetCell(hit, out DigCellVisual cell))
-            {
-                ApplyDecision(_inputRouter.Route(
-                    Pointer(button),
-                    BuildState(button),
-                    new ContextPointerTarget(ContextWorldTargetKind.None)));
-                return;
-            }
-
-            ContextPointerTarget ground = new ContextPointerTarget(
-                ContextWorldTargetKind.Ground,
-                cell: new CellId(cell.Model.X, cell.Model.Y),
-                reachable: !cell.Model.IsSolid);
             ApplyDecision(_inputRouter.Route(
                 Pointer(button),
                 BuildState(button),
-                ground),
-                cell: cell);
+                new ContextPointerTarget(ContextWorldTargetKind.None)));
         }
 
         private ContextInputState BuildState(PointerButtonKind button)

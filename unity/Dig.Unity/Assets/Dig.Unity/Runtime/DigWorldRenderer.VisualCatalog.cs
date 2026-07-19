@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using Dig.Presentation.World;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -9,25 +7,26 @@ namespace Dig.Unity
         private const string TerrainCatalogResourcePath =
             "Dig/VisualCatalogs/Terrain";
 
-        private readonly Dictionary<Vector2Int, long> _catalogAppliedVersions =
-            new Dictionary<Vector2Int, long>();
-        private readonly HashSet<string> _reportedFallbackIds =
-            new HashSet<string>(System.StringComparer.Ordinal);
-        private readonly List<Vector2Int> _removedCatalogCells =
-            new List<Vector2Int>();
-
         [SerializeField]
         private DigTerrainVisualCatalog? terrainVisualCatalog;
+
+        private DigTerrainChunkRenderer? _terrainChunkRenderer;
+        private bool _tunnelDigInteractionActive;
 
         public void SetVisualCatalog(DigTerrainVisualCatalog? catalog)
         {
             terrainVisualCatalog = catalog;
-            _catalogAppliedVersions.Clear();
-            _reportedFallbackIds.Clear();
+            _terrainChunkRenderer?.Invalidate();
             DigVisualCatalogDiagnostics.LogValidation(
                 terrainVisualCatalog,
                 this,
                 "Terrain");
+        }
+
+        internal void SetTunnelDigInteractionActive(bool active)
+        {
+            _tunnelDigInteractionActive = active;
+            ApplyCellProxyState();
         }
 
         private void Awake()
@@ -46,74 +45,54 @@ namespace Dig.Unity
 
         private void LateUpdate()
         {
-            if (terrainVisualCatalog == null || _cells.Count == 0)
+            ApplyCellProxyState();
+            if (_cells.Count == 0 || _chunks.Count == 0)
             {
                 return;
             }
 
-            foreach (KeyValuePair<Vector2Int, DigCellVisual> pair in _cells)
-            {
-                WorldCellViewModel model = pair.Value.Model;
-                if (_catalogAppliedVersions.TryGetValue(
-                        pair.Key,
-                        out long appliedVersion)
-                    && appliedVersion == model.WorldVersion)
-                {
-                    continue;
-                }
-
-                DigVisualAsset asset = terrainVisualCatalog.Resolve(model.MaterialId);
-                ApplyCatalogMaterial(pair.Value, asset);
-                _catalogAppliedVersions[pair.Key] = model.WorldVersion;
-                if (asset.IsFallback && _reportedFallbackIds.Add(model.MaterialId))
-                {
-                    Debug.LogWarning(
-                        $"Terrain visual '{model.MaterialId}' uses catalog fallback.",
-                        this);
-                }
-            }
-
-            RemoveMissingCatalogState();
+            EnsureTerrainChunkRenderer().Render(
+                _cells,
+                _chunks,
+                _solidCells,
+                _tunnelCutaway,
+                _protectedCells,
+                terrainVisualCatalog);
         }
 
-        private static void ApplyCatalogMaterial(
-            DigCellVisual visual,
-            DigVisualAsset asset)
+        private DigTerrainChunkRenderer EnsureTerrainChunkRenderer()
         {
-            if (asset.Material == null)
+            if (_terrainChunkRenderer != null)
             {
-                return;
+                return _terrainChunkRenderer;
             }
 
-            DigVisualPrefabRoot? root = visual.GetComponent<DigVisualPrefabRoot>();
-            Renderer[] renderers = root == null
-                ? visual.GetComponentsInChildren<Renderer>(includeInactive: true)
-                : root.ResolveTintRenderers();
-            for (int index = 0; index < renderers.Length; index++)
+            _terrainChunkRenderer = GetComponent<DigTerrainChunkRenderer>();
+            if (_terrainChunkRenderer == null)
             {
-                renderers[index].sharedMaterial = asset.Material;
+                _terrainChunkRenderer = gameObject.AddComponent<DigTerrainChunkRenderer>();
             }
+
+            return _terrainChunkRenderer;
         }
 
-        private void RemoveMissingCatalogState()
+        private void ApplyCellProxyState()
         {
-            if (_catalogAppliedVersions.Count == _cells.Count)
+            foreach (DigCellVisual visual in _cells.Values)
             {
-                return;
-            }
-
-            _removedCatalogCells.Clear();
-            foreach (Vector2Int key in _catalogAppliedVersions.Keys)
-            {
-                if (!_cells.ContainsKey(key))
+                Renderer? renderer = visual.GetComponent<Renderer>();
+                if (renderer != null)
                 {
-                    _removedCatalogCells.Add(key);
+                    renderer.enabled = _tunnelDigInteractionActive
+                        && object.ReferenceEquals(visual, _rejectedCell);
                 }
-            }
 
-            for (int index = 0; index < _removedCatalogCells.Count; index++)
-            {
-                _catalogAppliedVersions.Remove(_removedCatalogCells[index]);
+                Collider? collider = visual.GetComponent<Collider>();
+                if (collider != null)
+                {
+                    collider.enabled = _tunnelDigInteractionActive
+                        && visual.gameObject.activeSelf;
+                }
             }
         }
     }

@@ -19,6 +19,7 @@ namespace Dig.Unity
             Model = model;
             _baseColor = baseColor;
             _rejected = false;
+            DisableInteractionCollider();
             EnsureRenderState();
             RefreshColor();
         }
@@ -33,6 +34,15 @@ namespace Dig.Unity
         {
             _rejected = rejected;
             RefreshColor();
+        }
+
+        private void DisableInteractionCollider()
+        {
+            Collider? collider = GetComponent<Collider>();
+            if (collider != null)
+            {
+                collider.enabled = false;
+            }
         }
 
         private void RefreshColor()

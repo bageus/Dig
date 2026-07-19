@@ -85,14 +85,6 @@ namespace Dig.Unity
                 return true;
             }
 
-            if (_renderer != null
-                && _renderer.TryGetWalkSurface(hit, out SpatialCellId walkSurface))
-            {
-                destination = walkSurface;
-                visual = null;
-                return true;
-            }
-
             destination = default;
             visual = null;
             return false;
