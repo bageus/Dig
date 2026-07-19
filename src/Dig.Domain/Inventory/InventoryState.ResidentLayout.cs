@@ -183,17 +183,55 @@ public sealed partial class InventoryState
 
     public double GetResidentMoveSpeedMultiplier(EntityId residentId)
     {
-        ResidentInventoryLayoutSnapshot layout = GetResidentInventoryLayout(residentId);
-        if (!layout.ActiveCargoExpansion.HasValue
-            || !layout.Slots.Any(slot =>
-                slot.Slot.Compartment == ResidentInventoryCompartment.Cargo
-                && !slot.IsEmpty))
+        ValidateResidentId(residentId);
+        ItemStackState? activeCargoStack = null;
+        InventoryExpansionDefinition? activeCargoDefinition = null;
+        bool cargoOccupied = false;
+        foreach (ItemStackState stack in _stacks.Values)
         {
-            return 1d;
+            ItemLocation location = stack.Location;
+            if (location.Kind != ItemLocationKind.AgentInventory
+                || !location.HasOwner
+                || location.OwnerId != residentId
+                || !location.HasResidentSlot)
+            {
+                continue;
+            }
+
+            if (location.ResidentCompartment == ResidentInventoryCompartment.Cargo)
+            {
+                cargoOccupied = true;
+                continue;
+            }
+
+            if (location.ResidentCompartment != ResidentInventoryCompartment.Main)
+            {
+                continue;
+            }
+
+            InventoryExpansionDefinition? expansion =
+                Catalog.Get(stack.ItemId).InventoryExpansion;
+            if (expansion?.Group != InventoryExpansionGroup.Cargo)
+            {
+                continue;
+            }
+
+            if (activeCargoDefinition is null
+                || expansion.Tier > activeCargoDefinition.Tier
+                || (expansion.Tier == activeCargoDefinition.Tier
+                    && string.Compare(
+                        stack.Id.ToString(),
+                        activeCargoStack!.Id.ToString(),
+                        StringComparison.Ordinal) < 0))
+            {
+                activeCargoStack = stack;
+                activeCargoDefinition = expansion;
+            }
         }
 
-        return layout.ActiveCargoExpansion.Value
-            .Definition.MoveSpeedMultiplierWhenOccupied;
+        return !cargoOccupied || activeCargoDefinition is null
+            ? 1d
+            : activeCargoDefinition.MoveSpeedMultiplierWhenOccupied;
     }
 }
 
