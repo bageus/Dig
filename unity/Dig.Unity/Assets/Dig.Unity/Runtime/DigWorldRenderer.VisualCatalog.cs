@@ -15,6 +15,7 @@ namespace Dig.Unity
             new DigTerrainRenderSnapshotBuilder();
         private DigTerrainChunkRenderer? _terrainChunkRenderer;
         private WorldViewModel? _terrainWorld;
+        private TerrainDepthVolumeViewModel? _terrainDepthVolume;
         private bool _tunnelDigInteractionActive;
 
         public void SetVisualCatalog(DigTerrainVisualCatalog? catalog)
@@ -54,6 +55,7 @@ namespace Dig.Unity
             ApplyCellProxyState();
             DigTerrainRenderSnapshot snapshot = _terrainSnapshotBuilder.Build(
                 world,
+                _terrainDepthVolume,
                 _tunnelCutaway,
                 _protectedCells);
             EnsureTerrainChunkRenderer().Render(snapshot, terrainVisualCatalog);
