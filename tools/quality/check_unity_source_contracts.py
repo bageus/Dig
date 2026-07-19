@@ -129,6 +129,11 @@ def check_resident_inventory_runtime_contracts(
     visual_path = RUNTIME_ROOT / "DigAgentVisual.cs"
     buildings_path = RUNTIME_ROOT / "DigTerrainWorkSession.Buildings.cs"
     session_path = RUNTIME_ROOT / "DigTerrainWorkSession.cs"
+    equipment_path = RUNTIME_ROOT / "DigResidentEquipment.cs"
+    feedback_path = RUNTIME_ROOT / "DigResidentInventory.Feedback.cs"
+    renderer_path = RUNTIME_ROOT / "DigAgentRenderer.InventoryAttachments.cs"
+    attachment_path = RUNTIME_ROOT / "DigResidentInventoryAttachmentVisual.cs"
+    hud_feedback_path = RUNTIME_ROOT / "DigGameHudCanvas.InventoryFeedback.cs"
     errors = require_fragments(
         visual_path,
         texts.get(visual_path, ""),
@@ -155,6 +160,57 @@ def check_resident_inventory_runtime_contracts(
         texts.get(session_path, ""),
         "shared resident inventory creation",
         ("CreateDemoResidentInventory(outputItemId);",),
+    ))
+    errors.extend(require_fragments(
+        equipment_path,
+        texts.get(equipment_path, ""),
+        "single authoritative equipment projection",
+        (
+            "ReferenceEquals(_buildingInventoryRepository, _inventoryRepository)",
+            "_inventoryRepository.Get().CreateSnapshot()",
+        ),
+    ))
+    errors.extend(require_fragments(
+        feedback_path,
+        texts.get(feedback_path, ""),
+        "resident expansion feedback",
+        (
+            "LoadResidentExpansionFeedback",
+            "LoadResidentInventoryAttachments",
+            "_residentInventoryAttachmentPresenter.Present(",
+        ),
+    ))
+    errors.extend(require_fragments(
+        renderer_path,
+        texts.get(renderer_path, ""),
+        "resident inventory attachments",
+        (
+            "RenderInventoryAttachments(",
+            "InventoryExpansionGroup.Cargo",
+            "InventoryExpansionGroup.Weapon",
+            "DigResidentInventoryAttachmentVisual",
+        ),
+    ))
+    errors.extend(require_fragments(
+        attachment_path,
+        texts.get(attachment_path, ""),
+        "resident attachment geometry",
+        (
+            "BuildCargo(model.Tier, material);",
+            "BuildWeapon(model.Tier, material);",
+            "model.VisualAttachmentId",
+        ),
+    ))
+    errors.extend(require_fragments(
+        hud_feedback_path,
+        texts.get(hud_feedback_path, ""),
+        "inventory tooltip and spill confirmation",
+        (
+            "SpillConfirmationSeconds",
+            "ShowInventorySlotFeedback(",
+            "ConfirmExpansionSpill(",
+            "RequiresSpillConfirmation",
+        ),
     ))
     return errors
 
