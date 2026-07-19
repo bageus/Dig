@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Callable
 
 from unity_cave_room_contracts import check_cave_room_runtime_contracts
+from unity_depth_terrain_contracts import check_depth_terrain_contracts
 
 RequireFragments = Callable[[Path, str, str, tuple[str, ...]], list[str]]
 RejectFragments = Callable[[Path, str, str, tuple[str, ...]], list[str]]
@@ -17,8 +18,6 @@ def check_excavation_contracts(
     reject_fragments: RejectFragments,
 ) -> list[str]:
     del root
-    depth_adapter_path = runtime_root / "DigWorldRenderer.DepthTerrain.cs"
-    depth_builder_path = runtime_root / "DigTerrainRenderSnapshotBuilder.Depth.cs"
     projection_path = runtime_root / "DigTunnelProjection.cs"
     tunnel_renderer_path = runtime_root / "DigTunnelDemoRenderer.cs"
     world_renderer_path = runtime_root / "DigWorldRenderer.cs"
@@ -42,27 +41,6 @@ def check_excavation_contracts(
     game_hud_path = runtime_root / "DigGameHudCanvas.Context.cs"
     bootstrap_path = runtime_root / "DigUnityBootstrap.cs"
     errors: list[str] = []
-    errors.extend(require_fragments(
-        depth_adapter_path,
-        texts.get(depth_adapter_path, ""),
-        "unified depth terrain adapter",
-        (
-            "TerrainDepthVolumePresenter",
-            "SetTerrainDepthVolume",
-            "RefreshChunkedTerrain();",
-        ),
-    ))
-    errors.extend(require_fragments(
-        depth_builder_path,
-        texts.get(depth_builder_path, ""),
-        "depth terrain chunk projection",
-        (
-            "TerrainDepthVolumeViewModel",
-            "AddDepthChunks",
-            "CalculateDepthChunkVersion",
-            "DigTerrainChunkKey",
-        ),
-    ))
     errors.extend(require_fragments(
         projection_path,
         texts.get(projection_path, ""),
@@ -131,14 +109,12 @@ def check_excavation_contracts(
     errors.extend(require_fragments(
         world_session_path,
         texts.get(world_session_path, ""),
-        "protected excavation and depth material facts",
+        "protected excavation boundary",
         (
             "partial class DigWorldSession",
             "ExcavationBoundaryPolicy",
             "topRockY: layout.SurfaceY + 1",
             "ProtectedCells => LoadAllProtectedCells()",
-            "SolidMaterialId => _solidMaterialId",
-            "SolidHardness => _solidHardness",
             "world.excavation.protected_rock",
             "_boundaryPolicy.IsProtected(cell) || IsCaveRoomProtected(cell)",
         ),
@@ -157,13 +133,10 @@ def check_excavation_contracts(
     errors.extend(require_fragments(
         room_driver_path,
         texts.get(room_driver_path, ""),
-        "completed cave room depth terrain activation",
+        "completed cave room protection activation",
         (
             "WorldSession!.SynchronizeCompletedCaveRoomProtection(completedPlans);",
             "WorldRenderer!.SetProtectedCells(WorldSession.ProtectedCells);",
-            "_terrainExcavatedVolume",
-            "RefreshTerrainDepthVolume",
-            "WorldRenderer.SetTerrainDepthVolume(",
         ),
     ))
     errors.extend(require_fragments(
@@ -227,12 +200,6 @@ def check_excavation_contracts(
             "TryHandleCaveRoomPlacement",
             "ApplyCaveRoomPlan",
         ),
-    ))
-    errors.extend(reject_fragments(
-        room_interaction_path,
-        texts.get(room_interaction_path, ""),
-        "separate cave rock renderer",
-        ("DigRockVolumeRenderer", "_caveRoomRockRenderer"),
     ))
     errors.extend(require_fragments(
         room_preview_path,
@@ -345,25 +312,21 @@ def check_excavation_contracts(
             'CreateButton("Tall Room", rooms, "▯"',
         ),
     ))
-    bootstrap = texts.get(bootstrap_path, "")
     errors.extend(require_fragments(
         bootstrap_path,
-        bootstrap,
-        "unified rock volume and room preview composition",
+        texts.get(bootstrap_path, ""),
+        "room preview composition",
         (
             "worldRenderer.SetProtectedCells(worldSession.ProtectedCells)",
-            "worldRenderer.SetTerrainDepthVolume(",
-            "worldSession.SolidMaterialId.ToString()",
-            "Array.Empty<SpatialCellId>()",
             "DigCaveRoomPreviewRenderer",
             "SetCaveRoomRenderers",
         ),
     ))
-    errors.extend(reject_fragments(
-        bootstrap_path,
-        bootstrap,
-        "separate rock volume composition",
-        ("DigRockVolumeRenderer", "rockRenderer.Initialize"),
+    errors.extend(check_depth_terrain_contracts(
+        runtime_root,
+        texts,
+        require_fragments,
+        reject_fragments,
     ))
     errors.extend(check_cave_room_runtime_contracts(
         runtime_root,
