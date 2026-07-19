@@ -110,10 +110,11 @@ def main() -> int:
         builder_path,
         builder,
         (
-            "CurrentAuthoritativeDepth = 1",
+            "TerrainDepthVolumeViewModel? depthVolume",
             "WorldViewModel world",
             "DigTerrainRenderCell.FromWorld(",
             "z: 0",
+            "AddDepthChunks(",
             "MarkChangedCells",
             "MarkChunkAndNeighbours",
             "chunk.Offset(-1, 0, 0)",
@@ -123,6 +124,36 @@ def main() -> int:
             "chunk.Offset(0, 0, -1)",
             "chunk.Offset(0, 0, 1)",
             "FloorDivide",
+        ),
+    ))
+    errors.extend(reject(
+        builder_path,
+        builder,
+        ("CurrentAuthoritativeDepth = 1",),
+    ))
+
+    depth_path, depth = read("DigTerrainRenderSnapshotBuilder.Depth.cs")
+    errors.extend(require(
+        depth_path,
+        depth,
+        (
+            "depthVolume.SolidCells",
+            "depthVolume.SolidMaterialId",
+            "depthVolume.Hardness",
+            "CalculateDepthChunkVersion",
+            "ChunkForCell(key, chunkSize)",
+        ),
+    ))
+
+    depth_adapter_path, depth_adapter = read("DigWorldRenderer.DepthTerrain.cs")
+    errors.extend(require(
+        depth_adapter_path,
+        depth_adapter,
+        (
+            "TerrainDepthVolumePresenter",
+            "SetTerrainDepthVolume",
+            "_terrainDepthPresenter.Present(",
+            "RefreshChunkedTerrain();",
         ),
     ))
 
@@ -143,6 +174,7 @@ def main() -> int:
         (
             "RefreshChunkedTerrain(WorldViewModel world)",
             "_terrainSnapshotBuilder.Build(",
+            "_terrainDepthVolume",
             "EnsureTerrainChunkRenderer().Render(snapshot, terrainVisualCatalog)",
             "SetTunnelDigInteractionActive",
             "renderer.enabled = _tunnelDigInteractionActive",
@@ -167,6 +199,12 @@ def main() -> int:
             "RefreshChunkedTerrain();",
         ),
     ))
+
+    rock_path = RUNTIME / "DigRockVolumeRenderer.cs"
+    if rock_path.exists():
+        errors.append(
+            f"{rock_path.relative_to(ROOT)}: separate rock renderer must remain removed"
+        )
 
     interaction_path, interaction = read("DigWorldInteraction.cs")
     errors.extend(reject(
