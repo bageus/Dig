@@ -116,6 +116,22 @@ public sealed class SaveGameBuilder
             });
         }
 
+        foreach (ResidentInventorySlotClaimSnapshot claim in snapshot.ResidentSlotClaims
+            .OrderBy(item => item.JobId.ToString(), StringComparer.Ordinal)
+            .ThenBy(item => item.Slot.Compartment)
+            .ThenBy(item => item.Slot.Index))
+        {
+            data.ResidentSlotClaims.Add(new ResidentSlotClaimSaveData
+            {
+                JobId = claim.JobId.ToString(),
+                ResidentId = claim.ResidentId.ToString(),
+                ItemId = claim.ItemId.ToString(),
+                Compartment = (int)claim.Slot.Compartment,
+                SlotIndex = claim.Slot.Index,
+                Quantity = claim.Quantity,
+            });
+        }
+
         return data;
     }
 
