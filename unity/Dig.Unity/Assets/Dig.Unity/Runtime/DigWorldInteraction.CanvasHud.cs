@@ -4,6 +4,7 @@ using Dig.Domain.Core;
 using Dig.Domain.World;
 using Dig.Presentation.Input;
 using Dig.Presentation.Inventory;
+using Dig.Presentation.Jobs;
 
 namespace Dig.Unity
 {
@@ -68,6 +69,26 @@ public sealed partial class DigWorldInteraction
             target);
         ApplyDecision(decision);
         ClearSelectedInventoryStack();
+    }
+
+    internal void SelectJobFromHud(string jobId)
+    {
+        JobOverlayViewModel? model = _terrainSession!.LoadJobs().FirstOrDefault(value =>
+            string.Equals(value.Id, jobId, StringComparison.Ordinal));
+        if (model == null)
+        {
+            _hud!.SetStatus("input.job.stale");
+            return;
+        }
+
+        DigJobVisual? selected = _jobRenderer!.SelectById(jobId);
+        _agentRenderer!.ClearSelection();
+        _buildingRenderer!.Select(null);
+        _selectedCell = null;
+        _renderer!.Select(null);
+        ClearSelectedInventoryStack();
+        _hud!.SetJobSelection(selected?.Model ?? model);
+        _hud.SetStatus($"Selected job: {model.Description}.");
     }
 
     internal void CancelBuildingPlacementFromHud()
