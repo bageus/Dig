@@ -190,7 +190,8 @@ public sealed partial class SaveGameLoader
         InventoryState inventory,
         JobSystem jobs)
     {
-        foreach (ItemStackSnapshot stack in inventory.CreateSnapshot().Stacks)
+        InventorySnapshot snapshot = inventory.CreateSnapshot();
+        foreach (ItemStackSnapshot stack in snapshot.Stacks)
         {
             foreach (ItemQuantityReservationSnapshot reservation in stack.Reservations)
             {
@@ -199,6 +200,25 @@ public sealed partial class SaveGameLoader
                 {
                     return Result.Failure(SaveErrors.InvalidDocument);
                 }
+            }
+        }
+
+        foreach (IGrouping<EntityId, ResidentInventorySlotClaimSnapshot> group
+            in snapshot.ResidentSlotClaims.GroupBy(claim => claim.JobId))
+        {
+            JobSnapshot? job = jobs.Get(group.Key);
+            ResidentInventorySlotClaimSnapshot[] claims = group.ToArray();
+            if (job is null
+                || job.IsTerminal
+                || job.Definition is not HaulJobDefinition hauling
+                || !job.AssignedAgentId.HasValue
+                || (job.Status != JobStatus.Claimed
+                    && job.Status != JobStatus.InProgress)
+                || claims.Any(claim => claim.ResidentId != job.AssignedAgentId.Value)
+                || claims.Any(claim => claim.ItemId != hauling.ItemId)
+                || claims.Sum(claim => claim.Quantity) != hauling.Quantity)
+            {
+                return Result.Failure(SaveErrors.InvalidDocument);
             }
         }
 
