@@ -126,6 +126,34 @@ def check_side_view_contracts(texts: dict[Path, str]) -> list[str]:
     return errors
 
 
+def check_unity_editor_compile_contracts(texts: dict[Path, str]) -> list[str]:
+    hud_canvas = RUNTIME_ROOT / "DigGameHudCanvas.cs"
+    interaction = RUNTIME_ROOT / "DigWorldInteraction.cs"
+    errors = require_fragments(
+        hud_canvas,
+        texts.get(hud_canvas, ""),
+        "Unity-compatible HUD hit testing",
+        (
+            "RectTransformUtility.RectangleContainsScreenPoint(",
+            "(Vector2)screenPoint,",
+            "null);",
+        ),
+    )
+    errors.extend(reject_fragments(
+        hud_canvas,
+        texts.get(hud_canvas, ""),
+        "unsupported RectangleContainsScreenPoint named argument",
+        ("camera: null",),
+    ))
+    errors.extend(require_fragments(
+        interaction,
+        texts.get(interaction, ""),
+        "initialized HUD nullability",
+        ("if (_hud!.ContainsScreenPoint(Input.mousePosition))",),
+    ))
+    return errors
+
+
 def check_generic_source_contracts(
     texts: dict[Path, str],
     internal_types: set[str],
@@ -191,6 +219,7 @@ def main() -> int:
         for match in INTERNAL_TYPE_DECLARATION.finditer(text)
     }
     errors: list[str] = check_side_view_contracts(texts)
+    errors.extend(check_unity_editor_compile_contracts(texts))
     errors.extend(check_resident_inventory_runtime_contracts(
         RUNTIME_ROOT,
         texts,

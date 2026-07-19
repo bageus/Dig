@@ -94,7 +94,7 @@ namespace Dig.Unity
             PointerButtonKind button = left
                 ? PointerButtonKind.Left
                 : PointerButtonKind.Right;
-            if (_hud.ContainsScreenPoint(Input.mousePosition))
+            if (_hud!.ContainsScreenPoint(Input.mousePosition))
             {
                 _inputRouter.Route(
                     new ContextPointerEvent(
