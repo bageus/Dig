@@ -135,9 +135,8 @@ namespace Dig.Unity
                     EntityId.Parse(agent.Id),
                     skillLevel: 5_000 - (index * 250),
                     distanceCost: distance,
-                    isAvailable: agent.IsAlive
-                        && agent.CellZ == 0
-                        && !IsDirectMovementControlled(agent.Id));
+                    isAvailable: IsAvailableForAutomaticWork(agent)
+                        && agent.CellZ == 0);
             }
 
             return values;
