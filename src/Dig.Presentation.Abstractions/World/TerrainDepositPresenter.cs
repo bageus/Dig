@@ -170,6 +170,7 @@ public sealed class TerrainDepositPresenter
         IReadOnlyDictionary<SpatialCellId, Projection> deposits)
     {
         if (deposits.TryGetValue(neighbour, out Projection? value)
+            && value != null
             && value.IsVisible
             && string.Equals(
                 depositId,
