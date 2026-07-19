@@ -109,6 +109,7 @@ namespace Dig.Unity
                 journal,
                 tick: 1);
             session.InitializeDemoTunnelPlan(layout);
+            session.InitializeNaturalCaveProtection(layout);
             return session;
         }
 
@@ -129,7 +130,7 @@ namespace Dig.Unity
 
         internal bool IsProtected(CellId cell)
         {
-            return _boundaryPolicy.IsProtected(cell) || IsCaveRoomProtected(cell);
+            return _boundaryPolicy.IsProtected(cell) || IsNaturalCaveProtected(cell);
         }
 
         public Result ToggleDesignation(WorldCellViewModel cell)
