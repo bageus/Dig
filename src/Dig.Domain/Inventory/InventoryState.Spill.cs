@@ -41,6 +41,14 @@ public sealed partial class InventoryState
                 tick);
         }
 
+        bool hasClaims = _residentSlotClaims.Any(claim =>
+            claim.ResidentId == stack.Location.OwnerId
+            && claim.Slot.Compartment == compartment);
+        if (hasClaims)
+        {
+            return Result.Failure(InventoryErrors.ResidentSlotClaimConflict);
+        }
+
         ItemStackState[] contents = _stacks.Values
             .Where(value => value.Location.Kind == ItemLocationKind.AgentInventory
                 && value.Location.HasOwner
