@@ -19,6 +19,7 @@ namespace Dig.Unity
 {
     internal sealed partial class DigTerrainWorkSession
     {
+        private const int DefaultExcavationPriority = 750;
         private const int OutputQuantity = 12;
         private readonly AdvanceJobHandler _advanceHandler;
         private readonly CompleteTerrainWorkCommandHandler _completionHandler;
@@ -112,7 +113,7 @@ namespace Dig.Unity
                 DigJobDefinition definition = new DigJobDefinition(
                     jobId,
                     new DigJobTarget(new Dig.Domain.World.CellId(target.X, target.Y)),
-                    priority: 800 - (index * 50),
+                    priority: DefaultExcavationPriority,
                     createdTick: 0,
                     new JobRetryPolicy(maximumRetries: 2, retryDelayTicks: 3));
                 Require(create.Handle(new CreateDigJobCommand(
@@ -237,7 +238,7 @@ namespace Dig.Unity
 
             if (_worldChanged)
             {
-                SynchronizeDesignations(tick, agents);
+                SynchronizeDesignations(tick, agents, DefaultExcavationPriority);
             }
 
             return Result.Success();

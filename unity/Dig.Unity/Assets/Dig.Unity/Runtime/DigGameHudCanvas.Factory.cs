@@ -102,14 +102,18 @@ public sealed partial class DigGameHudCanvas
         layout.childControlHeight = true;
         layout.childControlWidth = true;
         layout.childForceExpandHeight = false;
-        Text heading = CreateText(
-            "Heading",
-            section,
-            title,
-            16,
-            TextAnchor.MiddleCenter);
-        LayoutElement headingLayout = heading.gameObject.AddComponent<LayoutElement>();
-        headingLayout.preferredHeight = 24f;
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            Text heading = CreateText(
+                "Heading",
+                section,
+                title,
+                16,
+                TextAnchor.MiddleCenter);
+            LayoutElement headingLayout = heading.gameObject.AddComponent<LayoutElement>();
+            headingLayout.preferredHeight = 24f;
+        }
+
         return section;
     }
 
@@ -117,7 +121,9 @@ public sealed partial class DigGameHudCanvas
     {
         for (int index = parent.childCount - 1; index >= 0; index--)
         {
-            Destroy(parent.GetChild(index).gameObject);
+            GameObject child = parent.GetChild(index).gameObject;
+            child.SetActive(false);
+            Destroy(child);
         }
     }
 

@@ -67,6 +67,8 @@ namespace Dig.Unity
                 return;
             }
 
+            WorldSession!.SynchronizeCompletedCaveRoomProtection(completedPlans);
+            WorldRenderer!.SetProtectedCells(WorldSession.ProtectedCells);
             HashSet<SpatialCellId> excavatedVolume = new HashSet<SpatialCellId>(
                 AgentSession.TunnelDepthExcavations);
             for (int index = 0; index < completedPlans.Count; index++)

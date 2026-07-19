@@ -1,8 +1,10 @@
 using System;
+using System.Linq;
 using Dig.Application.World;
 using Dig.Domain.Core;
 using Dig.Presentation.Buildings;
 using Dig.Presentation.Inventory;
+using Dig.Presentation.Jobs;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -23,6 +25,17 @@ public sealed partial class DigGameHudCanvas
         if (building != null)
         {
             ShowBuildingFunctions(building);
+            return;
+        }
+
+        string? selectedJobId = _jobRenderer!.SelectedJobId;
+        JobOverlayViewModel? job = selectedJobId == null
+            ? null
+            : _terrainSession!.LoadJobs().FirstOrDefault(value =>
+                string.Equals(value.Id, selectedJobId, StringComparison.Ordinal));
+        if (job != null)
+        {
+            ShowJobDetails(job);
             return;
         }
 
@@ -63,9 +76,9 @@ public sealed partial class DigGameHudCanvas
 
     private void ShowExcavationPalette()
     {
+        _interaction!.EnsureDefaultExcavationDrawingMode();
         string signature = "excavation:"
-            + $"{_interaction!.ExcavationModeLabel}:"
-            + $"{_interaction.ExcavationPriority}:"
+            + $"{_interaction.ExcavationModeLabel}:"
             + $"{_interaction.CaveRoomPreset}";
         if (!ApplyContextSignature(signature))
         {
@@ -76,31 +89,67 @@ public sealed partial class DigGameHudCanvas
         RectTransform section = CreateSection(
             "Excavation",
             _bottomContent!,
-            "КОПКА",
+            string.Empty,
             preferredWidth: 1200f);
         RectTransform row = CreateHorizontalRow("Tools", section, 44f);
-        CreateButton("Off", row, "Выкл", () =>
-            _interaction.SetExcavationDrawingMode(DigExcavationDrawingMode.None));
-        CreateButton("Tunnel", row, "Тоннель", () =>
+        Button tunnel = CreateButton("Tunnel", row, "Tunnel", () =>
             _interaction.SetExcavationDrawingMode(DigExcavationDrawingMode.Tunnel));
-        CreateButton("Depth", row, "Глубина", () =>
+        Button depth = CreateButton("Depth", row, "Depth", () =>
             _interaction.SetExcavationDrawingMode(DigExcavationDrawingMode.Depth));
-        CreateButton("Delete", row, "Ластик", () =>
+        Button erase = CreateButton("Erase", row, "Erase", () =>
             _interaction.SetExcavationDrawingMode(DigExcavationDrawingMode.Delete));
-        CreateButton("Priority Down", row, "Приоритет −", () =>
-            _interaction.AdjustExcavationPriority(-50));
-        CreateButton("Priority Up", row, "Приоритет +", () =>
-            _interaction.AdjustExcavationPriority(50));
+        SetButtonActive(
+            tunnel,
+            _interaction.ExcavationDrawingMode == DigExcavationDrawingMode.Tunnel
+                && !_interaction.CaveRoomPreset.HasValue);
+        SetButtonActive(
+            depth,
+            _interaction.ExcavationDrawingMode == DigExcavationDrawingMode.Depth);
+        SetButtonActive(
+            erase,
+            _interaction.ExcavationDrawingMode == DigExcavationDrawingMode.Delete);
 
         RectTransform rooms = CreateHorizontalRow("Rooms", section, 44f);
-        CreateButton("Small Room", rooms, "Малая", () =>
+        Button small = CreateButton("Small Room", rooms, "□", () =>
             _interaction.SetCaveRoomPlanningPreset(CaveRoomPresetKind.Small));
-        CreateButton("Medium Room", rooms, "Средняя", () =>
+        Button medium = CreateButton("Medium Room", rooms, "▭", () =>
             _interaction.SetCaveRoomPlanningPreset(CaveRoomPresetKind.Medium));
-        CreateButton("Large Room", rooms, "Большая", () =>
+        Button large = CreateButton("Large Room", rooms, "▰", () =>
             _interaction.SetCaveRoomPlanningPreset(CaveRoomPresetKind.Large));
-        CreateButton("Tall Room", rooms, "Высокая", () =>
+        Button tall = CreateButton("Tall Room", rooms, "▯", () =>
             _interaction.SetCaveRoomPlanningPreset(CaveRoomPresetKind.Tall));
+        SetButtonActive(small, _interaction.CaveRoomPreset == CaveRoomPresetKind.Small);
+        SetButtonActive(medium, _interaction.CaveRoomPreset == CaveRoomPresetKind.Medium);
+        SetButtonActive(large, _interaction.CaveRoomPreset == CaveRoomPresetKind.Large);
+        SetButtonActive(tall, _interaction.CaveRoomPreset == CaveRoomPresetKind.Tall);
+    }
+
+    private void ShowJobDetails(JobOverlayViewModel job)
+    {
+        string signature = $"job:{job.Id}:{job.Status}:{job.Stage}:"
+            + $"{job.AssignedAgentId}:{job.Priority}:{job.RetryCount}";
+        if (!ApplyContextSignature(signature))
+        {
+            return;
+        }
+
+        BeginBottomLayout();
+        RectTransform section = CreateSection(
+            "Job Details",
+            _bottomContent!,
+            job.Description.ToUpperInvariant(),
+            preferredWidth: 900f);
+        string target = job.HasTarget
+            ? $" · Target {job.TargetX},{job.TargetY}"
+            : string.Empty;
+        Text details = CreateText(
+            "Details",
+            section,
+            $"{job.Status} · {job.Stage} · Priority {job.Priority}"
+                + $" · Worker {job.AssignedAgentId ?? "Unassigned"}{target}",
+            18,
+            TextAnchor.MiddleCenter);
+        details.gameObject.AddComponent<LayoutElement>().preferredHeight = 42f;
     }
 
     private void ShowBuildingFunctions(BuildingWorldViewModel building)
@@ -122,7 +171,7 @@ public sealed partial class DigGameHudCanvas
         Text details = CreateText(
             "Details",
             section,
-            $"Прочность {functions.Durability}/{functions.MaximumDurability}",
+            $"Durability {functions.Durability}/{functions.MaximumDurability}",
             18,
             TextAnchor.MiddleCenter);
         details.gameObject.AddComponent<LayoutElement>().preferredHeight = 32f;
@@ -130,7 +179,7 @@ public sealed partial class DigGameHudCanvas
         Button pack = CreateButton(
             "Pack",
             section,
-            functions.IsPacking ? "Упаковка выполняется" : "Упаковать в коробку",
+            functions.IsPacking ? "Packing in progress" : "Pack into a box",
             () => ExecutePacking(building.Id),
             preferredHeight: 44f);
         pack.interactable = action.IsEnabled;
@@ -149,11 +198,11 @@ public sealed partial class DigGameHudCanvas
         RectTransform section = CreateSection(
             "Building Placement",
             _bottomContent!,
-            "РАЗМЕЩЕНИЕ СТРОЕНИЯ",
+            "BUILDING PLACEMENT",
             preferredWidth: 900f);
         string state = _interaction.BuildingPlacementValid
-            ? "Позиция допустима — ЛКМ подтверждает"
-            : "Недопустимо: " + (_interaction.BuildingPlacementReasonCode ?? "нет клетки");
+            ? "Valid position — LMB confirms"
+            : "Invalid: " + (_interaction.BuildingPlacementReasonCode ?? "no cell");
         Text message = CreateText(
             "Placement State",
             section,
@@ -164,7 +213,7 @@ public sealed partial class DigGameHudCanvas
         CreateButton(
             "Cancel Placement",
             section,
-            "Отменить",
+            "Cancel",
             _interaction.CancelBuildingPlacementFromHud,
             preferredHeight: 42f);
     }

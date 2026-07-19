@@ -17,12 +17,20 @@ namespace Dig.Unity
             CellId entrance)
         {
             WorldSnapshot snapshot = LoadSnapshot();
+            IReadOnlyList<CaveRoomPlan> completed = GetCompletedCaveRoomPlans(snapshot);
+            if (completed.Any(plan => plan.Entrance == entrance))
+            {
+                return CaveRoomPlanResult.Failure(
+                    CaveRoomPlanFailureReason.RoomObstructed,
+                    "A completed cave room is immutable.");
+            }
+
             return _caveRoomPlanner.Plan(
                 snapshot,
                 _boundaryPolicy,
                 kind,
                 entrance,
-                GetCompletedCaveRoomPlans(snapshot));
+                completedPlans: null);
         }
 
         internal Result ApplyCaveRoomPlan(CaveRoomPlan plan)
@@ -38,6 +46,12 @@ namespace Dig.Unity
             if (alreadyPlaced)
             {
                 return Result.Success();
+            }
+
+            if (GetCompletedCaveRoomPlans(LoadSnapshot()).Any(existing =>
+                existing.Entrance == plan.Entrance))
+            {
+                return Result.Failure(ProtectedRock);
             }
 
             List<CellId> applied = new List<CellId>();

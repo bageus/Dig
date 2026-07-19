@@ -33,22 +33,22 @@ public sealed partial class DigGameHudCanvas
             return;
         }
 
-        string state = expansion.IsActive ? "активно" : "неактивно";
+        string state = expansion.IsActive ? "active" : "inactive";
         string group = expansion.Group == InventoryExpansionGroup.Cargo
-            ? "грузовых ячеек"
-            : "оружейных ячеек";
+            ? "cargo slots"
+            : "weapon slots";
         string categories = expansion.AcceptedCategories.Count == 0
             ? "—"
             : string.Join(", ", expansion.AcceptedCategories);
         string penalty = expansion.SpeedPenaltyPercent == 0
-            ? "без штрафа скорости"
-            : $"штраф скорости -{expansion.SpeedPenaltyPercent}% при заполнении";
+            ? "no speed penalty"
+            : $"-{expansion.SpeedPenaltyPercent}% speed when occupied";
         string spill = expansion.RequiresSpillConfirmation
-            ? $" · ⚠ при выбрасывании прольётся стеков: {expansion.OccupiedSlotCount}"
+            ? $" · ⚠ dropping spills {expansion.OccupiedSlotCount} stack(s)"
             : string.Empty;
         _statusText.text =
             $"{expansion.DisplayName} · T{expansion.Tier} · {state} · "
-            + $"+{expansion.AddedSlots} {group} · фильтр: {categories} · "
+            + $"+{expansion.AddedSlots} {group} · filter: {categories} · "
             + $"{penalty} · visual: {expansion.VisualAttachmentId}{spill}";
     }
 
@@ -85,9 +85,9 @@ public sealed partial class DigGameHudCanvas
         _pendingSpillStackId = expansion.StackId;
         _pendingSpillUntil = now + SpillConfirmationSeconds;
         SetStatus(
-            $"⚠ {expansion.DisplayName}: выбрасывание прольёт "
-            + $"{expansion.OccupiedSlotCount} стек(ов) из "
-            + $"{expansion.Group}. Повторите действие для подтверждения.");
+            $"⚠ {expansion.DisplayName}: dropping it spills "
+            + $"{expansion.OccupiedSlotCount} stack(s) from "
+            + $"{expansion.Group}. Repeat the action to confirm.");
         return false;
     }
 
@@ -121,12 +121,12 @@ public sealed partial class DigGameHudCanvas
     private static string BuildItemTooltip(
         ResidentInventoryLayoutSlotViewModel slot)
     {
-        string quantities = $"доступно {slot.AvailableQuantity}/{slot.Quantity}";
+        string quantities = $"available {slot.AvailableQuantity}/{slot.Quantity}";
         string reserved = slot.ReservedQuantity > 0
-            ? $" · зарезервировано {slot.ReservedQuantity}"
+            ? $" · reserved {slot.ReservedQuantity}"
             : string.Empty;
         string held = slot.HeldQuantity > 0
-            ? $" · в руках {slot.HeldQuantity}"
+            ? $" · held {slot.HeldQuantity}"
             : string.Empty;
         return $"{slot.DisplayName} · {quantities}{reserved}{held}";
     }

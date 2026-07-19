@@ -7,6 +7,7 @@ from pathlib import Path
 
 from unity_cave_room_contracts import check_cave_room_runtime_contracts
 from unity_excavation_contracts import check_excavation_contracts
+from unity_gameplay_hud_contracts import check_gameplay_hud_and_work_contracts
 from unity_group_input_contracts import (
     check_group_hud_contracts,
     check_tunnel_and_group_contracts,
@@ -220,6 +221,13 @@ def main() -> int:
     }
     errors: list[str] = check_side_view_contracts(texts)
     errors.extend(check_unity_editor_compile_contracts(texts))
+    errors.extend(check_gameplay_hud_and_work_contracts(
+        ROOT,
+        RUNTIME_ROOT,
+        texts,
+        require_fragments,
+        reject_fragments,
+    ))
     errors.extend(check_resident_inventory_runtime_contracts(
         RUNTIME_ROOT,
         texts,

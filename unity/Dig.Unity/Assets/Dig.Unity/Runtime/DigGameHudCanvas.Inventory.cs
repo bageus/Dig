@@ -17,16 +17,16 @@ public sealed partial class DigGameHudCanvas
         BuildCompartment(
             inventory,
             ResidentInventoryCompartment.Weapon,
-            "ОРУЖИЕ",
+            "WEAPON",
             preferredWidth: 360f);
         BuildCompartment(
             inventory,
             ResidentInventoryCompartment.Main,
-            "ОСНОВНОЙ · 6",
+            "MAIN · 6",
             preferredWidth: 620f);
         string cargoTitle = inventory.CargoCapacity == 0
-            ? "ГРУЗ · НЕТ РАСШИРЕНИЯ"
-            : $"ГРУЗ · {inventory.CargoCapacity}";
+            ? "CARGO · NO EXPANSION"
+            : $"CARGO · {inventory.CargoCapacity}";
         BuildCompartment(
             inventory,
             ResidentInventoryCompartment.Cargo,
@@ -35,8 +35,8 @@ public sealed partial class DigGameHudCanvas
 
         if (inventory.MoveSpeedMultiplier < 1d)
         {
-            _statusText!.text = _status +
-                $"  ·  Скорость с грузом: {inventory.MoveSpeedMultiplier:P0}";
+            _statusText!.text = _status
+                + $"  ·  Loaded speed: {inventory.MoveSpeedMultiplier:P0}";
         }
         else
         {
@@ -101,12 +101,13 @@ public sealed partial class DigGameHudCanvas
         string reservation = slot.ReservedQuantity > 0
             ? $"\nR:{slot.ReservedQuantity}"
             : string.Empty;
-        string held = slot.IsHeld ? $"\nВ руках:{slot.HeldQuantity}" : string.Empty;
+        string held = slot.IsHeld ? $"\nHeld:{slot.HeldQuantity}" : string.Empty;
         string active = slot.IsActiveExpansion ? " ★" : string.Empty;
         string warning = RequiresExpansionSpillConfirmation(slot) ? " ⚠" : string.Empty;
         string name = slot.IsEmpty
             ? $"{slot.SlotIndex + 1}\n·"
-            : $"{marker}{active}{warning}\n{ShortName(slot.DisplayName)}{quantity}{reservation}{held}";
+            : $"{marker}{active}{warning}\n{ShortName(slot.DisplayName)}"
+                + $"{quantity}{reservation}{held}";
         Text label = CreateText(
             "Slot Label",
             rect,
@@ -156,8 +157,8 @@ public sealed partial class DigGameHudCanvas
             else
             {
                 SetStatus(slot.IsHeld
-                    ? "Предмет используется и остаётся в исходном слоте."
-                    : "Зарезервированный предмет нельзя выбросить.");
+                    ? "The held item remains in its original slot."
+                    : "A reserved item cannot be dropped.");
             }
         }
         else if (altPressed)
@@ -169,8 +170,8 @@ public sealed partial class DigGameHudCanvas
             else
             {
                 SetStatus(slot.IsHeld
-                    ? "Этот предмет уже находится в руках."
-                    : "Предмет сейчас нельзя использовать.");
+                    ? "This item is already held."
+                    : "This item cannot be used now.");
             }
         }
         else if (slot.CanStartPlacement)
@@ -189,7 +190,7 @@ public sealed partial class DigGameHudCanvas
         }
         else
         {
-            SetStatus("Предмет в руках остаётся в исходном слоте.");
+            SetStatus("The held item remains in its original slot.");
         }
 
         InvalidateAll();

@@ -26,15 +26,19 @@ def check_excavation_contracts(
     movement_path = runtime_root / "DigWorldInteraction.TunnelMovement.cs"
     world_session_path = runtime_root / "DigWorldSession.cs"
     room_session_path = runtime_root / "DigWorldSession.CaveRooms.cs"
+    room_protection_path = runtime_root / "DigWorldSession.CaveRoomProtection.cs"
     interaction_path = runtime_root / "DigWorldInteraction.cs"
     drawing_path = runtime_root / "DigWorldInteraction.Excavation.cs"
+    drawing_defaults_path = runtime_root / "DigWorldInteraction.ExcavationDefaults.cs"
     room_interaction_path = runtime_root / "DigWorldInteraction.CaveRooms.cs"
     room_preview_path = runtime_root / "DigCaveRoomPreviewRenderer.cs"
     designations_path = runtime_root / "DigTerrainWorkDesignations.cs"
     manual_path = runtime_root / "DigTerrainWorkManualExcavation.cs"
     driver_path = runtime_root / "DigAgentSimulationDriverBase.Excavation.cs"
+    room_driver_path = runtime_root / "DigAgentSimulationDriverBase.CaveRooms.cs"
     session_path = runtime_root / "DigAgentSession.TunnelMovement.cs"
     hud_path = runtime_root / "DigHudOverlay.Excavation.cs"
+    game_hud_path = runtime_root / "DigGameHudCanvas.Context.cs"
     bootstrap_path = runtime_root / "DigUnityBootstrap.cs"
     errors: list[str] = []
     errors.extend(require_fragments(
@@ -123,9 +127,29 @@ def check_excavation_contracts(
             "partial class DigWorldSession",
             "ExcavationBoundaryPolicy",
             "topRockY: layout.SurfaceY + 1",
-            "ProtectedCells",
+            "ProtectedCells => LoadAllProtectedCells()",
             "world.excavation.protected_rock",
-            "_boundaryPolicy.IsProtected(cell)",
+            "_boundaryPolicy.IsProtected(cell) || IsCaveRoomProtected(cell)",
+        ),
+    ))
+    errors.extend(require_fragments(
+        room_protection_path,
+        texts.get(room_protection_path, ""),
+        "completed cave room shell protection",
+        (
+            "CaveRoomShellProtectionPolicy",
+            "SynchronizeCompletedCaveRoomProtection",
+            "_caveRoomProtectedCells",
+            "LoadAllProtectedCells",
+        ),
+    ))
+    errors.extend(require_fragments(
+        room_driver_path,
+        texts.get(room_driver_path, ""),
+        "completed cave room protection activation",
+        (
+            "WorldSession!.SynchronizeCompletedCaveRoomProtection(completedPlans);",
+            "WorldRenderer!.SetProtectedCells(WorldSession.ProtectedCells);",
         ),
     ))
     errors.extend(require_fragments(
@@ -156,6 +180,16 @@ def check_excavation_contracts(
             "_session!.IsProtected(target)",
             "_renderer!.HighlightRejected(target)",
             "DisableCaveRoomPlanning",
+        ),
+    ))
+    errors.extend(require_fragments(
+        drawing_defaults_path,
+        texts.get(drawing_defaults_path, ""),
+        "base tunnel palette",
+        (
+            "EnsureDefaultExcavationDrawingMode",
+            "DigExcavationDrawingMode.Tunnel",
+            "CanSelectExcavationCells",
         ),
     ))
     errors.extend(reject_fragments(
@@ -258,25 +292,37 @@ def check_excavation_contracts(
     errors.extend(require_fragments(
         hud_path,
         texts.get(hud_path, ""),
-        "excavation and cave room HUD controls",
+        "base excavation HUD controls",
         (
-            "Tunnel",
-            "Delete",
-            "Small Cave",
-            "CaveRoomPresetKind.Medium",
-            "CaveRoomPresetKind.Large",
-            "CaveRoomPresetKind.Tall",
-            "P-",
-            "P+",
+            "EnsureDefaultExcavationDrawingMode",
+            'GUILayout.Button("Tunnel"',
+            'GUILayout.Button("Depth"',
+            'GUILayout.Button("Delete"',
+            'GUILayout.Button("□"',
+            'GUILayout.Button("▭"',
+            'GUILayout.Button("▰"',
+            'GUILayout.Button("▯"',
         ),
     ))
     errors.extend(reject_fragments(
         hud_path,
         texts.get(hud_path, ""),
-        "separate axis buttons",
+        "removed excavation HUD controls",
         (
-            'GUILayout.Button("Horizontal"',
-            'GUILayout.Button("Vertical"',
+            'GUILayout.Button("Off"',
+            'GUILayout.Button("P-"',
+            'GUILayout.Button("P+"',
+        ),
+    ))
+    errors.extend(require_fragments(
+        game_hud_path,
+        texts.get(game_hud_path, ""),
+        "icon room palette",
+        (
+            'CreateButton("Small Room", rooms, "□"',
+            'CreateButton("Medium Room", rooms, "▭"',
+            'CreateButton("Large Room", rooms, "▰"',
+            'CreateButton("Tall Room", rooms, "▯"',
         ),
     ))
     errors.extend(require_fragments(
