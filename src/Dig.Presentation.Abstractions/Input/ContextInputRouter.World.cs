@@ -178,14 +178,6 @@ public sealed partial class ContextInputRouter
                 targetCell: target.Cell);
         }
 
-        if (target.Kind == ContextWorldTargetKind.Ground && target.Cell.HasValue)
-        {
-            return Local(
-                PresentationInputEffect.SelectGround,
-                consumesPointer: true,
-                targetCell: target.Cell);
-        }
-
         return None();
     }
 
@@ -211,4 +203,5 @@ public sealed partial class ContextInputRouter
             target.Cell);
     }
 }
+
 }
