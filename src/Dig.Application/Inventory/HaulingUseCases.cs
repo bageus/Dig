@@ -237,14 +237,16 @@ public sealed class CompleteHaulingJobHandler
         }
 
         if (snapshot.Status != JobStatus.InProgress
-            || snapshot.Stage != JobStageKind.DepositItem)
+            || snapshot.Stage != JobStageKind.DepositItem
+            || !snapshot.AssignedAgentId.HasValue)
         {
             return Result.Failure(HaulingErrors.InvalidStage);
         }
 
-        Result moved = inventory.MoveReserved(
-            hauling.SourceStackId,
+        Result moved = inventory.DepositReservedResidentItems(
             command.JobId,
+            snapshot.AssignedAgentId.Value,
+            hauling.ItemId,
             hauling.Quantity,
             ItemLocation.InStorage(hauling.DestinationStorageId),
             command.SplitStackId,
