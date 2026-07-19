@@ -251,6 +251,21 @@ public sealed class CompleteHaulingJobHandler
             ItemLocation.InStorage(hauling.DestinationStorageId),
             command.SplitStackId,
             command.Tick);
+        if (moved.IsFailure && moved.Error == InventoryErrors.ReservationNotFound)
+        {
+            Result legacyMove = inventory.MoveReserved(
+                hauling.SourceStackId,
+                command.JobId,
+                hauling.Quantity,
+                ItemLocation.InStorage(hauling.DestinationStorageId),
+                command.SplitStackId,
+                command.Tick);
+            if (legacyMove.IsSuccess)
+            {
+                moved = legacyMove;
+            }
+        }
+
         if (moved.IsFailure)
         {
             return moved;
