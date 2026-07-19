@@ -102,13 +102,9 @@ public sealed class HaulingResidentSlotClaimService
 
         InventoryState inventory = _inventoryRepository.Get();
         EntityId[] staleJobs = inventory.GetResidentSlotClaims()
-            .Select(claim => claim.JobId)
-            .Distinct()
-            .Where(jobId =>
-            {
-                JobSnapshot? job = jobs.Get(jobId);
-                return job is null || job.IsTerminal;
-            })
+            .GroupBy(claim => claim.JobId)
+            .Where(group => IsStale(jobs.Get(group.Key), group.ToArray()))
+            .Select(group => group.Key)
             .OrderBy(jobId => jobId.ToString(), StringComparer.Ordinal)
             .ToArray();
         int released = 0;
@@ -124,6 +120,25 @@ public sealed class HaulingResidentSlotClaimService
         }
 
         return released;
+    }
+
+    private static bool IsStale(
+        JobSnapshot? job,
+        ResidentInventorySlotClaimSnapshot[] claims)
+    {
+        if (job is null
+            || job.IsTerminal
+            || job.Definition is not HaulJobDefinition hauling
+            || !job.AssignedAgentId.HasValue
+            || (job.Status != JobStatus.Claimed && job.Status != JobStatus.InProgress))
+        {
+            return true;
+        }
+
+        EntityId residentId = job.AssignedAgentId.Value;
+        return claims.Any(claim => claim.ResidentId != residentId
+                || claim.ItemId != hauling.ItemId)
+            || claims.Sum(claim => claim.Quantity) != hauling.Quantity;
     }
 
     private void Save(InventoryState inventory)
