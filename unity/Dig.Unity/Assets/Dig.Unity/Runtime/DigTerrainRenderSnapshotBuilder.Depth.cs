@@ -85,7 +85,7 @@ namespace Dig.Unity
                 }
             }
 
-            return unchecked((long)(hash & long.MaxValue));
+            return unchecked((long)(hash & (ulong)long.MaxValue));
         }
 
         private static long CombineVersion(long worldVersion, long depthVersion)
@@ -94,7 +94,7 @@ namespace Dig.Unity
             {
                 ulong mixed = (ulong)worldVersion * 1099511628211UL;
                 mixed ^= (ulong)depthVersion;
-                return (long)(mixed & long.MaxValue);
+                return (long)(mixed & (ulong)long.MaxValue);
             }
         }
 
