@@ -123,7 +123,7 @@ public sealed class TerrainDepthVolumePresenter
             Mix(ref hash, (ulong)(uint)cell.Z, prime);
         }
 
-        return unchecked((long)(hash & long.MaxValue));
+        return unchecked((long)(hash & (ulong)long.MaxValue));
     }
 
     private static void Mix(ref ulong hash, ulong value, ulong prime)
