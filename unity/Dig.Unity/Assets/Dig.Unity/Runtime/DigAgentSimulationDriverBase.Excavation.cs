@@ -78,8 +78,9 @@ namespace Dig.Unity
 
             for (int index = 0; index < residentIds.Count; index++)
             {
-                AgentSession!.ReleaseManualTunnelOrder(residentIds[index]);
-                TerrainSession!.ReleaseDirectMovementControl(residentIds[index]);
+                string residentId = residentIds[index];
+                AgentSession!.ReleaseManualTunnelOrder(residentId);
+                TerrainSession!.ReleaseDirectMovementControl(residentId);
             }
 
             Result result = TerrainSession!.AssignExcavationClusterToResidents(
