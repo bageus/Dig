@@ -186,7 +186,7 @@ namespace Dig.Unity
                 || job.Stage == JobStageKind.AcquireItem
                 || job.Stage == JobStageKind.TravelToDestination)
             {
-                return _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick));
+                return AdvanceHaulingTransitAtTarget(job, tick);
             }
 
             if (job.Stage != JobStageKind.DepositItem)
