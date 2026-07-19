@@ -1,3 +1,4 @@
+using System.Linq;
 using Dig.Application.Inventory;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -18,7 +19,7 @@ public sealed class ResidentEquipmentTests
     private static readonly EntityId SecondStackId = Id(3);
 
     [Fact]
-    public void Use_rejects_second_tool_when_equipped_slot_is_occupied()
+    public void Use_rejects_second_tool_when_held_reference_is_occupied()
     {
         InventoryState inventory = CreateInventory();
         Assert.True(inventory.AddStack(
@@ -50,14 +51,15 @@ public sealed class ResidentEquipmentTests
 
         Assert.True(first.IsSuccess, first.Error?.ToString());
         Assert.Equal(InventoryErrors.ToolSlotOccupied, second.Error);
-        Assert.Equal(ItemLocation.EquippedBy(ResidentId),
+        Assert.Equal(ItemLocation.InAgent(ResidentId),
             inventory.GetStack(FirstStackId)!.Location);
         Assert.Equal(ItemLocation.InAgent(ResidentId),
             inventory.GetStack(SecondStackId)!.Location);
+        Assert.Equal(FirstStackId, inventory.GetHeldItem(ResidentId)!.Value.StackId);
     }
 
     [Fact]
-    public void Equipped_tool_is_presented_and_can_be_dropped_without_duplication()
+    public void Held_tool_is_presented_once_and_cannot_drop_until_released()
     {
         InventoryState inventory = CreateInventory();
         Assert.True(inventory.AddStack(
@@ -76,25 +78,38 @@ public sealed class ResidentEquipmentTests
             FirstStackId,
             tick: 1)).IsSuccess);
 
-        ResidentInventorySlotViewModel slot = new ResidentInventoryPresenter(
-            BoxItemId,
-            inventory.Catalog).Present(
-                inventory.CreateSnapshot(),
-                ResidentId).Slots[0];
+        ResidentInventorySlotViewModel slot = Assert.Single(
+            new ResidentInventoryPresenter(
+                BoxItemId,
+                inventory.Catalog).Present(
+                    inventory.CreateSnapshot(),
+                    ResidentId).Slots,
+            value => value.StackId == FirstStackId.ToString());
 
         Assert.True(slot.IsEquipped);
         Assert.True(slot.IsTool);
         Assert.False(slot.CanUse);
-        Assert.True(slot.CanDrop);
+        Assert.False(slot.CanDrop);
+        Assert.Equal(1, slot.HeldQuantity);
 
         CellId destination = new CellId(4, 5);
-        Result dropped = new DropResidentInventoryStackHandler(
+        Result blocked = new DropResidentInventoryStackHandler(
             repository,
             journal).Handle(new DropResidentInventoryStackCommand(
                 ResidentId,
                 FirstStackId,
                 destination,
                 tick: 2));
+        Assert.Equal(ResidentInventoryActionErrors.StackReserved, blocked.Error);
+        Assert.True(inventory.ReleaseHeldItem(ResidentId, tick: 3).IsSuccess);
+
+        Result dropped = new DropResidentInventoryStackHandler(
+            repository,
+            journal).Handle(new DropResidentInventoryStackCommand(
+                ResidentId,
+                FirstStackId,
+                destination,
+                tick: 4));
 
         Assert.True(dropped.IsSuccess, dropped.Error?.ToString());
         Assert.Equal(ItemLocation.InWorld(destination),
