@@ -25,6 +25,13 @@ public sealed class CaveRoomPlanner
             throw new ArgumentNullException(nameof(boundary));
         }
 
+        if (completedPlans?.Any(plan => plan.Entrance == entrance) == true)
+        {
+            return CaveRoomPlanResult.Failure(
+                CaveRoomPlanFailureReason.RoomObstructed,
+                "A completed cave room is immutable.");
+        }
+
         Dictionary<CellId, CellSnapshot> cells = world.Chunks
             .SelectMany(chunk => chunk.Cells)
             .ToDictionary(cell => cell.Id);
