@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable
 
+from unity_runtime_diagnostics import dump_runtime_references
+
 RequireFragments = Callable[[Path, str, str, tuple[str, ...]], list[str]]
 
 
@@ -11,6 +13,7 @@ def check_navigation_and_marquee_contracts(
     texts: dict[Path, str],
     require_fragments: RequireFragments,
 ) -> list[str]:
+    dump_runtime_references(runtime_root.parents[5], texts)
     interaction = runtime_root / "DigWorldInteraction.cs"
     marquee = runtime_root / "DigWorldInteraction.MarqueeSelection.cs"
     marquee_renderer = runtime_root / "DigSelectionMarqueeRenderer.cs"

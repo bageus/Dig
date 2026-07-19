@@ -30,6 +30,13 @@ namespace Dig.Unity
             if (result.Succeeded)
             {
                 tunnelRenderer.Initialize(AgentSession.TunnelVolume);
+                tunnelRenderer.SetDepthExcavationSources(
+                    AgentSession.TunnelDepthExcavations);
+                SpatialCellId target = result.Plan!.Target;
+                if (tunnelRenderer.TryGetCell(target, out DigTunnelCellVisual visual))
+                {
+                    tunnelRenderer.Select(visual);
+                }
             }
 
             return result;

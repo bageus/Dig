@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using Dig.Application.Jobs;
 using Dig.Domain.Core;
 using Dig.Domain.World;
+using Dig.Presentation.Agents;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -202,10 +204,13 @@ namespace Dig.Unity
             bool vertical = active && _excavationAxis == ExcavationStrokeAxis.Vertical;
             if (vertical && _excavationAnchor.HasValue)
             {
-                _session!.SetVerticalTunnelPlan(_excavationAnchor.Value, active: true);
+                _session!.SetTunnelPlan(
+                    _excavationAnchor.Value,
+                    active: true,
+                    vertical: true);
             }
 
-            _session!.SetVerticalTunnelPlan(target, vertical);
+            _session!.SetTunnelPlan(target, active, vertical);
             return Result.Success();
         }
 
@@ -213,24 +218,30 @@ namespace Dig.Unity
             RaycastHit hit,
             bool leftButton)
         {
-            string? residentId = _agentRenderer!.SelectedAgentId;
-            if (!leftButton || residentId == null)
+            IReadOnlyList<string> residentIds = _agentRenderer!.SelectedAgentIds;
+            if (!leftButton || residentIds.Count == 0)
             {
                 return false;
             }
 
-            CellId? target = ResolveExcavationTarget(hit);
-            if (!target.HasValue)
+            DigSelectedResidentTarget target = ResolveSelectedResidentTarget();
+            if (target.Kind != DigSelectedResidentTargetKind.Excavation)
             {
                 return false;
             }
 
-            var selected = _agentRenderer.SelectedModel!;
-            if (selected.CellZ != 0)
+            IReadOnlyList<AgentViewModel> selected = _agentRenderer.GetSelectedModels();
+            for (int index = 0; index < selected.Count; index++)
             {
+                AgentViewModel resident = selected[index];
+                if (resident.CellZ == 0)
+                {
+                    continue;
+                }
+
                 Result moved = _simulation!.MoveResidentThroughTunnel(
-                    residentId,
-                    new SpatialCellId(selected.CellX, selected.CellY, 0),
+                    resident.Id,
+                    new SpatialCellId(resident.CellX, resident.CellY, 0),
                     _tunnelRenderer!);
                 if (moved.IsFailure)
                 {
@@ -239,12 +250,14 @@ namespace Dig.Unity
                 }
             }
 
-            Result result = _simulation!.AssignExcavationCluster(target.Value, residentId);
+            Result result = _simulation!.AssignExcavationCluster(
+                target.ExcavationCell,
+                residentIds);
             _hud!.SetCommandResult(result);
             if (result.IsSuccess)
             {
                 _hud.SetStatus(
-                    "Selected dwarf assigned to connected excavation cells within radius 4.");
+                    $"{residentIds.Count} selected dwarf(s) assigned across connected excavation cells within radius 4.");
             }
 
             return true;

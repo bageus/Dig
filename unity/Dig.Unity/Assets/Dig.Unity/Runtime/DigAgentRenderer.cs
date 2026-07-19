@@ -9,7 +9,7 @@ using UnityEngine;
 namespace Dig.Unity
 {
     [DisallowMultipleComponent]
-    public sealed class DigAgentRenderer : MonoBehaviour
+    public sealed partial class DigAgentRenderer : MonoBehaviour
     {
         private readonly Dictionary<string, DigAgentVisual> _agents =
             new Dictionary<string, DigAgentVisual>();

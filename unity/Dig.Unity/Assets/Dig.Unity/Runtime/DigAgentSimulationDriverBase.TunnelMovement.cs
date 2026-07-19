@@ -23,11 +23,12 @@ namespace Dig.Unity
             }
 
             SynchronizeExcavatedTunnelNavigation();
-            MoveAgentThroughTunnelReport report =
-                AgentSession.MoveResidentThroughTunnel(residentId, destination);
-            if (report.Result.IsFailure)
+            Result validation = AgentSession.ValidateResidentThroughTunnel(
+                residentId,
+                destination);
+            if (validation.IsFailure)
             {
-                return report.Result;
+                return validation;
             }
 
             Result interrupted = TerrainSession.InterruptForDirectMovement(
@@ -36,6 +37,13 @@ namespace Dig.Unity
             if (interrupted.IsFailure)
             {
                 return interrupted;
+            }
+
+            MoveAgentThroughTunnelReport report =
+                AgentSession.MoveResidentThroughTunnel(residentId, destination);
+            if (report.Result.IsFailure)
+            {
+                return report.Result;
             }
 
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
@@ -81,11 +89,12 @@ namespace Dig.Unity
             }
 
             SynchronizeExcavatedTunnelNavigation();
-            MoveAgentsThroughTunnelReport report =
-                AgentSession.MoveResidentsThroughTunnel(residentIds, destination);
-            if (report.Result.IsFailure)
+            Result validation = AgentSession.ValidateResidentsThroughTunnel(
+                residentIds,
+                destination);
+            if (validation.IsFailure)
             {
-                return report.Result;
+                return validation;
             }
 
             Result interrupted = TerrainSession.InterruptForDirectMovement(
@@ -94,6 +103,13 @@ namespace Dig.Unity
             if (interrupted.IsFailure)
             {
                 return interrupted;
+            }
+
+            MoveAgentsThroughTunnelReport report =
+                AgentSession.MoveResidentsThroughTunnel(residentIds, destination);
+            if (report.Result.IsFailure)
+            {
+                return report.Result;
             }
 
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();

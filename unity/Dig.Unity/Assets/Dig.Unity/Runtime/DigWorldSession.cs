@@ -87,7 +87,7 @@ namespace Dig.Unity
             InMemoryExecutionJournal journal = new InMemoryExecutionJournal(
                 maximumCommands: 100,
                 maximumEvents: 500);
-            return new DigWorldSession(
+            DigWorldSession session = new DigWorldSession(
                 new DesignateDiggingCommandHandler(repository, journal),
                 new WorldPresenter(new GetWorldSnapshotQueryHandler(repository)),
                 repository,
@@ -95,6 +95,8 @@ namespace Dig.Unity
                 boundaryPolicy,
                 journal,
                 tick: 1);
+            session.InitializeDemoTunnelPlan(layout);
+            return session;
         }
 
         public WorldViewModel LoadView()
