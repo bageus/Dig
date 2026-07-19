@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Dig.Application.Inventory;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -41,14 +40,8 @@ internal sealed partial class DigTerrainWorkSession
     {
         EnsureResidentInventoryPresentation();
         EntityId id = ParseResidentId(residentId);
-        ResidentInventoryViewModel building = _residentBuildingInventoryPresenter!.Present(
-            _buildingInventoryRepository!.Get().CreateSnapshot(), id);
-        ResidentInventoryViewModel terrain = _residentTerrainInventoryPresenter!.Present(
-            _inventoryRepository.Get().CreateSnapshot(), id);
-        return new ResidentInventoryViewModel(
-            id.ToString(),
-            checked(building.InventoryVersion + terrain.InventoryVersion),
-            building.Slots.Concat(terrain.Slots).ToArray());
+        InventorySnapshot snapshot = _inventoryRepository.Get().CreateSnapshot();
+        return _residentTerrainInventoryPresenter!.Present(snapshot, id);
     }
 
     internal ResidentInventoryLayoutViewModel LoadResidentInventoryLayout(
@@ -56,7 +49,7 @@ internal sealed partial class DigTerrainWorkSession
     {
         EnsureResidentInventoryPresentation();
         EntityId id = ParseResidentId(residentId);
-        InventoryState inventory = _buildingInventoryRepository!.Get();
+        InventoryState inventory = _inventoryRepository.Get();
         Result normalized = inventory.NormalizeResidentInventory(id, tick: 0);
         if (normalized.IsFailure)
         {
@@ -65,7 +58,7 @@ internal sealed partial class DigTerrainWorkSession
 
         if (normalized.IsSuccess)
         {
-            _buildingInventoryRepository.Save(inventory);
+            _inventoryRepository.Save(inventory);
         }
 
         return _residentInventoryLayoutPresenter!.Present(inventory, id);
