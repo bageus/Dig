@@ -123,6 +123,42 @@ def check_side_view_contracts(texts: dict[Path, str]) -> list[str]:
     return errors
 
 
+def check_resident_inventory_runtime_contracts(
+    texts: dict[Path, str],
+) -> list[str]:
+    visual_path = RUNTIME_ROOT / "DigAgentVisual.cs"
+    buildings_path = RUNTIME_ROOT / "DigTerrainWorkSession.Buildings.cs"
+    session_path = RUNTIME_ROOT / "DigTerrainWorkSession.cs"
+    errors = require_fragments(
+        visual_path,
+        texts.get(visual_path, ""),
+        "resident equipment visual",
+        (
+            "_equipmentVisual.Configure(",
+            "equipment.ItemId,",
+            "EquipmentAppearanceKind.Generic,",
+            "equipmentMaterial);",
+        ),
+    )
+    errors.extend(require_fragments(
+        buildings_path,
+        texts.get(buildings_path, ""),
+        "shared resident inventory",
+        (
+            "_buildingInventoryRepository = _inventoryRepository;",
+            "ResidentInventoryExpansionContent.BasketItemId",
+            "ResidentInventoryExpansionContent.WeaponHarnessItemId",
+        ),
+    ))
+    errors.extend(require_fragments(
+        session_path,
+        texts.get(session_path, ""),
+        "shared resident inventory creation",
+        ("CreateDemoResidentInventory(outputItemId);",),
+    ))
+    return errors
+
+
 def check_generic_source_contracts(
     texts: dict[Path, str],
     internal_types: set[str],
@@ -164,7 +200,6 @@ def check_generic_source_contracts(
                     f"{relative}:{line_number}: protected member exposes internal type "
                     f"{type_name}; use private protected/internal or widen the type"
                 )
-
     for (class_name, method_name), paths in sorted(messages.items()):
         if len(paths) <= 1:
             continue
@@ -189,6 +224,7 @@ def main() -> int:
         for match in INTERNAL_TYPE_DECLARATION.finditer(text)
     }
     errors: list[str] = check_side_view_contracts(texts)
+    errors.extend(check_resident_inventory_runtime_contracts(texts))
     errors.extend(check_tunnel_and_group_contracts(
         RUNTIME_ROOT,
         texts,
