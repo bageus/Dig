@@ -64,13 +64,12 @@ namespace Dig.Unity
             string? selectedBuildingId = BuildingRenderer!.SelectedBuildingId;
             IReadOnlyList<AgentViewModel> before = AgentSession!.LoadView();
             long nextTick = checked(AgentSession.Tick + 1);
-            TerrainSession!.SynchronizeDesignations(nextTick, before);
-            TerrainSession.SynchronizeHauling(nextTick, before);
-            TerrainSession.SynchronizeBuildingBoxAssembly(nextTick, before);
-            TerrainSession.SynchronizeBuildingPacking(nextTick, before);
-            Result result = TerrainSession.EnforceDirectMovementOwnership(nextTick);
+            Result result = TerrainSession!.EnforceDirectMovementOwnership(nextTick);
             if (result.IsSuccess)
             {
+                TerrainSession.SynchronizeDesignations(nextTick, before);
+                TerrainSession.SynchronizeBuildingBoxAssembly(nextTick, before);
+                TerrainSession.SynchronizeBuildingPacking(nextTick, before);
                 IReadOnlyDictionary<string, CellId> movement =
                     TerrainSession.PlanMovement(before);
                 result = AgentSession.Advance(movement);
@@ -117,6 +116,7 @@ namespace Dig.Unity
             {
                 WorldViewModel world = WorldSession!.LoadView();
                 WorldRenderer!.Render(world);
+                WorldRenderer.SetProtectedCells(WorldSession.ProtectedCells);
                 Hud!.SetWorld(world);
             }
 
