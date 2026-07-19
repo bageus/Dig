@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Presentation.World;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -67,7 +68,8 @@ namespace Dig.Unity
         private static DigTerrainMaterialKey ResolveKey(
             DigTerrainRenderCell cell,
             bool isProtected,
-            DigTerrainSurfaceRole role)
+            DigTerrainSurfaceRole role,
+            DigTerrainRenderSnapshot snapshot)
         {
             DigTerrainSurfaceState state;
             if (!cell.IsExplored)
@@ -90,7 +92,33 @@ namespace Dig.Unity
             byte shade = state == DigTerrainSurfaceState.Solid
                 ? (byte)Mathf.Clamp(cell.Hardness / 32, 0, 7)
                 : (byte)0;
-            return new DigTerrainMaterialKey(cell.MaterialId, state, role, shade);
+            string depositId = string.Empty;
+            TerrainDepositVisualState depositState =
+                TerrainDepositVisualState.Hidden;
+            byte depositDamageBand = 0;
+            TerrainDepositConnection depositConnections =
+                TerrainDepositConnection.None;
+            if (state == DigTerrainSurfaceState.Solid
+                && snapshot.TryGetVisibleDeposit(
+                    cell.Key,
+                    out TerrainDepositCellViewModel? deposit)
+                && deposit != null)
+            {
+                depositId = deposit.VisibleDepositId;
+                depositState = deposit.State;
+                depositDamageBand = deposit.DamageBand;
+                depositConnections = deposit.Connections;
+            }
+
+            return new DigTerrainMaterialKey(
+                cell.MaterialId,
+                state,
+                role,
+                shade,
+                depositId,
+                depositState,
+                depositDamageBand,
+                depositConnections);
         }
 
         private static int GetSubmesh(
@@ -125,7 +153,11 @@ namespace Dig.Unity
                 ? DigTerrainSurfaceRole.FreshCut
                 : role;
             return GetSubmesh(
-                ResolveKey(cell, isProtected, resolvedRole),
+                ResolveKey(
+                    cell,
+                    isProtected,
+                    resolvedRole,
+                    snapshot),
                 keys,
                 triangles,
                 submeshes);
