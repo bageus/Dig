@@ -5,10 +5,8 @@ using UnityEngine;
 
 namespace Dig.Unity
 {
-    internal sealed class DigTerrainRenderSnapshotBuilder
+    internal sealed partial class DigTerrainRenderSnapshotBuilder
     {
-        private const int CurrentAuthoritativeDepth = 1;
-
         private readonly Dictionary<DigTerrainChunkKey, long> _chunkVersions =
             new Dictionary<DigTerrainChunkKey, long>();
         private readonly HashSet<DigTerrainCellKey> _previousCutaway =
@@ -17,9 +15,11 @@ namespace Dig.Unity
             new HashSet<DigTerrainCellKey>();
         private bool _initialized;
         private int _chunkSize;
+        private int _depth;
 
         internal DigTerrainRenderSnapshot Build(
             WorldViewModel world,
+            TerrainDepthVolumeViewModel? depthVolume,
             IEnumerable<Vector2Int> cutawayCells,
             IEnumerable<Vector2Int> protectedCells)
         {
@@ -28,6 +28,8 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(world));
             }
 
+            ValidateDepthVolume(world, depthVolume);
+            int depth = depthVolume?.Depth ?? 1;
             List<DigTerrainRenderChunk> chunks = new List<DigTerrainRenderChunk>();
             HashSet<DigTerrainCellKey> solid = new HashSet<DigTerrainCellKey>();
             Dictionary<DigTerrainChunkKey, long> currentVersions =
@@ -35,35 +37,25 @@ namespace Dig.Unity
             HashSet<DigTerrainChunkKey> dirtyOrigins =
                 new HashSet<DigTerrainChunkKey>();
 
-            bool layoutChanged = _initialized && _chunkSize != world.ChunkSize;
-            for (int index = 0; index < world.Chunks.Count; index++)
+            bool layoutChanged = _initialized
+                && (_chunkSize != world.ChunkSize || _depth != depth);
+            AddFrontChunks(
+                world,
+                chunks,
+                solid,
+                currentVersions,
+                dirtyOrigins,
+                layoutChanged);
+            if (depthVolume != null)
             {
-                WorldChunkViewModel source = world.Chunks[index];
-                DigTerrainChunkKey key = new DigTerrainChunkKey(source.X, source.Y, 0);
-                List<DigTerrainRenderCell> cells = new List<DigTerrainRenderCell>(
-                    source.Cells.Count);
-                for (int cellIndex = 0; cellIndex < source.Cells.Count; cellIndex++)
-                {
-                    DigTerrainRenderCell cell = DigTerrainRenderCell.FromWorld(
-                        source.Cells[cellIndex],
-                        z: 0);
-                    cells.Add(cell);
-                    if (cell.IsSolid)
-                    {
-                        solid.Add(cell.Key);
-                    }
-                }
-
-                cells.Sort(CompareCells);
-                chunks.Add(new DigTerrainRenderChunk(key, source.Version, cells));
-                currentVersions.Add(key, source.Version);
-                if (!_initialized
-                    || layoutChanged
-                    || !_chunkVersions.TryGetValue(key, out long previousVersion)
-                    || previousVersion != source.Version)
-                {
-                    dirtyOrigins.Add(key);
-                }
+                AddDepthChunks(
+                    depthVolume,
+                    world.ChunkSize,
+                    chunks,
+                    solid,
+                    currentVersions,
+                    dirtyOrigins,
+                    layoutChanged);
             }
 
             foreach (DigTerrainChunkKey previous in _chunkVersions.Keys)
@@ -98,14 +90,15 @@ namespace Dig.Unity
             Replace(_previousCutaway, currentCutaway);
             Replace(_previousProtected, currentProtected);
             _chunkSize = world.ChunkSize;
+            _depth = depth;
             _initialized = true;
 
             return new DigTerrainRenderSnapshot(
                 world.Width,
                 world.Height,
-                CurrentAuthoritativeDepth,
+                depth,
                 world.ChunkSize,
-                world.Version,
+                CombineVersion(world.Version, depthVolume?.Version ?? 0),
                 chunks,
                 solid,
                 currentCutaway,
@@ -116,6 +109,60 @@ namespace Dig.Unity
         internal void Invalidate()
         {
             _initialized = false;
+        }
+
+        private void AddFrontChunks(
+            WorldViewModel world,
+            ICollection<DigTerrainRenderChunk> chunks,
+            ISet<DigTerrainCellKey> solid,
+            IDictionary<DigTerrainChunkKey, long> currentVersions,
+            ISet<DigTerrainChunkKey> dirtyOrigins,
+            bool layoutChanged)
+        {
+            for (int index = 0; index < world.Chunks.Count; index++)
+            {
+                WorldChunkViewModel source = world.Chunks[index];
+                DigTerrainChunkKey key = new DigTerrainChunkKey(source.X, source.Y, 0);
+                List<DigTerrainRenderCell> cells = new List<DigTerrainRenderCell>(
+                    source.Cells.Count);
+                for (int cellIndex = 0; cellIndex < source.Cells.Count; cellIndex++)
+                {
+                    DigTerrainRenderCell cell = DigTerrainRenderCell.FromWorld(
+                        source.Cells[cellIndex],
+                        z: 0);
+                    cells.Add(cell);
+                    if (cell.IsSolid)
+                    {
+                        solid.Add(cell.Key);
+                    }
+                }
+
+                cells.Sort(CompareCells);
+                chunks.Add(new DigTerrainRenderChunk(key, source.Version, cells));
+                TrackChunkVersion(
+                    key,
+                    source.Version,
+                    currentVersions,
+                    dirtyOrigins,
+                    layoutChanged);
+            }
+        }
+
+        private void TrackChunkVersion(
+            DigTerrainChunkKey key,
+            long version,
+            IDictionary<DigTerrainChunkKey, long> currentVersions,
+            ISet<DigTerrainChunkKey> dirtyOrigins,
+            bool layoutChanged)
+        {
+            currentVersions.Add(key, version);
+            if (!_initialized
+                || layoutChanged
+                || !_chunkVersions.TryGetValue(key, out long previousVersion)
+                || previousVersion != version)
+            {
+                dirtyOrigins.Add(key);
+            }
         }
 
         private static HashSet<DigTerrainCellKey> ToDepthZero(
@@ -209,6 +256,12 @@ namespace Dig.Unity
 
             int y = left.Key.Y.CompareTo(right.Key.Y);
             return y != 0 ? y : left.Key.X.CompareTo(right.Key.X);
+        }
+
+        private static void Mix(ref ulong hash, ulong value, ulong prime)
+        {
+            hash ^= value;
+            hash *= prime;
         }
 
         private static void Replace<TKey, TValue>(

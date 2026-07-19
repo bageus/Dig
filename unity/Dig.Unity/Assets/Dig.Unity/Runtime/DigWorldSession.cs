@@ -19,6 +19,8 @@ namespace Dig.Unity
         private readonly WorldPresenter _presenter;
         private readonly InMemoryWorldRepository _repository;
         private readonly MaterialId _emptyMaterialId;
+        private readonly MaterialId _solidMaterialId;
+        private readonly int _solidHardness;
         private readonly ExcavationBoundaryPolicy _boundaryPolicy;
         private long _tick;
 
@@ -27,6 +29,8 @@ namespace Dig.Unity
             WorldPresenter presenter,
             InMemoryWorldRepository repository,
             MaterialId emptyMaterialId,
+            MaterialId solidMaterialId,
+            int solidHardness,
             ExcavationBoundaryPolicy boundaryPolicy,
             InMemoryExecutionJournal journal,
             long tick)
@@ -35,6 +39,8 @@ namespace Dig.Unity
             _presenter = presenter;
             _repository = repository;
             _emptyMaterialId = emptyMaterialId;
+            _solidMaterialId = solidMaterialId;
+            _solidHardness = solidHardness;
             _boundaryPolicy = boundaryPolicy;
             Journal = journal;
             _tick = tick;
@@ -45,6 +51,10 @@ namespace Dig.Unity
         internal InMemoryWorldRepository Repository => _repository;
 
         internal MaterialId EmptyMaterialId => _emptyMaterialId;
+
+        internal MaterialId SolidMaterialId => _solidMaterialId;
+
+        internal int SolidHardness => _solidHardness;
 
         internal IReadOnlyList<CellId> ProtectedCells => LoadAllProtectedCells();
 
@@ -60,11 +70,12 @@ namespace Dig.Unity
                 throw new ArgumentOutOfRangeException(nameof(height));
             }
 
+            const int rockHardness = 120;
             MaterialId rock = new MaterialId("demo.rock");
             MaterialId air = new MaterialId("demo.air");
             MaterialCatalog materials = new MaterialCatalog(new[]
             {
-                new MaterialDefinition(rock, isSolid: true, hardness: 120),
+                new MaterialDefinition(rock, isSolid: true, hardness: rockHardness),
                 new MaterialDefinition(air, isSolid: false, hardness: 0),
             });
             WorldState world = WorldState.CreateFilled(
@@ -92,6 +103,8 @@ namespace Dig.Unity
                 new WorldPresenter(new GetWorldSnapshotQueryHandler(repository)),
                 repository,
                 air,
+                rock,
+                rockHardness,
                 boundaryPolicy,
                 journal,
                 tick: 1);

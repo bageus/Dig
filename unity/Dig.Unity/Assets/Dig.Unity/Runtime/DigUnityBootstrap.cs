@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Domain.World;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Buildings;
 using Dig.Presentation.Inventory;
@@ -90,7 +91,6 @@ namespace Dig.Unity
             _startupStage = "creating Unity adapters";
             Camera targetCamera = EnsureCamera();
             DigWorldRenderer worldRenderer = GetOrAdd<DigWorldRenderer>(gameObject);
-            DigRockVolumeRenderer rockRenderer = GetOrAdd<DigRockVolumeRenderer>(gameObject);
             DigAgentRenderer agentRenderer = GetOrAdd<DigAgentRenderer>(gameObject);
             DigJobRenderer jobRenderer = GetOrAdd<DigJobRenderer>(gameObject);
             DigBuildingRenderer buildingRenderer = GetOrAdd<DigBuildingRenderer>(gameObject);
@@ -130,9 +130,13 @@ namespace Dig.Unity
             _startupStage = "rendering world and layered tunnels";
             RenderSettings.ambientLight = new Color(0.58f, 0.60f, 0.66f, 1f);
             worldRenderer.SetProtectedCells(worldSession.ProtectedCells);
-            worldRenderer.Render(world);
             worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume);
-            rockRenderer.Initialize(agentSession.TunnelVolume);
+            worldRenderer.SetTerrainDepthVolume(
+                agentSession.TunnelVolume,
+                worldSession.SolidMaterialId.ToString(),
+                worldSession.SolidHardness,
+                Array.Empty<SpatialCellId>());
+            worldRenderer.Render(world);
             tunnelRenderer.Initialize(agentSession.TunnelVolume);
             caveRoomPreviewRenderer.Clear();
 
@@ -168,8 +172,7 @@ namespace Dig.Unity
             interaction.SetTunnelMovement(tunnelRenderer);
             interaction.SetCaveRoomRenderers(
                 caveRoomPreviewRenderer,
-                caveRoomFloorRenderer,
-                rockRenderer);
+                caveRoomFloorRenderer);
             simulation.Initialize(
                 worldSession,
                 worldRenderer,

@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Callable
 
 from unity_cave_room_contracts import check_cave_room_runtime_contracts
+from unity_depth_terrain_contracts import check_depth_terrain_contracts
 
 RequireFragments = Callable[[Path, str, str, tuple[str, ...]], list[str]]
 RejectFragments = Callable[[Path, str, str, tuple[str, ...]], list[str]]
@@ -17,7 +18,6 @@ def check_excavation_contracts(
     reject_fragments: RejectFragments,
 ) -> list[str]:
     del root
-    rock_path = runtime_root / "DigRockVolumeRenderer.cs"
     projection_path = runtime_root / "DigTunnelProjection.cs"
     tunnel_renderer_path = runtime_root / "DigTunnelDemoRenderer.cs"
     world_renderer_path = runtime_root / "DigWorldRenderer.cs"
@@ -41,18 +41,6 @@ def check_excavation_contracts(
     game_hud_path = runtime_root / "DigGameHudCanvas.Context.cs"
     bootstrap_path = runtime_root / "DigUnityBootstrap.cs"
     errors: list[str] = []
-    errors.extend(require_fragments(
-        rock_path,
-        texts.get(rock_path, ""),
-        "solid rock volume",
-        (
-            "for (int z = 1; z < _volume.Depth; z++)",
-            "IsSolidRock",
-            "volume.IsOpen(cell)",
-            "MeshFilter",
-            "IndexFormat.UInt32",
-        ),
-    ))
     errors.extend(require_fragments(
         projection_path,
         texts.get(projection_path, ""),
@@ -327,14 +315,18 @@ def check_excavation_contracts(
     errors.extend(require_fragments(
         bootstrap_path,
         texts.get(bootstrap_path, ""),
-        "rock volume and room preview composition",
+        "room preview composition",
         (
-            "DigRockVolumeRenderer",
-            "rockRenderer.Initialize",
             "worldRenderer.SetProtectedCells(worldSession.ProtectedCells)",
             "DigCaveRoomPreviewRenderer",
             "SetCaveRoomRenderers",
         ),
+    ))
+    errors.extend(check_depth_terrain_contracts(
+        runtime_root,
+        texts,
+        require_fragments,
+        reject_fragments,
     ))
     errors.extend(check_cave_room_runtime_contracts(
         runtime_root,

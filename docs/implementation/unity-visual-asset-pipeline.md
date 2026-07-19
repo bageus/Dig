@@ -28,28 +28,46 @@ A prefab entry must contain `DigVisualPrefabRoot`. Missing, duplicate or invalid
 
 `DigTerrainVisualCatalog` is loaded from `Resources/Dig/VisualCatalogs/Terrain` when it is not assigned explicitly.
 
-The terrain presentation has three separate responsibilities:
+The terrain presentation has four responsibilities:
 
-1. `DigTerrainRenderSnapshotBuilder` converts the latest presentation read model and current presentation-only cutaway/protected sets into an immutable snapshot.
-2. `DigTerrainChunkRenderer` consumes that snapshot and creates collider-free meshes per dirty world chunk.
-3. Existing per-cell primitives stay hidden and are retained only as bounded tunnel-dig interaction proxies.
+1. `WorldViewModel` supplies authoritative material and state for the front `Z=0` layer.
+2. `TerrainDepthVolumePresenter` projects the current deep solid-rock mask from `TunnelNavigationVolume`, explicit material facts and explicit excavation cells.
+3. `DigTerrainRenderSnapshotBuilder` merges both immutable projections and derives dirty chunks.
+4. `DigTerrainChunkRenderer` creates collider-free meshes for the resulting `Z=0..3` chunks.
 
-The renderer no longer walks hidden `DigCellVisual` objects in `LateUpdate`. A world refresh, cutaway change, protected-cell change or catalog change explicitly refreshes the terrain projection.
+Existing per-cell primitives stay hidden and are retained only as bounded tunnel-dig interaction proxies. The renderer does not walk those objects in `LateUpdate`. World, cutaway, protected-cell, depth-volume or catalog changes explicitly refresh the terrain projection.
+
+The former `DigRockVolumeRenderer` has been removed. Front terrain and deep rock now use one material resolver, mesh builder, signature calculation, diagnostics counter and dirty-invalidation path.
 
 ### Snapshot contract
 
-`DigTerrainCellKey` and `DigTerrainChunkKey` contain `X`, `Y` and `Z`. Mesh generation and exposure checks already evaluate all six neighbours.
+`DigTerrainCellKey` and `DigTerrainChunkKey` contain `X`, `Y` and `Z`. Mesh generation and exposure checks evaluate all six neighbours.
 
-The current `WorldViewModel` still exposes only the authoritative front layer, so `DigTerrainRenderSnapshotBuilder` publishes those cells at `Z=0` and reports `Depth=1`. It does not infer deeper materials, hardness, exploration or deposits from the front layer. The depth-ready contract is intended to accept the unified `Z=0..3` read model from #88 without changing the renderer API.
+Front chunks preserve their authoritative `WorldChunkViewModel.Version`. Deep chunks receive deterministic versions from their sorted cell keys, material id and hardness. A changed or removed deep cell therefore invalidates its own chunk and exposed neighbouring faces without rebuilding unrelated chunks.
 
 Dirty chunks are derived from:
 
-- new, removed or version-changed source chunks;
+- new, removed or version-changed front chunks;
+- new, removed or version-changed deep chunks;
 - changed cutaway cells;
 - changed protected cells;
-- a changed chunk layout.
+- a changed chunk size or depth.
 
-Every dirty origin also marks its four `X/Y` neighbours and the two adjacent `Z` layers. This conservative invalidation keeps exposed faces correct across chunk and layer boundaries. Chunk signatures provide a second check, so an invalidated neighbour is rebuilt only when its resulting visual state actually changed.
+Every dirty origin also marks its four `X/Y` neighbours and the two adjacent `Z` layers. Chunk signatures provide a second check, so an invalidated neighbour is rebuilt only when its resulting visual state changed.
+
+### Deep terrain projection boundary
+
+The deep projection intentionally receives an explicit material id and hardness from `DigWorldSession`. It never copies those facts from an arbitrary front cell.
+
+For the current demo, `TerrainDepthVolumePresenter` reproduces the previous rock mask:
+
+- `TunnelNavigationVolume.IsOpen` cells are empty;
+- explicit depth excavations and completed-room volume cells are empty;
+- cells above the demo surface are empty sky;
+- the generated natural-cave interior is empty;
+- every remaining `Z=1..3` cell is solid rock.
+
+This is a transitional presentation projection. `TunnelNavigationVolume` owns open topology, while the two-dimensional World and Job systems still own front terrain work. Full per-cell deep materials, damage, deposits, Jobs, reservations and save ownership remain part of #88.
 
 ## Terrain interaction boundary
 
@@ -61,9 +79,9 @@ The ordinary world surface has no cell picking.
 - entering Tunnel, Delete or Depth excavation mode enables proxy colliders;
 - cave-room planning uses the same bounded excavation proxy path;
 - leaving excavation mode disables proxies again;
-- exact `CellId` resolution remains limited to tunnel excavation flows.
+- exact front `CellId` resolution remains limited to tunnel excavation flows.
 
-Objects, residents, jobs, buildings and items continue to use their own interaction components. Tunnel navigation continues to use the dedicated layered tunnel and completed-room floor renderers.
+Objects, residents, jobs, buildings and items continue to use their own interaction components. Layered movement uses dedicated tunnel and completed-room floor visuals rather than terrain chunks or hidden front-cell proxies.
 
 ## Prefab contract
 
@@ -110,13 +128,13 @@ Fallbacks are presentation-only. They must never change gameplay state or infer 
 
 ## Current limitations
 
-The immutable snapshot currently contains only authoritative `Z=0` cells. The deeper `Z=1..3` rock volume remains rendered by the existing tunnel/rock presentation until #88 exposes material and state data for every spatial cell.
+The unified mesh snapshot covers the current visual `Z=0..3` volume, but only front cells have the full authoritative World state. Deep cells currently carry one explicit rock material/hardness pair and an open/solid projection from tunnel topology and excavation completion.
 
 Texture UV conventions, greedy meshing, production terrain materials, deposits and template cave trim remain part of #206.
 
 ## Next steps
 
-- #205: feed authoritative `Z=0..3` terrain chunks into `DigTerrainRenderSnapshot` and retire duplicate deeper rock geometry;
+- #88: migrate deep terrain materials, damage, Jobs, reservations and persistence to authoritative spatial ownership;
 - #206: production terrain/deposit/template-cave assets;
 - #207–#210: typed prefab integrations for buildings, items, residents and creatures;
 - #211: unified overlay styles;
