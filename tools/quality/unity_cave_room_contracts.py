@@ -16,7 +16,7 @@ def check_cave_room_runtime_contracts(
     room_runtime = runtime_root / "DigAgentSimulationDriverBase.CaveRooms.cs"
     room_floor = runtime_root / "DigCaveRoomFloorRenderer.cs"
     tunnel_renderer = runtime_root / "DigTunnelDemoRenderer.cs"
-    rock_renderer = runtime_root / "DigRockVolumeRenderer.cs"
+    depth_adapter = runtime_root / "DigWorldRenderer.DepthTerrain.cs"
     agent_session = runtime_root / "DigAgentSession.TunnelMovement.cs"
     bootstrap = runtime_root / "DigUnityBootstrap.cs"
     errors: list[str] = []
@@ -52,12 +52,13 @@ def check_cave_room_runtime_contracts(
         "completed cave room and depth runtime activation",
         (
             "_activatedCaveRooms",
+            "_terrainExcavatedVolume",
             "ExcavateTunnelDepth",
             "TunnelDepthExcavations",
             "RefreshCaveRoomRuntime",
+            "RefreshTerrainDepthVolume",
             "CreateFloorCells",
             "ExpandTunnelVolume",
-            "SetExcavatedCells",
             "AddRoomFloor",
         ),
     ))
@@ -90,14 +91,13 @@ def check_cave_room_runtime_contracts(
         ),
     ))
     errors.extend(require_fragments(
-        rock_renderer,
-        texts.get(rock_renderer, ""),
-        "dynamic cave room rock meshes",
+        depth_adapter,
+        texts.get(depth_adapter, ""),
+        "dynamic cave room terrain meshes",
         (
-            "SetExcavatedCells",
-            "_excavatedCells.SetEquals",
-            "Rebuild",
-            "_excavatedCells.Contains(cell)",
+            "SetTerrainDepthVolume",
+            "TerrainDepthVolumePresenter",
+            "RefreshChunkedTerrain();",
         ),
     ))
     errors.extend(require_fragments(
@@ -118,7 +118,7 @@ def check_cave_room_runtime_contracts(
             "DigCaveRoomFloorRenderer",
             "SetCaveRoomRenderers",
             "caveRoomFloorRenderer",
-            "rockRenderer",
+            "worldRenderer.SetTerrainDepthVolume(",
         ),
     ))
     return errors
