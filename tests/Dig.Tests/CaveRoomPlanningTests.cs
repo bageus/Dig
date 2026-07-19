@@ -69,7 +69,7 @@ public sealed class CaveRoomPlanningTests
     }
 
     [Fact]
-    public void Larger_room_can_expand_a_completed_small_room_at_the_same_entrance()
+    public void Completed_room_is_immutable_at_the_same_entrance()
     {
         ExcavationBoundaryPolicy boundary = new ExcavationBoundaryPolicy(20, 14, 2);
         CaveRoomPlanner planner = new CaveRoomPlanner();
@@ -90,12 +90,9 @@ public sealed class CaveRoomPlanningTests
             entrance,
             new[] { small });
 
-        Assert.True(result.Succeeded, result.Detail);
-        Assert.NotEmpty(result.Plan!.FrontExcavationCells);
-        Assert.DoesNotContain(
-            result.Plan.FrontExcavationCells,
-            cell => small.FrontExcavationCells.Contains(cell));
-        Assert.Equal(new[] { 9, 8, 7, 6, 5 }, RowWidths(result.Plan));
+        Assert.False(result.Succeeded);
+        Assert.Equal(CaveRoomPlanFailureReason.RoomObstructed, result.FailureReason);
+        Assert.Equal("A completed cave room is immutable.", result.Detail);
     }
 
     [Fact]
