@@ -144,7 +144,9 @@ public sealed class ResidentInventoryPresenter
         }
 
         HeldItemReferenceSnapshot? held = snapshot.HeldItems
-            .SingleOrDefault(item => item.ResidentId == residentId);
+            .Where(item => item.ResidentId == residentId)
+            .Select(item => (HeldItemReferenceSnapshot?)item)
+            .SingleOrDefault();
         ResidentInventorySlotViewModel[] slots = snapshot.Stacks
             .Where(stack => IsOwnedByResident(stack.Location, residentId))
             .Select(stack => PresentStack(stack, held))
