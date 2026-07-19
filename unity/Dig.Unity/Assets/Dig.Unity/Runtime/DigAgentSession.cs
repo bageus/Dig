@@ -7,6 +7,7 @@ using Dig.Domain.Agents;
 using Dig.Domain.Core;
 using Dig.Domain.Navigation;
 using Dig.Domain.Runtime;
+using Dig.Domain.Society;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Dig.Presentation.Agents;
@@ -17,6 +18,7 @@ namespace Dig.Unity
     internal sealed partial class DigAgentSession
     {
         private const int DemoResidentCount = 4;
+        private const ulong DemoIdentitySeed = 0xD1661EUL;
         private readonly AgentAutonomySystem _autonomy;
         private readonly MoveAgentCommandHandler _movementHandler;
         private readonly AgentPresenter _presenter;
@@ -94,7 +96,7 @@ namespace Dig.Unity
                 new AgentPresenter(new GetAgentSnapshotsQueryHandler(repository)),
                 repository,
                 SimulationState.Create(
-                    worldSeed: 0xD1661EUL,
+                    worldSeed: DemoIdentitySeed,
                     tickDuration: TimeSpan.FromMilliseconds(500)),
                 walkable,
                 routeIndices);
@@ -188,15 +190,13 @@ namespace Dig.Unity
         {
             TunnelDemoLayout layout = tunnelVolume.DemoLayout
                 ?? throw new InvalidOperationException("The tunnel demo layout is required.");
-            IReadOnlyList<ResidentIdentity> identities =
-                new ResidentIdentityGenerator().Generate(DemoResidentCount);
-            int surfaceWidth = layout.SurfaceMaxX - layout.SurfaceMinX + 1;
+            IReadOnlyList<ResidentBirthPlan> identities = CreateDemoIdentities(
+                layout,
+                DemoResidentCount);
             for (int index = 0; index < identities.Count; index++)
             {
-                ResidentIdentity identity = identities[index];
+                ResidentBirthPlan identity = identities[index];
                 int routeIndex = (index * walkable.Count) / identities.Count;
-                int x = layout.SurfaceMinX
-                    + (((index + 1) * surfaceWidth) / (identities.Count + 1));
                 AgentState agent = new AgentState(
                     identity.Id,
                     identity.Name,
@@ -207,8 +207,11 @@ namespace Dig.Unity
                         new NeedValue(10_000)),
                     DailySchedule.CreateBalanced(24),
                     skills: null,
-                    traits: null,
-                    initialPosition: new SpatialCellId(x, layout.SurfaceY, z: 0));
+                    traits: identity.Heritage.Traits,
+                    initialPosition: new SpatialCellId(
+                        identity.Position.X,
+                        identity.Position.Y,
+                        0));
                 Result added = repository.Add(agent);
                 if (added.IsFailure)
                 {
@@ -217,6 +220,45 @@ namespace Dig.Unity
 
                 routeIndices.Add(agent.Id, routeIndex);
             }
+        }
+
+        private static IReadOnlyList<ResidentBirthPlan> CreateDemoIdentities(
+            TunnelDemoLayout layout,
+            int count)
+        {
+            ResidentNameCatalog names = new ResidentNameCatalog(
+                new[] { "Dora", "Fara", "Hela", "Iria", "Kara", "Mira", "Nora", "Runa" },
+                new[] { "Borin", "Doran", "Einar", "Gimli", "Haldor", "Korin", "Orin", "Torin" });
+            ResidentHeritage founderHeritage = new ResidentHeritage(7_500);
+            ResidentInheritancePolicy inheritance = new ResidentInheritancePolicy(
+                potentialVariance: 0);
+            Dig.Domain.Society.ResidentIdentityGenerator generator =
+                new Dig.Domain.Society.ResidentIdentityGenerator();
+            HashSet<string> usedNames = new HashSet<string>(StringComparer.Ordinal);
+            List<ResidentBirthPlan> result = new List<ResidentBirthPlan>(count);
+            long sequence = 0;
+            int surfaceWidth = layout.SurfaceMaxX - layout.SurfaceMinX + 1;
+            for (int index = 0; index < count; index++)
+            {
+                int x = layout.SurfaceMinX
+                    + (((index + 1) * surfaceWidth) / (count + 1));
+                ResidentBirthPlan identity;
+                do
+                {
+                    identity = generator.CreateBirthPlan(
+                        DemoIdentitySeed,
+                        sequence++,
+                        names,
+                        founderHeritage,
+                        founderHeritage,
+                        inheritance,
+                        new CellId(x, layout.SurfaceY));
+                }
+                while (!usedNames.Add(identity.Name));
+                result.Add(identity);
+            }
+
+            return result;
         }
     }
 }
