@@ -7,7 +7,8 @@ namespace Dig.Unity
     internal static class DigTerrainChunkMeshBuilder
     {
         private const float HalfExtent = 0.47f;
-        private const float RockDepth = 0.82f;
+        private const float FrontRockDepth = 0.82f;
+        private const float DepthLayerScale = 0.94f;
         private const float Roughness = 0.012f;
 
         internal static DigTerrainChunkMeshData Build(
@@ -121,8 +122,7 @@ namespace Dig.Unity
         {
             float minX = cell.X - HalfExtent;
             float maxX = cell.X + HalfExtent;
-            float minDepth = cell.Z * DigTunnelProjection.DepthSpacing;
-            float maxDepth = minDepth + RockDepth;
+            ResolveDepthExtents(cell.Z, out float minDepth, out float maxDepth);
             float minVertical = cell.Y - HalfExtent;
             float maxVertical = cell.Y + HalfExtent;
 
@@ -221,6 +221,27 @@ namespace Dig.Unity
                     normals,
                     triangles);
             }
+        }
+
+        private static void ResolveDepthExtents(
+            int z,
+            out float minDepth,
+            out float maxDepth)
+        {
+            if (z == 0)
+            {
+                minDepth = 0f;
+                maxDepth = FrontRockDepth;
+                return;
+            }
+
+            float center = DigTunnelProjection.DepthOrigin
+                + (z * DigTunnelProjection.DepthSpacing);
+            float half = Mathf.Abs(DigTunnelProjection.DepthSpacing)
+                * DepthLayerScale
+                * 0.5f;
+            minDepth = center - half;
+            maxDepth = center + half;
         }
 
         private static void AddFace(
