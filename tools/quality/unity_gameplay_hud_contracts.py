@@ -22,6 +22,7 @@ def check_gameplay_hud_and_work_contracts(
     context_path = runtime_root / "DigGameHudCanvas.Context.cs"
     interaction_path = runtime_root / "DigWorldInteraction.CanvasHud.cs"
     agent_session_path = runtime_root / "DigAgentSession.cs"
+    room_session_path = runtime_root / "DigWorldSession.CaveRooms.cs"
     loop_path = runtime_root / "DigAgentSimulationDriverBase.Loop.cs"
     router_path = (
         root
@@ -116,6 +117,12 @@ def check_gameplay_hud_and_work_contracts(
             "identity.Position.Y,",
             "0));",
         ),
+    ))
+    errors.extend(reject_fragments(
+        room_session_path,
+        texts.get(room_session_path, ""),
+        "application-internal cave room result factory from Unity",
+        ("CaveRoomPlanResult.Failure(",),
     ))
 
     loop_text = texts.get(loop_path, "")
