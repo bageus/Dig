@@ -1,4 +1,5 @@
-using System.Collections.Generic;
+using System.Linq;
+using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 
@@ -7,64 +8,51 @@ namespace Dig.Unity
 
 internal sealed partial class DigTerrainWorkSession
 {
-    private InventoryState CreateDemoResidentInventory()
+    private static InventoryState CreateDemoResidentInventory(ItemId outputItemId)
     {
-        ItemCategoryId raw = new ItemCategoryId("raw.stone");
-        ItemCategoryId weapon = new ItemCategoryId("weapon");
-        ItemCategoryId buildingBox = new ItemCategoryId("building.box");
-        InventoryState inventory = new InventoryState(new ItemCatalog(new[]
+        ResidentInventoryExpansionContent expansions =
+            new ResidentInventoryExpansionContent();
+        ItemDefinition[] baseItems =
         {
+            new ItemDefinition(
+                outputItemId,
+                "Rock chunk",
+                100,
+                false,
+                new[]
+                {
+                    ResidentInventoryExpansionContent.RawMaterialCategoryId,
+                }),
             new ItemDefinition(
                 DemoBuildingBoxItemId,
                 "Workshop BuildingBox",
                 1,
                 false,
-                new[] { buildingBox }),
+                new[]
+                {
+                    ResidentInventoryExpansionContent.GeneralItemCategoryId,
+                }),
             new ItemDefinition(
                 DemoResidentToolItemId,
                 "Resident pickaxe",
                 1,
                 true,
-                new[] { weapon }),
+                new[]
+                {
+                    ResidentInventoryExpansionContent.WeaponCategoryId,
+                }),
             new ItemDefinition(
                 DemoResidentHammerItemId,
                 "Resident hammer",
                 1,
                 true,
-                new[] { weapon }),
-            CreateExpansion(
-                DemoBasketItemId,
-                "Basket",
-                InventoryExpansionGroup.Cargo,
-                1,
-                4,
-                0.75d,
-                new[] { raw, buildingBox }),
-            CreateExpansion(
-                DemoLargeBasketItemId,
-                "Large basket",
-                InventoryExpansionGroup.Cargo,
-                2,
-                6,
-                0.65d,
-                new[] { raw, buildingBox }),
-            CreateExpansion(
-                DemoScabbardItemId,
-                "Scabbard",
-                InventoryExpansionGroup.Weapon,
-                1,
-                2,
-                1d,
-                new[] { weapon }),
-            CreateExpansion(
-                DemoHarnessItemId,
-                "Weapon harness",
-                InventoryExpansionGroup.Weapon,
-                2,
-                4,
-                1d,
-                new[] { weapon }),
-        }));
+                new[]
+                {
+                    ResidentInventoryExpansionContent.WeaponCategoryId,
+                }),
+        };
+        InventoryState inventory = new InventoryState(new ItemCatalog(
+            baseItems.Concat(expansions.Items)));
         EntityId residentId = DemoId('a', 1);
         AddResidentStack(
             inventory,
@@ -109,30 +97,6 @@ internal sealed partial class DigTerrainWorkSession
             ResidentInventoryCompartment.Weapon,
             1);
         return inventory;
-    }
-
-    private static ItemDefinition CreateExpansion(
-        ItemId id,
-        string name,
-        InventoryExpansionGroup group,
-        int tier,
-        int slots,
-        double speedMultiplier,
-        IReadOnlyCollection<ItemCategoryId> acceptedCategories)
-    {
-        return new ItemDefinition(
-            id,
-            name,
-            1,
-            false,
-            acceptedCategories,
-            new InventoryExpansionDefinition(
-                group,
-                tier,
-                slots,
-                acceptedCategories,
-                speedMultiplier,
-                $"visual.{id}"));
     }
 
     private static void AddResidentStack(
