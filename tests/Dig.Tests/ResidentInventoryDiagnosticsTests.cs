@@ -130,7 +130,11 @@ public sealed class ResidentInventoryDiagnosticsTests
             new ResidentInventoryDiagnosticsPresenter().Present(inventory, ResidentId);
 
         Assert.Equal(0.75d, model.MoveSpeedMultiplier);
-        Assert.Equal(3, model.Slots.Sum(slot => slot.Quantity));
+        Assert.Equal(
+            3,
+            model.Slots
+                .Where(slot => slot.Compartment == ResidentInventoryCompartment.Cargo)
+                .Sum(slot => slot.Quantity));
     }
 
     private static EntityId Id(int value)
