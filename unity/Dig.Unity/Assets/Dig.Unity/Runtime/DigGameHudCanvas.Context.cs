@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Dig.Application.World;
 using Dig.Domain.Core;
 using Dig.Presentation.Buildings;
@@ -27,7 +28,11 @@ public sealed partial class DigGameHudCanvas
             return;
         }
 
-        JobOverlayViewModel? job = _jobRenderer!.SelectedModel;
+        string? selectedJobId = _jobRenderer!.SelectedJobId;
+        JobOverlayViewModel? job = selectedJobId == null
+            ? null
+            : _terrainSession!.LoadJobs().FirstOrDefault(value =>
+                string.Equals(value.Id, selectedJobId, StringComparison.Ordinal));
         if (job != null)
         {
             ShowJobDetails(job);
