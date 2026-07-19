@@ -13,10 +13,12 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
     {
         Residents = 0,
         Buildings = 1,
+        Jobs = 2,
     }
 
     private DigTerrainWorkSession? _terrainSession;
     private DigAgentRenderer? _agentRenderer;
+    private DigJobRenderer? _jobRenderer;
     private DigBuildingRenderer? _buildingRenderer;
     private DigWorldInteraction? _interaction;
     private DigAgentSimulationDriver? _simulation;
@@ -29,6 +31,7 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
     private Text? _statusText;
     private Button? _residentTabButton;
     private Button? _buildingTabButton;
+    private Button? _jobTabButton;
     private RightPanelTab _rightTab;
     private string _lastRosterSignature = string.Empty;
     private string _lastContextSignature = string.Empty;
@@ -38,6 +41,7 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
     internal void Initialize(
         DigTerrainWorkSession terrainSession,
         DigAgentRenderer agentRenderer,
+        DigJobRenderer jobRenderer,
         DigBuildingRenderer buildingRenderer,
         DigWorldInteraction interaction,
         DigAgentSimulationDriver simulation,
@@ -47,6 +51,8 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
             ?? throw new ArgumentNullException(nameof(terrainSession));
         _agentRenderer = agentRenderer
             ?? throw new ArgumentNullException(nameof(agentRenderer));
+        _jobRenderer = jobRenderer
+            ?? throw new ArgumentNullException(nameof(jobRenderer));
         _buildingRenderer = buildingRenderer
             ?? throw new ArgumentNullException(nameof(buildingRenderer));
         _interaction = interaction
@@ -113,8 +119,8 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
         _rightPanel = CreatePanel(
             "Roster Panel",
             transform,
-            new Color(0.06f, 0.08f, 0.11f, 0.78f));
-        Anchor(_rightPanel, 1f, 1f, 1f, 1f, -328f, -24f, -24f, -676f);
+            new Color(0.06f, 0.08f, 0.11f, 0.82f));
+        Anchor(_rightPanel, 1f, 1f, 1f, 1f, -356f, -596f, -20f, -20f);
         CreateRightPanelShell();
 
         _bottomPanel = CreatePanel(
@@ -151,13 +157,18 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
         _residentTabButton = CreateButton(
             "Residents Tab",
             tabs,
-            "Гномы",
+            "●",
             SelectResidentTab);
         _buildingTabButton = CreateButton(
             "Buildings Tab",
             tabs,
-            "Строения",
+            "■",
             SelectBuildingTab);
+        _jobTabButton = CreateButton(
+            "Jobs Tab",
+            tabs,
+            "▲",
+            SelectJobTab);
 
         RectTransform viewport = CreatePanel(
             "Roster Viewport",
