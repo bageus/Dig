@@ -16,6 +16,7 @@ namespace Dig.Unity
 {
     internal sealed partial class DigAgentSession
     {
+        private const int DemoResidentCount = 4;
         private readonly AgentAutonomySystem _autonomy;
         private readonly MoveAgentCommandHandler _movementHandler;
         private readonly AgentPresenter _presenter;
@@ -187,24 +188,18 @@ namespace Dig.Unity
         {
             TunnelDemoLayout layout = tunnelVolume.DemoLayout
                 ?? throw new InvalidOperationException("The tunnel demo layout is required.");
-            string[] ids =
-            {
-                "10000000000000000000000000000001",
-                "10000000000000000000000000000002",
-                "10000000000000000000000000000003",
-                "10000000000000000000000000000004",
-            };
-            string[] names = { "Borin", "Dora", "Einar", "Fara" };
+            IReadOnlyList<ResidentIdentity> identities =
+                new ResidentIdentityGenerator().Generate(DemoResidentCount);
             int surfaceWidth = layout.SurfaceMaxX - layout.SurfaceMinX + 1;
-            for (int index = 0; index < names.Length; index++)
+            for (int index = 0; index < identities.Count; index++)
             {
-                int routeIndex = (index * walkable.Count) / names.Length;
+                ResidentIdentity identity = identities[index];
+                int routeIndex = (index * walkable.Count) / identities.Count;
                 int x = layout.SurfaceMinX
-                    + (((index + 1) * surfaceWidth) / (names.Length + 1));
-                int z = index % tunnelVolume.Depth;
+                    + (((index + 1) * surfaceWidth) / (identities.Count + 1));
                 AgentState agent = new AgentState(
-                    EntityId.Parse(ids[index]),
-                    names[index],
+                    identity.Id,
+                    identity.Name,
                     new AgentNeedsSnapshot(
                         new NeedValue(7_800 - (index * 900)),
                         new NeedValue(6_600 + (index * 500)),
@@ -213,7 +208,7 @@ namespace Dig.Unity
                     DailySchedule.CreateBalanced(24),
                     skills: null,
                     traits: null,
-                    initialPosition: new SpatialCellId(x, layout.SurfaceY, z));
+                    initialPosition: new SpatialCellId(x, layout.SurfaceY, z: 0));
                 Result added = repository.Add(agent);
                 if (added.IsFailure)
                 {
