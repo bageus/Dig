@@ -86,10 +86,7 @@ namespace Dig.Unity
                 _storageRepository,
                 _jobRepository,
                 journal);
-            _haulingAssignment = new AssignAvailableJobsHandler(
-                _jobRepository,
-                _haulingCandidates,
-                journal);
+            _haulingAssignment = CreateHaulingAssignment(journal);
             _haulingPathfinder = new NavigationPathfinder();
             _moveStorageZone = new MoveStorageZoneHandler(
                 _storageRepository,
