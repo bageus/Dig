@@ -18,19 +18,12 @@ namespace Dig.Unity
         {
             WorldSnapshot snapshot = LoadSnapshot();
             IReadOnlyList<CaveRoomPlan> completed = GetCompletedCaveRoomPlans(snapshot);
-            if (completed.Any(plan => plan.Entrance == entrance))
-            {
-                return CaveRoomPlanResult.Failure(
-                    CaveRoomPlanFailureReason.RoomObstructed,
-                    "A completed cave room is immutable.");
-            }
-
             return _caveRoomPlanner.Plan(
                 snapshot,
                 _boundaryPolicy,
                 kind,
                 entrance,
-                completedPlans: null);
+                completed);
         }
 
         internal Result ApplyCaveRoomPlan(CaveRoomPlan plan)
