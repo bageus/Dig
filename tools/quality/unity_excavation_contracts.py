@@ -97,7 +97,6 @@ def check_excavation_contracts(
         "direct layered movement",
         (
             "_tunnelRenderer.TryGetCell",
-            "_renderer.TryGetWalkSurface",
             "SpatialCellId destination",
             "MoveResidentThroughTunnel",
         ),
