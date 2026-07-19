@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable
 
+from unity_runtime_regression_contracts import check_runtime_regression_contracts
+
 RequireFragments = Callable[[Path, str, str, tuple[str, ...]], list[str]]
 
 
@@ -170,5 +172,10 @@ def check_navigation_and_marquee_contracts(
         texts.get(manual_excavation, ""),
         "explicit return to work ownership",
         ("ReleaseDirectMovementControl(residentId);",),
+    ))
+    errors.extend(check_runtime_regression_contracts(
+        runtime_root,
+        texts,
+        require_fragments,
     ))
     return errors
