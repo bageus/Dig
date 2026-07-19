@@ -40,16 +40,14 @@ namespace Dig.Unity
                     continue;
                 }
 
-                DigTerrainMaterialKey key = ResolveKey(
-                    cell,
-                    snapshot.IsProtected(cell.Key));
-                int submesh = GetSubmesh(key, keys, triangles, submeshes);
                 AddCell(
-                    cell.Key,
-                    submesh,
+                    cell,
+                    snapshot.IsProtected(cell.Key),
                     vertices,
                     normals,
+                    keys,
                     triangles,
+                    submeshes,
                     snapshot);
             }
 
@@ -68,7 +66,8 @@ namespace Dig.Unity
 
         private static DigTerrainMaterialKey ResolveKey(
             DigTerrainRenderCell cell,
-            bool isProtected)
+            bool isProtected,
+            DigTerrainSurfaceRole role)
         {
             DigTerrainSurfaceState state;
             if (!cell.IsExplored)
@@ -91,7 +90,7 @@ namespace Dig.Unity
             byte shade = state == DigTerrainSurfaceState.Solid
                 ? (byte)Mathf.Clamp(cell.Hardness / 32, 0, 7)
                 : (byte)0;
-            return new DigTerrainMaterialKey(cell.MaterialId, state, shade);
+            return new DigTerrainMaterialKey(cell.MaterialId, state, role, shade);
         }
 
         private static int GetSubmesh(
@@ -112,111 +111,188 @@ namespace Dig.Unity
             return index;
         }
 
+        private static int GetFaceSubmesh(
+            DigTerrainRenderCell cell,
+            bool isProtected,
+            DigTerrainCellKey neighbour,
+            DigTerrainSurfaceRole role,
+            DigTerrainRenderSnapshot snapshot,
+            List<DigTerrainMaterialKey> keys,
+            List<List<int>> triangles,
+            Dictionary<DigTerrainMaterialKey, int> submeshes)
+        {
+            DigTerrainSurfaceRole resolvedRole = snapshot.IsCutaway(neighbour)
+                ? DigTerrainSurfaceRole.FreshCut
+                : role;
+            return GetSubmesh(
+                ResolveKey(cell, isProtected, resolvedRole),
+                keys,
+                triangles,
+                submeshes);
+        }
+
         private static void AddCell(
-            DigTerrainCellKey cell,
-            int submesh,
+            DigTerrainRenderCell cell,
+            bool isProtected,
             List<Vector3> vertices,
             List<Vector3> normals,
+            List<DigTerrainMaterialKey> keys,
             List<List<int>> triangles,
+            Dictionary<DigTerrainMaterialKey, int> submeshes,
             DigTerrainRenderSnapshot snapshot)
         {
-            float minX = cell.X - HalfExtent;
-            float maxX = cell.X + HalfExtent;
-            ResolveDepthExtents(cell.Z, out float minDepth, out float maxDepth);
-            float minVertical = cell.Y - HalfExtent;
-            float maxVertical = cell.Y + HalfExtent;
+            DigTerrainCellKey position = cell.Key;
+            float minX = position.X - HalfExtent;
+            float maxX = position.X + HalfExtent;
+            ResolveDepthExtents(position.Z, out float minDepth, out float maxDepth);
+            float minVertical = position.Y - HalfExtent;
+            float maxVertical = position.Y + HalfExtent;
 
-            if (!snapshot.IsRenderedSolid(cell.Offset(0, 0, 1)))
+            DigTerrainCellKey front = position.Offset(0, 0, 1);
+            if (!snapshot.IsRenderedSolid(front))
             {
                 AddFace(
-                    cell,
+                    position,
                     1,
                     Vector3.down,
                     new Vector3(minX, minDepth, minVertical),
                     new Vector3(maxX, minDepth, minVertical),
                     new Vector3(maxX, minDepth, maxVertical),
                     new Vector3(minX, minDepth, maxVertical),
-                    submesh,
+                    GetFaceSubmesh(
+                        cell,
+                        isProtected,
+                        front,
+                        DigTerrainSurfaceRole.Wall,
+                        snapshot,
+                        keys,
+                        triangles,
+                        submeshes),
                     vertices,
                     normals,
                     triangles);
             }
 
-            if (!snapshot.IsRenderedSolid(cell.Offset(0, 0, -1)))
+            DigTerrainCellKey back = position.Offset(0, 0, -1);
+            if (!snapshot.IsRenderedSolid(back))
             {
                 AddFace(
-                    cell,
+                    position,
                     2,
                     Vector3.up,
                     new Vector3(minX, maxDepth, minVertical),
                     new Vector3(minX, maxDepth, maxVertical),
                     new Vector3(maxX, maxDepth, maxVertical),
                     new Vector3(maxX, maxDepth, minVertical),
-                    submesh,
+                    GetFaceSubmesh(
+                        cell,
+                        isProtected,
+                        back,
+                        DigTerrainSurfaceRole.Wall,
+                        snapshot,
+                        keys,
+                        triangles,
+                        submeshes),
                     vertices,
                     normals,
                     triangles);
             }
 
-            if (!snapshot.IsRenderedSolid(cell.Offset(-1, 0, 0)))
+            DigTerrainCellKey left = position.Offset(-1, 0, 0);
+            if (!snapshot.IsRenderedSolid(left))
             {
                 AddFace(
-                    cell,
+                    position,
                     3,
                     Vector3.left,
                     new Vector3(minX, minDepth, minVertical),
                     new Vector3(minX, minDepth, maxVertical),
                     new Vector3(minX, maxDepth, maxVertical),
                     new Vector3(minX, maxDepth, minVertical),
-                    submesh,
+                    GetFaceSubmesh(
+                        cell,
+                        isProtected,
+                        left,
+                        DigTerrainSurfaceRole.Wall,
+                        snapshot,
+                        keys,
+                        triangles,
+                        submeshes),
                     vertices,
                     normals,
                     triangles);
             }
 
-            if (!snapshot.IsRenderedSolid(cell.Offset(1, 0, 0)))
+            DigTerrainCellKey right = position.Offset(1, 0, 0);
+            if (!snapshot.IsRenderedSolid(right))
             {
                 AddFace(
-                    cell,
+                    position,
                     4,
                     Vector3.right,
                     new Vector3(maxX, minDepth, minVertical),
                     new Vector3(maxX, maxDepth, minVertical),
                     new Vector3(maxX, maxDepth, maxVertical),
                     new Vector3(maxX, minDepth, maxVertical),
-                    submesh,
+                    GetFaceSubmesh(
+                        cell,
+                        isProtected,
+                        right,
+                        DigTerrainSurfaceRole.Wall,
+                        snapshot,
+                        keys,
+                        triangles,
+                        submeshes),
                     vertices,
                     normals,
                     triangles);
             }
 
-            if (!snapshot.IsRenderedSolid(cell.Offset(0, -1, 0)))
+            DigTerrainCellKey above = position.Offset(0, -1, 0);
+            if (!snapshot.IsRenderedSolid(above))
             {
                 AddFace(
-                    cell,
+                    position,
                     5,
                     Vector3.back,
                     new Vector3(minX, minDepth, minVertical),
                     new Vector3(minX, maxDepth, minVertical),
                     new Vector3(maxX, maxDepth, minVertical),
                     new Vector3(maxX, minDepth, minVertical),
-                    submesh,
+                    GetFaceSubmesh(
+                        cell,
+                        isProtected,
+                        above,
+                        DigTerrainSurfaceRole.Floor,
+                        snapshot,
+                        keys,
+                        triangles,
+                        submeshes),
                     vertices,
                     normals,
                     triangles);
             }
 
-            if (!snapshot.IsRenderedSolid(cell.Offset(0, 1, 0)))
+            DigTerrainCellKey below = position.Offset(0, 1, 0);
+            if (!snapshot.IsRenderedSolid(below))
             {
                 AddFace(
-                    cell,
+                    position,
                     6,
                     Vector3.forward,
                     new Vector3(minX, minDepth, maxVertical),
                     new Vector3(maxX, minDepth, maxVertical),
                     new Vector3(maxX, maxDepth, maxVertical),
                     new Vector3(minX, maxDepth, maxVertical),
-                    submesh,
+                    GetFaceSubmesh(
+                        cell,
+                        isProtected,
+                        below,
+                        DigTerrainSurfaceRole.Ceiling,
+                        snapshot,
+                        keys,
+                        triangles,
+                        submeshes),
                     vertices,
                     normals,
                     triangles);
