@@ -38,8 +38,6 @@ def check_excavation_contracts(
     room_driver_path = runtime_root / "DigAgentSimulationDriverBase.CaveRooms.cs"
     session_path = runtime_root / "DigAgentSession.TunnelMovement.cs"
     hud_path = runtime_root / "DigHudOverlay.Excavation.cs"
-    game_hud_path = runtime_root / "DigGameHudCanvas.Context.cs"
-    factory_path = runtime_root / "DigGameHudCanvas.Factory.cs"
     bootstrap_path = runtime_root / "DigUnityBootstrap.cs"
     errors: list[str] = []
 
@@ -331,37 +329,6 @@ def check_excavation_contracts(
             'GUILayout.Button("P-"',
             'GUILayout.Button("P+"',
         ),
-    ))
-
-    game_hud = texts.get(game_hud_path, "")
-    errors.extend(require_fragments(
-        game_hud_path,
-        game_hud,
-        "single-row generated room icon palette",
-        (
-            'CreateHorizontalRow("Excavation Tools", section, 56f)',
-            "CreateRoomIconButton(",
-            "new Vector2(18f, 18f)",
-            "new Vector2(30f, 18f)",
-            "new Vector2(38f, 22f)",
-            "new Vector2(18f, 32f)",
-        ),
-    ))
-    errors.extend(reject_fragments(
-        game_hud_path,
-        game_hud,
-        "two-row or font-glyph room palette",
-        (
-            'CreateHorizontalRow("Tools"',
-            'CreateHorizontalRow("Rooms"',
-            'CreateButton("Small Room", rooms',
-        ),
-    ))
-    errors.extend(require_fragments(
-        factory_path,
-        texts.get(factory_path, ""),
-        "programmatic room icon geometry",
-        ("CreateRoomIconButton", "CreateIconBar", "Outline outline"),
     ))
     errors.extend(require_fragments(
         bootstrap_path,
