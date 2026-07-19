@@ -13,7 +13,7 @@ namespace Dig.Unity
     {
         internal static readonly DomainError ProtectedRock = new DomainError(
             "world.excavation.protected_rock",
-            "The border and first upper rock row cannot be excavated.");
+            "Protected terrain cannot be excavated.");
 
         private readonly DesignateDiggingCommandHandler _designationHandler;
         private readonly WorldPresenter _presenter;
@@ -46,7 +46,7 @@ namespace Dig.Unity
 
         internal MaterialId EmptyMaterialId => _emptyMaterialId;
 
-        internal IReadOnlyList<CellId> ProtectedCells => _boundaryPolicy.ProtectedCells;
+        internal IReadOnlyList<CellId> ProtectedCells => LoadAllProtectedCells();
 
         public static DigWorldSession CreateDemo(int width, int height, int chunkSize)
         {
@@ -116,7 +116,7 @@ namespace Dig.Unity
 
         internal bool IsProtected(CellId cell)
         {
-            return _boundaryPolicy.IsProtected(cell);
+            return _boundaryPolicy.IsProtected(cell) || IsCaveRoomProtected(cell);
         }
 
         public Result ToggleDesignation(WorldCellViewModel cell)
@@ -126,7 +126,7 @@ namespace Dig.Unity
 
         internal Result SetDesignation(CellId cell, bool active)
         {
-            if (active && _boundaryPolicy.IsProtected(cell))
+            if (active && IsProtected(cell))
             {
                 return Result.Failure(ProtectedRock);
             }
