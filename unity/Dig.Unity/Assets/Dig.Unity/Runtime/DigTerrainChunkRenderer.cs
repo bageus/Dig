@@ -197,16 +197,19 @@ namespace Dig.Unity
             }
         }
 
-        private static void CountVisual(DigTerrainChunkVisual visual)
+        private void CountVisual(DigTerrainChunkVisual visual)
         {
-            MeshFilter? filter = visual.GetComponent<MeshFilter>();
-            Mesh? mesh = filter == null ? null : filter.sharedMesh;
+            Mesh? mesh = visual.ResolveMesh();
             if (mesh == null)
             {
                 return;
             }
 
-            // Counters are accumulated by the caller after this helper returns.
+            VertexCount += mesh.vertexCount;
+            for (int submesh = 0; submesh < mesh.subMeshCount; submesh++)
+            {
+                TriangleCount += (int)mesh.GetIndexCount(submesh) / 3;
+            }
         }
 
         private void EnsureRoot()
