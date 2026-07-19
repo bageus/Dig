@@ -163,7 +163,7 @@ public sealed class ContextInputRouterSelectionTests
     }
 
     [Fact]
-    public void Completed_building_and_ground_have_typed_local_selection_effects()
+    public void Completed_building_selects_but_ordinary_ground_does_not_select_a_cell()
     {
         ContextInputDecision building = _router.Route(
             WorldLeft(),
@@ -179,8 +179,9 @@ public sealed class ContextInputRouterSelectionTests
 
         Assert.Equal(PresentationInputEffect.SelectBuilding, building.Effects);
         Assert.Equal(Building, building.TargetEntityId);
-        Assert.Equal(PresentationInputEffect.SelectGround, ground.Effects);
-        Assert.Equal(Cell, ground.TargetCell);
+        Assert.Equal(PresentationInputEffect.None, ground.Effects);
+        Assert.False(ground.HasApplicationCommand);
+        Assert.Null(ground.TargetCell);
     }
 
     [Fact]
@@ -236,4 +237,5 @@ public sealed class ContextInputRouterSelectionTests
         return EntityId.Parse(value.ToString("x32"));
     }
 }
+
 }
