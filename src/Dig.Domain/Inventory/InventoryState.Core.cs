@@ -167,7 +167,8 @@ public sealed partial class InventoryState : AggregateRoot
         return new InventorySnapshot(
             Version,
             _stacks.Values.Select(stack => stack.CreateSnapshot()).ToArray(),
-            _heldItems.Values.ToArray());
+            _heldItems.Values.ToArray(),
+            _residentSlotClaims.ToArray());
     }
 
     private ItemStackState? Find(EntityId stackId)
