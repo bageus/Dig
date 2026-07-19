@@ -75,21 +75,42 @@ def main() -> int:
         mesh_path,
         mesh,
         (
+            "internal static partial class DigTerrainChunkMeshBuilder",
             "DigTerrainRenderChunk chunk",
             "DigTerrainRenderSnapshot snapshot",
-            "DigTunnelProjection.DepthSpacing",
-            "cell.Offset(-1, 0, 0)",
-            "cell.Offset(1, 0, 0)",
-            "cell.Offset(0, -1, 0)",
-            "cell.Offset(0, 1, 0)",
-            "cell.Offset(0, 0, -1)",
-            "cell.Offset(0, 0, 1)",
-            "ResolveOffset",
+            "position.Offset(-1, 0, 0)",
+            "position.Offset(1, 0, 0)",
+            "position.Offset(0, -1, 0)",
+            "position.Offset(0, 1, 0)",
+            "position.Offset(0, 0, -1)",
+            "position.Offset(0, 0, 1)",
+            "snapshot.IsCutaway(neighbour)",
+            "DigTerrainSurfaceRole.Floor",
+            "DigTerrainSurfaceRole.Wall",
+            "DigTerrainSurfaceRole.Ceiling",
+            "DigTerrainSurfaceRole.FreshCut",
         ),
     ))
     errors.extend(reject(
         mesh_path,
         mesh,
+        ("UnityEngine.Random", "MeshCollider", "BoxCollider", "DigCellVisual"),
+    ))
+
+    geometry_path, geometry = read("DigTerrainChunkMeshBuilder.Geometry.cs")
+    errors.extend(require(
+        geometry_path,
+        geometry,
+        (
+            "ResolveDepthExtents",
+            "DigTunnelProjection.DepthSpacing",
+            "AddFace(",
+            "ResolveOffset",
+        ),
+    ))
+    errors.extend(reject(
+        geometry_path,
+        geometry,
         ("UnityEngine.Random", "MeshCollider", "BoxCollider", "DigCellVisual"),
     ))
 

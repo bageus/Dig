@@ -37,7 +37,7 @@ namespace Dig.Unity
             return CreateFallback(stableId);
         }
 
-        public IReadOnlyList<string> ValidateCatalog()
+        public virtual IReadOnlyList<string> ValidateCatalog()
         {
             List<string> errors = new List<string>();
             HashSet<string> ids = new HashSet<string>(StringComparer.Ordinal);
@@ -122,12 +122,12 @@ namespace Dig.Unity
             }
         }
 
-        private void OnEnable()
+        protected virtual void OnEnable()
         {
             _lookup = null;
         }
 
-        private void OnValidate()
+        protected virtual void OnValidate()
         {
             _lookup = null;
         }

@@ -152,7 +152,7 @@ namespace Dig.Unity
                 Material? material = null;
                 if (key.State == DigTerrainSurfaceState.Solid && catalog != null)
                 {
-                    material = catalog.Resolve(key.MaterialId).Material;
+                    material = catalog.ResolveSurface(key.MaterialId, key.Role);
                 }
 
                 materials[index] = material ?? ResolveFallbackMaterial(key);
@@ -189,11 +189,30 @@ namespace Dig.Unity
                 case DigTerrainSurfaceState.Protected:
                     return new Color(0.18f, 0.22f, 0.28f, 1f);
                 default:
-                    float hardness = key.Shade / 7f;
+                    return ResolveSolidFallbackColor(key);
+            }
+        }
+
+        private static Color ResolveSolidFallbackColor(DigTerrainMaterialKey key)
+        {
+            float hardness = key.Shade / 7f;
+            Color baseColor = Color.Lerp(
+                new Color(0.48f, 0.36f, 0.25f, 1f),
+                new Color(0.32f, 0.36f, 0.42f, 1f),
+                hardness);
+            switch (key.Role)
+            {
+                case DigTerrainSurfaceRole.Floor:
+                    return Color.Lerp(baseColor, Color.white, 0.08f);
+                case DigTerrainSurfaceRole.Ceiling:
+                    return Color.Lerp(baseColor, Color.black, 0.12f);
+                case DigTerrainSurfaceRole.FreshCut:
                     return Color.Lerp(
-                        new Color(0.48f, 0.36f, 0.25f, 1f),
-                        new Color(0.32f, 0.36f, 0.42f, 1f),
-                        hardness);
+                        baseColor,
+                        new Color(0.62f, 0.43f, 0.28f, 1f),
+                        0.22f);
+                default:
+                    return baseColor;
             }
         }
 

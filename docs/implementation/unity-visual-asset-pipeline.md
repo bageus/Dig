@@ -39,6 +39,30 @@ Existing per-cell primitives stay hidden and are retained only as bounded tunnel
 
 The former `DigRockVolumeRenderer` has been removed. Front terrain and deep rock now use one material resolver, mesh builder, signature calculation, diagnostics counter and dirty-invalidation path.
 
+### Terrain visual profile contract
+
+`DigTerrainVisualCatalog` resolves a stable gameplay material id to a typed `DigTerrainVisualProfile`. Every profile declares one of six required visual families:
+
+- Sand;
+- Stone;
+- MetalBearing;
+- Crystalline;
+- Lava;
+- Unmineable.
+
+A profile contains separate materials for `Floor`, `Wall`, `Ceiling` and `FreshCut`. Catalog validation reports duplicate stable ids, missing surface materials and any missing required family. The base catalog material remains a backward-compatible fallback for an unknown or incomplete profile.
+
+The chunk builder assigns a surface role to every exposed face before submesh grouping:
+
+- an exposed logical top face is `Floor`;
+- an exposed logical bottom face is `Ceiling`;
+- horizontal and depth-facing sides are `Wall`;
+- a face bordering an explicit excavation cutaway becomes `FreshCut`.
+
+Natural empty volume is not automatically classified as fresh excavation. This keeps natural cave surfaces and player-cut surfaces separable once provenance and template-cave data are connected.
+
+One cell may therefore contribute triangles to several material submeshes, but it still creates no per-cell GameObject. Missing catalog assets use cached role-aware debug materials so fallback rendering also stays deterministic and allocation bounded.
+
 ### Snapshot contract
 
 `DigTerrainCellKey` and `DigTerrainChunkKey` contain `X`, `Y` and `Z`. Mesh generation and exposure checks evaluate all six neighbours.
@@ -121,8 +145,8 @@ VFX_Excavation_Stone
 
 Fallbacks are presentation-only. They must never change gameplay state or infer missing definitions.
 
-- missing catalog: cached debug materials on chunk submeshes;
-- unknown id: catalog fallback material;
+- missing catalog: cached role-aware debug materials on chunk submeshes;
+- unknown terrain profile id: base catalog fallback material;
 - invalid prefab root: catalog fallback;
 - validation errors: logged during renderer startup.
 
@@ -130,12 +154,12 @@ Fallbacks are presentation-only. They must never change gameplay state or infer 
 
 The unified mesh snapshot covers the current visual `Z=0..3` volume, but only front cells have the full authoritative World state. Deep cells currently carry one explicit rock material/hardness pair and an open/solid projection from tunnel topology and excavation completion.
 
-Texture UV conventions, greedy meshing, production terrain materials, deposits and template cave trim remain part of #206.
+The typed terrain profile and surface-role contract is present, but production material assets, UV conventions, deposits, deterministic decorations and template cave trim remain part of the later #206 slices.
 
 ## Next steps
 
 - #88: migrate deep terrain materials, damage, Jobs, reservations and persistence to authoritative spatial ownership;
-- #206: production terrain/deposit/template-cave assets;
+- #206: connect production materials, deposits, decorations and template-cave assets to the typed profile contract;
 - #207–#210: typed prefab integrations for buildings, items, residents and creatures;
 - #211: unified overlay styles;
 - #212: URP, lighting and pooled VFX.
