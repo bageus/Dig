@@ -23,6 +23,8 @@ namespace Dig.Unity
             {
                 _protectedCells.Add(new Vector2Int(cells[index].X, cells[index].Y));
             }
+
+            RefreshChunkedTerrain();
         }
 
         internal void HighlightRejected(CellId cell)
