@@ -19,16 +19,8 @@ namespace Dig.Unity
                 return;
             }
 
-            GUILayout.Label(
-                $"Excavation: {_excavationControls.ExcavationModeLabel} | " +
-                $"priority {_excavationControls.ExcavationPriority}");
+            _excavationControls.EnsureDefaultExcavationDrawingMode();
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Off", GUILayout.Width(56f)))
-            {
-                _excavationControls.SetExcavationDrawingMode(
-                    DigExcavationDrawingMode.None);
-            }
-
             GUI.enabled = _excavationControls.CanActivateExcavationDrawing;
             if (GUILayout.Button("Tunnel", GUILayout.Width(76f)))
             {
@@ -48,39 +40,27 @@ namespace Dig.Unity
                     DigExcavationDrawingMode.Delete);
             }
 
-            GUI.enabled = true;
-            if (GUILayout.Button("P-", GUILayout.Width(42f)))
-            {
-                _excavationControls.AdjustExcavationPriority(-50);
-            }
-
-            if (GUILayout.Button("P+", GUILayout.Width(42f)))
-            {
-                _excavationControls.AdjustExcavationPriority(50);
-            }
-
             GUILayout.EndHorizontal();
-            GUI.enabled = _excavationControls.CanActivateExcavationDrawing;
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Small Cave", GUILayout.Width(88f)))
+            if (GUILayout.Button("□", GUILayout.Width(58f)))
             {
                 _excavationControls.SetCaveRoomPlanningPreset(
                     CaveRoomPresetKind.Small);
             }
 
-            if (GUILayout.Button("Medium", GUILayout.Width(76f)))
+            if (GUILayout.Button("▭", GUILayout.Width(58f)))
             {
                 _excavationControls.SetCaveRoomPlanningPreset(
                     CaveRoomPresetKind.Medium);
             }
 
-            if (GUILayout.Button("Large", GUILayout.Width(68f)))
+            if (GUILayout.Button("▰", GUILayout.Width(58f)))
             {
                 _excavationControls.SetCaveRoomPlanningPreset(
                     CaveRoomPresetKind.Large);
             }
 
-            if (GUILayout.Button("Tall", GUILayout.Width(58f)))
+            if (GUILayout.Button("▯", GUILayout.Width(58f)))
             {
                 _excavationControls.SetCaveRoomPlanningPreset(
                     CaveRoomPresetKind.Tall);
@@ -94,7 +74,7 @@ namespace Dig.Unity
             }
             else if (_excavationControls.CaveRoomPreset.HasValue)
             {
-                GUILayout.Label("Move over a horizontal tunnel; LMB places or expands the room plan.");
+                GUILayout.Label("Move over a horizontal tunnel; LMB places a room plan.");
             }
             else if (_excavationControls.ExcavationModeLabel == "Depth")
             {
