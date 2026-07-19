@@ -198,6 +198,14 @@ public sealed partial class InventoryState
             definition.InventoryExpansion.Group == InventoryExpansionGroup.Cargo
                 ? ResidentInventoryCompartment.Cargo
                 : ResidentInventoryCompartment.Weapon;
+        bool hasClaims = _residentSlotClaims.Any(claim =>
+            claim.ResidentId == source.OwnerId
+            && claim.Slot.Compartment == compartment);
+        if (hasClaims)
+        {
+            return Result.Failure(InventoryErrors.ResidentSlotClaimConflict);
+        }
+
         bool hasContents = occupied.Keys.Any(slot => slot.Compartment == compartment);
         return hasContents
             ? Result.Failure(InventoryErrors.ResidentInventorySpillRequired)
