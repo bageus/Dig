@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Dig.Presentation.World;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -8,18 +7,21 @@ namespace Dig.Unity
     internal static class DigTerrainChunkMeshBuilder
     {
         private const float HalfExtent = 0.47f;
-        private const float RockHeight = 0.82f;
+        private const float RockDepth = 0.82f;
         private const float Roughness = 0.012f;
 
         internal static DigTerrainChunkMeshData Build(
-            IReadOnlyList<DigCellVisual> cells,
-            ISet<Vector2Int> solidCells,
-            ISet<Vector2Int> cutawayCells,
-            ISet<Vector2Int> protectedCells)
+            DigTerrainRenderChunk chunk,
+            DigTerrainRenderSnapshot snapshot)
         {
-            if (cells == null)
+            if (chunk == null)
             {
-                throw new ArgumentNullException(nameof(cells));
+                throw new ArgumentNullException(nameof(chunk));
+            }
+
+            if (snapshot == null)
+            {
+                throw new ArgumentNullException(nameof(snapshot));
             }
 
             List<Vector3> vertices = new List<Vector3>();
@@ -29,28 +31,25 @@ namespace Dig.Unity
             Dictionary<DigTerrainMaterialKey, int> submeshes =
                 new Dictionary<DigTerrainMaterialKey, int>();
 
-            for (int index = 0; index < cells.Count; index++)
+            for (int index = 0; index < chunk.Cells.Count; index++)
             {
-                WorldCellViewModel model = cells[index].Model;
-                Vector2Int cell = new Vector2Int(model.X, model.Y);
-                if (!model.IsSolid || cutawayCells.Contains(cell))
+                DigTerrainRenderCell cell = chunk.Cells[index];
+                if (!cell.IsSolid || snapshot.IsCutaway(cell.Key))
                 {
                     continue;
                 }
 
                 DigTerrainMaterialKey key = ResolveKey(
-                    model,
-                    protectedCells.Contains(cell));
+                    cell,
+                    snapshot.IsProtected(cell.Key));
                 int submesh = GetSubmesh(key, keys, triangles, submeshes);
                 AddCell(
-                    model.X,
-                    model.Y,
+                    cell.Key,
                     submesh,
                     vertices,
                     normals,
                     triangles,
-                    solidCells,
-                    cutawayCells);
+                    snapshot);
             }
 
             int[][] triangleArrays = new int[triangles.Count][];
@@ -67,7 +66,7 @@ namespace Dig.Unity
         }
 
         private static DigTerrainMaterialKey ResolveKey(
-            WorldCellViewModel cell,
+            DigTerrainRenderCell cell,
             bool isProtected)
         {
             DigTerrainSurfaceState state;
@@ -113,131 +112,119 @@ namespace Dig.Unity
         }
 
         private static void AddCell(
-            int x,
-            int y,
+            DigTerrainCellKey cell,
             int submesh,
             List<Vector3> vertices,
             List<Vector3> normals,
             List<List<int>> triangles,
-            ISet<Vector2Int> solidCells,
-            ISet<Vector2Int> cutawayCells)
+            DigTerrainRenderSnapshot snapshot)
         {
-            float minX = x - HalfExtent;
-            float maxX = x + HalfExtent;
-            float minY = 0f;
-            float maxY = RockHeight;
-            float minZ = y - HalfExtent;
-            float maxZ = y + HalfExtent;
+            float minX = cell.X - HalfExtent;
+            float maxX = cell.X + HalfExtent;
+            float minDepth = cell.Z * DigTunnelProjection.DepthSpacing;
+            float maxDepth = minDepth + RockDepth;
+            float minVertical = cell.Y - HalfExtent;
+            float maxVertical = cell.Y + HalfExtent;
 
-            AddFace(
-                x,
-                y,
-                1,
-                Vector3.down,
-                new Vector3(minX, minY, minZ),
-                new Vector3(maxX, minY, minZ),
-                new Vector3(maxX, minY, maxZ),
-                new Vector3(minX, minY, maxZ),
-                submesh,
-                vertices,
-                normals,
-                triangles);
-            AddFace(
-                x,
-                y,
-                2,
-                Vector3.up,
-                new Vector3(minX, maxY, minZ),
-                new Vector3(minX, maxY, maxZ),
-                new Vector3(maxX, maxY, maxZ),
-                new Vector3(maxX, maxY, minZ),
-                submesh,
-                vertices,
-                normals,
-                triangles);
-
-            if (!IsRenderedSolid(x - 1, y, solidCells, cutawayCells))
+            if (!snapshot.IsRenderedSolid(cell.Offset(0, 0, 1)))
             {
                 AddFace(
-                    x,
-                    y,
+                    cell,
+                    1,
+                    Vector3.down,
+                    new Vector3(minX, minDepth, minVertical),
+                    new Vector3(maxX, minDepth, minVertical),
+                    new Vector3(maxX, minDepth, maxVertical),
+                    new Vector3(minX, minDepth, maxVertical),
+                    submesh,
+                    vertices,
+                    normals,
+                    triangles);
+            }
+
+            if (!snapshot.IsRenderedSolid(cell.Offset(0, 0, -1)))
+            {
+                AddFace(
+                    cell,
+                    2,
+                    Vector3.up,
+                    new Vector3(minX, maxDepth, minVertical),
+                    new Vector3(minX, maxDepth, maxVertical),
+                    new Vector3(maxX, maxDepth, maxVertical),
+                    new Vector3(maxX, maxDepth, minVertical),
+                    submesh,
+                    vertices,
+                    normals,
+                    triangles);
+            }
+
+            if (!snapshot.IsRenderedSolid(cell.Offset(-1, 0, 0)))
+            {
+                AddFace(
+                    cell,
                     3,
                     Vector3.left,
-                    new Vector3(minX, minY, minZ),
-                    new Vector3(minX, minY, maxZ),
-                    new Vector3(minX, maxY, maxZ),
-                    new Vector3(minX, maxY, minZ),
+                    new Vector3(minX, minDepth, minVertical),
+                    new Vector3(minX, minDepth, maxVertical),
+                    new Vector3(minX, maxDepth, maxVertical),
+                    new Vector3(minX, maxDepth, minVertical),
                     submesh,
                     vertices,
                     normals,
                     triangles);
             }
 
-            if (!IsRenderedSolid(x + 1, y, solidCells, cutawayCells))
+            if (!snapshot.IsRenderedSolid(cell.Offset(1, 0, 0)))
             {
                 AddFace(
-                    x,
-                    y,
+                    cell,
                     4,
                     Vector3.right,
-                    new Vector3(maxX, minY, minZ),
-                    new Vector3(maxX, maxY, minZ),
-                    new Vector3(maxX, maxY, maxZ),
-                    new Vector3(maxX, minY, maxZ),
+                    new Vector3(maxX, minDepth, minVertical),
+                    new Vector3(maxX, maxDepth, minVertical),
+                    new Vector3(maxX, maxDepth, maxVertical),
+                    new Vector3(maxX, minDepth, maxVertical),
                     submesh,
                     vertices,
                     normals,
                     triangles);
             }
 
-            if (!IsRenderedSolid(x, y - 1, solidCells, cutawayCells))
+            if (!snapshot.IsRenderedSolid(cell.Offset(0, -1, 0)))
             {
                 AddFace(
-                    x,
-                    y,
+                    cell,
                     5,
                     Vector3.back,
-                    new Vector3(minX, minY, minZ),
-                    new Vector3(minX, maxY, minZ),
-                    new Vector3(maxX, maxY, minZ),
-                    new Vector3(maxX, minY, minZ),
+                    new Vector3(minX, minDepth, minVertical),
+                    new Vector3(minX, maxDepth, minVertical),
+                    new Vector3(maxX, maxDepth, minVertical),
+                    new Vector3(maxX, minDepth, minVertical),
                     submesh,
                     vertices,
                     normals,
                     triangles);
             }
 
-            if (!IsRenderedSolid(x, y + 1, solidCells, cutawayCells))
+            if (!snapshot.IsRenderedSolid(cell.Offset(0, 1, 0)))
             {
                 AddFace(
-                    x,
-                    y,
+                    cell,
                     6,
                     Vector3.forward,
-                    new Vector3(minX, minY, maxZ),
-                    new Vector3(maxX, minY, maxZ),
-                    new Vector3(maxX, maxY, maxZ),
-                    new Vector3(minX, maxY, maxZ),
+                    new Vector3(minX, minDepth, maxVertical),
+                    new Vector3(maxX, minDepth, maxVertical),
+                    new Vector3(maxX, maxDepth, maxVertical),
+                    new Vector3(minX, maxDepth, maxVertical),
                     submesh,
                     vertices,
                     normals,
                     triangles);
             }
-        }
-
-        private static bool IsRenderedSolid(
-            int x,
-            int y,
-            ISet<Vector2Int> solidCells,
-            ISet<Vector2Int> cutawayCells)
-        {
-            Vector2Int cell = new Vector2Int(x, y);
-            return solidCells.Contains(cell) && !cutawayCells.Contains(cell);
         }
 
         private static void AddFace(
-            int x,
-            int y,
+            DigTerrainCellKey cell,
             int salt,
             Vector3 normal,
             Vector3 a,
@@ -249,7 +236,7 @@ namespace Dig.Unity
             List<Vector3> normals,
             List<List<int>> triangles)
         {
-            Vector3 offset = normal * ResolveOffset(x, y, salt);
+            Vector3 offset = normal * ResolveOffset(cell, salt);
             int start = vertices.Count;
             vertices.Add(a + offset);
             vertices.Add(b + offset);
@@ -267,13 +254,14 @@ namespace Dig.Unity
             triangles[submesh].Add(start + 3);
         }
 
-        private static float ResolveOffset(int x, int y, int salt)
+        private static float ResolveOffset(DigTerrainCellKey cell, int salt)
         {
             unchecked
             {
-                uint hash = (uint)(x * 73856093)
-                    ^ (uint)(y * 19349663)
-                    ^ (uint)(salt * 83492791);
+                uint hash = (uint)(cell.X * 73856093)
+                    ^ (uint)(cell.Y * 19349663)
+                    ^ (uint)(cell.Z * 83492791)
+                    ^ (uint)(salt * 1640531513);
                 hash ^= hash >> 13;
                 hash *= 1274126177u;
                 float normalized = (hash & 1023u) / 1023f;
