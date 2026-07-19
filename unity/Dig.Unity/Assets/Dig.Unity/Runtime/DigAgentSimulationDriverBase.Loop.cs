@@ -73,9 +73,6 @@ namespace Dig.Unity
             {
                 IReadOnlyDictionary<string, CellId> movement =
                     TerrainSession.PlanMovement(before);
-                movement = TerrainSession.ApplyResidentMovementCadence(
-                    movement,
-                    nextTick);
                 result = AgentSession.Advance(movement);
             }
 
