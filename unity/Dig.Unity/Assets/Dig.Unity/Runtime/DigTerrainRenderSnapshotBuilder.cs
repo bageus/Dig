@@ -214,6 +214,7 @@ namespace Dig.Unity
         private static void Replace<TKey, TValue>(
             Dictionary<TKey, TValue> target,
             Dictionary<TKey, TValue> source)
+            where TKey : notnull
         {
             target.Clear();
             foreach (KeyValuePair<TKey, TValue> pair in source)
