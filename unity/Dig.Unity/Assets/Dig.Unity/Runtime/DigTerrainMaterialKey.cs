@@ -16,21 +16,25 @@ namespace Dig.Unity
         internal DigTerrainMaterialKey(
             string materialId,
             DigTerrainSurfaceState state,
+            DigTerrainSurfaceRole role,
             byte shade)
         {
             MaterialId = materialId ?? throw new ArgumentNullException(nameof(materialId));
             State = state;
+            Role = role;
             Shade = shade;
         }
 
         internal string MaterialId { get; }
         internal DigTerrainSurfaceState State { get; }
+        internal DigTerrainSurfaceRole Role { get; }
         internal byte Shade { get; }
 
         public bool Equals(DigTerrainMaterialKey other)
         {
             return string.Equals(MaterialId, other.MaterialId, StringComparison.Ordinal)
                 && State == other.State
+                && Role == other.Role
                 && Shade == other.Shade;
         }
 
@@ -45,13 +49,14 @@ namespace Dig.Unity
             {
                 int hash = StringComparer.Ordinal.GetHashCode(MaterialId);
                 hash = (hash * 397) ^ (int)State;
+                hash = (hash * 397) ^ (int)Role;
                 return (hash * 397) ^ Shade;
             }
         }
 
         public override string ToString()
         {
-            return $"{MaterialId}:{State}:{Shade}";
+            return $"{MaterialId}:{State}:{Role}:{Shade}";
         }
     }
 }
