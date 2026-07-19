@@ -90,14 +90,17 @@ public sealed partial class DigGameHudCanvas
             "Excavation",
             _bottomContent!,
             string.Empty,
-            preferredWidth: 1200f);
-        RectTransform row = CreateHorizontalRow("Tools", section, 44f);
+            preferredWidth: 1240f);
+        RectTransform row = CreateHorizontalRow("Excavation Tools", section, 56f);
         Button tunnel = CreateButton("Tunnel", row, "Tunnel", () =>
-            _interaction.SetExcavationDrawingMode(DigExcavationDrawingMode.Tunnel));
+            _interaction.SetExcavationDrawingMode(DigExcavationDrawingMode.Tunnel),
+            preferredHeight: 52f);
         Button depth = CreateButton("Depth", row, "Depth", () =>
-            _interaction.SetExcavationDrawingMode(DigExcavationDrawingMode.Depth));
+            _interaction.SetExcavationDrawingMode(DigExcavationDrawingMode.Depth),
+            preferredHeight: 52f);
         Button erase = CreateButton("Erase", row, "Erase", () =>
-            _interaction.SetExcavationDrawingMode(DigExcavationDrawingMode.Delete));
+            _interaction.SetExcavationDrawingMode(DigExcavationDrawingMode.Delete),
+            preferredHeight: 52f);
         SetButtonActive(
             tunnel,
             _interaction.ExcavationDrawingMode == DigExcavationDrawingMode.Tunnel
@@ -109,15 +112,26 @@ public sealed partial class DigGameHudCanvas
             erase,
             _interaction.ExcavationDrawingMode == DigExcavationDrawingMode.Delete);
 
-        RectTransform rooms = CreateHorizontalRow("Rooms", section, 44f);
-        Button small = CreateButton("Small Room", rooms, "□", () =>
-            _interaction.SetCaveRoomPlanningPreset(CaveRoomPresetKind.Small));
-        Button medium = CreateButton("Medium Room", rooms, "▭", () =>
-            _interaction.SetCaveRoomPlanningPreset(CaveRoomPresetKind.Medium));
-        Button large = CreateButton("Large Room", rooms, "▰", () =>
-            _interaction.SetCaveRoomPlanningPreset(CaveRoomPresetKind.Large));
-        Button tall = CreateButton("Tall Room", rooms, "▯", () =>
-            _interaction.SetCaveRoomPlanningPreset(CaveRoomPresetKind.Tall));
+        Button small = CreateRoomIconButton(
+            "Small Room",
+            row,
+            new Vector2(18f, 18f),
+            () => _interaction.SetCaveRoomPlanningPreset(CaveRoomPresetKind.Small));
+        Button medium = CreateRoomIconButton(
+            "Medium Room",
+            row,
+            new Vector2(30f, 18f),
+            () => _interaction.SetCaveRoomPlanningPreset(CaveRoomPresetKind.Medium));
+        Button large = CreateRoomIconButton(
+            "Large Room",
+            row,
+            new Vector2(38f, 22f),
+            () => _interaction.SetCaveRoomPlanningPreset(CaveRoomPresetKind.Large));
+        Button tall = CreateRoomIconButton(
+            "Tall Room",
+            row,
+            new Vector2(18f, 32f),
+            () => _interaction.SetCaveRoomPlanningPreset(CaveRoomPresetKind.Tall));
         SetButtonActive(small, _interaction.CaveRoomPreset == CaveRoomPresetKind.Small);
         SetButtonActive(medium, _interaction.CaveRoomPreset == CaveRoomPresetKind.Medium);
         SetButtonActive(large, _interaction.CaveRoomPreset == CaveRoomPresetKind.Large);

@@ -38,9 +38,9 @@ def check_excavation_contracts(
     room_driver_path = runtime_root / "DigAgentSimulationDriverBase.CaveRooms.cs"
     session_path = runtime_root / "DigAgentSession.TunnelMovement.cs"
     hud_path = runtime_root / "DigHudOverlay.Excavation.cs"
-    game_hud_path = runtime_root / "DigGameHudCanvas.Context.cs"
     bootstrap_path = runtime_root / "DigUnityBootstrap.cs"
     errors: list[str] = []
+
     errors.extend(require_fragments(
         projection_path,
         texts.get(projection_path, ""),
@@ -54,17 +54,33 @@ def check_excavation_contracts(
             "ResidentFootSink",
         ),
     ))
+
+    tunnel_renderer = texts.get(tunnel_renderer_path, "")
     errors.extend(require_fragments(
         tunnel_renderer_path,
-        texts.get(tunnel_renderer_path, ""),
-        "layered floor rendering",
+        tunnel_renderer,
+        "depth-floor rendering without shaft markers",
         (
-            "if (!vertical && cell.Z == 0)",
+            "if (vertical || cell.Z == 0",
             "DigTunnelProjection.FloorWorldPosition(cell)",
             "DigTunnelProjection.FloorThickness",
             "DigTunnelProjection.FloorDepth",
+            "Layered Tunnel Floors",
         ),
     ))
+    errors.extend(reject_fragments(
+        tunnel_renderer_path,
+        tunnel_renderer,
+        "synthetic initial shaft and cave frame visuals",
+        (
+            '"Shaft {cell}"',
+            "Cave ceiling",
+            "Cave back wall",
+            "CreateCaveShell",
+            "_verticalMaterial",
+        ),
+    ))
+
     errors.extend(require_fragments(
         world_renderer_path,
         texts.get(world_renderer_path, ""),
@@ -122,7 +138,7 @@ def check_excavation_contracts(
     errors.extend(require_fragments(
         room_protection_path,
         texts.get(room_protection_path, ""),
-        "completed cave room shell protection",
+        "completed cave room perimeter protection",
         (
             "CaveRoomShellProtectionPolicy",
             "SynchronizeCompletedCaveRoomProtection",
@@ -151,9 +167,11 @@ def check_excavation_contracts(
             "RollBackDesignations",
         ),
     ))
+
+    drawing = texts.get(drawing_path, "")
     errors.extend(require_fragments(
         drawing_path,
-        texts.get(drawing_path, ""),
+        drawing,
         "unified Z0 excavation drawing",
         (
             "DigExcavationDrawingMode.Tunnel",
@@ -169,6 +187,15 @@ def check_excavation_contracts(
             "DisableCaveRoomPlanning",
         ),
     ))
+    errors.extend(reject_fragments(
+        drawing_path,
+        drawing,
+        "separate horizontal and vertical tools",
+        (
+            "DigExcavationDrawingMode.Horizontal",
+            "DigExcavationDrawingMode.Vertical",
+        ),
+    ))
     errors.extend(require_fragments(
         drawing_defaults_path,
         texts.get(drawing_defaults_path, ""),
@@ -177,15 +204,6 @@ def check_excavation_contracts(
             "EnsureDefaultExcavationDrawingMode",
             "DigExcavationDrawingMode.Tunnel",
             "CanSelectExcavationCells",
-        ),
-    ))
-    errors.extend(reject_fragments(
-        drawing_path,
-        texts.get(drawing_path, ""),
-        "separate horizontal and vertical tools",
-        (
-            "DigExcavationDrawingMode.Horizontal",
-            "DigExcavationDrawingMode.Vertical",
         ),
     ))
     errors.extend(require_fragments(
@@ -215,6 +233,7 @@ def check_excavation_contracts(
             "_invalidMaterial",
         ),
     ))
+
     interaction = texts.get(interaction_path, "")
     errors.extend(require_fragments(
         interaction_path,
@@ -276,40 +295,27 @@ def check_excavation_contracts(
         "manual movement release",
         ("ReleaseManualTunnelOrder", "_manualTunnelOrders.Remove"),
     ))
+
+    hud = texts.get(hud_path, "")
     errors.extend(require_fragments(
         hud_path,
-        texts.get(hud_path, ""),
-        "base excavation HUD controls",
+        hud,
+        "legacy excavation adapter controls",
         (
             "EnsureDefaultExcavationDrawingMode",
             'GUILayout.Button("Tunnel"',
             'GUILayout.Button("Depth"',
             'GUILayout.Button("Delete"',
-            'GUILayout.Button("□"',
-            'GUILayout.Button("▭"',
-            'GUILayout.Button("▰"',
-            'GUILayout.Button("▯"',
         ),
     ))
     errors.extend(reject_fragments(
         hud_path,
-        texts.get(hud_path, ""),
+        hud,
         "removed excavation HUD controls",
         (
             'GUILayout.Button("Off"',
             'GUILayout.Button("P-"',
             'GUILayout.Button("P+"',
-        ),
-    ))
-    errors.extend(require_fragments(
-        game_hud_path,
-        texts.get(game_hud_path, ""),
-        "icon room palette",
-        (
-            'CreateButton("Small Room", rooms, "□"',
-            'CreateButton("Medium Room", rooms, "▭"',
-            'CreateButton("Large Room", rooms, "▰"',
-            'CreateButton("Tall Room", rooms, "▯"',
         ),
     ))
     errors.extend(require_fragments(

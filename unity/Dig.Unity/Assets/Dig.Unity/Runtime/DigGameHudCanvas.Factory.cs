@@ -41,8 +41,11 @@ public sealed partial class DigGameHudCanvas
         Text text = rect.gameObject.AddComponent<Text>();
         text.font = GetFont();
         text.fontSize = fontSize;
+        text.fontStyle = FontStyle.Bold;
         text.color = Color.white;
         text.alignment = alignment;
+        text.alignByGeometry = true;
+        text.supportRichText = false;
         text.text = value;
         text.horizontalOverflow = HorizontalWrapMode.Wrap;
         text.verticalOverflow = VerticalWrapMode.Truncate;
@@ -59,27 +62,92 @@ public sealed partial class DigGameHudCanvas
         RectTransform rect = CreatePanel(
             name,
             parent,
-            new Color(0.18f, 0.22f, 0.28f, 0.92f));
+            new Color(0.15f, 0.20f, 0.27f, 1f));
         LayoutElement element = rect.gameObject.AddComponent<LayoutElement>();
         element.preferredHeight = preferredHeight;
         element.minHeight = preferredHeight;
         Button button = rect.gameObject.AddComponent<Button>();
         ColorBlock colors = button.colors;
         colors.normalColor = Color.white;
-        colors.highlightedColor = new Color(1.12f, 1.12f, 1.12f, 1f);
-        colors.pressedColor = new Color(0.78f, 0.82f, 0.90f, 1f);
+        colors.highlightedColor = new Color(1.08f, 1.08f, 1.08f, 1f);
+        colors.pressedColor = new Color(0.72f, 0.78f, 0.88f, 1f);
         colors.selectedColor = colors.highlightedColor;
+        colors.disabledColor = new Color(0.55f, 0.58f, 0.62f, 0.72f);
+        colors.colorMultiplier = 1f;
+        colors.fadeDuration = 0.05f;
         button.colors = colors;
         button.onClick.AddListener(() => callback());
         Text text = CreateText(
             "Label",
             rect,
             label,
-            18,
+            20,
             TextAnchor.MiddleCenter);
-        Stretch(text.rectTransform, 6f, 2f, -6f, -2f);
+        Stretch(text.rectTransform, 8f, 3f, -8f, -3f);
         text.raycastTarget = false;
+        Outline outline = text.gameObject.AddComponent<Outline>();
+        outline.effectColor = new Color(0f, 0f, 0f, 0.82f);
+        outline.effectDistance = new Vector2(1f, -1f);
+        outline.useGraphicAlpha = true;
         return button;
+    }
+
+    private static Button CreateRoomIconButton(
+        string name,
+        Transform parent,
+        Vector2 iconSize,
+        Action callback)
+    {
+        Button button = CreateButton(
+            name,
+            parent,
+            string.Empty,
+            callback,
+            preferredHeight: 52f);
+        RectTransform icon = CreateRect("Room Icon", button.transform);
+        icon.anchorMin = new Vector2(0.5f, 0.5f);
+        icon.anchorMax = new Vector2(0.5f, 0.5f);
+        icon.pivot = new Vector2(0.5f, 0.5f);
+        icon.sizeDelta = iconSize;
+        icon.anchoredPosition = Vector2.zero;
+
+        const float thickness = 3f;
+        CreateIconBar(
+            "Top",
+            icon,
+            new Vector2(iconSize.x, thickness),
+            new Vector2(0f, (iconSize.y - thickness) * 0.5f));
+        CreateIconBar(
+            "Bottom",
+            icon,
+            new Vector2(iconSize.x, thickness),
+            new Vector2(0f, -(iconSize.y - thickness) * 0.5f));
+        CreateIconBar(
+            "Left",
+            icon,
+            new Vector2(thickness, Mathf.Max(thickness, iconSize.y - (thickness * 2f))),
+            new Vector2(-(iconSize.x - thickness) * 0.5f, 0f));
+        CreateIconBar(
+            "Right",
+            icon,
+            new Vector2(thickness, Mathf.Max(thickness, iconSize.y - (thickness * 2f))),
+            new Vector2((iconSize.x - thickness) * 0.5f, 0f));
+        return button;
+    }
+
+    private static void CreateIconBar(
+        string name,
+        Transform parent,
+        Vector2 size,
+        Vector2 position)
+    {
+        RectTransform bar = CreatePanel(name, parent, Color.white);
+        bar.anchorMin = new Vector2(0.5f, 0.5f);
+        bar.anchorMax = new Vector2(0.5f, 0.5f);
+        bar.pivot = new Vector2(0.5f, 0.5f);
+        bar.sizeDelta = size;
+        bar.anchoredPosition = position;
+        bar.GetComponent<Image>().raycastTarget = false;
     }
 
     private static RectTransform CreateSection(
@@ -91,7 +159,7 @@ public sealed partial class DigGameHudCanvas
         RectTransform section = CreatePanel(
             name,
             parent,
-            new Color(0.11f, 0.14f, 0.18f, 0.82f));
+            new Color(0.08f, 0.11f, 0.15f, 0.96f));
         LayoutElement element = section.gameObject.AddComponent<LayoutElement>();
         element.preferredWidth = preferredWidth;
         element.flexibleWidth = 1f;
@@ -193,8 +261,8 @@ public sealed partial class DigGameHudCanvas
         if (image != null)
         {
             image.color = active
-                ? new Color(0.86f, 0.55f, 0.18f, 0.96f)
-                : new Color(0.18f, 0.22f, 0.28f, 0.92f);
+                ? new Color(0.90f, 0.54f, 0.13f, 1f)
+                : new Color(0.15f, 0.20f, 0.27f, 1f);
         }
     }
 }

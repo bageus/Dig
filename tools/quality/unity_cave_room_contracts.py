@@ -23,7 +23,7 @@ def check_cave_room_runtime_contracts(
     errors.extend(require_fragments(
         room_session,
         texts.get(room_session, ""),
-        "completed cave room tracking and expansion",
+        "completed cave room tracking and immutability",
         (
             "_caveRoomPlans",
             "LoadCompletedCaveRoomPlans",
@@ -31,6 +31,8 @@ def check_cave_room_runtime_contracts(
             "FrontExcavationCells.All",
             "!value.IsSolid",
             "GetCompletedCaveRoomPlans(snapshot)",
+            "IReadOnlyList<CaveRoomPlan> completed",
+            "completed);",
         ),
     ))
     errors.extend(require_fragments(
@@ -60,12 +62,14 @@ def check_cave_room_runtime_contracts(
             "CreateFloorCells",
             "ExpandTunnelVolume",
             "AddRoomFloor",
+            "SynchronizeCompletedCaveRoomProtection",
         ),
     ))
+    room_floor_text = texts.get(room_floor, "")
     errors.extend(require_fragments(
         room_floor,
-        texts.get(room_floor, ""),
-        "completed cave room floor and back wall rendering",
+        room_floor_text,
+        "ordinary completed cave room floor rendering",
         (
             "AddRoomFloor",
             "plan.Preset.BaseWidth",
@@ -74,22 +78,40 @@ def check_cave_room_runtime_contracts(
             "FloorWorldPosition",
             "isVerticalTunnel: false",
             "material: _materials[z]!",
-            "_backWalls",
-            "ReplaceBackWall",
-            "Cave room back wall",
-            "DepthSpacing * 0.55f",
-            "Destroy(collider)",
         ),
     ))
+    for fragment in (
+        "_backWalls",
+        "ReplaceBackWall",
+        "Cave room back wall",
+        "_backWallMaterial",
+    ):
+        if fragment in room_floor_text:
+            errors.append(f"{room_floor}: obsolete room wall visual remains: {fragment!r}")
+
+    tunnel_text = texts.get(tunnel_renderer, "")
     errors.extend(require_fragments(
         tunnel_renderer,
-        texts.get(tunnel_renderer, ""),
-        "optional generated cave back wall",
+        tunnel_text,
+        "depth-floor-only tunnel visuals",
         (
-            "layout.CaveHasBackWall",
-            "Cave back wall",
+            "if (vertical || cell.Z == 0",
+            "Walkable plane",
+            "FloorWorldPosition",
+            "Layered Tunnel Floors",
         ),
     ))
+    for fragment in (
+        "CreateCaveShell",
+        "CreateShellPart",
+        "Cave back wall",
+        "_caveMaterial",
+        "_verticalMaterial",
+        '"Shaft {cell}"',
+    ):
+        if fragment in tunnel_text:
+            errors.append(f"{tunnel_renderer}: obsolete tunnel visual remains: {fragment!r}")
+
     errors.extend(require_fragments(
         depth_adapter,
         texts.get(depth_adapter, ""),

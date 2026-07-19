@@ -10,7 +10,7 @@ namespace Dig.Tests
 public sealed class CaveRoomProtectionTests
 {
     [Fact]
-    public void Completed_room_shell_protects_roof_sides_and_floor_support()
+    public void Completed_room_protects_only_roof_sides_and_floor_support()
     {
         CellId entrance = new CellId(10, 9);
         CaveRoomPlanResult planned = new CaveRoomPlanner().Plan(
@@ -30,6 +30,9 @@ public sealed class CaveRoomProtectionTests
         Assert.Contains(new CellId(8, 10), shell);
         Assert.Contains(new CellId(12, 10), shell);
         Assert.DoesNotContain(entrance, shell);
+        Assert.All(
+            planned.Plan.FrontExcavationCells,
+            roomCell => Assert.DoesNotContain(roomCell, shell));
     }
 
     private static WorldSnapshot CreateWorld(int horizontalTunnelY)

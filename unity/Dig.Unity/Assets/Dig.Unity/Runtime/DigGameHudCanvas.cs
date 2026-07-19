@@ -135,38 +135,41 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
         _canvas = gameObject.AddComponent<Canvas>();
         _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         _canvas.sortingOrder = 100;
+        _canvas.pixelPerfect = true;
         CanvasScaler scaler = gameObject.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-        scaler.matchWidthOrHeight = 0.5f;
+        scaler.referenceResolution = new Vector2(1280f, 720f);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = 0f;
+        scaler.referencePixelsPerUnit = 100f;
         gameObject.AddComponent<GraphicRaycaster>();
         EnsureEventSystem();
 
         _rightPanel = CreatePanel(
             "Roster Panel",
             transform,
-            new Color(0.06f, 0.08f, 0.11f, 0.82f));
+            new Color(0.06f, 0.08f, 0.11f, 0.92f));
         Anchor(_rightPanel, 1f, 1f, 1f, 1f, -356f, -596f, -20f, -20f);
         CreateRightPanelShell();
 
         _bottomPanel = CreatePanel(
             "Context Panel",
             transform,
-            new Color(0.06f, 0.08f, 0.11f, 0.72f));
-        Anchor(_bottomPanel, 0.5f, 0f, 0.5f, 0f, -720f, 18f, 720f, 208f);
+            new Color(0.05f, 0.07f, 0.10f, 0.94f));
+        Anchor(_bottomPanel, 0.5f, 0f, 0.5f, 0f, -620f, 14f, 620f, 112f);
         _bottomContent = CreateRect("Context Content", _bottomPanel);
-        Stretch(_bottomContent, 18f, 18f, -18f, -18f);
+        Stretch(_bottomContent, 10f, 10f, -10f, -10f);
 
         RectTransform statusPanel = CreatePanel(
             "Status Panel",
             transform,
-            new Color(0.04f, 0.05f, 0.07f, 0.62f));
-        Anchor(statusPanel, 0.5f, 0f, 0.5f, 0f, -480f, 214f, 480f, 254f);
+            new Color(0.03f, 0.04f, 0.06f, 0.84f));
+        Anchor(statusPanel, 0.5f, 0f, 0.5f, 0f, -460f, 118f, 460f, 154f);
         _statusText = CreateText(
             "Status",
             statusPanel,
             string.Empty,
-            17,
+            16,
             TextAnchor.MiddleCenter);
         Stretch(_statusText.rectTransform, 10f, 4f, -10f, -4f);
         _statusText.raycastTarget = false;

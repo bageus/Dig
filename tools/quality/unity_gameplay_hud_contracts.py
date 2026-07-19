@@ -36,7 +36,7 @@ def check_gameplay_hud_and_work_contracts(
     errors = require_fragments(
         hud_path,
         texts.get(hud_path, ""),
-        "upper-right icon roster tabs",
+        "upper-right icon roster tabs and crisp canvas",
         (
             "Jobs = 2",
             '"●"',
@@ -44,15 +44,24 @@ def check_gameplay_hud_and_work_contracts(
             '"▲"',
             "_jobTabButton",
             "-356f, -596f, -20f, -20f",
+            "_canvas.pixelPerfect = true;",
+            "new Vector2(1280f, 720f)",
+            "scaler.matchWidthOrHeight = 0f;",
+            "-620f, 14f, 620f, 112f",
         ),
     )
     errors.extend(require_fragments(
         factory_path,
         texts.get(factory_path, ""),
-        "immediate tab content replacement",
+        "sharp button and generated room icon rendering",
         (
             "child.SetActive(false);",
             "Destroy(child);",
+            "FontStyle.Bold",
+            "Outline outline",
+            "CreateRoomIconButton(",
+            "CreateIconBar(",
+            "raycastTarget = false;",
         ),
     ))
     errors.extend(require_fragments(
@@ -85,19 +94,28 @@ def check_gameplay_hud_and_work_contracts(
     errors.extend(require_fragments(
         context_path,
         texts.get(context_path, ""),
-        "authoritative selected job context",
+        "single-row authoritative excavation and job context",
         (
             "SelectedJobId",
             "_terrainSession!.LoadJobs().FirstOrDefault",
-            'CreateButton("Small Room", rooms, "□"',
-            'CreateButton("Tall Room", rooms, "▯"',
+            'CreateHorizontalRow("Excavation Tools", section, 56f)',
+            'CreateRoomIconButton(',
+            'new Vector2(18f, 18f)',
+            'new Vector2(38f, 22f)',
+            'new Vector2(18f, 32f)',
         ),
     ))
     errors.extend(reject_fragments(
         context_path,
         texts.get(context_path, ""),
-        "unsupported job renderer model lookup",
-        ("_jobRenderer!.SelectedModel", "КОПКА"),
+        "unsupported or multi-row excavation HUD",
+        (
+            "_jobRenderer!.SelectedModel",
+            "КОПКА",
+            'CreateHorizontalRow("Tools"',
+            'CreateHorizontalRow("Rooms"',
+            'CreateButton("Small Room", rooms',
+        ),
     ))
     for path, text in texts.items():
         if not path.name.startswith("DigGameHudCanvas"):
