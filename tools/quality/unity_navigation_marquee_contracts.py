@@ -3,8 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable
 
-from unity_runtime_diagnostics import dump_runtime_references
-
 RequireFragments = Callable[[Path, str, str, tuple[str, ...]], list[str]]
 
 
@@ -13,7 +11,6 @@ def check_navigation_and_marquee_contracts(
     texts: dict[Path, str],
     require_fragments: RequireFragments,
 ) -> list[str]:
-    dump_runtime_references(runtime_root.parents[5], texts)
     interaction = runtime_root / "DigWorldInteraction.cs"
     marquee = runtime_root / "DigWorldInteraction.MarqueeSelection.cs"
     marquee_renderer = runtime_root / "DigSelectionMarqueeRenderer.cs"
@@ -23,11 +20,16 @@ def check_navigation_and_marquee_contracts(
     navigation_sync = runtime_root / "DigAgentSimulationDriverBase.NavigationSync.cs"
     movement = runtime_root / "DigAgentSimulationDriverBase.TunnelMovement.cs"
     movement_input = runtime_root / "DigWorldInteraction.TunnelMovement.cs"
+    pointer_hits = runtime_root / "DigWorldInteraction.PointerHits.cs"
+    selected_targets = runtime_root / "DigWorldInteraction.SelectedResidentTargets.cs"
     room_floor = runtime_root / "DigCaveRoomFloorRenderer.cs"
     agent_renderer = runtime_root / "DigAgentRenderer.cs"
+    selection_persistence = runtime_root / "DigAgentRenderer.SelectionPersistence.cs"
+    simulation_loop = runtime_root / "DigAgentSimulationDriverBase.Loop.cs"
     direct_control = runtime_root / "DigTerrainWorkDirectMovement.cs"
     designations = runtime_root / "DigTerrainWorkDesignations.cs"
     manual_excavation = runtime_root / "DigTerrainWorkManualExcavation.cs"
+    multi_worker = runtime_root / "DigTerrainWorkManualExcavation.MultiWorker.cs"
     errors: list[str] = []
     errors.extend(require_fragments(
         interaction,
@@ -70,18 +72,21 @@ def check_navigation_and_marquee_contracts(
         "vertical tunnel planning",
         (
             "ExcavationStrokeAxis.Vertical",
-            "SetVerticalTunnelPlan",
+            "SetTunnelPlan",
             "_excavationAnchor.Value",
         ),
     ))
     errors.extend(require_fragments(
         world_session,
         texts.get(world_session, ""),
-        "vertical tunnel plan ownership",
+        "tunnel plan ownership",
         (
+            "_plannedTunnelCells",
             "_plannedVerticalTunnelCells",
+            "PlannedTunnelCells",
             "PlannedVerticalTunnelCells",
-            "SetVerticalTunnelPlan",
+            "IsPlannedHorizontalTunnel",
+            "SetTunnelPlan",
         ),
     ))
     errors.extend(require_fragments(
@@ -107,13 +112,37 @@ def check_navigation_and_marquee_contracts(
     errors.extend(require_fragments(
         movement,
         texts.get(movement, ""),
-        "fresh single and group navigation with work interruption",
+        "validated single and group direct movement",
         (
             "SynchronizeExcavatedTunnelNavigation();",
+            "ValidateResidentThroughTunnel",
+            "ValidateResidentsThroughTunnel",
             "MoveResidentThroughTunnel",
             "MoveResidentsThroughTunnel",
-            "residentIds.Count == 1",
             "TerrainSession.InterruptForDirectMovement",
+        ),
+    ))
+    errors.extend(require_fragments(
+        pointer_hits,
+        texts.get(pointer_hits, ""),
+        "ordered pointer hit stack",
+        (
+            "Physics.RaycastAll",
+            "Array.Sort(hits, ComparePointerHits)",
+            "left.distance.CompareTo(right.distance)",
+        ),
+    ))
+    errors.extend(require_fragments(
+        selected_targets,
+        texts.get(selected_targets, ""),
+        "selected resident target priority",
+        (
+            "ResolveSelectedResidentTarget",
+            "GetPointerHits()",
+            "ResolveExcavationTarget",
+            "TryResolveTunnelDestination",
+            "DigSelectedResidentTarget.Excavation",
+            "DigSelectedResidentTarget.Movement",
         ),
     ))
     errors.extend(require_fragments(
@@ -121,9 +150,11 @@ def check_navigation_and_marquee_contracts(
         texts.get(movement_input, ""),
         "all walkable destination renderers",
         (
+            "TryResolveTunnelDestination",
             "_tunnelRenderer.TryGetCell",
             "_caveRoomFloorRenderer.TryGetCell",
             "_renderer.TryGetWalkSurface",
+            "MoveResidentsThroughTunnel",
         ),
     ))
     errors.extend(require_fragments(
@@ -143,6 +174,29 @@ def check_navigation_and_marquee_contracts(
         (
             "visual.SetSelected(_selectedIds.Contains(model.Id))",
             "agentVisual.SetSelected(_selectedIds.Contains(model.Id))",
+            "SelectedAgentIds => _selectedSnapshot",
+        ),
+    ))
+    errors.extend(require_fragments(
+        selection_persistence,
+        texts.get(selection_persistence, ""),
+        "ordered group selection restoration",
+        (
+            "RestoreSelection",
+            "_selectedIds.Clear()",
+            "_selectionOrder.Clear()",
+            "PublishSelectionSnapshot();",
+        ),
+    ))
+    errors.extend(require_fragments(
+        simulation_loop,
+        texts.get(simulation_loop, ""),
+        "selection persistence across simulation ticks",
+        (
+            "IReadOnlyList<string> selectedAgentIds",
+            "primarySelectedAgentId",
+            "AgentRenderer.Render(agents, movementDuration)",
+            "RestoreSelection(",
         ),
     ))
     errors.extend(require_fragments(
@@ -151,10 +205,12 @@ def check_navigation_and_marquee_contracts(
         "direct movement job ownership",
         (
             "InterruptForDirectMovement",
+            "EnforceDirectMovementOwnership",
             "ReleaseJobAssignmentCommand",
-            "_routePlans.Remove",
+            "RemoveAllRoutePlans",
             "_directMovementAgents.Add",
             "ClearManualGroupForAgent",
+            "IsAvailableForAutomaticWork",
         ),
     ))
     errors.extend(require_fragments(
@@ -162,7 +218,7 @@ def check_navigation_and_marquee_contracts(
         texts.get(designations, ""),
         "directly controlled candidate suppression",
         (
-            "!IsDirectMovementControlled(agent.Id)",
+            "IsAvailableForAutomaticWork(agent)",
             "CreateDynamicCandidates",
         ),
     ))
@@ -171,5 +227,17 @@ def check_navigation_and_marquee_contracts(
         texts.get(manual_excavation, ""),
         "explicit return to work ownership",
         ("ReleaseDirectMovementControl(residentId);",),
+    ))
+    errors.extend(require_fragments(
+        multi_worker,
+        texts.get(multi_worker, ""),
+        "parallel connected excavation assignment",
+        (
+            "AssignExcavationClusterToResidents",
+            "workerCount",
+            "List<EntityId>[] buckets",
+            "AssignNextManualExcavation",
+            "RollbackManualGroups",
+        ),
     ))
     return errors
