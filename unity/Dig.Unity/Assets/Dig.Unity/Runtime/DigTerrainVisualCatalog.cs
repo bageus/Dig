@@ -8,7 +8,7 @@ namespace Dig.Unity
     [CreateAssetMenu(
         fileName = "TerrainVisualCatalog",
         menuName = "Dig/Visual Catalogs/Terrain")]
-    public sealed class DigTerrainVisualCatalog : DigVisualCatalog
+    public sealed partial class DigTerrainVisualCatalog : DigVisualCatalog
     {
         [SerializeField]
         private DigTerrainVisualProfile[] profiles =
@@ -72,6 +72,7 @@ namespace Dig.Unity
             RequireKind(DigTerrainProfileKind.Crystalline, kinds, errors);
             RequireKind(DigTerrainProfileKind.Lava, kinds, errors);
             RequireKind(DigTerrainProfileKind.Unmineable, kinds, errors);
+            AppendDepositValidation(errors);
             return new ReadOnlyCollection<string>(errors);
         }
 
@@ -79,12 +80,14 @@ namespace Dig.Unity
         {
             base.OnEnable();
             _profileLookup = null;
+            ResetDepositProfileLookup();
         }
 
         protected override void OnValidate()
         {
             base.OnValidate();
             _profileLookup = null;
+            ResetDepositProfileLookup();
         }
 
         private void EnsureProfileLookup()
