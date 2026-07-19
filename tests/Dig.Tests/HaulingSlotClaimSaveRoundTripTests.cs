@@ -59,7 +59,7 @@ public sealed class HaulingSlotClaimSaveRoundTripTests
     }
 
     [Fact]
-    public void Claim_for_wrong_resident_is_rejected_as_invalid_document()
+    public void Claim_for_wrong_resident_is_rejected_as_stale()
     {
         MaterialCatalog materials = CreateMaterials();
         ItemCatalog items = CreateItems();
@@ -72,7 +72,7 @@ public sealed class HaulingSlotClaimSaveRoundTripTests
             new SaveMigrationPipeline(Array.Empty<ISaveMigration>()),
             registry).Load(document, materials, items);
 
-        Assert.Equal(SaveErrors.InvalidDocument, loaded.Error);
+        Assert.Equal(InventoryErrors.ResidentSlotClaimStale, loaded.Error);
     }
 
     private static SaveGameContext CreateContext(
