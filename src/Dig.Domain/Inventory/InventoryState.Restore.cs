@@ -79,6 +79,12 @@ public sealed partial class InventoryState
             }
         }
 
+        Result claims = inventory.RestoreResidentSlotClaims(snapshot.ResidentSlotClaims);
+        if (claims.IsFailure)
+        {
+            return Result<InventoryState>.Failure(claims.Error!);
+        }
+
         inventory.DequeueUncommittedEvents();
         inventory.Version = snapshot.Version;
         return Result<InventoryState>.Success(inventory);
