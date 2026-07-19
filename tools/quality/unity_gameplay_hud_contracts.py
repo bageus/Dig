@@ -14,7 +14,6 @@ def check_gameplay_hud_and_work_contracts(
     require_fragments: RequireFragments,
     reject_fragments: RejectFragments,
 ) -> list[str]:
-    del root
     hud_path = runtime_root / "DigGameHudCanvas.cs"
     factory_path = runtime_root / "DigGameHudCanvas.Factory.cs"
     roster_path = runtime_root / "DigGameHudCanvas.Roster.cs"
@@ -23,7 +22,7 @@ def check_gameplay_hud_and_work_contracts(
     agent_session_path = runtime_root / "DigAgentSession.cs"
     loop_path = runtime_root / "DigAgentSimulationDriverBase.Loop.cs"
     router_path = (
-        runtime_root.parents[5]
+        root
         / "src"
         / "Dig.Presentation.Abstractions"
         / "Input"
