@@ -58,7 +58,8 @@ namespace Dig.Unity
 
         private void AdvanceOneTick()
         {
-            string? selectedAgentId = AgentRenderer!.SelectedAgentId;
+            IReadOnlyList<string> selectedAgentIds = AgentRenderer!.SelectedAgentIds;
+            string? primarySelectedAgentId = AgentRenderer.SelectedAgentId;
             string? selectedJobId = JobRenderer!.SelectedJobId;
             string? selectedBuildingId = BuildingRenderer!.SelectedBuildingId;
             IReadOnlyList<AgentViewModel> before = AgentSession!.LoadView();
@@ -67,10 +68,17 @@ namespace Dig.Unity
             TerrainSession.SynchronizeHauling(nextTick, before);
             TerrainSession.SynchronizeBuildingBoxAssembly(nextTick, before);
             TerrainSession.SynchronizeBuildingPacking(nextTick, before);
-            IReadOnlyDictionary<string, CellId> movement =
-                TerrainSession.PlanMovement(before);
-            movement = TerrainSession.ApplyResidentMovementCadence(movement, nextTick);
-            Result result = AgentSession.Advance(movement);
+            Result result = TerrainSession.EnforceDirectMovementOwnership(nextTick);
+            if (result.IsSuccess)
+            {
+                IReadOnlyDictionary<string, CellId> movement =
+                    TerrainSession.PlanMovement(before);
+                movement = TerrainSession.ApplyResidentMovementCadence(
+                    movement,
+                    nextTick);
+                result = AgentSession.Advance(movement);
+            }
+
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
             if (result.IsSuccess)
             {
@@ -131,7 +139,11 @@ namespace Dig.Unity
             Hud!.SetAgents(agents, AgentSession.Tick);
             Hud.SetJobs(jobs);
             Hud.SetStorageStatus(storage);
-            RestoreSelection(selectedAgentId, selectedJobId, selectedBuildingId);
+            RestoreSelection(
+                selectedAgentIds,
+                primarySelectedAgentId,
+                selectedJobId,
+                selectedBuildingId);
         }
     }
 }
