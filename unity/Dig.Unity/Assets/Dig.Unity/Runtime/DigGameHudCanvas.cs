@@ -192,8 +192,8 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
     {
         return rect != null && RectTransformUtility.RectangleContainsScreenPoint(
             rect,
-            screenPoint,
-            camera: null);
+            (Vector2)screenPoint,
+            null);
     }
 }
 
