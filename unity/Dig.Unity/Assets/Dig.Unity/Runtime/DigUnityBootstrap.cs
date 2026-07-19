@@ -43,8 +43,8 @@ namespace Dig.Unity
             {
                 DisableRuntimeDrivers();
                 string message =
-                    $"STARTUP FAILED [{_startupStage}] " +
-                    $"{exception.GetType().Name}: {exception.Message}";
+                    $"STARTUP FAILED [{_startupStage}] "
+                    + $"{exception.GetType().Name}: {exception.Message}";
                 hud.SetStatus(message);
                 Debug.LogException(exception, this);
             }
@@ -191,6 +191,7 @@ namespace Dig.Unity
             gameHud.Initialize(
                 terrainSession,
                 agentRenderer,
+                jobRenderer,
                 buildingRenderer,
                 interaction,
                 simulation,
@@ -200,13 +201,13 @@ namespace Dig.Unity
             interaction.enabled = true;
             simulation.enabled = true;
             hud.SetStatus(
-                "Выберите гнома или строение; без выбора доступна панель копки.");
+                "Select a dwarf, building, or job. Tunnel planning is the default mode.");
             if (logStartup)
             {
                 Debug.Log(
-                    $"Dig Unity runtime started with {agents.Count} residents, " +
-                    $"{jobs.Count} jobs, {buildings.Count} buildings and a " +
-                    $"{world.Width}x{world.Height}x4 rock volume.",
+                    $"Dig Unity runtime started with {agents.Count} residents, "
+                    + $"{jobs.Count} jobs, {buildings.Count} buildings and a "
+                    + $"{world.Width}x{world.Height}x4 rock volume.",
                     this);
             }
         }
