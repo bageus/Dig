@@ -26,13 +26,14 @@ public sealed class ResidentInventoryExpansionPresentationTests
     {
         InventoryState inventory = CreateInventory(withCargo: true);
 
-        ResidentInventoryExpansionFeedbackViewModel model =
-            Assert.NotNull(new ResidentInventoryExpansionFeedbackPresenter().Present(
+        ResidentInventoryExpansionFeedbackViewModel? model =
+            new ResidentInventoryExpansionFeedbackPresenter().Present(
                 inventory,
                 ResidentId,
-                LargeBasketStackId));
+                LargeBasketStackId);
+        Assert.NotNull(model);
 
-        Assert.Equal(InventoryExpansionGroup.Cargo, model.Group);
+        Assert.Equal(InventoryExpansionGroup.Cargo, model!.Group);
         Assert.Equal(2, model.Tier);
         Assert.Equal(6, model.AddedSlots);
         Assert.Equal(35, model.SpeedPenaltyPercent);
@@ -48,13 +49,14 @@ public sealed class ResidentInventoryExpansionPresentationTests
     {
         InventoryState inventory = CreateInventory(withCargo: true);
 
-        ResidentInventoryExpansionFeedbackViewModel model =
-            Assert.NotNull(new ResidentInventoryExpansionFeedbackPresenter().Present(
+        ResidentInventoryExpansionFeedbackViewModel? model =
+            new ResidentInventoryExpansionFeedbackPresenter().Present(
                 inventory,
                 ResidentId,
-                BasketStackId));
+                BasketStackId);
+        Assert.NotNull(model);
 
-        Assert.False(model.IsActive);
+        Assert.False(model!.IsActive);
         Assert.False(model.RequiresSpillConfirmation);
         Assert.Equal(4, model.AddedSlots);
         Assert.Equal(25, model.SpeedPenaltyPercent);
