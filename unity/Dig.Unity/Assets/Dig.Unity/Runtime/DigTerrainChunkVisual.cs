@@ -12,6 +12,7 @@ namespace Dig.Unity
         private Mesh? _mesh;
 
         internal ulong Signature { get; private set; }
+        internal bool IsInitialized => _mesh != null;
 
         internal void Invalidate()
         {
@@ -19,7 +20,7 @@ namespace Dig.Unity
         }
 
         internal void Apply(
-            Vector2Int chunk,
+            DigTerrainChunkKey chunk,
             ulong signature,
             DigTerrainChunkMeshData data,
             Material[] materials)
@@ -35,7 +36,7 @@ namespace Dig.Unity
             }
 
             EnsureComponents();
-            name = $"Terrain chunk {chunk.x},{chunk.y}";
+            name = $"Terrain chunk {chunk}";
             Signature = signature;
             _mesh!.Clear();
             _mesh.indexFormat = data.Vertices.Length > ushort.MaxValue
@@ -55,6 +56,11 @@ namespace Dig.Unity
             _mesh.RecalculateBounds();
             _renderer!.sharedMaterials = materials;
             gameObject.SetActive(data.Vertices.Length > 0);
+        }
+
+        internal Mesh? ResolveMesh()
+        {
+            return _mesh;
         }
 
         private void EnsureComponents()
