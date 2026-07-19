@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Dig.Application.Messaging;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -35,7 +34,10 @@ public sealed class UseResidentInventoryItemHandler
             return Result.Failure(InventoryErrors.StackNotFound);
         }
 
-        if (stack.Location != ItemLocation.InAgent(command.ActorId))
+        if (!DropResidentInventoryStackHandler.IsOwnedByResident(
+                stack.Location,
+                command.ActorId)
+            || stack.Location.Kind == ItemLocationKind.Equipped)
         {
             return Result.Failure(ResidentInventoryActionErrors.StackNotCarriedByActor);
         }
@@ -49,13 +51,6 @@ public sealed class UseResidentInventoryItemHandler
         if (!definition.IsTool)
         {
             return Result.Failure(ResidentInventoryActionErrors.ItemNotUsable);
-        }
-
-        bool occupied = inventory.CreateSnapshot().Stacks.Any(value =>
-            value.Location == ItemLocation.EquippedBy(command.ActorId));
-        if (occupied)
-        {
-            return Result.Failure(InventoryErrors.ToolSlotOccupied);
         }
 
         Result equipped = inventory.EquipTool(command.StackId, command.ActorId, command.Tick);

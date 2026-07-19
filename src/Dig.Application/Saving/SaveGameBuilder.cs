@@ -104,6 +104,34 @@ public sealed class SaveGameBuilder
             data.Stacks.Add(saved);
         }
 
+        foreach (HeldItemReferenceSnapshot held in snapshot.HeldItems
+            .OrderBy(item => item.ResidentId.ToString(), StringComparer.Ordinal))
+        {
+            data.HeldItems.Add(new HeldItemReferenceSaveData
+            {
+                ResidentId = held.ResidentId.ToString(),
+                StackId = held.StackId.ToString(),
+                Quantity = held.Quantity,
+                Purpose = (int)held.Purpose,
+            });
+        }
+
+        foreach (ResidentInventorySlotClaimSnapshot claim in snapshot.ResidentSlotClaims
+            .OrderBy(item => item.JobId.ToString(), StringComparer.Ordinal)
+            .ThenBy(item => item.Slot.Compartment)
+            .ThenBy(item => item.Slot.Index))
+        {
+            data.ResidentSlotClaims.Add(new ResidentSlotClaimSaveData
+            {
+                JobId = claim.JobId.ToString(),
+                ResidentId = claim.ResidentId.ToString(),
+                ItemId = claim.ItemId.ToString(),
+                Compartment = (int)claim.Slot.Compartment,
+                SlotIndex = claim.Slot.Index,
+                Quantity = claim.Quantity,
+            });
+        }
+
         return data;
     }
 
@@ -200,6 +228,12 @@ public sealed class SaveGameBuilder
             OwnerId = location.HasOwner ? location.OwnerId.ToString() : null,
             CellX = location.HasCell ? location.CellId.X : (int?)null,
             CellY = location.HasCell ? location.CellId.Y : (int?)null,
+            ResidentCompartment = location.HasResidentSlot
+                ? (int)location.ResidentCompartment
+                : (int?)null,
+            ResidentSlotIndex = location.HasResidentSlot
+                ? location.ResidentSlotIndex
+                : (int?)null,
         };
     }
 
@@ -228,4 +262,5 @@ public sealed class SaveGameBuilder
         }
     }
 }
+
 }

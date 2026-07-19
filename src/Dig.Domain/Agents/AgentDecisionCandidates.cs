@@ -98,6 +98,13 @@ public sealed partial class AgentDecisionSystem
                     "Utility candidate order no longer matches stable intent rank.");
             }
 
+            if (candidates[index].IntentKind != AgentIntentKind.Idle)
+            {
+                candidates[index].FinalScore = ApplyTravelCost(
+                    candidates[index].FinalScore,
+                    context.TravelCostMultiplier);
+            }
+
             if (candidates[index].Critical)
             {
                 candidates[index].FinalScore = checked(
@@ -106,6 +113,13 @@ public sealed partial class AgentDecisionSystem
         }
 
         return activeOrderId;
+    }
+
+    private static int ApplyTravelCost(int score, double multiplier)
+    {
+        return multiplier == 1d
+            ? score
+            : checked((int)Math.Floor(score / multiplier));
     }
 
     private static void ApplyContinuityRules(
@@ -161,4 +175,5 @@ public sealed partial class AgentDecisionSystem
         public bool BlockedByCooldown;
     }
 }
+
 }

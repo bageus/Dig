@@ -24,7 +24,9 @@ public sealed class ResidentEquipmentViewModel
     }
 
     public string ResidentId { get; }
+
     public string StackId { get; }
+
     public string ItemId { get; }
 }
 
@@ -38,27 +40,47 @@ public sealed class ResidentEquipmentPresenter
             throw new ArgumentNullException(nameof(snapshots));
         }
 
-        var equipped = snapshots
-            .SelectMany(snapshot => snapshot.Stacks)
-            .Where(stack => stack.Location.Kind == ItemLocationKind.Equipped
-                && stack.Location.HasOwner)
-            .GroupBy(stack => stack.Location.OwnerId)
-            .OrderBy(group => group.Key.ToString(), StringComparer.Ordinal)
-            .ToArray();
-        if (equipped.Any(group => group.Count() > 1))
+        List<ResidentEquipmentViewModel> models = new List<ResidentEquipmentViewModel>();
+        for (int index = 0; index < snapshots.Length; index++)
         {
-            throw new InvalidOperationException(
-                "A resident cannot have more than one equipped item.");
+            InventorySnapshot snapshot = snapshots[index];
+            Dictionary<Dig.Domain.Core.EntityId, ItemStackSnapshot> stacks = snapshot.Stacks
+                .ToDictionary(stack => stack.StackId);
+            foreach (HeldItemReferenceSnapshot held in snapshot.HeldItems)
+            {
+                if (!stacks.TryGetValue(held.StackId, out ItemStackSnapshot? stack))
+                {
+                    throw new InvalidOperationException(
+                        "A held item reference points to a missing stack.");
+                }
+
+                models.Add(new ResidentEquipmentViewModel(
+                    held.ResidentId.ToString(),
+                    held.StackId.ToString(),
+                    stack.ItemId.ToString()));
+            }
+
+            models.AddRange(snapshot.Stacks
+                .Where(stack => stack.Location.Kind == ItemLocationKind.Equipped
+                    && stack.Location.HasOwner)
+                .Select(stack => new ResidentEquipmentViewModel(
+                    stack.Location.OwnerId.ToString(),
+                    stack.StackId.ToString(),
+                    stack.ItemId.ToString())));
         }
 
-        ResidentEquipmentViewModel[] models = equipped
-            .Select(group => group.Single())
-            .Select(stack => new ResidentEquipmentViewModel(
-                stack.Location.OwnerId.ToString(),
-                stack.StackId.ToString(),
-                stack.ItemId.ToString()))
+        ResidentEquipmentViewModel[] ordered = models
+            .OrderBy(model => model.ResidentId, StringComparer.Ordinal)
+            .ThenBy(model => model.StackId, StringComparer.Ordinal)
             .ToArray();
-        return new ReadOnlyCollection<ResidentEquipmentViewModel>(models);
+        if (ordered.GroupBy(model => model.ResidentId, StringComparer.Ordinal)
+            .Any(group => group.Count() > 1))
+        {
+            throw new InvalidOperationException(
+                "A resident cannot have more than one held or legacy equipped item.");
+        }
+
+        return new ReadOnlyCollection<ResidentEquipmentViewModel>(ordered);
     }
 }
 

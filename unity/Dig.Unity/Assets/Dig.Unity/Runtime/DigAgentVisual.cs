@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Domain.Inventory;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Inventory;
@@ -119,7 +120,10 @@ namespace Dig.Unity
                 _equipmentVisual = root.AddComponent<DigAgentEquipmentVisual>();
             }
 
-            _equipmentVisual.Configure(equipment.ItemId, equipmentMaterial);
+            _equipmentVisual.Configure(
+                equipment.ItemId,
+                EquipmentAppearanceKind.Generic,
+                equipmentMaterial);
         }
 
         internal void SetSelected(bool selected)

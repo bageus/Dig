@@ -70,7 +70,8 @@ def check_navigation_and_marquee_contracts(
         "vertical tunnel planning",
         (
             "ExcavationStrokeAxis.Vertical",
-            "SetVerticalTunnelPlan",
+            "SetTunnelPlan(",
+            "vertical: true",
             "_excavationAnchor.Value",
         ),
     ))

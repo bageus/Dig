@@ -10,90 +10,61 @@ public sealed partial class InventoryState
     public Result EquipTool(EntityId stackId, EntityId agentId, long tick)
     {
         ValidateTick(tick);
-        if (agentId.IsEmpty)
-        {
-            throw new ArgumentException("Agent id cannot be empty.", nameof(agentId));
-        }
-
-        ItemStackState? stack = Find(stackId);
-        if (stack is null)
-        {
-            return Result.Failure(InventoryErrors.StackNotFound);
-        }
-
-        ItemDefinition definition = Catalog.Get(stack.ItemId);
-        if (!definition.IsTool || stack.Quantity != 1 || stack.ReservedQuantity != 0)
-        {
-            return Result.Failure(InventoryErrors.ToolRequired);
-        }
-
-        if (stack.Location != ItemLocation.InAgent(agentId))
-        {
-            return Result.Failure(InventoryErrors.ToolNotCarried);
-        }
-
-        bool occupied = _stacks.Values.Any(candidate =>
-            candidate.Location == ItemLocation.EquippedBy(agentId));
-        if (occupied)
+        ValidateResidentId(agentId);
+        if (_heldItems.ContainsKey(agentId)
+            || HasLegacyEquippedItem(agentId))
         {
             return Result.Failure(InventoryErrors.ToolSlotOccupied);
         }
 
-        return MoveAvailable(
-            stackId,
-            quantity: 1,
-            ItemLocation.EquippedBy(agentId),
-            splitStackId: default,
-            tick);
+        Result validation = ValidateToolTarget(stackId, agentId);
+        return validation.IsFailure
+            ? validation
+            : HoldItem(agentId, stackId, 1, HeldItemPurpose.ToolUse, tick);
     }
 
     public Result CanSwitchTool(EntityId stackId, EntityId agentId, long tick)
     {
         ValidateTick(tick);
-        if (agentId.IsEmpty)
-        {
-            throw new ArgumentException("Agent id cannot be empty.", nameof(agentId));
-        }
-
+        ValidateResidentId(agentId);
         ItemStackState? target = Find(stackId);
         if (target is null)
         {
             return Result.Failure(InventoryErrors.StackNotFound);
         }
 
-        ItemDefinition targetDefinition = Catalog.Get(target.ItemId);
-        if (!targetDefinition.IsTool
-            || target.Quantity != 1
-            || target.ReservedQuantity != 0)
-        {
-            return Result.Failure(InventoryErrors.ToolRequired);
-        }
-
-        ItemLocation equippedLocation = ItemLocation.EquippedBy(agentId);
-        if (target.Location == equippedLocation)
+        if (target.Location == ItemLocation.EquippedBy(agentId))
         {
             return Result.Success();
         }
 
-        if (target.Location != ItemLocation.InAgent(agentId))
+        Result targetValidation = ValidateToolTarget(stackId, agentId);
+        if (targetValidation.IsFailure)
         {
-            return Result.Failure(InventoryErrors.ToolNotCarried);
+            HeldItemReferenceSnapshot? current = GetHeldItem(agentId);
+            if (!current.HasValue || current.Value.StackId != stackId)
+            {
+                return targetValidation;
+            }
         }
 
-        ItemStackState[] equipped = _stacks.Values
-            .Where(candidate => candidate.Location == equippedLocation)
-            .ToArray();
-        if (equipped.Length > 1)
+        HeldItemReferenceSnapshot? held = GetHeldItem(agentId);
+        if (held.HasValue && !IsHeldReferenceValid(held.Value))
         {
-            throw new InvalidOperationException(
-                "A resident cannot have more than one equipped item.");
+            return Result.Failure(InventoryErrors.ToolSwitchUnsafe);
         }
 
-        if (equipped.Length == 1)
+        ItemStackState[] legacy = GetLegacyEquippedItems(agentId);
+        if (legacy.Length > 1)
         {
-            ItemStackState current = equipped[0];
-            ItemDefinition currentDefinition = Catalog.Get(current.ItemId);
-            if (!currentDefinition.IsTool
+            return Result.Failure(InventoryErrors.ToolSwitchUnsafe);
+        }
+
+        if (legacy.Length == 1)
+        {
+            ItemStackState current = legacy[0];
+            ItemDefinition definition = Catalog.Get(current.ItemId);
+            if (!definition.IsTool
                 || current.Quantity != 1
                 || current.ReservedQuantity != 0)
             {
@@ -113,43 +84,86 @@ public sealed partial class InventoryState
         }
 
         ItemStackState target = Find(stackId)!;
-        ItemLocation equippedLocation = ItemLocation.EquippedBy(agentId);
-        if (target.Location == equippedLocation)
+        if (target.Location == ItemLocation.EquippedBy(agentId))
         {
             return Result.Success();
         }
 
-        ItemLocation carriedLocation = ItemLocation.InAgent(agentId);
-        ItemStackState? current = _stacks.Values.SingleOrDefault(
-            candidate => candidate.Location == equippedLocation);
-        if (current is not null)
+        HeldItemReferenceSnapshot? held = GetHeldItem(agentId);
+        if (held.HasValue)
         {
-            current.MoveFull(carriedLocation);
+            return SwitchHeldItem(
+                agentId,
+                stackId,
+                HeldItemPurpose.ToolUse,
+                tick);
         }
 
-        target.MoveFull(equippedLocation);
-        IncrementVersion();
-        if (current is not null)
+        ItemStackState[] legacy = GetLegacyEquippedItems(agentId);
+        if (legacy.Length == 1)
         {
+            ItemStackState current = legacy[0];
+            ItemLocation source = current.Location;
+            ItemLocation destination = ItemLocation.InAgent(agentId);
+            current.MoveFull(destination);
+            IncrementVersion();
             Raise(new ItemStackMoved(
                 tick,
                 current.Id,
                 current.Id,
                 current.ItemId,
-                1,
-                equippedLocation,
-                carriedLocation));
+                current.Quantity,
+                source,
+                destination));
         }
 
-        Raise(new ItemStackMoved(
-            tick,
-            target.Id,
-            target.Id,
-            target.ItemId,
-            1,
-            carriedLocation,
-            equippedLocation));
-        return Result.Success();
+        return HoldItem(agentId, stackId, 1, HeldItemPurpose.ToolUse, tick);
+    }
+
+    private Result ValidateToolTarget(EntityId stackId, EntityId agentId)
+    {
+        ItemStackState? stack = Find(stackId);
+        if (stack is null)
+        {
+            return Result.Failure(InventoryErrors.StackNotFound);
+        }
+
+        ItemDefinition definition = Catalog.Get(stack.ItemId);
+        if (!definition.IsTool
+            || stack.Quantity != 1
+            || stack.ReservedQuantity != 0)
+        {
+            return Result.Failure(InventoryErrors.ToolRequired);
+        }
+
+        if (!IsCarriedBy(stack.Location, agentId))
+        {
+            return Result.Failure(InventoryErrors.ToolNotCarried);
+        }
+
+        return stack.AvailableQuantity > 0 || stack.HeldQuantity > 0
+            ? Result.Success()
+            : Result.Failure(InventoryErrors.InsufficientAvailableQuantity);
+    }
+
+    private bool HasLegacyEquippedItem(EntityId agentId)
+    {
+        return _stacks.Values.Any(candidate =>
+            candidate.Location == ItemLocation.EquippedBy(agentId));
+    }
+
+    private ItemStackState[] GetLegacyEquippedItems(EntityId agentId)
+    {
+        ItemLocation location = ItemLocation.EquippedBy(agentId);
+        return _stacks.Values.Where(candidate => candidate.Location == location).ToArray();
+    }
+
+    private static bool IsCarriedBy(ItemLocation location, EntityId agentId)
+    {
+        return location.Kind == ItemLocationKind.AgentInventory
+            && location.HasOwner
+            && location.OwnerId == agentId;
     }
 }
+
 }

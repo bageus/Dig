@@ -108,16 +108,7 @@ public sealed class ResidentWorkRatePresenter
         foreach (string residentId in residents)
         {
             EntityId resident = EntityId.Parse(residentId);
-            ItemStackSnapshot[] equipped = snapshots
-                .SelectMany(snapshot => snapshot.Stacks)
-                .Where(stack => stack.Location == ItemLocation.EquippedBy(resident))
-                .ToArray();
-            if (equipped.Length > 1)
-            {
-                throw new InvalidOperationException(
-                    "A resident cannot have more than one equipped item.");
-            }
-
+            ItemStackSnapshot? current = ResolveCurrentItem(resident, snapshots);
             int mining = _rates.ResolveIntervalTicks(
                 resident,
                 EquipmentWorkKind.Mining,
@@ -130,7 +121,7 @@ public sealed class ResidentWorkRatePresenter
                 snapshots);
             models.Add(new ResidentWorkRateViewModel(
                 residentId,
-                equipped.Length == 0 ? null : equipped[0].ItemId.ToString(),
+                current?.ItemId.ToString(),
                 _miningBaseIntervalTicks,
                 mining,
                 _constructionBaseIntervalTicks,
@@ -138,6 +129,48 @@ public sealed class ResidentWorkRatePresenter
         }
 
         return new ReadOnlyCollection<ResidentWorkRateViewModel>(models);
+    }
+
+    private static ItemStackSnapshot? ResolveCurrentItem(
+        EntityId resident,
+        IReadOnlyList<InventorySnapshot> snapshots)
+    {
+        List<ItemStackSnapshot> current = new List<ItemStackSnapshot>();
+        for (int index = 0; index < snapshots.Count; index++)
+        {
+            InventorySnapshot snapshot = snapshots[index];
+            HeldItemReferenceSnapshot[] held = snapshot.HeldItems
+                .Where(item => item.ResidentId == resident)
+                .ToArray();
+            ItemStackSnapshot[] legacy = snapshot.Stacks
+                .Where(stack => stack.Location == ItemLocation.EquippedBy(resident))
+                .ToArray();
+            if (held.Length + legacy.Length > 1)
+            {
+                throw new InvalidOperationException(
+                    "A resident cannot have more than one held or legacy equipped item.");
+            }
+
+            if (held.Length == 1)
+            {
+                EntityId stackId = held[0].StackId;
+                current.Add(snapshot.Stacks.SingleOrDefault(stack => stack.StackId == stackId)
+                    ?? throw new InvalidOperationException(
+                        "A held item reference points to a missing stack."));
+            }
+            else if (legacy.Length == 1)
+            {
+                current.Add(legacy[0]);
+            }
+        }
+
+        if (current.Count > 1)
+        {
+            throw new InvalidOperationException(
+                "A resident cannot have more than one held or legacy equipped item.");
+        }
+
+        return current.Count == 0 ? null : current[0];
     }
 }
 

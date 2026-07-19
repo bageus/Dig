@@ -23,14 +23,18 @@ public sealed class ResidentInventorySlotViewModel
         int quantity,
         int reservedQuantity,
         ResidentInventoryItemKind itemKind,
-        bool isEquipped = false)
+        bool isEquipped = false,
+        int heldQuantity = 0)
     {
         if (string.IsNullOrWhiteSpace(stackId) || string.IsNullOrWhiteSpace(itemId))
         {
             throw new ArgumentException("Inventory slot identifiers are required.");
         }
 
-        if (quantity <= 0 || reservedQuantity < 0 || reservedQuantity > quantity)
+        if (quantity <= 0
+            || reservedQuantity < 0
+            || heldQuantity < 0
+            || reservedQuantity + heldQuantity > quantity)
         {
             throw new ArgumentOutOfRangeException(nameof(quantity));
         }
@@ -44,15 +48,17 @@ public sealed class ResidentInventorySlotViewModel
         ItemId = itemId.Trim();
         Quantity = quantity;
         ReservedQuantity = reservedQuantity;
+        HeldQuantity = heldQuantity;
         ItemKind = itemKind;
-        IsEquipped = isEquipped;
+        IsEquipped = isEquipped || heldQuantity > 0;
     }
 
     public string StackId { get; }
     public string ItemId { get; }
     public int Quantity { get; }
     public int ReservedQuantity { get; }
-    public int AvailableQuantity => Quantity - ReservedQuantity;
+    public int HeldQuantity { get; }
+    public int AvailableQuantity => Quantity - ReservedQuantity - HeldQuantity;
     public ResidentInventoryItemKind ItemKind { get; }
     public bool IsEquipped { get; }
     public bool IsBuildingBox => ItemKind == ResidentInventoryItemKind.BuildingBox;
@@ -65,7 +71,7 @@ public sealed class ResidentInventorySlotViewModel
         && IsTool
         && Quantity == 1
         && AvailableQuantity == 1;
-    public bool CanDrop => ReservedQuantity == 0;
+    public bool CanDrop => ReservedQuantity == 0 && HeldQuantity == 0;
 }
 
 public sealed class ResidentInventoryViewModel
@@ -137,20 +143,36 @@ public sealed class ResidentInventoryPresenter
             throw new ArgumentException("Resident id is required.", nameof(residentId));
         }
 
+        HeldItemReferenceSnapshot? held = snapshot.HeldItems
+            .Where(item => item.ResidentId == residentId)
+            .Select(item => (HeldItemReferenceSnapshot?)item)
+            .SingleOrDefault();
         ResidentInventorySlotViewModel[] slots = snapshot.Stacks
             .Where(stack => IsOwnedByResident(stack.Location, residentId))
-            .Select(stack => new ResidentInventorySlotViewModel(
-                stack.StackId.ToString(),
-                stack.ItemId.ToString(),
-                stack.Quantity,
-                stack.ReservedQuantity,
-                ResolveKind(stack.ItemId),
-                isEquipped: stack.Location.Kind == ItemLocationKind.Equipped))
+            .Select(stack => PresentStack(stack, held))
             .ToArray();
         return new ResidentInventoryViewModel(
             residentId.ToString(),
             snapshot.Version,
             slots);
+    }
+
+    private ResidentInventorySlotViewModel PresentStack(
+        ItemStackSnapshot stack,
+        HeldItemReferenceSnapshot? held)
+    {
+        int heldQuantity = held.HasValue && held.Value.StackId == stack.StackId
+            ? held.Value.Quantity
+            : 0;
+        return new ResidentInventorySlotViewModel(
+            stack.StackId.ToString(),
+            stack.ItemId.ToString(),
+            stack.Quantity,
+            stack.ReservedQuantity,
+            ResolveKind(stack.ItemId),
+            isEquipped: heldQuantity > 0
+                || stack.Location.Kind == ItemLocationKind.Equipped,
+            heldQuantity);
     }
 
     private static bool IsOwnedByResident(ItemLocation location, EntityId residentId)
@@ -173,4 +195,5 @@ public sealed class ResidentInventoryPresenter
             : ResidentInventoryItemKind.Generic;
     }
 }
+
 }

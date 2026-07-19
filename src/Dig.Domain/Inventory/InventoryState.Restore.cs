@@ -22,8 +22,12 @@ public sealed partial class InventoryState
         }
 
         InventoryState inventory = new InventoryState(catalog);
-        foreach (ItemStackSnapshot stack in snapshot.Stacks
-            .OrderBy(item => item.StackId.ToString(), StringComparer.Ordinal))
+        ItemStackSnapshot[] orderedStacks = snapshot.Stacks
+            .OrderBy(stack => RestoreOrder(stack, catalog))
+            .ThenBy(stack => stack.Location)
+            .ThenBy(stack => stack.StackId.ToString(), StringComparer.Ordinal)
+            .ToArray();
+        foreach (ItemStackSnapshot stack in orderedStacks)
         {
             if (!catalog.Contains(stack.ItemId))
             {
@@ -42,7 +46,10 @@ public sealed partial class InventoryState
             {
                 return Result<InventoryState>.Failure(added.Error!);
             }
+        }
 
+        foreach (ItemStackSnapshot stack in orderedStacks)
+        {
             foreach (ItemQuantityReservationSnapshot reservation in stack.Reservations)
             {
                 Result reserved = inventory.ReserveQuantity(
@@ -57,9 +64,50 @@ public sealed partial class InventoryState
             }
         }
 
+        foreach (HeldItemReferenceSnapshot held in snapshot.HeldItems
+            .OrderBy(item => item.ResidentId.ToString(), StringComparer.Ordinal))
+        {
+            Result restored = inventory.HoldItem(
+                held.ResidentId,
+                held.StackId,
+                held.Quantity,
+                held.Purpose,
+                tick: 0);
+            if (restored.IsFailure)
+            {
+                return Result<InventoryState>.Failure(restored.Error!);
+            }
+        }
+
+        Result claims = inventory.RestoreResidentSlotClaims(snapshot.ResidentSlotClaims);
+        if (claims.IsFailure)
+        {
+            return Result<InventoryState>.Failure(claims.Error!);
+        }
+
         inventory.DequeueUncommittedEvents();
         inventory.Version = snapshot.Version;
         return Result<InventoryState>.Success(inventory);
     }
+
+    private static int RestoreOrder(
+        ItemStackSnapshot stack,
+        ItemCatalog catalog)
+    {
+        ItemLocation location = stack.Location;
+        if (location.Kind != ItemLocationKind.AgentInventory
+            || !location.HasResidentSlot)
+        {
+            return 3;
+        }
+
+        if (location.ResidentCompartment == ResidentInventoryCompartment.Main)
+        {
+            return catalog.Get(stack.ItemId).IsInventoryExpansion ? 0 : 1;
+        }
+
+        return 2;
+    }
 }
+
 }

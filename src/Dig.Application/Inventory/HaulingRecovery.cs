@@ -129,6 +129,10 @@ public sealed class BlockHaulingJobHandler
         }
 
         Result blocked = jobs.Block(command.JobId, command.Reason, command.Tick);
+        if (blocked.IsSuccess)
+        {
+            inventory.ReleaseResidentSlotClaims(command.JobId, command.Tick);
+        }
         JobSnapshot? after = jobs.Get(command.JobId);
         if (after?.Status == JobStatus.Failed)
         {
@@ -159,6 +163,7 @@ public sealed class BlockHaulingJobHandler
         long tick)
     {
         inventory.ReleaseReservations(jobId, tick);
+        inventory.ReleaseResidentSlotClaims(jobId, tick);
         storage.ReleaseIncoming(jobId, tick);
     }
 }
@@ -226,6 +231,7 @@ public sealed class ReconcileHaulingHandler
         InventoryState inventory = _inventoryRepository.Get();
         StorageState storage = _storageRepository.Get();
         JobSystem jobs = _jobRepository.Get();
+        HaulingResidentSlotClaimReconciler.ReleaseStale(inventory, jobs, command.Tick);
         List<HaulingReconciliationEntry> entries = new List<HaulingReconciliationEntry>();
 
         foreach (JobSnapshot job in jobs.GetAll())
@@ -332,8 +338,10 @@ public sealed class ReconcileHaulingHandler
         long tick)
     {
         int releasedItems = inventory.ReleaseReservations(jobId, tick);
+        int releasedSlots = inventory.ReleaseResidentSlotClaims(jobId, tick);
         int releasedStorage = storage.ReleaseIncoming(jobId, tick);
-        return checked(releasedItems + releasedStorage);
+        return checked(releasedItems + releasedSlots + releasedStorage);
     }
 }
+
 }

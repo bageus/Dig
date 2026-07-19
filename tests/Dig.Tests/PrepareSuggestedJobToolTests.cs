@@ -20,7 +20,7 @@ public sealed class PrepareSuggestedJobToolTests
     private static readonly ItemId PickaxeItemId = new ItemId("tool.pickaxe");
 
     [Fact]
-    public void Suggested_tool_action_switches_inventory_and_updates_retained_diagnostic()
+    public void Suggested_tool_action_switches_held_reference_and_updates_retained_diagnostic()
     {
         InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
         InMemoryJobRepository jobs = CreateClaimedJob(reserveSuggestedTool: true);
@@ -36,12 +36,11 @@ public sealed class PrepareSuggestedJobToolTests
         Result result = handler.Handle(new PrepareSuggestedJobToolCommand(JobId, tick: 5));
 
         Assert.True(result.IsSuccess, result.Error?.ToString());
-        Assert.Equal(
-            ItemLocation.InAgent(AgentId),
-            inventory.GetStack(HammerStackId)!.Location);
-        Assert.Equal(
-            ItemLocation.EquippedBy(AgentId),
-            inventory.GetStack(PickaxeStackId)!.Location);
+        Assert.Equal(ItemLocation.InAgent(AgentId), inventory.GetStack(HammerStackId)!.Location);
+        Assert.Equal(ItemLocation.InAgent(AgentId), inventory.GetStack(PickaxeStackId)!.Location);
+        Assert.Equal(0, inventory.GetStack(HammerStackId)!.HeldQuantity);
+        Assert.Equal(1, inventory.GetStack(PickaxeStackId)!.HeldQuantity);
+        Assert.Equal(PickaxeStackId, inventory.GetHeldItem(AgentId)!.Value.StackId);
         JobAssignmentReport retained = journal.Find(JobId)!;
         JobAssignment assignment = Assert.Single(retained.Assignments);
         Assert.Equal(5, retained.Tick);
@@ -69,12 +68,11 @@ public sealed class PrepareSuggestedJobToolTests
 
         Assert.True(result.IsFailure);
         Assert.Equal(PrepareSuggestedJobToolErrors.ToolReservationMissing, result.Error);
-        Assert.Equal(
-            ItemLocation.EquippedBy(AgentId),
-            inventory.GetStack(HammerStackId)!.Location);
-        Assert.Equal(
-            ItemLocation.InAgent(AgentId),
-            inventory.GetStack(PickaxeStackId)!.Location);
+        Assert.Equal(ItemLocation.InAgent(AgentId), inventory.GetStack(HammerStackId)!.Location);
+        Assert.Equal(ItemLocation.InAgent(AgentId), inventory.GetStack(PickaxeStackId)!.Location);
+        Assert.Equal(1, inventory.GetStack(HammerStackId)!.HeldQuantity);
+        Assert.Equal(0, inventory.GetStack(PickaxeStackId)!.HeldQuantity);
+        Assert.Equal(HammerStackId, inventory.GetHeldItem(AgentId)!.Value.StackId);
         Assert.Equal(
             JobToolPreparationOutcome.Suggested,
             Assert.Single(journal.Find(JobId)!.Assignments).ToolPreparation);
@@ -98,12 +96,11 @@ public sealed class PrepareSuggestedJobToolTests
 
         Assert.True(result.IsFailure);
         Assert.Equal(PrepareSuggestedJobToolErrors.SuggestionStale, result.Error);
-        Assert.Equal(
-            ItemLocation.EquippedBy(AgentId),
-            inventory.GetStack(HammerStackId)!.Location);
-        Assert.Equal(
-            ItemLocation.InAgent(AgentId),
-            inventory.GetStack(PickaxeStackId)!.Location);
+        Assert.Equal(ItemLocation.InAgent(AgentId), inventory.GetStack(HammerStackId)!.Location);
+        Assert.Equal(ItemLocation.InAgent(AgentId), inventory.GetStack(PickaxeStackId)!.Location);
+        Assert.Equal(1, inventory.GetStack(HammerStackId)!.HeldQuantity);
+        Assert.Equal(0, inventory.GetStack(PickaxeStackId)!.HeldQuantity);
+        Assert.Equal(HammerStackId, inventory.GetHeldItem(AgentId)!.Value.StackId);
     }
 
     private static InMemoryJobRepository CreateClaimedJob(bool reserveSuggestedTool)
@@ -173,4 +170,5 @@ public sealed class PrepareSuggestedJobToolTests
         return EntityId.Parse(value.ToString("x32"));
     }
 }
+
 }

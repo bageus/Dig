@@ -34,9 +34,7 @@ public sealed class DropResidentInventoryStackHandler
             return Result.Failure(InventoryErrors.StackNotFound);
         }
 
-        bool owned = stack.Location == ItemLocation.InAgent(command.ActorId)
-            || stack.Location == ItemLocation.EquippedBy(command.ActorId);
-        if (!owned)
+        if (!IsOwnedByResident(stack.Location, command.ActorId))
         {
             return Result.Failure(ResidentInventoryActionErrors.StackNotCarriedByActor);
         }
@@ -46,11 +44,9 @@ public sealed class DropResidentInventoryStackHandler
             return Result.Failure(ResidentInventoryActionErrors.StackReserved);
         }
 
-        Result moved = inventory.MoveAvailable(
+        Result moved = inventory.DropResidentStackWithSpill(
             command.StackId,
-            stack.Quantity,
             ItemLocation.InWorld(command.Destination),
-            splitStackId: default,
             command.Tick);
         if (moved.IsFailure)
         {
@@ -60,6 +56,14 @@ public sealed class DropResidentInventoryStackHandler
         _repository.Save(inventory);
         _eventSink.Append(inventory.DequeueUncommittedEvents());
         return Result.Success();
+    }
+
+    internal static bool IsOwnedByResident(ItemLocation location, EntityId residentId)
+    {
+        return location.HasOwner
+            && location.OwnerId == residentId
+            && (location.Kind == ItemLocationKind.AgentInventory
+                || location.Kind == ItemLocationKind.Equipped);
     }
 }
 

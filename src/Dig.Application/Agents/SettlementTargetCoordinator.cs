@@ -35,13 +35,15 @@ internal sealed class SettlementTargetCoordinator
 
         InventoryState inventory = _inventoryRepository.Get();
         BuildingFacilitiesState facilities = _facilitiesRepository.Get();
+        double speed = inventory.GetResidentMoveSpeedMultiplier(agent.Id);
         return new AgentDecisionContext(
             foodAvailable: inventory.HasAvailableCategory(FoodCategory, agent.Id),
             bedAvailable: facilities.HasAvailable(BuildingFacilityKind.Bed, agent.Id),
             workAvailable: external.WorkAvailable,
             restAvailable: facilities.HasAvailable(BuildingFacilityKind.Leisure, agent.Id),
             escapeRouteAvailable: external.EscapeRouteAvailable,
-            threatLevel: external.ThreatLevel);
+            threatLevel: external.ThreatLevel,
+            travelCostMultiplier: 1d / speed);
     }
 
     public string? ValidateExistingTarget(
@@ -247,4 +249,5 @@ public static class AgentSettlementErrors
         "agents.settlement.target_reservation_missing",
         "The resident activity target reservation disappeared.");
 }
+
 }

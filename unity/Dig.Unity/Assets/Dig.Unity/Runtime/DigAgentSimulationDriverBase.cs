@@ -65,6 +65,8 @@ namespace Dig.Unity
             StockpileRenderer = stockpileRenderer;
             RouteRenderer = routeRenderer;
             Hud = hud;
+            AgentSession.SetMovementTargetFilter(
+                TerrainSession.ApplyResidentMovementCadence);
             RefreshEquipmentVisuals();
         }
 

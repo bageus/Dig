@@ -60,4 +60,67 @@ public sealed class ItemQuantityReservationChanged : IDomainEvent
 
     public int ReservedQuantity { get; }
 }
+
+public sealed class HeldItemReferenceChanged : IDomainEvent
+{
+    public HeldItemReferenceChanged(
+        long tick,
+        EntityId residentId,
+        EntityId stackId,
+        int quantity,
+        HeldItemPurpose purpose,
+        bool isActive)
+    {
+        Tick = tick;
+        ResidentId = residentId;
+        StackId = stackId;
+        Quantity = quantity;
+        Purpose = purpose;
+        IsActive = isActive;
+    }
+
+    public long Tick { get; }
+
+    public EntityId ResidentId { get; }
+
+    public EntityId StackId { get; }
+
+    public int Quantity { get; }
+
+    public HeldItemPurpose Purpose { get; }
+
+    public bool IsActive { get; }
+}
+
+public sealed class ResidentInventorySlotClaimChanged : IDomainEvent
+{
+    public ResidentInventorySlotClaimChanged(
+        long tick,
+        EntityId jobId,
+        EntityId residentId,
+        ItemId itemId,
+        ResidentInventorySlot slot,
+        int quantity)
+    {
+        Tick = tick;
+        JobId = jobId;
+        ResidentId = residentId;
+        ItemId = itemId;
+        Slot = slot;
+        Quantity = quantity;
+    }
+
+    public long Tick { get; }
+
+    public EntityId JobId { get; }
+
+    public EntityId ResidentId { get; }
+
+    public ItemId ItemId { get; }
+
+    public ResidentInventorySlot Slot { get; }
+
+    public int Quantity { get; }
+}
+
 }

@@ -119,6 +119,7 @@ public sealed class CreateHaulingJobHandler
         long tick)
     {
         inventory.ReleaseReservations(jobId, tick);
+        inventory.ReleaseResidentSlotClaims(jobId, tick);
         storage.ReleaseIncoming(jobId, tick);
     }
 }
@@ -174,6 +175,7 @@ public sealed class CancelHaulingJobHandler
         }
 
         inventory.ReleaseReservations(command.JobId, command.Tick);
+        inventory.ReleaseResidentSlotClaims(command.JobId, command.Tick);
         storage.ReleaseIncoming(command.JobId, command.Tick);
         SaveAndPublish(inventory, storage, jobs);
         return Result.Success();
@@ -235,18 +237,35 @@ public sealed class CompleteHaulingJobHandler
         }
 
         if (snapshot.Status != JobStatus.InProgress
-            || snapshot.Stage != JobStageKind.DepositItem)
+            || snapshot.Stage != JobStageKind.DepositItem
+            || !snapshot.AssignedAgentId.HasValue)
         {
             return Result.Failure(HaulingErrors.InvalidStage);
         }
 
-        Result moved = inventory.MoveReserved(
-            hauling.SourceStackId,
+        Result moved = inventory.DepositReservedResidentItems(
             command.JobId,
+            snapshot.AssignedAgentId.Value,
+            hauling.ItemId,
             hauling.Quantity,
             ItemLocation.InStorage(hauling.DestinationStorageId),
             command.SplitStackId,
             command.Tick);
+        if (moved.IsFailure && moved.Error == InventoryErrors.ReservationNotFound)
+        {
+            Result legacyMove = inventory.MoveReserved(
+                hauling.SourceStackId,
+                command.JobId,
+                hauling.Quantity,
+                ItemLocation.InStorage(hauling.DestinationStorageId),
+                command.SplitStackId,
+                command.Tick);
+            if (legacyMove.IsSuccess)
+            {
+                moved = legacyMove;
+            }
+        }
+
         if (moved.IsFailure)
         {
             return moved;
@@ -259,6 +278,7 @@ public sealed class CompleteHaulingJobHandler
                 "Validated hauling job failed its final lifecycle transition.");
         }
 
+        inventory.ReleaseResidentSlotClaims(command.JobId, command.Tick);
         storage.ReleaseIncoming(command.JobId, command.Tick);
         _inventoryRepository.Save(inventory);
         _storageRepository.Save(storage);
@@ -269,4 +289,5 @@ public sealed class CompleteHaulingJobHandler
         return Result.Success();
     }
 }
+
 }

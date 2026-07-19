@@ -52,6 +52,11 @@ namespace Dig.Unity
 
         internal bool ContainsScreenPoint(Vector3 screenPoint)
         {
+            if (_gameHudCanvas != null)
+            {
+                return _gameHudCanvas.ContainsScreenPoint(screenPoint);
+            }
+
             Vector2 guiPoint = new Vector2(screenPoint.x, Screen.height - screenPoint.y);
             return new Rect(HudX, HudY, HudWidth, CurrentHudHeight).Contains(guiPoint);
         }
@@ -88,16 +93,18 @@ namespace Dig.Unity
 
             ClearJobSelection();
             ClearBuildingSelection();
+            _gameHudCanvas?.InvalidateAll();
         }
 
         public void SetCommandResult(Result result)
         {
-            _status = result.IsSuccess ? "Command accepted." : result.Error!.ToString();
+            SetStatus(result.IsSuccess ? "Command accepted." : result.Error!.ToString());
         }
 
         public void SetStatus(string status)
         {
             _status = status;
+            _gameHudCanvas?.SetStatus(status);
         }
 
         private float CurrentHudHeight => _isCollapsed
@@ -106,6 +113,11 @@ namespace Dig.Unity
 
         private void OnGUI()
         {
+            if (_gameHudCanvas != null)
+            {
+                return;
+            }
+
             GUILayout.BeginArea(
                 new Rect(HudX, HudY, HudWidth, CurrentHudHeight),
                 GUI.skin.box);
