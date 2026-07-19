@@ -19,9 +19,11 @@ def check_gameplay_hud_and_work_contracts(
     hud_path = runtime_root / "DigGameHudCanvas.cs"
     factory_path = runtime_root / "DigGameHudCanvas.Factory.cs"
     roster_path = runtime_root / "DigGameHudCanvas.Roster.cs"
+    inventory_path = runtime_root / "DigGameHudCanvas.Inventory.cs"
     context_path = runtime_root / "DigGameHudCanvas.Context.cs"
     interaction_path = runtime_root / "DigWorldInteraction.CanvasHud.cs"
     agent_session_path = runtime_root / "DigAgentSession.cs"
+    driver_path = runtime_root / "DigAgentSimulationDriverBase.cs"
     room_session_path = runtime_root / "DigWorldSession.CaveRooms.cs"
     loop_path = runtime_root / "DigAgentSimulationDriverBase.Loop.cs"
     router_path = (
@@ -65,31 +67,59 @@ def check_gameplay_hud_and_work_contracts(
         ),
     ))
     errors.extend(require_fragments(
+        inventory_path,
+        texts.get(inventory_path, ""),
+        "active-only two-row resident inventory",
+        (
+            "InventoryColumns = 3",
+            "GridLayoutGroup",
+            "FixedColumnCount",
+            "constraintCount = InventoryColumns",
+            "BuildCompartmentIfActive",
+            "inventory.GetCompartment(compartment).Count > 0",
+            '"MAIN · 6"',
+        ),
+    ))
+    errors.extend(reject_fragments(
+        inventory_path,
+        texts.get(inventory_path, ""),
+        "inactive expansion placeholders and one-row inventory",
+        (
+            '"CARGO · NO EXPANSION"',
+            'CreateHorizontalRow("Slots"',
+            '"Unavailable"',
+        ),
+    ))
+    errors.extend(require_fragments(
         roster_path,
         texts.get(roster_path, ""),
-        "selectable resident building and job roster",
+        "one-line gender-colored selectable roster",
         (
             "SelectRightPanelTab",
-            "_lastRosterSignature = string.Empty;",
-            "RefreshRoster();",
             "LoadJobs()",
+            "ResolveResidentSex(id)",
+            "ResidentSex.Female",
+            '"#FF83B9"',
+            '"#70B7FF"',
+            "ConfigureSingleLineRosterRow",
+            "HorizontalWrapMode.Overflow",
+            "resizeTextForBestFit = true",
             "SelectResidentFromHud(id)",
             "SelectBuildingFromHud(id)",
             "SelectJobFromHud(id)",
-            '"No dwarfs"',
-            '"No completed buildings"',
-            '"No jobs"',
         ),
+    ))
+    errors.extend(reject_fragments(
+        roster_path,
+        texts.get(roster_path, ""),
+        "multi-line roster entries",
+        ('+ $"\\nHealth', '+ $"\\nCell', '+ $"\\n{job.Status}'),
     ))
     errors.extend(require_fragments(
         interaction_path,
         texts.get(interaction_path, ""),
         "runtime job selection",
-        (
-            "SelectJobFromHud",
-            "_jobRenderer!.SelectById(jobId)",
-            "_hud!.SetJobSelection",
-        ),
+        ("SelectJobFromHud", "_jobRenderer!.SelectById(jobId)", "_hud!.SetJobSelection"),
     ))
     errors.extend(require_fragments(
         context_path,
@@ -99,42 +129,32 @@ def check_gameplay_hud_and_work_contracts(
             "SelectedJobId",
             "_terrainSession!.LoadJobs().FirstOrDefault",
             'CreateHorizontalRow("Excavation Tools", section, 56f)',
-            'CreateRoomIconButton(',
-            'new Vector2(18f, 18f)',
-            'new Vector2(38f, 22f)',
-            'new Vector2(18f, 32f)',
-        ),
-    ))
-    errors.extend(reject_fragments(
-        context_path,
-        texts.get(context_path, ""),
-        "unsupported or multi-row excavation HUD",
-        (
-            "_jobRenderer!.SelectedModel",
-            "КОПКА",
-            'CreateHorizontalRow("Tools"',
-            'CreateHorizontalRow("Rooms"',
-            'CreateButton("Small Room", rooms',
+            "CreateRoomIconButton(",
         ),
     ))
     for path, text in texts.items():
-        if not path.name.startswith("DigGameHudCanvas"):
-            continue
-        if CYRILLIC.search(text):
+        if path.name.startswith("DigGameHudCanvas") and CYRILLIC.search(text):
             errors.append(f"{path.relative_to(root)}: game HUD text must be English-only")
 
     errors.extend(require_fragments(
         agent_session_path,
         texts.get(agent_session_path, ""),
-        "society-backed unique grounded demo residents",
+        "society-backed unique resident identity and sex projection",
         (
             "ResidentNameCatalog",
-            "Dig.Domain.Society.ResidentIdentityGenerator",
+            "ResidentIdentityGenerator",
             "generator.CreateBirthPlan(",
             "usedNames.Add(identity.Name)",
-            "identity.Position.Y,",
-            "0));",
+            "Dictionary<EntityId, ResidentSex>",
+            "residentSexes.Add(agent.Id, identity.Sex)",
+            "ResolveResidentSex",
         ),
+    ))
+    errors.extend(require_fragments(
+        driver_path,
+        texts.get(driver_path, ""),
+        "resident sex HUD adapter",
+        ("ResidentSex ResolveResidentSex", "AgentSession?.ResolveResidentSex"),
     ))
     errors.extend(reject_fragments(
         room_session_path,
@@ -148,17 +168,12 @@ def check_gameplay_hud_and_work_contracts(
         loop_path,
         loop_text,
         "worker release and automatic excavation reassignment",
-        (
-            "EnforceDirectMovementOwnership(nextTick)",
-            "SynchronizeDesignations(nextTick, before)",
-        ),
+        ("EnforceDirectMovementOwnership(nextTick)", "SynchronizeDesignations(nextTick, before)"),
     ))
     release_index = loop_text.find("EnforceDirectMovementOwnership(nextTick)")
     assignment_index = loop_text.find("SynchronizeDesignations(nextTick, before)")
     if release_index < 0 or assignment_index < 0 or release_index >= assignment_index:
-        errors.append(
-            f"{loop_path}: direct movement ownership must be released before assignment"
-        )
+        errors.append(f"{loop_path}: direct movement ownership must be released before assignment")
     errors.extend(reject_fragments(
         loop_path,
         loop_text,
