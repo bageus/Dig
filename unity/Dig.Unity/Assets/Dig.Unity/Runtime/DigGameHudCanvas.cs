@@ -41,6 +41,32 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
     internal void Initialize(
         DigTerrainWorkSession terrainSession,
         DigAgentRenderer agentRenderer,
+        DigBuildingRenderer buildingRenderer,
+        DigWorldInteraction interaction,
+        DigAgentSimulationDriver simulation,
+        DigHudOverlay legacyHud)
+    {
+        if (agentRenderer == null)
+        {
+            throw new ArgumentNullException(nameof(agentRenderer));
+        }
+
+        DigJobRenderer jobRenderer = agentRenderer.GetComponent<DigJobRenderer>()
+            ?? throw new InvalidOperationException(
+                "The job renderer must exist before the game HUD is initialized.");
+        Initialize(
+            terrainSession,
+            agentRenderer,
+            jobRenderer,
+            buildingRenderer,
+            interaction,
+            simulation,
+            legacyHud);
+    }
+
+    internal void Initialize(
+        DigTerrainWorkSession terrainSession,
+        DigAgentRenderer agentRenderer,
         DigJobRenderer jobRenderer,
         DigBuildingRenderer buildingRenderer,
         DigWorldInteraction interaction,
