@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Buildings;
 using Dig.Domain.Buildings;
+using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
@@ -23,13 +24,13 @@ internal sealed partial class DigTerrainWorkSession
     private static readonly ItemId DemoResidentHammerItemId =
         new ItemId("demo.tool.hammer");
     private static readonly ItemId DemoBasketItemId =
-        new ItemId("demo.inventory.basket");
+        ResidentInventoryExpansionContent.BasketItemId;
     private static readonly ItemId DemoLargeBasketItemId =
-        new ItemId("demo.inventory.large_basket");
+        ResidentInventoryExpansionContent.LargeBasketItemId;
     private static readonly ItemId DemoScabbardItemId =
-        new ItemId("demo.inventory.scabbard");
+        ResidentInventoryExpansionContent.SheathItemId;
     private static readonly ItemId DemoHarnessItemId =
-        new ItemId("demo.inventory.harness");
+        ResidentInventoryExpansionContent.WeaponHarnessItemId;
     private static readonly DomainError BuildingsNotInitialized = new DomainError(
         "unity.buildings.not_initialized",
         "The demo building runtime is not initialized.");
@@ -86,8 +87,7 @@ internal sealed partial class DigTerrainWorkSession
         BuildingsState buildings = BuildingsState.RestoreWithPacking(
             new[] { snapshot }).Value;
         _buildingsRepository = new InMemoryBuildingsRepository(buildings);
-        _buildingInventoryRepository = new InMemoryInventoryRepository(
-            CreateDemoResidentInventory());
+        _buildingInventoryRepository = _inventoryRepository;
 
         BuildingFunctionsPresenter functions = new BuildingFunctionsPresenter();
         _buildingPresenter = new BuildingWorldPresenter(functions);
