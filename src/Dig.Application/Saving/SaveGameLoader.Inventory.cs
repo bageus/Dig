@@ -46,7 +46,14 @@ public sealed partial class SaveGameLoader
                 heldQuantity));
         }
 
-        return new InventorySnapshot(data.Version, stacks, heldItems);
+        ResidentInventorySlotClaimSnapshot[] claims = (data.ResidentSlotClaims
+                ?? new List<ResidentSlotClaimSaveData>())
+            .OrderBy(value => value.JobId, StringComparer.Ordinal)
+            .ThenBy(value => value.Compartment)
+            .ThenBy(value => value.SlotIndex)
+            .Select(ParseResidentSlotClaim)
+            .ToArray();
+        return new InventorySnapshot(data.Version, stacks, heldItems, claims);
     }
 
     private static List<HeldItemReferenceSnapshot> ParseHeldItems(
