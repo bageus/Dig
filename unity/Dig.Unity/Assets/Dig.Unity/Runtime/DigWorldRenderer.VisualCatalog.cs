@@ -1,3 +1,4 @@
+using System;
 using Dig.Presentation.World;
 using UnityEngine;
 
@@ -16,6 +17,7 @@ namespace Dig.Unity
         private DigTerrainChunkRenderer? _terrainChunkRenderer;
         private WorldViewModel? _terrainWorld;
         private TerrainDepthVolumeViewModel? _terrainDepthVolume;
+        private TerrainDepositVolumeViewModel? _terrainDeposits;
         private bool _tunnelDigInteractionActive;
 
         public void SetVisualCatalog(DigTerrainVisualCatalog? catalog)
@@ -26,6 +28,13 @@ namespace Dig.Unity
                 terrainVisualCatalog,
                 this,
                 "Terrain");
+            RefreshChunkedTerrain();
+        }
+
+        internal void SetTerrainDeposits(TerrainDepositVolumeViewModel deposits)
+        {
+            _terrainDeposits = deposits
+                ?? throw new ArgumentNullException(nameof(deposits));
             RefreshChunkedTerrain();
         }
 
@@ -56,6 +65,7 @@ namespace Dig.Unity
             DigTerrainRenderSnapshot snapshot = _terrainSnapshotBuilder.Build(
                 world,
                 _terrainDepthVolume,
+                _terrainDeposits,
                 _tunnelCutaway,
                 _protectedCells);
             EnsureTerrainChunkRenderer().Render(snapshot, terrainVisualCatalog);
