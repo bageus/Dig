@@ -71,6 +71,12 @@ public static class InventoryErrors
     public static readonly DomainError ResidentInventorySpillRequired = new DomainError(
         "inventory.resident.spill_required",
         "Removing this active expansion requires a transactional compartment spill.");
+    public static readonly DomainError ResidentSlotClaimConflict = new DomainError(
+        "inventory.resident.slot_claim_conflict",
+        "The hauling job already owns a different resident slot capacity claim.");
+    public static readonly DomainError ResidentSlotClaimStale = new DomainError(
+        "inventory.resident.slot_claim_stale",
+        "A resident slot capacity claim no longer matches the active inventory layout.");
 }
 
 }
