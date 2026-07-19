@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Dig.Domain.Core;
+using Dig.Domain.Society;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Runtime;
@@ -35,6 +36,11 @@ namespace Dig.Unity
         internal string PlaybackLabel => Playback.Label;
 
         internal long CurrentTick => AgentSession?.Tick ?? 0;
+
+        internal ResidentSex ResolveResidentSex(string residentId)
+        {
+            return AgentSession?.ResolveResidentSex(residentId) ?? ResidentSex.Male;
+        }
 
         protected float TickIntervalSeconds => tickIntervalSeconds;
 
