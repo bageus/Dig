@@ -12,6 +12,9 @@ from unity_group_input_contracts import (
     check_tunnel_and_group_contracts,
 )
 from unity_navigation_marquee_contracts import check_navigation_and_marquee_contracts
+from unity_resident_inventory_contracts import (
+    check_resident_inventory_runtime_contracts,
+)
 from unity_tunnel_depth_contracts import check_tunnel_depth_contracts
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -164,7 +167,6 @@ def check_generic_source_contracts(
                     f"{relative}:{line_number}: protected member exposes internal type "
                     f"{type_name}; use private protected/internal or widen the type"
                 )
-
     for (class_name, method_name), paths in sorted(messages.items()):
         if len(paths) <= 1:
             continue
@@ -189,6 +191,11 @@ def main() -> int:
         for match in INTERNAL_TYPE_DECLARATION.finditer(text)
     }
     errors: list[str] = check_side_view_contracts(texts)
+    errors.extend(check_resident_inventory_runtime_contracts(
+        RUNTIME_ROOT,
+        texts,
+        require_fragments,
+    ))
     errors.extend(check_tunnel_and_group_contracts(
         RUNTIME_ROOT,
         texts,

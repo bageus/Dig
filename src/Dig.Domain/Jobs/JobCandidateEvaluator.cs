@@ -86,6 +86,17 @@ public sealed class JobCandidate
             readiness,
             toolStackId);
     }
+
+    public JobCandidate WithDistanceCost(int distanceCost)
+    {
+        return new JobCandidate(
+            AgentId,
+            SkillLevel,
+            distanceCost,
+            IsAvailable,
+            ToolReadiness,
+            ToolStackId);
+    }
 }
 
 public static class JobCandidateEvaluator
@@ -141,4 +152,5 @@ public static class JobCandidateEvaluator
         return checked(priorityScore + toolScore + skillScore - candidate.DistanceCost);
     }
 }
+
 }

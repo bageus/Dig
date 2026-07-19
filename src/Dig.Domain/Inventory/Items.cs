@@ -107,7 +107,8 @@ public sealed class ItemDefinition
         string displayName,
         int maximumStackSize,
         bool isTool,
-        IEnumerable<ItemCategoryId>? categories = null)
+        IEnumerable<ItemCategoryId>? categories = null,
+        InventoryExpansionDefinition? inventoryExpansion = null)
     {
         if (id.IsEmpty)
         {
@@ -124,10 +125,25 @@ public sealed class ItemDefinition
             throw new ArgumentOutOfRangeException(nameof(maximumStackSize));
         }
 
+        if (inventoryExpansion != null && maximumStackSize != 1)
+        {
+            throw new ArgumentException(
+                "Inventory expansions must be non-stackable.",
+                nameof(maximumStackSize));
+        }
+
+        if (inventoryExpansion != null && isTool)
+        {
+            throw new ArgumentException(
+                "An inventory expansion cannot also be a tool.",
+                nameof(isTool));
+        }
+
         Id = id;
         DisplayName = displayName.Trim();
         MaximumStackSize = maximumStackSize;
         IsTool = isTool;
+        InventoryExpansion = inventoryExpansion;
         _categories = (categories ?? Array.Empty<ItemCategoryId>())
             .Distinct()
             .OrderBy(category => category)
@@ -141,6 +157,10 @@ public sealed class ItemDefinition
     public int MaximumStackSize { get; }
 
     public bool IsTool { get; }
+
+    public InventoryExpansionDefinition? InventoryExpansion { get; }
+
+    public bool IsInventoryExpansion => InventoryExpansion != null;
 
     public IReadOnlyList<ItemCategoryId> Categories =>
         new ReadOnlyCollection<ItemCategoryId>(_categories);
@@ -191,4 +211,5 @@ public sealed class ItemCatalog
         return _definitions.ContainsKey(itemId);
     }
 }
+
 }

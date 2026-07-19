@@ -28,16 +28,55 @@ public static class InventoryErrors
         "A unique stack id is required for a partial move.");
     public static readonly DomainError ToolRequired = new DomainError(
         "inventory.tool_required",
-        "Only a single unreserved tool can be equipped.");
+        "Only a single available tool can be held.");
     public static readonly DomainError ToolNotCarried = new DomainError(
         "inventory.tool_not_carried",
-        "The tool must be carried by the acting resident before it can be equipped.");
+        "The tool must remain in the acting resident inventory.");
     public static readonly DomainError ToolSlotOccupied = new DomainError(
         "inventory.tool_slot_occupied",
-        "The resident already has an equipped tool.");
+        "The resident already holds another item.");
     public static readonly DomainError ToolSwitchUnsafe = new DomainError(
         "inventory.tool_switch_unsafe",
-        "The currently equipped item cannot be safely returned to the resident inventory.");
+        "The currently held item cannot be safely released.");
+    public static readonly DomainError HeldItemAlreadyExists = new DomainError(
+        "inventory.held.already_exists",
+        "The resident already has a held item reference.");
+    public static readonly DomainError HeldItemNotFound = new DomainError(
+        "inventory.held.not_found",
+        "The resident does not have a held item reference.");
+    public static readonly DomainError HeldItemStackNotCarried = new DomainError(
+        "inventory.held.stack_not_carried",
+        "The held stack must stay in the resident inventory.");
+    public static readonly DomainError HeldItemReferenceInvalid = new DomainError(
+        "inventory.held.reference_invalid",
+        "The held item reference is stale or inconsistent with the stack.");
+    public static readonly DomainError ResidentSlotOccupied = new DomainError(
+        "inventory.resident.slot_occupied",
+        "The selected resident inventory slot already contains another stack.");
+    public static readonly DomainError ResidentSlotOutOfRange = new DomainError(
+        "inventory.resident.slot_out_of_range",
+        "The selected slot does not exist in the resident's active inventory layout.");
+    public static readonly DomainError ResidentSlotCategoryRejected = new DomainError(
+        "inventory.resident.slot_category_rejected",
+        "The item category is not accepted by the selected inventory compartment.");
+    public static readonly DomainError InventoryExpansionMainOnly = new DomainError(
+        "inventory.resident.expansion_main_only",
+        "Inventory expansions can only occupy a resident Main slot.");
+    public static readonly DomainError ResidentInventoryCapacityExceeded = new DomainError(
+        "inventory.resident.capacity_exceeded",
+        "The resident inventory does not have a compatible free slot.");
+    public static readonly DomainError ResidentInventoryLayoutInvalid = new DomainError(
+        "inventory.resident.layout_invalid",
+        "The resident inventory contains duplicate or invalid slot locations.");
+    public static readonly DomainError ResidentInventorySpillRequired = new DomainError(
+        "inventory.resident.spill_required",
+        "Removing this active expansion requires a transactional compartment spill.");
+    public static readonly DomainError ResidentSlotClaimConflict = new DomainError(
+        "inventory.resident.slot_claim_conflict",
+        "The hauling job already owns a different resident slot capacity claim.");
+    public static readonly DomainError ResidentSlotClaimStale = new DomainError(
+        "inventory.resident.slot_claim_stale",
+        "A resident slot capacity claim no longer matches the active inventory layout.");
 }
 
 }

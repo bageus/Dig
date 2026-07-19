@@ -14,11 +14,19 @@ public sealed class AgentDecisionContext
         bool workAvailable,
         bool restAvailable,
         bool escapeRouteAvailable,
-        int threatLevel)
+        int threatLevel,
+        double travelCostMultiplier = 1d)
     {
         if (threatLevel < NeedValue.Minimum || threatLevel > NeedValue.Maximum)
         {
             throw new ArgumentOutOfRangeException(nameof(threatLevel));
+        }
+
+        if (travelCostMultiplier < 1d
+            || double.IsNaN(travelCostMultiplier)
+            || double.IsInfinity(travelCostMultiplier))
+        {
+            throw new ArgumentOutOfRangeException(nameof(travelCostMultiplier));
         }
 
         FoodAvailable = foodAvailable;
@@ -27,6 +35,7 @@ public sealed class AgentDecisionContext
         RestAvailable = restAvailable;
         EscapeRouteAvailable = escapeRouteAvailable;
         ThreatLevel = threatLevel;
+        TravelCostMultiplier = travelCostMultiplier;
     }
 
     public bool FoodAvailable { get; }
@@ -40,6 +49,22 @@ public sealed class AgentDecisionContext
     public bool EscapeRouteAvailable { get; }
 
     public int ThreatLevel { get; }
+
+    public double TravelCostMultiplier { get; }
+
+    public AgentDecisionContext WithTravelCostMultiplier(double multiplier)
+    {
+        return Math.Abs(multiplier - TravelCostMultiplier) < 0.0000001d
+            ? this
+            : new AgentDecisionContext(
+                FoodAvailable,
+                BedAvailable,
+                WorkAvailable,
+                RestAvailable,
+                EscapeRouteAvailable,
+                ThreatLevel,
+                multiplier);
+    }
 
     public static AgentDecisionContext AllAvailable(int threatLevel = 0)
     {
@@ -212,4 +237,5 @@ public sealed class AgentDecision
         }
     }
 }
+
 }

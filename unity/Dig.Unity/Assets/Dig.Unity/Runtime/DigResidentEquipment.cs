@@ -120,6 +120,14 @@ namespace Dig.Unity
                     "Resident equipment requires building inventory state.");
             }
 
+            if (ReferenceEquals(_buildingInventoryRepository, _inventoryRepository))
+            {
+                return new[]
+                {
+                    _inventoryRepository.Get().CreateSnapshot(),
+                };
+            }
+
             return new[]
             {
                 _buildingInventoryRepository.Get().CreateSnapshot(),

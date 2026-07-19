@@ -48,9 +48,10 @@ def check_tunnel_depth_contracts(
             "ResolveTunnelDepthSource",
             "TryGetWalkSurface",
             "TryGetCell",
+            "tunnelCell.CanExcavateDepth",
             "ExcavateTunnelDepth",
             "RefreshCompletedCaveRooms(force: true)",
-            "Select the new cell to continue one layer deeper",
+            "The new deepest tunnel cell is selected for the next step",
         ),
     ))
     errors.extend(require_fragments(

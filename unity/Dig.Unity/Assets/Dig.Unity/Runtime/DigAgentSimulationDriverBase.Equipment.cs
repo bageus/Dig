@@ -22,6 +22,8 @@ namespace Dig.Unity
 
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
             AgentRenderer.RenderEquipment(TerrainSession.LoadResidentEquipment());
+            AgentRenderer.RenderInventoryAttachments(
+                TerrainSession.LoadResidentInventoryAttachments());
             Hud.SetResidentWorkRates(TerrainSession.LoadResidentWorkRates(agents));
         }
     }

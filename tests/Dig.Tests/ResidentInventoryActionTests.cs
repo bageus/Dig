@@ -67,15 +67,18 @@ public sealed class ResidentInventoryActionTests
     }
 
     [Fact]
-    public void Use_equips_owned_unreserved_tool()
+    public void Use_holds_owned_unreserved_tool_in_original_slot()
     {
         Harness harness = new Harness(ToolItemId, quantity: 1);
+        ItemLocation original = ItemLocation.InAgent(harness.ActorId);
 
         Result result = harness.Use();
 
         Assert.True(result.IsSuccess, result.Error?.ToString());
         ItemStackSnapshot stack = harness.Inventory.GetStack(harness.StackId)!;
-        Assert.Equal(ItemLocation.EquippedBy(harness.ActorId), stack.Location);
+        Assert.Equal(original, stack.Location);
+        Assert.Equal(1, stack.HeldQuantity);
+        Assert.Equal(harness.StackId, harness.Inventory.GetHeldItem(harness.ActorId)!.Value.StackId);
         Assert.Equal(1, harness.Inventory.GetTotal(ToolItemId));
     }
 
@@ -176,4 +179,5 @@ public sealed class ResidentInventoryActionTests
         return EntityId.Parse(value.ToString("x32"));
     }
 }
+
 }

@@ -86,10 +86,7 @@ namespace Dig.Unity
                 _storageRepository,
                 _jobRepository,
                 journal);
-            _haulingAssignment = new AssignAvailableJobsHandler(
-                _jobRepository,
-                _haulingCandidates,
-                journal);
+            _haulingAssignment = CreateHaulingAssignment(journal);
             _haulingPathfinder = new NavigationPathfinder();
             _moveStorageZone = new MoveStorageZoneHandler(
                 _storageRepository,
@@ -189,7 +186,7 @@ namespace Dig.Unity
                 || job.Stage == JobStageKind.AcquireItem
                 || job.Stage == JobStageKind.TravelToDestination)
             {
-                return _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick));
+                return AdvanceHaulingTransitAtTarget(job, tick);
             }
 
             if (job.Stage != JobStageKind.DepositItem)

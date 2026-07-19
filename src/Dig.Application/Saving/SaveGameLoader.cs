@@ -186,90 +186,12 @@ public sealed partial class SaveGameLoader
             new ReadOnlyCollection<ChunkSnapshot>(chunks));
     }
 
-    private static InventorySnapshot BuildInventorySnapshot(InventorySaveData data)
-    {
-        if (data is null || data.Stacks is null)
-        {
-            throw new InvalidOperationException("Inventory save data is missing.");
-        }
-
-        List<ItemStackSnapshot> stacks = new List<ItemStackSnapshot>();
-        foreach (ItemStackSaveData savedStack in data.Stacks
-            .OrderBy(item => item.StackId, StringComparer.Ordinal))
-        {
-            if (savedStack is null || savedStack.Reservations is null)
-            {
-                throw new InvalidOperationException("Inventory stack save data is missing.");
-            }
-
-            EntityId stackId = EntityId.Parse(savedStack.StackId);
-            List<ItemQuantityReservationSnapshot> reservations = savedStack.Reservations
-                .OrderBy(item => item.JobId, StringComparer.Ordinal)
-                .Select(item => new ItemQuantityReservationSnapshot(
-                    EntityId.Parse(item.JobId),
-                    item.Quantity))
-                .ToList();
-            stacks.Add(new ItemStackSnapshot(
-                stackId,
-                new ItemId(savedStack.ItemId),
-                savedStack.Quantity,
-                ParseLocation(savedStack.Location),
-                reservations));
-        }
-
-        return new InventorySnapshot(data.Version, stacks);
-    }
-
-    private static ItemLocation ParseLocation(ItemLocationSaveData data)
-    {
-        if (data is null || !Enum.IsDefined(typeof(ItemLocationKind), data.Kind))
-        {
-            throw new InvalidOperationException("Item location save data is invalid.");
-        }
-
-        ItemLocationKind kind = (ItemLocationKind)data.Kind;
-        return kind switch
-        {
-            ItemLocationKind.World => ItemLocation.InWorld(ParseCell(data)),
-            ItemLocationKind.AgentInventory => ItemLocation.InAgent(
-                EntityId.Parse(RequireOwner(data))),
-            ItemLocationKind.BuildingInventory => ItemLocation.InBuilding(
-                EntityId.Parse(RequireOwner(data))),
-            ItemLocationKind.Storage => ItemLocation.InStorage(
-                EntityId.Parse(RequireOwner(data))),
-            ItemLocationKind.Equipped => ItemLocation.EquippedBy(
-                EntityId.Parse(RequireOwner(data))),
-            _ => throw new InvalidOperationException("Unsupported item location kind."),
-        };
-    }
-
-    private static CellId ParseCell(ItemLocationSaveData data)
-    {
-        if (!data.CellX.HasValue || !data.CellY.HasValue || data.OwnerId is not null)
-        {
-            throw new InvalidOperationException("World item location is malformed.");
-        }
-
-        return new CellId(data.CellX.Value, data.CellY.Value);
-    }
-
-    private static string RequireOwner(ItemLocationSaveData data)
-    {
-        if (string.IsNullOrWhiteSpace(data.OwnerId)
-            || data.CellX.HasValue
-            || data.CellY.HasValue)
-        {
-            throw new InvalidOperationException("Owned item location is malformed.");
-        }
-
-        return data.OwnerId;
-    }
-
     private static Result ValidateCrossReferences(
         InventoryState inventory,
         JobSystem jobs)
     {
-        foreach (ItemStackSnapshot stack in inventory.CreateSnapshot().Stacks)
+        InventorySnapshot snapshot = inventory.CreateSnapshot();
+        foreach (ItemStackSnapshot stack in snapshot.Stacks)
         {
             foreach (ItemQuantityReservationSnapshot reservation in stack.Reservations)
             {
@@ -278,6 +200,25 @@ public sealed partial class SaveGameLoader
                 {
                     return Result.Failure(SaveErrors.InvalidDocument);
                 }
+            }
+        }
+
+        foreach (IGrouping<EntityId, ResidentInventorySlotClaimSnapshot> group
+            in snapshot.ResidentSlotClaims.GroupBy(claim => claim.JobId))
+        {
+            JobSnapshot? job = jobs.Get(group.Key);
+            ResidentInventorySlotClaimSnapshot[] claims = group.ToArray();
+            if (job is null
+                || job.IsTerminal
+                || job.Definition is not HaulJobDefinition hauling
+                || !job.AssignedAgentId.HasValue
+                || (job.Status != JobStatus.Claimed
+                    && job.Status != JobStatus.InProgress)
+                || claims.Any(claim => claim.ResidentId != job.AssignedAgentId.Value)
+                || claims.Any(claim => claim.ItemId != hauling.ItemId)
+                || claims.Sum(claim => claim.Quantity) != hauling.Quantity)
+            {
+                return Result.Failure(SaveErrors.InvalidDocument);
             }
         }
 
@@ -310,4 +251,5 @@ public sealed partial class SaveGameLoader
         };
     }
 }
+
 }

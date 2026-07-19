@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Collections.ObjectModel;
+using System.Linq;
 using Dig.Domain.Core;
 
 namespace Dig.Domain.Inventory
@@ -37,7 +37,8 @@ public sealed class ItemStackSnapshot
         ItemId itemId,
         int quantity,
         ItemLocation location,
-        IReadOnlyCollection<ItemQuantityReservationSnapshot> reservations)
+        IReadOnlyCollection<ItemQuantityReservationSnapshot> reservations,
+        int heldQuantity = 0)
     {
         if (stackId.IsEmpty)
         {
@@ -59,6 +60,11 @@ public sealed class ItemStackSnapshot
             throw new ArgumentNullException(nameof(reservations));
         }
 
+        if (heldQuantity < 0 || heldQuantity > quantity)
+        {
+            throw new ArgumentOutOfRangeException(nameof(heldQuantity));
+        }
+
         StackId = stackId;
         ItemId = itemId;
         Quantity = quantity;
@@ -66,6 +72,12 @@ public sealed class ItemStackSnapshot
         Reservations = new ReadOnlyCollection<ItemQuantityReservationSnapshot>(
             reservations.OrderBy(item => item.JobId.ToString(), StringComparer.Ordinal).ToArray());
         ReservedQuantity = Reservations.Sum(item => item.Quantity);
+        HeldQuantity = heldQuantity;
+        if (ReservedQuantity + HeldQuantity > Quantity)
+        {
+            throw new ArgumentException(
+                "Reserved and held quantities cannot exceed stack quantity.");
+        }
     }
 
     public EntityId StackId { get; }
@@ -76,7 +88,9 @@ public sealed class ItemStackSnapshot
 
     public int ReservedQuantity { get; }
 
-    public int AvailableQuantity => Quantity - ReservedQuantity;
+    public int HeldQuantity { get; }
+
+    public int AvailableQuantity => Quantity - ReservedQuantity - HeldQuantity;
 
     public ItemLocation Location { get; }
 
@@ -85,7 +99,11 @@ public sealed class ItemStackSnapshot
 
 public sealed class InventorySnapshot
 {
-    public InventorySnapshot(long version, IReadOnlyCollection<ItemStackSnapshot> stacks)
+    public InventorySnapshot(
+        long version,
+        IReadOnlyCollection<ItemStackSnapshot> stacks,
+        IReadOnlyCollection<HeldItemReferenceSnapshot>? heldItems = null,
+        IReadOnlyCollection<ResidentInventorySlotClaimSnapshot>? residentSlotClaims = null)
     {
         if (version < 0)
         {
@@ -97,14 +115,63 @@ public sealed class InventorySnapshot
             throw new ArgumentNullException(nameof(stacks));
         }
 
+        ItemStackSnapshot[] orderedStacks = stacks
+            .OrderBy(item => item.StackId.ToString(), StringComparer.Ordinal)
+            .ToArray();
+        HeldItemReferenceSnapshot[] orderedHeld = (heldItems
+                ?? Array.Empty<HeldItemReferenceSnapshot>())
+            .OrderBy(item => item.ResidentId.ToString(), StringComparer.Ordinal)
+            .ToArray();
+        ResidentInventorySlotClaimSnapshot[] orderedClaims = (residentSlotClaims
+                ?? Array.Empty<ResidentInventorySlotClaimSnapshot>())
+            .OrderBy(item => item.JobId.ToString(), StringComparer.Ordinal)
+            .ThenBy(item => item.Slot.Compartment)
+            .ThenBy(item => item.Slot.Index)
+            .ToArray();
+        if (orderedHeld.Select(item => item.ResidentId).Distinct().Count()
+            != orderedHeld.Length)
+        {
+            throw new ArgumentException(
+                "A resident cannot hold more than one item.",
+                nameof(heldItems));
+        }
+
+        Dictionary<EntityId, ItemStackSnapshot> byStack = orderedStacks
+            .ToDictionary(item => item.StackId);
+        foreach (IGrouping<EntityId, HeldItemReferenceSnapshot> group in orderedHeld
+            .GroupBy(item => item.StackId))
+        {
+            if (!byStack.TryGetValue(group.Key, out ItemStackSnapshot? stack)
+                || group.Sum(item => item.Quantity) != stack.HeldQuantity)
+            {
+                throw new ArgumentException(
+                    "Held references must match stack held quantities.",
+                    nameof(heldItems));
+            }
+        }
+
+        if (orderedStacks.Any(stack => stack.HeldQuantity > 0
+            && !orderedHeld.Any(item => item.StackId == stack.StackId)))
+        {
+            throw new ArgumentException(
+                "Every held stack quantity requires a held reference.",
+                nameof(heldItems));
+        }
+
         Version = version;
-        Stacks = new ReadOnlyCollection<ItemStackSnapshot>(
-            stacks.OrderBy(item => item.StackId.ToString(), StringComparer.Ordinal).ToArray());
+        Stacks = new ReadOnlyCollection<ItemStackSnapshot>(orderedStacks);
+        HeldItems = new ReadOnlyCollection<HeldItemReferenceSnapshot>(orderedHeld);
+        ResidentSlotClaims =
+            new ReadOnlyCollection<ResidentInventorySlotClaimSnapshot>(orderedClaims);
     }
 
     public long Version { get; }
 
     public IReadOnlyList<ItemStackSnapshot> Stacks { get; }
+
+    public IReadOnlyList<HeldItemReferenceSnapshot> HeldItems { get; }
+
+    public IReadOnlyList<ResidentInventorySlotClaimSnapshot> ResidentSlotClaims { get; }
 
     public int GetTotal(ItemId itemId)
     {
@@ -118,4 +185,5 @@ public sealed class InventorySnapshot
             .Sum(stack => stack.Quantity);
     }
 }
+
 }

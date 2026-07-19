@@ -125,21 +125,25 @@ public sealed class InventoryStateTests
     }
 
     [Fact]
-    public void Only_single_unreserved_tool_can_be_equipped()
+    public void Only_single_available_tool_can_be_held()
     {
         InventoryState inventory = CreateInventory();
         EntityId toolStackId = EntityId.Parse("57000000000000000000000000000001");
         EntityId agentId = EntityId.Parse("58000000000000000000000000000001");
+        ItemLocation carried = ItemLocation.InAgent(agentId);
         Assert.True(inventory.AddStack(
             toolStackId,
             Pickaxe,
             quantity: 1,
-            ItemLocation.InAgent(agentId),
+            carried,
             tick: 0).IsSuccess);
 
         Assert.True(inventory.EquipTool(toolStackId, agentId, tick: 1).IsSuccess);
 
-        Assert.Equal(ItemLocation.EquippedBy(agentId), inventory.GetStack(toolStackId)!.Location);
+        ItemStackSnapshot stack = inventory.GetStack(toolStackId)!;
+        Assert.Equal(carried, stack.Location);
+        Assert.Equal(1, stack.HeldQuantity);
+        Assert.Equal(toolStackId, inventory.GetHeldItem(agentId)!.Value.StackId);
     }
 
     private static InventoryState CreateInventory()
@@ -153,4 +157,5 @@ public sealed class InventoryStateTests
         return new InventoryState(catalog);
     }
 }
+
 }

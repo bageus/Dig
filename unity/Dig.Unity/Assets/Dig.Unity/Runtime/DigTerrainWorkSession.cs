@@ -141,15 +141,7 @@ namespace Dig.Unity
             }
 
             ItemId outputItemId = new ItemId("demo.rock.chunk");
-            InventoryState inventory = new InventoryState(new ItemCatalog(new[]
-            {
-                new ItemDefinition(
-                    outputItemId,
-                    "Rock chunk",
-                    maximumStackSize: 100,
-                    isTool: false,
-                    new[] { new ItemCategoryId("raw.stone") }),
-            }));
+            InventoryState inventory = CreateDemoResidentInventory(outputItemId);
             InMemoryInventoryRepository inventoryRepository =
                 new InMemoryInventoryRepository(inventory);
             TraversalProfile profile = TraversalProfile.CreateFreeMover();

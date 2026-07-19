@@ -10,7 +10,7 @@ using Xunit;
 namespace Dig.Tests
 {
 
-public sealed class JobToolAssignmentTests
+public sealed partial class JobToolAssignmentTests
 {
     private static readonly ItemId PickaxeItemId = new ItemId("tool.pickaxe");
     private static readonly ItemId HammerItemId = new ItemId("tool.hammer");
@@ -110,8 +110,11 @@ public sealed class JobToolAssignmentTests
             ItemLocation.InAgent(FirstAgentId),
             inventory.GetStack(FirstToolStackId)!.Location);
         Assert.Equal(
-            ItemLocation.EquippedBy(FirstAgentId),
+            ItemLocation.InAgent(FirstAgentId),
             inventory.GetStack(SecondToolStackId)!.Location);
+        Assert.Equal(
+            SecondToolStackId,
+            inventory.GetHeldItem(FirstAgentId)!.Value.StackId);
         Assert.Equal(JobStatus.Claimed, harness.Jobs.Get().Get(JobId)!.Status);
     }
 
@@ -138,11 +141,14 @@ public sealed class JobToolAssignmentTests
         Assert.Equal(JobToolPreparationOutcome.Suggested, assignment.ToolPreparation);
         Assert.Equal(SecondToolStackId, assignment.ToolStackId);
         Assert.Equal(
-            ItemLocation.EquippedBy(FirstAgentId),
+            ItemLocation.InAgent(FirstAgentId),
             inventory.GetStack(FirstToolStackId)!.Location);
         Assert.Equal(
             ItemLocation.InAgent(FirstAgentId),
             inventory.GetStack(SecondToolStackId)!.Location);
+        Assert.Equal(
+            FirstToolStackId,
+            inventory.GetHeldItem(FirstAgentId)!.Value.StackId);
         Assert.Contains(
             harness.Jobs.Get().GetReservations(),
             value => value.Key == ReservationKey.ForTool(SecondToolStackId));
@@ -176,11 +182,14 @@ public sealed class JobToolAssignmentTests
         Assert.Equal(JobToolPreparationOutcome.None, assignment.ToolPreparation);
         Assert.Null(assignment.ToolStackId);
         Assert.Equal(
-            ItemLocation.EquippedBy(FirstAgentId),
+            ItemLocation.InAgent(FirstAgentId),
             inventory.GetStack(FirstToolStackId)!.Location);
         Assert.Equal(
             ItemLocation.InAgent(FirstAgentId),
             inventory.GetStack(SecondToolStackId)!.Location);
+        Assert.Equal(
+            FirstToolStackId,
+            inventory.GetHeldItem(FirstAgentId)!.Value.StackId);
     }
 
     [Fact]
@@ -301,46 +310,6 @@ public sealed class JobToolAssignmentTests
     {
         return EntityId.Parse(value.ToString("x32"));
     }
-
-    private sealed class JobToolHarness
-    {
-        public JobToolHarness(
-            InMemoryJobRepository jobs,
-            InMemoryInventoryRepository inventory,
-            InMemoryJobCandidateProvider candidates,
-            InMemoryExecutionJournal journal)
-        {
-            Jobs = jobs;
-            Inventory = inventory;
-            Candidates = candidates;
-            Journal = journal;
-        }
-
-        public InMemoryJobRepository Jobs { get; }
-        public InMemoryInventoryRepository Inventory { get; }
-        public InMemoryJobCandidateProvider Candidates { get; }
-        public InMemoryExecutionJournal Journal { get; }
-
-        public JobAssignmentReport Assign(
-            JobToolPreparationMode mode,
-            bool configurePreparation)
-        {
-            InventoryAwareJobCandidateProvider provider =
-                new InventoryAwareJobCandidateProvider(
-                    Candidates,
-                    Inventory,
-                    CreateRates());
-            IJobToolPreparationService? preparation = configurePreparation
-                ? new InventoryJobToolPreparationService(Inventory, Journal)
-                : null;
-            return new AssignAvailableJobsHandler(
-                Jobs,
-                provider,
-                Journal,
-                preparation).Handle(new AssignAvailableJobsCommand(
-                    tick: 2,
-                    toolPreparationMode: mode));
-        }
-    }
 }
+
 }

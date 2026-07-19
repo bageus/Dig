@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dig.Application.Inventory;
 using Dig.Application.Messaging;
 using Dig.Domain.Core;
 using Dig.Domain.Jobs;
@@ -53,6 +54,7 @@ public sealed class AssignAvailableJobsHandler
     private readonly IJobToolPreparationService? _toolPreparationService;
     private readonly IJobAssignmentReportSink? _assignmentReportSink;
     private readonly IJobToolPreparationModeSource? _toolPreparationModeSource;
+    private readonly IHaulingResidentSlotClaimService? _haulingResidentSlotClaims;
 
     public AssignAvailableJobsHandler(
         IJobRepository repository,
@@ -60,7 +62,8 @@ public sealed class AssignAvailableJobsHandler
         IEventSink eventSink,
         IJobToolPreparationService? toolPreparationService = null,
         IJobAssignmentReportSink? assignmentReportSink = null,
-        IJobToolPreparationModeSource? toolPreparationModeSource = null)
+        IJobToolPreparationModeSource? toolPreparationModeSource = null,
+        IHaulingResidentSlotClaimService? haulingResidentSlotClaims = null)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _candidateProvider = candidateProvider
@@ -69,6 +72,7 @@ public sealed class AssignAvailableJobsHandler
         _toolPreparationService = toolPreparationService;
         _assignmentReportSink = assignmentReportSink;
         _toolPreparationModeSource = toolPreparationModeSource;
+        _haulingResidentSlotClaims = haulingResidentSlotClaims;
     }
 
     public JobAssignmentReport Handle(AssignAvailableJobsCommand command)
@@ -80,6 +84,7 @@ public sealed class AssignAvailableJobsHandler
 
         JobToolPreparationMode preparationMode = ResolvePreparationMode(command);
         JobSystem jobs = _repository.Get();
+        _haulingResidentSlotClaims?.Reconcile(jobs, command.Tick);
         List<JobAssignment> assignments = new List<JobAssignment>();
         List<JobAssignmentFailure> failures = new List<JobAssignmentFailure>();
 
@@ -120,6 +125,16 @@ public sealed class AssignAvailableJobsHandler
                     continue;
                 }
 
+                Result capacity = _haulingResidentSlotClaims?.Reserve(
+                    job,
+                    candidate.AgentId,
+                    command.Tick) ?? Result.Success();
+                if (capacity.IsFailure)
+                {
+                    failure = capacity.Error!;
+                    continue;
+                }
+
                 JobToolPreparationOutcome preparation = ResolvePreparation(
                     candidate,
                     preparationMode);
@@ -128,6 +143,7 @@ public sealed class AssignAvailableJobsHandler
                 {
                     if (_toolPreparationService is null)
                     {
+                        _haulingResidentSlotClaims?.Release(job.Id, command.Tick);
                         failure = JobErrors.ToolPreparationUnavailable;
                         continue;
                     }
@@ -141,6 +157,7 @@ public sealed class AssignAvailableJobsHandler
                         command.Tick);
                     if (prepared.IsFailure)
                     {
+                        _haulingResidentSlotClaims?.Release(job.Id, command.Tick);
                         failure = prepared.Error!;
                         continue;
                     }
@@ -163,6 +180,7 @@ public sealed class AssignAvailableJobsHandler
                     break;
                 }
 
+                _haulingResidentSlotClaims?.Release(job.Id, command.Tick);
                 failure = claim.Error!;
                 if (claim.Error != JobErrors.AgentUnavailable
                     && claim.Error != JobErrors.ReservationConflict)
@@ -302,4 +320,5 @@ public sealed class GetJobsHandler : IQueryHandler<GetJobsQuery, IReadOnlyList<J
         return _repository.Get().GetAll();
     }
 }
+
 }

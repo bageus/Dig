@@ -229,16 +229,31 @@ namespace Dig.Unity
                 ? null
                 : EntityId.Parse(selectedBuildingId);
             bool selectedAlive = _agentRenderer.SelectedModel?.IsAlive ?? true;
+            bool placement = _buildingPlacementMode.HasValue;
+            EntityId? selectedStack = placement
+                ? _buildingPlacementMode!.Value.SourceStackId
+                : ParseOptionalEntityId(_selectedInventoryStackId);
             return new ContextInputState(
                 selectedResidentId: selectedResident,
                 selectedResidentAlive: selectedAlive,
                 selectedCompletedBuildingId: selectedBuilding,
-                selectedInventoryStackId: _buildingPlacementMode?.SourceStackId,
-                selectedInventoryItemIsBuildingBox: _buildingPlacementMode.HasValue,
-                buildingPlacementActive: _buildingPlacementMode.HasValue,
+                selectedInventoryStackId: selectedStack,
+                selectedInventoryItemUsable: !placement && _selectedInventoryItemUsable,
+                selectedInventoryItemIsBuildingBox: placement
+                    || _selectedInventoryItemIsBuildingBox,
+                canUseSelectedInventoryItem: !placement && _selectedInventoryItemCanUse,
+                canDropSelectedInventoryItem: !placement && _selectedInventoryItemCanDrop,
+                buildingPlacementActive: placement,
                 buildingPlacementValid: _buildingPlacementPreview?.IsValid ?? false,
                 buildingPlacementReasonCode: _buildingPlacementPreview?.ReasonCode,
                 excavationTool: ExcavationToolKind.None);
+        }
+
+        private static EntityId? ParseOptionalEntityId(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value)
+                ? null
+                : EntityId.Parse(value);
         }
 
         private int RegisterResidentClick(string residentId)

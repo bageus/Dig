@@ -1,0 +1,119 @@
+using System.Linq;
+using Dig.Domain.Content;
+using Dig.Domain.Core;
+using Dig.Domain.Inventory;
+
+namespace Dig.Unity
+{
+
+internal sealed partial class DigTerrainWorkSession
+{
+    private static InventoryState CreateDemoResidentInventory(ItemId outputItemId)
+    {
+        ResidentInventoryExpansionContent expansions =
+            new ResidentInventoryExpansionContent();
+        ItemDefinition[] baseItems =
+        {
+            new ItemDefinition(
+                outputItemId,
+                "Rock chunk",
+                100,
+                false,
+                new[]
+                {
+                    ResidentInventoryExpansionContent.RawMaterialCategoryId,
+                }),
+            new ItemDefinition(
+                DemoBuildingBoxItemId,
+                "Workshop BuildingBox",
+                1,
+                false,
+                new[]
+                {
+                    ResidentInventoryExpansionContent.GeneralItemCategoryId,
+                }),
+            new ItemDefinition(
+                DemoResidentToolItemId,
+                "Resident pickaxe",
+                1,
+                true,
+                new[]
+                {
+                    ResidentInventoryExpansionContent.WeaponCategoryId,
+                }),
+            new ItemDefinition(
+                DemoResidentHammerItemId,
+                "Resident hammer",
+                1,
+                true,
+                new[]
+                {
+                    ResidentInventoryExpansionContent.WeaponCategoryId,
+                }),
+        };
+        InventoryState inventory = new InventoryState(new ItemCatalog(
+            baseItems.Concat(expansions.Items)));
+        EntityId residentId = DemoId('a', 1);
+        AddResidentStack(
+            inventory,
+            DemoId('3', 1),
+            DemoLargeBasketItemId,
+            residentId,
+            ResidentInventoryCompartment.Main,
+            0);
+        AddResidentStack(
+            inventory,
+            DemoId('4', 1),
+            DemoHarnessItemId,
+            residentId,
+            ResidentInventoryCompartment.Main,
+            1);
+        AddResidentStack(
+            inventory,
+            DemoId('5', 1),
+            DemoBasketItemId,
+            residentId,
+            ResidentInventoryCompartment.Main,
+            2);
+        AddResidentStack(
+            inventory,
+            DemoId('6', 1),
+            DemoScabbardItemId,
+            residentId,
+            ResidentInventoryCompartment.Main,
+            3);
+        AddResidentStack(
+            inventory,
+            DemoId('1', 1),
+            DemoResidentToolItemId,
+            residentId,
+            ResidentInventoryCompartment.Weapon,
+            0);
+        AddResidentStack(
+            inventory,
+            DemoId('2', 1),
+            DemoResidentHammerItemId,
+            residentId,
+            ResidentInventoryCompartment.Weapon,
+            1);
+        return inventory;
+    }
+
+    private static void AddResidentStack(
+        InventoryState inventory,
+        EntityId stackId,
+        ItemId itemId,
+        EntityId residentId,
+        ResidentInventoryCompartment compartment,
+        int slotIndex)
+    {
+        Require(inventory.AddStack(
+            stackId,
+            itemId,
+            1,
+            ItemLocation.InResidentSlot(residentId, compartment, slotIndex),
+            tick: 0));
+    }
+}
+
+}

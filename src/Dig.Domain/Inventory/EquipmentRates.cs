@@ -56,25 +56,53 @@ public sealed class EquipmentRates
             throw new ArgumentNullException(nameof(snapshots));
         }
 
-        ItemStackSnapshot[] equipped = snapshots
-            .SelectMany(snapshot => snapshot.Stacks)
-            .Where(stack => stack.Location == ItemLocation.EquippedBy(residentId))
+        ItemStackSnapshot[] current = snapshots
+            .Select(snapshot => ResolveCurrentItem(snapshot, residentId))
+            .Where(stack => stack != null)
+            .Cast<ItemStackSnapshot>()
             .ToArray();
-        if (equipped.Length > 1)
+        if (current.Length > 1)
         {
             throw new InvalidOperationException(
-                "A resident cannot have more than one equipped item.");
+                "A resident cannot have more than one held or legacy equipped item.");
         }
 
-        if (equipped.Length == 0)
+        if (current.Length == 0)
         {
             return baseIntervalTicks;
         }
 
-        EquipmentProfile? profile = Find(equipped[0].ItemId);
+        EquipmentProfile? profile = Find(current[0].ItemId);
         return profile != null && profile.WorkKind == workKind
             ? Math.Min(baseIntervalTicks, profile.WorkIntervalTicks)
             : baseIntervalTicks;
+    }
+
+    private static ItemStackSnapshot? ResolveCurrentItem(
+        InventorySnapshot snapshot,
+        EntityId residentId)
+    {
+        HeldItemReferenceSnapshot[] held = snapshot.HeldItems
+            .Where(item => item.ResidentId == residentId)
+            .ToArray();
+        ItemStackSnapshot[] legacy = snapshot.Stacks
+            .Where(stack => stack.Location == ItemLocation.EquippedBy(residentId))
+            .ToArray();
+        if (held.Length + legacy.Length > 1)
+        {
+            throw new InvalidOperationException(
+                "A resident cannot have more than one held or legacy equipped item.");
+        }
+
+        if (held.Length == 1)
+        {
+            EntityId stackId = held[0].StackId;
+            return snapshot.Stacks.SingleOrDefault(stack => stack.StackId == stackId)
+                ?? throw new InvalidOperationException(
+                    "A held item reference points to a missing stack.");
+        }
+
+        return legacy.SingleOrDefault();
     }
 
     private EquipmentProfile? Find(ItemId itemId)
