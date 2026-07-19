@@ -26,6 +26,7 @@ namespace Dig.Unity
         private readonly SimulationState _simulationState;
         private readonly WorldCellViewModel[] _walkableCells;
         private readonly Dictionary<EntityId, int> _routeIndices;
+        private readonly Dictionary<EntityId, ResidentSex> _residentSexes;
         private long _tick;
 
         private DigAgentSession(
@@ -35,7 +36,8 @@ namespace Dig.Unity
             InMemoryAgentRepository repository,
             SimulationState simulationState,
             WorldCellViewModel[] walkableCells,
-            Dictionary<EntityId, int> routeIndices)
+            Dictionary<EntityId, int> routeIndices,
+            Dictionary<EntityId, ResidentSex> residentSexes)
         {
             _autonomy = autonomy;
             _movementHandler = movementHandler;
@@ -44,6 +46,7 @@ namespace Dig.Unity
             _simulationState = simulationState;
             _walkableCells = walkableCells;
             _routeIndices = routeIndices;
+            _residentSexes = residentSexes;
         }
 
         public long Tick => _tick;
@@ -79,7 +82,14 @@ namespace Dig.Unity
                 world.Height);
             InMemoryAgentRepository repository = new InMemoryAgentRepository();
             Dictionary<EntityId, int> routeIndices = new Dictionary<EntityId, int>();
-            AddDemoAgents(repository, routeIndices, walkable, tunnelVolume);
+            Dictionary<EntityId, ResidentSex> residentSexes =
+                new Dictionary<EntityId, ResidentSex>();
+            AddDemoAgents(
+                repository,
+                routeIndices,
+                residentSexes,
+                walkable,
+                tunnelVolume);
             AgentBehaviorPolicy policy = AgentBehaviorPolicy.CreateDefault();
             InMemoryAgentDecisionContextProvider contexts =
                 new InMemoryAgentDecisionContextProvider(
@@ -99,7 +109,8 @@ namespace Dig.Unity
                     worldSeed: DemoIdentitySeed,
                     tickDuration: TimeSpan.FromMilliseconds(500)),
                 walkable,
-                routeIndices);
+                routeIndices,
+                residentSexes);
             session.InitializeTunnelMovement(tunnelVolume, journal);
             return session;
         }
@@ -107,6 +118,19 @@ namespace Dig.Unity
         public IReadOnlyList<AgentViewModel> LoadView()
         {
             return _presenter.Load(_tick);
+        }
+
+        internal ResidentSex ResolveResidentSex(string residentId)
+        {
+            if (string.IsNullOrWhiteSpace(residentId))
+            {
+                throw new ArgumentException("Resident id is required.", nameof(residentId));
+            }
+
+            EntityId id = EntityId.Parse(residentId);
+            return _residentSexes.TryGetValue(id, out ResidentSex sex)
+                ? sex
+                : ResidentSex.Male;
         }
 
         public Result MoveResident(string residentId, CellId destination)
@@ -185,6 +209,7 @@ namespace Dig.Unity
         private static void AddDemoAgents(
             InMemoryAgentRepository repository,
             Dictionary<EntityId, int> routeIndices,
+            Dictionary<EntityId, ResidentSex> residentSexes,
             IReadOnlyList<WorldCellViewModel> walkable,
             TunnelNavigationVolume tunnelVolume)
         {
@@ -219,6 +244,7 @@ namespace Dig.Unity
                 }
 
                 routeIndices.Add(agent.Id, routeIndex);
+                residentSexes.Add(agent.Id, identity.Sex);
             }
         }
 
