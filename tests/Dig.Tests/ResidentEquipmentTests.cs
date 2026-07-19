@@ -1,4 +1,3 @@
-using System.Linq;
 using Dig.Application.Inventory;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -100,7 +99,7 @@ public sealed class ResidentEquipmentTests
                 FirstStackId,
                 destination,
                 tick: 2));
-        Assert.Equal(ResidentInventoryActionErrors.StackReserved, blocked.Error);
+        Assert.Equal(InventoryErrors.InsufficientAvailableQuantity, blocked.Error);
         Assert.True(inventory.ReleaseHeldItem(ResidentId, tick: 3).IsSuccess);
 
         Result dropped = new DropResidentInventoryStackHandler(
