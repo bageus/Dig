@@ -93,6 +93,8 @@ public sealed partial class DigGameHudCanvas
         DigInventorySlotPointer pointer =
             rect.gameObject.AddComponent<DigInventorySlotPointer>();
         pointer.Clicked = eventData => HandleInventorySlotClick(slot, eventData);
+        pointer.Hovered = () => ShowInventorySlotFeedback(slot);
+        pointer.Exited = HideInventorySlotFeedback;
 
         string marker = ResolveSlotMarker(slot);
         string quantity = slot.Quantity > 1 ? $" ×{slot.Quantity}" : string.Empty;
@@ -101,9 +103,10 @@ public sealed partial class DigGameHudCanvas
             : string.Empty;
         string held = slot.IsHeld ? $"\nВ руках:{slot.HeldQuantity}" : string.Empty;
         string active = slot.IsActiveExpansion ? " ★" : string.Empty;
+        string warning = RequiresExpansionSpillConfirmation(slot) ? " ⚠" : string.Empty;
         string name = slot.IsEmpty
             ? $"{slot.SlotIndex + 1}\n·"
-            : $"{marker}{active}\n{ShortName(slot.DisplayName)}{quantity}{reservation}{held}";
+            : $"{marker}{active}{warning}\n{ShortName(slot.DisplayName)}{quantity}{reservation}{held}";
         Text label = CreateText(
             "Slot Label",
             rect,
@@ -140,6 +143,12 @@ public sealed partial class DigGameHudCanvas
         if (eventData.button == PointerEventData.InputButton.Right
             || eventData.clickCount >= 2)
         {
+            if (!ConfirmExpansionSpill(slot))
+            {
+                InvalidateAll();
+                return;
+            }
+
             if (slot.CanDrop)
             {
                 _interaction!.DropResidentInventoryLayoutSlot(slot);
@@ -170,6 +179,12 @@ public sealed partial class DigGameHudCanvas
         }
         else if (!slot.IsHeld)
         {
+            if (!ConfirmExpansionSpill(slot))
+            {
+                InvalidateAll();
+                return;
+            }
+
             _interaction!.SelectResidentInventoryLayoutSlot(slot);
         }
         else
