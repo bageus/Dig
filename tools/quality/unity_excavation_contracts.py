@@ -58,7 +58,8 @@ def check_excavation_contracts(
             "renderer.enabled = !hiddenHitTarget",
             "DigTunnelProjection.CellWorldPosition(cell)",
             "DigTunnelProjection.FloorWorldPosition(cell)",
-            "TryGetCell(SpatialCellId cell",
+            "internal bool TryGetCell(",
+            "SpatialCellId cell,",
         ),
     ))
     errors.extend(reject_fragments(
