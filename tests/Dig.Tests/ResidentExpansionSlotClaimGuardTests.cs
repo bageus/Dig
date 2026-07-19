@@ -82,8 +82,8 @@ public sealed class ResidentExpansionSlotClaimGuardTests
                     tier: 1,
                     addedSlots: 4,
                     acceptedCategories: new[] { raw },
-                    occupiedSpeedMultiplier: 0.75d,
-                    visualToken: "visual.basket")),
+                    moveSpeedMultiplierWhenOccupied: 0.75d,
+                    visualAttachmentId: "visual.basket")),
         }));
         Assert.True(inventory.AddStack(
             BasketStackId,
