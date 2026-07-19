@@ -129,12 +129,13 @@ public sealed class ResidentInventorySlotClaimTests
             FirstJobId,
             ResidentId,
             OreId,
-            quantity: 600,
+            quantity: 500,
             tick: 1);
 
         Assert.True(result.IsSuccess, result.Error?.ToString());
+        Assert.Equal(5, result.Value.Count);
         Assert.All(result.Value, claim =>
-            Assert.NotEqual(ResidentInventoryCompartment.Weapon, claim.Slot.Compartment));
+            Assert.Equal(ResidentInventoryCompartment.Main, claim.Slot.Compartment));
     }
 
     [Fact]
@@ -242,10 +243,10 @@ public sealed class ResidentInventorySlotClaimTests
             new InventoryExpansionDefinition(
                 group,
                 tier: 1,
-                slots,
-                accepted,
-                group == InventoryExpansionGroup.Cargo ? 0.75d : 1d,
-                $"visual.{itemId}"));
+                addedSlots: slots,
+                acceptedCategories: accepted,
+                moveSpeedMultiplierWhenOccupied: 0.75d,
+                visualAttachmentId: $"visual.{itemId}"));
     }
 
     private static EntityId Id(int value)
