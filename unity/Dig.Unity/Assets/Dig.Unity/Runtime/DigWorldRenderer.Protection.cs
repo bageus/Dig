@@ -38,11 +38,13 @@ namespace Dig.Unity
             if (!_cells.TryGetValue(key, out DigCellVisual? visual))
             {
                 _rejectedCell = null;
+                ApplyCellProxyState();
                 return;
             }
 
             _rejectedCell = visual;
             _rejectedCell.SetRejected(true);
+            ApplyCellProxyState();
         }
 
         private void ApplyProtectedVisual(DigCellVisual visual, Vector2Int key)
