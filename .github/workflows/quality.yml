@@ -40,6 +40,9 @@ jobs:
       - name: Validate terrain visual profiles
         run: python tools/quality/check_unity_terrain_visual_profiles.py
 
+      - name: Validate terrain deposit presentation
+        run: python tools/quality/check_unity_terrain_deposit_contracts.py
+
       - name: Upload Unity source contract log
         if: always()
         uses: actions/upload-artifact@v4
