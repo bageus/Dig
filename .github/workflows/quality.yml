@@ -37,6 +37,9 @@ jobs:
       - name: Validate chunked terrain interaction boundary
         run: python tools/quality/check_unity_terrain_chunk_contracts.py
 
+      - name: Validate terrain visual profiles
+        run: python tools/quality/check_unity_terrain_visual_profiles.py
+
       - name: Upload Unity source contract log
         if: always()
         uses: actions/upload-artifact@v4
