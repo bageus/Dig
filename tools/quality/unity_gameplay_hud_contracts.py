@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Callable
 
 RequireFragments = Callable[[Path, str, str, tuple[str, ...]], list[str]]
 RejectFragments = Callable[[Path, str, str, tuple[str, ...]], list[str]]
+CYRILLIC = re.compile(r"[А-Яа-яЁё]")
 
 
 def check_gameplay_hud_and_work_contracts(
@@ -96,6 +98,12 @@ def check_gameplay_hud_and_work_contracts(
         "unsupported job renderer model lookup",
         ("_jobRenderer!.SelectedModel", "КОПКА"),
     ))
+    for path, text in texts.items():
+        if not path.name.startswith("DigGameHudCanvas"):
+            continue
+        if CYRILLIC.search(text):
+            errors.append(f"{path.relative_to(root)}: game HUD text must be English-only")
+
     errors.extend(require_fragments(
         agent_session_path,
         texts.get(agent_session_path, ""),
