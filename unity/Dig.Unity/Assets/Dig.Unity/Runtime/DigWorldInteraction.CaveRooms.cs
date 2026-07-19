@@ -10,7 +10,6 @@ namespace Dig.Unity
         private CaveRoomPresetKind? _caveRoomPreset;
         private DigCaveRoomPreviewRenderer? _caveRoomPreviewRenderer;
         private DigCaveRoomFloorRenderer? _caveRoomFloorRenderer;
-        private DigRockVolumeRenderer? _caveRoomRockRenderer;
         private CaveRoomPlanResult? _hoveredCaveRoomPlan;
         private long _lastCaveRoomRuntimeTick = -1;
 
@@ -18,12 +17,10 @@ namespace Dig.Unity
 
         internal void SetCaveRoomRenderers(
             DigCaveRoomPreviewRenderer previewRenderer,
-            DigCaveRoomFloorRenderer floorRenderer,
-            DigRockVolumeRenderer rockRenderer)
+            DigCaveRoomFloorRenderer floorRenderer)
         {
             _caveRoomPreviewRenderer = previewRenderer;
             _caveRoomFloorRenderer = floorRenderer;
-            _caveRoomRockRenderer = rockRenderer;
         }
 
         internal void SetCaveRoomPlanningPreset(CaveRoomPresetKind kind)
@@ -97,7 +94,6 @@ namespace Dig.Unity
         {
             if (_simulation == null
                 || _session == null
-                || _caveRoomRockRenderer == null
                 || _caveRoomFloorRenderer == null)
             {
                 return;
@@ -112,7 +108,6 @@ namespace Dig.Unity
             _lastCaveRoomRuntimeTick = tick;
             _simulation.RefreshCaveRoomRuntime(
                 _session.LoadCompletedCaveRoomPlans(),
-                _caveRoomRockRenderer,
                 _caveRoomFloorRenderer);
         }
 
