@@ -134,6 +134,10 @@ def check_resident_inventory_runtime_contracts(
     renderer_path = RUNTIME_ROOT / "DigAgentRenderer.InventoryAttachments.cs"
     attachment_path = RUNTIME_ROOT / "DigResidentInventoryAttachmentVisual.cs"
     hud_feedback_path = RUNTIME_ROOT / "DigGameHudCanvas.InventoryFeedback.cs"
+    agent_session_path = RUNTIME_ROOT / "DigAgentSession.cs"
+    movement_filter_path = RUNTIME_ROOT / "DigAgentSession.MovementFilter.cs"
+    driver_path = RUNTIME_ROOT / "DigAgentSimulationDriverBase.cs"
+    cadence_path = RUNTIME_ROOT / "DigTerrainWorkSession.MovementCadence.cs"
     errors = require_fragments(
         visual_path,
         texts.get(visual_path, ""),
@@ -210,6 +214,40 @@ def check_resident_inventory_runtime_contracts(
             "ShowInventorySlotFeedback(",
             "ConfirmExpansionSpill(",
             "RequiresSpillConfirmation",
+        ),
+    ))
+    errors.extend(require_fragments(
+        movement_filter_path,
+        texts.get(movement_filter_path, ""),
+        "resident movement target filtering",
+        (
+            "SetMovementTargetFilter(",
+            "_movementTargetFilter",
+            "ApplyMovementTargetFilter(",
+        ),
+    ))
+    errors.extend(require_fragments(
+        agent_session_path,
+        texts.get(agent_session_path, ""),
+        "session-level cargo cadence",
+        ("movementTargets = ApplyMovementTargetFilter(movementTargets, _tick);",),
+    ))
+    errors.extend(require_fragments(
+        driver_path,
+        texts.get(driver_path, ""),
+        "cargo cadence composition",
+        (
+            "AgentSession.SetMovementTargetFilter(",
+            "TerrainSession.ApplyResidentMovementCadence",
+        ),
+    ))
+    errors.extend(require_fragments(
+        cadence_path,
+        texts.get(cadence_path, ""),
+        "authoritative cargo cadence policy",
+        (
+            "ApplyResidentMovementCadence(",
+            "IsResidentMovementDue(residentId, tick)",
         ),
     ))
     return errors
