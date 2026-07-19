@@ -220,8 +220,8 @@ public sealed class ResidentInventoryExpansionContentTests
     {
         Assert.Equal(1, item.MaximumStackSize);
         Assert.False(item.IsTool);
-        InventoryExpansionDefinition expansion = Assert.NotNull(
-            item.InventoryExpansion);
+        Assert.NotNull(item.InventoryExpansion);
+        InventoryExpansionDefinition expansion = item.InventoryExpansion!;
         Assert.Equal(group, expansion.Group);
         Assert.Equal(tier, expansion.Tier);
         Assert.Equal(slots, expansion.AddedSlots);
@@ -234,9 +234,14 @@ public sealed class ResidentInventoryExpansionContentTests
         IEnumerable<ContentItemQuantity> actual,
         IReadOnlyDictionary<ItemId, int> expected)
     {
-        Assert.Equal(
-            expected,
-            actual.ToDictionary(value => value.ItemId, value => value.Quantity));
+        Dictionary<ItemId, int> values = actual.ToDictionary(
+            value => value.ItemId,
+            value => value.Quantity);
+        Assert.Equal(expected.Count, values.Count);
+        foreach (KeyValuePair<ItemId, int> pair in expected)
+        {
+            Assert.Equal(pair.Value, values[pair.Key]);
+        }
     }
 }
 
