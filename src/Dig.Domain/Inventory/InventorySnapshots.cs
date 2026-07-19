@@ -102,7 +102,8 @@ public sealed class InventorySnapshot
     public InventorySnapshot(
         long version,
         IReadOnlyCollection<ItemStackSnapshot> stacks,
-        IReadOnlyCollection<HeldItemReferenceSnapshot>? heldItems = null)
+        IReadOnlyCollection<HeldItemReferenceSnapshot>? heldItems = null,
+        IReadOnlyCollection<ResidentInventorySlotClaimSnapshot>? residentSlotClaims = null)
     {
         if (version < 0)
         {
@@ -120,6 +121,12 @@ public sealed class InventorySnapshot
         HeldItemReferenceSnapshot[] orderedHeld = (heldItems
                 ?? Array.Empty<HeldItemReferenceSnapshot>())
             .OrderBy(item => item.ResidentId.ToString(), StringComparer.Ordinal)
+            .ToArray();
+        ResidentInventorySlotClaimSnapshot[] orderedClaims = (residentSlotClaims
+                ?? Array.Empty<ResidentInventorySlotClaimSnapshot>())
+            .OrderBy(item => item.JobId.ToString(), StringComparer.Ordinal)
+            .ThenBy(item => item.Slot.Compartment)
+            .ThenBy(item => item.Slot.Index)
             .ToArray();
         if (orderedHeld.Select(item => item.ResidentId).Distinct().Count()
             != orderedHeld.Length)
@@ -154,6 +161,8 @@ public sealed class InventorySnapshot
         Version = version;
         Stacks = new ReadOnlyCollection<ItemStackSnapshot>(orderedStacks);
         HeldItems = new ReadOnlyCollection<HeldItemReferenceSnapshot>(orderedHeld);
+        ResidentSlotClaims =
+            new ReadOnlyCollection<ResidentInventorySlotClaimSnapshot>(orderedClaims);
     }
 
     public long Version { get; }
@@ -161,6 +170,8 @@ public sealed class InventorySnapshot
     public IReadOnlyList<ItemStackSnapshot> Stacks { get; }
 
     public IReadOnlyList<HeldItemReferenceSnapshot> HeldItems { get; }
+
+    public IReadOnlyList<ResidentInventorySlotClaimSnapshot> ResidentSlotClaims { get; }
 
     public int GetTotal(ItemId itemId)
     {
