@@ -132,6 +132,7 @@ namespace Dig.Unity
             }
 
             _tick = checked(_tick + 1);
+            movementTargets = ApplyMovementTargetFilter(movementTargets, _tick);
             _autonomy.Execute(new SimulationContext(_tick, _simulationState));
             IReadOnlyList<AgentState> agents = _repository.GetAll();
             for (int index = 0; index < agents.Count; index++)
