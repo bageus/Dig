@@ -10,7 +10,7 @@ using Xunit;
 namespace Dig.Tests
 {
 
-public sealed class JobToolAssignmentTests
+public sealed partial class JobToolAssignmentTests
 {
     private static readonly ItemId PickaxeItemId = new ItemId("tool.pickaxe");
     private static readonly ItemId HammerItemId = new ItemId("tool.hammer");
@@ -309,47 +309,6 @@ public sealed class JobToolAssignmentTests
     private static EntityId Id(int value)
     {
         return EntityId.Parse(value.ToString("x32"));
-    }
-
-    private sealed class JobToolHarness
-    {
-        public JobToolHarness(
-            InMemoryJobRepository jobs,
-            InMemoryInventoryRepository inventory,
-            InMemoryJobCandidateProvider candidates,
-            InMemoryExecutionJournal journal)
-        {
-            Jobs = jobs;
-            Inventory = inventory;
-            Candidates = candidates;
-            Journal = journal;
-        }
-
-        public InMemoryJobRepository Jobs { get; }
-        public InMemoryInventoryRepository Inventory { get; }
-        public InMemoryJobCandidateProvider Candidates { get; }
-        public InMemoryExecutionJournal Journal { get; }
-
-        public JobAssignmentReport Assign(
-            JobToolPreparationMode mode,
-            bool configurePreparation)
-        {
-            InventoryAwareJobCandidateProvider provider =
-                new InventoryAwareJobCandidateProvider(
-                    Candidates,
-                    Inventory,
-                    CreateRates());
-            IJobToolPreparationService? preparation = configurePreparation
-                ? new InventoryJobToolPreparationService(Inventory, Journal)
-                : null;
-            return new AssignAvailableJobsHandler(
-                Jobs,
-                provider,
-                Journal,
-                preparation).Handle(new AssignAvailableJobsCommand(
-                    tick: 2,
-                    toolPreparationMode: mode));
-        }
     }
 }
 
