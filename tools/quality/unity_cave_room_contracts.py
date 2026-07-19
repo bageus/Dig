@@ -31,7 +31,8 @@ def check_cave_room_runtime_contracts(
             "FrontExcavationCells.All",
             "!value.IsSolid",
             "GetCompletedCaveRoomPlans(snapshot)",
-            "completedPlans: completed",
+            "IReadOnlyList<CaveRoomPlan> completed",
+            "completed);",
         ),
     ))
     errors.extend(require_fragments(
@@ -85,10 +86,7 @@ def check_cave_room_runtime_contracts(
         "_backWallMaterial",
     ):
         if fragment in room_floor_text:
-            errors.append(
-                f"{room_floor.relative_to(runtime_root.parent.parent.parent.parent.parent)}: "
-                f"synthetic completed-room back wall is forbidden: {fragment!r}"
-            )
+            errors.append(f"{room_floor}: obsolete room wall visual remains: {fragment!r}")
 
     tunnel_text = texts.get(tunnel_renderer, "")
     errors.extend(require_fragments(
@@ -111,10 +109,7 @@ def check_cave_room_runtime_contracts(
         '"Shaft {cell}"',
     ):
         if fragment in tunnel_text:
-            errors.append(
-                f"{tunnel_renderer}: synthetic shaft or cave-shell visual is forbidden: "
-                f"{fragment!r}"
-            )
+            errors.append(f"{tunnel_renderer}: obsolete tunnel visual remains: {fragment!r}")
 
     errors.extend(require_fragments(
         rock_renderer,
