@@ -18,7 +18,14 @@ public sealed class DigRenderMaterialCatalog : ScriptableObject
         RenderSurfaceKind surface, out DigRenderMaterialProfile profile)
     {
         EnsureLookup();
-        return _lookup!.TryGetValue(Key(semantic, surface), out profile!);
+        DigRenderMaterialProfile? found;
+        if (_lookup!.TryGetValue(Key(semantic, surface), out found))
+        {
+            profile = found;
+            return true;
+        }
+        profile = null!;
+        return false;
     }
 
     public IReadOnlyList<string> ValidateCatalog()
