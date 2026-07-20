@@ -2,6 +2,7 @@ using System;
 using Dig.Domain.Buildings;
 using Dig.Domain.World;
 using Dig.Presentation.Buildings;
+using Dig.Presentation.World;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -19,12 +20,14 @@ namespace Dig.Unity
         private Transform? _previewContainer;
         private GameObject? _previewInstance;
         private DigVisualTintTarget? _previewTint;
+        private DigRepresentativeBuildingPrefabLibrary? _representatives;
         private string _assetKey = string.Empty;
         private Material? _markerMaterial;
         private GameObject? _workMarker;
 
         private void Awake()
         {
+            _representatives = DigRepresentativeBuildingPrefabLibrary.Acquire();
             if (visualCatalog == null)
             {
                 visualCatalog = Resources.Load<DigBuildingVisualCatalog>(
@@ -68,11 +71,31 @@ namespace Dig.Unity
         private DigBuildingVisualResolution Resolve(BuildingBoxGhostViewModel preview)
         {
             string stableId = preview.DefinitionId.ToString();
+            DigBuildingVisualResolution catalogResolution = default;
+            bool hasCatalogResolution = visualCatalog != null;
             if (visualCatalog != null)
             {
-                return visualCatalog.ResolveBuilding(
+                catalogResolution = visualCatalog.ResolveBuilding(
                     stableId,
                     BuildingVisualState.BuildingBox);
+                if (catalogResolution.HasProfile)
+                {
+                    return catalogResolution;
+                }
+            }
+
+            if (_representatives != null
+                && _representatives.TryResolve(
+                    stableId,
+                    BuildingVisualState.BuildingBox,
+                    out DigBuildingVisualResolution representative))
+            {
+                return representative;
+            }
+
+            if (hasCatalogResolution)
+            {
+                return catalogResolution;
             }
 
             return new DigBuildingVisualResolution(
@@ -106,6 +129,14 @@ namespace Dig.Unity
                 PrimitiveType.Cube);
             _assetKey = resolution.Asset.StableId;
             _previewTint = _previewInstance.GetComponent<DigVisualTintTarget>();
+            DigBuildingDetailGroup[] groups =
+                _previewInstance.GetComponentsInChildren<DigBuildingDetailGroup>(
+                    includeInactive: true);
+            for (int index = 0; index < groups.Length; index++)
+            {
+                groups[index].SetDetailLevel(TerrainVisualDetailLevel.Reduced);
+            }
+
             SetLayerRecursively(_previewInstance, layer: 2);
             DisableColliders(_previewInstance);
             _previewContainer!.gameObject.SetActive(true);
@@ -315,6 +346,8 @@ namespace Dig.Unity
 
         private void OnDestroy()
         {
+            _representatives?.Dispose();
+            _representatives = null;
             if (_markerMaterial != null)
             {
                 Destroy(_markerMaterial);
