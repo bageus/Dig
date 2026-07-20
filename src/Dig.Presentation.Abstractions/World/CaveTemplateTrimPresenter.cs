@@ -42,6 +42,11 @@ public sealed class CaveTemplateTrimPresenter
             .ThenBy(instance => instance.Entrance.X)
             .ThenBy(instance => instance.TemplateId, StringComparer.Ordinal)
             .ToArray();
+        if (ordered.Length == 0)
+        {
+            return CaveTemplateTrimVolumeViewModel.Empty();
+        }
+
         return new CaveTemplateTrimVolumeViewModel(
             CalculateVersion(ordered),
             ordered);
