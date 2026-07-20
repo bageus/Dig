@@ -84,6 +84,11 @@ public sealed partial class DigGameHudCanvas
             20,
             TextAnchor.MiddleCenter);
         Stretch(text.rectTransform, 8f, 3f, -8f, -3f);
+        text.horizontalOverflow = HorizontalWrapMode.Overflow;
+        text.verticalOverflow = VerticalWrapMode.Truncate;
+        text.resizeTextForBestFit = true;
+        text.resizeTextMinSize = 9;
+        text.resizeTextMaxSize = 20;
         text.raycastTarget = false;
         Outline outline = text.gameObject.AddComponent<Outline>();
         outline.effectColor = new Color(0f, 0f, 0f, 0.82f);
