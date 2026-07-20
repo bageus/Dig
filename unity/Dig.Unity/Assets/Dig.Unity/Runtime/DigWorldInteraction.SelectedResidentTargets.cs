@@ -56,36 +56,67 @@ namespace Dig.Unity
         {
             RaycastHit[] hits = GetPointerHits();
             CellId? excavationCandidate = null;
+            DigSelectedResidentTarget visibleMovement = default;
+            bool hasVisibleMovement = false;
+            DigSelectedResidentTarget hiddenMovement = default;
+            bool hasHiddenMovement = false;
             for (int index = 0; index < hits.Length; index++)
             {
                 RaycastHit hit = hits[index];
                 DigAgentVisual? resident = hit.collider == null
                     ? null
                     : hit.collider.GetComponentInParent<DigAgentVisual>();
-                if (resident != null
-                    || _buildingRenderer!.TryGetBuilding(hit, out _)
-                    || _itemRenderer!.TryGetItem(hit, out _))
+                if (resident != null)
                 {
-                    return default;
+                    continue;
                 }
 
-                if (TryResolveTunnelDestination(
-                    hit,
-                    out SpatialCellId destination,
-                    out DigTunnelCellVisual? visual))
+                if (_buildingRenderer!.TryGetBuilding(hit, out _)
+                    || _itemRenderer!.TryGetItem(hit, out _))
                 {
-                    return DigSelectedResidentTarget.Movement(destination, visual);
+                    break;
                 }
 
                 if (!excavationCandidate.HasValue)
                 {
                     excavationCandidate = ResolveExcavationTarget(hit);
                 }
+
+                if (!TryResolveTunnelDestination(
+                    hit,
+                    out SpatialCellId destination,
+                    out DigTunnelCellVisual? visual))
+                {
+                    continue;
+                }
+
+                DigSelectedResidentTarget movement =
+                    DigSelectedResidentTarget.Movement(destination, visual);
+                bool visible = visual == null
+                    || visual.GetComponent<Renderer>().enabled;
+                if (visible && !hasVisibleMovement)
+                {
+                    visibleMovement = movement;
+                    hasVisibleMovement = true;
+                }
+                else if (!visible && !hasHiddenMovement)
+                {
+                    hiddenMovement = movement;
+                    hasHiddenMovement = true;
+                }
             }
 
-            return excavationCandidate.HasValue
-                ? DigSelectedResidentTarget.Excavation(excavationCandidate.Value)
-                : default;
+            if (excavationCandidate.HasValue)
+            {
+                return DigSelectedResidentTarget.Excavation(excavationCandidate.Value);
+            }
+
+            if (hasVisibleMovement)
+            {
+                return visibleMovement;
+            }
+
+            return hasHiddenMovement ? hiddenMovement : default;
         }
     }
 }

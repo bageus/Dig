@@ -67,6 +67,7 @@ namespace Dig.Unity
                 return;
             }
 
+            UpdateResidentHover();
             bool right = Input.GetMouseButtonDown(1);
             if (right && !_hud!.ContainsScreenPoint(Input.mousePosition))
             {
@@ -119,13 +120,6 @@ namespace Dig.Unity
             }
 
             RaycastHit hit = hits[0];
-            if (left
-                && _agentRenderer!.SelectedCount > 0
-                && TryApplyTunnelMove(hit, leftButton: true))
-            {
-                return;
-            }
-
             if (TryResolveAgentHit(hits, out DigAgentVisual agent))
             {
                 if (left && IsAdditiveResidentSelectionPressed())
@@ -145,6 +139,18 @@ namespace Dig.Unity
                     BuildState(button),
                     target),
                     agent: agent);
+                return;
+            }
+
+            if (TryAssignSelectedResidentToExcavation(hit, left))
+            {
+                return;
+            }
+
+            if (left
+                && _agentRenderer!.SelectedCount > 0
+                && TryApplyTunnelMove(hit, leftButton: true))
+            {
                 return;
             }
 

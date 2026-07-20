@@ -25,7 +25,8 @@ public sealed class JobOverlayViewModel
         JobToolKind? preferredToolKind = null,
         JobAssignmentDiagnosticViewModel? assignmentDiagnostic = null,
         IReadOnlyList<JobActionViewModel>? actions = null,
-        JobExecutionReadinessViewModel? executionReadiness = null)
+        JobExecutionReadinessViewModel? executionReadiness = null,
+        int? targetZ = null)
     {
         if (string.IsNullOrWhiteSpace(id)
             || string.IsNullOrWhiteSpace(description)
@@ -44,6 +45,19 @@ public sealed class JobOverlayViewModel
             || (targetY.HasValue && targetY.Value < 0))
         {
             throw new ArgumentOutOfRangeException(nameof(targetX));
+        }
+
+        int? normalizedZ = targetX.HasValue ? targetZ ?? 0 : null;
+        if (targetZ.HasValue && !targetX.HasValue)
+        {
+            throw new ArgumentException(
+                "Target depth requires horizontal target coordinates.",
+                nameof(targetZ));
+        }
+
+        if (normalizedZ.HasValue && (normalizedZ.Value < 0 || normalizedZ.Value > 3))
+        {
+            throw new ArgumentOutOfRangeException(nameof(targetZ));
         }
 
         if (preferredToolKind.HasValue
@@ -70,6 +84,7 @@ public sealed class JobOverlayViewModel
         AssignedAgentId = assignedAgentId;
         TargetX = targetX;
         TargetY = targetY;
+        TargetZ = normalizedZ;
         RetryCount = retryCount;
         NextRetryTick = nextRetryTick;
         Reason = reason;
@@ -92,6 +107,7 @@ public sealed class JobOverlayViewModel
     public string? AssignedAgentId { get; }
     public int? TargetX { get; }
     public int? TargetY { get; }
+    public int? TargetZ { get; }
     public int RetryCount { get; }
     public long NextRetryTick { get; }
     public string? Reason { get; }
@@ -100,6 +116,6 @@ public sealed class JobOverlayViewModel
     public JobAssignmentDiagnosticViewModel? AssignmentDiagnostic { get; }
     public IReadOnlyList<JobActionViewModel> Actions { get; }
     public JobExecutionReadinessViewModel ExecutionReadiness { get; }
-    public bool HasTarget => TargetX.HasValue && TargetY.HasValue;
+    public bool HasTarget => TargetX.HasValue && TargetY.HasValue && TargetZ.HasValue;
 }
 }

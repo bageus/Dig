@@ -72,10 +72,30 @@ namespace Dig.Unity
                 TerrainSession.SynchronizeBuildingPacking(nextTick, before);
                 IReadOnlyDictionary<string, CellId> movement =
                     TerrainSession.PlanMovement(before);
+                IReadOnlyDictionary<string, SpatialCellId> spatialMovement =
+                    TerrainSession.PlanSpatialExcavationMovement(before);
+                AgentSession.SetSpatialWorkMovementTargets(spatialMovement);
                 result = AgentSession.Advance(movement);
             }
 
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
+            if (result.IsSuccess)
+            {
+                result = TerrainSession.AdvanceSpatialExcavationWork(
+                    AgentSession.Tick,
+                    agents);
+            }
+
+            if (result.IsSuccess)
+            {
+                IReadOnlyList<SpatialExcavationCommit> commits =
+                    TerrainSession.LoadSpatialExcavationsToFinalize();
+                for (int index = 0; index < commits.Count && result.IsSuccess; index++)
+                {
+                    result = CompleteSpatialExcavation(commits[index]);
+                }
+            }
+
             if (result.IsSuccess)
             {
                 result = AdvanceTerrainForAgents(AgentSession.Tick, agents);

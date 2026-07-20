@@ -59,7 +59,7 @@ namespace Dig.Unity
                 DigExcavationDrawingMode.Delete =>
                     "Delete tool active. Hold LMB over marked cells.",
                 DigExcavationDrawingMode.Depth =>
-                    "Depth tool active. LMB an open horizontal tunnel cell to excavate one deeper layer.",
+                    "Depth tool active. LMB an open tunnel or room cell to designate one deeper layer.",
                 _ => throw new InvalidOperationException("Unknown excavation mode."),
             });
         }
@@ -269,7 +269,8 @@ namespace Dig.Unity
         {
             if (_jobRenderer!.TryGetJob(hit, out DigJobVisual job)
                 && job.Model.TargetX.HasValue
-                && job.Model.TargetY.HasValue)
+                && job.Model.TargetY.HasValue
+                && (!job.Model.TargetZ.HasValue || job.Model.TargetZ.Value == 0))
             {
                 return new CellId(job.Model.TargetX.Value, job.Model.TargetY.Value);
             }
@@ -287,7 +288,8 @@ namespace Dig.Unity
         {
             if (_jobRenderer!.TryGetJob(hit, out DigJobVisual job)
                 && job.Model.TargetX.HasValue
-                && job.Model.TargetY.HasValue)
+                && job.Model.TargetY.HasValue
+                && (!job.Model.TargetZ.HasValue || job.Model.TargetZ.Value == 0))
             {
                 return new CellId(job.Model.TargetX.Value, job.Model.TargetY.Value);
             }

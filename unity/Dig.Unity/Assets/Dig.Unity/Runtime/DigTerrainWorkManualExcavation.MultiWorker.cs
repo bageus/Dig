@@ -34,8 +34,10 @@ namespace Dig.Unity
                     nameof(residentIds));
             }
 
+            HashSet<EntityId> selectedAgents = new HashSet<EntityId>(agents);
             for (int index = 0; index < agents.Length; index++)
             {
+                ReleaseDirectMovementControl(agents[index].ToString());
                 ClearManualGroupForAgent(agents[index]);
             }
 
@@ -49,7 +51,8 @@ namespace Dig.Unity
             for (int index = 0; index < cluster.Count; index++)
             {
                 if (jobsByCell.TryGetValue(cluster[index], out JobSnapshot? job)
-                    && seenJobs.Add(job.Id))
+                    && seenJobs.Add(job.Id)
+                    && !IsOwnedByUnselectedResident(job, selectedAgents))
                 {
                     orderedJobs.Add(job);
                 }
@@ -60,24 +63,13 @@ namespace Dig.Unity
                 return Result.Failure(JobErrors.NotFound);
             }
 
-            Dictionary<CellId, CellSnapshot> cells = CollectWorldCells();
-            JobSnapshot[] frontiers = orderedJobs
-                .Where(job => IsExcavationFrontier(
-                    ((DigJobDefinition)job.Definition).Target.CellId,
-                    cells))
-                .ToArray();
-            int workerCount = Math.Min(agents.Length, frontiers.Length);
-            if (workerCount == 0)
-            {
-                return Result.Failure(NoExcavationFront);
-            }
-
             for (int index = 0; index < orderedJobs.Count; index++)
             {
                 JobSnapshot job = orderedJobs[index];
                 RemoveJobFromExistingManualGroup(job.Id);
-                if (job.Status == JobStatus.Claimed
-                    || job.Status == JobStatus.InProgress)
+                if ((job.Status == JobStatus.Claimed || job.Status == JobStatus.InProgress)
+                    && job.AssignedAgentId.HasValue
+                    && selectedAgents.Contains(job.AssignedAgentId.Value))
                 {
                     Result released = _releaseAssignment!.Handle(
                         new ReleaseJobAssignmentCommand(job.Id, tick));
@@ -90,15 +82,27 @@ namespace Dig.Unity
                 _candidateProvider!.SetCandidates(job.Id, NoCandidates);
             }
 
+            Dictionary<CellId, CellSnapshot> cells = CollectWorldCells();
+            JobSnapshot[] frontiers = orderedJobs
+                .Where(job => IsExcavationFrontier(
+                    ((DigJobDefinition)job.Definition).Target.CellId,
+                    cells))
+                .ToArray();
+            int workerCount = Math.Min(agents.Length, orderedJobs.Count);
+            JobSnapshot[] anchors = frontiers
+                .Concat(orderedJobs.Where(job => !frontiers.Contains(job)))
+                .Take(workerCount)
+                .ToArray();
+
             List<EntityId>[] buckets = new List<EntityId>[workerCount];
-            CellId[] anchors = new CellId[workerCount];
+            CellId[] anchorCells = new CellId[workerCount];
             HashSet<EntityId> distributed = new HashSet<EntityId>();
             for (int index = 0; index < workerCount; index++)
             {
-                buckets[index] = new List<EntityId> { frontiers[index].Id };
-                anchors[index] = ((DigJobDefinition)frontiers[index].Definition)
+                buckets[index] = new List<EntityId> { anchors[index].Id };
+                anchorCells[index] = ((DigJobDefinition)anchors[index].Definition)
                     .Target.CellId;
-                distributed.Add(frontiers[index].Id);
+                distributed.Add(anchors[index].Id);
             }
 
             for (int index = 0; index < orderedJobs.Count; index++)
@@ -110,7 +114,7 @@ namespace Dig.Unity
                 }
 
                 CellId cell = ((DigJobDefinition)job.Definition).Target.CellId;
-                buckets[SelectNearestBucket(cell, anchors)].Add(job.Id);
+                buckets[SelectNearestBucket(cell, anchorCells)].Add(job.Id);
             }
 
             List<ManualExcavationGroup> created = new List<ManualExcavationGroup>();
@@ -124,9 +128,9 @@ namespace Dig.Unity
                 created.Add(group);
                 Result assigned = AssignNextManualExcavation(
                     group,
-                    anchors[index],
+                    anchorCells[index],
                     tick);
-                if (assigned.IsFailure)
+                if (assigned.IsFailure && !IsWaitingForExcavationFront(assigned))
                 {
                     RollbackManualGroups(created, tick);
                     return assigned;
@@ -156,6 +160,7 @@ namespace Dig.Unity
                 {
                     JobSnapshot? job = _jobRepository.Get().Get(group.JobIds[jobIndex]);
                     if (job != null
+                        && job.AssignedAgentId == group.AgentId
                         && (job.Status == JobStatus.Claimed
                             || job.Status == JobStatus.InProgress))
                     {
@@ -166,6 +171,15 @@ namespace Dig.Unity
 
                 ClearManualGroup(group);
             }
+        }
+
+        private static bool IsOwnedByUnselectedResident(
+            JobSnapshot job,
+            ISet<EntityId> selectedAgents)
+        {
+            return (job.Status == JobStatus.Claimed || job.Status == JobStatus.InProgress)
+                && job.AssignedAgentId.HasValue
+                && !selectedAgents.Contains(job.AssignedAgentId.Value);
         }
 
         private static int SelectNearestBucket(CellId cell, IReadOnlyList<CellId> anchors)

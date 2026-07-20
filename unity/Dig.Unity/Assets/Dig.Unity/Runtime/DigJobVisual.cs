@@ -50,7 +50,7 @@ namespace Dig.Unity
                     new SpatialCellId(
                         model.TargetX!.Value,
                         model.TargetY!.Value,
-                        0));
+                        model.TargetZ!.Value));
                 position.y += 0.72f;
                 position.z += 0.18f;
                 transform.position = position;

@@ -73,11 +73,15 @@ def check_cave_room_runtime_contracts(
     errors.extend(require_fragments(
         room_runtime,
         runtime_text,
-        "ordinary player room and depth runtime activation",
+        "ordinary player room and spatial depth runtime activation",
         (
             "_activatedCaveRooms",
             "_terrainExcavatedVolume",
-            "ExcavateTunnelDepth",
+            "DesignateTunnelDepth",
+            "DesignateSpatialExcavation(",
+            "CompleteSpatialExcavation",
+            "CompleteTunnelDepthExcavation(commit.Target)",
+            "CompleteSpatialExcavationJob(",
             "TunnelDepthExcavations",
             "RefreshCaveRoomRuntime",
             "RefreshTerrainDepthVolume",
@@ -86,6 +90,12 @@ def check_cave_room_runtime_contracts(
             "AddRoomFloor",
         ),
     ))
+    for forbidden in (
+        "AgentSession.ExcavateTunnelDepth",
+        "internal TunnelDepthExcavationPlanResult ExcavateTunnelDepth",
+    ):
+        if forbidden in runtime_text:
+            errors.append(f"{room_runtime}: instant depth mutation remains: {forbidden!r}")
     if "SynchronizeCompletedCaveRoomProtection" in runtime_text:
         errors.append(f"{room_runtime}: player-dug rooms must not become protected")
     room_floor_text = texts.get(room_floor, "")
@@ -144,8 +154,13 @@ def check_cave_room_runtime_contracts(
     errors.extend(require_fragments(
         agent_session,
         texts.get(agent_session, ""),
-        "dynamic cave room navigation",
-        ("ExpandTunnelVolume", "WithAdditionalOpenCells", "_tunnelJournal"),
+        "dynamic cave room navigation and deferred depth opening",
+        (
+            "ExpandTunnelVolume",
+            "WithAdditionalOpenCells",
+            "_tunnelJournal",
+            "CompleteTunnelDepthExcavation",
+        ),
     ))
     errors.extend(require_fragments(
         bootstrap,
