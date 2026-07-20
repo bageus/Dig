@@ -155,6 +155,7 @@ def main() -> int:
         builder,
         (
             "DigCaveTemplateTrimMeshData Build(",
+            "TerrainVisualDetailLevel detailLevel",
             "CaveTemplateTrimRole.Entrance",
             "CaveTemplateTrimRole.Arch",
             "CaveTemplateTrimRole.SideWall",
@@ -199,9 +200,9 @@ def main() -> int:
         (
             "Dictionary<string, DigCaveTemplateTrimVisual>",
             "CaveTemplateTrimVolumeViewModel volume",
-            "DigCaveTemplateTrimMeshBuilder.Build(instance)",
+            "DigCaveTemplateTrimMeshBuilder.Build(instance, _detailLevel)",
             "catalog?.ResolveCaveTemplate(templateId, role)",
-            "CalculateSignature(instance)",
+            "CalculateSignature(instance, _detailLevel)",
             "Cave Template Trim Visuals",
             "InstanceCount",
             "VertexCount",
