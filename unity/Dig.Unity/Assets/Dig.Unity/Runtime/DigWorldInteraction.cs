@@ -142,14 +142,14 @@ namespace Dig.Unity
                 return;
             }
 
-            if (TryAssignSelectedResidentToExcavation(hit, left))
+            if (left
+                && _agentRenderer!.SelectedCount > 0
+                && TryApplyTunnelMove(hit, leftButton: true))
             {
                 return;
             }
 
-            if (left
-                && _agentRenderer!.SelectedCount > 0
-                && TryApplyTunnelMove(hit, leftButton: true))
+            if (TryAssignSelectedResidentToExcavation(hit, left))
             {
                 return;
             }
