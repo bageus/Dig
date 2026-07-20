@@ -100,6 +100,7 @@ namespace Dig.Unity
                 _terrainChunkRenderer = gameObject.AddComponent<DigTerrainChunkRenderer>();
             }
 
+            _terrainChunkRenderer.SetDetailLevel(_terrainVisualDetailLevel);
             return _terrainChunkRenderer;
         }
 
