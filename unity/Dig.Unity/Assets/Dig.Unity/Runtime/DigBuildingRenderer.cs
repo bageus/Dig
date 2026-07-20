@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
 using Dig.Presentation.Buildings;
+using Dig.Presentation.World;
 using UnityEngine;
 
 namespace Dig.Unity
 {
     [DisallowMultipleComponent]
-    public sealed class DigBuildingRenderer : MonoBehaviour
+    public sealed partial class DigBuildingRenderer : MonoBehaviour
     {
         private const string CatalogResourcePath =
             "Dig/VisualCatalogs/Buildings";
@@ -18,6 +19,9 @@ namespace Dig.Unity
             new Dictionary<string, DigBuildingVisual>(StringComparer.Ordinal);
         private Transform? _root;
         private DigBuildingVisual? _selected;
+        private DigRepresentativeBuildingPrefabLibrary? _representatives;
+        private TerrainVisualDetailLevel _buildingDetailLevel =
+            TerrainVisualDetailLevel.Full;
 
         public string? SelectedBuildingId => _selected?.Model.Id;
 
@@ -27,6 +31,7 @@ namespace Dig.Unity
 
         private void Awake()
         {
+            _representatives = DigRepresentativeBuildingPrefabLibrary.Acquire();
             if (visualCatalog == null)
             {
                 visualCatalog = Resources.Load<DigBuildingVisualCatalog>(
@@ -37,6 +42,7 @@ namespace Dig.Unity
                 visualCatalog,
                 this,
                 "Buildings");
+            LogRepresentativeValidation();
         }
 
         public void SetVisualCatalog(DigBuildingVisualCatalog? catalog)
@@ -50,6 +56,7 @@ namespace Dig.Unity
             {
                 visual.InvalidateAsset();
                 visual.SetModel(visual.Model, Resolve(visual.Model));
+                visual.SetDetailLevel(_buildingDetailLevel);
             }
         }
 
@@ -113,11 +120,31 @@ namespace Dig.Unity
 
         private DigBuildingVisualResolution Resolve(BuildingWorldViewModel model)
         {
+            DigBuildingVisualResolution catalogResolution = default;
+            bool hasCatalogResolution = visualCatalog != null;
             if (visualCatalog != null)
             {
-                return visualCatalog.ResolveBuilding(
+                catalogResolution = visualCatalog.ResolveBuilding(
                     model.DefinitionId,
                     model.VisualState);
+                if (catalogResolution.HasProfile)
+                {
+                    return catalogResolution;
+                }
+            }
+
+            if (_representatives != null
+                && _representatives.TryResolve(
+                    model.DefinitionId,
+                    model.VisualState,
+                    out DigBuildingVisualResolution representative))
+            {
+                return representative;
+            }
+
+            if (hasCatalogResolution)
+            {
+                return catalogResolution;
             }
 
             DigVisualAsset fallback = DigVisualAsset.CreateRuntimeFallback(
@@ -138,6 +165,7 @@ namespace Dig.Unity
             root.transform.SetParent(_root, worldPositionStays: false);
             DigBuildingVisual visual = root.AddComponent<DigBuildingVisual>();
             visual.Initialize(model, resolution);
+            visual.SetDetailLevel(_buildingDetailLevel);
             _buildings.Add(model.Id, visual);
         }
 
@@ -175,6 +203,20 @@ namespace Dig.Unity
 
             _root = new GameObject("Building Visuals").transform;
             _root.SetParent(transform, worldPositionStays: false);
+        }
+
+        private void LogRepresentativeValidation()
+        {
+            if (_representatives == null)
+            {
+                return;
+            }
+
+            IReadOnlyList<string> errors = _representatives.ValidationErrors;
+            for (int index = 0; index < errors.Count; index++)
+            {
+                Debug.LogError($"Buildings representative pack: {errors[index]}", this);
+            }
         }
 
         private static Color ResolveFallbackTint(BuildingVisualState state)
