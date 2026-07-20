@@ -76,6 +76,45 @@ public sealed partial class DigPooledVfxPlayer : MonoBehaviour
         _activeParticles += instance.ParticleBudget;
     }
 
+    private void Update()
+    {
+        if (_active.Count == 0) return;
+        _expiredIds.Clear();
+        float now = Time.unscaledTime;
+        foreach (KeyValuePair<string, DigPooledVfxInstance> pair in _active)
+        {
+            if (pair.Value.IsExpired(now)) _expiredIds.Add(pair.Key);
+        }
+        for (int index = 0; index < _expiredIds.Count; index++)
+        {
+            string requestId = _expiredIds[index];
+            Recycle(requestId, _active[requestId]);
+        }
+    }
+
+    private void Recycle(string requestId, DigPooledVfxInstance instance)
+    {
+        _active.Remove(requestId);
+        _activeParticles = Mathf.Max(
+            0,
+            _activeParticles - instance.ParticleBudget);
+        string effectId = instance.EffectId;
+        instance.StopAndHide();
+        if (_pooledCount >= MaximumPoolSize)
+        {
+            Destroy(instance.gameObject);
+            return;
+        }
+        Stack<DigPooledVfxInstance>? pool;
+        if (!_pools.TryGetValue(effectId, out pool))
+        {
+            pool = new Stack<DigPooledVfxInstance>();
+            _pools.Add(effectId, pool);
+        }
+        pool.Push(instance);
+        _pooledCount++;
+    }
+
     private int CountActive(string effectId)
     {
         int count = 0;
