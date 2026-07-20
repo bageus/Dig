@@ -50,7 +50,7 @@ def main() -> int:
         "CreatureLodTier", "CreatureAnimationUpdatePolicy",
     )))
     errors.extend(require(snapshot_path, read(snapshot_path), (
-        "CreatureVisualSnapshot", "Stable", "SpeciesId", "Disposition",
+        "CreatureVisualSnapshot", "SpeciesId", "Disposition",
         "IsMoving", "IsAttacking", "ShowImpact", "IsGrowing",
         "IsSpecialAction", "ActionProgress", "Version",
     )))
@@ -131,7 +131,7 @@ def main() -> int:
         "Stack<DigCreatureVisual>", "AcquireRoot(", "RemoveCreature(",
         "TryGetCreature(", "SelectById(", "TryResolveAnchor(",
         "Resources.Load<DigCreatureVisualCatalog>", "enableInstancing = true",
-        "CreatureAnimationUpdatePolicy", "WorldToViewportPoint",
+        "PresentLod(", "WorldToViewportPoint",
     )))
     errors.extend(reject(renderer_path, renderer, (
         "GameObject.CreatePrimitive(PrimitiveType.Capsule)",
