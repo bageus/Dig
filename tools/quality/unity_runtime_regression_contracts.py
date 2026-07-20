@@ -23,9 +23,13 @@ def check_runtime_regression_contracts(
     multi_worker = runtime_root / "DigTerrainWorkManualExcavation.MultiWorker.cs"
 
     errors: list[str] = []
+    renderer_text = "\n".join(
+        value for path, value in texts.items()
+        if path.name.startswith("DigAgentRenderer")
+    )
     errors.extend(require_fragments(
         renderer,
-        texts.get(renderer, ""),
+        renderer_text,
         "resident selection snapshot",
         (
             "SelectedAgentIds => _selectedSnapshot",
@@ -37,101 +41,54 @@ def check_runtime_regression_contracts(
         selection,
         texts.get(selection, ""),
         "ordered group selection restoration",
-        (
-            "RestoreSelection",
-            "_selectedIds.Clear()",
-            "_selectionOrder.Clear()",
-            "PublishSelectionSnapshot();",
-        ),
+        ("RestoreSelection", "_selectedIds.Clear()", "_selectionOrder.Clear()", "PublishSelectionSnapshot();"),
     ))
     errors.extend(require_fragments(
         loop,
         texts.get(loop, ""),
         "selection and direct ownership across simulation ticks",
-        (
-            "IReadOnlyList<string> selectedAgentIds",
-            "primarySelectedAgentId",
-            "EnforceDirectMovementOwnership(nextTick)",
-            "AgentRenderer.Render(agents, movementDuration)",
-            "RestoreSelection(",
-        ),
+        ("IReadOnlyList<string> selectedAgentIds", "primarySelectedAgentId", "EnforceDirectMovementOwnership(nextTick)", "AgentRenderer.Render(agents, movementDuration)", "RestoreSelection("),
     ))
     errors.extend(require_fragments(
         movement,
         texts.get(movement, ""),
         "validate-before-interrupt direct movement",
-        (
-            "ValidateResidentThroughTunnel",
-            "ValidateResidentsThroughTunnel",
-            "TerrainSession.InterruptForDirectMovement",
-            "MoveResidentThroughTunnel",
-            "MoveResidentsThroughTunnel",
-        ),
+        ("ValidateResidentThroughTunnel", "ValidateResidentsThroughTunnel", "TerrainSession.InterruptForDirectMovement", "MoveResidentThroughTunnel", "MoveResidentsThroughTunnel"),
     ))
     errors.extend(require_fragments(
         direct,
         texts.get(direct, ""),
         "persistent direct movement ownership",
-        (
-            "InterruptForDirectMovement",
-            "EnforceDirectMovementOwnership",
-            "ReleaseJobAssignmentCommand",
-            "RemoveAllRoutePlans",
-            "_directMovementAgents.Add",
-            "IsAvailableForAutomaticWork",
-        ),
+        ("InterruptForDirectMovement", "EnforceDirectMovementOwnership", "ReleaseJobAssignmentCommand", "RemoveAllRoutePlans", "_directMovementAgents.Add", "IsAvailableForAutomaticWork"),
     ))
     errors.extend(require_fragments(
         designations,
         texts.get(designations, ""),
         "Dig candidate direct-order suppression",
-        (
-            "IsAvailableForAutomaticWork(agent)",
-            "agent.CellZ == 0",
-        ),
+        ("IsAvailableForAutomaticWork(agent)", "agent.CellZ == 0"),
     ))
     errors.extend(require_fragments(
         pointer_hits,
         texts.get(pointer_hits, ""),
         "ordered pointer hit stack",
-        (
-            "Physics.RaycastAll",
-            "Array.Sort(hits, ComparePointerHits)",
-            "left.distance.CompareTo(right.distance)",
-        ),
+        ("Physics.RaycastAll", "Array.Sort(hits, ComparePointerHits)", "left.distance.CompareTo(right.distance)"),
     ))
     errors.extend(require_fragments(
         targets,
         texts.get(targets, ""),
         "excavation and movement target priority",
-        (
-            "GetPointerHits()",
-            "ResolveExcavationTarget",
-            "TryResolveTunnelDestination",
-            "DigSelectedResidentTarget.Excavation",
-            "DigSelectedResidentTarget.Movement",
-        ),
+        ("GetPointerHits()", "ResolveExcavationTarget", "TryResolveTunnelDestination", "DigSelectedResidentTarget.Excavation", "DigSelectedResidentTarget.Movement"),
     ))
     errors.extend(require_fragments(
         movement_input,
         texts.get(movement_input, ""),
         "explicit tunnel destination surfaces",
-        (
-            "_tunnelRenderer.TryGetCell",
-            "_caveRoomFloorRenderer.TryGetCell",
-            "MoveResidentsThroughTunnel",
-        ),
+        ("_tunnelRenderer.TryGetCell", "_caveRoomFloorRenderer.TryGetCell", "MoveResidentsThroughTunnel"),
     ))
     errors.extend(require_fragments(
         multi_worker,
         texts.get(multi_worker, ""),
         "parallel connected excavation groups",
-        (
-            "AssignExcavationClusterToResidents",
-            "workerCount",
-            "List<EntityId>[] buckets",
-            "AssignNextManualExcavation",
-            "RollbackManualGroups",
-        ),
+        ("AssignExcavationClusterToResidents", "workerCount", "List<EntityId>[] buckets", "AssignNextManualExcavation", "RollbackManualGroups"),
     ))
     return errors

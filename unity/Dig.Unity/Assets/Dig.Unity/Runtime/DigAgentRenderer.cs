@@ -251,16 +251,7 @@ namespace Dig.Unity
 
         private void CreateAgent(AgentViewModel model)
         {
-            GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            visual.name = $"Resident {model.Name}";
-            visual.transform.SetParent(_visualRoot, worldPositionStays: false);
-            visual.transform.localScale = new Vector3(0.48f, 0.62f, 0.48f);
-            DigAgentVisual agentVisual = visual.AddComponent<DigAgentVisual>();
-            agentVisual.Initialize(model, _normalMaterial!, _selectedMaterial!);
-            agentVisual.SetSelected(_selectedIds.Contains(model.Id));
-            _equipment.TryGetValue(model.Id, out ResidentEquipmentViewModel? equipment);
-            agentVisual.SetEquipment(equipment, _equipmentMaterial!);
-            _agents.Add(model.Id, agentVisual);
+            CreateResidentAgent(model);
         }
 
         private void EnsureResources()
@@ -291,16 +282,19 @@ namespace Dig.Unity
             {
                 name = "Dig Resident",
                 color = new Color(0.25f, 0.72f, 0.82f, 1f),
+                enableInstancing = true,
             };
             _selectedMaterial = new Material(shader)
             {
                 name = "Dig Resident Selected",
                 color = new Color(1f, 0.78f, 0.22f, 1f),
+                enableInstancing = true,
             };
             _equipmentMaterial = new Material(shader)
             {
                 name = "Dig Resident Equipment",
                 color = new Color(0.38f, 0.28f, 0.18f, 1f),
+                enableInstancing = true,
             };
         }
 

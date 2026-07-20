@@ -80,7 +80,12 @@ public sealed partial class DigAgentRenderer
             || visual == null)
         {
             GameObject root = new GameObject(group + " Inventory Attachment");
-            root.transform.SetParent(agent.transform, worldPositionStays: false);
+            DigResidentSocketKind socket = group == InventoryExpansionGroup.Cargo
+                ? DigResidentSocketKind.Cargo
+                : DigResidentSocketKind.Back;
+            root.transform.SetParent(agent.ResolveSocket(socket), worldPositionStays: false);
+            root.transform.localPosition = Vector3.zero;
+            root.transform.localRotation = Quaternion.identity;
             visual = root.AddComponent<DigResidentInventoryAttachmentVisual>();
             _inventoryAttachmentVisuals[key] = visual;
         }
