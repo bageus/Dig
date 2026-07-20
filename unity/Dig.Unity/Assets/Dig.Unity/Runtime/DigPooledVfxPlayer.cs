@@ -115,6 +115,60 @@ public sealed partial class DigPooledVfxPlayer : MonoBehaviour
         _pooledCount++;
     }
 
+    private DigPooledVfxInstance Acquire(string effectId, DigVfxProfile? profile)
+    {
+        Stack<DigPooledVfxInstance>? pool;
+        if (_pools.TryGetValue(effectId, out pool) && pool.Count > 0)
+        {
+            _pooledCount--;
+            return pool.Pop();
+        }
+        return CreateInstance(effectId, profile);
+    }
+
+    private DigPooledVfxInstance CreateInstance(
+        string effectId,
+        DigVfxProfile? profile)
+    {
+        GameObject root;
+        ParticleSystem? particles = null;
+        if (profile?.Prefab != null)
+        {
+            root = Instantiate(profile.Prefab);
+            particles = root.GetComponentInChildren<ParticleSystem>(
+                includeInactive: true);
+        }
+        else
+        {
+            root = new GameObject("Fallback VFX " + effectId);
+            root.AddComponent<DigVisualPrefabRoot>();
+            particles = root.AddComponent<ParticleSystem>();
+        }
+        if (particles == null)
+        {
+            Destroy(root);
+            root = new GameObject("Fallback VFX " + effectId);
+            root.AddComponent<DigVisualPrefabRoot>();
+            particles = root.AddComponent<ParticleSystem>();
+        }
+        root.name = "VFX " + effectId;
+        root.transform.SetParent(_root, worldPositionStays: true);
+        Collider[] colliders = root.GetComponentsInChildren<Collider>(
+            includeInactive: true);
+        for (int index = 0; index < colliders.Length; index++)
+        {
+            colliders[index].enabled = false;
+        }
+        DigPooledVfxInstance instance =
+            root.GetComponent<DigPooledVfxInstance>();
+        if (instance == null)
+        {
+            instance = root.AddComponent<DigPooledVfxInstance>();
+        }
+        instance.Initialize(particles);
+        return instance;
+    }
+
     private int CountActive(string effectId)
     {
         int count = 0;
