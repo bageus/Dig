@@ -79,11 +79,19 @@ Visible cells receive a six-direction connection mask only for adjacent visible 
 
 `TerrainDepositDecorationPresenter` consumes that hidden-safe snapshot and publishes only visible decorations. The same cell and deposit id always produce the same four-way variant, quarter-turn rotation and bounded two-axis offset. Damage changes the scale band without changing the stable variant or rotation. Hidden and depleted cells produce no decoration entry.
 
-Each exposed host-rock face keeps its normal terrain material. The chunk mesh adds a separate low-poly deposit overlay consisting of one faceted cluster and at most two connector strips selected from the same-id connection mask. Internal faces between solid cells receive no overlay. There is no deposit prefab, collider or per-cell GameObject.
+Each exposed host-rock face keeps its normal terrain material. The chunk mesh adds a separate low-poly deposit overlay consisting of one shape cluster and a bounded number of connector strips selected from the same-id connection mask. Internal faces between solid cells receive no overlay. There is no deposit prefab, collider or per-cell GameObject.
 
 `DigTerrainRenderSnapshotBuilder` copies only decoration entries whose host terrain cell is still solid. Reveal, damage, connection, layout or removal changes invalidate the local terrain chunk. The chunk signature includes variant, rotation, scale and offset bands, so a changed layout cannot reuse stale geometry.
 
-`DigTerrainVisualCatalog` requires five deposit profile families: Iron, Gold, Crystal, Coal and Stone. Each profile has `Revealed` and `Damaged` materials. There are deliberately no hidden or depleted materials.
+`DigTerrainVisualCatalog` requires five deposit profile families. Each family has `Revealed` and `Damaged` materials and a non-colour silhouette:
+
+- Iron uses a raised `Nodule`;
+- Gold uses a flat wide `Plate`;
+- Crystal uses a pointed triangular `Crystal`;
+- Coal uses a long narrow `Seam`;
+- Stone uses a grouped `Pebble` silhouette.
+
+There are deliberately no hidden or depleted materials. Unknown visible deposit ids receive a deterministic fallback silhouette as well as a fallback material, so distinguishability never depends on colour alone. Damage reduces height/scale in addition to changing the material.
 
 The current runtime does not synthesize demo deposits from terrain material ids. Until #91 publishes authoritative deposit instances, the renderer receives no deposit volume and displays only host terrain.
 
@@ -102,7 +110,7 @@ The immutable trim instance contains the exact trapezoid rows produced by `CaveR
 
 `DigTerrainVisualCatalog` requires a profile for all four template kinds. Every profile has separate `Entrance`, `Arch`, `SideWall` and `BackWall` materials. Missing assets use cached role-aware fallback materials without changing room topology or provenance.
 
-`DigCaveTemplateTrimRenderer` creates one collider-free dynamic mesh object per completed room. The mesh contains:
+`DigCaveTemplateTrimRenderer` creates one collider-free dynamic mesh object per completed room. At full detail the mesh contains:
 
 - one entrance outline;
 - `Depth - 1` internal arch outlines;
@@ -113,7 +121,24 @@ The deterministic variant changes trim thickness only. It never changes room dim
 
 Template trim uses the same world scale as terrain: one Unity unit per logical X/Y cell. Its root transform is identity under `DigWorldRenderer`; X comes from cell centers, vertical position is `-CellId.Y`, and Z uses `DigTunnelProjection.DepthOrigin/DepthSpacing`. The room entrance is the provenance pivot; all mesh vertices are emitted in world-root coordinates.
 
-The current LOD/instance budget is intentionally bounded: one mesh renderer and four material slots at most per completed room. There is no distance LOD yet; future LOD work must preserve the same immutable instance signature and may replace only geometry density.
+### Accessibility and measured visual detail
+
+`TerrainVisualDetailPolicy` selects one of three presentation-only levels from the measured screen size of one logical cell. The camera probe projects the world-root origin, logical X axis and logical Y axis once per frame; it does not scan cells, chunks or colliders.
+
+The hysteresis thresholds are:
+
+- `Marker -> Reduced` at 12 pixels per cell;
+- `Reduced -> Marker` below 8 pixels per cell;
+- `Reduced -> Full` at 28 pixels per cell;
+- `Full -> Reduced` below 22 pixels per cell.
+
+The levels preserve semantic shape while reducing geometry:
+
+- `Full`: full deposit silhouette, up to two connector strips per exposed face, every template-room internal arch, side walls and back wall;
+- `Reduced`: the same deposit family silhouette, at most one connector, sparse internal arches, side walls and back wall;
+- `Marker`: a compact deposit family silhouette without connectors and only the template entrance outline.
+
+The immutable terrain/deposit/template snapshots and their versions never include camera distance or detail level. Crossing a threshold invalidates only cached Unity meshes. Chunk and trim signatures include the selected detail level so stale geometry cannot be reused. `TerrainPixelsPerCell`, current detail level, vertex count, triangle count and rebuild count remain available as runtime diagnostics.
 
 ### Snapshot contract
 
@@ -199,7 +224,7 @@ VFX_Excavation_Stone
 Fallbacks are presentation-only. They must never change gameplay state or infer missing definitions.
 
 - missing catalog: cached role-aware debug materials on terrain and trim submeshes;
-- unknown terrain, deposit or cave-template profile id: base catalog fallback material;
+- unknown terrain, deposit or cave-template profile id: deterministic shape/material fallback;
 - invalid prefab root: catalog fallback;
 - validation errors: logged during renderer startup.
 
@@ -207,13 +232,13 @@ Fallbacks are presentation-only. They must never change gameplay state or infer 
 
 The unified mesh snapshot covers the current visual `Z=0..3` volume, but only front cells have the full authoritative World state. Deep cells currently carry one explicit rock material/hardness pair and an open/solid projection from tunnel topology and excavation completion.
 
-Terrain, deposits, deterministic decoration geometry and template-room trim contracts are present. Production materials, authoritative deposit instances from #91, UV conventions, accessibility shape/icon assets and a measured distance-LOD implementation remain later work.
+Terrain, deposits, deterministic decoration geometry, non-colour deposit silhouettes, measured LOD and template-room trim contracts are present. Production-authored materials/UVs and authoritative deposit instances from #91 remain outside the current repository implementation.
 
 ## Next steps
 
 - #91: publish authoritative generated deposit instances, reveal and depletion snapshots;
 - #88: migrate deep terrain materials, damage, Jobs, reservations and persistence to authoritative spatial ownership;
-- #206: connect production materials, accessibility assets and measured LOD thresholds;
+- #206: connect final authored materials and UV assets when available;
 - #207–#210: typed prefab integrations for buildings, items, residents and creatures;
 - #211: unified overlay styles;
 - #212: URP, lighting and pooled VFX.

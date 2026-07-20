@@ -14,6 +14,15 @@ namespace Dig.Unity
         Stone = 4,
     }
 
+    public enum DigTerrainDepositShape
+    {
+        Nodule = 0,
+        Plate = 1,
+        Crystal = 2,
+        Seam = 3,
+        Pebble = 4,
+    }
+
     [Serializable]
     public sealed class DigTerrainDepositVisualProfile
     {
@@ -32,6 +41,8 @@ namespace Dig.Unity
         public string StableId => stableId;
 
         public DigTerrainDepositProfileKind Kind => kind;
+
+        internal DigTerrainDepositShape Shape => ResolveShape(kind);
 
         internal Material? Resolve(TerrainDepositVisualState state)
         {
@@ -68,6 +79,24 @@ namespace Dig.Unity
             {
                 errors.Add(
                     $"Deposit profile '{stableId}' has no damaged material.");
+            }
+        }
+
+        private static DigTerrainDepositShape ResolveShape(
+            DigTerrainDepositProfileKind profileKind)
+        {
+            switch (profileKind)
+            {
+                case DigTerrainDepositProfileKind.Iron:
+                    return DigTerrainDepositShape.Nodule;
+                case DigTerrainDepositProfileKind.Gold:
+                    return DigTerrainDepositShape.Plate;
+                case DigTerrainDepositProfileKind.Crystal:
+                    return DigTerrainDepositShape.Crystal;
+                case DigTerrainDepositProfileKind.Coal:
+                    return DigTerrainDepositShape.Seam;
+                default:
+                    return DigTerrainDepositShape.Pebble;
             }
         }
     }

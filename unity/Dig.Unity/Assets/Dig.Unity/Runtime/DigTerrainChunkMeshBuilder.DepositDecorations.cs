@@ -17,7 +17,9 @@ namespace Dig.Unity
             List<DigTerrainMaterialKey> keys,
             List<List<int>> triangles,
             Dictionary<DigTerrainMaterialKey, int> submeshes,
-            DigTerrainRenderSnapshot snapshot)
+            DigTerrainRenderSnapshot snapshot,
+            DigTerrainVisualCatalog? catalog,
+            TerrainVisualDetailLevel detailLevel)
         {
             if (isProtected || !cell.IsExplored || cell.IsDesignated)
             {
@@ -63,7 +65,9 @@ namespace Dig.Unity
                     normals,
                     keys,
                     triangles,
-                    submeshes);
+                    submeshes,
+                    catalog,
+                    detailLevel);
             }
 
             if (!snapshot.IsRenderedSolid(position.Offset(0, 0, -1)))
@@ -86,7 +90,9 @@ namespace Dig.Unity
                     normals,
                     keys,
                     triangles,
-                    submeshes);
+                    submeshes,
+                    catalog,
+                    detailLevel);
             }
 
             if (!snapshot.IsRenderedSolid(position.Offset(-1, 0, 0)))
@@ -109,7 +115,9 @@ namespace Dig.Unity
                     normals,
                     keys,
                     triangles,
-                    submeshes);
+                    submeshes,
+                    catalog,
+                    detailLevel);
             }
 
             if (!snapshot.IsRenderedSolid(position.Offset(1, 0, 0)))
@@ -132,7 +140,9 @@ namespace Dig.Unity
                     normals,
                     keys,
                     triangles,
-                    submeshes);
+                    submeshes,
+                    catalog,
+                    detailLevel);
             }
 
             if (!snapshot.IsRenderedSolid(position.Offset(0, -1, 0)))
@@ -155,7 +165,9 @@ namespace Dig.Unity
                     normals,
                     keys,
                     triangles,
-                    submeshes);
+                    submeshes,
+                    catalog,
+                    detailLevel);
             }
 
             if (!snapshot.IsRenderedSolid(position.Offset(0, 1, 0)))
@@ -178,7 +190,9 @@ namespace Dig.Unity
                     normals,
                     keys,
                     triangles,
-                    submeshes);
+                    submeshes,
+                    catalog,
+                    detailLevel);
             }
         }
 
@@ -200,7 +214,9 @@ namespace Dig.Unity
             List<Vector3> normals,
             List<DigTerrainMaterialKey> keys,
             List<List<int>> triangles,
-            Dictionary<DigTerrainMaterialKey, int> submeshes)
+            Dictionary<DigTerrainMaterialKey, int> submeshes,
+            DigTerrainVisualCatalog? catalog,
+            TerrainVisualDetailLevel detailLevel)
         {
             ResolveRotatedAxes(
                 tangent,
@@ -218,32 +234,45 @@ namespace Dig.Unity
                 keys,
                 triangles,
                 submeshes);
+            DigTerrainDepositShape shape = catalog?.ResolveDepositShape(
+                decoration.VisibleDepositId)
+                ?? ResolveFallbackDepositShape(decoration.VisibleDepositId);
             AddDepositCluster(
                 center,
                 normal,
                 shapeTangent,
                 shapeBitangent,
                 decoration,
+                shape,
+                detailLevel,
                 submesh,
                 vertices,
                 normals,
                 triangles);
-            AddDepositConnectors(
-                center,
-                normal,
-                tangent,
-                bitangent,
-                tangentHalf,
-                bitangentHalf,
-                negativeTangent,
-                positiveTangent,
-                negativeBitangent,
-                positiveBitangent,
-                decoration,
-                submesh,
-                vertices,
-                normals,
-                triangles);
+
+            int connectorBudget = detailLevel == TerrainVisualDetailLevel.Full
+                ? TerrainDepositDecorationCellViewModel.MaximumConnectorsPerFace
+                : detailLevel == TerrainVisualDetailLevel.Reduced ? 1 : 0;
+            if (connectorBudget > 0)
+            {
+                AddDepositConnectors(
+                    center,
+                    normal,
+                    tangent,
+                    bitangent,
+                    tangentHalf,
+                    bitangentHalf,
+                    negativeTangent,
+                    positiveTangent,
+                    negativeBitangent,
+                    positiveBitangent,
+                    decoration,
+                    connectorBudget,
+                    submesh,
+                    vertices,
+                    normals,
+                    triangles);
+            }
         }
 
         private static DigTerrainMaterialKey ResolveDepositKey(
@@ -260,6 +289,22 @@ namespace Dig.Unity
                 decoration.State,
                 decoration.DamageBand,
                 decoration.Connections);
+        }
+
+        private static DigTerrainDepositShape ResolveFallbackDepositShape(
+            string stableId)
+        {
+            unchecked
+            {
+                uint hash = 2166136261u;
+                for (int index = 0; index < stableId.Length; index++)
+                {
+                    hash ^= stableId[index];
+                    hash *= 16777619u;
+                }
+
+                return (DigTerrainDepositShape)(hash % 5u);
+            }
         }
 
         private static void ResolveRotatedAxes(

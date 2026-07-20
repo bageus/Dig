@@ -10,11 +10,17 @@ namespace Dig.Unity
         private const float CellHalfExtent = 0.48f;
 
         internal static DigCaveTemplateTrimMeshData Build(
-            CaveTemplateTrimInstanceViewModel instance)
+            CaveTemplateTrimInstanceViewModel instance,
+            TerrainVisualDetailLevel detailLevel)
         {
             if (instance == null)
             {
                 throw new ArgumentNullException(nameof(instance));
+            }
+
+            if (!Enum.IsDefined(typeof(TerrainVisualDetailLevel), detailLevel))
+            {
+                throw new ArgumentOutOfRangeException(nameof(detailLevel));
             }
 
             List<Vector3> vertices = new List<Vector3>();
@@ -42,42 +48,52 @@ namespace Dig.Unity
                 roles,
                 triangles,
                 submeshes);
-            for (int index = 0; index < instance.ArchDepths.Count; index++)
+            if (detailLevel != TerrainVisualDetailLevel.Marker)
             {
-                float z = DigTunnelProjection.DepthOrigin
-                    + (instance.ArchDepths[index]
-                        * DigTunnelProjection.DepthSpacing);
-                AddOutline(
-                    instance.Rows,
-                    z,
-                    thickness,
-                    CaveTemplateTrimRole.Arch,
-                    vertices,
-                    normals,
-                    roles,
-                    triangles,
-                    submeshes);
-            }
+                for (int index = 0; index < instance.ArchDepths.Count; index++)
+                {
+                    if (detailLevel == TerrainVisualDetailLevel.Reduced
+                        && index % 2 != 0
+                        && index != instance.ArchDepths.Count - 1)
+                    {
+                        continue;
+                    }
 
-            AddSideWalls(
-                instance.Rows,
-                frontZ,
-                backZ,
-                vertices,
-                normals,
-                roles,
-                triangles,
-                submeshes);
-            if (instance.HasBackWall)
-            {
-                AddBackWall(
+                    float z = DigTunnelProjection.DepthOrigin
+                        + (instance.ArchDepths[index]
+                            * DigTunnelProjection.DepthSpacing);
+                    AddOutline(
+                        instance.Rows,
+                        z,
+                        thickness,
+                        CaveTemplateTrimRole.Arch,
+                        vertices,
+                        normals,
+                        roles,
+                        triangles,
+                        submeshes);
+                }
+
+                AddSideWalls(
                     instance.Rows,
+                    frontZ,
                     backZ,
                     vertices,
                     normals,
                     roles,
                     triangles,
                     submeshes);
+                if (instance.HasBackWall)
+                {
+                    AddBackWall(
+                        instance.Rows,
+                        backZ,
+                        vertices,
+                        normals,
+                        roles,
+                        triangles,
+                        submeshes);
+                }
             }
 
             int[][] triangleArrays = new int[triangles.Count][];
