@@ -7,7 +7,6 @@ namespace Dig.Unity
 [DisallowMultipleComponent]
 public sealed class DigCreatureVisual : MonoBehaviour
 {
-    private CreatureVisualPresenter? _presenter;
     private DigCreatureRig? _rig;
     private CreatureAppearanceViewModel? _appearance;
     private Vector3 _previousPosition;
@@ -27,7 +26,7 @@ public sealed class DigCreatureVisual : MonoBehaviour
         CreatureLodViewModel lod)
     {
         Model = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
-        _presenter = presenter ?? throw new ArgumentNullException(nameof(presenter));
+        if (presenter == null) throw new ArgumentNullException(nameof(presenter));
         _rig = rig ?? throw new ArgumentNullException(nameof(rig));
         _appearance = appearance ?? throw new ArgumentNullException(nameof(appearance));
         _previousPosition = ToWorld(snapshot);
@@ -54,7 +53,10 @@ public sealed class DigCreatureVisual : MonoBehaviour
         if (rig == null) throw new ArgumentNullException(nameof(rig));
         if (appearance == null) throw new ArgumentNullException(nameof(appearance));
         if (_rig != null && _rig != rig)
+        {
+            _rig.gameObject.SetActive(false);
             Destroy(_rig.gameObject);
+        }
         _rig = rig;
         _appearance = appearance;
         _rig.ApplyAppearance(appearance);
