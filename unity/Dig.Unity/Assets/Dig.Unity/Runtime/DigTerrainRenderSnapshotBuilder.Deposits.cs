@@ -7,12 +7,13 @@ namespace Dig.Unity
     internal sealed partial class DigTerrainRenderSnapshotBuilder
     {
         private readonly Dictionary<DigTerrainCellKey, ulong>
-            _previousDepositVisuals =
+            _previousDepositDecorations =
                 new Dictionary<DigTerrainCellKey, ulong>();
 
-        private Dictionary<DigTerrainCellKey, TerrainDepositCellViewModel>
-            BuildVisibleDeposits(
-                TerrainDepositVolumeViewModel? depositVolume,
+        private Dictionary<
+            DigTerrainCellKey,
+            TerrainDepositDecorationCellViewModel> BuildDepositDecorations(
+                TerrainDepositDecorationVolumeViewModel? decorationVolume,
                 int width,
                 int height,
                 int depth,
@@ -20,49 +21,50 @@ namespace Dig.Unity
                 ISet<DigTerrainCellKey> solidCells,
                 ISet<DigTerrainChunkKey> dirtyOrigins)
         {
-            ValidateDepositVolume(
-                depositVolume,
+            ValidateDepositDecorationVolume(
+                decorationVolume,
                 width,
                 height,
                 depth);
             Dictionary<DigTerrainCellKey, ulong> current =
                 new Dictionary<DigTerrainCellKey, ulong>();
-            Dictionary<DigTerrainCellKey, TerrainDepositCellViewModel> visible =
-                new Dictionary<DigTerrainCellKey, TerrainDepositCellViewModel>();
-            if (depositVolume != null)
+            Dictionary<
+                DigTerrainCellKey,
+                TerrainDepositDecorationCellViewModel> visible =
+                    new Dictionary<
+                        DigTerrainCellKey,
+                        TerrainDepositDecorationCellViewModel>();
+            if (decorationVolume != null)
             {
-                for (int index = 0; index < depositVolume.Cells.Count; index++)
+                for (int index = 0; index < decorationVolume.Cells.Count; index++)
                 {
-                    TerrainDepositCellViewModel source =
-                        depositVolume.Cells[index];
-                    if (!source.IsVisible)
-                    {
-                        continue;
-                    }
-
+                    TerrainDepositDecorationCellViewModel source =
+                        decorationVolume.Cells[index];
                     DigTerrainCellKey key = new DigTerrainCellKey(
                         source.Cell.X,
                         source.Cell.Y,
                         source.Cell.Z);
-                    ulong signature = CalculateDepositVisualSignature(source);
-                    current.Add(key, signature);
-                    if (solidCells.Contains(key))
+                    if (!solidCells.Contains(key))
                     {
-                        visible.Add(key, source);
+                        continue;
                     }
+
+                    ulong signature = CalculateDepositDecorationSignature(source);
+                    current.Add(key, signature);
+                    visible.Add(key, source);
                 }
             }
 
-            MarkChangedDepositVisuals(
-                _previousDepositVisuals,
+            MarkChangedDepositDecorations(
+                _previousDepositDecorations,
                 current,
                 chunkSize,
                 dirtyOrigins);
-            Replace(_previousDepositVisuals, current);
+            Replace(_previousDepositDecorations, current);
             return visible;
         }
 
-        private static void MarkChangedDepositVisuals(
+        private static void MarkChangedDepositDecorations(
             IReadOnlyDictionary<DigTerrainCellKey, ulong> previous,
             IReadOnlyDictionary<DigTerrainCellKey, ulong> current,
             int chunkSize,
@@ -91,25 +93,32 @@ namespace Dig.Unity
             }
         }
 
-        private static ulong CalculateDepositVisualSignature(
-            TerrainDepositCellViewModel deposit)
+        private static ulong CalculateDepositDecorationSignature(
+            TerrainDepositDecorationCellViewModel decoration)
         {
             const ulong offset = 1469598103934665603UL;
             const ulong prime = 1099511628211UL;
             ulong hash = offset;
-            Mix(ref hash, (ulong)deposit.State, prime);
-            Mix(ref hash, deposit.DamageBand, prime);
-            Mix(ref hash, (byte)deposit.Connections, prime);
-            for (int index = 0; index < deposit.VisibleDepositId.Length; index++)
+            Mix(ref hash, (ulong)decoration.State, prime);
+            Mix(ref hash, decoration.DamageBand, prime);
+            Mix(ref hash, (byte)decoration.Connections, prime);
+            Mix(ref hash, decoration.Variant, prime);
+            Mix(ref hash, decoration.RotationQuarterTurns, prime);
+            Mix(ref hash, decoration.ScaleBand, prime);
+            Mix(ref hash, unchecked((byte)decoration.OffsetBandX), prime);
+            Mix(ref hash, unchecked((byte)decoration.OffsetBandY), prime);
+            for (int index = 0;
+                index < decoration.VisibleDepositId.Length;
+                index++)
             {
-                Mix(ref hash, deposit.VisibleDepositId[index], prime);
+                Mix(ref hash, decoration.VisibleDepositId[index], prime);
             }
 
             return hash;
         }
 
-        private static void ValidateDepositVolume(
-            TerrainDepositVolumeViewModel? volume,
+        private static void ValidateDepositDecorationVolume(
+            TerrainDepositDecorationVolumeViewModel? volume,
             int width,
             int height,
             int depth)
@@ -120,7 +129,7 @@ namespace Dig.Unity
                     || volume.Depth != depth))
             {
                 throw new ArgumentException(
-                    "Deposit presentation dimensions must match terrain.",
+                    "Deposit decoration dimensions must match terrain.",
                     nameof(volume));
             }
         }

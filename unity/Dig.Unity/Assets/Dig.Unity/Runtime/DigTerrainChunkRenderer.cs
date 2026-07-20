@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Dig.Presentation.World;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -112,31 +111,6 @@ namespace Dig.Unity
             }
 
             return hash;
-        }
-
-        private static void MixDeposit(
-            ref ulong hash,
-            DigTerrainCellKey cell,
-            DigTerrainRenderSnapshot snapshot,
-            ulong prime)
-        {
-            if (!snapshot.TryGetVisibleDeposit(
-                    cell,
-                    out TerrainDepositCellViewModel? deposit)
-                || deposit == null)
-            {
-                Mix(ref hash, 0UL, prime);
-                return;
-            }
-
-            Mix(ref hash, 1UL, prime);
-            Mix(ref hash, (ulong)deposit.State, prime);
-            Mix(ref hash, deposit.DamageBand, prime);
-            Mix(ref hash, (byte)deposit.Connections, prime);
-            for (int index = 0; index < deposit.VisibleDepositId.Length; index++)
-            {
-                Mix(ref hash, deposit.VisibleDepositId[index], prime);
-            }
         }
 
         private static void MixNeighbour(
