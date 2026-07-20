@@ -25,6 +25,10 @@ public static class AgentErrors
         "agents.position.invalid",
         "Agent positions must use non-negative logical cell coordinates.");
 
+    public static readonly DomainError InvalidSchedule = new DomainError(
+        "agents.schedule.invalid",
+        "The work interval must be inside the day and leave time for rest.");
+
     public static readonly DomainError TargetedActionRequired = new DomainError(
         "agents.action.target_required",
         "The active action does not have a reserved settlement target.");
