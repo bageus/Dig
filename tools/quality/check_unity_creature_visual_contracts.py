@@ -104,7 +104,7 @@ def main() -> int:
     errors.extend(require(rig_path, rig, (
         "MaterialPropertyBlock", "DigCreatureAnchorKind", "Equipment", "Drop",
         "InsideCreature", "Vfx", "ApplyAppearance(", "ApplyAction(",
-        "ApplyLod(", "CreatureMarkerShape", "CreatureDisposition.Tamed",
+        "ApplyLod(", "_appearance.MarkerShape", "CreatureDisposition.Tamed",
         "CreatureDisposition.Hostile", "CreatureLodTier.Far",
     )))
 
