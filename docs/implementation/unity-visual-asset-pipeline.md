@@ -87,6 +87,34 @@ Each exposed host-rock face keeps its normal terrain material. The chunk mesh ad
 
 The current runtime does not synthesize demo deposits from terrain material ids. Until #91 publishes authoritative deposit instances, the renderer receives no deposit volume and displays only host terrain.
 
+### Template cave provenance and trim contract
+
+`CaveTemplateTrimPresenter` receives only completed `CaveRoomPlan` instances. It does not receive cutaway cells, tunnel strokes or arbitrary empty terrain. Free excavation therefore cannot acquire template arches by accident.
+
+Each completed plan resolves to one of four stable ids:
+
+- `cave.template.small`;
+- `cave.template.medium`;
+- `cave.template.large`;
+- `cave.template.tall`.
+
+The immutable trim instance contains the exact trapezoid rows produced by `CaveRoomPlanner.InterpolateWidth`, explicit internal arch depth slices, a deterministic four-way variant and a back-wall flag. Reordering the same completed plans produces the same instance order, version and variants.
+
+`DigTerrainVisualCatalog` requires a profile for all four template kinds. Every profile has separate `Entrance`, `Arch`, `SideWall` and `BackWall` materials. Missing assets use cached role-aware fallback materials without changing room topology or provenance.
+
+`DigCaveTemplateTrimRenderer` creates one collider-free dynamic mesh object per completed room. The mesh contains:
+
+- one entrance outline;
+- `Depth - 1` internal arch outlines;
+- two side-wall quads per trapezoid row;
+- one back-wall quad per row when the template enables a back wall.
+
+The deterministic variant changes trim thickness only. It never changes room dimensions, navigation, protected cells or excavation ownership. The renderer creates no per-cell trim object, no primitive collider and no picking target.
+
+Template trim uses the same world scale as terrain: one Unity unit per logical X/Y cell. Its root transform is identity under `DigWorldRenderer`; X comes from cell centers, vertical position is `-CellId.Y`, and Z uses `DigTunnelProjection.DepthOrigin/DepthSpacing`. The room entrance is the provenance pivot; all mesh vertices are emitted in world-root coordinates.
+
+The current LOD/instance budget is intentionally bounded: one mesh renderer and four material slots at most per completed room. There is no distance LOD yet; future LOD work must preserve the same immutable instance signature and may replace only geometry density.
+
 ### Snapshot contract
 
 `DigTerrainCellKey` and `DigTerrainChunkKey` contain `X`, `Y` and `Z`. Mesh generation and exposure checks evaluate all six neighbours.
@@ -170,8 +198,8 @@ VFX_Excavation_Stone
 
 Fallbacks are presentation-only. They must never change gameplay state or infer missing definitions.
 
-- missing catalog: cached role-aware debug materials on chunk submeshes;
-- unknown terrain or visible deposit profile id: base catalog fallback material;
+- missing catalog: cached role-aware debug materials on terrain and trim submeshes;
+- unknown terrain, deposit or cave-template profile id: base catalog fallback material;
 - invalid prefab root: catalog fallback;
 - validation errors: logged during renderer startup.
 
@@ -179,13 +207,13 @@ Fallbacks are presentation-only. They must never change gameplay state or infer 
 
 The unified mesh snapshot covers the current visual `Z=0..3` volume, but only front cells have the full authoritative World state. Deep cells currently carry one explicit rock material/hardness pair and an open/solid projection from tunnel topology and excavation completion.
 
-Terrain and deposit authoring plus deterministic decoration geometry are present, but production materials, authoritative deposit instances from #91, UV conventions and template cave trim remain later #206 slices.
+Terrain, deposits, deterministic decoration geometry and template-room trim contracts are present. Production materials, authoritative deposit instances from #91, UV conventions, accessibility shape/icon assets and a measured distance-LOD implementation remain later work.
 
 ## Next steps
 
 - #91: publish authoritative generated deposit instances, reveal and depletion snapshots;
 - #88: migrate deep terrain materials, damage, Jobs, reservations and persistence to authoritative spatial ownership;
-- #206: connect production materials and template-cave arches, entrances, side walls and back-wall trim;
+- #206: connect production materials, accessibility assets and measured LOD thresholds;
 - #207–#210: typed prefab integrations for buildings, items, residents and creatures;
 - #211: unified overlay styles;
 - #212: URP, lighting and pooled VFX.
