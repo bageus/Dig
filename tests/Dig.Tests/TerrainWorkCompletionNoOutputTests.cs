@@ -1,4 +1,3 @@
-using System;
 using Dig.Application.Jobs;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -14,6 +13,7 @@ public sealed class TerrainWorkCompletionNoOutputTests
 {
     private static readonly MaterialId Rock = new MaterialId("test.rock");
     private static readonly MaterialId Air = new MaterialId("test.air");
+    private static readonly ItemId UnrelatedItem = new ItemId("test.unrelated");
     private static readonly CellId Target = new CellId(3, 1);
     private static readonly EntityId JobId =
         EntityId.Parse("40000000000000000000000000000009");
@@ -22,8 +22,14 @@ public sealed class TerrainWorkCompletionNoOutputTests
     public void Ordinary_rock_completes_without_creating_an_inventory_stack()
     {
         WorldState world = CreateWorld();
-        InventoryState inventory = new InventoryState(
-            new ItemCatalog(Array.Empty<ItemDefinition>()));
+        InventoryState inventory = new InventoryState(new ItemCatalog(new[]
+        {
+            new ItemDefinition(
+                UnrelatedItem,
+                "Unrelated item",
+                maximumStackSize: 1,
+                isTool: false),
+        }));
         JobSystem jobs = CreateFinalizingJob();
         InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
         CompleteTerrainWorkCommandHandler handler = new CompleteTerrainWorkCommandHandler(
