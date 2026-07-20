@@ -164,7 +164,8 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
             "Status Panel",
             transform,
             new Color(0.03f, 0.04f, 0.06f, 0.84f));
-        Anchor(statusPanel, 0.5f, 0f, 0.5f, 0f, -460f, 118f, 460f, 154f);
+        Anchor(statusPanel, 0f, 1f, 1f, 1f, 20f, -44f, -376f, -8f);
+        statusPanel.GetComponent<Image>().raycastTarget = false;
         _statusText = CreateText(
             "Status",
             statusPanel,
