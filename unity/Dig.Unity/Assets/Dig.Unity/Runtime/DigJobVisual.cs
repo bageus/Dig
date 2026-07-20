@@ -1,5 +1,6 @@
 using Dig.Domain.World;
 using Dig.Presentation.Jobs;
+using Dig.Presentation.Overlays;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -9,36 +10,40 @@ namespace Dig.Unity
     {
         private Renderer? _renderer;
         private LineRenderer? _workerLink;
-        private Material? _statusMaterial;
-        private Material? _selectedMaterial;
+        private DigOverlayManager? _overlays;
+        private OverlaySemanticKind _semantic;
         private bool _selected;
 
         public JobOverlayViewModel Model { get; private set; } = null!;
 
         internal void Initialize(
             JobOverlayViewModel model,
-            Material statusMaterial,
-            Material selectedMaterial,
-            Material lineMaterial)
+            DigOverlayManager overlays,
+            OverlaySemanticKind semantic)
         {
             Model = model;
-            _statusMaterial = statusMaterial;
-            _selectedMaterial = selectedMaterial;
+            _overlays = overlays;
+            _semantic = semantic;
             _renderer = GetComponent<Renderer>();
             _workerLink = gameObject.AddComponent<LineRenderer>();
-            _workerLink.sharedMaterial = lineMaterial;
             _workerLink.positionCount = 2;
             _workerLink.startWidth = 0.055f;
             _workerLink.endWidth = 0.025f;
             _workerLink.useWorldSpace = true;
             _workerLink.enabled = false;
-            ApplyModel(model, statusMaterial);
+            _overlays.ConfigureLineRenderer(
+                _workerLink,
+                OverlayLayerKind.Jobs,
+                OverlaySemanticKind.Diagnostic);
+            ApplyModel(model, semantic);
         }
 
-        internal void ApplyModel(JobOverlayViewModel model, Material statusMaterial)
+        internal void ApplyModel(
+            JobOverlayViewModel model,
+            OverlaySemanticKind semantic)
         {
             Model = model;
-            _statusMaterial = statusMaterial;
+            _semantic = semantic;
             if (model.HasTarget)
             {
                 Vector3 position = DigTunnelProjection.CellWorldPosition(
@@ -51,13 +56,13 @@ namespace Dig.Unity
                 transform.position = position;
             }
 
-            RefreshMaterial();
+            RefreshAppearance();
         }
 
         internal void SetSelected(bool selected)
         {
             _selected = selected;
-            RefreshMaterial();
+            RefreshAppearance();
         }
 
         internal void SetWorkerLink(bool visible, Vector3 workerPosition)
@@ -77,14 +82,30 @@ namespace Dig.Unity
             _workerLink.SetPosition(1, workerPosition + (Vector3.up * 0.45f));
         }
 
-        private void RefreshMaterial()
+        private void RefreshAppearance()
         {
-            if (_renderer != null)
+            if (_renderer == null || _overlays == null)
             {
-                _renderer.sharedMaterial = _selected
-                    ? _selectedMaterial
-                    : _statusMaterial;
+                return;
             }
+
+            OverlaySemanticKind semantic = _selected
+                ? OverlaySemanticKind.Selection
+                : _semantic;
+            DigOverlayAppearance appearance = _overlays.ConfigureRenderer(
+                _renderer,
+                OverlayLayerKind.Jobs,
+                semantic);
+            float horizontal = 0.34f * appearance.Scale;
+            float vertical = appearance.Shape == OverlayShapeKind.Cross
+                ? 0.14f
+                : 0.08f;
+            transform.localScale = new Vector3(horizontal, vertical, horizontal);
+            float yaw = appearance.Shape == OverlayShapeKind.Diamond ? 45f : 0f;
+            transform.localRotation = Quaternion.Euler(
+                0f,
+                yaw,
+                appearance.TiltDegrees);
         }
     }
 }
