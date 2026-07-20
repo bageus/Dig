@@ -11,9 +11,12 @@ namespace Dig.Unity
     [DisallowMultipleComponent]
     public sealed class DigAgentVisual : MonoBehaviour
     {
+        private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        private static readonly int ColorId = Shader.PropertyToID("_Color");
+        private static readonly Color HoverColor = new Color(0.42f, 0.88f, 0.96f, 1f);
         private Material? _normalMaterial;
-        private Material? _hoveredMaterial;
         private Material? _selectedMaterial;
+        private MaterialPropertyBlock? _propertyBlock;
         private DigAgentEquipmentVisual? _equipmentVisual;
         private bool _selected;
         private bool _hovered;
@@ -35,13 +38,12 @@ namespace Dig.Unity
         internal void Initialize(
             AgentViewModel model,
             Material normalMaterial,
-            Material hoveredMaterial,
             Material selectedMaterial)
         {
             Model = model;
             _normalMaterial = normalMaterial;
-            _hoveredMaterial = hoveredMaterial;
             _selectedMaterial = selectedMaterial;
+            _propertyBlock = new MaterialPropertyBlock();
             _previousX = model.CellX;
             _previousY = model.CellY;
             _previousZ = model.CellZ;
@@ -148,11 +150,15 @@ namespace Dig.Unity
         private void ApplyVisualState()
         {
             Renderer renderer = GetComponent<Renderer>();
-            renderer.sharedMaterial = _selected
-                ? _selectedMaterial
-                : _hovered
-                    ? _hoveredMaterial
-                    : _normalMaterial;
+            renderer.sharedMaterial = _selected ? _selectedMaterial : _normalMaterial;
+            _propertyBlock!.Clear();
+            if (_hovered && !_selected)
+            {
+                _propertyBlock.SetColor(BaseColorId, HoverColor);
+                _propertyBlock.SetColor(ColorId, HoverColor);
+            }
+
+            renderer.SetPropertyBlock(_propertyBlock);
         }
 
         private void Update()
