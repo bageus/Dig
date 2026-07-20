@@ -23,10 +23,10 @@ namespace Dig.Unity
             Vector3 c = center + tangent * tangentRadius + bitangent * bitangentRadius;
             Vector3 d = center - tangent * tangentRadius + bitangent * bitangentRadius;
             Vector3 tip = center + normal * height;
-            AddDepositTriangle(a, b, tip, normal, submesh, vertices, normals, triangles);
-            AddDepositTriangle(b, c, tip, normal, submesh, vertices, normals, triangles);
-            AddDepositTriangle(c, d, tip, normal, submesh, vertices, normals, triangles);
-            AddDepositTriangle(d, a, tip, normal, submesh, vertices, normals, triangles);
+            AddDecorationTriangle(a, b, tip, normal, submesh, vertices, normals, triangles);
+            AddDecorationTriangle(b, c, tip, normal, submesh, vertices, normals, triangles);
+            AddDecorationTriangle(c, d, tip, normal, submesh, vertices, normals, triangles);
+            AddDecorationTriangle(d, a, tip, normal, submesh, vertices, normals, triangles);
         }
 
         private static void AddDepositFlatQuad(
@@ -45,11 +45,11 @@ namespace Dig.Unity
             Vector3 b = center + tangent * tangentRadius - bitangent * bitangentRadius;
             Vector3 c = center + tangent * tangentRadius + bitangent * bitangentRadius;
             Vector3 d = center - tangent * tangentRadius + bitangent * bitangentRadius;
-            AddDepositTriangle(a, b, c, normal, submesh, vertices, normals, triangles);
-            AddDepositTriangle(a, c, d, normal, submesh, vertices, normals, triangles);
+            AddDecorationTriangle(a, b, c, normal, submesh, vertices, normals, triangles);
+            AddDecorationTriangle(a, c, d, normal, submesh, vertices, normals, triangles);
         }
 
-        private static void AddDepositTriangle(
+        private static void AddDecorationTriangle(
             Vector3 a,
             Vector3 b,
             Vector3 c,
