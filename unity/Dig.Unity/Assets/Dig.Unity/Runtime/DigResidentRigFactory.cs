@@ -11,8 +11,11 @@ internal static class DigResidentRigFactory
         Transform parent,
         DigVisualAsset asset,
         Material fallbackMaterial,
-        ResidentAppearanceViewModel appearance)
+        ResidentAppearanceViewModel appearance,
+        int maximumRenderers)
     {
+        int rendererBudget = Mathf.Clamp(maximumRenderers, 10, 24);
+        Material material = asset.Material ?? fallbackMaterial;
         GameObject root;
         DigResidentRig rig;
         if (asset.Prefab != null)
@@ -21,16 +24,17 @@ internal static class DigResidentRigFactory
             rig = root.GetComponent<DigResidentRig>();
             if (rig == null && !TryConfigureAuthoredRig(
                     root,
+                    rendererBudget,
                     out rig))
             {
                 UnityEngine.Object.Destroy(root);
-                root = BuildRepresentative(fallbackMaterial);
+                root = BuildRepresentative(material);
                 rig = root.GetComponent<DigResidentRig>();
             }
         }
         else
         {
-            root = BuildRepresentative(fallbackMaterial);
+            root = BuildRepresentative(material);
             rig = root.GetComponent<DigResidentRig>();
         }
 
@@ -77,10 +81,11 @@ internal static class DigResidentRigFactory
 
     private static bool TryConfigureAuthoredRig(
         GameObject root,
+        int maximumRenderers,
         out DigResidentRig rig)
     {
         Renderer[] renderers = root.GetComponentsInChildren<Renderer>(includeInactive: true);
-        if (renderers.Length < 4 || renderers.Length > 24)
+        if (renderers.Length < 4 || renderers.Length > maximumRenderers)
         {
             rig = null!;
             return false;
