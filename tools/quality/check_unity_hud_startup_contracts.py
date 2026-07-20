@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-RUNTIME = ROOT / "unity" / "Dig.Unity"" / "Assets" / "Dig.Unity" / "Runtime"
+RUNTIME = ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" / "Runtime"
 BOOTSTRAP = RUNTIME / "DigUnityBootstrap.cs"
 HUD = RUNTIME / "DigGameHudCanvas.cs"
 MINIMAP = RUNTIME / "DigGameHudCanvas.Minimap.cs"
