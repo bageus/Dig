@@ -17,7 +17,7 @@ public sealed partial class DigGameHudCanvas
 
     private void BuildInventoryContext(ResidentInventoryLayoutViewModel inventory)
     {
-        BeginBottomLayout();
+        BeginBottomLayout(220f);
         BuildCompartmentIfActive(
             inventory,
             ResidentInventoryCompartment.Weapon,
