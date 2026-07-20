@@ -117,6 +117,14 @@ namespace Dig.Unity
             interaction.enabled = false;
             simulation.enabled = false;
 
+            _startupStage = "creating uGUI game HUD shell";
+            GameObject canvasObject = new GameObject(
+                "Dig Game HUD Canvas",
+                typeof(RectTransform));
+            DigGameHudCanvas gameHud = canvasObject.AddComponent<DigGameHudCanvas>();
+            gameHud.InitializeStartup(hud);
+            hud.AttachGameHudCanvas(gameHud);
+
             _startupStage = "framing camera and HUD";
             cameraController.Initialize(targetCamera, world);
             hud.SetWorld(world);
@@ -188,11 +196,7 @@ namespace Dig.Unity
                 routeRenderer,
                 hud);
 
-            _startupStage = "creating uGUI game HUD";
-            GameObject canvasObject = new GameObject(
-                "Dig Game HUD Canvas",
-                typeof(RectTransform));
-            DigGameHudCanvas gameHud = canvasObject.AddComponent<DigGameHudCanvas>();
+            _startupStage = "binding uGUI game HUD";
             gameHud.Initialize(
                 terrainSession,
                 agentRenderer,
@@ -203,7 +207,6 @@ namespace Dig.Unity
                 hud,
                 targetCamera,
                 world);
-            hud.AttachGameHudCanvas(gameHud);
 
             interaction.enabled = true;
             simulation.enabled = true;
