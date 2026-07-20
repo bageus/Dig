@@ -13,16 +13,32 @@ internal static class DigResidentRigFactory
         Material fallbackMaterial,
         ResidentAppearanceViewModel appearance)
     {
-        GameObject root = asset.Prefab == null
-            ? BuildRepresentative(fallbackMaterial)
-            : UnityEngine.Object.Instantiate(asset.Prefab);
+        GameObject root;
+        DigResidentRig rig;
+        if (asset.Prefab != null)
+        {
+            root = UnityEngine.Object.Instantiate(asset.Prefab);
+            rig = root.GetComponent<DigResidentRig>();
+            if (rig == null && !TryConfigureAuthoredRig(
+                    root,
+                    out rig))
+            {
+                UnityEngine.Object.Destroy(root);
+                root = BuildRepresentative(fallbackMaterial);
+                rig = root.GetComponent<DigResidentRig>();
+            }
+        }
+        else
+        {
+            root = BuildRepresentative(fallbackMaterial);
+            rig = root.GetComponent<DigResidentRig>();
+        }
+
         root.name = "Resident Rig " + appearance.ResidentId;
         root.transform.SetParent(parent, worldPositionStays: false);
         root.transform.localPosition = Vector3.zero;
         root.transform.localRotation = Quaternion.identity;
         root.transform.localScale = Vector3.one;
-        DigResidentRig rig = root.GetComponent<DigResidentRig>()
-            ?? ConfigureAuthoredRig(root, asset.Material ?? fallbackMaterial);
         DisableChildColliders(root);
         rig.ApplyAppearance(appearance);
         return rig;
@@ -59,22 +75,25 @@ internal static class DigResidentRigFactory
         return root;
     }
 
-    private static DigResidentRig ConfigureAuthoredRig(GameObject root, Material material)
+    private static bool TryConfigureAuthoredRig(
+        GameObject root,
+        out DigResidentRig rig)
     {
         Renderer[] renderers = root.GetComponentsInChildren<Renderer>(includeInactive: true);
         if (renderers.Length < 4 || renderers.Length > 24)
         {
-            UnityEngine.Object.Destroy(root);
-            return BuildRepresentative(material).GetComponent<DigResidentRig>();
+            rig = null!;
+            return false;
         }
+
         Transform leftArm = FindOrCreate(root.transform, "Left Arm");
         Transform rightArm = FindOrCreate(root.transform, "Right Arm");
         Transform leftLeg = FindOrCreate(root.transform, "Left Leg");
         Transform rightLeg = FindOrCreate(root.transform, "Right Leg");
         Transform[] sockets = CreateSockets(root.transform, leftArm, rightArm);
-        DigResidentRig rig = root.AddComponent<DigResidentRig>();
+        rig = root.AddComponent<DigResidentRig>();
         rig.Initialize(renderers, leftArm, rightArm, leftLeg, rightLeg, sockets);
-        return rig;
+        return true;
     }
 
     private static Transform CreateLimb(Transform parent, string name, float x, float y,
@@ -141,7 +160,10 @@ internal static class DigResidentRigFactory
     private static void DisableChildColliders(GameObject root)
     {
         Collider[] colliders = root.GetComponentsInChildren<Collider>(includeInactive: true);
-        for (int index = 0; index < colliders.Length; index++) colliders[index].enabled = false;
+        for (int index = 0; index < colliders.Length; index++)
+        {
+            colliders[index].enabled = false;
+        }
     }
 }
 }
