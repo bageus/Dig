@@ -9,12 +9,17 @@ namespace Dig.Unity
 public sealed partial class DigPooledVfxPlayer : MonoBehaviour
 {
     private const int MaximumPoolSize = 64;
+    private const string CatalogPath = "VisualCatalogs/Vfx";
     private readonly Dictionary<string, DigPooledVfxInstance> _active =
         new Dictionary<string, DigPooledVfxInstance>(StringComparer.Ordinal);
     private readonly Dictionary<string, Stack<DigPooledVfxInstance>> _pools =
         new Dictionary<string, Stack<DigPooledVfxInstance>>(StringComparer.Ordinal);
     private readonly List<string> _expiredIds = new List<string>();
     private RenderFrameBudget _budget = RenderFrameBudget.Default;
+    private Transform? _root;
+    private DigVfxCatalog? _catalog;
+    private DigRenderMaterialLibrary? _materials;
+    private Material? _sharedMaterial;
     private int _activeParticles;
     private int _pooledCount;
 
