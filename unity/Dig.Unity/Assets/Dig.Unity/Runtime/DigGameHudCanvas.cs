@@ -45,6 +45,14 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
     private float _bottomPanelHeight = 98f;
     private bool _initialized;
 
+    internal void InitializeStartup(DigHudOverlay legacyHud)
+    {
+        _legacyHud = legacyHud
+            ?? throw new ArgumentNullException(nameof(legacyHud));
+        CreateCanvasShell();
+        SetStatus("Starting runtime...");
+    }
+
     internal void Initialize(
         DigTerrainWorkSession terrainSession,
         DigAgentRenderer agentRenderer,
@@ -177,6 +185,11 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
 
     private void CreateCanvasShell()
     {
+        if (_canvas != null)
+        {
+            return;
+        }
+
         _canvas = gameObject.AddComponent<Canvas>();
         _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         _canvas.sortingOrder = 100;
