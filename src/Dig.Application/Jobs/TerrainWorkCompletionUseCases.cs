@@ -43,6 +43,25 @@ public sealed class CompleteTerrainWorkCommand
         int outputQuantity,
         MaterialId emptyMaterialId,
         long tick)
+        : this(
+            jobId,
+            outputStackId,
+            outputItemId,
+            outputQuantity,
+            emptyMaterialId,
+            tick,
+            producesOutput: true)
+    {
+    }
+
+    private CompleteTerrainWorkCommand(
+        EntityId jobId,
+        EntityId outputStackId,
+        ItemId outputItemId,
+        int outputQuantity,
+        MaterialId emptyMaterialId,
+        long tick,
+        bool producesOutput)
     {
         JobId = jobId;
         OutputStackId = outputStackId;
@@ -50,6 +69,7 @@ public sealed class CompleteTerrainWorkCommand
         OutputQuantity = outputQuantity;
         EmptyMaterialId = emptyMaterialId;
         Tick = tick;
+        ProducesOutput = producesOutput;
     }
 
     public EntityId JobId { get; }
@@ -58,6 +78,22 @@ public sealed class CompleteTerrainWorkCommand
     public int OutputQuantity { get; }
     public MaterialId EmptyMaterialId { get; }
     public long Tick { get; }
+    public bool ProducesOutput { get; }
+
+    public static CompleteTerrainWorkCommand WithoutOutput(
+        EntityId jobId,
+        MaterialId emptyMaterialId,
+        long tick)
+    {
+        return new CompleteTerrainWorkCommand(
+            jobId,
+            default,
+            default,
+            outputQuantity: 0,
+            emptyMaterialId,
+            tick,
+            producesOutput: false);
+    }
 }
 
 public sealed class TerrainWorkCompletionResult
@@ -68,6 +104,7 @@ public sealed class TerrainWorkCompletionResult
         EntityId outputStackId,
         ItemId outputItemId,
         int outputQuantity,
+        bool producedOutput,
         long worldVersion,
         long inventoryVersion)
     {
@@ -76,6 +113,7 @@ public sealed class TerrainWorkCompletionResult
         OutputStackId = outputStackId;
         OutputItemId = outputItemId;
         OutputQuantity = outputQuantity;
+        ProducedOutput = producedOutput;
         WorldVersion = worldVersion;
         InventoryVersion = inventoryVersion;
     }
@@ -85,6 +123,7 @@ public sealed class TerrainWorkCompletionResult
     public EntityId OutputStackId { get; }
     public ItemId OutputItemId { get; }
     public int OutputQuantity { get; }
+    public bool ProducedOutput { get; }
     public long WorldVersion { get; }
     public long InventoryVersion { get; }
 }
@@ -188,13 +227,16 @@ public sealed class CompleteTerrainWorkCommandHandler
             command.Tick);
         EnsureCommitStep(terrain.IsSuccess, terrain.Error);
 
-        Result added = inventory.AddStack(
-            command.OutputStackId,
-            command.OutputItemId,
-            command.OutputQuantity,
-            ItemLocation.InWorld(terrainJob.Target.CellId),
-            command.Tick);
-        EnsureCommitStep(added.IsSuccess, added.Error);
+        if (command.ProducesOutput)
+        {
+            Result added = inventory.AddStack(
+                command.OutputStackId,
+                command.OutputItemId,
+                command.OutputQuantity,
+                ItemLocation.InWorld(terrainJob.Target.CellId),
+                command.Tick);
+            EnsureCommitStep(added.IsSuccess, added.Error);
+        }
 
         Result completed = jobs.Complete(command.JobId, command.Tick);
         EnsureCommitStep(completed.IsSuccess, completed.Error);
@@ -213,6 +255,7 @@ public sealed class CompleteTerrainWorkCommandHandler
                 command.OutputStackId,
                 command.OutputItemId,
                 command.OutputQuantity,
+                command.ProducesOutput,
                 world.Version,
                 inventory.Version));
     }
@@ -221,6 +264,11 @@ public sealed class CompleteTerrainWorkCommandHandler
         InventoryState inventory,
         CompleteTerrainWorkCommand command)
     {
+        if (!command.ProducesOutput)
+        {
+            return Result.Success();
+        }
+
         if (!inventory.Catalog.Contains(command.OutputItemId))
         {
             return Result.Failure(TerrainWorkCompletionErrors.UnknownOutputItem);
