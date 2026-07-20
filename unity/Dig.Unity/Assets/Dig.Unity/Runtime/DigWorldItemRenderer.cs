@@ -8,11 +8,48 @@ namespace Dig.Unity
     [DisallowMultipleComponent]
     public sealed class DigWorldItemRenderer : MonoBehaviour
     {
+        private const string CatalogResourcePath = "Dig/VisualCatalogs/Items";
+        private const int MaximumPooledRoots = 64;
+
+        [SerializeField]
+        private DigItemVisualCatalog? visualCatalog;
+
         private readonly Dictionary<string, DigWorldItemVisual> _visuals =
             new Dictionary<string, DigWorldItemVisual>(StringComparer.Ordinal);
+        private readonly Stack<DigWorldItemVisual> _pool =
+            new Stack<DigWorldItemVisual>();
+        private readonly ItemStackVisualLayoutPresenter _layoutPresenter =
+            new ItemStackVisualLayoutPresenter();
         private Transform? _root;
-        private Material? _resourceMaterial;
-        private Material? _boxMaterial;
+
+        internal int ActiveStackCount => _visuals.Count;
+        internal int PooledRootCount => _pool.Count;
+
+        private void Awake()
+        {
+            if (visualCatalog == null)
+            {
+                visualCatalog = Resources.Load<DigItemVisualCatalog>(CatalogResourcePath);
+            }
+
+            DigVisualCatalogDiagnostics.LogValidation(
+                visualCatalog,
+                this,
+                "Items");
+        }
+
+        public void SetVisualCatalog(DigItemVisualCatalog? catalog)
+        {
+            visualCatalog = catalog;
+            DigVisualCatalogDiagnostics.LogValidation(
+                visualCatalog,
+                this,
+                "Items");
+            foreach (DigWorldItemVisual visual in _visuals.Values)
+            {
+                visual.InvalidateAsset();
+            }
+        }
 
         public void Render(IReadOnlyList<WorldItemViewModel> items)
         {
@@ -21,7 +58,7 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(items));
             }
 
-            EnsureResources();
+            EnsureRoot();
             HashSet<string> visible = new HashSet<string>(StringComparer.Ordinal);
             for (int index = 0; index < items.Count; index++)
             {
@@ -29,13 +66,12 @@ namespace Dig.Unity
                 visible.Add(item.StackId);
                 if (!_visuals.TryGetValue(item.StackId, out DigWorldItemVisual? visual))
                 {
-                    visual = CreateVisual(item);
+                    visual = AcquireVisual();
                     _visuals.Add(item.StackId, visual);
                 }
 
-                visual.Configure(
-                    item,
-                    item.IsBuildingBox ? _boxMaterial! : _resourceMaterial!);
+                ItemStackVisualLayoutViewModel layout = _layoutPresenter.Present(item);
+                visual.Configure(item, layout, Resolve(item.ItemId));
             }
 
             RemoveMissing(visible);
@@ -43,10 +79,14 @@ namespace Dig.Unity
 
         public bool TryGetItem(RaycastHit hit, out DigWorldItemVisual visual)
         {
-            DigWorldItemVisual? candidate = hit.collider.GetComponentInParent<DigWorldItemVisual>();
+            DigWorldItemVisual? candidate = hit.collider == null
+                ? null
+                : hit.collider.GetComponentInParent<DigWorldItemVisual>();
             if (candidate != null
                 && candidate.Model.IsInteractive
-                && _visuals.TryGetValue(candidate.Model.StackId, out DigWorldItemVisual? tracked)
+                && _visuals.TryGetValue(
+                    candidate.Model.StackId,
+                    out DigWorldItemVisual? tracked)
                 && ReferenceEquals(candidate, tracked))
             {
                 visual = candidate;
@@ -57,14 +97,42 @@ namespace Dig.Unity
             return false;
         }
 
-        private DigWorldItemVisual CreateVisual(WorldItemViewModel item)
+        private DigItemVisualResolution Resolve(string itemId)
         {
-            PrimitiveType primitive = item.IsBuildingBox
-                ? PrimitiveType.Cube
-                : PrimitiveType.Sphere;
-            GameObject target = GameObject.CreatePrimitive(primitive);
-            target.transform.SetParent(_root, worldPositionStays: false);
-            return target.AddComponent<DigWorldItemVisual>();
+            if (visualCatalog != null)
+            {
+                return visualCatalog.ResolveItem(itemId);
+            }
+
+            return new DigItemVisualResolution(
+                DigVisualAsset.CreateRuntimeFallback(itemId, Color.magenta),
+                icon: null,
+                DigItemCarrySocketPolicy.None,
+                new Vector3(0.34f, 0.34f, 0.34f),
+                new Vector3(0.28f, 0.28f, 0.28f),
+                DigItemRotationPolicy.StackQuarterTurns,
+                DigItemColliderPolicy.InteractiveOnly,
+                maxVisibleInstances: 4,
+                hasProfile: false);
+        }
+
+        private DigWorldItemVisual AcquireVisual()
+        {
+            DigWorldItemVisual visual;
+            if (_pool.Count > 0)
+            {
+                visual = _pool.Pop();
+                visual.gameObject.SetActive(true);
+            }
+            else
+            {
+                GameObject root = new GameObject("World Item Stack");
+                root.transform.SetParent(_root, worldPositionStays: false);
+                visual = root.AddComponent<DigWorldItemVisual>();
+            }
+
+            visual.transform.SetParent(_root, worldPositionStays: false);
+            return visual;
         }
 
         private void RemoveMissing(HashSet<string> visible)
@@ -78,61 +146,32 @@ namespace Dig.Unity
                 }
             }
 
-            foreach (string id in removed)
+            for (int index = 0; index < removed.Count; index++)
             {
+                string id = removed[index];
                 DigWorldItemVisual visual = _visuals[id];
                 _visuals.Remove(id);
-                Destroy(visual.gameObject);
+                if (_pool.Count < MaximumPooledRoots)
+                {
+                    visual.PrepareForPool();
+                    _pool.Push(visual);
+                }
+                else
+                {
+                    Destroy(visual.gameObject);
+                }
             }
         }
 
-        private void EnsureResources()
+        private void EnsureRoot()
         {
-            if (_root == null)
-            {
-                _root = new GameObject("World Item Visuals").transform;
-                _root.SetParent(transform, worldPositionStays: false);
-            }
-
-            if (_resourceMaterial != null && _boxMaterial != null)
+            if (_root != null)
             {
                 return;
             }
 
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
-            if (shader == null)
-            {
-                shader = Shader.Find("Standard");
-            }
-
-            if (shader == null)
-            {
-                throw new InvalidOperationException("No supported item shader was found.");
-            }
-
-            _resourceMaterial = new Material(shader)
-            {
-                name = "Dig World Resource",
-                color = new Color(0.56f, 0.62f, 0.70f, 1f),
-            };
-            _boxMaterial = new Material(shader)
-            {
-                name = "Dig BuildingBox",
-                color = new Color(0.84f, 0.58f, 0.24f, 1f),
-            };
-        }
-
-        private void OnDestroy()
-        {
-            if (_resourceMaterial != null)
-            {
-                Destroy(_resourceMaterial);
-            }
-
-            if (_boxMaterial != null)
-            {
-                Destroy(_boxMaterial);
-            }
+            _root = new GameObject("World Item Visuals").transform;
+            _root.SetParent(transform, worldPositionStays: false);
         }
     }
 }
