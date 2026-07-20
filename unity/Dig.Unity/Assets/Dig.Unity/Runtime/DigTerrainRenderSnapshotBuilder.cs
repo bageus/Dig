@@ -20,7 +20,7 @@ namespace Dig.Unity
         internal DigTerrainRenderSnapshot Build(
             WorldViewModel world,
             TerrainDepthVolumeViewModel? depthVolume,
-            TerrainDepositVolumeViewModel? depositVolume,
+            TerrainDepositDecorationVolumeViewModel? depositDecorations,
             IEnumerable<Vector2Int> cutawayCells,
             IEnumerable<Vector2Int> protectedCells)
         {
@@ -79,15 +79,17 @@ namespace Dig.Unity
                 currentProtected,
                 world.ChunkSize,
                 dirtyOrigins);
-            Dictionary<DigTerrainCellKey, TerrainDepositCellViewModel>
-                visibleDeposits = BuildVisibleDeposits(
-                    depositVolume,
-                    world.Width,
-                    world.Height,
-                    depth,
-                    world.ChunkSize,
-                    solid,
-                    dirtyOrigins);
+            Dictionary<
+                DigTerrainCellKey,
+                TerrainDepositDecorationCellViewModel> visibleDecorations =
+                    BuildDepositDecorations(
+                        depositDecorations,
+                        world.Width,
+                        world.Height,
+                        depth,
+                        world.ChunkSize,
+                        solid,
+                        dirtyOrigins);
 
             HashSet<DigTerrainChunkKey> dirty = new HashSet<DigTerrainChunkKey>();
             foreach (DigTerrainChunkKey origin in dirtyOrigins)
@@ -111,13 +113,13 @@ namespace Dig.Unity
                 CombineVersion(
                     world.Version,
                     depthVolume?.Version ?? 0,
-                    depositVolume?.Version ?? 0),
+                    depositDecorations?.Version ?? 0),
                 chunks,
                 solid,
                 currentCutaway,
                 currentProtected,
                 dirty,
-                visibleDeposits);
+                visibleDecorations);
         }
 
         internal void Invalidate()
