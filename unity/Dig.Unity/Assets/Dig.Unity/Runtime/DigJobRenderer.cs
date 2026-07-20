@@ -20,6 +20,13 @@ namespace Dig.Unity
 
         public JobOverlayViewModel? SelectedModel => _selected?.Model;
 
+        internal void Initialize(DigAgentRenderer agents)
+        {
+            DigOverlayManager overlays = GetComponent<DigOverlayManager>()
+                ?? gameObject.AddComponent<DigOverlayManager>();
+            Initialize(agents, overlays);
+        }
+
         internal void Initialize(
             DigAgentRenderer agents,
             DigOverlayManager overlays)
@@ -146,8 +153,8 @@ namespace Dig.Unity
         {
             if (_overlays == null)
             {
-                throw new InvalidOperationException(
-                    "Job renderer requires DigOverlayManager.");
+                _overlays = GetComponent<DigOverlayManager>()
+                    ?? gameObject.AddComponent<DigOverlayManager>();
             }
 
             if (_visualRoot != null)
