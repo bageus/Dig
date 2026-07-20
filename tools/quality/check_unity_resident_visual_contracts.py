@@ -78,9 +78,12 @@ def main() -> int:
         "agentVisual.SetSelected(_selectedIds.Contains(model.Id))",
         "Resources.Load<DigResidentVisualCatalog>",
         "enableInstancing = true",
+        "catch (Exception exception)",
+        "CreatePrimitiveResidentAgent(model)",
+        "GameObject.CreatePrimitive(PrimitiveType.Capsule)",
+        "InitializeSimple(model, _normalMaterial!, _selectedMaterial!)",
     )))
     errors.extend(reject(renderer_path, renderer, (
-        "GameObject.CreatePrimitive(PrimitiveType.Capsule)",
         "FindObjectOfType<", "FindObjectsOfType<",
     )))
 
@@ -110,6 +113,7 @@ def main() -> int:
         "PlayRoute(", "Quaternion.LookRotation(Vector3.back, Vector3.up)",
         "ResolveSocket(DigResidentSocketKind kind)",
         "_rig?.SetSelected(selected)", "PresentAction(",
+        "internal void InitializeSimple(",
     )))
     errors.extend(reject(visual_path, visual, (
         "Animator.Set", "ApplyRootMotion", "ICommand", "Handle(",
@@ -136,7 +140,7 @@ def main() -> int:
             print(f"- {error}", file=sys.stderr)
         return 1
 
-    print("PASS: resident profiles, composite rig, sockets and action projection")
+    print("PASS: composite resident rig remains primary with a bounded primitive fallback")
     return 0
 
 
