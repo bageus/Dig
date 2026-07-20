@@ -38,7 +38,7 @@ def check_gameplay_hud_and_work_contracts(
     errors = require_fragments(
         hud_path,
         texts.get(hud_path, ""),
-        "upper-right icon roster tabs and crisp canvas",
+        "upper-right icon roster tabs, top notifications and crisp canvas",
         (
             "Jobs = 2",
             '"●"',
@@ -50,6 +50,8 @@ def check_gameplay_hud_and_work_contracts(
             "new Vector2(1280f, 720f)",
             "scaler.matchWidthOrHeight = 0f;",
             "-620f, 14f, 620f, 112f",
+            "Anchor(statusPanel, 0f, 1f, 1f, 1f, 20f, -44f, -376f, -8f);",
+            "statusPanel.GetComponent<Image>().raycastTarget = false;",
         ),
     )
     errors.extend(require_fragments(
@@ -69,25 +71,35 @@ def check_gameplay_hud_and_work_contracts(
     errors.extend(require_fragments(
         inventory_path,
         texts.get(inventory_path, ""),
-        "active-only two-row resident inventory",
+        "compact active-only two-row resident inventory",
         (
             "InventoryColumns = 3",
+            "InventoryCellWidth = 62f",
+            "InventoryCellHeight = 52f",
+            "InventoryCellSpacing = 4f",
+            'MainCompartmentTitle = ""',
+            "BeginBottomLayout(hasExpansion ? 184f : 150f)",
+            "ConfigureInventoryRootLayout",
+            "layout.childAlignment = TextAnchor.MiddleLeft",
+            "sectionElement.flexibleWidth = 0f",
             "GridLayoutGroup",
             "FixedColumnCount",
             "constraintCount = InventoryColumns",
             "BuildCompartmentIfActive",
             "inventory.GetCompartment(compartment).Count > 0",
-            '"MAIN · 6"',
         ),
     ))
     errors.extend(reject_fragments(
         inventory_path,
         texts.get(inventory_path, ""),
-        "inactive expansion placeholders and one-row inventory",
+        "inactive placeholders, Main heading and oversized inventory",
         (
+            '"MAIN · 6"',
             '"CARGO · NO EXPANSION"',
             'CreateHorizontalRow("Slots"',
             '"Unavailable"',
+            "InventoryCellWidth = 82f",
+            "InventoryCellHeight = 76f",
         ),
     ))
     errors.extend(require_fragments(
