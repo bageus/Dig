@@ -108,8 +108,8 @@ namespace Dig.Unity
                 return;
             }
 
-            Ray ray = _camera!.ScreenPointToRay(Input.mousePosition);
-            if (!Physics.Raycast(ray, out RaycastHit hit, 500f))
+            RaycastHit[] hits = GetPointerHits();
+            if (hits.Length == 0)
             {
                 ApplyDecision(_inputRouter.Route(
                     Pointer(button),
@@ -118,13 +118,8 @@ namespace Dig.Unity
                 return;
             }
 
-            if (TryAssignSelectedResidentToExcavation(hit, left)
-                || TryApplyTunnelMove(hit, left))
-            {
-                return;
-            }
-
-            if (_agentRenderer!.TryGetAgent(hit, out DigAgentVisual agent))
+            RaycastHit hit = hits[0];
+            if (TryResolveAgentHit(hits, out DigAgentVisual agent))
             {
                 if (left && IsAdditiveResidentSelectionPressed())
                 {
@@ -146,18 +141,20 @@ namespace Dig.Unity
                 return;
             }
 
+            if (TryApplyTunnelMove(hit, left))
+            {
+                return;
+            }
+
             if (_jobRenderer!.TryGetJob(hit, out DigJobVisual job))
             {
-                if (left && !_buildingPlacementMode.HasValue)
+                if (left
+                    && _agentRenderer.SelectedCount == 0
+                    && !_buildingPlacementMode.HasValue)
                 {
                     SelectJob(job);
-                    return;
                 }
 
-                ApplyDecision(_inputRouter.Route(
-                    Pointer(button),
-                    BuildState(button),
-                    new ContextPointerTarget(ContextWorldTargetKind.None)));
                 return;
             }
 

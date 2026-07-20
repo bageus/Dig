@@ -55,6 +55,7 @@ namespace Dig.Unity
         private DigSelectedResidentTarget ResolveSelectedResidentTarget()
         {
             RaycastHit[] hits = GetPointerHits();
+            CellId? excavationCandidate = null;
             for (int index = 0; index < hits.Length; index++)
             {
                 RaycastHit hit = hits[index];
@@ -65,12 +66,6 @@ namespace Dig.Unity
                     return default;
                 }
 
-                CellId? excavation = ResolveExcavationTarget(hit);
-                if (excavation.HasValue)
-                {
-                    return DigSelectedResidentTarget.Excavation(excavation.Value);
-                }
-
                 if (TryResolveTunnelDestination(
                     hit,
                     out SpatialCellId destination,
@@ -78,9 +73,16 @@ namespace Dig.Unity
                 {
                     return DigSelectedResidentTarget.Movement(destination, visual);
                 }
+
+                if (!excavationCandidate.HasValue)
+                {
+                    excavationCandidate = ResolveExcavationTarget(hit);
+                }
             }
 
-            return default;
+            return excavationCandidate.HasValue
+                ? DigSelectedResidentTarget.Excavation(excavationCandidate.Value)
+                : default;
         }
     }
 }

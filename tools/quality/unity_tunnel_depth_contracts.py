@@ -39,21 +39,27 @@ def check_tunnel_depth_contracts(
             "if (_excavationMode == DigExcavationDrawingMode.Depth)",
         ),
     ))
+    depth_text = texts.get(depth_input, "")
     errors.extend(require_fragments(
         depth_input,
-        texts.get(depth_input, ""),
+        depth_text,
         "one-layer tunnel depth interaction",
         (
             "Input.GetMouseButtonDown(0)",
             "ResolveTunnelDepthSource",
             "TryGetWalkSurface",
             "TryGetCell",
-            "tunnelCell.CanExcavateDepth",
+            "!tunnelCell.IsVerticalTunnel",
+            "tunnelCell.Cell.Z > selected.Value.Z",
             "ExcavateTunnelDepth",
             "RefreshCompletedCaveRooms(force: true)",
             "The new deepest tunnel cell is selected for the next step",
         ),
     ))
+    if "tunnelCell.CanExcavateDepth" in depth_text:
+        errors.append(
+            f"{depth_input}: depth source resolution must use authoritative policy validation"
+        )
     errors.extend(require_fragments(
         session,
         texts.get(session, ""),

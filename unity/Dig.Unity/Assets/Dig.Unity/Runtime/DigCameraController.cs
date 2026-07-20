@@ -16,6 +16,9 @@ namespace Dig.Unity
         private float zoomSpeed = 3f;
 
         [SerializeField]
+        private float focusZoomStep = 4f;
+
+        [SerializeField]
         private float minimumDistance = 6f;
 
         [SerializeField]
@@ -84,6 +87,10 @@ namespace Dig.Unity
         internal void Focus(Vector3 worldPosition)
         {
             _focus = new Vector3(worldPosition.x, worldPosition.y, 0f);
+            _distance = Mathf.Clamp(
+                _distance - focusZoomStep,
+                minimumDistance,
+                maximumDistance);
             ApplyPose();
         }
 
@@ -222,6 +229,7 @@ namespace Dig.Unity
         {
             panSpeed = Mathf.Max(0.1f, panSpeed);
             zoomSpeed = Mathf.Max(0.1f, zoomSpeed);
+            focusZoomStep = Mathf.Max(0f, focusZoomStep);
             minimumDistance = Mathf.Max(1f, minimumDistance);
             maximumDistance = Mathf.Max(minimumDistance + 1f, maximumDistance);
             verticalFieldOfView = Mathf.Clamp(verticalFieldOfView, 20f, 80f);

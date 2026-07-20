@@ -14,6 +14,14 @@ def check_navigation_and_marquee_contracts(
     require_fragments: RequireFragments,
 ) -> list[str]:
     interaction = runtime_root / "DigWorldInteraction.cs"
+    pointer_hits = runtime_root / "DigWorldInteraction.PointerHits.cs"
+    targets = runtime_root / "DigWorldInteraction.SelectedResidentTargets.cs"
+    movement_input = runtime_root / "DigWorldInteraction.TunnelMovement.cs"
+    depth_input = runtime_root / "DigWorldInteraction.TunnelDepthExcavation.cs"
+    tunnel_renderer = runtime_root / "DigTunnelDemoRenderer.cs"
+    room_floor = runtime_root / "DigCaveRoomFloorRenderer.cs"
+    canvas_hud = runtime_root / "DigWorldInteraction.CanvasHud.cs"
+    camera = runtime_root / "DigCameraController.cs"
     marquee = runtime_root / "DigWorldInteraction.MarqueeSelection.cs"
     marquee_renderer = runtime_root / "DigSelectionMarqueeRenderer.cs"
     excavation = runtime_root / "DigWorldInteraction.Excavation.cs"
@@ -21,160 +29,182 @@ def check_navigation_and_marquee_contracts(
     agent_session = runtime_root / "DigAgentSession.TunnelMovement.cs"
     navigation_sync = runtime_root / "DigAgentSimulationDriverBase.NavigationSync.cs"
     movement = runtime_root / "DigAgentSimulationDriverBase.TunnelMovement.cs"
-    movement_input = runtime_root / "DigWorldInteraction.TunnelMovement.cs"
-    room_floor = runtime_root / "DigCaveRoomFloorRenderer.cs"
-    agent_renderer = runtime_root / "DigAgentRenderer.cs"
     direct_control = runtime_root / "DigTerrainWorkDirectMovement.cs"
     designations = runtime_root / "DigTerrainWorkDesignations.cs"
     manual_excavation = runtime_root / "DigTerrainWorkManualExcavation.cs"
+
     errors: list[str] = []
     errors.extend(require_fragments(
         interaction,
         texts.get(interaction, ""),
-        "marquee input wiring",
+        "resident-first direct movement input",
         (
-            "InitializeResidentMarquee();",
-            "TryHandleResidentMarqueeSelection()",
-            "CancelResidentMarquee();",
+            "RaycastHit[] hits = GetPointerHits();",
+            "TryResolveAgentHit(hits",
+            "TryApplyTunnelMove(hit, left)",
+            "_agentRenderer.SelectedCount == 0",
         ),
     ))
+    if "TryAssignSelectedResidentToExcavation(hit, left)" in texts.get(interaction, ""):
+        errors.append(f"{interaction}: selected-resident LMB must not assign excavation")
+
     errors.extend(require_fragments(
-        marquee,
-        texts.get(marquee, ""),
-        "resident marquee selection",
+        pointer_hits,
+        texts.get(pointer_hits, ""),
+        "reliable resident pointer resolution",
         (
-            "MarqueeThresholdPixels",
-            "GetComponentsInChildren<DigAgentVisual>",
+            "Physics.RaycastAll",
+            "GetComponentInParent<DigAgentVisual>()",
+            "TryResolveAgentNearPointer",
+            "ResidentScreenPickRadius",
             "WorldToScreenPoint",
-            "CreateScreenRect",
-            "IsMarqueeBlockingTarget",
-            "SelectResidentsInsideMarquee",
-            "TryApplyTunnelMove(_marqueeStartHit, leftButton: true)",
         ),
     ))
     errors.extend(require_fragments(
-        marquee_renderer,
-        texts.get(marquee_renderer, ""),
-        "marquee rectangle rendering",
+        targets,
+        texts.get(targets, ""),
+        "movement before excavation markers",
         (
-            "private void OnGUI()",
-            "GUI.DrawTexture",
-            "Texture2D.whiteTexture",
-            "Screen.height",
+            "CellId? excavationCandidate",
+            "TryResolveTunnelDestination(",
+            "return DigSelectedResidentTarget.Movement",
+            "DigSelectedResidentTarget.Excavation(excavationCandidate.Value)",
         ),
     ))
-    errors.extend(require_fragments(
-        excavation,
-        texts.get(excavation, ""),
-        "vertical tunnel planning",
-        (
-            "ExcavationStrokeAxis.Vertical",
-            "SetTunnelPlan(",
-            "vertical: true",
-            "_excavationAnchor.Value",
-        ),
-    ))
-    errors.extend(require_fragments(
-        world_session,
-        texts.get(world_session, ""),
-        "vertical tunnel plan ownership",
-        (
-            "_plannedVerticalTunnelCells",
-            "PlannedVerticalTunnelCells",
-            "SetVerticalTunnelPlan",
-        ),
-    ))
-    errors.extend(require_fragments(
-        agent_session,
-        texts.get(agent_session, ""),
-        "front navigation synchronization",
-        (
-            "SynchronizeFrontNavigation",
-            "WithSynchronizedFrontLayer",
-            "CreateTunnelMovementHandlers();",
-        ),
-    ))
-    errors.extend(require_fragments(
-        navigation_sync,
-        texts.get(navigation_sync, ""),
-        "authoritative world navigation refresh",
-        (
-            "SynchronizeExcavatedTunnelNavigation",
-            "WorldSession.LoadSnapshot()",
-            "WorldSession.PlannedVerticalTunnelCells",
-        ),
-    ))
-    errors.extend(require_fragments(
-        movement,
-        texts.get(movement, ""),
-        "fresh single and group navigation with work interruption",
-        (
-            "SynchronizeExcavatedTunnelNavigation();",
-            "MoveResidentThroughTunnel",
-            "MoveResidentsThroughTunnel",
-            "residentIds.Count == 1",
-            "TerrainSession.InterruptForDirectMovement",
-        ),
-    ))
+    target_text = texts.get(targets, "")
+    if target_text.find("return DigSelectedResidentTarget.Movement") >= target_text.find(
+        "DigSelectedResidentTarget.Excavation(excavationCandidate.Value)"
+    ):
+        errors.append(f"{targets}: movement must win over excavation markers")
+
+    movement_text = texts.get(movement_input, "")
     errors.extend(require_fragments(
         movement_input,
-        texts.get(movement_input, ""),
-        "explicit tunnel destination renderers",
+        movement_text,
+        "dedicated walkable destination proxies",
         (
             "_tunnelRenderer.TryGetCell",
             "_caveRoomFloorRenderer.TryGetCell",
+            "MoveResidentsThroughTunnel",
+        ),
+    ))
+    if "TryGetWalkSurface" in movement_text:
+        errors.append(f"{movement_input}: general terrain picking must remain disabled")
+
+    errors.extend(require_fragments(
+        tunnel_renderer,
+        texts.get(tunnel_renderer, ""),
+        "full-volume tunnel and natural cave targets",
+        (
+            "ConfigureInteractionCollider(target, cell, vertical, layout)",
+            "IsNaturalCaveFloor",
+            "SetWorldColliderBounds",
+            "CaveCeilingY + 1",
         ),
     ))
     errors.extend(require_fragments(
         room_floor,
         texts.get(room_floor, ""),
-        "completed room destination lookup",
+        "full-volume completed-room targets",
         (
-            "internal bool TryGetCell",
-            "GetComponent<DigTunnelCellVisual>()",
-            "_cells.Contains(cell.Cell)",
+            "for (int z = 0; z < plan.Preset.Depth; z++)",
+            "Cave room hit target",
+            "ConfigureInteractionCollider(floor, plan, cell)",
+            "floor.GetComponent<Renderer>().enabled = z > 0",
+        ),
+    ))
+
+    depth_text = texts.get(depth_input, "")
+    errors.extend(require_fragments(
+        depth_input,
+        depth_text,
+        "authoritative tunnel depth input",
+        (
+            "ResolveTunnelDepthSource",
+            "!tunnelCell.IsVerticalTunnel",
+            "tunnelCell.Cell.Z > selected.Value.Z",
+            "ExcavateTunnelDepth(source.Value",
+        ),
+    ))
+    if "tunnelCell.CanExcavateDepth" in depth_text:
+        errors.append(f"{depth_input}: stale depth presentation flag remains")
+
+    errors.extend(require_fragments(
+        canvas_hud,
+        texts.get(canvas_hud, ""),
+        "roster double-click focus",
+        (
+            "RegisterRosterResidentClick",
+            "clickCount: RegisterRosterResidentClick(residentId)",
+            "return doubleClick ? 2 : 1",
         ),
     ))
     errors.extend(require_fragments(
-        agent_renderer,
-        texts.get(agent_renderer, ""),
-        "selection material persistence",
-        (
-            "visual.SetSelected(_selectedIds.Contains(model.Id))",
-            "agentVisual.SetSelected(_selectedIds.Contains(model.Id))",
-        ),
+        camera,
+        texts.get(camera, ""),
+        "bounded resident focus zoom",
+        ("focusZoomStep", "_distance - focusZoomStep", "Mathf.Clamp("),
+    ))
+
+    errors.extend(require_fragments(
+        marquee,
+        texts.get(marquee, ""),
+        "resident marquee selection",
+        ("MarqueeThresholdPixels", "SelectResidentsInsideMarquee", "TryApplyTunnelMove"),
+    ))
+    errors.extend(require_fragments(
+        marquee_renderer,
+        texts.get(marquee_renderer, ""),
+        "marquee rendering",
+        ("private void OnGUI()", "GUI.DrawTexture", "Screen.height"),
+    ))
+    errors.extend(require_fragments(
+        excavation,
+        texts.get(excavation, ""),
+        "vertical tunnel planning",
+        ("ExcavationStrokeAxis.Vertical", "vertical: true"),
+    ))
+    errors.extend(require_fragments(
+        world_session,
+        texts.get(world_session, ""),
+        "vertical tunnel ownership",
+        ("_plannedVerticalTunnelCells", "SetVerticalTunnelPlan"),
+    ))
+    errors.extend(require_fragments(
+        agent_session,
+        texts.get(agent_session, ""),
+        "front navigation synchronization",
+        ("SynchronizeFrontNavigation", "WithSynchronizedFrontLayer"),
+    ))
+    errors.extend(require_fragments(
+        navigation_sync,
+        texts.get(navigation_sync, ""),
+        "authoritative navigation refresh",
+        ("SynchronizeExcavatedTunnelNavigation", "WorldSession.LoadSnapshot()"),
+    ))
+    errors.extend(require_fragments(
+        movement,
+        texts.get(movement, ""),
+        "validated direct movement",
+        ("ValidateResidentThroughTunnel", "TerrainSession.InterruptForDirectMovement"),
     ))
     errors.extend(require_fragments(
         direct_control,
         texts.get(direct_control, ""),
-        "direct movement job ownership",
-        (
-            "InterruptForDirectMovement",
-            "ReleaseJobAssignmentCommand",
-            "_routePlans.Remove",
-            "_directMovementAgents.Add",
-            "ClearManualGroupForAgent",
-            "IsAvailableForAutomaticWork",
-        ),
+        "direct movement ownership",
+        ("InterruptForDirectMovement", "IsAvailableForAutomaticWork"),
     ))
     errors.extend(require_fragments(
         designations,
         texts.get(designations, ""),
-        "directly controlled candidate suppression",
-        (
-            "IsAvailableForAutomaticWork(agent)",
-            "CreateDynamicCandidates",
-        ),
+        "automatic work suppression",
+        ("IsAvailableForAutomaticWork(agent)",),
     ))
     errors.extend(require_fragments(
         manual_excavation,
         texts.get(manual_excavation, ""),
-        "explicit return to work ownership",
+        "explicit return to work",
         ("ReleaseDirectMovementControl(residentId);",),
     ))
-    errors.extend(check_runtime_regression_contracts(
-        runtime_root,
-        texts,
-        require_fragments,
-    ))
+    errors.extend(check_runtime_regression_contracts(runtime_root, texts, require_fragments))
     return errors
