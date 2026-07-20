@@ -177,7 +177,7 @@ namespace Dig.Unity
                 selectedBuildingId);
             if (movementWarning != null)
             {
-                Hud.SetStatus($"Movement order cancelled: {movementWarning}");
+                Hud.SetStatus($"Manual movement cancelled: {movementWarning}");
             }
         }
     }
