@@ -170,6 +170,16 @@ namespace Dig.Unity
                     continue;
                 }
 
+                if (TryAdvanceSpatialWorkMovement(agent, out Result spatialMovement))
+                {
+                    if (spatialMovement.IsFailure)
+                    {
+                        return spatialMovement;
+                    }
+
+                    continue;
+                }
+
                 CellId destination;
                 if (!movementTargets.TryGetValue(agent.Id.ToString(), out destination))
                 {

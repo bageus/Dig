@@ -111,7 +111,17 @@ public readonly struct ReservationKey : IEquatable<ReservationKey>, IComparable<
         return new ReservationKey(ReservationKind.Position, cellId.ToString());
     }
 
+    public static ReservationKey ForPosition(SpatialCellId cellId)
+    {
+        return new ReservationKey(ReservationKind.Position, cellId.ToString());
+    }
+
     public static ReservationKey ForDesignation(CellId cellId)
+    {
+        return new ReservationKey(ReservationKind.Designation, cellId.ToString());
+    }
+
+    public static ReservationKey ForDesignation(SpatialCellId cellId)
     {
         return new ReservationKey(ReservationKind.Designation, cellId.ToString());
     }

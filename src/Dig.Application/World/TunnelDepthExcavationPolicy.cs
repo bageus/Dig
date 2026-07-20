@@ -56,7 +56,7 @@ public sealed class TunnelDepthExcavationPlanResult
         return new TunnelDepthExcavationPlanResult(
             plan ?? throw new ArgumentNullException(nameof(plan)),
             TunnelDepthExcavationFailureReason.None,
-            "The next tunnel depth cell can be excavated.");
+            "The next tunnel depth cell can be designated for excavation.");
     }
 
     internal static TunnelDepthExcavationPlanResult Failure(
@@ -94,14 +94,7 @@ public sealed class TunnelDepthExcavationPolicy
         {
             return TunnelDepthExcavationPlanResult.Failure(
                 TunnelDepthExcavationFailureReason.SourceNotOpen,
-                "Depth excavation must start from an already open tunnel cell.");
-        }
-
-        if (volume.IsVerticalTunnel(source))
-        {
-            return TunnelDepthExcavationPlanResult.Failure(
-                TunnelDepthExcavationFailureReason.SourceNotHorizontalTunnel,
-                "Depth excavation is available only from a horizontal tunnel cell.");
+                "Depth excavation must start from an already open tunnel or room cell.");
         }
 
         if (source.Z + 1 >= volume.Depth)

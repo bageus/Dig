@@ -119,7 +119,7 @@ namespace Dig.Unity
         {
             agent = hit.collider == null
                 ? null!
-                : hit.collider.GetComponent<DigAgentVisual>();
+                : hit.collider.GetComponentInParent<DigAgentVisual>();
             return agent != null;
         }
 
