@@ -169,6 +169,15 @@ public sealed partial class DigPooledVfxPlayer : MonoBehaviour
         return instance;
     }
 
+    private DigVfxProfile? ResolveProfile(string effectId)
+    {
+        return null;
+    }
+
+    private void EnsureResources()
+    {
+    }
+
     private int CountActive(string effectId)
     {
         int count = 0;
