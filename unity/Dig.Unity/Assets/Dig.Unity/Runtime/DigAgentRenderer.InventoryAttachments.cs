@@ -86,7 +86,7 @@ public sealed partial class DigAgentRenderer
         }
 
         visual.gameObject.SetActive(true);
-        visual.Configure(model, _equipmentMaterial!);
+        visual.Configure(model, ResolveItemVisual(model.ItemId));
     }
 
     private void RemoveDestroyedAttachmentEntries()
@@ -108,5 +108,4 @@ public sealed partial class DigAgentRenderer
         return residentId + ":" + group;
     }
 }
-
 }
