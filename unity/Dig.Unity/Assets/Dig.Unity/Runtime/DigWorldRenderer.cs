@@ -110,7 +110,7 @@ namespace Dig.Unity
             {
                 for (int x = layout.CaveMinX; x <= layout.CaveMaxX; x++)
                 {
-                    for (int y = layout.CaveCeilingY; y <= layout.CaveFloorY; y++)
+                    for (int y = layout.CaveCeilingY + 1; y <= layout.CaveFloorY; y++)
                     {
                         _tunnelCutaway.Add(new Vector2Int(x, y));
                     }
