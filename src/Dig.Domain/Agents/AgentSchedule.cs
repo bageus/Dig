@@ -62,23 +62,13 @@ public sealed class DailySchedule
             throw new ArgumentOutOfRangeException(nameof(ticksPerDay));
         }
 
-        if (segments is null)
-        {
-            throw new ArgumentNullException(nameof(segments));
-        }
-
-        ScheduleSegment[] ordered = segments
-            .OrderBy(segment => segment.StartTickInclusive)
-            .ToArray();
-        ValidateCoverage(ticksPerDay, ordered);
-
         TicksPerDay = ticksPerDay;
-        Segments = new ReadOnlyCollection<ScheduleSegment>(ordered);
+        Segments = NormalizeSegments(ticksPerDay, segments);
     }
 
     public int TicksPerDay { get; }
 
-    public IReadOnlyList<ScheduleSegment> Segments { get; }
+    public IReadOnlyList<ScheduleSegment> Segments { get; private set; }
 
     public ScheduleActivity GetActivity(long tick)
     {
@@ -123,6 +113,17 @@ public sealed class DailySchedule
         startTickInclusive = 0;
         endTickExclusive = 0;
         return false;
+    }
+
+    internal void SetWorkRestWindow(
+        int workStartTickInclusive,
+        int workEndTickExclusive)
+    {
+        DailySchedule replacement = CreateWorkRest(
+            TicksPerDay,
+            workStartTickInclusive,
+            workEndTickExclusive);
+        Segments = replacement.Segments;
     }
 
     public static DailySchedule CreateWorkRest(
@@ -196,6 +197,22 @@ public sealed class DailySchedule
                 new ScheduleSegment(workEnd, restEnd, ScheduleActivity.Rest),
                 new ScheduleSegment(restEnd, ticksPerDay, ScheduleActivity.Sleep),
             });
+    }
+
+    private static IReadOnlyList<ScheduleSegment> NormalizeSegments(
+        int ticksPerDay,
+        IEnumerable<ScheduleSegment> segments)
+    {
+        if (segments is null)
+        {
+            throw new ArgumentNullException(nameof(segments));
+        }
+
+        ScheduleSegment[] ordered = segments
+            .OrderBy(segment => segment.StartTickInclusive)
+            .ToArray();
+        ValidateCoverage(ticksPerDay, ordered);
+        return new ReadOnlyCollection<ScheduleSegment>(ordered);
     }
 
     private static void AddSegment(
