@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
@@ -32,10 +31,6 @@ public sealed partial class DigAgentVisual : MonoBehaviour
     private int _currentZ;
     private float _elapsed;
     private float _duration;
-    private IReadOnlyList<SpatialCellId>? _route;
-    private int _routeIndex;
-    private float _routeElapsed;
-    private float _routeStepDuration;
 
     public AgentViewModel Model { get; private set; } = null!;
 
