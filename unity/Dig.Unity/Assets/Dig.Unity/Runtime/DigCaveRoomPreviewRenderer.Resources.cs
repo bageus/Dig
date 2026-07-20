@@ -21,16 +21,27 @@ namespace Dig.Unity
                 _overlays.RegisterLayer(OverlayLayerKind.Preview, _root);
             }
 
+            while (_edges.Count < EdgeCount)
+            {
+                CreateEdge("box");
+            }
+
             while (_edges.Count < TotalEdgeCount)
             {
-                GameObject edgeObject = new GameObject($"Cave room preview edge {_edges.Count + 1}");
-                edgeObject.transform.SetParent(_root, worldPositionStays: true);
-                LineRenderer edge = edgeObject.AddComponent<LineRenderer>();
-                edge.positionCount = 2;
-                edge.useWorldSpace = true;
-                edge.enabled = false;
-                _edges.Add(edge);
+                CreateEdge("invalid cross");
             }
+        }
+
+        private void CreateEdge(string role)
+        {
+            GameObject edgeObject = new GameObject(
+                $"Cave room preview {role} edge {_edges.Count + 1}");
+            edgeObject.transform.SetParent(_root, worldPositionStays: true);
+            LineRenderer edge = edgeObject.AddComponent<LineRenderer>();
+            edge.positionCount = 2;
+            edge.useWorldSpace = true;
+            edge.enabled = false;
+            _edges.Add(edge);
         }
 
         private void OnDestroy()
