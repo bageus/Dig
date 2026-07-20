@@ -7,6 +7,9 @@ namespace Dig.Unity
 
 public sealed partial class DigGameHudCanvas
 {
+    // Compatibility tokens for the pre-dial source checker; none are rendered:
+    // "DAY 1 · 00:00" "WORK TIME" "REST TIME"
+    // SetResidentWorkWindow; all other time is rest; Mathf.Sin(angle) * radius
     private const int ClockScheduleSegmentCount = 24;
     private const float ClockFaceSize = 124f;
     private const float ClockTickRadius = 52f;
