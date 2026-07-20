@@ -37,7 +37,6 @@ namespace Dig.Unity
             HashSet<EntityId> selectedAgents = new HashSet<EntityId>(agents);
             for (int index = 0; index < agents.Length; index++)
             {
-                ReleaseDirectMovementControl(agents[index].ToString());
                 ClearManualGroupForAgent(agents[index]);
             }
 
