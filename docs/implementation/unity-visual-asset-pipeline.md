@@ -77,7 +77,11 @@ It projects four visual states: `Hidden`, `Revealed`, `Damaged` and `Depleted`. 
 
 Visible cells receive a six-direction connection mask only for adjacent visible cells with the same stable deposit id. The cells remain independent read models; the mask never creates a shared vein aggregate or changes depletion ownership.
 
-`DigTerrainRenderSnapshotBuilder` copies only revealed or damaged deposits into the Unity snapshot, and only when the host terrain cell is still solid. A deposit never creates terrain geometry. Reveal, damage, connection or removal changes invalidate the local terrain chunk; hidden deposit type/version changes do not alter the visual snapshot version.
+`TerrainDepositDecorationPresenter` consumes that hidden-safe snapshot and publishes only visible decorations. The same cell and deposit id always produce the same four-way variant, quarter-turn rotation and bounded two-axis offset. Damage changes the scale band without changing the stable variant or rotation. Hidden and depleted cells produce no decoration entry.
+
+Each exposed host-rock face keeps its normal terrain material. The chunk mesh adds a separate low-poly deposit overlay consisting of one faceted cluster and at most two connector strips selected from the same-id connection mask. Internal faces between solid cells receive no overlay. There is no deposit prefab, collider or per-cell GameObject.
+
+`DigTerrainRenderSnapshotBuilder` copies only decoration entries whose host terrain cell is still solid. Reveal, damage, connection, layout or removal changes invalidate the local terrain chunk. The chunk signature includes variant, rotation, scale and offset bands, so a changed layout cannot reuse stale geometry.
 
 `DigTerrainVisualCatalog` requires five deposit profile families: Iron, Gold, Crystal, Coal and Stone. Each profile has `Revealed` and `Damaged` materials. There are deliberately no hidden or depleted materials.
 
@@ -93,7 +97,7 @@ Dirty chunks are derived from:
 
 - new, removed or version-changed front chunks;
 - new, removed or version-changed deep chunks;
-- revealed, damaged, reconnected or removed visible deposits;
+- revealed, damaged, reconnected, relaid-out or removed visible deposits;
 - changed cutaway cells;
 - changed protected cells;
 - a changed chunk size or depth.
@@ -175,13 +179,13 @@ Fallbacks are presentation-only. They must never change gameplay state or infer 
 
 The unified mesh snapshot covers the current visual `Z=0..3` volume, but only front cells have the full authoritative World state. Deep cells currently carry one explicit rock material/hardness pair and an open/solid projection from tunnel topology and excavation completion.
 
-Terrain and deposit authoring contracts are present, but production materials, deposit instances from #91, UV conventions, deterministic decoration meshes and template cave trim remain later #206 slices.
+Terrain and deposit authoring plus deterministic decoration geometry are present, but production materials, authoritative deposit instances from #91, UV conventions and template cave trim remain later #206 slices.
 
 ## Next steps
 
 - #91: publish authoritative generated deposit instances, reveal and depletion snapshots;
 - #88: migrate deep terrain materials, damage, Jobs, reservations and persistence to authoritative spatial ownership;
-- #206: connect production materials, deterministic decorations and template-cave assets;
+- #206: connect production materials and template-cave arches, entrances, side walls and back-wall trim;
 - #207–#210: typed prefab integrations for buildings, items, residents and creatures;
 - #211: unified overlay styles;
 - #212: URP, lighting and pooled VFX.
