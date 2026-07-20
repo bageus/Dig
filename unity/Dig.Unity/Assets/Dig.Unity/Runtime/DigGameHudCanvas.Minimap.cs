@@ -72,7 +72,10 @@ public sealed partial class DigGameHudCanvas
 
     private void InitializeMinimapCamera()
     {
-        if (_mainCamera == null || _world == null || _minimapImage == null)
+        if (_minimapCamera != null
+            || _mainCamera == null
+            || _world == null
+            || _minimapImage == null)
         {
             return;
         }

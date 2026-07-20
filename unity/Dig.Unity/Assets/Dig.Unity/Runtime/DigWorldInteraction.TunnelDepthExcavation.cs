@@ -1,4 +1,4 @@
-using Dig.Application.World;
+using Dig.Domain.Core;
 using Dig.Domain.World;
 using UnityEngine;
 
@@ -29,23 +29,24 @@ namespace Dig.Unity
             if (!source.HasValue)
             {
                 _hud.SetStatus(
-                    "Depth excavation requires an open horizontal tunnel cell under the cursor.");
+                    "Depth excavation requires an open tunnel or room cell under the cursor.");
                 return true;
             }
 
-            TunnelDepthExcavationPlanResult result =
-                _simulation!.ExcavateTunnelDepth(source.Value, _tunnelRenderer!);
-            if (!result.Succeeded)
+            Result result = _simulation!.DesignateTunnelDepth(source.Value);
+            if (result.IsFailure)
             {
-                _hud.SetStatus(result.Detail);
+                _hud.SetCommandResult(result);
                 return true;
             }
 
-            RefreshCompletedCaveRooms(force: true);
-            SpatialCellId target = result.Plan!.Target;
+            SpatialCellId target = new SpatialCellId(
+                source.Value.X,
+                source.Value.Y,
+                source.Value.Z + 1);
             _hud.SetStatus(
-                $"Tunnel depth excavated at X={target.X}, Y={target.Y}, Z={target.Z}. " +
-                "The new deepest tunnel cell is selected for the next step.");
+                $"Depth excavation designated at X={target.X}, Y={target.Y}, Z={target.Z}. "
+                + "A worker must reach the open face and finish the Dig job.");
             return true;
         }
 
@@ -57,10 +58,19 @@ namespace Dig.Unity
             {
                 RaycastHit hit = hits[index];
                 if (_tunnelRenderer!.TryGetCell(hit, out DigTunnelCellVisual tunnelCell)
-                    && !tunnelCell.IsVerticalTunnel
                     && (!selected.HasValue || tunnelCell.Cell.Z > selected.Value.Z))
                 {
                     selected = tunnelCell.Cell;
+                    continue;
+                }
+
+                if (_caveRoomFloorRenderer != null
+                    && _caveRoomFloorRenderer.TryGetCell(
+                        hit,
+                        out DigTunnelCellVisual roomCell)
+                    && (!selected.HasValue || roomCell.Cell.Z > selected.Value.Z))
+                {
+                    selected = roomCell.Cell;
                     continue;
                 }
 

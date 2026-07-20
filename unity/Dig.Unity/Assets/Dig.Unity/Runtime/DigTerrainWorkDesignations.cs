@@ -87,6 +87,11 @@ namespace Dig.Unity
             }
 
             _assignmentHandler.Handle(new AssignAvailableJobsCommand(tick));
+            Result pending = RetryPendingManualExcavations(tick);
+            if (pending.IsFailure)
+            {
+                throw new InvalidOperationException(pending.Error!.ToString());
+            }
         }
 
         private static bool IsExcavationFrontier(

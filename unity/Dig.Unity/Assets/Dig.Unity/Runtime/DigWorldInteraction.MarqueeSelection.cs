@@ -39,12 +39,14 @@ namespace Dig.Unity
                     return false;
                 }
 
-                Ray ray = _camera!.ScreenPointToRay(Input.mousePosition);
-                _marqueeHasStartHit = Physics.Raycast(
-                    ray,
-                    out _marqueeStartHit,
-                    500f);
-                if (_marqueeHasStartHit && IsMarqueeBlockingTarget(_marqueeStartHit))
+                RaycastHit[] hits = GetPointerHits();
+                _marqueeHasStartHit = hits.Length > 0;
+                if (_marqueeHasStartHit)
+                {
+                    _marqueeStartHit = hits[0];
+                }
+
+                if (IsMarqueeBlockingTarget(hits))
                 {
                     _marqueeHasStartHit = false;
                     return false;
@@ -123,12 +125,25 @@ namespace Dig.Unity
             _hud!.SetStatus("Drag LMB to select multiple dwarfs.");
         }
 
-        private bool IsMarqueeBlockingTarget(RaycastHit hit)
+        private bool IsMarqueeBlockingTarget(RaycastHit[] hits)
         {
-            return _agentRenderer!.TryGetAgent(hit, out _)
-                || _jobRenderer!.TryGetJob(hit, out _)
-                || _buildingRenderer!.TryGetBuilding(hit, out _)
-                || _itemRenderer!.TryGetItem(hit, out _);
+            if (TryResolveAgentHit(hits, out _))
+            {
+                return true;
+            }
+
+            for (int index = 0; index < hits.Length; index++)
+            {
+                RaycastHit hit = hits[index];
+                if (_jobRenderer!.TryGetJob(hit, out _)
+                    || _buildingRenderer!.TryGetBuilding(hit, out _)
+                    || _itemRenderer!.TryGetItem(hit, out _))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private bool CanUseResidentMarquee()
@@ -183,8 +198,8 @@ namespace Dig.Unity
                 _agentRenderer.SelectedCount);
             _hud.SetStatus(_agentRenderer.SelectedCount == 0
                 ? "No dwarfs were inside the selection rectangle."
-                : $"{_agentRenderer.SelectedCount} dwarf(s) selected. " +
-                    "LMB on a destination moves the group.");
+                : $"{_agentRenderer.SelectedCount} dwarf(s) selected. "
+                    + "LMB on a destination moves the group.");
         }
 
         private void CancelResidentMarquee()

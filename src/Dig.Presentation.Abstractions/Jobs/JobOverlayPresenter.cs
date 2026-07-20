@@ -87,11 +87,18 @@ public sealed class JobOverlayPresenter
             .ToArray();
         int? targetX = null;
         int? targetY = null;
-        DigJobDefinition? digging = job.Definition as DigJobDefinition;
-        if (digging != null)
+        int? targetZ = null;
+        if (job.Definition is DigJobDefinition digging)
         {
             targetX = digging.Target.CellId.X;
             targetY = digging.Target.CellId.Y;
+            targetZ = 0;
+        }
+        else if (job.Definition is SpatialDigJobDefinition spatial)
+        {
+            targetX = spatial.Target.TargetCell.X;
+            targetY = spatial.Target.TargetCell.Y;
+            targetZ = spatial.Target.TargetCell.Z;
         }
 
         return new JobOverlayViewModel(
@@ -110,7 +117,8 @@ public sealed class JobOverlayPresenter
             job.Definition.PreferredToolKind,
             assignmentDiagnostic,
             actions,
-            executionReadiness);
+            executionReadiness,
+            targetZ);
     }
 
     private static IReadOnlyList<JobActionViewModel> MapActions(

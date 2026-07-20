@@ -78,7 +78,8 @@ namespace Dig.Unity
             }
             else if (_excavationControls.ExcavationModeLabel == "Depth")
             {
-                GUILayout.Label("Depth: click one open tunnel cell; each click opens only Z+1, up to Z=3.");
+                GUILayout.Label(
+                    "Depth: click an open tunnel or room cell to create a Z+1 Dig job, up to Z=3.");
             }
             else
             {

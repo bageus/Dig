@@ -52,10 +52,13 @@ namespace Dig.Unity
             List<EntityId> jobIds = new List<EntityId>();
             for (int index = 0; index < cluster.Count; index++)
             {
-                if (jobsByCell.TryGetValue(cluster[index], out JobSnapshot? job))
+                if (!jobsByCell.TryGetValue(cluster[index], out JobSnapshot? job)
+                    || IsOwnedByOtherResident(job, agentId))
                 {
-                    jobIds.Add(job.Id);
+                    continue;
                 }
+
+                jobIds.Add(job.Id);
             }
 
             if (jobIds.Count == 0)
@@ -81,6 +84,7 @@ namespace Dig.Unity
                 _candidateProvider!.SetCandidates(jobId, NoCandidates);
                 JobSnapshot? job = _jobRepository.Get().Get(jobId);
                 if (job != null
+                    && job.AssignedAgentId == agentId
                     && (job.Status == JobStatus.Claimed
                         || job.Status == JobStatus.InProgress))
                 {
@@ -95,12 +99,13 @@ namespace Dig.Unity
             }
 
             Result assigned = AssignNextManualExcavation(group, seed, tick);
-            if (assigned.IsFailure)
+            if (assigned.IsFailure && !IsWaitingForExcavationFront(assigned))
             {
                 ClearManualGroup(group);
+                return assigned;
             }
 
-            return assigned;
+            return Result.Success();
         }
 
         internal Result ContinueManualExcavation(
@@ -123,7 +128,44 @@ namespace Dig.Unity
                 return Result.Success();
             }
 
-            return AssignNextManualExcavation(group, preferredCell: null, tick);
+            Result assigned = AssignNextManualExcavation(group, preferredCell: null, tick);
+            return IsWaitingForExcavationFront(assigned)
+                ? Result.Success()
+                : assigned;
+        }
+
+        internal Result RetryPendingManualExcavations(long tick)
+        {
+            ManualExcavationGroup[] groups = _manualGroups.Values
+                .OrderBy(value => value.AgentId.ToString(), StringComparer.Ordinal)
+                .ThenBy(value => value.Id.ToString(), StringComparer.Ordinal)
+                .ToArray();
+            for (int index = 0; index < groups.Length; index++)
+            {
+                ManualExcavationGroup group = groups[index];
+                bool alreadyAssigned = group.JobIds
+                    .Select(jobId => _jobRepository.Get().Get(jobId))
+                    .Any(job => job != null
+                        && !job.IsTerminal
+                        && job.AssignedAgentId == group.AgentId
+                        && (job.Status == JobStatus.Claimed
+                            || job.Status == JobStatus.InProgress));
+                if (alreadyAssigned)
+                {
+                    continue;
+                }
+
+                Result assigned = AssignNextManualExcavation(
+                    group,
+                    preferredCell: null,
+                    tick);
+                if (assigned.IsFailure && !IsWaitingForExcavationFront(assigned))
+                {
+                    return assigned;
+                }
+            }
+
+            return Result.Success();
         }
 
         private Result AssignNextManualExcavation(
@@ -136,7 +178,8 @@ namespace Dig.Unity
                 .Select(jobId => _jobRepository.Get().Get(jobId))
                 .Where(job => job != null
                     && !job.IsTerminal
-                    && job.Definition is DigJobDefinition)
+                    && job.Definition is DigJobDefinition
+                    && !IsOwnedByOtherResident(job, group.AgentId))
                 .OrderByDescending(job => Preferred(job!, preferredCell))
                 .ThenBy(job => Distance(
                     ((DigJobDefinition)job!.Definition).Target.CellId,
@@ -165,6 +208,22 @@ namespace Dig.Unity
             }
 
             _manualGroups.Remove(group.Id);
+        }
+
+        private static bool IsWaitingForExcavationFront(Result result)
+        {
+            return result.IsFailure
+                && string.Equals(
+                    result.Error?.Code,
+                    NoExcavationFront.Code,
+                    StringComparison.Ordinal);
+        }
+
+        private static bool IsOwnedByOtherResident(JobSnapshot job, EntityId residentId)
+        {
+            return (job.Status == JobStatus.Claimed || job.Status == JobStatus.InProgress)
+                && job.AssignedAgentId.HasValue
+                && job.AssignedAgentId.Value != residentId;
         }
 
         private void RequireManualExcavationInitialized()

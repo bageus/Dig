@@ -24,84 +24,110 @@ def check_navigation_and_marquee_contracts(
     camera = runtime_root / "DigCameraController.cs"
     marquee = runtime_root / "DigWorldInteraction.MarqueeSelection.cs"
     marquee_renderer = runtime_root / "DigSelectionMarqueeRenderer.cs"
+    agent_renderer = runtime_root / "DigAgentRenderer.cs"
     excavation = runtime_root / "DigWorldInteraction.Excavation.cs"
     world_session = runtime_root / "DigWorldSession.TunnelNavigation.cs"
     agent_session = runtime_root / "DigAgentSession.TunnelMovement.cs"
+    spatial_agent_movement = runtime_root / "DigAgentSession.SpatialWorkMovement.cs"
     navigation_sync = runtime_root / "DigAgentSimulationDriverBase.NavigationSync.cs"
     movement = runtime_root / "DigAgentSimulationDriverBase.TunnelMovement.cs"
+    spatial_driver = runtime_root / "DigAgentSimulationDriverBase.SpatialExcavation.cs"
+    spatial_runtime = runtime_root / "DigTerrainSpatialExcavation.cs"
     direct_control = runtime_root / "DigTerrainWorkDirectMovement.cs"
     designations = runtime_root / "DigTerrainWorkDesignations.cs"
     manual_excavation = runtime_root / "DigTerrainWorkManualExcavation.cs"
+    multi_worker = runtime_root / "DigTerrainWorkManualExcavation.MultiWorker.cs"
 
     errors: list[str] = []
     interaction_text = texts.get(interaction, "")
     errors.extend(require_fragments(
         interaction,
         interaction_text,
-        "selected-resident tunnel movement before global resident picking",
+        "resident selection, forced excavation and movement ordering",
         (
             "RaycastHit[] hits = GetPointerHits();",
+            "TryResolveAgentHit(hits",
+            "TryAssignSelectedResidentToExcavation(hit, left)",
             "_agentRenderer!.SelectedCount > 0",
             "TryApplyTunnelMove(hit, leftButton: true)",
-            "TryResolveAgentHit(hits",
             "TryApplyTunnelMove(hit, left)",
             "_agentRenderer!.SelectedCount == 0",
         ),
     ))
+    resident_pick_index = interaction_text.find("TryResolveAgentHit(hits")
+    forced_work_index = interaction_text.find(
+        "TryAssignSelectedResidentToExcavation(hit, left)"
+    )
     direct_move_index = interaction_text.find(
         "TryApplyTunnelMove(hit, leftButton: true)"
     )
-    resident_pick_index = interaction_text.find("TryResolveAgentHit(hits")
     if (
-        direct_move_index < 0
-        or resident_pick_index < 0
-        or direct_move_index >= resident_pick_index
+        resident_pick_index < 0
+        or forced_work_index < 0
+        or direct_move_index < 0
+        or resident_pick_index >= forced_work_index
+        or forced_work_index >= direct_move_index
     ):
         errors.append(
-            f"{interaction}: selected-resident tunnel movement must be resolved "
-            "before the global all-hit resident picker"
+            f"{interaction}: expected resident pick before forced excavation "
+            "and forced excavation before free movement"
         )
-    if "TryAssignSelectedResidentToExcavation(hit, left)" in interaction_text:
-        errors.append(f"{interaction}: selected-resident LMB must not assign excavation")
 
+    pointer_text = texts.get(pointer_hits, "")
     errors.extend(require_fragments(
         pointer_hits,
-        texts.get(pointer_hits, ""),
-        "reliable resident pointer resolution",
+        pointer_text,
+        "reliable resident pointer and hover resolution",
         (
             "Physics.RaycastAll",
             "GetComponentInParent<DigAgentVisual>()",
             "TryResolveAgentNearPointer",
             "ResidentScreenPickRadius",
             "WorldToScreenPoint",
+            "UpdateResidentHover",
+            "SetHovered(false)",
+            "SetHovered(true)",
+            "firstWalkableDistance",
         ),
     ))
     errors.extend(require_fragments(
+        agent_renderer,
+        texts.get(agent_renderer, ""),
+        "child-collider resident ownership",
+        ("hit.collider.GetComponentInParent<DigAgentVisual>()",),
+    ))
+
+    target_text = texts.get(targets, "")
+    errors.extend(require_fragments(
         targets,
-        texts.get(targets, ""),
-        "movement before excavation markers and child-collider residents",
+        target_text,
+        "designated excavation and layered movement priority",
         (
             "CellId? excavationCandidate",
             "GetComponentInParent<DigAgentVisual>()",
             "TryResolveTunnelDestination(",
-            "return DigSelectedResidentTarget.Movement",
+            "visibleMovement",
+            "hiddenMovement",
             "DigSelectedResidentTarget.Excavation(excavationCandidate.Value)",
+            "return visibleMovement",
         ),
     ))
-    target_text = texts.get(targets, "")
-    if target_text.find("return DigSelectedResidentTarget.Movement") >= target_text.find(
+    excavation_index = target_text.find(
         "DigSelectedResidentTarget.Excavation(excavationCandidate.Value)"
-    ):
-        errors.append(f"{targets}: movement must win over excavation markers")
+    )
+    movement_index = target_text.find("return visibleMovement")
+    if excavation_index < 0 or movement_index < 0 or excavation_index >= movement_index:
+        errors.append(f"{targets}: designated excavation must win over free movement")
 
     movement_text = texts.get(movement_input, "")
     errors.extend(require_fragments(
         movement_input,
         movement_text,
-        "dedicated walkable destination proxies",
+        "dedicated walkable destinations and spatial work assignment",
         (
             "_tunnelRenderer.TryGetCell",
             "_caveRoomFloorRenderer.TryGetCell",
+            "TryAssignSpatialExcavation(",
             "MoveResidentsThroughTunnel",
         ),
     ))
@@ -135,16 +161,25 @@ def check_navigation_and_marquee_contracts(
     errors.extend(require_fragments(
         depth_input,
         depth_text,
-        "authoritative tunnel depth input",
+        "authoritative spatial tunnel depth input",
         (
             "ResolveTunnelDepthSource",
-            "!tunnelCell.IsVerticalTunnel",
+            "_caveRoomFloorRenderer.TryGetCell",
             "tunnelCell.Cell.Z > selected.Value.Z",
-            "ExcavateTunnelDepth(source.Value",
+            "DesignateTunnelDepth(source.Value)",
+            "Depth excavation designated",
         ),
     ))
-    if "tunnelCell.CanExcavateDepth" in depth_text:
-        errors.append(f"{depth_input}: stale depth presentation flag remains")
+    for forbidden in (
+        "tunnelCell.CanExcavateDepth",
+        "!tunnelCell.IsVerticalTunnel",
+        "ExcavateTunnelDepth(source.Value",
+        "RefreshCompletedCaveRooms(force: true)",
+    ):
+        if forbidden in depth_text:
+            errors.append(
+                f"{depth_input}: stale instant/orientation depth input remains: {forbidden!r}"
+            )
 
     errors.extend(require_fragments(
         canvas_hud,
@@ -166,8 +201,15 @@ def check_navigation_and_marquee_contracts(
     errors.extend(require_fragments(
         marquee,
         texts.get(marquee, ""),
-        "resident marquee selection",
-        ("MarqueeThresholdPixels", "SelectResidentsInsideMarquee", "TryApplyTunnelMove"),
+        "resident marquee selection with shared pointer resolution",
+        (
+            "MarqueeThresholdPixels",
+            "RaycastHit[] hits = GetPointerHits();",
+            "IsMarqueeBlockingTarget(hits)",
+            "TryResolveAgentHit(hits",
+            "SelectResidentsInsideMarquee",
+            "TryApplyTunnelMove",
+        ),
     ))
     errors.extend(require_fragments(
         marquee_renderer,
@@ -178,8 +220,13 @@ def check_navigation_and_marquee_contracts(
     errors.extend(require_fragments(
         excavation,
         texts.get(excavation, ""),
-        "vertical tunnel planning",
-        ("ExcavationStrokeAxis.Vertical", "vertical: true"),
+        "vertical tunnel planning and forced work",
+        (
+            "ExcavationStrokeAxis.Vertical",
+            "vertical: true",
+            "TryAssignSelectedResidentToExcavation",
+            "AssignExcavationCluster",
+        ),
     ))
     errors.extend(require_fragments(
         world_session,
@@ -190,8 +237,38 @@ def check_navigation_and_marquee_contracts(
     errors.extend(require_fragments(
         agent_session,
         texts.get(agent_session, ""),
-        "front navigation synchronization",
-        ("SynchronizeFrontNavigation", "WithSynchronizedFrontLayer"),
+        "front navigation synchronization and deferred depth commit",
+        (
+            "SynchronizeFrontNavigation",
+            "WithSynchronizedFrontLayer",
+            "PlanTunnelDepthExcavation",
+            "CompleteTunnelDepthExcavation",
+        ),
+    ))
+    errors.extend(require_fragments(
+        spatial_agent_movement,
+        texts.get(spatial_agent_movement, ""),
+        "spatial work path movement",
+        ("FindPath", "agent.SpatialPosition", "agent.MoveTo(next, _tick)"),
+    ))
+    errors.extend(require_fragments(
+        spatial_driver,
+        texts.get(spatial_driver, ""),
+        "selected resident spatial assignment",
+        ("TryAssignSpatialExcavation", "ReleaseDirectMovementControl"),
+    ))
+    errors.extend(require_fragments(
+        spatial_runtime,
+        texts.get(spatial_runtime, ""),
+        "spatial excavation job lifecycle",
+        (
+            "SpatialDigJobDefinition",
+            "DesignateSpatialExcavation",
+            "PlanSpatialExcavationMovement",
+            "AdvanceSpatialExcavationWork",
+            "LoadSpatialExcavationsToFinalize",
+            "CompleteSpatialExcavationJob",
+        ),
     ))
     errors.extend(require_fragments(
         navigation_sync,
@@ -214,14 +291,30 @@ def check_navigation_and_marquee_contracts(
     errors.extend(require_fragments(
         designations,
         texts.get(designations, ""),
-        "automatic work suppression",
-        ("IsAvailableForAutomaticWork(agent)",),
+        "automatic work suppression and pending manual retries",
+        ("IsAvailableForAutomaticWork(agent)", "RetryPendingManualExcavations(tick)"),
     ))
     errors.extend(require_fragments(
         manual_excavation,
         texts.get(manual_excavation, ""),
-        "explicit return to work",
-        ("ReleaseDirectMovementControl(residentId);",),
+        "persistent explicit work without stealing another assignment",
+        (
+            "ReleaseDirectMovementControl(residentId);",
+            "IsOwnedByOtherResident",
+            "job.AssignedAgentId == agentId",
+            "RetryPendingManualExcavations",
+            "IsWaitingForExcavationFront",
+        ),
+    ))
+    errors.extend(require_fragments(
+        multi_worker,
+        texts.get(multi_worker, ""),
+        "persistent multi-worker excavation groups",
+        (
+            "workerCount = Math.Min(agents.Length, orderedJobs.Count)",
+            "IsWaitingForExcavationFront(assigned)",
+            "IsOwnedByUnselectedResident",
+        ),
     ))
     errors.extend(check_runtime_regression_contracts(runtime_root, texts, require_fragments))
     return errors

@@ -115,6 +115,14 @@ def main() -> int:
         "Animator.Set", "ApplyRootMotion", "ICommand", "Handle(",
     )))
 
+    movement_path = RUNTIME / "DigAgentVisual.Movement.cs"
+    movement = read(movement_path)
+    errors.extend(require(movement_path, movement, (
+        "using Dig.Presentation.Agents;",
+        "AgentInterpolatedSpatialPosition",
+        "AgentSpatialPositionInterpolator.Interpolate(",
+    )))
+
     attachments_path = RUNTIME / "DigAgentRenderer.InventoryAttachments.cs"
     attachments = read(attachments_path)
     errors.extend(require(attachments_path, attachments, (
