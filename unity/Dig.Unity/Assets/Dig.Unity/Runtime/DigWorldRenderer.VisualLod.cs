@@ -11,7 +11,7 @@ namespace Dig.Unity
             TerrainVisualDetailLevel.Full;
         private Camera? _terrainVisualLodCamera;
 
-        internal TerrainVisualDetailLevel TerrainVisualDetailLevel =>
+        internal TerrainVisualDetailLevel TerrainDetailLevel =>
             _terrainVisualDetailLevel;
 
         internal float TerrainPixelsPerCell { get; private set; }
