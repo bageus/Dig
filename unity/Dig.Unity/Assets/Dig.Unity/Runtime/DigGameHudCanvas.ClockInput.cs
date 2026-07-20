@@ -124,6 +124,17 @@ public sealed partial class DigGameHudCanvas
             }
         }
 
+        if (nextStart == start && nextEnd == end)
+        {
+            if (announce)
+            {
+                SetStatus(
+                    $"Work schedule remains {start:00}:00–{end:00}:00; all other time is rest.");
+            }
+
+            return;
+        }
+
         Result result = _simulation.SetResidentWorkWindow(
             selectedId,
             nextStart,
