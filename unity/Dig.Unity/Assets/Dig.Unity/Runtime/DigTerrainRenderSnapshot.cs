@@ -11,8 +11,9 @@ namespace Dig.Unity
         private readonly HashSet<DigTerrainCellKey> _cutawayCells;
         private readonly HashSet<DigTerrainCellKey> _protectedCells;
         private readonly HashSet<DigTerrainChunkKey> _dirtyChunks;
-        private readonly Dictionary<DigTerrainCellKey, TerrainDepositCellViewModel>
-            _visibleDeposits;
+        private readonly Dictionary<
+            DigTerrainCellKey,
+            TerrainDepositDecorationCellViewModel> _depositDecorations;
 
         internal DigTerrainRenderSnapshot(
             int width,
@@ -27,7 +28,7 @@ namespace Dig.Unity
             IEnumerable<DigTerrainChunkKey> dirtyChunks,
             IReadOnlyDictionary<
                 DigTerrainCellKey,
-                TerrainDepositCellViewModel> visibleDeposits)
+                TerrainDepositDecorationCellViewModel> depositDecorations)
         {
             if (width <= 0)
             {
@@ -54,9 +55,9 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(chunks));
             }
 
-            if (visibleDeposits == null)
+            if (depositDecorations == null)
             {
-                throw new ArgumentNullException(nameof(visibleDeposits));
+                throw new ArgumentNullException(nameof(depositDecorations));
             }
 
             Width = width;
@@ -70,9 +71,9 @@ namespace Dig.Unity
             _cutawayCells = new HashSet<DigTerrainCellKey>(cutawayCells);
             _protectedCells = new HashSet<DigTerrainCellKey>(protectedCells);
             _dirtyChunks = new HashSet<DigTerrainChunkKey>(dirtyChunks);
-            _visibleDeposits =
-                new Dictionary<DigTerrainCellKey, TerrainDepositCellViewModel>(
-                    visibleDeposits);
+            _depositDecorations = new Dictionary<
+                DigTerrainCellKey,
+                TerrainDepositDecorationCellViewModel>(depositDecorations);
         }
 
         internal int Width { get; }
@@ -112,11 +113,11 @@ namespace Dig.Unity
             return _dirtyChunks.Contains(chunk);
         }
 
-        internal bool TryGetVisibleDeposit(
+        internal bool TryGetDepositDecoration(
             DigTerrainCellKey cell,
-            out TerrainDepositCellViewModel? deposit)
+            out TerrainDepositDecorationCellViewModel? decoration)
         {
-            return _visibleDeposits.TryGetValue(cell, out deposit);
+            return _depositDecorations.TryGetValue(cell, out decoration);
         }
     }
 }
