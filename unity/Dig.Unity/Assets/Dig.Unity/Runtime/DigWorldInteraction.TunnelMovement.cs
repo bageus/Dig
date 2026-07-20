@@ -44,12 +44,29 @@ namespace Dig.Unity
             }
 
             SpatialCellId destination = target.MovementCell;
+            if (_simulation!.TryAssignSpatialExcavation(
+                destination,
+                residentIds,
+                out Result excavationAssignment))
+            {
+                _hud!.SetCommandResult(excavationAssignment);
+                if (excavationAssignment.IsSuccess)
+                {
+                    _hud.SetStatus(
+                        $"Assigned a selected dwarf to spatial excavation from "
+                        + $"X={destination.X}, Y={destination.Y}, Z={destination.Z}. "
+                        + "Existing workers keep their excavation jobs.");
+                }
+
+                return true;
+            }
+
             Result result = residentIds.Count == 1
-                ? _simulation!.MoveResidentThroughTunnel(
+                ? _simulation.MoveResidentThroughTunnel(
                     residentIds[0],
                     destination,
                     _tunnelRenderer)
-                : _simulation!.MoveResidentsThroughTunnel(
+                : _simulation.MoveResidentsThroughTunnel(
                     residentIds,
                     destination,
                     _tunnelRenderer);
@@ -57,8 +74,8 @@ namespace Dig.Unity
             if (result.IsSuccess)
             {
                 _hud.SetStatus(
-                    $"Moving {residentIds.Count} dwarf(s) to " +
-                    $"X={destination.X}, Y={destination.Y}, Z={destination.Z}.");
+                    $"Moving {residentIds.Count} dwarf(s) to "
+                    + $"X={destination.X}, Y={destination.Y}, Z={destination.Z}.");
             }
 
             return true;

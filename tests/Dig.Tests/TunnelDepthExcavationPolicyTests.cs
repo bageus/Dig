@@ -9,7 +9,7 @@ namespace Dig.Tests
 public sealed class TunnelDepthExcavationPolicyTests
 {
     [Fact]
-    public void Open_horizontal_tunnel_excavates_exactly_one_next_depth_cell()
+    public void Open_horizontal_tunnel_designates_exactly_one_next_depth_cell()
     {
         SpatialCellId source = new SpatialCellId(2, 3, 0);
         TunnelNavigationVolume volume = CreateVolume(
@@ -22,6 +22,21 @@ public sealed class TunnelDepthExcavationPolicyTests
         Assert.True(result.Succeeded, result.Detail);
         Assert.Equal(source, result.Plan!.Source);
         Assert.Equal(new SpatialCellId(2, 3, 1), result.Plan.Target);
+    }
+
+    [Fact]
+    public void Open_vertical_tunnel_can_designate_the_next_depth_cell()
+    {
+        SpatialCellId source = new SpatialCellId(2, 3, 0);
+        TunnelNavigationVolume volume = CreateVolume(
+            open: new[] { source },
+            vertical: new[] { source });
+
+        TunnelDepthExcavationPlanResult result =
+            new TunnelDepthExcavationPolicy().Plan(volume, source);
+
+        Assert.True(result.Succeeded, result.Detail);
+        Assert.Equal(new SpatialCellId(2, 3, 1), result.Plan!.Target);
     }
 
     [Fact]
@@ -56,23 +71,6 @@ public sealed class TunnelDepthExcavationPolicyTests
         Assert.False(result.Succeeded);
         Assert.Equal(
             TunnelDepthExcavationFailureReason.MaximumDepthReached,
-            result.FailureReason);
-    }
-
-    [Fact]
-    public void Shaft_cell_cannot_be_used_for_depth_excavation()
-    {
-        SpatialCellId source = new SpatialCellId(2, 3, 0);
-        TunnelNavigationVolume volume = CreateVolume(
-            open: new[] { source },
-            vertical: new[] { source });
-
-        TunnelDepthExcavationPlanResult result =
-            new TunnelDepthExcavationPolicy().Plan(volume, source);
-
-        Assert.False(result.Succeeded);
-        Assert.Equal(
-            TunnelDepthExcavationFailureReason.SourceNotHorizontalTunnel,
             result.FailureReason);
     }
 

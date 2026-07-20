@@ -93,20 +93,43 @@ namespace Dig.Unity
             return report;
         }
 
-        internal TunnelDepthExcavationPlanResult ExcavateTunnelDepth(
+        internal TunnelDepthExcavationPlanResult PlanTunnelDepthExcavation(
             SpatialCellId source)
         {
-            TunnelDepthExcavationPlanResult result =
-                _tunnelDepthExcavation.Plan(TunnelVolume, source);
-            if (!result.Succeeded)
+            return _tunnelDepthExcavation.Plan(TunnelVolume, source);
+        }
+
+        internal Result CompleteTunnelDepthExcavation(SpatialCellId target)
+        {
+            TunnelNavigationVolume volume = TunnelVolume;
+            if (!volume.Contains(target) || target.Z <= 0)
             {
-                return result;
+                return Result.Failure(new DomainError(
+                    "unity.depth.target_invalid",
+                    "The spatial excavation target is outside the deep rock volume."));
             }
 
-            SpatialCellId target = result.Plan!.Target;
+            if (volume.IsOpen(target))
+            {
+                return Result.Failure(new DomainError(
+                    "unity.depth.target_open",
+                    "The spatial excavation target is already open."));
+            }
+
+            SpatialCellId source = new SpatialCellId(
+                target.X,
+                target.Y,
+                target.Z - 1);
+            if (!volume.IsOpen(source))
+            {
+                return Result.Failure(new DomainError(
+                    "unity.depth.source_closed",
+                    "The spatial excavation work cell is no longer open."));
+            }
+
             _tunnelDepthExcavations.Add(target);
             ExpandTunnelVolume(new[] { target });
-            return result;
+            return Result.Success();
         }
 
         internal bool ReleaseManualTunnelOrder(string residentId)
