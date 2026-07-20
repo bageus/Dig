@@ -50,5 +50,40 @@ public sealed partial class DigPooledVfxPlayer : MonoBehaviour
             TryPresent(plan.Effects[index], now);
         }
     }
+
+    private void TryPresent(EffectSpawnRequest request, float now)
+    {
+        DigPooledVfxInstance? existing;
+        if (_active.TryGetValue(request.RequestId, out existing))
+        {
+            if (existing.Version == request.Version) return;
+            Recycle(request.RequestId, existing);
+        }
+        if (_active.Count >= _budget.MaximumEffects
+            || _activeParticles + request.ParticleBudget > _budget.MaximumParticles)
+        {
+            return;
+        }
+        DigVfxProfile? profile = ResolveProfile(request.EffectId);
+        if (profile != null
+            && CountActive(request.EffectId) >= profile.MaximumInstances)
+        {
+            return;
+        }
+        DigPooledVfxInstance instance = Acquire(request.EffectId, profile);
+        instance.Play(request, profile, _sharedMaterial!, now);
+        _active.Add(request.RequestId, instance);
+        _activeParticles += instance.ParticleBudget;
+    }
+
+    private int CountActive(string effectId)
+    {
+        int count = 0;
+        foreach (DigPooledVfxInstance instance in _active.Values)
+        {
+            if (instance.EffectId == effectId) count++;
+        }
+        return count;
+    }
 }
 }
