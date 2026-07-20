@@ -117,6 +117,7 @@ namespace Dig.Unity
                 WorldViewModel world = WorldSession!.LoadView();
                 WorldRenderer!.Render(world);
                 WorldRenderer.SetProtectedCells(WorldSession.ProtectedCells);
+                WorldRenderer.SetTerrainDeposits(WorldSession.LoadTerrainDeposits());
                 Hud!.SetWorld(world);
             }
 
