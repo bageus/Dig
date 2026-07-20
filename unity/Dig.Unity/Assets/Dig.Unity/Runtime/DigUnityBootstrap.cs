@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Buildings;
+using Dig.Presentation.Creatures;
 using Dig.Presentation.Inventory;
 using Dig.Presentation.Jobs;
 using Dig.Presentation.Navigation;
@@ -18,18 +19,10 @@ namespace Dig.Unity
         private const int MinimumDemoDimension = 8;
         private const int MaximumDemoDimension = 64;
 
-        [SerializeField]
-        private int demoWidth = 20;
-
-        [SerializeField]
-        private int demoHeight = 14;
-
-        [SerializeField]
-        private int chunkSize = 5;
-
-        [SerializeField]
-        private bool logStartup = true;
-
+        [SerializeField] private int demoWidth = 20;
+        [SerializeField] private int demoHeight = 14;
+        [SerializeField] private int chunkSize = 5;
+        [SerializeField] private bool logStartup = true;
         private string _startupStage = "not started";
 
         private void Awake()
@@ -44,8 +37,7 @@ namespace Dig.Unity
             catch (Exception exception)
             {
                 DisableRuntimeDrivers();
-                string message =
-                    $"STARTUP FAILED [{_startupStage}] "
+                string message = $"STARTUP FAILED [{_startupStage}] "
                     + $"{exception.GetType().Name}: {exception.Message}";
                 hud.SetStatus(message);
                 Debug.LogException(exception, this);
@@ -56,29 +48,23 @@ namespace Dig.Unity
         {
             _startupStage = "validating demo configuration";
             ClampDemoConfiguration();
-
             _startupStage = "configuring side-view world root";
             ConfigureSideViewRoot();
 
             _startupStage = "creating world";
             DigWorldSession worldSession = DigWorldSession.CreateDemo(
-                demoWidth,
-                demoHeight,
-                chunkSize);
+                demoWidth, demoHeight, chunkSize);
             WorldViewModel world = worldSession.LoadView();
 
             _startupStage = "creating residents";
             DigAgentSession agentSession = DigAgentSession.CreateDemo(
-                world,
-                worldSession.Journal);
+                world, worldSession.Journal);
             agentSession.InitializeHudSchedule(worldSession.Journal);
             IReadOnlyList<AgentViewModel> agents = agentSession.LoadView();
 
             _startupStage = "creating work systems";
             DigTerrainWorkSession terrainSession = DigTerrainWorkSession.CreateDemo(
-                worldSession,
-                agents,
-                worldSession.Journal);
+                worldSession, agents, worldSession.Journal);
             terrainSession.InitializeDynamicDesignations(worldSession.Journal);
             terrainSession.InitializeHauling(worldSession.Journal);
             terrainSession.PlanMovement(agents);
@@ -94,25 +80,23 @@ namespace Dig.Unity
             Camera targetCamera = EnsureCamera();
             DigWorldRenderer worldRenderer = GetOrAdd<DigWorldRenderer>(gameObject);
             DigAgentRenderer agentRenderer = GetOrAdd<DigAgentRenderer>(gameObject);
+            DigCreatureRenderer creatureRenderer = GetOrAdd<DigCreatureRenderer>(gameObject);
             DigJobRenderer jobRenderer = GetOrAdd<DigJobRenderer>(gameObject);
             DigBuildingRenderer buildingRenderer = GetOrAdd<DigBuildingRenderer>(gameObject);
             DigWorldItemRenderer itemRenderer = GetOrAdd<DigWorldItemRenderer>(gameObject);
             DigBuildingBoxGhostRenderer ghostRenderer =
                 GetOrAdd<DigBuildingBoxGhostRenderer>(gameObject);
-            DigStockpileRenderer stockpileRenderer =
-                GetOrAdd<DigStockpileRenderer>(gameObject);
+            DigStockpileRenderer stockpileRenderer = GetOrAdd<DigStockpileRenderer>(gameObject);
             DigNavigationRouteRenderer routeRenderer =
                 GetOrAdd<DigNavigationRouteRenderer>(gameObject);
-            DigTunnelDemoRenderer tunnelRenderer =
-                GetOrAdd<DigTunnelDemoRenderer>(gameObject);
+            DigTunnelDemoRenderer tunnelRenderer = GetOrAdd<DigTunnelDemoRenderer>(gameObject);
             DigCaveRoomPreviewRenderer caveRoomPreviewRenderer =
                 GetOrAdd<DigCaveRoomPreviewRenderer>(gameObject);
             DigCaveRoomFloorRenderer caveRoomFloorRenderer =
                 GetOrAdd<DigCaveRoomFloorRenderer>(gameObject);
             GetOrAdd<DigOverlayHotkeys>(gameObject);
             DigWorldInteraction interaction = GetOrAdd<DigWorldInteraction>(gameObject);
-            DigAgentSimulationDriver simulation =
-                GetOrAdd<DigAgentSimulationDriver>(gameObject);
+            DigAgentSimulationDriver simulation = GetOrAdd<DigAgentSimulationDriver>(gameObject);
             DigCameraController cameraController =
                 GetOrAdd<DigCameraController>(targetCamera.gameObject);
             interaction.enabled = false;
@@ -132,100 +116,54 @@ namespace Dig.Unity
             _startupStage = "initializing interaction and simulation";
             jobRenderer.Initialize(agentRenderer);
             interaction.Initialize(
-                targetCamera,
-                cameraController,
-                worldSession,
-                worldRenderer,
-                agentRenderer,
-                jobRenderer,
-                buildingRenderer,
-                itemRenderer,
-                ghostRenderer,
-                terrainSession,
-                stockpileRenderer,
-                simulation,
-                hud);
+                targetCamera, cameraController, worldSession, worldRenderer,
+                agentRenderer, jobRenderer, buildingRenderer, itemRenderer,
+                ghostRenderer, terrainSession, stockpileRenderer, simulation, hud);
             interaction.SetTunnelMovement(tunnelRenderer);
-            interaction.SetCaveRoomRenderers(
-                caveRoomPreviewRenderer,
-                caveRoomFloorRenderer);
+            interaction.SetCaveRoomRenderers(caveRoomPreviewRenderer, caveRoomFloorRenderer);
             simulation.Initialize(
-                worldSession,
-                worldRenderer,
-                agentSession,
-                agentRenderer,
-                terrainSession,
-                jobRenderer,
-                buildingRenderer,
-                itemRenderer,
-                stockpileRenderer,
-                routeRenderer,
-                hud);
+                worldSession, worldRenderer, agentSession, agentRenderer,
+                terrainSession, jobRenderer, buildingRenderer, itemRenderer,
+                stockpileRenderer, routeRenderer, hud);
 
             _startupStage = "binding uGUI game HUD";
             gameHud.Initialize(
-                terrainSession,
-                agentRenderer,
-                jobRenderer,
-                buildingRenderer,
-                interaction,
-                simulation,
-                hud,
-                targetCamera,
-                world);
+                terrainSession, agentRenderer, jobRenderer, buildingRenderer,
+                interaction, simulation, hud, targetCamera, world);
 
             List<string> visualWarnings = new List<string>();
             RenderSettings.ambientLight = new Color(0.58f, 0.60f, 0.66f, 1f);
-            RunPresentationStage(
-                "rendering world terrain",
-                visualWarnings,
-                () =>
-                {
-                    worldRenderer.SetProtectedCells(worldSession.ProtectedCells);
-                    worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume);
-                    worldRenderer.SetTerrainDepthVolume(
-                        agentSession.TunnelVolume,
-                        worldSession.SolidMaterialId.ToString(),
-                        worldSession.SolidHardness,
-                        Array.Empty<SpatialCellId>());
-                    worldRenderer.SetTerrainDeposits(worldSession.LoadTerrainDeposits());
-                    worldRenderer.Render(world);
-                });
-            RunPresentationStage(
-                "rendering layered tunnels",
-                visualWarnings,
+            RunPresentationStage("rendering world terrain", visualWarnings, () =>
+            {
+                worldRenderer.SetProtectedCells(worldSession.ProtectedCells);
+                worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume);
+                worldRenderer.SetTerrainDepthVolume(
+                    agentSession.TunnelVolume,
+                    worldSession.SolidMaterialId.ToString(),
+                    worldSession.SolidHardness,
+                    Array.Empty<SpatialCellId>());
+                worldRenderer.SetTerrainDeposits(worldSession.LoadTerrainDeposits());
+                worldRenderer.Render(world);
+            });
+            RunPresentationStage("rendering layered tunnels", visualWarnings,
                 () => tunnelRenderer.Initialize(agentSession.TunnelVolume));
-            RunPresentationStage(
-                "clearing cave preview",
-                visualWarnings,
+            RunPresentationStage("clearing cave preview", visualWarnings,
                 caveRoomPreviewRenderer.Clear);
-            RunPresentationStage(
-                "rendering residents",
-                visualWarnings,
+            RunPresentationStage("rendering residents", visualWarnings,
                 () => agentRenderer.Render(agents, movementDuration: 0f));
-            RunPresentationStage(
-                "rendering jobs",
-                visualWarnings,
+            RunPresentationStage("rendering creatures", visualWarnings, () =>
+                creatureRenderer.Render(
+                    Array.Empty<CreatureVisualSnapshot>(), targetCamera, movementDuration: 0f));
+            RunPresentationStage("rendering jobs", visualWarnings,
                 () => jobRenderer.Render(jobs));
-            RunPresentationStage(
-                "rendering buildings",
-                visualWarnings,
+            RunPresentationStage("rendering buildings", visualWarnings,
                 () => buildingRenderer.Render(buildings));
-            RunPresentationStage(
-                "rendering world items",
-                visualWarnings,
+            RunPresentationStage("rendering world items", visualWarnings,
                 () => itemRenderer.Render(items));
-            RunPresentationStage(
-                "clearing building ghost",
-                visualWarnings,
-                ghostRenderer.Clear);
-            RunPresentationStage(
-                "rendering stockpile",
-                visualWarnings,
+            RunPresentationStage("clearing building ghost", visualWarnings, ghostRenderer.Clear);
+            RunPresentationStage("rendering stockpile", visualWarnings,
                 () => stockpileRenderer.Render(storage));
-            RunPresentationStage(
-                "rendering navigation routes",
-                visualWarnings,
+            RunPresentationStage("rendering navigation routes", visualWarnings,
                 () => routeRenderer.Render(routes));
 
             interaction.enabled = true;
@@ -241,15 +179,12 @@ namespace Dig.Unity
                     $"Dig Unity runtime started with {agents.Count} residents, "
                     + $"{jobs.Count} jobs, {buildings.Count} buildings and a "
                     + $"{world.Width}x{world.Height}x4 rock volume. "
-                    + $"Visual warnings: {visualWarnings.Count}.",
-                    this);
+                    + $"Visual warnings: {visualWarnings.Count}.", this);
             }
         }
 
         private void RunPresentationStage(
-            string stage,
-            ICollection<string> warnings,
-            Action action)
+            string stage, ICollection<string> warnings, Action action)
         {
             _startupStage = stage;
             try
@@ -267,8 +202,7 @@ namespace Dig.Unity
         private static DigGameHudCanvas CreateStartupGameHud(DigHudOverlay hud)
         {
             GameObject canvasObject = new GameObject(
-                "Dig Game HUD Canvas",
-                typeof(RectTransform));
+                "Dig Game HUD Canvas", typeof(RectTransform));
             DigGameHudCanvas gameHud = canvasObject.AddComponent<DigGameHudCanvas>();
             gameHud.InitializeStartup(hud);
             hud.AttachGameHudCanvas(gameHud);
@@ -287,7 +221,6 @@ namespace Dig.Unity
             {
                 interaction.enabled = false;
             }
-
             DigAgentSimulationDriver simulation = GetComponent<DigAgentSimulationDriver>();
             if (simulation != null)
             {
@@ -305,7 +238,6 @@ namespace Dig.Unity
                 camera = cameraObject.AddComponent<Camera>();
                 cameraObject.AddComponent<AudioListener>();
             }
-
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = new Color(0.10f, 0.13f, 0.17f, 1f);
             camera.nearClipPlane = 0.1f;
@@ -313,8 +245,7 @@ namespace Dig.Unity
             return camera;
         }
 
-        private static T GetOrAdd<T>(GameObject target)
-            where T : Component
+        private static T GetOrAdd<T>(GameObject target) where T : Component
         {
             T component = target.GetComponent<T>();
             return component == null ? target.AddComponent<T>() : component;
@@ -322,18 +253,9 @@ namespace Dig.Unity
 
         private void ClampDemoConfiguration()
         {
-            demoWidth = Mathf.Clamp(
-                demoWidth,
-                MinimumDemoDimension,
-                MaximumDemoDimension);
-            demoHeight = Mathf.Clamp(
-                demoHeight,
-                MinimumDemoDimension,
-                MaximumDemoDimension);
-            chunkSize = Mathf.Clamp(
-                chunkSize,
-                1,
-                Mathf.Min(demoWidth, demoHeight));
+            demoWidth = Mathf.Clamp(demoWidth, MinimumDemoDimension, MaximumDemoDimension);
+            demoHeight = Mathf.Clamp(demoHeight, MinimumDemoDimension, MaximumDemoDimension);
+            chunkSize = Mathf.Clamp(chunkSize, 1, Mathf.Min(demoWidth, demoHeight));
         }
 
         private void OnValidate()
