@@ -8,7 +8,7 @@ using UnityEngine;
 namespace Dig.Unity
 {
     [DisallowMultipleComponent]
-    public sealed class DigBuildingBoxGhostRenderer : MonoBehaviour
+    public sealed partial class DigBuildingBoxGhostRenderer : MonoBehaviour
     {
         private const string CatalogResourcePath =
             "Dig/VisualCatalogs/Buildings";
@@ -20,14 +20,13 @@ namespace Dig.Unity
         private Transform? _previewContainer;
         private GameObject? _previewInstance;
         private DigVisualTintTarget? _previewTint;
-        private DigRepresentativeBuildingPrefabLibrary? _representatives;
         private string _assetKey = string.Empty;
         private Material? _markerMaterial;
         private GameObject? _workMarker;
 
         private void Awake()
         {
-            _representatives = DigRepresentativeBuildingPrefabLibrary.Acquire();
+            InitializeRepresentatives();
             if (visualCatalog == null)
             {
                 visualCatalog = Resources.Load<DigBuildingVisualCatalog>(
@@ -66,43 +65,6 @@ namespace Dig.Unity
             {
                 _workMarker.SetActive(false);
             }
-        }
-
-        private DigBuildingVisualResolution Resolve(BuildingBoxGhostViewModel preview)
-        {
-            string stableId = preview.DefinitionId.ToString();
-            DigBuildingVisualResolution catalogResolution = default;
-            bool hasCatalogResolution = visualCatalog != null;
-            if (visualCatalog != null)
-            {
-                catalogResolution = visualCatalog.ResolveBuilding(
-                    stableId,
-                    BuildingVisualState.BuildingBox);
-                if (catalogResolution.HasProfile)
-                {
-                    return catalogResolution;
-                }
-            }
-
-            if (_representatives != null
-                && _representatives.TryResolve(
-                    stableId,
-                    BuildingVisualState.BuildingBox,
-                    out DigBuildingVisualResolution representative))
-            {
-                return representative;
-            }
-
-            if (hasCatalogResolution)
-            {
-                return catalogResolution;
-            }
-
-            return new DigBuildingVisualResolution(
-                DigVisualAsset.CreateRuntimeFallback(stableId, Color.white),
-                Vector2Int.one,
-                Vector2.zero,
-                hasProfile: false);
         }
 
         private void EnsurePreviewInstance(
@@ -346,8 +308,7 @@ namespace Dig.Unity
 
         private void OnDestroy()
         {
-            _representatives?.Dispose();
-            _representatives = null;
+            DisposeRepresentatives();
             if (_markerMaterial != null)
             {
                 Destroy(_markerMaterial);
