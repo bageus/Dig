@@ -17,6 +17,7 @@ def check_cave_room_runtime_contracts(
     room_runtime = runtime_root / "DigAgentSimulationDriverBase.CaveRooms.cs"
     room_floor = runtime_root / "DigCaveRoomFloorRenderer.cs"
     tunnel_renderer = runtime_root / "DigTunnelDemoRenderer.cs"
+    world_renderer = runtime_root / "DigWorldRenderer.cs"
     depth_adapter = runtime_root / "DigWorldRenderer.DepthTerrain.cs"
     agent_session = runtime_root / "DigAgentSession.TunnelMovement.cs"
     bootstrap = runtime_root / "DigUnityBootstrap.cs"
@@ -124,6 +125,16 @@ def check_cave_room_runtime_contracts(
         if fragment in tunnel_text:
             errors.append(f"{tunnel_renderer}: obsolete tunnel visual remains: {fragment!r}")
 
+    errors.extend(require_fragments(
+        world_renderer,
+        texts.get(world_renderer, ""),
+        "natural cave cutaway preserves the protected Z0 ceiling",
+        (
+            "for (int x = layout.CaveMinX; x <= layout.CaveMaxX; x++)",
+            "for (int y = layout.CaveCeilingY + 1; y <= layout.CaveFloorY; y++)",
+            "_tunnelCutaway.Add(new Vector2Int(x, y));",
+        ),
+    ))
     errors.extend(require_fragments(
         depth_adapter,
         texts.get(depth_adapter, ""),
