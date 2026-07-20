@@ -165,8 +165,19 @@ namespace Dig.Unity
             for (int index = 0; index < agents.Count; index++)
             {
                 AgentState agent = agents[index];
-                if (!agent.IsAlive || HasManualTunnelOrder(agent.Id))
+                if (!agent.IsAlive)
                 {
+                    CancelManualTunnelMovement(agent.Id.ToString());
+                    continue;
+                }
+
+                if (TryAdvanceManualTunnelMovement(agent, out Result manualMovement))
+                {
+                    if (manualMovement.IsFailure)
+                    {
+                        return manualMovement;
+                    }
+
                     continue;
                 }
 
