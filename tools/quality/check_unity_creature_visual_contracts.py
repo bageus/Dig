@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PRESENTATION = ROOT / "src" / "Dig.Presentation.Abstractions" / "Creatures"
 RUNTIME = ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" / "Runtime"
+LOG = ROOT / "unity-source-contracts.log"
 
 
 def read(path: Path) -> str:
@@ -31,6 +32,11 @@ def reject(path: Path, text: str, fragments: tuple[str, ...]) -> list[str]:
         for fragment in fragments
         if fragment in text
     ]
+
+
+def append_log(lines: list[str]) -> None:
+    with LOG.open("a", encoding="utf-8") as output:
+        output.write("\n" + "\n".join(lines) + "\n")
 
 
 def main() -> int:
@@ -145,12 +151,14 @@ def main() -> int:
     )))
 
     if errors:
-        print("Unity creature visual contracts failed:", file=sys.stderr)
-        for error in errors:
-            print(f"- {error}", file=sys.stderr)
+        lines = ["Unity creature visual contracts failed:"] + [f"- {error}" for error in errors]
+        append_log(lines)
+        print("\n".join(lines), file=sys.stderr)
         return 1
 
-    print("PASS: creature families, lifecycle variants, markers, pooling and LOD")
+    line = "PASS: creature families, lifecycle variants, markers, pooling and LOD"
+    append_log([line])
+    print(line)
     return 0
 
 
