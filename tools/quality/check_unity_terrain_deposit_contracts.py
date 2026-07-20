@@ -74,10 +74,8 @@ def main() -> int:
             "PositiveY",
             "NegativeZ",
             "PositiveZ",
-            "VisibleDepositId",
             "Only revealed or damaged deposits may expose a visual id.",
             "Hidden or depleted deposits cannot expose visual connections.",
-            "TerrainDepositVolumeViewModel Empty(",
         ),
     ))
 
@@ -95,7 +93,6 @@ def main() -> int:
             "TerrainDepositVisualState.Depleted",
             "visibleDepositId = string.Empty",
             "ResolveConnections",
-            "string.Equals(",
             "CalculateVersion",
         ),
     ))
@@ -103,6 +100,47 @@ def main() -> int:
         presenter_path,
         presenter,
         ("UnityEngine", "UnityEngine.Random", "displayName"),
+    ))
+
+    decoration_view_path = (
+        PRESENTATION / "TerrainDepositDecorationViewModels.cs"
+    )
+    decoration_view = read(decoration_view_path)
+    errors.extend(require(
+        decoration_view_path,
+        decoration_view,
+        (
+            "TerrainDepositDecorationCellViewModel",
+            "MaximumVariant = 3",
+            "MaximumRotationQuarterTurns = 3",
+            "MaximumScaleBand = 3",
+            "MaximumConnectorsPerFace = 2",
+            "OffsetBandX",
+            "OffsetBandY",
+            "TerrainDepositDecorationVolumeViewModel",
+        ),
+    ))
+
+    decoration_presenter_path = (
+        PRESENTATION / "TerrainDepositDecorationPresenter.cs"
+    )
+    decoration_presenter = read(decoration_presenter_path)
+    errors.extend(require(
+        decoration_presenter_path,
+        decoration_presenter,
+        (
+            "if (!source.IsVisible)",
+            "CalculateSeed(source.Cell, source.VisibleDepositId)",
+            "ResolveScaleBand",
+            "RotationQuarterTurns",
+            "cells.Sort(CompareCells)",
+            "CalculateVersion(cells)",
+        ),
+    ))
+    errors.extend(reject(
+        decoration_presenter_path,
+        decoration_presenter,
+        ("UnityEngine", "UnityEngine.Random", "SourceVersion", "displayName"),
     ))
 
     profile_path = RUNTIME / "DigTerrainDepositVisualProfile.cs"
@@ -119,8 +157,6 @@ def main() -> int:
             "Stone",
             "Material? revealedMaterial",
             "Material? damagedMaterial",
-            "TerrainDepositVisualState.Revealed",
-            "TerrainDepositVisualState.Damaged",
         ),
     ))
     errors.extend(reject(
@@ -140,11 +176,6 @@ def main() -> int:
             "state != TerrainDepositVisualState.Revealed",
             "state != TerrainDepositVisualState.Damaged",
             "RequireDepositKind(",
-            "DigTerrainDepositProfileKind.Iron",
-            "DigTerrainDepositProfileKind.Gold",
-            "DigTerrainDepositProfileKind.Crystal",
-            "DigTerrainDepositProfileKind.Coal",
-            "DigTerrainDepositProfileKind.Stone",
         ),
     ))
 
@@ -154,18 +185,21 @@ def main() -> int:
         deposits_path,
         deposits,
         (
-            "_previousDepositVisuals",
-            "if (!source.IsVisible)",
+            "_previousDepositDecorations",
+            "TerrainDepositDecorationVolumeViewModel? decorationVolume",
             "solidCells.Contains(key)",
-            "MarkChangedDepositVisuals",
-            "CalculateDepositVisualSignature",
-            "Deposit presentation dimensions must match terrain.",
+            "MarkChangedDepositDecorations",
+            "CalculateDepositDecorationSignature",
+            "decoration.Variant",
+            "decoration.RotationQuarterTurns",
+            "decoration.ScaleBand",
+            "Deposit decoration dimensions must match terrain.",
         ),
     ))
     errors.extend(reject(
         deposits_path,
         deposits,
-        ("source.State == TerrainDepositVisualState.Hidden", "UnityEngine.Random"),
+        ("UnityEngine.Random", "TerrainDepositVisualState.Hidden"),
     ))
 
     snapshot_path = RUNTIME / "DigTerrainRenderSnapshot.cs"
@@ -174,9 +208,9 @@ def main() -> int:
         snapshot_path,
         snapshot,
         (
-            "_visibleDeposits",
-            "TryGetVisibleDeposit",
-            "TerrainDepositCellViewModel",
+            "_depositDecorations",
+            "TryGetDepositDecoration",
+            "TerrainDepositDecorationCellViewModel",
         ),
     ))
 
@@ -200,13 +234,57 @@ def main() -> int:
         mesh_path,
         mesh,
         (
-            "snapshot.TryGetVisibleDeposit(",
-            "state == DigTerrainSurfaceState.Solid",
-            "deposit.VisibleDepositId",
-            "deposit.DamageBand",
-            "deposit.Connections",
+            "ResolveTerrainKey",
+            "string.Empty",
+            "TerrainDepositVisualState.Hidden",
+            "AddDepositDecorations(",
         ),
     ))
+    errors.extend(reject(
+        mesh_path,
+        mesh,
+        ("TryGetDepositDecoration", "deposit.VisibleDepositId"),
+    ))
+
+    topology_path = RUNTIME / "DigTerrainChunkMeshBuilder.DepositDecorations.cs"
+    topology = read(topology_path)
+    errors.extend(require(
+        topology_path,
+        topology,
+        (
+            "snapshot.TryGetDepositDecoration(",
+            "ResolveDepositKey",
+            "AddDepositFace(",
+            "position.Offset(0, 0, 1)",
+            "position.Offset(0, 0, -1)",
+            "position.Offset(-1, 0, 0)",
+            "position.Offset(1, 0, 0)",
+            "position.Offset(0, -1, 0)",
+            "position.Offset(0, 1, 0)",
+        ),
+    ))
+
+    geometry_path = (
+        RUNTIME / "DigTerrainChunkMeshBuilder.DepositDecorationGeometry.cs"
+    )
+    geometry = read(geometry_path)
+    errors.extend(require(
+        geometry_path,
+        geometry,
+        (
+            "AddDepositCluster",
+            "AddDepositConnectors",
+            "MaximumConnectorsPerFace",
+            "AddDepositConnector",
+            "AddDecorationTriangle",
+        ),
+    ))
+    for path, text in ((topology_path, topology), (geometry_path, geometry)):
+        errors.extend(reject(
+            path,
+            text,
+            ("GameObject", "Collider", "UnityEngine.Random", "Instantiate("),
+        ))
 
     renderer_path = RUNTIME / "DigTerrainChunkRenderer.cs"
     renderer = read(renderer_path)
@@ -220,16 +298,38 @@ def main() -> int:
         ),
     ))
 
+    renderer_deposits_path = RUNTIME / "DigTerrainChunkRenderer.Deposits.cs"
+    renderer_deposits = read(renderer_deposits_path)
+    errors.extend(require(
+        renderer_deposits_path,
+        renderer_deposits,
+        (
+            "snapshot.TryGetDepositDecoration(",
+            "decoration.Variant",
+            "decoration.RotationQuarterTurns",
+            "decoration.ScaleBand",
+            "decoration.OffsetBandX",
+            "decoration.OffsetBandY",
+        ),
+    ))
+
     adapter_path = RUNTIME / "DigWorldRenderer.VisualCatalog.cs"
     adapter = read(adapter_path)
     errors.extend(require(
         adapter_path,
         adapter,
         (
-            "TerrainDepositVolumeViewModel? _terrainDeposits",
+            "TerrainDepositDecorationPresenter",
+            "TerrainDepositDecorationVolumeViewModel? _terrainDepositDecorations",
             "SetTerrainDeposits",
-            "_terrainDeposits,",
+            "_depositDecorationPresenter.Present(deposits)",
+            "_terrainDepositDecorations,",
         ),
+    ))
+    errors.extend(reject(
+        adapter_path,
+        adapter,
+        ("terrain.metal_bearing_rock", "GameObject.CreatePrimitive"),
     ))
 
     if errors:
