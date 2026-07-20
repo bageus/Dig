@@ -25,9 +25,7 @@ namespace Dig.Unity
             bool hasCatalogResolution = visualCatalog != null;
             if (visualCatalog != null)
             {
-                catalogResolution = visualCatalog.ResolveBuilding(
-                    stableId,
-                    BuildingVisualState.BuildingBox);
+                catalogResolution = ResolveCatalogBuildingBox(stableId);
                 if (catalogResolution.HasProfile)
                 {
                     return catalogResolution;
