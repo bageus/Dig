@@ -64,12 +64,23 @@ namespace Dig.Unity
             string? selectedBuildingId = BuildingRenderer!.SelectedBuildingId;
             IReadOnlyList<AgentViewModel> before = AgentSession!.LoadView();
             long nextTick = checked(AgentSession.Tick + 1);
-            Result result = TerrainSession!.EnforceDirectMovementOwnership(nextTick);
+            IReadOnlyList<string> manualMovementIds =
+                AgentSession.ActiveManualTunnelResidentIds;
+            Result result = TerrainSession!.InterruptForManualMovement(
+                manualMovementIds,
+                nextTick);
             if (result.IsSuccess)
             {
                 TerrainSession.SynchronizeDesignations(nextTick, before);
                 TerrainSession.SynchronizeBuildingBoxAssembly(nextTick, before);
                 TerrainSession.SynchronizeBuildingPacking(nextTick, before);
+                result = TerrainSession.InterruptForManualMovement(
+                    AgentSession.ActiveManualTunnelResidentIds,
+                    nextTick);
+            }
+
+            if (result.IsSuccess)
+            {
                 IReadOnlyDictionary<string, CellId> movement =
                     TerrainSession.PlanMovement(before);
                 IReadOnlyDictionary<string, SpatialCellId> spatialMovement =
@@ -78,6 +89,8 @@ namespace Dig.Unity
                 result = AgentSession.Advance(movement);
             }
 
+            DomainError? manualMovementWarning =
+                AgentSession.ConsumeManualTunnelMovementWarning();
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
             if (result.IsSuccess)
             {
@@ -162,6 +175,12 @@ namespace Dig.Unity
                 primarySelectedAgentId,
                 selectedJobId,
                 selectedBuildingId);
+            if (manualMovementWarning != null)
+            {
+                Hud.SetStatus(
+                    $"Manual movement cancelled: {manualMovementWarning.Code} — "
+                    + manualMovementWarning.Message);
+            }
         }
     }
 }
