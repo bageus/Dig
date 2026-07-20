@@ -73,6 +73,7 @@ namespace Dig.Unity
             RequireKind(DigTerrainProfileKind.Lava, kinds, errors);
             RequireKind(DigTerrainProfileKind.Unmineable, kinds, errors);
             AppendDepositValidation(errors);
+            AppendCaveTemplateValidation(errors);
             return new ReadOnlyCollection<string>(errors);
         }
 
@@ -81,6 +82,7 @@ namespace Dig.Unity
             base.OnEnable();
             _profileLookup = null;
             ResetDepositProfileLookup();
+            ResetCaveTemplateProfileLookup();
         }
 
         protected override void OnValidate()
@@ -88,6 +90,7 @@ namespace Dig.Unity
             base.OnValidate();
             _profileLookup = null;
             ResetDepositProfileLookup();
+            ResetCaveTemplateProfileLookup();
         }
 
         private void EnsureProfileLookup()

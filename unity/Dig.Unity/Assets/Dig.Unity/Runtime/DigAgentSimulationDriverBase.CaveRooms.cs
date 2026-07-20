@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Dig.Application.World;
 using Dig.Domain.World;
+using Dig.Presentation.World;
 
 namespace Dig.Unity
 {
@@ -11,6 +12,8 @@ namespace Dig.Unity
             new HashSet<string>(StringComparer.Ordinal);
         private readonly HashSet<SpatialCellId> _terrainExcavatedVolume =
             new HashSet<SpatialCellId>();
+        private readonly CaveTemplateTrimPresenter _caveTemplateTrimPresenter =
+            new CaveTemplateTrimPresenter();
 
         internal TunnelDepthExcavationPlanResult ExcavateTunnelDepth(
             SpatialCellId source,
@@ -60,7 +63,7 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(floorRenderer));
             }
 
-            if (AgentSession == null)
+            if (AgentSession == null || WorldRenderer == null)
             {
                 return;
             }
@@ -90,6 +93,8 @@ namespace Dig.Unity
                 floorRenderer.AddRoomFloor(plan);
             }
 
+            WorldRenderer.SetCaveTemplateTrims(
+                _caveTemplateTrimPresenter.Present(completedPlans));
             RefreshTerrainDepthVolume();
         }
 

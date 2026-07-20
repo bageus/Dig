@@ -26,11 +26,13 @@ namespace Dig.Unity
         {
             terrainVisualCatalog = catalog;
             _terrainChunkRenderer?.Invalidate();
+            _caveTemplateTrimRenderer?.Invalidate();
             DigVisualCatalogDiagnostics.LogValidation(
                 terrainVisualCatalog,
                 this,
                 "Terrain");
             RefreshChunkedTerrain();
+            RefreshCaveTemplateTrims();
         }
 
         internal void SetTerrainDeposits(TerrainDepositVolumeViewModel deposits)
