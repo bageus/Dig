@@ -27,7 +27,10 @@ def check_tunnel_and_group_contracts(
     session_path = runtime_root / "DigAgentSession.cs"
     errors: list[str] = []
 
-    agent_visual = texts.get(agent_visual_path, "")
+    agent_visual = "\n".join(
+        text for path, text in texts.items()
+        if path.name.startswith("DigAgentVisual") and path.suffix == ".cs"
+    )
     errors.extend(require_fragments(
         agent_visual_path,
         agent_visual,
@@ -46,9 +49,13 @@ def check_tunnel_and_group_contracts(
         "rotated-root resident movement",
         ("transform.localPosition", "ResidentLocalPosition"),
     ))
+    agent_renderer = "\n".join(
+        text for path, text in texts.items()
+        if path.name.startswith("DigAgentRenderer") and path.suffix == ".cs"
+    )
     errors.extend(require_fragments(
         agent_renderer_path,
-        texts.get(agent_renderer_path, ""),
+        agent_renderer,
         "multi-resident selection ownership",
         (
             "_selectedIds",
