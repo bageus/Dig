@@ -19,6 +19,17 @@ public sealed class DigRenderMaterialLibrary : MonoBehaviour
     public int CachedMaterialCount => _resolved.Count;
     public int RuntimeFallbackCount => _ownedFallbacks.Count;
 
+    private void Awake()
+    {
+        DigStylizedLightingRig lighting = GetComponent<DigStylizedLightingRig>();
+        if (lighting == null) lighting = gameObject.AddComponent<DigStylizedLightingRig>();
+        lighting.Configure();
+        if (GetComponent<DigPooledVfxPlayer>() == null)
+            gameObject.AddComponent<DigPooledVfxPlayer>();
+        if (GetComponent<DigRealtimeLightPool>() == null)
+            gameObject.AddComponent<DigRealtimeLightPool>();
+    }
+
     public Material Resolve(RenderMaterialSemantic semantic,
         RenderSurfaceKind surface, Color fallbackTint)
     {
