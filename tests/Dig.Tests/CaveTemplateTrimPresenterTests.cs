@@ -18,7 +18,7 @@ public sealed class CaveTemplateTrimPresenterTests
             new CaveTemplateTrimPresenter().Present(Array.Empty<CaveRoomPlan>());
 
         Assert.Empty(result.Instances);
-        Assert.Equal(0, result.Version);
+        Assert.Equal(0L, result.Version);
     }
 
     [Theory]
@@ -101,7 +101,7 @@ public sealed class CaveTemplateTrimPresenterTests
         WorldSnapshot world = CreateWorld(entranceY);
         CaveRoomPlanResult result = new CaveRoomPlanner().Plan(
             world,
-            new ExcavationBoundaryPolicy(32, 22, protectedTopRows: 2),
+            new ExcavationBoundaryPolicy(32, 22, 2),
             kind,
             new CellId(entranceX, entranceY));
         Assert.True(result.Succeeded, result.Detail);
