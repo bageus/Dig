@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Dig.Presentation.Navigation;
+using Dig.Presentation.Overlays;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -11,8 +12,13 @@ namespace Dig.Unity
         private readonly Dictionary<string, LineRenderer> _routes =
             new Dictionary<string, LineRenderer>(StringComparer.Ordinal);
         private Transform? _root;
-        private Material? _material;
-        private bool _visible = true;
+        private DigOverlayManager? _overlays;
+
+        internal void Initialize(DigOverlayManager overlays)
+        {
+            _overlays = overlays
+                ?? throw new ArgumentNullException(nameof(overlays));
+        }
 
         public void Render(IReadOnlyList<RouteViewModel> routes)
         {
@@ -42,26 +48,13 @@ namespace Dig.Unity
             RemoveMissing(visibleIds);
         }
 
-        private void Update()
-        {
-            if (!Input.GetKeyDown(KeyCode.F4) || _root == null)
-            {
-                return;
-            }
-
-            _visible = !_visible;
-            _root.gameObject.SetActive(_visible);
-        }
-
         private void Configure(LineRenderer line)
         {
-            line.sharedMaterial = _material;
+            _overlays!.ConfigureLineRenderer(
+                line,
+                OverlayLayerKind.Routes,
+                OverlaySemanticKind.Route);
             line.useWorldSpace = true;
-            line.widthMultiplier = 0.075f;
-            line.numCapVertices = 3;
-            line.numCornerVertices = 3;
-            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            line.receiveShadows = false;
         }
 
         private static void Apply(LineRenderer line, RouteViewModel route)
@@ -93,8 +86,9 @@ namespace Dig.Unity
                 }
             }
 
-            foreach (string id in removed)
+            for (int index = 0; index < removed.Count; index++)
             {
+                string id = removed[index];
                 LineRenderer line = _routes[id];
                 _routes.Remove(id);
                 Destroy(line.gameObject);
@@ -103,40 +97,27 @@ namespace Dig.Unity
 
         private void EnsureResources()
         {
-            if (_root == null)
+            if (_overlays == null)
             {
-                _root = new GameObject("Navigation Routes [F4]").transform;
-                _root.SetParent(transform, worldPositionStays: false);
+                throw new InvalidOperationException(
+                    "Navigation route renderer requires DigOverlayManager.");
             }
 
-            if (_material != null)
+            if (_root != null)
             {
                 return;
             }
 
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
-            if (shader == null)
-            {
-                shader = Shader.Find("Unlit/Color");
-            }
-
-            if (shader == null)
-            {
-                throw new InvalidOperationException("No supported route shader was found.");
-            }
-
-            _material = new Material(shader)
-            {
-                name = "Dig Navigation Route",
-                color = new Color(0.40f, 0.92f, 1f, 1f),
-            };
+            _root = new GameObject("Navigation Routes").transform;
+            _root.SetParent(transform, worldPositionStays: false);
+            _overlays.RegisterLayer(OverlayLayerKind.Routes, _root);
         }
 
         private void OnDestroy()
         {
-            if (_material != null)
+            if (_root != null && _overlays != null)
             {
-                Destroy(_material);
+                _overlays.UnregisterLayer(OverlayLayerKind.Routes, _root);
             }
         }
     }
