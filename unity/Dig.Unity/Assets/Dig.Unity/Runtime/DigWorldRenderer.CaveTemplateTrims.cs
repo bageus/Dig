@@ -43,6 +43,7 @@ namespace Dig.Unity
                     gameObject.AddComponent<DigCaveTemplateTrimRenderer>();
             }
 
+            _caveTemplateTrimRenderer.SetDetailLevel(_terrainVisualDetailLevel);
             return _caveTemplateTrimRenderer;
         }
     }
