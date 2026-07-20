@@ -61,8 +61,8 @@ jobs:
       - name: Validate resident rig presentation
         run: python tools/quality/check_unity_resident_visual_contracts.py
 
-      - name: Validate adaptive HUD startup
-        run: python tools/quality/check_unity_hud_startup_contracts.py
+      - name: Validate creature visual presentation
+        run: python tools/quality/check_unity_creature_visual_contracts.py
 
       - name: Upload Unity source contract log
         if: always()

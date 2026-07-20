@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Buildings;
+using Dig.Presentation.Creatures;
 using Dig.Presentation.Inventory;
 using Dig.Presentation.Jobs;
 using Dig.Presentation.Navigation;
@@ -94,6 +95,7 @@ namespace Dig.Unity
             Camera targetCamera = EnsureCamera();
             DigWorldRenderer worldRenderer = GetOrAdd<DigWorldRenderer>(gameObject);
             DigAgentRenderer agentRenderer = GetOrAdd<DigAgentRenderer>(gameObject);
+            DigCreatureRenderer creatureRenderer = GetOrAdd<DigCreatureRenderer>(gameObject);
             DigJobRenderer jobRenderer = GetOrAdd<DigJobRenderer>(gameObject);
             DigBuildingRenderer buildingRenderer = GetOrAdd<DigBuildingRenderer>(gameObject);
             DigWorldItemRenderer itemRenderer = GetOrAdd<DigWorldItemRenderer>(gameObject);
@@ -143,8 +145,12 @@ namespace Dig.Unity
             tunnelRenderer.Initialize(agentSession.TunnelVolume);
             caveRoomPreviewRenderer.Clear();
 
-            _startupStage = "rendering residents";
+            _startupStage = "rendering residents and creatures";
             agentRenderer.Render(agents, movementDuration: 0f);
+            creatureRenderer.Render(
+                Array.Empty<CreatureVisualSnapshot>(),
+                targetCamera,
+                movementDuration: 0f);
 
             _startupStage = "rendering jobs and buildings";
             jobRenderer.Initialize(agentRenderer);
