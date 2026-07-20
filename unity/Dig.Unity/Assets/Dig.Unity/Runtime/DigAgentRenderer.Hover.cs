@@ -7,6 +7,19 @@ namespace Dig.Unity
 public sealed partial class DigAgentRenderer
 {
     private const float ResidentHoverRadiusPixels = 22f;
+    private DigAgentVisual? _hoveredAgent;
+
+    internal void SetHovered(DigAgentVisual? agent)
+    {
+        if (_hoveredAgent == agent)
+        {
+            return;
+        }
+
+        _hoveredAgent?.SetHovered(false);
+        _hoveredAgent = agent != null && agent.Model.IsAlive ? agent : null;
+        _hoveredAgent?.SetHovered(true);
+    }
 
     internal bool TryResolveHoveredAgent(
         Camera camera,
