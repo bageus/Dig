@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using Dig.Domain.Buildings;
 using Dig.Domain.World;
 using Dig.Presentation.Buildings;
 using UnityEngine;
@@ -9,12 +9,34 @@ namespace Dig.Unity
     [DisallowMultipleComponent]
     public sealed class DigBuildingBoxGhostRenderer : MonoBehaviour
     {
-        private readonly Dictionary<CellId, GameObject> _cells =
-            new Dictionary<CellId, GameObject>();
+        private const string CatalogResourcePath =
+            "Dig/VisualCatalogs/Buildings";
+
+        [SerializeField]
+        private DigBuildingVisualCatalog? visualCatalog;
+
         private Transform? _root;
-        private Material? _validMaterial;
-        private Material? _invalidMaterial;
+        private Transform? _previewContainer;
+        private GameObject? _previewInstance;
+        private DigVisualTintTarget? _previewTint;
+        private string _assetKey = string.Empty;
+        private Material? _markerMaterial;
         private GameObject? _workMarker;
+
+        private void Awake()
+        {
+            if (visualCatalog == null)
+            {
+                visualCatalog = Resources.Load<DigBuildingVisualCatalog>(
+                    CatalogResourcePath);
+            }
+        }
+
+        public void SetVisualCatalog(DigBuildingVisualCatalog? catalog)
+        {
+            visualCatalog = catalog;
+            _assetKey = string.Empty;
+        }
 
         public void Render(BuildingBoxGhostViewModel preview)
         {
@@ -24,55 +46,113 @@ namespace Dig.Unity
             }
 
             EnsureResources();
-            HashSet<CellId> visible = new HashSet<CellId>();
-            for (int index = 0; index < preview.Footprint.Count; index++)
-            {
-                CellId cell = preview.Footprint[index];
-                visible.Add(cell);
-                if (!_cells.TryGetValue(cell, out GameObject? visual))
-                {
-                    visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                    visual.name = $"Building ghost {cell}";
-                    visual.layer = 2;
-                    visual.transform.SetParent(_root, worldPositionStays: false);
-                    _cells.Add(cell, visual);
-                }
-
-                visual.SetActive(true);
-                visual.GetComponent<Renderer>().sharedMaterial = preview.IsValid
-                    ? _validMaterial
-                    : _invalidMaterial;
-                visual.transform.localPosition = new Vector3(cell.X, 0.16f, cell.Y);
-                visual.transform.localRotation = preview.IsValid
-                    ? Quaternion.identity
-                    : Quaternion.Euler(0f, 45f, 0f);
-                visual.transform.localScale = preview.IsValid
-                    ? new Vector3(0.88f, 0.18f, 0.88f)
-                    : new Vector3(0.72f, 0.46f, 0.72f);
-            }
-
-            foreach (KeyValuePair<CellId, GameObject> pair in _cells)
-            {
-                if (!visible.Contains(pair.Key))
-                {
-                    pair.Value.SetActive(false);
-                }
-            }
-
+            DigBuildingVisualResolution resolution = Resolve(preview);
+            EnsurePreviewInstance(preview, resolution);
+            ApplyPreviewTransform(preview, resolution);
             RenderWorkMarker(preview);
         }
 
         public void Clear()
         {
-            foreach (GameObject visual in _cells.Values)
+            if (_previewContainer != null)
             {
-                visual.SetActive(false);
+                _previewContainer.gameObject.SetActive(false);
             }
 
             if (_workMarker != null)
             {
                 _workMarker.SetActive(false);
             }
+        }
+
+        private DigBuildingVisualResolution Resolve(BuildingBoxGhostViewModel preview)
+        {
+            string stableId = preview.DefinitionId.ToString();
+            if (visualCatalog != null)
+            {
+                return visualCatalog.ResolveBuilding(
+                    stableId,
+                    BuildingVisualState.BuildingBox);
+            }
+
+            return new DigBuildingVisualResolution(
+                DigVisualAsset.CreateRuntimeFallback(stableId, Color.white),
+                Vector2Int.one,
+                Vector2.zero,
+                hasProfile: false);
+        }
+
+        private void EnsurePreviewInstance(
+            BuildingBoxGhostViewModel preview,
+            DigBuildingVisualResolution resolution)
+        {
+            if (_previewInstance != null
+                && _assetKey == resolution.Asset.StableId)
+            {
+                _previewContainer!.gameObject.SetActive(true);
+                return;
+            }
+
+            if (_previewInstance != null)
+            {
+                _previewInstance.SetActive(false);
+                Destroy(_previewInstance);
+            }
+
+            _previewInstance = DigVisualPrefabFactory.Create(
+                resolution.Asset,
+                _previewContainer!,
+                $"Building ghost {preview.DefinitionId}",
+                PrimitiveType.Cube);
+            _assetKey = resolution.Asset.StableId;
+            _previewTint = _previewInstance.GetComponent<DigVisualTintTarget>();
+            SetLayerRecursively(_previewInstance, layer: 2);
+            DisableColliders(_previewInstance);
+            _previewContainer!.gameObject.SetActive(true);
+        }
+
+        private void ApplyPreviewTransform(
+            BuildingBoxGhostViewModel preview,
+            DigBuildingVisualResolution resolution)
+        {
+            _previewContainer!.localPosition = new Vector3(
+                preview.Origin.X,
+                0.03f,
+                preview.Origin.Y);
+            _previewContainer.localRotation = ResolveOrientation(preview.Orientation)
+                * (preview.IsValid
+                    ? Quaternion.identity
+                    : Quaternion.Euler(0f, 0f, 7f));
+            _previewContainer.localScale = preview.IsValid
+                ? Vector3.one
+                : new Vector3(0.92f, 1.18f, 0.92f);
+
+            if (resolution.Asset.IsFallback || resolution.Asset.Prefab == null)
+            {
+                ResolveLocalBounds(preview, out Vector2 center, out Vector2 size);
+                _previewInstance!.transform.localPosition = new Vector3(
+                    center.x,
+                    0.12f,
+                    center.y);
+                _previewInstance.transform.localRotation = Quaternion.identity;
+                _previewInstance.transform.localScale = new Vector3(
+                    Mathf.Max(0.50f, size.x * 0.86f),
+                    0.24f,
+                    Mathf.Max(0.50f, size.y * 0.86f));
+            }
+            else
+            {
+                _previewInstance!.transform.localPosition = new Vector3(
+                    -resolution.PivotCell.x,
+                    0f,
+                    -resolution.PivotCell.y);
+                _previewInstance.transform.localRotation = Quaternion.identity;
+                _previewInstance.transform.localScale = Vector3.one;
+            }
+
+            _previewTint?.SetTint(preview.IsValid
+                ? new Color(0.25f, 0.82f, 0.56f, 0.72f)
+                : new Color(0.92f, 0.32f, 0.28f, 0.82f));
         }
 
         private void RenderWorkMarker(BuildingBoxGhostViewModel preview)
@@ -86,11 +166,16 @@ namespace Dig.Unity
             CellId cell = preview.WorkPosition.Value;
             _workMarker!.SetActive(true);
             _workMarker.name = $"Building work position {cell}";
-            _workMarker.GetComponent<Renderer>().sharedMaterial = preview.IsValid
-                ? _validMaterial
-                : _invalidMaterial;
             _workMarker.transform.localPosition = new Vector3(cell.X, 0.24f, cell.Y);
+            _workMarker.transform.localRotation = preview.IsValid
+                ? Quaternion.identity
+                : Quaternion.Euler(0f, 45f, 0f);
             _workMarker.transform.localScale = new Vector3(0.24f, 0.48f, 0.24f);
+            Renderer renderer = _workMarker.GetComponent<Renderer>();
+            renderer.sharedMaterial = _markerMaterial;
+            renderer.GetComponent<DigVisualTintTarget>()?.SetTint(preview.IsValid
+                ? new Color(0.25f, 0.82f, 0.56f, 0.82f)
+                : new Color(0.92f, 0.32f, 0.28f, 0.92f));
         }
 
         private void EnsureResources()
@@ -99,9 +184,11 @@ namespace Dig.Unity
             {
                 _root = new GameObject("Building Placement Ghost").transform;
                 _root.SetParent(transform, worldPositionStays: false);
+                _previewContainer = new GameObject("Preview").transform;
+                _previewContainer.SetParent(_root, worldPositionStays: false);
             }
 
-            if (_validMaterial != null && _invalidMaterial != null && _workMarker != null)
+            if (_workMarker != null)
             {
                 return;
             }
@@ -117,32 +204,120 @@ namespace Dig.Unity
                 throw new InvalidOperationException("No supported ghost shader was found.");
             }
 
-            _validMaterial = new Material(shader)
+            _markerMaterial = new Material(shader)
             {
-                name = "Dig Valid Building Ghost",
-                color = new Color(0.25f, 0.82f, 0.56f, 0.58f),
-            };
-            _invalidMaterial = new Material(shader)
-            {
-                name = "Dig Invalid Building Ghost",
-                color = new Color(0.92f, 0.32f, 0.28f, 0.72f),
+                name = "Dig Building Ghost Marker",
             };
             _workMarker = GameObject.CreatePrimitive(PrimitiveType.Cube);
             _workMarker.layer = 2;
             _workMarker.transform.SetParent(_root, worldPositionStays: false);
+            Collider? collider = _workMarker.GetComponent<Collider>();
+            if (collider != null)
+            {
+                collider.enabled = false;
+            }
+
+            if (_workMarker.GetComponent<DigVisualPrefabRoot>() == null)
+            {
+                _workMarker.AddComponent<DigVisualPrefabRoot>();
+            }
+
+            _workMarker.AddComponent<DigVisualTintTarget>();
             _workMarker.SetActive(false);
+        }
+
+        private static void ResolveLocalBounds(
+            BuildingBoxGhostViewModel preview,
+            out Vector2 center,
+            out Vector2 size)
+        {
+            int minX = int.MaxValue;
+            int maxX = int.MinValue;
+            int minY = int.MaxValue;
+            int maxY = int.MinValue;
+            for (int index = 0; index < preview.Footprint.Count; index++)
+            {
+                CellId cell = preview.Footprint[index];
+                ResolveLocalOffset(
+                    cell.X - preview.Origin.X,
+                    cell.Y - preview.Origin.Y,
+                    preview.Orientation,
+                    out int x,
+                    out int y);
+                minX = Math.Min(minX, x);
+                maxX = Math.Max(maxX, x);
+                minY = Math.Min(minY, y);
+                maxY = Math.Max(maxY, y);
+            }
+
+            center = new Vector2((minX + maxX) * 0.5f, (minY + maxY) * 0.5f);
+            size = new Vector2((maxX - minX) + 1, (maxY - minY) + 1);
+        }
+
+        private static void ResolveLocalOffset(
+            int x,
+            int y,
+            BuildingOrientation orientation,
+            out int localX,
+            out int localY)
+        {
+            switch (orientation)
+            {
+                case BuildingOrientation.East:
+                    localX = y;
+                    localY = -x;
+                    break;
+                case BuildingOrientation.South:
+                    localX = -x;
+                    localY = -y;
+                    break;
+                case BuildingOrientation.West:
+                    localX = -y;
+                    localY = x;
+                    break;
+                default:
+                    localX = x;
+                    localY = y;
+                    break;
+            }
+        }
+
+        private static Quaternion ResolveOrientation(BuildingOrientation orientation)
+        {
+            float yaw = orientation switch
+            {
+                BuildingOrientation.North => 0f,
+                BuildingOrientation.East => -90f,
+                BuildingOrientation.South => 180f,
+                BuildingOrientation.West => 90f,
+                _ => throw new ArgumentOutOfRangeException(nameof(orientation)),
+            };
+            return Quaternion.Euler(0f, yaw, 0f);
+        }
+
+        private static void DisableColliders(GameObject root)
+        {
+            Collider[] colliders = root.GetComponentsInChildren<Collider>(includeInactive: true);
+            for (int index = 0; index < colliders.Length; index++)
+            {
+                colliders[index].enabled = false;
+            }
+        }
+
+        private static void SetLayerRecursively(GameObject root, int layer)
+        {
+            Transform[] transforms = root.GetComponentsInChildren<Transform>(includeInactive: true);
+            for (int index = 0; index < transforms.Length; index++)
+            {
+                transforms[index].gameObject.layer = layer;
+            }
         }
 
         private void OnDestroy()
         {
-            if (_validMaterial != null)
+            if (_markerMaterial != null)
             {
-                Destroy(_validMaterial);
-            }
-
-            if (_invalidMaterial != null)
-            {
-                Destroy(_invalidMaterial);
+                Destroy(_markerMaterial);
             }
         }
     }
