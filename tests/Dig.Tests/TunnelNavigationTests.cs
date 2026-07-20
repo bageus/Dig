@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Agents;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
@@ -89,6 +90,7 @@ public sealed class TunnelNavigationTests
         Assert.All(result.Path!.Cells, cell => Assert.Equal(layout.SurfaceY, cell.Y));
         Assert.Contains(result.Path.Cells, cell => cell.Z == 3);
         Assert.Contains(result.Path.Cells, cell => cell.X == goal.X);
+        AssertRouteUsesOnlyAuthoritativeSteps(volume, result.Path);
     }
 
     [Fact]
@@ -111,6 +113,7 @@ public sealed class TunnelNavigationTests
         Assert.All(result.Path!.Cells, cell => Assert.Equal(layout.ShaftX, cell.X));
         Assert.All(result.Path.Cells, cell => Assert.Equal(0, cell.Z));
         Assert.Contains(result.Path.Cells, cell => cell.Y == layout.CaveFloorY);
+        AssertRouteUsesOnlyAuthoritativeSteps(volume, result.Path);
     }
 
     [Fact]
@@ -135,6 +138,25 @@ public sealed class TunnelNavigationTests
         Assert.Contains(result.Path.Cells, cell => volume.IsVerticalTunnel(cell));
         Assert.Contains(result.Path.Cells, cell => cell.Z == 0);
         Assert.Contains(result.Path.Cells, cell => cell.Z == 3);
+        AssertRouteUsesOnlyAuthoritativeSteps(volume, result.Path);
+    }
+
+    [Fact]
+    public void Horizontal_depth_step_requires_two_open_adjacent_cells()
+    {
+        SpatialCellId start = new SpatialCellId(1, 1, 0);
+        SpatialCellId nextDepth = new SpatialCellId(1, 1, 1);
+        SpatialCellId skippedDepth = new SpatialCellId(1, 1, 2);
+        TunnelNavigationVolume volume = new TunnelNavigationVolume(
+            width: 4,
+            height: 4,
+            depth: 4,
+            openCells: new[] { start, nextDepth, skippedDepth },
+            verticalCells: new SpatialCellId[0]);
+
+        Assert.True(volume.CanTraverseStep(start, nextDepth));
+        Assert.False(volume.CanTraverseStep(start, skippedDepth));
+        Assert.False(volume.CanTraverseStep(start, new SpatialCellId(2, 1, 0)));
     }
 
     [Fact]
@@ -151,6 +173,7 @@ public sealed class TunnelNavigationTests
 
         TunnelPathResult result = volume.FindPath(lower, upper);
 
+        Assert.False(volume.CanTraverseStep(lower, upper));
         Assert.False(result.Succeeded);
         Assert.Equal(TunnelPathFailureReason.Unreachable, result.FailureReason);
     }
@@ -169,12 +192,13 @@ public sealed class TunnelNavigationTests
 
         TunnelPathResult result = volume.FindPath(lower, upper);
 
+        Assert.True(volume.CanTraverseStep(lower, upper));
         Assert.True(result.Succeeded, result.Detail);
         Assert.Equal(new[] { lower, upper }, result.Path!.Cells);
     }
 
     [Fact]
-    public void Application_moves_the_authoritative_resident_to_the_validated_destination()
+    public void Application_plans_route_without_teleporting_the_resident()
     {
         SpatialCellId start = new SpatialCellId(1, 1, 0);
         SpatialCellId middle = new SpatialCellId(2, 1, 0);
@@ -190,23 +214,53 @@ public sealed class TunnelNavigationTests
             "10000000000000000000000000000099",
             start);
         Assert.True(repository.Add(agent).IsSuccess);
-        InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
-        MoveAgentThroughTunnelCommandHandler handler =
-            new MoveAgentThroughTunnelCommandHandler(repository, volume, journal);
+        PlanAgentTunnelRouteCommandHandler handler =
+            new PlanAgentTunnelRouteCommandHandler(repository, volume);
 
-        MoveAgentThroughTunnelReport report = handler.Handle(
-            new MoveAgentThroughTunnelCommand(agent.Id, goal, tick: 5));
+        PlanAgentTunnelRouteReport report = handler.Handle(
+            new PlanAgentTunnelRouteCommand(agent.Id, goal));
 
         Assert.True(report.Result.IsSuccess);
         Assert.Equal(new[] { start, middle, goal }, report.Path!.Cells);
-        Assert.Equal(goal, repository.Get(agent.Id)!.SpatialPosition);
-        AgentMoved moved = Assert.IsType<AgentMoved>(Assert.Single(journal.Events));
-        Assert.Equal(start, moved.PreviousSpatialPosition);
-        Assert.Equal(goal, moved.CurrentSpatialPosition);
+        Assert.Equal(start, repository.Get(agent.Id)!.SpatialPosition);
+        Assert.Empty(repository.Get(agent.Id)!.DequeueUncommittedEvents());
     }
 
     [Fact]
-    public void Group_command_moves_every_resident_to_one_validated_destination()
+    public void Authoritative_execution_moves_one_route_cell_at_a_time()
+    {
+        SpatialCellId start = new SpatialCellId(0, 1, 0);
+        SpatialCellId second = new SpatialCellId(1, 1, 0);
+        SpatialCellId third = new SpatialCellId(1, 1, 1);
+        SpatialCellId goal = new SpatialCellId(2, 1, 1);
+        TunnelNavigationVolume volume = new TunnelNavigationVolume(
+            width: 4,
+            height: 3,
+            depth: 4,
+            openCells: new[] { start, second, third, goal },
+            verticalCells: new SpatialCellId[0]);
+        AgentState agent = CreateAgent(
+            "10000000000000000000000000000100",
+            start);
+        TunnelPath path = Assert.IsType<TunnelPath>(volume.FindPath(start, goal).Path);
+
+        for (int index = 1; index < path.Cells.Count; index++)
+        {
+            SpatialCellId before = agent.SpatialPosition;
+            SpatialCellId next = path.Cells[index];
+            Assert.True(volume.CanTraverseStep(before, next));
+            Assert.True(agent.MoveTo(next, tick: index).IsSuccess);
+            AgentMoved moved = Assert.IsType<AgentMoved>(
+                Assert.Single(agent.DequeueUncommittedEvents()));
+            Assert.Equal(before, moved.PreviousSpatialPosition);
+            Assert.Equal(next, moved.CurrentSpatialPosition);
+        }
+
+        Assert.Equal(goal, agent.SpatialPosition);
+    }
+
+    [Fact]
+    public void Group_planner_returns_atomic_routes_without_moving_any_resident()
     {
         SpatialCellId firstStart = new SpatialCellId(0, 1, 0);
         SpatialCellId secondStart = new SpatialCellId(1, 1, 1);
@@ -233,27 +287,27 @@ public sealed class TunnelNavigationTests
             secondStart);
         Assert.True(repository.Add(first).IsSuccess);
         Assert.True(repository.Add(second).IsSuccess);
-        InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
-        MoveAgentsThroughTunnelCommandHandler handler =
-            new MoveAgentsThroughTunnelCommandHandler(repository, volume, journal);
+        PlanAgentsTunnelRoutesCommandHandler handler =
+            new PlanAgentsTunnelRoutesCommandHandler(repository, volume);
 
-        MoveAgentsThroughTunnelReport report = handler.Handle(
-            new MoveAgentsThroughTunnelCommand(
+        PlanAgentsTunnelRoutesReport report = handler.Handle(
+            new PlanAgentsTunnelRoutesCommand(
                 new[] { first.Id, second.Id },
-                goal,
-                tick: 7));
+                goal));
 
         Assert.True(report.Result.IsSuccess);
         Assert.Equal(2, report.Entries.Count);
         Assert.All(report.Entries, entry =>
-            Assert.Equal(goal, entry.Path.Cells[entry.Path.Cells.Count - 1]));
-        Assert.Equal(goal, repository.Get(first.Id)!.SpatialPosition);
-        Assert.Equal(goal, repository.Get(second.Id)!.SpatialPosition);
-        Assert.Equal(2, journal.Events.Count);
+        {
+            Assert.Equal(goal, entry.Path.Cells[entry.Path.Cells.Count - 1]);
+            AssertRouteUsesOnlyAuthoritativeSteps(volume, entry.Path);
+        });
+        Assert.Equal(firstStart, repository.Get(first.Id)!.SpatialPosition);
+        Assert.Equal(secondStart, repository.Get(second.Id)!.SpatialPosition);
     }
 
     [Fact]
-    public void Group_command_changes_no_resident_when_one_route_is_unreachable()
+    public void Group_planner_returns_no_routes_when_one_resident_is_unreachable()
     {
         SpatialCellId firstStart = new SpatialCellId(0, 1, 0);
         SpatialCellId goal = new SpatialCellId(1, 1, 0);
@@ -273,20 +327,18 @@ public sealed class TunnelNavigationTests
             isolatedStart);
         Assert.True(repository.Add(first).IsSuccess);
         Assert.True(repository.Add(isolated).IsSuccess);
-        InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
-        MoveAgentsThroughTunnelCommandHandler handler =
-            new MoveAgentsThroughTunnelCommandHandler(repository, volume, journal);
+        PlanAgentsTunnelRoutesCommandHandler handler =
+            new PlanAgentsTunnelRoutesCommandHandler(repository, volume);
 
-        MoveAgentsThroughTunnelReport report = handler.Handle(
-            new MoveAgentsThroughTunnelCommand(
+        PlanAgentsTunnelRoutesReport report = handler.Handle(
+            new PlanAgentsTunnelRoutesCommand(
                 new[] { first.Id, isolated.Id },
-                goal,
-                tick: 8));
+                goal));
 
         Assert.True(report.Result.IsFailure);
+        Assert.Empty(report.Entries);
         Assert.Equal(firstStart, repository.Get(first.Id)!.SpatialPosition);
         Assert.Equal(isolatedStart, repository.Get(isolated.Id)!.SpatialPosition);
-        Assert.Empty(journal.Events);
     }
 
     [Fact]
@@ -299,6 +351,19 @@ public sealed class TunnelNavigationTests
         Assert.True(agent.MoveTo(new CellId(4, 5), tick: 1).IsSuccess);
 
         Assert.Equal(new SpatialCellId(4, 5, 3), agent.SpatialPosition);
+    }
+
+    private static void AssertRouteUsesOnlyAuthoritativeSteps(
+        TunnelNavigationVolume volume,
+        TunnelPath path)
+    {
+        Assert.True(path.Cells.Count > 0);
+        for (int index = 1; index < path.Cells.Count; index++)
+        {
+            Assert.True(
+                volume.CanTraverseStep(path.Cells[index - 1], path.Cells[index]),
+                $"Invalid route step {path.Cells[index - 1]} -> {path.Cells[index]}.");
+        }
     }
 
     private static AgentState CreateAgent(string id, SpatialCellId position)
