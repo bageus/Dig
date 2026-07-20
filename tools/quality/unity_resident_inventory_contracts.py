@@ -78,15 +78,17 @@ def check_resident_inventory_runtime_contracts(
             "InventoryExpansionGroup.Cargo",
             "InventoryExpansionGroup.Weapon",
             "DigResidentInventoryAttachmentVisual",
+            "visual.Configure(model, ResolveItemVisual(model.ItemId))",
         ),
     ))
     errors.extend(require_fragments(
         attachment_path,
         texts.get(attachment_path, ""),
-        "resident attachment geometry",
+        "resident attachment item profile geometry",
         (
-            "BuildCargo(model.Tier, material);",
-            "BuildWeapon(model.Tier, material);",
+            "DigItemVisualResolution resolution",
+            "ResolveSocket(model.Group, resolution.CarrySocket)",
+            "resolution.CarryScale",
             "model.VisualAttachmentId",
         ),
     ))
