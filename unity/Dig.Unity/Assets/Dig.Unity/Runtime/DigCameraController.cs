@@ -1,5 +1,6 @@
 using Dig.Presentation.World;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace Dig.Unity
 {
@@ -127,6 +128,12 @@ namespace Dig.Unity
 
         private void HandleZoom()
         {
+            if (EventSystem.current != null
+                && EventSystem.current.IsPointerOverGameObject())
+            {
+                return;
+            }
+
             float wheel = Input.mouseScrollDelta.y;
             if (Mathf.Abs(wheel) > 0.001f)
             {

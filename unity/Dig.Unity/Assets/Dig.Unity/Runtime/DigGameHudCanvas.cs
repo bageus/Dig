@@ -1,5 +1,6 @@
 using System;
 using Dig.Presentation.Inventory;
+using Dig.Presentation.World;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -23,11 +24,16 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
     private DigWorldInteraction? _interaction;
     private DigAgentSimulationDriver? _simulation;
     private DigHudOverlay? _legacyHud;
+    private Camera? _mainCamera;
+    private WorldViewModel? _world;
     private Canvas? _canvas;
     private RectTransform? _rightPanel;
     private RectTransform? _rightContent;
     private RectTransform? _bottomPanel;
     private RectTransform? _bottomContent;
+    private RectTransform? _statusPanel;
+    private RectTransform? _minimapPanel;
+    private RectTransform? _clockPanel;
     private Text? _statusText;
     private Button? _residentTabButton;
     private Button? _buildingTabButton;
@@ -36,6 +42,7 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
     private string _lastRosterSignature = string.Empty;
     private string _lastContextSignature = string.Empty;
     private string _status = string.Empty;
+    private float _bottomPanelHeight = 98f;
     private bool _initialized;
 
     internal void Initialize(
@@ -61,7 +68,9 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
             buildingRenderer,
             interaction,
             simulation,
-            legacyHud);
+            legacyHud,
+            Camera.main,
+            world: null);
     }
 
     internal void Initialize(
@@ -72,6 +81,29 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
         DigWorldInteraction interaction,
         DigAgentSimulationDriver simulation,
         DigHudOverlay legacyHud)
+    {
+        Initialize(
+            terrainSession,
+            agentRenderer,
+            jobRenderer,
+            buildingRenderer,
+            interaction,
+            simulation,
+            legacyHud,
+            Camera.main,
+            world: null);
+    }
+
+    internal void Initialize(
+        DigTerrainWorkSession terrainSession,
+        DigAgentRenderer agentRenderer,
+        DigJobRenderer jobRenderer,
+        DigBuildingRenderer buildingRenderer,
+        DigWorldInteraction interaction,
+        DigAgentSimulationDriver simulation,
+        DigHudOverlay legacyHud,
+        Camera? mainCamera,
+        WorldViewModel? world)
     {
         _terrainSession = terrainSession
             ?? throw new ArgumentNullException(nameof(terrainSession));
@@ -87,6 +119,8 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
             ?? throw new ArgumentNullException(nameof(simulation));
         _legacyHud = legacyHud
             ?? throw new ArgumentNullException(nameof(legacyHud));
+        _mainCamera = mainCamera;
+        _world = world;
         CreateCanvasShell();
         _initialized = true;
         InvalidateAll();
@@ -100,6 +134,9 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
         }
 
         return Contains(_rightPanel, screenPoint)
+            || Contains(_minimapPanel, screenPoint)
+            || Contains(_clockPanel, screenPoint)
+            || Contains(_statusPanel, screenPoint)
             || (_bottomPanel!.gameObject.activeSelf
                 && Contains(_bottomPanel, screenPoint));
     }
@@ -117,6 +154,7 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
     {
         _lastRosterSignature = string.Empty;
         _lastContextSignature = string.Empty;
+        InvalidateClock();
     }
 
     private void LateUpdate()
@@ -126,8 +164,15 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
             return;
         }
 
+        ApplyResponsiveLayout();
+        RefreshClock();
         RefreshRoster();
         RefreshContextPanel();
+    }
+
+    private void OnDestroy()
+    {
+        DisposeMinimap();
     }
 
     private void CreateCanvasShell()
@@ -140,7 +185,7 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1280f, 720f);
         scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-        scaler.matchWidthOrHeight = 0f;
+        scaler.matchWidthOrHeight = 0.5f;
         scaler.referencePixelsPerUnit = 100f;
         gameObject.AddComponent<GraphicRaycaster>();
         EnsureEventSystem();
@@ -148,62 +193,67 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
         _rightPanel = CreatePanel(
             "Roster Panel",
             transform,
-            new Color(0.06f, 0.08f, 0.11f, 0.92f));
-        Anchor(_rightPanel, 1f, 1f, 1f, 1f, -356f, -596f, -20f, -20f);
+            new Color(0.035f, 0.05f, 0.075f, 0.94f));
         CreateRightPanelShell();
 
         _bottomPanel = CreatePanel(
             "Context Panel",
             transform,
-            new Color(0.05f, 0.07f, 0.10f, 0.94f));
-        Anchor(_bottomPanel, 0.5f, 0f, 0.5f, 0f, -620f, 14f, 620f, 112f);
+            new Color(0.035f, 0.05f, 0.075f, 0.95f));
         _bottomContent = CreateRect("Context Content", _bottomPanel);
-        Stretch(_bottomContent, 10f, 10f, -10f, -10f);
+        Stretch(_bottomContent, 8f, 8f, -8f, -8f);
 
-        RectTransform statusPanel = CreatePanel(
-            "Status Panel",
+        _statusPanel = CreatePanel(
+            "Notification Ticker",
             transform,
-            new Color(0.03f, 0.04f, 0.06f, 0.84f));
-        Anchor(statusPanel, 0.5f, 0f, 0.5f, 0f, -460f, 118f, 460f, 154f);
+            new Color(0.02f, 0.03f, 0.045f, 0.90f));
+        _statusPanel.GetComponent<Image>().raycastTarget = false;
         _statusText = CreateText(
-            "Status",
-            statusPanel,
+            "Notification",
+            _statusPanel,
             string.Empty,
             16,
             TextAnchor.MiddleCenter);
-        Stretch(_statusText.rectTransform, 10f, 4f, -10f, -4f);
+        Stretch(_statusText.rectTransform, 10f, 3f, -10f, -3f);
         _statusText.raycastTarget = false;
+
+        CreateMinimapShell();
+        CreateClockShell();
+        ApplyResponsiveLayout(force: true);
     }
 
     private void CreateRightPanelShell()
     {
         RectTransform tabs = CreateRect("Tabs", _rightPanel!);
-        Anchor(tabs, 0f, 1f, 1f, 1f, 12f, -54f, -12f, -12f);
+        Anchor(tabs, 0f, 1f, 1f, 1f, 8f, -48f, -8f, -8f);
         HorizontalLayoutGroup layout = tabs.gameObject.AddComponent<HorizontalLayoutGroup>();
-        layout.spacing = 8f;
+        layout.spacing = 5f;
         layout.childControlWidth = true;
         layout.childForceExpandWidth = true;
         _residentTabButton = CreateButton(
             "Residents Tab",
             tabs,
             "●",
-            SelectResidentTab);
+            SelectResidentTab,
+            preferredHeight: 38f);
         _buildingTabButton = CreateButton(
             "Buildings Tab",
             tabs,
             "■",
-            SelectBuildingTab);
+            SelectBuildingTab,
+            preferredHeight: 38f);
         _jobTabButton = CreateButton(
             "Jobs Tab",
             tabs,
             "▲",
-            SelectJobTab);
+            SelectJobTab,
+            preferredHeight: 38f);
 
         RectTransform viewport = CreatePanel(
             "Roster Viewport",
             _rightPanel!,
             new Color(0f, 0f, 0f, 0.12f));
-        Anchor(viewport, 0f, 0f, 1f, 1f, 12f, 12f, -12f, -66f);
+        Anchor(viewport, 0f, 0f, 1f, 1f, 8f, 8f, -8f, -56f);
         viewport.gameObject.AddComponent<RectMask2D>();
         _rightContent = CreateRect("Roster Content", viewport);
         _rightContent.anchorMin = new Vector2(0f, 1f);
@@ -212,8 +262,8 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
         _rightContent.offsetMin = Vector2.zero;
         _rightContent.offsetMax = Vector2.zero;
         VerticalLayoutGroup rows = _rightContent.gameObject.AddComponent<VerticalLayoutGroup>();
-        rows.spacing = 6f;
-        rows.padding = new RectOffset(6, 6, 6, 6);
+        rows.spacing = 4f;
+        rows.padding = new RectOffset(4, 4, 4, 4);
         rows.childControlHeight = true;
         rows.childControlWidth = true;
         rows.childForceExpandHeight = false;

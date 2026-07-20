@@ -17,13 +17,22 @@ def check_gameplay_hud_and_work_contracts(
     reject_fragments: RejectFragments,
 ) -> list[str]:
     hud_path = runtime_root / "DigGameHudCanvas.cs"
+    layout_path = runtime_root / "DigGameHudCanvas.Layout.cs"
     factory_path = runtime_root / "DigGameHudCanvas.Factory.cs"
     roster_path = runtime_root / "DigGameHudCanvas.Roster.cs"
+    resident_rows_path = runtime_root / "DigGameHudCanvas.ResidentRows.cs"
     inventory_path = runtime_root / "DigGameHudCanvas.Inventory.cs"
     context_path = runtime_root / "DigGameHudCanvas.Context.cs"
+    minimap_path = runtime_root / "DigGameHudCanvas.Minimap.cs"
+    minimap_pointer_path = runtime_root / "DigMinimapPointer.cs"
+    clock_path = runtime_root / "DigGameHudCanvas.Clock.cs"
+    camera_path = runtime_root / "DigCameraController.cs"
+    bootstrap_path = runtime_root / "DigUnityBootstrap.cs"
     interaction_path = runtime_root / "DigWorldInteraction.CanvasHud.cs"
     agent_session_path = runtime_root / "DigAgentSession.cs"
+    agent_hud_path = runtime_root / "DigAgentSession.Hud.cs"
     driver_path = runtime_root / "DigAgentSimulationDriverBase.cs"
+    driver_hud_path = runtime_root / "DigAgentSimulationDriverBase.Hud.cs"
     room_session_path = runtime_root / "DigWorldSession.CaveRooms.cs"
     loop_path = runtime_root / "DigAgentSimulationDriverBase.Loop.cs"
     router_path = (
@@ -38,20 +47,40 @@ def check_gameplay_hud_and_work_contracts(
     errors = require_fragments(
         hud_path,
         texts.get(hud_path, ""),
-        "upper-right icon roster tabs and crisp canvas",
+        "adaptive HUD shell and input shielding",
         (
             "Jobs = 2",
             '"●"',
             '"■"',
             '"▲"',
-            "_jobTabButton",
-            "-356f, -596f, -20f, -20f",
             "_canvas.pixelPerfect = true;",
-            "new Vector2(1280f, 720f)",
-            "scaler.matchWidthOrHeight = 0f;",
-            "-620f, 14f, 620f, 112f",
+            "scaler.matchWidthOrHeight = 0.5f;",
+            "CreateMinimapShell();",
+            "CreateClockShell();",
+            "ApplyResponsiveLayout();",
+            "Contains(_minimapPanel, screenPoint)",
+            "Contains(_clockPanel, screenPoint)",
+            '"Notification Ticker"',
         ),
     )
+    errors.extend(require_fragments(
+        layout_path,
+        texts.get(layout_path, ""),
+        "non-overlapping canvas-space responsive HUD anchors",
+        (
+            "MinimumSidePanelWidth",
+            "MaximumRosterWidth",
+            "RectTransform canvasRect = (RectTransform)transform",
+            "canvasRect.rect.width",
+            "canvasRect.rect.height",
+            "_statusPanel!",
+            "_minimapPanel!",
+            "_clockPanel!",
+            "_rightPanel!",
+            "_bottomPanel!",
+            "SetBottomPanelHeight",
+        ),
+    ))
     errors.extend(require_fragments(
         factory_path,
         texts.get(factory_path, ""),
@@ -67,53 +96,142 @@ def check_gameplay_hud_and_work_contracts(
         ),
     ))
     errors.extend(require_fragments(
+        minimap_path,
+        texts.get(minimap_path, ""),
+        "zoomable bottom-left minimap",
+        (
+            "RenderTexture",
+            "orthographic = true",
+            "DigSideViewProjection.WorldCenter",
+            "ZoomMinimap",
+            '"Minimap Zoom Out"',
+            '"Minimap Zoom In"',
+            "MinimumMinimapZoom",
+            "MaximumMinimapZoom",
+            "DisposeMinimap",
+        ),
+    ))
+    errors.extend(require_fragments(
+        minimap_pointer_path,
+        texts.get(minimap_pointer_path, ""),
+        "minimap mouse wheel input",
+        ("IScrollHandler", "eventData.scrollDelta.y", "Scrolled?.Invoke"),
+    ))
+    errors.extend(require_fragments(
+        camera_path,
+        texts.get(camera_path, ""),
+        "world-camera scroll isolation over HUD",
+        (
+            "using UnityEngine.EventSystems;",
+            "EventSystem.current.IsPointerOverGameObject()",
+            "Input.mouseScrollDelta.y",
+        ),
+    ))
+    errors.extend(require_fragments(
+        clock_path,
+        texts.get(clock_path, ""),
+        "game clock and selected-resident work schedule",
+        (
+            '"DAY 1 · 00:00"',
+            '"WORK TIME"',
+            '"REST TIME"',
+            "TryGetResidentWorkWindow",
+            "SetResidentWorkWindow",
+            "all other time is rest",
+            "CreateClockTicks",
+            "Mathf.Sin(angle) * radius",
+        ),
+    ))
+    errors.extend(require_fragments(
         inventory_path,
         texts.get(inventory_path, ""),
-        "active-only two-row resident inventory",
+        "compact active-only two-row resident inventory",
         (
             "InventoryColumns = 3",
+            "InventoryCellWidth = 62f",
+            "InventoryCellHeight = 52f",
+            'MainCompartmentTitle = ""',
+            "BeginBottomLayout(hasExpansion ? 184f : 150f)",
+            "layout.childAlignment = TextAnchor.MiddleLeft",
             "GridLayoutGroup",
-            "FixedColumnCount",
             "constraintCount = InventoryColumns",
             "BuildCompartmentIfActive",
-            "inventory.GetCompartment(compartment).Count > 0",
-            '"MAIN · 6"',
         ),
     ))
     errors.extend(reject_fragments(
         inventory_path,
         texts.get(inventory_path, ""),
-        "inactive expansion placeholders and one-row inventory",
+        "inactive placeholders, Main heading and oversized inventory",
         (
+            '"MAIN · 6"',
             '"CARGO · NO EXPANSION"',
             'CreateHorizontalRow("Slots"',
             '"Unavailable"',
+            "InventoryCellWidth = 82f",
+            "InventoryCellHeight = 76f",
         ),
     ))
     errors.extend(require_fragments(
         roster_path,
         texts.get(roster_path, ""),
-        "one-line gender-colored selectable roster",
+        "authoritative roster selection and tab switching",
         (
             "SelectRightPanelTab",
-            "LoadJobs()",
-            "ResolveResidentSex(id)",
-            "ResidentSex.Female",
-            '"#FF83B9"',
-            '"#70B7FF"',
-            "ConfigureSingleLineRosterRow",
-            "HorizontalWrapMode.Overflow",
-            "resizeTextForBestFit = true",
-            "SelectResidentFromHud(id)",
+            "LoadResidentRoster",
+            "ResidentRosterViewModel",
+            "BuildResidentRows(residents)",
             "SelectBuildingFromHud(id)",
             "SelectJobFromHud(id)",
         ),
     ))
-    errors.extend(reject_fragments(
-        roster_path,
-        texts.get(roster_path, ""),
-        "multi-line roster entries",
-        ('+ $"\\nHealth', '+ $"\\nCell', '+ $"\\n{job.Status}'),
+    errors.extend(require_fragments(
+        resident_rows_path,
+        texts.get(resident_rows_path, ""),
+        "compact health schedule mood and expanded resident details",
+        (
+            "CreateCompactHealthBar",
+            "CreateScheduleIndicator",
+            '"W!"',
+            "CreateMoodIndicator",
+            "BuildResidentDetails",
+            '"Nutrition"',
+            '"Alertness"',
+            "resident.Skills.TopFive",
+            "NeedColor",
+            "SelectResidentFromHud(resident.Id)",
+        ),
+    ))
+    errors.extend(require_fragments(
+        agent_hud_path,
+        texts.get(agent_hud_path, ""),
+        "authoritative resident HUD and schedule bridge",
+        (
+            "ResidentRosterPresenter",
+            "LoadResidentRoster",
+            "CreateSnapshot(_tick)",
+            "TryGetWorkWindow",
+            "SetAgentWorkRestWindowCommand",
+        ),
+    ))
+    errors.extend(require_fragments(
+        driver_hud_path,
+        texts.get(driver_hud_path, ""),
+        "simulation HUD adapter",
+        (
+            "LoadResidentRoster",
+            "TryGetResidentWorkWindow",
+            "SetResidentWorkWindow",
+        ),
+    ))
+    errors.extend(require_fragments(
+        bootstrap_path,
+        texts.get(bootstrap_path, ""),
+        "HUD world camera and schedule composition",
+        (
+            "agentSession.InitializeHudSchedule(worldSession.Journal);",
+            "targetCamera,",
+            "world);",
+        ),
     ))
     errors.extend(require_fragments(
         interaction_path,
@@ -124,12 +242,13 @@ def check_gameplay_hud_and_work_contracts(
     errors.extend(require_fragments(
         context_path,
         texts.get(context_path, ""),
-        "single-row authoritative excavation and job context",
+        "single-row context using responsive height",
         (
             "SelectedJobId",
             "_terrainSession!.LoadJobs().FirstOrDefault",
             'CreateHorizontalRow("Excavation Tools", section, 56f)',
             "CreateRoomIconButton(",
+            "SetBottomPanelHeight(height)",
         ),
     ))
     for path, text in texts.items():

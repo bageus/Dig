@@ -12,20 +12,25 @@ namespace Dig.Unity
 public sealed partial class DigGameHudCanvas
 {
     private const int InventoryColumns = 3;
-    private const float InventoryCellWidth = 82f;
-    private const float InventoryCellHeight = 76f;
+    private const float InventoryCellWidth = 62f;
+    private const float InventoryCellHeight = 52f;
+    private const float InventoryCellSpacing = 4f;
+    private const float InventorySectionWidth = 202f;
+    private const string MainCompartmentTitle = "";
 
     private void BuildInventoryContext(ResidentInventoryLayoutViewModel inventory)
     {
-        BeginBottomLayout(220f);
+        bool hasExpansion = inventory.WeaponCapacity > 0 || inventory.CargoCapacity > 0;
+        BeginBottomLayout(hasExpansion ? 184f : 150f);
+        ConfigureInventoryRootLayout();
+        BuildCompartment(
+            inventory,
+            ResidentInventoryCompartment.Main,
+            MainCompartmentTitle);
         BuildCompartmentIfActive(
             inventory,
             ResidentInventoryCompartment.Weapon,
             $"WEAPON · {inventory.WeaponCapacity}");
-        BuildCompartment(
-            inventory,
-            ResidentInventoryCompartment.Main,
-            "MAIN · 6");
         BuildCompartmentIfActive(
             inventory,
             ResidentInventoryCompartment.Cargo,
@@ -40,6 +45,18 @@ public sealed partial class DigGameHudCanvas
         {
             _statusText!.text = _status;
         }
+    }
+
+    private void ConfigureInventoryRootLayout()
+    {
+        HorizontalLayoutGroup layout =
+            _bottomContent!.gameObject.GetComponent<HorizontalLayoutGroup>();
+        layout.spacing = 8f;
+        layout.childAlignment = TextAnchor.MiddleLeft;
+        layout.childControlHeight = true;
+        layout.childControlWidth = true;
+        layout.childForceExpandHeight = false;
+        layout.childForceExpandWidth = false;
     }
 
     private void BuildCompartmentIfActive(
@@ -66,23 +83,33 @@ public sealed partial class DigGameHudCanvas
         }
 
         int rows = Mathf.CeilToInt(models.Count / (float)InventoryColumns);
-        float gridHeight = (rows * InventoryCellHeight) + ((rows - 1) * 6f);
+        float gridHeight = (rows * InventoryCellHeight)
+            + ((rows - 1) * InventoryCellSpacing);
         RectTransform section = CreateSection(
             compartment.ToString(),
             _bottomContent!,
             title,
-            preferredWidth: 286f);
+            preferredWidth: InventorySectionWidth);
+        LayoutElement sectionElement = section.GetComponent<LayoutElement>();
+        sectionElement.minWidth = InventorySectionWidth;
+        sectionElement.preferredWidth = InventorySectionWidth;
+        sectionElement.flexibleWidth = 0f;
+        VerticalLayoutGroup sectionLayout = section.GetComponent<VerticalLayoutGroup>();
+        sectionLayout.padding = new RectOffset(4, 4, 4, 4);
+        sectionLayout.spacing = 4f;
+        sectionLayout.childAlignment = TextAnchor.UpperLeft;
+
         RectTransform slots = CreateRect("Slot Grid", section);
         LayoutElement gridElement = slots.gameObject.AddComponent<LayoutElement>();
         gridElement.preferredHeight = gridHeight;
         gridElement.minHeight = gridHeight;
         GridLayoutGroup grid = slots.gameObject.AddComponent<GridLayoutGroup>();
-        grid.padding = new RectOffset(6, 6, 0, 0);
+        grid.padding = new RectOffset(0, 0, 0, 0);
         grid.cellSize = new Vector2(InventoryCellWidth, InventoryCellHeight);
-        grid.spacing = new Vector2(6f, 6f);
+        grid.spacing = new Vector2(InventoryCellSpacing, InventoryCellSpacing);
         grid.startCorner = GridLayoutGroup.Corner.UpperLeft;
         grid.startAxis = GridLayoutGroup.Axis.Horizontal;
-        grid.childAlignment = TextAnchor.UpperCenter;
+        grid.childAlignment = TextAnchor.UpperLeft;
         grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         grid.constraintCount = InventoryColumns;
         for (int index = 0; index < models.Count; index++)
@@ -123,10 +150,10 @@ public sealed partial class DigGameHudCanvas
             "Slot Label",
             rect,
             name,
-            slot.IsEmpty ? 18 : 15,
+            slot.IsEmpty ? 16 : 13,
             TextAnchor.MiddleCenter);
         label.color = ResolveSlotTextColor(slot);
-        Stretch(label.rectTransform, 3f, 3f, -3f, -3f);
+        Stretch(label.rectTransform, 2f, 2f, -2f, -2f);
         label.raycastTarget = false;
 
         if (!slot.IsEmpty

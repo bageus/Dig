@@ -110,6 +110,29 @@ public sealed class AgentPlayerOrderChanged : IDomainEvent
     public string? PlayerOrderId { get; }
 }
 
+public sealed class AgentScheduleChanged : IDomainEvent
+{
+    public AgentScheduleChanged(
+        long tick,
+        EntityId agentId,
+        int workStartTickInclusive,
+        int workEndTickExclusive)
+    {
+        Tick = tick;
+        AgentId = agentId;
+        WorkStartTickInclusive = workStartTickInclusive;
+        WorkEndTickExclusive = workEndTickExclusive;
+    }
+
+    public long Tick { get; }
+
+    public EntityId AgentId { get; }
+
+    public int WorkStartTickInclusive { get; }
+
+    public int WorkEndTickExclusive { get; }
+}
+
 public sealed class AgentDied : IDomainEvent
 {
     public AgentDied(long tick, EntityId agentId)

@@ -263,14 +263,12 @@ public sealed partial class DigGameHudCanvas
     private void BeginBottomLayout(float height = CompactBottomPanelHeight)
     {
         _bottomPanel!.gameObject.SetActive(true);
-        Vector2 offsetMax = _bottomPanel.offsetMax;
-        offsetMax.y = _bottomPanel.offsetMin.y + height;
-        _bottomPanel.offsetMax = offsetMax;
+        SetBottomPanelHeight(height);
         ClearChildren(_bottomContent!);
         HorizontalLayoutGroup layout =
             _bottomContent!.gameObject.GetComponent<HorizontalLayoutGroup>()
             ?? _bottomContent.gameObject.AddComponent<HorizontalLayoutGroup>();
-        layout.spacing = 12f;
+        layout.spacing = 10f;
         layout.childAlignment = TextAnchor.MiddleCenter;
         layout.childControlHeight = true;
         layout.childControlWidth = true;

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dig.Domain.Society;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Buildings;
 using Dig.Presentation.Jobs;
@@ -37,10 +36,12 @@ public sealed partial class DigGameHudCanvas
 
     private void RefreshRoster()
     {
-        IReadOnlyList<AgentViewModel> residents = _agentRenderer!.GetHudModels()
-            .OrderBy(resident => resident.Name, StringComparer.Ordinal)
-            .ThenBy(resident => resident.Id, StringComparer.Ordinal)
-            .ToArray();
+        string? selectedResidentId = _agentRenderer!.SelectedCount == 1
+            ? _agentRenderer.SelectedAgentId
+            : null;
+        ResidentRosterViewModel residentRoster =
+            _simulation!.LoadResidentRoster(selectedResidentId);
+        IReadOnlyList<ResidentRosterRowViewModel> residents = residentRoster.Rows;
         IReadOnlyList<BuildingWorldViewModel> buildings = _terrainSession!
             .LoadBuildings()
             .Where(building => building.IsSelectable)
@@ -80,41 +81,6 @@ public sealed partial class DigGameHudCanvas
         }
     }
 
-    private void BuildResidentRows(IReadOnlyList<AgentViewModel> residents)
-    {
-        if (residents.Count == 0)
-        {
-            AddEmptyRosterMessage("No dwarfs");
-            return;
-        }
-
-        string? selectedId = _agentRenderer!.SelectedAgentId;
-        for (int index = 0; index < residents.Count; index++)
-        {
-            AgentViewModel resident = residents[index];
-            string id = resident.Id;
-            bool isSelected = string.Equals(id, selectedId, StringComparison.Ordinal);
-            string marker = isSelected ? "◆ " : string.Empty;
-            ResidentSex sex = _simulation!.ResolveResidentSex(id);
-            string nameColor = sex == ResidentSex.Female ? "#FF83B9" : "#70B7FF";
-            string label = marker
-                + $"<color={nameColor}>{resident.Name}</color>"
-                + $" · Health {resident.Health / 100}% · {resident.ActiveIntent}";
-            Button row = CreateButton(
-                $"Resident {id}",
-                _rightContent!,
-                label,
-                () => _interaction!.SelectResidentFromHud(id),
-                preferredHeight: 42f);
-            ConfigureSingleLineRosterRow(row);
-            if (isSelected)
-            {
-                row.GetComponent<Image>().color =
-                    new Color(0.30f, 0.48f, 0.64f, 0.96f);
-            }
-        }
-    }
-
     private void BuildBuildingRows(IReadOnlyList<BuildingWorldViewModel> buildings)
     {
         if (buildings.Count == 0)
@@ -138,7 +104,7 @@ public sealed partial class DigGameHudCanvas
                 _rightContent!,
                 label,
                 () => _interaction!.SelectBuildingFromHud(id),
-                preferredHeight: 42f);
+                preferredHeight: 36f);
             ConfigureSingleLineRosterRow(row);
             if (isSelected)
             {
@@ -150,7 +116,7 @@ public sealed partial class DigGameHudCanvas
 
     private void BuildJobRows(
         IReadOnlyList<JobOverlayViewModel> jobs,
-        IReadOnlyList<AgentViewModel> residents)
+        IReadOnlyList<ResidentRosterRowViewModel> residents)
     {
         if (jobs.Count == 0)
         {
@@ -181,7 +147,7 @@ public sealed partial class DigGameHudCanvas
                 _rightContent!,
                 label,
                 () => _interaction!.SelectJobFromHud(id),
-                preferredHeight: 42f);
+                preferredHeight: 36f);
             ConfigureSingleLineRosterRow(row);
             if (isSelected)
             {
@@ -198,8 +164,8 @@ public sealed partial class DigGameHudCanvas
         label.horizontalOverflow = HorizontalWrapMode.Overflow;
         label.verticalOverflow = VerticalWrapMode.Truncate;
         label.resizeTextForBestFit = true;
-        label.resizeTextMinSize = 11;
-        label.resizeTextMaxSize = 18;
+        label.resizeTextMinSize = 10;
+        label.resizeTextMaxSize = 16;
     }
 
     private void AddEmptyRosterMessage(string message)
@@ -208,21 +174,26 @@ public sealed partial class DigGameHudCanvas
             "Empty",
             _rightContent!,
             message,
-            17,
+            15,
             TextAnchor.MiddleCenter);
         LayoutElement element = text.gameObject.AddComponent<LayoutElement>();
-        element.preferredHeight = 48f;
+        element.preferredHeight = 44f;
     }
 
     private string BuildRosterSignature(
-        IReadOnlyList<AgentViewModel> residents,
+        IReadOnlyList<ResidentRosterRowViewModel> residents,
         IReadOnlyList<BuildingWorldViewModel> buildings,
         IReadOnlyList<JobOverlayViewModel> jobs)
     {
         string residentVersions = string.Join(
             ",",
             residents.Select(resident =>
-                $"{resident.Id}:{resident.Version}:{_simulation!.ResolveResidentSex(resident.Id)}"));
+                $"{resident.Id}:{resident.Version}:{resident.IsExpanded}:"
+                + $"{resident.ScheduledActivity}:{resident.IsIdleAtWork}:"
+                + $"{resident.Health.Value}:{resident.Nutrition.Value}:"
+                + $"{resident.Alertness.Value}:{resident.Mood.Value}:"
+                + $"{resident.Activity.Kind}:{resident.Activity.ProgressCurrent}:"
+                + $"{resident.Activity.BlockReasonCode}"));
         string buildingVersions = string.Join(
             ",",
             buildings.Select(building => $"{building.Id}:{building.Version}"));

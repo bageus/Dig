@@ -70,6 +70,7 @@ namespace Dig.Unity
             DigAgentSession agentSession = DigAgentSession.CreateDemo(
                 world,
                 worldSession.Journal);
+            agentSession.InitializeHudSchedule(worldSession.Journal);
             IReadOnlyList<AgentViewModel> agents = agentSession.LoadView();
 
             _startupStage = "creating work systems";
@@ -198,7 +199,9 @@ namespace Dig.Unity
                 buildingRenderer,
                 interaction,
                 simulation,
-                hud);
+                hud,
+                targetCamera,
+                world);
             hud.AttachGameHudCanvas(gameHud);
 
             interaction.enabled = true;
