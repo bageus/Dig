@@ -99,8 +99,8 @@ namespace Dig.Unity
         {
             if (_overlays == null)
             {
-                throw new InvalidOperationException(
-                    "Navigation route renderer requires DigOverlayManager.");
+                _overlays = GetComponent<DigOverlayManager>()
+                    ?? gameObject.AddComponent<DigOverlayManager>();
             }
 
             if (_root != null)
