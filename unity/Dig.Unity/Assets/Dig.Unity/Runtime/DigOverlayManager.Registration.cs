@@ -11,8 +11,8 @@ namespace Dig.Unity
         private OverlayVisibilityProfile visibilityProfile =
             OverlayVisibilityProfile.Debug;
 
-        private readonly Dictionary<OverlayLayerKind, Transform> _roots =
-            new Dictionary<OverlayLayerKind, Transform>();
+        private readonly Dictionary<OverlayLayerKind, List<Transform>> _roots =
+            new Dictionary<OverlayLayerKind, List<Transform>>();
         private readonly Dictionary<OverlayLayerKind, bool> _visibilityOverrides =
             new Dictionary<OverlayLayerKind, bool>();
         private readonly OverlayVisibilityResolver _visibility =
@@ -28,16 +28,29 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(root));
             }
 
-            _roots[layer] = root;
+            if (!_roots.TryGetValue(layer, out List<Transform>? roots))
+            {
+                roots = new List<Transform>();
+                _roots.Add(layer, roots);
+            }
+
+            if (!roots.Contains(root))
+            {
+                roots.Add(root);
+            }
+
             ApplyVisibility();
         }
 
         public void UnregisterLayer(OverlayLayerKind layer, Transform root)
         {
-            if (_roots.TryGetValue(layer, out Transform? registered)
-                && registered == root)
+            if (_roots.TryGetValue(layer, out List<Transform>? roots))
             {
-                _roots.Remove(layer);
+                roots.Remove(root);
+                if (roots.Count == 0)
+                {
+                    _roots.Remove(layer);
+                }
             }
         }
 
