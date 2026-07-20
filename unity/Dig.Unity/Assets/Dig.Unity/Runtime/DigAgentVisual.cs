@@ -43,10 +43,31 @@ public sealed partial class DigAgentVisual : MonoBehaviour
         Material selectedMaterial, DigResidentRig rig,
         ResidentAppearanceViewModel appearance)
     {
-        Model = model;
-        _normalMaterial = normalMaterial;
-        _selectedMaterial = selectedMaterial;
-        _rig = rig;
+        InitializeCommon(model, normalMaterial, selectedMaterial);
+        _rig = rig ?? throw new ArgumentNullException(nameof(rig));
+        _rig.ApplyAppearance(appearance);
+        ApplyAction(isMoving: false);
+        SetSelected(false);
+        SetHovered(false);
+    }
+
+    internal void InitializeSimple(AgentViewModel model, Material normalMaterial,
+        Material selectedMaterial)
+    {
+        InitializeCommon(model, normalMaterial, selectedMaterial);
+        _rig = null;
+        SetSelected(false);
+        SetHovered(false);
+    }
+
+    private void InitializeCommon(AgentViewModel model, Material normalMaterial,
+        Material selectedMaterial)
+    {
+        Model = model ?? throw new ArgumentNullException(nameof(model));
+        _normalMaterial = normalMaterial
+            ?? throw new ArgumentNullException(nameof(normalMaterial));
+        _selectedMaterial = selectedMaterial
+            ?? throw new ArgumentNullException(nameof(selectedMaterial));
         _previousX = model.CellX;
         _previousY = model.CellY;
         _previousZ = model.CellZ;
@@ -55,10 +76,6 @@ public sealed partial class DigAgentVisual : MonoBehaviour
         _currentZ = model.CellZ;
         transform.SetPositionAndRotation(ToWorld(model.CellX, model.CellY, model.CellZ),
             Quaternion.identity);
-        _rig.ApplyAppearance(appearance);
-        ApplyAction(isMoving: false);
-        SetSelected(false);
-        SetHovered(false);
     }
 
     internal void SetModel(AgentViewModel model, float duration)
@@ -126,10 +143,11 @@ public sealed partial class DigAgentVisual : MonoBehaviour
 
     private void ApplyHover()
     {
-        if (_rig == null) return;
         if (_hoverRenderers.Length == 0)
         {
-            _hoverRenderers = _rig.GetComponentsInChildren<Renderer>(includeInactive: true);
+            _hoverRenderers = _rig == null
+                ? GetComponentsInChildren<Renderer>(includeInactive: true)
+                : _rig.GetComponentsInChildren<Renderer>(includeInactive: true);
             _hoverBaseColors = new Color[_hoverRenderers.Length];
         }
         for (int index = 0; index < _hoverRenderers.Length; index++)
@@ -149,7 +167,7 @@ public sealed partial class DigAgentVisual : MonoBehaviour
             _hoverProperties.SetColor(ColorId, highlighted);
             renderer.SetPropertyBlock(_hoverProperties);
         }
-        _hoverApplied = true;
+        _hoverApplied = _hoverRenderers.Length > 0;
     }
 
     private void RestoreHover()
