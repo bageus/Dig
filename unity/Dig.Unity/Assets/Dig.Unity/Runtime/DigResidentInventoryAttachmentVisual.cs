@@ -10,127 +10,139 @@ namespace Dig.Unity
 internal sealed class DigResidentInventoryAttachmentVisual : MonoBehaviour
 {
     private string? _visualAttachmentId;
+    private string _assetKey = string.Empty;
     private InventoryExpansionGroup _group;
     private int _tier;
+    private GameObject? _instance;
+
+    internal void InvalidateAsset()
+    {
+        _assetKey = string.Empty;
+    }
 
     internal void Configure(
         ResidentInventoryAttachmentViewModel model,
-        Material material)
+        DigItemVisualResolution resolution)
     {
         if (model == null)
         {
             throw new ArgumentNullException(nameof(model));
         }
 
-        if (material == null)
-        {
-            throw new ArgumentNullException(nameof(material));
-        }
-
-        if (string.Equals(
+        bool rebuild = _instance == null
+            || !string.Equals(_assetKey, resolution.Asset.StableId, StringComparison.Ordinal)
+            || !string.Equals(
                 _visualAttachmentId,
                 model.VisualAttachmentId,
                 StringComparison.Ordinal)
-            && _group == model.Group
-            && _tier == model.Tier
-            && transform.childCount > 0)
-        {
-            return;
-        }
-
-        Clear();
+            || _group != model.Group
+            || _tier != model.Tier;
         _visualAttachmentId = model.VisualAttachmentId;
         _group = model.Group;
         _tier = model.Tier;
         name = "Inventory Attachment " + model.VisualAttachmentId;
-        if (model.Group == InventoryExpansionGroup.Cargo)
+        if (rebuild)
         {
-            BuildCargo(model.Tier, material);
+            Rebuild(model, resolution);
         }
         else
         {
-            BuildWeapon(model.Tier, material);
+            ApplySocket(model, resolution);
         }
     }
 
     internal void Clear()
     {
         _visualAttachmentId = null;
+        _assetKey = string.Empty;
         _tier = 0;
-        for (int index = transform.childCount - 1; index >= 0; index--)
+        if (_instance != null)
         {
-            Destroy(transform.GetChild(index).gameObject);
+            Destroy(_instance);
+            _instance = null;
         }
     }
 
-    private void BuildCargo(int tier, Material material)
+    private void Rebuild(
+        ResidentInventoryAttachmentViewModel model,
+        DigItemVisualResolution resolution)
     {
-        float width = tier >= 2 ? 0.72f : 0.56f;
-        float height = tier >= 2 ? 0.52f : 0.42f;
-        transform.localPosition = new Vector3(0f, 0.04f, -0.42f);
-        transform.localRotation = Quaternion.identity;
-        CreatePart(
-            "Basket Back",
-            new Vector3(0f, 0f, 0f),
-            new Vector3(width, height, 0.12f),
-            material);
-        CreatePart(
-            "Basket Rim",
-            new Vector3(0f, height * 0.5f, -0.06f),
-            new Vector3(width + 0.08f, 0.08f, 0.22f),
-            material);
-        CreatePart(
-            "Basket Left Strap",
-            new Vector3(-width * 0.32f, height * 0.38f, 0.12f),
-            new Vector3(0.07f, 0.62f, 0.07f),
-            material);
-        CreatePart(
-            "Basket Right Strap",
-            new Vector3(width * 0.32f, height * 0.38f, 0.12f),
-            new Vector3(0.07f, 0.62f, 0.07f),
-            material);
+        if (_instance != null)
+        {
+            Destroy(_instance);
+        }
+
+        _instance = DigVisualPrefabFactory.Create(
+            resolution.Asset,
+            transform,
+            model.VisualAttachmentId,
+            PrimitiveType.Cube);
+        _assetKey = resolution.Asset.StableId;
+        SetLayerRecursively(_instance, layer: 2);
+        DisableColliders(_instance);
+        ApplySocket(model, resolution);
     }
 
-    private void BuildWeapon(int tier, Material material)
+    private void ApplySocket(
+        ResidentInventoryAttachmentViewModel model,
+        DigItemVisualResolution resolution)
     {
-        transform.localPosition = new Vector3(-0.43f, 0.03f, 0.02f);
-        transform.localRotation = Quaternion.Euler(0f, 0f, 8f);
-        CreatePart(
-            "Harness Strap",
-            Vector3.zero,
-            new Vector3(0.10f, 0.84f, 0.10f),
-            material);
-        int pockets = tier >= 2 ? 2 : 1;
-        for (int index = 0; index < pockets; index++)
+        if (_instance == null)
         {
-            CreatePart(
-                "Weapon Pocket " + index,
-                new Vector3(0.11f, -0.16f + (index * 0.30f), 0f),
-                new Vector3(0.20f, 0.28f, 0.16f),
-                material);
+            return;
+        }
+
+        DigItemCarrySocketPolicy socket = ResolveSocket(model.Group, resolution.CarrySocket);
+        float tierScale = model.Tier >= 2 ? 1.14f : 1f;
+        transform.localPosition = socket switch
+        {
+            DigItemCarrySocketPolicy.Hand => new Vector3(0.38f, 0.18f, -0.04f),
+            DigItemCarrySocketPolicy.Weapon => new Vector3(-0.43f, 0.03f, 0.02f),
+            DigItemCarrySocketPolicy.Back => new Vector3(0f, 0.16f, -0.44f),
+            _ => new Vector3(0f, 0.04f, -0.42f),
+        };
+        transform.localRotation = socket switch
+        {
+            DigItemCarrySocketPolicy.Hand => Quaternion.Euler(0f, 0f, -18f),
+            DigItemCarrySocketPolicy.Weapon => Quaternion.Euler(0f, 0f, 8f),
+            _ => Quaternion.identity,
+        };
+        transform.localScale = Vector3.one;
+        _instance.transform.localPosition = Vector3.zero;
+        _instance.transform.localRotation = Quaternion.identity;
+        _instance.transform.localScale = resolution.CarryScale * tierScale;
+    }
+
+    private static DigItemCarrySocketPolicy ResolveSocket(
+        InventoryExpansionGroup group,
+        DigItemCarrySocketPolicy configured)
+    {
+        if (configured != DigItemCarrySocketPolicy.None)
+        {
+            return configured;
+        }
+
+        return group == InventoryExpansionGroup.Weapon
+            ? DigItemCarrySocketPolicy.Weapon
+            : DigItemCarrySocketPolicy.Cargo;
+    }
+
+    private static void DisableColliders(GameObject root)
+    {
+        Collider[] colliders = root.GetComponentsInChildren<Collider>(includeInactive: true);
+        for (int index = 0; index < colliders.Length; index++)
+        {
+            colliders[index].enabled = false;
         }
     }
 
-    private void CreatePart(
-        string partName,
-        Vector3 localPosition,
-        Vector3 localScale,
-        Material material)
+    private static void SetLayerRecursively(GameObject root, int layer)
     {
-        GameObject part = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        part.name = partName;
-        part.layer = 2;
-        part.transform.SetParent(transform, worldPositionStays: false);
-        part.transform.localPosition = localPosition;
-        part.transform.localScale = localScale;
-        Renderer renderer = part.GetComponent<Renderer>();
-        renderer.sharedMaterial = material;
-        Collider collider = part.GetComponent<Collider>();
-        if (collider != null)
+        Transform[] values = root.GetComponentsInChildren<Transform>(includeInactive: true);
+        for (int index = 0; index < values.Length; index++)
         {
-            Destroy(collider);
+            values[index].gameObject.layer = layer;
         }
     }
 }
-
 }
