@@ -45,7 +45,7 @@ def check_navigation_and_marquee_contracts(
             "TryApplyTunnelMove(hit, leftButton: true)",
             "TryResolveAgentHit(hits",
             "TryApplyTunnelMove(hit, left)",
-            "_agentRenderer.SelectedCount == 0",
+            "_agentRenderer!.SelectedCount == 0",
         ),
     ))
     direct_move_index = interaction_text.find(

@@ -62,6 +62,10 @@ namespace Dig.Unity
 
             _storageId = EntityId.Parse("60000000000000000000000000000001");
             CellId storageCell = SelectStorageCell();
+            ItemId[] acceptedOutputs = _worldSession.TerrainDepositDefinitions
+                .Select(value => value.OutputItemId)
+                .Distinct()
+                .ToArray();
             StorageState storage = new StorageState();
             Require(storage.AddZone(new StorageZoneDefinition(
                 _storageId,
@@ -70,7 +74,7 @@ namespace Dig.Unity
                 capacity: 500,
                 new StorageFilter(
                     acceptsAll: false,
-                    allowedItems: new[] { _outputItemId }),
+                    allowedItems: acceptedOutputs),
                 storageCell)));
             _storageRepository = new InMemoryStorageRepository(storage);
             _haulingIds = new DemoHaulingJobIdSource();
