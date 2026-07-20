@@ -34,18 +34,34 @@ def check_navigation_and_marquee_contracts(
     manual_excavation = runtime_root / "DigTerrainWorkManualExcavation.cs"
 
     errors: list[str] = []
+    interaction_text = texts.get(interaction, "")
     errors.extend(require_fragments(
         interaction,
-        texts.get(interaction, ""),
-        "resident-first direct movement input",
+        interaction_text,
+        "selected-resident tunnel movement before global resident picking",
         (
             "RaycastHit[] hits = GetPointerHits();",
+            "_agentRenderer!.SelectedCount > 0",
+            "TryApplyTunnelMove(hit, leftButton: true)",
             "TryResolveAgentHit(hits",
             "TryApplyTunnelMove(hit, left)",
             "_agentRenderer.SelectedCount == 0",
         ),
     ))
-    if "TryAssignSelectedResidentToExcavation(hit, left)" in texts.get(interaction, ""):
+    direct_move_index = interaction_text.find(
+        "TryApplyTunnelMove(hit, leftButton: true)"
+    )
+    resident_pick_index = interaction_text.find("TryResolveAgentHit(hits")
+    if (
+        direct_move_index < 0
+        or resident_pick_index < 0
+        or direct_move_index >= resident_pick_index
+    ):
+        errors.append(
+            f"{interaction}: selected-resident tunnel movement must be resolved "
+            "before the global all-hit resident picker"
+        )
+    if "TryAssignSelectedResidentToExcavation(hit, left)" in interaction_text:
         errors.append(f"{interaction}: selected-resident LMB must not assign excavation")
 
     errors.extend(require_fragments(
@@ -63,9 +79,10 @@ def check_navigation_and_marquee_contracts(
     errors.extend(require_fragments(
         targets,
         texts.get(targets, ""),
-        "movement before excavation markers",
+        "movement before excavation markers and child-collider residents",
         (
             "CellId? excavationCandidate",
+            "GetComponentInParent<DigAgentVisual>()",
             "TryResolveTunnelDestination(",
             "return DigSelectedResidentTarget.Movement",
             "DigSelectedResidentTarget.Excavation(excavationCandidate.Value)",
