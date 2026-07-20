@@ -36,6 +36,65 @@ public sealed class BuildingWorldPresenterTests
     }
 
     [Fact]
+    public void Projection_preserves_orientation_work_position_and_assembly_progress()
+    {
+        BuildingWorldPresenter presenter = new BuildingWorldPresenter(
+            new BuildingFunctionsPresenter());
+        BuildingSnapshot source = Snapshot(
+            Id(1),
+            BuildingStatus.UnderConstruction,
+            orientation: BuildingOrientation.East,
+            completedWork: 1);
+
+        BuildingWorldViewModel model = Assert.Single(presenter.Load(new[] { source }));
+
+        Assert.Equal(BuildingOrientation.East, model.Orientation);
+        Assert.Equal(source.WorkPosition.X, model.WorkPositionX);
+        Assert.Equal(source.WorkPosition.Y, model.WorkPositionY);
+        Assert.Equal(1d / 3d, model.AssemblyProgress, precision: 6);
+        Assert.Equal(BuildingVisualState.Assembly, model.VisualState);
+    }
+
+    [Fact]
+    public void Packing_state_overrides_completed_visual_state()
+    {
+        BuildingPackingPlanSnapshot active = new BuildingPackingPlanSnapshot(
+            Id(20),
+            Id(21),
+            completedWork: 1,
+            commitState: BuildingPackingCommitState.Active);
+        BuildingWorldPresenter presenter = new BuildingWorldPresenter(
+            new BuildingFunctionsPresenter());
+
+        BuildingWorldViewModel model = Assert.Single(presenter.Load(new[]
+        {
+            Snapshot(Id(1), BuildingStatus.Completed, active),
+        }));
+
+        Assert.Equal(BuildingVisualState.Packing, model.VisualState);
+        Assert.Equal(0.5d, model.Functions.PackingProgress, precision: 6);
+    }
+
+    [Theory]
+    [InlineData(BuildingStatus.AwaitingBox, BuildingVisualState.BuildingBox)]
+    [InlineData(BuildingStatus.Damaged, BuildingVisualState.Damaged)]
+    [InlineData(BuildingStatus.Completed, BuildingVisualState.Completed)]
+    public void Status_maps_to_stable_visual_state(
+        BuildingStatus status,
+        BuildingVisualState expected)
+    {
+        BuildingWorldPresenter presenter = new BuildingWorldPresenter(
+            new BuildingFunctionsPresenter());
+
+        BuildingWorldViewModel model = Assert.Single(presenter.Load(new[]
+        {
+            Snapshot(Id(1), status),
+        }));
+
+        Assert.Equal(expected, model.VisualState);
+    }
+
+    [Fact]
     public void Enabled_pack_action_dispatches_exactly_one_typed_command()
     {
         RecordingPackingHandler handler = new RecordingPackingHandler();
@@ -90,7 +149,9 @@ public sealed class BuildingWorldPresenterTests
     private static BuildingSnapshot Snapshot(
         EntityId id,
         BuildingStatus status,
-        BuildingPackingPlanSnapshot? packingPlan = null)
+        BuildingPackingPlanSnapshot? packingPlan = null,
+        BuildingOrientation orientation = BuildingOrientation.North,
+        int? completedWork = null)
     {
         BuildingDefinition definition = new BuildingDefinition(
             new BuildingDefinitionId("box.world_presenter"),
@@ -106,11 +167,11 @@ public sealed class BuildingWorldPresenterTests
             id,
             definition,
             origin,
-            BuildingOrientation.North,
-            definition.ResolveFootprint(origin, BuildingOrientation.North),
-            new CellId(origin.X, origin.Y - 1),
+            orientation,
+            definition.ResolveFootprint(origin, orientation),
+            definition.ResolveWorkPositions(origin, orientation)[0],
             status,
-            completedWork: definition.RequiredWork,
+            completedWork ?? definition.RequiredWork,
             durability: definition.MaximumDurability,
             version: 1,
             diagnosticReason: null,

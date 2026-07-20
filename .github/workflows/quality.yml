@@ -49,6 +49,9 @@ jobs:
       - name: Validate terrain accessibility and LOD
         run: python tools/quality/check_unity_terrain_accessibility_lod_contracts.py
 
+      - name: Validate building prefab presentation
+        run: python tools/quality/check_unity_building_visual_contracts.py
+
       - name: Upload Unity source contract log
         if: always()
         uses: actions/upload-artifact@v4

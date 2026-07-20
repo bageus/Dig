@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Dig.Domain.Buildings;
 using Dig.Presentation.Buildings;
 using UnityEngine;
@@ -9,144 +8,252 @@ namespace Dig.Unity
     [DisallowMultipleComponent]
     public sealed class DigBuildingVisual : MonoBehaviour
     {
-        private readonly List<Transform> _parts = new List<Transform>();
-        private readonly List<Vector2Int> _cells = new List<Vector2Int>();
-        private Material? _normalMaterial;
-        private Material? _selectedMaterial;
+        private Transform? _modelContainer;
+        private GameObject? _instance;
+        private DigVisualTintTarget? _tint;
+        private string _assetKey = string.Empty;
+        private Color _baseTint = Color.white;
         private bool _selected;
 
         public BuildingWorldViewModel Model { get; private set; } = null!;
 
         internal void Initialize(
             BuildingWorldViewModel model,
-            Material normalMaterial,
-            Material selectedMaterial)
+            DigBuildingVisualResolution resolution)
         {
-            _normalMaterial = normalMaterial
-                ?? throw new ArgumentNullException(nameof(normalMaterial));
-            _selectedMaterial = selectedMaterial
-                ?? throw new ArgumentNullException(nameof(selectedMaterial));
             Model = model ?? throw new ArgumentNullException(nameof(model));
-            RebuildGeometry();
+            EnsureContainer();
+            RebuildInstance(resolution);
             SetSelected(false);
         }
 
-        internal void SetModel(BuildingWorldViewModel model)
+        internal void InvalidateAsset()
         {
-            if (model == null)
-            {
-                throw new ArgumentNullException(nameof(model));
-            }
+            _assetKey = string.Empty;
+        }
 
-            bool rebuild = !GeometryMatches(model);
-            Model = model;
-            if (rebuild)
+        internal void SetModel(
+            BuildingWorldViewModel model,
+            DigBuildingVisualResolution resolution)
+        {
+            Model = model ?? throw new ArgumentNullException(nameof(model));
+            EnsureContainer();
+            if (_instance == null || _assetKey != resolution.Asset.StableId)
             {
-                RebuildGeometry();
+                RebuildInstance(resolution);
             }
-
-            ApplySelection();
+            else
+            {
+                ApplyPlacement(resolution);
+                ApplyPresentation();
+            }
         }
 
         internal void SetSelected(bool selected)
         {
             _selected = selected;
-            ApplySelection();
+            ApplyPresentation();
         }
 
-        private bool GeometryMatches(BuildingWorldViewModel model)
+        private void EnsureContainer()
         {
-            if (_cells.Count != model.Footprint.Count)
-            {
-                return false;
-            }
-
-            for (int index = 0; index < _cells.Count; index++)
-            {
-                BuildingFootprintCellViewModel cell = model.Footprint[index];
-                if (_cells[index].x != cell.X || _cells[index].y != cell.Y)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private void RebuildGeometry()
-        {
-            foreach (Transform part in _parts)
-            {
-                if (part != null)
-                {
-                    Destroy(part.gameObject);
-                }
-            }
-
-            _parts.Clear();
-            _cells.Clear();
-            for (int index = 0; index < Model.Footprint.Count; index++)
-            {
-                BuildingFootprintCellViewModel cell = Model.Footprint[index];
-                GameObject part = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                part.name = $"{Model.Name} footprint {cell.X},{cell.Y}";
-                part.transform.SetParent(transform, worldPositionStays: false);
-                _parts.Add(part.transform);
-                _cells.Add(new Vector2Int(cell.X, cell.Y));
-            }
-
-            ApplySelection();
-        }
-
-        private void ApplySelection()
-        {
-            if (_normalMaterial == null || _selectedMaterial == null)
+            if (_modelContainer != null)
             {
                 return;
             }
 
-            float height = ResolveHeight(Model.Status) + (_selected ? 0.20f : 0f);
-            float width = ResolveWidth(Model.Status) + (_selected ? 0.10f : 0f);
-            bool plan = Model.Status == BuildingStatus.AwaitingBox;
-            for (int index = 0; index < _parts.Count; index++)
+            _modelContainer = new GameObject("Model").transform;
+            _modelContainer.SetParent(transform, worldPositionStays: false);
+        }
+
+        private void RebuildInstance(DigBuildingVisualResolution resolution)
+        {
+            if (_instance != null)
             {
-                Transform part = _parts[index];
-                Vector2Int cell = _cells[index];
-                part.localPosition = new Vector3(cell.x, height * 0.5f, cell.y);
-                part.localScale = new Vector3(width, height, width);
-                part.localRotation = plan
-                    ? Quaternion.Euler(0f, 45f, 0f)
-                    : Quaternion.identity;
-                part.GetComponent<Renderer>().sharedMaterial = _selected
-                    ? _selectedMaterial
-                    : _normalMaterial;
+                _instance.SetActive(false);
+                Destroy(_instance);
             }
 
-            gameObject.name = $"Building {Model.Name} [{Model.Status}]";
+            _instance = DigVisualPrefabFactory.Create(
+                resolution.Asset,
+                _modelContainer!,
+                $"{Model.Name} {Model.VisualState}",
+                PrimitiveType.Cube);
+            _assetKey = resolution.Asset.StableId;
+            _baseTint = resolution.Asset.Tint;
+            _tint = _instance.GetComponent<DigVisualTintTarget>();
+            ApplyPlacement(resolution);
+            ValidateFootprint(resolution);
+            ApplyPresentation();
         }
 
-        private static float ResolveHeight(BuildingStatus status)
+        private void ApplyPlacement(DigBuildingVisualResolution resolution)
         {
-            return status switch
+            transform.localPosition = new Vector3(Model.OriginX, 0f, Model.OriginY);
+            transform.localRotation = ResolveOrientation(Model.Orientation);
+            transform.localScale = Vector3.one;
+
+            if (_instance == null)
             {
-                BuildingStatus.AwaitingBox => 0.08f,
-                BuildingStatus.ReadyToBuild => 0.16f,
-                BuildingStatus.UnderConstruction => 0.27f,
-                BuildingStatus.ReadyToComplete => 0.36f,
-                BuildingStatus.Completed => 0.42f,
-                BuildingStatus.Damaged => 0.38f,
-                _ => 0.10f,
+                return;
+            }
+
+            if (resolution.Asset.IsFallback || resolution.Asset.Prefab == null)
+            {
+                ResolveLocalBounds(
+                    out Vector2 center,
+                    out Vector2 size);
+                float height = ResolveFallbackHeight(Model.VisualState);
+                _instance.transform.localPosition = new Vector3(
+                    center.x,
+                    height * 0.5f,
+                    center.y);
+                _instance.transform.localRotation = Quaternion.identity;
+                _instance.transform.localScale = new Vector3(
+                    Mathf.Max(0.50f, size.x * 0.86f),
+                    height,
+                    Mathf.Max(0.50f, size.y * 0.86f));
+                return;
+            }
+
+            _instance.transform.localPosition = new Vector3(
+                -resolution.PivotCell.x,
+                0f,
+                -resolution.PivotCell.y);
+            _instance.transform.localRotation = Quaternion.identity;
+            _instance.transform.localScale = Vector3.one;
+        }
+
+        private void ApplyPresentation()
+        {
+            if (_modelContainer == null || Model == null)
+            {
+                return;
+            }
+
+            float progressScale = 1f;
+            if (Model.VisualState == BuildingVisualState.Assembly)
+            {
+                progressScale = Mathf.Lerp(
+                    0.18f,
+                    1f,
+                    (float)Model.AssemblyProgress);
+            }
+            else if (Model.VisualState == BuildingVisualState.Packing)
+            {
+                progressScale = Mathf.Lerp(
+                    1f,
+                    0.65f,
+                    (float)Model.Functions.PackingProgress);
+            }
+
+            float selectionScale = _selected ? 1.06f : 1f;
+            _modelContainer.localPosition = Vector3.zero;
+            _modelContainer.localRotation = Quaternion.identity;
+            _modelContainer.localScale = new Vector3(
+                selectionScale,
+                progressScale * selectionScale,
+                selectionScale);
+            _tint?.SetTint(_selected
+                ? Color.Lerp(_baseTint, Color.white, 0.34f)
+                : _baseTint);
+            gameObject.name = $"Building {Model.Name} [{Model.VisualState}]";
+        }
+
+        private void ValidateFootprint(DigBuildingVisualResolution resolution)
+        {
+            if (!resolution.HasProfile)
+            {
+                return;
+            }
+
+            ResolveLocalBounds(out _, out Vector2 actualSize);
+            Vector2Int rounded = new Vector2Int(
+                Mathf.RoundToInt(actualSize.x),
+                Mathf.RoundToInt(actualSize.y));
+            if (rounded != resolution.ExpectedFootprintSize)
+            {
+                Debug.LogWarning(
+                    $"Building '{Model.DefinitionId}' footprint {rounded} does not "
+                    + $"match visual profile {resolution.ExpectedFootprintSize}.",
+                    this);
+            }
+        }
+
+        private void ResolveLocalBounds(out Vector2 center, out Vector2 size)
+        {
+            int minX = int.MaxValue;
+            int maxX = int.MinValue;
+            int minY = int.MaxValue;
+            int maxY = int.MinValue;
+            for (int index = 0; index < Model.Footprint.Count; index++)
+            {
+                BuildingFootprintCellViewModel cell = Model.Footprint[index];
+                ResolveLocalOffset(
+                    cell.X - Model.OriginX,
+                    cell.Y - Model.OriginY,
+                    Model.Orientation,
+                    out int x,
+                    out int y);
+                minX = Math.Min(minX, x);
+                maxX = Math.Max(maxX, x);
+                minY = Math.Min(minY, y);
+                maxY = Math.Max(maxY, y);
+            }
+
+            center = new Vector2((minX + maxX) * 0.5f, (minY + maxY) * 0.5f);
+            size = new Vector2((maxX - minX) + 1, (maxY - minY) + 1);
+        }
+
+        private static void ResolveLocalOffset(
+            int x,
+            int y,
+            BuildingOrientation orientation,
+            out int localX,
+            out int localY)
+        {
+            switch (orientation)
+            {
+                case BuildingOrientation.East:
+                    localX = y;
+                    localY = -x;
+                    break;
+                case BuildingOrientation.South:
+                    localX = -x;
+                    localY = -y;
+                    break;
+                case BuildingOrientation.West:
+                    localX = -y;
+                    localY = x;
+                    break;
+                default:
+                    localX = x;
+                    localY = y;
+                    break;
+            }
+        }
+
+        private static Quaternion ResolveOrientation(BuildingOrientation orientation)
+        {
+            float yaw = orientation switch
+            {
+                BuildingOrientation.North => 0f,
+                BuildingOrientation.East => -90f,
+                BuildingOrientation.South => 180f,
+                BuildingOrientation.West => 90f,
+                _ => throw new ArgumentOutOfRangeException(nameof(orientation)),
             };
+            return Quaternion.Euler(0f, yaw, 0f);
         }
 
-        private static float ResolveWidth(BuildingStatus status)
+        private static float ResolveFallbackHeight(BuildingVisualState state)
         {
-            return status switch
+            return state switch
             {
-                BuildingStatus.AwaitingBox => 0.58f,
-                BuildingStatus.ReadyToBuild => 0.66f,
-                BuildingStatus.UnderConstruction => 0.74f,
-                BuildingStatus.ReadyToComplete => 0.80f,
+                BuildingVisualState.BuildingBox => 0.18f,
+                BuildingVisualState.Assembly => 0.46f,
+                BuildingVisualState.Damaged => 0.72f,
+                BuildingVisualState.Packing => 0.62f,
                 _ => 0.82f,
             };
         }

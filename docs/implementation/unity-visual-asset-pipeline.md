@@ -194,14 +194,52 @@ Every production prefab referenced by a visual catalog must have `DigVisualPrefa
 - `SelectionColliders` optionally lists colliders used by pointer routing.
 - Empty arrays fall back to child renderer/collider discovery.
 
-`DigVisualTintTarget` applies `_BaseColor` and `_Color` with `MaterialPropertyBlock`, so future selection and diagnostics do not instantiate materials.
+`DigVisualTintTarget` applies `_BaseColor` and `_Color` with `MaterialPropertyBlock`, so selection and diagnostics do not instantiate materials.
+
+## Building prefab authoring contract
+
+`DigBuildingVisualCatalog` resolves `BuildingWorldViewModel.DefinitionId` to a typed `DigBuildingVisualProfile`. The first representative profile kinds are `Campfire`, `Furnace` and `Storage`; the kind is an authoring/validation category and never changes the stable gameplay definition id.
+
+Each profile declares:
+
+- expected logical footprint width and height;
+- a pivot expressed in North-authored cell coordinates;
+- required Presentation anchor kinds;
+- separate prefab references for `BuildingBox`, `Assembly`, `Completed`, `Damaged` and `Packing` states.
+
+`BuildingWorldPresenter` publishes the authoritative origin, `BuildingOrientation`, work position, completed/required construction work and packing progress. `BuildingVisualStateResolver` maps those immutable facts to a visual stage. Unity may scale or replace a staged prefab to show progress, but an animation callback never starts, advances, completes or cancels a Domain/Application operation.
+
+Every production building prefab contains both `DigVisualPrefabRoot` and `DigBuildingPrefabAuthoring`. Validation checks:
+
+- positive footprint dimensions matching the profile;
+- matching pivot metadata;
+- North authoring orientation;
+- at least one selection collider under `ModelRoot`;
+- non-null colliders and anchors;
+- unique, non-empty anchor stable ids;
+- every anchor kind required by the profile.
+
+Typed `DigBuildingAnchor` components support `Worker`, `Visitor`, `Input`, `Output`, `Storage` and `Vfx`. These transforms are Presentation metadata only. Authoritative work positions, item locations, storage ownership, job reservations and visitor destinations remain in Domain/Application/read models and are never inferred from prefab transforms.
+
+`DigBuildingRenderer` keeps one stable root per building and one staged prefab instance below it. Origin and orientation are reapplied from the read model on every render. Changing construction/damage/packing stage replaces only the child prefab, so selection remains attached to the stable building root. Changing the visual catalog explicitly invalidates existing child assets.
+
+The placement ghost uses the same `BuildingBox` profile and authoritative preview origin/orientation/footprint. It creates one prefab preview plus one narrow work-position marker, places the hierarchy on Ignore Raycast and disables every preview collider. Validity remains visible through both tint and shape/tilt. Previewing or rebuilding the ghost commits no placement command.
+
+The first-slice budgets are:
+
+- one building root and one active prefab instance per active building;
+- no GameObject per footprint cell in the production renderer;
+- one placement-preview prefab and one work marker;
+- no runtime material allocation per building;
+- one bounding-box primitive only as an explicit missing-asset fallback.
 
 ## Authoring conventions
 
 - one Unity unit equals one logical X/Y cell;
 - authored object forward is Unity +Z and up is +Y;
 - resident origin is between the feet;
-- building origin is the center of its anchor cell at floor height;
+- building origin is the center of its authoritative anchor cell at floor height;
+- building prefabs face North; runtime orientation rotates their stable root;
 - item origin is the center of its lowest contact surface;
 - apply Blender transforms before export;
 - keep stable gameplay ids out of prefab names and use catalog entries for mapping.
@@ -225,20 +263,23 @@ Fallbacks are presentation-only. They must never change gameplay state or infer 
 
 - missing catalog: cached role-aware debug materials on terrain and trim submeshes;
 - unknown terrain, deposit or cave-template profile id: deterministic shape/material fallback;
-- invalid prefab root: catalog fallback;
+- unknown building profile or missing stage prefab: base building-catalog fallback;
+- missing building catalog: one footprint bounding-box cube, never one cube per cell;
+- invalid prefab root/authoring metadata: validation error and fallback;
 - validation errors: logged during renderer startup.
 
 ## Current limitations
 
 The unified mesh snapshot covers the current visual `Z=0..3` volume, but only front cells have the full authoritative World state. Deep cells currently carry one explicit rock material/hardness pair and an open/solid projection from tunnel topology and excavation completion.
 
-Terrain, deposits, deterministic decoration geometry, non-colour deposit silhouettes, measured LOD and template-room trim contracts are present. Production-authored materials/UVs and authoritative deposit instances from #91 remain outside the current repository implementation.
+Terrain, deposits, deterministic decoration geometry, non-colour deposit silhouettes, measured LOD and template-room trim contracts are present. The building pipeline now has read-model orientation/progress, staged profiles, authoring validation, typed anchors and a single-prefab renderer/ghost. Production-authored materials/UVs, authoritative deposit instances from #91 and final building prefabs/animations remain outside the current repository implementation.
 
 ## Next steps
 
 - #91: publish authoritative generated deposit instances, reveal and depletion snapshots;
 - #88: migrate deep terrain materials, damage, Jobs, reservations and persistence to authoritative spatial ownership;
 - #206: connect final authored materials and UV assets when available;
-- #207–#210: typed prefab integrations for buildings, items, residents and creatures;
+- #207: author representative Campfire, Furnace and Storage assets, then connect function-specific anchors and measured LOD/static batching budgets;
+- #208–#210: typed prefab integrations for items, residents and creatures;
 - #211: unified overlay styles;
 - #212: URP, lighting and pooled VFX.

@@ -8,16 +8,50 @@ namespace Dig.Unity
     [DisallowMultipleComponent]
     public sealed class DigBuildingRenderer : MonoBehaviour
     {
+        private const string CatalogResourcePath =
+            "Dig/VisualCatalogs/Buildings";
+
+        [SerializeField]
+        private DigBuildingVisualCatalog? visualCatalog;
+
         private readonly Dictionary<string, DigBuildingVisual> _buildings =
             new Dictionary<string, DigBuildingVisual>(StringComparer.Ordinal);
         private Transform? _root;
-        private Material? _normalMaterial;
-        private Material? _selectedMaterial;
         private DigBuildingVisual? _selected;
 
         public string? SelectedBuildingId => _selected?.Model.Id;
 
         public BuildingWorldViewModel? SelectedModel => _selected?.Model;
+
+        internal int InstanceCount => _buildings.Count;
+
+        private void Awake()
+        {
+            if (visualCatalog == null)
+            {
+                visualCatalog = Resources.Load<DigBuildingVisualCatalog>(
+                    CatalogResourcePath);
+            }
+
+            DigVisualCatalogDiagnostics.LogValidation(
+                visualCatalog,
+                this,
+                "Buildings");
+        }
+
+        public void SetVisualCatalog(DigBuildingVisualCatalog? catalog)
+        {
+            visualCatalog = catalog;
+            DigVisualCatalogDiagnostics.LogValidation(
+                visualCatalog,
+                this,
+                "Buildings");
+            foreach (DigBuildingVisual visual in _buildings.Values)
+            {
+                visual.InvalidateAsset();
+                visual.SetModel(visual.Model, Resolve(visual.Model));
+            }
+        }
 
         public void Render(IReadOnlyList<BuildingWorldViewModel> buildings)
         {
@@ -26,19 +60,20 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(buildings));
             }
 
-            EnsureResources();
+            EnsureRoot();
             HashSet<string> visible = new HashSet<string>(StringComparer.Ordinal);
             for (int index = 0; index < buildings.Count; index++)
             {
                 BuildingWorldViewModel model = buildings[index];
                 visible.Add(model.Id);
+                DigBuildingVisualResolution resolution = Resolve(model);
                 if (_buildings.TryGetValue(model.Id, out DigBuildingVisual? visual))
                 {
-                    visual.SetModel(model);
+                    visual.SetModel(model, resolution);
                 }
                 else
                 {
-                    CreateBuilding(model);
+                    CreateBuilding(model, resolution);
                 }
             }
 
@@ -76,12 +111,33 @@ namespace Dig.Unity
                 : Select(null);
         }
 
-        private void CreateBuilding(BuildingWorldViewModel model)
+        private DigBuildingVisualResolution Resolve(BuildingWorldViewModel model)
+        {
+            if (visualCatalog != null)
+            {
+                return visualCatalog.ResolveBuilding(
+                    model.DefinitionId,
+                    model.VisualState);
+            }
+
+            DigVisualAsset fallback = DigVisualAsset.CreateRuntimeFallback(
+                model.DefinitionId,
+                ResolveFallbackTint(model.VisualState));
+            return new DigBuildingVisualResolution(
+                fallback,
+                Vector2Int.one,
+                Vector2.zero,
+                hasProfile: false);
+        }
+
+        private void CreateBuilding(
+            BuildingWorldViewModel model,
+            DigBuildingVisualResolution resolution)
         {
             GameObject root = new GameObject($"Building {model.Name}");
             root.transform.SetParent(_root, worldPositionStays: false);
             DigBuildingVisual visual = root.AddComponent<DigBuildingVisual>();
-            visual.Initialize(model, _normalMaterial!, _selectedMaterial!);
+            visual.Initialize(model, resolution);
             _buildings.Add(model.Id, visual);
         }
 
@@ -96,8 +152,9 @@ namespace Dig.Unity
                 }
             }
 
-            foreach (string id in removed)
+            for (int index = 0; index < removed.Count; index++)
             {
+                string id = removed[index];
                 DigBuildingVisual visual = _buildings[id];
                 if (_selected == visual)
                 {
@@ -109,53 +166,27 @@ namespace Dig.Unity
             }
         }
 
-        private void EnsureResources()
+        private void EnsureRoot()
         {
-            if (_root == null)
-            {
-                _root = new GameObject("Building Visuals").transform;
-                _root.SetParent(transform, worldPositionStays: false);
-            }
-
-            if (_normalMaterial != null)
+            if (_root != null)
             {
                 return;
             }
 
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
-            if (shader == null)
-            {
-                shader = Shader.Find("Standard");
-            }
-
-            if (shader == null)
-            {
-                throw new InvalidOperationException("No supported building shader was found.");
-            }
-
-            _normalMaterial = new Material(shader)
-            {
-                name = "Dig Building",
-                color = new Color(0.64f, 0.48f, 0.28f, 1f),
-            };
-            _selectedMaterial = new Material(shader)
-            {
-                name = "Dig Building Selected",
-                color = new Color(1f, 0.76f, 0.24f, 1f),
-            };
+            _root = new GameObject("Building Visuals").transform;
+            _root.SetParent(transform, worldPositionStays: false);
         }
 
-        private void OnDestroy()
+        private static Color ResolveFallbackTint(BuildingVisualState state)
         {
-            if (_normalMaterial != null)
+            return state switch
             {
-                Destroy(_normalMaterial);
-            }
-
-            if (_selectedMaterial != null)
-            {
-                Destroy(_selectedMaterial);
-            }
+                BuildingVisualState.BuildingBox => new Color(0.52f, 0.38f, 0.22f, 1f),
+                BuildingVisualState.Assembly => new Color(0.76f, 0.57f, 0.28f, 1f),
+                BuildingVisualState.Damaged => new Color(0.56f, 0.24f, 0.18f, 1f),
+                BuildingVisualState.Packing => new Color(0.42f, 0.52f, 0.66f, 1f),
+                _ => new Color(0.64f, 0.48f, 0.28f, 1f),
+            };
         }
     }
 }
