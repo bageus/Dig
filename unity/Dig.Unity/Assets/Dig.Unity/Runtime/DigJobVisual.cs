@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Dig.Unity
 {
     [DisallowMultipleComponent]
-    public sealed class DigJobVisual : MonoBehaviour
+    public sealed partial class DigJobVisual : MonoBehaviour
     {
         private Renderer? _renderer;
         private LineRenderer? _workerLink;
