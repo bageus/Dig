@@ -25,8 +25,7 @@ namespace Dig.Unity
 
         public void ToggleLayer(OverlayLayerKind layer)
         {
-            bool next = !IsVisible(layer);
-            _visibilityOverrides[layer] = next;
+            _visibilityOverrides[layer] = !IsVisible(layer);
             ApplyVisibility();
         }
 
@@ -35,11 +34,16 @@ namespace Dig.Unity
             _snapshot = _visibility.CreateSnapshot(
                 visibilityProfile,
                 _visibilityOverrides);
-            foreach (KeyValuePair<OverlayLayerKind, Transform> pair in _roots)
+            foreach (KeyValuePair<OverlayLayerKind, List<Transform>> pair in _roots)
             {
-                if (pair.Value != null)
+                bool visible = _snapshot.IsVisible(pair.Key);
+                for (int index = 0; index < pair.Value.Count; index++)
                 {
-                    pair.Value.gameObject.SetActive(_snapshot.IsVisible(pair.Key));
+                    Transform root = pair.Value[index];
+                    if (root != null)
+                    {
+                        root.gameObject.SetActive(visible);
+                    }
                 }
             }
         }
