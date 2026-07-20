@@ -127,6 +127,8 @@ The renderer uses camera distance and viewport visibility. The root and snapshot
 
 `DigUnityBootstrap` composes `DigCreatureRenderer` with an empty snapshot list. This validates resources and ownership without inventing demo ecology state. Issue #149 will later provide authoritative snapshots to the same renderer.
 
+The foundation does not edit `Main.unity`; current scene changes remain owned by `main`, while runtime composition stays code-driven.
+
 ## Remaining #210 work
 
 - ecology/combat snapshot adapter from #149 and #12;
