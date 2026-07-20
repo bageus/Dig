@@ -58,16 +58,23 @@ public sealed class TerrainVisualDetailPolicyTests
             policy.Resolve(32f, TerrainVisualDetailLevel.Reduced));
     }
 
-    [Theory]
-    [InlineData(-1f)]
-    [InlineData(float.NaN)]
-    [InlineData(float.PositiveInfinity)]
-    public void Invalid_pixel_measurement_is_rejected(float pixelsPerCell)
+    [Fact]
+    public void Invalid_pixel_measurements_are_rejected()
     {
         TerrainVisualDetailPolicy policy = new TerrainVisualDetailPolicy();
+        float[] invalid =
+        {
+            -1f,
+            float.NaN,
+            float.PositiveInfinity,
+        };
 
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            policy.Resolve(pixelsPerCell, TerrainVisualDetailLevel.Full));
+        for (int index = 0; index < invalid.Length; index++)
+        {
+            float pixelsPerCell = invalid[index];
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                policy.Resolve(pixelsPerCell, TerrainVisualDetailLevel.Full));
+        }
     }
 
     [Fact]
