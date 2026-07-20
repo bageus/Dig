@@ -9,198 +9,211 @@ using Dig.Presentation.World;
 
 namespace Dig.Unity
 {
-    internal sealed partial class DigWorldSession
+
+internal sealed partial class DigWorldSession
+{
+    private const int DefaultDemoGenerationSeed = 1337;
+    internal static readonly DomainError ProtectedRock = new DomainError(
+        "world.excavation.protected_rock",
+        "Protected terrain cannot be excavated.");
+
+    private readonly DesignateDiggingCommandHandler _designationHandler;
+    private readonly WorldPresenter _presenter;
+    private readonly InMemoryWorldRepository _repository;
+    private readonly MaterialId _emptyMaterialId;
+    private readonly MaterialId _solidMaterialId;
+    private readonly int _solidHardness;
+    private readonly ExcavationBoundaryPolicy _boundaryPolicy;
+    private long _tick;
+
+    private DigWorldSession(
+        DesignateDiggingCommandHandler designationHandler,
+        WorldPresenter presenter,
+        InMemoryWorldRepository repository,
+        MaterialId emptyMaterialId,
+        MaterialId solidMaterialId,
+        int solidHardness,
+        ExcavationBoundaryPolicy boundaryPolicy,
+        InMemoryExecutionJournal journal,
+        long tick)
     {
-        internal static readonly DomainError ProtectedRock = new DomainError(
-            "world.excavation.protected_rock",
-            "Protected terrain cannot be excavated.");
+        _designationHandler = designationHandler;
+        _presenter = presenter;
+        _repository = repository;
+        _emptyMaterialId = emptyMaterialId;
+        _solidMaterialId = solidMaterialId;
+        _solidHardness = solidHardness;
+        _boundaryPolicy = boundaryPolicy;
+        Journal = journal;
+        _tick = tick;
+    }
 
-        private readonly DesignateDiggingCommandHandler _designationHandler;
-        private readonly WorldPresenter _presenter;
-        private readonly InMemoryWorldRepository _repository;
-        private readonly MaterialId _emptyMaterialId;
-        private readonly MaterialId _solidMaterialId;
-        private readonly int _solidHardness;
-        private readonly ExcavationBoundaryPolicy _boundaryPolicy;
-        private long _tick;
+    public InMemoryExecutionJournal Journal { get; }
 
-        private DigWorldSession(
-            DesignateDiggingCommandHandler designationHandler,
-            WorldPresenter presenter,
-            InMemoryWorldRepository repository,
-            MaterialId emptyMaterialId,
-            MaterialId solidMaterialId,
-            int solidHardness,
-            ExcavationBoundaryPolicy boundaryPolicy,
-            InMemoryExecutionJournal journal,
-            long tick)
+    internal InMemoryWorldRepository Repository => _repository;
+
+    internal MaterialId EmptyMaterialId => _emptyMaterialId;
+
+    internal MaterialId SolidMaterialId => _solidMaterialId;
+
+    internal int SolidHardness => _solidHardness;
+
+    internal IReadOnlyList<CellId> ProtectedCells => LoadAllProtectedCells();
+
+    public static DigWorldSession CreateDemo(int width, int height, int chunkSize)
+    {
+        return CreateDemo(width, height, chunkSize, DefaultDemoGenerationSeed);
+    }
+
+    public static DigWorldSession CreateDemo(
+        int width,
+        int height,
+        int chunkSize,
+        int generationSeed)
+    {
+        if (width < 8)
         {
-            _designationHandler = designationHandler;
-            _presenter = presenter;
-            _repository = repository;
-            _emptyMaterialId = emptyMaterialId;
-            _solidMaterialId = solidMaterialId;
-            _solidHardness = solidHardness;
-            _boundaryPolicy = boundaryPolicy;
-            Journal = journal;
-            _tick = tick;
+            throw new ArgumentOutOfRangeException(nameof(width));
         }
 
-        public InMemoryExecutionJournal Journal { get; }
-
-        internal InMemoryWorldRepository Repository => _repository;
-
-        internal MaterialId EmptyMaterialId => _emptyMaterialId;
-
-        internal MaterialId SolidMaterialId => _solidMaterialId;
-
-        internal int SolidHardness => _solidHardness;
-
-        internal IReadOnlyList<CellId> ProtectedCells => LoadAllProtectedCells();
-
-        public static DigWorldSession CreateDemo(int width, int height, int chunkSize)
+        if (height < 8)
         {
-            if (width < 8)
-            {
-                throw new ArgumentOutOfRangeException(nameof(width));
-            }
-
-            if (height < 8)
-            {
-                throw new ArgumentOutOfRangeException(nameof(height));
-            }
-
-            const int rockHardness = 120;
-            MaterialId rock = new MaterialId("demo.rock");
-            MaterialId air = new MaterialId("demo.air");
-            MaterialCatalog materials = new MaterialCatalog(new[]
-            {
-                new MaterialDefinition(rock, isSolid: true, hardness: rockHardness),
-                new MaterialDefinition(air, isSolid: false, hardness: 0),
-            });
-            WorldState world = WorldState.CreateFilled(
-                new WorldSize(width, height),
-                chunkSize,
-                materials,
-                rock,
-                explored: true).Value;
-            TunnelNavigationVolume tunnel = TunnelNavigationVolume.CreateDemo(width, height);
-            TunnelDemoLayout layout = tunnel.DemoLayout
-                ?? throw new InvalidOperationException("The tunnel demo layout is required.");
-            ExcavationBoundaryPolicy boundaryPolicy = new ExcavationBoundaryPolicy(
-                width,
-                height,
-                topRockY: layout.SurfaceY + 1);
-            CarveDemoAir(world, air, tunnel);
-            world.DequeueUncommittedEvents();
-
-            InMemoryWorldRepository repository = new InMemoryWorldRepository(world);
-            InMemoryExecutionJournal journal = new InMemoryExecutionJournal(
-                maximumCommands: 100,
-                maximumEvents: 500);
-            DigWorldSession session = new DigWorldSession(
-                new DesignateDiggingCommandHandler(repository, journal),
-                new WorldPresenter(new GetWorldSnapshotQueryHandler(repository)),
-                repository,
-                air,
-                rock,
-                rockHardness,
-                boundaryPolicy,
-                journal,
-                tick: 1);
-            session.InitializeDemoTunnelPlan(layout);
-            session.InitializeNaturalCaveProtection(layout);
-            return session;
+            throw new ArgumentOutOfRangeException(nameof(height));
         }
 
-        public WorldViewModel LoadView()
+        const int rockHardness = 120;
+        MaterialId rock = new MaterialId("demo.rock");
+        MaterialId air = new MaterialId("demo.air");
+        MaterialCatalog materials = new MaterialCatalog(new[]
         {
-            return _presenter.Load();
+            new MaterialDefinition(rock, isSolid: true, hardness: rockHardness),
+            new MaterialDefinition(air, isSolid: false, hardness: 0),
+        });
+        WorldState world = WorldState.CreateFilled(
+            new WorldSize(width, height),
+            chunkSize,
+            materials,
+            rock,
+            explored: true).Value;
+        TunnelNavigationVolume tunnel = TunnelNavigationVolume.CreateDemo(width, height);
+        TunnelDemoLayout layout = tunnel.DemoLayout
+            ?? throw new InvalidOperationException("The tunnel demo layout is required.");
+        ExcavationBoundaryPolicy boundaryPolicy = new ExcavationBoundaryPolicy(
+            width,
+            height,
+            topRockY: layout.SurfaceY + 1);
+        CarveDemoAir(world, air, tunnel);
+        world.DequeueUncommittedEvents();
+
+        InMemoryWorldRepository repository = new InMemoryWorldRepository(world);
+        InMemoryExecutionJournal journal = new InMemoryExecutionJournal(
+            maximumCommands: 100,
+            maximumEvents: 500);
+        DigWorldSession session = new DigWorldSession(
+            new DesignateDiggingCommandHandler(repository, journal),
+            new WorldPresenter(new GetWorldSnapshotQueryHandler(repository)),
+            repository,
+            air,
+            rock,
+            rockHardness,
+            boundaryPolicy,
+            journal,
+            tick: 1);
+        session.InitializeDemoTunnelPlan(layout);
+        session.InitializeNaturalCaveProtection(layout);
+        session.InitializeDemoDeposits(generationSeed);
+        return session;
+    }
+
+    public WorldViewModel LoadView()
+    {
+        return _presenter.Load();
+    }
+
+    internal WorldSnapshot LoadSnapshot()
+    {
+        return _repository.Get().CreateSnapshot();
+    }
+
+    internal IReadOnlyList<ChunkId> DrainDirtyChunks()
+    {
+        return _repository.Get().DrainDirtyChunks();
+    }
+
+    internal bool IsProtected(CellId cell)
+    {
+        return _boundaryPolicy.IsProtected(cell) || IsNaturalCaveProtected(cell);
+    }
+
+    public Result ToggleDesignation(WorldCellViewModel cell)
+    {
+        return SetDesignation(new CellId(cell.X, cell.Y), !cell.IsDesignated);
+    }
+
+    internal Result SetDesignation(CellId cell, bool active)
+    {
+        if (active && IsProtected(cell))
+        {
+            return Result.Failure(ProtectedRock);
         }
 
-        internal WorldSnapshot LoadSnapshot()
+        _tick = checked(_tick + 1);
+        return _designationHandler.Handle(new DesignateDiggingCommand(
+            cell,
+            active,
+            _tick));
+    }
+
+    private static void CarveDemoAir(
+        WorldState world,
+        MaterialId air,
+        TunnelNavigationVolume tunnel)
+    {
+        TunnelDemoLayout layout = tunnel.DemoLayout
+            ?? throw new InvalidOperationException("The tunnel demo layout is required.");
+        CellState empty = new CellState(
+            air,
+            CellDesignation.None,
+            isExplored: true,
+            damage: 0,
+            temperature: 20);
+        HashSet<CellId> airCells = new HashSet<CellId>();
+        for (int y = 0; y < layout.SurfaceY; y++)
         {
-            return _repository.Get().CreateSnapshot();
+            for (int x = 0; x < tunnel.Width; x++)
+            {
+                airCells.Add(new CellId(x, y));
+            }
         }
 
-        internal IReadOnlyList<ChunkId> DrainDirtyChunks()
+        foreach (SpatialCellId cell in tunnel.Cells)
         {
-            return _repository.Get().DrainDirtyChunks();
+            if (cell.Z == 0)
+            {
+                airCells.Add(cell.Projection);
+            }
         }
 
-        internal bool IsProtected(CellId cell)
+        for (int y = layout.CaveCeilingY + 1; y <= layout.CaveFloorY; y++)
         {
-            return _boundaryPolicy.IsProtected(cell) || IsNaturalCaveProtected(cell);
+            for (int x = layout.CaveMinX; x <= layout.CaveMaxX; x++)
+            {
+                airCells.Add(new CellId(x, y));
+            }
         }
 
-        public Result ToggleDesignation(WorldCellViewModel cell)
+        List<TerrainChange> changes = new List<TerrainChange>(airCells.Count);
+        foreach (CellId cell in airCells)
         {
-            return SetDesignation(new CellId(cell.X, cell.Y), !cell.IsDesignated);
+            changes.Add(new TerrainChange(cell, empty));
         }
 
-        internal Result SetDesignation(CellId cell, bool active)
+        Result<WorldMutationResult> result = world.ApplyTerrainChanges(changes, tick: 1);
+        if (result.IsFailure)
         {
-            if (active && IsProtected(cell))
-            {
-                return Result.Failure(ProtectedRock);
-            }
-
-            _tick = checked(_tick + 1);
-            return _designationHandler.Handle(new DesignateDiggingCommand(
-                cell,
-                active,
-                _tick));
-        }
-
-        private static void CarveDemoAir(
-            WorldState world,
-            MaterialId air,
-            TunnelNavigationVolume tunnel)
-        {
-            TunnelDemoLayout layout = tunnel.DemoLayout
-                ?? throw new InvalidOperationException("The tunnel demo layout is required.");
-            CellState empty = new CellState(
-                air,
-                CellDesignation.None,
-                isExplored: true,
-                damage: 0,
-                temperature: 20);
-            HashSet<CellId> airCells = new HashSet<CellId>();
-            for (int y = 0; y < layout.SurfaceY; y++)
-            {
-                for (int x = 0; x < tunnel.Width; x++)
-                {
-                    airCells.Add(new CellId(x, y));
-                }
-            }
-
-            foreach (SpatialCellId cell in tunnel.Cells)
-            {
-                if (cell.Z == 0)
-                {
-                    airCells.Add(cell.Projection);
-                }
-            }
-
-            for (int y = layout.CaveCeilingY + 1; y <= layout.CaveFloorY; y++)
-            {
-                for (int x = layout.CaveMinX; x <= layout.CaveMaxX; x++)
-                {
-                    airCells.Add(new CellId(x, y));
-                }
-            }
-
-            List<TerrainChange> changes = new List<TerrainChange>(airCells.Count);
-            foreach (CellId cell in airCells)
-            {
-                changes.Add(new TerrainChange(cell, empty));
-            }
-
-            Result<WorldMutationResult> result = world.ApplyTerrainChanges(changes, tick: 1);
-            if (result.IsFailure)
-            {
-                throw new InvalidOperationException(result.Error!.ToString());
-            }
+            throw new InvalidOperationException(result.Error!.ToString());
         }
     }
+}
+
 }

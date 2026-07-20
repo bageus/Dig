@@ -47,8 +47,12 @@ def check_resident_inventory_runtime_contracts(
     errors.extend(require_fragments(
         session_path,
         texts.get(session_path, ""),
-        "shared resident inventory creation",
-        ("CreateDemoResidentInventory(outputItemId);",),
+        "shared resident inventory and generated resource catalog creation",
+        (
+            "CreateDemoResidentInventory(",
+            "worldSession.TerrainDepositDefinitions",
+            "InMemoryInventoryRepository inventoryRepository",
+        ),
     ))
     errors.extend(require_fragments(
         equipment_path,

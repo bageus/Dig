@@ -119,6 +119,13 @@ namespace Dig.Unity
             }
 
             RaycastHit hit = hits[0];
+            if (left
+                && _agentRenderer!.SelectedCount > 0
+                && TryApplyTunnelMove(hit, leftButton: true))
+            {
+                return;
+            }
+
             if (TryResolveAgentHit(hits, out DigAgentVisual agent))
             {
                 if (left && IsAdditiveResidentSelectionPressed())
