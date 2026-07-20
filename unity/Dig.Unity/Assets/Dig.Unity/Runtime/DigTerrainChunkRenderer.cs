@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Presentation.World;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -17,16 +18,40 @@ namespace Dig.Unity
             new List<DigTerrainChunkKey>();
         private Transform? _root;
         private Shader? _fallbackShader;
+        private DigTerrainRenderSnapshot? _lastSnapshot;
+        private DigTerrainVisualCatalog? _lastCatalog;
+        private TerrainVisualDetailLevel _detailLevel = TerrainVisualDetailLevel.Full;
 
         internal int RebuildCount { get; private set; }
         internal int VertexCount { get; private set; }
         internal int TriangleCount { get; private set; }
+        internal TerrainVisualDetailLevel DetailLevel => _detailLevel;
 
         internal void Invalidate()
         {
             foreach (DigTerrainChunkVisual visual in _visuals.Values)
             {
                 visual.Invalidate();
+            }
+        }
+
+        internal void SetDetailLevel(TerrainVisualDetailLevel detailLevel)
+        {
+            if (!Enum.IsDefined(typeof(TerrainVisualDetailLevel), detailLevel))
+            {
+                throw new ArgumentOutOfRangeException(nameof(detailLevel));
+            }
+
+            if (_detailLevel == detailLevel)
+            {
+                return;
+            }
+
+            _detailLevel = detailLevel;
+            Invalidate();
+            if (_lastSnapshot != null)
+            {
+                Render(_lastSnapshot, _lastCatalog);
             }
         }
 
@@ -39,6 +64,8 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(snapshot));
             }
 
+            _lastSnapshot = snapshot;
+            _lastCatalog = catalog;
             EnsureRoot();
             _visibleChunks.Clear();
             VertexCount = 0;
@@ -53,12 +80,17 @@ namespace Dig.Unity
                     || !visual.IsInitialized
                     || visual.Signature == ulong.MaxValue)
                 {
-                    ulong signature = CalculateSignature(chunk, snapshot);
+                    ulong signature = CalculateSignature(
+                        chunk,
+                        snapshot,
+                        _detailLevel);
                     if (!visual.IsInitialized || visual.Signature != signature)
                     {
                         DigTerrainChunkMeshData data = DigTerrainChunkMeshBuilder.Build(
                             chunk,
-                            snapshot);
+                            snapshot,
+                            catalog,
+                            _detailLevel);
                         Material[] materials = ResolveMaterials(
                             data.MaterialKeys,
                             catalog);
@@ -75,7 +107,8 @@ namespace Dig.Unity
 
         private static ulong CalculateSignature(
             DigTerrainRenderChunk chunk,
-            DigTerrainRenderSnapshot snapshot)
+            DigTerrainRenderSnapshot snapshot,
+            TerrainVisualDetailLevel detailLevel)
         {
             const ulong offset = 1469598103934665603UL;
             const ulong prime = 1099511628211UL;
@@ -84,6 +117,7 @@ namespace Dig.Unity
             Mix(ref hash, (ulong)(uint)chunk.Key.Y, prime);
             Mix(ref hash, (ulong)(uint)chunk.Key.Z, prime);
             Mix(ref hash, (ulong)chunk.Version, prime);
+            Mix(ref hash, (ulong)detailLevel, prime);
 
             for (int index = 0; index < chunk.Cells.Count; index++)
             {

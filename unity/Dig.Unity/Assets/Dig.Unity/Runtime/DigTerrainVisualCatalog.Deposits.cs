@@ -26,11 +26,8 @@ namespace Dig.Unity
                 return null;
             }
 
-            EnsureDepositProfileLookup();
-            if (!string.IsNullOrWhiteSpace(stableId)
-                && _depositProfileLookup!.TryGetValue(
-                    stableId,
-                    out DigTerrainDepositVisualProfile? profile))
+            DigTerrainDepositVisualProfile? profile = ResolveDepositProfile(stableId);
+            if (profile != null)
             {
                 Material? material = profile.Resolve(state);
                 if (material != null)
@@ -40,6 +37,12 @@ namespace Dig.Unity
             }
 
             return Resolve(stableId).Material;
+        }
+
+        internal DigTerrainDepositShape ResolveDepositShape(string stableId)
+        {
+            DigTerrainDepositVisualProfile? profile = ResolveDepositProfile(stableId);
+            return profile?.Shape ?? ResolveFallbackDepositShape(stableId);
         }
 
         private void AppendDepositValidation(ICollection<string> errors)
@@ -97,6 +100,21 @@ namespace Dig.Unity
             _depositProfileLookup = null;
         }
 
+        private DigTerrainDepositVisualProfile? ResolveDepositProfile(string stableId)
+        {
+            EnsureDepositProfileLookup();
+            if (string.IsNullOrWhiteSpace(stableId))
+            {
+                return null;
+            }
+
+            return _depositProfileLookup!.TryGetValue(
+                stableId,
+                out DigTerrainDepositVisualProfile? profile)
+                ? profile
+                : null;
+        }
+
         private void EnsureDepositProfileLookup()
         {
             if (_depositProfileLookup != null)
@@ -119,6 +137,22 @@ namespace Dig.Unity
                 {
                     _depositProfileLookup.Add(profile.StableId, profile);
                 }
+            }
+        }
+
+        private static DigTerrainDepositShape ResolveFallbackDepositShape(
+            string stableId)
+        {
+            unchecked
+            {
+                uint hash = 2166136261u;
+                for (int index = 0; index < stableId.Length; index++)
+                {
+                    hash ^= stableId[index];
+                    hash *= 16777619u;
+                }
+
+                return (DigTerrainDepositShape)(hash % 5u);
             }
         }
 

@@ -14,7 +14,9 @@ namespace Dig.Unity
 
         internal static DigTerrainChunkMeshData Build(
             DigTerrainRenderChunk chunk,
-            DigTerrainRenderSnapshot snapshot)
+            DigTerrainRenderSnapshot snapshot,
+            DigTerrainVisualCatalog? catalog,
+            TerrainVisualDetailLevel detailLevel)
         {
             if (chunk == null)
             {
@@ -24,6 +26,11 @@ namespace Dig.Unity
             if (snapshot == null)
             {
                 throw new ArgumentNullException(nameof(snapshot));
+            }
+
+            if (!Enum.IsDefined(typeof(TerrainVisualDetailLevel), detailLevel))
+            {
+                throw new ArgumentOutOfRangeException(nameof(detailLevel));
             }
 
             List<Vector3> vertices = new List<Vector3>();
@@ -49,7 +56,9 @@ namespace Dig.Unity
                     keys,
                     triangles,
                     submeshes,
-                    snapshot);
+                    snapshot,
+                    catalog,
+                    detailLevel);
             }
 
             int[][] triangleArrays = new int[triangles.Count][];
@@ -148,7 +157,9 @@ namespace Dig.Unity
             List<DigTerrainMaterialKey> keys,
             List<List<int>> triangles,
             Dictionary<DigTerrainMaterialKey, int> submeshes,
-            DigTerrainRenderSnapshot snapshot)
+            DigTerrainRenderSnapshot snapshot,
+            DigTerrainVisualCatalog? catalog,
+            TerrainVisualDetailLevel detailLevel)
         {
             DigTerrainCellKey position = cell.Key;
             float minX = position.X - HalfExtent;
@@ -315,7 +326,9 @@ namespace Dig.Unity
                 keys,
                 triangles,
                 submeshes,
-                snapshot);
+                snapshot,
+                catalog,
+                detailLevel);
         }
     }
 }
