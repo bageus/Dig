@@ -37,7 +37,7 @@ def check_tunnel_depth_contracts(
         (
             "Depth = 3",
             "DigExcavationDrawingMode.Depth",
-            "excavate one deeper layer",
+            "designate one deeper layer",
             "if (_excavationMode == DigExcavationDrawingMode.Depth)",
         ),
     ))
