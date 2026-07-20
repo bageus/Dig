@@ -22,7 +22,7 @@ namespace Dig.Unity
 
             EnsureResources();
             int minX = plan.Entrance.X - ((plan.Preset.BaseWidth - 1) / 2);
-            for (int z = 1; z < plan.Preset.Depth; z++)
+            for (int z = 0; z < plan.Preset.Depth; z++)
             {
                 for (int offset = 0; offset < plan.Preset.BaseWidth; offset++)
                 {
@@ -36,7 +36,9 @@ namespace Dig.Unity
                     }
 
                     GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                    floor.name = $"Cave room floor {cell}";
+                    floor.name = z == 0
+                        ? $"Cave room hit target {cell}"
+                        : $"Cave room floor {cell}";
                     floor.transform.SetParent(_root, worldPositionStays: true);
                     floor.transform.SetPositionAndRotation(
                         DigTunnelProjection.FloorWorldPosition(cell),
@@ -50,6 +52,8 @@ namespace Dig.Unity
                         cell,
                         isVerticalTunnel: false,
                         material: _materials[z]!);
+                    ConfigureInteractionCollider(floor, plan, cell);
+                    floor.GetComponent<Renderer>().enabled = z > 0;
                 }
             }
         }
@@ -60,6 +64,42 @@ namespace Dig.Unity
                 ? null!
                 : hit.collider.GetComponent<DigTunnelCellVisual>();
             return cell != null && _cells.Contains(cell.Cell);
+        }
+
+        private static void ConfigureInteractionCollider(
+            GameObject floor,
+            CaveRoomPlan plan,
+            SpatialCellId destination)
+        {
+            int topY = destination.Y;
+            for (int index = 0; index < plan.VolumeCells.Count; index++)
+            {
+                SpatialCellId volumeCell = plan.VolumeCells[index];
+                if (volumeCell.X == destination.X
+                    && volumeCell.Z == destination.Z
+                    && volumeCell.Y < topY)
+                {
+                    topY = volumeCell.Y;
+                }
+            }
+
+            float top = DigTunnelProjection.CellWorldPosition(
+                new SpatialCellId(destination.X, topY, destination.Z)).y
+                + DigTunnelProjection.RockCellHalfExtent;
+            float bottom = DigTunnelProjection.WalkSurfaceY(destination.Y);
+            Vector3 center = DigTunnelProjection.CellWorldPosition(destination);
+            center.y = (top + bottom) * 0.5f;
+            Vector3 size = new Vector3(
+                0.94f,
+                Mathf.Max(0.94f, top - bottom),
+                0.50f);
+            BoxCollider collider = floor.GetComponent<BoxCollider>();
+            Vector3 scale = floor.transform.lossyScale;
+            collider.center = floor.transform.InverseTransformPoint(center);
+            collider.size = new Vector3(
+                size.x / Mathf.Max(0.001f, Mathf.Abs(scale.x)),
+                size.y / Mathf.Max(0.001f, Mathf.Abs(scale.y)),
+                size.z / Mathf.Max(0.001f, Mathf.Abs(scale.z)));
         }
 
         private void EnsureResources()

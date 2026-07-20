@@ -28,6 +28,7 @@ namespace Dig.Unity
             }
 
             EnsureResources();
+            TunnelDemoLayout? layout = volume.DemoLayout;
             foreach (SpatialCellId cell in volume.Cells)
             {
                 if (_cells.ContainsKey(cell))
@@ -58,6 +59,7 @@ namespace Dig.Unity
                     cell,
                     vertical,
                     ResolveMaterial(cell));
+                ConfigureInteractionCollider(target, cell, vertical, layout);
                 Renderer renderer = target.GetComponent<Renderer>();
                 renderer.enabled = !hiddenHitTarget;
                 _cells.Add(cell, visual);
@@ -119,6 +121,59 @@ namespace Dig.Unity
                     index,
                     DigTunnelProjection.RouteWorldPosition(path.Cells[index]));
             }
+        }
+
+        private static void ConfigureInteractionCollider(
+            GameObject target,
+            SpatialCellId cell,
+            bool vertical,
+            TunnelDemoLayout? layout)
+        {
+            BoxCollider collider = target.GetComponent<BoxCollider>();
+            Vector3 center = DigTunnelProjection.CellWorldPosition(cell);
+            float height = 0.94f;
+            if (!vertical && IsNaturalCaveFloor(cell, layout))
+            {
+                float top = DigTunnelProjection.CellWorldPosition(
+                    new SpatialCellId(
+                        cell.X,
+                        layout!.CaveCeilingY + 1,
+                        cell.Z)).y
+                    + DigTunnelProjection.RockCellHalfExtent;
+                float bottom = DigTunnelProjection.WalkSurfaceY(layout.CaveFloorY);
+                center.y = (top + bottom) * 0.5f;
+                height = Mathf.Max(0.94f, top - bottom);
+            }
+
+            SetWorldColliderBounds(
+                target.transform,
+                collider,
+                center,
+                new Vector3(0.94f, height, 0.50f));
+        }
+
+        private static bool IsNaturalCaveFloor(
+            SpatialCellId cell,
+            TunnelDemoLayout? layout)
+        {
+            return layout != null
+                && cell.Y == layout.CaveFloorY
+                && cell.X >= layout.CaveMinX
+                && cell.X <= layout.CaveMaxX;
+        }
+
+        private static void SetWorldColliderBounds(
+            Transform target,
+            BoxCollider collider,
+            Vector3 worldCenter,
+            Vector3 worldSize)
+        {
+            Vector3 scale = target.lossyScale;
+            collider.center = target.InverseTransformPoint(worldCenter);
+            collider.size = new Vector3(
+                worldSize.x / Mathf.Max(0.001f, Mathf.Abs(scale.x)),
+                worldSize.y / Mathf.Max(0.001f, Mathf.Abs(scale.y)),
+                worldSize.z / Mathf.Max(0.001f, Mathf.Abs(scale.z)));
         }
 
         private Material ResolveMaterial(SpatialCellId cell)

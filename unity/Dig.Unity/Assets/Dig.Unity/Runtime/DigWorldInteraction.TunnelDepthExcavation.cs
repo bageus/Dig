@@ -58,7 +58,6 @@ namespace Dig.Unity
                 RaycastHit hit = hits[index];
                 if (_tunnelRenderer!.TryGetCell(hit, out DigTunnelCellVisual tunnelCell)
                     && !tunnelCell.IsVerticalTunnel
-                    && tunnelCell.CanExcavateDepth
                     && (!selected.HasValue || tunnelCell.Cell.Z > selected.Value.Z))
                 {
                     selected = tunnelCell.Cell;

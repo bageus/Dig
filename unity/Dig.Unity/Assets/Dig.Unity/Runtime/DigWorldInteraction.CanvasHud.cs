@@ -5,6 +5,7 @@ using Dig.Domain.World;
 using Dig.Presentation.Input;
 using Dig.Presentation.Inventory;
 using Dig.Presentation.Jobs;
+using UnityEngine;
 
 namespace Dig.Unity
 {
@@ -16,6 +17,8 @@ public sealed partial class DigWorldInteraction
     private bool _selectedInventoryItemIsBuildingBox;
     private bool _selectedInventoryItemCanUse;
     private bool _selectedInventoryItemCanDrop;
+    private string? _lastRosterResidentClickId;
+    private float _lastRosterResidentClickTime = float.NegativeInfinity;
 
     internal bool HasActiveBuildingPlacement => _buildingPlacementMode.HasValue;
 
@@ -37,7 +40,8 @@ public sealed partial class DigWorldInteraction
         ContextInputDecision decision = _inputRouter.Route(
             new ContextPointerEvent(
                 PointerInputSurface.ResidentRoster,
-                PointerButtonKind.Left),
+                PointerButtonKind.Left,
+                clickCount: RegisterRosterResidentClick(residentId)),
             BuildState(PointerButtonKind.Left),
             target);
         ApplyDecision(decision);
@@ -129,6 +133,19 @@ public sealed partial class DigWorldInteraction
     {
         DropResidentInventorySlot(ToLegacySlot(slot));
         ClearSelectedInventoryStack();
+    }
+
+    private int RegisterRosterResidentClick(string residentId)
+    {
+        float now = Time.unscaledTime;
+        bool doubleClick = string.Equals(
+                _lastRosterResidentClickId,
+                residentId,
+                StringComparison.Ordinal)
+            && now - _lastRosterResidentClickTime <= DoubleClickSeconds;
+        _lastRosterResidentClickId = residentId;
+        _lastRosterResidentClickTime = now;
+        return doubleClick ? 2 : 1;
     }
 
     private AgentViewModelFacts GetResidentFacts(string residentId)
