@@ -10,7 +10,7 @@ namespace Dig.Unity
     {
         private const int EdgeCount = 12;
         private const int InvalidCrossEdgeCount = 2;
-        private const int TotalEdgeCount = EdgeCount + InvalidCrossEdgeCount;
+        private const int TotalEdgeCount = 14;
         private const int BoxEdgeCount = EdgeCount;
 
         private readonly List<LineRenderer> _edges =
