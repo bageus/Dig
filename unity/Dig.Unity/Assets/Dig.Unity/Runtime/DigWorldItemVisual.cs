@@ -20,10 +20,13 @@ namespace Dig.Unity
         public WorldItemViewModel Model { get; private set; } = null!;
 
         internal string QuantityBadge { get; private set; } = string.Empty;
-
         internal int VisibleInstanceCount { get; private set; }
-
         internal int RebuildCount { get; private set; }
+
+        internal void InvalidateAsset()
+        {
+            _assetKey = string.Empty;
+        }
 
         internal void Configure(
             WorldItemViewModel model,
@@ -115,7 +118,10 @@ namespace Dig.Unity
                 + $"reserved {layout.ReservedQuantity}";
 
             float width = Mathf.Max(resolution.WorldScale.x, resolution.WorldScale.z);
-            _interactionCollider!.center = new Vector3(0f, resolution.WorldScale.y * 0.5f, 0f);
+            _interactionCollider!.center = new Vector3(
+                0f,
+                resolution.WorldScale.y * 0.5f,
+                0f);
             _interactionCollider.size = new Vector3(
                 Mathf.Max(0.28f, width * 1.9f),
                 Mathf.Max(0.28f, resolution.WorldScale.y * 1.5f),
@@ -163,7 +169,7 @@ namespace Dig.Unity
             _interactionCollider!.enabled = interactive;
         }
 
-        private Quaternion ResolveRotation(
+        private static Quaternion ResolveRotation(
             DigItemRotationPolicy policy,
             ItemStackQuantityBand band,
             int quarterTurns)
