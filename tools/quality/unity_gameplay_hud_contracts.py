@@ -26,6 +26,7 @@ def check_gameplay_hud_and_work_contracts(
     minimap_path = runtime_root / "DigGameHudCanvas.Minimap.cs"
     minimap_pointer_path = runtime_root / "DigMinimapPointer.cs"
     clock_path = runtime_root / "DigGameHudCanvas.Clock.cs"
+    camera_path = runtime_root / "DigCameraController.cs"
     bootstrap_path = runtime_root / "DigUnityBootstrap.cs"
     interaction_path = runtime_root / "DigWorldInteraction.CanvasHud.cs"
     agent_session_path = runtime_root / "DigAgentSession.cs"
@@ -65,12 +66,13 @@ def check_gameplay_hud_and_work_contracts(
     errors.extend(require_fragments(
         layout_path,
         texts.get(layout_path, ""),
-        "non-overlapping responsive HUD anchors",
+        "non-overlapping canvas-space responsive HUD anchors",
         (
             "MinimumSidePanelWidth",
             "MaximumRosterWidth",
-            "Screen.width",
-            "Screen.height",
+            "RectTransform canvasRect = (RectTransform)transform",
+            "canvasRect.rect.width",
+            "canvasRect.rect.height",
             "_statusPanel!",
             "_minimapPanel!",
             "_clockPanel!",
@@ -114,6 +116,16 @@ def check_gameplay_hud_and_work_contracts(
         texts.get(minimap_pointer_path, ""),
         "minimap mouse wheel input",
         ("IScrollHandler", "eventData.scrollDelta.y", "Scrolled?.Invoke"),
+    ))
+    errors.extend(require_fragments(
+        camera_path,
+        texts.get(camera_path, ""),
+        "world-camera scroll isolation over HUD",
+        (
+            "using UnityEngine.EventSystems;",
+            "EventSystem.current.IsPointerOverGameObject()",
+            "Input.mouseScrollDelta.y",
+        ),
     ))
     errors.extend(require_fragments(
         clock_path,
