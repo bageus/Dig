@@ -33,6 +33,23 @@ namespace Dig.Unity
                 : GetComponentsInChildren<DigBuildingAnchor>(includeInactive: true);
         }
 
+        internal void ConfigureRuntime(
+            Vector2Int configuredFootprintSize,
+            Vector2 configuredPivotCell,
+            DigBuildingAnchor[] configuredAnchors)
+        {
+            if (configuredFootprintSize.x <= 0 || configuredFootprintSize.y <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(configuredFootprintSize));
+            }
+
+            footprintSize = configuredFootprintSize;
+            pivotCell = configuredPivotCell;
+            authoredOrientation = BuildingOrientation.North;
+            anchors = configuredAnchors
+                ?? throw new ArgumentNullException(nameof(configuredAnchors));
+        }
+
         internal void AppendValidation(
             string profileId,
             Vector2Int expectedFootprintSize,

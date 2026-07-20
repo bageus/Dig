@@ -39,5 +39,21 @@ namespace Dig.Unity
         public DigBuildingAnchorKind Kind => kind;
 
         internal DigBuildingAnchorMask Mask => (DigBuildingAnchorMask)(1 << (int)kind);
+
+        internal void Configure(DigBuildingAnchorKind anchorKind, string anchorId)
+        {
+            if (!Enum.IsDefined(typeof(DigBuildingAnchorKind), anchorKind))
+            {
+                throw new ArgumentOutOfRangeException(nameof(anchorKind));
+            }
+
+            if (string.IsNullOrWhiteSpace(anchorId))
+            {
+                throw new ArgumentException("Anchor stable id is required.", nameof(anchorId));
+            }
+
+            kind = anchorKind;
+            stableId = anchorId.Trim();
+        }
     }
 }

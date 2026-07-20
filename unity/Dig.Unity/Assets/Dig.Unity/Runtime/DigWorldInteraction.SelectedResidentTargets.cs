@@ -59,7 +59,10 @@ namespace Dig.Unity
             for (int index = 0; index < hits.Length; index++)
             {
                 RaycastHit hit = hits[index];
-                if (_agentRenderer!.TryGetAgent(hit, out _)
+                DigAgentVisual? resident = hit.collider == null
+                    ? null
+                    : hit.collider.GetComponentInParent<DigAgentVisual>();
+                if (resident != null
                     || _buildingRenderer!.TryGetBuilding(hit, out _)
                     || _itemRenderer!.TryGetItem(hit, out _))
                 {

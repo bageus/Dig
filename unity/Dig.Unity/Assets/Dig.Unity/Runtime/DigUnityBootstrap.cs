@@ -137,6 +137,7 @@ namespace Dig.Unity
                 worldSession.SolidMaterialId.ToString(),
                 worldSession.SolidHardness,
                 Array.Empty<SpatialCellId>());
+            worldRenderer.SetTerrainDeposits(worldSession.LoadTerrainDeposits());
             worldRenderer.Render(world);
             tunnelRenderer.Initialize(agentSession.TunnelVolume);
             caveRoomPreviewRenderer.Clear();

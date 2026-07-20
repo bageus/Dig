@@ -1,28 +1,39 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
+using Dig.Domain.World;
 
 namespace Dig.Unity
 {
 
 internal sealed partial class DigTerrainWorkSession
 {
-    private static InventoryState CreateDemoResidentInventory(ItemId outputItemId)
+    private static InventoryState CreateDemoResidentInventory(
+        IReadOnlyList<TerrainDepositDefinition> depositDefinitions)
     {
+        if (depositDefinitions == null)
+        {
+            throw new ArgumentNullException(nameof(depositDefinitions));
+        }
+
         ResidentInventoryExpansionContent expansions =
             new ResidentInventoryExpansionContent();
-        ItemDefinition[] baseItems =
-        {
-            new ItemDefinition(
-                outputItemId,
-                "Rock chunk",
-                100,
-                false,
+        ItemDefinition[] resourceItems = depositDefinitions
+            .Select(value => new ItemDefinition(
+                value.OutputItemId,
+                value.DisplayName,
+                maximumStackSize: 100,
+                isTool: false,
                 new[]
                 {
                     ResidentInventoryExpansionContent.RawMaterialCategoryId,
-                }),
+                }))
+            .ToArray();
+        ItemDefinition[] baseItems =
+        {
             new ItemDefinition(
                 DemoBuildingBoxItemId,
                 "Workshop BuildingBox",
@@ -52,7 +63,7 @@ internal sealed partial class DigTerrainWorkSession
                 }),
         };
         InventoryState inventory = new InventoryState(new ItemCatalog(
-            baseItems.Concat(expansions.Items)));
+            resourceItems.Concat(baseItems).Concat(expansions.Items)));
         EntityId residentId = DemoId('a', 1);
         AddResidentStack(
             inventory,
