@@ -130,6 +130,7 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
         _mainCamera = mainCamera;
         _world = world;
         CreateCanvasShell();
+        InitializeMinimapCamera();
         _initialized = true;
         InvalidateAll();
     }
