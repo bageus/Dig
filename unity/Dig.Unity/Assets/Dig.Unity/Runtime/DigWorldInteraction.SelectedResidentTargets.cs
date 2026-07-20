@@ -106,17 +106,19 @@ namespace Dig.Unity
                 }
             }
 
-            if (excavationCandidate.HasValue)
-            {
-                return DigSelectedResidentTarget.Excavation(excavationCandidate.Value);
-            }
-
             if (hasVisibleMovement)
             {
                 return visibleMovement;
             }
 
-            return hasHiddenMovement ? hiddenMovement : default;
+            if (hasHiddenMovement)
+            {
+                return hiddenMovement;
+            }
+
+            return excavationCandidate.HasValue
+                ? DigSelectedResidentTarget.Excavation(excavationCandidate.Value)
+                : default;
         }
     }
 }

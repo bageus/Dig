@@ -34,21 +34,27 @@ def check_tunnel_and_group_contracts(
     errors.extend(require_fragments(
         agent_visual_path,
         agent_visual,
-        "world-axis resident movement",
+        "authoritative world-axis resident step interpolation",
         (
             "model.CellZ",
             "transform.position",
             "DigTunnelProjection.ResidentWorldPosition",
             "Quaternion.LookRotation(Vector3.back, Vector3.up)",
-            "PlayRoute(",
+            "AgentSpatialPositionInterpolator.Interpolate(",
         ),
     ))
     errors.extend(reject_fragments(
         agent_visual_path,
         agent_visual,
-        "rotated-root resident movement",
-        ("transform.localPosition", "ResidentLocalPosition"),
+        "decorative or rotated-root resident movement",
+        (
+            "transform.localPosition",
+            "ResidentLocalPosition",
+            "PlayRoute(",
+            "UpdateRoute(",
+        ),
     ))
+
     agent_renderer = "\n".join(
         text for path, text in texts.items()
         if path.name.startswith("DigAgentRenderer") and path.suffix == ".cs"
@@ -67,6 +73,13 @@ def check_tunnel_and_group_contracts(
             "PublishSelectionSnapshot",
         ),
     ))
+    errors.extend(reject_fragments(
+        agent_renderer_path,
+        agent_renderer,
+        "whole-route visual animation",
+        ("AnimateRoute(",),
+    ))
+
     errors.extend(require_fragments(
         interaction_path,
         texts.get(interaction_path, ""),
@@ -99,25 +112,64 @@ def check_tunnel_and_group_contracts(
         movement_path,
         texts.get(movement_path, ""),
         "group destination movement",
-        ("SelectedAgentIds", "MoveResidentsThroughTunnel", "residentIds.Count", "SpatialCellId destination"),
+        (
+            "SelectedAgentIds",
+            "MoveResidentsThroughTunnel",
+            "residentIds.Count",
+            "SpatialCellId destination",
+        ),
     ))
+
+    session_movement = texts.get(agent_session_path, "")
     errors.extend(require_fragments(
         agent_session_path,
-        texts.get(agent_session_path, ""),
-        "group movement composition",
-        ("MoveAgentsThroughTunnelCommandHandler", "MoveResidentsThroughTunnel", "_groupTunnelMovement", "_manualTunnelOrders.Add"),
+        session_movement,
+        "group authoritative route composition",
+        (
+            "PlanAgentsTunnelRoutesCommandHandler",
+            "MoveResidentsThroughTunnel",
+            "_groupTunnelRoutePlanner",
+            "RegisterManualMovement(entry.AgentId, entry.Path)",
+        ),
     ))
+    errors.extend(reject_fragments(
+        agent_session_path,
+        session_movement,
+        "legacy group teleport composition",
+        (
+            "MoveAgentsThroughTunnelCommandHandler",
+            "_groupTunnelMovement",
+            "_manualTunnelOrders.Add",
+        ),
+    ))
+
+    driver_text = texts.get(driver_path, "")
     errors.extend(require_fragments(
         driver_path,
-        texts.get(driver_path, ""),
-        "group route animation",
-        ("MoveAgentsThroughTunnelReport", "report.Entries", "AgentRenderer.AnimateRoute", "AgentRenderer.SelectedCount"),
+        driver_text,
+        "group route registration",
+        (
+            "PlanAgentsTunnelRoutesReport",
+            "report.Entries",
+            "AgentRenderer.SelectedCount",
+        ),
     ))
+    errors.extend(reject_fragments(
+        driver_path,
+        driver_text,
+        "group route-only animation",
+        ("MoveAgentsThroughTunnelReport", "AgentRenderer.AnimateRoute"),
+    ))
+
     errors.extend(require_fragments(
         bootstrap_path,
         texts.get(bootstrap_path, ""),
         "platform cave bootstrap",
-        ("DigTunnelDemoRenderer", "worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume)", "interaction.SetTunnelMovement"),
+        (
+            "DigTunnelDemoRenderer",
+            "worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume)",
+            "interaction.SetTunnelMovement",
+        ),
     ))
     errors.extend(require_fragments(
         projection_path,
@@ -125,6 +177,7 @@ def check_tunnel_and_group_contracts(
         "explicit XYZ world projection",
         ("CellWorldPosition", "ResidentWorldPosition", "-cell.Y", "cell.Z * DepthSpacing"),
     ))
+
     tunnel_renderer = texts.get(tunnel_renderer_path, "")
     errors.extend(require_fragments(
         tunnel_renderer_path,
@@ -156,8 +209,13 @@ def check_tunnel_and_group_contracts(
     errors.extend(require_fragments(
         session_path,
         texts.get(session_path, ""),
-        "platform resident composition",
-        ("TunnelNavigationVolume.CreateDemo", "initialPosition: new SpatialCellId", "HasManualTunnelOrder(agent.Id)", "_tunnelVolume != null"),
+        "platform resident composition and manual movement priority",
+        (
+            "TunnelNavigationVolume.CreateDemo",
+            "initialPosition: new SpatialCellId",
+            "TryAdvanceManualTunnelMovement(agent",
+            "_tunnelVolume != null",
+        ),
     ))
     return errors
 

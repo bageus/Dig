@@ -165,8 +165,19 @@ namespace Dig.Unity
             for (int index = 0; index < agents.Count; index++)
             {
                 AgentState agent = agents[index];
-                if (!agent.IsAlive || HasManualTunnelOrder(agent.Id))
+                if (!agent.IsAlive)
                 {
+                    CancelManualTunnelMovement(agent.Id.ToString());
+                    continue;
+                }
+
+                if (TryAdvanceManualTunnelMovement(agent, out Result manualMovement))
+                {
+                    if (manualMovement.IsFailure)
+                    {
+                        CancelManualMovementWithWarning(agent.Id, manualMovement.Error!);
+                    }
+
                     continue;
                 }
 
@@ -174,7 +185,7 @@ namespace Dig.Unity
                 {
                     if (spatialMovement.IsFailure)
                     {
-                        return spatialMovement;
+                        CancelManualMovementWithWarning(agent.Id, spatialMovement.Error!);
                     }
 
                     continue;
@@ -199,7 +210,7 @@ namespace Dig.Unity
                     _tick));
                 if (result.IsFailure)
                 {
-                    return result;
+                    CancelManualMovementWithWarning(agent.Id, result.Error!);
                 }
             }
 

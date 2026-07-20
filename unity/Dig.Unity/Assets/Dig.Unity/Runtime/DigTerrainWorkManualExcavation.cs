@@ -36,7 +36,6 @@ namespace Dig.Unity
             }
 
             RequireManualExcavationInitialized();
-            ReleaseDirectMovementControl(residentId);
             EntityId agentId = EntityId.Parse(residentId);
             ClearManualGroupForAgent(agentId);
             IReadOnlyList<CellId> cluster = _clusterPlanner!.Select(

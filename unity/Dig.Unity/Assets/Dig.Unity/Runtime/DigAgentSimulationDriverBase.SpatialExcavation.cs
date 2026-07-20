@@ -38,8 +38,7 @@ public abstract partial class DigAgentSimulationDriverBase
 
         for (int index = 0; index < residentIds.Count; index++)
         {
-            AgentSession.ReleaseManualTunnelOrder(residentIds[index]);
-            TerrainSession.ReleaseDirectMovementControl(residentIds[index]);
+            AgentSession.CancelManualTunnelMovement(residentIds[index]);
         }
 
         IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();

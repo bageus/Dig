@@ -235,19 +235,10 @@ namespace Dig.Unity
             IReadOnlyList<AgentViewModel> selected = _agentRenderer.GetSelectedModels();
             for (int index = 0; index < selected.Count; index++)
             {
-                AgentViewModel resident = selected[index];
-                if (resident.CellZ == 0)
+                if (selected[index].CellZ != 0)
                 {
-                    continue;
-                }
-
-                Result moved = _simulation!.MoveResidentThroughTunnel(
-                    resident.Id,
-                    new SpatialCellId(resident.CellX, resident.CellY, 0),
-                    _tunnelRenderer!);
-                if (moved.IsFailure)
-                {
-                    _hud!.SetCommandResult(moved);
+                    _hud!.SetStatus(
+                        "Move every selected dwarf to an open Z=0 tunnel cell before assigning front-layer excavation.");
                     return true;
                 }
             }

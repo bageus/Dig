@@ -23,15 +23,7 @@ namespace Dig.Unity
             }
 
             SynchronizeExcavatedTunnelNavigation();
-            Result validation = AgentSession.ValidateResidentThroughTunnel(
-                residentId,
-                destination);
-            if (validation.IsFailure)
-            {
-                return validation;
-            }
-
-            Result interrupted = TerrainSession.InterruptForDirectMovement(
+            Result interrupted = TerrainSession.InterruptForManualMovement(
                 new[] { residentId },
                 CurrentTick);
             if (interrupted.IsFailure)
@@ -39,21 +31,15 @@ namespace Dig.Unity
                 return interrupted;
             }
 
-            MoveAgentThroughTunnelReport report =
+            PlanAgentTunnelRouteReport report =
                 AgentSession.MoveResidentThroughTunnel(residentId, destination);
             if (report.Result.IsFailure)
             {
                 return report.Result;
             }
 
-            IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
-            AgentRenderer.Render(agents, movementDuration: 0.01f);
-            AgentRenderer.AnimateRoute(
-                residentId,
-                report.Path!.Cells,
-                stepDuration: 0.12f);
             tunnelRenderer.ShowRoute(report.Path);
-            RefreshTunnelMovementPresentation(agents);
+            RefreshTunnelMovementPresentation(AgentSession.LoadView());
             return Result.Success();
         }
 
@@ -89,15 +75,7 @@ namespace Dig.Unity
             }
 
             SynchronizeExcavatedTunnelNavigation();
-            Result validation = AgentSession.ValidateResidentsThroughTunnel(
-                residentIds,
-                destination);
-            if (validation.IsFailure)
-            {
-                return validation;
-            }
-
-            Result interrupted = TerrainSession.InterruptForDirectMovement(
+            Result interrupted = TerrainSession.InterruptForManualMovement(
                 residentIds,
                 CurrentTick);
             if (interrupted.IsFailure)
@@ -105,27 +83,16 @@ namespace Dig.Unity
                 return interrupted;
             }
 
-            MoveAgentsThroughTunnelReport report =
+            PlanAgentsTunnelRoutesReport report =
                 AgentSession.MoveResidentsThroughTunnel(residentIds, destination);
             if (report.Result.IsFailure)
             {
                 return report.Result;
             }
 
-            IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
-            AgentRenderer.Render(agents, movementDuration: 0.01f);
-            for (int index = 0; index < report.Entries.Count; index++)
-            {
-                MoveAgentThroughTunnelEntry entry = report.Entries[index];
-                AgentRenderer.AnimateRoute(
-                    entry.AgentId.ToString(),
-                    entry.Path.Cells,
-                    stepDuration: 0.12f);
-            }
-
             tunnelRenderer.ShowRoute(
                 report.Entries.Count == 0 ? null : report.Entries[0].Path);
-            RefreshTunnelMovementPresentation(agents);
+            RefreshTunnelMovementPresentation(AgentSession.LoadView());
             return Result.Success();
         }
 

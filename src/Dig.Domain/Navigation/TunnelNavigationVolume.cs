@@ -169,6 +169,32 @@ public sealed partial class TunnelNavigationVolume
         return _verticalCells.Contains(cell);
     }
 
+    public bool CanTraverseStep(SpatialCellId from, SpatialCellId to)
+    {
+        if (!IsOpen(from) || !IsOpen(to))
+        {
+            return false;
+        }
+
+        int deltaX = Math.Abs(to.X - from.X);
+        int deltaY = Math.Abs(to.Y - from.Y);
+        int deltaZ = Math.Abs(to.Z - from.Z);
+        if (deltaX + deltaY + deltaZ != 1)
+        {
+            return false;
+        }
+
+        if (deltaY == 0)
+        {
+            return true;
+        }
+
+        return deltaX == 0
+            && deltaZ == 0
+            && IsVerticalTunnel(from)
+            && IsVerticalTunnel(to);
+    }
+
     public TunnelPathResult FindPath(SpatialCellId start, SpatialCellId goal)
     {
         if (!Contains(start))
@@ -237,36 +263,21 @@ public sealed partial class TunnelNavigationVolume
 
     private IEnumerable<SpatialCellId> GetNeighbors(SpatialCellId cell)
     {
-        SpatialCellId[] horizontal =
+        SpatialCellId[] candidates =
         {
             new SpatialCellId(cell.X - 1, cell.Y, cell.Z),
             new SpatialCellId(cell.X + 1, cell.Y, cell.Z),
             new SpatialCellId(cell.X, cell.Y, cell.Z - 1),
             new SpatialCellId(cell.X, cell.Y, cell.Z + 1),
+            new SpatialCellId(cell.X, cell.Y - 1, cell.Z),
+            new SpatialCellId(cell.X, cell.Y + 1, cell.Z),
         };
-        for (int index = 0; index < horizontal.Length; index++)
+        for (int index = 0; index < candidates.Length; index++)
         {
-            if (IsOpen(horizontal[index]))
+            if (CanTraverseStep(cell, candidates[index]))
             {
-                yield return horizontal[index];
+                yield return candidates[index];
             }
-        }
-
-        if (!IsVerticalTunnel(cell))
-        {
-            yield break;
-        }
-
-        SpatialCellId up = new SpatialCellId(cell.X, cell.Y - 1, cell.Z);
-        if (IsVerticalTunnel(up))
-        {
-            yield return up;
-        }
-
-        SpatialCellId down = new SpatialCellId(cell.X, cell.Y + 1, cell.Z);
-        if (IsVerticalTunnel(down))
-        {
-            yield return down;
         }
     }
 

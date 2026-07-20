@@ -11,28 +11,22 @@ using Dig.Domain.World;
 namespace Dig.Application.Agents
 {
 
-public sealed class MoveAgentThroughTunnelCommand : ICommand<MoveAgentThroughTunnelReport>
+public sealed class PlanAgentTunnelRouteCommand : ICommand<PlanAgentTunnelRouteReport>
 {
-    public MoveAgentThroughTunnelCommand(
-        EntityId agentId,
-        SpatialCellId destination,
-        long tick)
+    public PlanAgentTunnelRouteCommand(EntityId agentId, SpatialCellId destination)
     {
         AgentId = agentId;
         Destination = destination;
-        Tick = tick;
     }
 
     public EntityId AgentId { get; }
 
     public SpatialCellId Destination { get; }
-
-    public long Tick { get; }
 }
 
-public sealed class MoveAgentThroughTunnelReport
+public sealed class PlanAgentTunnelRouteReport
 {
-    public MoveAgentThroughTunnelReport(Result result, TunnelPath? path)
+    public PlanAgentTunnelRouteReport(Result result, TunnelPath? path)
     {
         Result = result;
         Path = path;
@@ -43,24 +37,21 @@ public sealed class MoveAgentThroughTunnelReport
     public TunnelPath? Path { get; }
 }
 
-public sealed class MoveAgentThroughTunnelCommandHandler :
-    ICommandHandler<MoveAgentThroughTunnelCommand, MoveAgentThroughTunnelReport>
+public sealed class PlanAgentTunnelRouteCommandHandler :
+    ICommandHandler<PlanAgentTunnelRouteCommand, PlanAgentTunnelRouteReport>
 {
     private readonly IAgentRepository _repository;
     private readonly TunnelNavigationVolume _volume;
-    private readonly IEventSink _eventSink;
 
-    public MoveAgentThroughTunnelCommandHandler(
+    public PlanAgentTunnelRouteCommandHandler(
         IAgentRepository repository,
-        TunnelNavigationVolume volume,
-        IEventSink eventSink)
+        TunnelNavigationVolume volume)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _volume = volume ?? throw new ArgumentNullException(nameof(volume));
-        _eventSink = eventSink ?? throw new ArgumentNullException(nameof(eventSink));
     }
 
-    public MoveAgentThroughTunnelReport Handle(MoveAgentThroughTunnelCommand command)
+    public PlanAgentTunnelRouteReport Handle(PlanAgentTunnelRouteCommand command)
     {
         if (command is null)
         {
@@ -73,30 +64,22 @@ public sealed class MoveAgentThroughTunnelCommandHandler :
             return Failure(AgentApplicationErrors.NotFound);
         }
 
+        if (!agent.IsAlive)
+        {
+            return Failure(AgentErrors.AgentDead);
+        }
+
         TunnelPathResult pathResult = _volume.FindPath(
             agent.SpatialPosition,
             command.Destination);
-        if (!pathResult.Succeeded)
-        {
-            return Failure(ToDomainError(pathResult));
-        }
-
-        Result movement = agent.MoveTo(command.Destination, command.Tick);
-        if (movement.IsFailure)
-        {
-            return new MoveAgentThroughTunnelReport(movement, null);
-        }
-
-        _repository.Save(agent);
-        _eventSink.Append(agent.DequeueUncommittedEvents());
-        return new MoveAgentThroughTunnelReport(
-            Result.Success(),
-            pathResult.Path);
+        return pathResult.Succeeded
+            ? new PlanAgentTunnelRouteReport(Result.Success(), pathResult.Path)
+            : Failure(ToDomainError(pathResult));
     }
 
-    private static MoveAgentThroughTunnelReport Failure(DomainError error)
+    private static PlanAgentTunnelRouteReport Failure(DomainError error)
     {
-        return new MoveAgentThroughTunnelReport(Result.Failure(error), null);
+        return new PlanAgentTunnelRouteReport(Result.Failure(error), null);
     }
 
     internal static DomainError ToDomainError(TunnelPathResult result)
@@ -107,12 +90,12 @@ public sealed class MoveAgentThroughTunnelCommandHandler :
     }
 }
 
-public sealed class MoveAgentsThroughTunnelCommand : ICommand<MoveAgentsThroughTunnelReport>
+public sealed class PlanAgentsTunnelRoutesCommand :
+    ICommand<PlanAgentsTunnelRoutesReport>
 {
-    public MoveAgentsThroughTunnelCommand(
+    public PlanAgentsTunnelRoutesCommand(
         IReadOnlyCollection<EntityId> agentIds,
-        SpatialCellId destination,
-        long tick)
+        SpatialCellId destination)
     {
         if (agentIds is null)
         {
@@ -132,19 +115,16 @@ public sealed class MoveAgentsThroughTunnelCommand : ICommand<MoveAgentsThroughT
 
         AgentIds = new ReadOnlyCollection<EntityId>(copied);
         Destination = destination;
-        Tick = tick;
     }
 
     public IReadOnlyList<EntityId> AgentIds { get; }
 
     public SpatialCellId Destination { get; }
-
-    public long Tick { get; }
 }
 
-public sealed class MoveAgentThroughTunnelEntry
+public sealed class PlannedAgentTunnelRoute
 {
-    public MoveAgentThroughTunnelEntry(EntityId agentId, TunnelPath path)
+    public PlannedAgentTunnelRoute(EntityId agentId, TunnelPath path)
     {
         AgentId = agentId;
         Path = path ?? throw new ArgumentNullException(nameof(path));
@@ -155,11 +135,11 @@ public sealed class MoveAgentThroughTunnelEntry
     public TunnelPath Path { get; }
 }
 
-public sealed class MoveAgentsThroughTunnelReport
+public sealed class PlanAgentsTunnelRoutesReport
 {
-    private MoveAgentsThroughTunnelReport(
+    private PlanAgentsTunnelRoutesReport(
         Result result,
-        IReadOnlyList<MoveAgentThroughTunnelEntry> entries)
+        IReadOnlyList<PlannedAgentTunnelRoute> entries)
     {
         Result = result;
         Entries = entries;
@@ -167,64 +147,60 @@ public sealed class MoveAgentsThroughTunnelReport
 
     public Result Result { get; }
 
-    public IReadOnlyList<MoveAgentThroughTunnelEntry> Entries { get; }
+    public IReadOnlyList<PlannedAgentTunnelRoute> Entries { get; }
 
-    internal static MoveAgentsThroughTunnelReport Success(
-        IReadOnlyList<MoveAgentThroughTunnelEntry> entries)
+    internal static PlanAgentsTunnelRoutesReport Success(
+        IReadOnlyList<PlannedAgentTunnelRoute> entries)
     {
-        return new MoveAgentsThroughTunnelReport(
+        return new PlanAgentsTunnelRoutesReport(
             Result.Success(),
-            new ReadOnlyCollection<MoveAgentThroughTunnelEntry>(entries.ToArray()));
+            new ReadOnlyCollection<PlannedAgentTunnelRoute>(entries.ToArray()));
     }
 
-    internal static MoveAgentsThroughTunnelReport Failure(DomainError error)
+    internal static PlanAgentsTunnelRoutesReport Failure(DomainError error)
     {
-        return new MoveAgentsThroughTunnelReport(
+        return new PlanAgentsTunnelRoutesReport(
             Result.Failure(error),
-            Array.Empty<MoveAgentThroughTunnelEntry>());
+            Array.Empty<PlannedAgentTunnelRoute>());
     }
 }
 
-public sealed class MoveAgentsThroughTunnelCommandHandler :
-    ICommandHandler<MoveAgentsThroughTunnelCommand, MoveAgentsThroughTunnelReport>
+public sealed class PlanAgentsTunnelRoutesCommandHandler :
+    ICommandHandler<PlanAgentsTunnelRoutesCommand, PlanAgentsTunnelRoutesReport>
 {
     private readonly IAgentRepository _repository;
     private readonly TunnelNavigationVolume _volume;
-    private readonly IEventSink _eventSink;
 
-    public MoveAgentsThroughTunnelCommandHandler(
+    public PlanAgentsTunnelRoutesCommandHandler(
         IAgentRepository repository,
-        TunnelNavigationVolume volume,
-        IEventSink eventSink)
+        TunnelNavigationVolume volume)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _volume = volume ?? throw new ArgumentNullException(nameof(volume));
-        _eventSink = eventSink ?? throw new ArgumentNullException(nameof(eventSink));
     }
 
-    public MoveAgentsThroughTunnelReport Handle(MoveAgentsThroughTunnelCommand command)
+    public PlanAgentsTunnelRoutesReport Handle(PlanAgentsTunnelRoutesCommand command)
     {
         if (command is null)
         {
             throw new ArgumentNullException(nameof(command));
         }
 
-        List<AgentState> agents = new List<AgentState>(command.AgentIds.Count);
-        List<MoveAgentThroughTunnelEntry> entries =
-            new List<MoveAgentThroughTunnelEntry>(command.AgentIds.Count);
+        List<PlannedAgentTunnelRoute> entries =
+            new List<PlannedAgentTunnelRoute>(command.AgentIds.Count);
         for (int index = 0; index < command.AgentIds.Count; index++)
         {
             EntityId agentId = command.AgentIds[index];
             AgentState? agent = _repository.Get(agentId);
             if (agent is null)
             {
-                return MoveAgentsThroughTunnelReport.Failure(
+                return PlanAgentsTunnelRoutesReport.Failure(
                     AgentApplicationErrors.NotFound);
             }
 
             if (!agent.IsAlive)
             {
-                return MoveAgentsThroughTunnelReport.Failure(AgentErrors.AgentDead);
+                return PlanAgentsTunnelRoutesReport.Failure(AgentErrors.AgentDead);
             }
 
             TunnelPathResult pathResult = _volume.FindPath(
@@ -232,31 +208,14 @@ public sealed class MoveAgentsThroughTunnelCommandHandler :
                 command.Destination);
             if (!pathResult.Succeeded)
             {
-                return MoveAgentsThroughTunnelReport.Failure(
-                    MoveAgentThroughTunnelCommandHandler.ToDomainError(pathResult));
+                return PlanAgentsTunnelRoutesReport.Failure(
+                    PlanAgentTunnelRouteCommandHandler.ToDomainError(pathResult));
             }
 
-            agents.Add(agent);
-            entries.Add(new MoveAgentThroughTunnelEntry(agentId, pathResult.Path!));
+            entries.Add(new PlannedAgentTunnelRoute(agentId, pathResult.Path!));
         }
 
-        for (int index = 0; index < agents.Count; index++)
-        {
-            Result movement = agents[index].MoveTo(command.Destination, command.Tick);
-            if (movement.IsFailure)
-            {
-                return MoveAgentsThroughTunnelReport.Failure(movement.Error!);
-            }
-        }
-
-        for (int index = 0; index < agents.Count; index++)
-        {
-            AgentState agent = agents[index];
-            _repository.Save(agent);
-            _eventSink.Append(agent.DequeueUncommittedEvents());
-        }
-
-        return MoveAgentsThroughTunnelReport.Success(entries);
+        return PlanAgentsTunnelRoutesReport.Success(entries);
     }
 }
 

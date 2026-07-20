@@ -84,7 +84,7 @@ def main() -> int:
         "InitializeSimple(model, _normalMaterial!, _selectedMaterial!)",
     )))
     errors.extend(reject(renderer_path, renderer, (
-        "FindObjectOfType<", "FindObjectsOfType<",
+        "FindObjectOfType<", "FindObjectsOfType<", "AnimateRoute(",
     )))
 
     rig_path = RUNTIME / "DigResidentRig.cs"
@@ -110,13 +110,15 @@ def main() -> int:
     errors.extend(require(visual_path, visual, (
         "AgentSpatialPositionInterpolator.Interpolate(",
         "DigTunnelProjection.ResidentWorldPosition",
-        "PlayRoute(", "Quaternion.LookRotation(Vector3.back, Vector3.up)",
+        "Quaternion.LookRotation(Vector3.back, Vector3.up)",
         "ResolveSocket(DigResidentSocketKind kind)",
         "_rig?.SetSelected(selected)", "PresentAction(",
         "internal void InitializeSimple(",
+        "transform.position = ToWorld(_currentX, _currentY, _currentZ)",
     )))
     errors.extend(reject(visual_path, visual, (
         "Animator.Set", "ApplyRootMotion", "ICommand", "Handle(",
+        "PlayRoute(", "UpdateRoute(", "_routeStepDuration", "_routeIndex",
     )))
 
     movement_path = RUNTIME / "DigAgentVisual.Movement.cs"
@@ -140,7 +142,7 @@ def main() -> int:
             print(f"- {error}", file=sys.stderr)
         return 1
 
-    print("PASS: composite resident rig remains primary with a bounded primitive fallback")
+    print("PASS: composite resident rig uses only authoritative per-tick movement interpolation")
     return 0
 
 

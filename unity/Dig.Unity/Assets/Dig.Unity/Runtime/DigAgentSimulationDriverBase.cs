@@ -74,6 +74,8 @@ namespace Dig.Unity
             Hud = hud;
             AgentSession.SetMovementTargetFilter(
                 TerrainSession.ApplyResidentMovementCadence);
+            TerrainSession.BindManualMovementSource(
+                AgentSession.HasManualTunnelMovement);
             try
             {
                 RefreshEquipmentVisuals();
