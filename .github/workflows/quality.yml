@@ -43,6 +43,9 @@ jobs:
       - name: Validate terrain deposit presentation
         run: python tools/quality/check_unity_terrain_deposit_contracts.py
 
+      - name: Validate cave template trim presentation
+        run: python tools/quality/check_unity_cave_template_trim_contracts.py
+
       - name: Upload Unity source contract log
         if: always()
         uses: actions/upload-artifact@v4
