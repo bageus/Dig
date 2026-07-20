@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Dig.Unity
 {
     [DisallowMultipleComponent]
-    internal sealed class DigBuildingDetailGroup : MonoBehaviour
+    public sealed class DigBuildingDetailGroup : MonoBehaviour
     {
         [SerializeField]
         private TerrainVisualDetailLevel minimumDetail =
