@@ -1,9 +1,16 @@
 using System;
+using UnityEngine;
 
 namespace Dig.Unity
 {
     public sealed partial class DigCaveRoomPreviewRenderer
     {
+        private void Awake()
+        {
+            _overlays = GetComponent<DigOverlayManager>()
+                ?? gameObject.AddComponent<DigOverlayManager>();
+        }
+
         internal void Initialize(DigOverlayManager overlays)
         {
             _overlays = overlays
