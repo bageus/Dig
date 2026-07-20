@@ -52,6 +52,9 @@ jobs:
       - name: Validate building prefab presentation
         run: python tools/quality/check_unity_building_visual_contracts.py
 
+      - name: Validate representative building content and budgets
+        run: python tools/quality/check_unity_building_representative_contracts.py
+
       - name: Upload Unity source contract log
         if: always()
         uses: actions/upload-artifact@v4

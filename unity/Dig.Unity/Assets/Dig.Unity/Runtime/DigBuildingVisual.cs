@@ -1,6 +1,7 @@
 using System;
 using Dig.Domain.Buildings;
 using Dig.Presentation.Buildings;
+using Dig.Presentation.World;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -11,11 +12,60 @@ namespace Dig.Unity
         private Transform? _modelContainer;
         private GameObject? _instance;
         private DigVisualTintTarget? _tint;
+        private DigBuildingDetailGroup[] _detailGroups =
+            Array.Empty<DigBuildingDetailGroup>();
+        private MeshFilter[] _meshFilters = Array.Empty<MeshFilter>();
+        private Renderer[] _renderers = Array.Empty<Renderer>();
         private string _assetKey = string.Empty;
         private Color _baseTint = Color.white;
+        private TerrainVisualDetailLevel _detailLevel = TerrainVisualDetailLevel.Full;
         private bool _selected;
 
         public BuildingWorldViewModel Model { get; private set; } = null!;
+
+        internal int RebuildCount { get; private set; }
+
+        internal int VisibleRendererCount
+        {
+            get
+            {
+                int count = 0;
+                for (int index = 0; index < _renderers.Length; index++)
+                {
+                    if (_renderers[index] != null
+                        && _renderers[index].gameObject.activeInHierarchy)
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
+        }
+
+        internal int VisibleTriangleCount
+        {
+            get
+            {
+                int count = 0;
+                for (int index = 0; index < _meshFilters.Length; index++)
+                {
+                    MeshFilter filter = _meshFilters[index];
+                    if (filter == null || !filter.gameObject.activeInHierarchy)
+                    {
+                        continue;
+                    }
+
+                    Mesh? mesh = filter.sharedMesh;
+                    if (mesh != null && mesh.subMeshCount > 0)
+                    {
+                        count += checked((int)(mesh.GetIndexCount(0) / 3u));
+                    }
+                }
+
+                return count;
+            }
+        }
 
         internal void Initialize(
             BuildingWorldViewModel model,
@@ -55,6 +105,17 @@ namespace Dig.Unity
             ApplyPresentation();
         }
 
+        internal void SetDetailLevel(TerrainVisualDetailLevel value)
+        {
+            if (_detailLevel == value)
+            {
+                return;
+            }
+
+            _detailLevel = value;
+            ApplyDetailLevel();
+        }
+
         private void EnsureContainer()
         {
             if (_modelContainer != null)
@@ -82,9 +143,25 @@ namespace Dig.Unity
             _assetKey = resolution.Asset.StableId;
             _baseTint = resolution.Asset.Tint;
             _tint = _instance.GetComponent<DigVisualTintTarget>();
+            _detailGroups = _instance.GetComponentsInChildren<DigBuildingDetailGroup>(
+                includeInactive: true);
+            _meshFilters = _instance.GetComponentsInChildren<MeshFilter>(
+                includeInactive: true);
+            _renderers = _instance.GetComponentsInChildren<Renderer>(
+                includeInactive: true);
+            RebuildCount++;
             ApplyPlacement(resolution);
             ValidateFootprint(resolution);
+            ApplyDetailLevel();
             ApplyPresentation();
+        }
+
+        private void ApplyDetailLevel()
+        {
+            for (int index = 0; index < _detailGroups.Length; index++)
+            {
+                _detailGroups[index].SetDetailLevel(_detailLevel);
+            }
         }
 
         private void ApplyPlacement(DigBuildingVisualResolution resolution)
@@ -100,9 +177,7 @@ namespace Dig.Unity
 
             if (resolution.Asset.IsFallback || resolution.Asset.Prefab == null)
             {
-                ResolveLocalBounds(
-                    out Vector2 center,
-                    out Vector2 size);
+                ResolveLocalBounds(out Vector2 center, out Vector2 size);
                 float height = ResolveFallbackHeight(Model.VisualState);
                 _instance.transform.localPosition = new Vector3(
                     center.x,

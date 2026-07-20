@@ -1,0 +1,74 @@
+{
+  "profiles": [
+    {
+      "stableIds": ["kitchen.campfire", "building.campfire"],
+      "kind": "Campfire",
+      "footprintSize": {"x": 1, "y": 1},
+      "pivotCell": {"x": 0.0, "y": 0.0},
+      "tint": {"r": 0.92, "g": 0.42, "b": 0.12, "a": 1.0},
+      "maxRenderers": 8,
+      "maxTriangles": 160,
+      "parts": [
+        {"name": "Hearth", "shape": "Box", "detail": "Marker", "position": {"x": 0.0, "y": 0.08, "z": 0.0}, "scale": {"x": 0.82, "y": 0.16, "z": 0.82}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Flame", "shape": "Octahedron", "detail": "Marker", "position": {"x": 0.0, "y": 0.48, "z": 0.0}, "scale": {"x": 0.34, "y": 0.68, "z": 0.34}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Log A", "shape": "Box", "detail": "Reduced", "position": {"x": 0.0, "y": 0.20, "z": 0.0}, "scale": {"x": 0.72, "y": 0.14, "z": 0.18}, "rotation": {"x": 0.0, "y": 45.0, "z": 0.0}},
+        {"name": "Log B", "shape": "Box", "detail": "Reduced", "position": {"x": 0.0, "y": 0.20, "z": 0.0}, "scale": {"x": 0.72, "y": 0.14, "z": 0.18}, "rotation": {"x": 0.0, "y": -45.0, "z": 0.0}},
+        {"name": "Spark", "shape": "Octahedron", "detail": "Full", "position": {"x": 0.18, "y": 0.86, "z": 0.08}, "scale": {"x": 0.10, "y": 0.18, "z": 0.10}, "rotation": {"x": 0.0, "y": 20.0, "z": 0.0}}
+      ],
+      "anchors": [
+        {"kind": "Worker", "stableId": "worker.primary", "position": {"x": 0.0, "y": 0.0, "z": -0.62}},
+        {"kind": "Input", "stableId": "input.food", "position": {"x": -0.46, "y": 0.12, "z": 0.0}},
+        {"kind": "Output", "stableId": "output.meal", "position": {"x": 0.46, "y": 0.12, "z": 0.0}},
+        {"kind": "Vfx", "stableId": "vfx.flame", "position": {"x": 0.0, "y": 0.52, "z": 0.0}}
+      ]
+    },
+    {
+      "stableIds": ["building.furnace", "building.forge", "demo.workshop.box"],
+      "kind": "Furnace",
+      "footprintSize": {"x": 1, "y": 1},
+      "pivotCell": {"x": 0.0, "y": 0.0},
+      "tint": {"r": 0.64, "g": 0.30, "b": 0.16, "a": 1.0},
+      "maxRenderers": 8,
+      "maxTriangles": 192,
+      "parts": [
+        {"name": "Body", "shape": "Box", "detail": "Marker", "position": {"x": 0.0, "y": 0.42, "z": 0.0}, "scale": {"x": 0.82, "y": 0.84, "z": 0.76}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Fire Mouth", "shape": "Box", "detail": "Marker", "position": {"x": 0.0, "y": 0.30, "z": -0.43}, "scale": {"x": 0.42, "y": 0.34, "z": 0.12}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Chimney", "shape": "Box", "detail": "Reduced", "position": {"x": 0.22, "y": 1.06, "z": 0.12}, "scale": {"x": 0.28, "y": 0.72, "z": 0.28}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Chimney Cap", "shape": "Pyramid", "detail": "Full", "position": {"x": 0.22, "y": 1.48, "z": 0.12}, "scale": {"x": 0.42, "y": 0.26, "z": 0.42}, "rotation": {"x": 0.0, "y": 45.0, "z": 0.0}},
+        {"name": "Side Bellows", "shape": "Wedge", "detail": "Full", "position": {"x": -0.50, "y": 0.34, "z": 0.08}, "scale": {"x": 0.34, "y": 0.38, "z": 0.48}, "rotation": {"x": 0.0, "y": -90.0, "z": 0.0}}
+      ],
+      "anchors": [
+        {"kind": "Worker", "stableId": "worker.primary", "position": {"x": 0.0, "y": 0.0, "z": -0.72}},
+        {"kind": "Input", "stableId": "input.ore", "position": {"x": -0.54, "y": 0.12, "z": -0.12}},
+        {"kind": "Output", "stableId": "output.ingot", "position": {"x": 0.54, "y": 0.12, "z": -0.12}},
+        {"kind": "Vfx", "stableId": "vfx.smoke", "position": {"x": 0.22, "y": 1.58, "z": 0.12}}
+      ]
+    },
+    {
+      "stableIds": ["building.arsenal", "building.storage"],
+      "kind": "Storage",
+      "footprintSize": {"x": 3, "y": 2},
+      "pivotCell": {"x": 1.0, "y": 0.5},
+      "tint": {"r": 0.40, "g": 0.48, "b": 0.56, "a": 1.0},
+      "maxRenderers": 12,
+      "maxTriangles": 256,
+      "parts": [
+        {"name": "Foundation", "shape": "Box", "detail": "Marker", "position": {"x": 1.0, "y": 0.12, "z": 0.5}, "scale": {"x": 2.82, "y": 0.24, "z": 1.82}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Left Rack", "shape": "Box", "detail": "Marker", "position": {"x": 0.18, "y": 0.82, "z": 0.52}, "scale": {"x": 0.36, "y": 1.40, "z": 1.52}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Right Rack", "shape": "Box", "detail": "Marker", "position": {"x": 1.82, "y": 0.82, "z": 0.52}, "scale": {"x": 0.36, "y": 1.40, "z": 1.52}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Roof Beam", "shape": "Box", "detail": "Reduced", "position": {"x": 1.0, "y": 1.48, "z": 0.52}, "scale": {"x": 2.00, "y": 0.24, "z": 1.58}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Center Shield", "shape": "Octahedron", "detail": "Reduced", "position": {"x": 1.0, "y": 0.92, "z": -0.18}, "scale": {"x": 0.52, "y": 0.72, "z": 0.18}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Weapon Bar A", "shape": "Box", "detail": "Full", "position": {"x": 0.54, "y": 0.82, "z": -0.12}, "scale": {"x": 0.10, "y": 1.10, "z": 0.10}, "rotation": {"x": 0.0, "y": 0.0, "z": 22.0}},
+        {"name": "Weapon Bar B", "shape": "Box", "detail": "Full", "position": {"x": 1.46, "y": 0.82, "z": -0.12}, "scale": {"x": 0.10, "y": 1.10, "z": 0.10}, "rotation": {"x": 0.0, "y": 0.0, "z": -22.0}}
+      ],
+      "anchors": [
+        {"kind": "Worker", "stableId": "worker.primary", "position": {"x": 1.0, "y": 0.0, "z": -0.76}},
+        {"kind": "Input", "stableId": "input.weapon", "position": {"x": 0.22, "y": 0.18, "z": -0.48}},
+        {"kind": "Output", "stableId": "output.weapon", "position": {"x": 1.78, "y": 0.18, "z": -0.48}},
+        {"kind": "Storage", "stableId": "storage.left", "position": {"x": 0.34, "y": 0.82, "z": 0.50}},
+        {"kind": "Storage", "stableId": "storage.right", "position": {"x": 1.66, "y": 0.82, "z": 0.50}},
+        {"kind": "Visitor", "stableId": "visitor.inspect", "position": {"x": 1.0, "y": 0.0, "z": -0.92}}
+      ]
+    }
+  ]
+}
