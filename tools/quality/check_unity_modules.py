@@ -11,7 +11,6 @@ ASMDEF_PATH = ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" / "Runtime" 
 REQUIRED_PACKAGES = {
     "com.unity.modules.audio": ("1.0.0", "builtin"),
     "com.unity.modules.imgui": ("1.0.0", "builtin"),
-    "com.unity.modules.jsonserialize": ("1.0.0", "builtin"),
     "com.unity.modules.physics": ("1.0.0", "builtin"),
     "com.unity.ugui": ("2.0.0", "builtin"),
 }
@@ -20,7 +19,6 @@ REQUIRED_ASSEMBLIES = {
     "UnityEngine.AudioModule",
     "UnityEngine.IMGUIModule",
     "UnityEngine.InputLegacyModule",
-    "UnityEngine.JSONSerializeModule",
     "UnityEngine.PhysicsModule",
     "UnityEngine.UI",
 }

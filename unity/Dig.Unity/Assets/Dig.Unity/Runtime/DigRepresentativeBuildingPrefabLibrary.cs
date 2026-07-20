@@ -8,9 +8,6 @@ namespace Dig.Unity
 {
     internal sealed partial class DigRepresentativeBuildingPrefabLibrary : IDisposable
     {
-        private const string PackResourcePath =
-            "Dig/VisualCatalogs/RepresentativeBuildings";
-
         private static DigRepresentativeBuildingPrefabLibrary? _shared;
         private static int _referenceCount;
 
@@ -34,22 +31,10 @@ namespace Dig.Unity
             _templateRoot.SetActive(false);
             _material = CreateMaterial();
 
-            TextAsset? source = Resources.Load<TextAsset>(PackResourcePath);
-            DigRepresentativeBuildingPackData? pack = source == null
-                ? null
-                : JsonUtility.FromJson<DigRepresentativeBuildingPackData>(source.text);
+            DigRepresentativeBuildingPackData pack = CreateBuiltInPack();
             List<string> errors = new List<string>(
                 DigRepresentativeBuildingDataValidator.Validate(pack));
-            if (source == null)
-            {
-                errors.Insert(0, $"Missing Resources/{PackResourcePath}.json.");
-            }
-
-            if (pack != null)
-            {
-                IndexProfiles(pack, errors);
-            }
-
+            IndexProfiles(pack, errors);
             _validationErrors = new ReadOnlyCollection<string>(errors);
         }
 
@@ -159,6 +144,104 @@ namespace Dig.Unity
             {
                 errors.Add("Representative building pack produced no usable aliases.");
             }
+        }
+
+        private static DigRepresentativeBuildingPackData CreateBuiltInPack()
+        {
+            return new DigRepresentativeBuildingPackData
+            {
+                profiles = new[]
+                {
+                    Profile(
+                        new[] { "kitchen.campfire", "building.campfire" },
+                        "Campfire",
+                        Vector2Int.one,
+                        Vector2.zero,
+                        new Color(0.92f, 0.42f, 0.12f, 1f),
+                        new[]
+                        {
+                            Part("Hearth", "Box", new Vector3(0f, 0.08f, 0f), new Vector3(0.82f, 0.16f, 0.82f)),
+                            Part("Flame", "Octahedron", new Vector3(0f, 0.48f, 0f), new Vector3(0.34f, 0.68f, 0.34f)),
+                        },
+                        Anchor("Worker", "worker.primary", new Vector3(0f, 0f, -0.62f))),
+                    Profile(
+                        new[] { "building.furnace", "building.forge", "demo.workshop.box" },
+                        "Furnace",
+                        Vector2Int.one,
+                        Vector2.zero,
+                        new Color(0.64f, 0.30f, 0.16f, 1f),
+                        new[]
+                        {
+                            Part("Body", "Box", new Vector3(0f, 0.42f, 0f), new Vector3(0.82f, 0.84f, 0.76f)),
+                            Part("Chimney", "Box", new Vector3(0.22f, 1.06f, 0.12f), new Vector3(0.28f, 0.72f, 0.28f)),
+                        },
+                        Anchor("Worker", "worker.primary", new Vector3(0f, 0f, -0.72f))),
+                    Profile(
+                        new[] { "building.arsenal", "building.storage" },
+                        "Storage",
+                        new Vector2Int(3, 2),
+                        new Vector2(1f, 0.5f),
+                        new Color(0.40f, 0.48f, 0.56f, 1f),
+                        new[]
+                        {
+                            Part("Foundation", "Box", new Vector3(1f, 0.12f, 0.5f), new Vector3(2.82f, 0.24f, 1.82f)),
+                            Part("Rack", "Box", new Vector3(1f, 0.82f, 0.52f), new Vector3(1.9f, 1.40f, 1.52f)),
+                        },
+                        Anchor("Storage", "storage.primary", new Vector3(1f, 0.82f, 0.50f))),
+                },
+            };
+        }
+
+        private static DigRepresentativeBuildingProfileData Profile(
+            string[] stableIds,
+            string kind,
+            Vector2Int footprint,
+            Vector2 pivot,
+            Color tint,
+            DigRepresentativeBuildingPartData[] parts,
+            DigRepresentativeBuildingAnchorData anchor)
+        {
+            return new DigRepresentativeBuildingProfileData
+            {
+                stableIds = stableIds,
+                kind = kind,
+                footprintSize = footprint,
+                pivotCell = pivot,
+                tint = tint,
+                maxRenderers = 8,
+                maxTriangles = 256,
+                parts = parts,
+                anchors = new[] { anchor },
+            };
+        }
+
+        private static DigRepresentativeBuildingPartData Part(
+            string name,
+            string shape,
+            Vector3 position,
+            Vector3 scale)
+        {
+            return new DigRepresentativeBuildingPartData
+            {
+                name = name,
+                shape = shape,
+                detail = "Marker",
+                position = position,
+                scale = scale,
+            };
+        }
+
+        private static DigRepresentativeBuildingAnchorData Anchor(
+            string kind,
+            string stableId,
+            Vector3 position)
+        {
+            return new DigRepresentativeBuildingAnchorData
+            {
+                kind = kind,
+                stableId = stableId,
+                position = position,
+            };
         }
 
         private static Material CreateMaterial()
