@@ -17,20 +17,41 @@ namespace Dig.Unity
         private readonly List<string> _removedInstances = new List<string>();
         private Transform? _root;
         private Shader? _fallbackShader;
+        private CaveTemplateTrimVolumeViewModel? _lastVolume;
+        private DigTerrainVisualCatalog? _lastCatalog;
+        private TerrainVisualDetailLevel _detailLevel = TerrainVisualDetailLevel.Full;
 
         internal int InstanceCount => _visuals.Count;
-
         internal int RebuildCount { get; private set; }
-
         internal int VertexCount { get; private set; }
-
         internal int TriangleCount { get; private set; }
+        internal TerrainVisualDetailLevel DetailLevel => _detailLevel;
 
         internal void Invalidate()
         {
             foreach (DigCaveTemplateTrimVisual visual in _visuals.Values)
             {
                 visual.Invalidate();
+            }
+        }
+
+        internal void SetDetailLevel(TerrainVisualDetailLevel detailLevel)
+        {
+            if (!Enum.IsDefined(typeof(TerrainVisualDetailLevel), detailLevel))
+            {
+                throw new ArgumentOutOfRangeException(nameof(detailLevel));
+            }
+
+            if (_detailLevel == detailLevel)
+            {
+                return;
+            }
+
+            _detailLevel = detailLevel;
+            Invalidate();
+            if (_lastVolume != null)
+            {
+                Render(_lastVolume, _lastCatalog);
             }
         }
 
@@ -43,6 +64,8 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(volume));
             }
 
+            _lastVolume = volume;
+            _lastCatalog = catalog;
             EnsureRoot();
             _visibleInstances.Clear();
             VertexCount = 0;
@@ -52,11 +75,11 @@ namespace Dig.Unity
                 CaveTemplateTrimInstanceViewModel instance = volume.Instances[index];
                 _visibleInstances.Add(instance.InstanceId);
                 DigCaveTemplateTrimVisual visual = GetOrCreateVisual(instance);
-                ulong signature = CalculateSignature(instance);
+                ulong signature = CalculateSignature(instance, _detailLevel);
                 if (!visual.IsInitialized || visual.Signature != signature)
                 {
                     DigCaveTemplateTrimMeshData data =
-                        DigCaveTemplateTrimMeshBuilder.Build(instance);
+                        DigCaveTemplateTrimMeshBuilder.Build(instance, _detailLevel);
                     visual.Apply(
                         signature,
                         data,
@@ -161,7 +184,8 @@ namespace Dig.Unity
         }
 
         private static ulong CalculateSignature(
-            CaveTemplateTrimInstanceViewModel instance)
+            CaveTemplateTrimInstanceViewModel instance,
+            TerrainVisualDetailLevel detailLevel)
         {
             const ulong offset = 1469598103934665603UL;
             const ulong prime = 1099511628211UL;
@@ -173,6 +197,7 @@ namespace Dig.Unity
             Mix(ref hash, (ulong)(uint)instance.Depth, prime);
             Mix(ref hash, instance.Variant, prime);
             Mix(ref hash, instance.HasBackWall ? 1UL : 0UL, prime);
+            Mix(ref hash, (ulong)detailLevel, prime);
             for (int index = 0; index < instance.Rows.Count; index++)
             {
                 CaveTemplateTrimRowViewModel row = instance.Rows[index];
