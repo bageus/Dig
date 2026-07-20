@@ -175,7 +175,7 @@ namespace Dig.Unity
                 {
                     if (manualMovement.IsFailure)
                     {
-                        return manualMovement;
+                        CancelManualMovementWithWarning(agent.Id, manualMovement.Error!);
                     }
 
                     continue;
@@ -185,7 +185,7 @@ namespace Dig.Unity
                 {
                     if (spatialMovement.IsFailure)
                     {
-                        return spatialMovement;
+                        CancelManualMovementWithWarning(agent.Id, spatialMovement.Error!);
                     }
 
                     continue;
@@ -210,7 +210,7 @@ namespace Dig.Unity
                     _tick));
                 if (result.IsFailure)
                 {
-                    return result;
+                    CancelManualMovementWithWarning(agent.Id, result.Error!);
                 }
             }
 
