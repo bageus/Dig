@@ -16,8 +16,9 @@ public sealed partial class DigGameHudCanvas
 
     private void ApplyResponsiveLayout(bool force = false)
     {
-        int width = Screen.width;
-        int height = Screen.height;
+        RectTransform canvasRect = (RectTransform)transform;
+        int width = Mathf.RoundToInt(Mathf.Max(640f, canvasRect.rect.width));
+        int height = Mathf.RoundToInt(Mathf.Max(360f, canvasRect.rect.height));
         if (!force && width == _lastLayoutWidth && height == _lastLayoutHeight)
         {
             return;
