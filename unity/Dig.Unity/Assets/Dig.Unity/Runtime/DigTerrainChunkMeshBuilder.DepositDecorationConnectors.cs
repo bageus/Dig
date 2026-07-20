@@ -99,8 +99,8 @@ namespace Dig.Unity
             Vector3 b = center + axis * end - width + lift;
             Vector3 c = center + axis * end + width + lift;
             Vector3 d = center + axis * start + width + lift;
-            AddDepositTriangle(a, b, c, normal, submesh, vertices, normals, triangles);
-            AddDepositTriangle(a, c, d, normal, submesh, vertices, normals, triangles);
+            AddDecorationTriangle(a, b, c, normal, submesh, vertices, normals, triangles);
+            AddDecorationTriangle(a, c, d, normal, submesh, vertices, normals, triangles);
         }
     }
 }
