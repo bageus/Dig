@@ -107,6 +107,7 @@ public sealed partial class DigCreatureRenderer : MonoBehaviour
     {
         DigCreatureVisual visual = _creatures[snapshot.CreatureId];
         CreatureAppearanceViewModel appearance = _presenter.PresentAppearance(snapshot);
+        ConfigureCollider(visual, appearance.Family);
         if (visual.RequiresRigRebuild(appearance))
         {
             DigCreatureVisualResolution resolution = ResolveVisual(appearance);
@@ -131,6 +132,7 @@ public sealed partial class DigCreatureRenderer : MonoBehaviour
     {
         DigCreatureVisual visual = AcquireRoot(snapshot.CreatureId);
         CreatureAppearanceViewModel appearance = _presenter.PresentAppearance(snapshot);
+        ConfigureCollider(visual, appearance.Family);
         DigCreatureVisualResolution resolution = ResolveVisual(appearance);
         DigCreatureRig rig = DigCreatureRigFactory.Create(
             visual.transform,
