@@ -55,6 +55,11 @@ namespace Dig.Unity
                     continue;
                 }
 
+                if (job.Definition is SpatialDigJobDefinition)
+                {
+                    continue;
+                }
+
                 string agentId = job.AssignedAgentId.Value.ToString();
                 if (IsDirectMovementControlled(agentId)
                     || !agentsById.TryGetValue(agentId, out AgentViewModel? agent))
