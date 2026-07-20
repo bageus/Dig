@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Dig.Domain.Core;
 using Dig.Domain.Society;
@@ -73,7 +74,14 @@ namespace Dig.Unity
             Hud = hud;
             AgentSession.SetMovementTargetFilter(
                 TerrainSession.ApplyResidentMovementCadence);
-            RefreshEquipmentVisuals();
+            try
+            {
+                RefreshEquipmentVisuals();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, this);
+            }
         }
 
         internal void TogglePause()
