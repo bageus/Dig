@@ -10,8 +10,7 @@ namespace Dig.Unity
         {
             if (_overlays == null)
             {
-                throw new InvalidOperationException(
-                    "Cave room preview requires DigOverlayManager.");
+                throw new InvalidOperationException("Cave room preview requires DigOverlayManager.");
             }
 
             if (_root == null)
@@ -22,10 +21,9 @@ namespace Dig.Unity
                 _overlays.RegisterLayer(OverlayLayerKind.Preview, _root);
             }
 
-            while (_edges.Count < EdgeCount)
+            while (_edges.Count < TotalEdgeCount)
             {
-                GameObject edgeObject = new GameObject(
-                    $"Cave room preview edge {_edges.Count + 1}");
+                GameObject edgeObject = new GameObject($"Cave room preview edge {_edges.Count + 1}");
                 edgeObject.transform.SetParent(_root, worldPositionStays: true);
                 LineRenderer edge = edgeObject.AddComponent<LineRenderer>();
                 edge.positionCount = 2;
