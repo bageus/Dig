@@ -89,7 +89,7 @@ namespace Dig.Unity
                 result = AgentSession.Advance(movement);
             }
 
-            DomainError? manualMovementWarning =
+            DomainError? movementWarning =
                 AgentSession.ConsumeManualTunnelMovementWarning();
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
             if (result.IsSuccess)
@@ -175,11 +175,9 @@ namespace Dig.Unity
                 primarySelectedAgentId,
                 selectedJobId,
                 selectedBuildingId);
-            if (manualMovementWarning != null)
+            if (movementWarning != null)
             {
-                Hud.SetStatus(
-                    $"Manual movement cancelled: {manualMovementWarning.Code} — "
-                    + manualMovementWarning.Message);
+                Hud.SetStatus($"Movement order cancelled: {movementWarning}");
             }
         }
     }
