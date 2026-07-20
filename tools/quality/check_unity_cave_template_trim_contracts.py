@@ -59,7 +59,6 @@ def main() -> int:
             "InstanceId",
             "ArchDepths",
             "HasBackWall",
-            "Maximum",
         ),
     ))
     errors.extend(reject(
