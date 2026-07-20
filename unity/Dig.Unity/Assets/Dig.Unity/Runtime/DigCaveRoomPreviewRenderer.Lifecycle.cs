@@ -9,5 +9,13 @@ namespace Dig.Unity
             _overlays = overlays
                 ?? throw new ArgumentNullException(nameof(overlays));
         }
+
+        internal void Clear()
+        {
+            for (int index = 0; index < _edges.Count; index++)
+            {
+                _edges[index].enabled = false;
+            }
+        }
     }
 }
