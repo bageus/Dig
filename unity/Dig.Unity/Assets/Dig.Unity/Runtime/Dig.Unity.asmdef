@@ -9,7 +9,6 @@
     "UnityEngine.AudioModule",
     "UnityEngine.IMGUIModule",
     "UnityEngine.InputLegacyModule",
-    "UnityEngine.JSONSerializeModule",
     "UnityEngine.PhysicsModule",
     "UnityEngine.UI"
   ],
