@@ -102,6 +102,7 @@ def check_navigation_and_marquee_contracts(
         (
             "_tunnelRenderer.TryGetCell",
             "_caveRoomFloorRenderer.TryGetCell",
+            "TryAssignSpatialExcavation(",
             "MoveResidentsThroughTunnel",
         ),
     ))
@@ -135,16 +136,25 @@ def check_navigation_and_marquee_contracts(
     errors.extend(require_fragments(
         depth_input,
         depth_text,
-        "authoritative tunnel depth input",
+        "authoritative spatial tunnel depth input",
         (
             "ResolveTunnelDepthSource",
-            "!tunnelCell.IsVerticalTunnel",
+            "_caveRoomFloorRenderer.TryGetCell",
             "tunnelCell.Cell.Z > selected.Value.Z",
-            "ExcavateTunnelDepth(source.Value",
+            "DesignateTunnelDepth(source.Value)",
+            "Depth excavation designated",
         ),
     ))
-    if "tunnelCell.CanExcavateDepth" in depth_text:
-        errors.append(f"{depth_input}: stale depth presentation flag remains")
+    for forbidden in (
+        "tunnelCell.CanExcavateDepth",
+        "!tunnelCell.IsVerticalTunnel",
+        "ExcavateTunnelDepth(source.Value",
+        "RefreshCompletedCaveRooms(force: true)",
+    ):
+        if forbidden in depth_text:
+            errors.append(
+                f"{depth_input}: stale instant/orientation depth input remains: {forbidden!r}"
+            )
 
     errors.extend(require_fragments(
         canvas_hud,
