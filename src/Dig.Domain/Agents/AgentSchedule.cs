@@ -99,6 +99,82 @@ public sealed class DailySchedule
         throw new InvalidOperationException("The schedule does not cover the full day.");
     }
 
+    public bool TryGetWorkWindow(out int startTickInclusive, out int endTickExclusive)
+    {
+        ScheduleSegment[] work = Segments
+            .Where(segment => segment.Activity == ScheduleActivity.Work)
+            .ToArray();
+        if (work.Length == 1)
+        {
+            startTickInclusive = work[0].StartTickInclusive;
+            endTickExclusive = work[0].EndTickExclusive % TicksPerDay;
+            return true;
+        }
+
+        if (work.Length == 2
+            && work[0].StartTickInclusive == 0
+            && work[1].EndTickExclusive == TicksPerDay)
+        {
+            startTickInclusive = work[1].StartTickInclusive;
+            endTickExclusive = work[0].EndTickExclusive;
+            return true;
+        }
+
+        startTickInclusive = 0;
+        endTickExclusive = 0;
+        return false;
+    }
+
+    public static DailySchedule CreateWorkRest(
+        int ticksPerDay,
+        int workStartTickInclusive,
+        int workEndTickExclusive)
+    {
+        ValidateWorkWindow(
+            ticksPerDay,
+            workStartTickInclusive,
+            workEndTickExclusive);
+        List<ScheduleSegment> segments = new List<ScheduleSegment>(3);
+        if (workStartTickInclusive < workEndTickExclusive)
+        {
+            AddSegment(
+                segments,
+                0,
+                workStartTickInclusive,
+                ScheduleActivity.Rest);
+            AddSegment(
+                segments,
+                workStartTickInclusive,
+                workEndTickExclusive,
+                ScheduleActivity.Work);
+            AddSegment(
+                segments,
+                workEndTickExclusive,
+                ticksPerDay,
+                ScheduleActivity.Rest);
+        }
+        else
+        {
+            AddSegment(
+                segments,
+                0,
+                workEndTickExclusive,
+                ScheduleActivity.Work);
+            AddSegment(
+                segments,
+                workEndTickExclusive,
+                workStartTickInclusive,
+                ScheduleActivity.Rest);
+            AddSegment(
+                segments,
+                workStartTickInclusive,
+                ticksPerDay,
+                ScheduleActivity.Work);
+        }
+
+        return new DailySchedule(ticksPerDay, segments);
+    }
+
     public static DailySchedule CreateBalanced(int ticksPerDay)
     {
         if (ticksPerDay < 4)
@@ -120,6 +196,41 @@ public sealed class DailySchedule
                 new ScheduleSegment(workEnd, restEnd, ScheduleActivity.Rest),
                 new ScheduleSegment(restEnd, ticksPerDay, ScheduleActivity.Sleep),
             });
+    }
+
+    private static void AddSegment(
+        ICollection<ScheduleSegment> segments,
+        int start,
+        int end,
+        ScheduleActivity activity)
+    {
+        if (end > start)
+        {
+            segments.Add(new ScheduleSegment(start, end, activity));
+        }
+    }
+
+    private static void ValidateWorkWindow(int ticksPerDay, int start, int end)
+    {
+        if (ticksPerDay < 2)
+        {
+            throw new ArgumentOutOfRangeException(nameof(ticksPerDay));
+        }
+
+        if (start < 0 || start >= ticksPerDay)
+        {
+            throw new ArgumentOutOfRangeException(nameof(start));
+        }
+
+        if (end < 0 || end >= ticksPerDay)
+        {
+            throw new ArgumentOutOfRangeException(nameof(end));
+        }
+
+        if (start == end)
+        {
+            throw new ArgumentException("The work interval must leave time for rest.");
+        }
     }
 
     private static void ValidateCoverage(
