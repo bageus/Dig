@@ -55,6 +55,9 @@ jobs:
       - name: Validate item prefab and bounded stack presentation
         run: python tools/quality/check_unity_item_visual_contracts.py
 
+      - name: Validate unified overlay presentation
+        run: python tools/quality/check_unity_overlay_contracts.py
+
       - name: Upload Unity source contract log
         if: always()
         uses: actions/upload-artifact@v4
