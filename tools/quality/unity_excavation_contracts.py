@@ -45,7 +45,13 @@ def check_excavation_contracts(
         projection,
         texts.get(projection, ""),
         "embedded walk-surface projection",
-        ("RockCellHalfExtent", "FloorThickness", "FloorWorldPosition", "WalkSurfaceY", "ResidentHalfHeight"),
+        (
+            "RockCellHalfExtent",
+            "FloorThickness",
+            "FloorWorldPosition",
+            "WalkSurfaceY",
+            "ResidentHalfHeight",
+        ),
     ))
     tunnel_text = texts.get(tunnel_renderer, "")
     errors.extend(require_fragments(
@@ -66,7 +72,13 @@ def check_excavation_contracts(
         tunnel_renderer,
         tunnel_text,
         "visible shaft or synthetic cave geometry",
-        ('"Shaft {cell}"', "CreateCaveShell", "Cave ceiling", "Cave back wall", "_verticalMaterial"),
+        (
+            '"Shaft {cell}"',
+            "CreateCaveShell",
+            "Cave ceiling",
+            "Cave back wall",
+            "_verticalMaterial",
+        ),
     ))
     errors.extend(require_fragments(
         world_renderer,
@@ -119,7 +131,11 @@ def check_excavation_contracts(
         room_protection,
         room_protection_text,
         "player-dug room protection",
-        ("CaveRoomShellProtectionPolicy", "SynchronizeCompletedCaveRoomProtection", "_caveRoomProtectedCells"),
+        (
+            "CaveRoomShellProtectionPolicy",
+            "SynchronizeCompletedCaveRoomProtection",
+            "_caveRoomProtectedCells",
+        ),
     ))
     errors.extend(reject_fragments(
         room_driver,
@@ -131,7 +147,13 @@ def check_excavation_contracts(
         room_session,
         texts.get(room_session, ""),
         "cave room designation transaction",
-        ("CaveRoomPlanner", "PlanCaveRoom", "ApplyCaveRoomPlan", "FrontExcavationCells", "RollBackDesignations"),
+        (
+            "CaveRoomPlanner",
+            "PlanCaveRoom",
+            "ApplyCaveRoomPlan",
+            "FrontExcavationCells",
+            "RollBackDesignations",
+        ),
     ))
 
     drawing_text = texts.get(drawing, "")
@@ -159,31 +181,55 @@ def check_excavation_contracts(
         drawing_defaults,
         texts.get(drawing_defaults, ""),
         "base tunnel palette",
-        ("EnsureDefaultExcavationDrawingMode", "DigExcavationDrawingMode.Tunnel", "CanSelectExcavationCells"),
+        (
+            "EnsureDefaultExcavationDrawingMode",
+            "DigExcavationDrawingMode.Tunnel",
+            "CanSelectExcavationCells",
+        ),
     ))
     errors.extend(require_fragments(
         room_interaction,
         texts.get(room_interaction, ""),
         "cave room hover and placement",
-        ("CaveRoomPresetKind?", "SetCaveRoomPlanningPreset", "UpdateCaveRoomPreview", "TryHandleCaveRoomPlacement"),
+        (
+            "CaveRoomPresetKind?",
+            "SetCaveRoomPlanningPreset",
+            "UpdateCaveRoomPreview",
+            "TryHandleCaveRoomPlacement",
+        ),
     ))
     errors.extend(require_fragments(
         room_preview,
         texts.get(room_preview, ""),
         "volumetric trapezoid preview",
-        ("EdgeCount = 12", "CreateCorners", "preset.BaseWidth", "preset.TopWidth", "preset.Depth - 1"),
+        (
+            "EdgeCount = 12",
+            "CreateCorners",
+            "preset.BaseWidth",
+            "preset.TopWidth",
+            "preset.Depth - 1",
+        ),
     ))
     errors.extend(require_fragments(
         interaction,
         texts.get(interaction, ""),
         "explicit excavation routing",
-        ("TryHandleCaveRoomPlacement()", "TryHandleTunnelDepthExcavation()", "TryHandleExcavationStroke()"),
+        (
+            "TryHandleCaveRoomPlacement()",
+            "TryHandleTunnelDepthExcavation()",
+            "TryHandleExcavationStroke()",
+        ),
     ))
     errors.extend(require_fragments(
         designations,
         texts.get(designations, ""),
         "frontier-only automatic excavation",
-        ("IsExcavationFrontier", "NoCandidates", "agent.CellZ == 0", "IsManualExcavationJob(job.Id)"),
+        (
+            "IsExcavationFrontier",
+            "NoCandidates",
+            "agent.CellZ == 0",
+            "IsManualExcavationJob(job.Id)",
+        ),
     ))
     errors.extend(require_fragments(
         manual,
@@ -195,14 +241,29 @@ def check_excavation_contracts(
         driver,
         texts.get(driver, ""),
         "excavation application adapter",
-        ("ApplyExcavationDesignation", "ApplyCaveRoomPlan", "AssignExcavationClusterToResidents", "SynchronizeDesignations"),
+        (
+            "ApplyExcavationDesignation",
+            "ApplyCaveRoomPlan",
+            "AssignExcavationClusterToResidents",
+            "SynchronizeDesignations",
+            "CancelManualTunnelMovement",
+        ),
     ))
+
+    session_text = texts.get(session, "")
     errors.extend(require_fragments(
         session,
-        texts.get(session, ""),
-        "manual movement release",
+        session_text,
+        "authoritative manual movement cancellation",
+        ("CancelManualTunnelMovement", "_manualTunnelMovements.Remove"),
+    ))
+    errors.extend(reject_fragments(
+        session,
+        session_text,
+        "legacy manual movement release",
         ("ReleaseManualTunnelOrder", "_manualTunnelOrders.Remove"),
     ))
+
     errors.extend(require_fragments(
         hud,
         texts.get(hud, ""),
@@ -213,8 +274,21 @@ def check_excavation_contracts(
         bootstrap,
         texts.get(bootstrap, ""),
         "room preview composition",
-        ("worldRenderer.SetProtectedCells(worldSession.ProtectedCells)", "DigCaveRoomPreviewRenderer", "SetCaveRoomRenderers"),
+        (
+            "worldRenderer.SetProtectedCells(worldSession.ProtectedCells)",
+            "DigCaveRoomPreviewRenderer",
+            "SetCaveRoomRenderers",
+        ),
     ))
-    errors.extend(check_depth_terrain_contracts(runtime_root, texts, require_fragments, reject_fragments))
-    errors.extend(check_cave_room_runtime_contracts(runtime_root, texts, require_fragments))
+    errors.extend(check_depth_terrain_contracts(
+        runtime_root,
+        texts,
+        require_fragments,
+        reject_fragments,
+    ))
+    errors.extend(check_cave_room_runtime_contracts(
+        runtime_root,
+        texts,
+        require_fragments,
+    ))
     return errors
