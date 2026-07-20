@@ -40,6 +40,13 @@ namespace Dig.Unity
             _assetKey = string.Empty;
         }
 
+        private DigBuildingVisualResolution ResolveCatalogBuildingBox(string stableId)
+        {
+            return visualCatalog!.ResolveBuilding(
+                stableId,
+                BuildingVisualState.BuildingBox);
+        }
+
         public void Render(BuildingBoxGhostViewModel preview)
         {
             if (preview == null)
