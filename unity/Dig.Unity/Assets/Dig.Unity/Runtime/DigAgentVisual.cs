@@ -12,8 +12,11 @@ namespace Dig.Unity
     public sealed class DigAgentVisual : MonoBehaviour
     {
         private Material? _normalMaterial;
+        private Material? _hoveredMaterial;
         private Material? _selectedMaterial;
         private DigAgentEquipmentVisual? _equipmentVisual;
+        private bool _selected;
+        private bool _hovered;
         private int _previousX;
         private int _previousY;
         private int _previousZ;
@@ -32,10 +35,12 @@ namespace Dig.Unity
         internal void Initialize(
             AgentViewModel model,
             Material normalMaterial,
+            Material hoveredMaterial,
             Material selectedMaterial)
         {
             Model = model;
             _normalMaterial = normalMaterial;
+            _hoveredMaterial = hoveredMaterial;
             _selectedMaterial = selectedMaterial;
             _previousX = model.CellX;
             _previousY = model.CellY;
@@ -46,7 +51,9 @@ namespace Dig.Unity
             transform.SetPositionAndRotation(
                 ToWorld(model.CellX, model.CellY, model.CellZ),
                 Quaternion.identity);
-            SetSelected(false);
+            _selected = false;
+            _hovered = false;
+            ApplyVisualState();
         }
 
         internal void SetModel(AgentViewModel model, float duration)
@@ -128,8 +135,24 @@ namespace Dig.Unity
 
         internal void SetSelected(bool selected)
         {
+            _selected = selected;
+            ApplyVisualState();
+        }
+
+        internal void SetHovered(bool hovered)
+        {
+            _hovered = hovered;
+            ApplyVisualState();
+        }
+
+        private void ApplyVisualState()
+        {
             Renderer renderer = GetComponent<Renderer>();
-            renderer.sharedMaterial = selected ? _selectedMaterial : _normalMaterial;
+            renderer.sharedMaterial = _selected
+                ? _selectedMaterial
+                : _hovered
+                    ? _hoveredMaterial
+                    : _normalMaterial;
         }
 
         private void Update()
