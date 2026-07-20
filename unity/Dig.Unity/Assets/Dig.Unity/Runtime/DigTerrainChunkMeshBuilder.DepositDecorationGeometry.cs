@@ -6,6 +6,8 @@ namespace Dig.Unity
 {
     internal static partial class DigTerrainChunkMeshBuilder
     {
+        // Sibling partials own AddDepositConnectors, AddDepositConnector,
+        // MaximumConnectorsPerFace budgeting and AddDecorationTriangle primitives.
         private static void AddDepositCluster(
             Vector3 center,
             Vector3 normal,
@@ -174,9 +176,9 @@ namespace Dig.Unity
                 - bitangent * (scale * 0.48f);
             Vector3 c = center + bitangent * scale;
             Vector3 tip = center + normal * (0.08f + scale * 0.95f * damageHeight);
-            AddDepositTriangle(a, b, tip, normal, submesh, vertices, normals, triangles);
-            AddDepositTriangle(b, c, tip, normal, submesh, vertices, normals, triangles);
-            AddDepositTriangle(c, a, tip, normal, submesh, vertices, normals, triangles);
+            AddDecorationTriangle(a, b, tip, normal, submesh, vertices, normals, triangles);
+            AddDecorationTriangle(b, c, tip, normal, submesh, vertices, normals, triangles);
+            AddDecorationTriangle(c, a, tip, normal, submesh, vertices, normals, triangles);
         }
 
         private static void AddSeam(
@@ -201,10 +203,10 @@ namespace Dig.Unity
             Vector3 b = right - bitangent * halfWidth;
             Vector3 c = right + bitangent * halfWidth;
             Vector3 d = left + bitangent * halfWidth;
-            AddDepositTriangle(a, b, ridgeRight, normal, submesh, vertices, normals, triangles);
-            AddDepositTriangle(a, ridgeRight, ridgeLeft, normal, submesh, vertices, normals, triangles);
-            AddDepositTriangle(ridgeLeft, ridgeRight, c, normal, submesh, vertices, normals, triangles);
-            AddDepositTriangle(ridgeLeft, c, d, normal, submesh, vertices, normals, triangles);
+            AddDecorationTriangle(a, b, ridgeRight, normal, submesh, vertices, normals, triangles);
+            AddDecorationTriangle(a, ridgeRight, ridgeLeft, normal, submesh, vertices, normals, triangles);
+            AddDecorationTriangle(ridgeLeft, ridgeRight, c, normal, submesh, vertices, normals, triangles);
+            AddDecorationTriangle(ridgeLeft, c, d, normal, submesh, vertices, normals, triangles);
         }
 
         private static void AddPebbles(
