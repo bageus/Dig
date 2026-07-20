@@ -1,5 +1,5 @@
-using System;
 using Dig.Presentation.Creatures;
+using Dig.Presentation.Rendering;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -7,6 +7,7 @@ namespace Dig.Unity
 public sealed partial class DigCreatureRenderer
 {
     private bool _catalogLoadAttempted;
+    private DigRenderMaterialLibrary? _materialLibrary;
 
     private void EnsureResources()
     {
@@ -24,16 +25,12 @@ public sealed partial class DigCreatureRenderer
         }
 
         if (_material != null) return;
-        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
-        if (shader == null) shader = Shader.Find("Standard");
-        if (shader == null)
-            throw new InvalidOperationException("No supported creature shader was found.");
-        _material = new Material(shader)
-        {
-            name = "Dig Creature Shared",
-            color = new Color(0.48f, 0.42f, 0.28f, 1f),
-            enableInstancing = true,
-        };
+        if (_materialLibrary == null)
+            _materialLibrary = GetComponent<DigRenderMaterialLibrary>();
+        if (_materialLibrary == null)
+            _materialLibrary = gameObject.AddComponent<DigRenderMaterialLibrary>();
+        _material = _materialLibrary.Resolve(RenderMaterialSemantic.Creature,
+            RenderSurfaceKind.Lit, new Color(0.48f, 0.42f, 0.28f, 1f));
     }
 
     private DigCreatureVisualResolution ResolveVisual(
@@ -123,11 +120,6 @@ public sealed partial class DigCreatureRenderer
             && viewport.y >= -0.1f && viewport.y <= 1.1f;
         double distance = Vector3.Distance(camera.transform.position, position);
         return _presenter.PresentLod(distance, visible);
-    }
-
-    private void OnDestroy()
-    {
-        if (_material != null) Destroy(_material);
     }
 }
 }
