@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.World;
+using Dig.Domain.Navigation;
 using Dig.Domain.World;
 
 namespace Dig.Unity
@@ -9,40 +10,37 @@ namespace Dig.Unity
 
 internal sealed partial class DigWorldSession
 {
-    private readonly CaveRoomShellProtectionPolicy _caveRoomShellProtection =
-        new CaveRoomShellProtectionPolicy();
-    private readonly HashSet<CellId> _caveRoomProtectedCells = new HashSet<CellId>();
+    private readonly NaturalCaveShellProtectionPolicy _naturalCaveProtection =
+        new NaturalCaveShellProtectionPolicy();
+    private readonly HashSet<CellId> _naturalCaveProtectedCells =
+        new HashSet<CellId>();
 
-    internal void SynchronizeCompletedCaveRoomProtection(
-        IReadOnlyList<CaveRoomPlan> completedPlans)
+    internal void InitializeNaturalCaveProtection(TunnelDemoLayout layout)
     {
-        if (completedPlans == null)
+        if (layout == null)
         {
-            throw new ArgumentNullException(nameof(completedPlans));
+            throw new ArgumentNullException(nameof(layout));
         }
 
-        WorldSize size = LoadSnapshot().Size;
-        for (int index = 0; index < completedPlans.Count; index++)
+        IReadOnlyList<CellId> perimeter = _naturalCaveProtection.Resolve(
+            layout,
+            LoadSnapshot().Size);
+        _naturalCaveProtectedCells.Clear();
+        for (int index = 0; index < perimeter.Count; index++)
         {
-            IReadOnlyList<CellId> shell = _caveRoomShellProtection.Resolve(
-                completedPlans[index],
-                size);
-            for (int cellIndex = 0; cellIndex < shell.Count; cellIndex++)
-            {
-                _caveRoomProtectedCells.Add(shell[cellIndex]);
-            }
+            _naturalCaveProtectedCells.Add(perimeter[index]);
         }
     }
 
-    private bool IsCaveRoomProtected(CellId cell)
+    private bool IsNaturalCaveProtected(CellId cell)
     {
-        return _caveRoomProtectedCells.Contains(cell);
+        return _naturalCaveProtectedCells.Contains(cell);
     }
 
     private IReadOnlyList<CellId> LoadAllProtectedCells()
     {
         return _boundaryPolicy.ProtectedCells
-            .Concat(_caveRoomProtectedCells)
+            .Concat(_naturalCaveProtectedCells)
             .Distinct()
             .OrderBy(cell => cell)
             .ToArray();

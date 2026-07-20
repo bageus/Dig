@@ -11,6 +11,8 @@ namespace Dig.Unity
     {
         private readonly Dictionary<SpatialCellId, DigTunnelCellVisual> _cells =
             new Dictionary<SpatialCellId, DigTunnelCellVisual>();
+        private readonly HashSet<SpatialCellId> _hiddenHitTargets =
+            new HashSet<SpatialCellId>();
         private readonly Material?[] _depthMaterials = new Material?[4];
         private Transform? _root;
         private Material? _selectedMaterial;
@@ -28,28 +30,41 @@ namespace Dig.Unity
             EnsureResources();
             foreach (SpatialCellId cell in volume.Cells)
             {
-                bool vertical = volume.IsVerticalTunnel(cell);
-                if (vertical || cell.Z == 0 || _cells.ContainsKey(cell))
+                if (_cells.ContainsKey(cell))
                 {
                     continue;
                 }
 
+                bool vertical = volume.IsVerticalTunnel(cell);
+                bool hiddenHitTarget = vertical || cell.Z == 0;
                 GameObject target = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                target.name = $"Walkable plane {cell}";
+                target.name = hiddenHitTarget
+                    ? $"Tunnel hit target {cell}"
+                    : $"Walkable plane {cell}";
                 target.transform.SetParent(_root, worldPositionStays: false);
                 target.transform.SetPositionAndRotation(
-                    DigTunnelProjection.FloorWorldPosition(cell),
+                    vertical
+                        ? DigTunnelProjection.CellWorldPosition(cell)
+                        : DigTunnelProjection.FloorWorldPosition(cell),
                     Quaternion.identity);
-                target.transform.localScale = new Vector3(
-                    0.84f,
-                    DigTunnelProjection.FloorThickness,
-                    DigTunnelProjection.FloorDepth);
+                target.transform.localScale = vertical
+                    ? new Vector3(0.72f, 0.72f, 0.48f)
+                    : new Vector3(
+                        0.84f,
+                        hiddenHitTarget ? 0.14f : DigTunnelProjection.FloorThickness,
+                        DigTunnelProjection.FloorDepth);
                 DigTunnelCellVisual visual = target.AddComponent<DigTunnelCellVisual>();
                 visual.Configure(
                     cell,
-                    isVerticalTunnel: false,
-                    material: ResolveMaterial(cell));
+                    vertical,
+                    ResolveMaterial(cell));
+                Renderer renderer = target.GetComponent<Renderer>();
+                renderer.enabled = !hiddenHitTarget;
                 _cells.Add(cell, visual);
+                if (hiddenHitTarget)
+                {
+                    _hiddenHitTargets.Add(cell);
+                }
             }
         }
 
@@ -61,18 +76,28 @@ namespace Dig.Unity
             return cell != null;
         }
 
+        internal bool TryGetCell(
+            SpatialCellId cell,
+            out DigTunnelCellVisual visual)
+        {
+            return _cells.TryGetValue(cell, out visual!);
+        }
+
         internal void Select(DigTunnelCellVisual? cell)
         {
             if (_selected != null)
             {
-                _selected.GetComponent<Renderer>().sharedMaterial = ResolveMaterial(
-                    _selected.Cell);
+                Renderer previous = _selected.GetComponent<Renderer>();
+                previous.sharedMaterial = ResolveMaterial(_selected.Cell);
+                previous.enabled = !_hiddenHitTargets.Contains(_selected.Cell);
             }
 
             _selected = cell;
             if (_selected != null)
             {
-                _selected.GetComponent<Renderer>().sharedMaterial = _selectedMaterial;
+                Renderer current = _selected.GetComponent<Renderer>();
+                current.sharedMaterial = _selectedMaterial;
+                current.enabled = true;
             }
         }
 
@@ -105,7 +130,7 @@ namespace Dig.Unity
         {
             if (_root == null)
             {
-                _root = new GameObject("Layered Tunnel Floors").transform;
+                _root = new GameObject("Layered Tunnel Targets").transform;
                 _root.SetParent(transform, worldPositionStays: false);
             }
 

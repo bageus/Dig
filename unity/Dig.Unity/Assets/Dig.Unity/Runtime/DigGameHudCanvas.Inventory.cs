@@ -11,27 +11,25 @@ namespace Dig.Unity
 
 public sealed partial class DigGameHudCanvas
 {
+    private const int InventoryColumns = 3;
+    private const float InventoryCellWidth = 82f;
+    private const float InventoryCellHeight = 76f;
+
     private void BuildInventoryContext(ResidentInventoryLayoutViewModel inventory)
     {
-        BeginBottomLayout();
-        BuildCompartment(
+        BeginBottomLayout(220f);
+        BuildCompartmentIfActive(
             inventory,
             ResidentInventoryCompartment.Weapon,
-            "WEAPON",
-            preferredWidth: 360f);
+            $"WEAPON · {inventory.WeaponCapacity}");
         BuildCompartment(
             inventory,
             ResidentInventoryCompartment.Main,
-            "MAIN · 6",
-            preferredWidth: 620f);
-        string cargoTitle = inventory.CargoCapacity == 0
-            ? "CARGO · NO EXPANSION"
-            : $"CARGO · {inventory.CargoCapacity}";
-        BuildCompartment(
+            "MAIN · 6");
+        BuildCompartmentIfActive(
             inventory,
             ResidentInventoryCompartment.Cargo,
-            cargoTitle,
-            preferredWidth: 520f);
+            $"CARGO · {inventory.CargoCapacity}");
 
         if (inventory.MoveSpeedMultiplier < 1d)
         {
@@ -44,32 +42,49 @@ public sealed partial class DigGameHudCanvas
         }
     }
 
+    private void BuildCompartmentIfActive(
+        ResidentInventoryLayoutViewModel inventory,
+        ResidentInventoryCompartment compartment,
+        string title)
+    {
+        if (inventory.GetCompartment(compartment).Count > 0)
+        {
+            BuildCompartment(inventory, compartment, title);
+        }
+    }
+
     private void BuildCompartment(
         ResidentInventoryLayoutViewModel inventory,
         ResidentInventoryCompartment compartment,
-        string title,
-        float preferredWidth)
+        string title)
     {
-        RectTransform section = CreateSection(
-            compartment.ToString(),
-            _bottomContent!,
-            title,
-            preferredWidth);
-        RectTransform slots = CreateHorizontalRow("Slots", section, 92f);
         IReadOnlyList<ResidentInventoryLayoutSlotViewModel> models =
             inventory.GetCompartment(compartment);
         if (models.Count == 0)
         {
-            Text none = CreateText(
-                "Unavailable",
-                slots,
-                "—",
-                28,
-                TextAnchor.MiddleCenter);
-            none.gameObject.AddComponent<LayoutElement>().preferredWidth = 70f;
             return;
         }
 
+        int rows = Mathf.CeilToInt(models.Count / (float)InventoryColumns);
+        float gridHeight = (rows * InventoryCellHeight) + ((rows - 1) * 6f);
+        RectTransform section = CreateSection(
+            compartment.ToString(),
+            _bottomContent!,
+            title,
+            preferredWidth: 286f);
+        RectTransform slots = CreateRect("Slot Grid", section);
+        LayoutElement gridElement = slots.gameObject.AddComponent<LayoutElement>();
+        gridElement.preferredHeight = gridHeight;
+        gridElement.minHeight = gridHeight;
+        GridLayoutGroup grid = slots.gameObject.AddComponent<GridLayoutGroup>();
+        grid.padding = new RectOffset(6, 6, 0, 0);
+        grid.cellSize = new Vector2(InventoryCellWidth, InventoryCellHeight);
+        grid.spacing = new Vector2(6f, 6f);
+        grid.startCorner = GridLayoutGroup.Corner.UpperLeft;
+        grid.startAxis = GridLayoutGroup.Axis.Horizontal;
+        grid.childAlignment = TextAnchor.UpperCenter;
+        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        grid.constraintCount = InventoryColumns;
         for (int index = 0; index < models.Count; index++)
         {
             CreateInventorySlot(slots, models[index]);
@@ -84,10 +99,6 @@ public sealed partial class DigGameHudCanvas
             $"{slot.Compartment} {slot.SlotIndex}",
             parent,
             ResolveSlotBackground(slot));
-        LayoutElement layout = rect.gameObject.AddComponent<LayoutElement>();
-        layout.preferredWidth = 82f;
-        layout.minWidth = 64f;
-        layout.flexibleWidth = 1f;
         Button button = rect.gameObject.AddComponent<Button>();
         button.interactable = !slot.IsEmpty;
         DigInventorySlotPointer pointer =

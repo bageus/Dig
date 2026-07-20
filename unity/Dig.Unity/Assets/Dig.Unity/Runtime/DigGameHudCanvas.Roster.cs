@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dig.Domain.Society;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Buildings;
 using Dig.Presentation.Jobs;
@@ -94,15 +95,18 @@ public sealed partial class DigGameHudCanvas
             string id = resident.Id;
             bool isSelected = string.Equals(id, selectedId, StringComparison.Ordinal);
             string marker = isSelected ? "◆ " : string.Empty;
+            ResidentSex sex = _simulation!.ResolveResidentSex(id);
+            string nameColor = sex == ResidentSex.Female ? "#FF83B9" : "#70B7FF";
             string label = marker
-                + resident.Name
-                + $"\nHealth {resident.Health / 100}% · {resident.ActiveIntent}";
+                + $"<color={nameColor}>{resident.Name}</color>"
+                + $" · Health {resident.Health / 100}% · {resident.ActiveIntent}";
             Button row = CreateButton(
                 $"Resident {id}",
                 _rightContent!,
                 label,
                 () => _interaction!.SelectResidentFromHud(id),
-                preferredHeight: 58f);
+                preferredHeight: 42f);
+            ConfigureSingleLineRosterRow(row);
             if (isSelected)
             {
                 row.GetComponent<Image>().color =
@@ -128,13 +132,14 @@ public sealed partial class DigGameHudCanvas
             string marker = isSelected ? "■ " : string.Empty;
             string label = marker
                 + building.Name
-                + $"\nCell {building.OriginX},{building.OriginY}";
+                + $" · Cell {building.OriginX},{building.OriginY}";
             Button row = CreateButton(
                 $"Building {id}",
                 _rightContent!,
                 label,
                 () => _interaction!.SelectBuildingFromHud(id),
-                preferredHeight: 58f);
+                preferredHeight: 42f);
+            ConfigureSingleLineRosterRow(row);
             if (isSelected)
             {
                 row.GetComponent<Image>().color =
@@ -170,19 +175,31 @@ public sealed partial class DigGameHudCanvas
             string marker = isSelected ? "▲ " : string.Empty;
             string label = marker
                 + job.Description
-                + $"\n{job.Status} · P{job.Priority} · {worker}";
+                + $" · {job.Status} · P{job.Priority} · {worker}";
             Button row = CreateButton(
                 $"Job {id}",
                 _rightContent!,
                 label,
                 () => _interaction!.SelectJobFromHud(id),
-                preferredHeight: 58f);
+                preferredHeight: 42f);
+            ConfigureSingleLineRosterRow(row);
             if (isSelected)
             {
                 row.GetComponent<Image>().color =
                     new Color(0.46f, 0.30f, 0.54f, 0.96f);
             }
         }
+    }
+
+    private static void ConfigureSingleLineRosterRow(Button row)
+    {
+        Text label = row.GetComponentInChildren<Text>();
+        label.supportRichText = true;
+        label.horizontalOverflow = HorizontalWrapMode.Overflow;
+        label.verticalOverflow = VerticalWrapMode.Truncate;
+        label.resizeTextForBestFit = true;
+        label.resizeTextMinSize = 11;
+        label.resizeTextMaxSize = 18;
     }
 
     private void AddEmptyRosterMessage(string message)
@@ -204,7 +221,8 @@ public sealed partial class DigGameHudCanvas
     {
         string residentVersions = string.Join(
             ",",
-            residents.Select(resident => $"{resident.Id}:{resident.Version}"));
+            residents.Select(resident =>
+                $"{resident.Id}:{resident.Version}:{_simulation!.ResolveResidentSex(resident.Id)}"));
         string buildingVersions = string.Join(
             ",",
             buildings.Select(building => $"{building.Id}:{building.Version}"));

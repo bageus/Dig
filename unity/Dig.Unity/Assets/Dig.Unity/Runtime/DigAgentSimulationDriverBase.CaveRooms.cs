@@ -65,8 +65,6 @@ namespace Dig.Unity
                 return;
             }
 
-            WorldSession!.SynchronizeCompletedCaveRoomProtection(completedPlans);
-            WorldRenderer!.SetProtectedCells(WorldSession.ProtectedCells);
             _terrainExcavatedVolume.Clear();
             _terrainExcavatedVolume.UnionWith(AgentSession.TunnelDepthExcavations);
             for (int index = 0; index < completedPlans.Count; index++)

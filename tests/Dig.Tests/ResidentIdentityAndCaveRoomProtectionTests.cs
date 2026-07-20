@@ -1,69 +1,46 @@
-using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.World;
+using Dig.Domain.Navigation;
 using Dig.Domain.World;
 using Xunit;
 
 namespace Dig.Tests
 {
 
-public sealed class CaveRoomProtectionTests
+public sealed class NaturalCaveProtectionTests
 {
     [Fact]
-    public void Completed_room_protects_only_roof_sides_and_floor_support()
+    public void Natural_cave_protects_complete_outer_perimeter_only()
     {
-        CellId entrance = new CellId(10, 9);
-        CaveRoomPlanResult planned = new CaveRoomPlanner().Plan(
-            CreateWorld(horizontalTunnelY: entrance.Y),
-            new ExcavationBoundaryPolicy(20, 14, topRockY: 2),
-            CaveRoomPresetKind.Small,
-            entrance);
-        Assert.True(planned.Succeeded, planned.Detail);
+        TunnelNavigationVolume volume = TunnelNavigationVolume.CreateDemo(20, 14);
+        TunnelDemoLayout layout = volume.DemoLayout!;
 
-        CellId[] shell = new CaveRoomShellProtectionPolicy()
-            .Resolve(planned.Plan!, new WorldSize(20, 14))
+        CellId[] protectedCells = new NaturalCaveShellProtectionPolicy()
+            .Resolve(layout, new WorldSize(volume.Width, volume.Height))
             .ToArray();
 
-        Assert.All(planned.Plan!.RoofCells, cell => Assert.Contains(cell, shell));
-        Assert.Contains(new CellId(7, 9), shell);
-        Assert.Contains(new CellId(13, 9), shell);
-        Assert.Contains(new CellId(8, 10), shell);
-        Assert.Contains(new CellId(12, 10), shell);
-        Assert.DoesNotContain(entrance, shell);
-        Assert.All(
-            planned.Plan.FrontExcavationCells,
-            roomCell => Assert.DoesNotContain(roomCell, shell));
-    }
-
-    private static WorldSnapshot CreateWorld(int horizontalTunnelY)
-    {
-        MaterialId rock = new MaterialId("test.rock");
-        MaterialId air = new MaterialId("test.air");
-        MaterialCatalog materials = new MaterialCatalog(new[]
+        int left = layout.CaveMinX - 1;
+        int right = layout.CaveMaxX + 1;
+        int top = layout.CaveCeilingY;
+        int bottom = layout.CaveFloorY + 1;
+        for (int x = left; x <= right; x++)
         {
-            new MaterialDefinition(rock, isSolid: true, hardness: 100),
-            new MaterialDefinition(air, isSolid: false, hardness: 0),
-        });
-        WorldState world = WorldState.CreateFilled(
-            new WorldSize(20, 14),
-            chunkSize: 5,
-            materials,
-            rock,
-            explored: true).Value;
-        CellState empty = new CellState(
-            air,
-            CellDesignation.None,
-            isExplored: true,
-            damage: 0,
-            temperature: 20);
-        List<TerrainChange> changes = new List<TerrainChange>();
-        for (int x = 1; x < 19; x++)
-        {
-            changes.Add(new TerrainChange(new CellId(x, horizontalTunnelY), empty));
+            Assert.Contains(new CellId(x, top), protectedCells);
+            Assert.Contains(new CellId(x, bottom), protectedCells);
         }
 
-        world.ApplyTerrainChanges(changes, tick: 1);
-        return world.CreateSnapshot();
+        for (int y = top + 1; y < bottom; y++)
+        {
+            Assert.Contains(new CellId(left, y), protectedCells);
+            Assert.Contains(new CellId(right, y), protectedCells);
+        }
+
+        Assert.DoesNotContain(
+            new CellId(layout.CaveMinX, layout.CaveFloorY),
+            protectedCells);
+        Assert.DoesNotContain(
+            new CellId(layout.CaveMaxX, layout.CaveCeilingY + 1),
+            protectedCells);
     }
 }
 

@@ -92,82 +92,53 @@ def check_tunnel_and_group_contracts(
         movement_path,
         texts.get(movement_path, ""),
         "group destination movement",
-        (
-            "SelectedAgentIds",
-            "MoveResidentsThroughTunnel",
-            "residentIds.Count",
-            "SpatialCellId destination",
-        ),
+        ("SelectedAgentIds", "MoveResidentsThroughTunnel", "residentIds.Count", "SpatialCellId destination"),
     ))
     errors.extend(require_fragments(
         agent_session_path,
         texts.get(agent_session_path, ""),
         "group movement composition",
-        (
-            "MoveAgentsThroughTunnelCommandHandler",
-            "MoveResidentsThroughTunnel",
-            "_groupTunnelMovement",
-            "_manualTunnelOrders.Add",
-        ),
+        ("MoveAgentsThroughTunnelCommandHandler", "MoveResidentsThroughTunnel", "_groupTunnelMovement", "_manualTunnelOrders.Add"),
     ))
     errors.extend(require_fragments(
         driver_path,
         texts.get(driver_path, ""),
         "group route animation",
-        (
-            "MoveAgentsThroughTunnelReport",
-            "report.Entries",
-            "AgentRenderer.AnimateRoute",
-            "AgentRenderer.SelectedCount",
-        ),
+        ("MoveAgentsThroughTunnelReport", "report.Entries", "AgentRenderer.AnimateRoute", "AgentRenderer.SelectedCount"),
     ))
     errors.extend(require_fragments(
         bootstrap_path,
         texts.get(bootstrap_path, ""),
         "platform cave bootstrap",
-        (
-            "DigTunnelDemoRenderer",
-            "worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume)",
-            "interaction.SetTunnelMovement",
-            "x4 rock volume",
-        ),
+        ("DigTunnelDemoRenderer", "worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume)", "interaction.SetTunnelMovement"),
     ))
     errors.extend(require_fragments(
         projection_path,
         texts.get(projection_path, ""),
         "explicit XYZ world projection",
-        (
-            "CellWorldPosition",
-            "ResidentWorldPosition",
-            "-cell.Y",
-            "cell.Z * DepthSpacing",
-        ),
+        ("CellWorldPosition", "ResidentWorldPosition", "-cell.Y", "cell.Z * DepthSpacing"),
     ))
     tunnel_renderer = texts.get(tunnel_renderer_path, "")
     errors.extend(require_fragments(
         tunnel_renderer_path,
         tunnel_renderer,
-        "XZ depth platforms with logical XY shafts",
+        "clickable horizontal and vertical tunnel targets",
         (
             "Walkable plane",
-            "DigTunnelProjection.FloorWorldPosition",
-            "if (vertical || cell.Z == 0",
-            "Layered Tunnel Floors",
-            "SetPositionAndRotation",
+            "Tunnel hit target",
+            "hiddenHitTarget = vertical || cell.Z == 0",
+            "renderer.enabled = !hiddenHitTarget",
+            "DigTunnelProjection.CellWorldPosition(cell)",
+            "DigTunnelProjection.FloorWorldPosition(cell)",
+            "Layered Tunnel Targets",
             "_route.useWorldSpace = true",
         ),
     ))
     errors.extend(reject_fragments(
         tunnel_renderer_path,
         tunnel_renderer,
-        "synthetic shaft and cave frame geometry",
-        (
-            '"Shaft {cell}"',
-            "Cave ceiling",
-            "Cave back wall",
-            "CreateCaveShell",
-            "_verticalMaterial",
-        ),
+        "visible synthetic shaft and cave frame geometry",
+        ('"Shaft {cell}"', "Cave ceiling", "Cave back wall", "CreateCaveShell", "_verticalMaterial"),
     ))
     errors.extend(require_fragments(
         world_renderer_path,
@@ -179,12 +150,7 @@ def check_tunnel_and_group_contracts(
         session_path,
         texts.get(session_path, ""),
         "platform resident composition",
-        (
-            "TunnelNavigationVolume.CreateDemo",
-            "initialPosition: new SpatialCellId",
-            "HasManualTunnelOrder(agent.Id)",
-            "_tunnelVolume != null",
-        ),
+        ("TunnelNavigationVolume.CreateDemo", "initialPosition: new SpatialCellId", "HasManualTunnelOrder(agent.Id)", "_tunnelVolume != null"),
     ))
     return errors
 

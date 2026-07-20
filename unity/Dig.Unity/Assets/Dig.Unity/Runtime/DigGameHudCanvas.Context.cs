@@ -13,6 +13,8 @@ namespace Dig.Unity
 
 public sealed partial class DigGameHudCanvas
 {
+    private const float CompactBottomPanelHeight = 98f;
+
     private void RefreshContextPanel()
     {
         if (_interaction!.HasActiveBuildingPlacement)
@@ -176,7 +178,7 @@ public sealed partial class DigGameHudCanvas
             return;
         }
 
-        BeginBottomLayout();
+        BeginBottomLayout(142f);
         RectTransform section = CreateSection(
             "Building Functions",
             _bottomContent!,
@@ -208,7 +210,7 @@ public sealed partial class DigGameHudCanvas
             return;
         }
 
-        BeginBottomLayout();
+        BeginBottomLayout(142f);
         RectTransform section = CreateSection(
             "Building Placement",
             _bottomContent!,
@@ -258,9 +260,12 @@ public sealed partial class DigGameHudCanvas
         return true;
     }
 
-    private void BeginBottomLayout()
+    private void BeginBottomLayout(float height = CompactBottomPanelHeight)
     {
         _bottomPanel!.gameObject.SetActive(true);
+        Vector2 offsetMax = _bottomPanel.offsetMax;
+        offsetMax.y = _bottomPanel.offsetMin.y + height;
+        _bottomPanel.offsetMax = offsetMax;
         ClearChildren(_bottomContent!);
         HorizontalLayoutGroup layout =
             _bottomContent!.gameObject.GetComponent<HorizontalLayoutGroup>()

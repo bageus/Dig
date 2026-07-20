@@ -12,6 +12,7 @@ def check_cave_room_runtime_contracts(
     require_fragments: RequireFragments,
 ) -> list[str]:
     room_session = runtime_root / "DigWorldSession.CaveRooms.cs"
+    protection = runtime_root / "DigWorldSession.CaveRoomProtection.cs"
     room_interaction = runtime_root / "DigWorldInteraction.CaveRooms.cs"
     room_runtime = runtime_root / "DigAgentSimulationDriverBase.CaveRooms.cs"
     room_floor = runtime_root / "DigCaveRoomFloorRenderer.cs"
@@ -30,11 +31,30 @@ def check_cave_room_runtime_contracts(
             "GetCompletedCaveRoomPlans",
             "FrontExcavationCells.All",
             "!value.IsSolid",
-            "GetCompletedCaveRoomPlans(snapshot)",
             "IReadOnlyList<CaveRoomPlan> completed",
             "completed);",
         ),
     ))
+    protection_text = texts.get(protection, "")
+    errors.extend(require_fragments(
+        protection,
+        protection_text,
+        "natural cave outer perimeter protection",
+        (
+            "NaturalCaveShellProtectionPolicy",
+            "InitializeNaturalCaveProtection",
+            "_naturalCaveProtectedCells",
+            "IsNaturalCaveProtected",
+            "LoadAllProtectedCells",
+        ),
+    ))
+    for fragment in (
+        "CaveRoomShellProtectionPolicy",
+        "SynchronizeCompletedCaveRoomProtection",
+        "_caveRoomProtectedCells",
+    ):
+        if fragment in protection_text:
+            errors.append(f"{protection}: player room protection remains: {fragment!r}")
     errors.extend(require_fragments(
         room_interaction,
         texts.get(room_interaction, ""),
@@ -48,10 +68,11 @@ def check_cave_room_runtime_contracts(
             "RefreshCaveRoomRuntime",
         ),
     ))
+    runtime_text = texts.get(room_runtime, "")
     errors.extend(require_fragments(
         room_runtime,
-        texts.get(room_runtime, ""),
-        "completed cave room and depth runtime activation",
+        runtime_text,
+        "ordinary player room and depth runtime activation",
         (
             "_activatedCaveRooms",
             "_terrainExcavatedVolume",
@@ -62,9 +83,10 @@ def check_cave_room_runtime_contracts(
             "CreateFloorCells",
             "ExpandTunnelVolume",
             "AddRoomFloor",
-            "SynchronizeCompletedCaveRoomProtection",
         ),
     ))
+    if "SynchronizeCompletedCaveRoomProtection" in runtime_text:
+        errors.append(f"{room_runtime}: player-dug rooms must not become protected")
     room_floor_text = texts.get(room_floor, "")
     errors.extend(require_fragments(
         room_floor,
@@ -80,12 +102,7 @@ def check_cave_room_runtime_contracts(
             "material: _materials[z]!",
         ),
     ))
-    for fragment in (
-        "_backWalls",
-        "ReplaceBackWall",
-        "Cave room back wall",
-        "_backWallMaterial",
-    ):
+    for fragment in ("_backWalls", "ReplaceBackWall", "Cave room back wall", "_backWallMaterial"):
         if fragment in room_floor_text:
             errors.append(f"{room_floor}: obsolete room wall visual remains: {fragment!r}")
 
@@ -93,22 +110,17 @@ def check_cave_room_runtime_contracts(
     errors.extend(require_fragments(
         tunnel_renderer,
         tunnel_text,
-        "depth-floor-only tunnel visuals",
+        "invisible tunnel hit targets and visible depth floors",
         (
-            "if (vertical || cell.Z == 0",
+            "Tunnel hit target",
+            "hiddenHitTarget = vertical || cell.Z == 0",
+            "renderer.enabled = !hiddenHitTarget",
             "Walkable plane",
             "FloorWorldPosition",
-            "Layered Tunnel Floors",
+            "Layered Tunnel Targets",
         ),
     ))
-    for fragment in (
-        "CreateCaveShell",
-        "CreateShellPart",
-        "Cave back wall",
-        "_caveMaterial",
-        "_verticalMaterial",
-        '"Shaft {cell}"',
-    ):
+    for fragment in ("CreateCaveShell", "CreateShellPart", "Cave back wall", "_caveMaterial", "_verticalMaterial"):
         if fragment in tunnel_text:
             errors.append(f"{tunnel_renderer}: obsolete tunnel visual remains: {fragment!r}")
 
@@ -116,21 +128,13 @@ def check_cave_room_runtime_contracts(
         depth_adapter,
         texts.get(depth_adapter, ""),
         "dynamic cave room terrain meshes",
-        (
-            "SetTerrainDepthVolume",
-            "TerrainDepthVolumePresenter",
-            "RefreshChunkedTerrain();",
-        ),
+        ("SetTerrainDepthVolume", "TerrainDepthVolumePresenter", "RefreshChunkedTerrain();"),
     ))
     errors.extend(require_fragments(
         agent_session,
         texts.get(agent_session, ""),
         "dynamic cave room navigation",
-        (
-            "ExpandTunnelVolume",
-            "WithAdditionalOpenCells",
-            "_tunnelJournal",
-        ),
+        ("ExpandTunnelVolume", "WithAdditionalOpenCells", "_tunnelJournal"),
     ))
     errors.extend(require_fragments(
         bootstrap,
