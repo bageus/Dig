@@ -68,7 +68,7 @@ def main() -> int:
     manager_path = RUNTIME / "DigOverlayManager.cs"
     manager = combined("DigOverlayManager")
     errors.extend(require(manager_path, manager, (
-        "Dictionary<OverlayLayerKind, Transform>",
+        "Dictionary<OverlayLayerKind, List<Transform>>",
         "RegisterLayer(OverlayLayerKind layer, Transform root)",
         "ResolveSortingOrder(OverlayLayerKind layer)",
         "SetVisibilityProfile(OverlayVisibilityProfile profile)",
