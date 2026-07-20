@@ -1,13 +1,17 @@
 using System;
 using System.Collections.Generic;
 using Dig.Application.World;
+using Dig.Domain.Core;
 using Dig.Domain.World;
+using Dig.Presentation.Agents;
+using Dig.Presentation.Jobs;
 using Dig.Presentation.World;
 
 namespace Dig.Unity
 {
     public abstract partial class DigAgentSimulationDriverBase
     {
+        private const int DefaultSpatialExcavationPriority = 750;
         private readonly HashSet<string> _activatedCaveRooms =
             new HashSet<string>(StringComparer.Ordinal);
         private readonly HashSet<SpatialCellId> _terrainExcavatedVolume =
@@ -15,38 +19,68 @@ namespace Dig.Unity
         private readonly CaveTemplateTrimPresenter _caveTemplateTrimPresenter =
             new CaveTemplateTrimPresenter();
 
-        internal TunnelDepthExcavationPlanResult ExcavateTunnelDepth(
-            SpatialCellId source,
-            DigTunnelDemoRenderer tunnelRenderer)
+        internal Result DesignateTunnelDepth(SpatialCellId source)
         {
-            if (AgentSession == null)
+            if (AgentSession == null || TerrainSession == null)
             {
-                throw new InvalidOperationException(
-                    "Tunnel depth excavation is not initialized.");
+                return Result.Failure(new DomainError(
+                    "unity.depth.not_initialized",
+                    "Spatial excavation is not initialized."));
             }
 
-            if (tunnelRenderer == null)
+            TunnelDepthExcavationPlanResult planned =
+                AgentSession.PlanTunnelDepthExcavation(source);
+            if (!planned.Succeeded)
             {
-                throw new ArgumentNullException(nameof(tunnelRenderer));
+                return Result.Failure(new DomainError(
+                    $"unity.depth.{planned.FailureReason.ToString().ToLowerInvariant()}",
+                    planned.Detail));
             }
 
-            TunnelDepthExcavationPlanResult result =
-                AgentSession.ExcavateTunnelDepth(source);
-            if (result.Succeeded)
+            IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
+            Result designated = TerrainSession.DesignateSpatialExcavation(
+                planned.Plan!,
+                agents,
+                DefaultSpatialExcavationPriority,
+                CurrentTick);
+            if (designated.IsFailure)
             {
-                SpatialCellId target = result.Plan!.Target;
-                _terrainExcavatedVolume.Add(target);
-                tunnelRenderer.Initialize(AgentSession.TunnelVolume);
-                tunnelRenderer.SetDepthExcavationSources(
-                    AgentSession.TunnelDepthExcavations);
-                RefreshTerrainDepthVolume();
-                if (tunnelRenderer.TryGetCell(target, out DigTunnelCellVisual visual))
-                {
-                    tunnelRenderer.Select(visual);
-                }
+                return designated;
             }
 
-            return result;
+            IReadOnlyList<JobOverlayViewModel> jobs = TerrainSession.LoadJobs();
+            JobRenderer!.Render(jobs);
+            Hud!.SetJobs(jobs);
+            return Result.Success();
+        }
+
+        private Result CompleteSpatialExcavation(SpatialExcavationCommit commit)
+        {
+            Result terrain = AgentSession!.CompleteTunnelDepthExcavation(commit.Target);
+            if (terrain.IsFailure)
+            {
+                return terrain;
+            }
+
+            Result job = TerrainSession!.CompleteSpatialExcavationJob(
+                commit.JobId,
+                CurrentTick);
+            if (job.IsFailure)
+            {
+                return job;
+            }
+
+            _terrainExcavatedVolume.Add(commit.Target);
+            DigTunnelDemoRenderer renderer = GetComponent<DigTunnelDemoRenderer>();
+            renderer.Initialize(AgentSession.TunnelVolume);
+            renderer.SetDepthExcavationSources(AgentSession.TunnelDepthExcavations);
+            RefreshTerrainDepthVolume();
+            if (renderer.TryGetCell(commit.Target, out DigTunnelCellVisual visual))
+            {
+                renderer.Select(visual);
+            }
+
+            return Result.Success();
         }
 
         internal void RefreshCaveRoomRuntime(
