@@ -127,37 +127,10 @@ namespace Dig.Unity
             hud.SetSimulationControls(simulation);
             hud.SetToolAssignmentControls(terrainSession, jobRenderer);
             hud.SetBuildingControls(terrainSession, buildingRenderer, jobRenderer);
-            hud.SetStatus("Starting renderers...");
+            hud.SetStatus("Binding runtime controls...");
 
-            _startupStage = "rendering world and layered tunnels";
-            RenderSettings.ambientLight = new Color(0.58f, 0.60f, 0.66f, 1f);
-            worldRenderer.SetProtectedCells(worldSession.ProtectedCells);
-            worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume);
-            worldRenderer.SetTerrainDepthVolume(
-                agentSession.TunnelVolume,
-                worldSession.SolidMaterialId.ToString(),
-                worldSession.SolidHardness,
-                Array.Empty<SpatialCellId>());
-            worldRenderer.SetTerrainDeposits(worldSession.LoadTerrainDeposits());
-            worldRenderer.Render(world);
-            tunnelRenderer.Initialize(agentSession.TunnelVolume);
-            caveRoomPreviewRenderer.Clear();
-
-            _startupStage = "rendering residents";
-            agentRenderer.Render(agents, movementDuration: 0f);
-
-            _startupStage = "rendering jobs and buildings";
+            _startupStage = "initializing interaction and simulation";
             jobRenderer.Initialize(agentRenderer);
-            jobRenderer.Render(jobs);
-            buildingRenderer.Render(buildings);
-
-            _startupStage = "rendering inventory and routes";
-            itemRenderer.Render(items);
-            ghostRenderer.Clear();
-            stockpileRenderer.Render(storage);
-            routeRenderer.Render(routes);
-
-            _startupStage = "enabling interaction";
             interaction.Initialize(
                 targetCamera,
                 cameraController,
@@ -201,17 +174,93 @@ namespace Dig.Unity
                 targetCamera,
                 world);
 
+            List<string> visualWarnings = new List<string>();
+            RenderSettings.ambientLight = new Color(0.58f, 0.60f, 0.66f, 1f);
+            RunPresentationStage(
+                "rendering world terrain",
+                visualWarnings,
+                () =>
+                {
+                    worldRenderer.SetProtectedCells(worldSession.ProtectedCells);
+                    worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume);
+                    worldRenderer.SetTerrainDepthVolume(
+                        agentSession.TunnelVolume,
+                        worldSession.SolidMaterialId.ToString(),
+                        worldSession.SolidHardness,
+                        Array.Empty<SpatialCellId>());
+                    worldRenderer.SetTerrainDeposits(worldSession.LoadTerrainDeposits());
+                    worldRenderer.Render(world);
+                });
+            RunPresentationStage(
+                "rendering layered tunnels",
+                visualWarnings,
+                () => tunnelRenderer.Initialize(agentSession.TunnelVolume));
+            RunPresentationStage(
+                "clearing cave preview",
+                visualWarnings,
+                caveRoomPreviewRenderer.Clear);
+            RunPresentationStage(
+                "rendering residents",
+                visualWarnings,
+                () => agentRenderer.Render(agents, movementDuration: 0f));
+            RunPresentationStage(
+                "rendering jobs",
+                visualWarnings,
+                () => jobRenderer.Render(jobs));
+            RunPresentationStage(
+                "rendering buildings",
+                visualWarnings,
+                () => buildingRenderer.Render(buildings));
+            RunPresentationStage(
+                "rendering world items",
+                visualWarnings,
+                () => itemRenderer.Render(items));
+            RunPresentationStage(
+                "clearing building ghost",
+                visualWarnings,
+                ghostRenderer.Clear);
+            RunPresentationStage(
+                "rendering stockpile",
+                visualWarnings,
+                () => stockpileRenderer.Render(storage));
+            RunPresentationStage(
+                "rendering navigation routes",
+                visualWarnings,
+                () => routeRenderer.Render(routes));
+
             interaction.enabled = true;
             simulation.enabled = true;
-            hud.SetStatus(
-                "Select a dwarf, building, or job. Tunnel planning is the default mode.");
+            _startupStage = "running";
+            hud.SetStatus(visualWarnings.Count == 0
+                ? "Select a dwarf, building, or job. Tunnel planning is the default mode."
+                : $"Runtime started with {visualWarnings.Count} visual warning(s): "
+                    + visualWarnings[0]);
             if (logStartup)
             {
                 Debug.Log(
                     $"Dig Unity runtime started with {agents.Count} residents, "
                     + $"{jobs.Count} jobs, {buildings.Count} buildings and a "
-                    + $"{world.Width}x{world.Height}x4 rock volume.",
+                    + $"{world.Width}x{world.Height}x4 rock volume. "
+                    + $"Visual warnings: {visualWarnings.Count}.",
                     this);
+            }
+        }
+
+        private void RunPresentationStage(
+            string stage,
+            ICollection<string> warnings,
+            Action action)
+        {
+            _startupStage = stage;
+            try
+            {
+                action();
+            }
+            catch (Exception exception)
+            {
+                string warning = $"{stage}: {exception.GetType().Name}: {exception.Message}";
+                warnings.Add(warning);
+                Debug.LogException(exception, this);
             }
         }
 
