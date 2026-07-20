@@ -10,10 +10,15 @@ namespace Dig.Unity
 {
     internal sealed partial class DigTerrainWorkSession
     {
-        private readonly HashSet<EntityId> _directMovementAgents =
-            new HashSet<EntityId>();
+        private Func<string, bool>? _isManualMovementActive;
 
-        internal Result InterruptForDirectMovement(
+        internal void BindManualMovementSource(Func<string, bool> isManualMovementActive)
+        {
+            _isManualMovementActive = isManualMovementActive
+                ?? throw new ArgumentNullException(nameof(isManualMovementActive));
+        }
+
+        internal Result InterruptForManualMovement(
             IReadOnlyCollection<string> residentIds,
             long tick)
         {
@@ -33,36 +38,15 @@ namespace Dig.Unity
             foreach (EntityId agentId in agents)
             {
                 ClearManualGroupForAgent(agentId);
-                _directMovementAgents.Add(agentId);
             }
 
             return Result.Success();
         }
 
-        internal Result EnforceDirectMovementOwnership(long tick)
-        {
-            RequireManualExcavationInitialized();
-            return ReleaseAssignmentsForAgents(_directMovementAgents, tick);
-        }
-
-        internal void ReleaseDirectMovementControl(string residentId)
-        {
-            if (string.IsNullOrWhiteSpace(residentId))
-            {
-                throw new ArgumentException("Resident id is required.", nameof(residentId));
-            }
-
-            _directMovementAgents.Remove(EntityId.Parse(residentId));
-        }
-
-        private bool IsDirectMovementControlled(string residentId)
-        {
-            return _directMovementAgents.Contains(EntityId.Parse(residentId));
-        }
-
         private bool IsAvailableForAutomaticWork(AgentViewModel agent)
         {
-            return agent.IsAlive && !IsDirectMovementControlled(agent.Id);
+            return agent.IsAlive
+                && !(_isManualMovementActive?.Invoke(agent.Id) ?? false);
         }
 
         private Result ReleaseAssignmentsForAgents(
