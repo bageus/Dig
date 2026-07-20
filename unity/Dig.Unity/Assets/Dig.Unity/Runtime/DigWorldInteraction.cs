@@ -156,7 +156,7 @@ namespace Dig.Unity
             if (_jobRenderer!.TryGetJob(hit, out DigJobVisual job))
             {
                 if (left
-                    && _agentRenderer.SelectedCount == 0
+                    && _agentRenderer!.SelectedCount == 0
                     && !_buildingPlacementMode.HasValue)
                 {
                     SelectJob(job);
