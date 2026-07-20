@@ -35,7 +35,7 @@ The terrain presentation has four responsibilities:
 3. `DigTerrainRenderSnapshotBuilder` merges both immutable projections and derives dirty chunks.
 4. `DigTerrainChunkRenderer` creates collider-free meshes for the resulting `Z=0..3` chunks.
 
-Existing per-cell primitives stay hidden and are retained only as bounded tunnel-dig interaction proxies. The renderer does not walk those objects in `LateUpdate`. World, cutaway, protected-cell, depth-volume or catalog changes explicitly refresh the terrain projection.
+Existing per-cell primitives stay hidden and are retained only as bounded tunnel-dig interaction proxies. The renderer does not walk those objects in `LateUpdate`. World, cutaway, protected-cell, depth-volume, deposit-volume or catalog changes explicitly refresh the terrain projection.
 
 The former `DigRockVolumeRenderer` has been removed. Front terrain and deep rock now use one material resolver, mesh builder, signature calculation, diagnostics counter and dirty-invalidation path.
 
@@ -63,6 +63,26 @@ Natural empty volume is not automatically classified as fresh excavation. This k
 
 One cell may therefore contribute triangles to several material submeshes, but it still creates no per-cell GameObject. Missing catalog assets use cached role-aware debug materials so fallback rendering also stays deterministic and allocation bounded.
 
+### Deposit presentation contract
+
+`TerrainDepositPresenter` accepts explicit per-cell facts intended to come from the authoritative deposit model in #91:
+
+- `SpatialCellId`;
+- stable deposit id;
+- revealed flag;
+- remaining and maximum yield;
+- source version.
+
+It projects four visual states: `Hidden`, `Revealed`, `Damaged` and `Depleted`. Hidden and depleted entries expose an empty visual id, zero damage band and no connection mask. Their deposit type therefore cannot be selected through a terrain material or deterministic fallback color.
+
+Visible cells receive a six-direction connection mask only for adjacent visible cells with the same stable deposit id. The cells remain independent read models; the mask never creates a shared vein aggregate or changes depletion ownership.
+
+`DigTerrainRenderSnapshotBuilder` copies only revealed or damaged deposits into the Unity snapshot, and only when the host terrain cell is still solid. A deposit never creates terrain geometry. Reveal, damage, connection or removal changes invalidate the local terrain chunk; hidden deposit type/version changes do not alter the visual snapshot version.
+
+`DigTerrainVisualCatalog` requires five deposit profile families: Iron, Gold, Crystal, Coal and Stone. Each profile has `Revealed` and `Damaged` materials. There are deliberately no hidden or depleted materials.
+
+The current runtime does not synthesize demo deposits from terrain material ids. Until #91 publishes authoritative deposit instances, the renderer receives no deposit volume and displays only host terrain.
+
 ### Snapshot contract
 
 `DigTerrainCellKey` and `DigTerrainChunkKey` contain `X`, `Y` and `Z`. Mesh generation and exposure checks evaluate all six neighbours.
@@ -73,6 +93,7 @@ Dirty chunks are derived from:
 
 - new, removed or version-changed front chunks;
 - new, removed or version-changed deep chunks;
+- revealed, damaged, reconnected or removed visible deposits;
 - changed cutaway cells;
 - changed protected cells;
 - a changed chunk size or depth.
@@ -146,7 +167,7 @@ VFX_Excavation_Stone
 Fallbacks are presentation-only. They must never change gameplay state or infer missing definitions.
 
 - missing catalog: cached role-aware debug materials on chunk submeshes;
-- unknown terrain profile id: base catalog fallback material;
+- unknown terrain or visible deposit profile id: base catalog fallback material;
 - invalid prefab root: catalog fallback;
 - validation errors: logged during renderer startup.
 
@@ -154,12 +175,13 @@ Fallbacks are presentation-only. They must never change gameplay state or infer 
 
 The unified mesh snapshot covers the current visual `Z=0..3` volume, but only front cells have the full authoritative World state. Deep cells currently carry one explicit rock material/hardness pair and an open/solid projection from tunnel topology and excavation completion.
 
-The typed terrain profile and surface-role contract is present, but production material assets, UV conventions, deposits, deterministic decorations and template cave trim remain part of the later #206 slices.
+Terrain and deposit authoring contracts are present, but production materials, deposit instances from #91, UV conventions, deterministic decoration meshes and template cave trim remain later #206 slices.
 
 ## Next steps
 
+- #91: publish authoritative generated deposit instances, reveal and depletion snapshots;
 - #88: migrate deep terrain materials, damage, Jobs, reservations and persistence to authoritative spatial ownership;
-- #206: connect production materials, deposits, decorations and template-cave assets to the typed profile contract;
+- #206: connect production materials, deterministic decorations and template-cave assets;
 - #207–#210: typed prefab integrations for buildings, items, residents and creatures;
 - #211: unified overlay styles;
 - #212: URP, lighting and pooled VFX.

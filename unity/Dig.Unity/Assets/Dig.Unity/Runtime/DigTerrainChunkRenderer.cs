@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
+using Dig.Presentation.World;
 using UnityEngine;
 
 namespace Dig.Unity
 {
     [DisallowMultipleComponent]
-    internal sealed class DigTerrainChunkRenderer : MonoBehaviour
+    internal sealed partial class DigTerrainChunkRenderer : MonoBehaviour
     {
         private readonly Dictionary<DigTerrainChunkKey, DigTerrainChunkVisual> _visuals =
             new Dictionary<DigTerrainChunkKey, DigTerrainChunkVisual>();
@@ -97,6 +98,7 @@ namespace Dig.Unity
                 Mix(ref hash, (ulong)(uint)cell.Hardness, prime);
                 Mix(ref hash, snapshot.IsCutaway(cell.Key) ? 1UL : 0UL, prime);
                 Mix(ref hash, snapshot.IsProtected(cell.Key) ? 1UL : 0UL, prime);
+                MixDeposit(ref hash, cell.Key, snapshot, prime);
                 MixNeighbour(ref hash, cell.Key.Offset(-1, 0, 0), snapshot, prime);
                 MixNeighbour(ref hash, cell.Key.Offset(1, 0, 0), snapshot, prime);
                 MixNeighbour(ref hash, cell.Key.Offset(0, -1, 0), snapshot, prime);
@@ -110,6 +112,31 @@ namespace Dig.Unity
             }
 
             return hash;
+        }
+
+        private static void MixDeposit(
+            ref ulong hash,
+            DigTerrainCellKey cell,
+            DigTerrainRenderSnapshot snapshot,
+            ulong prime)
+        {
+            if (!snapshot.TryGetVisibleDeposit(
+                    cell,
+                    out TerrainDepositCellViewModel? deposit)
+                || deposit == null)
+            {
+                Mix(ref hash, 0UL, prime);
+                return;
+            }
+
+            Mix(ref hash, 1UL, prime);
+            Mix(ref hash, (ulong)deposit.State, prime);
+            Mix(ref hash, deposit.DamageBand, prime);
+            Mix(ref hash, (byte)deposit.Connections, prime);
+            for (int index = 0; index < deposit.VisibleDepositId.Length; index++)
+            {
+                Mix(ref hash, deposit.VisibleDepositId[index], prime);
+            }
         }
 
         private static void MixNeighbour(
@@ -152,7 +179,9 @@ namespace Dig.Unity
                 Material? material = null;
                 if (key.State == DigTerrainSurfaceState.Solid && catalog != null)
                 {
-                    material = catalog.ResolveSurface(key.MaterialId, key.Role);
+                    material = key.HasVisibleDeposit
+                        ? catalog.ResolveDeposit(key.DepositId, key.DepositState)
+                        : catalog.ResolveSurface(key.MaterialId, key.Role);
                 }
 
                 materials[index] = material ?? ResolveFallbackMaterial(key);
@@ -189,7 +218,9 @@ namespace Dig.Unity
                 case DigTerrainSurfaceState.Protected:
                     return new Color(0.18f, 0.22f, 0.28f, 1f);
                 default:
-                    return ResolveSolidFallbackColor(key);
+                    return key.HasVisibleDeposit
+                        ? ResolveDepositFallbackColor(key)
+                        : ResolveSolidFallbackColor(key);
             }
         }
 

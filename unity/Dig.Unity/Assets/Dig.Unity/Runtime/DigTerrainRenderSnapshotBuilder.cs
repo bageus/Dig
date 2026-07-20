@@ -20,6 +20,7 @@ namespace Dig.Unity
         internal DigTerrainRenderSnapshot Build(
             WorldViewModel world,
             TerrainDepthVolumeViewModel? depthVolume,
+            TerrainDepositVolumeViewModel? depositVolume,
             IEnumerable<Vector2Int> cutawayCells,
             IEnumerable<Vector2Int> protectedCells)
         {
@@ -78,6 +79,15 @@ namespace Dig.Unity
                 currentProtected,
                 world.ChunkSize,
                 dirtyOrigins);
+            Dictionary<DigTerrainCellKey, TerrainDepositCellViewModel>
+                visibleDeposits = BuildVisibleDeposits(
+                    depositVolume,
+                    world.Width,
+                    world.Height,
+                    depth,
+                    world.ChunkSize,
+                    solid,
+                    dirtyOrigins);
 
             HashSet<DigTerrainChunkKey> dirty = new HashSet<DigTerrainChunkKey>();
             foreach (DigTerrainChunkKey origin in dirtyOrigins)
@@ -98,12 +108,16 @@ namespace Dig.Unity
                 world.Height,
                 depth,
                 world.ChunkSize,
-                CombineVersion(world.Version, depthVolume?.Version ?? 0),
+                CombineVersion(
+                    world.Version,
+                    depthVolume?.Version ?? 0,
+                    depositVolume?.Version ?? 0),
                 chunks,
                 solid,
                 currentCutaway,
                 currentProtected,
-                dirty);
+                dirty,
+                visibleDeposits);
         }
 
         internal void Invalidate()
