@@ -42,7 +42,12 @@ namespace Dig.Unity
 
         private DigBuildingVisualResolution ResolveCatalogBuildingBox(string stableId)
         {
-            return visualCatalog!.ResolveBuilding(
+            if (visualCatalog == null)
+            {
+                throw new InvalidOperationException("Building visual catalog is unavailable.");
+            }
+
+            return visualCatalog.ResolveBuilding(
                 stableId,
                 BuildingVisualState.BuildingBox);
         }
