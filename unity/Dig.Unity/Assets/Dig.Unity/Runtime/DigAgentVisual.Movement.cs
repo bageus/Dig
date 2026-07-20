@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Dig.Domain.World;
+using Dig.Presentation.Agents;
 using UnityEngine;
 
 namespace Dig.Unity
