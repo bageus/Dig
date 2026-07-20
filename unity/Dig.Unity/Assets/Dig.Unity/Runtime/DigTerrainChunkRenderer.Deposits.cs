@@ -5,6 +5,38 @@ namespace Dig.Unity
 {
     internal sealed partial class DigTerrainChunkRenderer
     {
+        private static void MixDeposit(
+            ref ulong hash,
+            DigTerrainCellKey cell,
+            DigTerrainRenderSnapshot snapshot,
+            ulong prime)
+        {
+            if (!snapshot.TryGetDepositDecoration(
+                    cell,
+                    out TerrainDepositDecorationCellViewModel? decoration)
+                || decoration == null)
+            {
+                Mix(ref hash, 0UL, prime);
+                return;
+            }
+
+            Mix(ref hash, 1UL, prime);
+            Mix(ref hash, (ulong)decoration.State, prime);
+            Mix(ref hash, decoration.DamageBand, prime);
+            Mix(ref hash, (byte)decoration.Connections, prime);
+            Mix(ref hash, decoration.Variant, prime);
+            Mix(ref hash, decoration.RotationQuarterTurns, prime);
+            Mix(ref hash, decoration.ScaleBand, prime);
+            Mix(ref hash, unchecked((byte)decoration.OffsetBandX), prime);
+            Mix(ref hash, unchecked((byte)decoration.OffsetBandY), prime);
+            for (int index = 0;
+                index < decoration.VisibleDepositId.Length;
+                index++)
+            {
+                Mix(ref hash, decoration.VisibleDepositId[index], prime);
+            }
+        }
+
         private static Color ResolveDepositFallbackColor(
             DigTerrainMaterialKey key)
         {
