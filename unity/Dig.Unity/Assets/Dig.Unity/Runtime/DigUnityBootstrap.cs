@@ -36,9 +36,10 @@ namespace Dig.Unity
         {
             DigHudOverlay hud = GetOrAdd<DigHudOverlay>(gameObject);
             hud.SetStatus("Starting runtime...");
+            DigGameHudCanvas gameHud = CreateStartupGameHud(hud);
             try
             {
-                StartRuntime(hud);
+                StartRuntime(hud, gameHud);
             }
             catch (Exception exception)
             {
@@ -51,7 +52,7 @@ namespace Dig.Unity
             }
         }
 
-        private void StartRuntime(DigHudOverlay hud)
+        private void StartRuntime(DigHudOverlay hud, DigGameHudCanvas gameHud)
         {
             _startupStage = "validating demo configuration";
             ClampDemoConfiguration();
@@ -188,11 +189,7 @@ namespace Dig.Unity
                 routeRenderer,
                 hud);
 
-            _startupStage = "creating uGUI game HUD";
-            GameObject canvasObject = new GameObject(
-                "Dig Game HUD Canvas",
-                typeof(RectTransform));
-            DigGameHudCanvas gameHud = canvasObject.AddComponent<DigGameHudCanvas>();
+            _startupStage = "binding uGUI game HUD";
             gameHud.Initialize(
                 terrainSession,
                 agentRenderer,
@@ -203,7 +200,6 @@ namespace Dig.Unity
                 hud,
                 targetCamera,
                 world);
-            hud.AttachGameHudCanvas(gameHud);
 
             interaction.enabled = true;
             simulation.enabled = true;
@@ -217,6 +213,17 @@ namespace Dig.Unity
                     + $"{world.Width}x{world.Height}x4 rock volume.",
                     this);
             }
+        }
+
+        private static DigGameHudCanvas CreateStartupGameHud(DigHudOverlay hud)
+        {
+            GameObject canvasObject = new GameObject(
+                "Dig Game HUD Canvas",
+                typeof(RectTransform));
+            DigGameHudCanvas gameHud = canvasObject.AddComponent<DigGameHudCanvas>();
+            gameHud.InitializeStartup(hud);
+            hud.AttachGameHudCanvas(gameHud);
+            return gameHud;
         }
 
         private void ConfigureSideViewRoot()

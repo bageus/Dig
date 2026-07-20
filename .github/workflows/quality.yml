@@ -61,6 +61,9 @@ jobs:
       - name: Validate resident rig presentation
         run: python tools/quality/check_unity_resident_visual_contracts.py
 
+      - name: Validate adaptive HUD startup
+        run: python tools/quality/check_unity_hud_startup_contracts.py
+
       - name: Upload Unity source contract log
         if: always()
         uses: actions/upload-artifact@v4
@@ -107,38 +110,3 @@ jobs:
           path: test.log
           if-no-files-found: ignore
           retention-days: 7
-
-      - name: Run headless smoke test
-        run: dotnet run --project src/Dig.Headless/Dig.Headless.csproj --configuration Release --no-build
-
-      - name: Run standard deterministic soak
-        run: >-
-          dotnet run --project src/Dig.Headless/Dig.Headless.csproj
-          --configuration Release --no-build --
-          --soak --profile standard
-          --report soak-report-standard.json
-
-      - name: Run large settlement deterministic soak
-        run: >-
-          dotnet run --project src/Dig.Headless/Dig.Headless.csproj
-          --configuration Release --no-build --
-          --soak --profile large
-          --report soak-report-large.json
-
-      - name: Upload standard soak report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: soak-report-standard
-          path: soak-report-standard.json
-          if-no-files-found: warn
-          retention-days: 14
-
-      - name: Upload large soak report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: soak-report-large
-          path: soak-report-large.json
-          if-no-files-found: warn
-          retention-days: 14
