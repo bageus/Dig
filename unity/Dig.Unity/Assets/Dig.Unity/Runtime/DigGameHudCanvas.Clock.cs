@@ -104,17 +104,21 @@ public sealed partial class DigGameHudCanvas
 
     private static void CreateClockTicks(RectTransform face)
     {
+        const float radius = 34f;
         for (int index = 0; index < 12; index++)
         {
+            float angle = index * Mathf.PI * 2f / 12f;
             RectTransform tick = CreatePanel(
                 $"Clock Tick {index}",
                 face,
                 new Color(0.70f, 0.75f, 0.82f, 0.9f));
             tick.anchorMin = new Vector2(0.5f, 0.5f);
             tick.anchorMax = new Vector2(0.5f, 0.5f);
-            tick.pivot = new Vector2(0.5f, 0f);
+            tick.pivot = new Vector2(0.5f, 0.5f);
             tick.sizeDelta = new Vector2(2f, index % 3 == 0 ? 8f : 5f);
-            tick.anchoredPosition = Vector2.zero;
+            tick.anchoredPosition = new Vector2(
+                Mathf.Sin(angle) * radius,
+                Mathf.Cos(angle) * radius);
             tick.localRotation = Quaternion.Euler(0f, 0f, index * -30f);
             tick.GetComponent<Image>().raycastTarget = false;
         }
