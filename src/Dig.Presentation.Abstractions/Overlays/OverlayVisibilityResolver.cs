@@ -5,7 +5,7 @@ using System.Linq;
 namespace Dig.Presentation.Overlays
 {
 
-public sealed class OverlayVisibilityResolver
+public sealed partial class OverlayVisibilityResolver
 {
     private readonly Dictionary<OverlayLayerKind, OverlayLayerDefinition> _layers;
 
