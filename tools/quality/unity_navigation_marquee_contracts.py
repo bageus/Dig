@@ -126,7 +126,7 @@ def check_navigation_and_marquee_contracts(
             "ConfigureInteractionCollider(target, cell, vertical, layout)",
             "IsNaturalCaveFloor",
             "SetWorldColliderBounds",
-            "layout.CaveCeilingY + 1",
+            "CaveCeilingY + 1",
             "new Vector3(0.94f, height, 0.50f)",
         ),
     ))
