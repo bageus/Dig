@@ -54,6 +54,11 @@ namespace Dig.Unity
 
     public sealed partial class DigWorldInteraction
     {
+        private DigSelectedResidentTarget ResolveSelectedResidentTarget()
+        {
+            return ResolveSelectedResidentTarget(GetPointerHits());
+        }
+
         private DigSelectedResidentTarget ResolveSelectedResidentTarget(
             RaycastHit[] hits)
         {
