@@ -23,7 +23,7 @@ public sealed class DigCreatureRig : MonoBehaviour
     private Transform[] _anchors = Array.Empty<Transform>();
     private Transform? _primaryPivot;
     private Transform? _secondaryPivot;
-    private readonly MaterialPropertyBlock _properties = new MaterialPropertyBlock();
+    private MaterialPropertyBlock? _properties;
     private CreatureAppearanceViewModel? _appearance;
     private Vector3 _profileScale = Vector3.one;
     private bool _selected;
@@ -172,10 +172,22 @@ public sealed class DigCreatureRig : MonoBehaviour
 
     private void ApplyColor(Renderer renderer, Color color)
     {
-        renderer.GetPropertyBlock(_properties);
-        _properties.SetColor(BaseColorId, color);
-        _properties.SetColor(ColorId, color);
-        renderer.SetPropertyBlock(_properties);
+        MaterialPropertyBlock properties = ResolveProperties();
+        properties.Clear();
+        renderer.GetPropertyBlock(properties);
+        properties.SetColor(BaseColorId, color);
+        properties.SetColor(ColorId, color);
+        renderer.SetPropertyBlock(properties);
+    }
+
+    private MaterialPropertyBlock ResolveProperties()
+    {
+        if (_properties == null)
+        {
+            _properties = new MaterialPropertyBlock();
+        }
+
+        return _properties;
     }
 
     private void ResetPose()

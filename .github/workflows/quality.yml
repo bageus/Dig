@@ -34,6 +34,9 @@ jobs:
           set -o pipefail
           python tools/quality/check_unity_source_contracts.py 2>&1 | tee unity-source-contracts.log
 
+      - name: Validate Unity native field initialization
+        run: python tools/quality/check_unity_native_field_initializers.py
+
       - name: Validate chunked terrain interaction boundary
         run: python tools/quality/check_unity_terrain_chunk_contracts.py
 
