@@ -12,9 +12,11 @@ Each resident has one stable root GameObject owned by `DigAgentRenderer`:
 
 - the root contains `DigAgentVisual`;
 - the root contains exactly one `CapsuleCollider` used by existing resident selection;
-- the root follows the established `DigTunnelProjection.ResidentWorldPosition` mapping;
+- the root follows the established `DigTunnelProjection.ResidentWorldPosition` mapping and is anchored at the resident's feet on `WalkSurfaceY`;
 - route playback and normal interpolation continue to move the root;
 - the composite visual rig is a collider-free child.
+
+Visual height never offsets the stable root. Both representative and authored rigs use a foot-level pivot; the emergency capsule fallback keeps the same foot-level root and offsets only its collider-free visual child. This prevents a change of resident mesh or rig from lifting authoritative movement above the walk surface.
 
 Selection never depends on a particular child renderer. `DigResidentRig.SetSelected` applies a `MaterialPropertyBlock` to every child renderer, so authored multi-mesh or skinned prefabs preserve selection without replacing the stable resident root.
 

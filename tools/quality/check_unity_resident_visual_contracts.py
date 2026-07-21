@@ -81,6 +81,10 @@ def main() -> int:
         "catch (Exception exception)",
         "CreatePrimitiveResidentAgent(model)",
         "GameObject.CreatePrimitive(PrimitiveType.Capsule)",
+        "visual.transform.SetParent(root.transform, worldPositionStays: false)",
+        "visual.transform.localPosition = new Vector3(0f, 0.60f, 0f)",
+        "root.AddComponent<CapsuleCollider>()",
+        "root.AddComponent<DigAgentVisual>()",
         "InitializeSimple(model, _normalMaterial!, _selectedMaterial!)",
     )))
     errors.extend(reject(renderer_path, renderer, (
@@ -112,13 +116,24 @@ def main() -> int:
         "DigTunnelProjection.ResidentWorldPosition",
         "Quaternion.LookRotation(Vector3.back, Vector3.up)",
         "ResolveSocket(DigResidentSocketKind kind)",
-        "_rig?.SetSelected(selected)", "PresentAction(",
+        "_rig.SetSelected(selected)", "PresentAction(",
         "internal void InitializeSimple(",
+        "GetComponentsInChildren<Renderer>(includeInactive: true)",
         "transform.position = ToWorld(_currentX, _currentY, _currentZ)",
     )))
     errors.extend(reject(visual_path, visual, (
         "Animator.Set", "ApplyRootMotion", "ICommand", "Handle(",
         "PlayRoute(", "UpdateRoute(", "_routeStepDuration", "_routeIndex",
+    )))
+
+    projection_path = RUNTIME / "DigTunnelProjection.cs"
+    projection = read(projection_path)
+    errors.extend(require(projection_path, projection, (
+        "WalkSurfaceY(cellY) - ResidentFootSink",
+        "Resident and creature roots are authored at their feet",
+    )))
+    errors.extend(reject(projection_path, projection, (
+        "+ ResidentHalfHeight",
     )))
 
     movement_path = RUNTIME / "DigAgentVisual.Movement.cs"

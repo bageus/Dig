@@ -50,13 +50,24 @@ public sealed partial class DigAgentRenderer
 
     private void CreatePrimitiveResidentAgent(AgentViewModel model)
     {
+        GameObject root = new GameObject($"Resident {model.Name} (Fallback)");
+        root.transform.SetParent(_visualRoot, worldPositionStays: false);
+        CapsuleCollider interaction = root.AddComponent<CapsuleCollider>();
+        interaction.center = new Vector3(0f, 0.60f, 0f);
+        interaction.height = 1.24f;
+        interaction.radius = 0.24f;
+
         GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-        visual.name = $"Resident {model.Name} (Fallback)";
-        visual.transform.SetParent(_visualRoot, worldPositionStays: false);
+        visual.name = "Fallback Capsule Visual";
+        visual.layer = 2;
+        visual.transform.SetParent(root.transform, worldPositionStays: false);
+        visual.transform.localPosition = new Vector3(0f, 0.60f, 0f);
         visual.transform.localScale = new Vector3(0.48f, 0.62f, 0.48f);
+        Collider generatedCollider = visual.GetComponent<Collider>();
+        if (generatedCollider != null) Destroy(generatedCollider);
         Renderer renderer = visual.GetComponent<Renderer>();
         renderer.sharedMaterial = _normalMaterial;
-        DigAgentVisual agentVisual = visual.AddComponent<DigAgentVisual>();
+        DigAgentVisual agentVisual = root.AddComponent<DigAgentVisual>();
         agentVisual.InitializeSimple(model, _normalMaterial!, _selectedMaterial!);
         agentVisual.SetSelected(_selectedIds.Contains(model.Id));
         AttachEquipmentSafely(agentVisual, model.Id);

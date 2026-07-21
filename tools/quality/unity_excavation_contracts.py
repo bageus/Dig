@@ -50,8 +50,15 @@ def check_excavation_contracts(
             "FloorThickness",
             "FloorWorldPosition",
             "WalkSurfaceY",
-            "ResidentHalfHeight",
+            "ResidentFootSink",
+            "WalkSurfaceY(cellY) - ResidentFootSink",
         ),
+    ))
+    errors.extend(reject_fragments(
+        projection,
+        texts.get(projection, ""),
+        "resident root lifted above its authored foot anchor",
+        ("+ ResidentHalfHeight",),
     ))
     tunnel_text = texts.get(tunnel_renderer, "")
     errors.extend(require_fragments(
