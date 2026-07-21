@@ -1,0 +1,67 @@
+name: Export Source Stage 2
+
+on:
+  push:
+    branches:
+      - feature/authoritative-xyz-stage2
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore exact dependencies
+        run: dotnet restore Dig.sln
+
+      - name: Pack source tree
+        run: tar --exclude=.git -czf /tmp/dig-stage2-source.tgz .
+
+      - name: Pack .NET 8 SDK, targeting packs and NuGet cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk="$(dotnet --list-sdks | awk '$1 ~ /^8\./ { value=$1 } END { print value }')"
+          runtime="$(dotnet --list-runtimes | awk '$1 == "Microsoft.NETCore.App" && $2 ~ /^8\./ { value=$2 } END { print value }')"
+          root="${DOTNET_ROOT:-/usr/share/dotnet}"
+          test -n "$sdk"
+          test -n "$runtime"
+          mkdir -p /tmp/dotnet-min/sdk /tmp/dotnet-min/shared/Microsoft.NETCore.App
+          mkdir -p /tmp/dotnet-min/host/fxr /tmp/dotnet-min/packs
+          cp "$root/dotnet" /tmp/dotnet-min/
+          cp -a "$root/sdk/$sdk" /tmp/dotnet-min/sdk/
+          cp -a "$root/shared/Microsoft.NETCore.App/$runtime" /tmp/dotnet-min/shared/Microsoft.NETCore.App/
+          cp -a "$root/host/fxr/$runtime" /tmp/dotnet-min/host/fxr/
+          for pack in Microsoft.NETCore.App.Ref Microsoft.AspNetCore.App.Ref Microsoft.NETCore.App.Host.linux-x64 NETStandard.Library.Ref; do
+            if [ -d "$root/packs/$pack" ]; then
+              cp -a "$root/packs/$pack" /tmp/dotnet-min/packs/
+            fi
+          done
+          cp -a "$HOME/.nuget/packages" /tmp/nuget-packages
+          tar -C /tmp -czf /tmp/dotnet-sdk-min.tgz dotnet-min nuget-packages
+
+      - name: Upload source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: dig-stage2-source
+          path: /tmp/dig-stage2-source.tgz
+          retention-days: 1
+
+      - name: Upload .NET 8 SDK and packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: dig-stage2-dotnet8-complete
+          path: /tmp/dotnet-sdk-min.tgz
+          retention-days: 1
