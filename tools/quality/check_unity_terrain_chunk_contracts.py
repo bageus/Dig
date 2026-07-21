@@ -89,6 +89,7 @@ def main() -> int:
             "DigTerrainSurfaceRole.Wall",
             "DigTerrainSurfaceRole.Ceiling",
             "DigTerrainSurfaceRole.FreshCut",
+            "private const float HalfExtent = 0.5f;",
         ),
     ))
     errors.extend(reject(
@@ -105,13 +106,20 @@ def main() -> int:
             "ResolveDepthExtents",
             "DigTunnelProjection.DepthSpacing",
             "AddFace(",
-            "ResolveOffset",
+            "ResolvePlaneOffset",
+            "int plane = salt switch",
         ),
     ))
     errors.extend(reject(
         geometry_path,
         geometry,
-        ("UnityEngine.Random", "MeshCollider", "BoxCollider", "DigCellVisual"),
+        (
+            "UnityEngine.Random",
+            "MeshCollider",
+            "BoxCollider",
+            "DigCellVisual",
+            "cell.X * 73856093",
+        ),
     ))
 
     snapshot_path, snapshot = read("DigTerrainRenderSnapshot.cs")
