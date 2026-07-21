@@ -117,12 +117,20 @@ public sealed class ProductionOrderStatusChanged : IDomainEvent
     public ProductionOrderStatusChanged(
         long tick,
         EntityId orderId,
+        EntityId buildingId,
         ProductionOrderStatus previous,
         ProductionOrderStatus current,
         string? reason)
     {
+        if (tick < 0) throw new ArgumentOutOfRangeException(nameof(tick));
+        if (orderId.IsEmpty || buildingId.IsEmpty)
+            throw new ArgumentException("Order and building ids are required.");
+        if (!Enum.IsDefined(typeof(ProductionOrderStatus), previous)
+            || !Enum.IsDefined(typeof(ProductionOrderStatus), current))
+            throw new ArgumentOutOfRangeException(nameof(current));
         Tick = tick;
         OrderId = orderId;
+        BuildingId = buildingId;
         Previous = previous;
         Current = current;
         Reason = reason;
@@ -131,6 +139,8 @@ public sealed class ProductionOrderStatusChanged : IDomainEvent
     public long Tick { get; }
 
     public EntityId OrderId { get; }
+
+    public EntityId BuildingId { get; }
 
     public ProductionOrderStatus Previous { get; }
 
@@ -144,21 +154,35 @@ public sealed class ProductionWorkApplied : IDomainEvent
     public ProductionWorkApplied(
         long tick,
         EntityId orderId,
+        EntityId buildingId,
         int effectiveWork,
-        int completedWork)
+        int completedWork,
+        int requiredWork)
     {
+        if (tick < 0) throw new ArgumentOutOfRangeException(nameof(tick));
+        if (orderId.IsEmpty || buildingId.IsEmpty)
+            throw new ArgumentException("Order and building ids are required.");
+        if (effectiveWork <= 0 || completedWork <= 0
+            || requiredWork <= 0 || completedWork > requiredWork)
+            throw new ArgumentOutOfRangeException(nameof(effectiveWork));
         Tick = tick;
         OrderId = orderId;
+        BuildingId = buildingId;
         EffectiveWork = effectiveWork;
         CompletedWork = completedWork;
+        RequiredWork = requiredWork;
     }
 
     public long Tick { get; }
 
     public EntityId OrderId { get; }
 
+    public EntityId BuildingId { get; }
+
     public int EffectiveWork { get; }
 
     public int CompletedWork { get; }
+
+    public int RequiredWork { get; }
 }
 }

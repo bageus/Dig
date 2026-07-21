@@ -14,6 +14,7 @@ public sealed class DigRealtimeLightPool : MonoBehaviour
 
     public int ActiveCount { get; private set; }
     public int PoolSize => _lights.Count;
+    public int LastDroppedLightCount { get; private set; }
 
     public void SetBudget(RenderFrameBudget budget)
     {
@@ -25,10 +26,13 @@ public sealed class DigRealtimeLightPool : MonoBehaviour
     {
         if (requests == null) throw new ArgumentNullException(nameof(requests));
         EnsureCapacity(_budget.MaximumRealtimeLights);
-        Vector3 focus = camera == null ? Vector3.zero : camera.transform.position;
+        Vector3 focus = camera == null
+            ? Vector3.zero
+            : transform.InverseTransformPoint(camera.transform.position);
         RenderBudgetPlan plan = RenderBudgetPlan.Create(
             Array.Empty<EffectSpawnRequest>(), requests, _budget,
             focus.x, focus.y, focus.z);
+        LastDroppedLightCount = plan.DroppedLights;
         ActiveCount = plan.Lights.Count;
         for (int index = 0; index < _lights.Count; index++)
         {

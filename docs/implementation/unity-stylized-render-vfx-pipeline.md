@@ -44,7 +44,7 @@ This is a compatibility path, not the final production workflow. Creature render
 
 `DigStylizedLightingRig` creates a bake-independent baseline with flat ambient light, a warm directional key and a cool directional rim. Baseline directional lights do not cast realtime shadows. Dynamic excavation therefore does not require a baked-lighting rebuild.
 
-`DigRealtimeLightPool` owns reusable Unity Light components. It grows only to the configured maximum, disables unused lights, and enables shadows only for the selected shadow-budget subset. Lava, crystals, campfires and production buildings will publish requests in later slices instead of creating unbounded Light objects.
+`DigRealtimeLightPool` owns reusable Unity Light components. It grows only to the configured maximum, disables unused lights, enables shadows only for the selected shadow-budget subset and exposes the last dropped-light count. Revealed crystals, lava cells, completed campfires and buildings with active production orders publish a complete persistent emitter set every simulation frame; budget selection keeps only the most important and closest lights.
 
 ## VFX catalog and pooling
 
@@ -66,7 +66,11 @@ The production fallback path resolves one shared GPU-instanced Terrain/Lit mater
 
 ## Gameplay effect adapters
 
-Front-layer terrain completion publishes immutable excavation and deposit facts after the authoritative completion command succeeds. Spatial Z0-Z3 excavation publishes the same fact only after its authoritative cell and Job completion succeed. The bridge projects these facts into pooled VFX; losing or disabling the effect cannot affect the completed command.
+Front-layer terrain completion publishes immutable excavation and deposit facts after the authoritative completion command succeeds. Spatial Z0-Z3 excavation publishes the same fact only after its authoritative cell and Job completion succeed. Construction work now publishes `BuildingConstructionProgressed`; production events carry their authoritative building owner; combat and status effects consume the existing resolved domain events.
+
+`PresentationDomainEffectProjector` converts those facts into engine-neutral effect facts. `DigPresentationEffectRuntime` is the single Unity frame coordinator: it reads each bounded journal event once, resolves current entity positions, combines transient requests with ambient and persistent emitters, and calls the bridge once. No producer may render a partial light frame directly, so an excavation impact cannot accidentally disable campfire or production lights.
+
+Ambient dust is deterministic by simulation tick. Lava and crystal emitters are derived from rebuildable world/deposit read models; campfire and active-production emitters are derived from building and production facts. They remain Presentation-only and do not add saved or authoritative state.
 
 ## URP completion boundary
 
@@ -74,4 +78,4 @@ Completion of URP migration requires Editor-created pipeline and renderer assets
 
 ## Verification boundary
 
-Repository checks verify the pinned package, Editor authoring path, shader contracts, shared catalog IDs, terrain vertex/AO stream, bounded pools and live excavation adapters. A clean Unity 6000.0.71f1 import must still serialize the generated assets and representative Play Mode must confirm shader compilation, overlay readability, pool diagnostics and visual profiling on the target GPU before #212 is closed.
+Repository checks verify the pinned package, Editor authoring path, shader contracts, shared catalog IDs, terrain vertex/AO stream, bounded pools, gameplay event projection and live excavation/ambient adapters. A clean Unity 6000.0.71f1 import must still serialize the generated assets and representative Play Mode must confirm shader compilation, overlay readability, pool diagnostics and visual profiling on the target GPU before #212 is closed.

@@ -112,7 +112,13 @@ public sealed class ProductionState : AggregateRoot
 
         ProductionOrderStatus previous = order.Status;
         order.AddWork(effectiveWork);
-        Raise(new ProductionWorkApplied(tick, order.Id, effectiveWork, order.CompletedWork));
+        Raise(new ProductionWorkApplied(
+            tick,
+            order.Id,
+            order.BuildingId,
+            effectiveWork,
+            order.CompletedWork,
+            order.Recipe.RequiredWork));
         if (previous != order.Status)
         {
             RaiseStatusChanged(tick, order, previous, null);
@@ -247,6 +253,7 @@ public sealed class ProductionState : AggregateRoot
         Raise(new ProductionOrderStatusChanged(
             tick,
             order.Id,
+            order.BuildingId,
             previous,
             order.Status,
             reason));

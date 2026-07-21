@@ -157,7 +157,8 @@ public sealed class BuildingBoxAssemblyExecutionPolicyTests
             BuildingBoxAssemblyExecutionStepKind.AddWork =>
                 new AddBuildingBoxAssemblyWorkHandler(
                     harness.BuildingsRepository,
-                    harness.JobRepository).Handle(new AddBuildingBoxAssemblyWorkCommand(
+                    harness.JobRepository,
+                    harness.Journal).Handle(new AddBuildingBoxAssemblyWorkCommand(
                         harness.BuildingId,
                         harness.JobId,
                         workAmount: 1,

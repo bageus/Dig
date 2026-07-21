@@ -8,6 +8,8 @@ namespace Dig.Unity
 {
     internal sealed partial class DigRepresentativeBuildingPrefabLibrary : IDisposable
     {
+        private const string PackResourcePath =
+            "Dig/VisualCatalogs/RepresentativeBuildings";
         private static DigRepresentativeBuildingPrefabLibrary? _shared;
         private static int _referenceCount;
 
@@ -31,7 +33,7 @@ namespace Dig.Unity
             _templateRoot.SetActive(false);
             _material = CreateMaterial();
 
-            DigRepresentativeBuildingPackData pack = CreateBuiltInPack();
+            DigRepresentativeBuildingPackData pack = LoadPack();
             List<string> errors = new List<string>(
                 DigRepresentativeBuildingDataValidator.Validate(pack));
             IndexProfiles(pack, errors);
@@ -190,6 +192,21 @@ namespace Dig.Unity
                         Anchor("Storage", "storage.primary", new Vector3(1f, 0.82f, 0.50f))),
                 },
             };
+        }
+
+        private static DigRepresentativeBuildingPackData LoadPack()
+        {
+            TextAsset? source = Resources.Load<TextAsset>(PackResourcePath);
+            if (source == null)
+            {
+                return CreateBuiltInPack();
+            }
+
+            DigRepresentativeBuildingPackData? pack =
+                JsonUtility.FromJson<DigRepresentativeBuildingPackData>(source.text);
+            return pack == null || pack.profiles == null || pack.profiles.Length == 0
+                ? CreateBuiltInPack()
+                : pack;
         }
 
         private static DigRepresentativeBuildingProfileData Profile(

@@ -26,6 +26,7 @@ public sealed class DigPooledVfxPlayer : MonoBehaviour
     public int ActiveCount => _active.Count;
     public int ActiveParticleCount => _activeParticles;
     public int PooledCount => _pooledCount;
+    public int LastDroppedEffectCount { get; private set; }
 
     public void SetBudget(RenderFrameBudget budget)
     {
@@ -36,33 +37,39 @@ public sealed class DigPooledVfxPlayer : MonoBehaviour
     {
         if (requests == null) throw new ArgumentNullException(nameof(requests));
         EnsureResources();
-        Vector3 focus = camera == null ? Vector3.zero : camera.transform.position;
+        Vector3 focus = camera == null
+            ? Vector3.zero
+            : transform.InverseTransformPoint(camera.transform.position);
         RenderBudgetPlan plan = RenderBudgetPlan.Create(requests,
             Array.Empty<LightRequest>(), _budget, focus.x, focus.y, focus.z);
+        LastDroppedEffectCount = plan.DroppedEffects;
         float now = Time.unscaledTime;
         for (int index = 0; index < plan.Effects.Count; index++)
-            PlayOne(plan.Effects[index], now);
+        {
+            if (!PlayOne(plan.Effects[index], now)) LastDroppedEffectCount++;
+        }
     }
 
-    private void PlayOne(EffectSpawnRequest request, float now)
+    private bool PlayOne(EffectSpawnRequest request, float now)
     {
         DigPooledVfxInstance? existing;
         if (_active.TryGetValue(request.RequestId, out existing))
         {
-            if (existing.Version == request.Version) return;
+            if (existing.Version == request.Version) return true;
             Release(request.RequestId, existing);
         }
         if (_active.Count >= _budget.MaximumEffects
             || _activeParticles + request.ParticleBudget > _budget.MaximumParticles)
-            return;
+            return false;
 
         DigVfxProfile? profile = ResolveProfile(request.EffectId);
         if (profile != null && CountActive(request.EffectId) >= profile.MaximumInstances)
-            return;
+            return false;
         DigPooledVfxInstance instance = Acquire(request.EffectId, profile);
         instance.Play(request, profile, _sharedMaterial!, now);
         _active.Add(request.RequestId, instance);
         _activeParticles += instance.ParticleBudget;
+        return true;
     }
 
     private DigPooledVfxInstance Acquire(string effectId, DigVfxProfile? profile)

@@ -15,16 +15,19 @@ public sealed class AddBuildingBoxAssemblyWorkHandler
 {
     private readonly IBuildingsRepository _buildingsRepository;
     private readonly IJobRepository _jobRepository;
+    private readonly IEventSink _eventSink;
     private Func<EntityId, long, bool>? _workDuePolicy;
 
     public AddBuildingBoxAssemblyWorkHandler(
         IBuildingsRepository buildingsRepository,
-        IJobRepository jobRepository)
+        IJobRepository jobRepository,
+        IEventSink eventSink)
     {
         _buildingsRepository = buildingsRepository
             ?? throw new ArgumentNullException(nameof(buildingsRepository));
         _jobRepository = jobRepository
             ?? throw new ArgumentNullException(nameof(jobRepository));
+        _eventSink = eventSink ?? throw new ArgumentNullException(nameof(eventSink));
     }
 
     public void SetWorkDuePolicy(Func<EntityId, long, bool> workDuePolicy)
@@ -82,13 +85,15 @@ public sealed class AddBuildingBoxAssemblyWorkHandler
 
         Result worked = buildings.AddConstructionWork(
             command.BuildingId,
-            command.WorkAmount);
+            command.WorkAmount,
+            command.Tick);
         if (worked.IsFailure)
         {
             return worked;
         }
 
         _buildingsRepository.Save(buildings);
+        _eventSink.Append(buildings.DequeueUncommittedEvents());
         return Result.Success();
     }
 }

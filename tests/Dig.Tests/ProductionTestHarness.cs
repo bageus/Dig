@@ -194,7 +194,8 @@ internal sealed class ProductionTestHarness
         Assert.True(buildings.StartConstruction(buildingId).IsSuccess);
         Assert.True(buildings.AddConstructionWork(
             buildingId,
-            definition.RequiredWork).IsSuccess);
+            definition.RequiredWork,
+            tick: 0).IsSuccess);
         Assert.True(buildings.Complete(buildingId, tick: 0).IsSuccess);
         buildings.DequeueUncommittedEvents();
         return buildings;

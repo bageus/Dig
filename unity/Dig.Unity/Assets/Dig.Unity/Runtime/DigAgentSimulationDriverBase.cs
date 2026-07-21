@@ -29,6 +29,7 @@ namespace Dig.Unity
         protected DigWorldItemRenderer? ItemRenderer;
         protected DigStockpileRenderer? StockpileRenderer;
         protected DigNavigationRouteRenderer? RouteRenderer;
+        private protected DigPresentationEffectRuntime? EffectRuntime;
         protected DigHudOverlay? Hud;
         private SimulationPlaybackState? _playback;
 
@@ -71,6 +72,7 @@ namespace Dig.Unity
             ItemRenderer = itemRenderer;
             StockpileRenderer = stockpileRenderer;
             RouteRenderer = routeRenderer;
+            EffectRuntime = GetComponent<DigPresentationEffectRuntime>();
             Hud = hud;
             AgentSession.SetMovementTargetFilter(
                 TerrainSession.ApplyResidentMovementCadence);
@@ -136,6 +138,7 @@ namespace Dig.Unity
                 && ItemRenderer != null
                 && StockpileRenderer != null
                 && RouteRenderer != null
+                && EffectRuntime != null
                 && Hud != null;
         }
 

@@ -93,8 +93,9 @@ public sealed partial class BuildingsState : AggregateRoot
         return Result.Success();
     }
 
-    public Result AddConstructionWork(EntityId id, int amount)
+    public Result AddConstructionWork(EntityId id, int amount, long tick)
     {
+        ValidateTick(tick);
         if (amount <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(amount));
@@ -112,6 +113,11 @@ public sealed partial class BuildingsState : AggregateRoot
         }
 
         project.AddWork(amount);
+        Raise(new BuildingConstructionProgressed(
+            tick,
+            id,
+            project.CompletedWork,
+            project.Definition.RequiredWork));
         return Result.Success();
     }
 

@@ -22,7 +22,8 @@ public sealed class BuildingEquipmentCadenceTests
         harness.AdvanceToPerformWork();
         AddBuildingBoxAssemblyWorkHandler handler = new AddBuildingBoxAssemblyWorkHandler(
             harness.BuildingsRepository,
-            harness.JobRepository);
+            harness.JobRepository,
+            harness.Journal);
         handler.SetWorkDuePolicy((_, _) => false);
 
         Result first = handler.Handle(new AddBuildingBoxAssemblyWorkCommand(

@@ -110,7 +110,9 @@ def main() -> int:
         "MaximumPoolSize = 64", "Dictionary<string, DigPooledVfxInstance>",
         "Stack<DigPooledVfxInstance>", "existing.Version == request.Version",
         "MaximumEffects", "MaximumParticles", "MaximumInstances",
-        "ActiveParticleCount", "Resources.Load<DigVfxCatalog>",
+        "ActiveParticleCount", "LastDroppedEffectCount",
+        "transform.InverseTransformPoint(camera.transform.position)",
+        "Resources.Load<DigVfxCatalog>",
     )))
 
     light_pool_path = RUNTIME / "DigRealtimeLightPool.cs"
@@ -118,6 +120,8 @@ def main() -> int:
     errors.extend(require(light_pool_path, read(light_pool_path), (
         "RenderBudgetPlan.Create(", "MaximumRealtimeLights", "SelectedLight",
         "LightShadows.Soft", "LightShadows.None", "ActiveCount", "PoolSize",
+        "LastDroppedLightCount",
+        "transform.InverseTransformPoint(camera.transform.position)",
     )))
     errors.extend(require(lighting_path, read(lighting_path), (
         "AmbientMode.Flat", "ambientLight", "Key Light", "Rim Light",
@@ -137,6 +141,36 @@ def main() -> int:
     errors.extend(reject(RUNTIME, runtime_contract, (
         "ICommand", "Handle(", "ApplyDamage", "CompleteAttack",
         "SpawnCreature", "Commit(", "Animator.Set",
+    )))
+
+    domain_projector = PRESENTATION / "PresentationDomainEffectProjector.cs"
+    errors.extend(require(domain_projector, read(domain_projector), (
+        "BuildingConstructionProgressed", "ProductionWorkApplied",
+        "CombatAttackResolved", "CombatStatusTicked", "AgentExternalEffectApplied",
+        "PresentationEffectKind.ConstructionProgress",
+        "PresentationEffectKind.ProductionPulse",
+        "PresentationEffectKind.CombatImpact",
+        "PresentationEffectKind.StatusPulse",
+    )))
+    effect_runtime = RUNTIME / "DigPresentationEffectRuntime.cs"
+    errors.extend(require(effect_runtime, read(effect_runtime), (
+        "ReadNewEvents", "DroppedEventCount", "TrackProductionEmitters",
+        "PresentationEffectKind.LavaGlow", "PresentationEffectKind.CrystalGlow",
+        "PresentationEffectKind.CampfireGlow",
+        "PresentationEffectKind.ProductionBuildingGlow",
+        "PresentationEffectKind.AmbientDust", "_bridge!.Present(",
+    )))
+    bootstrap = RUNTIME / "DigUnityBootstrap.cs"
+    errors.extend(require(bootstrap, read(bootstrap), (
+        "DigPresentationEffectRuntime", "effectRuntime.Publish",
+        "effectRuntime.Flush(agentSession.Tick)",
+    )))
+    spatial_effects = RUNTIME / "DigAgentSimulationDriverBase.PresentationEffects.cs"
+    errors.extend(require(spatial_effects, read(spatial_effects), (
+        "EffectRuntime.Publish", "PresentationEffectKind.ExcavationImpact",
+    )))
+    errors.extend(reject(spatial_effects, read(spatial_effects), (
+        "DigPresentationEffectBridge", "bridge.Present(",
     )))
 
     if errors:
