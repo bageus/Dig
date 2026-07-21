@@ -21,8 +21,24 @@ jobs:
       - name: Pack source tree
         run: tar --exclude=.git -czf /tmp/dig-stage2-source.tgz .
 
-      - name: Pack runner dotnet
-        run: tar -C /usr/share -czf /tmp/dotnet-sdk.tgz dotnet
+      - name: Pack active dotnet SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk="$(dotnet --version)"
+          runtime="$(dotnet --list-runtimes | awk '$1 == "Microsoft.NETCore.App" { value=$2 } END { print value }')"
+          root=/usr/share/dotnet
+          mkdir -p /tmp/dotnet-min/sdk /tmp/dotnet-min/shared/Microsoft.NETCore.App
+          mkdir -p /tmp/dotnet-min/host/fxr /tmp/dotnet-min/packs
+          cp "$root/dotnet" /tmp/dotnet-min/
+          cp -a "$root/sdk/$sdk" /tmp/dotnet-min/sdk/
+          cp -a "$root/shared/Microsoft.NETCore.App/$runtime" /tmp/dotnet-min/shared/Microsoft.NETCore.App/
+          cp -a "$root/host/fxr/$runtime" /tmp/dotnet-min/host/fxr/
+          cp -a "$root/packs/Microsoft.NETCore.App.Ref/$runtime" /tmp/dotnet-min/packs/Microsoft.NETCore.App.Ref
+          if [ -d "$root/packs/NETStandard.Library.Ref" ]; then
+            cp -a "$root/packs/NETStandard.Library.Ref" /tmp/dotnet-min/packs/
+          fi
+          tar -C /tmp -czf /tmp/dotnet-sdk-min.tgz dotnet-min
 
       - name: Upload source archive
         uses: actions/upload-artifact@v4
@@ -31,9 +47,9 @@ jobs:
           path: /tmp/dig-stage2-source.tgz
           retention-days: 1
 
-      - name: Upload dotnet SDK
+      - name: Upload active dotnet SDK
         uses: actions/upload-artifact@v4
         with:
-          name: dig-stage2-dotnet
-          path: /tmp/dotnet-sdk.tgz
+          name: dig-stage2-dotnet-min
+          path: /tmp/dotnet-sdk-min.tgz
           retention-days: 1
