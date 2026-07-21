@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dig.Domain.Navigation;
 using Dig.Domain.World;
+using Dig.Presentation.Rendering;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -15,7 +16,7 @@ namespace Dig.Unity
         private Transform? _cellProxyRoot;
         private Transform? _movementSurfaceRoot;
         private Transform? _routeRoot;
-        private Material? _routeMaterial;
+        private DigRenderMaterialLibrary? _materialLibrary;
         private LineRenderer? _route;
         private int _volumeSignature;
         private bool _digInteractionActive;
@@ -268,50 +269,30 @@ namespace Dig.Unity
                 return;
             }
 
-            Shader unlit = Shader.Find("Universal Render Pipeline/Unlit");
-            if (unlit == null)
+            _materialLibrary = GetComponent<DigRenderMaterialLibrary>();
+            if (_materialLibrary == null)
             {
-                unlit = Shader.Find("Unlit/Color");
+                _materialLibrary = gameObject.AddComponent<DigRenderMaterialLibrary>();
             }
 
-            if (unlit == null)
-            {
-                throw new InvalidOperationException(
-                    "Tunnel route rendering requires a supported unlit shader.");
-            }
-
-            _routeMaterial = CreateMaterial(
-                unlit,
-                "Tunnel route",
-                new Color(0.35f, 0.95f, 1f, 1f));
+            Material routeMaterial = _materialLibrary.Resolve(
+                RenderMaterialSemantic.Overlay,
+                RenderSurfaceKind.Overlay,
+                Color.white);
+            Color routeColor = new Color(0.35f, 0.95f, 1f, 1f);
             _routeRoot = new GameObject("Tunnel Route Overlay").transform;
             _routeRoot.SetParent(transform, worldPositionStays: true);
             GameObject routeObject = new GameObject("Selected tunnel route");
             routeObject.transform.SetParent(_routeRoot, worldPositionStays: true);
             _route = routeObject.AddComponent<LineRenderer>();
-            _route.sharedMaterial = _routeMaterial;
+            _route.sharedMaterial = routeMaterial;
+            _route.startColor = routeColor;
+            _route.endColor = routeColor;
             _route.useWorldSpace = true;
             _route.widthMultiplier = 0.09f;
             _route.numCapVertices = 3;
             _route.numCornerVertices = 3;
             _route.enabled = false;
-        }
-
-        private static Material CreateMaterial(
-            Shader shader,
-            string materialName,
-            Color color)
-        {
-            return new Material(shader)
-            {
-                name = materialName,
-                color = color,
-            };
-        }
-
-        private void OnDestroy()
-        {
-            DestroyMaterial(_routeMaterial);
         }
 
         private static int CalculateSignature(TunnelNavigationVolume volume)
@@ -329,12 +310,5 @@ namespace Dig.Unity
             }
         }
 
-        private void DestroyMaterial(Material? material)
-        {
-            if (material != null)
-            {
-                Destroy(material);
-            }
-        }
     }
 }

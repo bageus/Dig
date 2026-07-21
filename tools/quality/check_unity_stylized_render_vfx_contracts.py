@@ -84,10 +84,25 @@ def main() -> int:
     errors.extend(require(library_path, library, (
         "GraphicsSettings.currentRenderPipeline", "VisualCatalogs/RenderMaterials",
         "Dictionary<string, Material>", "HashSet<Material>",
-        "Universal Render Pipeline/Lit", "Universal Render Pipeline/Unlit",
+        "Dig/Stylized Lit", "Dig/Stylized Unlit",
         "enableInstancing = true", "DigStylizedLightingRig",
         "DigPresentationEffectBridge",
     )))
+    errors.extend(reject(library_path, library, (
+        "Universal Render Pipeline/Unlit",
+    )))
+
+    overlay_path = RUNTIME / "DigOverlayManager.Materials.cs"
+    tunnel_path = RUNTIME / "DigTunnelDemoRenderer.cs"
+    for path in (overlay_path, tunnel_path):
+        runtime_overlay = read(path)
+        errors.extend(require(path, runtime_overlay, (
+            "DigRenderMaterialLibrary", "RenderMaterialSemantic.Overlay",
+            "RenderSurfaceKind.Overlay",
+        )))
+        errors.extend(reject(path, runtime_overlay, (
+            "Universal Render Pipeline/Unlit", "Shader.Find(", "new Material(",
+        )))
 
     vfx_profile_path = RUNTIME / "DigVfxProfile.cs"
     vfx_catalog_path = RUNTIME / "DigVfxCatalog.cs"
