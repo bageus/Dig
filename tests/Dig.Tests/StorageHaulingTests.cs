@@ -126,8 +126,7 @@ public sealed class StorageHaulingTests
             harness.InventoryRepository,
             harness.StorageRepository,
             harness.JobRepository,
-            harness.Journal,
-            AgentSkillGrantTestFactory.Create(WorkerId, harness.Journal));
+            harness.Journal);
 
         Assert.True(cancel.Handle(new CancelHaulingJobCommand(
             JobId,

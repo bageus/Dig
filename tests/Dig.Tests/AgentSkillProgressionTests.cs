@@ -52,7 +52,7 @@ public sealed class AgentSkillProgressionTests
 
         Assert.Equal(400, report.FreeCapacityGainUnits);
         Assert.Equal(0, report.OverflowUnits);
-        Assert.Empty(report.DonorLosses.Where(value => value.LossUnits > 0));
+        Assert.DoesNotContain(report.DonorLosses, value => value.LossUnits > 0);
         Assert.Equal(400, agent.CreateSnapshot(1).GetSkillLevel(
             AgentSkillCatalog.Stonework));
     }

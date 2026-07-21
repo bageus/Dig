@@ -4,6 +4,7 @@ using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Messaging;
+using Dig.Domain.Agents;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
