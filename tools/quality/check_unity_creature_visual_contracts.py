@@ -136,11 +136,13 @@ def main() -> int:
         "CreatureRenderReconciliationPlan.Create(", "MaximumPoolSize = 64",
         "Stack<DigCreatureVisual>", "AcquireRoot(", "RemoveCreature(",
         "TryGetCreature(", "SelectById(", "TryResolveAnchor(",
-        "Resources.Load<DigCreatureVisualCatalog>", "enableInstancing = true",
-        "PresentLod(", "WorldToViewportPoint",
+        "Resources.Load<DigCreatureVisualCatalog>",
+        "DigRenderMaterialLibrary", "RenderMaterialSemantic.Creature",
+        "RenderSurfaceKind.Lit", "PresentLod(", "WorldToViewportPoint",
     )))
     errors.extend(reject(renderer_path, renderer, (
         "GameObject.CreatePrimitive(PrimitiveType.Capsule)",
+        "Shader.Find(", "new Material(",
         "FindObjectOfType<", "FindObjectsOfType<",
     )))
 
@@ -156,7 +158,7 @@ def main() -> int:
         print("\n".join(lines), file=sys.stderr)
         return 1
 
-    line = "PASS: creature families, lifecycle variants, markers, pooling and LOD"
+    line = "PASS: creature families use shared materials, lifecycle variants, pooling and LOD"
     append_log([line])
     print(line)
     return 0
