@@ -68,6 +68,24 @@ def main() -> int:
         errors.append(
             f"{lock_path.relative_to(ROOT)}: builtin URP must not declare a registry URL"
         )
+    builtin_dependencies = {
+        "com.unity.render-pipelines.core": "17.0.4",
+        "com.unity.render-pipelines.universal-config": "17.0.3",
+        "com.unity.rendering.light-transport": "1.0.1",
+        "com.unity.shadergraph": "17.0.4",
+    }
+    lock_dependencies = package_lock.get("dependencies", {})
+    for package_name, package_version in builtin_dependencies.items():
+        dependency = lock_dependencies.get(package_name, {})
+        if (
+            dependency.get("version") != package_version
+            or dependency.get("source") != "builtin"
+            or "url" in dependency
+        ):
+            errors.append(
+                f"{lock_path.relative_to(ROOT)}: {package_name} must pin "
+                f"builtin {package_version}"
+            )
 
     configurator = EDITOR / "DigUrpProjectConfigurator.cs"
     errors.extend(require(configurator, (
