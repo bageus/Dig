@@ -76,14 +76,18 @@ def main() -> int:
         "Input.GetKeyDown(KeyCode.F2)",
         "Input.GetKeyDown(KeyCode.F3)",
         "Input.GetKeyDown(KeyCode.F4)",
-        "Dictionary<OverlaySemanticKind, Material>",
-        "enableInstancing = true",
+        "DigRenderMaterialLibrary",
+        "RenderMaterialSemantic.Overlay",
+        "RenderSurfaceKind.Overlay",
+        "MaterialPropertyBlock",
+        "_colorProperties.SetColor(\"_BaseColor\"",
         "ConfigureLineRenderer(",
         "DigOverlayMetadata",
     )))
     errors.extend(reject(manager_path, manager, (
         "ICommand", "InventoryState", "JobSystem", "BuildingState",
         "FindObjectOfType<", "FindObjectsOfType<",
+        "Shader.Find(", "new Material(",
     )))
 
     job_path = RUNTIME / "DigJobRenderer.cs"

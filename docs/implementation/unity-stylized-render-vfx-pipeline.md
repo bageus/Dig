@@ -33,12 +33,17 @@ URP 17.0.4 is pinned for Unity 6000.0.71f1. `DigUrpProjectConfigurator` creates 
 
 `DigRenderMaterialProfile` is keyed by `RenderMaterialSemantic` and `RenderSurfaceKind`. Authored materials must enable GPU instancing. `DigRenderMaterialCatalog` validates duplicates and profiles.
 
-`DigRenderMaterialLibrary` loads `VisualCatalogs/RenderMaterials`, caches each semantic/surface pair, never destroys authored catalog materials and destroys only owned runtime fallbacks. Runtime shader lookup is centralized here:
+`DigRenderMaterialLibrary` loads `VisualCatalogs/RenderMaterials`, caches each semantic/surface pair, never destroys authored catalog materials and destroys only owned runtime fallbacks. Runtime fallback lookup is centralized here:
 
-- Lit: `Universal Render Pipeline/Lit`, then `Standard`;
-- Unlit/Overlay: `Universal Render Pipeline/Unlit`, then built-in unlit fallbacks.
+- Lit: the small project-owned `Dig/Stylized Lit`, then compatibility fallbacks;
+- Unlit/Overlay: the small project-owned `Dig/Stylized Unlit`, then built-in
+  non-URP fallbacks.
 
-This is a compatibility path, not the final production workflow. Creature rendering is the first migrated consumer and no longer owns a private shader/material lifecycle.
+The large stock `Universal Render Pipeline/Unlit` shader is deliberately not a
+runtime fallback: requesting it from `Shader.Find` during startup forces an
+unbounded Editor compilation path on memory-constrained systems. Overlays and
+tunnel routes consume the authored shared material and apply semantic colours
+without creating materials.
 
 ## Stylized lighting
 

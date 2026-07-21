@@ -12,6 +12,7 @@ namespace Dig.Unity
         {
             DigOverlayAppearance appearance = ResolveAppearance(semantic);
             renderer.sharedMaterial = ResolveMaterial(semantic);
+            ApplyColor(renderer, appearance.Color);
             renderer.sortingOrder = ResolveSortingOrder(layer);
             ConfigureMetadata(renderer.gameObject, layer, semantic, appearance);
             return appearance;
@@ -37,6 +38,15 @@ namespace Dig.Unity
                 UnityEngine.Rendering.ShadowCastingMode.Off;
             line.receiveShadows = false;
             return appearance;
+        }
+
+        private void ApplyColor(Renderer renderer, Color color)
+        {
+            _colorProperties ??= new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(_colorProperties);
+            _colorProperties.SetColor("_BaseColor", color);
+            _colorProperties.SetColor("_Color", color);
+            renderer.SetPropertyBlock(_colorProperties);
         }
 
         private static void ConfigureMetadata(

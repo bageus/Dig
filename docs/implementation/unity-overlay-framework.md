@@ -54,7 +54,10 @@ Examples:
 
 ## Shared materials and allocation policy
 
-`DigOverlayManager` owns one cached material per semantic kind. Materials use the shared unlit shader and GPU instancing. Migrated renderers do not allocate their own status or valid/invalid materials.
+`DigOverlayManager` resolves one authored overlay material from
+`DigRenderMaterialLibrary`. Semantic colours are applied with a cached
+`MaterialPropertyBlock`, so overlay renderers do not
+allocate materials or invoke shader lookup at runtime.
 
 Current migrated systems:
 
