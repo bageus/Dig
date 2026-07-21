@@ -33,16 +33,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sdk="$(dotnet --version)"
-          runtime="$(dotnet --list-runtimes | awk '$1 == "Microsoft.NETCore.App" && $2 ~ /^8\./ { print $2; exit }')"
+          sdk="$(dotnet --list-sdks | awk '$1 ~ /^8\./ { value=$1 } END { print value }')"
+          runtime="$(dotnet --list-runtimes | awk '$1 == "Microsoft.NETCore.App" && $2 ~ /^8\./ { value=$2 } END { print value }')"
           root="${DOTNET_ROOT:-/usr/share/dotnet}"
+          test -n "$sdk"
+          test -n "$runtime"
           mkdir -p /tmp/dotnet-min/sdk /tmp/dotnet-min/shared/Microsoft.NETCore.App
           mkdir -p /tmp/dotnet-min/host/fxr /tmp/dotnet-min/packs /tmp/nuget-min
           cp "$root/dotnet" /tmp/dotnet-min/
           cp -a "$root/sdk/$sdk" /tmp/dotnet-min/sdk/
           cp -a "$root/shared/Microsoft.NETCore.App/$runtime" /tmp/dotnet-min/shared/Microsoft.NETCore.App/
           cp -a "$root/host/fxr/$runtime" /tmp/dotnet-min/host/fxr/
-          cp -a "$root/packs/Microsoft.NETCore.App.Ref/$runtime" /tmp/dotnet-min/packs/Microsoft.NETCore.App.Ref
+          ref="$(find "$root/packs/Microsoft.NETCore.App.Ref" -mindepth 1 -maxdepth 1 -type d -name '8.*' | sort -V | tail -1)"
+          cp -a "$ref" /tmp/dotnet-min/packs/Microsoft.NETCore.App.Ref
           if [ -d "$root/packs/NETStandard.Library.Ref" ]; then
             cp -a "$root/packs/NETStandard.Library.Ref" /tmp/dotnet-min/packs/
           fi
