@@ -21,9 +21,19 @@ jobs:
       - name: Pack source tree
         run: tar --exclude=.git -czf /tmp/dig-stage2-source.tgz .
 
+      - name: Pack runner dotnet
+        run: tar -C /usr/share -czf /tmp/dotnet-sdk.tgz dotnet
+
       - name: Upload source archive
         uses: actions/upload-artifact@v4
         with:
           name: dig-stage2-source
           path: /tmp/dig-stage2-source.tgz
+          retention-days: 1
+
+      - name: Upload dotnet SDK
+        uses: actions/upload-artifact@v4
+        with:
+          name: dig-stage2-dotnet
+          path: /tmp/dotnet-sdk.tgz
           retention-days: 1
