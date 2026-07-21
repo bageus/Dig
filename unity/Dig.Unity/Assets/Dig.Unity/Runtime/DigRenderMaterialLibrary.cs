@@ -60,8 +60,10 @@ public sealed class DigRenderMaterialLibrary : MonoBehaviour
     private static Shader? ResolveShader(RenderSurfaceKind surface)
     {
         if (surface == RenderSurfaceKind.Lit)
-            return Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-        return Shader.Find("Universal Render Pipeline/Unlit")
+            return Shader.Find("Dig/Stylized Lit")
+                ?? Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+        return Shader.Find("Dig/Stylized Unlit")
+            ?? Shader.Find("Universal Render Pipeline/Unlit")
             ?? Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default");
     }
     private void OnDestroy()
