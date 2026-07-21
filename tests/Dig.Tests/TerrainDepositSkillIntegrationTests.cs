@@ -104,12 +104,15 @@ public sealed class TerrainDepositSkillIntegrationTests
             new MaterialDefinition(Rock, isSolid: true, hardness: 100),
             new MaterialDefinition(Air, isSolid: false, hardness: 0),
         });
-        return WorldState.CreateFilled(
+        WorldState world = WorldState.CreateFilled(
             new WorldSize(3, 3),
             chunkSize: 1,
             materials,
             Rock,
             explored: true).Value;
+        Assert.True(world.SetDigDesignation(Target, designated: true, tick: 1).IsSuccess);
+        world.DequeueUncommittedEvents();
+        return world;
     }
 }
 
