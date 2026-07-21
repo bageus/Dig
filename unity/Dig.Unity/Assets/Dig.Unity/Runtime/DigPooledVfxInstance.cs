@@ -30,7 +30,7 @@ public sealed class DigPooledVfxInstance : MonoBehaviour
         _particleBudget = profile == null ? request.ParticleBudget
             : Mathf.Min(request.ParticleBudget, profile.MaximumParticles);
         _expiresAt = now + (float)request.DurationSeconds;
-        transform.position = new Vector3((float)request.WorldX,
+        transform.localPosition = new Vector3((float)request.WorldX,
             (float)request.WorldY, (float)request.WorldZ);
         transform.localScale = Vector3.one * (float)request.Scale;
         ConfigureParticles(_particles, request, material, _particleBudget);
