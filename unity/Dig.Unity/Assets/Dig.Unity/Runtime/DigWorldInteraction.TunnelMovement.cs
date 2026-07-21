@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Dig.Domain.Core;
 using Dig.Domain.World;
@@ -24,12 +25,22 @@ namespace Dig.Unity
 
         private bool TryApplyTunnelMove(RaycastHit hit, bool leftButton)
         {
+            return TryApplyTunnelMove(GetPointerHits(), leftButton);
+        }
+
+        private bool TryApplyTunnelMove(RaycastHit[] hits, bool leftButton)
+        {
             if (!leftButton || _tunnelRenderer == null)
             {
                 return false;
             }
 
-            DigSelectedResidentTarget target = ResolveSelectedResidentTarget();
+            if (hits == null)
+            {
+                throw new ArgumentNullException(nameof(hits));
+            }
+
+            DigSelectedResidentTarget target = ResolveSelectedResidentTarget(hits);
             if (target.Kind != DigSelectedResidentTargetKind.Movement)
             {
                 return false;
