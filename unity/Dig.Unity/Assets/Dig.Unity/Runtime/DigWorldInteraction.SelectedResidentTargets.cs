@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Dig.Domain.World;
 using UnityEngine;
 
@@ -52,14 +54,21 @@ namespace Dig.Unity
 
     public sealed partial class DigWorldInteraction
     {
-        private DigSelectedResidentTarget ResolveSelectedResidentTarget()
+        private DigSelectedResidentTarget ResolveSelectedResidentTarget(
+            RaycastHit[] hits)
         {
-            RaycastHit[] hits = GetPointerHits();
+            if (hits == null)
+            {
+                throw new ArgumentNullException(nameof(hits));
+            }
+
             CellId? excavationCandidate = null;
-            DigSelectedResidentTarget visibleMovement = default;
-            bool hasVisibleMovement = false;
-            DigSelectedResidentTarget hiddenMovement = default;
-            bool hasHiddenMovement = false;
+            DigSelectedResidentTarget bestMovement = default;
+            bool hasMovement = false;
+            float bestScreenDistance = float.PositiveInfinity;
+            float bestRayDistance = float.PositiveInfinity;
+            HashSet<SpatialCellId> seenMovementCells = new HashSet<SpatialCellId>();
+            Vector2 pointer = Input.mousePosition;
             for (int index = 0; index < hits.Length; index++)
             {
                 RaycastHit hit = hits[index];
@@ -83,42 +92,72 @@ namespace Dig.Unity
                 }
 
                 if (!TryResolveTunnelDestination(
-                    hit,
-                    out SpatialCellId destination,
-                    out DigTunnelCellVisual? visual))
+                        hit,
+                        out SpatialCellId destination,
+                        out DigTunnelCellVisual? visual)
+                    || !seenMovementCells.Add(destination))
                 {
                     continue;
                 }
 
-                DigSelectedResidentTarget movement =
-                    DigSelectedResidentTarget.Movement(destination, visual);
-                bool visible = visual == null
-                    || visual.GetComponent<Renderer>().enabled;
-                if (visible && !hasVisibleMovement)
+                float screenDistance = ResolveMovementPointerDistance(
+                    destination,
+                    visual,
+                    pointer);
+                if (screenDistance < bestScreenDistance - 0.01f
+                    || (Mathf.Abs(screenDistance - bestScreenDistance) <= 0.01f
+                        && hit.distance < bestRayDistance))
                 {
-                    visibleMovement = movement;
-                    hasVisibleMovement = true;
-                }
-                else if (!visible && !hasHiddenMovement)
-                {
-                    hiddenMovement = movement;
-                    hasHiddenMovement = true;
+                    bestMovement = DigSelectedResidentTarget.Movement(destination, visual);
+                    bestScreenDistance = screenDistance;
+                    bestRayDistance = hit.distance;
+                    hasMovement = true;
                 }
             }
 
-            if (hasVisibleMovement)
+            if (hasMovement)
             {
-                return visibleMovement;
-            }
-
-            if (hasHiddenMovement)
-            {
-                return hiddenMovement;
+                return bestMovement;
             }
 
             return excavationCandidate.HasValue
                 ? DigSelectedResidentTarget.Excavation(excavationCandidate.Value)
                 : default;
+        }
+
+        private bool TryResolveSelectedResidentMovementTarget(
+            RaycastHit[] hits,
+            out DigSelectedResidentTarget target)
+        {
+            target = ResolveSelectedResidentTarget(hits);
+            return target.Kind == DigSelectedResidentTargetKind.Movement;
+        }
+
+        private float ResolveMovementPointerDistance(
+            SpatialCellId destination,
+            DigTunnelCellVisual? visual,
+            Vector2 pointer)
+        {
+            Vector3 world = visual == null
+                ? DigTunnelProjection.FloorWorldPosition(destination)
+                : visual.transform.position;
+            Vector3 screen = _camera!.WorldToScreenPoint(world);
+            if (screen.z <= 0f)
+            {
+                return float.PositiveInfinity;
+            }
+
+            float distance = Vector2.Distance(pointer, new Vector2(screen.x, screen.y));
+            if (visual != null)
+            {
+                Renderer? renderer = visual.GetComponent<Renderer>();
+                if (renderer != null && !renderer.enabled)
+                {
+                    distance += 0.75f;
+                }
+            }
+
+            return distance;
         }
     }
 }
