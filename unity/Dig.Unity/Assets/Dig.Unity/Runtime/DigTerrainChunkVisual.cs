@@ -44,6 +44,7 @@ namespace Dig.Unity
                 : IndexFormat.UInt16;
             _mesh.vertices = data.Vertices;
             _mesh.normals = data.Normals;
+            _mesh.colors = data.Colors;
             _mesh.subMeshCount = data.Triangles.Length;
             for (int index = 0; index < data.Triangles.Length; index++)
             {
