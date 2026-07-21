@@ -52,6 +52,7 @@ public sealed class TerrainDepositSkillIntegrationTests
         InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
         InMemoryAgentRepository agents = new InMemoryAgentRepository();
         Assert.True(agents.Add(AgentTestFactory.CreateAgent(id: WorkerId)).IsSuccess);
+        AgentSnapshot before = agents.Get(WorkerId)!.CreateSnapshot(tick: 4);
         CompleteTerrainWorkCommandHandler handler = new CompleteTerrainWorkCommandHandler(
             new InMemoryJobRepository(jobs),
             new InMemoryWorldRepository(world),
@@ -73,9 +74,12 @@ public sealed class TerrainDepositSkillIntegrationTests
             ? AgentSkillCatalog.Metallurgy
             : AgentSkillCatalog.Alchemy;
         AgentSnapshot worker = agents.Get(WorkerId)!.CreateSnapshot(tick: 5);
-        Assert.Equal(AgentSkillCatalog.UnitsPerPoint,
+        Assert.Equal(
+            before.GetSkillLevel(skillId) + AgentSkillCatalog.UnitsPerPoint,
             worker.GetSkillLevel(skillId));
-        Assert.Equal(AgentSkillCatalog.UnitsPerPoint / 4,
+        Assert.Equal(
+            before.GetSkillLevel(AgentSkillCatalog.Logistics)
+                + AgentSkillCatalog.UnitsPerPoint / 4,
             worker.GetSkillLevel(AgentSkillCatalog.Logistics));
     }
 
