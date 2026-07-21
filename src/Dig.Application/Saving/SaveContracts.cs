@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using Dig.Domain.Agents;
 using Dig.Domain.Buildings;
+using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.World;
