@@ -144,6 +144,12 @@ The immutable terrain/deposit/template snapshots and their versions never includ
 
 `DigTerrainCellKey` and `DigTerrainChunkKey` contain `X`, `Y` and `Z`. Mesh generation and exposure checks evaluate all six neighbours.
 
+Base terrain faces meet at exact half-cell boundaries. Deterministic geometric
+roughness is constant for a whole coplanar surface rather than varying per cell,
+so chunk meshes do not expose the authoritative gameplay grid as gaps or lighting
+seams. Cell coordinates remain available only to simulation, navigation and the
+bounded excavation interaction layer.
+
 Front chunks preserve their authoritative `WorldChunkViewModel.Version`. Deep chunks receive deterministic versions from their sorted cell keys, material id and hardness. A changed or removed deep cell therefore invalidates its own chunk and exposed neighbouring faces without rebuilding unrelated chunks.
 
 Dirty chunks are derived from:

@@ -7,7 +7,10 @@ namespace Dig.Unity
 {
     internal static partial class DigTerrainChunkMeshBuilder
     {
-        private const float HalfExtent = 0.47f;
+        // Logical cells are one unit apart. Base terrain faces must meet exactly at
+        // the half-unit boundary; shrinking them exposes the authoritative grid as
+        // dark seams in the presentation mesh.
+        private const float HalfExtent = 0.5f;
         private const float FrontRockDepth = 0.82f;
         private const float DepthLayerScale = 0.94f;
         private const float Roughness = 0.012f;
