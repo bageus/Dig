@@ -15,7 +15,6 @@ namespace Dig.Unity
         internal void Configure(
             SpatialCellId cell,
             bool isVerticalTunnel,
-            Material material,
             bool canExcavateDepth = false)
         {
             Cell = cell;
@@ -24,7 +23,6 @@ namespace Dig.Unity
             name = isVerticalTunnel
                 ? $"Vertical tunnel {cell}"
                 : $"Tunnel {cell}";
-            GetComponent<Renderer>().sharedMaterial = material;
         }
 
         internal void SetCanExcavateDepth(bool canExcavateDepth)

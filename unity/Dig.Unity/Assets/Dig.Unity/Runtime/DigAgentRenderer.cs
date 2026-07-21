@@ -134,6 +134,22 @@ namespace Dig.Unity
             return false;
         }
 
+        internal void SetFreeformDestination(
+            string agentId,
+            Dig.Domain.World.SpatialCellId cell,
+            float offsetX)
+        {
+            if (string.IsNullOrWhiteSpace(agentId))
+            {
+                throw new ArgumentException("Resident id is required.", nameof(agentId));
+            }
+
+            if (_agents.TryGetValue(agentId, out DigAgentVisual? visual))
+            {
+                visual.SetFreeformDestination(cell, offsetX);
+            }
+        }
+
         public DigAgentVisual? Select(DigAgentVisual? agent)
         {
             ClearSelection();

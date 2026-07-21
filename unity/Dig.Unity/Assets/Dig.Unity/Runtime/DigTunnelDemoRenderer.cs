@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Domain.Navigation;
 using Dig.Domain.World;
 using UnityEngine;
@@ -11,14 +12,13 @@ namespace Dig.Unity
     {
         private readonly Dictionary<SpatialCellId, DigTunnelCellVisual> _cells =
             new Dictionary<SpatialCellId, DigTunnelCellVisual>();
-        private readonly HashSet<SpatialCellId> _hiddenHitTargets =
-            new HashSet<SpatialCellId>();
-        private readonly Material?[] _depthMaterials = new Material?[4];
-        private Transform? _root;
-        private Material? _selectedMaterial;
+        private Transform? _cellProxyRoot;
+        private Transform? _movementSurfaceRoot;
+        private Transform? _routeRoot;
         private Material? _routeMaterial;
         private LineRenderer? _route;
-        private DigTunnelCellVisual? _selected;
+        private int _volumeSignature;
+        private bool _digInteractionActive;
 
         internal void Initialize(TunnelNavigationVolume volume)
         {
@@ -27,52 +27,57 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(volume));
             }
 
-            EnsureResources();
-            if (_cells.Count == volume.Cells.Count)
+            EnsureRouteResources();
+            int signature = CalculateSignature(volume);
+            if (_volumeSignature == signature)
             {
                 return;
             }
 
-            TunnelDemoLayout? layout = volume.DemoLayout;
-            foreach (SpatialCellId cell in volume.Cells)
-            {
-                if (_cells.ContainsKey(cell))
-                {
-                    continue;
-                }
+            _volumeSignature = signature;
+            ReconcileCellProxies(volume);
+            RebuildMovementSurfaces(volume);
+        }
 
-                bool vertical = volume.IsVerticalTunnel(cell);
-                bool hiddenHitTarget = vertical || cell.Z == 0;
-                GameObject target = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                target.name = hiddenHitTarget
-                    ? $"Tunnel hit target {cell}"
-                    : $"Walkable plane {cell}";
-                target.transform.SetParent(_root, worldPositionStays: false);
-                target.transform.SetPositionAndRotation(
-                    vertical
-                        ? DigTunnelProjection.CellWorldPosition(cell)
-                        : DigTunnelProjection.FloorWorldPosition(cell),
-                    Quaternion.identity);
-                target.transform.localScale = vertical
-                    ? new Vector3(0.72f, 0.72f, 0.48f)
-                    : new Vector3(
-                        0.84f,
-                        hiddenHitTarget ? 0.14f : DigTunnelProjection.FloorThickness,
-                        DigTunnelProjection.FloorDepth);
-                DigTunnelCellVisual visual = target.AddComponent<DigTunnelCellVisual>();
-                visual.Configure(
-                    cell,
-                    vertical,
-                    ResolveMaterial(cell));
-                ConfigureInteractionCollider(target, cell, vertical, layout);
-                Renderer renderer = target.GetComponent<Renderer>();
-                renderer.enabled = !hiddenHitTarget;
-                _cells.Add(cell, visual);
-                if (hiddenHitTarget)
+        internal void SetDigInteractionActive(bool active)
+        {
+            _digInteractionActive = active;
+            foreach (DigTunnelCellVisual visual in _cells.Values)
+            {
+                Collider? collider = visual.GetComponent<Collider>();
+                if (collider != null)
                 {
-                    _hiddenHitTargets.Add(cell);
+                    collider.enabled = active;
                 }
             }
+
+            if (_movementSurfaceRoot != null)
+            {
+                Collider[] surfaces =
+                    _movementSurfaceRoot.GetComponentsInChildren<Collider>();
+                for (int index = 0; index < surfaces.Length; index++)
+                {
+                    surfaces[index].enabled = !active;
+                }
+            }
+        }
+
+        internal bool TryGetMovementTarget(
+            RaycastHit hit,
+            out DigTunnelMovementDestination destination)
+        {
+            DigTunnelMovementSurface? surface = _digInteractionActive
+                || hit.collider == null
+                ? null
+                : hit.collider.GetComponent<DigTunnelMovementSurface>();
+            if (surface == null)
+            {
+                destination = default;
+                return false;
+            }
+
+            destination = surface.Resolve(hit.point);
+            return true;
         }
 
         internal bool TryGetCell(RaycastHit hit, out DigTunnelCellVisual cell)
@@ -92,25 +97,11 @@ namespace Dig.Unity
 
         internal void Select(DigTunnelCellVisual? cell)
         {
-            if (_selected != null)
-            {
-                Renderer previous = _selected.GetComponent<Renderer>();
-                previous.sharedMaterial = ResolveMaterial(_selected.Cell);
-                previous.enabled = !_hiddenHitTargets.Contains(_selected.Cell);
-            }
-
-            _selected = cell;
-            if (_selected != null)
-            {
-                Renderer current = _selected.GetComponent<Renderer>();
-                current.sharedMaterial = _selectedMaterial;
-                current.enabled = true;
-            }
         }
 
-        internal void ShowRoute(TunnelPath? path)
+        internal void ShowRoute(TunnelPath? path, float destinationOffsetX = 0f)
         {
-            EnsureResources();
+            EnsureRouteResources();
             if (path == null || path.Cells.Count < 2)
             {
                 _route!.positionCount = 0;
@@ -122,87 +113,159 @@ namespace Dig.Unity
             _route.positionCount = path.Cells.Count;
             for (int index = 0; index < path.Cells.Count; index++)
             {
-                _route.SetPosition(
-                    index,
-                    DigTunnelProjection.RouteWorldPosition(path.Cells[index]));
+                SpatialCellId cell = path.Cells[index];
+                Vector3 position = DigTunnelProjection.RouteWorldPosition(cell);
+                if (index == path.Cells.Count - 1)
+                {
+                    position.x += destinationOffsetX;
+                }
+
+                _route.SetPosition(index, position);
             }
         }
 
-        private static void ConfigureInteractionCollider(
-            GameObject target,
-            SpatialCellId cell,
-            bool vertical,
-            TunnelDemoLayout? layout)
+        private void ReconcileCellProxies(TunnelNavigationVolume volume)
         {
-            BoxCollider collider = target.GetComponent<BoxCollider>();
-            Vector3 center = DigTunnelProjection.CellWorldPosition(cell);
-            float height = 0.94f;
-            if (!vertical && IsNaturalCaveFloor(cell, layout))
+            EnsureRoots();
+            HashSet<SpatialCellId> visible = new HashSet<SpatialCellId>(volume.Cells);
+            SpatialCellId[] removed = _cells.Keys
+                .Where(cell => !visible.Contains(cell))
+                .ToArray();
+            for (int index = 0; index < removed.Length; index++)
             {
-                float top = DigTunnelProjection.CellWorldPosition(
-                    new SpatialCellId(
-                        cell.X,
-                        layout!.CaveCeilingY + 1,
-                        cell.Z)).y
-                    + DigTunnelProjection.RockCellHalfExtent;
-                float bottom = DigTunnelProjection.WalkSurfaceY(layout.CaveFloorY);
-                center.y = (top + bottom) * 0.5f;
-                height = Mathf.Max(0.94f, top - bottom);
+                DigTunnelCellVisual visual = _cells[removed[index]];
+                _cells.Remove(removed[index]);
+                Destroy(visual.gameObject);
             }
 
-            SetWorldColliderBounds(
-                target.transform,
-                collider,
-                center,
+            foreach (SpatialCellId cell in volume.Cells)
+            {
+                if (_cells.ContainsKey(cell))
+                {
+                    continue;
+                }
+
+                GameObject proxy = new GameObject($"Dig cell proxy {cell}");
+                proxy.transform.SetParent(_cellProxyRoot, worldPositionStays: true);
+                proxy.transform.SetPositionAndRotation(
+                    DigTunnelProjection.CellWorldPosition(cell),
+                    Quaternion.identity);
+                BoxCollider collider = proxy.AddComponent<BoxCollider>();
+                collider.size = new Vector3(0.94f, 0.94f, 0.50f);
+                collider.enabled = _digInteractionActive;
+                DigTunnelCellVisual visual = proxy.AddComponent<DigTunnelCellVisual>();
+                visual.Configure(cell, volume.IsVerticalTunnel(cell));
+                _cells.Add(cell, visual);
+            }
+        }
+
+        private void RebuildMovementSurfaces(TunnelNavigationVolume volume)
+        {
+            EnsureRoots();
+            if (_movementSurfaceRoot != null)
+            {
+                _movementSurfaceRoot.gameObject.SetActive(false);
+                Destroy(_movementSurfaceRoot.gameObject);
+            }
+
+            _movementSurfaceRoot = new GameObject("Freeform Tunnel Movement Surfaces").transform;
+            _movementSurfaceRoot.SetParent(transform, worldPositionStays: true);
+            CreateSurfaceRuns(
+                volume.Cells.OrderBy(cell => cell.Z)
+                    .ThenBy(cell => cell.Y)
+                    .ThenBy(cell => cell.X),
+                DigTunnelMovementSurfaceKind.Horizontal,
+                sameLine: (left, right) => left.Y == right.Y && left.Z == right.Z,
+                consecutive: (left, right) => right.X == left.X + 1);
+            CreateSurfaceRuns(
+                volume.VerticalCells.OrderBy(cell => cell.Z)
+                    .ThenBy(cell => cell.X)
+                    .ThenBy(cell => cell.Y),
+                DigTunnelMovementSurfaceKind.Vertical,
+                sameLine: (left, right) => left.X == right.X && left.Z == right.Z,
+                consecutive: (left, right) => right.Y == left.Y + 1);
+        }
+
+        private void CreateSurfaceRuns(
+            IEnumerable<SpatialCellId> orderedCells,
+            DigTunnelMovementSurfaceKind kind,
+            Func<SpatialCellId, SpatialCellId, bool> sameLine,
+            Func<SpatialCellId, SpatialCellId, bool> consecutive)
+        {
+            List<SpatialCellId> run = new List<SpatialCellId>();
+            foreach (SpatialCellId cell in orderedCells)
+            {
+                if (run.Count > 0
+                    && (!sameLine(run[run.Count - 1], cell)
+                        || !consecutive(run[run.Count - 1], cell)))
+                {
+                    CreateMovementSurface(run, kind);
+                    run.Clear();
+                }
+
+                run.Add(cell);
+            }
+
+            if (run.Count > 0)
+            {
+                CreateMovementSurface(run, kind);
+            }
+        }
+
+        private void CreateMovementSurface(
+            IReadOnlyCollection<SpatialCellId> run,
+            DigTunnelMovementSurfaceKind kind)
+        {
+            SpatialCellId[] cells = run.OrderBy(cell => cell).ToArray();
+            Bounds bounds = ResolveSurfaceBounds(cells, kind);
+            GameObject surfaceObject = new GameObject(
+                $"{kind} movement surface {cells[0]}..{cells[cells.Length - 1]}");
+            surfaceObject.transform.SetParent(_movementSurfaceRoot, worldPositionStays: true);
+            surfaceObject.transform.SetPositionAndRotation(bounds.center, Quaternion.identity);
+            BoxCollider collider = surfaceObject.AddComponent<BoxCollider>();
+            collider.size = bounds.size;
+            collider.enabled = !_digInteractionActive;
+            DigTunnelMovementSurface surface =
+                surfaceObject.AddComponent<DigTunnelMovementSurface>();
+            surface.Configure(kind, cells);
+        }
+
+        private static Bounds ResolveSurfaceBounds(
+            IReadOnlyList<SpatialCellId> cells,
+            DigTunnelMovementSurfaceKind kind)
+        {
+            Vector3 first = DigTunnelProjection.CellWorldPosition(cells[0]);
+            Vector3 last = DigTunnelProjection.CellWorldPosition(cells[cells.Count - 1]);
+            if (kind == DigTunnelMovementSurfaceKind.Horizontal)
+            {
+                float width = Mathf.Abs(last.x - first.x) + 0.94f;
+                return new Bounds(
+                    new Vector3((first.x + last.x) * 0.5f, first.y, first.z),
+                    new Vector3(width, 0.94f, 0.50f));
+            }
+
+            float height = Mathf.Abs(last.y - first.y) + 0.94f;
+            return new Bounds(
+                new Vector3(first.x, (first.y + last.y) * 0.5f, first.z),
                 new Vector3(0.94f, height, 0.50f));
         }
 
-        private static bool IsNaturalCaveFloor(
-            SpatialCellId cell,
-            TunnelDemoLayout? layout)
+        private void EnsureRoots()
         {
-            return layout != null
-                && cell.Y == layout.CaveFloorY
-                && cell.X >= layout.CaveMinX
-                && cell.X <= layout.CaveMaxX;
-        }
-
-        private static void SetWorldColliderBounds(
-            Transform target,
-            BoxCollider collider,
-            Vector3 worldCenter,
-            Vector3 worldSize)
-        {
-            Vector3 scale = target.lossyScale;
-            collider.center = target.InverseTransformPoint(worldCenter);
-            collider.size = new Vector3(
-                worldSize.x / Mathf.Max(0.001f, Mathf.Abs(scale.x)),
-                worldSize.y / Mathf.Max(0.001f, Mathf.Abs(scale.y)),
-                worldSize.z / Mathf.Max(0.001f, Mathf.Abs(scale.z)));
-        }
-
-        private Material ResolveMaterial(SpatialCellId cell)
-        {
-            return _depthMaterials[cell.Z]!;
-        }
-
-        private void EnsureResources()
-        {
-            if (_root == null)
-            {
-                _root = new GameObject("Layered Tunnel Targets").transform;
-                _root.SetParent(transform, worldPositionStays: false);
-            }
-
-            if (_depthMaterials[0] != null)
+            if (_cellProxyRoot != null)
             {
                 return;
             }
 
-            Shader lit = Shader.Find("Universal Render Pipeline/Lit");
-            if (lit == null)
+            _cellProxyRoot = new GameObject("Tunnel Dig Cell Proxies").transform;
+            _cellProxyRoot.SetParent(transform, worldPositionStays: true);
+        }
+
+        private void EnsureRouteResources()
+        {
+            if (_route != null)
             {
-                lit = Shader.Find("Standard");
+                return;
             }
 
             Shader unlit = Shader.Find("Universal Render Pipeline/Unlit");
@@ -211,37 +274,20 @@ namespace Dig.Unity
                 unlit = Shader.Find("Unlit/Color");
             }
 
-            if (lit == null || unlit == null)
+            if (unlit == null)
             {
                 throw new InvalidOperationException(
-                    "Tunnel rendering requires lit and unlit shaders.");
+                    "Tunnel route rendering requires a supported unlit shader.");
             }
 
-            Color[] colors =
-            {
-                new Color(0.20f, 0.52f, 0.66f, 1f),
-                new Color(0.25f, 0.62f, 0.46f, 1f),
-                new Color(0.70f, 0.50f, 0.22f, 1f),
-                new Color(0.55f, 0.34f, 0.68f, 1f),
-            };
-            for (int index = 0; index < _depthMaterials.Length; index++)
-            {
-                _depthMaterials[index] = CreateMaterial(
-                    lit,
-                    $"Tunnel depth {index}",
-                    colors[index]);
-            }
-
-            _selectedMaterial = CreateMaterial(
-                lit,
-                "Selected tunnel destination",
-                Color.white);
             _routeMaterial = CreateMaterial(
                 unlit,
                 "Tunnel route",
                 new Color(0.35f, 0.95f, 1f, 1f));
+            _routeRoot = new GameObject("Tunnel Route Overlay").transform;
+            _routeRoot.SetParent(transform, worldPositionStays: true);
             GameObject routeObject = new GameObject("Selected tunnel route");
-            routeObject.transform.SetParent(_root, worldPositionStays: false);
+            routeObject.transform.SetParent(_routeRoot, worldPositionStays: true);
             _route = routeObject.AddComponent<LineRenderer>();
             _route.sharedMaterial = _routeMaterial;
             _route.useWorldSpace = true;
@@ -265,16 +311,22 @@ namespace Dig.Unity
 
         private void OnDestroy()
         {
-            for (int index = 0; index < _depthMaterials.Length; index++)
-            {
-                if (_depthMaterials[index] != null)
-                {
-                    Destroy(_depthMaterials[index]);
-                }
-            }
-
-            DestroyMaterial(_selectedMaterial);
             DestroyMaterial(_routeMaterial);
+        }
+
+        private static int CalculateSignature(TunnelNavigationVolume volume)
+        {
+            unchecked
+            {
+                int hash = 17;
+                foreach (SpatialCellId cell in volume.Cells)
+                {
+                    hash = (hash * 31) + cell.GetHashCode();
+                    hash = (hash * 31) + (volume.IsVerticalTunnel(cell) ? 1 : 0);
+                }
+
+                return hash;
+            }
         }
 
         private void DestroyMaterial(Material? material)

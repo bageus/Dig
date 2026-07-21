@@ -49,7 +49,7 @@ namespace Dig.Unity
 
             DisableCaveRoomPlanning();
             _excavationMode = mode;
-            _renderer!.SetTunnelDigInteractionActive(UsesTunnelCellInteraction(mode));
+            SetTunnelDigInteractionActive(UsesTunnelCellInteraction(mode));
             ResetExcavationStroke();
             _hud!.SetStatus(mode switch
             {
@@ -72,7 +72,7 @@ namespace Dig.Unity
         private void DisableExcavationDrawing()
         {
             _excavationMode = DigExcavationDrawingMode.None;
-            _renderer?.SetTunnelDigInteractionActive(active: false);
+            SetTunnelDigInteractionActive(active: false);
             ResetExcavationStroke();
             DisableCaveRoomPlanning();
         }

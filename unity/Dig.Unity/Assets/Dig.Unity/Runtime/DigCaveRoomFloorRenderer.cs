@@ -10,8 +10,8 @@ namespace Dig.Unity
     public sealed class DigCaveRoomFloorRenderer : MonoBehaviour
     {
         private readonly HashSet<SpatialCellId> _cells = new HashSet<SpatialCellId>();
-        private readonly Material?[] _materials = new Material?[4];
         private Transform? _root;
+        private bool _digInteractionActive;
 
         internal void AddRoomFloor(CaveRoomPlan plan)
         {
@@ -20,7 +20,7 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(plan));
             }
 
-            EnsureResources();
+            EnsureRoot();
             int minX = plan.Entrance.X - ((plan.Preset.BaseWidth - 1) / 2);
             for (int z = 0; z < plan.Preset.Depth; z++)
             {
@@ -35,26 +35,34 @@ namespace Dig.Unity
                         continue;
                     }
 
-                    GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                    floor.name = z == 0
-                        ? $"Cave room hit target {cell}"
-                        : $"Cave room floor {cell}";
+                    GameObject floor = new GameObject($"Cave room dig proxy {cell}");
                     floor.transform.SetParent(_root, worldPositionStays: true);
                     floor.transform.SetPositionAndRotation(
                         DigTunnelProjection.FloorWorldPosition(cell),
                         Quaternion.identity);
-                    floor.transform.localScale = new Vector3(
-                        0.84f,
-                        DigTunnelProjection.FloorThickness,
-                        DigTunnelProjection.FloorDepth);
+                    BoxCollider collider = floor.AddComponent<BoxCollider>();
                     DigTunnelCellVisual visual = floor.AddComponent<DigTunnelCellVisual>();
                     visual.Configure(
                         cell,
-                        isVerticalTunnel: false,
-                        material: _materials[z]!);
+                        isVerticalTunnel: false);
                     ConfigureInteractionCollider(floor, plan, cell);
-                    floor.GetComponent<Renderer>().enabled = z > 0;
+                    collider.enabled = _digInteractionActive;
                 }
+            }
+        }
+
+        internal void SetDigInteractionActive(bool active)
+        {
+            _digInteractionActive = active;
+            if (_root == null)
+            {
+                return;
+            }
+
+            BoxCollider[] colliders = _root.GetComponentsInChildren<BoxCollider>();
+            for (int index = 0; index < colliders.Length; index++)
+            {
+                colliders[index].enabled = active;
             }
         }
 
@@ -102,57 +110,13 @@ namespace Dig.Unity
                 size.z / Mathf.Max(0.001f, Mathf.Abs(scale.z)));
         }
 
-        private void EnsureResources()
+        private void EnsureRoot()
         {
             if (_root == null)
             {
                 _root = new GameObject("Completed Cave Room Floors").transform;
                 _root.SetParent(transform, worldPositionStays: true);
                 _root.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
-            }
-
-            if (_materials[0] != null)
-            {
-                return;
-            }
-
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
-            if (shader == null)
-            {
-                shader = Shader.Find("Standard");
-            }
-
-            if (shader == null)
-            {
-                throw new InvalidOperationException(
-                    "Cave room floors require a supported lit shader.");
-            }
-
-            Color[] colors =
-            {
-                new Color(0.20f, 0.52f, 0.66f, 1f),
-                new Color(0.25f, 0.62f, 0.46f, 1f),
-                new Color(0.70f, 0.50f, 0.22f, 1f),
-                new Color(0.55f, 0.34f, 0.68f, 1f),
-            };
-            for (int index = 0; index < _materials.Length; index++)
-            {
-                _materials[index] = new Material(shader)
-                {
-                    name = $"Cave room depth {index}",
-                    color = colors[index],
-                };
-            }
-        }
-
-        private void OnDestroy()
-        {
-            for (int index = 0; index < _materials.Length; index++)
-            {
-                if (_materials[index] != null)
-                {
-                    Destroy(_materials[index]);
-                }
             }
         }
     }

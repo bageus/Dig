@@ -3,6 +3,7 @@ using Dig.Domain.Inventory;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Inventory;
+using Dig.Presentation.Navigation;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -30,6 +31,10 @@ public sealed partial class DigAgentVisual : MonoBehaviour
     private int _currentX;
     private int _currentY;
     private int _currentZ;
+    private double _previousVisualX;
+    private double _currentVisualX;
+    private SpatialCellId? _freeformDestinationCell;
+    private float _freeformDestinationOffsetX;
     private float _elapsed;
     private float _duration;
 
@@ -70,6 +75,8 @@ public sealed partial class DigAgentVisual : MonoBehaviour
         _currentX = model.CellX;
         _currentY = model.CellY;
         _currentZ = model.CellZ;
+        _previousVisualX = model.CellX;
+        _currentVisualX = model.CellX;
         transform.SetPositionAndRotation(ToWorld(model.CellX, model.CellY, model.CellZ),
             Quaternion.identity);
     }
@@ -81,15 +88,49 @@ public sealed partial class DigAgentVisual : MonoBehaviour
             || _currentZ != model.CellZ;
         ApplyAction(moving);
         if (!moving) return;
+        if (_freeformDestinationCell.HasValue
+            && _currentX == _freeformDestinationCell.Value.X
+            && _currentY == _freeformDestinationCell.Value.Y
+            && _currentZ == _freeformDestinationCell.Value.Z)
+        {
+            _freeformDestinationCell = null;
+            _freeformDestinationOffsetX = 0f;
+        }
+
         _previousX = _currentX;
         _previousY = _currentY;
         _previousZ = _currentZ;
+        _previousVisualX = _currentVisualX;
         _currentX = model.CellX;
         _currentY = model.CellY;
         _currentZ = model.CellZ;
+        _currentVisualX = ResolveVisualX(model.CellX, model.CellY, model.CellZ);
         _elapsed = 0f;
         _duration = Mathf.Max(0.01f, duration);
-        Face(ToWorld(_currentX, _currentY, _currentZ) - transform.position);
+        Face(ToWorld(_currentVisualX, _currentY, _currentZ) - transform.position);
+    }
+
+    internal void SetFreeformDestination(SpatialCellId cell, float offsetX)
+    {
+        float limit = (float)TunnelMovementTargetResolver.MaximumOffsetX;
+        _freeformDestinationCell = cell;
+        _freeformDestinationOffsetX = Mathf.Clamp(offsetX, -limit, limit);
+        if (_currentX == cell.X && _currentY == cell.Y && _currentZ == cell.Z)
+        {
+            _previousVisualX = cell.X + _freeformDestinationOffsetX;
+            _currentVisualX = _previousVisualX;
+            transform.position = ToWorld(_currentVisualX, cell.Y, cell.Z);
+        }
+    }
+
+    private double ResolveVisualX(int cellX, int cellY, int cellZ)
+    {
+        return _freeformDestinationCell.HasValue
+            && _freeformDestinationCell.Value.X == cellX
+            && _freeformDestinationCell.Value.Y == cellY
+            && _freeformDestinationCell.Value.Z == cellZ
+                ? cellX + _freeformDestinationOffsetX
+                : cellX;
     }
 
     internal void SetEquipment(ResidentEquipmentViewModel? equipment,
@@ -216,9 +257,12 @@ public sealed partial class DigAgentVisual : MonoBehaviour
         return ToWorld(cell.X, cell.Y, cell.Z);
     }
 
-    private static Vector3 ToWorld(float cellX, float cellY, float cellZ)
+    private static Vector3 ToWorld(double cellX, double cellY, double cellZ)
     {
-        return DigTunnelProjection.ResidentWorldPosition(cellX, cellY, cellZ);
+        return DigTunnelProjection.ResidentWorldPosition(
+            (float)cellX,
+            (float)cellY,
+            (float)cellZ);
     }
 }
 }

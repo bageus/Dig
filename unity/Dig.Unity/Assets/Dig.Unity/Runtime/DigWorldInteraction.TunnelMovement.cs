@@ -12,7 +12,17 @@ namespace Dig.Unity
 
         internal void SetTunnelMovement(DigTunnelDemoRenderer tunnelRenderer)
         {
-            _tunnelRenderer = tunnelRenderer;
+            _tunnelRenderer = tunnelRenderer
+                ?? throw new ArgumentNullException(nameof(tunnelRenderer));
+            _tunnelRenderer.SetDigInteractionActive(
+                UsesTunnelCellInteraction(_excavationMode));
+        }
+
+        private void SetTunnelDigInteractionActive(bool active)
+        {
+            _renderer?.SetTunnelDigInteractionActive(active);
+            _tunnelRenderer?.SetDigInteractionActive(active);
+            _caveRoomFloorRenderer?.SetDigInteractionActive(active);
         }
 
         private void SynchronizeTunnelInteractionTargets()
@@ -58,31 +68,24 @@ namespace Dig.Unity
                 return false;
             }
 
-            if (target.Visual != null)
-            {
-                _tunnelRenderer.Select(target.Visual);
-            }
-            else
-            {
-                _tunnelRenderer.Select(null);
-            }
-
             SpatialCellId destination = target.MovementCell;
             Result result = residentIds.Count == 1
                 ? _simulation!.MoveResidentThroughTunnel(
                     residentIds[0],
                     destination,
+                    target.MovementOffsetX,
                     _tunnelRenderer)
                 : _simulation!.MoveResidentsThroughTunnel(
                     residentIds,
                     destination,
+                    target.MovementOffsetX,
                     _tunnelRenderer);
             _hud!.SetCommandResult(result);
             if (result.IsSuccess)
             {
                 _hud.SetStatus(
-                    $"Moving {residentIds.Count} dwarf(s) to "
-                    + $"X={destination.X}, Y={destination.Y}, Z={destination.Z}.");
+                    $"Moving {residentIds.Count} dwarf(s) to the selected point "
+                    + $"through hidden cell X={destination.X}, Y={destination.Y}, Z={destination.Z}.");
             }
 
             return true;

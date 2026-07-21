@@ -21,6 +21,8 @@ namespace Dig.Unity
         {
             _caveRoomPreviewRenderer = previewRenderer;
             _caveRoomFloorRenderer = floorRenderer;
+            _caveRoomFloorRenderer.SetDigInteractionActive(
+                UsesTunnelCellInteraction(_excavationMode));
         }
 
         internal void SetCaveRoomPlanningPreset(CaveRoomPresetKind kind)
@@ -36,7 +38,7 @@ namespace Dig.Unity
             ResetExcavationStroke();
             _caveRoomPreset = kind;
             _hoveredCaveRoomPlan = null;
-            _renderer!.SetTunnelDigInteractionActive(active: true);
+            SetTunnelDigInteractionActive(active: true);
             CaveRoomPreset preset = CaveRoomPresetCatalog.Get(kind);
             _hud!.SetStatus(
                 $"{kind} cave active: base {preset.BaseWidth}, top {preset.TopWidth}, " +
@@ -48,7 +50,7 @@ namespace Dig.Unity
             _caveRoomPreset = null;
             _hoveredCaveRoomPlan = null;
             _caveRoomPreviewRenderer?.Clear();
-            _renderer?.SetTunnelDigInteractionActive(
+            SetTunnelDigInteractionActive(
                 UsesTunnelCellInteraction(_excavationMode));
         }
 

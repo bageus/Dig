@@ -68,15 +68,16 @@ After a direct route validates, the terrain-work adapter releases every active J
 Unity owns disposable presentation state only:
 
 - collider-free chunk meshes for the current visual rock volume;
-- horizontal tunnel and completed-room floor targets;
-- selectable shaft and connector cells;
+- invisible continuous movement surfaces built from contiguous open-cell runs;
+- disabled-by-default exact tunnel/room cell proxies used only by excavation modes;
 - non-interactive cave shell and back walls;
 - world-space route rendering;
 - interpolation through validated `X/Y/Z` route cells;
+- a bounded within-cell X offset for the final freeform movement point;
 - resident selection visuals and an immutable ordered selection-id snapshot;
 - the drag-selection rectangle.
 
-The terrain mesh is never a movement or cell-picking authority. Movement destinations come from dedicated `DigTunnelDemoRenderer` and `DigCaveRoomFloorRenderer` visuals.
+The terrain mesh is never a movement or cell-picking authority. `DigTunnelDemoRenderer` owns invisible movement surfaces and maps their continuous hit point to a hidden navigation cell. `DigCaveRoomFloorRenderer` owns only excavation proxies and renders no per-cell floor geometry.
 
 ## Input
 
@@ -84,13 +85,13 @@ The terrain mesh is never a movement or cell-picking authority. Movement destina
 2. `Shift + LMB` on a dwarf adds it to the current group or removes it.
 3. Press and hold LMB on the world, then drag beyond the selection threshold to select visible dwarfs inside the rectangle.
 4. A drag without Shift replaces the current selection; `Shift + drag` adds residents not already selected.
-5. A short LMB click on a dedicated walkable tunnel or room-floor target sends the current group.
+5. A short LMB click anywhere on an invisible walkable tunnel surface sends the current group; the route uses hidden cells while the final visual position keeps the clicked within-cell offset.
 6. An ordinary terrain click creates no cell target and issues no movement command.
 7. Tunnel, Delete, Depth and cave-room planning temporarily enable the bounded front-cell proxies used by excavation only.
 8. RMB in the world cancels active marquee, excavation/cave mode, building preview, route and object selections.
 9. `Ctrl + mouse` orbits the side-view camera when depth separation is needed.
 
-The movement resolver checks `DigTunnelDemoRenderer` and `DigCaveRoomFloorRenderer`. It does not fall back to `DigWorldRenderer`, chunk meshes or hidden front-cell proxies. A deferred short click from marquee input follows the same resolver.
+The movement resolver checks only renderer-free surfaces from `DigTunnelDemoRenderer`. It does not fall back to `DigWorldRenderer`, chunk meshes, completed-room dig proxies or hidden front-cell proxies. A deferred short click from marquee input follows the same resolver.
 
 The marquee does not start from resident, Job, building or world-item colliders, so normal object clicks are not stolen. RMB over the HUD is shielded from world input. The cancel path is resolved before excavation, cave placement or building placement can consume the pointer event.
 

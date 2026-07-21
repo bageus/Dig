@@ -102,7 +102,7 @@ def check_cave_room_runtime_contracts(
     errors.extend(require_fragments(
         room_floor,
         room_floor_text,
-        "ordinary completed cave room floor rendering",
+        "completed cave room dig-only interaction proxies",
         (
             "AddRoomFloor",
             "plan.Preset.BaseWidth",
@@ -110,28 +110,35 @@ def check_cave_room_runtime_contracts(
             "DigTunnelCellVisual",
             "FloorWorldPosition",
             "isVerticalTunnel: false",
-            "material: _materials[z]!",
+            "SetDigInteractionActive",
+            "collider.enabled = _digInteractionActive",
         ),
     ))
     for fragment in ("_backWalls", "ReplaceBackWall", "Cave room back wall", "_backWallMaterial"):
         if fragment in room_floor_text:
             errors.append(f"{room_floor}: obsolete room wall visual remains: {fragment!r}")
+    for fragment in ("GameObject.CreatePrimitive", "new Material(", "GetComponent<Renderer>"):
+        if fragment in room_floor_text:
+            errors.append(f"{room_floor}: visible per-cell room floor remains: {fragment!r}")
 
     tunnel_text = texts.get(tunnel_renderer, "")
     errors.extend(require_fragments(
         tunnel_renderer,
         tunnel_text,
-        "invisible tunnel hit targets and visible depth floors",
+        "renderer-free movement surfaces and exact dig proxies",
         (
-            "Tunnel hit target",
-            "hiddenHitTarget = vertical || cell.Z == 0",
-            "renderer.enabled = !hiddenHitTarget",
-            "Walkable plane",
-            "FloorWorldPosition",
-            "Layered Tunnel Targets",
+            "Freeform Tunnel Movement Surfaces",
+            "Tunnel Dig Cell Proxies",
+            "TryGetMovementTarget",
+            "SetDigInteractionActive",
+            "RebuildMovementSurfaces",
         ),
     ))
-    for fragment in ("CreateCaveShell", "CreateShellPart", "Cave back wall", "_caveMaterial", "_verticalMaterial"):
+    for fragment in (
+        "CreateCaveShell", "CreateShellPart", "Cave back wall",
+        "_caveMaterial", "_verticalMaterial", "Walkable plane",
+        "GameObject.CreatePrimitive",
+    ):
         if fragment in tunnel_text:
             errors.append(f"{tunnel_renderer}: obsolete tunnel visual remains: {fragment!r}")
 

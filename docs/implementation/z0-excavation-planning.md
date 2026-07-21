@@ -26,9 +26,9 @@ Combined meshes are used instead of one GameObject per rock cell. The rock rende
 
 Direct movement accepts every renderer that owns a walkable destination:
 
-- `DigTunnelDemoRenderer` supplies `SpatialCellId` values for original layered cells, shaft cells, and manually opened depth cells.
-- `DigWorldRenderer.TryGetWalkSurface` supplies `SpatialCellId(X,Y,0)` for supported front-floor cells.
-- `DigCaveRoomFloorRenderer` supplies deep base-row cells created after a room is completed.
+- `DigTunnelDemoRenderer` builds invisible continuous surfaces over original layered cells, synchronized Z0 cells, shafts, completed-room floors and manually opened depth cells.
+- the continuous pointer hit resolves to a hidden `SpatialCellId` plus a bounded presentation-only X offset;
+- `DigWorldRenderer` and `DigCaveRoomFloorRenderer` expose exact cells only while an excavation tool is active and never act as ordinary movement targets.
 - All routes execute through the same single-resident or atomic group tunnel movement commands.
 - Additional open cells are added through `TunnelNavigationVolume.WithAdditionalOpenCells`.
 

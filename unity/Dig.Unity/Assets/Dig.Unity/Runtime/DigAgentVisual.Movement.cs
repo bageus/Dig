@@ -11,13 +11,13 @@ public sealed partial class DigAgentVisual
         _elapsed = Mathf.Min(_duration, _elapsed + Time.deltaTime);
         double progress = _elapsed / _duration;
         AgentInterpolatedSpatialPosition position = AgentSpatialPositionInterpolator.Interpolate(
-            _previousX, _previousY, _previousZ,
-            _currentX, _currentY, _currentZ, progress);
+            _previousVisualX, _previousY, _previousZ,
+            _currentVisualX, _currentY, _currentZ, progress);
         transform.position = ToWorld((float)position.X, (float)position.Y, (float)position.Z);
         if (_elapsed >= _duration)
         {
             _duration = 0f;
-            transform.position = ToWorld(_currentX, _currentY, _currentZ);
+            transform.position = ToWorld(_currentVisualX, _currentY, _currentZ);
             ApplyAction(isMoving: false);
         }
     }

@@ -18,18 +18,21 @@ namespace Dig.Unity
             DigSelectedResidentTargetKind kind,
             CellId excavationCell,
             SpatialCellId movementCell,
-            DigTunnelCellVisual? visual)
+            float movementOffsetX,
+            Vector3 movementWorldPosition)
         {
             Kind = kind;
             ExcavationCell = excavationCell;
             MovementCell = movementCell;
-            Visual = visual;
+            MovementOffsetX = movementOffsetX;
+            MovementWorldPosition = movementWorldPosition;
         }
 
         internal DigSelectedResidentTargetKind Kind { get; }
         internal CellId ExcavationCell { get; }
         internal SpatialCellId MovementCell { get; }
-        internal DigTunnelCellVisual? Visual { get; }
+        internal float MovementOffsetX { get; }
+        internal Vector3 MovementWorldPosition { get; }
 
         internal static DigSelectedResidentTarget Excavation(CellId cell)
         {
@@ -37,18 +40,19 @@ namespace Dig.Unity
                 DigSelectedResidentTargetKind.Excavation,
                 cell,
                 default,
-                null);
+                0f,
+                default);
         }
 
         internal static DigSelectedResidentTarget Movement(
-            SpatialCellId cell,
-            DigTunnelCellVisual? visual)
+            DigTunnelMovementDestination destination)
         {
             return new DigSelectedResidentTarget(
                 DigSelectedResidentTargetKind.Movement,
                 default,
-                cell,
-                visual);
+                destination.Cell,
+                destination.OffsetX,
+                destination.WorldPosition);
         }
     }
 
@@ -96,24 +100,22 @@ namespace Dig.Unity
                     excavationCandidate = ResolveExcavationTarget(hit);
                 }
 
-                if (!TryResolveTunnelDestination(
+                if (!_tunnelRenderer!.TryGetMovementTarget(
                         hit,
-                        out SpatialCellId destination,
-                        out DigTunnelCellVisual? visual)
-                    || !seenMovementCells.Add(destination))
+                        out DigTunnelMovementDestination destination)
+                    || !seenMovementCells.Add(destination.Cell))
                 {
                     continue;
                 }
 
                 float screenDistance = ResolveMovementPointerDistance(
-                    destination,
-                    visual,
+                    destination.WorldPosition,
                     pointer);
                 if (screenDistance < bestScreenDistance - 0.01f
                     || (Mathf.Abs(screenDistance - bestScreenDistance) <= 0.01f
                         && hit.distance < bestRayDistance))
                 {
-                    bestMovement = DigSelectedResidentTarget.Movement(destination, visual);
+                    bestMovement = DigSelectedResidentTarget.Movement(destination);
                     bestScreenDistance = screenDistance;
                     bestRayDistance = hit.distance;
                     hasMovement = true;
@@ -139,30 +141,16 @@ namespace Dig.Unity
         }
 
         private float ResolveMovementPointerDistance(
-            SpatialCellId destination,
-            DigTunnelCellVisual? visual,
+            Vector3 world,
             Vector2 pointer)
         {
-            Vector3 world = visual == null
-                ? DigTunnelProjection.FloorWorldPosition(destination)
-                : visual.transform.position;
             Vector3 screen = _camera!.WorldToScreenPoint(world);
             if (screen.z <= 0f)
             {
                 return float.PositiveInfinity;
             }
 
-            float distance = Vector2.Distance(pointer, new Vector2(screen.x, screen.y));
-            if (visual != null)
-            {
-                Renderer? renderer = visual.GetComponent<Renderer>();
-                if (renderer != null && !renderer.enabled)
-                {
-                    distance += 0.75f;
-                }
-            }
-
-            return distance;
+            return Vector2.Distance(pointer, new Vector2(screen.x, screen.y));
         }
     }
 }

@@ -117,7 +117,9 @@ def check_runtime_regression_contracts(
             "SynchronizeTunnelInteractionTargets(",
             "tunnelRenderer.Initialize(AgentSession.TunnelVolume)")),
         (tunnel_renderer, "incremental tunnel hit targets", (
-            "_cells.Count == volume.Cells.Count",
+            "CalculateSignature(volume)",
+            "ReconcileCellProxies(volume)",
+            "RebuildMovementSurfaces(volume)",
             "GetComponentInParent<DigTunnelCellVisual>()")),
         (job_visual, "terminal jobs are presentation-only", (
             "_interactionCollider = GetComponent<Collider>();",

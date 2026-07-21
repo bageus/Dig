@@ -21,6 +21,7 @@ def check_tunnel_and_group_contracts(
     selection_path = runtime_root / "DigWorldInteraction.Selection.cs"
     projection_path = runtime_root / "DigTunnelProjection.cs"
     tunnel_renderer_path = runtime_root / "DigTunnelDemoRenderer.cs"
+    movement_surface_path = runtime_root / "DigTunnelMovementSurface.cs"
     world_renderer_path = runtime_root / "DigWorldRenderer.cs"
     agent_session_path = runtime_root / "DigAgentSession.TunnelMovement.cs"
     driver_path = runtime_root / "DigAgentSimulationDriverBase.TunnelMovement.cs"
@@ -182,15 +183,17 @@ def check_tunnel_and_group_contracts(
     errors.extend(require_fragments(
         tunnel_renderer_path,
         tunnel_renderer,
-        "clickable horizontal and vertical tunnel targets",
+        "hidden-grid freeform movement and dig-only cell targets",
         (
-            "Walkable plane",
-            "Tunnel hit target",
-            "hiddenHitTarget = vertical || cell.Z == 0",
-            "renderer.enabled = !hiddenHitTarget",
+            "Freeform Tunnel Movement Surfaces",
+            "Tunnel Dig Cell Proxies",
+            "CreateSurfaceRuns(",
+            "DigTunnelMovementSurfaceKind.Horizontal",
+            "DigTunnelMovementSurfaceKind.Vertical",
+            "TryGetMovementTarget(",
+            "collider.enabled = !_digInteractionActive",
+            "collider.enabled = _digInteractionActive",
             "DigTunnelProjection.CellWorldPosition(cell)",
-            "DigTunnelProjection.FloorWorldPosition(cell)",
-            "Layered Tunnel Targets",
             "_route.useWorldSpace = true",
         ),
     ))
@@ -199,6 +202,23 @@ def check_tunnel_and_group_contracts(
         tunnel_renderer,
         "visible synthetic shaft and cave frame geometry",
         ('"Shaft {cell}"', "Cave ceiling", "Cave back wall", "CreateCaveShell", "_verticalMaterial"),
+    ))
+    errors.extend(reject_fragments(
+        tunnel_renderer_path,
+        tunnel_renderer,
+        "visible per-cell tunnel floors",
+        ("Walkable plane", "GameObject.CreatePrimitive", "_depthMaterials"),
+    ))
+    errors.extend(require_fragments(
+        movement_surface_path,
+        texts.get(movement_surface_path, ""),
+        "continuous point to hidden cell resolution",
+        (
+            "TunnelMovementTargetResolver",
+            "TunnelMovementTarget target = _resolver.Resolve(",
+            "target.Cell.X + offsetX",
+            "DigTunnelMovementDestination",
+        ),
     ))
     errors.extend(require_fragments(
         world_renderer_path,
