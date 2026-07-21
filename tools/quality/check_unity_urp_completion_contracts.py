@@ -87,6 +87,27 @@ def main() -> int:
                 f"builtin {package_version}"
             )
 
+    editor_asmdef_path = EDITOR / "Dig.Unity.Editor.asmdef"
+    try:
+        editor_asmdef = json.loads(read(editor_asmdef_path))
+    except json.JSONDecodeError as error:
+        errors.append(
+            f"{editor_asmdef_path.relative_to(ROOT)}: invalid assembly definition: {error}"
+        )
+        editor_asmdef = {}
+    editor_references = editor_asmdef.get("references", [])
+    urp_runtime_guid = "GUID:15fc0a57446b3144c949da3e2b9737a9"
+    if urp_runtime_guid not in editor_references:
+        errors.append(
+            f"{editor_asmdef_path.relative_to(ROOT)}: URP runtime must be referenced "
+            "by its stable assembly-definition GUID"
+        )
+    if "Unity.RenderPipelines.Universal.Runtime" in editor_references:
+        errors.append(
+            f"{editor_asmdef_path.relative_to(ROOT)}: URP runtime string reference "
+            "must not replace the stable GUID reference"
+        )
+
     configurator = EDITOR / "DigUrpProjectConfigurator.cs"
     errors.extend(require(configurator, (
         "UniversalRendererData", "UniversalRenderPipelineAsset.Create(",
