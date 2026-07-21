@@ -70,6 +70,9 @@ jobs:
       - name: Validate stylized rendering and VFX
         run: python tools/quality/check_unity_stylized_render_vfx_contracts.py
 
+      - name: Validate URP completion contracts
+        run: python tools/quality/check_unity_urp_completion_contracts.py
+
       - name: Validate presentation effect projection
         run: python tools/quality/check_unity_presentation_effect_projection_contracts.py
 
