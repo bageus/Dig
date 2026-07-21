@@ -121,11 +121,22 @@ public sealed partial class DigAgentVisual : MonoBehaviour
     internal void SetSelected(bool selected)
     {
         _selected = selected;
-        _rig?.SetSelected(selected);
+        if (_rig != null)
+        {
+            _rig.SetSelected(selected);
+        }
+        else
+        {
+            Renderer[] renderers = GetComponentsInChildren<Renderer>(includeInactive: true);
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                renderers[index].sharedMaterial = selected
+                    ? _selectedMaterial
+                    : _normalMaterial;
+            }
+        }
+
         _hoverApplied = false;
-        Renderer renderer = GetComponent<Renderer>();
-        if (renderer != null)
-            renderer.sharedMaterial = selected ? _selectedMaterial : _normalMaterial;
         if (_hovered && !_selected) ApplyHover();
     }
 

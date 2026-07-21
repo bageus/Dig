@@ -10,7 +10,6 @@ namespace Dig.Unity
         internal const float RockCellHalfExtent = 0.48f;
         internal const float FloorThickness = 0.08f;
         internal const float FloorDepth = 0.45f;
-        internal const float ResidentHalfHeight = 0.62f;
         internal const float ResidentFootSink = 0.02f;
         internal const float ResidentDepthOffset = 0f;
         internal const float RouteHeight = 0.10f;
@@ -44,7 +43,10 @@ namespace Dig.Unity
         {
             return new Vector3(
                 cellX,
-                WalkSurfaceY(cellY) + ResidentHalfHeight - ResidentFootSink,
+                // Resident and creature roots are authored at their feet. Keeping the
+                // authoritative root on the walk surface also keeps root colliders and
+                // authored rigs aligned; visual height belongs to the child rig.
+                WalkSurfaceY(cellY) - ResidentFootSink,
                 DepthOrigin + (cellZ * DepthSpacing) + ResidentDepthOffset);
         }
 
