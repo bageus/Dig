@@ -28,6 +28,11 @@ namespace Dig.Unity
             }
 
             EnsureResources();
+            if (_cells.Count == volume.Cells.Count)
+            {
+                return;
+            }
+
             TunnelDemoLayout? layout = volume.DemoLayout;
             foreach (SpatialCellId cell in volume.Cells)
             {
@@ -74,7 +79,7 @@ namespace Dig.Unity
         {
             cell = hit.collider == null
                 ? null!
-                : hit.collider.GetComponent<DigTunnelCellVisual>();
+                : hit.collider.GetComponentInParent<DigTunnelCellVisual>();
             return cell != null;
         }
 
