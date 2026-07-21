@@ -50,7 +50,8 @@ def main() -> int:
         "CombatImpact", "AmbientDust", "LavaGlow", "CrystalGlow",
         "CampfireGlow", "ProductionBuildingGlow",
         "PresentationEffectFact", "Magnitude", "Version",
-        "PresentationEffectFrame.Empty", "IReadOnlyList<EffectSpawnRequest>",
+        "public static PresentationEffectFrame Empty",
+        "IReadOnlyList<EffectSpawnRequest>",
         "IReadOnlyList<LightRequest>", "ReadOnlyCollection",
     )))
     errors.extend(require(presenter_path, presenter, (
