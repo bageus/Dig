@@ -17,6 +17,10 @@ public sealed class DigPresentationEffectBridge : MonoBehaviour
     public int ActiveParticleCount => _vfxPlayer == null
         ? 0 : _vfxPlayer.ActiveParticleCount;
     public int ActiveLightCount => _lightPool == null ? 0 : _lightPool.ActiveCount;
+    public int DroppedEffectCount => _vfxPlayer == null
+        ? 0 : _vfxPlayer.LastDroppedEffectCount;
+    public int DroppedLightCount => _lightPool == null
+        ? 0 : _lightPool.LastDroppedLightCount;
 
     private void Awake()
     {

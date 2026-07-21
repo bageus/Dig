@@ -154,6 +154,10 @@ def main() -> int:
     )))
     errors.extend(require(RUNTIME / "DigPooledVfxInstance.cs", ("localPosition",)))
     errors.extend(require(RUNTIME / "DigRealtimeLightPool.cs", ("localPosition",)))
+    errors.extend(require(RUNTIME / "DigPresentationEffectRuntime.cs", (
+        "TrackProductionEmitters", "LavaGlow", "CrystalGlow", "CampfireGlow",
+        "ProductionBuildingGlow", "AmbientDust", "ReadNewEvents",
+    )))
 
     if errors:
         print("Unity URP completion contracts failed:", file=sys.stderr)

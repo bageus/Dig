@@ -8,9 +8,7 @@ public abstract partial class DigAgentSimulationDriverBase
 {
     private void PresentSpatialExcavationEffect(SpatialCellId cell, long tick)
     {
-        DigPresentationEffectBridge? bridge =
-            GetComponent<DigPresentationEffectBridge>();
-        if (bridge == null) return;
+        if (EffectRuntime == null) return;
         Vector3 position = DigTunnelProjection.CellWorldPosition(cell);
         PresentationEffectFact fact = new PresentationEffectFact(
             "spatial-excavation:" + cell + ":" + tick,
@@ -20,7 +18,7 @@ public abstract partial class DigAgentSimulationDriverBase
             position.z,
             1d,
             tick);
-        bridge.Present(new[] { fact }, Camera.main);
+        EffectRuntime.Publish(new[] { fact });
     }
 }
 }

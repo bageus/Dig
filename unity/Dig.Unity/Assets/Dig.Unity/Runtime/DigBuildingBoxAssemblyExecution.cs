@@ -51,7 +51,8 @@ namespace Dig.Unity
                 journal);
             _buildingBoxAssemblyWork = new AddBuildingBoxAssemblyWorkHandler(
                 _buildingsRepository,
-                _jobRepository);
+                _jobRepository,
+                journal);
             _buildingBoxAssemblyComplete = new CompleteBuildingBoxAssemblyHandler(
                 _buildingsRepository,
                 _buildingInventoryRepository,

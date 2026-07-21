@@ -1,3 +1,4 @@
+using System.Linq;
 using Dig.Application.Production;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
@@ -35,6 +36,10 @@ public sealed class ProductionIntegrationTests
         Assert.True(harness.Prepare(FirstJobId, tick: 2).IsSuccess);
         harness.AssignAndBegin(FirstOrderId, FirstJobId, tick: 3);
         Assert.True(harness.ApplyWork(FirstOrderId, FirstJobId, tick: 6).IsSuccess);
+        ProductionWorkApplied work = Assert.Single(
+            harness.Journal.Events.OfType<ProductionWorkApplied>());
+        Assert.Equal(ProductionTestHarness.BuildingId, work.BuildingId);
+        Assert.Equal(work.RequiredWork, work.CompletedWork);
         Assert.Equal(ProductionOrderStatus.ReadyToComplete, harness.Production.Get(FirstOrderId)!.Status);
         Assert.Equal(JobStageKind.Finalize, harness.Jobs.Get(FirstJobId)!.Stage);
 

@@ -143,7 +143,8 @@ public sealed class AddConstructionWorkHandler
 
         Result result = buildings.AddConstructionWork(
             command.BuildingId,
-            command.WorkAmount);
+            command.WorkAmount,
+            command.Tick);
         if (result.IsFailure)
         {
             return result;

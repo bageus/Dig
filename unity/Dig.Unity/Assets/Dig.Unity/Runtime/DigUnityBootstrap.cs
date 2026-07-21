@@ -81,8 +81,16 @@ namespace Dig.Unity
             GetOrAdd<DigRenderMaterialLibrary>(gameObject);
             DigPresentationEffectBridge effectBridge =
                 GetOrAdd<DigPresentationEffectBridge>(gameObject);
+            DigPresentationEffectRuntime effectRuntime =
+                GetOrAdd<DigPresentationEffectRuntime>(gameObject);
+            effectRuntime.Initialize(
+                worldSession,
+                agentSession,
+                terrainSession,
+                effectBridge,
+                targetCamera);
             terrainSession.BindPresentationEffectSink(
-                facts => effectBridge.Present(facts, targetCamera));
+                effectRuntime.Publish);
             DigWorldRenderer worldRenderer = GetOrAdd<DigWorldRenderer>(gameObject);
             DigAgentRenderer agentRenderer = GetOrAdd<DigAgentRenderer>(gameObject);
             DigCreatureRenderer creatureRenderer = GetOrAdd<DigCreatureRenderer>(gameObject);
@@ -170,6 +178,8 @@ namespace Dig.Unity
                 () => stockpileRenderer.Render(storage));
             RunPresentationStage("rendering navigation routes", visualWarnings,
                 () => routeRenderer.Render(routes));
+            RunPresentationStage("rendering ambient effects", visualWarnings,
+                () => effectRuntime.Flush(agentSession.Tick));
 
             interaction.enabled = true;
             simulation.enabled = true;

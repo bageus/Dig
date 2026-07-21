@@ -77,6 +77,11 @@ public sealed class BuildingConstructionTests
             ItemLocation.InBuilding(BuildingId)));
         Assert.Equal(
             1,
+            harness.Journal.Events.OfType<BuildingConstructionProgressed>()
+                .Count(value => value.BuildingId == BuildingId
+                    && value.CompletedWork == value.RequiredWork));
+        Assert.Equal(
+            1,
             harness.Journal.Events.OfType<BuildingCompleted>()
                 .Count(value => value.BuildingId == BuildingId));
 

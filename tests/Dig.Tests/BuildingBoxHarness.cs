@@ -143,7 +143,8 @@ internal sealed class BuildingBoxHarness
     {
         return new AddBuildingBoxAssemblyWorkHandler(
             BuildingsRepository,
-            JobRepository).Handle(new AddBuildingBoxAssemblyWorkCommand(
+            JobRepository,
+            Journal).Handle(new AddBuildingBoxAssemblyWorkCommand(
                 BuildingId,
                 JobId,
                 amount,

@@ -167,6 +167,7 @@ namespace Dig.Unity
             ItemRenderer!.Render(items);
             StockpileRenderer!.Render(storage);
             RouteRenderer!.Render(routes);
+            EffectRuntime!.Flush(AgentSession.Tick);
             Hud!.SetAgents(agents, AgentSession.Tick);
             Hud.SetJobs(jobs);
             Hud.SetStorageStatus(storage);
