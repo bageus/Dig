@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Dig.Domain.Core;
 using Dig.Domain.World;
@@ -14,14 +15,27 @@ namespace Dig.Unity
             _tunnelRenderer = tunnelRenderer;
         }
 
-        private bool TryApplyTunnelMove(RaycastHit hit, bool leftButton)
+        private void SynchronizeTunnelInteractionTargets()
+        {
+            if (_simulation != null && _tunnelRenderer != null)
+            {
+                _simulation.SynchronizeTunnelInteractionTargets(_tunnelRenderer);
+            }
+        }
+
+        private bool TryApplyTunnelMove(RaycastHit[] hits, bool leftButton)
         {
             if (!leftButton || _tunnelRenderer == null)
             {
                 return false;
             }
 
-            DigSelectedResidentTarget target = ResolveSelectedResidentTarget();
+            if (hits == null)
+            {
+                throw new ArgumentNullException(nameof(hits));
+            }
+
+            DigSelectedResidentTarget target = ResolveSelectedResidentTarget(hits);
             if (target.Kind != DigSelectedResidentTargetKind.Movement)
             {
                 return false;
@@ -44,30 +58,12 @@ namespace Dig.Unity
             }
 
             SpatialCellId destination = target.MovementCell;
-            if (_simulation!.TryAssignSpatialExcavation(
-                destination,
-                residentIds,
-                out Result excavationAssignment))
-            {
-                _hud!.SetCommandResult(excavationAssignment);
-                if (excavationAssignment.IsSuccess)
-                {
-                    _hud.SetStatus(
-                        $"Assigned up to {residentIds.Count} selected dwarf(s) across nearby "
-                        + $"spatial excavation jobs from X={destination.X}, "
-                        + $"Y={destination.Y}, Z={destination.Z}. "
-                        + "Existing unselected workers keep their jobs.");
-                }
-
-                return true;
-            }
-
             Result result = residentIds.Count == 1
-                ? _simulation.MoveResidentThroughTunnel(
+                ? _simulation!.MoveResidentThroughTunnel(
                     residentIds[0],
                     destination,
                     _tunnelRenderer)
-                : _simulation.MoveResidentsThroughTunnel(
+                : _simulation!.MoveResidentsThroughTunnel(
                     residentIds,
                     destination,
                     _tunnelRenderer);
@@ -99,7 +95,7 @@ namespace Dig.Unity
                 && _caveRoomFloorRenderer.TryGetCell(hit, out DigTunnelCellVisual roomCell))
             {
                 destination = roomCell.Cell;
-                visual = null;
+                visual = roomCell;
                 return true;
             }
 
