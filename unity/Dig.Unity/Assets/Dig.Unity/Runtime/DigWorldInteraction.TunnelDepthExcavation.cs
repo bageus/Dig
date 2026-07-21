@@ -14,13 +14,13 @@ namespace Dig.Unity
                 return false;
             }
 
-            if (!CanActivateExcavationDrawing
-                || _buildingPlacementMode.HasValue)
+            if (!CanActivateExcavationDrawing)
             {
-                return true;
+                return false;
             }
 
-            if (_hud!.ContainsScreenPoint(Input.mousePosition))
+            if (_buildingPlacementMode.HasValue
+                || _hud!.ContainsScreenPoint(Input.mousePosition))
             {
                 return false;
             }
