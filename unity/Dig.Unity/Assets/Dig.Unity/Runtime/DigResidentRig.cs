@@ -26,7 +26,7 @@ public sealed class DigResidentRig : MonoBehaviour
     private Transform? _leftLeg;
     private Transform? _rightLeg;
     private Transform[] _sockets = Array.Empty<Transform>();
-    private readonly MaterialPropertyBlock _properties = new MaterialPropertyBlock();
+    private MaterialPropertyBlock? _properties;
     private ResidentAppearanceViewModel? _appearance;
     private bool _selected;
 
@@ -126,6 +126,7 @@ public sealed class DigResidentRig : MonoBehaviour
         Color skin = _appearance.BodyVariant == ResidentBodyVariant.Feminine
             ? new Color(0.82f, 0.62f, 0.48f, 1f)
             : new Color(0.76f, 0.55f, 0.40f, 1f);
+        MaterialPropertyBlock properties = ResolveProperties();
         for (int index = 0; index < _renderers.Length; index++)
         {
             Renderer renderer = _renderers[index];
@@ -138,11 +139,22 @@ public sealed class DigResidentRig : MonoBehaviour
                     ? skin
                     : clothing;
             if (_selected) color = Color.Lerp(color, new Color(1f, 0.78f, 0.18f, 1f), 0.55f);
-            renderer.GetPropertyBlock(_properties);
-            _properties.SetColor(BaseColorId, color);
-            _properties.SetColor(ColorId, color);
-            renderer.SetPropertyBlock(_properties);
+            properties.Clear();
+            renderer.GetPropertyBlock(properties);
+            properties.SetColor(BaseColorId, color);
+            properties.SetColor(ColorId, color);
+            renderer.SetPropertyBlock(properties);
         }
+    }
+
+    private MaterialPropertyBlock ResolveProperties()
+    {
+        if (_properties == null)
+        {
+            _properties = new MaterialPropertyBlock();
+        }
+
+        return _properties;
     }
 
     private static Color ClothingColor(int index)
