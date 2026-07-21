@@ -1,0 +1,70 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 257a23cd8be961757d5a392172840f92, type: 3}
+  m_Name: Vfx
+  m_EditorClassIdentifier: 
+  profiles:
+  - stableId: vfx.excavation.impact
+    category: 0
+    prefab: {fileID: 7196239345788254163, guid: 7c454e25f91f3dc40b939fab83f77af2, type: 3}
+    maximumInstances: 12
+    maximumParticles: 64
+  - stableId: vfx.deposit.reveal
+    category: 1
+    prefab: {fileID: 3402189164194198314, guid: c93effd69ddc7ba49acfcfd29ffa37d7, type: 3}
+    maximumInstances: 8
+    maximumParticles: 80
+  - stableId: vfx.deposit.crystal-glow
+    category: 1
+    prefab: {fileID: 7366025819147809538, guid: ebd964d364a1f9041b0b3d3eb1d5bc92, type: 3}
+    maximumInstances: 8
+    maximumParticles: 48
+  - stableId: vfx.construction.progress
+    category: 2
+    prefab: {fileID: 5944946765855384434, guid: 02355638570781f43a899d7ee1daede1, type: 3}
+    maximumInstances: 10
+    maximumParticles: 48
+  - stableId: vfx.production.pulse
+    category: 3
+    prefab: {fileID: 984607383245325770, guid: 842986e1adaa08840843051d9f3c79f9, type: 3}
+    maximumInstances: 8
+    maximumParticles: 48
+  - stableId: vfx.production.campfire
+    category: 3
+    prefab: {fileID: 3511479053156999258, guid: a2bc2b9619a48544ab8671ffbbba9f0a, type: 3}
+    maximumInstances: 8
+    maximumParticles: 48
+  - stableId: vfx.production.building
+    category: 3
+    prefab: {fileID: 1364105179898807251, guid: 46c388cbfb906a34a91d702ab9ee8f22, type: 3}
+    maximumInstances: 8
+    maximumParticles: 48
+  - stableId: vfx.status.pulse
+    category: 4
+    prefab: {fileID: 2859516837483200256, guid: 0b88f1012d8dd3c4db8aa6fc90d0d83e, type: 3}
+    maximumInstances: 12
+    maximumParticles: 40
+  - stableId: vfx.combat.impact
+    category: 5
+    prefab: {fileID: 3557256205670227423, guid: b3df5206a144c3641b7463fd620211fd, type: 3}
+    maximumInstances: 16
+    maximumParticles: 96
+  - stableId: vfx.ambient.dust
+    category: 6
+    prefab: {fileID: 8898508430977568742, guid: 5b6b8400f2792fc4a9b3d8419e7bdde5, type: 3}
+    maximumInstances: 8
+    maximumParticles: 32
+  - stableId: vfx.ambient.lava
+    category: 6
+    prefab: {fileID: 4766037629385377906, guid: 6828ed93a5b875941bc371eca7cacd40, type: 3}
+    maximumInstances: 8
+    maximumParticles: 40

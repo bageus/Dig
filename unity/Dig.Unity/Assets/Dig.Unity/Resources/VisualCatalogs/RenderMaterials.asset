@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a42981ae83ec1904c6831203ac411945, type: 3}
+  m_Name: RenderMaterials
+  m_EditorClassIdentifier: 
+  profiles:
+  - semantic: 0
+    surface: 0
+    material: {fileID: 2100000, guid: af90ee9748e7ec14c9114993fa8f0be5, type: 2}
+    fallbackTint: {r: 1, g: 0, b: 1, a: 1}
+  - semantic: 1
+    surface: 0
+    material: {fileID: 2100000, guid: af90ee9748e7ec14c9114993fa8f0be5, type: 2}
+    fallbackTint: {r: 1, g: 0, b: 1, a: 1}
+  - semantic: 2
+    surface: 2
+    material: {fileID: 2100000, guid: 785e54ab099b8b64ca34b75678301783, type: 2}
+    fallbackTint: {r: 1, g: 0, b: 1, a: 1}
+  - semantic: 3
+    surface: 0
+    material: {fileID: 2100000, guid: af90ee9748e7ec14c9114993fa8f0be5, type: 2}
+    fallbackTint: {r: 1, g: 0, b: 1, a: 1}
+  - semantic: 4
+    surface: 0
+    material: {fileID: 2100000, guid: af90ee9748e7ec14c9114993fa8f0be5, type: 2}
+    fallbackTint: {r: 1, g: 0, b: 1, a: 1}
+  - semantic: 5
+    surface: 0
+    material: {fileID: 2100000, guid: af90ee9748e7ec14c9114993fa8f0be5, type: 2}
+    fallbackTint: {r: 1, g: 0, b: 1, a: 1}
+  - semantic: 6
+    surface: 0
+    material: {fileID: 2100000, guid: af90ee9748e7ec14c9114993fa8f0be5, type: 2}
+    fallbackTint: {r: 1, g: 0, b: 1, a: 1}
+  - semantic: 7
+    surface: 2
+    material: {fileID: 2100000, guid: 785e54ab099b8b64ca34b75678301783, type: 2}
+    fallbackTint: {r: 1, g: 0, b: 1, a: 1}
+  - semantic: 8
+    surface: 1
+    material: {fileID: 2100000, guid: 785e54ab099b8b64ca34b75678301783, type: 2}
+    fallbackTint: {r: 1, g: 0, b: 1, a: 1}
+  - semantic: 9
+    surface: 1
+    material: {fileID: 2100000, guid: 785e54ab099b8b64ca34b75678301783, type: 2}
+    fallbackTint: {r: 1, g: 0, b: 1, a: 1}
