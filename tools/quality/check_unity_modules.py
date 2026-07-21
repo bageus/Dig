@@ -9,7 +9,7 @@ LOCK_PATH = ROOT / "unity" / "Dig.Unity" / "Packages" / "packages-lock.json"
 ASMDEF_PATH = ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" / "Runtime" / "Dig.Unity.asmdef"
 
 REQUIRED_PACKAGES = {
-    "com.unity.render-pipelines.universal": ("17.0.4", "registry"),
+    "com.unity.render-pipelines.universal": ("17.0.4", "builtin"),
     "com.unity.modules.audio": ("1.0.0", "builtin"),
     "com.unity.modules.imgui": ("1.0.0", "builtin"),
     "com.unity.modules.particlesystem": ("1.0.0", "builtin"),
