@@ -13,6 +13,16 @@ public sealed class DigPresentationEffectBridge : MonoBehaviour
     private DigPooledVfxPlayer? _vfxPlayer;
     private DigRealtimeLightPool? _lightPool;
 
+    public int ActiveEffectCount => _vfxPlayer == null ? 0 : _vfxPlayer.ActiveCount;
+    public int ActiveParticleCount => _vfxPlayer == null
+        ? 0 : _vfxPlayer.ActiveParticleCount;
+    public int ActiveLightCount => _lightPool == null ? 0 : _lightPool.ActiveCount;
+
+    private void Awake()
+    {
+        Render(PresentationEffectFrame.Empty, camera: null);
+    }
+
     public PresentationEffectFrame Present(
         IReadOnlyList<PresentationEffectFact> facts, Camera? camera)
     {
@@ -28,6 +38,14 @@ public sealed class DigPresentationEffectBridge : MonoBehaviour
         EnsureResources();
         _vfxPlayer!.Play(frame.Effects, camera);
         _lightPool!.Render(frame.Lights, camera);
+    }
+
+    public void SetBudget(RenderFrameBudget budget)
+    {
+        if (budget == null) throw new ArgumentNullException(nameof(budget));
+        EnsureResources();
+        _vfxPlayer!.SetBudget(budget);
+        _lightPool!.SetBudget(budget);
     }
 
     private void EnsureResources()
