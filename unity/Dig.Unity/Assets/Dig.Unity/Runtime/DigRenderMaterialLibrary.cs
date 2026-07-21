@@ -22,10 +22,8 @@ public sealed class DigRenderMaterialLibrary : MonoBehaviour
         DigStylizedLightingRig lighting = GetComponent<DigStylizedLightingRig>();
         if (lighting == null) lighting = gameObject.AddComponent<DigStylizedLightingRig>();
         lighting.Configure();
-        if (GetComponent<DigPooledVfxPlayer>() == null)
-            gameObject.AddComponent<DigPooledVfxPlayer>();
-        if (GetComponent<DigRealtimeLightPool>() == null)
-            gameObject.AddComponent<DigRealtimeLightPool>();
+        if (GetComponent<DigPresentationEffectBridge>() == null)
+            gameObject.AddComponent<DigPresentationEffectBridge>();
     }
     public Material Resolve(RenderMaterialSemantic semantic,
         RenderSurfaceKind surface, Color fallbackTint)
