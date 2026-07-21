@@ -23,6 +23,7 @@ namespace Dig.Unity
                 return;
             }
 
+            SynchronizeTunnelInteractionTargets();
             DigAgentVisual? next = null;
             if (!_hud.ContainsScreenPoint(Input.mousePosition))
             {
