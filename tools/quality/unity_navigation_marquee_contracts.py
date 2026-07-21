@@ -82,11 +82,11 @@ def check_navigation_and_marquee_contracts(
         texts.get(tunnel_renderer, ""),
         "full-volume and newly excavated tunnel targets",
         (
-            "_cells.Count == volume.Cells.Count",
-            "ConfigureInteractionCollider(target, cell, vertical, layout)",
-            "IsNaturalCaveFloor",
-            "SetWorldColliderBounds",
-            "CaveCeilingY + 1",
+            "CalculateSignature(volume)",
+            "ReconcileCellProxies(volume)",
+            "RebuildMovementSurfaces(volume)",
+            "CreateSurfaceRuns(",
+            "collider.enabled = _digInteractionActive",
             "GetComponentInParent<DigTunnelCellVisual>()",
         ),
     ))
@@ -96,9 +96,9 @@ def check_navigation_and_marquee_contracts(
         "full-volume completed-room targets",
         (
             "for (int z = 0; z < plan.Preset.Depth; z++)",
-            "Cave room hit target",
+            "Cave room dig proxy",
             "ConfigureInteractionCollider(floor, plan, cell)",
-            "floor.GetComponent<Renderer>().enabled = z > 0",
+            "collider.enabled = _digInteractionActive",
         ),
     ))
 

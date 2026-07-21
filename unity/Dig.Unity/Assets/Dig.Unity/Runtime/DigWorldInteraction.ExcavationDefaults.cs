@@ -20,6 +20,7 @@ public sealed partial class DigWorldInteraction
         }
 
         _excavationMode = DigExcavationDrawingMode.Tunnel;
+        SetTunnelDigInteractionActive(active: true);
         ResetExcavationStroke();
         _hud?.SetStatus(
             "Tunnel tool active. Hold LMB and drag horizontally or vertically.");

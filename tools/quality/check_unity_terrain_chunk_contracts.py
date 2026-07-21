@@ -261,7 +261,7 @@ def main() -> int:
         drawing_path,
         drawing,
         (
-            "_renderer!.SetTunnelDigInteractionActive(",
+            "SetTunnelDigInteractionActive(UsesTunnelCellInteraction(mode))",
             "UsesTunnelCellInteraction",
             "_renderer!.TryGetCell",
         ),

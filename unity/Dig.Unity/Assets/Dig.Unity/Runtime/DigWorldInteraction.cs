@@ -54,7 +54,7 @@ namespace Dig.Unity
             _stockpileRenderer = stockpileRenderer;
             _simulation = simulation;
             _hud = hud;
-            renderer.SetTunnelDigInteractionActive(active: false);
+            SetTunnelDigInteractionActive(active: false);
             hud.SetBuildingPlacementControls(this);
             hud.SetExcavationControls(this);
             InitializeResidentMarquee();

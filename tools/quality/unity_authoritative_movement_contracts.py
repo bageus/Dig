@@ -67,6 +67,8 @@ def check_authoritative_movement_contracts(
         (
             "ResolveSelectedResidentTarget(GetPointerHits())",
             "HashSet<SpatialCellId> seenMovementCells",
+            "TryGetMovementTarget(",
+            "MovementOffsetX",
             "ResolveMovementPointerDistance(",
             "bestScreenDistance",
             "return bestMovement",
@@ -129,7 +131,9 @@ def check_authoritative_movement_contracts(
         texts.get(tunnel_renderer, ""),
         "incremental newly excavated tunnel targets",
         (
-            "_cells.Count == volume.Cells.Count",
+            "CalculateSignature(volume)",
+            "ReconcileCellProxies(volume)",
+            "RebuildMovementSurfaces(volume)",
             "foreach (SpatialCellId cell in volume.Cells)",
             "GetComponentInParent<DigTunnelCellVisual>()",
         ),
@@ -210,6 +214,8 @@ def check_authoritative_movement_contracts(
             "PlanAgentsTunnelRoutesReport",
             "AgentSession.MoveResidentThroughTunnel",
             "AgentSession.MoveResidentsThroughTunnel",
+            "AgentRenderer.SetFreeformDestination(",
+            "ResolveGroupDestinationOffset(",
         ),
     ))
     for fragment in (

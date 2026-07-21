@@ -183,7 +183,9 @@ The ordinary world surface has no cell picking.
 - leaving excavation mode disables proxies again;
 - exact front `CellId` resolution remains limited to tunnel excavation flows.
 
-Objects, residents, jobs, buildings and items continue to use their own interaction components. Layered movement uses dedicated tunnel and completed-room floor visuals rather than terrain chunks or hidden front-cell proxies.
+Objects, residents, jobs, buildings and items continue to use their own interaction components. Layered movement uses dedicated invisible movement surfaces rather than terrain chunks, visible cell floors or hidden front-cell proxies.
+
+Ordinary resident movement uses renderer-free `DigTunnelMovementSurface` colliders. Contiguous horizontal passages and vertical shafts are collapsed into surface runs, so the pointer is not aimed at a visible cell object. The hit point resolves to the nearest open hidden `SpatialCellId` for authoritative pathfinding and retains its clamped within-cell X offset for the final resident presentation position. Entering an excavation mode disables these movement surfaces and enables exact cell proxies; leaving excavation reverses that state.
 
 ## Prefab contract
 
