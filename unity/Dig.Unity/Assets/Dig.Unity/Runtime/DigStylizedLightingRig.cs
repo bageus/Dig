@@ -34,7 +34,7 @@ public sealed class DigStylizedLightingRig : MonoBehaviour
     private Light EnsureDirectional(Light? existing, string name,
         Color color, float intensity, Quaternion rotation)
     {
-        Light light = existing;
+        Light light = existing!;
         if (light == null)
         {
             GameObject lightObject = new GameObject(name);
