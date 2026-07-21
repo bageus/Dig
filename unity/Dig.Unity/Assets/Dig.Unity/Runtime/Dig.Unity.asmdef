@@ -9,6 +9,7 @@
     "UnityEngine.AudioModule",
     "UnityEngine.IMGUIModule",
     "UnityEngine.InputLegacyModule",
+    "UnityEngine.ParticleSystemModule",
     "UnityEngine.PhysicsModule",
     "UnityEngine.UI"
   ],
