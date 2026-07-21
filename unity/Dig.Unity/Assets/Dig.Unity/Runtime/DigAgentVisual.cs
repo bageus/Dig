@@ -14,7 +14,7 @@ public sealed partial class DigAgentVisual : MonoBehaviour
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
     private static readonly int ColorId = Shader.PropertyToID("_Color");
     private readonly ResidentVisualPresenter _visualPresenter = new ResidentVisualPresenter();
-    private readonly MaterialPropertyBlock _hoverProperties = new MaterialPropertyBlock();
+    private MaterialPropertyBlock? _hoverProperties;
     private Material? _normalMaterial;
     private Material? _selectedMaterial;
     private DigResidentRig? _rig;
@@ -146,40 +146,52 @@ public sealed partial class DigAgentVisual : MonoBehaviour
                 : _rig.GetComponentsInChildren<Renderer>(includeInactive: true);
             _hoverBaseColors = new Color[_hoverRenderers.Length];
         }
+        MaterialPropertyBlock properties = ResolveHoverProperties();
         for (int index = 0; index < _hoverRenderers.Length; index++)
         {
             Renderer renderer = _hoverRenderers[index];
-            _hoverProperties.Clear();
-            renderer.GetPropertyBlock(_hoverProperties);
-            Color color = _hoverProperties.GetColor(BaseColorId);
+            properties.Clear();
+            renderer.GetPropertyBlock(properties);
+            Color color = properties.GetColor(BaseColorId);
             if (color == default)
             {
-                color = _hoverProperties.GetColor(ColorId);
+                color = properties.GetColor(ColorId);
                 if (color == default && renderer.sharedMaterial != null)
                     color = renderer.sharedMaterial.color;
             }
             _hoverBaseColors[index] = color;
             Color highlighted = Color.Lerp(color, Color.white, HoverBlend);
             highlighted.a = color.a;
-            _hoverProperties.SetColor(BaseColorId, highlighted);
-            _hoverProperties.SetColor(ColorId, highlighted);
-            renderer.SetPropertyBlock(_hoverProperties);
+            properties.SetColor(BaseColorId, highlighted);
+            properties.SetColor(ColorId, highlighted);
+            renderer.SetPropertyBlock(properties);
         }
         _hoverApplied = _hoverRenderers.Length > 0;
     }
 
     private void RestoreHover()
     {
+        MaterialPropertyBlock properties = ResolveHoverProperties();
         for (int index = 0; index < _hoverRenderers.Length; index++)
         {
             Renderer renderer = _hoverRenderers[index];
-            _hoverProperties.Clear();
-            renderer.GetPropertyBlock(_hoverProperties);
-            _hoverProperties.SetColor(BaseColorId, _hoverBaseColors[index]);
-            _hoverProperties.SetColor(ColorId, _hoverBaseColors[index]);
-            renderer.SetPropertyBlock(_hoverProperties);
+            properties.Clear();
+            renderer.GetPropertyBlock(properties);
+            properties.SetColor(BaseColorId, _hoverBaseColors[index]);
+            properties.SetColor(ColorId, _hoverBaseColors[index]);
+            renderer.SetPropertyBlock(properties);
         }
         _hoverApplied = false;
+    }
+
+    private MaterialPropertyBlock ResolveHoverProperties()
+    {
+        if (_hoverProperties == null)
+        {
+            _hoverProperties = new MaterialPropertyBlock();
+        }
+
+        return _hoverProperties;
     }
 
     private void ApplyAction(bool isMoving)
