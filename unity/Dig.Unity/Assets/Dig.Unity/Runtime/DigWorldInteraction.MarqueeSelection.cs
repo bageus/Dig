@@ -12,6 +12,7 @@ namespace Dig.Unity
         private bool _marqueeActive;
         private bool _marqueeHasStartHit;
         private RaycastHit _marqueeStartHit;
+        private RaycastHit[] _marqueeStartHits = Array.Empty<RaycastHit>();
         private Vector2 _marqueeStart;
         private Vector2 _marqueeCurrent;
 
@@ -40,6 +41,13 @@ namespace Dig.Unity
                 }
 
                 RaycastHit[] hits = GetPointerHits();
+                if (_agentRenderer!.SelectedCount > 0
+                    && TryResolveSelectedResidentMovementTarget(hits, out _))
+                {
+                    return false;
+                }
+
+                _marqueeStartHits = hits;
                 _marqueeHasStartHit = hits.Length > 0;
                 if (_marqueeHasStartHit)
                 {
@@ -49,6 +57,7 @@ namespace Dig.Unity
                 if (IsMarqueeBlockingTarget(hits))
                 {
                     _marqueeHasStartHit = false;
+                    _marqueeStartHits = Array.Empty<RaycastHit>();
                     return false;
                 }
 
@@ -110,8 +119,10 @@ namespace Dig.Unity
                 return;
             }
 
-            if (TryAssignSelectedResidentToExcavation(_marqueeStartHit, leftButton: true)
-                || TryApplyTunnelMove(_marqueeStartHit, leftButton: true))
+            if (TryApplyTunnelMove(_marqueeStartHits, leftButton: true)
+                || TryAssignSelectedResidentToExcavation(
+                    _marqueeStartHit,
+                    leftButton: true))
             {
                 return;
             }
@@ -207,6 +218,7 @@ namespace Dig.Unity
             _marqueePending = false;
             _marqueeActive = false;
             _marqueeHasStartHit = false;
+            _marqueeStartHits = Array.Empty<RaycastHit>();
             _marqueeRenderer?.Clear();
         }
 

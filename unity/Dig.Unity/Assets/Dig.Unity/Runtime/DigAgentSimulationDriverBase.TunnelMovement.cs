@@ -22,7 +22,7 @@ namespace Dig.Unity
                 return NotInitializedResult();
             }
 
-            SynchronizeExcavatedTunnelNavigation();
+            SynchronizeTunnelInteractionTargets(tunnelRenderer);
             Result interrupted = TerrainSession.InterruptForManualMovement(
                 new[] { residentId },
                 CurrentTick);
@@ -74,7 +74,7 @@ namespace Dig.Unity
                     tunnelRenderer);
             }
 
-            SynchronizeExcavatedTunnelNavigation();
+            SynchronizeTunnelInteractionTargets(tunnelRenderer);
             Result interrupted = TerrainSession.InterruptForManualMovement(
                 residentIds,
                 CurrentTick);

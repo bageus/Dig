@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Dig.Domain.Core;
 using Dig.Domain.World;
@@ -14,14 +15,44 @@ namespace Dig.Unity
             _tunnelRenderer = tunnelRenderer;
         }
 
+        private void SynchronizeTunnelInteractionTargets()
+        {
+            if (_simulation != null && _tunnelRenderer != null)
+            {
+                _simulation.SynchronizeTunnelInteractionTargets(_tunnelRenderer);
+            }
+        }
+
         private bool TryApplyTunnelMove(RaycastHit hit, bool leftButton)
+        {
+            return TryApplyTunnelMove(GetPointerHits(), leftButton);
+        }
+
+        private bool TryApplyTunnelMove(RaycastHit[] hits, bool leftButton)
         {
             if (!leftButton || _tunnelRenderer == null)
             {
                 return false;
             }
 
-            DigSelectedResidentTarget target = ResolveSelectedResidentTarget();
+            if (hits == null)
+            {
+                throw new ArgumentNullException(nameof(hits));
+            }
+
+            IReadOnlyList<string> residentIds = _agentRenderer!.SelectedAgentIds;
+            if (residentIds.Count == 0)
+            {
+                _hud!.SetStatus("Select one or more dwarfs, then click a walkable destination.");
+                return false;
+            }
+
+            if (TryAssignExplicitSpatialExcavation(hits, residentIds))
+            {
+                return true;
+            }
+
+            DigSelectedResidentTarget target = ResolveSelectedResidentTarget(hits);
             if (target.Kind != DigSelectedResidentTargetKind.Movement)
             {
                 return false;
@@ -36,38 +67,13 @@ namespace Dig.Unity
                 _tunnelRenderer.Select(null);
             }
 
-            IReadOnlyList<string> residentIds = _agentRenderer!.SelectedAgentIds;
-            if (residentIds.Count == 0)
-            {
-                _hud!.SetStatus("Select one or more dwarfs, then click a walkable destination.");
-                return true;
-            }
-
             SpatialCellId destination = target.MovementCell;
-            if (_simulation!.TryAssignSpatialExcavation(
-                destination,
-                residentIds,
-                out Result excavationAssignment))
-            {
-                _hud!.SetCommandResult(excavationAssignment);
-                if (excavationAssignment.IsSuccess)
-                {
-                    _hud.SetStatus(
-                        $"Assigned up to {residentIds.Count} selected dwarf(s) across nearby "
-                        + $"spatial excavation jobs from X={destination.X}, "
-                        + $"Y={destination.Y}, Z={destination.Z}. "
-                        + "Existing unselected workers keep their jobs.");
-                }
-
-                return true;
-            }
-
             Result result = residentIds.Count == 1
-                ? _simulation.MoveResidentThroughTunnel(
+                ? _simulation!.MoveResidentThroughTunnel(
                     residentIds[0],
                     destination,
                     _tunnelRenderer)
-                : _simulation.MoveResidentsThroughTunnel(
+                : _simulation!.MoveResidentsThroughTunnel(
                     residentIds,
                     destination,
                     _tunnelRenderer);
@@ -80,6 +86,48 @@ namespace Dig.Unity
             }
 
             return true;
+        }
+
+        private bool TryAssignExplicitSpatialExcavation(
+            RaycastHit[] hits,
+            IReadOnlyList<string> residentIds)
+        {
+            for (int index = 0; index < hits.Length; index++)
+            {
+                if (!_jobRenderer!.TryGetJob(hits[index], out DigJobVisual job)
+                    || !job.Model.TargetX.HasValue
+                    || !job.Model.TargetY.HasValue
+                    || !job.Model.TargetZ.HasValue
+                    || job.Model.TargetZ.Value <= 0)
+                {
+                    continue;
+                }
+
+                SpatialCellId workCell = new SpatialCellId(
+                    job.Model.TargetX.Value,
+                    job.Model.TargetY.Value,
+                    job.Model.TargetZ.Value - 1);
+                bool found = _simulation!.TryAssignSpatialExcavation(
+                    workCell,
+                    residentIds,
+                    out Result assignment);
+                if (!found)
+                {
+                    continue;
+                }
+
+                _hud!.SetCommandResult(assignment);
+                if (assignment.IsSuccess)
+                {
+                    _hud.SetStatus(
+                        $"Assigned {residentIds.Count} selected dwarf(s) to spatial excavation "
+                        + $"near X={workCell.X}, Y={workCell.Y}, Z={workCell.Z}.");
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         private bool TryResolveTunnelDestination(

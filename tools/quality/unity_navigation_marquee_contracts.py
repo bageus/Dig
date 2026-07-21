@@ -51,19 +51,25 @@ def check_navigation_and_marquee_contracts(
     errors.extend(require_fragments(
         pointer_hits,
         pointer_text,
-        "reliable resident pointer and hover resolution",
+        "resident hover through layered tunnel colliders",
         (
             "Physics.RaycastAll",
             "GetComponentInParent<DigAgentVisual>()",
             "TryResolveAgentNearPointer",
-            "ResidentScreenPickRadius",
-            "WorldToScreenPoint",
+            "ResidentScreenPickPadding",
+            "TryProjectResidentBounds",
+            "DistanceToRect",
+            "blockedByForegroundObject",
+            "SynchronizeTunnelInteractionTargets();",
             "UpdateResidentHover",
             "SetHovered(false)",
             "SetHovered(true)",
-            "firstWalkableDistance",
         ),
     ))
+    if "firstWalkableDistance" in pointer_text:
+        errors.append(
+            f"{pointer_hits}: tunnel destination colliders must not suppress resident hover"
+        )
     errors.extend(require_fragments(
         agent_renderer,
         texts.get(agent_renderer, ""),
@@ -74,12 +80,14 @@ def check_navigation_and_marquee_contracts(
     errors.extend(require_fragments(
         tunnel_renderer,
         texts.get(tunnel_renderer, ""),
-        "full-volume tunnel and natural cave targets",
+        "full-volume and newly excavated tunnel targets",
         (
+            "_cells.Count == volume.Cells.Count",
             "ConfigureInteractionCollider(target, cell, vertical, layout)",
             "IsNaturalCaveFloor",
             "SetWorldColliderBounds",
             "CaveCeilingY + 1",
+            "GetComponentInParent<DigTunnelCellVisual>()",
         ),
     ))
     errors.extend(require_fragments(
@@ -135,19 +143,28 @@ def check_navigation_and_marquee_contracts(
         ("focusZoomStep", "_distance - focusZoomStep", "Mathf.Clamp("),
     ))
 
+    marquee_text = texts.get(marquee, "")
     errors.extend(require_fragments(
         marquee,
-        texts.get(marquee, ""),
-        "resident marquee selection with shared pointer resolution",
+        marquee_text,
+        "marquee selection without swallowing selected-resident movement",
         (
             "MarqueeThresholdPixels",
             "RaycastHit[] hits = GetPointerHits();",
-            "IsMarqueeBlockingTarget(hits)",
-            "TryResolveAgentHit(hits",
+            "TryResolveSelectedResidentMovementTarget(hits, out _)",
+            "return false;",
+            "_marqueeStartHits",
+            "TryApplyTunnelMove(_marqueeStartHits, leftButton: true)",
             "SelectResidentsInsideMarquee",
-            "TryApplyTunnelMove",
         ),
     ))
+    movement_index = marquee_text.find(
+        "TryApplyTunnelMove(_marqueeStartHits, leftButton: true)"
+    )
+    work_index = marquee_text.find("TryAssignSelectedResidentToExcavation(")
+    if movement_index < 0 or work_index < 0 or movement_index >= work_index:
+        errors.append(f"{marquee}: deferred LMB movement must precede forced work")
+
     errors.extend(require_fragments(
         marquee_renderer,
         texts.get(marquee_renderer, ""),
@@ -199,8 +216,13 @@ def check_navigation_and_marquee_contracts(
     errors.extend(require_fragments(
         navigation_sync,
         texts.get(navigation_sync, ""),
-        "authoritative navigation refresh",
-        ("SynchronizeExcavatedTunnelNavigation", "WorldSession.LoadSnapshot()"),
+        "authoritative navigation and collider refresh",
+        (
+            "SynchronizeTunnelInteractionTargets(",
+            "SynchronizeExcavatedTunnelNavigation",
+            "WorldSession.LoadSnapshot()",
+            "tunnelRenderer.Initialize(AgentSession.TunnelVolume)",
+        ),
     ))
     errors.extend(require_fragments(
         designations,

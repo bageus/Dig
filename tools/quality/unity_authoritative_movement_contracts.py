@@ -20,6 +20,8 @@ def check_authoritative_movement_contracts(
     spatial_agent_movement = runtime_root / "DigAgentSession.SpatialWorkMovement.cs"
     movement_driver = runtime_root / "DigAgentSimulationDriverBase.TunnelMovement.cs"
     spatial_driver = runtime_root / "DigAgentSimulationDriverBase.SpatialExcavation.cs"
+    navigation_sync = runtime_root / "DigAgentSimulationDriverBase.NavigationSync.cs"
+    tunnel_renderer = runtime_root / "DigTunnelDemoRenderer.cs"
     loop = runtime_root / "DigAgentSimulationDriverBase.Loop.cs"
     direct_control = runtime_root / "DigTerrainWorkDirectMovement.cs"
     designations = runtime_root / "DigTerrainWorkDesignations.cs"
@@ -61,31 +63,78 @@ def check_authoritative_movement_contracts(
     errors.extend(require_fragments(
         targets,
         target_text,
-        "open tunnel movement target priority",
+        "screen-disambiguated Z0-Z3 tunnel target priority",
         (
-            "visibleMovement",
-            "hiddenMovement",
-            "return visibleMovement",
+            "ResolveSelectedResidentTarget(GetPointerHits())",
+            "HashSet<SpatialCellId> seenMovementCells",
+            "ResolveMovementPointerDistance(",
+            "bestScreenDistance",
+            "return bestMovement",
             "DigSelectedResidentTarget.Excavation(excavationCandidate.Value)",
         ),
     ))
-    visible_index = target_text.find("return visibleMovement")
+    resolved_movement_index = target_text.find("return bestMovement")
     excavation_index = target_text.find(
         "DigSelectedResidentTarget.Excavation(excavationCandidate.Value)"
     )
-    if visible_index < 0 or excavation_index < 0 or visible_index >= excavation_index:
+    if (
+        resolved_movement_index < 0
+        or excavation_index < 0
+        or resolved_movement_index >= excavation_index
+    ):
         errors.append(f"{targets}: open movement must win over designated excavation")
 
+    movement_input_text = texts.get(movement_input, "")
     errors.extend(require_fragments(
         movement_input,
-        texts.get(movement_input, ""),
-        "explicit layered movement destinations",
+        movement_input_text,
+        "explicit layered movement and spatial-job marker destinations",
         (
+            "TryApplyTunnelMove(RaycastHit[] hits",
+            "TryAssignExplicitSpatialExcavation(hits, residentIds)",
+            "_jobRenderer!.TryGetJob",
+            "job.Model.TargetZ.Value <= 0",
+            "TryAssignSpatialExcavation(",
+            "ResolveSelectedResidentTarget(hits)",
             "_tunnelRenderer.TryGetCell",
             "_caveRoomFloorRenderer.TryGetCell",
             "MoveResidentsThroughTunnel",
         ),
     ))
+    explicit_work_index = movement_input_text.find(
+        "TryAssignExplicitSpatialExcavation(hits, residentIds)"
+    )
+    ordinary_move_index = movement_input_text.find("ResolveSelectedResidentTarget(hits)")
+    if (
+        explicit_work_index < 0
+        or ordinary_move_index < 0
+        or explicit_work_index >= ordinary_move_index
+    ):
+        errors.append(
+            f"{movement_input}: only an explicit spatial job marker may precede ordinary LMB movement"
+        )
+
+    errors.extend(require_fragments(
+        navigation_sync,
+        texts.get(navigation_sync, ""),
+        "authoritative world-to-hit-target synchronization",
+        (
+            "SynchronizeTunnelInteractionTargets(",
+            "SynchronizeExcavatedTunnelNavigation();",
+            "tunnelRenderer.Initialize(AgentSession.TunnelVolume)",
+        ),
+    ))
+    errors.extend(require_fragments(
+        tunnel_renderer,
+        texts.get(tunnel_renderer, ""),
+        "incremental newly excavated tunnel targets",
+        (
+            "_cells.Count == volume.Cells.Count",
+            "foreach (SpatialCellId cell in volume.Cells)",
+            "GetComponentInParent<DigTunnelCellVisual>()",
+        ),
+    ))
+
     errors.extend(require_fragments(
         excavation,
         texts.get(excavation, ""),
@@ -155,6 +204,7 @@ def check_authoritative_movement_contracts(
         driver_text,
         "interrupt-before-plan manual movement",
         (
+            "SynchronizeTunnelInteractionTargets(tunnelRenderer)",
             "TerrainSession.InterruptForManualMovement",
             "PlanAgentTunnelRouteReport",
             "PlanAgentsTunnelRoutesReport",
