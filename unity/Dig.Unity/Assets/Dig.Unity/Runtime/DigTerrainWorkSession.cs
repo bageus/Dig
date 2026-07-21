@@ -309,6 +309,7 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         _worldChanged = true;
+        PublishTerrainCompletionEffects(job.Id, targetCell, tick, producesOutput);
         return ContinueManualExcavation(job.Id, worker, tick);
     }
 

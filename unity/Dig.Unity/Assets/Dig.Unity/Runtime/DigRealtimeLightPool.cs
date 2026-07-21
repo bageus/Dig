@@ -64,9 +64,9 @@ public sealed class DigRealtimeLightPool : MonoBehaviour
     {
         LightRequest request = selected.Request;
         Transform target = light.transform;
-        target.position = new Vector3((float)request.WorldX,
+        target.localPosition = new Vector3((float)request.WorldX,
             (float)request.WorldY, (float)request.WorldZ);
-        target.rotation = Quaternion.Euler(90f, 0f, 0f);
+        target.localRotation = Quaternion.Euler(90f, 0f, 0f);
         light.type = request.Kind == RealtimeLightKind.Spot
             ? LightType.Spot : LightType.Point;
         light.range = (float)request.Range;

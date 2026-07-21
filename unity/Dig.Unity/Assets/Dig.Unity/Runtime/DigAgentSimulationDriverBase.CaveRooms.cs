@@ -71,6 +71,7 @@ namespace Dig.Unity
             }
 
             _terrainExcavatedVolume.Add(commit.Target);
+            PresentSpatialExcavationEffect(commit.Target, CurrentTick);
             DigTunnelDemoRenderer renderer = GetComponent<DigTunnelDemoRenderer>();
             renderer.Initialize(AgentSession.TunnelVolume);
             renderer.SetDepthExcavationSources(AgentSession.TunnelDepthExcavations);

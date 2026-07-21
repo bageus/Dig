@@ -67,9 +67,15 @@ namespace Dig.Unity
                 triangleArrays[index] = triangles[index].ToArray();
             }
 
+            Color[] colors = DigTerrainVertexColor.Build(
+                vertices,
+                normals,
+                triangleArrays,
+                keys);
             return new DigTerrainChunkMeshData(
                 vertices.ToArray(),
                 normals.ToArray(),
+                colors,
                 triangleArrays,
                 keys.ToArray());
         }

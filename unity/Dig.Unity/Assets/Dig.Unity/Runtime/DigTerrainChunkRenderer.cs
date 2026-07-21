@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Presentation.Rendering;
 using Dig.Presentation.World;
 using UnityEngine;
 
@@ -10,14 +11,12 @@ namespace Dig.Unity
     {
         private readonly Dictionary<DigTerrainChunkKey, DigTerrainChunkVisual> _visuals =
             new Dictionary<DigTerrainChunkKey, DigTerrainChunkVisual>();
-        private readonly Dictionary<DigTerrainMaterialKey, Material> _fallbackMaterials =
-            new Dictionary<DigTerrainMaterialKey, Material>();
+        private DigRenderMaterialLibrary? _materials;
         private readonly HashSet<DigTerrainChunkKey> _visibleChunks =
             new HashSet<DigTerrainChunkKey>();
         private readonly List<DigTerrainChunkKey> _removedChunks =
             new List<DigTerrainChunkKey>();
         private Transform? _root;
-        private Shader? _fallbackShader;
         private DigTerrainRenderSnapshot? _lastSnapshot;
         private DigTerrainVisualCatalog? _lastCatalog;
         private TerrainVisualDetailLevel _detailLevel = TerrainVisualDetailLevel.Full;
@@ -200,59 +199,16 @@ namespace Dig.Unity
 
         private Material ResolveFallbackMaterial(DigTerrainMaterialKey key)
         {
-            if (_fallbackMaterials.TryGetValue(key, out Material? material))
+            if (_materials == null)
             {
-                return material;
+                _materials = GetComponent<DigRenderMaterialLibrary>();
+                if (_materials == null)
+                    _materials = gameObject.AddComponent<DigRenderMaterialLibrary>();
             }
-
-            EnsureFallbackShader();
-            material = new Material(_fallbackShader!)
-            {
-                name = $"Terrain fallback {key}",
-                color = ResolveFallbackColor(key),
-            };
-            _fallbackMaterials.Add(key, material);
-            return material;
-        }
-
-        private static Color ResolveFallbackColor(DigTerrainMaterialKey key)
-        {
-            switch (key.State)
-            {
-                case DigTerrainSurfaceState.Unexplored:
-                    return new Color(0.08f, 0.09f, 0.12f, 1f);
-                case DigTerrainSurfaceState.Designated:
-                    return new Color(0.95f, 0.47f, 0.12f, 1f);
-                case DigTerrainSurfaceState.Protected:
-                    return new Color(0.18f, 0.22f, 0.28f, 1f);
-                default:
-                    return key.HasVisibleDeposit
-                        ? ResolveDepositFallbackColor(key)
-                        : ResolveSolidFallbackColor(key);
-            }
-        }
-
-        private static Color ResolveSolidFallbackColor(DigTerrainMaterialKey key)
-        {
-            float hardness = key.Shade / 7f;
-            Color baseColor = Color.Lerp(
-                new Color(0.48f, 0.36f, 0.25f, 1f),
-                new Color(0.32f, 0.36f, 0.42f, 1f),
-                hardness);
-            switch (key.Role)
-            {
-                case DigTerrainSurfaceRole.Floor:
-                    return Color.Lerp(baseColor, Color.white, 0.08f);
-                case DigTerrainSurfaceRole.Ceiling:
-                    return Color.Lerp(baseColor, Color.black, 0.12f);
-                case DigTerrainSurfaceRole.FreshCut:
-                    return Color.Lerp(
-                        baseColor,
-                        new Color(0.62f, 0.43f, 0.28f, 1f),
-                        0.22f);
-                default:
-                    return baseColor;
-            }
+            return _materials.Resolve(
+                RenderMaterialSemantic.Terrain,
+                RenderSurfaceKind.Lit,
+                Color.white);
         }
 
         private void CountVisual(DigTerrainChunkVisual visual)
@@ -281,26 +237,6 @@ namespace Dig.Unity
             _root.SetParent(transform, worldPositionStays: false);
         }
 
-        private void EnsureFallbackShader()
-        {
-            if (_fallbackShader != null)
-            {
-                return;
-            }
-
-            _fallbackShader = Shader.Find("Universal Render Pipeline/Lit");
-            if (_fallbackShader == null)
-            {
-                _fallbackShader = Shader.Find("Standard");
-            }
-
-            if (_fallbackShader == null)
-            {
-                throw new InvalidOperationException(
-                    "Chunked terrain requires a compatible lit shader.");
-            }
-        }
-
         private void RemoveMissingChunks()
         {
             _removedChunks.Clear();
@@ -321,12 +257,5 @@ namespace Dig.Unity
             }
         }
 
-        private void OnDestroy()
-        {
-            foreach (Material material in _fallbackMaterials.Values)
-            {
-                Destroy(material);
-            }
-        }
     }
 }

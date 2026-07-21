@@ -149,8 +149,21 @@ def main() -> int:
         renderer,
         (
             "catalog.ResolveSurface(key.MaterialId, key.Role)",
-            "ResolveSolidFallbackColor",
-            "switch (key.Role)",
+            "DigRenderMaterialLibrary",
+            "RenderMaterialSemantic.Terrain",
+        ),
+    ))
+    vertex_path, vertex = read("DigTerrainVertexColor.cs")
+    errors.extend(require(
+        vertex_path,
+        vertex,
+        (
+            "ResolveBaseColor",
+            "switch (key.State)",
+            "key.Role == DigTerrainSurfaceRole.Floor",
+            "key.Role == DigTerrainSurfaceRole.Ceiling",
+            "key.Role == DigTerrainSurfaceRole.FreshCut",
+            "ApplyAmbientOcclusion",
         ),
     ))
 

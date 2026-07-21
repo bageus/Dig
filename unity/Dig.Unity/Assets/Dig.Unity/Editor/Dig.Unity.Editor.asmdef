@@ -2,7 +2,8 @@
   "name": "Dig.Unity.Editor",
   "rootNamespace": "Dig.Unity.Editor",
   "references": [
-    "Dig.Unity"
+    "Dig.Unity",
+    "Unity.RenderPipelines.Universal.Runtime"
   ],
   "includePlatforms": [
     "Editor"
