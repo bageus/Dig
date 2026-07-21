@@ -76,6 +76,11 @@ namespace Dig.Unity
                 return;
             }
 
+            if (TryHandlePriorityResidentPointerInput())
+            {
+                return;
+            }
+
             HandleStoragePlacement();
             UpdateBuildingPlacementHover();
             UpdateCaveRoomPreview();
