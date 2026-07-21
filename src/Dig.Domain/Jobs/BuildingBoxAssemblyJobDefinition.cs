@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Dig.Domain.Agents;
+using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 
@@ -27,7 +29,8 @@ public sealed class BuildingBoxAssemblyJobDefinition : JobDefinition
         int priority,
         long createdTick,
         JobRetryPolicy retryPolicy,
-        IEnumerable<EntityId>? dependencies = null)
+        IEnumerable<EntityId>? dependencies = null,
+        SkillGrantProfile? skillGrantProfile = null)
         : base(
             id,
             priority,
@@ -45,6 +48,9 @@ public sealed class BuildingBoxAssemblyJobDefinition : JobDefinition
         SourceStackId = sourceStackId;
         SiteCell = siteCell;
         WorkPosition = workPosition;
+        SkillGrantProfile = skillGrantProfile
+            ?? DefaultSkillProgressionContent.Catalog.GetProfile(
+                DefaultSkillGrantProfileIds.Construction);
     }
 
     public EntityId BuildingId { get; }
@@ -54,6 +60,8 @@ public sealed class BuildingBoxAssemblyJobDefinition : JobDefinition
     public CellId SiteCell { get; }
 
     public CellId WorkPosition { get; }
+
+    public SkillGrantProfile SkillGrantProfile { get; }
 
     public override string Description => $"Deliver and assemble building box for {BuildingId}";
 

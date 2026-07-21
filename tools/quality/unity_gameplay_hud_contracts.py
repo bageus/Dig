@@ -4,6 +4,8 @@ import re
 from pathlib import Path
 from typing import Callable
 
+from unity_issue14_hud_contracts import check_issue14_hud_contracts
+
 RequireFragments = Callable[[Path, str, str, tuple[str, ...]], list[str]]
 RejectFragments = Callable[[Path, str, str, tuple[str, ...]], list[str]]
 CYRILLIC = re.compile(r"[А-Яа-яЁё]")
@@ -78,6 +80,9 @@ def check_gameplay_hud_and_work_contracts(
             "_clockPanel!",
             "_rightPanel!",
             "_bottomPanel!",
+            "TopHudOffset",
+            "-50f,",
+            "TopHudOffset);",
             "SetBottomPanelHeight",
         ),
     ))
@@ -179,7 +184,6 @@ def check_gameplay_hud_and_work_contracts(
             "SelectRightPanelTab",
             "LoadResidentRoster",
             "ResidentRosterViewModel",
-            "BuildResidentRows(residents)",
             "SelectBuildingFromHud(id)",
             "SelectJobFromHud(id)",
         ),
@@ -196,10 +200,16 @@ def check_gameplay_hud_and_work_contracts(
             "BuildResidentDetails",
             '"Nutrition"',
             '"Alertness"',
-            "resident.Skills.TopFive",
+            "BuildTopSkillList(parent, resident.Skills)",
             "NeedColor",
-            "SelectResidentFromHud(resident.Id)",
         ),
+    ))
+    errors.extend(check_issue14_hud_contracts(
+        root,
+        runtime_root,
+        texts,
+        require_fragments,
+        reject_fragments,
     ))
     errors.extend(require_fragments(
         agent_hud_path,

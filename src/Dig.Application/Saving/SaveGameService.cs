@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Application.Agents;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -52,7 +53,8 @@ public sealed class SaveGameService
             context.World,
             context.Inventory,
             context.Jobs,
-            context.Buildings));
+            context.Buildings,
+            context.Agents));
     }
 
     public Result<LoadedGameState> Load(
@@ -62,6 +64,15 @@ public sealed class SaveGameService
     {
         SaveGameDocument document = _store.Load(slotId);
         return _loader.Load(document, materials, items);
+    }
+
+    public Result<LoadedGameState> Load(
+        string slotId,
+        MaterialCatalog materials,
+        ItemCatalog items,
+        IAgentRepository agents)
+    {
+        return RestoreAgentSkills(Load(slotId, materials, items), agents);
     }
 
     public Result<LoadedGameState> Load(
@@ -79,9 +90,38 @@ public sealed class SaveGameService
         return _loader.Load(document, materials, items, buildingCatalog);
     }
 
+    public Result<LoadedGameState> Load(
+        string slotId,
+        MaterialCatalog materials,
+        ItemCatalog items,
+        BuildingCatalog buildingCatalog,
+        IAgentRepository agents)
+    {
+        return RestoreAgentSkills(
+            Load(slotId, materials, items, buildingCatalog),
+            agents);
+    }
+
     public IReadOnlyList<SaveSlotInfo> ListSlots()
     {
         return _store.List();
+    }
+
+    private static Result<LoadedGameState> RestoreAgentSkills(
+        Result<LoadedGameState> loaded,
+        IAgentRepository agents)
+    {
+        if (loaded.IsFailure)
+        {
+            return loaded;
+        }
+
+        Result restored = new LoadedAgentSkillProgressionRestorer(
+            agents ?? throw new ArgumentNullException(nameof(agents)))
+            .Restore(loaded.Value);
+        return restored.IsFailure
+            ? Result<LoadedGameState>.Failure(restored.Error!)
+            : loaded;
     }
 }
 }

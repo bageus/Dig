@@ -42,7 +42,22 @@ internal static class HeadlessSoakStateHasher
                 .Append('|').Append(agent.ActiveAction?.IntentKind.ToString() ?? "none")
                 .Append('|').Append(agent.ActiveAction?.ElapsedTicks ?? 0)
                 .Append('|').Append(agent.ActiveAction?.Target?.ToString() ?? "none")
-                .AppendLine();
+                .Append('|').Append(agent.SkillProgression?.SchemaVersion ?? 0)
+                .Append('|').Append(agent.SkillProgression?.PrecisionVersion ?? 0)
+                .Append('|').Append(agent.SkillProgression?.TotalCapacityUnits ?? 0);
+            foreach (Dig.Domain.Agents.AgentSkillValue skill in agent.Skills
+                .OrderBy(item => item.Id))
+            {
+                value.Append('|').Append(skill.Id).Append(':').Append(skill.Level);
+            }
+
+            foreach (string source in agent.SkillProgression?.AppliedSourceKeys
+                ?? Array.Empty<string>())
+            {
+                value.Append('|').Append("source:").Append(source);
+            }
+
+            value.AppendLine();
         }
 
         InventorySnapshot inventory = inventoryRepository.Get().CreateSnapshot();

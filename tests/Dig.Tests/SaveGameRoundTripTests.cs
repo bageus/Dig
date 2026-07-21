@@ -1,12 +1,16 @@
 using System;
 using System.IO;
 using System.Linq;
+using Dig.Application.Agents;
 using Dig.Application.Saving;
+using Dig.Domain.Agents;
+using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.World;
 using Dig.Infrastructure.Saving;
+using Dig.Infrastructure.InMemory;
 using Xunit;
 
 namespace Dig.Tests

@@ -31,7 +31,7 @@
     },
     "com.unity.ext.nunit": {
       "version": "2.0.5",
-      "depth": 4,
+      "depth": 1,
       "source": "builtin",
       "dependencies": {}
     },
@@ -109,14 +109,15 @@
       }
     },
     "com.unity.test-framework": {
-      "version": "1.6.0",
-      "depth": 3,
-      "source": "builtin",
+      "version": "1.4.6",
+      "depth": 0,
+      "source": "registry",
       "dependencies": {
-        "com.unity.ext.nunit": "2.0.3",
+        "com.unity.ext.nunit": "2.0.5",
         "com.unity.modules.imgui": "1.0.0",
         "com.unity.modules.jsonserialize": "1.0.0"
-      }
+      },
+      "url": "https://packages.unity.com"
     },
     "com.unity.test-framework.performance": {
       "version": "3.2.0",
@@ -151,7 +152,7 @@
     },
     "com.unity.modules.jsonserialize": {
       "version": "1.0.0",
-      "depth": 2,
+      "depth": 1,
       "source": "builtin",
       "dependencies": {}
     },

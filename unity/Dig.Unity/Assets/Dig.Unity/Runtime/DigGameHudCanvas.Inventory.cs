@@ -23,14 +23,14 @@ public sealed partial class DigGameHudCanvas
         bool hasExpansion = inventory.WeaponCapacity > 0 || inventory.CargoCapacity > 0;
         BeginBottomLayout(hasExpansion ? 184f : 150f);
         ConfigureInventoryRootLayout();
-        BuildCompartment(
-            inventory,
-            ResidentInventoryCompartment.Main,
-            MainCompartmentTitle);
         BuildCompartmentIfActive(
             inventory,
             ResidentInventoryCompartment.Weapon,
             $"WEAPON · {inventory.WeaponCapacity}");
+        BuildCompartment(
+            inventory,
+            ResidentInventoryCompartment.Main,
+            MainCompartmentTitle);
         BuildCompartmentIfActive(
             inventory,
             ResidentInventoryCompartment.Cargo,
@@ -38,12 +38,12 @@ public sealed partial class DigGameHudCanvas
 
         if (inventory.MoveSpeedMultiplier < 1d)
         {
-            _statusText!.text = _status
-                + $"  ·  Loaded speed: {inventory.MoveSpeedMultiplier:P0}";
+            SetContextStatusSuffix(
+                $"Loaded speed: {inventory.MoveSpeedMultiplier:P0}");
         }
         else
         {
-            _statusText!.text = _status;
+            SetContextStatusSuffix(null);
         }
     }
 

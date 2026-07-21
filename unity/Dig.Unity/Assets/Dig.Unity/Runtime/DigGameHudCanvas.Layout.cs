@@ -11,6 +11,7 @@ public sealed partial class DigGameHudCanvas
     private const float MaximumSidePanelHeight = 188f;
     private const float MinimumRosterWidth = 268f;
     private const float MaximumRosterWidth = 360f;
+    private const float TopHudOffset = -12f;
     private int _lastLayoutWidth = -1;
     private int _lastLayoutHeight = -1;
 
@@ -55,7 +56,7 @@ public sealed partial class DigGameHudCanvas
             margin,
             -50f,
             -(rosterWidth + (margin * 2f)),
-            -12f);
+            TopHudOffset);
         Anchor(
             _minimapPanel!,
             0f,
@@ -85,7 +86,7 @@ public sealed partial class DigGameHudCanvas
             -(margin + rosterWidth),
             margin + sideHeight + gap,
             -margin,
-            -60f);
+            TopHudOffset);
         Anchor(
             _bottomPanel!,
             0f,

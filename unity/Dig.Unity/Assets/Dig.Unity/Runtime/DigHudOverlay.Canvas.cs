@@ -14,6 +14,16 @@ public sealed partial class DigHudOverlay
         _gameHudCanvas = canvas ?? throw new ArgumentNullException(nameof(canvas));
         _gameHudCanvas.SetStatus(_status);
     }
+
+    internal void ShowTechnologyDescription(string technologyId)
+    {
+        _gameHudCanvas?.ShowTechnologyDescription(technologyId);
+    }
+
+    internal void DismissTechnologyDescription()
+    {
+        _gameHudCanvas?.DismissTechnologyDescription();
+    }
 }
 
 }

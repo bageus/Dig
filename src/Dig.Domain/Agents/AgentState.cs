@@ -60,18 +60,6 @@ public sealed partial class AgentState : AggregateRoot
 
     public string? LastActionBlockReason { get; private set; }
 
-    public Result SetSkillLevel(AgentSkillId skillId, int level)
-    {
-        if (!IsAlive)
-        {
-            return Result.Failure(AgentErrors.AgentDead);
-        }
-
-        _skills.SetLevel(skillId, level);
-        Version = checked(Version + 1);
-        return Result.Success();
-    }
-
     public Result SetPlayerOrder(PlayerOrder order, long tick)
     {
         if (order is null)
@@ -129,7 +117,7 @@ public sealed partial class AgentState : AggregateRoot
         }
 
         ExpirePlayerOrder(tick);
-        _needs.AdvancePassive(policy.Needs);
+        AdvancePassiveNeeds(policy.Needs, tick);
         _lastNeedsTick = tick;
         Version = checked(Version + 1);
         HandleDeath(tick);
@@ -157,7 +145,8 @@ public sealed partial class AgentState : AggregateRoot
             LastDecision,
             _skills.CreateSnapshot(),
             _traits.CreateSnapshot(),
-            SpatialPosition);
+            SpatialPosition,
+            _skills.TryCreateProgressionSnapshot());
     }
 
     private void ExpirePlayerOrder(long tick)
@@ -178,7 +167,7 @@ public sealed partial class AgentState : AggregateRoot
 
         _activeAction = null;
         _playerOrder = null;
-        Raise(new AgentDied(tick, Id));
+        Raise(new AgentDied(tick, Id, Position));
     }
 
     private static void ValidateTick(long tick)

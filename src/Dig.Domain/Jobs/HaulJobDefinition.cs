@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Dig.Domain.Agents;
+using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 
@@ -25,7 +27,8 @@ public sealed class HaulJobDefinition : JobDefinition
         int priority,
         long createdTick,
         JobRetryPolicy retryPolicy,
-        IEnumerable<EntityId>? dependencies = null)
+        IEnumerable<EntityId>? dependencies = null,
+        SkillGrantProfile? skillGrantProfile = null)
         : this(
             id,
             sourceStackId,
@@ -35,7 +38,8 @@ public sealed class HaulJobDefinition : JobDefinition
             priority,
             createdTick,
             retryPolicy,
-            dependencies)
+            dependencies,
+            skillGrantProfile)
     {
     }
 
@@ -48,7 +52,8 @@ public sealed class HaulJobDefinition : JobDefinition
         int priority,
         long createdTick,
         JobRetryPolicy retryPolicy,
-        IEnumerable<EntityId>? dependencies = null)
+        IEnumerable<EntityId>? dependencies = null,
+        SkillGrantProfile? skillGrantProfile = null)
         : base(id, priority, createdTick, retryPolicy, HaulStages, dependencies)
     {
         if (sourceStackId.IsEmpty)
@@ -75,6 +80,9 @@ public sealed class HaulJobDefinition : JobDefinition
         ItemId = itemId;
         Quantity = quantity;
         Destination = destination;
+        SkillGrantProfile = skillGrantProfile
+            ?? DefaultSkillProgressionContent.Catalog.GetProfile(
+                DefaultSkillGrantProfileIds.Logistics);
     }
 
     public EntityId SourceStackId { get; }
@@ -84,6 +92,8 @@ public sealed class HaulJobDefinition : JobDefinition
     public int Quantity { get; }
 
     public ItemLocation Destination { get; }
+
+    public SkillGrantProfile SkillGrantProfile { get; }
 
     public EntityId DestinationStorageId =>
         Destination.Kind == ItemLocationKind.Storage && Destination.HasOwner

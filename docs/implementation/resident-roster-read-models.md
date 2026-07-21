@@ -75,7 +75,11 @@ Work schedule with no action, Job or emergency becomes `Idle` with `IsIdleAtWork
 
 `ResidentRosterViewModel` contains the stable rows and the selected resident id. Exactly the selected row is expanded; selection does not mutate Agent or Society state.
 
-`GetWindow(offset, count)` returns only the requested bounded row range. Unity can reuse a fixed pool of row visuals for 64+ residents instead of creating one GameObject for every resident on every tick.
+`GetWindow(offset, count)` returns only the requested bounded row range. Unity's
+`DigGameHudCanvas.RosterVirtualization` consumes that contract through a fixed
+pool of sixteen row roots. Top and bottom layout spacers preserve scroll extent;
+only a slot whose immutable row signature changed is rebound. The Unity adapter
+keeps the presenter order and no longer re-sorts rows by display name.
 
 ## Validation
 
@@ -89,5 +93,9 @@ Tests cover:
 - typed digging and player-order descriptors;
 - safe missing targets and typed block reasons;
 - a bounded window over seventy residents.
+- a Unity Play Mode regression with seventy residents, sixteen row roots and an
+  unchanged neighbouring row after another row updates.
 
-Later Unity roster work consumes these models and must keep visual pooling, click routing and localization outside Domain.
+Click routing, scroll position and row pooling remain local Presentation state.
+The Unity row reads the typed sex indicator already present in the read model;
+it does not query or mutate the simulation while binding.

@@ -62,6 +62,9 @@ public sealed partial class CombatState : AggregateRoot
     public WeaponCatalog Weapons { get; }
     public long Version { get; private set; }
 
+    public bool HasResolvedAttack(CombatActionId actionId) =>
+        _resolutions.ContainsKey(actionId);
+
     public Result<CombatAttackResolution> ResolveAttack(
         CombatAttackRequest request,
         CombatantSnapshot attacker,

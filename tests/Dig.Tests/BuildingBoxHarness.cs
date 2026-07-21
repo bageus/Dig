@@ -163,7 +163,9 @@ internal sealed class BuildingBoxHarness
             BuildingsRepository,
             InventoryRepository,
             JobRepository,
-            Journal).Handle(new CompleteBuildingBoxAssemblyCommand(
+            Journal,
+            AgentSkillGrantTestFactory.Create(WorkerId, Journal))
+            .Handle(new CompleteBuildingBoxAssemblyCommand(
                 BuildingId,
                 JobId,
                 _tick++));

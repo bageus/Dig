@@ -27,6 +27,7 @@ namespace Dig.Unity
         private readonly WorldCellViewModel[] _walkableCells;
         private readonly Dictionary<EntityId, int> _routeIndices;
         private readonly Dictionary<EntityId, ResidentSex> _residentSexes;
+        private readonly IAgentSkillGrantService _skillGrants;
         private long _tick;
 
         private DigAgentSession(
@@ -37,7 +38,8 @@ namespace Dig.Unity
             SimulationState simulationState,
             WorldCellViewModel[] walkableCells,
             Dictionary<EntityId, int> routeIndices,
-            Dictionary<EntityId, ResidentSex> residentSexes)
+            Dictionary<EntityId, ResidentSex> residentSexes,
+            IAgentSkillGrantService skillGrants)
         {
             _autonomy = autonomy;
             _movementHandler = movementHandler;
@@ -47,9 +49,13 @@ namespace Dig.Unity
             _walkableCells = walkableCells;
             _routeIndices = routeIndices;
             _residentSexes = residentSexes;
+            _skillGrants = skillGrants
+                ?? throw new ArgumentNullException(nameof(skillGrants));
         }
 
         public long Tick => _tick;
+
+        internal IAgentSkillGrantService SkillGrants => _skillGrants;
 
         public static DigAgentSession CreateDemo(
             WorldViewModel world,
@@ -110,7 +116,8 @@ namespace Dig.Unity
                     tickDuration: TimeSpan.FromMilliseconds(500)),
                 walkable,
                 routeIndices,
-                residentSexes);
+                residentSexes,
+                new AgentSkillGrantService(repository, journal));
             session.InitializeTunnelMovement(tunnelVolume, journal);
             return session;
         }
@@ -118,6 +125,15 @@ namespace Dig.Unity
         public IReadOnlyList<AgentViewModel> LoadView()
         {
             return _presenter.Load(_tick);
+        }
+
+        internal int GetMaximumSkillLevel(AgentSkillId skillId)
+        {
+            return _repository.GetAll()
+                .Where(agent => agent.IsAlive)
+                .Select(agent => agent.CreateSnapshot(_tick).GetSkillLevel(skillId))
+                .DefaultIfEmpty(0)
+                .Max();
         }
 
         internal ResidentSex ResolveResidentSex(string residentId)

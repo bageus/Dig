@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dig.Domain.Agents;
+using Dig.Domain.Content;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
 using Dig.Presentation.World;
@@ -19,31 +21,41 @@ internal sealed partial class DigWorldSession
             "Iron ore",
             new ItemId("ore.iron"),
             maximumYield: 8,
-            generationWeight: 28),
+            generationWeight: 28,
+            skillGrantProfile: DefaultSkillProgressionContent.Catalog.GetProfile(
+                DefaultSkillGrantProfileIds.Metallurgy)),
         new TerrainDepositDefinition(
             "deposit.gold_ore",
             "Gold ore",
             new ItemId("ore.gold"),
             maximumYield: 5,
-            generationWeight: 8),
+            generationWeight: 8,
+            skillGrantProfile: DefaultSkillProgressionContent.Catalog.GetProfile(
+                DefaultSkillGrantProfileIds.Metallurgy)),
         new TerrainDepositDefinition(
             "deposit.crystal_ore",
             "Crystal ore",
             new ItemId("ore.crystal"),
             maximumYield: 6,
-            generationWeight: 12),
+            generationWeight: 12,
+            skillGrantProfile: DefaultSkillProgressionContent.Catalog.GetProfile(
+                DefaultSkillGrantProfileIds.Alchemy)),
         new TerrainDepositDefinition(
             "deposit.coal",
             "Coal",
             new ItemId("material.coal"),
             maximumYield: 10,
-            generationWeight: 24),
+            generationWeight: 24,
+            skillGrantProfile: DefaultSkillProgressionContent.Catalog.GetProfile(
+                DefaultSkillGrantProfileIds.Alchemy)),
         new TerrainDepositDefinition(
             "deposit.stone",
             "Stone",
             new ItemId("material.stone"),
             maximumYield: 12,
-            generationWeight: 28),
+            generationWeight: 28,
+            skillGrantProfile: DefaultSkillProgressionContent.Catalog.GetProfile(
+                DefaultSkillGrantProfileIds.StoneExtraction)),
     };
 
     private readonly TerrainDepositPresenter _terrainDepositPresenter =
@@ -104,6 +116,16 @@ internal sealed partial class DigWorldSession
 
         long nextVersion = Math.Max(deposit.Version + 1, tick);
         _terrainDeposits[spatial] = deposit.Deplete(nextVersion);
+    }
+
+    internal SkillGrantProfile ResolveExcavationSkillGrantProfile(CellId cell)
+    {
+        SpatialCellId spatial = new SpatialCellId(cell.X, cell.Y, 0);
+        return _terrainDeposits.TryGetValue(spatial, out TerrainDepositInstance? deposit)
+            && !deposit.IsDepleted
+                ? deposit.Definition.SkillGrantProfile
+                : DefaultSkillProgressionContent.Catalog.GetProfile(
+                    DefaultSkillGrantProfileIds.StoneExtraction);
     }
 
     private void InitializeDemoDeposits(int seed)

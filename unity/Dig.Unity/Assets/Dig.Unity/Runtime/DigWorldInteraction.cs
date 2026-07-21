@@ -21,6 +21,7 @@ namespace Dig.Unity
         private DigTerrainWorkSession? _terrainSession;
         private DigStockpileRenderer? _stockpileRenderer;
         private DigAgentSimulationDriver? _simulation;
+        private DigAgentSession? _agentSession;
         private DigHudOverlay? _hud;
         private DigCellVisual? _selectedCell;
         private string? _lastResidentClickId;
@@ -38,6 +39,7 @@ namespace Dig.Unity
             DigBuildingBoxGhostRenderer buildingBoxGhostRenderer,
             DigTerrainWorkSession terrainSession,
             DigStockpileRenderer stockpileRenderer,
+            DigAgentSession agentSession,
             DigAgentSimulationDriver simulation,
             DigHudOverlay hud)
         {
@@ -52,6 +54,7 @@ namespace Dig.Unity
             _buildingBoxGhostRenderer = buildingBoxGhostRenderer;
             _terrainSession = terrainSession;
             _stockpileRenderer = stockpileRenderer;
+            _agentSession = agentSession;
             _simulation = simulation;
             _hud = hud;
             SetTunnelDigInteractionActive(active: false);
@@ -300,6 +303,7 @@ namespace Dig.Unity
                 && _buildingBoxGhostRenderer != null
                 && _terrainSession != null
                 && _stockpileRenderer != null
+                && _agentSession != null
                 && _simulation != null
                 && _hud != null;
         }

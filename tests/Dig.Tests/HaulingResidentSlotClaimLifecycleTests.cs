@@ -121,7 +121,9 @@ public sealed class HaulingResidentSlotClaimLifecycleTests
             harness.InventoryRepository,
             harness.StorageRepository,
             harness.JobRepository,
-            harness.Journal).Handle(new CompleteHaulingJobCommand(
+            harness.Journal,
+            AgentSkillGrantTestFactory.Create(FirstResidentId, harness.Journal))
+            .Handle(new CompleteHaulingJobCommand(
                 JobId,
                 Id(20),
                 tick: 6));

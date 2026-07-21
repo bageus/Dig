@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Diagnostics;
+using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Messaging;
@@ -116,6 +117,7 @@ internal sealed class SoakHaulingSystem : ISimulationSystem
         IInventoryRepository inventory,
         IStorageRepository storage,
         IJobRepository jobs,
+        IAgentRepository agents,
         IEventSink events,
         SimulationState state,
         IEnumerable<EntityId> workers)
@@ -137,7 +139,12 @@ internal sealed class SoakHaulingSystem : ISimulationSystem
             events);
         _assign = new AssignAvailableJobsHandler(jobs, _candidates, events);
         _advance = new AdvanceJobHandler(jobs, events);
-        _complete = new CompleteHaulingJobHandler(inventory, storage, jobs, events);
+        _complete = new CompleteHaulingJobHandler(
+            inventory,
+            storage,
+            jobs,
+            events,
+            new AgentSkillGrantService(agents, events));
     }
 
     public string Name => "soak.hauling";

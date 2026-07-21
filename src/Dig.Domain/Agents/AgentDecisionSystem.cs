@@ -6,7 +6,7 @@ public sealed partial class AgentDecisionSystem
 {
     private const int CandidateCount = 7;
     private static readonly AgentSkillId GeneralWorkSkill =
-        new AgentSkillId("general.work");
+        AgentSkillCatalog.Logistics;
 
     public AgentDecision Decide(
         AgentSnapshot agent,

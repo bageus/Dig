@@ -102,13 +102,13 @@ public sealed class ApplyProductionWorkCommand : ICommand<Result>
         EntityId orderId,
         EntityId jobId,
         int baseWork,
-        ProductionWorkContext context,
+        int conditionEfficiencyBasisPoints,
         long tick)
     {
         OrderId = orderId;
         JobId = jobId;
         BaseWork = baseWork;
-        Context = context;
+        ConditionEfficiencyBasisPoints = conditionEfficiencyBasisPoints;
         Tick = tick;
     }
 
@@ -118,7 +118,7 @@ public sealed class ApplyProductionWorkCommand : ICommand<Result>
 
     public int BaseWork { get; }
 
-    public ProductionWorkContext Context { get; }
+    public int ConditionEfficiencyBasisPoints { get; }
 
     public long Tick { get; }
 }

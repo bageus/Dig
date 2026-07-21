@@ -14,6 +14,7 @@ REQUIRED_PACKAGES = {
     "com.unity.modules.imgui": ("1.0.0", "builtin"),
     "com.unity.modules.particlesystem": ("1.0.0", "builtin"),
     "com.unity.modules.physics": ("1.0.0", "builtin"),
+    "com.unity.test-framework": ("1.4.6", "registry"),
     "com.unity.ugui": ("2.0.0", "builtin"),
 }
 

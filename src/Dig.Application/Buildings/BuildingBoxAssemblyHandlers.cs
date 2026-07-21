@@ -1,8 +1,10 @@
 using System;
+using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Messaging;
 using Dig.Domain.Buildings;
+using Dig.Domain.Agents;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
@@ -105,12 +107,14 @@ public sealed class CompleteBuildingBoxAssemblyHandler
     private readonly IInventoryRepository _inventoryRepository;
     private readonly IJobRepository _jobRepository;
     private readonly IEventSink _eventSink;
+    private readonly IAgentSkillGrantService _skillGrants;
 
     public CompleteBuildingBoxAssemblyHandler(
         IBuildingsRepository buildingsRepository,
         IInventoryRepository inventoryRepository,
         IJobRepository jobRepository,
-        IEventSink eventSink)
+        IEventSink eventSink,
+        IAgentSkillGrantService skillGrants)
     {
         _buildingsRepository = buildingsRepository
             ?? throw new ArgumentNullException(nameof(buildingsRepository));
@@ -119,6 +123,8 @@ public sealed class CompleteBuildingBoxAssemblyHandler
         _jobRepository = jobRepository
             ?? throw new ArgumentNullException(nameof(jobRepository));
         _eventSink = eventSink ?? throw new ArgumentNullException(nameof(eventSink));
+        _skillGrants = skillGrants
+            ?? throw new ArgumentNullException(nameof(skillGrants));
     }
 
     public Result Handle(CompleteBuildingBoxAssemblyCommand command)
@@ -143,6 +149,18 @@ public sealed class CompleteBuildingBoxAssemblyHandler
             || building.BoxPlan!.CommitState != BuildingBoxCommitState.AtSite)
         {
             return Result.Failure(BuildingBoxErrors.InvalidJobStage);
+        }
+
+        if (!job.AssignedAgentId.HasValue)
+        {
+            return Result.Failure(BuildingBoxErrors.InvalidJobStage);
+        }
+
+        SkillGrantBundle skillBundle = CreateSkillBundle(job, command.Tick);
+        Result skillValidation = _skillGrants.Validate(skillBundle);
+        if (skillValidation.IsFailure)
+        {
+            return skillValidation;
         }
 
         InventoryState inventory = _inventoryRepository.Get();
@@ -178,6 +196,7 @@ public sealed class CompleteBuildingBoxAssemblyHandler
             return completedJob;
         }
 
+        ApplyConfirmedSkillResult(skillBundle);
         _inventoryRepository.Save(inventory);
         _buildingsRepository.Save(buildings);
         _jobRepository.Save(jobs);
@@ -185,6 +204,28 @@ public sealed class CompleteBuildingBoxAssemblyHandler
         _eventSink.Append(buildings.DequeueUncommittedEvents());
         _eventSink.Append(jobs.DequeueUncommittedEvents());
         return Result.Success();
+    }
+
+    private static SkillGrantBundle CreateSkillBundle(JobSnapshot job, long tick)
+    {
+        BuildingBoxAssemblyJobDefinition definition =
+            (BuildingBoxAssemblyJobDefinition)job.Definition;
+        return new SkillGrantBundle(
+            job.AssignedAgentId!.Value,
+            SkillGrantSourceKind.JobCompleted,
+            job.Id.ToString(),
+            tick,
+            definition.SkillGrantProfile.Multiply(1));
+    }
+
+    private void ApplyConfirmedSkillResult(SkillGrantBundle bundle)
+    {
+        Result<SkillRedistributionReport> applied = _skillGrants.ApplyConfirmed(bundle);
+        if (applied.IsFailure)
+        {
+            throw new InvalidOperationException(
+                $"Completed building box assembly skill grant failed: {applied.Error}");
+        }
     }
 }
 

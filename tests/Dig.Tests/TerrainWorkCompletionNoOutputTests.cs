@@ -17,6 +17,8 @@ public sealed class TerrainWorkCompletionNoOutputTests
     private static readonly CellId Target = new CellId(3, 1);
     private static readonly EntityId JobId =
         EntityId.Parse("40000000000000000000000000000009");
+    private static readonly EntityId WorkerId =
+        EntityId.Parse("10000000000000000000000000000009");
 
     [Fact]
     public void Ordinary_rock_completes_without_creating_an_inventory_stack()
@@ -36,7 +38,8 @@ public sealed class TerrainWorkCompletionNoOutputTests
             new InMemoryJobRepository(jobs),
             new InMemoryWorldRepository(world),
             new InMemoryInventoryRepository(inventory),
-            journal);
+            journal,
+            AgentSkillGrantTestFactory.Create(WorkerId, journal));
         long inventoryVersion = inventory.Version;
 
         Result<TerrainWorkCompletionResult> result = handler.Handle(
@@ -82,7 +85,7 @@ public sealed class TerrainWorkCompletionNoOutputTests
         Assert.True(jobs.MakeAvailable(JobId, tick: 0).IsSuccess);
         Assert.True(jobs.Claim(
             JobId,
-            EntityId.Parse("10000000000000000000000000000009"),
+            WorkerId,
             tick: 1).IsSuccess);
         Assert.True(jobs.Start(JobId, tick: 2).IsSuccess);
         Assert.True(jobs.AdvanceStage(JobId, tick: 3).IsSuccess);

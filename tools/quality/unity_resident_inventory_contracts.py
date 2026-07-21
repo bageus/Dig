@@ -13,7 +13,7 @@ def check_resident_inventory_runtime_contracts(
 ) -> list[str]:
     visual_path = runtime_root / "DigAgentVisual.cs"
     buildings_path = runtime_root / "DigTerrainWorkSession.Buildings.cs"
-    session_path = runtime_root / "DigTerrainWorkSession.cs"
+    session_path = runtime_root / "DigTerrainWorkSession.Composition.cs"
     equipment_path = runtime_root / "DigResidentEquipment.cs"
     feedback_path = runtime_root / "DigResidentInventory.Feedback.cs"
     renderer_path = runtime_root / "DigAgentRenderer.InventoryAttachments.cs"

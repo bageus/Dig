@@ -195,31 +195,15 @@ public readonly struct ResidentSkillViewModel
     public int Level { get; }
 }
 
-public sealed class ResidentSkillSetViewModel
+public sealed partial class ResidentSkillSetViewModel
 {
     public ResidentSkillSetViewModel(IEnumerable<ResidentSkillViewModel> skills)
+        : this(
+            skills,
+            AgentSkillCatalog.BaseCapacityUnits,
+            AgentSkillCatalog.PrecisionVersion,
+            lastReport: null)
     {
-        if (skills is null)
-        {
-            throw new ArgumentNullException(nameof(skills));
-        }
-
-        ResidentSkillViewModel[] all = skills
-            .OrderBy(item => item.SkillId, StringComparer.Ordinal)
-            .ToArray();
-        if (all.Select(item => item.SkillId)
-            .Distinct(StringComparer.Ordinal)
-            .Count() != all.Length)
-        {
-            throw new ArgumentException("Skill ids must be unique.", nameof(skills));
-        }
-
-        All = new ReadOnlyCollection<ResidentSkillViewModel>(all);
-        TopFive = new ReadOnlyCollection<ResidentSkillViewModel>(all
-            .OrderByDescending(item => item.Level)
-            .ThenBy(item => item.SkillId, StringComparer.Ordinal)
-            .Take(5)
-            .ToArray());
     }
 
     public IReadOnlyList<ResidentSkillViewModel> All { get; }

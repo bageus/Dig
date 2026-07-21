@@ -1,0 +1,27 @@
+{
+  "name": "Dig.Unity.PlayModeTests",
+  "rootNamespace": "Dig.Unity.Tests",
+  "references": [
+    "Dig.Domain",
+    "Dig.Presentation.Abstractions",
+    "Dig.Unity",
+    "UnityEngine.TestRunner",
+    "UnityEngine.UI"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

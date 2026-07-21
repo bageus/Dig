@@ -77,6 +77,7 @@ internal static class HeadlessSoakScenario
             inventoryRepository,
             storageRepository,
             jobRepository,
+            agentRepository,
             journal,
             state,
             haulingWorkers);

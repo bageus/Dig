@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Runtime.Serialization;
+using Dig.Domain.Agents;
 using Dig.Domain.Buildings;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
@@ -12,7 +14,7 @@ namespace Dig.Application.Saving
 
 public static class SaveFormat
 {
-    public const int CurrentVersion = 3;
+    public const int CurrentVersion = 4;
 }
 
 public static class SaveSlotNames
@@ -101,6 +103,9 @@ public sealed class SaveGameDocument
 
     [DataMember(Order = 6)]
     public BuildingsSaveData Buildings { get; set; } = new BuildingsSaveData();
+
+    [DataMember(Order = 7)]
+    public AgentSkillsSaveData AgentSkills { get; set; } = new AgentSkillsSaveData();
 }
 
 public sealed class LoadedGameState
@@ -111,7 +116,8 @@ public sealed class LoadedGameState
         InventoryState inventory,
         JobSystem jobs,
         BuildingsState buildings,
-        SaveMigrationReport migrationReport)
+        SaveMigrationReport migrationReport,
+        IReadOnlyDictionary<EntityId, AgentSkillProgressionSnapshot>? agentSkills = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -119,6 +125,11 @@ public sealed class LoadedGameState
         Jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
         Buildings = buildings ?? throw new ArgumentNullException(nameof(buildings));
         MigrationReport = migrationReport ?? throw new ArgumentNullException(nameof(migrationReport));
+        Dictionary<EntityId, AgentSkillProgressionSnapshot> skillCopy = agentSkills is null
+            ? new Dictionary<EntityId, AgentSkillProgressionSnapshot>()
+            : agentSkills.ToDictionary(value => value.Key, value => value.Value);
+        AgentSkills = new ReadOnlyDictionary<EntityId, AgentSkillProgressionSnapshot>(
+            skillCopy);
     }
 
     public SaveMetadataData Metadata { get; }
@@ -127,6 +138,7 @@ public sealed class LoadedGameState
     public JobSystem Jobs { get; }
     public BuildingsState Buildings { get; }
     public SaveMigrationReport MigrationReport { get; }
+    public IReadOnlyDictionary<EntityId, AgentSkillProgressionSnapshot> AgentSkills { get; }
 }
 
 public sealed class SaveMigrationReport
@@ -199,12 +211,25 @@ public sealed class SaveGameContext
         InventoryState inventory,
         JobSystem jobs,
         BuildingsState buildings)
+        : this(metadata, world, inventory, jobs, buildings, Array.Empty<AgentState>())
+    {
+    }
+
+    public SaveGameContext(
+        SaveMetadataData metadata,
+        WorldState world,
+        InventoryState inventory,
+        JobSystem jobs,
+        BuildingsState buildings,
+        IReadOnlyCollection<AgentState> agents)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
         Inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
         Jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
         Buildings = buildings ?? throw new ArgumentNullException(nameof(buildings));
+        Agents = new ReadOnlyCollection<AgentState>(
+            (agents ?? throw new ArgumentNullException(nameof(agents))).ToList());
     }
 
     public SaveMetadataData Metadata { get; }
@@ -212,5 +237,6 @@ public sealed class SaveGameContext
     public InventoryState Inventory { get; }
     public JobSystem Jobs { get; }
     public BuildingsState Buildings { get; }
+    public IReadOnlyList<AgentState> Agents { get; }
 }
 }

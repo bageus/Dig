@@ -24,7 +24,8 @@ public sealed class AgentSnapshot
         IReadOnlyCollection<AgentSkillValue> skills,
         IReadOnlyCollection<AgentTraitId> traits,
         CellId? position = null,
-        int positionZ = 0)
+        int positionZ = 0,
+        AgentSkillProgressionSnapshot? skillProgression = null)
         : this(
             id,
             name,
@@ -41,7 +42,8 @@ public sealed class AgentSnapshot
             new SpatialCellId(
                 (position ?? new CellId(0, 0)).X,
                 (position ?? new CellId(0, 0)).Y,
-                positionZ))
+                positionZ),
+            skillProgression)
     {
     }
 
@@ -58,7 +60,8 @@ public sealed class AgentSnapshot
         AgentDecision? lastDecision,
         IReadOnlyList<AgentSkillValue> skills,
         IReadOnlyList<AgentTraitId> traits,
-        SpatialCellId position)
+        SpatialCellId position,
+        AgentSkillProgressionSnapshot? skillProgression)
     {
         if (id.IsEmpty)
         {
@@ -101,6 +104,7 @@ public sealed class AgentSnapshot
         LastActionSwitchTick = lastActionSwitchTick;
         LastDecision = lastDecision;
         SpatialPosition = position;
+        SkillProgression = skillProgression;
     }
 
     public EntityId Id { get; }
@@ -115,6 +119,7 @@ public sealed class AgentSnapshot
     public AgentDecision? LastDecision { get; }
     public IReadOnlyList<AgentSkillValue> Skills { get; }
     public IReadOnlyList<AgentTraitId> Traits { get; }
+    public AgentSkillProgressionSnapshot? SkillProgression { get; }
     public CellId Position => SpatialPosition.Projection;
     public SpatialCellId SpatialPosition { get; }
     public int PositionZ => SpatialPosition.Z;
@@ -129,7 +134,31 @@ public sealed class AgentSnapshot
             }
         }
 
+        AgentSkillId alias = LegacyAlias(skillId);
+        if (!alias.IsEmpty && alias != skillId)
+        {
+            for (int index = 0; index < Skills.Count; index++)
+            {
+                if (Skills[index].Id == alias)
+                {
+                    return Skills[index].Level;
+                }
+            }
+        }
+
         return 0;
+    }
+
+    private static AgentSkillId LegacyAlias(AgentSkillId skillId)
+    {
+        string value = skillId.ToString();
+        if (value == "general.work") return AgentSkillCatalog.Logistics;
+        if (value == "mining") return AgentSkillCatalog.Stonework;
+        if (value == "building") return AgentSkillCatalog.Woodworking;
+        if (skillId == AgentSkillCatalog.Logistics) return new AgentSkillId("general.work");
+        if (skillId == AgentSkillCatalog.Stonework) return new AgentSkillId("mining");
+        if (skillId == AgentSkillCatalog.Woodworking) return new AgentSkillId("building");
+        return default;
     }
 
     public bool HasTrait(AgentTraitId traitId)
@@ -158,7 +187,8 @@ public sealed class AgentSnapshot
         AgentDecision? lastDecision,
         IReadOnlyList<AgentSkillValue> skills,
         IReadOnlyList<AgentTraitId> traits,
-        CellId position)
+        CellId position,
+        AgentSkillProgressionSnapshot? skillProgression = null)
     {
         return FromNormalizedCapabilities(
             id,
@@ -173,7 +203,8 @@ public sealed class AgentSnapshot
             lastDecision,
             skills,
             traits,
-            new SpatialCellId(position.X, position.Y, 0));
+            new SpatialCellId(position.X, position.Y, 0),
+            skillProgression);
     }
 
     internal static AgentSnapshot FromNormalizedCapabilities(
@@ -189,7 +220,8 @@ public sealed class AgentSnapshot
         AgentDecision? lastDecision,
         IReadOnlyList<AgentSkillValue> skills,
         IReadOnlyList<AgentTraitId> traits,
-        SpatialCellId position)
+        SpatialCellId position,
+        AgentSkillProgressionSnapshot? skillProgression = null)
     {
         return new AgentSnapshot(
             id,
@@ -204,7 +236,8 @@ public sealed class AgentSnapshot
             lastDecision,
             skills,
             traits,
-            position);
+            position,
+            skillProgression);
     }
 
     private static IReadOnlyList<AgentSkillValue> CopySkills(

@@ -153,10 +153,7 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
     internal void SetStatus(string status)
     {
         _status = status ?? string.Empty;
-        if (_statusText != null)
-        {
-            _statusText.text = _status;
-        }
+        RefreshNotificationText();
     }
 
     internal void InvalidateAll()
@@ -175,6 +172,7 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
 
         ApplyResponsiveLayout();
         RefreshClock();
+        RefreshNotifications();
         RefreshRoster();
         RefreshContextPanel();
     }
@@ -221,7 +219,7 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
             "Notification Ticker",
             transform,
             new Color(0.02f, 0.03f, 0.045f, 0.90f));
-        _statusPanel.GetComponent<Image>().raycastTarget = false;
+        _statusPanel.GetComponent<Image>().raycastTarget = true;
         _statusText = CreateText(
             "Notification",
             _statusPanel,
@@ -230,6 +228,9 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
             TextAnchor.MiddleCenter);
         Stretch(_statusText.rectTransform, 10f, 3f, -10f, -3f);
         _statusText.raycastTarget = false;
+        DigInventorySlotPointer notificationPointer =
+            _statusPanel.gameObject.AddComponent<DigInventorySlotPointer>();
+        notificationPointer.Clicked = HandleNotificationClick;
 
         CreateMinimapShell();
         CreateClockShell();
@@ -284,12 +285,13 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
         rows.childForceExpandWidth = true;
         ContentSizeFitter fitter = _rightContent.gameObject.AddComponent<ContentSizeFitter>();
         fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        ScrollRect scroll = viewport.gameObject.AddComponent<ScrollRect>();
-        scroll.viewport = viewport;
-        scroll.content = _rightContent;
-        scroll.horizontal = false;
-        scroll.vertical = true;
-        scroll.movementType = ScrollRect.MovementType.Clamped;
+        _rightScroll = viewport.gameObject.AddComponent<ScrollRect>();
+        _rightScroll.viewport = viewport;
+        _rightScroll.content = _rightContent;
+        _rightScroll.horizontal = false;
+        _rightScroll.vertical = true;
+        _rightScroll.movementType = ScrollRect.MovementType.Clamped;
+        _rightScroll.onValueChanged.AddListener(OnRightPanelScrolled);
     }
 
     private static bool Contains(RectTransform? rect, Vector3 screenPoint)

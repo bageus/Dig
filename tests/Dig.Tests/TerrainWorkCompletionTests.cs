@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
+using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
+using Dig.Domain.Agents;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
@@ -56,6 +58,73 @@ public sealed class TerrainWorkCompletionTests
         Assert.Empty(jobs.GetReservations());
         Assert.Contains(journal.Events, item => item is CellChanged);
         Assert.Contains(journal.Events, item => item is JobStatusChanged);
+    }
+
+    [Fact]
+    public void Confirmed_excavation_grants_stonework_once_after_job_completion()
+    {
+        WorldState world = CreateWorld();
+        InventoryState inventory = CreateInventory();
+        JobSystem jobs = CreateFinalizingJob();
+        InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
+        InMemoryAgentRepository agents = new InMemoryAgentRepository();
+        EntityId workerId = Id("10000000000000000000000000000001");
+        Assert.True(agents.Add(AgentTestFactory.CreateAgent(id: workerId)).IsSuccess);
+        CompleteTerrainWorkCommandHandler handler = new CompleteTerrainWorkCommandHandler(
+            new InMemoryJobRepository(jobs),
+            new InMemoryWorldRepository(world),
+            new InMemoryInventoryRepository(inventory),
+            journal,
+            new AgentSkillGrantService(agents, journal));
+        CompleteTerrainWorkCommand command = new CompleteTerrainWorkCommand(
+            JobId,
+            Id("50000000000000000000000000000008"),
+            RockItem,
+            outputQuantity: 1,
+            Air,
+            tick: 10);
+
+        Assert.True(handler.Handle(command).IsSuccess);
+        Assert.Equal(AgentSkillCatalog.UnitsPerPoint, agents.Get(workerId)!
+            .CreateSnapshot(10)
+            .GetSkillLevel(AgentSkillCatalog.Stonework));
+        Assert.Single(journal.Events.OfType<SkillProgressionResultConfirmed>());
+        Assert.True(handler.Handle(command).IsFailure);
+        Assert.Equal(AgentSkillCatalog.UnitsPerPoint, agents.Get(workerId)!
+            .CreateSnapshot(10)
+            .GetSkillLevel(AgentSkillCatalog.Stonework));
+    }
+
+    [Fact]
+    public void Missing_skill_recipient_rejects_completion_before_world_mutation()
+    {
+        WorldState world = CreateWorld();
+        InventoryState inventory = CreateInventory();
+        JobSystem jobs = CreateFinalizingJob();
+        InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
+        InMemoryAgentRepository agents = new InMemoryAgentRepository();
+        CompleteTerrainWorkCommandHandler handler = new CompleteTerrainWorkCommandHandler(
+            new InMemoryJobRepository(jobs),
+            new InMemoryWorldRepository(world),
+            new InMemoryInventoryRepository(inventory),
+            journal,
+            new AgentSkillGrantService(agents, journal));
+
+        Result<TerrainWorkCompletionResult> result = handler.Handle(
+            new CompleteTerrainWorkCommand(
+                JobId,
+                Id("50000000000000000000000000000018"),
+                RockItem,
+                outputQuantity: 1,
+                Air,
+                tick: 10));
+
+        Assert.True(result.IsFailure);
+        Assert.True(world.GetCell(Target).Value.IsSolid);
+        Assert.Equal(JobStatus.InProgress, jobs.Get(JobId)!.Status);
+        Assert.Null(inventory.GetStack(
+            Id("50000000000000000000000000000018")));
+        Assert.Empty(journal.Events.OfType<SkillProgressionResultConfirmed>());
     }
 
     [Fact]
@@ -171,6 +240,7 @@ public sealed class TerrainWorkCompletionTests
     }
 
     private static EntityId JobId => Id("40000000000000000000000000000001");
+    private static EntityId WorkerId => Id("10000000000000000000000000000001");
 
     private static CompleteTerrainWorkCommandHandler CreateHandler(
         JobSystem jobs,
@@ -182,7 +252,8 @@ public sealed class TerrainWorkCompletionTests
             new InMemoryJobRepository(jobs),
             new InMemoryWorldRepository(world),
             new InMemoryInventoryRepository(inventory),
-            journal);
+            journal,
+            AgentSkillGrantTestFactory.Create(WorkerId, journal));
     }
 
     private static JobSystem CreateFinalizingJob()
@@ -198,7 +269,7 @@ public sealed class TerrainWorkCompletionTests
         Assert.True(jobs.MakeAvailable(JobId, tick: 0).IsSuccess);
         Assert.True(jobs.Claim(
             JobId,
-            Id("10000000000000000000000000000001"),
+            WorkerId,
             tick: 1).IsSuccess);
         Assert.True(jobs.Start(JobId, tick: 2).IsSuccess);
         Assert.True(jobs.AdvanceStage(JobId, tick: 3).IsSuccess);

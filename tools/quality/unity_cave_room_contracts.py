@@ -19,7 +19,7 @@ def check_cave_room_runtime_contracts(
     tunnel_renderer = runtime_root / "DigTunnelDemoRenderer.cs"
     world_renderer = runtime_root / "DigWorldRenderer.cs"
     depth_adapter = runtime_root / "DigWorldRenderer.DepthTerrain.cs"
-    agent_session = runtime_root / "DigAgentSession.TunnelMovement.cs"
+    agent_session = runtime_root / "DigAgentSession.TunnelTopology.cs"
     bootstrap = runtime_root / "DigUnityBootstrap.cs"
     errors: list[str] = []
     errors.extend(require_fragments(

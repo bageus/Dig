@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Dig.Domain.Agents;
+using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 
@@ -24,7 +26,8 @@ public sealed class HealingJobDefinition : JobDefinition
         int priority,
         long createdTick,
         JobRetryPolicy retryPolicy,
-        IEnumerable<EntityId>? dependencies = null)
+        IEnumerable<EntityId>? dependencies = null,
+        SkillGrantProfile? skillGrantProfile = null)
         : base(id, priority, createdTick, retryPolicy, HealingStages, dependencies)
     {
         if (patientId.IsEmpty)
@@ -40,6 +43,9 @@ public sealed class HealingJobDefinition : JobDefinition
         PatientId = patientId;
         WorkPosition = workPosition;
         HealthRestored = healthRestored;
+        SkillGrantProfile = skillGrantProfile
+            ?? DefaultSkillProgressionContent.Catalog.GetProfile(
+                DefaultSkillGrantProfileIds.Service);
     }
 
     public EntityId PatientId { get; }
@@ -47,6 +53,8 @@ public sealed class HealingJobDefinition : JobDefinition
     public CellId WorkPosition { get; }
 
     public int HealthRestored { get; }
+
+    public SkillGrantProfile SkillGrantProfile { get; }
 
     public override string Description => $"Heal:{PatientId}@{WorkPosition}";
 

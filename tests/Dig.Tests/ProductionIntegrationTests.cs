@@ -1,5 +1,6 @@
 using System.Linq;
 using Dig.Application.Production;
+using Dig.Domain.Agents;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -201,6 +202,88 @@ public sealed class ProductionIntegrationTests
         Assert.Equal(0, harness.Inventory.GetTotal(ProductionTestHarness.Plate));
         Assert.True(harness.Enqueue(SecondOrderId, advancedRecipeId, tick: 9).IsSuccess);
         Assert.True(harness.Prepare(SecondJobId, tick: 10).IsSuccess);
+    }
+
+    [Fact]
+    public void Committed_output_quantity_multiplies_data_driven_skill_grant_once()
+    {
+        RecipeDefinition recipe = new RecipeDefinition(
+            PlateRecipe,
+            "Skilled plate",
+            ProductionTestHarness.Workshop,
+            new[] { new ContentItemQuantity(ProductionTestHarness.Ore, 2) },
+            new[] { new ContentItemQuantity(ProductionTestHarness.Plate, 2) },
+            requiredWork: 6,
+            energyPerWorkTick: 5,
+            requiredToolItemId: ProductionTestHarness.Tool,
+            requiredTechnologyId: null,
+            skillGrantProfile: SkillGrantProfile.Single(
+                AgentSkillCatalog.Metallurgy,
+                units: 40));
+        ProductionTestHarness harness = new ProductionTestHarness(new[] { recipe });
+        Assert.True(harness.Enqueue(FirstOrderId, PlateRecipe, tick: 1).IsSuccess);
+        Assert.True(harness.Prepare(FirstJobId, tick: 2).IsSuccess);
+        harness.AssignAndBegin(FirstOrderId, FirstJobId, tick: 3);
+        Assert.True(harness.ApplyWork(FirstOrderId, FirstJobId, tick: 6).IsSuccess);
+
+        Assert.True(harness.Complete(
+            FirstOrderId,
+            FirstJobId,
+            OutputStackId,
+            tick: 7).IsSuccess);
+
+        Assert.Equal(80, harness.Agents.Get(ProductionTestHarness.WorkerId)!
+            .CreateSnapshot(7)
+            .GetSkillLevel(AgentSkillCatalog.Metallurgy));
+        Assert.True(harness.Complete(
+            FirstOrderId,
+            FirstJobId,
+            EntityId.Parse("86000000000000000000000000000009"),
+            tick: 8).IsFailure);
+        Assert.Equal(80, harness.Agents.Get(ProductionTestHarness.WorkerId)!
+            .CreateSnapshot(8)
+            .GetSkillLevel(AgentSkillCatalog.Metallurgy));
+    }
+
+    [Fact]
+    public void Cooking_skill_changes_work_duration_but_not_recipe_output_or_effect()
+    {
+        RecipeDefinition recipe = new RecipeDefinition(
+            PlateRecipe,
+            "Cooked test output",
+            ProductionTestHarness.Workshop,
+            new[] { new ContentItemQuantity(ProductionTestHarness.Ore, 1) },
+            new[] { new ContentItemQuantity(ProductionTestHarness.Plate, 2) },
+            requiredWork: 100,
+            energyPerWorkTick: 1,
+            skillGrantProfile: SkillGrantProfile.Single(
+                AgentSkillCatalog.Cooking,
+                units: 10),
+            workSpeedCurve: new SkillWorkSpeedCurve(
+                AgentSkillCatalog.Cooking,
+                minimumEfficiencyBasisPoints: 5_000,
+                maximumEfficiencyBasisPoints: 15_000));
+        var novice = AgentTestFactory.CreateAgent();
+        var expert = AgentTestFactory.CreateAgent(
+            id: EntityId.Parse("83000000000000000000000000000009"));
+        Assert.True(novice.SetSkillLevel(new AgentSkillId("general.work"), 0).IsSuccess);
+        Assert.True(expert.ApplySkillGrant(new SkillGrantBundle(
+            expert.Id,
+            SkillGrantSourceKind.TrainingCompleted,
+            "cooking-training",
+            tick: 1,
+            new[] { new SkillGrant(AgentSkillCatalog.Cooking, 10_000) })).IsSuccess);
+
+        int noviceWork = ProductionEfficiency.CalculateEffectiveWork(
+            10,
+            ProductionWorkContext.ForRecipe(recipe, novice.CreateSnapshot(1)));
+        int expertWork = ProductionEfficiency.CalculateEffectiveWork(
+            10,
+            ProductionWorkContext.ForRecipe(recipe, expert.CreateSnapshot(1)));
+
+        Assert.True(expertWork > noviceWork);
+        Assert.Equal(2, recipe.Outputs.Single().Quantity);
+        Assert.Equal(ProductionTestHarness.Plate, recipe.Outputs.Single().ItemId);
     }
 
     private static ProductionTestHarness CreateHarness()

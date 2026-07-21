@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Navigation;
@@ -32,6 +33,7 @@ internal sealed partial class DigTerrainWorkSession
     private readonly InMemoryInventoryRepository _inventoryRepository;
     private readonly InMemoryNavigationRepository _navigationRepository;
     private readonly DigWorldSession _worldSession;
+    private readonly IAgentSkillGrantService _skillGrants;
     private readonly TerrainWorkRoutePlanner _routePlanner;
     private readonly TraversalProfile _profile;
     private readonly Dictionary<EntityId, EntityId> _outputStackIds;
@@ -52,7 +54,8 @@ internal sealed partial class DigTerrainWorkSession
         DigWorldSession worldSession,
         TerrainWorkRoutePlanner routePlanner,
         TraversalProfile profile,
-        Dictionary<EntityId, EntityId> outputStackIds)
+        Dictionary<EntityId, EntityId> outputStackIds,
+        IAgentSkillGrantService skillGrants)
     {
         _advanceHandler = advanceHandler;
         _completionHandler = completionHandler;
@@ -67,118 +70,8 @@ internal sealed partial class DigTerrainWorkSession
         _routePlanner = routePlanner;
         _profile = profile;
         _outputStackIds = outputStackIds;
-    }
-
-    public static DigTerrainWorkSession CreateDemo(
-        DigWorldSession worldSession,
-        IReadOnlyList<AgentViewModel> agents,
-        InMemoryExecutionJournal journal)
-    {
-        if (worldSession == null)
-        {
-            throw new ArgumentNullException(nameof(worldSession));
-        }
-
-        if (agents == null)
-        {
-            throw new ArgumentNullException(nameof(agents));
-        }
-
-        WorldCellViewModel[] targets = worldSession.LoadView().Chunks
-            .SelectMany(chunk => chunk.Cells)
-            .Where(cell => cell.IsDesignated)
-            .OrderBy(cell => cell.Y)
-            .ThenBy(cell => cell.X)
-            .ToArray();
-        if (agents.Count == 0)
-        {
-            throw new InvalidOperationException(
-                "The terrain work demo requires at least one resident.");
-        }
-
-        InMemoryJobRepository jobs = new InMemoryJobRepository();
-        InMemoryJobCandidateProvider candidates = new InMemoryJobCandidateProvider();
-        Dictionary<EntityId, EntityId> outputStackIds =
-            new Dictionary<EntityId, EntityId>();
-        CreateDigJobHandler create = new CreateDigJobHandler(jobs, journal);
-        for (int index = 0; index < targets.Length; index++)
-        {
-            EntityId jobId = EntityId.Parse(
-                $"400000000000000000000000000000{index + 1:D2}");
-            EntityId stackId = EntityId.Parse(
-                $"500000000000000000000000000000{index + 1:D2}");
-            WorldCellViewModel target = targets[index];
-            DigJobDefinition definition = new DigJobDefinition(
-                jobId,
-                new DigJobTarget(new CellId(target.X, target.Y)),
-                priority: DefaultExcavationPriority,
-                createdTick: 0,
-                new JobRetryPolicy(maximumRetries: 2, retryDelayTicks: 3));
-            Require(create.Handle(new CreateDigJobCommand(
-                definition,
-                makeAvailable: true)));
-            outputStackIds.Add(jobId, stackId);
-            candidates.SetCandidates(jobId, CreateCandidates(agents, target));
-        }
-
-        new AssignAvailableJobsHandler(
-            jobs,
-            candidates,
-            journal,
-            assignmentReportSink: journal)
-            .Handle(new AssignAvailableJobsCommand(tick: 0));
-        AdvanceJobHandler advance = new AdvanceJobHandler(
-            jobs,
-            journal,
-            new SuggestedToolJobExecutionReadinessPolicy(journal));
-        foreach (JobSnapshot job in jobs.Get().GetAll())
-        {
-            if (job.Status == JobStatus.Claimed)
-            {
-                Require(advance.Handle(new AdvanceJobCommand(job.Id, tick: 0)));
-            }
-        }
-
-        InventoryState inventory = CreateDemoResidentInventory(
-            worldSession.TerrainDepositDefinitions);
-        InMemoryInventoryRepository inventoryRepository =
-            new InMemoryInventoryRepository(inventory);
-        TraversalProfile profile = TraversalProfile.CreateFreeMover();
-        InMemoryNavigationRepository navigation = new InMemoryNavigationRepository();
-        Result<NavigationUpdateDiagnostics> rebuild =
-            new RebuildNavigationCommandHandler(navigation).Handle(
-                new RebuildNavigationCommand(
-                    profile,
-                    worldSession.LoadSnapshot(),
-                    Array.Empty<TraversalLink>()));
-        if (rebuild.IsFailure)
-        {
-            throw new InvalidOperationException(rebuild.Error!.ToString());
-        }
-
-        worldSession.DrainDirtyChunks();
-        return new DigTerrainWorkSession(
-            advance,
-            new CompleteTerrainWorkCommandHandler(
-                jobs,
-                worldSession.Repository,
-                inventoryRepository,
-                journal),
-            new JobOverlayPresenter(
-                new GetJobsHandler(jobs),
-                new GetJobReservationsHandler(jobs)),
-            journal,
-            new InventoryWorldPresenter(
-                new GetInventorySnapshotQueryHandler(inventoryRepository),
-                WorldItemInteractionKind.Pickup),
-            new NavigationRoutePresenter(),
-            jobs,
-            inventoryRepository,
-            navigation,
-            worldSession,
-            new TerrainWorkRoutePlanner(new NavigationPathfinder()),
-            profile,
-            outputStackIds);
+        _skillGrants = skillGrants
+            ?? throw new ArgumentNullException(nameof(skillGrants));
     }
 
     public IReadOnlyList<JobOverlayViewModel> LoadJobs()

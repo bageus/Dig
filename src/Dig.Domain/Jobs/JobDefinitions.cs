@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Collections.ObjectModel;
+using Dig.Domain.Agents;
+using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 
@@ -128,13 +130,19 @@ public sealed class DigJobDefinition : JobDefinition
         int priority,
         long createdTick,
         JobRetryPolicy retryPolicy,
-        IEnumerable<EntityId>? dependencies = null)
+        IEnumerable<EntityId>? dependencies = null,
+        SkillGrantProfile? skillGrantProfile = null)
         : base(id, priority, createdTick, retryPolicy, DigStages, dependencies)
     {
         Target = target ?? throw new ArgumentNullException(nameof(target));
+        SkillGrantProfile = skillGrantProfile
+            ?? DefaultSkillProgressionContent.Catalog.GetProfile(
+                DefaultSkillGrantProfileIds.StoneExtraction);
     }
 
     public DigJobTarget Target { get; }
+
+    public SkillGrantProfile SkillGrantProfile { get; }
 
     public override string Description => Target.ToString();
 

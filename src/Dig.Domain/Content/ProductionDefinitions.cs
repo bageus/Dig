@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Collections.ObjectModel;
+using Dig.Domain.Agents;
 using Dig.Domain.Buildings;
 using Dig.Domain.Inventory;
 
@@ -149,7 +150,9 @@ public sealed class RecipeDefinition
         int requiredWork,
         int energyPerWorkTick,
         ItemId? requiredToolItemId = null,
-        TechnologyId? requiredTechnologyId = null)
+        TechnologyId? requiredTechnologyId = null,
+        SkillGrantProfile? skillGrantProfile = null,
+        SkillWorkSpeedCurve? workSpeedCurve = null)
     {
         if (id.IsEmpty)
         {
@@ -180,6 +183,8 @@ public sealed class RecipeDefinition
         EnergyPerWorkTick = energyPerWorkTick;
         RequiredToolItemId = requiredToolItemId;
         RequiredTechnologyId = requiredTechnologyId;
+        SkillGrantProfile = skillGrantProfile;
+        WorkSpeedCurve = workSpeedCurve;
     }
 
     public RecipeId Id { get; }
@@ -201,6 +206,10 @@ public sealed class RecipeDefinition
     public ItemId? RequiredToolItemId { get; }
 
     public TechnologyId? RequiredTechnologyId { get; }
+
+    public SkillGrantProfile? SkillGrantProfile { get; }
+
+    public SkillWorkSpeedCurve? WorkSpeedCurve { get; }
 
     private static ContentItemQuantity[] NormalizeQuantities(
         IEnumerable<ContentItemQuantity> values,

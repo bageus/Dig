@@ -35,6 +35,10 @@ public static class CombatApplicationErrors
         "combat.application.damage_rejected",
         "The resolved combat damage could not be applied to the target agent.");
 
+    public static readonly DomainError CombatIntentInactive = new DomainError(
+        "combat.application.intent_inactive",
+        "The attack intent was cancelled, expired, replaced or does not match the attack.");
+
     public static readonly DomainError HealingJobInvalid = new DomainError(
         "combat.application.healing_job_invalid",
         "The job is not an active healing job for the requested patient.");
@@ -47,13 +51,15 @@ public readonly struct CombatantModifiers
         int evasion,
         int armor,
         int blockChance,
-        int blockValue)
+        int blockValue,
+        ShieldSkillProfile? shieldSkillProfile = null)
     {
         AccuracyModifier = accuracyModifier;
         Evasion = evasion;
         Armor = armor;
         BlockChance = blockChance;
         BlockValue = blockValue;
+        ShieldSkillProfile = shieldSkillProfile;
     }
 
     public int AccuracyModifier { get; }
@@ -61,6 +67,7 @@ public readonly struct CombatantModifiers
     public int Armor { get; }
     public int BlockChance { get; }
     public int BlockValue { get; }
+    public ShieldSkillProfile? ShieldSkillProfile { get; }
 }
 
 public sealed class ResolveCombatAttackCommand
@@ -74,7 +81,8 @@ public sealed class ResolveCombatAttackCommand
         ulong worldSeed,
         long tick,
         CombatantModifiers attackerModifiers,
-        CombatantModifiers targetModifiers)
+        CombatantModifiers targetModifiers,
+        CombatIntentId? sourceIntentId = null)
     {
         ActionId = actionId;
         AttackerId = attackerId;
@@ -84,6 +92,7 @@ public sealed class ResolveCombatAttackCommand
         Tick = tick;
         AttackerModifiers = attackerModifiers;
         TargetModifiers = targetModifiers;
+        SourceIntentId = sourceIntentId;
     }
 
     public CombatActionId ActionId { get; }
@@ -94,6 +103,7 @@ public sealed class ResolveCombatAttackCommand
     public long Tick { get; }
     public CombatantModifiers AttackerModifiers { get; }
     public CombatantModifiers TargetModifiers { get; }
+    public CombatIntentId? SourceIntentId { get; }
 }
 
 public sealed class AdvanceCombatStatusesCommand

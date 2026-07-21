@@ -15,7 +15,10 @@ Meshes, colliders, navigation results, UI selection, animation state and other r
 
 ## Format and deterministic serialization
 
-`SaveGameDocument` has an explicit `FormatVersion`. Version 1 uses data-contract DTOs rather than serializing aggregates or private runtime fields.
+`SaveGameDocument` has an explicit `FormatVersion`. The current version is 4 and
+uses data-contract DTOs rather than serializing aggregates or private runtime
+fields. Version 4 adds the separately owned `AgentSkills` section described by
+[`ADR-0002`](../adr/0002-save-v4-agent-skill-progression.md).
 
 `SaveGameBuilder` sorts every unordered collection before serialization:
 
@@ -24,6 +27,8 @@ Meshes, colliders, navigation results, UI selection, animation state and other r
 - jobs by stable job id;
 - job reservations by job id and typed reservation key;
 - job codec properties and dependencies by ordinal stable id.
+- residents and their 12 skill values by stable agent and skill ids;
+- applied skill source keys and migration steps by ordinal value.
 
 The same authoritative snapshot therefore produces the same UTF-8 JSON bytes.
 
@@ -38,7 +43,14 @@ Each state owner exposes a restore factory:
 - `JobState.Restore` validates status, stage, assigned worker, retry and reason invariants;
 - `JobSystem.Restore` validates job references and restores every reservation with its original acquired tick.
 
-`SaveGameLoader` applies migrations first, reconstructs the authoritative owners, then validates cross-system references. An Inventory reservation must point to an existing non-terminal Job.
+`SaveGameLoader` applies format and skill-precision migrations first, reconstructs
+the authoritative owners, then validates cross-system references. An Inventory
+reservation must point to an existing non-terminal Job. Loaded skill snapshots
+are applied to the existing resident owner by
+`SaveGameService.Load(..., IAgentRepository)`, which delegates to
+`LoadedAgentSkillProgressionRestorer`; loading does not grant experience again.
+The restorer validates that every saved resident exists before it mutates any
+aggregate, so a missing recipient cannot produce a partial skills restore.
 
 Restore does not publish gameplay events. Loading recreates a confirmed state; it does not replay commands or side effects.
 
@@ -54,7 +66,14 @@ A saved job type without a registered codec returns `save.job_type.unknown`. New
 
 `SaveMigrationPipeline` applies exactly one ordered step per version. A migration declares a stable id, source version and next version. Missing steps and future versions return `save.version.unsupported`.
 
-The retained `save-v0.json` fixture verifies the v0 to v1 metadata migration and idempotent replay. Future format changes must add another fixture and a sequential migration; existing fixtures remain immutable.
+The retained `save-v0.json` fixture verifies the complete sequential migration to
+v4 and idempotent replay. `save-v3.json` verifies that v3→v4 adds an empty skill
+section without inventing resident progression. A separate precision-v0 fixture
+case verifies integer largest-remainder conversion, capacity scaling and migration
+diagnostics. Values and capacity use the same rational scale; migration rejects
+documents whose converted value sum would exceed the converted capacity rather
+than silently inflating capacity. Future format changes must add another fixture and a sequential
+migration; existing fixtures remain immutable.
 
 ## Slots and atomic writes
 
@@ -85,6 +104,9 @@ Automated coverage includes:
 - unknown item and job ids;
 - dangling inventory-to-job references;
 - future-version rejection;
-- migration of the retained v0 fixture.
+- migration of the retained v0 and v3 fixtures;
+- skill capacity, report and source-key round trip;
+- deterministic precision migration, exact capacity preservation and its report;
+- service-level load into a live agent repository followed by idempotent grant replay.
 
 The normal Quality workflow still runs architecture and file-size checks, C# compatibility, Release build, all tests, headless smoke and both deterministic soak profiles.

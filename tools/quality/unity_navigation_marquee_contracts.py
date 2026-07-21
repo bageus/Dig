@@ -28,7 +28,7 @@ def check_navigation_and_marquee_contracts(
     agent_renderer = runtime_root / "DigAgentRenderer.cs"
     excavation = runtime_root / "DigWorldInteraction.Excavation.cs"
     world_session = runtime_root / "DigWorldSession.TunnelNavigation.cs"
-    agent_session = runtime_root / "DigAgentSession.TunnelMovement.cs"
+    agent_session = runtime_root / "DigAgentSession.TunnelTopology.cs"
     spatial_runtime = runtime_root / "DigTerrainSpatialExcavation.cs"
     navigation_sync = runtime_root / "DigAgentSimulationDriverBase.NavigationSync.cs"
     designations = runtime_root / "DigTerrainWorkDesignations.cs"

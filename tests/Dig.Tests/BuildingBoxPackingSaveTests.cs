@@ -153,7 +153,9 @@ public sealed class BuildingBoxPackingSaveTests
             buildings,
             inventory,
             jobs,
-            journal).Handle(new CompleteBuildingBoxPackingCommand(
+            journal,
+            AgentSkillGrantTestFactory.Create(source.WorkerId, journal))
+            .Handle(new CompleteBuildingBoxPackingCommand(
                 source.BuildingId,
                 source.PackingJobId,
                 tick)).IsSuccess);
@@ -175,6 +177,7 @@ public sealed class BuildingBoxPackingSaveTests
             new LegacySaveVersionZeroMigration(),
             new SaveVersionOneBuildingsMigration(),
             new SaveVersionTwoPackingMigration(),
+            new SaveVersionThreeAgentSkillsMigration(),
         });
     }
 
