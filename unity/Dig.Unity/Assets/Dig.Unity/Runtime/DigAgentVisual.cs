@@ -10,6 +10,7 @@ namespace Dig.Unity
 [DisallowMultipleComponent]
 public sealed partial class DigAgentVisual : MonoBehaviour
 {
+    private const float HoverBlend = 0.42f;
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
     private static readonly int ColorId = Shader.PropertyToID("_Color");
     private readonly ResidentVisualPresenter _visualPresenter = new ResidentVisualPresenter();
@@ -148,6 +149,7 @@ public sealed partial class DigAgentVisual : MonoBehaviour
         for (int index = 0; index < _hoverRenderers.Length; index++)
         {
             Renderer renderer = _hoverRenderers[index];
+            _hoverProperties.Clear();
             renderer.GetPropertyBlock(_hoverProperties);
             Color color = _hoverProperties.GetColor(BaseColorId);
             if (color == default)
@@ -157,7 +159,8 @@ public sealed partial class DigAgentVisual : MonoBehaviour
                     color = renderer.sharedMaterial.color;
             }
             _hoverBaseColors[index] = color;
-            Color highlighted = Color.Lerp(color, Color.white, 0.28f);
+            Color highlighted = Color.Lerp(color, Color.white, HoverBlend);
+            highlighted.a = color.a;
             _hoverProperties.SetColor(BaseColorId, highlighted);
             _hoverProperties.SetColor(ColorId, highlighted);
             renderer.SetPropertyBlock(_hoverProperties);
@@ -170,6 +173,7 @@ public sealed partial class DigAgentVisual : MonoBehaviour
         for (int index = 0; index < _hoverRenderers.Length; index++)
         {
             Renderer renderer = _hoverRenderers[index];
+            _hoverProperties.Clear();
             renderer.GetPropertyBlock(_hoverProperties);
             _hoverProperties.SetColor(BaseColorId, _hoverBaseColors[index]);
             _hoverProperties.SetColor(ColorId, _hoverBaseColors[index]);
