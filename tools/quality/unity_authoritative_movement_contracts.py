@@ -88,18 +88,30 @@ def check_authoritative_movement_contracts(
     errors.extend(require_fragments(
         movement_input,
         movement_input_text,
-        "explicit layered movement destinations",
+        "explicit layered movement and spatial-job marker destinations",
         (
             "TryApplyTunnelMove(RaycastHit[] hits",
+            "TryAssignExplicitSpatialExcavation(hits, residentIds)",
+            "_jobRenderer!.TryGetJob",
+            "job.Model.TargetZ.Value <= 0",
+            "TryAssignSpatialExcavation(",
             "ResolveSelectedResidentTarget(hits)",
             "_tunnelRenderer.TryGetCell",
             "_caveRoomFloorRenderer.TryGetCell",
             "MoveResidentsThroughTunnel",
         ),
     ))
-    if "TryAssignSpatialExcavation(" in movement_input_text:
+    explicit_work_index = movement_input_text.find(
+        "TryAssignExplicitSpatialExcavation(hits, residentIds)"
+    )
+    ordinary_move_index = movement_input_text.find("ResolveSelectedResidentTarget(hits)")
+    if (
+        explicit_work_index < 0
+        or ordinary_move_index < 0
+        or explicit_work_index >= ordinary_move_index
+    ):
         errors.append(
-            f"{movement_input}: ordinary selected-resident LMB must not assign spatial work"
+            f"{movement_input}: only an explicit spatial job marker may precede ordinary LMB movement"
         )
 
     errors.extend(require_fragments(
