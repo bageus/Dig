@@ -78,6 +78,11 @@ namespace Dig.Unity
 
             _startupStage = "creating Unity adapters";
             Camera targetCamera = EnsureCamera();
+            GetOrAdd<DigRenderMaterialLibrary>(gameObject);
+            DigPresentationEffectBridge effectBridge =
+                GetOrAdd<DigPresentationEffectBridge>(gameObject);
+            terrainSession.BindPresentationEffectSink(
+                facts => effectBridge.Present(facts, targetCamera));
             DigWorldRenderer worldRenderer = GetOrAdd<DigWorldRenderer>(gameObject);
             DigAgentRenderer agentRenderer = GetOrAdd<DigAgentRenderer>(gameObject);
             DigCreatureRenderer creatureRenderer = GetOrAdd<DigCreatureRenderer>(gameObject);
