@@ -6,7 +6,7 @@ Domain and Application own excavation, construction, production, combat, statuse
 
 No particle callback, light visibility event, animation event or material state may commit a command, apply damage, complete work or spawn an entity.
 
-## Current source-only scope
+## Runtime and authoring scope
 
 The first #212 runtime slice provides:
 
@@ -19,7 +19,7 @@ The first #212 runtime slice provides:
 - one migrated production consumer: creature visuals;
 - source contracts and deterministic tests.
 
-It does not claim that the project is already assigned to an authored URP pipeline asset. Unity 6000.0.71f1 must create and serialize the Universal Render Pipeline asset, renderer data and Graphics Settings assignment through the Editor. Source-only automation must not fabricate those opaque serialized assets.
+URP 17.0.4 is pinned for Unity 6000.0.71f1. `DigUrpProjectConfigurator` creates the Universal Renderer and pipeline assets through Unity's public Editor API, assigns the pipeline in Graphics and current Quality settings, and creates the shared material and VFX catalogs on a clean import. The generated Unity assets remain replaceable by artist-authored assets with the same stable catalog contracts.
 
 ## Immutable requests and deterministic budgets
 
@@ -58,16 +58,20 @@ Effect loss, delay or disable never changes simulation state.
 
 Palette, selection and per-instance differences should use `MaterialPropertyBlock` rather than cloned materials. Overlay materials remain Unlit/Overlay semantic content. Non-color shape and pattern cues from #211 remain required so lighting changes cannot hide interaction state.
 
+## Terrain vertex color and ambient occlusion
+
+Every rebuilt terrain chunk now carries deterministic vertex colors. The color stream owns terrain/deposit palette projection and applies a stable directional ambient-occlusion factor without baked lightmaps. Rebuilding one dirty chunk therefore updates both geometry and lighting cues locally; no bake or simulation mutation is required.
+
+The production fallback path resolves one shared GPU-instanced Terrain/Lit material from `DigRenderMaterialLibrary`. Terrain no longer creates a material or searches for a shader per material key. Authored terrain catalog materials may still override the shared fallback.
+
+## Gameplay effect adapters
+
+Front-layer terrain completion publishes immutable excavation and deposit facts after the authoritative completion command succeeds. Spatial Z0-Z3 excavation publishes the same fact only after its authoritative cell and Job completion succeed. The bridge projects these facts into pooled VFX; losing or disabling the effect cannot affect the completed command.
+
 ## URP completion boundary
 
 Completion of URP migration requires Editor-created pipeline and renderer assets, assignment through Graphics Settings, reimport, and representative Play Mode validation. `GraphicsSettings.currentRenderPipeline` is diagnostic until that work is performed.
 
-## Remaining #212 work
+## Verification boundary
 
-- create and assign URP pipeline/renderer assets in Unity 6000.0.71f1;
-- author shared Lit, Unlit, Overlay and emissive materials;
-- migrate terrain, buildings, items, residents and overlays from local fallback ownership;
-- publish effect requests from excavation, deposits, construction, production, status and combat;
-- publish light requests for lava, crystals, campfires and active production buildings;
-- add terrain vertex-color/AO authoring and profiler diagnostics;
-- run Editor reimport and representative Play Mode validation.
+Repository checks verify the pinned package, Editor authoring path, shader contracts, shared catalog IDs, terrain vertex/AO stream, bounded pools and live excavation adapters. A clean Unity 6000.0.71f1 import must still serialize the generated assets and representative Play Mode must confirm shader compilation, overlay readability, pool diagnostics and visual profiling on the target GPU before #212 is closed.
