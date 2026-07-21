@@ -19,11 +19,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Pack source tree
-        run: tar --exclude=.git -czf dig-stage2-source.tgz .
+        run: tar --exclude=.git -czf /tmp/dig-stage2-source.tgz .
 
       - name: Upload source archive
         uses: actions/upload-artifact@v4
         with:
           name: dig-stage2-source
-          path: dig-stage2-source.tgz
+          path: /tmp/dig-stage2-source.tgz
           retention-days: 1
