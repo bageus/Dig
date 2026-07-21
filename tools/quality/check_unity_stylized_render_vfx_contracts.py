@@ -86,7 +86,7 @@ def main() -> int:
         "Dictionary<string, Material>", "HashSet<Material>",
         "Universal Render Pipeline/Lit", "Universal Render Pipeline/Unlit",
         "enableInstancing = true", "DigStylizedLightingRig",
-        "DigPooledVfxPlayer", "DigRealtimeLightPool",
+        "DigPresentationEffectBridge",
     )))
 
     vfx_profile_path = RUNTIME / "DigVfxProfile.cs"
