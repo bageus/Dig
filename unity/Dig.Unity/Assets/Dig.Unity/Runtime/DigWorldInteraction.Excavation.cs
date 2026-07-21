@@ -97,23 +97,28 @@ namespace Dig.Unity
                 return false;
             }
 
-            if (!CanActivateExcavationDrawing
-                || _buildingPlacementMode.HasValue
+            if (!CanActivateExcavationDrawing)
+            {
+                ResetExcavationStroke();
+                return false;
+            }
+
+            if (_buildingPlacementMode.HasValue
                 || _hud!.ContainsScreenPoint(Input.mousePosition))
             {
-                return true;
+                return false;
             }
 
             Ray ray = _camera!.ScreenPointToRay(Input.mousePosition);
             if (!Physics.Raycast(ray, out RaycastHit hit, 500f))
             {
-                return true;
+                return false;
             }
 
             CellId? rawTarget = ResolveExcavationPaintTarget(hit);
             if (!rawTarget.HasValue)
             {
-                return true;
+                return false;
             }
 
             CellId target = rawTarget.Value;
@@ -259,6 +264,7 @@ namespace Dig.Unity
         private CellId? ResolveExcavationTarget(RaycastHit hit)
         {
             if (_jobRenderer!.TryGetJob(hit, out DigJobVisual job)
+                && !IsTerminalJobStatus(job.Model.Status)
                 && job.Model.TargetX.HasValue
                 && job.Model.TargetY.HasValue
                 && (!job.Model.TargetZ.HasValue || job.Model.TargetZ.Value == 0))
@@ -278,6 +284,7 @@ namespace Dig.Unity
         private CellId? ResolveExcavationPaintTarget(RaycastHit hit)
         {
             if (_jobRenderer!.TryGetJob(hit, out DigJobVisual job)
+                && !IsTerminalJobStatus(job.Model.Status)
                 && job.Model.TargetX.HasValue
                 && job.Model.TargetY.HasValue
                 && (!job.Model.TargetZ.HasValue || job.Model.TargetZ.Value == 0))
