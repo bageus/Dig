@@ -15,11 +15,11 @@ namespace Dig.Tests
 public sealed class TerrainDepositSkillIntegrationTests
 {
     private static readonly EntityId JobId = EntityId.Parse(
-        "6a00000000000000000000000000000001");
+        "6a000000-0000-0000-0000-000000000001");
     private static readonly EntityId WorkerId = EntityId.Parse(
-        "6a00000000000000000000000000000002");
+        "6a000000-0000-0000-0000-000000000002");
     private static readonly EntityId OutputId = EntityId.Parse(
-        "6a00000000000000000000000000000003");
+        "6a000000-0000-0000-0000-000000000003");
     private static readonly MaterialId Rock = new MaterialId("deposit-skill.rock");
     private static readonly MaterialId Air = new MaterialId("deposit-skill.air");
     private static readonly CellId Target = new CellId(1, 1);

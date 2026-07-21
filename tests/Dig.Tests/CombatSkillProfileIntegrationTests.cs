@@ -18,9 +18,9 @@ namespace Dig.Tests
 public sealed class CombatSkillProfileIntegrationTests
 {
     private static readonly EntityId AttackerId = EntityId.Parse(
-        "cb00000000000000000000000000000001");
+        "cb000000-0000-0000-0000-000000000001");
     private static readonly EntityId TargetId = EntityId.Parse(
-        "cb00000000000000000000000000000002");
+        "cb000000-0000-0000-0000-000000000002");
     private static readonly FactionId PlayerFaction = new FactionId("faction.player");
     private static readonly FactionId EnemyFaction = new FactionId("faction.enemy");
 

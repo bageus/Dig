@@ -230,7 +230,10 @@ public sealed class AgentSkillSaveRoundTripTests
         private static SaveGameBuilder Builder()
         {
             return new SaveGameBuilder(new JobDefinitionSaveRegistry(
-                System.Array.Empty<IJobDefinitionSaveCodec>()));
+                new IJobDefinitionSaveCodec[]
+                {
+                    new DigJobDefinitionSaveCodec(),
+                }));
         }
 
         private static SaveGameLoader Loader()
@@ -238,7 +241,10 @@ public sealed class AgentSkillSaveRoundTripTests
             return new SaveGameLoader(
                 new SaveMigrationPipeline(System.Array.Empty<ISaveMigration>()),
                 new JobDefinitionSaveRegistry(
-                    System.Array.Empty<IJobDefinitionSaveCodec>()));
+                    new IJobDefinitionSaveCodec[]
+                    {
+                        new DigJobDefinitionSaveCodec(),
+                    }));
         }
 
         private SaveGameContext CreateContext(AgentState agent)
