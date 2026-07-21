@@ -74,8 +74,11 @@ def check_runtime_regression_contracts(
             "ResolveSelectedResidentTarget(GetPointerHits())",
             "ResolveMovementPointerDistance", "return bestMovement",
             "DigSelectedResidentTarget.Excavation")),
-        (movement_input, "explicit LMB tunnel destination surfaces", (
+        (movement_input, "explicit LMB tunnel destinations and job markers", (
             "TryApplyTunnelMove(RaycastHit[] hits",
+            "TryAssignExplicitSpatialExcavation(hits, residentIds)",
+            "job.Model.TargetZ.Value <= 0",
+            "ResolveSelectedResidentTarget(hits)",
             "_tunnelRenderer.TryGetCell", "_caveRoomFloorRenderer.TryGetCell",
             "MoveResidentsThroughTunnel")),
         (marquee, "selected movement bypasses marquee", (
@@ -115,7 +118,6 @@ def check_runtime_regression_contracts(
             "InterruptForDirectMovement",
         ),
         pointer_hits: ("firstWalkableDistance",),
-        movement_input: ("TryAssignSpatialExcavation(",),
     }
     for path, fragments in forbidden_by_path.items():
         text = texts.get(path, "") if path != renderer else renderer_text
@@ -128,4 +130,14 @@ def check_runtime_regression_contracts(
     excavation_index = target_text.find("DigSelectedResidentTarget.Excavation")
     if movement_index < 0 or excavation_index < 0 or movement_index >= excavation_index:
         errors.append(f"{targets}: open movement must resolve before excavation")
+
+    movement_input_text = texts.get(movement_input, "")
+    explicit_index = movement_input_text.find(
+        "TryAssignExplicitSpatialExcavation(hits, residentIds)"
+    )
+    target_index = movement_input_text.find("ResolveSelectedResidentTarget(hits)")
+    if explicit_index < 0 or target_index < 0 or explicit_index >= target_index:
+        errors.append(
+            f"{movement_input}: explicit job markers must be checked before ordinary movement"
+        )
     return errors
