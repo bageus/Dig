@@ -21,6 +21,9 @@ def check_runtime_regression_contracts(
     pointer_hits = runtime_root / "DigWorldInteraction.PointerHits.cs"
     targets = runtime_root / "DigWorldInteraction.SelectedResidentTargets.cs"
     movement_input = runtime_root / "DigWorldInteraction.TunnelMovement.cs"
+    marquee = runtime_root / "DigWorldInteraction.MarqueeSelection.cs"
+    navigation_sync = runtime_root / "DigAgentSimulationDriverBase.NavigationSync.cs"
+    tunnel_renderer = runtime_root / "DigTunnelDemoRenderer.cs"
     multi_worker = runtime_root / "DigTerrainWorkManualExcavation.MultiWorker.cs"
 
     errors: list[str] = []
@@ -53,6 +56,7 @@ def check_runtime_regression_contracts(
             "InterruptForManualMovement(",
             "AgentRenderer.Render(agents, movementDuration)", "RestoreSelection(")),
         (movement, "interrupt-before-plan manual movement", (
+            "SynchronizeTunnelInteractionTargets(tunnelRenderer)",
             "TerrainSession.InterruptForManualMovement",
             "PlanAgentTunnelRouteReport", "PlanAgentsTunnelRoutesReport",
             "MoveResidentThroughTunnel", "MoveResidentsThroughTunnel")),
@@ -62,15 +66,28 @@ def check_runtime_regression_contracts(
             "IsAvailableForAutomaticWork")),
         (designations, "Dig candidate manual-order suppression", (
             "IsAvailableForAutomaticWork(agent)", "agent.CellZ == 0")),
-        (pointer_hits, "ordered pointer hit stack", (
+        (pointer_hits, "resident selection through tunnel targets", (
             "Physics.RaycastAll", "Array.Sort(hits, ComparePointerHits)",
-            "left.distance.CompareTo(right.distance)")),
-        (targets, "movement and excavation target priority", (
-            "GetPointerHits()", "ResolveExcavationTarget", "TryResolveTunnelDestination",
-            "return visibleMovement", "DigSelectedResidentTarget.Excavation")),
-        (movement_input, "explicit tunnel destination surfaces", (
+            "TryProjectResidentBounds", "blockedByForegroundObject",
+            "SynchronizeTunnelInteractionTargets();")),
+        (targets, "screen-disambiguated movement and excavation priority", (
+            "ResolveSelectedResidentTarget(GetPointerHits())",
+            "ResolveMovementPointerDistance", "return bestMovement",
+            "DigSelectedResidentTarget.Excavation")),
+        (movement_input, "explicit LMB tunnel destination surfaces", (
+            "TryApplyTunnelMove(RaycastHit[] hits",
             "_tunnelRenderer.TryGetCell", "_caveRoomFloorRenderer.TryGetCell",
             "MoveResidentsThroughTunnel")),
+        (marquee, "selected movement bypasses marquee", (
+            "TryResolveSelectedResidentMovementTarget(hits, out _)",
+            "_marqueeStartHits",
+            "TryApplyTunnelMove(_marqueeStartHits, leftButton: true)")),
+        (navigation_sync, "new excavation collider synchronization", (
+            "SynchronizeTunnelInteractionTargets(",
+            "tunnelRenderer.Initialize(AgentSession.TunnelVolume)")),
+        (tunnel_renderer, "incremental tunnel hit targets", (
+            "_cells.Count == volume.Cells.Count",
+            "GetComponentInParent<DigTunnelCellVisual>()")),
         (multi_worker, "parallel connected excavation groups", (
             "AssignExcavationClusterToResidents", "workerCount",
             "List<EntityId>[] buckets", "AssignNextManualExcavation",
@@ -97,6 +114,8 @@ def check_runtime_regression_contracts(
             "ReleaseDirectMovementControl",
             "InterruptForDirectMovement",
         ),
+        pointer_hits: ("firstWalkableDistance",),
+        movement_input: ("TryAssignSpatialExcavation(",),
     }
     for path, fragments in forbidden_by_path.items():
         text = texts.get(path, "") if path != renderer else renderer_text
@@ -105,9 +124,8 @@ def check_runtime_regression_contracts(
                 errors.append(f"{path}: obsolete movement fragment remains: {fragment!r}")
 
     target_text = texts.get(targets, "")
-    movement_index = target_text.find("return visibleMovement")
+    movement_index = target_text.find("return bestMovement")
     excavation_index = target_text.find("DigSelectedResidentTarget.Excavation")
     if movement_index < 0 or excavation_index < 0 or movement_index >= excavation_index:
         errors.append(f"{targets}: open movement must resolve before excavation")
-
     return errors
