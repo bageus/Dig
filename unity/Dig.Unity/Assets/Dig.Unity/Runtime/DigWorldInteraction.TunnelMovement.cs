@@ -95,7 +95,7 @@ namespace Dig.Unity
                 && _caveRoomFloorRenderer.TryGetCell(hit, out DigTunnelCellVisual roomCell))
             {
                 destination = roomCell.Cell;
-                visual = roomCell;
+                visual = null;
                 return true;
             }
 
