@@ -18,12 +18,17 @@ def check_runtime_regression_contracts(
     movement = runtime_root / "DigAgentSimulationDriverBase.TunnelMovement.cs"
     direct = runtime_root / "DigTerrainWorkDirectMovement.cs"
     designations = runtime_root / "DigTerrainWorkDesignations.cs"
+    world_input = runtime_root / "DigWorldInteraction.cs"
+    priority_input = runtime_root / "DigWorldInteraction.ResidentCommandPriority.cs"
+    excavation = runtime_root / "DigWorldInteraction.Excavation.cs"
+    depth = runtime_root / "DigWorldInteraction.TunnelDepthExcavation.cs"
     pointer_hits = runtime_root / "DigWorldInteraction.PointerHits.cs"
     targets = runtime_root / "DigWorldInteraction.SelectedResidentTargets.cs"
     movement_input = runtime_root / "DigWorldInteraction.TunnelMovement.cs"
     marquee = runtime_root / "DigWorldInteraction.MarqueeSelection.cs"
     navigation_sync = runtime_root / "DigAgentSimulationDriverBase.NavigationSync.cs"
     tunnel_renderer = runtime_root / "DigTunnelDemoRenderer.cs"
+    job_visual = runtime_root / "DigJobVisual.cs"
     multi_worker = runtime_root / "DigTerrainWorkManualExcavation.MultiWorker.cs"
 
     errors: list[str] = []
@@ -66,6 +71,27 @@ def check_runtime_regression_contracts(
             "IsAvailableForAutomaticWork")),
         (designations, "Dig candidate manual-order suppression", (
             "IsAvailableForAutomaticWork(agent)", "agent.CellZ == 0")),
+        (world_input, "resident commands before modal work input", (
+            "TryHandlePriorityResidentPointerInput()",
+            "TryHandleResidentMarqueeSelection()",
+            "TryHandleTunnelDepthExcavation()",
+            "TryHandleExcavationStroke()")),
+        (priority_input, "resident selection and movement priority", (
+            "Input.GetMouseButtonDown(0)",
+            "TryResolveAgentHit(hits, out DigAgentVisual agent)",
+            "ToggleResidentSelection(agent)",
+            "ContextWorldTargetKind.Resident",
+            "TryApplyTunnelMove(hits, leftButton: true)",
+            "DisableExcavationDrawing();",
+            "DisableCaveRoomPlanning();")),
+        (excavation, "excavation tool pointer fallthrough", (
+            "if (!CanActivateExcavationDrawing)",
+            "ResetExcavationStroke();",
+            "return false;",
+            "!IsTerminalJobStatus(job.Model.Status)")),
+        (depth, "depth tool pointer fallthrough", (
+            "if (!CanActivateExcavationDrawing)",
+            "return false;")),
         (pointer_hits, "resident selection through tunnel targets", (
             "Physics.RaycastAll", "Array.Sort(hits, ComparePointerHits)",
             "TryProjectResidentBounds", "blockedByForegroundObject",
@@ -74,10 +100,12 @@ def check_runtime_regression_contracts(
             "ResolveSelectedResidentTarget(GetPointerHits())",
             "ResolveMovementPointerDistance", "return bestMovement",
             "DigSelectedResidentTarget.Excavation")),
-        (movement_input, "explicit LMB tunnel destinations and job markers", (
+        (movement_input, "explicit LMB tunnel destinations and active job markers", (
             "TryApplyTunnelMove(RaycastHit[] hits",
             "TryAssignExplicitSpatialExcavation(hits, residentIds)",
+            "IsTerminalJobStatus(job.Model.Status)",
             "job.Model.TargetZ.Value <= 0",
+            "TryResolveTunnelDestination(hit, out _, out _)",
             "ResolveSelectedResidentTarget(hits)",
             "_tunnelRenderer.TryGetCell", "_caveRoomFloorRenderer.TryGetCell",
             "MoveResidentsThroughTunnel")),
@@ -91,6 +119,12 @@ def check_runtime_regression_contracts(
         (tunnel_renderer, "incremental tunnel hit targets", (
             "_cells.Count == volume.Cells.Count",
             "GetComponentInParent<DigTunnelCellVisual>()")),
+        (job_visual, "terminal jobs are presentation-only", (
+            "_interactionCollider = GetComponent<Collider>();",
+            "_interactionCollider.enabled = !IsTerminalStatus(model.Status)",
+            "string.Equals(status, \"Completed\", StringComparison.Ordinal)",
+            "string.Equals(status, \"Cancelled\", StringComparison.Ordinal)",
+            "string.Equals(status, \"Failed\", StringComparison.Ordinal)")),
         (multi_worker, "parallel connected excavation groups", (
             "AssignExcavationClusterToResidents", "workerCount",
             "List<EntityId>[] buckets", "AssignNextManualExcavation",
@@ -124,6 +158,18 @@ def check_runtime_regression_contracts(
         for fragment in fragments:
             if fragment in text:
                 errors.append(f"{path}: obsolete movement fragment remains: {fragment!r}")
+
+    world_input_text = texts.get(world_input, "")
+    priority_index = world_input_text.find("TryHandlePriorityResidentPointerInput()")
+    modal_index = world_input_text.find("TryHandleResidentMarqueeSelection()")
+    if priority_index < 0 or modal_index < 0 or priority_index >= modal_index:
+        errors.append(f"{world_input}: resident commands must run before modal work tools")
+
+    priority_text = texts.get(priority_input, "")
+    resident_index = priority_text.find("TryResolveAgentHit(hits")
+    movement_priority_index = priority_text.find("TryApplyTunnelMove(hits, leftButton: true)")
+    if resident_index < 0 or movement_priority_index < 0 or resident_index >= movement_priority_index:
+        errors.append(f"{priority_input}: resident selection must win over movement and work")
 
     target_text = texts.get(targets, "")
     movement_index = target_text.find("return bestMovement")

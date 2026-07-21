@@ -1,3 +1,4 @@
+using System;
 using Dig.Domain.World;
 using Dig.Presentation.Jobs;
 using Dig.Presentation.Overlays;
@@ -9,6 +10,7 @@ namespace Dig.Unity
     public sealed partial class DigJobVisual : MonoBehaviour
     {
         private Renderer? _renderer;
+        private Collider? _interactionCollider;
         private LineRenderer? _workerLink;
         private DigOverlayManager? _overlays;
         private OverlaySemanticKind _semantic;
@@ -25,6 +27,7 @@ namespace Dig.Unity
             _overlays = overlays;
             _semantic = semantic;
             _renderer = GetComponent<Renderer>();
+            _interactionCollider = GetComponent<Collider>();
             _workerLink = gameObject.AddComponent<LineRenderer>();
             _workerLink.positionCount = 2;
             _workerLink.startWidth = 0.055f;
@@ -44,6 +47,11 @@ namespace Dig.Unity
         {
             Model = model;
             _semantic = semantic;
+            if (_interactionCollider != null)
+            {
+                _interactionCollider.enabled = !IsTerminalStatus(model.Status);
+            }
+
             if (model.HasTarget)
             {
                 Vector3 position = DigTunnelProjection.CellWorldPosition(
@@ -106,6 +114,13 @@ namespace Dig.Unity
                 0f,
                 yaw,
                 appearance.TiltDegrees);
+        }
+
+        private static bool IsTerminalStatus(string status)
+        {
+            return string.Equals(status, "Completed", StringComparison.Ordinal)
+                || string.Equals(status, "Cancelled", StringComparison.Ordinal)
+                || string.Equals(status, "Failed", StringComparison.Ordinal);
         }
     }
 }

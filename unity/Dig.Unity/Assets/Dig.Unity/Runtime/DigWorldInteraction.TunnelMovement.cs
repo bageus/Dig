@@ -94,37 +94,55 @@ namespace Dig.Unity
         {
             for (int index = 0; index < hits.Length; index++)
             {
-                if (!_jobRenderer!.TryGetJob(hits[index], out DigJobVisual job)
-                    || !job.Model.TargetX.HasValue
-                    || !job.Model.TargetY.HasValue
-                    || !job.Model.TargetZ.HasValue
-                    || job.Model.TargetZ.Value <= 0)
+                RaycastHit hit = hits[index];
+                if (_agentRenderer!.TryGetAgent(hit, out _)
+                    || (_buildingRenderer != null
+                        && _buildingRenderer.TryGetBuilding(hit, out _))
+                    || (_itemRenderer != null
+                        && _itemRenderer.TryGetItem(hit, out _)))
                 {
-                    continue;
+                    return false;
                 }
 
-                SpatialCellId workCell = new SpatialCellId(
-                    job.Model.TargetX.Value,
-                    job.Model.TargetY.Value,
-                    job.Model.TargetZ.Value - 1);
-                bool found = _simulation!.TryAssignSpatialExcavation(
-                    workCell,
-                    residentIds,
-                    out Result assignment);
-                if (!found)
+                if (_jobRenderer!.TryGetJob(hit, out DigJobVisual job))
                 {
-                    continue;
+                    if (IsTerminalJobStatus(job.Model.Status)
+                        || !job.Model.TargetX.HasValue
+                        || !job.Model.TargetY.HasValue
+                        || !job.Model.TargetZ.HasValue
+                        || job.Model.TargetZ.Value <= 0)
+                    {
+                        return false;
+                    }
+
+                    SpatialCellId workCell = new SpatialCellId(
+                        job.Model.TargetX.Value,
+                        job.Model.TargetY.Value,
+                        job.Model.TargetZ.Value - 1);
+                    bool found = _simulation!.TryAssignSpatialExcavation(
+                        workCell,
+                        residentIds,
+                        out Result assignment);
+                    if (!found)
+                    {
+                        return false;
+                    }
+
+                    _hud!.SetCommandResult(assignment);
+                    if (assignment.IsSuccess)
+                    {
+                        _hud.SetStatus(
+                            $"Assigned {residentIds.Count} selected dwarf(s) to spatial excavation "
+                            + $"near X={workCell.X}, Y={workCell.Y}, Z={workCell.Z}.");
+                    }
+
+                    return true;
                 }
 
-                _hud!.SetCommandResult(assignment);
-                if (assignment.IsSuccess)
+                if (TryResolveTunnelDestination(hit, out _, out _))
                 {
-                    _hud.SetStatus(
-                        $"Assigned {residentIds.Count} selected dwarf(s) to spatial excavation "
-                        + $"near X={workCell.X}, Y={workCell.Y}, Z={workCell.Z}.");
+                    return false;
                 }
-
-                return true;
             }
 
             return false;
@@ -154,6 +172,13 @@ namespace Dig.Unity
             destination = default;
             visual = null;
             return false;
+        }
+
+        private static bool IsTerminalJobStatus(string status)
+        {
+            return string.Equals(status, "Completed", StringComparison.Ordinal)
+                || string.Equals(status, "Cancelled", StringComparison.Ordinal)
+                || string.Equals(status, "Failed", StringComparison.Ordinal);
         }
     }
 }
