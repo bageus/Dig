@@ -46,7 +46,8 @@ public sealed partial class DigGameHudCanvas
         BuildManagementHeader(columns);
         if (buildings.Count == 0)
         {
-            BuildManagementEmptyState(DigHudLocalization.Resolve("management.buildings.empty"));
+            BuildManagementEmptyState(
+                DigManagementLocalization.Resolve("management.buildings.empty"));
             return;
         }
 
@@ -82,7 +83,7 @@ public sealed partial class DigGameHudCanvas
 
     private static string BuildingStatusLabel(BuildingStatus status)
     {
-        return DigHudLocalization.Resolve("management.building.status."
+        return DigManagementLocalization.Resolve("management.building.status."
             + status.ToString().ToLowerInvariant());
     }
 }

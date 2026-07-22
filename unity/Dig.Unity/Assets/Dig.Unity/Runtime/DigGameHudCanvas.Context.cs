@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using Dig.Application.World;
 using Dig.Domain.Core;
-using Dig.Presentation.Agents;
 using Dig.Presentation.Buildings;
 using Dig.Presentation.Inventory;
 using Dig.Presentation.Jobs;
@@ -60,39 +59,11 @@ public sealed partial class DigGameHudCanvas
             string residentId = _agentRenderer.SelectedAgentId;
             ResidentInventoryLayoutViewModel inventory = _terrainSession!
                 .LoadResidentInventoryLayout(residentId);
-            ResidentRosterRowViewModel resident = _simulation!
-                .LoadResidentRoster(residentId)
-                .Rows.Single(row => string.Equals(
-                    row.Id,
-                    residentId,
-                    StringComparison.Ordinal));
-            if (_skillInspectorResidentId != null
-                && !string.Equals(
-                    _skillInspectorResidentId,
-                    residentId,
-                    StringComparison.Ordinal))
-            {
-                _skillInspectorResidentId = null;
-            }
-
-            bool showSkills = string.Equals(
-                _skillInspectorResidentId,
-                residentId,
-                StringComparison.Ordinal);
             string signature = $"resident:{inventory.ResidentId}:"
-                + $"{inventory.InventoryVersion}:{inventory.MoveSpeedMultiplier}:"
-                + $"skills:{showSkills}:{BuildSkillSignature(resident.Skills)}";
+                + $"{inventory.InventoryVersion}:{inventory.MoveSpeedMultiplier}";
             if (ApplyContextSignature(signature))
             {
-                if (showSkills)
-                {
-                    BuildResidentSkillContext(resident);
-                }
-                else
-                {
-                    BuildInventoryContext(inventory);
-                    BuildSkillInspectorShortcut(residentId);
-                }
+                BuildInventoryContext(inventory);
             }
 
             return;
