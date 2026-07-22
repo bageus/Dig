@@ -77,6 +77,7 @@ public sealed partial class DigGameHudCanvas
             _clockFace,
             adjustStart: false,
             new Color(0.40f, 0.76f, 1f, 1f));
+        CreateAutomaticPlanningButton();
         SetScheduleVisible(showOverlay: false, editable: false);
     }
 
@@ -191,8 +192,13 @@ public sealed partial class DigGameHudCanvas
         int tickOfDay = (int)(tick % ticksPerDay);
         bool editable = hasSchedule
             && string.Equals(displayedId, selectedId, StringComparison.Ordinal);
+        string automaticPlanningSignature = ResolveAutomaticPlanningState(
+            selectedId,
+            out bool hasAutomaticPlanning,
+            out bool automaticPlanningEnabled);
         string signature =
-            $"{tick}:{selectedId}:{displayedId}:{ticksPerDay}:{start}:{end}:{editable}";
+            $"{tick}:{selectedId}:{displayedId}:{ticksPerDay}:{start}:{end}:{editable}:"
+            + automaticPlanningSignature;
         if (string.Equals(signature, _clockSignature, StringComparison.Ordinal))
         {
             return;
@@ -204,6 +210,9 @@ public sealed partial class DigGameHudCanvas
             0f,
             -(360f * tickOfDay / ticksPerDay));
         _clockMinuteHand!.localRotation = Quaternion.identity;
+        RefreshAutomaticPlanningButton(
+            hasAutomaticPlanning,
+            automaticPlanningEnabled);
         SetScheduleVisible(hasSchedule, editable);
         if (!hasSchedule)
         {

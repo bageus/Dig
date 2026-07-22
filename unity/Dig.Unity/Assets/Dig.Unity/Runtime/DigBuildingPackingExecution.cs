@@ -288,7 +288,7 @@ internal sealed partial class DigTerrainWorkSession
                 EntityId.Parse(agent.Id),
                 skillLevel: 4_500 - (index * 200),
                 distanceCost: distance,
-                isAvailable: agent.IsAlive);
+                isAvailable: agent.IsAvailableForAutomaticPlanning);
         }
 
         return candidates;

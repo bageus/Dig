@@ -36,6 +36,20 @@ public abstract partial class DigAgentSimulationDriverBase
             startTickInclusive,
             endTickExclusive);
     }
+
+    internal bool TryGetResidentAutomaticPlanning(
+        string residentId,
+        out bool enabled)
+    {
+        return AgentSession!.TryGetAutomaticPlanning(residentId, out enabled);
+    }
+
+    internal Result SetResidentAutomaticPlanning(
+        string residentId,
+        bool enabled)
+    {
+        return AgentSession!.SetAutomaticPlanning(residentId, enabled);
+    }
 }
 
 }

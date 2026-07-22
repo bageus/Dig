@@ -24,6 +24,7 @@ public sealed partial class SaveGameBuilder
                 UnitsPerPoint = AgentSkillCatalog.UnitsPerPoint,
                 TotalCapacityUnits = progression.TotalCapacityUnits,
                 LastReport = BuildReport(progression.LastReport),
+                AutomaticPlanningEnabled = agent.AutomaticPlanningEnabled,
             };
             saved.AppliedSourceKeys.AddRange(progression.AppliedSourceKeys);
             saved.MigrationSteps.AddRange(progression.MigrationSteps);

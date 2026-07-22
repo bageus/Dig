@@ -45,7 +45,7 @@ namespace Dig.Unity
 
         private bool IsAvailableForAutomaticWork(AgentViewModel agent)
         {
-            return agent.IsAlive
+            return agent.IsAvailableForAutomaticPlanning
                 && !(_isManualMovementActive?.Invoke(agent.Id) ?? false);
         }
 

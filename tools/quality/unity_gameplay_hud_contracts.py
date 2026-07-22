@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Callable
 
 from unity_issue14_hud_contracts import check_issue14_hud_contracts
+from unity_automatic_planning_contracts import check_automatic_planning_contracts
 
 RequireFragments = Callable[[Path, str, str, tuple[str, ...]], list[str]]
 RejectFragments = Callable[[Path, str, str, tuple[str, ...]], list[str]]
@@ -221,6 +222,8 @@ def check_gameplay_hud_and_work_contracts(
             "CreateSnapshot(_tick)",
             "TryGetWorkWindow",
             "SetAgentWorkRestWindowCommand",
+            "SetAgentAutomaticPlanningCommand",
+            "AutomaticPlanningEnabled",
         ),
     ))
     errors.extend(require_fragments(
@@ -231,7 +234,16 @@ def check_gameplay_hud_and_work_contracts(
             "LoadResidentRoster",
             "TryGetResidentWorkWindow",
             "SetResidentWorkWindow",
+            "TryGetResidentAutomaticPlanning",
+            "SetResidentAutomaticPlanning",
         ),
+    ))
+    errors.extend(check_automatic_planning_contracts(
+        root,
+        runtime_root,
+        texts,
+        require_fragments,
+        reject_fragments,
     ))
     errors.extend(require_fragments(
         bootstrap_path,

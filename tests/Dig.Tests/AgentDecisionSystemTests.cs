@@ -60,6 +60,37 @@ public sealed class AgentDecisionSystemTests
     }
 
     [Fact]
+    public void Automatic_planning_opt_out_rejects_new_work_but_keeps_manual_order()
+    {
+        AgentState agent = AgentTestFactory.CreateAgent(
+            nutrition: 9_000,
+            alertness: 9_000,
+            mood: 9_000);
+        Assert.True(agent.SetAutomaticPlanningEnabled(false, tick: 0).IsSuccess);
+
+        AgentDecision automatic = Decide(agent, tick: 0);
+
+        Assert.NotEqual(AgentIntentKind.Work, automatic.SelectedIntent);
+        UtilityOptionDiagnostic work = Assert.Single(
+            automatic.Options,
+            option => option.IntentKind == AgentIntentKind.Work);
+        Assert.False(work.Available);
+
+        PlayerOrder order = new PlayerOrder(
+            "order-manual-dig",
+            "Dig selected tunnel",
+            priority: 8_000,
+            issuedTick: 0,
+            expiresTick: 20);
+        Assert.True(agent.SetPlayerOrder(order, tick: 0).IsSuccess);
+
+        AgentDecision manual = Decide(agent, tick: 0);
+
+        Assert.Equal(AgentIntentKind.PlayerOrder, manual.SelectedIntent);
+        Assert.Equal(order.Id, manual.SelectedPlayerOrderId);
+    }
+
+    [Fact]
     public void Critical_sleep_interrupts_work_during_cooldown()
     {
         AgentState agent = AgentTestFactory.CreateAgent(
