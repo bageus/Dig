@@ -55,6 +55,31 @@ namespace Dig.Unity
             return Result.Success();
         }
 
+        internal Result<EraseExcavationBatchReport> ApplyExcavationEraseBatch(
+            IReadOnlyList<CellId> cells)
+        {
+            if (!IsInitialized())
+            {
+                return Result<EraseExcavationBatchReport>.Failure(new DomainError(
+                    "unity.excavation.not_initialized",
+                    "Excavation controls are not initialized."));
+            }
+
+            IReadOnlyList<CellId> expanded =
+                WorldSession!.ExpandExcavationEraseCells(cells);
+            Result<EraseExcavationBatchReport> erased =
+                TerrainSession!.EraseExcavationBatch(expanded, CurrentTick);
+            if (erased.IsFailure)
+            {
+                return erased;
+            }
+
+            WorldSession.CommitExcavationErase(expanded);
+            IReadOnlyList<AgentViewModel> agents = AgentSession!.LoadView();
+            RefreshExcavationPresentation(agents);
+            return erased;
+        }
+
         internal Result AssignExcavationCluster(CellId seed, string residentId)
         {
             return AssignExcavationCluster(seed, new[] { residentId });
@@ -101,6 +126,13 @@ namespace Dig.Unity
             var world = WorldSession!.LoadView();
             IReadOnlyList<JobOverlayViewModel> jobs = TerrainSession!.LoadJobs();
             WorldRenderer!.Render(world);
+            WorldOverlayRenderer!.RenderWorld(
+                world,
+                WorldSession.LoadTerrainDeposits());
+            WorldOverlayRenderer.RenderDynamic(
+                TerrainSession!.LoadBuildings(),
+                TerrainSession.GetStorageStatus(),
+                TerrainSession.LoadRoutes());
             JobRenderer!.Render(jobs);
             Hud!.SetWorld(world);
             Hud.SetAgents(agents, AgentSession!.Tick);

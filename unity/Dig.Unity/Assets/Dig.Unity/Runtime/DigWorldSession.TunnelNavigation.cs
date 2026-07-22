@@ -51,6 +51,15 @@ namespace Dig.Unity
             SetTunnelPlan(cell, active, vertical: active);
         }
 
+        internal void RemoveTunnelPlans(IReadOnlyList<CellId> cells)
+        {
+            for (int index = 0; index < cells.Count; index++)
+            {
+                _plannedTunnelCells.Remove(cells[index]);
+                _plannedVerticalTunnelCells.Remove(cells[index]);
+            }
+        }
+
         private void InitializeDemoTunnelPlan(TunnelDemoLayout layout)
         {
             if (layout == null)

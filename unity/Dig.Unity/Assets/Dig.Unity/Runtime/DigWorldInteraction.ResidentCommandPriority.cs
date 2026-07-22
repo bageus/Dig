@@ -17,6 +17,20 @@ public sealed partial class DigWorldInteraction
         }
 
         RaycastHit[] hits = GetPointerHits();
+        if (_agentRenderer!.SelectedCount > 0
+            && TryResolveHostileCreatureHit(hits, out DigCreatureVisual creature))
+        {
+            CancelResidentMarquee();
+            DisableExcavationDrawing();
+            DisableCaveRoomPlanning();
+            ContextPointerTarget hostileTarget = BuildHostileTarget(creature);
+            ApplyDecision(_inputRouter.Route(
+                Pointer(PointerButtonKind.Left),
+                BuildState(PointerButtonKind.Left),
+                hostileTarget));
+            return true;
+        }
+
         if (TryResolveAgentHit(hits, out DigAgentVisual agent))
         {
             CancelResidentMarquee();

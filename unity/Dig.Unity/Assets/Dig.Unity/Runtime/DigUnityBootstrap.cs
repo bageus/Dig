@@ -92,6 +92,9 @@ namespace Dig.Unity
             terrainSession.BindPresentationEffectSink(
                 effectRuntime.Publish);
             DigWorldRenderer worldRenderer = GetOrAdd<DigWorldRenderer>(gameObject);
+            DigOverlayManager overlayManager = GetOrAdd<DigOverlayManager>(gameObject);
+            DigWorldOverlayRenderer worldOverlayRenderer =
+                GetOrAdd<DigWorldOverlayRenderer>(gameObject);
             DigAgentRenderer agentRenderer = GetOrAdd<DigAgentRenderer>(gameObject);
             DigCreatureRenderer creatureRenderer = GetOrAdd<DigCreatureRenderer>(gameObject);
             DigJobRenderer jobRenderer = GetOrAdd<DigJobRenderer>(gameObject);
@@ -107,7 +110,6 @@ namespace Dig.Unity
                 GetOrAdd<DigCaveRoomPreviewRenderer>(gameObject);
             DigCaveRoomFloorRenderer caveRoomFloorRenderer =
                 GetOrAdd<DigCaveRoomFloorRenderer>(gameObject);
-            GetOrAdd<DigOverlayHotkeys>(gameObject);
             DigWorldInteraction interaction = GetOrAdd<DigWorldInteraction>(gameObject);
             DigAgentSimulationDriver simulation = GetOrAdd<DigAgentSimulationDriver>(gameObject);
             DigCameraController cameraController =
@@ -127,10 +129,15 @@ namespace Dig.Unity
             hud.SetStatus("Binding runtime controls...");
 
             _startupStage = "initializing interaction and simulation";
+            worldOverlayRenderer.Initialize(
+                overlayManager,
+                agentRenderer,
+                buildingRenderer,
+                worldRenderer);
             jobRenderer.Initialize(agentRenderer);
             interaction.Initialize(
                 targetCamera, cameraController, worldSession, worldRenderer,
-                agentRenderer, jobRenderer, buildingRenderer, itemRenderer,
+                agentRenderer, creatureRenderer, jobRenderer, buildingRenderer, itemRenderer,
                 ghostRenderer, terrainSession, stockpileRenderer, agentSession,
                 simulation, hud);
             interaction.SetTunnelMovement(tunnelRenderer);
@@ -138,7 +145,7 @@ namespace Dig.Unity
             simulation.Initialize(
                 worldSession, worldRenderer, agentSession, agentRenderer,
                 terrainSession, jobRenderer, buildingRenderer, itemRenderer,
-                stockpileRenderer, routeRenderer, hud);
+                stockpileRenderer, routeRenderer, worldOverlayRenderer, hud);
 
             _startupStage = "binding uGUI game HUD";
             gameHud.Initialize(
@@ -179,6 +186,13 @@ namespace Dig.Unity
                 () => stockpileRenderer.Render(storage));
             RunPresentationStage("rendering navigation routes", visualWarnings,
                 () => routeRenderer.Render(routes));
+            RunPresentationStage("rendering world overlays", visualWarnings, () =>
+            {
+                worldOverlayRenderer.RenderWorld(
+                    world,
+                    worldSession.LoadTerrainDeposits());
+                worldOverlayRenderer.RenderDynamic(buildings, storage, routes);
+            });
             RunPresentationStage("rendering ambient effects", visualWarnings,
                 () => effectRuntime.Flush(agentSession.Tick));
 

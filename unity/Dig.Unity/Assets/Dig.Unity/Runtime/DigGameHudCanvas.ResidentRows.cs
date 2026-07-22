@@ -142,12 +142,23 @@ public sealed partial class DigGameHudCanvas
         status.resizeTextMinSize = 9;
         status.resizeTextMaxSize = 12;
         status.gameObject.AddComponent<LayoutElement>().preferredHeight = 20f;
-        CreateNeedMetric(parent, "Health", resident.Health);
-        CreateNeedMetric(parent, "Nutrition", resident.Nutrition);
-        CreateNeedMetric(parent, "Alertness", resident.Alertness);
-        CreateNeedMetric(parent, "Mood", resident.Mood);
+        CreateNeedMetric(
+            parent,
+            DigHudLocalization.Resolve(resident.Health.AccessibilityKey),
+            resident.Health);
+        CreateNeedMetric(
+            parent,
+            DigHudLocalization.Resolve(resident.Nutrition.AccessibilityKey),
+            resident.Nutrition);
+        CreateNeedMetric(
+            parent,
+            DigHudLocalization.Resolve(resident.Alertness.AccessibilityKey),
+            resident.Alertness);
+        CreateNeedMetric(
+            parent,
+            DigHudLocalization.Resolve(resident.Mood.AccessibilityKey),
+            resident.Mood);
         BuildTopSkillList(parent, resident.Skills);
-        BuildSkillInspector(parent, resident.Skills);
     }
 
     private static void CreateNeedMetric(
@@ -180,13 +191,7 @@ public sealed partial class DigGameHudCanvas
 
     private static string FormatActivity(ResidentActivityDescriptor activity)
     {
-        string progress = activity.ProgressMaximum > 0
-            ? $" {activity.ProgressCurrent}/{activity.ProgressMaximum}"
-            : string.Empty;
-        string blocked = string.IsNullOrWhiteSpace(activity.BlockReasonCode)
-            ? string.Empty
-            : $" · {activity.BlockReasonCode}";
-        return $"Status: {activity.Kind}{progress}{blocked}";
+        return DigHudLocalization.FormatActivity(activity);
     }
 
     private static string ScheduleLabel(ScheduleActivity activity)

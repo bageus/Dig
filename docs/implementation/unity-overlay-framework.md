@@ -64,8 +64,13 @@ Current migrated systems:
 - job markers and worker links;
 - navigation route lines;
 - cave-room valid/invalid previews.
+- resident-group, building-footprint and cell selection markers;
+- excavation designations;
+- unfinished building footprints;
+- storage demand and reservation markers;
+- deposits, fog, dirty chunks and failed-navigation diagnostics.
 
-The cave preview retains a fixed pool of fourteen line renderers: twelve box edges and two invalid-cross edges. Route and job roots retain their existing keyed reuse behavior. Visibility toggles never allocate markers.
+The cave preview retains a fixed pool of fourteen line renderers: twelve box edges and two invalid-cross edges. Route and job roots retain their existing keyed reuse behavior. `DigWorldOverlayRenderer` grows bounded category pools and reuses inactive markers across rebuilds. Overlay markers have no colliders. Visibility toggles never allocate markers.
 
 ## Pointer boundary
 
@@ -82,17 +87,13 @@ One pointer event therefore continues through the existing input path exactly on
 
 Renderers may receive a manager explicitly or resolve the one attached to the shared bootstrap object. Registration is idempotent. Unregistering one root does not hide or remove other roots in the same layer.
 
-The legacy `DigOverlayHotkeys` component remains harmless compatibility scaffolding while `DigOverlayManager` owns all active F2/F3/F4 behavior. Migrated roots no longer use its historical name-based lookup strings.
+`DigOverlayManager` owns all active F2/F3/F4 behavior. Runtime composition no
+longer adds the legacy name-based `DigOverlayHotkeys` component.
 
-## Remaining #211 work
+## Verification
 
-This foundation establishes typed layers, priority, visibility profiles, shared style/material ownership and three representative renderer integrations. Follow-up slices still need:
-
-- selection, hover and marquee integration;
-- excavation/designation markers;
-- building footprint and placement ghost integration;
-- storage demand and reservation overlays;
-- deposits, fog/vision, dirty-chunk and navigation diagnostics;
-- pooled generic marker/line/decal factories;
-- full depth-offset policy for every `Z=0..3` overlay target;
-- Play Mode validation of click shielding, rebuild persistence and allocation budgets.
+Play Mode coverage verifies marker reuse, accessibility metadata and that
+visibility profile changes leave the immutable world model unchanged. Existing
+input tests continue to cover click shielding and the one-command priority
+matrix. Selection markers resolve current visuals by stable id every frame, so
+renderer reconciliation does not create a second selection state.

@@ -98,7 +98,7 @@ Local effects include selection, focus, placement preview/cancel and reason disp
 
 ## Unity adapter
 
-`DigWorldInteraction` now converts existing resident, Job and cell raycasts into router facts. The current demo slice wires:
+`DigWorldInteraction` now converts resident, hostile creature, Job and cell raycasts into router facts. The runtime wires:
 
 - resident single-click selection;
 - resident double-click camera focus;
@@ -107,10 +107,19 @@ Local effects include selection, focus, placement preview/cancel and reason disp
 - right-click digging designation when no resident is selected;
 - ground and Job local selection;
 - blocking HUD pointer shielding.
+- hostile creature priority before resident movement and an `AttackTarget` adapter
+  that issues one authoritative `IssueCombatIntentCommand` with
+  `CombatIntentSource.PlayerOrder`;
+- release-to-commit excavation eraser batches. A drag gathers preview cells;
+  preflight then removes designations in one world version, cancels matching
+  unfinished dig Jobs, releases their reservations and removes incomplete cave
+  and tunnel plans. Invalid input changes neither aggregate.
 
 `DigAgentSession.MoveResident` is a thin Application adapter. `DigAgentSimulationDriver.MoveResident` refreshes immutable Agent views, visuals and HUD after the accepted command. Camera focus changes only `DigCameraController` presentation state.
 
-The existing demo has no BuildingBox, resident-inventory or faction combat raycast visuals yet. Those command kinds remain explicit unsupported adapter cases; the router never substitutes a different mutation. Later slices add typed target adapters and matching Application handlers without changing the priority matrix.
+Attack input creates an intent only. Damage remains owned by the combat execution
+handler and can never be committed by a click or animation callback. A stale,
+dead or non-entity hostile visual produces the typed rejection path.
 
 ## Validation
 
@@ -126,5 +135,7 @@ Regression tests cover:
 - unreachable movement reasons;
 - completed-building and ground selection;
 - mutually exclusive panel modes.
+- authoritative attack-intent dispatch;
+- atomic eraser success, reservation cleanup and invalid-batch rollback.
 
 Quality also validates C# 9 compatibility for the Unity adapter, normal headless smoke and both deterministic simulation soak profiles.

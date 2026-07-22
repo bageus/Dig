@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Jobs;
 using Dig.Domain.Core;
 using Dig.Domain.World;
@@ -24,8 +25,9 @@ namespace Dig.Unity
         private ExcavationStrokeAxis _excavationAxis;
         private CellId? _excavationAnchor;
         private CellId? _lastExcavationPaintCell;
+        private readonly HashSet<CellId> _excavationEraseBatch =
+            new HashSet<CellId>();
         private int _excavationPriority = 750;
-
         internal string ExcavationModeLabel => _caveRoomPreset.HasValue
             ? $"{_caveRoomPreset.Value} Cave"
             : _excavationMode.ToString();
@@ -87,6 +89,11 @@ namespace Dig.Unity
             if (Input.GetMouseButtonUp(0))
             {
                 bool wasEditing = _excavationMode != DigExcavationDrawingMode.None;
+                if (_excavationMode == DigExcavationDrawingMode.Delete
+                    && _excavationEraseBatch.Count > 0)
+                {
+                    ApplyExcavationEraseBatch();
+                }
                 ResetExcavationStroke();
                 return wasEditing;
             }
@@ -122,6 +129,15 @@ namespace Dig.Unity
             }
 
             CellId target = rawTarget.Value;
+            if (_excavationMode == DigExcavationDrawingMode.Delete)
+            {
+                _excavationEraseBatch.Add(target);
+                _lastExcavationPaintCell = target;
+                _hud.SetStatus(
+                    $"Eraser preview: {_excavationEraseBatch.Count} cell(s). Release LMB to apply.");
+                return true;
+            }
+
             bool active = _excavationMode == DigExcavationDrawingMode.Tunnel;
             if (active)
             {
@@ -154,6 +170,22 @@ namespace Dig.Unity
             }
 
             return true;
+        }
+
+        private void ApplyExcavationEraseBatch()
+        {
+            CellId[] cells = _excavationEraseBatch.OrderBy(cell => cell).ToArray();
+            Result<EraseExcavationBatchReport> result =
+                _simulation!.ApplyExcavationEraseBatch(cells);
+            if (result.IsFailure)
+            {
+                _hud!.SetCommandResult(Result.Failure(result.Error!));
+                return;
+            }
+
+            _hud!.SetStatus(
+                $"Removed {result.Value.DesignationCount} designation(s) and cancelled "
+                + $"{result.Value.CancelledJobIds.Count} job(s).");
         }
 
         private Result ApplyExcavationStroke(CellId target, bool active)
@@ -312,6 +344,7 @@ namespace Dig.Unity
             _excavationAxis = ExcavationStrokeAxis.None;
             _excavationAnchor = null;
             _lastExcavationPaintCell = null;
+            _excavationEraseBatch.Clear();
         }
     }
 }

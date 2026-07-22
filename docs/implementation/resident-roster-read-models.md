@@ -43,6 +43,11 @@ Every need also carries an accessibility/localization key. Alertness uses `resid
 
 Combat skills participate in the same ordering as every other skill. The full inspector and compact row therefore cannot disagree because of separate queries.
 
+The expanded roster row renders only the five highest skills. The selected
+resident inventory panel exposes an explicit `All 12 skills` action; its separate
+screen renders capacity, every skill and the last redistribution report from the
+same snapshot.
+
 ## Typed activity
 
 `ResidentActivityDescriptor` contains:
@@ -99,3 +104,8 @@ Tests cover:
 Click routing, scroll position and row pooling remain local Presentation state.
 The Unity row reads the typed sex indicator already present in the read model;
 it does not query or mutate the simulation while binding.
+
+Need labels, activity text and notification ticker messages resolve typed
+localization keys in the Unity adapter. Russian `resident.need.alertness.vigor`
+is displayed as «Бодрость»; the read model still contains no ready localized
+sentence.

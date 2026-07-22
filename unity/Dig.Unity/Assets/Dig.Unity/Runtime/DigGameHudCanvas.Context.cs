@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Dig.Application.World;
 using Dig.Domain.Core;
+using Dig.Presentation.Agents;
 using Dig.Presentation.Buildings;
 using Dig.Presentation.Inventory;
 using Dig.Presentation.Jobs;
@@ -56,13 +57,42 @@ public sealed partial class DigGameHudCanvas
         if (_agentRenderer.SelectedCount == 1
             && _agentRenderer.SelectedAgentId != null)
         {
+            string residentId = _agentRenderer.SelectedAgentId;
             ResidentInventoryLayoutViewModel inventory = _terrainSession!
-                .LoadResidentInventoryLayout(_agentRenderer.SelectedAgentId);
+                .LoadResidentInventoryLayout(residentId);
+            ResidentRosterRowViewModel resident = _simulation!
+                .LoadResidentRoster(residentId)
+                .Rows.Single(row => string.Equals(
+                    row.Id,
+                    residentId,
+                    StringComparison.Ordinal));
+            if (_skillInspectorResidentId != null
+                && !string.Equals(
+                    _skillInspectorResidentId,
+                    residentId,
+                    StringComparison.Ordinal))
+            {
+                _skillInspectorResidentId = null;
+            }
+
+            bool showSkills = string.Equals(
+                _skillInspectorResidentId,
+                residentId,
+                StringComparison.Ordinal);
             string signature = $"resident:{inventory.ResidentId}:"
-                + $"{inventory.InventoryVersion}:{inventory.MoveSpeedMultiplier}";
+                + $"{inventory.InventoryVersion}:{inventory.MoveSpeedMultiplier}:"
+                + $"skills:{showSkills}:{BuildSkillSignature(resident.Skills)}";
             if (ApplyContextSignature(signature))
             {
-                BuildInventoryContext(inventory);
+                if (showSkills)
+                {
+                    BuildResidentSkillContext(resident);
+                }
+                else
+                {
+                    BuildInventoryContext(inventory);
+                    BuildSkillInspectorShortcut(residentId);
+                }
             }
 
             return;

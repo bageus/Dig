@@ -18,6 +18,14 @@ public static class DefaultOverlayStyles
             new OverlayStyleDefinition(OverlaySemanticKind.JobAttention, OverlayShapeKind.Diamond, OverlayPatternKind.Dashed, 125, 112, 12),
             new OverlayStyleDefinition(OverlaySemanticKind.JobTerminal, OverlayShapeKind.Ring, OverlayPatternKind.Dashed, 75, 82, 0),
             new OverlayStyleDefinition(OverlaySemanticKind.Route, OverlayShapeKind.Line, OverlayPatternKind.Dashed, 100, 100, 0),
+            new OverlayStyleDefinition(OverlaySemanticKind.Designation, OverlayShapeKind.Diamond, OverlayPatternKind.CrossHatch, 110, 100, 0),
+            new OverlayStyleDefinition(OverlaySemanticKind.Reservation, OverlayShapeKind.Outline, OverlayPatternKind.Dashed, 110, 100, 0),
+            new OverlayStyleDefinition(OverlaySemanticKind.BuildingFootprint, OverlayShapeKind.Outline, OverlayPatternKind.Double, 110, 100, 0),
+            new OverlayStyleDefinition(OverlaySemanticKind.StorageDemand, OverlayShapeKind.Chevron, OverlayPatternKind.Dashed, 115, 100, 0),
+            new OverlayStyleDefinition(OverlaySemanticKind.Deposit, OverlayShapeKind.Diamond, OverlayPatternKind.Solid, 90, 90, 0),
+            new OverlayStyleDefinition(OverlaySemanticKind.Fog, OverlayShapeKind.Cross, OverlayPatternKind.CrossHatch, 90, 100, 0),
+            new OverlayStyleDefinition(OverlaySemanticKind.DirtyChunk, OverlayShapeKind.Outline, OverlayPatternKind.Dashed, 125, 140, 0),
+            new OverlayStyleDefinition(OverlaySemanticKind.NavigationDiagnostic, OverlayShapeKind.Cross, OverlayPatternKind.Dashed, 105, 100, 0),
         };
 }
 }

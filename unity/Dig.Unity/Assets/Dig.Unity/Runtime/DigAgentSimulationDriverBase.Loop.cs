@@ -144,6 +144,8 @@ namespace Dig.Unity
             IReadOnlyList<JobOverlayViewModel> jobs = TerrainSession.LoadJobs();
             IReadOnlyList<WorldItemViewModel> items = TerrainSession.LoadAllWorldItems();
             IReadOnlyList<RouteViewModel> routes = TerrainSession.LoadRoutes();
+            IReadOnlyList<Dig.Presentation.Buildings.BuildingWorldViewModel> buildings =
+                TerrainSession.LoadBuildings();
             DigStorageStatus storage = TerrainSession.GetStorageStatus();
             if (TerrainSession.ConsumeWorldChanged())
             {
@@ -151,6 +153,9 @@ namespace Dig.Unity
                 WorldRenderer!.Render(world);
                 WorldRenderer.SetProtectedCells(WorldSession.ProtectedCells);
                 WorldRenderer.SetTerrainDeposits(WorldSession.LoadTerrainDeposits());
+                WorldOverlayRenderer!.RenderWorld(
+                    world,
+                    WorldSession.LoadTerrainDeposits());
                 Hud!.SetWorld(world);
             }
 
@@ -163,10 +168,11 @@ namespace Dig.Unity
             AgentRenderer.Render(agents, movementDuration);
             RefreshEquipmentVisuals();
             JobRenderer.Render(jobs);
-            BuildingRenderer.Render(TerrainSession.LoadBuildings());
+            BuildingRenderer.Render(buildings);
             ItemRenderer!.Render(items);
             StockpileRenderer!.Render(storage);
             RouteRenderer!.Render(routes);
+            WorldOverlayRenderer!.RenderDynamic(buildings, storage, routes);
             EffectRuntime!.Flush(AgentSession.Tick);
             Hud!.SetAgents(agents, AgentSession.Tick);
             Hud.SetJobs(jobs);
