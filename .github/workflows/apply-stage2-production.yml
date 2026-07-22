@@ -22,14 +22,49 @@ jobs:
           ref: feature/authoritative-xyz-stage2-production
           fetch-depth: 0
 
-      - name: Decode and apply authoritative XYZ patch
+      - name: Decode, validate and apply authoritative XYZ patch
         shell: bash
         run: |
-          set -euo pipefail
-          cat .stage2-patch/chunk0 .stage2-patch/chunk1 .stage2-patch/chunk2 .stage2-patch/chunk3 \
-            | base64 -d | xz -d > /tmp/stage2.patch
-          git apply --check /tmp/stage2.patch
-          git apply --index /tmp/stage2.patch
+          set -u
+          diagnostic=.stage2-patch/diagnostics.txt
+          encoded=/tmp/stage2.patch.b64
+          archive=/tmp/stage2.patch.xz
+          patch=/tmp/stage2.patch
+          : > "$diagnostic"
+          cat .stage2-patch/chunk0 .stage2-patch/chunk1 .stage2-patch/chunk2 .stage2-patch/chunk3 > "$encoded"
+          echo "encoded_bytes=$(wc -c < "$encoded")" >> "$diagnostic"
+          echo "encoded_sha256=$(sha256sum "$encoded" | awk '{print $1}')" >> "$diagnostic"
+
+          base64 -d "$encoded" > "$archive" 2>> "$diagnostic"
+          base64_status=$?
+          echo "base64_status=$base64_status" >> "$diagnostic"
+
+          xz -t "$archive" 2>> "$diagnostic"
+          xz_status=$?
+          echo "xz_status=$xz_status" >> "$diagnostic"
+
+          if [ "$base64_status" -eq 0 ] && [ "$xz_status" -eq 0 ]; then
+            xz -dc "$archive" > "$patch"
+            echo "patch_bytes=$(wc -c < "$patch")" >> "$diagnostic"
+            echo "patch_sha256=$(sha256sum "$patch" | awk '{print $1}')" >> "$diagnostic"
+            git apply --check "$patch" >> "$diagnostic" 2>&1
+            apply_status=$?
+          else
+            apply_status=99
+          fi
+          echo "apply_status=$apply_status" >> "$diagnostic"
+
+          if [ "$base64_status" -ne 0 ] || [ "$xz_status" -ne 0 ] || [ "$apply_status" -ne 0 ]; then
+            git add "$diagnostic"
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m 'Record Stage 2 patch diagnostics'
+            git push origin HEAD:feature/authoritative-xyz-stage2-production
+            exit 1
+          fi
+
+          rm -f "$diagnostic"
+          git apply --index "$patch"
 
       - name: Remove temporary Stage 2 files
         shell: bash
