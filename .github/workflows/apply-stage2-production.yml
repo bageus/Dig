@@ -1,0 +1,51 @@
+name: Apply Stage 2 Production Patch
+
+on:
+  push:
+    branches:
+      - feature/authoritative-xyz-stage2-production
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout production branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/authoritative-xyz-stage2-production
+          fetch-depth: 0
+
+      - name: Decode and apply authoritative XYZ patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .stage2-patch/chunk0 .stage2-patch/chunk1 .stage2-patch/chunk2 .stage2-patch/chunk3 \
+            | base64 -d | xz -d > /tmp/stage2.patch
+          git apply --check /tmp/stage2.patch
+          git apply --index /tmp/stage2.patch
+
+      - name: Remove temporary Stage 2 files
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .stage2-patch
+          rm -f .github/workflows/apply-stage2-production.yml
+          rm -f .github/workflows/export-source-stage2.yml
+          rm -f .github/workflows/export-stage2-v2.yml
+          rm -f .github/workflows/export-stage2-v3.yml
+          rm -f docs/implementation/stage2-v3-pr-placeholder.md
+          rm -f docs/implementation/stage2-v3-working-note.md
+          git add -A
+
+      - name: Commit production migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Implement authoritative XYZ gameplay model'
+          git push origin HEAD:feature/authoritative-xyz-stage2-production
