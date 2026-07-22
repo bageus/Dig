@@ -15,6 +15,8 @@ namespace Dig.Unity
         private BoxCollider? _interactionCollider;
         private string _assetKey = string.Empty;
         private Color _baseTint = Color.white;
+        private Color _displayTint = Color.white;
+        private bool _hovered;
         private int _poolCapacity;
 
         public WorldItemViewModel Model { get; private set; } = null!;
@@ -26,6 +28,17 @@ namespace Dig.Unity
         internal void InvalidateAsset()
         {
             _assetKey = string.Empty;
+        }
+
+        internal void SetHovered(bool hovered)
+        {
+            if (_hovered == hovered)
+            {
+                return;
+            }
+
+            _hovered = hovered;
+            ApplyVisibleTint();
         }
 
         internal void Configure(
@@ -56,6 +69,7 @@ namespace Dig.Unity
                 _instances[index].SetActive(false);
             }
 
+            _hovered = false;
             VisibleInstanceCount = 0;
             QuantityBadge = string.Empty;
             gameObject.SetActive(false);
@@ -137,7 +151,7 @@ namespace Dig.Unity
             DigItemVisualResolution resolution)
         {
             int visible = Math.Min(layout.Instances.Count, _instances.Count);
-            Color tint = ResolveReservationTint(layout.ReservationState);
+            _displayTint = ResolveReservationTint(layout.ReservationState);
             for (int index = 0; index < _instances.Count; index++)
             {
                 GameObject instance = _instances[index];
@@ -159,10 +173,26 @@ namespace Dig.Unity
                     layout.QuantityBand,
                     placement.QuarterTurns);
                 instance.transform.localScale = resolution.WorldScale * scaleFactor;
-                _tints[index].SetTint(tint);
+                _tints[index].SetTint(ResolveVisibleTint());
             }
 
             VisibleInstanceCount = visible;
+        }
+
+        private void ApplyVisibleTint()
+        {
+            Color tint = ResolveVisibleTint();
+            for (int index = 0; index < VisibleInstanceCount; index++)
+            {
+                _tints[index].SetTint(tint);
+            }
+        }
+
+        private Color ResolveVisibleTint()
+        {
+            return _hovered
+                ? Color.Lerp(_displayTint, Color.white, 0.48f)
+                : _displayTint;
         }
 
         private void ApplyInteraction(DigItemVisualResolution resolution)
