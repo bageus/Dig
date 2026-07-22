@@ -8,6 +8,7 @@ namespace Dig.Unity
 public sealed partial class DigAgentRenderer
 {
     private const string DefaultResidentVisualId = "resident.default";
+    private const float ResidentWorldScale = 0.5f;
     private readonly ResidentVisualPresenter _residentVisualPresenter = new ResidentVisualPresenter();
     private DigResidentVisualCatalog? _residentVisualCatalog;
 
@@ -18,6 +19,7 @@ public sealed partial class DigAgentRenderer
         {
             root = new GameObject($"Resident {model.Name}");
             root.transform.SetParent(_visualRoot, false);
+            root.transform.localScale = Vector3.one * ResidentWorldScale;
             CapsuleCollider collider = root.AddComponent<CapsuleCollider>();
             collider.center = new Vector3(0f, 0.74f, 0f);
             collider.height = 1.52f;
@@ -52,6 +54,7 @@ public sealed partial class DigAgentRenderer
     {
         GameObject root = new GameObject($"Resident {model.Name} (Fallback)");
         root.transform.SetParent(_visualRoot, worldPositionStays: false);
+        root.transform.localScale = Vector3.one * ResidentWorldScale;
         CapsuleCollider interaction = root.AddComponent<CapsuleCollider>();
         interaction.center = new Vector3(0f, 0.60f, 0f);
         interaction.height = 1.24f;

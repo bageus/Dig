@@ -35,7 +35,7 @@ public sealed partial class DigGameHudCanvas
             CloseManagementOverlay,
             preferredHeight: 42f);
         RectTransform closeRect = (RectTransform)close.transform;
-        Anchor(closeRect, 0f, 1f, 0f, 1f, 10f, -52f, 52f, -10f);
+        Anchor(closeRect, 1f, 1f, 1f, 1f, -52f, -52f, -10f, -10f);
 
         Text heading = CreateText(
             "Title",

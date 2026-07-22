@@ -42,7 +42,6 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
     private string _lastRosterSignature = string.Empty;
     private string _lastContextSignature = string.Empty;
     private string _status = string.Empty;
-    private string? _skillInspectorResidentId;
     private float _bottomPanelHeight = 98f;
     private bool _initialized;
 

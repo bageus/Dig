@@ -13,6 +13,7 @@ Each resident has one stable root GameObject owned by `DigAgentRenderer`:
 - the root contains `DigAgentVisual`;
 - the root contains exactly one `CapsuleCollider` used by existing resident selection;
 - the root follows the established `DigTunnelProjection.ResidentWorldPosition` mapping and is anchored at the resident's feet on `WalkSurfaceY`;
+- the root uses a fixed `0.5` presentation scale, reducing the rig, equipment, carried visuals and interaction collider together without changing its logical cell;
 - route playback and normal interpolation continue to move the root;
 - the composite visual rig is a collider-free child.
 

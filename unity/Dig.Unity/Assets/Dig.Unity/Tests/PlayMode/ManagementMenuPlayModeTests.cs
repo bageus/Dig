@@ -52,6 +52,41 @@ public sealed class ManagementMenuPlayModeTests
         Assert.That(Require("Management Overlay").gameObject.activeSelf, Is.True);
     }
 
+    [Test]
+    public void Overlay_close_is_top_right_and_management_labels_are_english()
+    {
+        Require("Management Menu Button").GetComponent<Button>().onClick.Invoke();
+        Require("Management Dropdown/Dwarfs").GetComponent<Button>().onClick.Invoke();
+        Invoke(
+            _root!.GetComponent<DigGameHudCanvas>(),
+            "BeginManagementOverlay",
+            "Dwarfs",
+            new[] { "Standard" },
+            0,
+            new System.Action<int>(_ => { }));
+
+        RectTransform close = Require("Management Overlay/Close")
+            .GetComponent<RectTransform>();
+        Assert.That(close.anchorMin, Is.EqualTo(Vector2.one));
+        Assert.That(close.anchorMax, Is.EqualTo(Vector2.one));
+        Assert.That(close.offsetMin, Is.EqualTo(new Vector2(-52f, -52f)));
+        Assert.That(close.offsetMax, Is.EqualTo(new Vector2(-10f, -10f)));
+
+        System.Type? localization = typeof(DigGameHudCanvas).Assembly.GetType(
+            "Dig.Unity.DigManagementLocalization");
+        Assert.That(localization, Is.Not.Null);
+        MethodInfo? resolve = localization!.GetMethod(
+            "Resolve",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.That(resolve, Is.Not.Null);
+        Assert.That(resolve!.Invoke(null, new object[] { "management.name" }),
+            Is.EqualTo("Name"));
+        Assert.That(resolve.Invoke(null, new object[] { "resident.need.alertness.vigor" }),
+            Is.EqualTo("Vigor"));
+        Assert.That(resolve.Invoke(null, new object[] { "management.schedule.work" }),
+            Is.EqualTo("Work time"));
+    }
+
     private Transform Require(string path)
     {
         Transform? value = _root!.transform.Find(path);

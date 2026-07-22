@@ -4,9 +4,13 @@
 
 The Unity HUD exposes a top-left hamburger menu button. A left click toggles a dropdown with
 `Dwarfs`, `Items`, and `Buildings`. Selecting an entry closes the dropdown and opens
-one centered management overlay. The overlay close button is placed in its upper-left
+one centered management overlay. The overlay close button is placed in its upper-right
 corner. Menu, dropdown, and overlay rectangles participate in HUD hit testing, so a UI
 click cannot reach world controls.
+
+All management table headers, status values, empty states, tabs, and fixed item labels
+are rendered in English. This is intentionally independent from the localized compact
+resident HUD.
 
 ## Dwarfs
 

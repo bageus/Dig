@@ -84,12 +84,20 @@ def main() -> int:
         "visual.transform.SetParent(root.transform, worldPositionStays: false)",
         "visual.transform.localPosition = new Vector3(0f, 0.60f, 0f)",
         "root.AddComponent<CapsuleCollider>()",
+        "private const float ResidentWorldScale = 0.5f;",
+        "root.transform.localScale = Vector3.one * ResidentWorldScale;",
         "root.AddComponent<DigAgentVisual>()",
         "InitializeSimple(model, _normalMaterial!, _selectedMaterial!)",
     )))
     errors.extend(reject(renderer_path, renderer, (
         "FindObjectOfType<", "FindObjectsOfType<", "AnimateRoute(",
     )))
+    resident_scale_applications = renderer.count(
+        "root.transform.localScale = Vector3.one * ResidentWorldScale;")
+    if resident_scale_applications != 2:
+        errors.append(
+            f"{renderer_path.relative_to(ROOT)}: resident world scale must be "
+            "applied to both authored and fallback resident roots")
 
     rig_path = RUNTIME / "DigResidentRig.cs"
     factory_path = RUNTIME / "DigResidentRigFactory.cs"
@@ -125,6 +133,16 @@ def main() -> int:
     errors.extend(reject(visual_path, visual, (
         "Animator.Set", "ApplyRootMotion", "ICommand", "Handle(",
         "PlayRoute(", "UpdateRoute(", "_routeStepDuration", "_routeIndex",
+    )))
+
+    scale_test_path = ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" \
+        / "Tests" / "PlayMode" / "ResidentWorldScalePlayModeTests.cs"
+    scale_test = read(scale_test_path)
+    errors.extend(require(scale_test_path, scale_test, (
+        "Rendered_resident_root_is_half_scale_without_moving_its_feet",
+        "renderer.Render(new[] { Resident() }, movementDuration: 0.1f);",
+        "resident.localScale, Is.EqualTo(Vector3.one * 0.5f)",
+        "resident.GetComponent<CapsuleCollider>()",
     )))
 
     projection_path = RUNTIME / "DigTunnelProjection.cs"

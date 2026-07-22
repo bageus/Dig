@@ -267,7 +267,7 @@ public sealed partial class DigGameHudCanvas
 
     private static ManagementColumn Column(string key, float width)
     {
-        return new ManagementColumn(DigHudLocalization.Resolve(key), width);
+        return new ManagementColumn(DigManagementLocalization.Resolve(key), width);
     }
 
     private static void CreateNeedBar(
@@ -293,7 +293,7 @@ public sealed partial class DigGameHudCanvas
 
     private static string SexLabel(ResidentSexIndicator sex)
     {
-        return DigHudLocalization.Resolve(sex == ResidentSexIndicator.Female
+        return DigManagementLocalization.Resolve(sex == ResidentSexIndicator.Female
             ? "resident.sex.female"
             : sex == ResidentSexIndicator.Male
                 ? "resident.sex.male"
@@ -302,7 +302,7 @@ public sealed partial class DigGameHudCanvas
 
     private static string ScheduleManagementLabel(ScheduleActivity activity)
     {
-        return DigHudLocalization.Resolve(activity switch
+        return DigManagementLocalization.Resolve(activity switch
         {
             ScheduleActivity.Work => "management.schedule.work",
             ScheduleActivity.Free => "management.schedule.free",

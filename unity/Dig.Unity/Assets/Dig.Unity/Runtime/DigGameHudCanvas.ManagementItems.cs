@@ -51,7 +51,8 @@ public sealed partial class DigGameHudCanvas
             model.GetRows(_itemManagementTab);
         if (rows.Count == 0)
         {
-            BuildManagementEmptyState(DigHudLocalization.Resolve("management.items.empty"));
+            BuildManagementEmptyState(
+                DigManagementLocalization.Resolve("management.items.empty"));
             return;
         }
 

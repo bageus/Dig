@@ -45,10 +45,9 @@ Every need also carries an accessibility/localization key. Alertness uses `resid
 
 Combat skills participate in the same ordering as every other skill. If fewer than five skills are above zero, the compact view contains only those skills; when every skill is zero, the section is hidden. The full diagnostic inspector remains available as a separate builder over the same snapshot, but is not mounted in the normal expanded resident row.
 
-The expanded roster row renders only the five highest skills. The selected
-resident inventory panel exposes an explicit `All 12 skills` action; its separate
-screen renders capacity, every skill and the last redistribution report from the
-same snapshot.
+The expanded roster row renders only the five highest skills. The selected resident
+inventory panel does not add a separate `All skills` shortcut; the settlement
+management tables expose the production and combat skill comparisons instead.
 
 ## Typed activity
 
