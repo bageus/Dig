@@ -62,6 +62,9 @@ namespace Dig.Unity
 
             // Forced excavation is deliberately independent from JobSystem ownership.
             // Existing automatic jobs keep their owner, status and candidate list.
+            // The tick remains part of the command contract; swing seeds use the
+            // simulation tick when AdvanceManualQuarterExcavation is called.
+            _ = tick;
             for (int index = 0; index < agents.Length; index++)
             {
                 EntityId agentId = agents[index];
