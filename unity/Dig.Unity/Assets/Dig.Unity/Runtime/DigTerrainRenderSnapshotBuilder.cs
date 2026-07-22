@@ -109,6 +109,21 @@ namespace Dig.Unity
                 visibleDecorations);
         }
 
+        private static long CombineVersion(
+            long worldVersion,
+            long depthVersion,
+            long depositVersion)
+        {
+            unchecked
+            {
+                ulong mixed = (ulong)worldVersion * 1099511628211UL;
+                mixed ^= (ulong)depthVersion;
+                mixed *= 1099511628211UL;
+                mixed ^= (ulong)depositVersion;
+                return (long)(mixed & (ulong)long.MaxValue);
+            }
+        }
+
         internal void Invalidate()
         {
             _initialized = false;
@@ -179,111 +194,6 @@ namespace Dig.Unity
             }
 
             return result;
-        }
-
-        private static void MarkChangedCells(
-            HashSet<DigTerrainCellKey> previous,
-            HashSet<DigTerrainCellKey> current,
-            int chunkSize,
-            HashSet<DigTerrainChunkKey> dirty)
-        {
-            foreach (DigTerrainCellKey cell in previous)
-            {
-                if (!current.Contains(cell))
-                {
-                    dirty.Add(ChunkForCell(cell, chunkSize));
-                }
-            }
-
-            foreach (DigTerrainCellKey cell in current)
-            {
-                if (!previous.Contains(cell))
-                {
-                    dirty.Add(ChunkForCell(cell, chunkSize));
-                }
-            }
-        }
-
-        private static DigTerrainChunkKey ChunkForCell(
-            DigTerrainCellKey cell,
-            int chunkSize)
-        {
-            return new DigTerrainChunkKey(
-                FloorDivide(cell.X, chunkSize),
-                FloorDivide(cell.Y, chunkSize),
-                cell.Z);
-        }
-
-        private static int FloorDivide(int value, int divisor)
-        {
-            int quotient = value / divisor;
-            int remainder = value % divisor;
-            return remainder < 0 ? quotient - 1 : quotient;
-        }
-
-        private static void MarkChunkAndNeighbours(
-            DigTerrainChunkKey chunk,
-            HashSet<DigTerrainChunkKey> dirty)
-        {
-            dirty.Add(chunk);
-            dirty.Add(chunk.Offset(-1, 0, 0));
-            dirty.Add(chunk.Offset(1, 0, 0));
-            dirty.Add(chunk.Offset(0, -1, 0));
-            dirty.Add(chunk.Offset(0, 1, 0));
-            dirty.Add(chunk.Offset(0, 0, -1));
-            dirty.Add(chunk.Offset(0, 0, 1));
-        }
-
-        private static int CompareCells(
-            DigTerrainRenderCell left,
-            DigTerrainRenderCell right)
-        {
-            int z = left.Key.Z.CompareTo(right.Key.Z);
-            if (z != 0)
-            {
-                return z;
-            }
-
-            int y = left.Key.Y.CompareTo(right.Key.Y);
-            return y != 0 ? y : left.Key.X.CompareTo(right.Key.X);
-        }
-
-        private static int CompareChunks(
-            DigTerrainRenderChunk left,
-            DigTerrainRenderChunk right)
-        {
-            int z = left.Key.Z.CompareTo(right.Key.Z);
-            if (z != 0)
-            {
-                return z;
-            }
-
-            int y = left.Key.Y.CompareTo(right.Key.Y);
-            return y != 0 ? y : left.Key.X.CompareTo(right.Key.X);
-        }
-
-        private static void Mix(ref ulong hash, ulong value, ulong prime)
-        {
-            hash ^= value;
-            hash *= prime;
-        }
-
-        private static void Replace<TKey, TValue>(
-            Dictionary<TKey, TValue> target,
-            Dictionary<TKey, TValue> source)
-            where TKey : notnull
-        {
-            target.Clear();
-            foreach (KeyValuePair<TKey, TValue> pair in source)
-            {
-                target.Add(pair.Key, pair.Value);
-            }
-        }
-
-        private static void Replace<T>(HashSet<T> target, HashSet<T> source)
-        {
-            target.Clear();
-            target.UnionWith(source);
         }
     }
 }
