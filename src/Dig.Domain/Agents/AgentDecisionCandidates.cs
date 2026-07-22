@@ -77,7 +77,8 @@ public sealed partial class AgentDecisionSystem
         candidates[(int)AgentIntentKind.Work] = new Candidate(
             AgentIntentKind.Work,
             workScore,
-            context.WorkAvailable || currentIntent == AgentIntentKind.Work,
+            currentIntent == AgentIntentKind.Work
+                || (agent.AutomaticPlanningEnabled && context.WorkAvailable),
             critical: false);
         candidates[(int)AgentIntentKind.Rest] = new Candidate(
             AgentIntentKind.Rest,

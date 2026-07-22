@@ -25,7 +25,8 @@ public sealed class AgentSnapshot
         IReadOnlyCollection<AgentTraitId> traits,
         CellId? position = null,
         int positionZ = 0,
-        AgentSkillProgressionSnapshot? skillProgression = null)
+        AgentSkillProgressionSnapshot? skillProgression = null,
+        bool automaticPlanningEnabled = true)
         : this(
             id,
             name,
@@ -43,7 +44,8 @@ public sealed class AgentSnapshot
                 (position ?? new CellId(0, 0)).X,
                 (position ?? new CellId(0, 0)).Y,
                 positionZ),
-            skillProgression)
+            skillProgression,
+            automaticPlanningEnabled)
     {
     }
 
@@ -61,7 +63,8 @@ public sealed class AgentSnapshot
         IReadOnlyList<AgentSkillValue> skills,
         IReadOnlyList<AgentTraitId> traits,
         SpatialCellId position,
-        AgentSkillProgressionSnapshot? skillProgression)
+        AgentSkillProgressionSnapshot? skillProgression,
+        bool automaticPlanningEnabled)
     {
         if (id.IsEmpty)
         {
@@ -105,6 +108,7 @@ public sealed class AgentSnapshot
         LastDecision = lastDecision;
         SpatialPosition = position;
         SkillProgression = skillProgression;
+        AutomaticPlanningEnabled = automaticPlanningEnabled;
     }
 
     public EntityId Id { get; }
@@ -120,6 +124,7 @@ public sealed class AgentSnapshot
     public IReadOnlyList<AgentSkillValue> Skills { get; }
     public IReadOnlyList<AgentTraitId> Traits { get; }
     public AgentSkillProgressionSnapshot? SkillProgression { get; }
+    public bool AutomaticPlanningEnabled { get; }
     public CellId Position => SpatialPosition.Projection;
     public SpatialCellId SpatialPosition { get; }
     public int PositionZ => SpatialPosition.Z;
@@ -188,7 +193,8 @@ public sealed class AgentSnapshot
         IReadOnlyList<AgentSkillValue> skills,
         IReadOnlyList<AgentTraitId> traits,
         CellId position,
-        AgentSkillProgressionSnapshot? skillProgression = null)
+        AgentSkillProgressionSnapshot? skillProgression = null,
+        bool automaticPlanningEnabled = true)
     {
         return FromNormalizedCapabilities(
             id,
@@ -204,7 +210,8 @@ public sealed class AgentSnapshot
             skills,
             traits,
             new SpatialCellId(position.X, position.Y, 0),
-            skillProgression);
+            skillProgression,
+            automaticPlanningEnabled);
     }
 
     internal static AgentSnapshot FromNormalizedCapabilities(
@@ -221,7 +228,8 @@ public sealed class AgentSnapshot
         IReadOnlyList<AgentSkillValue> skills,
         IReadOnlyList<AgentTraitId> traits,
         SpatialCellId position,
-        AgentSkillProgressionSnapshot? skillProgression = null)
+        AgentSkillProgressionSnapshot? skillProgression = null,
+        bool automaticPlanningEnabled = true)
     {
         return new AgentSnapshot(
             id,
@@ -237,7 +245,8 @@ public sealed class AgentSnapshot
             skills,
             traits,
             position,
-            skillProgression);
+            skillProgression,
+            automaticPlanningEnabled);
     }
 
     private static IReadOnlyList<AgentSkillValue> CopySkills(

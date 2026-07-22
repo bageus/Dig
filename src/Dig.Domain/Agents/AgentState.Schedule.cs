@@ -6,6 +6,30 @@ namespace Dig.Domain.Agents
 
 public sealed partial class AgentState
 {
+    public Result SetAutomaticPlanningEnabled(bool enabled, long tick)
+    {
+        ValidateTick(tick);
+        if (!IsAlive)
+        {
+            return Result.Failure(AgentErrors.AgentDead);
+        }
+
+        if (AutomaticPlanningEnabled == enabled)
+        {
+            return Result.Success();
+        }
+
+        AutomaticPlanningEnabled = enabled;
+        Version = checked(Version + 1);
+        Raise(new AgentAutomaticPlanningChanged(tick, Id, enabled));
+        return Result.Success();
+    }
+
+    public void RestoreAutomaticPlanningEnabled(bool enabled)
+    {
+        AutomaticPlanningEnabled = enabled;
+    }
+
     public Result SetWorkRestWindow(
         int workStartTickInclusive,
         int workEndTickExclusive,

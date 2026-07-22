@@ -106,6 +106,8 @@ public sealed partial class SaveGameLoader
 
             IReadOnlyDictionary<EntityId, Dig.Domain.Agents.AgentSkillProgressionSnapshot>
                 agentSkills = BuildAgentSkills(document.AgentSkills);
+            IReadOnlyDictionary<EntityId, bool> agentAutomaticPlanning =
+                BuildAgentAutomaticPlanning(document.AgentSkills);
 
             return Result<LoadedGameState>.Success(new LoadedGameState(
                 CopyMetadata(document.Metadata),
@@ -114,7 +116,8 @@ public sealed partial class SaveGameLoader
                 jobs.Value,
                 buildings.Value,
                 migrationReport,
-                agentSkills));
+                agentSkills,
+                agentAutomaticPlanning));
         }
         catch (KeyNotFoundException)
         {

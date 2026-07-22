@@ -6,6 +6,61 @@ using Dig.Domain.Core;
 namespace Dig.Application.Agents
 {
 
+public sealed class SetAgentAutomaticPlanningCommand : ICommand<Result>
+{
+    public SetAgentAutomaticPlanningCommand(EntityId agentId, bool enabled, long tick)
+    {
+        AgentId = agentId;
+        Enabled = enabled;
+        Tick = tick;
+    }
+
+    public EntityId AgentId { get; }
+
+    public bool Enabled { get; }
+
+    public long Tick { get; }
+}
+
+public sealed class SetAgentAutomaticPlanningCommandHandler
+    : ICommandHandler<SetAgentAutomaticPlanningCommand, Result>
+{
+    private readonly IAgentRepository _repository;
+    private readonly IEventSink _eventSink;
+
+    public SetAgentAutomaticPlanningCommandHandler(
+        IAgentRepository repository,
+        IEventSink eventSink)
+    {
+        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        _eventSink = eventSink ?? throw new ArgumentNullException(nameof(eventSink));
+    }
+
+    public Result Handle(SetAgentAutomaticPlanningCommand command)
+    {
+        if (command is null)
+        {
+            throw new ArgumentNullException(nameof(command));
+        }
+
+        AgentState? agent = _repository.Get(command.AgentId);
+        if (agent is null)
+        {
+            return Result.Failure(AgentApplicationErrors.NotFound);
+        }
+
+        Result result = agent.SetAutomaticPlanningEnabled(command.Enabled, command.Tick);
+        if (result.IsFailure)
+        {
+            return result;
+        }
+
+        _repository.Save(agent);
+        _eventSink.Append(agent.DequeueUncommittedEvents());
+        return Result.Success();
+    }
+}
+
 public sealed class SetAgentWorkRestWindowCommand : ICommand<Result>
 {
     public SetAgentWorkRestWindowCommand(

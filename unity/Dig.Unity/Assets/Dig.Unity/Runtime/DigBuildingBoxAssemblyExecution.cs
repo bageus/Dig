@@ -288,7 +288,7 @@ namespace Dig.Unity
                         EntityId.Parse(agent.Id),
                         skillLevel: 5_000,
                         distanceCost: 0,
-                        isAvailable: agent.IsAlive))
+                        isAvailable: agent.IsAvailableForAutomaticPlanning))
                     .ToArray();
             }
 
@@ -302,7 +302,7 @@ namespace Dig.Unity
                 EntityId.Parse(agent.Id),
                 skillLevel: 4_800 - (index * 150),
                 distanceCost: Math.Abs(agent.CellX - source.X) + Math.Abs(agent.CellY - source.Y),
-                isAvailable: agent.IsAlive)).ToArray();
+                isAvailable: agent.IsAvailableForAutomaticPlanning)).ToArray();
         }
 
         private void EnsureBuildingBoxAssemblyInitialized()

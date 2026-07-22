@@ -94,6 +94,25 @@ public sealed class AgentPositionPresentationTests
         Assert.Contains(first.ActiveIntent, first.DecisionExplanation);
     }
 
+    [Fact]
+    public void Presenter_exposes_automatic_planning_eligibility()
+    {
+        AgentState agent = CreateAgent(
+            "00000000000000000000000000000030",
+            "Kara",
+            new CellId(2, 2));
+        Assert.True(agent.SetAutomaticPlanningEnabled(false, tick: 1).IsSuccess);
+        agent.DequeueUncommittedEvents();
+        InMemoryAgentRepository repository = new InMemoryAgentRepository();
+        Assert.True(repository.Add(agent).IsSuccess);
+
+        AgentViewModel resident = Assert.Single(new AgentPresenter(
+            new GetAgentSnapshotsQueryHandler(repository)).Load(tick: 1));
+
+        Assert.False(resident.AutomaticPlanningEnabled);
+        Assert.False(resident.IsAvailableForAutomaticPlanning);
+    }
+
     [Theory]
     [InlineData(0d, 2d, 4d)]
     [InlineData(0.5d, 5d, 8d)]

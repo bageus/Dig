@@ -9,6 +9,31 @@ namespace Dig.Application.Saving
 
 public sealed partial class SaveGameLoader
 {
+    private static IReadOnlyDictionary<EntityId, bool> BuildAgentAutomaticPlanning(
+        AgentSkillsSaveData data)
+    {
+        if (data is null || data.Agents is null)
+        {
+            throw new InvalidOperationException("Agent save data is missing.");
+        }
+
+        Dictionary<EntityId, bool> result = new Dictionary<EntityId, bool>();
+        foreach (AgentSkillProgressionSaveData saved in data.Agents
+            .OrderBy(value => value.AgentId, StringComparer.Ordinal))
+        {
+            EntityId agentId = EntityId.Parse(saved.AgentId);
+            if (!result.TryAdd(
+                agentId,
+                saved.AutomaticPlanningEnabled ?? true))
+            {
+                throw new InvalidOperationException(
+                    $"Duplicate saved agent id '{agentId}'.");
+            }
+        }
+
+        return result;
+    }
+
     private static IReadOnlyDictionary<EntityId, AgentSkillProgressionSnapshot>
         BuildAgentSkills(AgentSkillsSaveData data)
     {

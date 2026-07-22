@@ -66,6 +66,48 @@ public sealed class AgentScheduleEditingTests
     }
 
     [Fact]
+    public void Automatic_planning_is_enabled_by_default_and_can_be_disabled()
+    {
+        AgentState agent = AgentTestFactory.CreateAgent();
+        long version = agent.Version;
+
+        Result result = agent.SetAutomaticPlanningEnabled(enabled: false, tick: 3);
+
+        Assert.True(result.IsSuccess);
+        Assert.False(agent.AutomaticPlanningEnabled);
+        Assert.False(agent.CreateSnapshot(3).AutomaticPlanningEnabled);
+        Assert.Equal(version + 1, agent.Version);
+        AgentAutomaticPlanningChanged changed = Assert.IsType<
+            AgentAutomaticPlanningChanged>(Assert.Single(agent.PeekUncommittedEvents()));
+        Assert.False(changed.Enabled);
+        Assert.Equal(3, changed.Tick);
+    }
+
+    [Fact]
+    public void Automatic_planning_command_persists_preference_without_touching_schedule()
+    {
+        AgentState agent = AgentTestFactory.CreateAgent(
+            schedule: DailySchedule.CreateWorkRest(24, 8, 18));
+        InMemoryAgentRepository repository = new InMemoryAgentRepository();
+        Assert.True(repository.Add(agent).IsSuccess);
+        InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
+        SetAgentAutomaticPlanningCommandHandler handler =
+            new SetAgentAutomaticPlanningCommandHandler(repository, journal);
+
+        Result result = handler.Handle(new SetAgentAutomaticPlanningCommand(
+            agent.Id,
+            enabled: false,
+            tick: 4));
+
+        Assert.True(result.IsSuccess);
+        AgentState saved = repository.Get(agent.Id)!;
+        Assert.False(saved.AutomaticPlanningEnabled);
+        Assert.Equal(ScheduleActivity.Work, saved.Schedule.GetActivity(9));
+        Assert.Contains(journal.Events, value =>
+            value is AgentAutomaticPlanningChanged changed && !changed.Enabled);
+    }
+
+    [Fact]
     public void Command_handler_persists_the_selected_work_window()
     {
         AgentState agent = AgentTestFactory.CreateAgent(

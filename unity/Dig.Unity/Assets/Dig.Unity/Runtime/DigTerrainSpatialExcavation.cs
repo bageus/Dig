@@ -248,7 +248,7 @@ internal sealed partial class DigTerrainWorkSession
                 distanceCost: Math.Abs(agent.CellX - workCell.X)
                     + Math.Abs(agent.CellY - workCell.Y)
                     + Math.Abs(agent.CellZ - workCell.Z),
-                isAvailable: agent.IsAlive
+                isAvailable: agent.IsAvailableForAutomaticPlanning
                     && string.Equals(
                         agent.ScheduledActivity,
                         ScheduleActivity.Work.ToString(),

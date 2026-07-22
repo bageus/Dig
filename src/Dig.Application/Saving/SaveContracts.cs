@@ -118,7 +118,8 @@ public sealed class LoadedGameState
         JobSystem jobs,
         BuildingsState buildings,
         SaveMigrationReport migrationReport,
-        IReadOnlyDictionary<EntityId, AgentSkillProgressionSnapshot>? agentSkills = null)
+        IReadOnlyDictionary<EntityId, AgentSkillProgressionSnapshot>? agentSkills = null,
+        IReadOnlyDictionary<EntityId, bool>? agentAutomaticPlanning = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -131,6 +132,10 @@ public sealed class LoadedGameState
             : agentSkills.ToDictionary(value => value.Key, value => value.Value);
         AgentSkills = new ReadOnlyDictionary<EntityId, AgentSkillProgressionSnapshot>(
             skillCopy);
+        Dictionary<EntityId, bool> planningCopy = agentAutomaticPlanning is null
+            ? new Dictionary<EntityId, bool>()
+            : agentAutomaticPlanning.ToDictionary(value => value.Key, value => value.Value);
+        AgentAutomaticPlanning = new ReadOnlyDictionary<EntityId, bool>(planningCopy);
     }
 
     public SaveMetadataData Metadata { get; }
@@ -140,6 +145,7 @@ public sealed class LoadedGameState
     public BuildingsState Buildings { get; }
     public SaveMigrationReport MigrationReport { get; }
     public IReadOnlyDictionary<EntityId, AgentSkillProgressionSnapshot> AgentSkills { get; }
+    public IReadOnlyDictionary<EntityId, bool> AgentAutomaticPlanning { get; }
 }
 
 public sealed class SaveMigrationReport

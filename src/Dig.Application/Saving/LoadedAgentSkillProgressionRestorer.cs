@@ -32,6 +32,15 @@ public sealed class LoadedAgentSkillProgressionRestorer
             }
         }
 
+        foreach (System.Collections.Generic.KeyValuePair<EntityId, bool> entry
+            in loaded.AgentAutomaticPlanning)
+        {
+            if (_agents.Get(entry.Key) is null)
+            {
+                return Result.Failure(AgentApplicationErrors.NotFound);
+            }
+        }
+
         foreach (System.Collections.Generic.KeyValuePair<
             EntityId,
             AgentSkillProgressionSnapshot> entry in loaded.AgentSkills)
@@ -43,6 +52,14 @@ public sealed class LoadedAgentSkillProgressionRestorer
                 return restored;
             }
 
+            _agents.Save(agent);
+        }
+
+        foreach (System.Collections.Generic.KeyValuePair<EntityId, bool> entry
+            in loaded.AgentAutomaticPlanning)
+        {
+            AgentState agent = _agents.Get(entry.Key)!;
+            agent.RestoreAutomaticPlanningEnabled(entry.Value);
             _agents.Save(agent);
         }
 
