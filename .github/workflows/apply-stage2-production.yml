@@ -55,11 +55,7 @@ jobs:
           echo "apply_status=$apply_status" >> "$diagnostic"
 
           if [ "$base64_status" -ne 0 ] || [ "$xz_status" -ne 0 ] || [ "$apply_status" -ne 0 ]; then
-            git add "$diagnostic"
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git commit -m 'Record Stage 2 patch diagnostics'
-            git push origin HEAD:feature/authoritative-xyz-stage2-production
+            cat "$diagnostic"
             exit 1
           fi
 
@@ -75,12 +71,22 @@ jobs:
           rm -f docs/implementation/stage2-v3-working-note.md
           git add -A
           git status --short
+          git diff --cached --stat
 
-      - name: Commit production migration
+      - name: Create production migration commit
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit --no-verify -m 'Implement authoritative XYZ gameplay model'
-          git push origin HEAD:feature/authoritative-xyz-stage2-production
+          tree=$(git write-tree)
+          parent=$(git rev-parse HEAD)
+          commit=$(printf '%s\n' 'Implement authoritative XYZ gameplay model' | git commit-tree "$tree" -p "$parent")
+          echo "STAGE2_COMMIT=$commit" >> "$GITHUB_ENV"
+          git show --stat --oneline "$commit"
+
+      - name: Push production migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git push origin "$STAGE2_COMMIT":refs/heads/feature/authoritative-xyz-stage2-production
