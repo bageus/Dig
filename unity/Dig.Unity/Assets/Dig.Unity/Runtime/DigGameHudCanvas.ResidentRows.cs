@@ -15,7 +15,9 @@ public sealed partial class DigGameHudCanvas
         ResidentRosterRowViewModel resident)
     {
         RectTransform compact = CreateRect("Compact", parent);
-        compact.gameObject.AddComponent<LayoutElement>().preferredHeight = 27f;
+        LayoutElement compactLayout = compact.gameObject.AddComponent<LayoutElement>();
+        compactLayout.preferredHeight = CompactResidentContentHeight;
+        compactLayout.flexibleHeight = 0f;
         HorizontalLayoutGroup layout = compact.gameObject.AddComponent<HorizontalLayoutGroup>();
         layout.spacing = 4f;
         layout.childAlignment = TextAnchor.MiddleLeft;
@@ -141,7 +143,9 @@ public sealed partial class DigGameHudCanvas
         status.resizeTextForBestFit = true;
         status.resizeTextMinSize = 9;
         status.resizeTextMaxSize = 12;
-        status.gameObject.AddComponent<LayoutElement>().preferredHeight = 20f;
+        LayoutElement statusLayout = status.gameObject.AddComponent<LayoutElement>();
+        statusLayout.preferredHeight = ResidentStatusHeight;
+        statusLayout.flexibleHeight = 0f;
         CreateNeedMetric(
             parent,
             DigHudLocalization.Resolve(resident.Health.AccessibilityKey),
@@ -167,7 +171,9 @@ public sealed partial class DigGameHudCanvas
         ResidentNeedViewModel need)
     {
         RectTransform row = CreateRect(label, parent);
-        row.gameObject.AddComponent<LayoutElement>().preferredHeight = 18f;
+        LayoutElement rowLayout = row.gameObject.AddComponent<LayoutElement>();
+        rowLayout.preferredHeight = ResidentNeedMetricHeight;
+        rowLayout.flexibleHeight = 0f;
         HorizontalLayoutGroup layout = row.gameObject.AddComponent<HorizontalLayoutGroup>();
         layout.spacing = 4f;
         layout.childControlHeight = true;

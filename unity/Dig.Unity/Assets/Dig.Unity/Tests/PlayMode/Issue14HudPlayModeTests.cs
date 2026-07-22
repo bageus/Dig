@@ -138,6 +138,36 @@ public sealed class Issue14HudPlayModeTests
         Assert.That(updated[1].Find("Compact"), Is.SameAs(unchangedCompact));
     }
 
+    [TestCase(0, 141f)]
+    [TestCase(1, 176f)]
+    [TestCase(2, 192f)]
+    [TestCase(3, 208f)]
+    [TestCase(4, 224f)]
+    [TestCase(5, 240f)]
+    public void Expanded_resident_row_fits_visible_metrics_without_stretching(
+        int visibleSkillCount,
+        float expectedHeight)
+    {
+        Invoke(
+            "RefreshResidentRows",
+            CreateRoster(
+                changedRow: -1,
+                expandFirst: true,
+                visibleSkillCount: visibleSkillCount));
+        Transform content = Require("Roster Panel/Roster Viewport/Roster Content");
+        Transform row = ResidentRows(content)[0];
+
+        LayoutElement rootLayout = row.GetComponent<LayoutElement>();
+        Assert.That(rootLayout.preferredHeight, Is.EqualTo(expectedHeight));
+        Assert.That(rootLayout.minHeight, Is.EqualTo(expectedHeight));
+        foreach (Transform child in row)
+        {
+            LayoutElement childLayout = child.GetComponent<LayoutElement>();
+            Assert.That(childLayout, Is.Not.Null, child.name);
+            Assert.That(childLayout.flexibleHeight, Is.Zero, child.name);
+        }
+    }
+
     [Test]
     public void Resident_inventory_renders_weapon_main_cargo_in_exact_order()
     {
@@ -170,7 +200,10 @@ public sealed class Issue14HudPlayModeTests
         Assert.That(sections, Is.EqualTo(new[] { "Weapon", "Main", "Cargo" }));
     }
 
-    private ResidentRosterViewModel CreateRoster(int changedRow)
+    private ResidentRosterViewModel CreateRoster(
+        int changedRow,
+        bool expandFirst = false,
+        int visibleSkillCount = 0)
     {
         List<ResidentRosterRowViewModel> rows = new List<ResidentRosterRowViewModel>();
         for (int index = 0; index < 70; index++)
@@ -180,12 +213,19 @@ public sealed class Issue14HudPlayModeTests
                 index == changedRow ? 7_900 : 8_000,
                 ResidentNeedBand.Healthy,
                 "resident.need.test");
+            ResidentSkillSetViewModel skills = index == 0
+                ? new ResidentSkillSetViewModel(AgentSkillCatalog.All
+                    .Take(visibleSkillCount)
+                    .Select(definition => new ResidentSkillViewModel(
+                        definition.Id.ToString(),
+                        1_000)))
+                : new ResidentSkillSetViewModel(Array.Empty<ResidentSkillViewModel>());
             rows.Add(new ResidentRosterRowViewModel(
                 id,
                 "Resident " + (index + 1),
                 version: index == changedRow ? 2 : 1,
                 isAlive: true,
-                isExpanded: false,
+                isExpanded: expandFirst && index == 0,
                 ResidentSexIndicator.Unknown,
                 "resident.sex.unknown",
                 ScheduleActivity.Work,
@@ -199,7 +239,7 @@ public sealed class Issue14HudPlayModeTests
                     id,
                     "resident.activity.idle"),
                 isIdleAtWork: true,
-                new ResidentSkillSetViewModel(Array.Empty<ResidentSkillViewModel>())));
+                skills));
         }
 
         return new ResidentRosterViewModel(rows, selectedResidentId: null);
