@@ -175,7 +175,7 @@ namespace Dig.Unity
         private void ApplyExcavationEraseBatch()
         {
             CellId[] cells = _excavationEraseBatch.OrderBy(cell => cell).ToArray();
-            Result<EraseExcavationBatchReport> result =
+            Result<Dig.Application.World.EraseExcavationBatchReport> result =
                 _simulation!.ApplyExcavationEraseBatch(cells);
             if (result.IsFailure)
             {
