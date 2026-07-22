@@ -1,0 +1,29 @@
+name: Export Stage 2 v2 Source
+
+on:
+  push:
+    branches:
+      - feature/authoritative-xyz-stage2-v2
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Pack source tree
+        run: tar --exclude=.git -czf /tmp/dig-stage2-v2-source.tgz .
+
+      - name: Upload source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: dig-stage2-v2-source
+          path: /tmp/dig-stage2-v2-source.tgz
+          retention-days: 1
