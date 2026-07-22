@@ -204,6 +204,12 @@ def check_gameplay_hud_and_work_contracts(
             "NeedColor",
         ),
     ))
+    errors.extend(reject_fragments(
+        resident_rows_path,
+        texts.get(resident_rows_path, ""),
+        "full diagnostic skill inspector in the normal resident HUD",
+        ("BuildSkillInspector(parent, resident.Skills)",),
+    ))
     errors.extend(check_issue14_hud_contracts(
         root,
         runtime_root,
