@@ -32,6 +32,17 @@ namespace Dig.Unity
                 miningSkill);
         }
 
+        internal ExcavationWorkerAssignment? LoadManualQuarterAssignment(
+            string residentId)
+        {
+            if (string.IsNullOrWhiteSpace(residentId))
+            {
+                return null;
+            }
+
+            return _excavationQuarterWork.GetAssignment(EntityId.Parse(residentId));
+        }
+
         internal bool CancelManualQuarterExcavation(string residentId)
         {
             if (string.IsNullOrWhiteSpace(residentId))
