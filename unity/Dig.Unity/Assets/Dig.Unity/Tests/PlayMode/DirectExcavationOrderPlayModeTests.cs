@@ -83,7 +83,7 @@ public sealed class DirectExcavationOrderPlayModeTests
         object result = Invoke(
             terrain,
             "AssignExcavationClusterToResidents",
-            new CellId(seed.TargetX!.Value, seed.TargetY!.Value),
+            new CellId(seed.TargetX!.Value, seed.TargetY!.Value, seed.TargetZ!.Value),
             new[] { seed.AssignedAgentId! },
             1L);
 
@@ -105,11 +105,13 @@ public sealed class DirectExcavationOrderPlayModeTests
         return new WorldViewModel(
             2,
             1,
+            WorldSize.RequiredDepth,
             2,
             1,
             new[]
             {
                 new WorldChunkViewModel(
+                    0,
                     0,
                     0,
                     1,
@@ -121,6 +123,7 @@ public sealed class DirectExcavationOrderPlayModeTests
     {
         return new WorldCellViewModel(
             x,
+            0,
             0,
             "test.rock",
             isSolid: true,
