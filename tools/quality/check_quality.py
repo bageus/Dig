@@ -136,6 +136,42 @@ def check_unity_compiler_configuration(config: dict[str, object]) -> list[str]:
                 "Dig.Unity.asmdef must reference UnityEngine.PhysicsModule for raycast input"
             )
 
+    play_mode_asmdef_path = (
+        ROOT
+        / "unity"
+        / "Dig.Unity"
+        / "Assets"
+        / "Dig.Unity"
+        / "Tests"
+        / "PlayMode"
+        / "Dig.Unity.PlayModeTests.asmdef"
+    )
+    if not play_mode_asmdef_path.exists():
+        errors.append("Dig.Unity Play Mode test assembly definition is missing")
+    else:
+        play_mode_assembly = json.loads(
+            play_mode_asmdef_path.read_text(encoding="utf-8-sig")
+        )
+        optional_references = {
+            str(reference)
+            for reference in play_mode_assembly.get("optionalUnityReferences", [])
+        }
+        explicit_references = {
+            str(reference)
+            for reference in play_mode_assembly.get("references", [])
+        }
+        test_runner_references = {
+            "UnityEngine.TestRunner",
+            "UnityEditor.TestRunner",
+        }
+        duplicates = explicit_references & test_runner_references
+        if "TestAssemblies" in optional_references and duplicates:
+            errors.append(
+                "Dig.Unity.PlayModeTests.asmdef must not explicitly reference test "
+                "runner assemblies when optionalUnityReferences includes TestAssemblies: "
+                f"{sorted(duplicates)}"
+            )
+
     manifest_path = ROOT / "unity" / "Dig.Unity" / "Packages" / "manifest.json"
     if not manifest_path.exists():
         errors.append("unity/Dig.Unity/Packages/manifest.json is required")
