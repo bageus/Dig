@@ -70,8 +70,7 @@ namespace Dig.Tests
                     skill,
                     seed);
 
-                Assert.InRange(Count(plan.Quarters), 1, maximum);
-                Assert.True(Count(plan.Quarters) <= maximum);
+                Assert.InRange(Count(plan.Quarters), minimum, maximum);
                 Assert.Equal(1, plan.RequiredSwingsPerQuarter);
             }
         }
