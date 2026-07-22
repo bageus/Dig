@@ -17,6 +17,7 @@ namespace Dig.Unity
         private AssignAvailableJobsHandler? _assignmentHandler;
         private InMemoryJobCandidateProvider? _candidateProvider;
         private DemoDigJobIdSource? _dynamicIds;
+        private EraseExcavationBatchHandler? _eraseExcavationBatch;
 
         internal void InitializeDynamicDesignations(InMemoryExecutionJournal journal)
         {
@@ -36,7 +37,39 @@ namespace Dig.Unity
                 _jobRepository,
                 _candidateProvider,
                 journal);
+            _eraseExcavationBatch = new EraseExcavationBatchHandler(
+                _worldSession.Repository,
+                _jobRepository,
+                journal);
             InitializeManualExcavation(journal);
+        }
+
+        internal Result<EraseExcavationBatchReport> EraseExcavationBatch(
+            IReadOnlyList<CellId> cells,
+            long tick)
+        {
+            if (_eraseExcavationBatch == null)
+            {
+                throw new InvalidOperationException(
+                    "Dynamic designation synchronization is not initialized.");
+            }
+
+            Result<EraseExcavationBatchReport> result = _eraseExcavationBatch.Handle(
+                new EraseExcavationBatchCommand(cells, tick));
+            if (result.IsFailure)
+            {
+                return result;
+            }
+
+            for (int index = 0; index < result.Value.CancelledJobIds.Count; index++)
+            {
+                EntityId jobId = result.Value.CancelledJobIds[index];
+                _routePlans.Remove(jobId);
+                _outputStackIds.Remove(jobId);
+                RemoveManualExcavationJob(jobId);
+            }
+
+            return result;
         }
 
         public void SynchronizeDesignations(

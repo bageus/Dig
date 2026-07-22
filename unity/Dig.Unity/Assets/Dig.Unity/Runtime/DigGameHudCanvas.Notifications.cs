@@ -105,18 +105,7 @@ public sealed partial class DigGameHudCanvas
             .Value;
         sourceId ??= notification.NavigationTarget.EntityId ?? "unknown";
         string source = ResolveNotificationSourceName(notification, sourceId);
-        return notification.Kind switch
-        {
-            GameNotificationKind.ResidentAttacked => $"⚔ {source} is under attack",
-            GameNotificationKind.ResidentBorn => $"★ {source} was born",
-            GameNotificationKind.ResidentHungry => $"! {source} is hungry",
-            GameNotificationKind.ResidentOld => $"◷ {source} reached old age",
-            GameNotificationKind.ResidentMoodCritical => $"! {source}'s mood is critical",
-            GameNotificationKind.ResidentDied => $"† {source} died",
-            GameNotificationKind.TechnologyUnlocked => $"◆ Technology unlocked: {source}",
-            GameNotificationKind.JobCompleted => $"✓ Job completed: {source}",
-            _ => notification.LocalizationKey,
-        };
+        return DigHudLocalization.FormatNotification(notification, source);
     }
 
     private string ResolveNotificationSourceName(
