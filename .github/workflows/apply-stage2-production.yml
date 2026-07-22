@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feature/authoritative-xyz-stage2-production
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
