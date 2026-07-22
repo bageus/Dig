@@ -100,9 +100,8 @@ namespace Dig.Domain.World
 
         private static void RequireSingleQuarter(ExcavationQuarter quarter)
         {
-            if (quarter == ExcavationQuarter.None
-                || quarter == ExcavationQuarter.All
-                || (quarter & (quarter - 1)) != 0)
+            int value = (int)quarter;
+            if (value == 0 || (value & (value - 1)) != 0)
             {
                 throw new ArgumentException(
                     "A single excavation quarter is required.",
@@ -140,34 +139,40 @@ namespace Dig.Domain.World
 
             int requiredSwings = RequiredSwings(miningSkill, deterministicSeed);
             int quarterCount = QuarterCount(miningSkill, deterministicSeed);
-            ExcavationQuarter candidates = CandidatesFor(approach)
+            ExcavationQuarter unfinished = ExcavationQuarter.All
                 & ~state.Completed
                 & ~reserved;
-
-            if (candidates == ExcavationQuarter.None)
-            {
-                candidates = ExcavationQuarter.All
-                    & ~state.Completed
-                    & ~reserved;
-            }
-
-            if (candidates == ExcavationQuarter.None)
+            if (unfinished == ExcavationQuarter.None)
             {
                 return new ExcavationSwingPlan(
                     ExcavationQuarter.None,
                     requiredSwings);
             }
 
-            List<ExcavationQuarter> available = AllQuarters
-                .Where(value => (candidates & value) != 0)
+            ExcavationQuarter preferredMask = CandidatesFor(approach) & unfinished;
+            List<ExcavationQuarter> preferred = AllQuarters
+                .Where(value => (preferredMask & value) != 0)
                 .ToList();
-            Shuffle(available, deterministicSeed ^ 0x9E3779B97F4A7C15UL);
+            List<ExcavationQuarter> remaining = AllQuarters
+                .Where(value => (unfinished & value) != 0
+                    && (preferredMask & value) == 0)
+                .ToList();
+            Shuffle(preferred, deterministicSeed ^ 0x9E3779B97F4A7C15UL);
+            Shuffle(remaining, deterministicSeed ^ 0xD1B54A32D192ED03UL);
 
             ExcavationQuarter selected = ExcavationQuarter.None;
-            int take = Math.Min(quarterCount, available.Count);
-            for (int index = 0; index < take; index++)
+            int take = Math.Min(quarterCount, preferred.Count + remaining.Count);
+            for (int index = 0; index < preferred.Count && index < take; index++)
             {
-                selected |= available[index];
+                selected |= preferred[index];
+            }
+
+            int selectedCount = Count(selected);
+            for (int index = 0;
+                index < remaining.Count && selectedCount < take;
+                index++, selectedCount++)
+            {
+                selected |= remaining[index];
             }
 
             return new ExcavationSwingPlan(selected, requiredSwings);
@@ -247,6 +252,19 @@ namespace Dig.Domain.World
                 values[index] = values[selected];
                 values[selected] = value;
             }
+        }
+
+        private static int Count(ExcavationQuarter quarters)
+        {
+            int value = (int)quarters;
+            int count = 0;
+            while (value != 0)
+            {
+                value &= value - 1;
+                count++;
+            }
+
+            return count;
         }
 
         private static ulong Mix(ulong value)
