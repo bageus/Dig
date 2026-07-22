@@ -71,7 +71,7 @@ namespace Dig.Unity
                 AssignManualQuarterExcavation(
                     agentId.ToString(),
                     target,
-                    target.Z,
+                    targetZ: 0,
                     residentCell,
                     miningSkill);
             }
@@ -95,13 +95,13 @@ namespace Dig.Unity
             switch (workerIndex % 4)
             {
                 case 0:
-                    return new CellId(target.X - 1, target.Y, target.Z);
+                    return new CellId(target.X - 1, target.Y);
                 case 1:
-                    return new CellId(target.X + 1, target.Y, target.Z);
+                    return new CellId(target.X + 1, target.Y);
                 case 2:
-                    return new CellId(target.X, target.Y + 1, target.Z);
+                    return new CellId(target.X, target.Y + 1);
                 default:
-                    return new CellId(target.X, target.Y - 1, target.Z);
+                    return new CellId(target.X, target.Y - 1);
             }
         }
 
