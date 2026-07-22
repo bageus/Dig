@@ -28,6 +28,7 @@ def check_runtime_regression_contracts(
     marquee = runtime_root / "DigWorldInteraction.MarqueeSelection.cs"
     navigation_sync = runtime_root / "DigAgentSimulationDriverBase.NavigationSync.cs"
     tunnel_renderer = runtime_root / "DigTunnelDemoRenderer.cs"
+    world_visual_catalog = runtime_root / "DigWorldRenderer.VisualCatalog.cs"
     job_visual = runtime_root / "DigJobVisual.cs"
     multi_worker = runtime_root / "DigTerrainWorkManualExcavation.MultiWorker.cs"
 
@@ -103,14 +104,18 @@ def check_runtime_regression_contracts(
         (movement_input, "explicit LMB tunnel destinations and active job markers", (
             "TryApplyTunnelMove(RaycastHit[] hits",
             "TryAssignExplicitExcavation(hits, residentIds)",
-            "job.Model.TargetZ.Value == 0",
+            "CellId? surfaceTarget = ResolveExcavationTarget(hit)",
+            "surfaceTarget.HasValue",
             "AssignSurfaceExcavation(",
             "IsTerminalJobStatus(job.Model.Status)",
-            "job.Model.TargetZ.Value == 0",
             "TryResolveTunnelDestination(hit, out _, out _)",
             "ResolveSelectedResidentTarget(hits)",
             "_tunnelRenderer.TryGetCell", "_caveRoomFloorRenderer.TryGetCell",
             "MoveResidentsThroughTunnel")),
+        (world_visual_catalog, "designated direct-work hit proxies", (
+            "collider.enabled = visual.gameObject.activeSelf",
+            "_tunnelDigInteractionActive",
+            "visual.Model.IsDesignated")),
         (marquee, "selected movement bypasses marquee", (
             "TryResolveSelectedResidentMovementTarget(hits, out _)",
             "_marqueeStartHits",
@@ -194,7 +199,7 @@ def check_runtime_regression_contracts(
         "private bool TryAssignExplicitExcavation("
     )
     surface_index = movement_input_text.find(
-        "job.Model.TargetZ.Value == 0",
+        "CellId? surfaceTarget = ResolveExcavationTarget(hit)",
         explicit_method_index,
     )
     movement_fallthrough_index = movement_input_text.find(

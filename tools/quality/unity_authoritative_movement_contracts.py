@@ -22,6 +22,7 @@ def check_authoritative_movement_contracts(
     spatial_driver = runtime_root / "DigAgentSimulationDriverBase.SpatialExcavation.cs"
     navigation_sync = runtime_root / "DigAgentSimulationDriverBase.NavigationSync.cs"
     tunnel_renderer = runtime_root / "DigTunnelDemoRenderer.cs"
+    world_visual_catalog = runtime_root / "DigWorldRenderer.VisualCatalog.cs"
     loop = runtime_root / "DigAgentSimulationDriverBase.Loop.cs"
     direct_control = runtime_root / "DigTerrainWorkDirectMovement.cs"
     designations = runtime_root / "DigTerrainWorkDesignations.cs"
@@ -94,10 +95,10 @@ def check_authoritative_movement_contracts(
         (
             "TryApplyTunnelMove(RaycastHit[] hits",
             "TryAssignExplicitExcavation(hits, residentIds)",
-            "job.Model.TargetZ.Value == 0",
+            "CellId? surfaceTarget = ResolveExcavationTarget(hit)",
+            "surfaceTarget.HasValue",
             "AssignSurfaceExcavation(",
             "_jobRenderer!.TryGetJob",
-            "job.Model.TargetZ.Value == 0",
             "TryAssignSpatialExcavation(",
             "ResolveSelectedResidentTarget(hits)",
             "_tunnelRenderer.TryGetCell",
@@ -115,8 +116,19 @@ def check_authoritative_movement_contracts(
         or explicit_work_index >= ordinary_move_index
     ):
         errors.append(
-            f"{movement_input}: only an explicit spatial job marker may precede ordinary LMB movement"
+            f"{movement_input}: an explicit work target must precede ordinary LMB movement"
         )
+
+    errors.extend(require_fragments(
+        world_visual_catalog,
+        texts.get(world_visual_catalog, ""),
+        "designated direct-work hit proxies",
+        (
+            "collider.enabled = visual.gameObject.activeSelf",
+            "_tunnelDigInteractionActive",
+            "visual.Model.IsDesignated",
+        ),
+    ))
 
     errors.extend(require_fragments(
         navigation_sync,

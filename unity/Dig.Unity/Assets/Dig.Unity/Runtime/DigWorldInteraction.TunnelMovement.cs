@@ -107,6 +107,14 @@ namespace Dig.Unity
                     return false;
                 }
 
+                CellId? surfaceTarget = ResolveExcavationTarget(hit);
+                if (surfaceTarget.HasValue)
+                {
+                    return AssignSurfaceExcavation(
+                        surfaceTarget.Value,
+                        residentIds);
+                }
+
                 if (_jobRenderer!.TryGetJob(hit, out DigJobVisual job))
                 {
                     if (IsTerminalJobStatus(job.Model.Status)
@@ -115,15 +123,6 @@ namespace Dig.Unity
                         || !job.Model.TargetZ.HasValue)
                     {
                         return false;
-                    }
-
-                    if (job.Model.TargetZ.Value == 0)
-                    {
-                        return AssignSurfaceExcavation(
-                            new CellId(
-                                job.Model.TargetX.Value,
-                                job.Model.TargetY.Value),
-                            residentIds);
                     }
 
                     SpatialCellId workCell = new SpatialCellId(
