@@ -93,9 +93,11 @@ def check_authoritative_movement_contracts(
         "explicit layered movement and spatial-job marker destinations",
         (
             "TryApplyTunnelMove(RaycastHit[] hits",
-            "TryAssignExplicitSpatialExcavation(hits, residentIds)",
+            "TryAssignExplicitExcavation(hits, residentIds)",
+            "job.Model.TargetZ.Value == 0",
+            "AssignSurfaceExcavation(",
             "_jobRenderer!.TryGetJob",
-            "job.Model.TargetZ.Value <= 0",
+            "job.Model.TargetZ.Value == 0",
             "TryAssignSpatialExcavation(",
             "ResolveSelectedResidentTarget(hits)",
             "_tunnelRenderer.TryGetCell",
@@ -104,7 +106,7 @@ def check_authoritative_movement_contracts(
         ),
     ))
     explicit_work_index = movement_input_text.find(
-        "TryAssignExplicitSpatialExcavation(hits, residentIds)"
+        "TryAssignExplicitExcavation(hits, residentIds)"
     )
     ordinary_move_index = movement_input_text.find("ResolveSelectedResidentTarget(hits)")
     if (
