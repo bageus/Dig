@@ -5,7 +5,6 @@
     "Dig.Domain",
     "Dig.Presentation.Abstractions",
     "Dig.Unity",
-    "UnityEngine.TestRunner",
     "UnityEngine.UI"
   ],
   "includePlatforms": [],
