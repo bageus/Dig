@@ -63,6 +63,7 @@ public sealed class Issue14OverlayPlayModeTests
         WorldCellViewModel first = new WorldCellViewModel(
             0,
             0,
+            0,
             "test.rock",
             isSolid: true,
             isExplored: true,
@@ -73,6 +74,7 @@ public sealed class Issue14OverlayPlayModeTests
             worldVersion: version);
         WorldCellViewModel second = new WorldCellViewModel(
             1,
+            0,
             0,
             "test.rock",
             isSolid: true,
@@ -85,11 +87,12 @@ public sealed class Issue14OverlayPlayModeTests
         return new WorldViewModel(
             width: 2,
             height: 1,
+            depth: Dig.Domain.World.WorldSize.RequiredDepth,
             chunkSize: 2,
             version: version,
             chunks: new[]
             {
-                new WorldChunkViewModel(0, 0, version, new[] { first, second }),
+                new WorldChunkViewModel(0, 0, 0, version, new[] { first, second }),
             });
     }
 
