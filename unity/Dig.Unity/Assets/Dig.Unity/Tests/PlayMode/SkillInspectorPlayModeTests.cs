@@ -119,6 +119,47 @@ public sealed class SkillInspectorPlayModeTests
     }
 
     [Test]
+    public void Roster_hides_zero_skills_and_omits_empty_top_skill_section()
+    {
+        Transform root = CreateRoot();
+        Transform sparseParent = new GameObject(
+            "Sparse Skills",
+            typeof(RectTransform)).transform;
+        sparseParent.SetParent(root);
+        ResidentSkillSetViewModel sparseSkills = CreateSkills(
+            new Dictionary<AgentSkillId, int>
+            {
+                [AgentSkillCatalog.Stonework] = 2_000,
+                [AgentSkillCatalog.Cooking] = 1_000,
+            },
+            AgentSkillCatalog.BaseCapacityUnits);
+
+        BuildTopSkills(sparseParent, sparseSkills);
+
+        Assert.That(sparseParent.childCount, Is.EqualTo(3));
+        Assert.That(sparseParent.GetChild(0).name, Is.EqualTo("Top Skills"));
+        Assert.That(
+            sparseParent.Cast<Transform>().Skip(1).Select(child => child.name),
+            Is.EqualTo(new[]
+            {
+                "Top Skill " + AgentSkillCatalog.Stonework,
+                "Top Skill " + AgentSkillCatalog.Cooking,
+            }));
+
+        Transform emptyParent = new GameObject(
+            "Empty Skills",
+            typeof(RectTransform)).transform;
+        emptyParent.SetParent(root);
+        ResidentSkillSetViewModel emptySkills = CreateSkills(
+            new Dictionary<AgentSkillId, int>(),
+            AgentSkillCatalog.BaseCapacityUnits);
+
+        BuildTopSkills(emptyParent, emptySkills);
+
+        Assert.That(emptyParent.childCount, Is.Zero);
+    }
+
+    [Test]
     public void Expanded_roster_uses_localized_needs_and_never_embeds_full_inspector()
     {
         ResidentSkillSetViewModel skills = CreateSkills(
