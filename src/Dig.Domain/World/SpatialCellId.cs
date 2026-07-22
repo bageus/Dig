@@ -7,6 +7,8 @@ public readonly struct SpatialCellId : IEquatable<SpatialCellId>, IComparable<Sp
 {
     public SpatialCellId(int x, int y, int z)
     {
+        WorldDepth.EnsureValid(z, nameof(z));
+
         X = x;
         Y = y;
         Z = z;
@@ -18,6 +20,7 @@ public readonly struct SpatialCellId : IEquatable<SpatialCellId>, IComparable<Sp
 
     public int Z { get; }
 
+    [Obsolete("2D projection is transitional only. Authoritative world state must retain Z.")]
     public CellId Projection => new CellId(X, Y);
 
     public int CompareTo(SpatialCellId other)
