@@ -11,7 +11,7 @@ namespace Dig.Unity
     {
         internal Result MoveResidentThroughTunnel(
             string residentId,
-            SpatialCellId destination,
+            CellId destination,
             float destinationOffsetX,
             DigTunnelDemoRenderer tunnelRenderer)
         {
@@ -50,7 +50,7 @@ namespace Dig.Unity
 
         internal Result MoveResidentsThroughTunnel(
             IReadOnlyList<string> residentIds,
-            SpatialCellId destination,
+            CellId destination,
             float destinationOffsetX,
             DigTunnelDemoRenderer tunnelRenderer)
         {
@@ -100,7 +100,7 @@ namespace Dig.Unity
             for (int index = 0; index < report.Entries.Count; index++)
             {
                 PlannedAgentTunnelRoute entry = report.Entries[index];
-                SpatialCellId assigned = entry.Path.Cells[entry.Path.Cells.Count - 1];
+                CellId assigned = entry.Path.Cells[entry.Path.Cells.Count - 1];
                 float assignedOffset = ResolveGroupDestinationOffset(
                     destinationOffsetX,
                     index,

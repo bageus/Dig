@@ -20,14 +20,14 @@ Meshes, colliders, navigation graphs and UI are not sources of world state. They
 
 ## Grid and chunks
 
-The gameplay topology is a finite two-dimensional integer grid.
+The gameplay topology is a finite three-dimensional integer grid with exactly four depth layers.
 
-- `CellId` identifies one logical cell by `X` and `Y`;
-- `ChunkId` identifies one chunk by `X` and `Y`;
-- `WorldSize` defines valid cell bounds;
-- `ChunkLayout` maps cells to chunks and handles partial chunks at world edges.
+- `CellId` identifies one logical cell by `X`, `Y` and bounded `Z=0..3`;
+- `ChunkId` identifies one chunk-layer by `X`, `Y` and `Z`;
+- `WorldSize` defines valid XYZ bounds and requires depth four;
+- `ChunkLayout` maps cells to chunk-layers and handles partial chunks at world edges.
 
-A changed interior cell invalidates only its owner chunk. A cell on a shared chunk boundary also invalidates adjacent chunks. A cell on two boundaries can invalidate four chunks, including the diagonal chunk that shares the corner.
+A changed cell invalidates its owning chunk-layer and only neighbouring chunk/layers whose mesh or navigation sampling can observe the changed boundary. Cells with the same X/Y and different Z remain distinct state, hash and reservation keys.
 
 This conservative rule allows future mesh and navigation builders to sample border data without silently using stale neighbors.
 
@@ -137,3 +137,8 @@ Automated tests cover:
 - command publication and side-effect-free queries.
 
 The headless host creates a world, designates one cell, excavates it and verifies that its snapshot becomes non-solid.
+
+
+## Authoritative XYZ integration
+
+World, Agents, Inventory, Buildings, Jobs, reservations and Navigation use the same `CellId(X,Y,Z)`. Navigation and Unity meshes are derived from immutable World snapshots and are not state owners. Save format v5 stores exact Z for world cells, residents, world items, buildings, jobs and terrain deposits. The v4-to-v5 migration deterministically maps every legacy `X,Y` coordinate to `Z=0`.

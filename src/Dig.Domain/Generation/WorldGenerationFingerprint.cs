@@ -42,7 +42,7 @@ public static class WorldGenerationFingerprint
         {
             for (int x = 0; x < world.Size.Width; x++)
             {
-                CellState state = world.GetCell(new CellId(x, y)).Value.State;
+                CellState state = world.GetCell(new CellId(x, y, 0)).Value.State;
                 AddString(ref hash, state.MaterialId.ToString());
                 AddInt32(ref hash, (int)state.Designation);
                 AddByte(ref hash, state.IsExplored ? (byte)1 : (byte)0);

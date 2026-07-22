@@ -21,7 +21,7 @@ internal static partial class WorldGenerationLayout
             {
                 int dx = x - center.X;
                 int dy = y - center.Y;
-                CellId cellId = new CellId(x, y);
+                CellId cellId = new CellId(x, y, 0);
                 if ((dx * dx) + (dy * dy) <= radius * radius && buffer.Contains(cellId))
                 {
                     CarveCell(buffer, cellId, emptyMaterialId, explored);
@@ -39,8 +39,8 @@ internal static partial class WorldGenerationLayout
         bool horizontalFirst)
     {
         CellId corner = horizontalFirst
-            ? new CellId(to.X, from.Y)
-            : new CellId(from.X, to.Y);
+            ? new CellId(to.X, from.Y, 0)
+            : new CellId(from.X, to.Y, 0);
         CarveLine(buffer, from, corner, emptyMaterialId, halfWidth);
         CarveLine(buffer, corner, to, emptyMaterialId, halfWidth);
     }
@@ -61,7 +61,7 @@ internal static partial class WorldGenerationLayout
             {
                 for (int offsetX = -halfWidth; offsetX <= halfWidth; offsetX++)
                 {
-                    CellId cellId = new CellId(current.X + offsetX, current.Y + offsetY);
+                    CellId cellId = new CellId(current.X + offsetX, current.Y + offsetY, 0);
                     if (buffer.Contains(cellId))
                     {
                         CarveCell(buffer, cellId, emptyMaterialId, explored: false);
@@ -74,7 +74,7 @@ internal static partial class WorldGenerationLayout
                 break;
             }
 
-            current = new CellId(current.X + stepX, current.Y + stepY);
+            current = new CellId(current.X + stepX, current.Y + stepY, 0);
         }
     }
 
@@ -105,7 +105,7 @@ internal static partial class WorldGenerationLayout
         {
             for (int x = center.X - maximumDistance; x <= center.X + maximumDistance; x++)
             {
-                CellId cellId = new CellId(x, y);
+                CellId cellId = new CellId(x, y, 0);
                 int distance = ManhattanDistance(cellId, center);
                 if (buffer.Contains(cellId)
                     && distance >= minimumDistance

@@ -64,7 +64,7 @@ namespace Dig.Unity
             ContextPointerTarget target = new ContextPointerTarget(
                 ContextWorldTargetKind.GenericItem,
                 stackId,
-                new CellId(resident.CellX, resident.CellY));
+                new CellId(resident.CellX, resident.CellY, resident.CellZ));
             ContextInputDecision decision = _inputRouter.Route(
                 new ContextPointerEvent(
                     PointerInputSurface.ResidentInventory,

@@ -62,21 +62,23 @@ public sealed class ExcavationClusterPlanner
     {
         if (cell.X > 0)
         {
-            yield return new CellId(cell.X - 1, cell.Y);
+            yield return new CellId(cell.X - 1, cell.Y, cell.Z);
         }
 
-        yield return new CellId(cell.X + 1, cell.Y);
+        yield return new CellId(cell.X + 1, cell.Y, cell.Z);
         if (cell.Y > 0)
         {
-            yield return new CellId(cell.X, cell.Y - 1);
+            yield return new CellId(cell.X, cell.Y - 1, cell.Z);
         }
 
-        yield return new CellId(cell.X, cell.Y + 1);
+        yield return new CellId(cell.X, cell.Y + 1, cell.Z);
     }
 
     private static int Distance(CellId first, CellId second)
     {
-        return Math.Abs(first.X - second.X) + Math.Abs(first.Y - second.Y);
+        return Math.Abs(first.X - second.X)
+            + Math.Abs(first.Y - second.Y)
+            + Math.Abs(first.Z - second.Z);
     }
 }
 

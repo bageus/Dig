@@ -26,7 +26,7 @@ public sealed class CaveRoomPlan
         CaveRoomPreset preset,
         CellId entrance,
         IReadOnlyList<CellId> frontExcavationCells,
-        IReadOnlyList<SpatialCellId> volumeCells,
+        IReadOnlyList<CellId> volumeCells,
         IReadOnlyList<CellId> roofCells)
     {
         Preset = preset ?? throw new ArgumentNullException(nameof(preset));
@@ -34,7 +34,7 @@ public sealed class CaveRoomPlan
         FrontExcavationCells = new ReadOnlyCollection<CellId>(
             frontExcavationCells?.ToArray()
                 ?? throw new ArgumentNullException(nameof(frontExcavationCells)));
-        VolumeCells = new ReadOnlyCollection<SpatialCellId>(
+        VolumeCells = new ReadOnlyCollection<CellId>(
             volumeCells?.ToArray()
                 ?? throw new ArgumentNullException(nameof(volumeCells)));
         RoofCells = new ReadOnlyCollection<CellId>(
@@ -45,7 +45,7 @@ public sealed class CaveRoomPlan
     public CaveRoomPreset Preset { get; }
     public CellId Entrance { get; }
     public IReadOnlyList<CellId> FrontExcavationCells { get; }
-    public IReadOnlyList<SpatialCellId> VolumeCells { get; }
+    public IReadOnlyList<CellId> VolumeCells { get; }
     public IReadOnlyList<CellId> RoofCells { get; }
 }
 

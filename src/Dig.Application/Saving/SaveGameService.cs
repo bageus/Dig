@@ -54,7 +54,8 @@ public sealed class SaveGameService
             context.Inventory,
             context.Jobs,
             context.Buildings,
-            context.Agents));
+            context.Agents,
+            context.TerrainDeposits));
     }
 
     public Result<LoadedGameState> Load(
@@ -70,9 +71,24 @@ public sealed class SaveGameService
         string slotId,
         MaterialCatalog materials,
         ItemCatalog items,
+        TerrainDepositCatalog terrainDeposits)
+    {
+        SaveGameDocument document = _store.Load(slotId);
+        return _loader.Load(
+            document,
+            materials,
+            items,
+            buildingCatalog: null,
+            terrainDeposits);
+    }
+
+    public Result<LoadedGameState> Load(
+        string slotId,
+        MaterialCatalog materials,
+        ItemCatalog items,
         IAgentRepository agents)
     {
-        return RestoreAgentSkills(Load(slotId, materials, items), agents);
+        return RestoreAgents(Load(slotId, materials, items), agents);
     }
 
     public Result<LoadedGameState> Load(
@@ -95,9 +111,30 @@ public sealed class SaveGameService
         MaterialCatalog materials,
         ItemCatalog items,
         BuildingCatalog buildingCatalog,
+        TerrainDepositCatalog terrainDeposits)
+    {
+        if (buildingCatalog is null)
+        {
+            throw new ArgumentNullException(nameof(buildingCatalog));
+        }
+
+        SaveGameDocument document = _store.Load(slotId);
+        return _loader.Load(
+            document,
+            materials,
+            items,
+            buildingCatalog,
+            terrainDeposits);
+    }
+
+    public Result<LoadedGameState> Load(
+        string slotId,
+        MaterialCatalog materials,
+        ItemCatalog items,
+        BuildingCatalog buildingCatalog,
         IAgentRepository agents)
     {
-        return RestoreAgentSkills(
+        return RestoreAgents(
             Load(slotId, materials, items, buildingCatalog),
             agents);
     }
@@ -107,7 +144,7 @@ public sealed class SaveGameService
         return _store.List();
     }
 
-    private static Result<LoadedGameState> RestoreAgentSkills(
+    private static Result<LoadedGameState> RestoreAgents(
         Result<LoadedGameState> loaded,
         IAgentRepository agents)
     {
@@ -116,12 +153,39 @@ public sealed class SaveGameService
             return loaded;
         }
 
-        Result restored = new LoadedAgentSkillProgressionRestorer(
-            agents ?? throw new ArgumentNullException(nameof(agents)))
+        IAgentRepository repository = agents
+            ?? throw new ArgumentNullException(nameof(agents));
+        foreach (KeyValuePair<EntityId, Dig.Domain.World.CellId> entry
+            in loaded.Value.AgentPositions)
+        {
+            if (repository.Get(entry.Key) is null)
+            {
+                return Result<LoadedGameState>.Failure(
+                    AgentApplicationErrors.NotFound);
+            }
+        }
+
+        Result skills = new LoadedAgentSkillProgressionRestorer(repository)
             .Restore(loaded.Value);
-        return restored.IsFailure
-            ? Result<LoadedGameState>.Failure(restored.Error!)
-            : loaded;
+        if (skills.IsFailure)
+        {
+            return Result<LoadedGameState>.Failure(skills.Error!);
+        }
+
+        foreach (KeyValuePair<EntityId, Dig.Domain.World.CellId> entry
+            in loaded.Value.AgentPositions)
+        {
+            Dig.Domain.Agents.AgentState agent = repository.Get(entry.Key)!;
+            Result restored = agent.RestorePosition(entry.Value);
+            if (restored.IsFailure)
+            {
+                return Result<LoadedGameState>.Failure(restored.Error!);
+            }
+
+            repository.Save(agent);
+        }
+
+        return loaded;
     }
 }
 }

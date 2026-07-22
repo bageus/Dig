@@ -93,7 +93,7 @@ internal static class Program
             explored: true));
         InMemoryWorldRepository worldRepository = new InMemoryWorldRepository(world);
         CommandPipeline commands = new CommandPipeline(journal);
-        CellId target = new CellId(3, 3);
+        CellId target = new CellId(3, 3, 0);
         EntityId digJobId = Require(state.Entities.RegisterNew());
         InMemoryJobRepository jobRepository = new InMemoryJobRepository();
         InMemoryJobCandidateProvider jobCandidates = new InMemoryJobCandidateProvider();
@@ -233,7 +233,7 @@ internal static class Program
         for (int x = 0; x < world.Size.Width; x++)
         {
             corridor.Add(new TerrainChange(
-                new CellId(x, 1),
+                new CellId(x, 1, 0),
                 new CellState(
                     air,
                     CellDesignation.None,
@@ -260,8 +260,8 @@ internal static class Program
             new NavigationPathfinder()).Handle(new FindPathQuery(
                 profile.Id,
                 new PathRequest(
-                    new CellId(0, 1),
-                    new CellId(7, 1),
+                    new CellId(0, 1, 0),
+                    new CellId(7, 1, 0),
                     navigationSnapshot.NavigationVersion))));
         if (!route.Succeeded)
         {

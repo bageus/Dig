@@ -26,7 +26,7 @@ namespace Dig.Tests
                 presenter.Present(deposits);
 
             TerrainDepositDecorationCellViewModel cell = Assert.Single(result.Cells);
-            Assert.Equal(new SpatialCellId(3, 1, 1), cell.Cell);
+            Assert.Equal(new CellId(3, 1, 1), cell.Cell);
             Assert.Equal("deposit.iron_ore", cell.VisibleDepositId);
         }
 
@@ -187,7 +187,7 @@ namespace Dig.Tests
             TerrainDepositConnection connections = TerrainDepositConnection.None)
         {
             return new TerrainDepositCellViewModel(
-                new SpatialCellId(x, y, z),
+                new CellId(x, y, z),
                 state,
                 id,
                 damageBand,

@@ -64,7 +64,7 @@ namespace Dig.Unity
                 WorldCellViewModel target = targets[index];
                 DigJobDefinition definition = new DigJobDefinition(
                     jobId,
-                    new DigJobTarget(new Dig.Domain.World.CellId(target.X, target.Y)),
+                    new DigJobTarget(new Dig.Domain.World.CellId(target.X, target.Y, target.Z)),
                     priority: 800 - (index * 50),
                     createdTick: 0,
                     new JobRetryPolicy(maximumRetries: 2, retryDelayTicks: 3));

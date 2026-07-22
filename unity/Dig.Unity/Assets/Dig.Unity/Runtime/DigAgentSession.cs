@@ -62,11 +62,17 @@ namespace Dig.Unity
 
         public static DigAgentSession CreateDemo(
             WorldViewModel world,
+            TunnelNavigationVolume tunnelVolume,
             InMemoryExecutionJournal journal)
         {
             if (world == null)
             {
                 throw new ArgumentNullException(nameof(world));
+            }
+
+            if (tunnelVolume == null)
+            {
+                throw new ArgumentNullException(nameof(tunnelVolume));
             }
 
             if (journal == null)
@@ -86,9 +92,6 @@ namespace Dig.Unity
                     "The resident demo requires at least eight walkable cells.");
             }
 
-            TunnelNavigationVolume tunnelVolume = TunnelNavigationVolume.CreateDemo(
-                world.Width,
-                world.Height);
             InMemoryAgentRepository repository = new InMemoryAgentRepository();
             Dictionary<EntityId, int> routeIndices = new Dictionary<EntityId, int>();
             Dictionary<EntityId, ResidentSex> residentSexes =
@@ -224,7 +227,7 @@ namespace Dig.Unity
 
                     int routeIndex = SelectNextRouteIndex(agent);
                     WorldCellViewModel cell = _walkableCells[routeIndex];
-                    destination = new CellId(cell.X, cell.Y);
+                    destination = new CellId(cell.X, cell.Y, cell.Z);
                 }
 
                 Result result = _movementHandler.Handle(new MoveAgentCommand(
@@ -278,7 +281,7 @@ namespace Dig.Unity
                     DailySchedule.CreateBalanced(24),
                     skills: null,
                     traits: identity.Heritage.Traits,
-                    initialPosition: new SpatialCellId(
+                    initialPosition: new CellId(
                         identity.Position.X,
                         identity.Position.Y,
                         0));
@@ -324,7 +327,7 @@ namespace Dig.Unity
                         founderHeritage,
                         founderHeritage,
                         inheritance,
-                        new CellId(x, layout.SurfaceY));
+                        new CellId(x, layout.SurfaceY, 0));
                 }
                 while (!usedNames.Add(identity.Name));
                 result.Add(identity);

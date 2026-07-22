@@ -52,8 +52,10 @@ public sealed class InventoryWorldPresenter
                 stack.ReservedQuantity,
                 stack.Location.CellId.X,
                 stack.Location.CellId.Y,
+                stack.Location.CellId.Z,
                 ResolveInteraction(stack.ItemId)))
-            .OrderBy(item => item.CellY)
+            .OrderBy(item => item.CellZ)
+            .ThenBy(item => item.CellY)
             .ThenBy(item => item.CellX)
             .ThenBy(item => item.StackId, StringComparer.Ordinal)
             .ToArray();

@@ -95,7 +95,7 @@ public readonly struct CellOffset : IEquatable<CellOffset>, IComparable<CellOffs
 
     public CellId Apply(CellId origin)
     {
-        return new CellId(checked(origin.X + X), checked(origin.Y + Y));
+        return new CellId(checked(origin.X + X), checked(origin.Y + Y), origin.Z);
     }
 
     public int CompareTo(CellOffset other)

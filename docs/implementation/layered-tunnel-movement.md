@@ -38,28 +38,17 @@ The Unity terrain snapshot combines front World cells with a deep solid-rock pro
 
 ## Traversal rules
 
-`TunnelNavigationVolume` owns the current layered topology.
+`WorldState` owns the open/solid state for every `CellId(X,Y,Z)`. `TunnelNavigationVolume` is a disposable projection rebuilt by `TunnelNavigationVolume.FromWorldSnapshot`; it never owns additional open cells.
 
-- A resident may move to an orthogonally adjacent open cell on `X`.
-- A resident may move to an orthogonally adjacent open cell on `Z`.
-- A resident may change `Y` only when both source and destination are marked shaft cells.
-- Routes are deterministic and are validated before the resident aggregate is moved.
-
-Before direct movement, `WithSynchronizedFrontLayer` derives new `Z=0` navigation from the authoritative `WorldSnapshot`.
-
-- An excavated cell with solid support directly below becomes a horizontal walkable cell.
-- A cell recorded by a vertical tunnel stroke becomes an open shaft cell even when it has no floor support.
-- Existing demo and deep-room cells remain in the immutable volume projection.
-- Unsupported open air above a room floor is not added, so the room wall does not become a climbable or floating surface.
-- Movement handlers are rebuilt only when the synchronized topology actually changes.
-
-This refresh runs after excavation presentation changes and immediately before both single-resident and group movement commands. A newly excavated floor therefore cannot be visible while remaining blocked in the pathfinder.
+- A resident may move to an orthogonally adjacent open cell on `X` or `Z`.
+- A resident may change `Y` only when both source and destination satisfy the shaft traversal rule.
+- Routes are deterministic and are validated against the current World-derived navigation version before the resident aggregate is moved.
+- Excavation mutates World first. Navigation is rebuilt from the resulting immutable snapshot, so a visible open cell and a pathfinding-open cell cannot diverge.
+- Unsupported open air above a room floor is excluded by the traversal projection and cannot become a floating walk surface.
 
 ## Ownership
 
-`AgentState` remains the only owner of logical resident position. It stores `SpatialCellId`, while the existing `CellId Position` projection remains available for older terrain and Job flows.
-
-A legacy two-dimensional move changes `X/Y` while preserving the current `Z` layer. A tunnel movement command validates the full `SpatialCellId` route and then writes the final destination through the aggregate.
+`AgentState` is the only owner of logical resident position and stores one exact `CellId(X,Y,Z)`. There is no parallel spatial position or two-dimensional position projection. Every movement command validates a full XYZ route and writes the final destination through the aggregate.
 
 Group movement uses one Application command. The handler first resolves every selected resident and validates every route to the shared destination. No resident position is mutated until all routes are valid. If one selected resident cannot reach the destination, the whole group command fails without moving anyone. A one-resident selection keeps the dedicated single-resident command path.
 
@@ -107,4 +96,4 @@ For a group selection, the HUD reports the selected resident count and keeps the
 
 All selected residents currently occupy the exact requested destination cell. Formation offsets, collision avoidance and distributing a group across neighbouring free cells are separate movement-policy work.
 
-The authoritative World and Job targeting systems still use the two-dimensional `CellId` projection. The unified terrain mesh now displays `Z=0..3`, but deep material state, damage, Jobs, reservations and persistence still require the full spatial migration tracked by #88.
+Formation offsets, collision avoidance and distributing a group across neighbouring free cells remain later movement-policy work. The coordinate ownership itself is unified: World, Agents, Inventory, Buildings, Jobs, reservations, Navigation and Save/Load use the same bounded `CellId(X,Y,Z)`.

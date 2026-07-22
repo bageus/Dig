@@ -19,11 +19,11 @@ public sealed class TunnelNavigationTests
         Assert.True(layout.CaveWidth >= 4);
         for (int z = 0; z < volume.Depth; z++)
         {
-            Assert.True(volume.IsOpen(new SpatialCellId(
+            Assert.True(volume.IsOpen(new CellId(
                 layout.SurfaceMinX + 1,
                 layout.SurfaceY,
                 z)));
-            Assert.True(volume.IsOpen(new SpatialCellId(
+            Assert.True(volume.IsOpen(new CellId(
                 layout.CaveMinX,
                 layout.CaveFloorY,
                 z)));
@@ -38,25 +38,25 @@ public sealed class TunnelNavigationTests
         int shaftY = layout.SurfaceY + 1;
 
         Assert.Equal(0, layout.ShaftZ);
-        Assert.True(volume.IsVerticalTunnel(new SpatialCellId(
+        Assert.True(volume.IsVerticalTunnel(new CellId(
             layout.ShaftX,
             shaftY,
             0)));
         for (int z = 1; z < volume.Depth; z++)
         {
-            Assert.False(volume.IsOpen(new SpatialCellId(layout.ShaftX, shaftY, z)));
+            Assert.False(volume.IsOpen(new CellId(layout.ShaftX, shaftY, z)));
         }
 
         if (layout.CaveMinX - layout.ShaftX > 1)
         {
             int corridorX = layout.ShaftX + 1;
-            Assert.True(volume.IsOpen(new SpatialCellId(
+            Assert.True(volume.IsOpen(new CellId(
                 corridorX,
                 layout.CaveFloorY,
                 0)));
             for (int z = 1; z < volume.Depth; z++)
             {
-                Assert.False(volume.IsOpen(new SpatialCellId(
+                Assert.False(volume.IsOpen(new CellId(
                     corridorX,
                     layout.CaveFloorY,
                     z)));
@@ -69,11 +69,11 @@ public sealed class TunnelNavigationTests
     {
         TunnelNavigationVolume volume = TunnelNavigationVolume.CreateDemo(20, 14);
         TunnelDemoLayout layout = volume.DemoLayout!;
-        SpatialCellId start = new SpatialCellId(
+        CellId start = new CellId(
             layout.SurfaceMinX,
             layout.SurfaceY,
             0);
-        SpatialCellId goal = new SpatialCellId(
+        CellId goal = new CellId(
             layout.SurfaceMinX + 3,
             layout.SurfaceY,
             3);
@@ -92,11 +92,11 @@ public sealed class TunnelNavigationTests
     {
         TunnelNavigationVolume volume = TunnelNavigationVolume.CreateDemo(20, 14);
         TunnelDemoLayout layout = volume.DemoLayout!;
-        SpatialCellId start = new SpatialCellId(
+        CellId start = new CellId(
             layout.ShaftX,
             layout.SurfaceY,
             layout.ShaftZ);
-        SpatialCellId goal = new SpatialCellId(
+        CellId goal = new CellId(
             layout.ShaftX,
             layout.CaveFloorY,
             layout.ShaftZ);
@@ -115,11 +115,11 @@ public sealed class TunnelNavigationTests
     {
         TunnelNavigationVolume volume = TunnelNavigationVolume.CreateDemo(20, 14);
         TunnelDemoLayout layout = volume.DemoLayout!;
-        SpatialCellId start = new SpatialCellId(
+        CellId start = new CellId(
             layout.SurfaceMinX,
             layout.SurfaceY,
             3);
-        SpatialCellId goal = new SpatialCellId(
+        CellId goal = new CellId(
             layout.CaveMaxX,
             layout.CaveFloorY,
             3);
@@ -138,32 +138,32 @@ public sealed class TunnelNavigationTests
     [Fact]
     public void Horizontal_depth_step_requires_two_open_adjacent_cells()
     {
-        SpatialCellId start = new SpatialCellId(1, 1, 0);
-        SpatialCellId nextDepth = new SpatialCellId(1, 1, 1);
-        SpatialCellId skippedDepth = new SpatialCellId(1, 1, 2);
+        CellId start = new CellId(1, 1, 0);
+        CellId nextDepth = new CellId(1, 1, 1);
+        CellId skippedDepth = new CellId(1, 1, 2);
         TunnelNavigationVolume volume = new TunnelNavigationVolume(
             width: 4,
             height: 4,
             depth: 4,
             openCells: new[] { start, nextDepth, skippedDepth },
-            verticalCells: new SpatialCellId[0]);
+            verticalCells: new CellId[0]);
 
         Assert.True(volume.CanTraverseStep(start, nextDepth));
         Assert.False(volume.CanTraverseStep(start, skippedDepth));
-        Assert.False(volume.CanTraverseStep(start, new SpatialCellId(2, 1, 0)));
+        Assert.False(volume.CanTraverseStep(start, new CellId(2, 1, 0)));
     }
 
     [Fact]
     public void Vertical_motion_is_rejected_outside_a_vertical_tunnel()
     {
-        SpatialCellId lower = new SpatialCellId(1, 1, 0);
-        SpatialCellId upper = new SpatialCellId(1, 2, 0);
+        CellId lower = new CellId(1, 1, 0);
+        CellId upper = new CellId(1, 2, 0);
         TunnelNavigationVolume volume = new TunnelNavigationVolume(
             width: 4,
             height: 4,
             depth: 4,
             openCells: new[] { lower, upper },
-            verticalCells: new SpatialCellId[0]);
+            verticalCells: new CellId[0]);
 
         TunnelPathResult result = volume.FindPath(lower, upper);
 
@@ -175,8 +175,8 @@ public sealed class TunnelNavigationTests
     [Fact]
     public void Vertical_motion_succeeds_when_both_cells_are_in_the_shaft()
     {
-        SpatialCellId lower = new SpatialCellId(1, 1, 0);
-        SpatialCellId upper = new SpatialCellId(1, 2, 0);
+        CellId lower = new CellId(1, 1, 0);
+        CellId upper = new CellId(1, 2, 0);
         TunnelNavigationVolume volume = new TunnelNavigationVolume(
             width: 4,
             height: 4,

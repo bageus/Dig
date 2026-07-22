@@ -17,7 +17,7 @@ namespace Dig.Unity
     internal readonly struct DigTunnelMovementDestination
     {
         internal DigTunnelMovementDestination(
-            SpatialCellId cell,
+            CellId cell,
             float offsetX,
             Vector3 worldPosition)
         {
@@ -26,7 +26,7 @@ namespace Dig.Unity
             WorldPosition = worldPosition;
         }
 
-        internal SpatialCellId Cell { get; }
+        internal CellId Cell { get; }
         internal float OffsetX { get; }
         internal Vector3 WorldPosition { get; }
     }
@@ -36,21 +36,21 @@ namespace Dig.Unity
     {
         private readonly TunnelMovementTargetResolver _resolver =
             new TunnelMovementTargetResolver();
-        private IReadOnlyList<SpatialCellId> _cells =
-            Array.Empty<SpatialCellId>();
+        private IReadOnlyList<CellId> _cells =
+            Array.Empty<CellId>();
 
         internal DigTunnelMovementSurfaceKind Kind { get; private set; }
 
         internal void Configure(
             DigTunnelMovementSurfaceKind kind,
-            IReadOnlyCollection<SpatialCellId> cells)
+            IReadOnlyCollection<CellId> cells)
         {
             if (cells == null)
             {
                 throw new ArgumentNullException(nameof(cells));
             }
 
-            SpatialCellId[] ordered = cells.OrderBy(cell => cell).ToArray();
+            CellId[] ordered = cells.OrderBy(cell => cell).ToArray();
             if (ordered.Length == 0)
             {
                 throw new ArgumentException(
@@ -59,7 +59,7 @@ namespace Dig.Unity
             }
 
             Kind = kind;
-            _cells = new ReadOnlyCollection<SpatialCellId>(ordered);
+            _cells = new ReadOnlyCollection<CellId>(ordered);
         }
 
         internal DigTunnelMovementDestination Resolve(Vector3 hitPoint)

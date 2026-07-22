@@ -30,7 +30,12 @@ public sealed partial class SaveGameLoader
         MaterialCatalog materials,
         ItemCatalog items)
     {
-        return Load(document, materials, items, buildingCatalog: null);
+        return Load(
+            document,
+            materials,
+            items,
+            buildingCatalog: null,
+            terrainDepositCatalog: null);
     }
 
     public Result<LoadedGameState> Load(
@@ -38,6 +43,21 @@ public sealed partial class SaveGameLoader
         MaterialCatalog materials,
         ItemCatalog items,
         BuildingCatalog? buildingCatalog)
+    {
+        return Load(
+            document,
+            materials,
+            items,
+            buildingCatalog,
+            terrainDepositCatalog: null);
+    }
+
+    public Result<LoadedGameState> Load(
+        SaveGameDocument document,
+        MaterialCatalog materials,
+        ItemCatalog items,
+        BuildingCatalog? buildingCatalog,
+        TerrainDepositCatalog? terrainDepositCatalog)
     {
         if (document is null)
         {
@@ -108,6 +128,13 @@ public sealed partial class SaveGameLoader
                 agentSkills = BuildAgentSkills(document.AgentSkills);
             IReadOnlyDictionary<EntityId, bool> agentAutomaticPlanning =
                 BuildAgentAutomaticPlanning(document.AgentSkills);
+            IReadOnlyDictionary<EntityId, CellId> agentPositions =
+                BuildAgentPositions(document.AgentPositions, document.World);
+            IReadOnlyCollection<TerrainDepositInstance> terrainDeposits =
+                BuildTerrainDeposits(
+                    document.TerrainDeposits,
+                    document.World,
+                    terrainDepositCatalog);
 
             return Result<LoadedGameState>.Success(new LoadedGameState(
                 CopyMetadata(document.Metadata),
@@ -117,7 +144,14 @@ public sealed partial class SaveGameLoader
                 buildings.Value,
                 migrationReport,
                 agentSkills,
-                agentAutomaticPlanning));
+                agentAutomaticPlanning,
+                agentPositions,
+                terrainDeposits));
+        }
+        catch (UnknownTerrainDepositDefinitionException)
+        {
+            return Result<LoadedGameState>.Failure(
+                SaveErrors.UnknownTerrainDepositDefinition);
         }
         catch (KeyNotFoundException)
         {
@@ -142,11 +176,12 @@ public sealed partial class SaveGameLoader
             throw new InvalidOperationException("World save data is missing.");
         }
 
-        WorldSize size = new WorldSize(data.Width, data.Height);
+        WorldSize size = new WorldSize(data.Width, data.Height, data.Depth);
         ChunkLayout layout = new ChunkLayout(size, data.ChunkSize);
         List<ChunkSnapshot> chunks = new List<ChunkSnapshot>();
         foreach (WorldChunkSaveData savedChunk in data.Chunks
-            .OrderBy(item => item.Y)
+            .OrderBy(item => item.Z)
+            .ThenBy(item => item.Y)
             .ThenBy(item => item.X))
         {
             if (savedChunk is null || savedChunk.Cells is null)
@@ -154,10 +189,11 @@ public sealed partial class SaveGameLoader
                 throw new InvalidOperationException("World chunk save data is missing.");
             }
 
-            ChunkId chunkId = new ChunkId(savedChunk.X, savedChunk.Y);
+            ChunkId chunkId = new ChunkId(savedChunk.X, savedChunk.Y, savedChunk.Z);
             List<CellSnapshot> cells = new List<CellSnapshot>();
             foreach (WorldCellSaveData savedCell in savedChunk.Cells
-                .OrderBy(item => item.Y)
+                .OrderBy(item => item.Z)
+                .ThenBy(item => item.Y)
                 .ThenBy(item => item.X))
             {
                 if (savedCell is null
@@ -177,7 +213,7 @@ public sealed partial class SaveGameLoader
                     savedCell.Damage,
                     savedCell.Temperature);
                 cells.Add(new CellSnapshot(
-                    new CellId(savedCell.X, savedCell.Y),
+                    new CellId(savedCell.X, savedCell.Y, savedCell.Z),
                     state,
                     material.IsSolid,
                     material.Hardness,
@@ -197,6 +233,37 @@ public sealed partial class SaveGameLoader
             data.ChunkSize,
             data.Version,
             new ReadOnlyCollection<ChunkSnapshot>(chunks));
+    }
+
+
+    private static IReadOnlyDictionary<EntityId, CellId> BuildAgentPositions(
+        AgentPositionsSaveData data,
+        WorldSaveData world)
+    {
+        if (data is null || data.Agents is null)
+        {
+            throw new InvalidOperationException("Agent positions save data is missing.");
+        }
+
+        WorldSize size = new WorldSize(world.Width, world.Height, world.Depth);
+        Dictionary<EntityId, CellId> result = new Dictionary<EntityId, CellId>();
+        foreach (AgentPositionSaveData saved in data.Agents
+            .OrderBy(value => value.AgentId, StringComparer.Ordinal))
+        {
+            if (saved is null)
+            {
+                throw new InvalidOperationException("Agent position entry is missing.");
+            }
+
+            EntityId id = EntityId.Parse(saved.AgentId);
+            CellId position = new CellId(saved.X, saved.Y, saved.Z);
+            if (!size.Contains(position) || !result.TryAdd(id, position))
+            {
+                throw new InvalidOperationException("Agent position is invalid or duplicated.");
+            }
+        }
+
+        return new ReadOnlyDictionary<EntityId, CellId>(result);
     }
 
     private static Result ValidateCrossReferences(

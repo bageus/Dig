@@ -8,25 +8,45 @@ namespace Dig.Domain.World
 
 public readonly struct CellId : IEquatable<CellId>, IComparable<CellId>
 {
+    public const int MinimumDepth = 0;
+    public const int MaximumDepth = 3;
+
     public CellId(int x, int y)
+        : this(x, y, MinimumDepth)
+    {
+    }
+
+    public CellId(int x, int y, int z)
     {
         X = x;
         Y = y;
+        Z = z;
     }
 
     public int X { get; }
 
     public int Y { get; }
 
+    public int Z { get; }
+
+
+    public CellId WithDepth(int z) => new CellId(X, Y, z);
+
     public int CompareTo(CellId other)
     {
         int yComparison = Y.CompareTo(other.Y);
-        return yComparison != 0 ? yComparison : X.CompareTo(other.X);
+        if (yComparison != 0)
+        {
+            return yComparison;
+        }
+
+        int zComparison = Z.CompareTo(other.Z);
+        return zComparison != 0 ? zComparison : X.CompareTo(other.X);
     }
 
     public bool Equals(CellId other)
     {
-        return X == other.X && Y == other.Y;
+        return X == other.X && Y == other.Y && Z == other.Z;
     }
 
     public override bool Equals(object? obj)
@@ -36,12 +56,12 @@ public readonly struct CellId : IEquatable<CellId>, IComparable<CellId>
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(X, Y);
+        return HashCode.Combine(X, Y, Z);
     }
 
     public override string ToString()
     {
-        return $"{X},{Y}";
+        return $"{X},{Y},{Z}";
     }
 
     public static bool operator ==(CellId left, CellId right)
@@ -58,24 +78,38 @@ public readonly struct CellId : IEquatable<CellId>, IComparable<CellId>
 public readonly struct ChunkId : IEquatable<ChunkId>, IComparable<ChunkId>
 {
     public ChunkId(int x, int y)
+        : this(x, y, CellId.MinimumDepth)
+    {
+    }
+
+    public ChunkId(int x, int y, int z)
     {
         X = x;
         Y = y;
+        Z = z;
     }
 
     public int X { get; }
 
     public int Y { get; }
 
+    public int Z { get; }
+
     public int CompareTo(ChunkId other)
     {
+        int zComparison = Z.CompareTo(other.Z);
+        if (zComparison != 0)
+        {
+            return zComparison;
+        }
+
         int yComparison = Y.CompareTo(other.Y);
         return yComparison != 0 ? yComparison : X.CompareTo(other.X);
     }
 
     public bool Equals(ChunkId other)
     {
-        return X == other.X && Y == other.Y;
+        return X == other.X && Y == other.Y && Z == other.Z;
     }
 
     public override bool Equals(object? obj)
@@ -85,12 +119,12 @@ public readonly struct ChunkId : IEquatable<ChunkId>, IComparable<ChunkId>
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(X, Y);
+        return HashCode.Combine(X, Y, Z);
     }
 
     public override string ToString()
     {
-        return $"{X},{Y}";
+        return $"{X},{Y},{Z}";
     }
 
     public static bool operator ==(ChunkId left, ChunkId right)
@@ -106,7 +140,14 @@ public readonly struct ChunkId : IEquatable<ChunkId>, IComparable<ChunkId>
 
 public readonly struct WorldSize
 {
+    public const int RequiredDepth = CellId.MaximumDepth + 1;
+
     public WorldSize(int width, int height)
+        : this(width, height, RequiredDepth)
+    {
+    }
+
+    public WorldSize(int width, int height, int depth)
     {
         if (width <= 0)
         {
@@ -118,40 +159,71 @@ public readonly struct WorldSize
             throw new ArgumentOutOfRangeException(nameof(height));
         }
 
+        if (depth != RequiredDepth)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(depth),
+                $"Authoritative world depth must be exactly {RequiredDepth}.");
+        }
+
         Width = width;
         Height = height;
+        Depth = depth;
     }
 
     public int Width { get; }
 
     public int Height { get; }
 
+    public int Depth { get; }
+
+    public int CellCount => checked(Width * Height * Depth);
+
     public bool Contains(CellId cellId)
     {
         return cellId.X >= 0
             && cellId.Y >= 0
+            && cellId.Z >= CellId.MinimumDepth
             && cellId.X < Width
-            && cellId.Y < Height;
+            && cellId.Y < Height
+            && cellId.Z < Depth;
     }
 }
 
 public readonly struct CellBounds
 {
     public CellBounds(int minX, int minY, int maxXExclusive, int maxYExclusive)
+        : this(minX, minY, CellId.MinimumDepth, maxXExclusive, maxYExclusive, CellId.MinimumDepth + 1)
+    {
+    }
+
+    public CellBounds(
+        int minX,
+        int minY,
+        int minZ,
+        int maxXExclusive,
+        int maxYExclusive,
+        int maxZExclusive)
     {
         MinX = minX;
         MinY = minY;
+        MinZ = minZ;
         MaxXExclusive = maxXExclusive;
         MaxYExclusive = maxYExclusive;
+        MaxZExclusive = maxZExclusive;
     }
 
     public int MinX { get; }
 
     public int MinY { get; }
 
+    public int MinZ { get; }
+
     public int MaxXExclusive { get; }
 
     public int MaxYExclusive { get; }
+
+    public int MaxZExclusive { get; }
 }
 
 public sealed class ChunkLayout
@@ -167,6 +239,7 @@ public sealed class ChunkLayout
         ChunkSize = chunkSize;
         ChunkCountX = DivideRoundUp(worldSize.Width, chunkSize);
         ChunkCountY = DivideRoundUp(worldSize.Height, chunkSize);
+        ChunkCountZ = worldSize.Depth;
     }
 
     public WorldSize WorldSize { get; }
@@ -177,14 +250,18 @@ public sealed class ChunkLayout
 
     public int ChunkCountY { get; }
 
-    public int ChunkCount => checked(ChunkCountX * ChunkCountY);
+    public int ChunkCountZ { get; }
+
+    public int ChunkCount => checked(ChunkCountX * ChunkCountY * ChunkCountZ);
 
     public bool Contains(ChunkId chunkId)
     {
         return chunkId.X >= 0
             && chunkId.Y >= 0
+            && chunkId.Z >= 0
             && chunkId.X < ChunkCountX
-            && chunkId.Y < ChunkCountY;
+            && chunkId.Y < ChunkCountY
+            && chunkId.Z < ChunkCountZ;
     }
 
     public ChunkId GetChunk(CellId cellId)
@@ -194,7 +271,7 @@ public sealed class ChunkLayout
             throw new ArgumentOutOfRangeException(nameof(cellId));
         }
 
-        return new ChunkId(cellId.X / ChunkSize, cellId.Y / ChunkSize);
+        return new ChunkId(cellId.X / ChunkSize, cellId.Y / ChunkSize, cellId.Z);
     }
 
     public CellBounds GetBounds(ChunkId chunkId)
@@ -209,8 +286,10 @@ public sealed class ChunkLayout
         return new CellBounds(
             minX,
             minY,
+            chunkId.Z,
             Math.Min(minX + ChunkSize, WorldSize.Width),
-            Math.Min(minY + ChunkSize, WorldSize.Height));
+            Math.Min(minY + ChunkSize, WorldSize.Height),
+            chunkId.Z + 1);
     }
 
     public IReadOnlyList<ChunkId> GetAffectedChunks(CellId cellId)
@@ -219,6 +298,7 @@ public sealed class ChunkLayout
         CellBounds bounds = GetBounds(owner);
         List<int> xCoordinates = new List<int> { owner.X };
         List<int> yCoordinates = new List<int> { owner.Y };
+        int z = owner.Z;
 
         if (cellId.X == bounds.MinX && owner.X > 0)
         {
@@ -245,7 +325,7 @@ public sealed class ChunkLayout
         {
             foreach (int x in xCoordinates)
             {
-                affected.Add(new ChunkId(x, y));
+                affected.Add(new ChunkId(x, y, z));
             }
         }
 

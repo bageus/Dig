@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Dig.Presentation.World;
-using UnityEngine;
+using Dig.Domain.World;
 
 namespace Dig.Unity
 {
@@ -19,18 +19,16 @@ namespace Dig.Unity
 
         internal DigTerrainRenderSnapshot Build(
             WorldViewModel world,
-            TerrainDepthVolumeViewModel? depthVolume,
             TerrainDepositDecorationVolumeViewModel? depositDecorations,
-            IEnumerable<Vector2Int> cutawayCells,
-            IEnumerable<Vector2Int> protectedCells)
+            IEnumerable<CellId> cutawayCells,
+            IEnumerable<CellId> protectedCells)
         {
             if (world == null)
             {
                 throw new ArgumentNullException(nameof(world));
             }
 
-            ValidateDepthVolume(world, depthVolume);
-            int depth = depthVolume?.Depth ?? 1;
+            int depth = world.Depth;
             List<DigTerrainRenderChunk> chunks = new List<DigTerrainRenderChunk>();
             HashSet<DigTerrainCellKey> solid = new HashSet<DigTerrainCellKey>();
             Dictionary<DigTerrainChunkKey, long> currentVersions =
@@ -40,24 +38,13 @@ namespace Dig.Unity
 
             bool layoutChanged = _initialized
                 && (_chunkSize != world.ChunkSize || _depth != depth);
-            AddFrontChunks(
+            AddWorldChunks(
                 world,
                 chunks,
                 solid,
                 currentVersions,
                 dirtyOrigins,
                 layoutChanged);
-            if (depthVolume != null)
-            {
-                AddDepthChunks(
-                    depthVolume,
-                    world.ChunkSize,
-                    chunks,
-                    solid,
-                    currentVersions,
-                    dirtyOrigins,
-                    layoutChanged);
-            }
 
             foreach (DigTerrainChunkKey previous in _chunkVersions.Keys)
             {
@@ -67,8 +54,8 @@ namespace Dig.Unity
                 }
             }
 
-            HashSet<DigTerrainCellKey> currentCutaway = ToDepthZero(cutawayCells);
-            HashSet<DigTerrainCellKey> currentProtected = ToDepthZero(protectedCells);
+            HashSet<DigTerrainCellKey> currentCutaway = ToCellKeys(cutawayCells);
+            HashSet<DigTerrainCellKey> currentProtected = ToCellKeys(protectedCells);
             MarkChangedCells(
                 _previousCutaway,
                 currentCutaway,
@@ -112,7 +99,7 @@ namespace Dig.Unity
                 world.ChunkSize,
                 CombineVersion(
                     world.Version,
-                    depthVolume?.Version ?? 0,
+                    depthVersion: 0,
                     depositDecorations?.Version ?? 0),
                 chunks,
                 solid,
@@ -127,7 +114,7 @@ namespace Dig.Unity
             _initialized = false;
         }
 
-        private void AddFrontChunks(
+        private void AddWorldChunks(
             WorldViewModel world,
             ICollection<DigTerrainRenderChunk> chunks,
             ISet<DigTerrainCellKey> solid,
@@ -138,14 +125,15 @@ namespace Dig.Unity
             for (int index = 0; index < world.Chunks.Count; index++)
             {
                 WorldChunkViewModel source = world.Chunks[index];
-                DigTerrainChunkKey key = new DigTerrainChunkKey(source.X, source.Y, 0);
+                DigTerrainChunkKey key = new DigTerrainChunkKey(source.X, source.Y, source.Z);
                 List<DigTerrainRenderCell> cells = new List<DigTerrainRenderCell>(
                     source.Cells.Count);
                 for (int cellIndex = 0; cellIndex < source.Cells.Count; cellIndex++)
                 {
+                    WorldCellViewModel sourceCell = source.Cells[cellIndex];
                     DigTerrainRenderCell cell = DigTerrainRenderCell.FromWorld(
-                        source.Cells[cellIndex],
-                        z: 0);
+                        sourceCell,
+                        sourceCell.Z);
                     cells.Add(cell);
                     if (cell.IsSolid)
                     {
@@ -181,13 +169,13 @@ namespace Dig.Unity
             }
         }
 
-        private static HashSet<DigTerrainCellKey> ToDepthZero(
-            IEnumerable<Vector2Int> cells)
+        private static HashSet<DigTerrainCellKey> ToCellKeys(
+            IEnumerable<CellId> cells)
         {
             HashSet<DigTerrainCellKey> result = new HashSet<DigTerrainCellKey>();
-            foreach (Vector2Int cell in cells)
+            foreach (CellId cell in cells)
             {
-                result.Add(new DigTerrainCellKey(cell.x, cell.y, 0));
+                result.Add(new DigTerrainCellKey(cell.X, cell.Y, cell.Z));
             }
 
             return result;

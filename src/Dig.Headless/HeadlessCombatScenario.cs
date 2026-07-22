@@ -30,11 +30,11 @@ internal static class HeadlessCombatScenario
         Require(agents.Add(CreateAgent(
             attackerId,
             health: 10_000,
-            new CellId(0, 0))));
+            new CellId(0, 0, 0))));
         Require(agents.Add(CreateAgent(
             targetId,
             health: 5_000,
-            new CellId(1, 0))));
+            new CellId(1, 0, 0))));
 
         FactionState factions = new FactionState(
             new FactionCatalog(new[]

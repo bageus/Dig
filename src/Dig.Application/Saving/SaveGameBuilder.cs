@@ -36,6 +36,8 @@ public sealed partial class SaveGameBuilder
             Jobs = BuildJobs(context.Jobs),
             Buildings = BuildBuildings(context.Buildings),
             AgentSkills = BuildAgentSkills(context.Agents),
+            AgentPositions = BuildAgentPositions(context.Agents),
+            TerrainDeposits = BuildTerrainDeposits(context.TerrainDeposits),
         };
     }
 
@@ -45,6 +47,7 @@ public sealed partial class SaveGameBuilder
         {
             Width = snapshot.Size.Width,
             Height = snapshot.Size.Height,
+            Depth = snapshot.Size.Depth,
             ChunkSize = snapshot.ChunkSize,
             Version = snapshot.Version,
         };
@@ -54,6 +57,7 @@ public sealed partial class SaveGameBuilder
             {
                 X = chunk.Id.X,
                 Y = chunk.Id.Y,
+                Z = chunk.Id.Z,
                 Version = chunk.ChunkVersion,
             };
             foreach (CellSnapshot cell in chunk.Cells.OrderBy(item => item.Id))
@@ -62,6 +66,7 @@ public sealed partial class SaveGameBuilder
                 {
                     X = cell.Id.X,
                     Y = cell.Id.Y,
+                    Z = cell.Id.Z,
                     MaterialId = cell.State.MaterialId.ToString(),
                     Designation = (int)cell.State.Designation,
                     IsExplored = cell.State.IsExplored,
@@ -185,9 +190,11 @@ public sealed partial class SaveGameBuilder
                 DefinitionId = building.Definition.Id.ToString(),
                 OriginX = building.Origin.X,
                 OriginY = building.Origin.Y,
+                OriginZ = building.Origin.Z,
                 Orientation = (int)building.Orientation,
                 WorkPositionX = building.WorkPosition.X,
                 WorkPositionY = building.WorkPosition.Y,
+                WorkPositionZ = building.WorkPosition.Z,
                 Status = (int)building.Status,
                 CompletedWork = building.CompletedWork,
                 Durability = building.Durability,
@@ -229,6 +236,7 @@ public sealed partial class SaveGameBuilder
             OwnerId = location.HasOwner ? location.OwnerId.ToString() : null,
             CellX = location.HasCell ? location.CellId.X : (int?)null,
             CellY = location.HasCell ? location.CellId.Y : (int?)null,
+            CellZ = location.HasCell ? location.CellId.Z : (int?)null,
             ResidentCompartment = location.HasResidentSlot
                 ? (int)location.ResidentCompartment
                 : (int?)null,
@@ -236,6 +244,51 @@ public sealed partial class SaveGameBuilder
                 ? location.ResidentSlotIndex
                 : (int?)null,
         };
+    }
+
+    private static AgentPositionsSaveData BuildAgentPositions(
+        IEnumerable<Dig.Domain.Agents.AgentState> agents)
+    {
+        AgentPositionsSaveData data = new AgentPositionsSaveData();
+        foreach (Dig.Domain.Agents.AgentState agent in agents.OrderBy(
+            value => value.Id.ToString(),
+            StringComparer.Ordinal))
+        {
+            data.Agents.Add(new AgentPositionSaveData
+            {
+                AgentId = agent.Id.ToString(),
+                X = agent.Position.X,
+                Y = agent.Position.Y,
+                Z = agent.Position.Z,
+            });
+        }
+
+        return data;
+    }
+
+
+    private static TerrainDepositsSaveData BuildTerrainDeposits(
+        IEnumerable<TerrainDepositInstance> deposits)
+    {
+        TerrainDepositsSaveData data = new TerrainDepositsSaveData();
+        foreach (TerrainDepositInstance deposit in deposits
+            .OrderBy(value => value.Cell)
+            .ThenBy(value => value.InstanceId, StringComparer.Ordinal))
+        {
+            data.Deposits.Add(new TerrainDepositSaveData
+            {
+                InstanceId = deposit.InstanceId,
+                DefinitionId = deposit.Definition.Id,
+                X = deposit.Cell.X,
+                Y = deposit.Cell.Y,
+                Z = deposit.Cell.Z,
+                IsRevealed = deposit.IsRevealed,
+                RemainingYield = deposit.RemainingYield,
+                Version = deposit.Version,
+            });
+        }
+
+        return data;
     }
 
     private static SaveMetadataData CopyMetadata(SaveMetadataData metadata)

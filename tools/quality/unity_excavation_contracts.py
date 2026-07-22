@@ -74,7 +74,7 @@ def check_excavation_contracts(
             "DigTunnelProjection.CellWorldPosition(cell)",
             "TryGetMovementTarget",
             "internal bool TryGetCell(",
-            "SpatialCellId cell,",
+            "CellId cell,",
         ),
     ))
     errors.extend(reject_fragments(
@@ -99,7 +99,7 @@ def check_excavation_contracts(
         movement,
         texts.get(movement, ""),
         "direct layered movement",
-        ("_tunnelRenderer.TryGetCell", "SpatialCellId destination", "MoveResidentThroughTunnel"),
+        ("_tunnelRenderer.TryGetCell", "CellId destination", "MoveResidentThroughTunnel"),
     ))
     errors.extend(require_fragments(
         protection,
@@ -236,7 +236,7 @@ def check_excavation_contracts(
         (
             "IsExcavationFrontier",
             "NoCandidates",
-            "agent.CellZ == 0",
+            "Math.Abs(agent.CellZ - target.Z)",
             "IsManualExcavationJob(job.Id)",
         ),
     ))

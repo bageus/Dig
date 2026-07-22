@@ -13,76 +13,75 @@ def check_depth_terrain_contracts(
     require_fragments: RequireFragments,
     reject_fragments: RejectFragments,
 ) -> list[str]:
-    adapter_path = runtime_root / "DigWorldRenderer.DepthTerrain.cs"
-    builder_path = runtime_root / "DigTerrainRenderSnapshotBuilder.Depth.cs"
-    session_path = runtime_root / "DigWorldSession.cs"
+    renderer_path = runtime_root / "DigWorldRenderer.cs"
+    builder_path = runtime_root / "DigTerrainRenderSnapshotBuilder.cs"
     driver_path = runtime_root / "DigAgentSimulationDriverBase.CaveRooms.cs"
-    interaction_path = runtime_root / "DigWorldInteraction.CaveRooms.cs"
     bootstrap_path = runtime_root / "DigUnityBootstrap.cs"
 
     errors = require_fragments(
-        adapter_path,
-        texts.get(adapter_path, ""),
-        "unified depth terrain adapter",
+        renderer_path,
+        texts.get(renderer_path, ""),
+        "authoritative XYZ terrain projection",
         (
-            "TerrainDepthVolumePresenter",
-            "SetTerrainDepthVolume",
-            "RefreshChunkedTerrain();",
+            "Dictionary<CellId, DigCellVisual>",
+            "Dictionary<ChunkId, Transform>",
+            "new CellId(cell.X, cell.Y, cell.Z)",
+            "DigTunnelProjection.CellWorldPosition(cellId)",
+            "DigTunnelProjection.FloorWorldPosition(cellId)",
+            "foreach (CellId cell in volume.Cells)",
         ),
     )
     errors.extend(require_fragments(
         builder_path,
         texts.get(builder_path, ""),
-        "depth terrain chunk projection",
+        "world-derived depth terrain chunks",
         (
-            "TerrainDepthVolumeViewModel",
-            "AddDepthChunks",
-            "CalculateDepthChunkVersion",
-            "DigTerrainChunkKey",
-        ),
-    ))
-    errors.extend(require_fragments(
-        session_path,
-        texts.get(session_path, ""),
-        "depth terrain material facts",
-        (
-            "SolidMaterialId => _solidMaterialId",
-            "SolidHardness => _solidHardness",
+            "int depth = world.Depth;",
+            "AddWorldChunks(",
+            "new DigTerrainChunkKey(source.X, source.Y, source.Z)",
+            "sourceCell.Z",
+            "ToCellKeys(cutawayCells)",
+            "ToCellKeys(protectedCells)",
         ),
     ))
     errors.extend(require_fragments(
         driver_path,
         texts.get(driver_path, ""),
-        "depth terrain excavation refresh",
+        "authoritative World excavation refresh",
         (
-            "_terrainExcavatedVolume",
-            "RefreshTerrainDepthVolume",
-            "WorldRenderer.SetTerrainDepthVolume(",
+            "WorldSession!.ExcavateSpatialCell(commit.Target)",
+            "AgentSession!.CompleteTunnelDepthExcavation(",
+            "WorldSession.LoadSnapshot()",
+            "WorldRenderer!.Render(WorldSession.LoadView())",
+            "WorldSession!.ActivateCaveRoomVolume(plan)",
         ),
     ))
-    errors.extend(reject_fragments(
-        interaction_path,
-        texts.get(interaction_path, ""),
-        "separate cave rock renderer",
-        ("DigRockVolumeRenderer", "_caveRoomRockRenderer"),
-    ))
-
-    bootstrap = texts.get(bootstrap_path, "")
     errors.extend(require_fragments(
         bootstrap_path,
-        bootstrap,
-        "unified rock volume composition",
+        texts.get(bootstrap_path, ""),
+        "single World terrain composition",
         (
-            "worldRenderer.SetTerrainDepthVolume(",
-            "worldSession.SolidMaterialId.ToString()",
-            "Array.Empty<SpatialCellId>()",
+            "worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume)",
+            "worldRenderer.SetTerrainDeposits(worldSession.LoadTerrainDeposits())",
+            "worldRenderer.Render(world)",
             "SetCaveRoomRenderers",
         ),
     ))
-    errors.extend(reject_fragments(
-        bootstrap_path,
-        bootstrap,
-        "separate rock volume composition",
-        ("DigRockVolumeRenderer", "rockRenderer.Initialize"),
-    ))
+
+    forbidden = (
+        "TerrainDepthVolumePresenter",
+        "TerrainDepthVolumeViewModel",
+        "SetTerrainDepthVolume",
+        "AddDepthChunks",
+        "_terrainDepthVolume",
+        "_terrainExcavatedVolume",
+        "RefreshTerrainDepthVolume",
+    )
+    for path in (renderer_path, builder_path, driver_path, bootstrap_path):
+        errors.extend(reject_fragments(
+            path,
+            texts.get(path, ""),
+            "parallel depth terrain ownership",
+            forbidden,
+        ))
     return errors

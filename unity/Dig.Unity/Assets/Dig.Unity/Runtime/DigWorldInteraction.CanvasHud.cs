@@ -35,7 +35,7 @@ public sealed partial class DigWorldInteraction
         ContextPointerTarget target = new ContextPointerTarget(
             ContextWorldTargetKind.Resident,
             EntityId.Parse(residentId),
-            new CellId(facts.CellX, facts.CellY),
+            new CellId(facts.CellX, facts.CellY, facts.CellZ),
             isAlive: facts.IsAlive);
         ContextInputDecision decision = _inputRouter.Route(
             new ContextPointerEvent(
@@ -64,7 +64,7 @@ public sealed partial class DigWorldInteraction
         ContextPointerTarget target = new ContextPointerTarget(
             ContextWorldTargetKind.CompletedBuilding,
             EntityId.Parse(building.Id),
-            new CellId(building.OriginX, building.OriginY));
+            new CellId(building.OriginX, building.OriginY, building.OriginZ));
         ContextInputDecision decision = _inputRouter.Route(
             new ContextPointerEvent(
                 PointerInputSurface.World,
@@ -154,10 +154,14 @@ public sealed partial class DigWorldInteraction
             string.Equals(value.Id, residentId, StringComparison.Ordinal));
         if (model == null)
         {
-            return new AgentViewModelFacts(isAlive: false, cellX: 0, cellY: 0);
+            return new AgentViewModelFacts(
+                isAlive: false,
+                cellX: 0,
+                cellY: 0,
+                cellZ: 0);
         }
 
-        return new AgentViewModelFacts(model.IsAlive, model.CellX, model.CellY);
+        return new AgentViewModelFacts(model.IsAlive, model.CellX, model.CellY, model.CellZ);
     }
 
     private static ResidentInventorySlotViewModel ToLegacySlot(
@@ -204,11 +208,12 @@ public sealed partial class DigWorldInteraction
 
     private readonly struct AgentViewModelFacts
     {
-        public AgentViewModelFacts(bool isAlive, int cellX, int cellY)
+        public AgentViewModelFacts(bool isAlive, int cellX, int cellY, int cellZ)
         {
             IsAlive = isAlive;
             CellX = cellX;
             CellY = cellY;
+            CellZ = cellZ;
         }
 
         public bool IsAlive { get; }
@@ -216,6 +221,8 @@ public sealed partial class DigWorldInteraction
         public int CellX { get; }
 
         public int CellY { get; }
+
+        public int CellZ { get; }
     }
 }
 

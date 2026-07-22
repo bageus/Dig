@@ -19,8 +19,8 @@ public sealed class TerrainDepositPresenter
             throw new ArgumentNullException(nameof(deposits));
         }
 
-        Dictionary<SpatialCellId, Projection> projected =
-            new Dictionary<SpatialCellId, Projection>();
+        Dictionary<CellId, Projection> projected =
+            new Dictionary<CellId, Projection>();
         foreach (TerrainDepositPresentationInput source in deposits)
         {
             if (source == null)
@@ -41,13 +41,13 @@ public sealed class TerrainDepositPresenter
             projected.Add(source.Cell, Project(source));
         }
 
-        List<SpatialCellId> orderedCells = new List<SpatialCellId>(projected.Keys);
+        List<CellId> orderedCells = new List<CellId>(projected.Keys);
         orderedCells.Sort();
         List<TerrainDepositCellViewModel> cells =
             new List<TerrainDepositCellViewModel>(orderedCells.Count);
         for (int index = 0; index < orderedCells.Count; index++)
         {
-            SpatialCellId cell = orderedCells[index];
+            CellId cell = orderedCells[index];
             Projection value = projected[cell];
             TerrainDepositConnection connections = ResolveConnections(
                 cell,
@@ -113,9 +113,9 @@ public sealed class TerrainDepositPresenter
     }
 
     private static TerrainDepositConnection ResolveConnections(
-        SpatialCellId cell,
+        CellId cell,
         Projection value,
-        IReadOnlyDictionary<SpatialCellId, Projection> deposits)
+        IReadOnlyDictionary<CellId, Projection> deposits)
     {
         if (!value.IsVisible)
         {
@@ -126,37 +126,37 @@ public sealed class TerrainDepositPresenter
         AddConnection(
             ref result,
             TerrainDepositConnection.NegativeX,
-            new SpatialCellId(cell.X - 1, cell.Y, cell.Z),
+            new CellId(cell.X - 1, cell.Y, cell.Z),
             value.VisibleDepositId,
             deposits);
         AddConnection(
             ref result,
             TerrainDepositConnection.PositiveX,
-            new SpatialCellId(cell.X + 1, cell.Y, cell.Z),
+            new CellId(cell.X + 1, cell.Y, cell.Z),
             value.VisibleDepositId,
             deposits);
         AddConnection(
             ref result,
             TerrainDepositConnection.NegativeY,
-            new SpatialCellId(cell.X, cell.Y - 1, cell.Z),
+            new CellId(cell.X, cell.Y - 1, cell.Z),
             value.VisibleDepositId,
             deposits);
         AddConnection(
             ref result,
             TerrainDepositConnection.PositiveY,
-            new SpatialCellId(cell.X, cell.Y + 1, cell.Z),
+            new CellId(cell.X, cell.Y + 1, cell.Z),
             value.VisibleDepositId,
             deposits);
         AddConnection(
             ref result,
             TerrainDepositConnection.NegativeZ,
-            new SpatialCellId(cell.X, cell.Y, cell.Z - 1),
+            new CellId(cell.X, cell.Y, cell.Z - 1),
             value.VisibleDepositId,
             deposits);
         AddConnection(
             ref result,
             TerrainDepositConnection.PositiveZ,
-            new SpatialCellId(cell.X, cell.Y, cell.Z + 1),
+            new CellId(cell.X, cell.Y, cell.Z + 1),
             value.VisibleDepositId,
             deposits);
         return result;
@@ -165,9 +165,9 @@ public sealed class TerrainDepositPresenter
     private static void AddConnection(
         ref TerrainDepositConnection connections,
         TerrainDepositConnection flag,
-        SpatialCellId neighbour,
+        CellId neighbour,
         string depositId,
-        IReadOnlyDictionary<SpatialCellId, Projection> deposits)
+        IReadOnlyDictionary<CellId, Projection> deposits)
     {
         if (deposits.TryGetValue(neighbour, out Projection? value)
             && value != null
@@ -238,7 +238,7 @@ public sealed class TerrainDepositPresenter
     }
 
     private static void ValidateCell(
-        SpatialCellId cell,
+        CellId cell,
         int width,
         int height,
         int depth)

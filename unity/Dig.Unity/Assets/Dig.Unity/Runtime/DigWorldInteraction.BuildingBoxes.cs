@@ -55,7 +55,7 @@ namespace Dig.Unity
 
             UpdateBuildingPlacement(
                 _buildingPlacementMode.Value,
-                new CellId(cell.Model.X, cell.Model.Y));
+                new CellId(cell.Model.X, cell.Model.Y, cell.Model.Z));
         }
 
         private void UpdateBuildingPlacement(
@@ -92,8 +92,8 @@ namespace Dig.Unity
 
             CellId origin = decision.TargetCell
                 ?? (item == null
-                    ? new CellId(0, 0)
-                    : new CellId(item.Model.CellX, item.Model.CellY));
+                    ? new CellId(0, 0, 0)
+                    : new CellId(item.Model.CellX, item.Model.CellY, item.Model.CellZ));
             BuildingBoxPlacementModeState mode = started.Value;
             BuildingBoxGhostViewModel preview =
                 _terrainSession.PreviewBuildingBoxPlacement(mode, origin);

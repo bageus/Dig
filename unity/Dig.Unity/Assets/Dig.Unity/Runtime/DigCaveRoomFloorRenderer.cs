@@ -9,7 +9,7 @@ namespace Dig.Unity
     [DisallowMultipleComponent]
     public sealed class DigCaveRoomFloorRenderer : MonoBehaviour
     {
-        private readonly HashSet<SpatialCellId> _cells = new HashSet<SpatialCellId>();
+        private readonly HashSet<CellId> _cells = new HashSet<CellId>();
         private Transform? _root;
         private bool _digInteractionActive;
 
@@ -26,7 +26,7 @@ namespace Dig.Unity
             {
                 for (int offset = 0; offset < plan.Preset.BaseWidth; offset++)
                 {
-                    SpatialCellId cell = new SpatialCellId(
+                    CellId cell = new CellId(
                         minX + offset,
                         plan.Entrance.Y,
                         z);
@@ -77,12 +77,12 @@ namespace Dig.Unity
         private static void ConfigureInteractionCollider(
             GameObject floor,
             CaveRoomPlan plan,
-            SpatialCellId destination)
+            CellId destination)
         {
             int topY = destination.Y;
             for (int index = 0; index < plan.VolumeCells.Count; index++)
             {
-                SpatialCellId volumeCell = plan.VolumeCells[index];
+                CellId volumeCell = plan.VolumeCells[index];
                 if (volumeCell.X == destination.X
                     && volumeCell.Z == destination.Z
                     && volumeCell.Y < topY)
@@ -92,7 +92,7 @@ namespace Dig.Unity
             }
 
             float top = DigTunnelProjection.CellWorldPosition(
-                new SpatialCellId(destination.X, topY, destination.Z)).y
+                new CellId(destination.X, topY, destination.Z)).y
                 + DigTunnelProjection.RockCellHalfExtent;
             float bottom = DigTunnelProjection.WalkSurfaceY(destination.Y);
             Vector3 center = DigTunnelProjection.CellWorldPosition(destination);

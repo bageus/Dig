@@ -54,7 +54,7 @@ public sealed partial class DigWorldInteraction
         return new ContextPointerTarget(
             ContextWorldTargetKind.HostileResident,
             hasEntityId ? id : (EntityId?)null,
-            new CellId(creature.Model.CellX, creature.Model.CellY),
+            new CellId(creature.Model.CellX, creature.Model.CellY, creature.Model.CellZ),
             isAlive: creature.Model.IsAlive);
     }
 }

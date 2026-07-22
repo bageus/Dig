@@ -23,6 +23,10 @@ public static class SaveErrors
     public static readonly DomainError UnknownBuildingDefinition = new DomainError(
         "save.building_definition.unknown",
         "The save references a building definition missing from the current catalog.");
+
+    public static readonly DomainError UnknownTerrainDepositDefinition = new DomainError(
+        "save.terrain_deposit_definition.unknown",
+        "The save references a terrain deposit definition missing from the current catalog.");
 }
 
 public sealed class SaveMigrationPipeline
@@ -196,4 +200,71 @@ public sealed class SaveVersionThreeAgentSkillsMigration : ISaveMigration
         document.FormatVersion = ToVersion;
     }
 }
+public sealed class SaveVersionFourAuthoritativeCoordinatesMigration : ISaveMigration
+{
+    public string Id => "save.v4_to_v5.authoritative_xyz";
+    public int FromVersion => 4;
+    public int ToVersion => 5;
+
+    public void Apply(SaveGameDocument document)
+    {
+        if (document is null)
+        {
+            throw new ArgumentNullException(nameof(document));
+        }
+
+        if (document.FormatVersion != FromVersion)
+        {
+            throw new InvalidOperationException(
+                "Migration received the wrong source version.");
+        }
+
+        document.World ??= new WorldSaveData();
+        document.World.Depth = Dig.Domain.World.WorldSize.RequiredDepth;
+        document.World.Chunks ??= new List<WorldChunkSaveData>();
+        foreach (WorldChunkSaveData chunk in document.World.Chunks)
+        {
+            if (chunk is null)
+            {
+                continue;
+            }
+
+            chunk.Z = 0;
+            chunk.Cells ??= new List<WorldCellSaveData>();
+            foreach (WorldCellSaveData cell in chunk.Cells)
+            {
+                if (cell is not null)
+                {
+                    cell.Z = 0;
+                }
+            }
+        }
+
+        document.Inventory ??= new InventorySaveData();
+        document.Inventory.Stacks ??= new List<ItemStackSaveData>();
+        foreach (ItemStackSaveData stack in document.Inventory.Stacks)
+        {
+            if (stack?.Location is not null && stack.Location.CellX.HasValue)
+            {
+                stack.Location.CellZ = 0;
+            }
+        }
+
+        document.Buildings ??= new BuildingsSaveData();
+        document.Buildings.Buildings ??= new List<BuildingSaveData>();
+        foreach (BuildingSaveData building in document.Buildings.Buildings)
+        {
+            if (building is not null)
+            {
+                building.OriginZ = 0;
+                building.WorkPositionZ = 0;
+            }
+        }
+
+        document.AgentPositions ??= new AgentPositionsSaveData();
+        document.TerrainDeposits ??= new TerrainDepositsSaveData();
+        document.FormatVersion = ToVersion;
+    }
+}
+
 }

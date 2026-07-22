@@ -37,6 +37,7 @@ public sealed class WorldItemPickupJobSaveCodec : IJobDefinitionSaveCodec
                 Property("quantity", pickup.Quantity),
                 Property("source_x", pickup.SourceCell.X),
                 Property("source_y", pickup.SourceCell.Y),
+                Property("source_z", pickup.SourceCell.Z),
             },
         };
     }
@@ -56,7 +57,8 @@ public sealed class WorldItemPickupJobSaveCodec : IJobDefinitionSaveCodec
             Integer(properties, "quantity"),
             new CellId(
                 Integer(properties, "source_x"),
-                Integer(properties, "source_y")),
+                Integer(properties, "source_y"),
+                Integer(properties, "source_z")),
             data.Priority,
             data.CreatedTick,
             new JobRetryPolicy(data.MaximumRetries, data.RetryDelayTicks),

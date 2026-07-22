@@ -7,8 +7,8 @@ namespace Dig.Unity
 {
     public sealed partial class DigWorldRenderer
     {
-        private readonly HashSet<Vector2Int> _protectedCells =
-            new HashSet<Vector2Int>();
+        private readonly HashSet<CellId> _protectedCells =
+            new HashSet<CellId>();
         private DigCellVisual? _rejectedCell;
 
         internal void SetProtectedCells(IReadOnlyList<CellId> cells)
@@ -21,7 +21,7 @@ namespace Dig.Unity
             _protectedCells.Clear();
             for (int index = 0; index < cells.Count; index++)
             {
-                _protectedCells.Add(new Vector2Int(cells[index].X, cells[index].Y));
+                _protectedCells.Add(cells[index]);
             }
 
             RefreshChunkedTerrain();
@@ -34,8 +34,7 @@ namespace Dig.Unity
                 _rejectedCell.SetRejected(false);
             }
 
-            Vector2Int key = new Vector2Int(cell.X, cell.Y);
-            if (!_cells.TryGetValue(key, out DigCellVisual? visual))
+            if (!_cells.TryGetValue(cell, out DigCellVisual? visual))
             {
                 _rejectedCell = null;
                 ApplyCellProxyState();
@@ -47,7 +46,7 @@ namespace Dig.Unity
             ApplyCellProxyState();
         }
 
-        private void ApplyProtectedVisual(DigCellVisual visual, Vector2Int key)
+        private void ApplyProtectedVisual(DigCellVisual visual, CellId key)
         {
             if (!visual.Model.IsSolid || !_protectedCells.Contains(key))
             {

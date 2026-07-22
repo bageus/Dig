@@ -18,7 +18,6 @@ namespace Dig.Unity
             new TerrainDepositDecorationPresenter();
         private DigTerrainChunkRenderer? _terrainChunkRenderer;
         private WorldViewModel? _terrainWorld;
-        private TerrainDepthVolumeViewModel? _terrainDepthVolume;
         private TerrainDepositDecorationVolumeViewModel? _terrainDepositDecorations;
         private bool _tunnelDigInteractionActive;
 
@@ -72,7 +71,6 @@ namespace Dig.Unity
             ApplyCellProxyState();
             DigTerrainRenderSnapshot snapshot = _terrainSnapshotBuilder.Build(
                 world,
-                _terrainDepthVolume,
                 _terrainDepositDecorations,
                 _tunnelCutaway,
                 _protectedCells);

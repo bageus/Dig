@@ -33,7 +33,7 @@ public sealed partial class DigAgentVisual : MonoBehaviour
     private int _currentZ;
     private double _previousVisualX;
     private double _currentVisualX;
-    private SpatialCellId? _freeformDestinationCell;
+    private CellId? _freeformDestinationCell;
     private float _freeformDestinationOffsetX;
     private float _elapsed;
     private float _duration;
@@ -110,7 +110,7 @@ public sealed partial class DigAgentVisual : MonoBehaviour
         Face(ToWorld(_currentVisualX, _currentY, _currentZ) - transform.position);
     }
 
-    internal void SetFreeformDestination(SpatialCellId cell, float offsetX)
+    internal void SetFreeformDestination(CellId cell, float offsetX)
     {
         float limit = (float)TunnelMovementTargetResolver.MaximumOffsetX;
         _freeformDestinationCell = cell;
@@ -252,7 +252,7 @@ public sealed partial class DigAgentVisual : MonoBehaviour
             isCarrying: false));
     }
 
-    private static Vector3 ToWorld(SpatialCellId cell)
+    private static Vector3 ToWorld(CellId cell)
     {
         return ToWorld(cell.X, cell.Y, cell.Z);
     }

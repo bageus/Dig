@@ -96,7 +96,7 @@ internal sealed partial class DigTerrainWorkSession
             EntityId stackId = EntityId.Parse(
                 $"500000000000000000000000000000{index + 1:D2}");
             WorldCellViewModel target = targets[index];
-            CellId targetCell = new CellId(target.X, target.Y);
+            CellId targetCell = new CellId(target.X, target.Y, target.Z);
             DigJobDefinition definition = new DigJobDefinition(
                 jobId,
                 new DigJobTarget(targetCell),

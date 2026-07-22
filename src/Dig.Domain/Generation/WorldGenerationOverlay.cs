@@ -47,7 +47,7 @@ public static class WorldGenerationOverlay
         {
             for (int x = 0; x < generatedBase.Size.Width; x++)
             {
-                CellId cellId = new CellId(x, y);
+                CellId cellId = new CellId(x, y, 0);
                 CellState baseState = generatedBase.GetCell(cellId).Value.State;
                 CellState currentState = currentWorld.GetCell(cellId).Value.State;
                 if (baseState != currentState)

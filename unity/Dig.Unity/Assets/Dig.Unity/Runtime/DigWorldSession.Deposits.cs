@@ -60,8 +60,8 @@ internal sealed partial class DigWorldSession
 
     private readonly TerrainDepositPresenter _terrainDepositPresenter =
         new TerrainDepositPresenter();
-    private readonly Dictionary<SpatialCellId, TerrainDepositInstance> _terrainDeposits =
-        new Dictionary<SpatialCellId, TerrainDepositInstance>();
+    private readonly Dictionary<CellId, TerrainDepositInstance> _terrainDeposits =
+        new Dictionary<CellId, TerrainDepositInstance>();
 
     internal IReadOnlyList<TerrainDepositDefinition> TerrainDepositDefinitions =>
         DemoDepositDefinitions;
@@ -82,7 +82,7 @@ internal sealed partial class DigWorldSession
         return _terrainDepositPresenter.Present(
             world.Width,
             world.Height,
-            depth: 4,
+            depth: world.Depth,
             inputs);
     }
 
@@ -91,8 +91,7 @@ internal sealed partial class DigWorldSession
         out ItemId outputItemId,
         out int outputQuantity)
     {
-        SpatialCellId spatial = new SpatialCellId(cell.X, cell.Y, 0);
-        if (_terrainDeposits.TryGetValue(spatial, out TerrainDepositInstance? deposit)
+        if (_terrainDeposits.TryGetValue(cell, out TerrainDepositInstance? deposit)
             && !deposit.IsDepleted)
         {
             outputItemId = deposit.Definition.OutputItemId;
@@ -107,21 +106,19 @@ internal sealed partial class DigWorldSession
 
     internal void DepleteTerrainDeposit(CellId cell, long tick)
     {
-        SpatialCellId spatial = new SpatialCellId(cell.X, cell.Y, 0);
-        if (!_terrainDeposits.TryGetValue(spatial, out TerrainDepositInstance? deposit)
+        if (!_terrainDeposits.TryGetValue(cell, out TerrainDepositInstance? deposit)
             || deposit.IsDepleted)
         {
             return;
         }
 
         long nextVersion = Math.Max(deposit.Version + 1, tick);
-        _terrainDeposits[spatial] = deposit.Deplete(nextVersion);
+        _terrainDeposits[cell] = deposit.Deplete(nextVersion);
     }
 
     internal SkillGrantProfile ResolveExcavationSkillGrantProfile(CellId cell)
     {
-        SpatialCellId spatial = new SpatialCellId(cell.X, cell.Y, 0);
-        return _terrainDeposits.TryGetValue(spatial, out TerrainDepositInstance? deposit)
+        return _terrainDeposits.TryGetValue(cell, out TerrainDepositInstance? deposit)
             && !deposit.IsDepleted
                 ? deposit.Definition.SkillGrantProfile
                 : DefaultSkillProgressionContent.Catalog.GetProfile(
@@ -131,19 +128,18 @@ internal sealed partial class DigWorldSession
     private void InitializeDemoDeposits(int seed)
     {
         WorldViewModel world = LoadView();
-        SpatialCellId[] candidates = world.Chunks
+        CellId[] candidates = world.Chunks
             .SelectMany(chunk => chunk.Cells)
             .Where(cell => cell.IsSolid)
-            .Select(cell => new CellId(cell.X, cell.Y))
+            .Select(cell => new CellId(cell.X, cell.Y, cell.Z))
             .Where(cell => !IsProtected(cell))
-            .Select(cell => new SpatialCellId(cell.X, cell.Y, 0))
             .OrderBy(cell => cell)
             .ToArray();
         TerrainDepositGenerator generator = new TerrainDepositGenerator();
         IReadOnlyList<TerrainDepositInstance> generated = generator.Generate(
             world.Width,
             world.Height,
-            depth: 4,
+            depth: world.Depth,
             candidates,
             DemoDepositDefinitions,
             new TerrainDepositGenerationSettings(

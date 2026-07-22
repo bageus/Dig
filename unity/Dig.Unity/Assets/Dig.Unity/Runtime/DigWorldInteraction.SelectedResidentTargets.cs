@@ -17,7 +17,7 @@ namespace Dig.Unity
         private DigSelectedResidentTarget(
             DigSelectedResidentTargetKind kind,
             CellId excavationCell,
-            SpatialCellId movementCell,
+            CellId movementCell,
             float movementOffsetX,
             Vector3 movementWorldPosition)
         {
@@ -30,7 +30,7 @@ namespace Dig.Unity
 
         internal DigSelectedResidentTargetKind Kind { get; }
         internal CellId ExcavationCell { get; }
-        internal SpatialCellId MovementCell { get; }
+        internal CellId MovementCell { get; }
         internal float MovementOffsetX { get; }
         internal Vector3 MovementWorldPosition { get; }
 
@@ -76,7 +76,7 @@ namespace Dig.Unity
             bool hasMovement = false;
             float bestScreenDistance = float.PositiveInfinity;
             float bestRayDistance = float.PositiveInfinity;
-            HashSet<SpatialCellId> seenMovementCells = new HashSet<SpatialCellId>();
+            HashSet<CellId> seenMovementCells = new HashSet<CellId>();
             Vector2 pointer = Input.mousePosition;
             for (int index = 0; index < hits.Length; index++)
             {

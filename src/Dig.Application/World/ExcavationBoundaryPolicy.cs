@@ -60,14 +60,14 @@ public sealed class ExcavationBoundaryPolicy
         HashSet<CellId> cells = new HashSet<CellId>();
         for (int x = 0; x < width; x++)
         {
-            cells.Add(new CellId(x, topRockY));
-            cells.Add(new CellId(x, height - 1));
+            cells.Add(new CellId(x, topRockY, 0));
+            cells.Add(new CellId(x, height - 1, 0));
         }
 
         for (int y = 0; y < height; y++)
         {
-            cells.Add(new CellId(0, y));
-            cells.Add(new CellId(width - 1, y));
+            cells.Add(new CellId(0, y, 0));
+            cells.Add(new CellId(width - 1, y, 0));
         }
 
         return cells;

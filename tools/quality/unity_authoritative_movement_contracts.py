@@ -16,6 +16,7 @@ def check_authoritative_movement_contracts(
     movement_input = runtime_root / "DigWorldInteraction.TunnelMovement.cs"
     excavation = runtime_root / "DigWorldInteraction.Excavation.cs"
     agent_session = runtime_root / "DigAgentSession.TunnelMovement.cs"
+    agent_topology = runtime_root / "DigAgentSession.TunnelTopology.cs"
     agent_session_base = runtime_root / "DigAgentSession.cs"
     spatial_agent_movement = runtime_root / "DigAgentSession.SpatialWorkMovement.cs"
     movement_driver = runtime_root / "DigAgentSimulationDriverBase.TunnelMovement.cs"
@@ -67,7 +68,7 @@ def check_authoritative_movement_contracts(
         "screen-disambiguated Z0-Z3 tunnel target priority",
         (
             "ResolveSelectedResidentTarget(GetPointerHits())",
-            "HashSet<SpatialCellId> seenMovementCells",
+            "HashSet<CellId> seenMovementCells",
             "TryGetMovementTarget(",
             "MovementOffsetX",
             "ResolveMovementPointerDistance(",
@@ -148,7 +149,7 @@ def check_authoritative_movement_contracts(
             "CalculateSignature(volume)",
             "ReconcileCellProxies(volume)",
             "RebuildMovementSurfaces(volume)",
-            "foreach (SpatialCellId cell in volume.Cells)",
+            "foreach (CellId cell in volume.Cells)",
             "GetComponentInParent<DigTunnelCellVisual>()",
         ),
     ))
@@ -175,10 +176,20 @@ def check_authoritative_movement_contracts(
             "TryAdvanceManualTunnelMovement(",
             "TunnelVolume.CanTraverseStep(",
             "agent.MoveTo(next, _tick)",
-            "EnsureOccupiedCellsOpen(",
             "ConsumeManualTunnelMovementWarning",
         ),
     ))
+    errors.extend(require_fragments(
+        agent_topology,
+        texts.get(agent_topology, ""),
+        "world-derived tunnel topology",
+        (
+            "SynchronizeNavigation(",
+            "TunnelNavigationVolume.FromWorldSnapshot(",
+            "WorldSnapshot world",
+        ),
+    ))
+
     reject_fragments = (
         "_manualTunnelOrders",
         "MoveAgentThroughTunnelCommandHandler",
@@ -213,7 +224,7 @@ def check_authoritative_movement_contracts(
         spatial_agent_movement,
         texts.get(spatial_agent_movement, ""),
         "authoritative spatial work steps",
-        ("FindPath", "agent.SpatialPosition", "agent.MoveTo(next, _tick)"),
+        ("FindPath", "agent.Position", "agent.MoveTo(next, _tick)"),
     ))
 
     driver_text = texts.get(movement_driver, "")

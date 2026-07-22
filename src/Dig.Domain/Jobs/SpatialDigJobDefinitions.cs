@@ -10,8 +10,8 @@ namespace Dig.Domain.Jobs
 public sealed class SpatialDigJobTarget
 {
     public SpatialDigJobTarget(
-        SpatialCellId targetCell,
-        SpatialCellId workCell)
+        CellId targetCell,
+        CellId workCell)
     {
         if (targetCell == workCell)
         {
@@ -34,9 +34,9 @@ public sealed class SpatialDigJobTarget
         WorkCell = workCell;
     }
 
-    public SpatialCellId TargetCell { get; }
+    public CellId TargetCell { get; }
 
-    public SpatialCellId WorkCell { get; }
+    public CellId WorkCell { get; }
 
     public override string ToString()
     {

@@ -8,6 +8,7 @@ public readonly struct WorldCellViewModel
     public WorldCellViewModel(
         int x,
         int y,
+        int z,
         string materialId,
         bool isSolid,
         bool isExplored,
@@ -24,6 +25,7 @@ public readonly struct WorldCellViewModel
 
         X = x;
         Y = y;
+        Z = z;
         MaterialId = materialId;
         IsSolid = isSolid;
         IsExplored = isExplored;
@@ -36,6 +38,7 @@ public readonly struct WorldCellViewModel
 
     public int X { get; }
     public int Y { get; }
+    public int Z { get; }
     public string MaterialId { get; }
     public bool IsSolid { get; }
     public bool IsExplored { get; }

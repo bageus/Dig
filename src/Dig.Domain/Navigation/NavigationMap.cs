@@ -60,6 +60,7 @@ public sealed class NavigationMap
 
         if (_snapshot.WorldSize.Width != world.Size.Width
             || _snapshot.WorldSize.Height != world.Size.Height
+            || _snapshot.WorldSize.Depth != world.Size.Depth
             || _snapshot.ChunkSize != world.ChunkSize)
         {
             return Result<NavigationUpdateDiagnostics>.Failure(
@@ -105,11 +106,14 @@ public sealed class NavigationMap
         if (fullRebuild)
         {
             _chunks.Clear();
-            for (int y = 0; y < index.Layout.ChunkCountY; y++)
+            for (int z = 0; z < index.Layout.ChunkCountZ; z++)
             {
-                for (int x = 0; x < index.Layout.ChunkCountX; x++)
+                for (int y = 0; y < index.Layout.ChunkCountY; y++)
                 {
-                    rebuild.Add(new ChunkId(x, y));
+                    for (int x = 0; x < index.Layout.ChunkCountX; x++)
+                    {
+                        rebuild.Add(new ChunkId(x, y, z));
+                    }
                 }
             }
         }
@@ -234,7 +238,7 @@ public sealed class NavigationMap
             return true;
         }
 
-        CellId belowId = new CellId(cell.Id.X, cell.Id.Y - 1);
+        CellId belowId = new CellId(cell.Id.X, cell.Id.Y - 1, cell.Id.Z);
         return index.TryGetCell(belowId, out CellSnapshot below) && below.IsSolid;
     }
 

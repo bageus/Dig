@@ -51,7 +51,7 @@ public sealed partial class DigWorldInteraction
             ContextPointerTarget target = new ContextPointerTarget(
                 ContextWorldTargetKind.Resident,
                 EntityId.Parse(agent.Model.Id),
-                new CellId(agent.Model.CellX, agent.Model.CellY),
+                new CellId(agent.Model.CellX, agent.Model.CellY, agent.Model.CellZ),
                 isAlive: agent.Model.IsAlive);
             ApplyDecision(
                 _inputRouter.Route(

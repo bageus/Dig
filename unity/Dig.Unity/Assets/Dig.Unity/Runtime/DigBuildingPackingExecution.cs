@@ -139,7 +139,7 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         EnsureBuildingPackingExecutionInitialized();
-        CellId start = new CellId(agent.CellX, agent.CellY);
+        CellId start = new CellId(agent.CellX, agent.CellY, agent.CellZ);
         PathResult path = _buildingPackingPathfinder!.FindPath(
             navigation,
             new PathRequest(start, packing.WorkPosition, navigation.NavigationVersion));
@@ -174,7 +174,7 @@ internal sealed partial class DigTerrainWorkSession
             BuildingBoxPackingExecutionPolicy.Evaluate(
                 job,
                 building,
-                new CellId(agent.CellX, agent.CellY));
+                new CellId(agent.CellX, agent.CellY, agent.CellZ));
         if (evaluated.IsFailure)
         {
             result = Result.Failure(evaluated.Error!);
@@ -213,7 +213,7 @@ internal sealed partial class DigTerrainWorkSession
             RouteCellViewModel[] cells = path.Path == null
                 ? Array.Empty<RouteCellViewModel>()
                 : path.Path.Cells
-                    .Select(cell => new RouteCellViewModel(cell.X, cell.Y))
+                    .Select(cell => new RouteCellViewModel(cell.X, cell.Y, cell.Z))
                     .ToArray();
             routes.Add(new RouteViewModel(
                 pair.Key.ToString(),

@@ -25,6 +25,13 @@ public sealed class CaveRoomPlanner
             throw new ArgumentNullException(nameof(boundary));
         }
 
+        if (entrance.Z != CellId.MinimumDepth)
+        {
+            return CaveRoomPlanResult.Failure(
+                CaveRoomPlanFailureReason.EntranceOutOfBounds,
+                "Cave room extrusion currently starts on the front Z=0 layer.");
+        }
+
         if (completedPlans?.Any(plan => plan.Entrance == entrance) == true)
         {
             return CaveRoomPlanResult.Failure(
@@ -51,9 +58,9 @@ public sealed class CaveRoomPlanner
         }
 
         bool horizontalTunnel = entrance.X > 0
-                && IsOpen(cells, new CellId(entrance.X - 1, entrance.Y))
+                && IsOpen(cells, new CellId(entrance.X - 1, entrance.Y, entrance.Z))
             || entrance.X + 1 < world.Size.Width
-                && IsOpen(cells, new CellId(entrance.X + 1, entrance.Y));
+                && IsOpen(cells, new CellId(entrance.X + 1, entrance.Y, entrance.Z));
         if (!horizontalTunnel)
         {
             return CaveRoomPlanResult.Failure(
@@ -66,7 +73,7 @@ public sealed class CaveRoomPlanner
             entrance);
         CaveRoomPreset preset = CaveRoomPresetCatalog.Get(kind);
         List<CellId> front = new List<CellId>();
-        List<SpatialCellId> volume = new List<SpatialCellId>();
+        List<CellId> volume = new List<CellId>();
         for (int level = 0; level < preset.Height; level++)
         {
             CaveRoomPlanResult? failure = AddRow(
@@ -98,7 +105,7 @@ public sealed class CaveRoomPlanner
                     "One complete row of solid rock must remain above the room.");
             }
 
-            CellId roofCell = new CellId(x, roofY);
+            CellId roofCell = new CellId(x, roofY, entrance.Z);
             if (!cells.TryGetValue(roofCell, out CellSnapshot roofSnapshot)
                 || !roofSnapshot.IsSolid)
             {
@@ -167,10 +174,10 @@ public sealed class CaveRoomPlanner
 
             for (int index = 0; index < plan.VolumeCells.Count; index++)
             {
-                SpatialCellId cell = plan.VolumeCells[index];
+                CellId cell = plan.VolumeCells[index];
                 if (cell.Z == 0)
                 {
-                    cells.Add(new CellId(cell.X, cell.Y));
+                    cells.Add(new CellId(cell.X, cell.Y, cell.Z));
                 }
             }
         }
@@ -187,7 +194,7 @@ public sealed class CaveRoomPlanner
         CellId entrance,
         int level,
         ICollection<CellId> front,
-        ICollection<SpatialCellId> volume)
+        ICollection<CellId> volume)
     {
         int y = entrance.Y - level;
         int rowWidth = InterpolateWidth(preset, level);
@@ -202,7 +209,7 @@ public sealed class CaveRoomPlanner
                     "The room outline leaves the world bounds.");
             }
 
-            CellId cell = new CellId(x, y);
+            CellId cell = new CellId(x, y, entrance.Z);
             if (!cells.TryGetValue(cell, out CellSnapshot snapshot))
             {
                 return CaveRoomPlanResult.Failure(
@@ -233,7 +240,7 @@ public sealed class CaveRoomPlanner
 
             for (int z = 0; z < preset.Depth; z++)
             {
-                volume.Add(new SpatialCellId(cell.X, cell.Y, z));
+                volume.Add(new CellId(cell.X, cell.Y, z));
             }
         }
 

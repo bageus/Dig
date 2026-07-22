@@ -93,7 +93,7 @@ namespace Dig.Unity
 
                 Result<TerrainWorkRoutePlan> planned = _routePlanner.Plan(
                     job,
-                    new CellId(agent.CellX, agent.CellY),
+                    new CellId(agent.CellX, agent.CellY, agent.CellZ),
                     navigation);
                 if (planned.IsFailure)
                 {

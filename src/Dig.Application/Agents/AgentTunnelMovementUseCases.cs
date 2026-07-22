@@ -13,7 +13,7 @@ namespace Dig.Application.Agents
 
 public sealed class PlanAgentTunnelRouteCommand : ICommand<PlanAgentTunnelRouteReport>
 {
-    public PlanAgentTunnelRouteCommand(EntityId agentId, SpatialCellId destination)
+    public PlanAgentTunnelRouteCommand(EntityId agentId, CellId destination)
     {
         AgentId = agentId;
         Destination = destination;
@@ -21,7 +21,7 @@ public sealed class PlanAgentTunnelRouteCommand : ICommand<PlanAgentTunnelRouteR
 
     public EntityId AgentId { get; }
 
-    public SpatialCellId Destination { get; }
+    public CellId Destination { get; }
 }
 
 public sealed class PlanAgentTunnelRouteReport
@@ -70,7 +70,7 @@ public sealed class PlanAgentTunnelRouteCommandHandler :
         }
 
         TunnelPathResult pathResult = _volume.FindPath(
-            agent.SpatialPosition,
+            agent.Position,
             command.Destination);
         return pathResult.Succeeded
             ? new PlanAgentTunnelRouteReport(Result.Success(), pathResult.Path)
@@ -95,7 +95,7 @@ public sealed class PlanAgentsTunnelRoutesCommand :
 {
     public PlanAgentsTunnelRoutesCommand(
         IReadOnlyCollection<EntityId> agentIds,
-        SpatialCellId destination)
+        CellId destination)
     {
         if (agentIds is null)
         {
@@ -119,7 +119,7 @@ public sealed class PlanAgentsTunnelRoutesCommand :
 
     public IReadOnlyList<EntityId> AgentIds { get; }
 
-    public SpatialCellId Destination { get; }
+    public CellId Destination { get; }
 }
 
 public sealed class PlannedAgentTunnelRoute
@@ -204,7 +204,7 @@ public sealed class PlanAgentsTunnelRoutesCommandHandler :
             }
 
             TunnelPathResult pathResult = _volume.FindPath(
-                agent.SpatialPosition,
+                agent.Position,
                 command.Destination);
             if (!pathResult.Succeeded)
             {

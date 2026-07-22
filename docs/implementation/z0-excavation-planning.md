@@ -2,14 +2,13 @@
 
 ## Rock volume and walk surfaces
 
-The Unity slice keeps the existing authoritative `WorldState` as the front excavation layer at `Z=0` and an immutable `TunnelNavigationVolume` for the four playable depth cells `Z=0..3`.
+`WorldState` owns all four playable depth layers (`Z=0..3`). `TunnelNavigationVolume` is derived from an immutable `WorldSnapshot` and contains no independently mutable open-cell set.
 
 - The world starts as solid rock below the surface.
 - Air is carved above the surface, through the existing shaft and connector, inside the generated lower cave, and inside completed user-planned rooms.
-- `DigRockVolumeRenderer` builds combined meshes for solid rock at `Z=1..3`.
-- Individual designation, damage, material yield, and Job targets remain authoritative on `Z=0`.
-- A completed room removes its bounded deeper volume as one activation step.
-- A manual depth command removes exactly one next-layer tunnel cell.
+- `DigTerrainRenderSnapshotBuilder` builds combined chunk meshes for authoritative solid cells on every Z layer.
+- Designation, damage, material yield and Job targets preserve exact XYZ coordinates.
+- A completed room and a manual depth command mutate their exact World cells before navigation and presentation rebuild.
 
 A walkable cell represents empty space above a supporting rock cell. Floor geometry therefore uses the upper boundary of the cell below instead of the center of the empty cell.
 
@@ -20,17 +19,17 @@ A walkable cell represents empty space above a supporting rock cell. Floor geome
 - Initial `Z=0` platforms are not duplicated by `DigTunnelDemoRenderer`.
 - Cave shells and room back walls have no collider and are never navigation surfaces.
 
-Combined meshes are used instead of one GameObject per rock cell. The rock renderer receives the union of completed room-volume cells and manually opened tunnel-depth cells.
+Combined meshes are used instead of one GameObject per rock cell. The renderer consumes one four-layer `WorldViewModel`; completed rooms and depth excavation need no second cutout owner.
 
 ## Direct resident movement
 
 Direct movement accepts every renderer that owns a walkable destination:
 
 - `DigTunnelDemoRenderer` builds invisible continuous surfaces over original layered cells, synchronized Z0 cells, shafts, completed-room floors and manually opened depth cells.
-- the continuous pointer hit resolves to a hidden `SpatialCellId` plus a bounded presentation-only X offset;
+- the continuous pointer hit resolves to a hidden `CellId` plus a bounded presentation-only X offset;
 - `DigWorldRenderer` and `DigCaveRoomFloorRenderer` expose exact cells only while an excavation tool is active and never act as ordinary movement targets.
 - All routes execute through the same single-resident or atomic group tunnel movement commands.
-- Additional open cells are added through `TunnelNavigationVolume.WithAdditionalOpenCells`.
+- Excavation changes World; `TunnelNavigationVolume.FromWorldSnapshot` rebuilds the resulting walk topology.
 
 ## Protected rock
 
@@ -128,12 +127,10 @@ The front excavation flow remains:
 
 `World designation -> Dig Job -> candidate assignment -> navigation -> work -> terrain completion`
 
-Each designated solid `Z=0` cell creates one Dig Job with the selected priority. Automatic candidates are exposed only when the target is a current frontier, the resident is alive and on `Z=0`, and the Job is not held by a player-directed group.
+Each designated solid cell creates one Dig Job with an exact XYZ target and work cell. Automatic candidates are exposed only when the target is a current frontier, the resident is alive, a physical route exists, and the Job is not held by a player-directed group.
 
 ## Scope boundary
 
 Room geometry, completed room expansion, optional generated-cave walls, mandatory planned-room walls, bounded one-cell depth opening, deep floor rendering, and deep direct movement are implemented.
 
-Manual depth opening currently expands the tunnel volume and rock mesh directly. It does not yet own an independent `SpatialCellId` Dig Job, worker reservation, damage progression, tool cadence, or material yield. Those require migrating world cells, Job targets, inventory locations, and reservations from the front `CellId` projection to full `SpatialCellId` ownership.
-
-Support simulation, collapse, material-specific deep mining, and formation-aware resident occupancy remain later work.
+Depth excavation now uses an exact XYZ Dig Job, worker/position/designation reservations, terrain completion and World-derived navigation. Support simulation, collapse, material-specific balancing and formation-aware resident occupancy remain later work.

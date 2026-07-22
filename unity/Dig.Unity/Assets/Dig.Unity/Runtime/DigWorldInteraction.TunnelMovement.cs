@@ -68,7 +68,7 @@ namespace Dig.Unity
                 return false;
             }
 
-            SpatialCellId destination = target.MovementCell;
+            CellId destination = target.MovementCell;
             Result result = residentIds.Count == 1
                 ? _simulation!.MoveResidentThroughTunnel(
                     residentIds[0],
@@ -125,7 +125,7 @@ namespace Dig.Unity
                         return false;
                     }
 
-                    SpatialCellId workCell = new SpatialCellId(
+                    CellId workCell = new CellId(
                         job.Model.TargetX.Value,
                         job.Model.TargetY.Value,
                         job.Model.TargetZ.Value - 1);
@@ -186,7 +186,7 @@ namespace Dig.Unity
 
         private bool TryResolveTunnelDestination(
             RaycastHit hit,
-            out SpatialCellId destination,
+            out CellId destination,
             out DigTunnelCellVisual? visual)
         {
             if (_tunnelRenderer != null

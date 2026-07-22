@@ -62,8 +62,8 @@ public sealed class CaveRoomPlanningTests
 
         Assert.True(result.Succeeded, result.Detail);
         CaveRoomPlan plan = result.Plan!;
-        Assert.Contains(new SpatialCellId(10, 9, 0), plan.VolumeCells);
-        Assert.Contains(new SpatialCellId(10, 9, 2), plan.VolumeCells);
+        Assert.Contains(new CellId(10, 9, 0), plan.VolumeCells);
+        Assert.Contains(new CellId(10, 9, 2), plan.VolumeCells);
         Assert.Equal(36, plan.VolumeCells.Count);
         Assert.Equal(new[] { 5, 4, 3 }, RowWidths(plan));
         Assert.Equal(3, plan.RoofCells.Count);

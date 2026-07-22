@@ -136,7 +136,7 @@ namespace Dig.Unity
             return _worldSession.LoadView().Chunks
                 .SelectMany(chunk => chunk.Cells)
                 .Where(cell => !cell.IsSolid)
-                .Select(cell => new CellId(cell.X, cell.Y))
+                .Select(cell => new CellId(cell.X, cell.Y, cell.Z))
                 .Distinct()
                 .OrderBy(cell => cell)
                 .ToArray();

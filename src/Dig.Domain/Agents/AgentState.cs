@@ -147,7 +147,7 @@ public sealed partial class AgentState : AggregateRoot
             LastDecision,
             _skills.CreateSnapshot(),
             _traits.CreateSnapshot(),
-            SpatialPosition,
+            Position,
             _skills.TryCreateProgressionSnapshot(),
             AutomaticPlanningEnabled);
     }

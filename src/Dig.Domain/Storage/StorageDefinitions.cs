@@ -67,7 +67,7 @@ public sealed class StorageZoneDefinition
         int priority,
         int capacity,
         StorageFilter filter)
-        : this(id, name, priority, capacity, filter, new CellId(0, 0))
+        : this(id, name, priority, capacity, filter, new CellId(0, 0, 0))
     {
     }
 

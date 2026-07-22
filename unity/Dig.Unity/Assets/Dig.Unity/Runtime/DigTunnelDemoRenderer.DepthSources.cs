@@ -8,11 +8,11 @@ namespace Dig.Unity
     {
         internal static void SetDepthExcavationSources(
             this DigTunnelDemoRenderer renderer,
-            IReadOnlyCollection<SpatialCellId> sources)
+            IReadOnlyCollection<CellId> sources)
         {
             if (renderer == null) throw new ArgumentNullException(nameof(renderer));
             if (sources == null) throw new ArgumentNullException(nameof(sources));
-            HashSet<SpatialCellId> allowed = new HashSet<SpatialCellId>(sources);
+            HashSet<CellId> allowed = new HashSet<CellId>(sources);
             DigTunnelCellVisual[] cells =
                 renderer.GetComponentsInChildren<DigTunnelCellVisual>();
             for (int index = 0; index < cells.Length; index++)
@@ -24,7 +24,7 @@ namespace Dig.Unity
 
         internal static bool TryGetCell(
             this DigTunnelDemoRenderer renderer,
-            SpatialCellId cell,
+            CellId cell,
             out DigTunnelCellVisual visual)
         {
             DigTunnelCellVisual[] cells =

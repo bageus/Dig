@@ -15,7 +15,7 @@ namespace Dig.Presentation.World
         public const byte MaximumConnectorsPerFace = 2;
 
         public TerrainDepositDecorationCellViewModel(
-            SpatialCellId cell,
+            CellId cell,
             string visibleDepositId,
             TerrainDepositVisualState state,
             byte damageBand,
@@ -81,7 +81,7 @@ namespace Dig.Presentation.World
             OffsetBandY = offsetBandY;
         }
 
-        public SpatialCellId Cell { get; }
+        public CellId Cell { get; }
 
         public string VisibleDepositId { get; }
 

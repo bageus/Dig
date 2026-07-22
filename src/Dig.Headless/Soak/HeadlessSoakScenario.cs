@@ -247,12 +247,12 @@ internal static class HeadlessSoakScenario
                 Register(state),
                 buildingId,
                 BuildingFacilityKind.Bed,
-                new CellId(index, 10))));
+                new CellId(index, 10, 0))));
             Require(facilities.Add(new BuildingFacilityDefinition(
                 Register(state),
                 buildingId,
                 BuildingFacilityKind.Leisure,
-                new CellId(index, 11))));
+                new CellId(index, 11, 0))));
         }
 
         return new InMemoryBuildingFacilitiesRepository(facilities);

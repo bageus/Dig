@@ -14,12 +14,10 @@ namespace Dig.Unity
         private const int DefaultSpatialExcavationPriority = 750;
         private readonly HashSet<string> _activatedCaveRooms =
             new HashSet<string>(StringComparer.Ordinal);
-        private readonly HashSet<SpatialCellId> _terrainExcavatedVolume =
-            new HashSet<SpatialCellId>();
         private readonly CaveTemplateTrimPresenter _caveTemplateTrimPresenter =
             new CaveTemplateTrimPresenter();
 
-        internal Result DesignateTunnelDepth(SpatialCellId source)
+        internal Result DesignateTunnelDepth(CellId source)
         {
             if (AgentSession == null || TerrainSession == null)
             {
@@ -56,7 +54,16 @@ namespace Dig.Unity
 
         private Result CompleteSpatialExcavation(SpatialExcavationCommit commit)
         {
-            Result terrain = AgentSession!.CompleteTunnelDepthExcavation(commit.Target);
+            Result world = WorldSession!.ExcavateSpatialCell(commit.Target);
+            if (world.IsFailure)
+            {
+                return world;
+            }
+
+            Result terrain = AgentSession!.CompleteTunnelDepthExcavation(
+                commit.Target,
+                WorldSession.LoadSnapshot(),
+                WorldSession.PlannedVerticalTunnelCells);
             if (terrain.IsFailure)
             {
                 return terrain;
@@ -70,12 +77,11 @@ namespace Dig.Unity
                 return job;
             }
 
-            _terrainExcavatedVolume.Add(commit.Target);
+            WorldRenderer!.Render(WorldSession.LoadView());
             PresentSpatialExcavationEffect(commit.Target, CurrentTick);
             DigTunnelDemoRenderer renderer = GetComponent<DigTunnelDemoRenderer>();
             renderer.Initialize(AgentSession.TunnelVolume);
             renderer.SetDepthExcavationSources(AgentSession.TunnelDepthExcavations);
-            RefreshTerrainDepthVolume();
             if (renderer.TryGetCell(commit.Target, out DigTunnelCellVisual visual))
             {
                 renderer.Select(visual);
@@ -103,19 +109,9 @@ namespace Dig.Unity
                 return;
             }
 
-            _terrainExcavatedVolume.Clear();
-            _terrainExcavatedVolume.UnionWith(AgentSession.TunnelDepthExcavations);
             for (int index = 0; index < completedPlans.Count; index++)
             {
                 CaveRoomPlan plan = completedPlans[index];
-                for (int cellIndex = 0; cellIndex < plan.VolumeCells.Count; cellIndex++)
-                {
-                    SpatialCellId cell = plan.VolumeCells[cellIndex];
-                    if (cell.Z > 0)
-                    {
-                        _terrainExcavatedVolume.Add(cell);
-                    }
-                }
 
                 string key = CreateCaveRoomKey(plan);
                 if (!_activatedCaveRooms.Add(key))
@@ -123,17 +119,24 @@ namespace Dig.Unity
                     continue;
                 }
 
-                SpatialCellId[] floorCells = CreateFloorCells(plan);
-                AgentSession.ExpandTunnelVolume(floorCells);
+                Result activated = WorldSession!.ActivateCaveRoomVolume(plan);
+                if (activated.IsFailure)
+                {
+                    throw new InvalidOperationException(activated.Error!.ToString());
+                }
+
+                AgentSession.SynchronizeNavigation(
+                    WorldSession.LoadSnapshot(),
+                    WorldSession.PlannedVerticalTunnelCells);
                 floorRenderer.AddRoomFloor(plan);
             }
 
             WorldRenderer.SetCaveTemplateTrims(
                 _caveTemplateTrimPresenter.Present(completedPlans));
-            RefreshTerrainDepthVolume();
+            WorldRenderer.Render(WorldSession!.LoadView());
         }
 
-        internal static SpatialCellId[] CreateFloorCells(CaveRoomPlan plan)
+        internal static CellId[] CreateFloorCells(CaveRoomPlan plan)
         {
             if (plan == null)
             {
@@ -141,14 +144,14 @@ namespace Dig.Unity
             }
 
             int minX = plan.Entrance.X - ((plan.Preset.BaseWidth - 1) / 2);
-            SpatialCellId[] cells = new SpatialCellId[
+            CellId[] cells = new CellId[
                 plan.Preset.BaseWidth * plan.Preset.Depth];
             int index = 0;
             for (int z = 0; z < plan.Preset.Depth; z++)
             {
                 for (int offset = 0; offset < plan.Preset.BaseWidth; offset++)
                 {
-                    cells[index++] = new SpatialCellId(
+                    cells[index++] = new CellId(
                         minX + offset,
                         plan.Entrance.Y,
                         z);
@@ -156,20 +159,6 @@ namespace Dig.Unity
             }
 
             return cells;
-        }
-
-        private void RefreshTerrainDepthVolume()
-        {
-            if (AgentSession == null || WorldSession == null || WorldRenderer == null)
-            {
-                return;
-            }
-
-            WorldRenderer.SetTerrainDepthVolume(
-                AgentSession.TunnelVolume,
-                WorldSession.SolidMaterialId.ToString(),
-                WorldSession.SolidHardness,
-                _terrainExcavatedVolume);
         }
 
         private static string CreateCaveRoomKey(CaveRoomPlan plan)

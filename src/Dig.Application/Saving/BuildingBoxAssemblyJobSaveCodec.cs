@@ -38,8 +38,10 @@ public sealed class BuildingBoxAssemblyJobSaveCodec : IJobDefinitionSaveCodec
                 Property("source_stack_id", box.SourceStackId.ToString()),
                 Property("site_x", box.SiteCell.X),
                 Property("site_y", box.SiteCell.Y),
+                Property("site_z", box.SiteCell.Z),
                 Property("work_x", box.WorkPosition.X),
                 Property("work_y", box.WorkPosition.Y),
+                Property("work_z", box.WorkPosition.Z),
             },
         };
     }
@@ -54,10 +56,12 @@ public sealed class BuildingBoxAssemblyJobSaveCodec : IJobDefinitionSaveCodec
             EntityId.Parse(Required(properties, "source_stack_id")),
             new CellId(
                 Integer(properties, "site_x"),
-                Integer(properties, "site_y")),
+                Integer(properties, "site_y"),
+                Integer(properties, "site_z")),
             new CellId(
                 Integer(properties, "work_x"),
-                Integer(properties, "work_y")),
+                Integer(properties, "work_y"),
+                Integer(properties, "work_z")),
             data.Priority,
             data.CreatedTick,
             new JobRetryPolicy(data.MaximumRetries, data.RetryDelayTicks),

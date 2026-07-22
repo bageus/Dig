@@ -38,6 +38,7 @@ public sealed class BuildingBoxPackingJobSaveCodec : IJobDefinitionSaveCodec
                 Property("output_stack_id", packing.OutputStackId.ToString()),
                 Property("work_x", packing.WorkPosition.X),
                 Property("work_y", packing.WorkPosition.Y),
+                Property("work_z", packing.WorkPosition.Z),
             },
         };
     }
@@ -52,7 +53,8 @@ public sealed class BuildingBoxPackingJobSaveCodec : IJobDefinitionSaveCodec
             EntityId.Parse(Required(properties, "output_stack_id")),
             new CellId(
                 Integer(properties, "work_x"),
-                Integer(properties, "work_y")),
+                Integer(properties, "work_y"),
+                Integer(properties, "work_z")),
             data.Priority,
             data.CreatedTick,
             new JobRetryPolicy(data.MaximumRetries, data.RetryDelayTicks),

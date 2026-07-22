@@ -10,7 +10,7 @@ namespace Dig.Unity
 public abstract partial class DigAgentSimulationDriverBase
 {
     internal bool TryAssignSpatialExcavation(
-        SpatialCellId workCell,
+        CellId workCell,
         IReadOnlyList<string> residentIds,
         out Result result)
     {

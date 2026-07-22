@@ -8,9 +8,10 @@ namespace Dig.Domain.Navigation
 
 public sealed partial class TunnelNavigationVolume
 {
-    public TunnelNavigationVolume WithSynchronizedFrontLayer(
+    public static TunnelNavigationVolume FromWorldSnapshot(
         WorldSnapshot world,
-        IReadOnlyCollection<CellId> plannedVerticalCells)
+        IReadOnlyCollection<CellId> plannedVerticalCells,
+        TunnelDemoLayout? demoLayout = null)
     {
         if (world is null)
         {
@@ -22,19 +23,13 @@ public sealed partial class TunnelNavigationVolume
             throw new ArgumentNullException(nameof(plannedVerticalCells));
         }
 
-        if (world.Size.Width != Width || world.Size.Height != Height)
-        {
-            throw new ArgumentException(
-                "The world and tunnel volume dimensions must match.",
-                nameof(world));
-        }
-
         Dictionary<CellId, CellSnapshot> cells = world.Chunks
             .SelectMany(chunk => chunk.Cells)
             .ToDictionary(cell => cell.Id);
-        HashSet<CellId> verticalPlans = new HashSet<CellId>(plannedVerticalCells);
-        HashSet<SpatialCellId> open = new HashSet<SpatialCellId>(Cells);
-        HashSet<SpatialCellId> vertical = new HashSet<SpatialCellId>(VerticalCells);
+        HashSet<CellId> verticalPlans = new HashSet<CellId>(
+            plannedVerticalCells.Where(world.Size.Contains));
+        HashSet<CellId> open = new HashSet<CellId>();
+        HashSet<CellId> vertical = new HashSet<CellId>();
 
         foreach (CellSnapshot snapshot in cells.Values)
         {
@@ -44,41 +39,37 @@ public sealed partial class TunnelNavigationVolume
             }
 
             CellId cell = snapshot.Id;
-            SpatialCellId front = new SpatialCellId(cell.X, cell.Y, 0);
             bool plannedVertical = verticalPlans.Contains(cell);
-            bool supported = IsSupported(cells, cell);
-            if (!plannedVertical && !supported)
+            if (!plannedVertical && !IsSupported(cells, world.Size, cell))
             {
                 continue;
             }
 
-            open.Add(front);
+            open.Add(cell);
             if (plannedVertical)
             {
-                vertical.Add(front);
+                vertical.Add(cell);
             }
         }
 
-        if (_openCells.SetEquals(open) && _verticalCells.SetEquals(vertical))
-        {
-            return this;
-        }
-
         return new TunnelNavigationVolume(
-            Width,
-            Height,
-            Depth,
+            world.Size.Width,
+            world.Size.Height,
+            world.Size.Depth,
             open,
             vertical,
-            DemoLayout);
+            demoLayout);
     }
 
     private static bool IsSupported(
         IReadOnlyDictionary<CellId, CellSnapshot> cells,
+        WorldSize size,
         CellId cell)
     {
-        CellId below = new CellId(cell.X, cell.Y + 1);
-        return cells.TryGetValue(below, out CellSnapshot support) && support.IsSolid;
+        CellId below = new CellId(cell.X, cell.Y + 1, cell.Z);
+        return size.Contains(below)
+            && cells.TryGetValue(below, out CellSnapshot support)
+            && support.IsSolid;
     }
 }
 

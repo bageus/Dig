@@ -32,7 +32,7 @@ namespace Dig.Unity
 
         internal PlanAgentTunnelRouteReport MoveResidentThroughTunnel(
             string residentId,
-            SpatialCellId destination)
+            CellId destination)
         {
             if (string.IsNullOrWhiteSpace(residentId))
             {
@@ -45,7 +45,6 @@ namespace Dig.Unity
             }
 
             EntityId id = EntityId.Parse(residentId);
-            EnsureResidentStartCellsOpen(new[] { id });
             PlanAgentTunnelRouteReport report = _tunnelRoutePlanner.Handle(
                 new PlanAgentTunnelRouteCommand(id, destination));
             if (report.Result.IsSuccess && report.Path != null)
@@ -58,7 +57,7 @@ namespace Dig.Unity
 
         internal PlanAgentsTunnelRoutesReport MoveResidentsThroughTunnel(
             IReadOnlyCollection<string> residentIds,
-            SpatialCellId destination)
+            CellId destination)
         {
             if (residentIds == null)
             {
@@ -83,7 +82,6 @@ namespace Dig.Unity
                 ids.Add(EntityId.Parse(residentId));
             }
 
-            EnsureResidentStartCellsOpen(ids);
             PlanAgentsTunnelRoutesReport report = _groupTunnelRoutePlanner.Handle(
                 new PlanAgentsTunnelRoutesCommand(ids, destination));
             if (report.Result.IsSuccess)
@@ -147,9 +145,9 @@ namespace Dig.Unity
                 return true;
             }
 
-            if (agent.SpatialPosition != order.ExpectedCurrent
+            if (agent.Position != order.ExpectedCurrent
                 || !TunnelVolume.CanTraverseStep(
-                    agent.SpatialPosition,
+                    agent.Position,
                     order.NextCell))
             {
                 if (!TryReplanManualMovement(agent, order.Destination, out order))
@@ -166,7 +164,7 @@ namespace Dig.Unity
                 }
             }
 
-            SpatialCellId next = order.NextCell;
+            CellId next = order.NextCell;
             Result moved = agent.MoveTo(next, _tick);
             if (moved.IsFailure)
             {
@@ -189,12 +187,11 @@ namespace Dig.Unity
 
         private bool TryReplanManualMovement(
             AgentState agent,
-            SpatialCellId destination,
+            CellId destination,
             out ManualTunnelMovementOrder order)
         {
-            EnsureOccupiedCellsOpen(new[] { agent.SpatialPosition });
             TunnelPathResult path = TunnelVolume.FindPath(
-                agent.SpatialPosition,
+                agent.Position,
                 destination);
             if (!path.Succeeded || path.Path == null)
             {
@@ -229,37 +226,6 @@ namespace Dig.Unity
             _manualTunnelMovementWarning = error;
         }
 
-        private void EnsureResidentStartCellsOpen(IReadOnlyCollection<EntityId> residentIds)
-        {
-            SpatialCellId[] occupied = residentIds
-                .Select(id => _repository.Get(id))
-                .Where(agent => agent != null)
-                .Select(agent => agent!.SpatialPosition)
-                .ToArray();
-            EnsureOccupiedCellsOpen(occupied);
-        }
-
-        private void EnsureOccupiedCellsOpen(
-            IReadOnlyCollection<SpatialCellId> occupiedCells)
-        {
-            if (_tunnelVolume == null || occupiedCells.Count == 0)
-            {
-                return;
-            }
-
-            SpatialCellId[] missing = occupiedCells
-                .Where(cell => _tunnelVolume.Contains(cell) && !_tunnelVolume.IsOpen(cell))
-                .Distinct()
-                .ToArray();
-            if (missing.Length == 0)
-            {
-                return;
-            }
-
-            _tunnelVolume = _tunnelVolume.WithAdditionalOpenCells(missing);
-            CreateTunnelRoutePlanners();
-        }
-
         private sealed class ManualTunnelMovementOrder
         {
             private int _nextCellIndex;
@@ -272,16 +238,16 @@ namespace Dig.Unity
 
             internal TunnelPath Path { get; }
 
-            internal SpatialCellId Destination => Path.Cells[Path.Cells.Count - 1];
+            internal CellId Destination => Path.Cells[Path.Cells.Count - 1];
 
             internal bool IsComplete => _nextCellIndex >= Path.Cells.Count;
 
-            internal SpatialCellId ExpectedCurrent =>
+            internal CellId ExpectedCurrent =>
                 Path.Cells[Math.Max(0, _nextCellIndex - 1)];
 
-            internal SpatialCellId NextCell => Path.Cells[_nextCellIndex];
+            internal CellId NextCell => Path.Cells[_nextCellIndex];
 
-            internal void ConfirmStep(SpatialCellId arrived)
+            internal void ConfirmStep(CellId arrived)
             {
                 if (IsComplete || arrived != NextCell)
                 {

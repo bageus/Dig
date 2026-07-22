@@ -31,9 +31,9 @@ namespace Dig.Unity
             float bottom = -entrance.Y - 0.5f;
             float top = -entrance.Y + preset.Height - 0.5f;
             float firstDepth = DigTunnelProjection.CellWorldPosition(
-                new SpatialCellId(entrance.X, entrance.Y, 0)).z;
+                new CellId(entrance.X, entrance.Y, 0)).z;
             float lastDepth = DigTunnelProjection.CellWorldPosition(
-                new SpatialCellId(entrance.X, entrance.Y, preset.Depth - 1)).z;
+                new CellId(entrance.X, entrance.Y, preset.Depth - 1)).z;
             float halfDepth = Mathf.Abs(DigTunnelProjection.DepthSpacing) * 0.47f;
             float front = Mathf.Max(firstDepth, lastDepth) + halfDepth;
             float back = Mathf.Min(firstDepth, lastDepth) - halfDepth;

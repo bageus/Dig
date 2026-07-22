@@ -34,7 +34,8 @@ namespace Dig.Unity
 
             DigCellVisual? target = cell ?? _renderer!.SelectAt(
                 decision.TargetCell.Value.X,
-                decision.TargetCell.Value.Y);
+                decision.TargetCell.Value.Y,
+                decision.TargetCell.Value.Z);
             if (target == null)
             {
                 _hud!.SetStatus("input.excavation.stale_target");
@@ -131,7 +132,7 @@ namespace Dig.Unity
 
             WorldCellViewModel selected = _selectedCell.Model;
             Result result = _terrainSession!.MoveStorageZone(
-                new CellId(selected.X, selected.Y),
+                new CellId(selected.X, selected.Y, selected.Z),
                 _simulation!.CurrentTick);
             if (result.IsFailure)
             {
@@ -156,7 +157,7 @@ namespace Dig.Unity
 
             WorldViewModel world = _session.LoadView();
             _renderer!.Render(world);
-            DigCellVisual? refreshed = _renderer.SelectAt(selected.X, selected.Y);
+            DigCellVisual? refreshed = _renderer.SelectAt(selected.X, selected.Y, selected.Z);
             _selectedCell = refreshed;
             _hud.SetWorld(world);
             _hud.SetSelection(refreshed == null ? null : refreshed.Model);

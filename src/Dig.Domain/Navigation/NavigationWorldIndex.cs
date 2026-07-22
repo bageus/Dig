@@ -59,7 +59,7 @@ internal sealed class NavigationWorldIndex
         }
 
         if (chunks.Count != layout.ChunkCount
-            || cells.Count != checked(snapshot.Size.Width * snapshot.Size.Height))
+            || cells.Count != snapshot.Size.CellCount)
         {
             return Result<NavigationWorldIndex>.Failure(
                 NavigationErrors.MissingWorldChunk);

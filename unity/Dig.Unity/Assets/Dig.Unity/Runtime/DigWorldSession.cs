@@ -24,6 +24,7 @@ internal sealed partial class DigWorldSession
     private readonly MaterialId _solidMaterialId;
     private readonly int _solidHardness;
     private readonly ExcavationBoundaryPolicy _boundaryPolicy;
+    private readonly TunnelDemoLayout _demoTunnelLayout;
     private long _tick;
 
     private DigWorldSession(
@@ -34,6 +35,7 @@ internal sealed partial class DigWorldSession
         MaterialId solidMaterialId,
         int solidHardness,
         ExcavationBoundaryPolicy boundaryPolicy,
+        TunnelDemoLayout demoTunnelLayout,
         InMemoryExecutionJournal journal,
         long tick)
     {
@@ -44,6 +46,8 @@ internal sealed partial class DigWorldSession
         _solidMaterialId = solidMaterialId;
         _solidHardness = solidHardness;
         _boundaryPolicy = boundaryPolicy;
+        _demoTunnelLayout = demoTunnelLayout
+            ?? throw new ArgumentNullException(nameof(demoTunnelLayout));
         Journal = journal;
         _tick = tick;
     }
@@ -117,6 +121,7 @@ internal sealed partial class DigWorldSession
             rock,
             rockHardness,
             boundaryPolicy,
+            layout,
             journal,
             tick: 1);
         session.InitializeDemoTunnelPlan(layout);
@@ -135,6 +140,64 @@ internal sealed partial class DigWorldSession
         return _repository.Get().CreateSnapshot();
     }
 
+    internal TunnelNavigationVolume CreateTunnelNavigationVolume()
+    {
+        return TunnelNavigationVolume.FromWorldSnapshot(
+            LoadSnapshot(),
+            PlannedVerticalTunnelCells,
+            _demoTunnelLayout);
+    }
+
+    internal Result ExcavateSpatialCell(CellId cell)
+    {
+        _tick = checked(_tick + 1);
+        Result<WorldMutationResult> result = _repository.Get().Excavate(
+            cell,
+            _emptyMaterialId,
+            _tick);
+        return result.IsSuccess
+            ? Result.Success()
+            : Result.Failure(result.Error!);
+    }
+
+    internal Result ActivateCaveRoomVolume(CaveRoomPlan plan)
+    {
+        if (plan == null)
+        {
+            throw new ArgumentNullException(nameof(plan));
+        }
+
+        WorldState world = _repository.Get();
+        List<TerrainChange> changes = new List<TerrainChange>();
+        for (int index = 0; index < plan.VolumeCells.Count; index++)
+        {
+            CellId cell = plan.VolumeCells[index];
+            Result<CellSnapshot> current = world.GetCell(cell);
+            if (current.IsFailure)
+            {
+                return Result.Failure(current.Error!);
+            }
+
+            if (current.Value.IsSolid)
+            {
+                changes.Add(new TerrainChange(
+                    cell,
+                    current.Value.State.WithTerrain(_emptyMaterialId)));
+            }
+        }
+
+        if (changes.Count == 0)
+        {
+            return Result.Success();
+        }
+
+        _tick = checked(_tick + 1);
+        Result<WorldMutationResult> result = world.ApplyTerrainChanges(changes, _tick);
+        return result.IsSuccess
+            ? Result.Success()
+            : Result.Failure(result.Error!);
+    }
+
     internal IReadOnlyList<ChunkId> DrainDirtyChunks()
     {
         return _repository.Get().DrainDirtyChunks();
@@ -147,7 +210,7 @@ internal sealed partial class DigWorldSession
 
     public Result ToggleDesignation(WorldCellViewModel cell)
     {
-        return SetDesignation(new CellId(cell.X, cell.Y), !cell.IsDesignated);
+        return SetDesignation(new CellId(cell.X, cell.Y, cell.Z), !cell.IsDesignated);
     }
 
     internal Result SetDesignation(CellId cell, bool active)
@@ -178,27 +241,30 @@ internal sealed partial class DigWorldSession
             damage: 0,
             temperature: 20);
         HashSet<CellId> airCells = new HashSet<CellId>();
-        for (int y = 0; y < layout.SurfaceY; y++)
+        for (int z = 0; z < tunnel.Depth; z++)
         {
-            for (int x = 0; x < tunnel.Width; x++)
+            for (int y = 0; y < layout.SurfaceY; y++)
             {
-                airCells.Add(new CellId(x, y));
+                for (int x = 0; x < tunnel.Width; x++)
+                {
+                    airCells.Add(new CellId(x, y, z));
+                }
             }
         }
 
-        foreach (SpatialCellId cell in tunnel.Cells)
+        foreach (CellId cell in tunnel.Cells)
         {
-            if (cell.Z == 0)
-            {
-                airCells.Add(cell.Projection);
-            }
+            airCells.Add(cell);
         }
 
-        for (int y = layout.CaveCeilingY + 1; y <= layout.CaveFloorY; y++)
+        for (int z = 0; z < tunnel.Depth; z++)
         {
-            for (int x = layout.CaveMinX; x <= layout.CaveMaxX; x++)
+            for (int y = layout.CaveCeilingY + 1; y <= layout.CaveFloorY; y++)
             {
-                airCells.Add(new CellId(x, y));
+                for (int x = layout.CaveMinX; x <= layout.CaveMaxX; x++)
+                {
+                    airCells.Add(new CellId(x, y, z));
+                }
             }
         }
 

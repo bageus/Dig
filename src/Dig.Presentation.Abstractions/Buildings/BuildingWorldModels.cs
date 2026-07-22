@@ -11,14 +11,20 @@ namespace Dig.Presentation.Buildings
 public readonly struct BuildingFootprintCellViewModel
 {
     public BuildingFootprintCellViewModel(int x, int y)
+        : this(x, y, CellId.MinimumDepth)
+    {
+    }
+
+    public BuildingFootprintCellViewModel(int x, int y, int z)
     {
         X = x;
         Y = y;
+        Z = z;
     }
 
     public int X { get; }
-
     public int Y { get; }
+    public int Z { get; }
 }
 
 public sealed class BuildingWorldViewModel
@@ -39,9 +45,11 @@ public sealed class BuildingWorldViewModel
             name,
             originX,
             originY,
+            CellId.MinimumDepth,
             BuildingOrientation.North,
             originX,
             originY,
+            CellId.MinimumDepth,
             status,
             status == BuildingStatus.Completed || status == BuildingStatus.Damaged ? 1 : 0,
             1,
@@ -66,6 +74,43 @@ public sealed class BuildingWorldViewModel
         long version,
         IReadOnlyCollection<BuildingFootprintCellViewModel> footprint,
         BuildingFunctionsViewModel functions)
+        : this(
+            id,
+            definitionId,
+            name,
+            originX,
+            originY,
+            CellId.MinimumDepth,
+            orientation,
+            workPositionX,
+            workPositionY,
+            CellId.MinimumDepth,
+            status,
+            completedWork,
+            requiredWork,
+            version,
+            footprint,
+            functions)
+    {
+    }
+
+    public BuildingWorldViewModel(
+        string id,
+        string definitionId,
+        string name,
+        int originX,
+        int originY,
+        int originZ,
+        BuildingOrientation orientation,
+        int workPositionX,
+        int workPositionY,
+        int workPositionZ,
+        BuildingStatus status,
+        int completedWork,
+        int requiredWork,
+        long version,
+        IReadOnlyCollection<BuildingFootprintCellViewModel> footprint,
+        BuildingFunctionsViewModel functions)
     {
         if (string.IsNullOrWhiteSpace(id)
             || string.IsNullOrWhiteSpace(definitionId)
@@ -77,6 +122,16 @@ public sealed class BuildingWorldViewModel
         if (!Enum.IsDefined(typeof(BuildingOrientation), orientation))
         {
             throw new ArgumentOutOfRangeException(nameof(orientation));
+        }
+
+        if (originZ < CellId.MinimumDepth || originZ > CellId.MaximumDepth)
+        {
+            throw new ArgumentOutOfRangeException(nameof(originZ));
+        }
+
+        if (workPositionZ < CellId.MinimumDepth || workPositionZ > CellId.MaximumDepth)
+        {
+            throw new ArgumentOutOfRangeException(nameof(workPositionZ));
         }
 
         if (completedWork < 0
@@ -101,52 +156,41 @@ public sealed class BuildingWorldViewModel
         Name = name.Trim();
         OriginX = originX;
         OriginY = originY;
+        OriginZ = originZ;
         Orientation = orientation;
         WorkPositionX = workPositionX;
         WorkPositionY = workPositionY;
+        WorkPositionZ = workPositionZ;
         Status = status;
         CompletedWork = completedWork;
         RequiredWork = requiredWork;
         Version = version;
         Footprint = new ReadOnlyCollection<BuildingFootprintCellViewModel>(
-            footprint.OrderBy(cell => cell.Y).ThenBy(cell => cell.X).ToArray());
+            footprint.OrderBy(cell => cell.Z)
+                .ThenBy(cell => cell.Y)
+                .ThenBy(cell => cell.X)
+                .ToArray());
         Functions = functions ?? throw new ArgumentNullException(nameof(functions));
     }
 
     public string Id { get; }
-
     public string DefinitionId { get; }
-
     public string Name { get; }
-
     public int OriginX { get; }
-
     public int OriginY { get; }
-
+    public int OriginZ { get; }
     public BuildingOrientation Orientation { get; }
-
     public int WorkPositionX { get; }
-
     public int WorkPositionY { get; }
-
+    public int WorkPositionZ { get; }
     public BuildingStatus Status { get; }
-
     public int CompletedWork { get; }
-
     public int RequiredWork { get; }
-
     public long Version { get; }
-
     public IReadOnlyList<BuildingFootprintCellViewModel> Footprint { get; }
-
     public BuildingFunctionsViewModel Functions { get; }
-
     public bool IsSelectable => Status == BuildingStatus.Completed;
-
-    public double AssemblyProgress => Math.Min(
-        1d,
-        (double)CompletedWork / RequiredWork);
-
+    public double AssemblyProgress => Math.Min(1d, (double)CompletedWork / RequiredWork);
     public BuildingVisualState VisualState => BuildingVisualStateResolver.Resolve(
         Status,
         Functions.IsPacking);
@@ -180,7 +224,7 @@ public sealed class BuildingWorldPresenter
     private BuildingWorldViewModel Present(BuildingSnapshot snapshot)
     {
         BuildingFootprintCellViewModel[] footprint = snapshot.Footprint
-            .Select(cell => new BuildingFootprintCellViewModel(cell.X, cell.Y))
+            .Select(cell => new BuildingFootprintCellViewModel(cell.X, cell.Y, cell.Z))
             .ToArray();
         return new BuildingWorldViewModel(
             snapshot.Id.ToString(),
@@ -188,9 +232,11 @@ public sealed class BuildingWorldPresenter
             snapshot.Definition.Name,
             snapshot.Origin.X,
             snapshot.Origin.Y,
+            snapshot.Origin.Z,
             snapshot.Orientation,
             snapshot.WorkPosition.X,
             snapshot.WorkPosition.Y,
+            snapshot.WorkPosition.Z,
             snapshot.Status,
             snapshot.CompletedWork,
             snapshot.Definition.RequiredWork,

@@ -15,7 +15,7 @@ namespace Dig.Application.Saving
 
 public static class SaveFormat
 {
-    public const int CurrentVersion = 4;
+    public const int CurrentVersion = 5;
 }
 
 public static class SaveSlotNames
@@ -107,6 +107,13 @@ public sealed class SaveGameDocument
 
     [DataMember(Order = 7)]
     public AgentSkillsSaveData AgentSkills { get; set; } = new AgentSkillsSaveData();
+
+    [DataMember(Order = 8)]
+    public AgentPositionsSaveData AgentPositions { get; set; } = new AgentPositionsSaveData();
+
+    [DataMember(Order = 9)]
+    public TerrainDepositsSaveData TerrainDeposits { get; set; } =
+        new TerrainDepositsSaveData();
 }
 
 public sealed class LoadedGameState
@@ -119,7 +126,9 @@ public sealed class LoadedGameState
         BuildingsState buildings,
         SaveMigrationReport migrationReport,
         IReadOnlyDictionary<EntityId, AgentSkillProgressionSnapshot>? agentSkills = null,
-        IReadOnlyDictionary<EntityId, bool>? agentAutomaticPlanning = null)
+        IReadOnlyDictionary<EntityId, bool>? agentAutomaticPlanning = null,
+        IReadOnlyDictionary<EntityId, CellId>? agentPositions = null,
+        IReadOnlyCollection<TerrainDepositInstance>? terrainDeposits = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -136,6 +145,15 @@ public sealed class LoadedGameState
             ? new Dictionary<EntityId, bool>()
             : agentAutomaticPlanning.ToDictionary(value => value.Key, value => value.Value);
         AgentAutomaticPlanning = new ReadOnlyDictionary<EntityId, bool>(planningCopy);
+        Dictionary<EntityId, CellId> positionCopy = agentPositions is null
+            ? new Dictionary<EntityId, CellId>()
+            : agentPositions.ToDictionary(value => value.Key, value => value.Value);
+        AgentPositions = new ReadOnlyDictionary<EntityId, CellId>(positionCopy);
+        TerrainDeposits = new ReadOnlyCollection<TerrainDepositInstance>(
+            (terrainDeposits ?? Array.Empty<TerrainDepositInstance>())
+                .OrderBy(value => value.Cell)
+                .ThenBy(value => value.InstanceId, StringComparer.Ordinal)
+                .ToArray());
     }
 
     public SaveMetadataData Metadata { get; }
@@ -146,6 +164,8 @@ public sealed class LoadedGameState
     public SaveMigrationReport MigrationReport { get; }
     public IReadOnlyDictionary<EntityId, AgentSkillProgressionSnapshot> AgentSkills { get; }
     public IReadOnlyDictionary<EntityId, bool> AgentAutomaticPlanning { get; }
+    public IReadOnlyDictionary<EntityId, CellId> AgentPositions { get; }
+    public IReadOnlyList<TerrainDepositInstance> TerrainDeposits { get; }
 }
 
 public sealed class SaveMigrationReport
@@ -218,7 +238,14 @@ public sealed class SaveGameContext
         InventoryState inventory,
         JobSystem jobs,
         BuildingsState buildings)
-        : this(metadata, world, inventory, jobs, buildings, Array.Empty<AgentState>())
+        : this(
+            metadata,
+            world,
+            inventory,
+            jobs,
+            buildings,
+            Array.Empty<AgentState>(),
+            Array.Empty<TerrainDepositInstance>())
     {
     }
 
@@ -228,7 +255,8 @@ public sealed class SaveGameContext
         InventoryState inventory,
         JobSystem jobs,
         BuildingsState buildings,
-        IReadOnlyCollection<AgentState> agents)
+        IReadOnlyCollection<AgentState> agents,
+        IReadOnlyCollection<TerrainDepositInstance>? terrainDeposits = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -237,6 +265,11 @@ public sealed class SaveGameContext
         Buildings = buildings ?? throw new ArgumentNullException(nameof(buildings));
         Agents = new ReadOnlyCollection<AgentState>(
             (agents ?? throw new ArgumentNullException(nameof(agents))).ToList());
+        TerrainDeposits = new ReadOnlyCollection<TerrainDepositInstance>(
+            (terrainDeposits ?? Array.Empty<TerrainDepositInstance>())
+                .OrderBy(value => value.Cell)
+                .ThenBy(value => value.InstanceId, StringComparer.Ordinal)
+                .ToList());
     }
 
     public SaveMetadataData Metadata { get; }
@@ -245,5 +278,6 @@ public sealed class SaveGameContext
     public JobSystem Jobs { get; }
     public BuildingsState Buildings { get; }
     public IReadOnlyList<AgentState> Agents { get; }
+    public IReadOnlyList<TerrainDepositInstance> TerrainDeposits { get; }
 }
 }
