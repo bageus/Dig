@@ -31,6 +31,8 @@ namespace Dig.Unity
         private Transform? _visualRoot;
         private DigCellVisual? _selected;
 
+        internal WorldCellViewModel? SelectedModel => _selected?.Model;
+
         public void Render(WorldViewModel world)
         {
             if (world == null)

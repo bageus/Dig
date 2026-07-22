@@ -119,37 +119,70 @@ public sealed class SkillInspectorPlayModeTests
     }
 
     [Test]
-    public void Roster_hides_zero_skills_and_omits_empty_top_skill_section()
+    public void Expanded_roster_uses_localized_needs_and_never_embeds_full_inspector()
     {
         ResidentSkillSetViewModel skills = CreateSkills(
             new Dictionary<AgentSkillId, int>
             {
                 [AgentSkillCatalog.Stonework] = 2_000,
-                [AgentSkillCatalog.Logistics] = 500,
+                [AgentSkillCatalog.Cooking] = 1_500,
+                [AgentSkillCatalog.Woodworking] = 1_000,
+                [AgentSkillCatalog.Alchemy] = 750,
+                [AgentSkillCatalog.Defense] = 500,
             },
             AgentSkillCatalog.BaseCapacityUnits);
+        ResidentNeedViewModel health = new ResidentNeedViewModel(
+            8_000,
+            ResidentNeedBand.Healthy,
+            "resident.need.health");
+        ResidentNeedViewModel nutrition = new ResidentNeedViewModel(
+            8_000,
+            ResidentNeedBand.Healthy,
+            "resident.need.nutrition");
+        ResidentNeedViewModel alertness = new ResidentNeedViewModel(
+            8_000,
+            ResidentNeedBand.Healthy,
+            "resident.need.alertness.vigor");
+        ResidentNeedViewModel mood = new ResidentNeedViewModel(
+            8_000,
+            ResidentNeedBand.Healthy,
+            "resident.need.mood");
+        ResidentRosterRowViewModel resident = new ResidentRosterRowViewModel(
+            "00000000000000000000000000000001",
+            "Тестовый гном",
+            version: 1,
+            isAlive: true,
+            isExpanded: true,
+            ResidentSexIndicator.Male,
+            "resident.sex.male",
+            ScheduleActivity.Work,
+            ResidentMoodFace.Joy,
+            health,
+            nutrition,
+            alertness,
+            mood,
+            new ResidentActivityDescriptor(
+                ResidentActivityKind.Idle,
+                "00000000000000000000000000000001",
+                "resident.activity.idle"),
+            isIdleAtWork: false,
+            skills);
         Transform parent = CreateRoot();
 
-        BuildTopSkills(parent, skills);
+        MethodInfo? method = typeof(DigGameHudCanvas).GetMethod(
+            "BuildResidentDetails",
+            BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.That(method, Is.Not.Null);
+        method!.Invoke(null, new object[] { parent, resident });
 
-        Assert.That(parent.childCount, Is.EqualTo(3));
-        Assert.That(
-            parent.Cast<Transform>().Skip(1).Select(child => child.name),
-            Is.EqualTo(new[]
-            {
-                "Top Skill " + AgentSkillCatalog.Stonework,
-                "Top Skill " + AgentSkillCatalog.Logistics,
-            }));
-        Assert.That(skills.TopFive.All(value => value.Level > 0), Is.True);
-
-        UnityEngine.Object.DestroyImmediate(_root);
-        _root = null;
-        parent = CreateRoot();
-        BuildTopSkills(parent, CreateSkills(
-            new Dictionary<AgentSkillId, int>(),
-            AgentSkillCatalog.BaseCapacityUnits));
-
-        Assert.That(parent.childCount, Is.EqualTo(0));
+        Assert.That(RequireChild(parent, "Бодрость"), Is.Not.Null);
+        StringAssert.Contains(
+            "Статус: Бездействует",
+            RequireChild(parent, "Status").GetComponent<UnityEngine.UI.Text>().text);
+        Assert.That(parent.Cast<Transform>().Count(child =>
+            child.name.StartsWith("Top Skill ", StringComparison.Ordinal)), Is.EqualTo(5));
+        Assert.That(parent.Cast<Transform>().Any(child =>
+            child.name.StartsWith("Skill ", StringComparison.Ordinal)), Is.False);
     }
 
     private Transform CreateRoot()

@@ -70,6 +70,40 @@ namespace Dig.Unity
             return GetCompletedCaveRoomPlans(LoadSnapshot());
         }
 
+        internal IReadOnlyList<CellId> ExpandExcavationEraseCells(
+            IReadOnlyList<CellId> requested)
+        {
+            HashSet<CellId> expanded = new HashSet<CellId>(requested);
+            WorldSnapshot snapshot = LoadSnapshot();
+            HashSet<CaveRoomPlan> completed = new HashSet<CaveRoomPlan>(
+                GetCompletedCaveRoomPlans(snapshot));
+            for (int index = 0; index < _caveRoomPlans.Count; index++)
+            {
+                CaveRoomPlan plan = _caveRoomPlans[index];
+                if (completed.Contains(plan)
+                    || !plan.FrontExcavationCells.Any(expanded.Contains))
+                {
+                    continue;
+                }
+
+                expanded.UnionWith(plan.FrontExcavationCells);
+            }
+
+            return expanded.OrderBy(cell => cell).ToArray();
+        }
+
+        internal void CommitExcavationErase(IReadOnlyList<CellId> cells)
+        {
+            HashSet<CellId> erased = new HashSet<CellId>(cells);
+            Dictionary<CellId, CellSnapshot> world = LoadSnapshot().Chunks
+                .SelectMany(chunk => chunk.Cells)
+                .ToDictionary(cell => cell.Id);
+            _caveRoomPlans.RemoveAll(plan =>
+                plan.FrontExcavationCells.Any(erased.Contains)
+                && plan.FrontExcavationCells.Any(cell => world[cell].IsSolid));
+            RemoveTunnelPlans(cells);
+        }
+
         private IReadOnlyList<CaveRoomPlan> GetCompletedCaveRoomPlans(
             WorldSnapshot snapshot)
         {

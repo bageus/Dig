@@ -118,6 +118,7 @@ namespace Dig.Unity
                 routeIndices,
                 residentSexes,
                 new AgentSkillGrantService(repository, journal));
+            session.InitializeCombat(journal);
             session.InitializeTunnelMovement(tunnelVolume, journal);
             return session;
         }

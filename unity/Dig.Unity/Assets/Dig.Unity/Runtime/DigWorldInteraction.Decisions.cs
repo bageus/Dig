@@ -39,6 +39,9 @@ public sealed partial class DigWorldInteraction
             case ApplicationInputCommandKind.MoveResident:
                 ApplyMove(decision);
                 break;
+            case ApplicationInputCommandKind.AttackTarget:
+                ApplyAttack(decision);
+                break;
             case ApplicationInputCommandKind.ApplyExcavation:
                 ApplyExcavation(decision, cell);
                 break;

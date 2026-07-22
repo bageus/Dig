@@ -62,7 +62,7 @@ public sealed class Issue14HudPlayModeTests
         Invoke("RefreshNotificationText");
 
         Text text = Require("Notification Ticker/Notification").GetComponent<Text>();
-        StringAssert.Contains("hungry", text.text);
+        StringAssert.Contains("голод", text.text);
         Assert.That(ticker.ActiveCount, Is.EqualTo(1));
 
         PointerEventData click = new PointerEventData(EventSystem.current)

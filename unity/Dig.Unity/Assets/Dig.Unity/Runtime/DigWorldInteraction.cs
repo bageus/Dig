@@ -16,6 +16,7 @@ namespace Dig.Unity
         private DigWorldSession? _session;
         private DigWorldRenderer? _renderer;
         private DigAgentRenderer? _agentRenderer;
+        private DigCreatureRenderer? _creatureRenderer;
         private DigJobRenderer? _jobRenderer;
         private DigBuildingRenderer? _buildingRenderer;
         private DigTerrainWorkSession? _terrainSession;
@@ -33,6 +34,7 @@ namespace Dig.Unity
             DigWorldSession session,
             DigWorldRenderer renderer,
             DigAgentRenderer agentRenderer,
+            DigCreatureRenderer creatureRenderer,
             DigJobRenderer jobRenderer,
             DigBuildingRenderer buildingRenderer,
             DigWorldItemRenderer itemRenderer,
@@ -48,6 +50,7 @@ namespace Dig.Unity
             _session = session;
             _renderer = renderer;
             _agentRenderer = agentRenderer;
+            _creatureRenderer = creatureRenderer;
             _jobRenderer = jobRenderer;
             _buildingRenderer = buildingRenderer;
             _itemRenderer = itemRenderer;

@@ -29,6 +29,7 @@ namespace Dig.Unity
         protected DigWorldItemRenderer? ItemRenderer;
         protected DigStockpileRenderer? StockpileRenderer;
         protected DigNavigationRouteRenderer? RouteRenderer;
+        protected DigWorldOverlayRenderer? WorldOverlayRenderer;
         private protected DigPresentationEffectRuntime? EffectRuntime;
         protected DigHudOverlay? Hud;
         private SimulationPlaybackState? _playback;
@@ -60,6 +61,7 @@ namespace Dig.Unity
             DigWorldItemRenderer itemRenderer,
             DigStockpileRenderer stockpileRenderer,
             DigNavigationRouteRenderer routeRenderer,
+            DigWorldOverlayRenderer worldOverlayRenderer,
             DigHudOverlay hud)
         {
             WorldSession = worldSession;
@@ -72,6 +74,7 @@ namespace Dig.Unity
             ItemRenderer = itemRenderer;
             StockpileRenderer = stockpileRenderer;
             RouteRenderer = routeRenderer;
+            WorldOverlayRenderer = worldOverlayRenderer;
             EffectRuntime = GetComponent<DigPresentationEffectRuntime>();
             Hud = hud;
             AgentSession.SetMovementTargetFilter(
@@ -138,6 +141,7 @@ namespace Dig.Unity
                 && ItemRenderer != null
                 && StockpileRenderer != null
                 && RouteRenderer != null
+                && WorldOverlayRenderer != null
                 && EffectRuntime != null
                 && Hud != null;
         }

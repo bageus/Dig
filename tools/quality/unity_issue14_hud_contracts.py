@@ -22,6 +22,11 @@ def check_issue14_hud_contracts(
     notifications_path = runtime_root / "DigGameHudCanvas.Notifications.cs"
     navigation_path = runtime_root / "DigWorldInteraction.Notifications.cs"
     technology_path = runtime_root / "DigGameHudCanvas.Context.Technology.cs"
+    localization_path = runtime_root / "DigHudLocalization.cs"
+    decisions_path = runtime_root / "DigWorldInteraction.Decisions.cs"
+    combat_path = runtime_root / "DigWorldInteraction.Combat.cs"
+    excavation_path = runtime_root / "DigWorldInteraction.Excavation.cs"
+    overlay_path = runtime_root / "DigWorldOverlayRenderer.Render.cs"
     inventory_text = texts.get(inventory_path, "")
     errors: list[str] = []
 
@@ -56,6 +61,66 @@ def check_issue14_hud_contracts(
         texts.get(roster_path, ""),
         "resident roster virtualization entry point",
         ("RefreshResidentRows(residentRoster);", "ResetResidentRowPool();"),
+    ))
+    errors.extend(reject_fragments(
+        resident_rows_path,
+        texts.get(resident_rows_path, ""),
+        "full skill inspector embedded in virtualized roster row",
+        ("BuildSkillInspector(parent, resident.Skills);",),
+    ))
+    errors.extend(require_fragments(
+        localization_path,
+        texts.get(localization_path, ""),
+        "typed Russian HUD localization",
+        (
+            '"resident.need.alertness.vigor"] = "Бодрость"',
+            "Resolve(activity.LocalizationKey)",
+            "Resolve(notification.LocalizationKey)",
+        ),
+    ))
+    errors.extend(require_fragments(
+        decisions_path,
+        texts.get(decisions_path, ""),
+        "Unity attack application adapter",
+        (
+            "case ApplicationInputCommandKind.AttackTarget:",
+            "ApplyAttack(decision);",
+        ),
+    ))
+    errors.extend(require_fragments(
+        combat_path,
+        texts.get(combat_path, ""),
+        "hostile target routing to combat intent",
+        (
+            "IssuePlayerAttackOrder(",
+            "ContextWorldTargetKind.HostileResident",
+            "CreatureDisposition.Hostile",
+        ),
+    ))
+    errors.extend(require_fragments(
+        excavation_path,
+        texts.get(excavation_path, ""),
+        "release-to-commit atomic eraser batch",
+        (
+            "_excavationEraseBatch.Add(target);",
+            "ApplyExcavationEraseBatch();",
+            "Release LMB to apply",
+        ),
+    ))
+    errors.extend(require_fragments(
+        overlay_path,
+        texts.get(overlay_path, ""),
+        "pooled world overlay integrations",
+        (
+            "OverlaySemanticKind.Designation",
+            "OverlaySemanticKind.BuildingFootprint",
+            "OverlaySemanticKind.StorageDemand",
+            "OverlaySemanticKind.Deposit",
+            "OverlaySemanticKind.Fog",
+            "OverlaySemanticKind.DirtyChunk",
+            "OverlaySemanticKind.NavigationDiagnostic",
+            "HideRemainder(_selection, count);",
+        ),
     ))
     errors.extend(require_fragments(
         resident_rows_path,
