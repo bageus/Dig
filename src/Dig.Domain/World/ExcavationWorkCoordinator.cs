@@ -223,7 +223,7 @@ namespace Dig.Domain.World
             ExcavationQuarter reserved = ExcavationQuarter.None;
             foreach (ExcavationWorkerAssignment other in _assignments.Values)
             {
-                if (other.WorkerId != assignment.WorkerId
+                if (!other.WorkerId.Equals(assignment.WorkerId)
                     && other.Target.Equals(assignment.Target))
                 {
                     reserved |= other.ReservedQuarters;
