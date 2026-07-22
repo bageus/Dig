@@ -31,6 +31,30 @@ public sealed partial class DigWorldInteraction
             return true;
         }
 
+        if (_agentRenderer.SelectedCount > 0
+            && TryResolveWorldItemHit(hits, out DigWorldItemVisual item))
+        {
+            CancelResidentMarquee();
+            DisableExcavationDrawing();
+            DisableCaveRoomPlanning();
+            ContextPointerTarget itemTarget = new ContextPointerTarget(
+                ContextWorldTargetKind.GenericItem,
+                EntityId.Parse(item.Model.StackId),
+                new CellId(item.Model.CellX, item.Model.CellY),
+                reachable: true,
+                supportsAltInteraction: item.Model.CanPickup);
+            ApplyDecision(
+                _inputRouter.Route(
+                    new ContextPointerEvent(
+                        PointerInputSurface.World,
+                        PointerButtonKind.Left,
+                        altPressed: true),
+                    BuildState(PointerButtonKind.Left),
+                    itemTarget),
+                item: item);
+            return true;
+        }
+
         if (TryResolveAgentHit(hits, out DigAgentVisual agent))
         {
             CancelResidentMarquee();
@@ -62,7 +86,7 @@ public sealed partial class DigWorldInteraction
             return true;
         }
 
-        if (_agentRenderer!.SelectedCount == 0
+        if (_agentRenderer.SelectedCount == 0
             || !TryApplyTunnelMove(hits, leftButton: true))
         {
             return false;
@@ -72,6 +96,24 @@ public sealed partial class DigWorldInteraction
         DisableExcavationDrawing();
         DisableCaveRoomPlanning();
         return true;
+    }
+
+    private bool TryResolveWorldItemHit(
+        RaycastHit[] hits,
+        out DigWorldItemVisual item)
+    {
+        for (int index = 0; index < hits.Length; index++)
+        {
+            if (_itemRenderer != null
+                && _itemRenderer.TryGetItem(hits[index], out item)
+                && !item.Model.IsBuildingBox)
+            {
+                return true;
+            }
+        }
+
+        item = null!;
+        return false;
     }
 }
 }
