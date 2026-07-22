@@ -44,7 +44,7 @@ public sealed class DirectExcavationOrderPlayModeTests
     }
 
     [Test]
-    public void Manual_cluster_claims_a_real_dig_job_for_the_requested_resident()
+    public void Manual_cluster_preserves_automatic_job_owner()
     {
         Assembly runtime = typeof(DigWorldInteraction).Assembly;
         object world = InvokeStatic(
@@ -79,23 +79,28 @@ public sealed class DirectExcavationOrderPlayModeTests
                     && value.TargetX.HasValue
                     && value.TargetY.HasValue
                     && value.TargetZ == 0);
+        string originalOwner = seed.AssignedAgentId!;
+        string manualWorker = residentModels
+            .Select(value => value.Id)
+            .FirstOrDefault(value => value != originalOwner)
+            ?? originalOwner;
 
         object result = Invoke(
             terrain,
             "AssignExcavationClusterToResidents",
             new CellId(seed.TargetX!.Value, seed.TargetY!.Value),
-            new[] { seed.AssignedAgentId! },
+            new[] { manualWorker },
             1L);
 
         Assert.That((bool)GetProperty(result, "IsSuccess"), Is.True);
-        JobOverlayViewModel[] jobs =
+        JobOverlayViewModel sameJob =
             ((IEnumerable)Invoke(terrain, "LoadJobs"))
                 .Cast<JobOverlayViewModel>()
-                .ToArray();
-        Assert.That(jobs.Any(value =>
-            value.AssignedAgentId == seed.AssignedAgentId
-            && (value.Status == "Claimed" || value.Status == "InProgress")),
-            Is.True);
+                .Single(value => value.Id == seed.Id);
+        Assert.That(sameJob.AssignedAgentId, Is.EqualTo(originalOwner));
+        Assert.That(
+            Invoke(terrain, "LoadManualQuarterAssignment", manualWorker),
+            Is.Not.Null);
     }
 
     private static WorldViewModel World()
