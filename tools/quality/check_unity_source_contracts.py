@@ -53,6 +53,9 @@ PROTECTED_MEMBER = re.compile(
     r"(?:\s*<[^>\n]+>)?\s+[A-Za-z_][A-Za-z0-9_]*"
 )
 KNOWN_SYMBOL_IMPORTS = {
+    "EraseExcavationBatchCommand": "Dig.Application.World",
+    "EraseExcavationBatchHandler": "Dig.Application.World",
+    "EraseExcavationBatchReport": "Dig.Application.World",
     "InventoryErrors": "Dig.Domain.Inventory",
     "JobErrors": "Dig.Domain.Jobs",
 }
@@ -170,9 +173,9 @@ def check_generic_source_contracts(
                 messages.setdefault((class_name, match.group("name")), []).append(relative)
 
         for symbol, namespace in KNOWN_SYMBOL_IMPORTS.items():
-            if f"{symbol}." not in text:
+            if re.search(rf"\b{re.escape(symbol)}\b", text) is None:
                 continue
-            if f"using {namespace};" in text or f"{namespace}.{symbol}." in text:
+            if f"using {namespace};" in text or f"{namespace}.{symbol}" in text:
                 continue
             errors.append(
                 f"{relative}: {symbol} requires 'using {namespace};' "
