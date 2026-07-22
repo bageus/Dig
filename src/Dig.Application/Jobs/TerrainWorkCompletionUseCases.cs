@@ -249,11 +249,12 @@ public sealed class CompleteTerrainWorkCommandHandler
 
         if (command.ProducesOutput)
         {
+            CellId outputCell = ResolveDropCell(world, terrainJob.Target.CellId);
             Result added = inventory.AddStack(
                 command.OutputStackId,
                 command.OutputItemId,
                 command.OutputQuantity,
-                ItemLocation.InWorld(terrainJob.Target.CellId),
+                ItemLocation.InWorld(outputCell),
                 command.Tick);
             EnsureCommitStep(added.IsSuccess, added.Error);
         }
@@ -301,6 +302,22 @@ public sealed class CompleteTerrainWorkCommandHandler
         {
             throw new InvalidOperationException(
                 $"Completed terrain job skill grant failed: {applied.Error}");
+        }
+    }
+
+    private static CellId ResolveDropCell(WorldState world, CellId origin)
+    {
+        CellId current = origin;
+        while (true)
+        {
+            CellId below = new CellId(current.X, current.Y + 1);
+            Result<CellSnapshot> belowResult = world.GetCell(below);
+            if (belowResult.IsFailure || belowResult.Value.IsSolid)
+            {
+                return current;
+            }
+
+            current = below;
         }
     }
 
