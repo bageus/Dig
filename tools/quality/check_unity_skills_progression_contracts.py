@@ -125,6 +125,7 @@ def main() -> int:
             "Top_five_uses_value_then_stable_id_from_same_snapshot",
             "Roster_renders_exactly_five_highest_skills_in_snapshot_order",
             "Roster_hides_zero_skills_and_omits_empty_top_skill_section",
+            "Expanded_roster_uses_localized_needs_and_never_embeds_full_inspector",
             "BuildSkillInspector",
             "BuildTopSkillList",
             "University 100/100",

@@ -119,6 +119,40 @@ public sealed class SkillInspectorPlayModeTests
     }
 
     [Test]
+    public void Roster_hides_zero_skills_and_omits_empty_top_skill_section()
+    {
+        ResidentSkillSetViewModel skills = CreateSkills(
+            new Dictionary<AgentSkillId, int>
+            {
+                [AgentSkillCatalog.Stonework] = 2_000,
+                [AgentSkillCatalog.Logistics] = 500,
+            },
+            AgentSkillCatalog.BaseCapacityUnits);
+        Transform parent = CreateRoot();
+
+        BuildTopSkills(parent, skills);
+
+        Assert.That(parent.childCount, Is.EqualTo(3));
+        Assert.That(
+            parent.Cast<Transform>().Skip(1).Select(child => child.name),
+            Is.EqualTo(new[]
+            {
+                "Top Skill " + AgentSkillCatalog.Stonework,
+                "Top Skill " + AgentSkillCatalog.Logistics,
+            }));
+        Assert.That(skills.TopFive.All(value => value.Level > 0), Is.True);
+
+        UnityEngine.Object.DestroyImmediate(_root);
+        _root = null;
+        parent = CreateRoot();
+        BuildTopSkills(parent, CreateSkills(
+            new Dictionary<AgentSkillId, int>(),
+            AgentSkillCatalog.BaseCapacityUnits));
+
+        Assert.That(parent.childCount, Is.EqualTo(0));
+    }
+
+    [Test]
     public void Expanded_roster_uses_localized_needs_and_never_embeds_full_inspector()
     {
         ResidentSkillSetViewModel skills = CreateSkills(
