@@ -134,6 +134,25 @@ public sealed class AgentScheduleChanged : IDomainEvent
     public int WorkEndTickExclusive { get; }
 }
 
+public sealed class AgentAutomaticPlanningChanged : IDomainEvent
+{
+    public AgentAutomaticPlanningChanged(
+        long tick,
+        EntityId agentId,
+        bool enabled)
+    {
+        Tick = tick;
+        AgentId = agentId;
+        Enabled = enabled;
+    }
+
+    public long Tick { get; }
+
+    public EntityId AgentId { get; }
+
+    public bool Enabled { get; }
+}
+
 public sealed class AgentDied : IDomainEvent
 {
     public AgentDied(long tick, EntityId agentId, CellId? lastKnownPosition = null)

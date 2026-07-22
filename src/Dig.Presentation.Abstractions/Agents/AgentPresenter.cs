@@ -70,7 +70,8 @@ public sealed class AgentPresenter
             decision?.ReasonCode ?? "agents.decision.pending",
             decision?.Explanation ?? "No utility decision has been recorded yet.",
             options,
-            snapshot.PositionZ);
+            snapshot.PositionZ,
+            snapshot.AutomaticPlanningEnabled);
     }
 }
 

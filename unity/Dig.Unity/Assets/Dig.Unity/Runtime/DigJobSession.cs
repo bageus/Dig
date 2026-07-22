@@ -154,7 +154,7 @@ namespace Dig.Unity
                     EntityId.Parse(agent.Id),
                     skillLevel: 5_000 - (index * 250),
                     distanceCost: distance,
-                    isAvailable: agent.IsAlive);
+                    isAvailable: agent.IsAvailableForAutomaticPlanning);
             }
 
             return candidates;

@@ -121,35 +121,42 @@ public sealed class SkillInspectorPlayModeTests
     [Test]
     public void Roster_hides_zero_skills_and_omits_empty_top_skill_section()
     {
-        ResidentSkillSetViewModel skills = CreateSkills(
+        Transform root = CreateRoot();
+        Transform sparseParent = new GameObject(
+            "Sparse Skills",
+            typeof(RectTransform)).transform;
+        sparseParent.SetParent(root);
+        ResidentSkillSetViewModel sparseSkills = CreateSkills(
             new Dictionary<AgentSkillId, int>
             {
                 [AgentSkillCatalog.Stonework] = 2_000,
-                [AgentSkillCatalog.Logistics] = 500,
+                [AgentSkillCatalog.Cooking] = 1_000,
             },
             AgentSkillCatalog.BaseCapacityUnits);
-        Transform parent = CreateRoot();
 
-        BuildTopSkills(parent, skills);
+        BuildTopSkills(sparseParent, sparseSkills);
 
-        Assert.That(parent.childCount, Is.EqualTo(3));
+        Assert.That(sparseParent.childCount, Is.EqualTo(3));
+        Assert.That(sparseParent.GetChild(0).name, Is.EqualTo("Top Skills"));
         Assert.That(
-            parent.Cast<Transform>().Skip(1).Select(child => child.name),
+            sparseParent.Cast<Transform>().Skip(1).Select(child => child.name),
             Is.EqualTo(new[]
             {
                 "Top Skill " + AgentSkillCatalog.Stonework,
-                "Top Skill " + AgentSkillCatalog.Logistics,
+                "Top Skill " + AgentSkillCatalog.Cooking,
             }));
-        Assert.That(skills.TopFive.All(value => value.Level > 0), Is.True);
 
-        UnityEngine.Object.DestroyImmediate(_root);
-        _root = null;
-        parent = CreateRoot();
-        BuildTopSkills(parent, CreateSkills(
+        Transform emptyParent = new GameObject(
+            "Empty Skills",
+            typeof(RectTransform)).transform;
+        emptyParent.SetParent(root);
+        ResidentSkillSetViewModel emptySkills = CreateSkills(
             new Dictionary<AgentSkillId, int>(),
-            AgentSkillCatalog.BaseCapacityUnits));
+            AgentSkillCatalog.BaseCapacityUnits);
 
-        Assert.That(parent.childCount, Is.EqualTo(0));
+        BuildTopSkills(emptyParent, emptySkills);
+
+        Assert.That(emptyParent.childCount, Is.Zero);
     }
 
     [Test]

@@ -50,6 +50,8 @@ public sealed partial class AgentState : AggregateRoot
 
     public DailySchedule Schedule { get; }
 
+    public bool AutomaticPlanningEnabled { get; private set; } = true;
+
     public long Version { get; private set; }
 
     public bool IsAlive => _needs.Health.Points > NeedValue.Minimum;
@@ -146,7 +148,8 @@ public sealed partial class AgentState : AggregateRoot
             _skills.CreateSnapshot(),
             _traits.CreateSnapshot(),
             SpatialPosition,
-            _skills.TryCreateProgressionSnapshot());
+            _skills.TryCreateProgressionSnapshot(),
+            AutomaticPlanningEnabled);
     }
 
     private void ExpirePlayerOrder(long tick)

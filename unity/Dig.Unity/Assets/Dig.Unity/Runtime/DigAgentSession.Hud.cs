@@ -19,12 +19,16 @@ internal sealed partial class DigAgentSession
     private readonly ResidentRosterPresenter _rosterPresenter =
         new ResidentRosterPresenter();
     private SetAgentWorkRestWindowCommandHandler? _workScheduleHandler;
+    private SetAgentAutomaticPlanningCommandHandler? _automaticPlanningHandler;
 
     internal void InitializeHudSchedule(InMemoryExecutionJournal journal)
     {
         _workScheduleHandler = new SetAgentWorkRestWindowCommandHandler(
             _repository,
             journal ?? throw new ArgumentNullException(nameof(journal)));
+        _automaticPlanningHandler = new SetAgentAutomaticPlanningCommandHandler(
+            _repository,
+            journal);
     }
 
     internal ResidentRosterViewModel LoadResidentRoster(
@@ -85,6 +89,29 @@ internal sealed partial class DigAgentSession
             startTickInclusive,
             endTickExclusive,
             _tick));
+    }
+
+    internal bool TryGetAutomaticPlanning(
+        string residentId,
+        out bool enabled)
+    {
+        AgentState? agent = GetResident(residentId);
+        enabled = agent?.AutomaticPlanningEnabled ?? true;
+        return agent is not null && agent.IsAlive;
+    }
+
+    internal Result SetAutomaticPlanning(string residentId, bool enabled)
+    {
+        if (_automaticPlanningHandler is null)
+        {
+            return Result.Failure(HudScheduleNotInitialized);
+        }
+
+        return _automaticPlanningHandler.Handle(
+            new SetAgentAutomaticPlanningCommand(
+                EntityId.Parse(residentId),
+                enabled,
+                _tick));
     }
 
     private AgentState? GetResident(string residentId)

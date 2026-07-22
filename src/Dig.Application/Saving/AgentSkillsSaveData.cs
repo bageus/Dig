@@ -27,6 +27,8 @@ public sealed class AgentSkillProgressionSaveData
     [DataMember(Order = 8)] public int UnitsPerPoint { get; set; }
     [DataMember(Order = 9)] public List<string> MigrationSteps { get; set; } =
         new List<string>();
+    [DataMember(Order = 10, EmitDefaultValue = false)]
+    public bool? AutomaticPlanningEnabled { get; set; }
 }
 
 [DataContract]

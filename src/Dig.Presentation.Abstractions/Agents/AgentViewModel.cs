@@ -26,7 +26,8 @@ public sealed class AgentViewModel
         string decisionReason,
         string decisionExplanation,
         IReadOnlyCollection<AgentUtilityOptionViewModel> utilityOptions,
-        int cellZ = 0)
+        int cellZ = 0,
+        bool automaticPlanningEnabled = true)
     {
         if (string.IsNullOrWhiteSpace(id))
         {
@@ -76,6 +77,7 @@ public sealed class AgentViewModel
         DecisionReason = decisionReason;
         DecisionExplanation = decisionExplanation;
         UtilityOptions = new ReadOnlyCollection<AgentUtilityOptionViewModel>(utilityOptions.ToArray());
+        AutomaticPlanningEnabled = automaticPlanningEnabled;
     }
 
     public string Id { get; }
@@ -96,6 +98,10 @@ public sealed class AgentViewModel
     public string DecisionReason { get; }
     public string DecisionExplanation { get; }
     public IReadOnlyList<AgentUtilityOptionViewModel> UtilityOptions { get; }
+    public bool AutomaticPlanningEnabled { get; }
+
+    public bool IsAvailableForAutomaticPlanning =>
+        IsAlive && AutomaticPlanningEnabled;
 
     public double ActionProgress => ActionRequiredTicks <= 0
         ? 0d

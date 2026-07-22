@@ -159,6 +159,39 @@ public sealed class AgentSkillSaveRoundTripTests
             .Value.WasAlreadyApplied);
     }
 
+    [Fact]
+    public void Round_trip_preserves_automatic_planning_preference()
+    {
+        SaveHarness harness = new SaveHarness();
+        AgentState source = AgentTestFactory.CreateAgent(id: WorkerId);
+        Assert.True(source.SetAutomaticPlanningEnabled(false, tick: 5).IsSuccess);
+        InMemoryAgentRepository targetRepository = new InMemoryAgentRepository();
+        AgentState target = AgentTestFactory.CreateAgent(id: WorkerId);
+        Assert.True(targetRepository.Add(target).IsSuccess);
+
+        Result<LoadedGameState> loaded = harness.SaveAndLoadThroughService(
+            source,
+            targetRepository);
+
+        Assert.True(loaded.IsSuccess, loaded.Error?.ToString());
+        Assert.False(loaded.Value.AgentAutomaticPlanning[WorkerId]);
+        Assert.False(target.AutomaticPlanningEnabled);
+    }
+
+    [Fact]
+    public void Save_without_preference_defaults_to_automatic_planning()
+    {
+        SaveHarness harness = new SaveHarness();
+        SaveGameDocument document = harness.Build(
+            AgentTestFactory.CreateAgent(id: WorkerId));
+        Assert.Single(document.AgentSkills.Agents).AutomaticPlanningEnabled = null;
+
+        Result<LoadedGameState> loaded = harness.Load(document);
+
+        Assert.True(loaded.IsSuccess);
+        Assert.True(loaded.Value.AgentAutomaticPlanning[WorkerId]);
+    }
+
     private sealed class SaveHarness
     {
         private readonly MaterialCatalog _materials;
