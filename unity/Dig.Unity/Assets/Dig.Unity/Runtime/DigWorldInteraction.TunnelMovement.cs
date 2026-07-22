@@ -57,7 +57,7 @@ namespace Dig.Unity
                 return false;
             }
 
-            if (TryAssignExplicitSpatialExcavation(hits, residentIds))
+            if (TryAssignExplicitExcavation(hits, residentIds))
             {
                 return true;
             }
@@ -91,7 +91,7 @@ namespace Dig.Unity
             return true;
         }
 
-        private bool TryAssignExplicitSpatialExcavation(
+        private bool TryAssignExplicitExcavation(
             RaycastHit[] hits,
             IReadOnlyList<string> residentIds)
         {
@@ -112,10 +112,18 @@ namespace Dig.Unity
                     if (IsTerminalJobStatus(job.Model.Status)
                         || !job.Model.TargetX.HasValue
                         || !job.Model.TargetY.HasValue
-                        || !job.Model.TargetZ.HasValue
-                        || job.Model.TargetZ.Value <= 0)
+                        || !job.Model.TargetZ.HasValue)
                     {
                         return false;
+                    }
+
+                    if (job.Model.TargetZ.Value == 0)
+                    {
+                        return AssignSurfaceExcavation(
+                            new CellId(
+                                job.Model.TargetX.Value,
+                                job.Model.TargetY.Value),
+                            residentIds);
                     }
 
                     SpatialCellId workCell = new SpatialCellId(
@@ -144,11 +152,37 @@ namespace Dig.Unity
 
                 if (TryResolveTunnelDestination(hit, out _, out _))
                 {
-                    return false;
+                    continue;
                 }
             }
 
             return false;
+        }
+
+        private bool AssignSurfaceExcavation(
+            CellId target,
+            IReadOnlyList<string> residentIds)
+        {
+            var selected = _agentRenderer!.GetSelectedModels();
+            for (int index = 0; index < selected.Count; index++)
+            {
+                if (selected[index].CellZ != 0)
+                {
+                    _hud!.SetStatus(
+                        "Move every selected dwarf to an open Z=0 tunnel cell before assigning front-layer excavation.");
+                    return true;
+                }
+            }
+
+            Result result = _simulation!.AssignExcavationCluster(target, residentIds);
+            _hud!.SetCommandResult(result);
+            if (result.IsSuccess)
+            {
+                _hud.SetStatus(
+                    $"{residentIds.Count} selected dwarf(s) assigned across connected excavation cells within radius 4.");
+            }
+
+            return true;
         }
 
         private bool TryResolveTunnelDestination(

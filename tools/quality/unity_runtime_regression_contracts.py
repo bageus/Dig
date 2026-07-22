@@ -102,9 +102,11 @@ def check_runtime_regression_contracts(
             "DigSelectedResidentTarget.Excavation")),
         (movement_input, "explicit LMB tunnel destinations and active job markers", (
             "TryApplyTunnelMove(RaycastHit[] hits",
-            "TryAssignExplicitSpatialExcavation(hits, residentIds)",
+            "TryAssignExplicitExcavation(hits, residentIds)",
+            "job.Model.TargetZ.Value == 0",
+            "AssignSurfaceExcavation(",
             "IsTerminalJobStatus(job.Model.Status)",
-            "job.Model.TargetZ.Value <= 0",
+            "job.Model.TargetZ.Value == 0",
             "TryResolveTunnelDestination(hit, out _, out _)",
             "ResolveSelectedResidentTarget(hits)",
             "_tunnelRenderer.TryGetCell", "_caveRoomFloorRenderer.TryGetCell",
@@ -181,11 +183,36 @@ def check_runtime_regression_contracts(
 
     movement_input_text = texts.get(movement_input, "")
     explicit_index = movement_input_text.find(
-        "TryAssignExplicitSpatialExcavation(hits, residentIds)"
+        "TryAssignExplicitExcavation(hits, residentIds)"
     )
     target_index = movement_input_text.find("ResolveSelectedResidentTarget(hits)")
     if explicit_index < 0 or target_index < 0 or explicit_index >= target_index:
         errors.append(
             f"{movement_input}: explicit job markers must be checked before ordinary movement"
+        )
+    explicit_method_index = movement_input_text.find(
+        "private bool TryAssignExplicitExcavation("
+    )
+    surface_index = movement_input_text.find(
+        "job.Model.TargetZ.Value == 0",
+        explicit_method_index,
+    )
+    movement_fallthrough_index = movement_input_text.find(
+        "if (TryResolveTunnelDestination(hit, out _, out _))",
+        explicit_method_index,
+    )
+    movement_continue_index = movement_input_text.find(
+        "continue;",
+        movement_fallthrough_index,
+    )
+    if (
+        explicit_method_index < 0
+        or surface_index < explicit_method_index
+        or movement_fallthrough_index < surface_index
+        or movement_continue_index < movement_fallthrough_index
+    ):
+        errors.append(
+            f"{movement_input}: explicit surface/spatial excavation must scan through "
+            "movement hits before falling back to ordinary movement"
         )
     return errors
