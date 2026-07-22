@@ -34,7 +34,6 @@ namespace Dig.Unity
                     nameof(residentIds));
             }
 
-            HashSet<EntityId> selectedAgents = new HashSet<EntityId>(agents);
             for (int index = 0; index < agents.Length; index++)
             {
                 ClearManualGroupForAgent(agents[index]);
@@ -50,8 +49,7 @@ namespace Dig.Unity
             for (int index = 0; index < cluster.Count; index++)
             {
                 if (jobsByCell.TryGetValue(cluster[index], out JobSnapshot? job)
-                    && seenJobs.Add(job.Id)
-                    && !IsOwnedByUnselectedResident(job, selectedAgents))
+                    && seenJobs.Add(job.Id))
                 {
                     orderedJobs.Add(job);
                 }
@@ -67,8 +65,7 @@ namespace Dig.Unity
                 JobSnapshot job = orderedJobs[index];
                 RemoveJobFromExistingManualGroup(job.Id);
                 if ((job.Status == JobStatus.Claimed || job.Status == JobStatus.InProgress)
-                    && job.AssignedAgentId.HasValue
-                    && selectedAgents.Contains(job.AssignedAgentId.Value))
+                    && job.AssignedAgentId.HasValue)
                 {
                     Result released = _releaseAssignment!.Handle(
                         new ReleaseJobAssignmentCommand(job.Id, tick));
@@ -170,15 +167,6 @@ namespace Dig.Unity
 
                 ClearManualGroup(group);
             }
-        }
-
-        private static bool IsOwnedByUnselectedResident(
-            JobSnapshot job,
-            ISet<EntityId> selectedAgents)
-        {
-            return (job.Status == JobStatus.Claimed || job.Status == JobStatus.InProgress)
-                && job.AssignedAgentId.HasValue
-                && !selectedAgents.Contains(job.AssignedAgentId.Value);
         }
 
         private static int SelectNearestBucket(CellId cell, IReadOnlyList<CellId> anchors)
