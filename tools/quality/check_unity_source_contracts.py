@@ -133,6 +133,7 @@ def check_side_view_contracts(texts: dict[Path, str]) -> list[str]:
 def check_unity_editor_compile_contracts(texts: dict[Path, str]) -> list[str]:
     hud_canvas = RUNTIME_ROOT / "DigGameHudCanvas.cs"
     interaction = RUNTIME_ROOT / "DigWorldInteraction.cs"
+    overlay_renderer = RUNTIME_ROOT / "DigWorldOverlayRenderer.Render.cs"
     errors = require_fragments(
         hud_canvas,
         texts.get(hud_canvas, ""),
@@ -154,6 +155,21 @@ def check_unity_editor_compile_contracts(texts: dict[Path, str]) -> list[str]:
         texts.get(interaction, ""),
         "initialized HUD nullability",
         ("if (_hud!.ContainsScreenPoint(Input.mousePosition))",),
+    ))
+    errors.extend(require_fragments(
+        overlay_renderer,
+        texts.get(overlay_renderer, ""),
+        "nullable world cell selection unwrapping",
+        (
+            "if (cellSelection is WorldCellViewModel selectedCell)",
+            "selectedCell.X, selectedCell.Y",
+        ),
+    ))
+    errors.extend(reject_fragments(
+        overlay_renderer,
+        texts.get(overlay_renderer, ""),
+        "nullable WorldCellViewModel member access",
+        ("cellSelection.X", "cellSelection.Y"),
     ))
     return errors
 

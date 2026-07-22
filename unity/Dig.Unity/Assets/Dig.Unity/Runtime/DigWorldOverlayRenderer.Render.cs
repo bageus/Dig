@@ -203,7 +203,7 @@ public sealed partial class DigWorldOverlayRenderer
         }
 
         WorldCellViewModel? cellSelection = _world.SelectedModel;
-        if (cellSelection != null)
+        if (cellSelection is WorldCellViewModel selectedCell)
         {
             GameObject marker = Acquire(
                 _selection,
@@ -212,7 +212,7 @@ public sealed partial class DigWorldOverlayRenderer
                 "Cell Selection",
                 OverlayLayerKind.Selection,
                 OverlaySemanticKind.Selection);
-            PlaceCell(marker, cellSelection.X, cellSelection.Y, 1.10f, 0.86f);
+            PlaceCell(marker, selectedCell.X, selectedCell.Y, 1.10f, 0.86f);
         }
 
         HideRemainder(_selection, count);
