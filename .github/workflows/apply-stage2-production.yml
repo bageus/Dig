@@ -69,6 +69,8 @@ jobs:
           rm -rf .stage2-patch
           rm -f docs/implementation/stage2-v3-pr-placeholder.md
           rm -f docs/implementation/stage2-v3-working-note.md
+          git restore --source=HEAD --staged --worktree -- .github/workflows
+          git clean -f -- .github/workflows
           git add -A
           git status --short
           git diff --cached --stat
