@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Agents;
+using Dig.Application.Runtime;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
 using Dig.Domain.Jobs;
@@ -107,11 +108,17 @@ internal sealed partial class DigAgentSession
             return Result.Failure(HudScheduleNotInitialized);
         }
 
-        return _automaticPlanningHandler.Handle(
+        Result result = _automaticPlanningHandler.Handle(
             new SetAgentAutomaticPlanningCommand(
                 EntityId.Parse(residentId),
                 enabled,
                 _tick));
+        if (result.IsSuccess && enabled)
+        {
+            _autonomy.Execute(new SimulationContext(_tick, _simulationState));
+        }
+
+        return result;
     }
 
     private AgentState? GetResident(string residentId)
