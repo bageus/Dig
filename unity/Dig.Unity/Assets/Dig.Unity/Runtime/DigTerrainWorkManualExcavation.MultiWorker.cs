@@ -50,8 +50,7 @@ namespace Dig.Unity
             for (int index = 0; index < cluster.Count; index++)
             {
                 if (jobsByCell.TryGetValue(cluster[index], out JobSnapshot? job)
-                    && seenJobs.Add(job.Id)
-                    && !IsOwnedByUnselectedResident(job, selectedAgents))
+                    && seenJobs.Add(job.Id))
                 {
                     orderedJobs.Add(job);
                 }
@@ -66,9 +65,14 @@ namespace Dig.Unity
             {
                 JobSnapshot job = orderedJobs[index];
                 RemoveJobFromExistingManualGroup(job.Id);
-                if ((job.Status == JobStatus.Claimed || job.Status == JobStatus.InProgress)
+                bool ownedByUnselectedResident = IsOwnedByUnselectedResident(
+                    job,
+                    selectedAgents);
+                bool ownedBySelectedResident =
+                    (job.Status == JobStatus.Claimed || job.Status == JobStatus.InProgress)
                     && job.AssignedAgentId.HasValue
-                    && selectedAgents.Contains(job.AssignedAgentId.Value))
+                    && selectedAgents.Contains(job.AssignedAgentId.Value);
+                if (ownedByUnselectedResident || ownedBySelectedResident)
                 {
                     Result released = _releaseAssignment!.Handle(
                         new ReleaseJobAssignmentCommand(job.Id, tick));
