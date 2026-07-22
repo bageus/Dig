@@ -10,24 +10,24 @@ namespace Dig.Unity
     [DisallowMultipleComponent]
     public sealed partial class DigWorldRenderer : MonoBehaviour
     {
-        private readonly Dictionary<Vector2Int, DigCellVisual> _cells =
-            new Dictionary<Vector2Int, DigCellVisual>();
-        private readonly Dictionary<Vector2Int, Transform> _chunks =
-            new Dictionary<Vector2Int, Transform>();
-        private readonly HashSet<Vector2Int> _visibleCells =
-            new HashSet<Vector2Int>();
-        private readonly HashSet<Vector2Int> _visibleChunks =
-            new HashSet<Vector2Int>();
-        private readonly HashSet<Vector2Int> _solidCells =
-            new HashSet<Vector2Int>();
-        private readonly HashSet<Vector2Int> _walkSurfaceCells =
-            new HashSet<Vector2Int>();
-        private readonly HashSet<Vector2Int> _tunnelCutaway =
-            new HashSet<Vector2Int>();
-        private readonly List<Vector2Int> _removedCells =
-            new List<Vector2Int>();
-        private readonly List<Vector2Int> _removedChunks =
-            new List<Vector2Int>();
+        private readonly Dictionary<CellId, DigCellVisual> _cells =
+            new Dictionary<CellId, DigCellVisual>();
+        private readonly Dictionary<ChunkId, Transform> _chunks =
+            new Dictionary<ChunkId, Transform>();
+        private readonly HashSet<CellId> _visibleCells =
+            new HashSet<CellId>();
+        private readonly HashSet<CellId> _visibleChunks =
+            new HashSet<CellId>();
+        private readonly HashSet<CellId> _solidCells =
+            new HashSet<CellId>();
+        private readonly HashSet<CellId> _walkSurfaceCells =
+            new HashSet<CellId>();
+        private readonly HashSet<CellId> _tunnelCutaway =
+            new HashSet<CellId>();
+        private readonly List<CellId> _removedCells =
+            new List<CellId>();
+        private readonly List<CellId> _removedChunks =
+            new List<CellId>();
         private Transform? _visualRoot;
         private DigCellVisual? _selected;
 
@@ -40,9 +40,12 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(world));
             }
 
-            Vector2Int? selectedCoordinates = _selected == null
-                ? (Vector2Int?)null
-                : new Vector2Int(_selected.Model.X, _selected.Model.Y);
+            CellId? selectedCoordinates = _selected == null
+                ? (CellId?)null
+                : new CellId(
+                    _selected.Model.X,
+                    _selected.Model.Y,
+                    _selected.Model.Z);
             EnsureRoot();
             _visibleCells.Clear();
             _visibleChunks.Clear();
@@ -55,22 +58,22 @@ namespace Dig.Unity
                 {
                     if (cell.IsSolid)
                     {
-                        _solidCells.Add(new Vector2Int(cell.X, cell.Y));
+                        _solidCells.Add(new CellId(cell.X, cell.Y, cell.Z));
                     }
                 }
             }
 
             foreach (WorldChunkViewModel chunk in world.Chunks)
             {
-                Vector2Int chunkKey = new Vector2Int(chunk.X, chunk.Y);
+                ChunkId chunkKey = new ChunkId(chunk.X, chunk.Y, chunk.Z);
                 _visibleChunks.Add(chunkKey);
                 Transform chunkRoot = GetOrCreateChunkRoot(chunkKey, chunk.Version);
                 foreach (WorldCellViewModel cell in chunk.Cells)
                 {
-                    Vector2Int cellKey = new Vector2Int(cell.X, cell.Y);
+                    CellId cellKey = new CellId(cell.X, cell.Y, cell.Z);
                     _visibleCells.Add(cellKey);
                     bool walkSurface = !cell.IsSolid
-                        && _solidCells.Contains(new Vector2Int(cell.X, cell.Y + 1));
+                        && _solidCells.Contains(new CellId(cell.X, cell.Y + 1, cell.Z));
                     if (walkSurface)
                     {
                         _walkSurfaceCells.Add(cellKey);
@@ -102,21 +105,9 @@ namespace Dig.Unity
             }
 
             _tunnelCutaway.Clear();
-            foreach (SpatialCellId cell in volume.Cells)
+            foreach (CellId cell in volume.Cells)
             {
-                _tunnelCutaway.Add(new Vector2Int(cell.X, cell.Y));
-            }
-
-            TunnelDemoLayout? layout = volume.DemoLayout;
-            if (layout != null)
-            {
-                for (int x = layout.CaveMinX; x <= layout.CaveMaxX; x++)
-                {
-                    for (int y = layout.CaveCeilingY + 1; y <= layout.CaveFloorY; y++)
-                    {
-                        _tunnelCutaway.Add(new Vector2Int(x, y));
-                    }
-                }
+                _tunnelCutaway.Add(cell);
             }
 
             ApplyTunnelCutaway();
@@ -131,7 +122,7 @@ namespace Dig.Unity
             return cell != null;
         }
 
-        internal bool TryGetWalkSurface(RaycastHit hit, out SpatialCellId cell)
+        internal bool TryGetWalkSurface(RaycastHit hit, out CellId cell)
         {
             cell = default;
             if (!TryGetCell(hit, out DigCellVisual visual))
@@ -139,13 +130,16 @@ namespace Dig.Unity
                 return false;
             }
 
-            Vector2Int key = new Vector2Int(visual.Model.X, visual.Model.Y);
+            CellId key = new CellId(
+                visual.Model.X,
+                visual.Model.Y,
+                visual.Model.Z);
             if (!_walkSurfaceCells.Contains(key))
             {
                 return false;
             }
 
-            cell = new SpatialCellId(visual.Model.X, visual.Model.Y, 0);
+            cell = key;
             return true;
         }
 
@@ -165,9 +159,9 @@ namespace Dig.Unity
             return _selected;
         }
 
-        public DigCellVisual? SelectAt(int x, int y)
+        public DigCellVisual? SelectAt(int x, int y, int z)
         {
-            return _cells.TryGetValue(new Vector2Int(x, y), out DigCellVisual? cell)
+            return _cells.TryGetValue(new CellId(x, y, z), out DigCellVisual? cell)
                 ? Select(cell)
                 : Select(null);
         }
@@ -183,7 +177,7 @@ namespace Dig.Unity
             _visualRoot.SetParent(transform, worldPositionStays: false);
         }
 
-        private Transform GetOrCreateChunkRoot(Vector2Int key, long version)
+        private Transform GetOrCreateChunkRoot(ChunkId key, long version)
         {
             if (!_chunks.TryGetValue(key, out Transform? root))
             {
@@ -192,7 +186,7 @@ namespace Dig.Unity
                 _chunks.Add(key, root);
             }
 
-            root.name = $"Chunk {key.x},{key.y} v{version}";
+            root.name = $"Chunk {key.X},{key.Y},{key.Z} v{version}";
             return root;
         }
 
@@ -208,32 +202,25 @@ namespace Dig.Unity
             WorldCellViewModel cell,
             bool walkSurface)
         {
-            visual.name = $"Cell {cell.X},{cell.Y} [{cell.MaterialId}]";
+            CellId cellId = new CellId(cell.X, cell.Y, cell.Z);
+            visual.name = $"Cell {cell.X},{cell.Y},{cell.Z} [{cell.MaterialId}]";
             if (cell.IsSolid)
             {
-                const float height = 0.82f;
-                visual.transform.localPosition = new Vector3(
-                    cell.X,
-                    height * 0.5f,
-                    cell.Y);
-                visual.transform.localScale = new Vector3(0.94f, height, 0.94f);
+                visual.transform.localPosition = DigTunnelProjection.CellWorldPosition(cellId);
+                visual.transform.localScale = Vector3.one * 0.96f;
             }
             else if (walkSurface)
             {
-                Vector3 floor = DigTunnelProjection.FloorWorldPosition(
-                    new SpatialCellId(cell.X, cell.Y, 0));
-                visual.transform.localPosition = new Vector3(
-                    cell.X,
-                    floor.z,
-                    -floor.y);
+                visual.transform.localPosition =
+                    DigTunnelProjection.FloorWorldPosition(cellId);
                 visual.transform.localScale = new Vector3(
                     0.94f,
-                    DigTunnelProjection.FloorDepth,
-                    DigTunnelProjection.FloorThickness);
+                    DigTunnelProjection.FloorThickness,
+                    DigTunnelProjection.FloorDepth);
             }
             else
             {
-                visual.transform.localPosition = new Vector3(cell.X, 0f, cell.Y);
+                visual.transform.localPosition = DigTunnelProjection.CellWorldPosition(cellId);
                 visual.transform.localScale = Vector3.zero;
             }
 
@@ -242,7 +229,7 @@ namespace Dig.Unity
 
         private void ApplyTunnelCutaway()
         {
-            foreach (KeyValuePair<Vector2Int, DigCellVisual> pair in _cells)
+            foreach (KeyValuePair<CellId, DigCellVisual> pair in _cells)
             {
                 bool renderable = pair.Value.Model.IsSolid
                     || _walkSurfaceCells.Contains(pair.Key);
@@ -260,7 +247,7 @@ namespace Dig.Unity
         private void RemoveMissingCells()
         {
             _removedCells.Clear();
-            foreach (KeyValuePair<Vector2Int, DigCellVisual> pair in _cells)
+            foreach (KeyValuePair<CellId, DigCellVisual> pair in _cells)
             {
                 if (!_visibleCells.Contains(pair.Key))
                 {
@@ -268,7 +255,7 @@ namespace Dig.Unity
                 }
             }
 
-            foreach (Vector2Int key in _removedCells)
+            foreach (CellId key in _removedCells)
             {
                 DigCellVisual visual = _cells[key];
                 if (_selected == visual)
@@ -284,7 +271,7 @@ namespace Dig.Unity
         private void RemoveMissingChunks()
         {
             _removedChunks.Clear();
-            foreach (KeyValuePair<Vector2Int, Transform> pair in _chunks)
+            foreach (KeyValuePair<ChunkId, Transform> pair in _chunks)
             {
                 if (!_visibleChunks.Contains(pair.Key))
                 {
@@ -292,7 +279,7 @@ namespace Dig.Unity
                 }
             }
 
-            foreach (Vector2Int key in _removedChunks)
+            foreach (ChunkId key in _removedChunks)
             {
                 Transform root = _chunks[key];
                 _chunks.Remove(key);
@@ -300,11 +287,11 @@ namespace Dig.Unity
             }
         }
 
-        private void RestoreSelection(Vector2Int? selectedCoordinates)
+        private void RestoreSelection(CellId? selectedCoordinates)
         {
             if (selectedCoordinates.HasValue)
             {
-                SelectAt(selectedCoordinates.Value.x, selectedCoordinates.Value.y);
+                SelectAt(selectedCoordinates.Value.X, selectedCoordinates.Value.Y, selectedCoordinates.Value.Z);
             }
         }
 

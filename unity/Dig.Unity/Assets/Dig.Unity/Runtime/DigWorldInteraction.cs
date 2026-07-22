@@ -143,7 +143,7 @@ namespace Dig.Unity
                 ContextPointerTarget target = new ContextPointerTarget(
                     ContextWorldTargetKind.Resident,
                     EntityId.Parse(agent.Model.Id),
-                    new CellId(agent.Model.CellX, agent.Model.CellY),
+                    new CellId(agent.Model.CellX, agent.Model.CellY, agent.Model.CellZ),
                     isAlive: agent.Model.IsAlive);
                 ApplyDecision(_inputRouter.Route(
                     Pointer(button, clickCount),
@@ -190,7 +190,7 @@ namespace Dig.Unity
                 ContextPointerTarget target = new ContextPointerTarget(
                     kind,
                     EntityId.Parse(item.Model.StackId),
-                    new CellId(item.Model.CellX, item.Model.CellY),
+                    new CellId(item.Model.CellX, item.Model.CellY, item.Model.CellZ),
                     reachable: true,
                     supportsAltInteraction: item.Model.IsBuildingBox
                         ? item.Model.AvailableQuantity == 1
@@ -211,7 +211,7 @@ namespace Dig.Unity
                 ContextPointerTarget target = new ContextPointerTarget(
                     kind,
                     EntityId.Parse(building.Model.Id),
-                    new CellId(building.Model.OriginX, building.Model.OriginY));
+                    new CellId(building.Model.OriginX, building.Model.OriginY, building.Model.OriginZ));
                 ApplyDecision(_inputRouter.Route(
                     Pointer(button),
                     BuildState(button),

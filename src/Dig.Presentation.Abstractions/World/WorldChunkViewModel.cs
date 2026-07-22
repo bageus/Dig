@@ -11,6 +11,7 @@ public sealed class WorldChunkViewModel
     public WorldChunkViewModel(
         int x,
         int y,
+        int z,
         long version,
         IReadOnlyCollection<WorldCellViewModel> cells)
     {
@@ -26,15 +27,18 @@ public sealed class WorldChunkViewModel
 
         X = x;
         Y = y;
+        Z = z;
         Version = version;
         Cells = new ReadOnlyCollection<WorldCellViewModel>(cells
-            .OrderBy(cell => cell.Y)
+            .OrderBy(cell => cell.Z)
+            .ThenBy(cell => cell.Y)
             .ThenBy(cell => cell.X)
             .ToArray());
     }
 
     public int X { get; }
     public int Y { get; }
+    public int Z { get; }
     public long Version { get; }
     public IReadOnlyList<WorldCellViewModel> Cells { get; }
 }

@@ -113,13 +113,23 @@ public sealed class TerrainWorkRoutePlanner
         CellId target,
         NavigationSnapshot navigation)
     {
-        CellId[] adjacent =
+        List<CellId> adjacent = new List<CellId>
         {
-            new CellId(target.X - 1, target.Y),
-            new CellId(target.X + 1, target.Y),
-            new CellId(target.X, target.Y - 1),
-            new CellId(target.X, target.Y + 1),
+            new CellId(target.X - 1, target.Y, target.Z),
+            new CellId(target.X + 1, target.Y, target.Z),
+            new CellId(target.X, target.Y - 1, target.Z),
+            new CellId(target.X, target.Y + 1, target.Z),
         };
+        if (target.Z > CellId.MinimumDepth)
+        {
+            adjacent.Add(new CellId(target.X, target.Y, target.Z - 1));
+        }
+
+        if (target.Z < CellId.MaximumDepth)
+        {
+            adjacent.Add(new CellId(target.X, target.Y, target.Z + 1));
+        }
+
         return adjacent
             .Where(navigation.IsWalkable)
             .Distinct()

@@ -58,7 +58,9 @@ namespace Dig.Unity
 
             _startupStage = "creating residents";
             DigAgentSession agentSession = DigAgentSession.CreateDemo(
-                world, worldSession.Journal);
+                world,
+                worldSession.CreateTunnelNavigationVolume(),
+                worldSession.Journal);
             agentSession.InitializeHudSchedule(worldSession.Journal);
             IReadOnlyList<AgentViewModel> agents = agentSession.LoadView();
 
@@ -158,11 +160,6 @@ namespace Dig.Unity
             {
                 worldRenderer.SetProtectedCells(worldSession.ProtectedCells);
                 worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume);
-                worldRenderer.SetTerrainDepthVolume(
-                    agentSession.TunnelVolume,
-                    worldSession.SolidMaterialId.ToString(),
-                    worldSession.SolidHardness,
-                    Array.Empty<SpatialCellId>());
                 worldRenderer.SetTerrainDeposits(worldSession.LoadTerrainDeposits());
                 worldRenderer.Render(world);
             });

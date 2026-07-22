@@ -7,7 +7,7 @@ namespace Dig.Presentation.Navigation
 
 public readonly struct TunnelMovementTarget
 {
-    public TunnelMovementTarget(SpatialCellId cell, double offsetX)
+    public TunnelMovementTarget(CellId cell, double offsetX)
     {
         if (offsetX < -TunnelMovementTargetResolver.MaximumOffsetX
             || offsetX > TunnelMovementTargetResolver.MaximumOffsetX)
@@ -19,7 +19,7 @@ public readonly struct TunnelMovementTarget
         OffsetX = offsetX;
     }
 
-    public SpatialCellId Cell { get; }
+    public CellId Cell { get; }
 
     public double OffsetX { get; }
 }
@@ -29,7 +29,7 @@ public sealed class TunnelMovementTargetResolver
     public const double MaximumOffsetX = 0.44d;
 
     public TunnelMovementTarget Resolve(
-        IReadOnlyList<SpatialCellId> candidates,
+        IReadOnlyList<CellId> candidates,
         double logicalX,
         double logicalY)
     {
@@ -45,11 +45,11 @@ public sealed class TunnelMovementTargetResolver
                 nameof(candidates));
         }
 
-        SpatialCellId best = candidates[0];
+        CellId best = candidates[0];
         double bestDistance = DistanceSquared(best, logicalX, logicalY);
         for (int index = 1; index < candidates.Count; index++)
         {
-            SpatialCellId candidate = candidates[index];
+            CellId candidate = candidates[index];
             double distance = DistanceSquared(candidate, logicalX, logicalY);
             if (distance < bestDistance
                 || (Math.Abs(distance - bestDistance) < 0.000001d
@@ -67,7 +67,7 @@ public sealed class TunnelMovementTargetResolver
     }
 
     private static double DistanceSquared(
-        SpatialCellId cell,
+        CellId cell,
         double logicalX,
         double logicalY)
     {

@@ -31,7 +31,7 @@ A prefab entry must contain `DigVisualPrefabRoot`. Missing, duplicate or invalid
 The terrain presentation has four responsibilities:
 
 1. `WorldViewModel` supplies authoritative material and state for the front `Z=0` layer.
-2. `TerrainDepthVolumePresenter` projects the current deep solid-rock mask from `TunnelNavigationVolume`, explicit material facts and explicit excavation cells.
+2. `DigTerrainRenderSnapshotBuilder` consumes the complete four-layer `WorldViewModel`; no separate deep-rock projection owns material or openness.
 3. `DigTerrainRenderSnapshotBuilder` merges both immutable projections and derives dirty chunks.
 4. `DigTerrainChunkRenderer` creates collider-free meshes for the resulting `Z=0..3` chunks.
 
@@ -67,7 +67,7 @@ One cell may therefore contribute triangles to several material submeshes, but i
 
 `TerrainDepositPresenter` accepts explicit per-cell facts intended to come from the authoritative deposit model in #91:
 
-- `SpatialCellId`;
+- `CellId`;
 - stable deposit id;
 - revealed flag;
 - remaining and maximum yield;
@@ -167,15 +167,7 @@ Every dirty origin also marks its four `X/Y` neighbours and the two adjacent `Z`
 
 The deep projection intentionally receives an explicit material id and hardness from `DigWorldSession`. It never copies those facts from an arbitrary front cell.
 
-For the current demo, `TerrainDepthVolumePresenter` reproduces the previous rock mask:
-
-- `TunnelNavigationVolume.IsOpen` cells are empty;
-- explicit depth excavations and completed-room volume cells are empty;
-- cells above the demo surface are empty sky;
-- the generated natural-cave interior is empty;
-- every remaining `Z=1..3` cell is solid rock.
-
-This is a transitional presentation projection. `TunnelNavigationVolume` owns open topology, while the two-dimensional World and Job systems still own front terrain work. Full per-cell deep materials, damage, deposits, Jobs, reservations and save ownership remain part of #88.
+The terrain snapshot is built directly from authoritative World cells on `Z=0..3`. Material, damage, deposits, cutaway state and chunk invalidation retain exact Z. `TunnelNavigationVolume` is rebuilt from the same `WorldSnapshot`, so rendering and navigation cannot disagree about which deep cell is open.
 
 ## Terrain interaction boundary
 
@@ -191,7 +183,7 @@ The ordinary world surface has no cell picking.
 
 Objects, residents, jobs, buildings and items continue to use their own interaction components. Layered movement uses dedicated invisible movement surfaces rather than terrain chunks, visible cell floors or hidden front-cell proxies.
 
-Ordinary resident movement uses renderer-free `DigTunnelMovementSurface` colliders. Contiguous horizontal passages and vertical shafts are collapsed into surface runs, so the pointer is not aimed at a visible cell object. The hit point resolves to the nearest open hidden `SpatialCellId` for authoritative pathfinding and retains its clamped within-cell X offset for the final resident presentation position. Entering an excavation mode disables these movement surfaces and enables exact cell proxies; leaving excavation reverses that state.
+Ordinary resident movement uses renderer-free `DigTunnelMovementSurface` colliders. Contiguous horizontal passages and vertical shafts are collapsed into surface runs, so the pointer is not aimed at a visible cell object. The hit point resolves to the nearest open hidden `CellId` for authoritative pathfinding and retains its clamped within-cell X offset for the final resident presentation position. Entering an excavation mode disables these movement surfaces and enables exact cell proxies; leaving excavation reverses that state.
 
 ## Prefab contract
 

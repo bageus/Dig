@@ -77,7 +77,7 @@ namespace Dig.Unity
             }
 
             EnsureBuildingBoxPickupInitialized();
-            CellId start = new CellId(agent.CellX, agent.CellY);
+            CellId start = new CellId(agent.CellX, agent.CellY, agent.CellZ);
             PathResult path = _buildingBoxPickupPathfinder!.FindPath(
                 navigation,
                 new PathRequest(start, pickup.SourceCell, navigation.NavigationVersion));
@@ -152,13 +152,14 @@ namespace Dig.Unity
                 RouteCellViewModel[] cells = path.Path == null
                     ? Array.Empty<RouteCellViewModel>()
                     : path.Path.Cells
-                        .Select(cell => new RouteCellViewModel(cell.X, cell.Y))
+                        .Select(cell => new RouteCellViewModel(cell.X, cell.Y, cell.Z))
                         .ToArray();
                 routes.Add(new RouteViewModel(
                     pair.Key.ToString(),
                     job.AssignedAgentId.Value.ToString(),
                     pair.Value.Target.X,
                     pair.Value.Target.Y,
+                    pair.Value.Target.Z,
                     path.Succeeded,
                     "BuildingBox pickup: " + path.Diagnostics.Detail,
                     path.Path?.TotalCost ?? 0,

@@ -30,7 +30,7 @@ public sealed partial class WorldState
                 "The world snapshot does not contain every expected chunk."));
         }
 
-        CellState[] cells = new CellState[checked(snapshot.Size.Width * snapshot.Size.Height)];
+        CellState[] cells = new CellState[snapshot.Size.CellCount];
         bool[] assigned = new bool[cells.Length];
         Dictionary<ChunkId, long> chunkVersions = new Dictionary<ChunkId, long>();
         foreach (ChunkSnapshot chunk in snapshot.Chunks.OrderBy(item => item.Id))
@@ -50,7 +50,9 @@ public sealed partial class WorldState
                 bool belongsToChunk = cell.Id.X >= bounds.MinX
                     && cell.Id.X < bounds.MaxXExclusive
                     && cell.Id.Y >= bounds.MinY
-                    && cell.Id.Y < bounds.MaxYExclusive;
+                    && cell.Id.Y < bounds.MaxYExclusive
+                    && cell.Id.Z >= bounds.MinZ
+                    && cell.Id.Z < bounds.MaxZExclusive;
                 if (!snapshot.Size.Contains(cell.Id)
                     || !belongsToChunk
                     || !materials.Contains(cell.State.MaterialId))
@@ -70,7 +72,7 @@ public sealed partial class WorldState
                     return Result<WorldState>.Failure(WorldErrors.UnknownMaterial);
                 }
 
-                int index = checked((cell.Id.Y * snapshot.Size.Width) + cell.Id.X);
+                int index = checked((((cell.Id.Z * snapshot.Size.Height) + cell.Id.Y) * snapshot.Size.Width) + cell.Id.X);
                 if (assigned[index])
                 {
                     return Result<WorldState>.Failure(new DomainError(

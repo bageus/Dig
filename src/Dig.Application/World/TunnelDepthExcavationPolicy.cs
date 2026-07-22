@@ -18,16 +18,16 @@ public enum TunnelDepthExcavationFailureReason
 public sealed class TunnelDepthExcavationPlan
 {
     internal TunnelDepthExcavationPlan(
-        SpatialCellId source,
-        SpatialCellId target)
+        CellId source,
+        CellId target)
     {
         Source = source;
         Target = target;
     }
 
-    public SpatialCellId Source { get; }
+    public CellId Source { get; }
 
-    public SpatialCellId Target { get; }
+    public CellId Target { get; }
 }
 
 public sealed class TunnelDepthExcavationPlanResult
@@ -76,7 +76,7 @@ public sealed class TunnelDepthExcavationPolicy
 {
     public TunnelDepthExcavationPlanResult Plan(
         TunnelNavigationVolume volume,
-        SpatialCellId source)
+        CellId source)
     {
         if (volume is null)
         {
@@ -104,7 +104,7 @@ public sealed class TunnelDepthExcavationPolicy
                 "The tunnel already reaches the maximum depth of four cells.");
         }
 
-        SpatialCellId target = new SpatialCellId(
+        CellId target = new CellId(
             source.X,
             source.Y,
             source.Z + 1);

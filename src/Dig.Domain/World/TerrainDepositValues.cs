@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Domain.Agents;
 using Dig.Domain.Content;
 using Dig.Domain.Inventory;
@@ -59,11 +61,53 @@ public sealed class TerrainDepositDefinition
     public SkillGrantProfile SkillGrantProfile { get; }
 }
 
+
+public sealed class TerrainDepositCatalog
+{
+    private readonly Dictionary<string, TerrainDepositDefinition> _definitions;
+
+    public TerrainDepositCatalog(IEnumerable<TerrainDepositDefinition> definitions)
+    {
+        if (definitions is null)
+        {
+            throw new ArgumentNullException(nameof(definitions));
+        }
+
+        TerrainDepositDefinition[] values = definitions.ToArray();
+        if (values.Length == 0
+            || values.Any(value => value is null)
+            || values.Select(value => value.Id)
+                .Distinct(StringComparer.Ordinal)
+                .Count() != values.Length)
+        {
+            throw new ArgumentException(
+                "Deposit definitions must be non-empty and unique.",
+                nameof(definitions));
+        }
+
+        _definitions = values.ToDictionary(
+            value => value.Id,
+            StringComparer.Ordinal);
+    }
+
+    public TerrainDepositDefinition? Get(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return null;
+        }
+
+        return _definitions.TryGetValue(id, out TerrainDepositDefinition? value)
+            ? value
+            : null;
+    }
+}
+
 public sealed class TerrainDepositInstance
 {
     public TerrainDepositInstance(
         string instanceId,
-        SpatialCellId cell,
+        CellId cell,
         TerrainDepositDefinition definition,
         bool isRevealed,
         int remainingYield,
@@ -94,7 +138,7 @@ public sealed class TerrainDepositInstance
 
     public string InstanceId { get; }
 
-    public SpatialCellId Cell { get; }
+    public CellId Cell { get; }
 
     public TerrainDepositDefinition Definition { get; }
 

@@ -29,7 +29,7 @@ public enum TerrainDepositConnection : byte
 public sealed class TerrainDepositCellViewModel
 {
     public TerrainDepositCellViewModel(
-        SpatialCellId cell,
+        CellId cell,
         TerrainDepositVisualState state,
         string visibleDepositId,
         byte damageBand,
@@ -82,7 +82,7 @@ public sealed class TerrainDepositCellViewModel
         SourceVersion = sourceVersion;
     }
 
-    public SpatialCellId Cell { get; }
+    public CellId Cell { get; }
 
     public TerrainDepositVisualState State { get; }
 

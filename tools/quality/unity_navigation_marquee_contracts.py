@@ -194,8 +194,8 @@ def check_navigation_and_marquee_contracts(
         texts.get(agent_session, ""),
         "front navigation synchronization and deferred depth commit",
         (
-            "SynchronizeFrontNavigation",
-            "WithSynchronizedFrontLayer",
+            "SynchronizeNavigation",
+            "TunnelNavigationVolume.FromWorldSnapshot",
             "PlanTunnelDepthExcavation",
             "CompleteTunnelDepthExcavation",
         ),

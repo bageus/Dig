@@ -54,7 +54,7 @@ public sealed partial class WorldState : AggregateRoot
         }
 
         ChunkLayout layout = new ChunkLayout(size, chunkSize);
-        int cellCount = checked(size.Width * size.Height);
+        int cellCount = size.CellCount;
         CellState initialState = new CellState(
             fillMaterialId,
             CellDesignation.None,
@@ -96,11 +96,14 @@ public sealed partial class WorldState : AggregateRoot
 
         CellBounds bounds = Layout.GetBounds(chunkId);
         List<CellSnapshot> cells = new List<CellSnapshot>();
-        for (int y = bounds.MinY; y < bounds.MaxYExclusive; y++)
+        for (int z = bounds.MinZ; z < bounds.MaxZExclusive; z++)
         {
-            for (int x = bounds.MinX; x < bounds.MaxXExclusive; x++)
+            for (int y = bounds.MinY; y < bounds.MaxYExclusive; y++)
             {
-                cells.Add(CreateCellSnapshot(new CellId(x, y)));
+                for (int x = bounds.MinX; x < bounds.MaxXExclusive; x++)
+                {
+                    cells.Add(CreateCellSnapshot(new CellId(x, y, z)));
+                }
             }
         }
 
@@ -151,11 +154,14 @@ public sealed partial class WorldState : AggregateRoot
     private IReadOnlyList<ChunkId> GetAllChunkIds()
     {
         List<ChunkId> chunks = new List<ChunkId>(Layout.ChunkCount);
-        for (int y = 0; y < Layout.ChunkCountY; y++)
+        for (int z = 0; z < Layout.ChunkCountZ; z++)
         {
-            for (int x = 0; x < Layout.ChunkCountX; x++)
+            for (int y = 0; y < Layout.ChunkCountY; y++)
             {
-                chunks.Add(new ChunkId(x, y));
+                for (int x = 0; x < Layout.ChunkCountX; x++)
+                {
+                    chunks.Add(new ChunkId(x, y, z));
+                }
             }
         }
 
@@ -164,12 +170,12 @@ public sealed partial class WorldState : AggregateRoot
 
     private int GetCellIndex(CellId cellId)
     {
-        return checked((cellId.Y * Size.Width) + cellId.X);
+        return checked((((cellId.Z * Size.Height) + cellId.Y) * Size.Width) + cellId.X);
     }
 
     private int GetChunkIndex(ChunkId chunkId)
     {
-        return checked((chunkId.Y * Layout.ChunkCountX) + chunkId.X);
+        return checked((((chunkId.Z * Layout.ChunkCountY) + chunkId.Y) * Layout.ChunkCountX) + chunkId.X);
     }
 
     private static IReadOnlyList<ChunkId> CreateReadOnlyChunks(

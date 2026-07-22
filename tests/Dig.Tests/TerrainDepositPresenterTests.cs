@@ -20,7 +20,7 @@ public sealed class TerrainDepositPresenterTests
             new[]
             {
                 Deposit(
-                    new SpatialCellId(2, 3, 1),
+                    new CellId(2, 3, 1),
                     "deposit.iron_ore",
                     revealed: false,
                     remaining: 4,
@@ -47,19 +47,19 @@ public sealed class TerrainDepositPresenterTests
             new[]
             {
                 Deposit(
-                    new SpatialCellId(1, 2, 1),
+                    new CellId(1, 2, 1),
                     "deposit.iron_ore",
                     revealed: true,
                     remaining: 9,
                     maximum: 9),
                 Deposit(
-                    new SpatialCellId(3, 2, 1),
+                    new CellId(3, 2, 1),
                     "deposit.gold_ore",
                     revealed: true,
                     remaining: 4,
                     maximum: 10),
                 Deposit(
-                    new SpatialCellId(5, 2, 1),
+                    new CellId(5, 2, 1),
                     "deposit.coal",
                     revealed: true,
                     remaining: 0,
@@ -84,7 +84,7 @@ public sealed class TerrainDepositPresenterTests
     public void Connections_include_only_visible_neighbours_with_the_same_id()
     {
         TerrainDepositPresenter presenter = new TerrainDepositPresenter();
-        SpatialCellId center = new SpatialCellId(3, 3, 2);
+        CellId center = new CellId(3, 3, 2);
 
         TerrainDepositVolumeViewModel result = presenter.Present(
             width: 8,
@@ -94,25 +94,25 @@ public sealed class TerrainDepositPresenterTests
             {
                 Deposit(center, "deposit.crystal_ore", true, 5, 5),
                 Deposit(
-                    new SpatialCellId(2, 3, 2),
+                    new CellId(2, 3, 2),
                     "deposit.crystal_ore",
                     true,
                     5,
                     5),
                 Deposit(
-                    new SpatialCellId(4, 3, 2),
+                    new CellId(4, 3, 2),
                     "deposit.gold_ore",
                     true,
                     5,
                     5),
                 Deposit(
-                    new SpatialCellId(3, 3, 3),
+                    new CellId(3, 3, 3),
                     "deposit.crystal_ore",
                     false,
                     5,
                     5),
                 Deposit(
-                    new SpatialCellId(3, 4, 2),
+                    new CellId(3, 4, 2),
                     "deposit.crystal_ore",
                     true,
                     2,
@@ -131,19 +131,19 @@ public sealed class TerrainDepositPresenterTests
     {
         TerrainDepositPresenter presenter = new TerrainDepositPresenter();
         TerrainDepositPresentationInput visible = Deposit(
-            new SpatialCellId(2, 2, 1),
+            new CellId(2, 2, 1),
             "deposit.stone",
             true,
             3,
             5);
         TerrainDepositPresentationInput hiddenIron = Deposit(
-            new SpatialCellId(4, 2, 1),
+            new CellId(4, 2, 1),
             "deposit.iron_ore",
             false,
             5,
             5);
         TerrainDepositPresentationInput hiddenGold = Deposit(
-            new SpatialCellId(4, 2, 1),
+            new CellId(4, 2, 1),
             "deposit.gold_ore",
             false,
             5,
@@ -176,7 +176,7 @@ public sealed class TerrainDepositPresenterTests
     {
         TerrainDepositPresenter presenter = new TerrainDepositPresenter();
         TerrainDepositPresentationInput deposit = Deposit(
-            new SpatialCellId(1, 1, 1),
+            new CellId(1, 1, 1),
             "deposit.coal",
             true,
             2,
@@ -194,7 +194,7 @@ public sealed class TerrainDepositPresenterTests
             new[]
             {
                 Deposit(
-                    new SpatialCellId(4, 1, 1),
+                    new CellId(4, 1, 1),
                     "deposit.coal",
                     true,
                     2,
@@ -217,7 +217,7 @@ public sealed class TerrainDepositPresenterTests
 
     private static TerrainDepositCellViewModel Find(
         TerrainDepositVolumeViewModel volume,
-        SpatialCellId cell)
+        CellId cell)
     {
         for (int index = 0; index < volume.Cells.Count; index++)
         {
@@ -231,7 +231,7 @@ public sealed class TerrainDepositPresenterTests
     }
 
     private static TerrainDepositPresentationInput Deposit(
-        SpatialCellId cell,
+        CellId cell,
         string id,
         bool revealed,
         int remaining,

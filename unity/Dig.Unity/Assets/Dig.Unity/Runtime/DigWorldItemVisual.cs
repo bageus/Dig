@@ -100,7 +100,10 @@ namespace Dig.Unity
             ItemStackVisualLayoutViewModel layout,
             DigItemVisualResolution resolution)
         {
-            transform.localPosition = new Vector3(Model.CellX, 0.22f, Model.CellY);
+            transform.localPosition = DigTunnelProjection.ResidentWorldPosition(
+                Model.CellX,
+                Model.CellY,
+                Model.CellZ) + new Vector3(0f, 0.22f, 0f);
             transform.localRotation = layout.ReservationState switch
             {
                 ItemReservationVisualState.Partial => Quaternion.Euler(0f, 0f, 3f),

@@ -69,7 +69,7 @@ namespace Dig.Unity
 
             for (int y = layout.SurfaceY; y <= layout.CaveFloorY; y++)
             {
-                CellId shaft = new CellId(layout.ShaftX, y);
+                CellId shaft = new CellId(layout.ShaftX, y, 0);
                 _plannedTunnelCells.Add(shaft);
                 _plannedVerticalTunnelCells.Add(shaft);
             }
@@ -78,7 +78,7 @@ namespace Dig.Unity
             int corridorMaxX = Math.Max(layout.ShaftX, layout.CaveMinX);
             for (int x = corridorMinX; x <= corridorMaxX; x++)
             {
-                CellId corridor = new CellId(x, layout.CaveFloorY);
+                CellId corridor = new CellId(x, layout.CaveFloorY, 0);
                 _plannedTunnelCells.Add(corridor);
                 if (x != layout.ShaftX)
                 {

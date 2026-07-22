@@ -17,20 +17,12 @@ public sealed class TunnelFrontNavigationSynchronizationTests
             new CellId(2, 2),
             new CellId(3, 2),
         });
-        SpatialCellId start = new SpatialCellId(1, 2, 0);
-        TunnelNavigationVolume volume = new TunnelNavigationVolume(
-            6,
-            6,
-            4,
-            new[] { start },
-            new SpatialCellId[0]);
-
-        TunnelNavigationVolume synchronized = volume.WithSynchronizedFrontLayer(
-            world,
-            new CellId[0]);
+        CellId start = new CellId(1, 2, 0);
+        TunnelNavigationVolume synchronized =
+            TunnelNavigationVolume.FromWorldSnapshot(world, new CellId[0]);
         TunnelPathResult route = synchronized.FindPath(
             start,
-            new SpatialCellId(3, 2, 0));
+            new CellId(3, 2, 0));
 
         Assert.True(route.Succeeded, route.Detail);
         Assert.Equal(3, route.Path!.Cells.Count);
@@ -42,19 +34,11 @@ public sealed class TunnelFrontNavigationSynchronizationTests
         CellId upper = new CellId(2, 2);
         CellId lower = new CellId(2, 3);
         WorldSnapshot world = CreateWorld(new[] { upper, lower });
-        TunnelNavigationVolume volume = new TunnelNavigationVolume(
-            6,
-            6,
-            4,
-            new SpatialCellId[0],
-            new SpatialCellId[0]);
-
-        TunnelNavigationVolume synchronized = volume.WithSynchronizedFrontLayer(
-            world,
-            new[] { upper, lower });
+        TunnelNavigationVolume synchronized =
+            TunnelNavigationVolume.FromWorldSnapshot(world, new[] { upper, lower });
         TunnelPathResult route = synchronized.FindPath(
-            new SpatialCellId(upper.X, upper.Y, 0),
-            new SpatialCellId(lower.X, lower.Y, 0));
+            new CellId(upper.X, upper.Y, 0),
+            new CellId(lower.X, lower.Y, 0));
 
         Assert.True(route.Succeeded, route.Detail);
         Assert.All(route.Path!.Cells, cell => Assert.True(synchronized.IsVerticalTunnel(cell)));
@@ -69,18 +53,10 @@ public sealed class TunnelFrontNavigationSynchronizationTests
             unsupported,
             new CellId(3, 3),
         });
-        TunnelNavigationVolume volume = new TunnelNavigationVolume(
-            6,
-            6,
-            4,
-            new SpatialCellId[0],
-            new SpatialCellId[0]);
+        TunnelNavigationVolume synchronized =
+            TunnelNavigationVolume.FromWorldSnapshot(world, new CellId[0]);
 
-        TunnelNavigationVolume synchronized = volume.WithSynchronizedFrontLayer(
-            world,
-            new CellId[0]);
-
-        Assert.False(synchronized.IsOpen(new SpatialCellId(unsupported.X, unsupported.Y, 0)));
+        Assert.False(synchronized.IsOpen(new CellId(unsupported.X, unsupported.Y, 0)));
     }
 
     private static WorldSnapshot CreateWorld(IReadOnlyCollection<CellId> airCells)

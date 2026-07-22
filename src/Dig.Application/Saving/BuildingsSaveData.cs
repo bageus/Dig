@@ -28,33 +28,39 @@ public sealed class BuildingSaveData
     public int OriginY { get; set; }
 
     [DataMember(Order = 5)]
-    public int Orientation { get; set; }
+    public int OriginZ { get; set; }
 
     [DataMember(Order = 6)]
-    public int WorkPositionX { get; set; }
+    public int Orientation { get; set; }
 
     [DataMember(Order = 7)]
-    public int WorkPositionY { get; set; }
+    public int WorkPositionX { get; set; }
 
     [DataMember(Order = 8)]
-    public int Status { get; set; }
+    public int WorkPositionY { get; set; }
 
     [DataMember(Order = 9)]
-    public int CompletedWork { get; set; }
+    public int WorkPositionZ { get; set; }
 
     [DataMember(Order = 10)]
-    public int Durability { get; set; }
+    public int Status { get; set; }
 
     [DataMember(Order = 11)]
+    public int CompletedWork { get; set; }
+
+    [DataMember(Order = 12)]
+    public int Durability { get; set; }
+
+    [DataMember(Order = 13)]
     public long Version { get; set; }
 
-    [DataMember(Order = 12, EmitDefaultValue = false)]
+    [DataMember(Order = 14, EmitDefaultValue = false)]
     public string? DiagnosticReason { get; set; }
 
-    [DataMember(Order = 13, EmitDefaultValue = false)]
+    [DataMember(Order = 15, EmitDefaultValue = false)]
     public BuildingBoxPlanSaveData? BoxPlan { get; set; }
 
-    [DataMember(Order = 14, EmitDefaultValue = false)]
+    [DataMember(Order = 16, EmitDefaultValue = false)]
     public BuildingPackingPlanSaveData? PackingPlan { get; set; }
 }
 

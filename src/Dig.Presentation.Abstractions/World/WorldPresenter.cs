@@ -29,6 +29,7 @@ public sealed class WorldPresenter
         return new WorldViewModel(
             snapshot.Size.Width,
             snapshot.Size.Height,
+            snapshot.Size.Depth,
             snapshot.ChunkSize,
             snapshot.Version,
             chunks);
@@ -42,6 +43,7 @@ public sealed class WorldPresenter
             cells.Add(new WorldCellViewModel(
                 cell.Id.X,
                 cell.Id.Y,
+                cell.Id.Z,
                 cell.State.MaterialId.ToString(),
                 cell.IsSolid,
                 cell.State.IsExplored,
@@ -55,6 +57,7 @@ public sealed class WorldPresenter
         return new WorldChunkViewModel(
             chunk.Id.X,
             chunk.Id.Y,
+            chunk.Id.Z,
             chunk.ChunkVersion,
             cells);
     }

@@ -112,7 +112,7 @@ namespace Dig.Unity
             ItemStackSnapshot? box = _buildingInventoryRepository!.Get().GetStack(
                 assembly.SourceStackId);
             CellId target = ResolveBuildingBoxAssemblyTarget(job, assembly, box);
-            CellId start = new CellId(agent.CellX, agent.CellY);
+            CellId start = new CellId(agent.CellX, agent.CellY, agent.CellZ);
             PathResult path = _buildingBoxAssemblyPathfinder!.FindPath(
                 navigation,
                 new PathRequest(start, target, navigation.NavigationVersion));
@@ -155,7 +155,7 @@ namespace Dig.Unity
                         job,
                         building,
                         box,
-                        new CellId(agent.CellX, agent.CellY));
+                        new CellId(agent.CellX, agent.CellY, agent.CellZ));
                 if (evaluated.IsFailure)
                 {
                     return Result.Failure(evaluated.Error!);
@@ -164,7 +164,7 @@ namespace Dig.Unity
                 Result executed = ExecuteBuildingBoxAssemblyStep(
                     evaluated.Value,
                     assembly,
-                    new CellId(agent.CellX, agent.CellY),
+                    new CellId(agent.CellX, agent.CellY, agent.CellZ),
                     tick);
                 if (executed.IsFailure)
                 {
@@ -198,13 +198,14 @@ namespace Dig.Unity
                 RouteCellViewModel[] cells = path.Path == null
                     ? Array.Empty<RouteCellViewModel>()
                     : path.Path.Cells
-                        .Select(cell => new RouteCellViewModel(cell.X, cell.Y))
+                        .Select(cell => new RouteCellViewModel(cell.X, cell.Y, cell.Z))
                         .ToArray();
                 routes.Add(new RouteViewModel(
                     pair.Key.ToString(),
                     job.AssignedAgentId.Value.ToString(),
                     pair.Value.Target.X,
                     pair.Value.Target.Y,
+                    pair.Value.Target.Z,
                     path.Succeeded,
                     "BuildingBox assembly: " + path.Diagnostics.Detail,
                     path.Path?.TotalCost ?? 0,

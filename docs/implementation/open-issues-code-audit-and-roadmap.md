@@ -176,7 +176,7 @@
 Реализовано:
 
 - `SpatialDigJobDefinition`;
-- authoritative `SpatialCellId` target и work cell;
+- authoritative `CellId` target и work cell;
 - Z-aware Position и Designation reservations;
 - стадии `TravelToTarget -> PerformWork -> Finalize`;
 - изменение terrain только после завершения работы;
@@ -284,7 +284,7 @@ Domain, Application, Save/Load, hauling и visual attachments реализова
 - удалён destination teleport;
 - удалена decorative whole-route playback model;
 - один authoritative manual spatial order на resident;
-- один adjacent open `SpatialCellId` за simulation tick;
+- один adjacent open `CellId` за simulation tick;
 - player movement interrupt active work;
 - manual order имеет приоритет над work/autonomy;
 - local failure не отключает global simulation;
@@ -311,7 +311,7 @@ Issues: **#87, #88, #89, #90, #91, #92, #93, #94, #109, #110**.
 
 Что уже есть:
 
-- `SpatialCellId` и Z0–Z3 movement/digging slice;
+- `CellId` и Z0–Z3 movement/digging slice;
 - cave-room preview foundation;
 - deterministic sparse deposits;
 - deposit depletion;
@@ -321,7 +321,7 @@ Issues: **#87, #88, #89, #90, #91, #92, #93, #94, #109, #110**.
 
 Главные пробелы:
 
-- одновременно существуют 2D `CellId` и spatial `SpatialCellId` paths;
+- одновременно существуют 2D `CellId` и spatial `CellId` paths;
 - World, Inventory, Buildings, Jobs, Save/Load и Presentation ещё не используют одну authoritative XYZ model;
 - нет полного 3D template mask/provenance/save lifecycle;
 - нет полного depth-aware deposit persistence;

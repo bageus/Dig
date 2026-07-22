@@ -83,7 +83,7 @@ namespace Dig.Unity
             {
                 IReadOnlyDictionary<string, CellId> movement =
                     TerrainSession.PlanMovement(before);
-                IReadOnlyDictionary<string, SpatialCellId> spatialMovement =
+                IReadOnlyDictionary<string, CellId> spatialMovement =
                     TerrainSession.PlanSpatialExcavationMovement(before);
                 AgentSession.SetSpatialWorkMovementTargets(spatialMovement);
                 result = AgentSession.Advance(movement);

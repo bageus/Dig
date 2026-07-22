@@ -6,14 +6,14 @@ namespace Dig.Unity
     [DisallowMultipleComponent]
     public sealed class DigTunnelCellVisual : MonoBehaviour
     {
-        public SpatialCellId Cell { get; private set; }
+        public CellId Cell { get; private set; }
 
         public bool IsVerticalTunnel { get; private set; }
 
         public bool CanExcavateDepth { get; private set; }
 
         internal void Configure(
-            SpatialCellId cell,
+            CellId cell,
             bool isVerticalTunnel,
             bool canExcavateDepth = false)
         {

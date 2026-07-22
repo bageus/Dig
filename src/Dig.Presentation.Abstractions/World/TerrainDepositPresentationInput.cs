@@ -7,7 +7,7 @@ namespace Dig.Presentation.World
 public sealed class TerrainDepositPresentationInput
 {
     public TerrainDepositPresentationInput(
-        SpatialCellId cell,
+        CellId cell,
         string depositId,
         bool isRevealed,
         int remainingYield,
@@ -44,7 +44,7 @@ public sealed class TerrainDepositPresentationInput
         Version = version;
     }
 
-    public SpatialCellId Cell { get; }
+    public CellId Cell { get; }
 
     public string DepositId { get; }
 

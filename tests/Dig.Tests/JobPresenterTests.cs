@@ -36,7 +36,7 @@ public sealed class JobPresenterTests
         Assert.Equal(JobStageKind.None.ToString(), view.Stage);
         Assert.Null(view.AssignedAgentId);
         Assert.Contains("path_missing", view.Reason!);
-        Assert.Equal("Dig:5,6", view.Target);
+        Assert.Equal("Dig:5,6,0", view.Target);
     }
 }
 }

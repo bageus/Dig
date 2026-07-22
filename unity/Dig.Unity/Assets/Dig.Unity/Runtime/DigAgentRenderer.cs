@@ -136,7 +136,7 @@ namespace Dig.Unity
 
         internal void SetFreeformDestination(
             string agentId,
-            Dig.Domain.World.SpatialCellId cell,
+            Dig.Domain.World.CellId cell,
             float offsetX)
         {
             if (string.IsNullOrWhiteSpace(agentId))

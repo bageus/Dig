@@ -165,8 +165,8 @@ public sealed class WorldStateTests
 
         Assert.NotEmpty(drained);
         Assert.Empty(world.PeekDirtyChunks());
-        Assert.Equal(6, snapshot.Chunks.Count);
-        Assert.Equal(60, snapshot.Chunks.Sum(chunk => chunk.Cells.Count));
+        Assert.Equal(24, snapshot.Chunks.Count);
+        Assert.Equal(240, snapshot.Chunks.Sum(chunk => chunk.Cells.Count));
         Assert.Equal(world.Version, snapshot.Version);
     }
 

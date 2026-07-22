@@ -12,9 +12,9 @@ public sealed class SpatialDigJobTests
     public void Spatial_reservations_distinguish_equal_projection_at_different_depths()
     {
         ReservationKey front = ReservationKey.ForDesignation(
-            new SpatialCellId(4, 5, 0));
+            new CellId(4, 5, 0));
         ReservationKey deep = ReservationKey.ForDesignation(
-            new SpatialCellId(4, 5, 1));
+            new CellId(4, 5, 1));
 
         Assert.NotEqual(front, deep);
         Assert.Equal("4,5,0", front.Value);
@@ -27,8 +27,8 @@ public sealed class SpatialDigJobTests
         JobSystem jobs = new JobSystem();
         EntityId jobId = Id("40000000000000000000000000000031");
         EntityId agentId = Id("10000000000000000000000000000031");
-        SpatialCellId work = new SpatialCellId(4, 5, 1);
-        SpatialCellId target = new SpatialCellId(4, 5, 2);
+        CellId work = new CellId(4, 5, 1);
+        CellId target = new CellId(4, 5, 2);
         SpatialDigJobDefinition definition = new SpatialDigJobDefinition(
             jobId,
             new SpatialDigJobTarget(target, work),
@@ -52,8 +52,8 @@ public sealed class SpatialDigJobTests
     public void Adjacent_face_is_required_for_spatial_work_position()
     {
         Assert.Throws<System.ArgumentException>(() => new SpatialDigJobTarget(
-            new SpatialCellId(4, 5, 2),
-            new SpatialCellId(5, 5, 1)));
+            new CellId(4, 5, 2),
+            new CellId(5, 5, 1)));
     }
 
     private static EntityId Id(string value)

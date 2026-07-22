@@ -95,7 +95,7 @@ namespace Dig.Unity
                 return;
             }
 
-            CellId entrance = new CellId(cell.Model.X, cell.Model.Y);
+            CellId entrance = new CellId(cell.Model.X, cell.Model.Y, cell.Model.Z);
             CaveRoomPlanResult result = _session!.PlanCaveRoom(
                 _caveRoomPreset.Value,
                 entrance);

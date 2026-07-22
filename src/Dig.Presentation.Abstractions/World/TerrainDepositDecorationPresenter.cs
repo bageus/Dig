@@ -86,7 +86,7 @@ namespace Dig.Presentation.World
             }
         }
 
-        private static ulong CalculateSeed(SpatialCellId cell, string depositId)
+        private static ulong CalculateSeed(CellId cell, string depositId)
         {
             const ulong offset = 1469598103934665603UL;
             const ulong prime = 1099511628211UL;

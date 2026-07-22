@@ -108,7 +108,7 @@ public sealed partial class SaveGameLoader
     private static CellId ParseCell(string value)
     {
         string[] parts = value.Split(',');
-        if (parts.Length != 2
+        if ((parts.Length != 2 && parts.Length != 3)
             || !int.TryParse(
                 parts[0],
                 NumberStyles.Integer,
@@ -118,12 +118,22 @@ public sealed partial class SaveGameLoader
                 parts[1],
                 NumberStyles.Integer,
                 CultureInfo.InvariantCulture,
-                out int y))
+                out int y)
+            || (parts.Length == 3
+                && !int.TryParse(
+                    parts[2],
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out _)))
         {
             throw new InvalidOperationException("Saved reservation cell is invalid.");
         }
 
-        return new CellId(x, y);
+        int z = parts.Length == 3
+            ? int.Parse(parts[2], CultureInfo.InvariantCulture)
+            : CellId.MinimumDepth;
+        return new CellId(x, y, z);
     }
+
 }
 }

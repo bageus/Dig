@@ -114,7 +114,7 @@ public sealed partial class TunnelNavigationVolume
             caveFloorY,
             naturalCaveHasBackWall);
 
-        HashSet<SpatialCellId> open = new HashSet<SpatialCellId>();
+        HashSet<CellId> open = new HashSet<CellId>();
         AddPlatform(
             open,
             surfaceMinX,
@@ -128,10 +128,10 @@ public sealed partial class TunnelNavigationVolume
             caveFloorY,
             depth);
 
-        HashSet<SpatialCellId> vertical = new HashSet<SpatialCellId>();
+        HashSet<CellId> vertical = new HashSet<CellId>();
         for (int y = surfaceY; y <= caveFloorY; y++)
         {
-            SpatialCellId shaft = new SpatialCellId(shaftX, y, nearestDepthZ);
+            CellId shaft = new CellId(shaftX, y, nearestDepthZ);
             open.Add(shaft);
             vertical.Add(shaft);
         }
@@ -140,7 +140,7 @@ public sealed partial class TunnelNavigationVolume
         int corridorMaxX = Math.Max(shaftX, caveMinX);
         for (int x = corridorMinX; x <= corridorMaxX; x++)
         {
-            open.Add(new SpatialCellId(x, caveFloorY, nearestDepthZ));
+            open.Add(new CellId(x, caveFloorY, nearestDepthZ));
         }
 
         return new TunnelNavigationVolume(
@@ -153,7 +153,7 @@ public sealed partial class TunnelNavigationVolume
     }
 
     private static void AddPlatform(
-        ISet<SpatialCellId> cells,
+        ISet<CellId> cells,
         int minX,
         int maxX,
         int y,
@@ -163,7 +163,7 @@ public sealed partial class TunnelNavigationVolume
         {
             for (int z = 0; z < depth; z++)
             {
-                cells.Add(new SpatialCellId(x, y, z));
+                cells.Add(new CellId(x, y, z));
             }
         }
     }

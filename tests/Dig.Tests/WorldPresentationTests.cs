@@ -21,15 +21,22 @@ public sealed class WorldPresentationTests
 
         Assert.Equal(4, view.Width);
         Assert.Equal(3, view.Height);
+        Assert.Equal(4, view.Depth);
         Assert.Equal(2, view.ChunkSize);
         Assert.Equal(world.Version, view.Version);
         Assert.Equal(
-            new[] { "0,0", "1,0", "0,1", "1,1" },
-            view.Chunks.Select(chunk => $"{chunk.X},{chunk.Y}").ToArray());
+            new[]
+            {
+                "0,0,0", "1,0,0", "0,1,0", "1,1,0",
+                "0,0,1", "1,0,1", "0,1,1", "1,1,1",
+                "0,0,2", "1,0,2", "0,1,2", "1,1,2",
+                "0,0,3", "1,0,3", "0,1,3", "1,1,3",
+            },
+            view.Chunks.Select(chunk => $"{chunk.X},{chunk.Y},{chunk.Z}").ToArray());
         Assert.All(
             view.Chunks,
             chunk => Assert.Equal(
-                chunk.Cells.OrderBy(cell => cell.Y).ThenBy(cell => cell.X).ToArray(),
+                chunk.Cells.OrderBy(cell => cell.Z).ThenBy(cell => cell.Y).ThenBy(cell => cell.X).ToArray(),
                 chunk.Cells.ToArray()));
     }
 
@@ -70,7 +77,7 @@ public sealed class WorldPresentationTests
         WorldViewModel current = presenter.Load();
         WorldCellViewModel cell = current.Chunks
             .SelectMany(chunk => chunk.Cells)
-            .Single(value => value.X == 2 && value.Y == 1);
+            .Single(value => value.X == 2 && value.Y == 1 && value.Z == 0);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(previousVersion + 1, current.Version);

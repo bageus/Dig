@@ -131,7 +131,7 @@ namespace Dig.Unity
                 return true;
             }
 
-            CellId start = new CellId(agent.CellX, agent.CellY);
+            CellId start = new CellId(agent.CellX, agent.CellY, agent.CellZ);
             PathResult path = _haulingPathfinder!.FindPath(
                 navigation,
                 new PathRequest(start, target.Value, navigation.NavigationVersion));
@@ -159,7 +159,8 @@ namespace Dig.Unity
             CellId? target = ResolveHaulingTarget(job, hauling);
             if (!target.HasValue
                 || agent.CellX != target.Value.X
-                || agent.CellY != target.Value.Y)
+                || agent.CellY != target.Value.Y
+                || agent.CellZ != target.Value.Z)
             {
                 return Result.Success();
             }
@@ -206,13 +207,14 @@ namespace Dig.Unity
                 RouteCellViewModel[] cells = path.Path == null
                     ? Array.Empty<RouteCellViewModel>()
                     : path.Path.Cells
-                        .Select(cell => new RouteCellViewModel(cell.X, cell.Y))
+                        .Select(cell => new RouteCellViewModel(cell.X, cell.Y, cell.Z))
                         .ToArray();
                 routes.Add(new RouteViewModel(
                     pair.Key.ToString(),
                     job.AssignedAgentId.Value.ToString(),
                     pair.Value.Target.X,
                     pair.Value.Target.Y,
+                    pair.Value.Target.Z,
                     path.Succeeded,
                     "Hauling: " + path.Diagnostics.Detail,
                     path.Path?.TotalCost ?? 0,
@@ -258,7 +260,7 @@ namespace Dig.Unity
                 .ThenBy(value => value.Y)
                 .ThenBy(value => value.X)
                 .First();
-            return new CellId(cell.X, cell.Y);
+            return new CellId(cell.X, cell.Y, cell.Z);
         }
 
         private static IReadOnlyList<JobCandidate> CreateHaulingCandidates(
@@ -270,7 +272,8 @@ namespace Dig.Unity
             {
                 AgentViewModel agent = agents[index];
                 int distance = Math.Abs(agent.CellX - source.X)
-                    + Math.Abs(agent.CellY - source.Y);
+                    + Math.Abs(agent.CellY - source.Y)
+                    + Math.Abs(agent.CellZ - source.Z);
                 result[index] = new JobCandidate(
                     EntityId.Parse(agent.Id),
                     skillLevel: 4_000 - (index * 200),

@@ -15,7 +15,7 @@ namespace Dig.Unity
         internal const float RouteHeight = 0.10f;
         internal const float RouteDepthOffset = 0.02f;
 
-        internal static Vector3 CellWorldPosition(SpatialCellId cell)
+        internal static Vector3 CellWorldPosition(CellId cell)
         {
             return new Vector3(
                 cell.X,
@@ -28,7 +28,7 @@ namespace Dig.Unity
             return -(cellY + 1f) + RockCellHalfExtent;
         }
 
-        internal static Vector3 FloorWorldPosition(SpatialCellId cell)
+        internal static Vector3 FloorWorldPosition(CellId cell)
         {
             return new Vector3(
                 cell.X,
@@ -50,7 +50,7 @@ namespace Dig.Unity
                 DepthOrigin + (cellZ * DepthSpacing) + ResidentDepthOffset);
         }
 
-        internal static Vector3 RouteWorldPosition(SpatialCellId cell)
+        internal static Vector3 RouteWorldPosition(CellId cell)
         {
             return new Vector3(
                 cell.X,

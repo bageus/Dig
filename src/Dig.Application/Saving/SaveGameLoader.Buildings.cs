@@ -53,7 +53,7 @@ public sealed partial class SaveGameLoader
             }
 
             BuildingOrientation orientation = (BuildingOrientation)saved.Orientation;
-            CellId origin = new CellId(saved.OriginX, saved.OriginY);
+            CellId origin = new CellId(saved.OriginX, saved.OriginY, saved.OriginZ);
             BuildingBoxPlanSnapshot? boxPlan = ParseBoxPlan(saved.BoxPlan);
             BuildingPackingPlanSnapshot? packingPlan = ParsePackingPlan(saved.PackingPlan);
             snapshots.Add(new BuildingSnapshot(
@@ -62,7 +62,7 @@ public sealed partial class SaveGameLoader
                 origin,
                 orientation,
                 definition.ResolveFootprint(origin, orientation),
-                new CellId(saved.WorkPositionX, saved.WorkPositionY),
+                new CellId(saved.WorkPositionX, saved.WorkPositionY, saved.WorkPositionZ),
                 (BuildingStatus)saved.Status,
                 saved.CompletedWork,
                 saved.Durability,

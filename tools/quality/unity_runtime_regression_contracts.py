@@ -71,7 +71,7 @@ def check_runtime_regression_contracts(
             "ReleaseJobAssignmentCommand", "RemoveAllRoutePlans",
             "IsAvailableForAutomaticWork")),
         (designations, "Dig candidate manual-order suppression", (
-            "IsAvailableForAutomaticWork(agent)", "agent.CellZ == 0")),
+            "IsAvailableForAutomaticWork(agent)", "Math.Abs(agent.CellZ - target.Z)")),
         (world_input, "resident commands before modal work input", (
             "TryHandlePriorityResidentPointerInput()",
             "TryHandleResidentMarqueeSelection()",

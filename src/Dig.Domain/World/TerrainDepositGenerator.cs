@@ -8,21 +8,21 @@ namespace Dig.Domain.World
 
 public sealed class TerrainDepositGenerator
 {
-    private static readonly SpatialCellId[] NeighbourOffsets =
+    private static readonly CellId[] NeighbourOffsets =
     {
-        new SpatialCellId(-1, 0, 0),
-        new SpatialCellId(1, 0, 0),
-        new SpatialCellId(0, -1, 0),
-        new SpatialCellId(0, 1, 0),
-        new SpatialCellId(0, 0, -1),
-        new SpatialCellId(0, 0, 1),
+        new CellId(-1, 0, 0),
+        new CellId(1, 0, 0),
+        new CellId(0, -1, 0),
+        new CellId(0, 1, 0),
+        new CellId(0, 0, -1),
+        new CellId(0, 0, 1),
     };
 
     public IReadOnlyList<TerrainDepositInstance> Generate(
         int width,
         int height,
         int depth,
-        IReadOnlyCollection<SpatialCellId> mineableCells,
+        IReadOnlyCollection<CellId> mineableCells,
         IReadOnlyList<TerrainDepositDefinition> definitions,
         TerrainDepositGenerationSettings settings)
     {
@@ -44,19 +44,19 @@ public sealed class TerrainDepositGenerator
             throw new ArgumentNullException(nameof(settings));
         }
 
-        SpatialCellId[] ordered = mineableCells.Distinct().OrderBy(cell => cell).ToArray();
-        HashSet<SpatialCellId> candidates = new HashSet<SpatialCellId>(ordered);
+        CellId[] ordered = mineableCells.Distinct().OrderBy(cell => cell).ToArray();
+        HashSet<CellId> candidates = new HashSet<CellId>(ordered);
         for (int index = 0; index < ordered.Length; index++)
         {
             ValidateCell(ordered[index], width, height, depth);
         }
 
         int totalWeight = definitions.Sum(value => value.GenerationWeight);
-        HashSet<SpatialCellId> assigned = new HashSet<SpatialCellId>();
+        HashSet<CellId> assigned = new HashSet<CellId>();
         List<TerrainDepositInstance> result = new List<TerrainDepositInstance>();
         for (int index = 0; index < ordered.Length; index++)
         {
-            SpatialCellId origin = ordered[index];
+            CellId origin = ordered[index];
             if (assigned.Contains(origin)
                 || Roll(settings, origin, salt: 1) % 1_000UL
                     >= (ulong)settings.DensityPermille)
@@ -84,19 +84,19 @@ public sealed class TerrainDepositGenerator
     }
 
     private static void GrowCluster(
-        SpatialCellId origin,
+        CellId origin,
         int desiredSize,
         TerrainDepositDefinition definition,
-        ISet<SpatialCellId> candidates,
-        ISet<SpatialCellId> assigned,
+        ISet<CellId> candidates,
+        ISet<CellId> assigned,
         TerrainDepositGenerationSettings settings,
         ICollection<TerrainDepositInstance> result)
     {
-        Queue<SpatialCellId> frontier = new Queue<SpatialCellId>();
+        Queue<CellId> frontier = new Queue<CellId>();
         frontier.Enqueue(origin);
         while (frontier.Count > 0 && desiredSize > 0)
         {
-            SpatialCellId cell = frontier.Dequeue();
+            CellId cell = frontier.Dequeue();
             if (!candidates.Contains(cell) || !assigned.Add(cell))
             {
                 continue;
@@ -116,9 +116,9 @@ public sealed class TerrainDepositGenerator
                 % (ulong)NeighbourOffsets.Length);
             for (int offset = 0; offset < NeighbourOffsets.Length; offset++)
             {
-                SpatialCellId delta = NeighbourOffsets[(start + offset)
+                CellId delta = NeighbourOffsets[(start + offset)
                     % NeighbourOffsets.Length];
-                frontier.Enqueue(new SpatialCellId(
+                frontier.Enqueue(new CellId(
                     cell.X + delta.X,
                     cell.Y + delta.Y,
                     cell.Z + delta.Z));
@@ -148,7 +148,7 @@ public sealed class TerrainDepositGenerator
 
     private static ulong Roll(
         TerrainDepositGenerationSettings settings,
-        SpatialCellId cell,
+        CellId cell,
         int salt)
     {
         const ulong offset = 1469598103934665603UL;
@@ -178,7 +178,7 @@ public sealed class TerrainDepositGenerator
     }
 
     private static void ValidateCell(
-        SpatialCellId cell,
+        CellId cell,
         int width,
         int height,
         int depth)

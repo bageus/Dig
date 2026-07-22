@@ -11,6 +11,7 @@ public sealed class WorldViewModel
     public WorldViewModel(
         int width,
         int height,
+        int depth,
         int chunkSize,
         long version,
         IReadOnlyCollection<WorldChunkViewModel> chunks)
@@ -23,6 +24,11 @@ public sealed class WorldViewModel
         if (height <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(height));
+        }
+
+        if (depth != Dig.Domain.World.WorldSize.RequiredDepth)
+        {
+            throw new ArgumentOutOfRangeException(nameof(depth));
         }
 
         if (chunkSize <= 0)
@@ -42,16 +48,19 @@ public sealed class WorldViewModel
 
         Width = width;
         Height = height;
+        Depth = depth;
         ChunkSize = chunkSize;
         Version = version;
         Chunks = new ReadOnlyCollection<WorldChunkViewModel>(chunks
-            .OrderBy(chunk => chunk.Y)
+            .OrderBy(chunk => chunk.Z)
+            .ThenBy(chunk => chunk.Y)
             .ThenBy(chunk => chunk.X)
             .ToArray());
     }
 
     public int Width { get; }
     public int Height { get; }
+    public int Depth { get; }
     public int ChunkSize { get; }
     public long Version { get; }
     public IReadOnlyList<WorldChunkViewModel> Chunks { get; }

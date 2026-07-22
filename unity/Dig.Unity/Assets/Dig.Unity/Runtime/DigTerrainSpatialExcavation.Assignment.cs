@@ -13,7 +13,7 @@ namespace Dig.Unity
         private const int SpatialManualAssignmentRadius = 4;
 
         private bool TryAssignSpatialExcavationGroup(
-            SpatialCellId workCell,
+            CellId workCell,
             IReadOnlyList<string> residentIds,
             long tick,
             out Result result)
@@ -156,7 +156,7 @@ namespace Dig.Unity
                 && !selectedResidents.Contains(job.AssignedAgentId.Value);
         }
 
-        private static int SpatialDistance(SpatialCellId left, SpatialCellId right)
+        private static int SpatialDistance(CellId left, CellId right)
         {
             return Math.Abs(left.X - right.X)
                 + Math.Abs(left.Y - right.Y)

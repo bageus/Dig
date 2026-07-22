@@ -178,6 +178,7 @@ public sealed class BuildingBoxPackingSaveTests
             new SaveVersionOneBuildingsMigration(),
             new SaveVersionTwoPackingMigration(),
             new SaveVersionThreeAgentSkillsMigration(),
+            new SaveVersionFourAuthoritativeCoordinatesMigration(),
         });
     }
 

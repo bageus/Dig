@@ -37,13 +37,13 @@ internal static class HeadlessAutomaticHaulingScenario
             firstStack,
             ore,
             quantity: 3,
-            location: ItemLocation.InWorld(new CellId(1, 4)),
+            location: ItemLocation.InWorld(new CellId(1, 4, 0)),
             tick: startTick));
         Require(inventory.AddStack(
             secondStack,
             ore,
             quantity: 3,
-            location: ItemLocation.InWorld(new CellId(2, 4)),
+            location: ItemLocation.InWorld(new CellId(2, 4, 0)),
             tick: startTick));
 
         StorageState storage = new StorageState();

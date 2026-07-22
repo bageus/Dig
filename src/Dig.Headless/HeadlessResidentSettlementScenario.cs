@@ -35,7 +35,7 @@ internal static class HeadlessResidentSettlementScenario
             mealStack,
             meal,
             quantity: 2,
-            location: ItemLocation.InWorld(new CellId(1, 5)),
+            location: ItemLocation.InWorld(new CellId(1, 5, 0)),
             tick: startTick));
 
         InMemoryAgentRepository agents = new InMemoryAgentRepository();
@@ -51,25 +51,25 @@ internal static class HeadlessResidentSettlementScenario
             Require(state.Entities.RegisterNew()),
             home,
             BuildingFacilityKind.Bed,
-            new CellId(2, 5));
+            new CellId(2, 5, 0));
         AddFacility(
             facilities,
             Require(state.Entities.RegisterNew()),
             home,
             BuildingFacilityKind.Bed,
-            new CellId(3, 5));
+            new CellId(3, 5, 0));
         AddFacility(
             facilities,
             Require(state.Entities.RegisterNew()),
             home,
             BuildingFacilityKind.Leisure,
-            new CellId(2, 6));
+            new CellId(2, 6, 0));
         AddFacility(
             facilities,
             Require(state.Entities.RegisterNew()),
             home,
             BuildingFacilityKind.Leisure,
-            new CellId(3, 6));
+            new CellId(3, 6, 0));
 
         InMemoryInventoryRepository inventoryRepository =
             new InMemoryInventoryRepository(inventory);

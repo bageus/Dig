@@ -128,7 +128,7 @@ def main() -> int:
         "internal void InitializeSimple(",
         "GetComponentsInChildren<Renderer>(includeInactive: true)",
         "transform.position = ToWorld(_currentVisualX, _currentY, _currentZ)",
-        "SetFreeformDestination(SpatialCellId cell, float offsetX)",
+        "SetFreeformDestination(CellId cell, float offsetX)",
     )))
     errors.extend(reject(visual_path, visual, (
         "Animator.Set", "ApplyRootMotion", "ICommand", "Handle(",

@@ -11,8 +11,8 @@ namespace Dig.Unity
     [DisallowMultipleComponent]
     public sealed class DigTunnelDemoRenderer : MonoBehaviour
     {
-        private readonly Dictionary<SpatialCellId, DigTunnelCellVisual> _cells =
-            new Dictionary<SpatialCellId, DigTunnelCellVisual>();
+        private readonly Dictionary<CellId, DigTunnelCellVisual> _cells =
+            new Dictionary<CellId, DigTunnelCellVisual>();
         private Transform? _cellProxyRoot;
         private Transform? _movementSurfaceRoot;
         private Transform? _routeRoot;
@@ -90,7 +90,7 @@ namespace Dig.Unity
         }
 
         internal bool TryGetCell(
-            SpatialCellId cell,
+            CellId cell,
             out DigTunnelCellVisual visual)
         {
             return _cells.TryGetValue(cell, out visual!);
@@ -114,7 +114,7 @@ namespace Dig.Unity
             _route.positionCount = path.Cells.Count;
             for (int index = 0; index < path.Cells.Count; index++)
             {
-                SpatialCellId cell = path.Cells[index];
+                CellId cell = path.Cells[index];
                 Vector3 position = DigTunnelProjection.RouteWorldPosition(cell);
                 if (index == path.Cells.Count - 1)
                 {
@@ -128,8 +128,8 @@ namespace Dig.Unity
         private void ReconcileCellProxies(TunnelNavigationVolume volume)
         {
             EnsureRoots();
-            HashSet<SpatialCellId> visible = new HashSet<SpatialCellId>(volume.Cells);
-            SpatialCellId[] removed = _cells.Keys
+            HashSet<CellId> visible = new HashSet<CellId>(volume.Cells);
+            CellId[] removed = _cells.Keys
                 .Where(cell => !visible.Contains(cell))
                 .ToArray();
             for (int index = 0; index < removed.Length; index++)
@@ -139,7 +139,7 @@ namespace Dig.Unity
                 Destroy(visual.gameObject);
             }
 
-            foreach (SpatialCellId cell in volume.Cells)
+            foreach (CellId cell in volume.Cells)
             {
                 if (_cells.ContainsKey(cell))
                 {
@@ -188,13 +188,13 @@ namespace Dig.Unity
         }
 
         private void CreateSurfaceRuns(
-            IEnumerable<SpatialCellId> orderedCells,
+            IEnumerable<CellId> orderedCells,
             DigTunnelMovementSurfaceKind kind,
-            Func<SpatialCellId, SpatialCellId, bool> sameLine,
-            Func<SpatialCellId, SpatialCellId, bool> consecutive)
+            Func<CellId, CellId, bool> sameLine,
+            Func<CellId, CellId, bool> consecutive)
         {
-            List<SpatialCellId> run = new List<SpatialCellId>();
-            foreach (SpatialCellId cell in orderedCells)
+            List<CellId> run = new List<CellId>();
+            foreach (CellId cell in orderedCells)
             {
                 if (run.Count > 0
                     && (!sameLine(run[run.Count - 1], cell)
@@ -214,10 +214,10 @@ namespace Dig.Unity
         }
 
         private void CreateMovementSurface(
-            IReadOnlyCollection<SpatialCellId> run,
+            IReadOnlyCollection<CellId> run,
             DigTunnelMovementSurfaceKind kind)
         {
-            SpatialCellId[] cells = run.OrderBy(cell => cell).ToArray();
+            CellId[] cells = run.OrderBy(cell => cell).ToArray();
             Bounds bounds = ResolveSurfaceBounds(cells, kind);
             GameObject surfaceObject = new GameObject(
                 $"{kind} movement surface {cells[0]}..{cells[cells.Length - 1]}");
@@ -232,7 +232,7 @@ namespace Dig.Unity
         }
 
         private static Bounds ResolveSurfaceBounds(
-            IReadOnlyList<SpatialCellId> cells,
+            IReadOnlyList<CellId> cells,
             DigTunnelMovementSurfaceKind kind)
         {
             Vector3 first = DigTunnelProjection.CellWorldPosition(cells[0]);
@@ -300,7 +300,7 @@ namespace Dig.Unity
             unchecked
             {
                 int hash = 17;
-                foreach (SpatialCellId cell in volume.Cells)
+                foreach (CellId cell in volume.Cells)
                 {
                     hash = (hash * 31) + cell.GetHashCode();
                     hash = (hash * 31) + (volume.IsVerticalTunnel(cell) ? 1 : 0);

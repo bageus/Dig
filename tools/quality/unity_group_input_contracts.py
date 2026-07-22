@@ -117,7 +117,7 @@ def check_tunnel_and_group_contracts(
             "SelectedAgentIds",
             "MoveResidentsThroughTunnel",
             "residentIds.Count",
-            "SpatialCellId destination",
+            "CellId destination",
         ),
     ))
 
@@ -224,15 +224,15 @@ def check_tunnel_and_group_contracts(
         world_renderer_path,
         texts.get(world_renderer_path, ""),
         "terrain cutaway",
-        ("SetTunnelCutaway", "CaveCeilingY", "ApplyTunnelCutaway();"),
+        ("SetTunnelCutaway", "foreach (CellId cell in volume.Cells)", "ApplyTunnelCutaway();"),
     ))
     errors.extend(require_fragments(
         session_path,
         texts.get(session_path, ""),
         "platform resident composition and manual movement priority",
         (
-            "TunnelNavigationVolume.CreateDemo",
-            "initialPosition: new SpatialCellId",
+            "TunnelDemoLayout layout = tunnelVolume.DemoLayout",
+            "initialPosition: new CellId",
             "TryAdvanceManualTunnelMovement(agent",
             "_tunnelVolume != null",
         ),

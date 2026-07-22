@@ -70,19 +70,23 @@ public sealed partial class SaveGameLoader
     private static CellId ParseCell(ItemLocationSaveData data)
     {
         EnsureNoResidentSlot(data);
-        if (!data.CellX.HasValue || !data.CellY.HasValue || data.OwnerId is not null)
+        if (!data.CellX.HasValue
+            || !data.CellY.HasValue
+            || !data.CellZ.HasValue
+            || data.OwnerId is not null)
         {
             throw new InvalidOperationException("World item location is malformed.");
         }
 
-        return new CellId(data.CellX.Value, data.CellY.Value);
+        return new CellId(data.CellX.Value, data.CellY.Value, data.CellZ.Value);
     }
 
     private static string RequireOwner(ItemLocationSaveData data)
     {
         if (string.IsNullOrWhiteSpace(data.OwnerId)
             || data.CellX.HasValue
-            || data.CellY.HasValue)
+            || data.CellY.HasValue
+            || data.CellZ.HasValue)
         {
             throw new InvalidOperationException("Owned item location is malformed.");
         }

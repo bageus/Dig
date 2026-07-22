@@ -14,7 +14,7 @@ namespace Dig.Unity
 
 internal readonly struct SpatialExcavationCommit
 {
-    internal SpatialExcavationCommit(EntityId jobId, SpatialCellId target)
+    internal SpatialExcavationCommit(EntityId jobId, CellId target)
     {
         JobId = jobId;
         Target = target;
@@ -22,14 +22,14 @@ internal readonly struct SpatialExcavationCommit
 
     internal EntityId JobId { get; }
 
-    internal SpatialCellId Target { get; }
+    internal CellId Target { get; }
 }
 
 internal sealed partial class DigTerrainWorkSession
 {
     private const int SpatialExcavationWorkCadence = 3;
-    private readonly Dictionary<SpatialCellId, EntityId> _spatialDigJobs =
-        new Dictionary<SpatialCellId, EntityId>();
+    private readonly Dictionary<CellId, EntityId> _spatialDigJobs =
+        new Dictionary<CellId, EntityId>();
 
     internal Result DesignateSpatialExcavation(
         TunnelDepthExcavationPlan plan,
@@ -79,7 +79,7 @@ internal sealed partial class DigTerrainWorkSession
     }
 
     internal bool TryAssignSpatialExcavation(
-        SpatialCellId workCell,
+        CellId workCell,
         IReadOnlyList<string> residentIds,
         long tick,
         out Result result)
@@ -91,14 +91,14 @@ internal sealed partial class DigTerrainWorkSession
             out result);
     }
 
-    internal IReadOnlyDictionary<string, SpatialCellId> PlanSpatialExcavationMovement(
+    internal IReadOnlyDictionary<string, CellId> PlanSpatialExcavationMovement(
         IReadOnlyList<AgentViewModel> agents)
     {
         Dictionary<string, AgentViewModel> byId = agents.ToDictionary(
             value => value.Id,
             StringComparer.Ordinal);
-        Dictionary<string, SpatialCellId> result =
-            new Dictionary<string, SpatialCellId>(StringComparer.Ordinal);
+        Dictionary<string, CellId> result =
+            new Dictionary<string, CellId>(StringComparer.Ordinal);
         foreach (JobSnapshot job in LoadActiveSpatialJobs())
         {
             if (!job.AssignedAgentId.HasValue)
@@ -112,7 +112,7 @@ internal sealed partial class DigTerrainWorkSession
                 continue;
             }
 
-            SpatialCellId work = ((SpatialDigJobDefinition)job.Definition).Target.WorkCell;
+            CellId work = ((SpatialDigJobDefinition)job.Definition).Target.WorkCell;
             if (agent.CellX != work.X || agent.CellY != work.Y || agent.CellZ != work.Z)
             {
                 result[residentId] = work;
@@ -141,7 +141,7 @@ internal sealed partial class DigTerrainWorkSession
                 continue;
             }
 
-            SpatialCellId work = ((SpatialDigJobDefinition)snapshot.Definition)
+            CellId work = ((SpatialDigJobDefinition)snapshot.Definition)
                 .Target.WorkCell;
             if (agent.CellX != work.X || agent.CellY != work.Y || agent.CellZ != work.Z)
             {
@@ -225,7 +225,7 @@ internal sealed partial class DigTerrainWorkSession
     }
 
     private bool TryGetActiveSpatialJob(
-        SpatialCellId target,
+        CellId target,
         out JobSnapshot? job)
     {
         job = null;
@@ -240,7 +240,7 @@ internal sealed partial class DigTerrainWorkSession
 
     private static IReadOnlyList<JobCandidate> CreateSpatialCandidates(
         IReadOnlyList<AgentViewModel> agents,
-        SpatialCellId workCell)
+        CellId workCell)
     {
         return agents.Select((agent, index) => new JobCandidate(
                 EntityId.Parse(agent.Id),

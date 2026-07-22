@@ -39,6 +39,7 @@ public sealed class DigJobDefinitionSaveCodec : IJobDefinitionSaveCodec
             {
                 Property("target.x", dig.Target.CellId.X),
                 Property("target.y", dig.Target.CellId.Y),
+                Property("target.z", dig.Target.CellId.Z),
             },
         };
     }
@@ -49,12 +50,13 @@ public sealed class DigJobDefinitionSaveCodec : IJobDefinitionSaveCodec
             .ToDictionary(item => item.Key, item => item.Value, StringComparer.Ordinal);
         int x = ParseInt(properties, "target.x");
         int y = ParseInt(properties, "target.y");
+        int z = ParseInt(properties, "target.z");
         EntityId[] dependencies = data.Dependencies
             .Select(EntityId.Parse)
             .ToArray();
         return new DigJobDefinition(
             EntityId.Parse(data.JobId),
-            new DigJobTarget(new CellId(x, y)),
+            new DigJobTarget(new CellId(x, y, z)),
             data.Priority,
             data.CreatedTick,
             new JobRetryPolicy(data.MaximumRetries, data.RetryDelayTicks),

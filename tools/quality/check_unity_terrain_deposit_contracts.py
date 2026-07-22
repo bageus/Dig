@@ -47,7 +47,7 @@ def main() -> int:
         input_path,
         input_text,
         (
-            "SpatialCellId cell",
+            "CellId cell",
             "string depositId",
             "bool isRevealed",
             "int remainingYield",

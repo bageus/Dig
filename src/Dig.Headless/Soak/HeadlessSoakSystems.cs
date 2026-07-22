@@ -83,7 +83,8 @@ internal sealed class SoakResourceSpawnerSystem : ISimulationSystem
         int quantity = 5;
         CellId location = new CellId(
             x: checked((int)(context.Tick % 16)),
-            y: checked(1 + (int)((context.Tick / 16) % 8)));
+            y: checked(1 + (int)((context.Tick / 16) % 8)),
+            z: 0);
         InventoryState inventory = _inventory.Get();
         Result added = inventory.AddStack(
             created.Value,

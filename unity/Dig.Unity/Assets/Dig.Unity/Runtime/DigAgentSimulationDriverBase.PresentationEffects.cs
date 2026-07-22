@@ -6,7 +6,7 @@ namespace Dig.Unity
 {
 public abstract partial class DigAgentSimulationDriverBase
 {
-    private void PresentSpatialExcavationEffect(SpatialCellId cell, long tick)
+    private void PresentSpatialExcavationEffect(CellId cell, long tick)
     {
         if (EffectRuntime == null) return;
         Vector3 position = DigTunnelProjection.CellWorldPosition(cell);

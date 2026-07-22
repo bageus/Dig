@@ -18,7 +18,6 @@ def check_cave_room_runtime_contracts(
     room_floor = runtime_root / "DigCaveRoomFloorRenderer.cs"
     tunnel_renderer = runtime_root / "DigTunnelDemoRenderer.cs"
     world_renderer = runtime_root / "DigWorldRenderer.cs"
-    depth_adapter = runtime_root / "DigWorldRenderer.DepthTerrain.cs"
     agent_session = runtime_root / "DigAgentSession.TunnelTopology.cs"
     bootstrap = runtime_root / "DigUnityBootstrap.cs"
     errors: list[str] = []
@@ -76,17 +75,18 @@ def check_cave_room_runtime_contracts(
         "ordinary player room and spatial depth runtime activation",
         (
             "_activatedCaveRooms",
-            "_terrainExcavatedVolume",
             "DesignateTunnelDepth",
             "DesignateSpatialExcavation(",
             "CompleteSpatialExcavation",
-            "CompleteTunnelDepthExcavation(commit.Target)",
+            "WorldSession!.ExcavateSpatialCell(commit.Target)",
+            "CompleteTunnelDepthExcavation(",
             "CompleteSpatialExcavationJob(",
             "TunnelDepthExcavations",
             "RefreshCaveRoomRuntime",
-            "RefreshTerrainDepthVolume",
+            "WorldSession!.ActivateCaveRoomVolume(plan)",
+            "AgentSession.SynchronizeNavigation(",
+            "WorldRenderer.Render(WorldSession!.LoadView())",
             "CreateFloorCells",
-            "ExpandTunnelVolume",
             "AddRoomFloor",
         ),
     ))
@@ -145,28 +145,22 @@ def check_cave_room_runtime_contracts(
     errors.extend(require_fragments(
         world_renderer,
         texts.get(world_renderer, ""),
-        "natural cave cutaway preserves the protected Z0 ceiling",
+        "exact XYZ tunnel cutaway",
         (
-            "for (int x = layout.CaveMinX; x <= layout.CaveMaxX; x++)",
-            "for (int y = layout.CaveCeilingY + 1; y <= layout.CaveFloorY; y++)",
-            "_tunnelCutaway.Add(new Vector2Int(x, y));",
+            "foreach (CellId cell in volume.Cells)",
+            "_tunnelCutaway.Add(cell);",
+            "DigTunnelProjection.CellWorldPosition(cellId)",
         ),
-    ))
-    errors.extend(require_fragments(
-        depth_adapter,
-        texts.get(depth_adapter, ""),
-        "dynamic cave room terrain meshes",
-        ("SetTerrainDepthVolume", "TerrainDepthVolumePresenter", "RefreshChunkedTerrain();"),
     ))
     errors.extend(require_fragments(
         agent_session,
         texts.get(agent_session, ""),
         "dynamic cave room navigation and deferred depth opening",
         (
-            "ExpandTunnelVolume",
-            "WithAdditionalOpenCells",
             "_tunnelJournal",
             "CompleteTunnelDepthExcavation",
+            "SynchronizeNavigation",
+            "TunnelNavigationVolume.FromWorldSnapshot",
         ),
     ))
     errors.extend(require_fragments(
@@ -177,7 +171,7 @@ def check_cave_room_runtime_contracts(
             "DigCaveRoomFloorRenderer",
             "SetCaveRoomRenderers",
             "caveRoomFloorRenderer",
-            "worldRenderer.SetTerrainDepthVolume(",
+            "worldRenderer.Render(world)",
         ),
     ))
     return errors

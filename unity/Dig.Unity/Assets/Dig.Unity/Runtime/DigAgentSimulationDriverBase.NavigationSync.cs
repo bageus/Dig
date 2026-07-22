@@ -26,7 +26,7 @@ namespace Dig.Unity
                 return;
             }
 
-            AgentSession.SynchronizeFrontNavigation(
+            AgentSession.SynchronizeNavigation(
                 WorldSession.LoadSnapshot(),
                 WorldSession.PlannedVerticalTunnelCells);
         }

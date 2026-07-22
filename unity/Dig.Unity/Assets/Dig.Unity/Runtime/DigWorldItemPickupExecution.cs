@@ -30,7 +30,7 @@ namespace Dig.Unity
             }
 
             EnsureWorldItemPickupInitialized();
-            CellId start = new CellId(agent.CellX, agent.CellY);
+            CellId start = new CellId(agent.CellX, agent.CellY, agent.CellZ);
             PathResult path = _worldItemPickupPathfinder!.FindPath(
                 navigation,
                 new PathRequest(start, pickup.SourceCell, navigation.NavigationVersion));
@@ -72,7 +72,9 @@ namespace Dig.Unity
                     continue;
                 }
 
-                if (agent.CellX != pickup.SourceCell.X || agent.CellY != pickup.SourceCell.Y)
+                if (agent.CellX != pickup.SourceCell.X
+                    || agent.CellY != pickup.SourceCell.Y
+                    || agent.CellZ != pickup.SourceCell.Z)
                 {
                     continue;
                 }

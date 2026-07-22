@@ -40,9 +40,9 @@ public sealed class AgentSnapshot
             lastDecision,
             CopySkills(skills),
             CopyTraits(traits),
-            new SpatialCellId(
-                (position ?? new CellId(0, 0)).X,
-                (position ?? new CellId(0, 0)).Y,
+            new CellId(
+                (position ?? new CellId(0, 0, 0)).X,
+                (position ?? new CellId(0, 0, 0)).Y,
                 positionZ),
             skillProgression,
             automaticPlanningEnabled)
@@ -62,7 +62,7 @@ public sealed class AgentSnapshot
         AgentDecision? lastDecision,
         IReadOnlyList<AgentSkillValue> skills,
         IReadOnlyList<AgentTraitId> traits,
-        SpatialCellId position,
+        CellId position,
         AgentSkillProgressionSnapshot? skillProgression,
         bool automaticPlanningEnabled)
     {
@@ -106,7 +106,7 @@ public sealed class AgentSnapshot
         PlayerOrder = playerOrder;
         LastActionSwitchTick = lastActionSwitchTick;
         LastDecision = lastDecision;
-        SpatialPosition = position;
+        Position = position;
         SkillProgression = skillProgression;
         AutomaticPlanningEnabled = automaticPlanningEnabled;
     }
@@ -125,9 +125,8 @@ public sealed class AgentSnapshot
     public IReadOnlyList<AgentTraitId> Traits { get; }
     public AgentSkillProgressionSnapshot? SkillProgression { get; }
     public bool AutomaticPlanningEnabled { get; }
-    public CellId Position => SpatialPosition.Projection;
-    public SpatialCellId SpatialPosition { get; }
-    public int PositionZ => SpatialPosition.Z;
+    public CellId Position { get; }
+    public int PositionZ => Position.Z;
 
     public int GetSkillLevel(AgentSkillId skillId)
     {
@@ -193,41 +192,6 @@ public sealed class AgentSnapshot
         IReadOnlyList<AgentSkillValue> skills,
         IReadOnlyList<AgentTraitId> traits,
         CellId position,
-        AgentSkillProgressionSnapshot? skillProgression = null,
-        bool automaticPlanningEnabled = true)
-    {
-        return FromNormalizedCapabilities(
-            id,
-            name,
-            version,
-            isAlive,
-            needs,
-            scheduledActivity,
-            activeAction,
-            playerOrder,
-            lastActionSwitchTick,
-            lastDecision,
-            skills,
-            traits,
-            new SpatialCellId(position.X, position.Y, 0),
-            skillProgression,
-            automaticPlanningEnabled);
-    }
-
-    internal static AgentSnapshot FromNormalizedCapabilities(
-        EntityId id,
-        string name,
-        long version,
-        bool isAlive,
-        AgentNeedsSnapshot needs,
-        ScheduleActivity scheduledActivity,
-        AgentActionSnapshot? activeAction,
-        PlayerOrder? playerOrder,
-        long lastActionSwitchTick,
-        AgentDecision? lastDecision,
-        IReadOnlyList<AgentSkillValue> skills,
-        IReadOnlyList<AgentTraitId> traits,
-        SpatialCellId position,
         AgentSkillProgressionSnapshot? skillProgression = null,
         bool automaticPlanningEnabled = true)
     {

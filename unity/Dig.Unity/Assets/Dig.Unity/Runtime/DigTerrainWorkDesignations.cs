@@ -141,10 +141,10 @@ namespace Dig.Unity
 
             CellId[] neighbors =
             {
-                target.X > 0 ? new CellId(target.X - 1, target.Y) : target,
-                new CellId(target.X + 1, target.Y),
-                target.Y > 0 ? new CellId(target.X, target.Y - 1) : target,
-                new CellId(target.X, target.Y + 1),
+                target.X > 0 ? new CellId(target.X - 1, target.Y, target.Z) : target,
+                new CellId(target.X + 1, target.Y, target.Z),
+                target.Y > 0 ? new CellId(target.X, target.Y - 1, target.Z) : target,
+                new CellId(target.X, target.Y + 1, target.Z),
             };
             for (int index = 0; index < neighbors.Length; index++)
             {
@@ -169,13 +169,12 @@ namespace Dig.Unity
                 AgentViewModel agent = agents[index];
                 int distance = Math.Abs(agent.CellX - target.X)
                     + Math.Abs(agent.CellY - target.Y)
-                    + Math.Abs(agent.CellZ);
+                    + Math.Abs(agent.CellZ - target.Z);
                 values[index] = new JobCandidate(
                     EntityId.Parse(agent.Id),
                     skillLevel: 5_000 - (index * 250),
                     distanceCost: distance,
-                    isAvailable: agent.CellZ == 0
-                        && IsAvailableForAutomaticWork(agent));
+                    isAvailable: IsAvailableForAutomaticWork(agent));
             }
 
             return values;

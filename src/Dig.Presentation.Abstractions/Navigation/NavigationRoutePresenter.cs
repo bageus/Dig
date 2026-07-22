@@ -18,15 +18,17 @@ public sealed class NavigationRoutePresenter
         RouteCellViewModel[] cells = plan.PathResult.Path is null
             ? Array.Empty<RouteCellViewModel>()
             : plan.PathResult.Path.Cells
-                .Select(cell => new RouteCellViewModel(cell.X, cell.Y))
+                .Select(cell => new RouteCellViewModel(cell.X, cell.Y, cell.Z))
                 .ToArray();
         int workX = plan.WorkCell?.X ?? plan.TargetCell.X;
         int workY = plan.WorkCell?.Y ?? plan.TargetCell.Y;
+        int workZ = plan.WorkCell?.Z ?? plan.TargetCell.Z;
         return new RouteViewModel(
             plan.JobId.ToString(),
             agentId.ToString(),
             workX,
             workY,
+            workZ,
             plan.Succeeded,
             plan.PathResult.Diagnostics.Detail,
             plan.PathResult.Path?.TotalCost ?? 0,

@@ -111,10 +111,10 @@ public sealed class WorldGenerationValidator
         while (frontier.Count > 0)
         {
             CellId current = frontier.Dequeue();
-            Visit(world, new CellId(current.X - 1, current.Y), visited, frontier);
-            Visit(world, new CellId(current.X + 1, current.Y), visited, frontier);
-            Visit(world, new CellId(current.X, current.Y - 1), visited, frontier);
-            Visit(world, new CellId(current.X, current.Y + 1), visited, frontier);
+            Visit(world, new CellId(current.X - 1, current.Y, 0), visited, frontier);
+            Visit(world, new CellId(current.X + 1, current.Y, 0), visited, frontier);
+            Visit(world, new CellId(current.X, current.Y - 1, 0), visited, frontier);
+            Visit(world, new CellId(current.X, current.Y + 1, 0), visited, frontier);
         }
 
         return visited;

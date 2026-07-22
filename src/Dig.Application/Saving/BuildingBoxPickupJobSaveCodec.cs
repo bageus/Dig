@@ -37,6 +37,7 @@ public sealed class BuildingBoxPickupJobSaveCodec : IJobDefinitionSaveCodec
                 Property("stack_id", pickup.StackId.ToString()),
                 Property("source_x", pickup.SourceCell.X),
                 Property("source_y", pickup.SourceCell.Y),
+                Property("source_z", pickup.SourceCell.Z),
             },
         };
     }
@@ -55,7 +56,8 @@ public sealed class BuildingBoxPickupJobSaveCodec : IJobDefinitionSaveCodec
             EntityId.Parse(Required(properties, "stack_id")),
             new CellId(
                 Integer(properties, "source_x"),
-                Integer(properties, "source_y")),
+                Integer(properties, "source_y"),
+                Integer(properties, "source_z")),
             data.Priority,
             data.CreatedTick,
             new JobRetryPolicy(data.MaximumRetries, data.RetryDelayTicks),

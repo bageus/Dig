@@ -35,7 +35,7 @@ internal static partial class WorldGenerationLayout
             int layer = Math.Min(
                 profile.LayerCount - 1,
                 ((y - margin) * profile.LayerCount) / usableHeight);
-            zones.Add(new GeneratedZonePlan(index, new CellId(x, y), biome, layer));
+            zones.Add(new GeneratedZonePlan(index, new CellId(x, y, 0), biome, layer));
         }
 
         return new ReadOnlyCollection<GeneratedZonePlan>(zones);
@@ -50,7 +50,7 @@ internal static partial class WorldGenerationLayout
         {
             for (int x = 0; x < profile.Size.Width; x++)
             {
-                CellId cellId = new CellId(x, y);
+                CellId cellId = new CellId(x, y, 0);
                 GeneratedZonePlan nearest = FindNearestZone(cellId, zones);
                 cells[(y * profile.Size.Width) + x] = new CellState(
                     nearest.Biome.SolidMaterialId,
@@ -162,7 +162,7 @@ internal static partial class WorldGenerationLayout
         {
             for (int x = 0; x < buffer.Size.Width; x++)
             {
-                CellId cellId = new CellId(x, y);
+                CellId cellId = new CellId(x, y, 0);
                 if (buffer.Get(cellId).MaterialId == profile.EmptyMaterialId
                     && ManhattanDistance(cellId, start) > exclusionRadius)
                 {

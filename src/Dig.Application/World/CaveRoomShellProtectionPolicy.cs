@@ -43,7 +43,7 @@ public sealed class CaveRoomShellProtectionPolicy
     {
         if (x >= 0 && y >= 0 && x < size.Width && y < size.Height)
         {
-            cells.Add(new CellId(x, y));
+            cells.Add(new CellId(x, y, 0));
         }
     }
 }

@@ -31,7 +31,7 @@ public sealed class TerrainDepositGenerationTests
     public void Same_seed_and_version_generate_identical_sparse_cells()
     {
         TerrainDepositGenerator generator = new TerrainDepositGenerator();
-        SpatialCellId[] candidates = CreateCandidates(width: 10, height: 10);
+        CellId[] candidates = CreateCandidates(width: 10, height: 10);
         TerrainDepositGenerationSettings settings =
             new TerrainDepositGenerationSettings(
                 seed: 42,
@@ -54,7 +54,7 @@ public sealed class TerrainDepositGenerationTests
     public void Different_seed_changes_the_generated_layout()
     {
         TerrainDepositGenerator generator = new TerrainDepositGenerator();
-        SpatialCellId[] candidates = CreateCandidates(width: 10, height: 10);
+        CellId[] candidates = CreateCandidates(width: 10, height: 10);
 
         var first = generator.Generate(
             10,
@@ -80,14 +80,14 @@ public sealed class TerrainDepositGenerationTests
     public void Generated_deposits_remain_inside_the_mineable_candidate_set()
     {
         TerrainDepositGenerator generator = new TerrainDepositGenerator();
-        SpatialCellId[] candidates =
+        CellId[] candidates =
         {
-            new SpatialCellId(2, 2, 0),
-            new SpatialCellId(3, 2, 0),
-            new SpatialCellId(4, 2, 0),
-            new SpatialCellId(4, 3, 0),
+            new CellId(2, 2, 0),
+            new CellId(3, 2, 0),
+            new CellId(4, 2, 0),
+            new CellId(4, 3, 0),
         };
-        HashSet<SpatialCellId> allowed = new HashSet<SpatialCellId>(candidates);
+        HashSet<CellId> allowed = new HashSet<CellId>(candidates);
 
         var deposits = generator.Generate(
             8,
@@ -130,14 +130,14 @@ public sealed class TerrainDepositGenerationTests
             grant => grant.SkillId == AgentSkillCatalog.Stonework);
     }
 
-    private static SpatialCellId[] CreateCandidates(int width, int height)
+    private static CellId[] CreateCandidates(int width, int height)
     {
-        List<SpatialCellId> cells = new List<SpatialCellId>();
+        List<CellId> cells = new List<CellId>();
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
             {
-                cells.Add(new SpatialCellId(x, y, 0));
+                cells.Add(new CellId(x, y, 0));
             }
         }
 

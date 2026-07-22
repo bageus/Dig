@@ -25,7 +25,7 @@ namespace Dig.Unity
                 return false;
             }
 
-            SpatialCellId? source = ResolveTunnelDepthSource();
+            CellId? source = ResolveTunnelDepthSource();
             if (!source.HasValue)
             {
                 _hud.SetStatus(
@@ -40,7 +40,7 @@ namespace Dig.Unity
                 return true;
             }
 
-            SpatialCellId target = new SpatialCellId(
+            CellId target = new CellId(
                 source.Value.X,
                 source.Value.Y,
                 source.Value.Z + 1);
@@ -50,10 +50,10 @@ namespace Dig.Unity
             return true;
         }
 
-        private SpatialCellId? ResolveTunnelDepthSource()
+        private CellId? ResolveTunnelDepthSource()
         {
             RaycastHit[] hits = GetPointerHits();
-            SpatialCellId? selected = null;
+            CellId? selected = null;
             for (int index = 0; index < hits.Length; index++)
             {
                 RaycastHit hit = hits[index];
@@ -74,9 +74,9 @@ namespace Dig.Unity
                     continue;
                 }
 
-                if (_renderer!.TryGetWalkSurface(hit, out SpatialCellId walkSurface)
+                if (_renderer!.TryGetWalkSurface(hit, out CellId walkSurface)
                     && walkSurface.Z == 0
-                    && _session!.IsPlannedHorizontalTunnel(walkSurface.Projection)
+                    && _session!.IsPlannedHorizontalTunnel(walkSurface)
                     && !selected.HasValue)
                 {
                     selected = walkSurface;

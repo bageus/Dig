@@ -41,6 +41,13 @@ public sealed class ExcavationStrokePlanner
             throw new ArgumentOutOfRangeException(nameof(lockedAxis));
         }
 
+        if (anchor.Z != pointer.Z)
+        {
+            throw new ArgumentException(
+                "An excavation stroke cannot cross depth layers.",
+                nameof(pointer));
+        }
+
         ExcavationStrokeAxis axis = lockedAxis;
         int horizontalDistance = Math.Abs(pointer.X - anchor.X);
         int verticalDistance = Math.Abs(pointer.Y - anchor.Y);
@@ -54,8 +61,8 @@ public sealed class ExcavationStrokePlanner
 
         CellId cell = axis switch
         {
-            ExcavationStrokeAxis.Horizontal => new CellId(pointer.X, anchor.Y),
-            ExcavationStrokeAxis.Vertical => new CellId(anchor.X, pointer.Y),
+            ExcavationStrokeAxis.Horizontal => new CellId(pointer.X, anchor.Y, anchor.Z),
+            ExcavationStrokeAxis.Vertical => new CellId(anchor.X, pointer.Y, anchor.Z),
             _ => anchor,
         };
         return new ExcavationStrokeDecision(cell, axis);

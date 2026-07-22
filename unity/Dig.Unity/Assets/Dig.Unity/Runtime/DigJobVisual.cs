@@ -55,7 +55,7 @@ namespace Dig.Unity
             if (model.HasTarget)
             {
                 Vector3 position = DigTunnelProjection.CellWorldPosition(
-                    new SpatialCellId(
+                    new CellId(
                         model.TargetX!.Value,
                         model.TargetY!.Value,
                         model.TargetZ!.Value));

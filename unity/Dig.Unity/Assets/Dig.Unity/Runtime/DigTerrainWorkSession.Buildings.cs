@@ -56,7 +56,7 @@ internal sealed partial class DigTerrainWorkSession
         BuildingDefinition definition = CreateDemoBuildingDefinition();
         BuildingCatalog catalog = new BuildingCatalog(new[] { definition });
         CellId origin = FindDemoBuildingOrigin();
-        CellId workPosition = new CellId(origin.X, origin.Y - 1);
+        CellId workPosition = new CellId(origin.X, origin.Y - 1, origin.Z);
         EntityId buildingId = DemoId('b', 1);
         EntityId sourceStackId = DemoId('c', 1);
         EntityId assemblyJobId = DemoId('d', 1);
@@ -176,10 +176,10 @@ internal sealed partial class DigTerrainWorkSession
             .Where(value => !value.IsSolid)
             .ToArray();
         HashSet<CellId> open = new HashSet<CellId>(openCells.Select(
-            value => new CellId(value.X, value.Y)));
+            value => new CellId(value.X, value.Y, value.Z)));
         WorldCellViewModel? cell = openCells
             .Where(value => value.Y > 0
-                && open.Contains(new CellId(value.X, value.Y - 1)))
+                && open.Contains(new CellId(value.X, value.Y - 1, value.Z)))
             .OrderByDescending(value => value.X)
             .ThenByDescending(value => value.Y)
             .Select(value => (WorldCellViewModel?)value)
@@ -190,7 +190,7 @@ internal sealed partial class DigTerrainWorkSession
                 "The demo world has no open building and work-cell pair.");
         }
 
-        return new CellId(cell.Value.X, cell.Value.Y);
+        return new CellId(cell.Value.X, cell.Value.Y, cell.Value.Z);
     }
 
     private static BuildingDefinition CreateDemoBuildingDefinition()

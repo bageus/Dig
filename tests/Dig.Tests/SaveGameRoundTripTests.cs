@@ -24,8 +24,10 @@ public sealed class SaveGameRoundTripTests
     private static readonly EntityId StackId = Id("f1000000000000000000000000000001");
     private static readonly EntityId JobId = Id("f2000000000000000000000000000002");
     private static readonly EntityId WorkerId = Id("f3000000000000000000000000000003");
-    private static readonly CellId Target = new CellId(1, 1);
-
+    private static readonly CellId Target = new CellId(1, 1, 2);
+    private static readonly CellId DepositCell = new CellId(5, 4, 3);
+    private const string DepositInstanceId = "deposit.test.deep";
+    private const string DepositDefinitionId = "deposit.test.ore";
     [Fact]
     public void Round_trip_completes_the_same_digging_vertical_slice()
     {
@@ -38,9 +40,13 @@ public sealed class SaveGameRoundTripTests
         byte[] firstBytes = codec.Serialize(document);
         SaveGameDocument decoded = codec.Deserialize(firstBytes);
         SaveGameLoader loader = CreateLoader();
-
-        Result<LoadedGameState> loadedResult = loader.Load(decoded, materials, items);
-
+        TerrainDepositCatalog deposits = CreateDepositCatalog();
+        Result<LoadedGameState> loadedResult = loader.Load(
+            decoded,
+            materials,
+            items,
+            buildingCatalog: null,
+            deposits);
         Assert.True(loadedResult.IsSuccess);
         LoadedGameState loaded = loadedResult.Value;
         Assert.Equal(context.Metadata.SimulationTick, loaded.Metadata.SimulationTick);
@@ -49,15 +55,23 @@ public sealed class SaveGameRoundTripTests
             context.Inventory.CreateSnapshot(),
             loaded.Inventory.CreateSnapshot());
         AssertJobsEqual(context.Jobs, loaded.Jobs);
-
+        TerrainDepositInstance loadedDeposit = Assert.Single(loaded.TerrainDeposits);
+        Assert.Equal(DepositInstanceId, loadedDeposit.InstanceId);
+        Assert.Equal(DepositDefinitionId, loadedDeposit.Definition.Id);
+        Assert.Equal(DepositCell, loadedDeposit.Cell);
+        Assert.True(loadedDeposit.IsRevealed);
+        Assert.Equal(7, loadedDeposit.RemainingYield);
+        Assert.Equal(9, loadedDeposit.Version);
         SaveGameDocument rebuilt = builder.Build(new SaveGameContext(
             loaded.Metadata,
             loaded.World,
             loaded.Inventory,
-            loaded.Jobs));
+            loaded.Jobs,
+            loaded.Buildings,
+            Array.Empty<AgentState>(),
+            loaded.TerrainDeposits));
         byte[] secondBytes = codec.Serialize(rebuilt);
         Assert.Equal(firstBytes, secondBytes);
-
         CompleteDigging(context.World, context.Inventory, context.Jobs);
         CompleteDigging(loaded.World, loaded.Inventory, loaded.Jobs);
 
@@ -88,6 +102,7 @@ public sealed class SaveGameRoundTripTests
                 CreateLoader(),
                 store);
             SaveGameContext context = CreateContext(materials, items, "manual-1");
+            TerrainDepositCatalog deposits = CreateDepositCatalog();
 
             service.Save(context);
             service.Autosave(context);
@@ -96,8 +111,14 @@ public sealed class SaveGameRoundTripTests
             Assert.Equal(2, slots.Count);
             Assert.Contains(slots, item => item.SlotId == "manual-1" && !item.IsCorrupted);
             Assert.Contains(slots, item => item.SlotId == SaveSlotNames.Autosave && !item.IsCorrupted);
-            Assert.True(service.Load("manual-1", materials, items).IsSuccess);
-            Assert.True(service.Load(SaveSlotNames.Autosave, materials, items).IsSuccess);
+            Assert.True(service.Load("manual-1", materials, items, deposits).IsSuccess);
+            Result<LoadedGameState> autosave = service.Load(
+                SaveSlotNames.Autosave,
+                materials,
+                items,
+                deposits);
+            Assert.True(autosave.IsSuccess);
+            Assert.Equal(DepositCell, Assert.Single(autosave.Value.TerrainDeposits).Cell);
             Assert.False(File.Exists(Path.Combine(directory, "manual-1.digsave.tmp")));
             Assert.False(File.Exists(Path.Combine(directory, "manual-1.digsave.bak")));
         }
@@ -149,7 +170,7 @@ public sealed class SaveGameRoundTripTests
             StackId,
             Ore,
             quantity: 10,
-            ItemLocation.InWorld(new CellId(2, 1)),
+            ItemLocation.InWorld(new CellId(2, 1, 3)),
             tick: 6).IsSuccess);
         Assert.True(inventory.ReserveQuantity(
             StackId,
@@ -168,6 +189,19 @@ public sealed class SaveGameRoundTripTests
         Assert.True(jobs.MakeAvailable(JobId, tick: 7).IsSuccess);
         Assert.True(jobs.Claim(JobId, WorkerId, tick: 8).IsSuccess);
 
+        TerrainDepositDefinition depositDefinition = CreateDepositCatalog()
+            .Get(DepositDefinitionId)!;
+        TerrainDepositInstance[] deposits =
+        {
+            new TerrainDepositInstance(
+                DepositInstanceId,
+                DepositCell,
+                depositDefinition,
+                isRevealed: true,
+                remainingYield: 7,
+                version: 9),
+        };
+
         return new SaveGameContext(
             new SaveMetadataData
             {
@@ -180,7 +214,10 @@ public sealed class SaveGameRoundTripTests
             },
             world,
             inventory,
-            jobs);
+            jobs,
+            new BuildingsState(),
+            Array.Empty<AgentState>(),
+            deposits);
     }
 
     private static SaveGameBuilder CreateBuilder()
@@ -204,6 +241,19 @@ public sealed class SaveGameRoundTripTests
             }));
     }
 
+    private static TerrainDepositCatalog CreateDepositCatalog()
+    {
+        return new TerrainDepositCatalog(new[]
+        {
+            new TerrainDepositDefinition(
+                DepositDefinitionId,
+                "Deep Test Ore",
+                Ore,
+                maximumYield: 10,
+                generationWeight: 1),
+        });
+    }
+
     private static MaterialCatalog CreateMaterials()
     {
         return new MaterialCatalog(new[]
@@ -225,6 +275,7 @@ public sealed class SaveGameRoundTripTests
     {
         Assert.Equal(expected.Size.Width, actual.Size.Width);
         Assert.Equal(expected.Size.Height, actual.Size.Height);
+        Assert.Equal(expected.Size.Depth, actual.Size.Depth);
         Assert.Equal(expected.ChunkSize, actual.ChunkSize);
         Assert.Equal(expected.Version, actual.Version);
         Assert.Equal(expected.Chunks.Count, actual.Chunks.Count);

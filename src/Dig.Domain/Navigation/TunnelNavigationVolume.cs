@@ -19,7 +19,7 @@ public enum TunnelPathFailureReason
 
 public sealed class TunnelPath
 {
-    public TunnelPath(IReadOnlyCollection<SpatialCellId> cells)
+    public TunnelPath(IReadOnlyCollection<CellId> cells)
     {
         if (cells is null)
         {
@@ -31,10 +31,10 @@ public sealed class TunnelPath
             throw new ArgumentException("A tunnel path requires at least one cell.", nameof(cells));
         }
 
-        Cells = new ReadOnlyCollection<SpatialCellId>(cells.ToArray());
+        Cells = new ReadOnlyCollection<CellId>(cells.ToArray());
     }
 
-    public IReadOnlyList<SpatialCellId> Cells { get; }
+    public IReadOnlyList<CellId> Cells { get; }
 }
 
 public sealed class TunnelPathResult
@@ -80,15 +80,15 @@ public sealed class TunnelPathResult
 
 public sealed partial class TunnelNavigationVolume
 {
-    private readonly HashSet<SpatialCellId> _openCells;
-    private readonly HashSet<SpatialCellId> _verticalCells;
+    private readonly HashSet<CellId> _openCells;
+    private readonly HashSet<CellId> _verticalCells;
 
     public TunnelNavigationVolume(
         int width,
         int height,
         int depth,
-        IReadOnlyCollection<SpatialCellId> openCells,
-        IReadOnlyCollection<SpatialCellId> verticalCells,
+        IReadOnlyCollection<CellId> openCells,
+        IReadOnlyCollection<CellId> verticalCells,
         TunnelDemoLayout? demoLayout = null)
     {
         if (width <= 0)
@@ -120,8 +120,8 @@ public sealed partial class TunnelNavigationVolume
         Height = height;
         Depth = depth;
         DemoLayout = demoLayout;
-        _openCells = new HashSet<SpatialCellId>(openCells);
-        _verticalCells = new HashSet<SpatialCellId>(verticalCells);
+        _openCells = new HashSet<CellId>(openCells);
+        _verticalCells = new HashSet<CellId>(verticalCells);
         ValidateCells(_openCells, nameof(openCells));
         ValidateCells(_verticalCells, nameof(verticalCells));
         if (!_verticalCells.IsSubsetOf(_openCells))
@@ -131,9 +131,9 @@ public sealed partial class TunnelNavigationVolume
                 nameof(verticalCells));
         }
 
-        Cells = new ReadOnlyCollection<SpatialCellId>(
+        Cells = new ReadOnlyCollection<CellId>(
             _openCells.OrderBy(cell => cell).ToArray());
-        VerticalCells = new ReadOnlyCollection<SpatialCellId>(
+        VerticalCells = new ReadOnlyCollection<CellId>(
             _verticalCells.OrderBy(cell => cell).ToArray());
     }
 
@@ -145,11 +145,11 @@ public sealed partial class TunnelNavigationVolume
 
     public TunnelDemoLayout? DemoLayout { get; }
 
-    public IReadOnlyList<SpatialCellId> Cells { get; }
+    public IReadOnlyList<CellId> Cells { get; }
 
-    public IReadOnlyList<SpatialCellId> VerticalCells { get; }
+    public IReadOnlyList<CellId> VerticalCells { get; }
 
-    public bool Contains(SpatialCellId cell)
+    public bool Contains(CellId cell)
     {
         return cell.X >= 0
             && cell.Y >= 0
@@ -159,17 +159,17 @@ public sealed partial class TunnelNavigationVolume
             && cell.Z < Depth;
     }
 
-    public bool IsOpen(SpatialCellId cell)
+    public bool IsOpen(CellId cell)
     {
         return _openCells.Contains(cell);
     }
 
-    public bool IsVerticalTunnel(SpatialCellId cell)
+    public bool IsVerticalTunnel(CellId cell)
     {
         return _verticalCells.Contains(cell);
     }
 
-    public bool CanTraverseStep(SpatialCellId from, SpatialCellId to)
+    public bool CanTraverseStep(CellId from, CellId to)
     {
         if (!IsOpen(from) || !IsOpen(to))
         {
@@ -195,7 +195,7 @@ public sealed partial class TunnelNavigationVolume
             && IsVerticalTunnel(to);
     }
 
-    public TunnelPathResult FindPath(SpatialCellId start, SpatialCellId goal)
+    public TunnelPathResult FindPath(CellId start, CellId goal)
     {
         if (!Contains(start))
         {
@@ -230,15 +230,15 @@ public sealed partial class TunnelNavigationVolume
             return TunnelPathResult.Success(new TunnelPath(new[] { start }));
         }
 
-        Queue<SpatialCellId> frontier = new Queue<SpatialCellId>();
-        Dictionary<SpatialCellId, SpatialCellId> previous =
-            new Dictionary<SpatialCellId, SpatialCellId>();
-        HashSet<SpatialCellId> visited = new HashSet<SpatialCellId> { start };
+        Queue<CellId> frontier = new Queue<CellId>();
+        Dictionary<CellId, CellId> previous =
+            new Dictionary<CellId, CellId>();
+        HashSet<CellId> visited = new HashSet<CellId> { start };
         frontier.Enqueue(start);
         while (frontier.Count > 0)
         {
-            SpatialCellId current = frontier.Dequeue();
-            foreach (SpatialCellId neighbor in GetNeighbors(current))
+            CellId current = frontier.Dequeue();
+            foreach (CellId neighbor in GetNeighbors(current))
             {
                 if (!visited.Add(neighbor))
                 {
@@ -261,16 +261,16 @@ public sealed partial class TunnelNavigationVolume
             "No route connects the resident to the requested tunnel cell.");
     }
 
-    private IEnumerable<SpatialCellId> GetNeighbors(SpatialCellId cell)
+    private IEnumerable<CellId> GetNeighbors(CellId cell)
     {
-        SpatialCellId[] candidates =
+        CellId[] candidates =
         {
-            new SpatialCellId(cell.X - 1, cell.Y, cell.Z),
-            new SpatialCellId(cell.X + 1, cell.Y, cell.Z),
-            new SpatialCellId(cell.X, cell.Y, cell.Z - 1),
-            new SpatialCellId(cell.X, cell.Y, cell.Z + 1),
-            new SpatialCellId(cell.X, cell.Y - 1, cell.Z),
-            new SpatialCellId(cell.X, cell.Y + 1, cell.Z),
+            new CellId(cell.X - 1, cell.Y, cell.Z),
+            new CellId(cell.X + 1, cell.Y, cell.Z),
+            new CellId(cell.X, cell.Y, cell.Z - 1),
+            new CellId(cell.X, cell.Y, cell.Z + 1),
+            new CellId(cell.X, cell.Y - 1, cell.Z),
+            new CellId(cell.X, cell.Y + 1, cell.Z),
         };
         for (int index = 0; index < candidates.Length; index++)
         {
@@ -281,13 +281,13 @@ public sealed partial class TunnelNavigationVolume
         }
     }
 
-    private static IReadOnlyList<SpatialCellId> Reconstruct(
-        IReadOnlyDictionary<SpatialCellId, SpatialCellId> previous,
-        SpatialCellId start,
-        SpatialCellId goal)
+    private static IReadOnlyList<CellId> Reconstruct(
+        IReadOnlyDictionary<CellId, CellId> previous,
+        CellId start,
+        CellId goal)
     {
-        List<SpatialCellId> reverse = new List<SpatialCellId> { goal };
-        SpatialCellId current = goal;
+        List<CellId> reverse = new List<CellId> { goal };
+        CellId current = goal;
         while (current != start)
         {
             current = previous[current];
@@ -295,12 +295,12 @@ public sealed partial class TunnelNavigationVolume
         }
 
         reverse.Reverse();
-        return new ReadOnlyCollection<SpatialCellId>(reverse);
+        return new ReadOnlyCollection<CellId>(reverse);
     }
 
-    private void ValidateCells(IEnumerable<SpatialCellId> cells, string parameterName)
+    private void ValidateCells(IEnumerable<CellId> cells, string parameterName)
     {
-        foreach (SpatialCellId cell in cells)
+        foreach (CellId cell in cells)
         {
             if (!Contains(cell))
             {

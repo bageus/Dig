@@ -10,13 +10,13 @@ namespace Dig.Unity
 
 internal sealed partial class DigAgentSession
 {
-    private static readonly IReadOnlyDictionary<string, SpatialCellId> NoSpatialWorkTargets =
-        new Dictionary<string, SpatialCellId>(StringComparer.Ordinal);
-    private IReadOnlyDictionary<string, SpatialCellId> _spatialWorkTargets =
+    private static readonly IReadOnlyDictionary<string, CellId> NoSpatialWorkTargets =
+        new Dictionary<string, CellId>(StringComparer.Ordinal);
+    private IReadOnlyDictionary<string, CellId> _spatialWorkTargets =
         NoSpatialWorkTargets;
 
     internal void SetSpatialWorkMovementTargets(
-        IReadOnlyDictionary<string, SpatialCellId> targets)
+        IReadOnlyDictionary<string, CellId> targets)
     {
         _spatialWorkTargets = targets
             ?? throw new ArgumentNullException(nameof(targets));
@@ -28,7 +28,7 @@ internal sealed partial class DigAgentSession
     {
         if (!_spatialWorkTargets.TryGetValue(
             agent.Id.ToString(),
-            out SpatialCellId destination))
+            out CellId destination))
         {
             result = Result.Success();
             return false;
@@ -43,7 +43,7 @@ internal sealed partial class DigAgentSession
         }
 
         TunnelPathResult path = _tunnelVolume.FindPath(
-            agent.SpatialPosition,
+            agent.Position,
             destination);
         if (!path.Succeeded || path.Path == null)
         {
@@ -53,7 +53,7 @@ internal sealed partial class DigAgentSession
             return true;
         }
 
-        SpatialCellId next = path.Path.Cells.Count > 1
+        CellId next = path.Path.Cells.Count > 1
             ? path.Path.Cells[1]
             : destination;
         result = agent.MoveTo(next, _tick);

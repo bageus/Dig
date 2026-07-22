@@ -208,7 +208,7 @@ namespace Dig.Unity
             int yStep = Math.Sign(target.Y - current.Y);
             while (current != target)
             {
-                current = new CellId(current.X + xStep, current.Y + yStep);
+                current = new CellId(current.X + xStep, current.Y + yStep, current.Z);
                 Result applied = ApplyExcavationCell(current, active: true);
                 if (applied.IsFailure)
                 {
@@ -301,13 +301,13 @@ namespace Dig.Unity
                 && job.Model.TargetY.HasValue
                 && (!job.Model.TargetZ.HasValue || job.Model.TargetZ.Value == 0))
             {
-                return new CellId(job.Model.TargetX.Value, job.Model.TargetY.Value);
+                return new CellId(job.Model.TargetX.Value, job.Model.TargetY.Value, job.Model.TargetZ ?? 0);
             }
 
             if (_renderer!.TryGetCell(hit, out DigCellVisual cell)
                 && cell.Model.IsDesignated)
             {
-                return new CellId(cell.Model.X, cell.Model.Y);
+                return new CellId(cell.Model.X, cell.Model.Y, cell.Model.Z);
             }
 
             return null;
@@ -321,12 +321,12 @@ namespace Dig.Unity
                 && job.Model.TargetY.HasValue
                 && (!job.Model.TargetZ.HasValue || job.Model.TargetZ.Value == 0))
             {
-                return new CellId(job.Model.TargetX.Value, job.Model.TargetY.Value);
+                return new CellId(job.Model.TargetX.Value, job.Model.TargetY.Value, job.Model.TargetZ ?? 0);
             }
 
             if (_renderer!.TryGetCell(hit, out DigCellVisual cell))
             {
-                return new CellId(cell.Model.X, cell.Model.Y);
+                return new CellId(cell.Model.X, cell.Model.Y, cell.Model.Z);
             }
 
             return null;
