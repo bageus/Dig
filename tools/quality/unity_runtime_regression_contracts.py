@@ -1,44 +1,107 @@
-#!/usr/bin/env python3
 from __future__ import annotations
 
-import sys
 from pathlib import Path
+from typing import Callable
 
-from unity_contract_helpers import read_texts, require_fragments
+RequireFragments = Callable[[Path, str, str, tuple[str, ...]], list[str]]
 
 
-def check_runtime_regression_contracts(runtime_root: Path) -> list[str]:
-    errors: list[str] = []
-    movement_input = runtime_root / "DigWorldInteraction.TunnelMovement.cs"
+def check_runtime_regression_contracts(
+    runtime_root: Path,
+    texts: dict[Path, str],
+    require_fragments: RequireFragments,
+) -> list[str]:
+    renderer = runtime_root / "DigAgentRenderer.cs"
+    selection = runtime_root / "DigAgentRenderer.SelectionPersistence.cs"
+    agent_session = runtime_root / "DigAgentSession.TunnelMovement.cs"
+    loop = runtime_root / "DigAgentSimulationDriverBase.Loop.cs"
+    movement = runtime_root / "DigAgentSimulationDriverBase.TunnelMovement.cs"
+    direct = runtime_root / "DigTerrainWorkDirectMovement.cs"
+    designations = runtime_root / "DigTerrainWorkDesignations.cs"
+    world_input = runtime_root / "DigWorldInteraction.cs"
+    priority_input = runtime_root / "DigWorldInteraction.ResidentCommandPriority.cs"
+    excavation = runtime_root / "DigWorldInteraction.Excavation.cs"
+    depth = runtime_root / "DigWorldInteraction.TunnelDepthExcavation.cs"
     pointer_hits = runtime_root / "DigWorldInteraction.PointerHits.cs"
     targets = runtime_root / "DigWorldInteraction.SelectedResidentTargets.cs"
+    movement_input = runtime_root / "DigWorldInteraction.TunnelMovement.cs"
     marquee = runtime_root / "DigWorldInteraction.MarqueeSelection.cs"
     navigation_sync = runtime_root / "DigAgentSimulationDriverBase.NavigationSync.cs"
     tunnel_renderer = runtime_root / "DigTunnelDemoRenderer.cs"
     world_visual_catalog = runtime_root / "DigWorldRenderer.VisualCatalog.cs"
     job_visual = runtime_root / "DigJobVisual.cs"
     multi_worker = runtime_root / "DigTerrainWorkManualExcavation.MultiWorker.cs"
-    quarter_work = runtime_root / "DigTerrainWorkExcavationQuarters.cs"
 
-    files = (
-        movement_input,
-        pointer_hits,
-        targets,
-        marquee,
-        navigation_sync,
-        tunnel_renderer,
-        world_visual_catalog,
-        job_visual,
-        multi_worker,
-        quarter_work,
+    errors: list[str] = []
+    renderer_text = "\n".join(
+        text for path, text in texts.items()
+        if path.name.startswith("DigAgentRenderer") and path.suffix == ".cs"
     )
-    texts = read_texts(files, errors)
-
     errors.extend(require_fragments(
-        movement_input,
-        texts.get(movement_input, ""),
-        "explicit LMB tunnel destinations and active job markers",
+        renderer,
+        renderer_text,
+        "resident selection snapshot",
         (
+            "SelectedAgentIds => _selectedSnapshot",
+            "visual.SetSelected(_selectedIds.Contains(model.Id))",
+            "agentVisual.SetSelected(_selectedIds.Contains(model.Id))",
+        ),
+    ))
+    checks = (
+        (selection, "ordered group selection restoration", (
+            "RestoreSelection", "_selectedIds.Clear()", "_selectionOrder.Clear()",
+            "PublishSelectionSnapshot();")),
+        (agent_session, "single manual movement order state", (
+            "Dictionary<EntityId, ManualTunnelMovementOrder>",
+            "ActiveManualTunnelResidentIds", "TryAdvanceManualTunnelMovement(",
+            "CanTraverseStep(", "agent.MoveTo(next, _tick)",
+            "ConsumeManualTunnelMovementWarning")),
+        (loop, "selection and manual ownership across simulation ticks", (
+            "IReadOnlyList<string> selectedAgentIds", "primarySelectedAgentId",
+            "AgentSession.ActiveManualTunnelResidentIds",
+            "InterruptForManualMovement(",
+            "AgentRenderer.Render(agents, movementDuration)", "RestoreSelection(")),
+        (movement, "interrupt-before-plan manual movement", (
+            "SynchronizeTunnelInteractionTargets(tunnelRenderer)",
+            "TerrainSession.InterruptForManualMovement",
+            "PlanAgentTunnelRouteReport", "PlanAgentsTunnelRoutesReport",
+            "MoveResidentThroughTunnel", "MoveResidentsThroughTunnel")),
+        (direct, "stateless work interruption", (
+            "BindManualMovementSource", "InterruptForManualMovement",
+            "ReleaseJobAssignmentCommand", "RemoveAllRoutePlans",
+            "IsAvailableForAutomaticWork")),
+        (designations, "Dig candidate manual-order suppression", (
+            "IsAvailableForAutomaticWork(agent)", "Math.Abs(agent.CellZ - target.Z)")),
+        (world_input, "resident commands before modal work input", (
+            "TryHandlePriorityResidentPointerInput()",
+            "TryHandleResidentMarqueeSelection()",
+            "TryHandleTunnelDepthExcavation()",
+            "TryHandleExcavationStroke()")),
+        (priority_input, "resident selection and movement priority", (
+            "Input.GetMouseButtonDown(0)",
+            "TryResolveAgentHit(hits, out DigAgentVisual agent)",
+            "ToggleResidentSelection(agent)",
+            "ContextWorldTargetKind.Resident",
+            "TryApplyTunnelMove(hits, leftButton: true)",
+            "DisableExcavationDrawing();",
+            "DisableCaveRoomPlanning();")),
+        (excavation, "excavation tool pointer fallthrough", (
+            "if (!CanActivateExcavationDrawing)",
+            "ResetExcavationStroke();",
+            "return false;",
+            "!IsTerminalJobStatus(job.Model.Status)")),
+        (depth, "depth tool pointer fallthrough", (
+            "if (!CanActivateExcavationDrawing)",
+            "return false;")),
+        (pointer_hits, "resident selection through tunnel targets", (
+            "Physics.RaycastAll", "Array.Sort(hits, ComparePointerHits)",
+            "TryProjectResidentBounds", "blockedByForegroundObject",
+            "SynchronizeTunnelInteractionTargets();")),
+        (targets, "screen-disambiguated movement and excavation priority", (
+            "ResolveSelectedResidentTarget(GetPointerHits())",
+            "ResolveMovementPointerDistance", "return bestMovement",
+            "DigSelectedResidentTarget.Excavation")),
+        (movement_input, "explicit LMB tunnel destinations and active job markers", (
             "TryApplyTunnelMove(RaycastHit[] hits",
             "TryAssignExplicitExcavation(hits, residentIds)",
             "CellId? surfaceTarget = ResolveExcavationTarget(hit)",
@@ -47,47 +110,93 @@ def check_runtime_regression_contracts(runtime_root: Path) -> list[str]:
             "IsTerminalJobStatus(job.Model.Status)",
             "TryResolveTunnelDestination(hit, out _, out _)",
             "ResolveSelectedResidentTarget(hits)",
-            "_tunnelRenderer.TryGetCell",
-            "_caveRoomFloorRenderer.TryGetCell",
-            "MoveResidentsThroughTunnel",
-        ),
-    ))
-    errors.extend(require_fragments(
-        world_visual_catalog,
-        texts.get(world_visual_catalog, ""),
-        "designated direct-work hit proxies",
-        (
+            "_tunnelRenderer.TryGetCell", "_caveRoomFloorRenderer.TryGetCell",
+            "MoveResidentsThroughTunnel")),
+        (world_visual_catalog, "designated direct-work hit proxies", (
             "collider.enabled = visual.gameObject.activeSelf",
             "_tunnelDigInteractionActive",
-            "visual.Model.IsDesignated",
-        ),
-    ))
-    errors.extend(require_fragments(
-        multi_worker,
-        texts.get(multi_worker, ""),
-        "forced excavation independent from job ownership",
-        (
+            "visual.Model.IsDesignated")),
+        (marquee, "selected movement bypasses marquee", (
+            "TryResolveSelectedResidentMovementTarget(hits, out _)",
+            "_marqueeStartHits",
+            "TryApplyTunnelMove(_marqueeStartHits, leftButton: true)")),
+        (navigation_sync, "new excavation collider synchronization", (
+            "SynchronizeTunnelInteractionTargets(",
+            "tunnelRenderer.Initialize(AgentSession.TunnelVolume)")),
+        (tunnel_renderer, "incremental tunnel hit targets", (
+            "CalculateSignature(volume)",
+            "ReconcileCellProxies(volume)",
+            "RebuildMovementSurfaces(volume)",
+            "GetComponentInParent<DigTunnelCellVisual>()")),
+        (job_visual, "terminal jobs are presentation-only", (
+            "_interactionCollider = GetComponent<Collider>();",
+            "_interactionCollider.enabled = !IsTerminalStatus(model.Status)",
+            "string.Equals(status, \"Completed\", StringComparison.Ordinal)",
+            "string.Equals(status, \"Cancelled\", StringComparison.Ordinal)",
+            "string.Equals(status, \"Failed\", StringComparison.Ordinal)")),
+        (multi_worker, "forced excavation independent from job ownership", (
             "AssignExcavationClusterToResidents",
             "AssignManualQuarterExcavation(",
             "Existing automatic jobs keep their owner",
             "BindManualExcavationResidentState",
-            "ResolveManualMiningSkill",
+            "ResolveManualMiningSkill")),
+    )
+    for path, name, fragments in checks:
+        errors.extend(require_fragments(path, texts.get(path, ""), name, fragments))
+
+    forbidden_by_path = {
+        renderer: ("AnimateRoute(",),
+        agent_session: (
+            "_manualTunnelOrders",
+            "MoveAgentThroughTunnelCommandHandler",
+            "MoveAgentsThroughTunnelCommandHandler",
         ),
-    ))
-    errors.extend(require_fragments(
-        quarter_work,
-        texts.get(quarter_work, ""),
-        "manual quarter excavation adapter",
-        (
-            "ExcavationWorkCoordinator",
-            "AssignManualQuarterExcavation",
-            "LoadManualQuarterAssignment",
-            "AdvanceManualQuarterExcavation",
-            "LoadExcavationQuarterState",
+        movement: (
+            "ValidateResidentThroughTunnel",
+            "ValidateResidentsThroughTunnel",
+            "AnimateRoute(",
         ),
-    ))
+        direct: (
+            "_directMovementAgents",
+            "EnforceDirectMovementOwnership",
+            "ReleaseDirectMovementControl",
+            "InterruptForDirectMovement",
+        ),
+        pointer_hits: ("firstWalkableDistance",),
+    }
+    for path, fragments in forbidden_by_path.items():
+        text = texts.get(path, "") if path != renderer else renderer_text
+        for fragment in fragments:
+            if fragment in text:
+                errors.append(f"{path}: obsolete movement fragment remains: {fragment!r}")
+
+    world_input_text = texts.get(world_input, "")
+    priority_index = world_input_text.find("TryHandlePriorityResidentPointerInput()")
+    modal_index = world_input_text.find("TryHandleResidentMarqueeSelection()")
+    if priority_index < 0 or modal_index < 0 or priority_index >= modal_index:
+        errors.append(f"{world_input}: resident commands must run before modal work tools")
+
+    priority_text = texts.get(priority_input, "")
+    resident_index = priority_text.find("TryResolveAgentHit(hits")
+    movement_priority_index = priority_text.find("TryApplyTunnelMove(hits, leftButton: true)")
+    if resident_index < 0 or movement_priority_index < 0 or resident_index >= movement_priority_index:
+        errors.append(f"{priority_input}: resident selection must win over movement and work")
+
+    target_text = texts.get(targets, "")
+    movement_index = target_text.find("return bestMovement")
+    excavation_index = target_text.find("DigSelectedResidentTarget.Excavation")
+    if movement_index < 0 or excavation_index < 0 or movement_index >= excavation_index:
+        errors.append(f"{targets}: open movement must resolve before excavation")
 
     movement_input_text = texts.get(movement_input, "")
+    explicit_index = movement_input_text.find(
+        "TryAssignExplicitExcavation(hits, residentIds)"
+    )
+    target_index = movement_input_text.find("ResolveSelectedResidentTarget(hits)")
+    if explicit_index < 0 or target_index < 0 or explicit_index >= target_index:
+        errors.append(
+            f"{movement_input}: explicit job markers must be checked before ordinary movement"
+        )
     explicit_method_index = movement_input_text.find(
         "private bool TryAssignExplicitExcavation("
     )
@@ -96,37 +205,21 @@ def check_runtime_regression_contracts(runtime_root: Path) -> list[str]:
         explicit_method_index,
     )
     movement_fallthrough_index = movement_input_text.find(
-        "ResolveSelectedResidentTarget(hits)",
+        "if (TryResolveTunnelDestination(hit, out _, out _))",
         explicit_method_index,
+    )
+    movement_continue_index = movement_input_text.find(
+        "continue;",
+        movement_fallthrough_index,
     )
     if (
         explicit_method_index < 0
-        or surface_index < 0
-        or movement_fallthrough_index < 0
-        or surface_index >= movement_fallthrough_index
+        or surface_index < explicit_method_index
+        or movement_fallthrough_index < surface_index
+        or movement_continue_index < movement_fallthrough_index
     ):
         errors.append(
-            f"{movement_input}: explicit excavation must precede movement fallthrough"
+            f"{movement_input}: explicit surface/spatial excavation must scan through "
+            "movement hits before falling back to ordinary movement"
         )
-
     return errors
-
-
-def main() -> int:
-    root = Path(__file__).resolve().parents[2]
-    runtime_root = (
-        root / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" / "Runtime"
-    )
-    errors = check_runtime_regression_contracts(runtime_root)
-    if errors:
-        print("Unity runtime regression contract checks failed:", file=sys.stderr)
-        for error in errors:
-            print(f"- {error}", file=sys.stderr)
-        return 1
-
-    print("PASS: Unity runtime regression contracts")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
