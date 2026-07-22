@@ -53,7 +53,7 @@ public sealed partial class DigGameHudCanvas
             1f,
             1f,
             1f,
-            margin,
+            margin + ManagementMenuWidth + gap,
             -50f,
             -(rosterWidth + (margin * 2f)),
             TopHudOffset);

@@ -1,4 +1,5 @@
 using Dig.Domain.Core;
+using Dig.Domain.Society;
 using Dig.Presentation.Agents;
 
 namespace Dig.Unity
@@ -6,6 +7,13 @@ namespace Dig.Unity
 
 public abstract partial class DigAgentSimulationDriverBase
 {
+    internal long CurrentSocietyTick => AgentSession!.SocietyTick;
+
+    internal SocietySnapshot LoadSocietySnapshot()
+    {
+        return AgentSession!.LoadSocietySnapshot();
+    }
+
     internal ResidentRosterViewModel LoadResidentRoster(string? selectedResidentId)
     {
         return AgentSession!.LoadResidentRoster(
