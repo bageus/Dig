@@ -1,9 +1,11 @@
 using System;
 using System.Linq;
+using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Messaging;
 using Dig.Domain.Buildings;
+using Dig.Domain.Agents;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
@@ -175,17 +177,21 @@ public sealed class CompleteConstructionHandler
     private readonly IInventoryRepository _inventoryRepository;
     private readonly IJobRepository _jobRepository;
     private readonly IEventSink _eventSink;
+    private readonly IAgentSkillGrantService _skillGrants;
 
     public CompleteConstructionHandler(
         IBuildingsRepository buildingsRepository,
         IInventoryRepository inventoryRepository,
         IJobRepository jobRepository,
-        IEventSink eventSink)
+        IEventSink eventSink,
+        IAgentSkillGrantService skillGrants)
     {
         _buildingsRepository = buildingsRepository;
         _inventoryRepository = inventoryRepository;
         _jobRepository = jobRepository;
         _eventSink = eventSink;
+        _skillGrants = skillGrants
+            ?? throw new ArgumentNullException(nameof(skillGrants));
     }
 
     public Result Handle(CompleteConstructionCommand command)
@@ -219,6 +225,18 @@ public sealed class CompleteConstructionHandler
             return Result.Failure(BuildingErrors.WorkIncomplete);
         }
 
+        if (!job.AssignedAgentId.HasValue)
+        {
+            return Result.Failure(BuildingUseCaseErrors.JobMismatch);
+        }
+
+        SkillGrantBundle skillBundle = CreateSkillBundle(job, work, command.Tick);
+        Result skillValidation = _skillGrants.Validate(skillBundle);
+        if (skillValidation.IsFailure)
+        {
+            return skillValidation;
+        }
+
         ItemConsumptionRequest[] materials = building.Definition.Materials
             .Select(value => new ItemConsumptionRequest(value.ItemId, value.Quantity))
             .ToArray();
@@ -245,6 +263,7 @@ public sealed class CompleteConstructionHandler
                 "Validated construction job could not complete its final stage.");
         }
 
+        ApplyConfirmedSkillResult(skillBundle);
         _buildingsRepository.Save(buildings);
         _inventoryRepository.Save(inventory);
         _jobRepository.Save(jobs);
@@ -252,6 +271,29 @@ public sealed class CompleteConstructionHandler
         _eventSink.Append(inventory.DequeueUncommittedEvents());
         _eventSink.Append(jobs.DequeueUncommittedEvents());
         return Result.Success();
+    }
+
+    private static SkillGrantBundle CreateSkillBundle(
+        JobSnapshot job,
+        BuildingWorkJobDefinition work,
+        long tick)
+    {
+        return new SkillGrantBundle(
+            job.AssignedAgentId!.Value,
+            SkillGrantSourceKind.JobCompleted,
+            job.Id.ToString(),
+            tick,
+            work.SkillGrantProfile.Multiply(1));
+    }
+
+    private void ApplyConfirmedSkillResult(SkillGrantBundle bundle)
+    {
+        Result<SkillRedistributionReport> applied = _skillGrants.ApplyConfirmed(bundle);
+        if (applied.IsFailure)
+        {
+            throw new InvalidOperationException(
+                $"Completed construction skill grant failed: {applied.Error}");
+        }
     }
 }
 }

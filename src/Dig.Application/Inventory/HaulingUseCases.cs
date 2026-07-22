@@ -1,7 +1,9 @@
 using System;
+using Dig.Application.Agents;
 using Dig.Application.Jobs;
 using Dig.Application.Messaging;
 using Dig.Domain.Core;
+using Dig.Domain.Agents;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.Storage;
@@ -202,17 +204,21 @@ public sealed class CompleteHaulingJobHandler
     private readonly IStorageRepository _storageRepository;
     private readonly IJobRepository _jobRepository;
     private readonly IEventSink _eventSink;
+    private readonly IAgentSkillGrantService _skillGrants;
 
     public CompleteHaulingJobHandler(
         IInventoryRepository inventoryRepository,
         IStorageRepository storageRepository,
         IJobRepository jobRepository,
-        IEventSink eventSink)
+        IEventSink eventSink,
+        IAgentSkillGrantService skillGrants)
     {
         _inventoryRepository = inventoryRepository;
         _storageRepository = storageRepository;
         _jobRepository = jobRepository;
         _eventSink = eventSink;
+        _skillGrants = skillGrants
+            ?? throw new ArgumentNullException(nameof(skillGrants));
     }
 
     public Result Handle(CompleteHaulingJobCommand command)
@@ -241,6 +247,16 @@ public sealed class CompleteHaulingJobHandler
             || !snapshot.AssignedAgentId.HasValue)
         {
             return Result.Failure(HaulingErrors.InvalidStage);
+        }
+
+        SkillGrantBundle skillBundle = CreateSkillBundle(
+            snapshot,
+            hauling,
+            command.Tick);
+        Result skillValidation = _skillGrants.Validate(skillBundle);
+        if (skillValidation.IsFailure)
+        {
+            return skillValidation;
         }
 
         Result moved = inventory.DepositReservedResidentItems(
@@ -280,6 +296,7 @@ public sealed class CompleteHaulingJobHandler
 
         inventory.ReleaseResidentSlotClaims(command.JobId, command.Tick);
         storage.ReleaseIncoming(command.JobId, command.Tick);
+        ApplyConfirmedSkillResult(skillBundle);
         _inventoryRepository.Save(inventory);
         _storageRepository.Save(storage);
         _jobRepository.Save(jobs);
@@ -287,6 +304,29 @@ public sealed class CompleteHaulingJobHandler
         _eventSink.Append(storage.DequeueUncommittedEvents());
         _eventSink.Append(jobs.DequeueUncommittedEvents());
         return Result.Success();
+    }
+
+    private static SkillGrantBundle CreateSkillBundle(
+        JobSnapshot job,
+        HaulJobDefinition hauling,
+        long tick)
+    {
+        return new SkillGrantBundle(
+            job.AssignedAgentId!.Value,
+            SkillGrantSourceKind.JobCompleted,
+            job.Id.ToString(),
+            tick,
+            hauling.SkillGrantProfile.Multiply(1));
+    }
+
+    private void ApplyConfirmedSkillResult(SkillGrantBundle bundle)
+    {
+        Result<SkillRedistributionReport> applied = _skillGrants.ApplyConfirmed(bundle);
+        if (applied.IsFailure)
+        {
+            throw new InvalidOperationException(
+                $"Completed hauling job skill grant failed: {applied.Error}");
+        }
     }
 }
 

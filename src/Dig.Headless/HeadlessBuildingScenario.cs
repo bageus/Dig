@@ -1,5 +1,6 @@
 using System;
 using Dig.Application.Buildings;
+using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Domain.Agents;
@@ -25,6 +26,7 @@ internal static class HeadlessBuildingScenario
         InMemoryJobCandidateProvider candidates,
         EntityId residentId,
         AgentSnapshot resident,
+        IAgentSkillGrantService skillGrants,
         EntityId sourceStackId,
         ItemId materialId,
         CellId origin,
@@ -130,7 +132,8 @@ internal static class HeadlessBuildingScenario
             buildingsRepository,
             inventoryRepository,
             jobRepository,
-            journal);
+            journal,
+            skillGrants);
         Require(completeConstruction.Handle(new CompleteConstructionCommand(
             constructionJobId,
             buildingId,

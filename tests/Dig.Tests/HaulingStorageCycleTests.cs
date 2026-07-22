@@ -71,7 +71,9 @@ public sealed class HaulingStorageCycleTests
             inventory,
             storage,
             jobs,
-            journal).Handle(new CompleteHaulingJobCommand(
+            journal,
+            AgentSkillGrantTestFactory.Create(AgentId, journal))
+            .Handle(new CompleteHaulingJobCommand(
                 JobId,
                 Id("a0000000000000000000000000000001"),
                 tick: 6));

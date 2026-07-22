@@ -17,6 +17,11 @@ TestResults/
 coverage/
 *.trx
 
+# Local quality-tool output
+__pycache__/
+*.py[cod]
+unity-source-contracts.log
+
 # Unity project generated files
 unity/Dig.Unity/[Ll]ibrary/
 unity/Dig.Unity/[Tt]emp/

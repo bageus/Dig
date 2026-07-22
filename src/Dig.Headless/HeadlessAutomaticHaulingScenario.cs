@@ -1,8 +1,10 @@
 using System;
 using System.Linq;
+using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Messaging;
+using Dig.Domain.Agents;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
@@ -84,6 +86,9 @@ internal static class HeadlessAutomaticHaulingScenario
 
         EntityId firstWorker = Require(state.Entities.RegisterNew());
         EntityId secondWorker = Require(state.Entities.RegisterNew());
+        InMemoryAgentRepository agents = new InMemoryAgentRepository();
+        Require(agents.Add(CreateWorker(firstWorker)));
+        Require(agents.Add(CreateWorker(secondWorker)));
         InMemoryJobCandidateProvider candidates = new InMemoryJobCandidateProvider();
         candidates.SetCandidates(firstJob, new[]
         {
@@ -107,7 +112,8 @@ internal static class HeadlessAutomaticHaulingScenario
             inventoryRepository,
             storageRepository,
             jobRepository,
-            events);
+            events,
+            new AgentSkillGrantService(agents, events));
         long tick = startTick + 3;
         foreach (PlannedHaulingJob planned in planning.Created)
         {
@@ -132,6 +138,20 @@ internal static class HeadlessAutomaticHaulingScenario
         }
 
         return planning.Created.Count;
+    }
+
+    private static AgentState CreateWorker(EntityId id)
+    {
+        return new AgentState(
+            id,
+            "Automatic Hauler",
+            new AgentNeedsSnapshot(
+                new NeedValue(8_000),
+                new NeedValue(8_000),
+                new NeedValue(8_000),
+                new NeedValue(10_000)),
+            DailySchedule.CreateBalanced(ticksPerDay: 12),
+            new[] { new AgentSkillValue(new AgentSkillId("general.work"), 4_000) });
     }
 
     private static T Require<T>(Result<T> result)

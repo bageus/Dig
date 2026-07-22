@@ -52,6 +52,12 @@ public sealed partial class SaveGameLoader
                 return Result<LoadedGameState>.Failure(migration.Error!);
             }
 
+            List<string> migrationSteps = migration.Value.AppliedSteps.ToList();
+            migrationSteps.AddRange(
+                AgentSkillSaveDataMigrator.Apply(document.AgentSkills));
+            SaveMigrationReport migrationReport = new SaveMigrationReport(
+                migrationSteps);
+
             ValidateMetadata(document.Metadata);
             Result<WorldState> world = WorldState.Restore(
                 BuildWorldSnapshot(document.World, materials),
@@ -98,13 +104,17 @@ public sealed partial class SaveGameLoader
                 return Result<LoadedGameState>.Failure(references.Error!);
             }
 
+            IReadOnlyDictionary<EntityId, Dig.Domain.Agents.AgentSkillProgressionSnapshot>
+                agentSkills = BuildAgentSkills(document.AgentSkills);
+
             return Result<LoadedGameState>.Success(new LoadedGameState(
                 CopyMetadata(document.Metadata),
                 world.Value,
                 inventory.Value,
                 jobs.Value,
                 buildings.Value,
-                migration.Value));
+                migrationReport,
+                agentSkills));
         }
         catch (KeyNotFoundException)
         {

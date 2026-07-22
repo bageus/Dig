@@ -48,7 +48,8 @@ internal sealed partial class DigTerrainWorkSession
             _buildingsRepository,
             _buildingInventoryRepository,
             _jobRepository,
-            journal);
+            journal,
+            _skillGrants);
         _buildingInventoryPresenter = new InventoryWorldPresenter(
             new GetInventorySnapshotQueryHandler(_buildingInventoryRepository));
         _buildingPackingPathfinder = new NavigationPathfinder();

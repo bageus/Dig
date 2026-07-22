@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Dig.Domain.Agents;
+using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 
@@ -24,7 +26,8 @@ public sealed class BuildingBoxPackingJobDefinition : JobDefinition
         int priority,
         long createdTick,
         JobRetryPolicy retryPolicy,
-        IEnumerable<EntityId>? dependencies = null)
+        IEnumerable<EntityId>? dependencies = null,
+        SkillGrantProfile? skillGrantProfile = null)
         : base(
             id,
             priority,
@@ -41,6 +44,9 @@ public sealed class BuildingBoxPackingJobDefinition : JobDefinition
         BuildingId = buildingId;
         OutputStackId = outputStackId;
         WorkPosition = workPosition;
+        SkillGrantProfile = skillGrantProfile
+            ?? DefaultSkillProgressionContent.Catalog.GetProfile(
+                DefaultSkillGrantProfileIds.Logistics);
     }
 
     public EntityId BuildingId { get; }
@@ -48,6 +54,8 @@ public sealed class BuildingBoxPackingJobDefinition : JobDefinition
     public EntityId OutputStackId { get; }
 
     public CellId WorkPosition { get; }
+
+    public SkillGrantProfile SkillGrantProfile { get; }
 
     public override string Description => $"Pack building {BuildingId} into a box";
 

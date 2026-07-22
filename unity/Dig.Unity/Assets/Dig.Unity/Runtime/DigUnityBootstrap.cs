@@ -64,7 +64,7 @@ namespace Dig.Unity
 
             _startupStage = "creating work systems";
             DigTerrainWorkSession terrainSession = DigTerrainWorkSession.CreateDemo(
-                worldSession, agents, worldSession.Journal);
+                worldSession, agents, worldSession.Journal, agentSession.SkillGrants);
             terrainSession.InitializeDynamicDesignations(worldSession.Journal);
             terrainSession.InitializeHauling(worldSession.Journal);
             terrainSession.PlanMovement(agents);
@@ -131,7 +131,8 @@ namespace Dig.Unity
             interaction.Initialize(
                 targetCamera, cameraController, worldSession, worldRenderer,
                 agentRenderer, jobRenderer, buildingRenderer, itemRenderer,
-                ghostRenderer, terrainSession, stockpileRenderer, simulation, hud);
+                ghostRenderer, terrainSession, stockpileRenderer, agentSession,
+                simulation, hud);
             interaction.SetTunnelMovement(tunnelRenderer);
             interaction.SetCaveRoomRenderers(caveRoomPreviewRenderer, caveRoomFloorRenderer);
             simulation.Initialize(

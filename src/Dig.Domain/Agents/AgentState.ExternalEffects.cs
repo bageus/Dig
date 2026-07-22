@@ -64,7 +64,7 @@ public sealed partial class AgentState
         }
 
         int previousHealth = _needs.Health.Points;
-        _needs.Apply(delta);
+        ApplyNeedDelta(delta, tick);
         int currentHealth = _needs.Health.Points;
         Version = checked(Version + 1);
         Raise(new AgentExternalEffectApplied(

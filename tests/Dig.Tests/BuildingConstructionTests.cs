@@ -60,7 +60,8 @@ public sealed class BuildingConstructionTests
             harness.BuildingsRepository,
             harness.InventoryRepository,
             harness.JobRepository,
-            harness.Journal);
+            harness.Journal,
+            AgentSkillGrantTestFactory.Create(WorkerId, harness.Journal));
 
         Assert.True(complete.Handle(new CompleteConstructionCommand(
             constructionJobId,
@@ -237,7 +238,9 @@ public sealed class BuildingConstructionTests
             harness.BuildingsRepository,
             harness.InventoryRepository,
             harness.JobRepository,
-            harness.Journal).Handle(new CompleteConstructionCommand(
+            harness.Journal,
+            AgentSkillGrantTestFactory.Create(WorkerId, harness.Journal))
+            .Handle(new CompleteConstructionCommand(
                 constructionJob,
                 BuildingId,
                 tick: 14)).IsSuccess);

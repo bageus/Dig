@@ -9,7 +9,7 @@ using Dig.Domain.World;
 namespace Dig.Application.Saving
 {
 
-public sealed class SaveGameBuilder
+public sealed partial class SaveGameBuilder
 {
     private readonly JobDefinitionSaveRegistry _jobDefinitions;
 
@@ -35,6 +35,7 @@ public sealed class SaveGameBuilder
             Inventory = BuildInventory(context.Inventory.CreateSnapshot()),
             Jobs = BuildJobs(context.Jobs),
             Buildings = BuildBuildings(context.Buildings),
+            AgentSkills = BuildAgentSkills(context.Agents),
         };
     }
 

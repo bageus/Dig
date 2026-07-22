@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Dig.Domain.Agents;
 using Dig.Domain.Buildings;
 using Dig.Domain.Inventory;
 
@@ -95,7 +96,9 @@ public sealed class ResidentInventoryExpansionContent
                 },
                 new[] { new ContentItemQuantity(SheathItemId, 1) },
                 requiredWork: 12,
-                energyPerWorkTick: 0),
+                energyPerWorkTick: 0,
+                skillGrantProfile: DefaultSkillProgressionContent.Catalog.GetProfile(
+                    DefaultSkillGrantProfileIds.Metallurgy)),
             new RecipeDefinition(
                 WeaponHarnessRecipeId,
                 "Assemble weapon harness",
@@ -109,7 +112,9 @@ public sealed class ResidentInventoryExpansionContent
                 },
                 new[] { new ContentItemQuantity(WeaponHarnessItemId, 1) },
                 requiredWork: 20,
-                energyPerWorkTick: 0),
+                energyPerWorkTick: 0,
+                skillGrantProfile: DefaultSkillProgressionContent.Catalog.GetProfile(
+                    DefaultSkillGrantProfileIds.Metallurgy)),
         };
     }
 

@@ -57,7 +57,8 @@ namespace Dig.Unity
                 _buildingsRepository,
                 _buildingInventoryRepository,
                 _jobRepository,
-                journal);
+                journal,
+                _skillGrants);
             _buildingBoxAssemblyPathfinder = new NavigationPathfinder();
         }
 

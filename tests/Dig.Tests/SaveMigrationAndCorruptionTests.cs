@@ -38,12 +38,38 @@ public sealed class SaveMigrationAndCorruptionTests
             "save.v0_to_v1.metadata",
             "save.v1_to_v2.buildings",
             "save.v2_to_v3.packing",
+            "save.v3_to_v4.agent_skills",
         }, first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
         Assert.Equal(1, document.Metadata.GeneratorVersion);
         Assert.Equal("legacy", document.Metadata.DisplayName);
         Assert.NotNull(document.Buildings);
         Assert.Empty(document.Buildings.Buildings);
+        Assert.True(replay.IsSuccess);
+        Assert.Empty(replay.Value.AppliedSteps);
+    }
+
+    [Fact]
+    public void Version_three_fixture_adds_empty_agent_skills_once()
+    {
+        string fixturePath = Path.Combine(
+            AppContext.BaseDirectory,
+            "Fixtures",
+            "save-v3.json");
+        SaveGameDocument document = new DataContractJsonSaveCodec().Deserialize(
+            File.ReadAllBytes(fixturePath));
+        SaveMigrationPipeline pipeline = CreateMigrations();
+
+        Result<SaveMigrationReport> first = pipeline.Apply(document);
+        Result<SaveMigrationReport> replay = pipeline.Apply(document);
+
+        Assert.True(first.IsSuccess);
+        Assert.Equal(
+            new[] { "save.v3_to_v4.agent_skills" },
+            first.Value.AppliedSteps);
+        Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
+        Assert.NotNull(document.AgentSkills);
+        Assert.Empty(document.AgentSkills.Agents);
         Assert.True(replay.IsSuccess);
         Assert.Empty(replay.Value.AppliedSteps);
     }
@@ -252,6 +278,7 @@ public sealed class SaveMigrationAndCorruptionTests
             new LegacySaveVersionZeroMigration(),
             new SaveVersionOneBuildingsMigration(),
             new SaveVersionTwoPackingMigration(),
+            new SaveVersionThreeAgentSkillsMigration(),
         });
     }
 

@@ -53,6 +53,9 @@ internal static class Program
             });
         InMemoryAgentRepository agentRepository = new InMemoryAgentRepository();
         Require(agentRepository.Add(resident));
+        AgentSkillGrantService skillGrants = new AgentSkillGrantService(
+            agentRepository,
+            journal);
         InMemoryAgentDecisionContextProvider agentContexts =
             new InMemoryAgentDecisionContextProvider(AgentDecisionContext.AllAvailable());
         AgentAutonomySystem autonomy = new AgentAutonomySystem(
@@ -187,7 +190,8 @@ internal static class Program
             inventoryRepository,
             storageRepository,
             jobRepository,
-            journal);
+            journal,
+            skillGrants);
         Require(completeHaul.Handle(new CompleteHaulingJobCommand(
             haulJobId,
             splitStackId: default,
@@ -211,6 +215,7 @@ internal static class Program
             jobCandidates,
             residentId,
             residentSnapshot,
+            skillGrants,
             resourceStackId,
             rockChunk,
             target,

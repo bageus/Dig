@@ -254,13 +254,4 @@ do_wait time 0.7
 #702b Was aufbau'n, was aufbau'n...
 #702c Was soll'n das werden?! Hm?
 #702d Wir bauen die Brücke auf.
-#702e Damit?... Nie! Brauchen wir Eisen für. Zehn Einheiten... mindestens! Schmelze bauen!
-#702f Ach so... Hmmm... gute Idee.
-#702g ENTSETZLICH SCHREIEN - ALS WÜRDE ER ABSTÜRZEN!
-#702h Nur'n Spass.
-#702i Was aufbauen, was aufbauen...
-
-#---inserted-by-Jan---MUSIC---------------
-+adaptive_sound changethemenow metall
-#-----------------------------------------
-
+#702e Damit?... Nie!

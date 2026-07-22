@@ -1,4 +1,6 @@
 using System;
+using Dig.Domain.Agents;
+using Dig.Domain.Content;
 using Dig.Domain.Inventory;
 
 namespace Dig.Domain.World
@@ -11,7 +13,8 @@ public sealed class TerrainDepositDefinition
         string displayName,
         ItemId outputItemId,
         int maximumYield,
-        int generationWeight)
+        int generationWeight,
+        SkillGrantProfile? skillGrantProfile = null)
     {
         if (string.IsNullOrWhiteSpace(id))
         {
@@ -38,6 +41,9 @@ public sealed class TerrainDepositDefinition
         OutputItemId = outputItemId;
         MaximumYield = maximumYield;
         GenerationWeight = generationWeight;
+        SkillGrantProfile = skillGrantProfile
+            ?? DefaultSkillProgressionContent.Catalog.GetProfile(
+                DefaultSkillGrantProfileIds.StoneExtraction);
     }
 
     public string Id { get; }
@@ -49,6 +55,8 @@ public sealed class TerrainDepositDefinition
     public int MaximumYield { get; }
 
     public int GenerationWeight { get; }
+
+    public SkillGrantProfile SkillGrantProfile { get; }
 }
 
 public sealed class TerrainDepositInstance

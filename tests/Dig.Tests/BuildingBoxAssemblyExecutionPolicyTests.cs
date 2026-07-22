@@ -168,7 +168,11 @@ public sealed class BuildingBoxAssemblyExecutionPolicyTests
                     harness.BuildingsRepository,
                     harness.InventoryRepository,
                     harness.JobRepository,
-                    harness.Journal).Handle(new CompleteBuildingBoxAssemblyCommand(
+                    harness.Journal,
+                    AgentSkillGrantTestFactory.Create(
+                        harness.WorkerId,
+                        harness.Journal))
+                    .Handle(new CompleteBuildingBoxAssemblyCommand(
                         harness.BuildingId,
                         harness.JobId,
                         tick)),

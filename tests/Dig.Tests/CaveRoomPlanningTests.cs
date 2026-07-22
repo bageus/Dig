@@ -10,6 +10,25 @@ namespace Dig.Tests
 public sealed class CaveRoomPlanningTests
 {
     [Theory]
+    [InlineData(CaveRoomPresetKind.Small, 0, true)]
+    [InlineData(CaveRoomPresetKind.Medium, 1_999, false)]
+    [InlineData(CaveRoomPresetKind.Medium, 2_000, true)]
+    [InlineData(CaveRoomPresetKind.Large, 3_999, false)]
+    [InlineData(CaveRoomPresetKind.Large, 4_000, true)]
+    [InlineData(CaveRoomPresetKind.Tall, 5_999, false)]
+    [InlineData(CaveRoomPresetKind.Tall, 6_000, true)]
+    public void Room_presets_enforce_colony_stonework_thresholds(
+        CaveRoomPresetKind kind,
+        int maximumStoneworkUnits,
+        bool expected)
+    {
+        CaveRoomSkillAccessResult result = new CaveRoomSkillAccessPolicy()
+            .Evaluate(kind, maximumStoneworkUnits);
+
+        Assert.Equal(expected, result.Allowed);
+    }
+
+    [Theory]
     [InlineData(CaveRoomPresetKind.Small, 5, 3, 3, 3)]
     [InlineData(CaveRoomPresetKind.Medium, 7, 3, 4, 3)]
     [InlineData(CaveRoomPresetKind.Large, 9, 5, 4, 5)]

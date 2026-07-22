@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using Dig.Domain.Agents;
+using Dig.Domain.Content;
 namespace Dig.Domain.Production
 {
 
@@ -29,6 +31,30 @@ public readonly struct ProductionWorkContext
 
     public static ProductionWorkContext Normal =>
         new ProductionWorkContext(10_000, 10_000);
+
+    public static ProductionWorkContext ForRecipe(
+        RecipeDefinition recipe,
+        AgentSnapshot worker,
+        int conditionEfficiencyBasisPoints = 10_000)
+    {
+        if (recipe is null)
+        {
+            throw new ArgumentNullException(nameof(recipe));
+        }
+
+        if (worker is null)
+        {
+            throw new ArgumentNullException(nameof(worker));
+        }
+
+        SkillWorkSpeedCurve? curve = recipe.WorkSpeedCurve;
+        int skillEfficiency = curve is null
+            ? 10_000
+            : curve.Evaluate(worker.GetSkillLevel(curve.SkillId));
+        return new ProductionWorkContext(
+            skillEfficiency,
+            conditionEfficiencyBasisPoints);
+    }
 }
 
 public static class ProductionEfficiency

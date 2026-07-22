@@ -4,7 +4,8 @@
     "src",
     "tests",
     "tools",
-    ".github"
+    ".github",
+    "unity"
   ],
   "extensions": [
     ".cs",

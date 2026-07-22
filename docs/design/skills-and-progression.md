@@ -1,5 +1,11 @@
 # Навыки гномов и прогрессия за деятельность
 
+Статус реализации: authoritative Domain aggregate, work/production/combat grants,
+read model, Unity inspector и Save/Load реализованы в коде и прошли статические
+quality gates. Полная компиляция, `.NET`-тесты и Unity Play Mode остаются
+обязательными проверками CI/editor перед закрытием issues. Техническая карта:
+[`../implementation/skills-progression-system.md`](../implementation/skills-progression-system.md).
+
 ## Назначение
 
 Документ фиксирует каталог навыков, источники прогресса, общий предел характеристик, mixed grants и точную формулу перераспределения. Навыки принадлежат конкретному resident и повышаются только через подтверждённые симуляцией результаты.
@@ -210,7 +216,7 @@ Runtime не использует binary floating point как authoritative sto
 
 Рекомендуемый алгоритм:
 
-1. хранить skill values в целых минимальных единицах, например `1 point = 1000 units`;
+1. хранить skill values в целых минимальных единицах; текущая precision — `1 point = 100 units`;
 2. для каждого donor вычислить numerator `R_units × x_j_units`;
 3. взять `floor(numerator / S_units)`;
 4. посчитать остаток до точной суммы `R_units`;

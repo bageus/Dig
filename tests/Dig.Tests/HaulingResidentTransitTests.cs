@@ -209,7 +209,9 @@ public sealed class HaulingResidentTransitTests
                 InventoryRepository,
                 StorageRepository,
                 JobRepository,
-                Journal).Handle(new CompleteHaulingJobCommand(
+                Journal,
+                AgentSkillGrantTestFactory.Create(ResidentId, Journal))
+                .Handle(new CompleteHaulingJobCommand(
                     JobId,
                     destinationStackId,
                     tick));

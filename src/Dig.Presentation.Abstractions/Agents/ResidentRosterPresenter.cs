@@ -146,10 +146,14 @@ public sealed class ResidentRosterPresenter
             : source.Society.Sex == ResidentSex.Female
                 ? ResidentSexIndicator.Female
                 : ResidentSexIndicator.Male;
+        AgentSkillProgressionSnapshot? progression = agent.SkillProgression;
         ResidentSkillSetViewModel skills = new ResidentSkillSetViewModel(
             agent.Skills.Select(item => new ResidentSkillViewModel(
                 item.Id.ToString(),
-                item.Level)));
+                item.Level)),
+            progression?.TotalCapacityUnits ?? AgentSkillCatalog.BaseCapacityUnits,
+            progression?.PrecisionVersion ?? AgentSkillCatalog.PrecisionVersion,
+            progression?.LastReport);
         bool idleAtWork = agent.ScheduledActivity == ScheduleActivity.Work
             && agent.ActiveAction is null
             && source.CurrentJob is null

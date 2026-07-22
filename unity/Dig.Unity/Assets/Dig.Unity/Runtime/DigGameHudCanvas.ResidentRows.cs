@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Dig.Domain.Agents;
-using Dig.Domain.Society;
 using Dig.Presentation.Agents;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,51 +10,6 @@ namespace Dig.Unity
 
 public sealed partial class DigGameHudCanvas
 {
-    private void BuildResidentRows(IReadOnlyList<ResidentRosterRowViewModel> residents)
-    {
-        if (residents.Count == 0)
-        {
-            AddEmptyRosterMessage("No dwarfs");
-            return;
-        }
-
-        foreach (ResidentRosterRowViewModel resident in residents
-            .OrderBy(value => value.Name, StringComparer.Ordinal)
-            .ThenBy(value => value.Id, StringComparer.Ordinal))
-        {
-            BuildResidentRow(resident);
-        }
-    }
-
-    private void BuildResidentRow(ResidentRosterRowViewModel resident)
-    {
-        RectTransform row = CreatePanel(
-            $"Resident {resident.Id}",
-            _rightContent!,
-            resident.IsExpanded
-                ? new Color(0.16f, 0.28f, 0.40f, 0.98f)
-                : new Color(0.10f, 0.14f, 0.19f, 0.96f));
-        LayoutElement rowLayout = row.gameObject.AddComponent<LayoutElement>();
-        rowLayout.preferredHeight = resident.IsExpanded ? 184f : 34f;
-        rowLayout.minHeight = rowLayout.preferredHeight;
-        VerticalLayoutGroup vertical = row.gameObject.AddComponent<VerticalLayoutGroup>();
-        vertical.padding = new RectOffset(5, 5, 3, 4);
-        vertical.spacing = 3f;
-        vertical.childControlHeight = true;
-        vertical.childControlWidth = true;
-        vertical.childForceExpandHeight = false;
-        vertical.childForceExpandWidth = true;
-        Button button = row.gameObject.AddComponent<Button>();
-        button.targetGraphic = row.GetComponent<Image>();
-        button.onClick.AddListener(() => _interaction!.SelectResidentFromHud(resident.Id));
-
-        BuildResidentCompactRow(row, resident);
-        if (resident.IsExpanded)
-        {
-            BuildResidentDetails(row, resident);
-        }
-    }
-
     private void BuildResidentCompactRow(
         Transform parent,
         ResidentRosterRowViewModel resident)
@@ -71,17 +24,21 @@ public sealed partial class DigGameHudCanvas
         layout.childForceExpandHeight = true;
         layout.childForceExpandWidth = false;
 
-        ResidentSex sex = _simulation!.ResolveResidentSex(resident.Id);
-        string sexMarker = sex == ResidentSex.Female ? "F" : "M";
+        ResidentSexIndicator sex = resident.Sex;
+        string sexMarker = sex == ResidentSexIndicator.Female
+            ? "F"
+            : sex == ResidentSexIndicator.Male ? "M" : "?";
         Text name = CreateText(
             "Name",
             compact,
             $"{resident.Name} ({sexMarker})",
             14,
             TextAnchor.MiddleLeft);
-        name.color = sex == ResidentSex.Female
+        name.color = sex == ResidentSexIndicator.Female
             ? new Color(1f, 0.51f, 0.73f, 1f)
-            : new Color(0.44f, 0.72f, 1f, 1f);
+            : sex == ResidentSexIndicator.Male
+                ? new Color(0.44f, 0.72f, 1f, 1f)
+                : new Color(0.76f, 0.76f, 0.76f, 1f);
         name.horizontalOverflow = HorizontalWrapMode.Overflow;
         name.resizeTextForBestFit = true;
         name.resizeTextMinSize = 10;
@@ -189,21 +146,8 @@ public sealed partial class DigGameHudCanvas
         CreateNeedMetric(parent, "Nutrition", resident.Nutrition);
         CreateNeedMetric(parent, "Alertness", resident.Alertness);
         CreateNeedMetric(parent, "Mood", resident.Mood);
-        string skills = string.Join(
-            " · ",
-            resident.Skills.TopFive.Select(value =>
-                $"{ShortSkill(value.SkillId)} {value.Level / 100}"));
-        Text topSkills = CreateText(
-            "Top Skills",
-            parent,
-            string.IsNullOrWhiteSpace(skills) ? "Skills: none" : $"Skills: {skills}",
-            11,
-            TextAnchor.MiddleLeft);
-        topSkills.horizontalOverflow = HorizontalWrapMode.Overflow;
-        topSkills.resizeTextForBestFit = true;
-        topSkills.resizeTextMinSize = 8;
-        topSkills.resizeTextMaxSize = 11;
-        topSkills.gameObject.AddComponent<LayoutElement>().preferredHeight = 21f;
+        BuildTopSkillList(parent, resident.Skills);
+        BuildSkillInspector(parent, resident.Skills);
     }
 
     private static void CreateNeedMetric(

@@ -1,8 +1,10 @@
 using System;
+using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Messaging;
 using Dig.Application.World;
 using Dig.Domain.Core;
+using Dig.Domain.Agents;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.World;
@@ -135,12 +137,14 @@ public sealed class CompleteTerrainWorkCommandHandler
     private readonly IWorldRepository _worldRepository;
     private readonly IInventoryRepository _inventoryRepository;
     private readonly IEventSink _eventSink;
+    private readonly IAgentSkillGrantService _skillGrants;
 
     public CompleteTerrainWorkCommandHandler(
         IJobRepository jobRepository,
         IWorldRepository worldRepository,
         IInventoryRepository inventoryRepository,
-        IEventSink eventSink)
+        IEventSink eventSink,
+        IAgentSkillGrantService skillGrants)
     {
         _jobRepository = jobRepository
             ?? throw new ArgumentNullException(nameof(jobRepository));
@@ -149,6 +153,8 @@ public sealed class CompleteTerrainWorkCommandHandler
         _inventoryRepository = inventoryRepository
             ?? throw new ArgumentNullException(nameof(inventoryRepository));
         _eventSink = eventSink ?? throw new ArgumentNullException(nameof(eventSink));
+        _skillGrants = skillGrants
+            ?? throw new ArgumentNullException(nameof(skillGrants));
     }
 
     public Result<TerrainWorkCompletionResult> Handle(CompleteTerrainWorkCommand command)
@@ -180,6 +186,20 @@ public sealed class CompleteTerrainWorkCommandHandler
         {
             return Result<TerrainWorkCompletionResult>.Failure(
                 TerrainWorkCompletionErrors.JobNotReady);
+        }
+
+        EntityId workerId = job.AssignedAgentId
+            ?? throw new InvalidOperationException(
+                "An in-progress terrain job must retain its worker.");
+        SkillGrantBundle skillBundle = CreateSkillBundle(
+            terrainJob,
+            workerId,
+            command.Tick);
+        Result skillValidation = _skillGrants.Validate(skillBundle);
+        if (skillValidation.IsFailure)
+        {
+            return Result<TerrainWorkCompletionResult>.Failure(
+                skillValidation.Error!);
         }
 
         WorldState world = _worldRepository.Get();
@@ -241,6 +261,7 @@ public sealed class CompleteTerrainWorkCommandHandler
         Result completed = jobs.Complete(command.JobId, command.Tick);
         EnsureCommitStep(completed.IsSuccess, completed.Error);
 
+        ApplyConfirmedSkillResult(skillBundle);
         _worldRepository.Save(world);
         _inventoryRepository.Save(inventory);
         _jobRepository.Save(jobs);
@@ -258,6 +279,29 @@ public sealed class CompleteTerrainWorkCommandHandler
                 command.ProducesOutput,
                 world.Version,
                 inventory.Version));
+    }
+
+    private static SkillGrantBundle CreateSkillBundle(
+        DigJobDefinition job,
+        EntityId workerId,
+        long tick)
+    {
+        return new SkillGrantBundle(
+            workerId,
+            SkillGrantSourceKind.JobCompleted,
+            job.Id.ToString(),
+            tick,
+            job.SkillGrantProfile.Multiply(1));
+    }
+
+    private void ApplyConfirmedSkillResult(SkillGrantBundle bundle)
+    {
+        Result<SkillRedistributionReport> applied = _skillGrants.ApplyConfirmed(bundle);
+        if (applied.IsFailure)
+        {
+            throw new InvalidOperationException(
+                $"Completed terrain job skill grant failed: {applied.Error}");
+        }
     }
 
     private static Result ValidateOutput(

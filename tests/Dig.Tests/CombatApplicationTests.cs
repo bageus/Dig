@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dig.Application.Agents;
 using Dig.Application.Combat;
 using Dig.Application.Messaging;
 using Dig.Domain.Agents;
@@ -36,7 +37,8 @@ public sealed class CombatApplicationTests
             agents,
             new InMemoryCombatRepository(combat),
             new InMemoryFactionRepository(factions),
-            events);
+            events,
+            new AgentSkillGrantService(agents, events));
         ResolveCombatAttackCommand command = AttackCommand("application-attack", tick: 10);
 
         Result<CombatAttackResolution> first = handler.Handle(command);
@@ -73,7 +75,8 @@ public sealed class CombatApplicationTests
             agents,
             combatRepository,
             new InMemoryFactionRepository(factions),
-            events);
+            events,
+            new AgentSkillGrantService(agents, events));
         Assert.True(attack.Handle(AttackCommand("status-attack", tick: 10)).IsSuccess);
         int afterAttack = agents.Get(TargetId)!.CreateSnapshot(10).Needs.Health.Points;
         AdvanceCombatStatusesHandler statusHandler = new AdvanceCombatStatusesHandler(
@@ -97,6 +100,85 @@ public sealed class CombatApplicationTests
     }
 
     [Fact]
+    public void Confirmed_weapon_hit_and_shield_event_grant_both_skills_once()
+    {
+        InMemoryAgentRepository agents = CreateAgents(targetHealth: 5_000);
+        FactionState factions = CreateFactions(agents);
+        CombatState combat = CreateCombat(status: null);
+        RecordingEventSink events = new RecordingEventSink();
+        AgentSkillGrantService skills = new AgentSkillGrantService(agents, events);
+        ResolveCombatAttackHandler handler = new ResolveCombatAttackHandler(
+            agents,
+            new InMemoryCombatRepository(combat),
+            new InMemoryFactionRepository(factions),
+            events,
+            skills);
+        CombatantModifiers attacker = new CombatantModifiers(0, 0, 0, 0, 0);
+        CombatantModifiers shield = new CombatantModifiers(
+            0, 0, 0, blockChance: 10_000, blockValue: 0,
+            shieldSkillProfile: new ShieldSkillProfile(
+                "shield.test",
+                defenseGrantUnits: 50));
+        ResolveCombatAttackCommand command = new ResolveCombatAttackCommand(
+            new CombatActionId("skill-attack"),
+            AttackerId,
+            TargetId,
+            WeaponId,
+            worldSeed: 77UL,
+            tick: 10,
+            attacker,
+            shield);
+
+        Assert.True(handler.Handle(command).IsSuccess);
+        Assert.True(handler.Handle(command).Value.WasAlreadyProcessed);
+
+        Assert.Equal(75, agents.Get(AttackerId)!.CreateSnapshot(10)
+            .GetSkillLevel(AgentSkillCatalog.OneHandedCombat));
+        Assert.Equal(50, agents.Get(TargetId)!.CreateSnapshot(10)
+            .GetSkillLevel(AgentSkillCatalog.Defense));
+        Assert.Equal(2, events.Events.OfType<AgentSkillGrantApplied>().Count());
+        SkillProgressionResultConfirmed[] confirmed = events.Events
+            .OfType<SkillProgressionResultConfirmed>()
+            .ToArray();
+        Assert.Contains(confirmed, value => value.Bundle.SourceId
+            == "skill-attack:weapon:weapon.test");
+        Assert.Contains(confirmed, value => value.Bundle.SourceId
+            == "skill-attack:shield:shield.test");
+    }
+
+    [Fact]
+    public void Miss_does_not_grant_weapon_or_defense_skill()
+    {
+        InMemoryAgentRepository agents = CreateAgents(targetHealth: 5_000);
+        RecordingEventSink events = new RecordingEventSink();
+        ResolveCombatAttackHandler handler = new ResolveCombatAttackHandler(
+            agents,
+            new InMemoryCombatRepository(CreateCombat(status: null, accuracy: 0)),
+            new InMemoryFactionRepository(CreateFactions(agents)),
+            events,
+            new AgentSkillGrantService(agents, events));
+        CombatantModifiers none = new CombatantModifiers(0, 0, 0, 0, 0);
+        CombatantModifiers shield = new CombatantModifiers(
+            0, 0, 0, blockChance: 10_000, blockValue: 0,
+            shieldSkillProfile: new ShieldSkillProfile("shield.test", 50));
+
+        Result<CombatAttackResolution> result = handler.Handle(
+            new ResolveCombatAttackCommand(
+                new CombatActionId("missed-skill-attack"),
+                AttackerId,
+                TargetId,
+                WeaponId,
+                worldSeed: 77UL,
+                tick: 10,
+                none,
+                shield));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(CombatAttackOutcome.Miss, result.Value.Outcome);
+        Assert.Empty(events.Events.OfType<AgentSkillGrantApplied>());
+    }
+
+    [Fact]
     public void Healing_job_restores_health_once_and_releases_reservations()
     {
         InMemoryAgentRepository agents = CreateAgents(targetHealth: 5_000);
@@ -116,7 +198,8 @@ public sealed class CombatApplicationTests
         CompleteHealingJobHandler handler = new CompleteHealingJobHandler(
             agents,
             new InMemoryJobRepository(jobs),
-            events);
+            events,
+            new AgentSkillGrantService(agents, events));
         CompleteHealingJobCommand command = new CompleteHealingJobCommand(
             HealingJobId,
             TargetId,
@@ -132,6 +215,8 @@ public sealed class CombatApplicationTests
         Assert.Equal(JobStatus.Completed, jobs.Get(HealingJobId)!.Status);
         Assert.Empty(jobs.GetReservations());
         Assert.Single(events.Events.OfType<AgentExternalEffectApplied>());
+        Assert.Equal(100, agents.Get(HealerId)!.CreateSnapshot(2)
+            .GetSkillLevel(AgentSkillCatalog.Service));
     }
 
     private static InMemoryAgentRepository CreateAgents(int targetHealth)
@@ -179,7 +264,9 @@ public sealed class CombatApplicationTests
         return factions;
     }
 
-    private static CombatState CreateCombat(CombatStatusDefinition? status)
+    private static CombatState CreateCombat(
+        CombatStatusDefinition? status,
+        int accuracy = 10_000)
     {
         return new CombatState(new WeaponCatalog(new[]
         {
@@ -187,11 +274,14 @@ public sealed class CombatApplicationTests
                 WeaponId,
                 minimumRange: 1,
                 maximumRange: 1,
-                accuracy: 10_000,
+                accuracy: accuracy,
                 baseDamage: 1_000,
                 armorPenetration: 0,
                 cooldownTicks: 1,
-                status),
+                statusOnHit: status,
+                skillProfile: new CombatSkillProfile(
+                    AgentSkillCatalog.OneHandedCombat,
+                    hitGrantUnits: 75)),
         }));
     }
 

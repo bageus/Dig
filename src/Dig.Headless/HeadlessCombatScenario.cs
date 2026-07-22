@@ -1,4 +1,5 @@
 using System;
+using Dig.Application.Agents;
 using Dig.Application.Combat;
 using Dig.Domain.Agents;
 using Dig.Domain.Combat;
@@ -59,7 +60,8 @@ internal static class HeadlessCombatScenario
             agents,
             new InMemoryCombatRepository(combat),
             new InMemoryFactionRepository(factions),
-            journal);
+            journal,
+            new AgentSkillGrantService(agents, journal));
         CombatantModifiers none = new CombatantModifiers(0, 0, 0, 0, 0);
         ResolveCombatAttackCommand command = new ResolveCombatAttackCommand(
             new CombatActionId("headless-attack-1"),

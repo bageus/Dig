@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dig.Application.Agents;
 using Dig.Application.Buildings;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Production;
 using Dig.Domain.Buildings;
+using Dig.Domain.Agents;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -70,6 +72,9 @@ internal sealed class ProductionTestHarness
         Candidates = new InMemoryJobCandidateProvider();
         Energy = new FixedEnergyAvailability(energyAvailable);
         Journal = new InMemoryExecutionJournal();
+        Agents = new InMemoryAgentRepository();
+        Assert.True(Agents.Add(AgentTestFactory.CreateAgent(id: WorkerId)).IsSuccess);
+        SkillGrants = new AgentSkillGrantService(Agents, Journal);
     }
 
     public ItemCatalog Items { get; }
@@ -101,6 +106,10 @@ internal sealed class ProductionTestHarness
     public FixedEnergyAvailability Energy { get; }
 
     public InMemoryExecutionJournal Journal { get; }
+
+    public InMemoryAgentRepository Agents { get; }
+
+    public AgentSkillGrantService SkillGrants { get; }
 
     public Result Enqueue(EntityId orderId, RecipeId recipeId, long tick)
     {
@@ -153,11 +162,12 @@ internal sealed class ProductionTestHarness
         return new ApplyProductionWorkHandler(
             ProductionRepository,
             JobRepository,
+            Agents,
             Journal).Handle(new ApplyProductionWorkCommand(
                 orderId,
                 jobId,
                 baseWork: 8,
-                new ProductionWorkContext(15_000, 10_000),
+                conditionEfficiencyBasisPoints: 15_000,
                 tick));
     }
 
@@ -171,7 +181,8 @@ internal sealed class ProductionTestHarness
             ProductionRepository,
             InventoryRepository,
             JobRepository,
-            Journal).Handle(new CompleteProductionOrderCommand(
+            Journal,
+            SkillGrants).Handle(new CompleteProductionOrderCommand(
                 orderId,
                 jobId,
                 new[] { outputStackId },

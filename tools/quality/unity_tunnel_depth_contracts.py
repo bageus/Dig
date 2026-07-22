@@ -14,7 +14,7 @@ def check_tunnel_depth_contracts(
     interaction = runtime_root / "DigWorldInteraction.cs"
     drawing = runtime_root / "DigWorldInteraction.Excavation.cs"
     depth_input = runtime_root / "DigWorldInteraction.TunnelDepthExcavation.cs"
-    session = runtime_root / "DigAgentSession.TunnelMovement.cs"
+    session = runtime_root / "DigAgentSession.TunnelTopology.cs"
     runtime = runtime_root / "DigAgentSimulationDriverBase.CaveRooms.cs"
     loop = runtime_root / "DigAgentSimulationDriverBase.Loop.cs"
     spatial_runtime = runtime_root / "DigTerrainSpatialExcavation.cs"

@@ -79,6 +79,9 @@ jobs:
       - name: Validate adaptive HUD startup
         run: python tools/quality/check_unity_hud_startup_contracts.py
 
+      - name: Validate skills progression integration
+        run: python tools/quality/check_unity_skills_progression_contracts.py
+
       - name: Upload Unity source contract log
         if: always()
         uses: actions/upload-artifact@v4

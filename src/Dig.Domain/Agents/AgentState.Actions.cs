@@ -107,7 +107,7 @@ public sealed partial class AgentState
 
         AgentIntentKind completedIntent = _activeAction.IntentKind;
         AgentActionEffect effect = policy.Actions.Get(completedIntent);
-        _needs.Apply(effect.NeedDelta);
+        ApplyNeedDelta(effect.NeedDelta, tick);
         bool completed = _activeAction.Advance();
         Version = checked(Version + 1);
         HandleDeath(tick);
@@ -169,7 +169,7 @@ public sealed partial class AgentState
 
         AgentIntentKind completedIntent = _activeAction.IntentKind;
         AgentActionEffect effect = policy.Actions.Get(completedIntent);
-        _needs.Apply(effect.NeedDelta);
+        ApplyNeedDelta(effect.NeedDelta, tick);
         _activeAction = null;
         LastActionBlockReason = null;
         Version = checked(Version + 1);

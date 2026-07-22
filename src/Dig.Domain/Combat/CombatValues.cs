@@ -71,7 +71,8 @@ public sealed class WeaponProfile
         int baseDamage,
         int armorPenetration,
         long cooldownTicks,
-        CombatStatusDefinition? statusOnHit = null)
+        CombatStatusDefinition? statusOnHit = null,
+        CombatSkillProfile? skillProfile = null)
     {
         if (id.IsEmpty)
         {
@@ -103,6 +104,7 @@ public sealed class WeaponProfile
         ArmorPenetration = armorPenetration;
         CooldownTicks = cooldownTicks;
         StatusOnHit = statusOnHit;
+        SkillProfile = skillProfile;
     }
 
     public WeaponProfileId Id { get; }
@@ -113,6 +115,7 @@ public sealed class WeaponProfile
     public int ArmorPenetration { get; }
     public long CooldownTicks { get; }
     public CombatStatusDefinition? StatusOnHit { get; }
+    public CombatSkillProfile? SkillProfile { get; }
 
     private static void ValidateChance(int chance, string parameterName)
     {
@@ -121,6 +124,55 @@ public sealed class WeaponProfile
             throw new ArgumentOutOfRangeException(parameterName);
         }
     }
+}
+
+public sealed class CombatSkillProfile
+{
+    public CombatSkillProfile(AgentSkillId skillId, int hitGrantUnits)
+    {
+        if (skillId != AgentSkillCatalog.OneHandedCombat
+            && skillId != AgentSkillCatalog.TwoHandedCombat
+            && skillId != AgentSkillCatalog.RangedCombat
+            && skillId != AgentSkillCatalog.UnarmedCombat)
+        {
+            throw new ArgumentException(
+                "A weapon profile requires an offensive combat skill.",
+                nameof(skillId));
+        }
+
+        if (hitGrantUnits <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(hitGrantUnits));
+        }
+
+        SkillId = skillId;
+        HitGrantUnits = hitGrantUnits;
+    }
+
+    public AgentSkillId SkillId { get; }
+    public int HitGrantUnits { get; }
+}
+
+public sealed class ShieldSkillProfile
+{
+    public ShieldSkillProfile(string profileId, int defenseGrantUnits)
+    {
+        if (string.IsNullOrWhiteSpace(profileId))
+        {
+            throw new ArgumentException("Shield skill profile id is required.", nameof(profileId));
+        }
+
+        if (defenseGrantUnits <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(defenseGrantUnits));
+        }
+
+        ProfileId = profileId.Trim();
+        DefenseGrantUnits = defenseGrantUnits;
+    }
+
+    public string ProfileId { get; }
+    public int DefenseGrantUnits { get; }
 }
 
 public sealed class WeaponCatalog

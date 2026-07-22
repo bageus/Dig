@@ -192,7 +192,9 @@ internal sealed class BuildingBoxPackingHarness
             Assembly.BuildingsRepository,
             Assembly.InventoryRepository,
             Assembly.JobRepository,
-            Assembly.Journal).Handle(new CompleteBuildingBoxPackingCommand(
+            Assembly.Journal,
+            AgentSkillGrantTestFactory.Create(WorkerId, Assembly.Journal))
+            .Handle(new CompleteBuildingBoxPackingCommand(
                 BuildingId,
                 PackingJobId,
                 _tick++));

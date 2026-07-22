@@ -10,6 +10,24 @@ using Dig.Domain.Core;
 namespace Dig.Infrastructure.InMemory
 {
 
+public readonly struct JournalEventEntry
+{
+    public JournalEventEntry(long sequence, IDomainEvent domainEvent)
+    {
+        if (sequence <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(sequence));
+        }
+
+        Sequence = sequence;
+        DomainEvent = domainEvent
+            ?? throw new ArgumentNullException(nameof(domainEvent));
+    }
+
+    public long Sequence { get; }
+    public IDomainEvent DomainEvent { get; }
+}
+
 public sealed class InMemoryExecutionJournal
     : IExecutionJournal,
       IJobAssignmentReportSink,
@@ -18,10 +36,12 @@ public sealed class InMemoryExecutionJournal
     private readonly object _gate = new object();
     private readonly List<CommandJournalEntry> _commands = new List<CommandJournalEntry>();
     private readonly List<IDomainEvent> _events = new List<IDomainEvent>();
+    private readonly List<long> _eventSequences = new List<long>();
     private readonly Dictionary<EntityId, JobAssignmentReport> _jobAssignmentReports =
         new Dictionary<EntityId, JobAssignmentReport>();
     private readonly int? _maximumCommands;
     private readonly int? _maximumEvents;
+    private long _nextEventSequence = 1;
 
     public InMemoryExecutionJournal(
         int? maximumCommands = null,
@@ -59,6 +79,17 @@ public sealed class InMemoryExecutionJournal
         }
     }
 
+    public long LatestEventSequence
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _nextEventSequence - 1;
+            }
+        }
+    }
+
     public IReadOnlyDictionary<EntityId, JobAssignmentReport> JobAssignmentReports
     {
         get
@@ -90,9 +121,62 @@ public sealed class InMemoryExecutionJournal
 
         lock (_gate)
         {
-            _events.AddRange(events);
-            DroppedEventCount = checked(DroppedEventCount
-                + TrimOldest(_events, _maximumEvents));
+            foreach (IDomainEvent domainEvent in events)
+            {
+                if (domainEvent is null)
+                {
+                    throw new ArgumentException(
+                        "Journal events cannot contain null.",
+                        nameof(events));
+                }
+
+                _events.Add(domainEvent);
+                _eventSequences.Add(_nextEventSequence);
+                _nextEventSequence = checked(_nextEventSequence + 1);
+            }
+
+            int removed = TrimOldest(_events, _maximumEvents);
+            if (removed > 0)
+            {
+                _eventSequences.RemoveRange(0, removed);
+            }
+
+            DroppedEventCount = checked(DroppedEventCount + removed);
+        }
+    }
+
+    public IReadOnlyList<JournalEventEntry> ReadEventsAfter(
+        long sequenceExclusive,
+        int maximumCount = 256)
+    {
+        if (sequenceExclusive < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(sequenceExclusive));
+        }
+
+        if (maximumCount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maximumCount));
+        }
+
+        lock (_gate)
+        {
+            int start = _eventSequences.FindIndex(value => value > sequenceExclusive);
+            if (start < 0)
+            {
+                return Array.Empty<JournalEventEntry>();
+            }
+
+            int count = Math.Min(maximumCount, _events.Count - start);
+            JournalEventEntry[] entries = new JournalEventEntry[count];
+            for (int index = 0; index < count; index++)
+            {
+                entries[index] = new JournalEventEntry(
+                    _eventSequences[start + index],
+                    _events[start + index]);
+            }
+
+            return entries;
         }
     }
 

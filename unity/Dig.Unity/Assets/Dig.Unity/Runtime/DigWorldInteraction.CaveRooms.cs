@@ -12,6 +12,8 @@ namespace Dig.Unity
         private DigCaveRoomFloorRenderer? _caveRoomFloorRenderer;
         private CaveRoomPlanResult? _hoveredCaveRoomPlan;
         private long _lastCaveRoomRuntimeTick = -1;
+        private readonly CaveRoomSkillAccessPolicy _caveRoomSkillAccess =
+            new CaveRoomSkillAccessPolicy();
 
         internal CaveRoomPresetKind? CaveRoomPreset => _caveRoomPreset;
 
@@ -30,6 +32,12 @@ namespace Dig.Unity
             if (!CanActivateExcavationDrawing)
             {
                 _hud!.SetStatus("Clear the dwarf selection before placing a cave room.");
+                return;
+            }
+
+            if (!CanUseCavePreset(kind, out string skillDetail))
+            {
+                _hud!.SetStatus(skillDetail);
                 return;
             }
 
@@ -61,6 +69,12 @@ namespace Dig.Unity
             if (!_caveRoomPreset.HasValue || _caveRoomPreviewRenderer == null)
             {
                 _caveRoomPreviewRenderer?.Clear();
+                return;
+            }
+
+            if (!CanUseCavePreset(_caveRoomPreset.Value, out _))
+            {
+                _caveRoomPreviewRenderer.Clear();
                 return;
             }
 
@@ -120,6 +134,13 @@ namespace Dig.Unity
                 return false;
             }
 
+            if (!CanUseCavePreset(_caveRoomPreset.Value, out string skillDetail))
+            {
+                _hud!.SetStatus(skillDetail);
+                DisableCaveRoomPlanning();
+                return true;
+            }
+
             if (_hud!.ContainsScreenPoint(Input.mousePosition))
             {
                 return false;
@@ -153,6 +174,28 @@ namespace Dig.Unity
             }
 
             return true;
+        }
+
+        private bool CanUseCavePreset(
+            CaveRoomPresetKind kind,
+            out string detail)
+        {
+            int maximum = _agentSession!.GetMaximumSkillLevel(
+                Dig.Domain.Agents.AgentSkillCatalog.Stonework);
+            CaveRoomSkillAccessResult access = _caveRoomSkillAccess.Evaluate(
+                kind,
+                maximum);
+            if (access.Allowed)
+            {
+                detail = string.Empty;
+                return true;
+            }
+
+            detail = $"{kind} cave requires Stonework "
+                + $"{access.RequiredUnits / Dig.Domain.Agents.AgentSkillCatalog.UnitsPerPoint}; "
+                + $"colony maximum is "
+                + $"{maximum / Dig.Domain.Agents.AgentSkillCatalog.UnitsPerPoint}.";
+            return false;
         }
     }
 }

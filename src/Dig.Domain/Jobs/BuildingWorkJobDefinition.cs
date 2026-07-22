@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Dig.Domain.Agents;
 using Dig.Domain.Buildings;
+using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 
@@ -32,7 +34,8 @@ public sealed class BuildingWorkJobDefinition : JobDefinition
         int priority,
         long createdTick,
         JobRetryPolicy retryPolicy,
-        IEnumerable<EntityId>? dependencies = null)
+        IEnumerable<EntityId>? dependencies = null,
+        SkillGrantProfile? skillGrantProfile = null)
         : base(id, priority, createdTick, retryPolicy, WorkStages, dependencies)
     {
         if (buildingId.IsEmpty)
@@ -43,6 +46,7 @@ public sealed class BuildingWorkJobDefinition : JobDefinition
         BuildingId = buildingId;
         Kind = kind;
         WorkPosition = workPosition;
+        SkillGrantProfile = skillGrantProfile ?? CreateSkillProfile(kind);
     }
 
     public EntityId BuildingId { get; }
@@ -50,6 +54,8 @@ public sealed class BuildingWorkJobDefinition : JobDefinition
     public BuildingWorkKind Kind { get; }
 
     public CellId WorkPosition { get; }
+
+    public SkillGrantProfile SkillGrantProfile { get; }
 
     public override string Description =>
         $"{Kind}:{BuildingId}@{WorkPosition}";
@@ -62,6 +68,15 @@ public sealed class BuildingWorkJobDefinition : JobDefinition
         {
             ReservationKey.ForPosition(WorkPosition),
         });
+    }
+
+    private static SkillGrantProfile CreateSkillProfile(BuildingWorkKind kind)
+    {
+        return kind == BuildingWorkKind.Construction
+            ? DefaultSkillProgressionContent.Catalog.GetProfile(
+                DefaultSkillGrantProfileIds.Construction)
+            : DefaultSkillProgressionContent.Catalog.GetProfile(
+                DefaultSkillGrantProfileIds.Logistics);
     }
 }
 }

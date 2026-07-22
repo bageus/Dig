@@ -23,6 +23,12 @@ public sealed partial class DigGameHudCanvas
             return;
         }
 
+        if (_technologyDescriptionId != null)
+        {
+            ShowTechnologyDescriptionPanel(_technologyDescriptionId);
+            return;
+        }
+
         BuildingWorldViewModel? building = _buildingRenderer!.SelectedModel;
         if (building != null)
         {

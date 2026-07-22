@@ -40,5 +40,9 @@ public static class AgentErrors
     public static readonly DomainError TargetedActionAlreadyReady = new DomainError(
         "agents.action.already_ready",
         "The targeted action is already waiting for external completion.");
+
+    public static readonly DomainError SkillBundleAgentMismatch = new DomainError(
+        "agents.skills.agent_mismatch",
+        "The skill grant bundle targets a different agent.");
 }
 }

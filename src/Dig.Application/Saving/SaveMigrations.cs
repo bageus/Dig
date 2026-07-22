@@ -172,4 +172,28 @@ public sealed class SaveVersionTwoPackingMigration : ISaveMigration
         document.FormatVersion = ToVersion;
     }
 }
+
+public sealed class SaveVersionThreeAgentSkillsMigration : ISaveMigration
+{
+    public string Id => "save.v3_to_v4.agent_skills";
+    public int FromVersion => 3;
+    public int ToVersion => 4;
+
+    public void Apply(SaveGameDocument document)
+    {
+        if (document is null)
+        {
+            throw new ArgumentNullException(nameof(document));
+        }
+
+        if (document.FormatVersion != FromVersion)
+        {
+            throw new InvalidOperationException(
+                "Migration received the wrong source version.");
+        }
+
+        document.AgentSkills ??= new AgentSkillsSaveData();
+        document.FormatVersion = ToVersion;
+    }
+}
 }

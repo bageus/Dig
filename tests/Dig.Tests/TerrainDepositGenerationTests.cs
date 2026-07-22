@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
+using Dig.Domain.Agents;
+using Dig.Domain.Content;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
 using Xunit;
@@ -98,6 +100,34 @@ public sealed class TerrainDepositGenerationTests
         Assert.NotEmpty(deposits);
         Assert.All(deposits, value => Assert.Contains(value.Cell, allowed));
         Assert.All(deposits, value => Assert.InRange(value.RemainingYield, 1, value.Definition.MaximumYield));
+    }
+
+    [Fact]
+    public void Deposit_definitions_carry_data_driven_extraction_skill_profiles()
+    {
+        TerrainDepositDefinition iron = new TerrainDepositDefinition(
+            "deposit.iron_ore",
+            "Iron ore",
+            new ItemId("ore.iron"),
+            maximumYield: 8,
+            generationWeight: 1,
+            skillGrantProfile: DefaultSkillProgressionContent.Catalog.GetProfile(
+                DefaultSkillGrantProfileIds.Metallurgy));
+        TerrainDepositDefinition crystal = new TerrainDepositDefinition(
+            "deposit.crystal_ore",
+            "Crystal ore",
+            new ItemId("ore.crystal"),
+            maximumYield: 6,
+            generationWeight: 1,
+            skillGrantProfile: DefaultSkillProgressionContent.Catalog.GetProfile(
+                DefaultSkillGrantProfileIds.Alchemy));
+
+        Assert.Contains(iron.SkillGrantProfile.PerUnit,
+            grant => grant.SkillId == AgentSkillCatalog.Metallurgy);
+        Assert.Contains(crystal.SkillGrantProfile.PerUnit,
+            grant => grant.SkillId == AgentSkillCatalog.Alchemy);
+        Assert.DoesNotContain(iron.SkillGrantProfile.PerUnit,
+            grant => grant.SkillId == AgentSkillCatalog.Stonework);
     }
 
     private static SpatialCellId[] CreateCandidates(int width, int height)

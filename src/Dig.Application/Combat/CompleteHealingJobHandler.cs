@@ -15,15 +15,19 @@ public sealed class CompleteHealingJobHandler
     private readonly IAgentRepository _agents;
     private readonly IJobRepository _jobs;
     private readonly IEventSink _eventSink;
+    private readonly IAgentSkillGrantService _skillGrants;
 
     public CompleteHealingJobHandler(
         IAgentRepository agents,
         IJobRepository jobs,
-        IEventSink eventSink)
+        IEventSink eventSink,
+        IAgentSkillGrantService skillGrants)
     {
         _agents = agents ?? throw new ArgumentNullException(nameof(agents));
         _jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
         _eventSink = eventSink ?? throw new ArgumentNullException(nameof(eventSink));
+        _skillGrants = skillGrants
+            ?? throw new ArgumentNullException(nameof(skillGrants));
     }
 
     public Result Handle(CompleteHealingJobCommand command)
@@ -50,6 +54,21 @@ public sealed class CompleteHealingJobHandler
             return Result.Failure(CombatApplicationErrors.AgentNotFound);
         }
 
+        EntityId healerId = snapshot.AssignedAgentId
+            ?? throw new InvalidOperationException(
+                "An active healing job must retain its assigned healer.");
+        SkillGrantBundle skillBundle = new SkillGrantBundle(
+            healerId,
+            SkillGrantSourceKind.ServiceCompleted,
+            command.JobId.ToString(),
+            command.Tick,
+            healing.SkillGrantProfile.Multiply(1));
+        Result skillValidation = _skillGrants.Validate(skillBundle);
+        if (skillValidation.IsFailure)
+        {
+            return skillValidation;
+        }
+
         Result healed = patient.ApplyExternalNeedDelta(
             new NeedDelta(0, 0, 0, healing.HealthRestored),
             "healing-job:" + command.JobId,
@@ -63,6 +82,14 @@ public sealed class CompleteHealingJobHandler
         if (completed.IsFailure)
         {
             return completed;
+        }
+
+        Result<SkillRedistributionReport> skillApplied =
+            _skillGrants.ApplyConfirmed(skillBundle);
+        if (skillApplied.IsFailure)
+        {
+            throw new InvalidOperationException(
+                $"Completed healing service skill grant failed: {skillApplied.Error}");
         }
 
         _agents.Save(patient);

@@ -1,5 +1,6 @@
 using System;
 using Dig.Domain.Core;
+using Dig.Domain.World;
 
 namespace Dig.Domain.Agents
 {
@@ -135,14 +136,17 @@ public sealed class AgentScheduleChanged : IDomainEvent
 
 public sealed class AgentDied : IDomainEvent
 {
-    public AgentDied(long tick, EntityId agentId)
+    public AgentDied(long tick, EntityId agentId, CellId? lastKnownPosition = null)
     {
         Tick = tick;
         AgentId = agentId;
+        LastKnownPosition = lastKnownPosition;
     }
 
     public long Tick { get; }
 
     public EntityId AgentId { get; }
+
+    public CellId? LastKnownPosition { get; }
 }
 }

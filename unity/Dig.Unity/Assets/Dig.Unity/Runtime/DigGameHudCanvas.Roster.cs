@@ -54,6 +54,15 @@ public sealed partial class DigGameHudCanvas
             .ThenBy(job => job.Description, StringComparer.Ordinal)
             .ThenBy(job => job.Id, StringComparer.Ordinal)
             .ToArray();
+        SetButtonActive(_residentTabButton, _rightTab == RightPanelTab.Residents);
+        SetButtonActive(_buildingTabButton, _rightTab == RightPanelTab.Buildings);
+        SetButtonActive(_jobTabButton, _rightTab == RightPanelTab.Jobs);
+        if (_rightTab == RightPanelTab.Residents)
+        {
+            RefreshResidentRows(residentRoster);
+            return;
+        }
+
         string signature = BuildRosterSignature(residents, buildings, jobs);
         if (string.Equals(signature, _lastRosterSignature, StringComparison.Ordinal))
         {
@@ -61,15 +70,10 @@ public sealed partial class DigGameHudCanvas
         }
 
         _lastRosterSignature = signature;
-        SetButtonActive(_residentTabButton, _rightTab == RightPanelTab.Residents);
-        SetButtonActive(_buildingTabButton, _rightTab == RightPanelTab.Buildings);
-        SetButtonActive(_jobTabButton, _rightTab == RightPanelTab.Jobs);
+        ResetResidentRowPool();
         ClearChildren(_rightContent!);
         switch (_rightTab)
         {
-            case RightPanelTab.Residents:
-                BuildResidentRows(residents);
-                break;
             case RightPanelTab.Buildings:
                 BuildBuildingRows(buildings);
                 break;
