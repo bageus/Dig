@@ -38,10 +38,12 @@ Every need also carries an accessibility/localization key. Alertness uses `resid
 
 `ResidentSkillSetViewModel` stores one immutable full skill list in stable skill-id order. The compact top-five view is derived from the same values using:
 
-1. level descending;
-2. stable `AgentSkillId` ascending.
+1. omit skills whose level is zero;
+2. level descending;
+3. stable `AgentSkillId` ascending;
+4. take at most five values.
 
-Combat skills participate in the same ordering as every other skill. The full inspector and compact row therefore cannot disagree because of separate queries.
+Combat skills participate in the same ordering as every other skill. If fewer than five skills are above zero, the compact view contains only those skills; when every skill is zero, the section is hidden. The full diagnostic inspector remains available as a separate builder over the same snapshot, but is not mounted in the normal expanded resident row.
 
 ## Typed activity
 

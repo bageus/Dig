@@ -147,7 +147,6 @@ public sealed partial class DigGameHudCanvas
         CreateNeedMetric(parent, "Alertness", resident.Alertness);
         CreateNeedMetric(parent, "Mood", resident.Mood);
         BuildTopSkillList(parent, resident.Skills);
-        BuildSkillInspector(parent, resident.Skills);
     }
 
     private static void CreateNeedMetric(
