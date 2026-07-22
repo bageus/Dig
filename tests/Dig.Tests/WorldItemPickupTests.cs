@@ -14,7 +14,7 @@ namespace Dig.Tests
 public sealed class WorldItemPickupTests
 {
     [Fact]
-    public void Pickup_reserves_and_moves_full_world_stack_to_selected_resident()
+    public void Pickup_reserves_and_places_full_world_stack_in_first_resident_slot()
     {
         Harness harness = new Harness(quantity: 12);
         Assert.True(harness.Create().IsSuccess);
@@ -27,7 +27,12 @@ public sealed class WorldItemPickupTests
 
         Assert.True(completed.IsSuccess, completed.Error?.ToString());
         ItemStackSnapshot carried = harness.Inventory.GetStack(harness.StackId)!;
-        Assert.Equal(ItemLocation.InAgent(harness.ResidentId), carried.Location);
+        Assert.Equal(
+            ItemLocation.InResidentSlot(
+                harness.ResidentId,
+                ResidentInventoryCompartment.Main,
+                slotIndex: 0),
+            carried.Location);
         Assert.Equal(12, carried.Quantity);
         Assert.Equal(0, carried.ReservedQuantity);
         Assert.Equal(JobStatus.Completed, harness.Jobs.Get(harness.JobId)!.Status);

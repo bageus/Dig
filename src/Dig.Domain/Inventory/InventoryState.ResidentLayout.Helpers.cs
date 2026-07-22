@@ -96,6 +96,18 @@ public sealed partial class InventoryState
         IReadOnlyDictionary<ResidentInventorySlot, ItemStackState> occupied,
         out ResidentInventorySlot slot)
     {
+        ItemDefinition definition = Catalog.Get(stack.ItemId);
+        if (activeWeapon.HasValue
+            && activeWeapon.Value.Definition.Accepts(definition)
+            && TryFindFreeSlot(
+                ResidentInventoryCompartment.Weapon,
+                weaponCapacity,
+                occupied,
+                out slot))
+        {
+            return true;
+        }
+
         if (TryFindFreeSlot(
                 ResidentInventoryCompartment.Main,
                 ResidentInventoryLayoutSnapshot.MainSlotCount,
@@ -105,7 +117,6 @@ public sealed partial class InventoryState
             return true;
         }
 
-        ItemDefinition definition = Catalog.Get(stack.ItemId);
         if (activeCargo.HasValue
             && activeCargo.Value.Definition.Accepts(definition)
             && TryFindFreeSlot(
@@ -117,13 +128,8 @@ public sealed partial class InventoryState
             return true;
         }
 
-        return activeWeapon.HasValue
-            && activeWeapon.Value.Definition.Accepts(definition)
-            && TryFindFreeSlot(
-                ResidentInventoryCompartment.Weapon,
-                weaponCapacity,
-                occupied,
-                out slot);
+        slot = default;
+        return false;
     }
 
     private Result ValidatePlacedStack(
