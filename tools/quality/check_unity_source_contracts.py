@@ -13,6 +13,7 @@ from unity_group_input_contracts import (
     check_tunnel_and_group_contracts,
 )
 from unity_navigation_marquee_contracts import check_navigation_and_marquee_contracts
+from unity_management_menu_contracts import check_management_menu_contracts
 from unity_resident_inventory_contracts import (
     check_resident_inventory_runtime_contracts,
 )
@@ -276,6 +277,11 @@ def main() -> int:
         require_fragments,
     ))
     errors.extend(check_navigation_and_marquee_contracts(
+        RUNTIME_ROOT,
+        texts,
+        require_fragments,
+    ))
+    errors.extend(check_management_menu_contracts(
         RUNTIME_ROOT,
         texts,
         require_fragments,

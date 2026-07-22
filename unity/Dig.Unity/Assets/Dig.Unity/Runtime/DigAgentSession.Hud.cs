@@ -48,7 +48,7 @@ internal sealed partial class DigAgentSession
             .ToArray();
         return _rosterPresenter.Present(
             snapshots,
-            society: null,
+            _society.CreateSnapshot(),
             jobs,
             selected);
     }

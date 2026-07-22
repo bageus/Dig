@@ -144,6 +144,7 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
         }
 
         return Contains(_rightPanel, screenPoint)
+            || PointInManagementUi(screenPoint)
             || Contains(_minimapPanel, screenPoint)
             || Contains(_clockPanel, screenPoint)
             || Contains(_statusPanel, screenPoint)
@@ -174,6 +175,7 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
         ApplyResponsiveLayout();
         RefreshClock();
         RefreshNotifications();
+        RefreshManagementOverlay();
         RefreshRoster();
         RefreshContextPanel();
     }
@@ -235,6 +237,7 @@ public sealed partial class DigGameHudCanvas : MonoBehaviour
 
         CreateMinimapShell();
         CreateClockShell();
+        CreateManagementShell();
         ApplyResponsiveLayout(force: true);
     }
 

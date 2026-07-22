@@ -27,6 +27,7 @@ namespace Dig.Unity
         private readonly WorldCellViewModel[] _walkableCells;
         private readonly Dictionary<EntityId, int> _routeIndices;
         private readonly Dictionary<EntityId, ResidentSex> _residentSexes;
+        private readonly SocietyState _society;
         private readonly IAgentSkillGrantService _skillGrants;
         private long _tick;
 
@@ -39,6 +40,7 @@ namespace Dig.Unity
             WorldCellViewModel[] walkableCells,
             Dictionary<EntityId, int> routeIndices,
             Dictionary<EntityId, ResidentSex> residentSexes,
+            SocietyState society,
             IAgentSkillGrantService skillGrants)
         {
             _autonomy = autonomy;
@@ -49,6 +51,7 @@ namespace Dig.Unity
             _walkableCells = walkableCells;
             _routeIndices = routeIndices;
             _residentSexes = residentSexes;
+            _society = society ?? throw new ArgumentNullException(nameof(society));
             _skillGrants = skillGrants
                 ?? throw new ArgumentNullException(nameof(skillGrants));
         }
@@ -90,10 +93,12 @@ namespace Dig.Unity
             Dictionary<EntityId, int> routeIndices = new Dictionary<EntityId, int>();
             Dictionary<EntityId, ResidentSex> residentSexes =
                 new Dictionary<EntityId, ResidentSex>();
+            SocietyState society = CreateDemoSociety();
             AddDemoAgents(
                 repository,
                 routeIndices,
                 residentSexes,
+                society,
                 walkable,
                 tunnelVolume);
             AgentBehaviorPolicy policy = AgentBehaviorPolicy.CreateDefault();
@@ -117,6 +122,7 @@ namespace Dig.Unity
                 walkable,
                 routeIndices,
                 residentSexes,
+                society,
                 new AgentSkillGrantService(repository, journal));
             session.InitializeCombat(journal);
             session.InitializeTunnelMovement(tunnelVolume, journal);
@@ -248,6 +254,7 @@ namespace Dig.Unity
             InMemoryAgentRepository repository,
             Dictionary<EntityId, int> routeIndices,
             Dictionary<EntityId, ResidentSex> residentSexes,
+            SocietyState society,
             IReadOnlyList<WorldCellViewModel> walkable,
             TunnelNavigationVolume tunnelVolume)
         {
@@ -283,6 +290,7 @@ namespace Dig.Unity
 
                 routeIndices.Add(agent.Id, routeIndex);
                 residentSexes.Add(agent.Id, identity.Sex);
+                RegisterDemoResident(society, identity);
             }
         }
 
