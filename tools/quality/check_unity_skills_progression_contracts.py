@@ -108,6 +108,7 @@ def main() -> int:
         (
             "skills.All",
             "skills.TopFive",
+            "skills.TopFive.Count == 0",
             '"Top Skill "',
             "Color.Lerp",
             "FormatSkillReport",
@@ -123,10 +124,16 @@ def main() -> int:
             "Inspector_renders_twelve_skills_capacity_thresholds_and_gradient",
             "Top_five_uses_value_then_stable_id_from_same_snapshot",
             "Roster_renders_exactly_five_highest_skills_in_snapshot_order",
+            "Roster_hides_zero_skills_and_omits_empty_top_skill_section",
             "BuildSkillInspector",
             "BuildTopSkillList",
             "University 100/100",
         ),
+        errors,
+    )
+    require(
+        "src/Dig.Presentation.Abstractions/Agents/ResidentSkillProgressionViewModel.cs",
+        (".Where(item => item.Level > 0)", ".Take(5)"),
         errors,
     )
     require(

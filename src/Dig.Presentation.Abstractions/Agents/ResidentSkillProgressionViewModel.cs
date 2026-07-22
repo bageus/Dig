@@ -39,6 +39,7 @@ public sealed partial class ResidentSkillSetViewModel
 
         All = new ReadOnlyCollection<ResidentSkillViewModel>(all);
         TopFive = new ReadOnlyCollection<ResidentSkillViewModel>(all
+            .Where(item => item.Level > 0)
             .OrderByDescending(item => item.Level)
             .ThenBy(item => item.SkillId, StringComparer.Ordinal)
             .Take(5)

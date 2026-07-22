@@ -14,6 +14,11 @@ public sealed partial class DigGameHudCanvas
         Transform parent,
         ResidentSkillSetViewModel skills)
     {
+        if (skills.TopFive.Count == 0)
+        {
+            return;
+        }
+
         Text heading = CreateText(
             "Top Skills",
             parent,
