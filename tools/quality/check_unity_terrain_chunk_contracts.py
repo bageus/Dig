@@ -207,7 +207,9 @@ def main() -> int:
             "EnsureTerrainChunkRenderer().Render(snapshot, terrainVisualCatalog)",
             "SetTunnelDigInteractionActive",
             "renderer.enabled = _tunnelDigInteractionActive",
-            "collider.enabled = _tunnelDigInteractionActive",
+            "collider.enabled = visual.gameObject.activeSelf",
+            "_tunnelDigInteractionActive",
+            "visual.Model.IsDesignated",
         ),
     ))
     errors.extend(reject(

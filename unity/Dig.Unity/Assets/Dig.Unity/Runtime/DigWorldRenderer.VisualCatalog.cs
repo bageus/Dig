@@ -118,8 +118,9 @@ namespace Dig.Unity
                 Collider? collider = visual.GetComponent<Collider>();
                 if (collider != null)
                 {
-                    collider.enabled = _tunnelDigInteractionActive
-                        && visual.gameObject.activeSelf;
+                    collider.enabled = visual.gameObject.activeSelf
+                        && (_tunnelDigInteractionActive
+                            || visual.Model.IsDesignated);
                 }
             }
         }
