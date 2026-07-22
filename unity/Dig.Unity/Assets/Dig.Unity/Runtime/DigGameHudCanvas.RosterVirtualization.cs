@@ -11,8 +11,17 @@ namespace Dig.Unity
 public sealed partial class DigGameHudCanvas
 {
     private const int ResidentRowPoolCapacity = 16;
-    private const float CompactResidentRowHeight = 34f;
-    private const float ExpandedResidentRowHeight = 512f;
+    private const float ResidentVerticalPaddingHeight = 7f;
+    private const float ResidentElementSpacing = 3f;
+    private const float CompactResidentContentHeight = 27f;
+    private const float ResidentStatusHeight = 20f;
+    private const float ResidentNeedMetricHeight = 18f;
+    private const int ResidentNeedMetricCount = 4;
+    private const float ResidentTopSkillHeadingHeight = 16f;
+    private const float ResidentTopSkillMetricHeight = 13f;
+    private const int MaximumVisibleResidentSkills = 5;
+    private const float CompactResidentRowHeight =
+        ResidentVerticalPaddingHeight + CompactResidentContentHeight;
     private const float ResidentRowSpacing = 4f;
 
     private readonly List<ResidentRowSlot> _residentRowPool =
@@ -126,6 +135,7 @@ public sealed partial class DigGameHudCanvas
             _rightContent!,
             new Color(0.10f, 0.14f, 0.19f, 0.96f));
         LayoutElement element = row.gameObject.AddComponent<LayoutElement>();
+        element.flexibleHeight = 0f;
         VerticalLayoutGroup vertical = row.gameObject.AddComponent<VerticalLayoutGroup>();
         vertical.padding = new RectOffset(5, 5, 3, 4);
         vertical.spacing = 3f;
@@ -194,8 +204,29 @@ public sealed partial class DigGameHudCanvas
     private static float ResidentRowHeight(ResidentRosterRowViewModel resident)
     {
         return resident.IsExpanded
-            ? ExpandedResidentRowHeight
+            ? CalculateExpandedResidentRowHeight(resident.Skills.TopFive.Count)
             : CompactResidentRowHeight;
+    }
+
+    private static float CalculateExpandedResidentRowHeight(int visibleSkillCount)
+    {
+        int skillCount = Math.Min(
+            MaximumVisibleResidentSkills,
+            Math.Max(0, visibleSkillCount));
+        float height = ResidentVerticalPaddingHeight
+            + CompactResidentContentHeight
+            + ResidentStatusHeight
+            + (ResidentNeedMetricHeight * ResidentNeedMetricCount)
+            + (ResidentElementSpacing * ResidentNeedMetricCount + ResidentElementSpacing);
+        if (skillCount == 0)
+        {
+            return height;
+        }
+
+        return height
+            + ResidentTopSkillHeadingHeight
+            + (ResidentTopSkillMetricHeight * skillCount)
+            + (ResidentElementSpacing * (skillCount + 1));
     }
 
     private static string BuildResidentWindowSignature(

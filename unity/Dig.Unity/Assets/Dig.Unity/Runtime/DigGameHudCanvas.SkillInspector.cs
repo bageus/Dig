@@ -25,7 +25,9 @@ public sealed partial class DigGameHudCanvas
             "TOP 5 SKILLS",
             10,
             TextAnchor.MiddleLeft);
-        heading.gameObject.AddComponent<LayoutElement>().preferredHeight = 16f;
+        LayoutElement headingLayout = heading.gameObject.AddComponent<LayoutElement>();
+        headingLayout.preferredHeight = ResidentTopSkillHeadingHeight;
+        headingLayout.flexibleHeight = 0f;
 
         foreach (ResidentSkillViewModel skill in skills.TopFive)
         {
@@ -67,7 +69,9 @@ public sealed partial class DigGameHudCanvas
         bool useShortName)
     {
         RectTransform row = CreateRect(rowPrefix + skill.SkillId, parent);
-        row.gameObject.AddComponent<LayoutElement>().preferredHeight = 13f;
+        LayoutElement rowLayout = row.gameObject.AddComponent<LayoutElement>();
+        rowLayout.preferredHeight = ResidentTopSkillMetricHeight;
+        rowLayout.flexibleHeight = 0f;
         HorizontalLayoutGroup layout = row.gameObject.AddComponent<HorizontalLayoutGroup>();
         layout.spacing = 3f;
         layout.childControlHeight = true;

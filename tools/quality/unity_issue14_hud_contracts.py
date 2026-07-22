@@ -18,6 +18,7 @@ def check_issue14_hud_contracts(
     roster_path = runtime_root / "DigGameHudCanvas.Roster.cs"
     resident_rows_path = runtime_root / "DigGameHudCanvas.ResidentRows.cs"
     virtualization_path = runtime_root / "DigGameHudCanvas.RosterVirtualization.cs"
+    skill_inspector_path = runtime_root / "DigGameHudCanvas.SkillInspector.cs"
     notifications_path = runtime_root / "DigGameHudCanvas.Notifications.cs"
     navigation_path = runtime_root / "DigWorldInteraction.Notifications.cs"
     technology_path = runtime_root / "DigGameHudCanvas.Context.Technology.cs"
@@ -60,7 +61,21 @@ def check_issue14_hud_contracts(
         resident_rows_path,
         texts.get(resident_rows_path, ""),
         "typed resident sex read model",
-        ("ResidentSexIndicator sex = resident.Sex;",),
+        (
+            "ResidentSexIndicator sex = resident.Sex;",
+            "compactLayout.flexibleHeight = 0f;",
+            "statusLayout.flexibleHeight = 0f;",
+            "rowLayout.flexibleHeight = 0f;",
+        ),
+    ))
+    errors.extend(require_fragments(
+        skill_inspector_path,
+        texts.get(skill_inspector_path, ""),
+        "fixed-height compact resident skill rows",
+        (
+            "headingLayout.flexibleHeight = 0f;",
+            "rowLayout.flexibleHeight = 0f;",
+        ),
     ))
     errors.extend(require_fragments(
         virtualization_path,
@@ -75,6 +90,8 @@ def check_issue14_hud_contracts(
             "ClearChildren(slot.Root);",
             "BuildResidentRowSignature",
             "OnRightPanelScrolled",
+            "CalculateExpandedResidentRowHeight(resident.Skills.TopFive.Count)",
+            "MaximumVisibleResidentSkills = 5",
         ),
     ))
     errors.extend(reject_fragments(
