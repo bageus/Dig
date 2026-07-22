@@ -202,6 +202,14 @@ public sealed class CompleteWorldItemPickupHandler
             return moved;
         }
 
+        Result normalized = inventory.NormalizeResidentInventory(
+            job.AssignedAgentId.Value,
+            command.Tick);
+        if (normalized.IsFailure)
+        {
+            return normalized;
+        }
+
         Result completed = jobs.Complete(job.Id, command.Tick);
         if (completed.IsFailure)
         {
