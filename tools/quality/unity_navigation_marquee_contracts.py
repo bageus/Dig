@@ -230,14 +230,18 @@ def check_navigation_and_marquee_contracts(
         "pending manual excavation retries",
         ("RetryPendingManualExcavations(tick)",),
     ))
+
+    # Forced excavation is no longer represented by persistent JobSystem groups.
     errors.extend(require_fragments(
         multi_worker,
         texts.get(multi_worker, ""),
-        "persistent multi-worker excavation groups",
+        "independent multi-worker quarter excavation",
         (
-            "workerCount = Math.Min(agents.Length, orderedJobs.Count)",
-            "IsWaitingForExcavationFront(assigned)",
-            "IsOwnedByUnselectedResident",
+            "AssignExcavationClusterToResidents",
+            "AssignManualQuarterExcavation(",
+            "Existing automatic jobs keep their owner",
+            "BindManualExcavationResidentState",
+            "ResolveManualMiningSkill",
         ),
     ))
 
