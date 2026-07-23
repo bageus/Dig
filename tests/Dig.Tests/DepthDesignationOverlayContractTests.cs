@@ -36,8 +36,16 @@ namespace Dig.Tests
             string visual = ReadRuntime(root, "DigCellVisual.cs");
 
             Assert.Contains("private void Awake()", visual);
-            Assert.Contains("collider.enabled = false", visual);
-            Assert.DoesNotContain("DisableInteractionCollider", visual);
+            Assert.Contains("DisableInteractionCollider();", visual);
+            Assert.Contains("private void DisableInteractionCollider()", visual);
+
+            int configureStart = visual.IndexOf("public void Configure(", StringComparison.Ordinal);
+            int selectedStart = visual.IndexOf("public void SetSelected(", StringComparison.Ordinal);
+            Assert.True(configureStart >= 0);
+            Assert.True(selectedStart > configureStart);
+            string configureBody = visual.Substring(configureStart, selectedStart - configureStart);
+            Assert.DoesNotContain("DisableInteractionCollider", configureBody);
+            Assert.DoesNotContain("collider.enabled = false", configureBody);
         }
 
         [Fact]
