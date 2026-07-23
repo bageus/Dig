@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dig.Domain.Agents;
@@ -60,8 +59,7 @@ internal sealed partial class DigWorldSession
 
     private readonly TerrainDepositPresenter _terrainDepositPresenter =
         new TerrainDepositPresenter();
-    private readonly Dictionary<CellId, TerrainDepositInstance> _terrainDeposits =
-        new Dictionary<CellId, TerrainDepositInstance>();
+    private readonly TerrainDepositState _terrainDeposits = new TerrainDepositState();
 
     internal IReadOnlyList<TerrainDepositDefinition> TerrainDepositDefinitions =>
         DemoDepositDefinitions;
@@ -69,8 +67,7 @@ internal sealed partial class DigWorldSession
     internal TerrainDepositVolumeViewModel LoadTerrainDeposits()
     {
         WorldViewModel world = LoadView();
-        TerrainDepositPresentationInput[] inputs = _terrainDeposits.Values
-            .OrderBy(value => value.Cell)
+        TerrainDepositPresentationInput[] inputs = _terrainDeposits.Snapshot()
             .Select(value => new TerrainDepositPresentationInput(
                 value.Cell,
                 value.Definition.Id,
@@ -91,7 +88,7 @@ internal sealed partial class DigWorldSession
         out ItemId outputItemId,
         out int outputQuantity)
     {
-        if (_terrainDeposits.TryGetValue(cell, out TerrainDepositInstance? deposit)
+        if (_terrainDeposits.TryGet(cell, out TerrainDepositInstance deposit)
             && !deposit.IsDepleted)
         {
             outputItemId = deposit.Definition.OutputItemId;
@@ -104,21 +101,19 @@ internal sealed partial class DigWorldSession
         return false;
     }
 
+    internal bool RevealTerrainDeposit(CellId cell, long tick)
+    {
+        return _terrainDeposits.Reveal(cell, tick);
+    }
+
     internal void DepleteTerrainDeposit(CellId cell, long tick)
     {
-        if (!_terrainDeposits.TryGetValue(cell, out TerrainDepositInstance? deposit)
-            || deposit.IsDepleted)
-        {
-            return;
-        }
-
-        long nextVersion = Math.Max(deposit.Version + 1, tick);
-        _terrainDeposits[cell] = deposit.Deplete(nextVersion);
+        _terrainDeposits.Deplete(cell, tick);
     }
 
     internal SkillGrantProfile ResolveExcavationSkillGrantProfile(CellId cell)
     {
-        return _terrainDeposits.TryGetValue(cell, out TerrainDepositInstance? deposit)
+        return _terrainDeposits.TryGet(cell, out TerrainDepositInstance deposit)
             && !deposit.IsDepleted
                 ? deposit.Definition.SkillGrantProfile
                 : DefaultSkillProgressionContent.Catalog.GetProfile(
@@ -147,12 +142,7 @@ internal sealed partial class DigWorldSession
                 DemoDepositAlgorithmVersion,
                 DemoDepositDensityPermille,
                 maximumClusterSize: 4));
-        _terrainDeposits.Clear();
-        for (int index = 0; index < generated.Count; index++)
-        {
-            TerrainDepositInstance deposit = generated[index];
-            _terrainDeposits.Add(deposit.Cell, deposit);
-        }
+        _terrainDeposits.ReplaceAll(generated);
     }
 }
 
