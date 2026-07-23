@@ -32,8 +32,8 @@ public sealed class TerrainOutputProfileTests
         for (int x = 0; x < 64; x++)
         {
             TerrainOutputRoll roll = resolver.Resolve(
-                worldSeed: 42,
-                generatorVersion: 3,
+                42,
+                3,
                 new CellId(x, 7, x % WorldSize.RequiredDepth),
                 sand.OutputProfile!);
 
@@ -51,8 +51,8 @@ public sealed class TerrainOutputProfileTests
         for (int x = 0; x < 64; x++)
         {
             TerrainOutputRoll roll = resolver.Resolve(
-                worldSeed: 81,
-                generatorVersion: 2,
+                81,
+                2,
                 new CellId(x, 3, x % WorldSize.RequiredDepth),
                 stone.OutputProfile!);
 
