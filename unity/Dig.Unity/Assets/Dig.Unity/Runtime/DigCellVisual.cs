@@ -1,3 +1,4 @@
+using Dig.Domain.World;
 using Dig.Presentation.World;
 using UnityEngine;
 
@@ -24,6 +25,7 @@ namespace Dig.Unity
             Model = model;
             _baseColor = baseColor;
             _rejected = false;
+            AlignWithChunkBuilderSpace(model);
             EnsureRenderState();
             RefreshColor();
         }
@@ -38,6 +40,21 @@ namespace Dig.Unity
         {
             _rejected = rejected;
             RefreshColor();
+        }
+
+        private void AlignWithChunkBuilderSpace(WorldCellViewModel model)
+        {
+            float depth = DigTunnelProjection.DepthOrigin
+                + (model.Z * DigTunnelProjection.DepthSpacing);
+            transform.localPosition = new Vector3(model.X, depth, model.Y);
+
+            if (!model.IsSolid && transform.localScale != Vector3.zero)
+            {
+                transform.localScale = new Vector3(
+                    0.94f,
+                    DigTunnelProjection.FloorDepth,
+                    DigTunnelProjection.FloorThickness);
+            }
         }
 
         private void DisableInteractionCollider()
