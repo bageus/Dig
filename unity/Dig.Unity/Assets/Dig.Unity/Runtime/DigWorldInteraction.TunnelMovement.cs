@@ -68,27 +68,45 @@ namespace Dig.Unity
                 return false;
             }
 
+            Result prepared = _terrainSession!.PrepareResidentsForDirectCommand(
+                residentIds,
+                _simulation!.CurrentTick);
+            if (prepared.IsFailure)
+            {
+                _hud!.SetCommandResult(prepared);
+                return true;
+            }
+
             CellId destination = target.MovementCell;
             Result result = residentIds.Count == 1
-                ? _simulation!.MoveResidentThroughTunnel(
+                ? _simulation.MoveResidentThroughTunnel(
                     residentIds[0],
                     destination,
                     target.MovementOffsetX,
                     _tunnelRenderer)
-                : _simulation!.MoveResidentsThroughTunnel(
+                : _simulation.MoveResidentsThroughTunnel(
                     residentIds,
                     destination,
                     target.MovementOffsetX,
                     _tunnelRenderer);
-            _hud!.SetCommandResult(result);
+            _hud.SetCommandResult(result);
             if (result.IsSuccess)
             {
+                RefreshDirectCommandPresentation();
                 _hud.SetStatus(
                     $"Moving {residentIds.Count} dwarf(s) to the selected point "
                     + $"through hidden cell X={destination.X}, Y={destination.Y}, Z={destination.Z}.");
             }
 
             return true;
+        }
+
+        private void RefreshDirectCommandPresentation()
+        {
+            var jobs = _terrainSession!.LoadJobs();
+            _jobRenderer!.Render(jobs);
+            _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
+            _hud!.SetJobs(jobs);
         }
 
         private bool TryAssignExplicitExcavation(
