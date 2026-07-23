@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Dig.Domain.Core;
-using Dig.Domain.Inventory;
 using Dig.Domain.World;
 
 namespace Dig.Application.World
@@ -96,6 +95,60 @@ public sealed class MiningOutputCommitSaveSnapshot
 
     public int FormatVersion { get; }
     public IReadOnlyList<MiningOutputCommitSaveEntry> Commits { get; }
+
+    public static MiningOutputCommitSaveSnapshot Capture(MiningOutputCommitState state)
+    {
+        if (state == null)
+        {
+            throw new ArgumentNullException(nameof(state));
+        }
+
+        return new MiningOutputCommitSaveSnapshot(
+            CurrentFormatVersion,
+            state.Snapshot().Select(commit => new MiningOutputCommitSaveEntry(
+                commit.Cell,
+                commit.SourceKind,
+                commit.ItemId.ToString(),
+                commit.Quantity,
+                commit.HasStack ? commit.StackId.ToString() : null,
+                commit.HasStack)));
+    }
+
+    public MiningOutputCommitState Restore()
+    {
+        if (FormatVersion != CurrentFormatVersion)
+        {
+            throw new InvalidOperationException(
+                $"Unsupported mining output commit snapshot version {FormatVersion}.");
+        }
+
+        MiningOutputCommitState restored = new MiningOutputCommitState();
+        foreach (MiningOutputCommitSaveEntry entry in Commits)
+        {
+            ItemId itemId = entry.Quantity == 0
+                ? default
+                : new ItemId(entry.ItemId);
+            EntityId stackId = entry.HasStack
+                ? EntityId.Parse(entry.StackId!)
+                : default;
+            string sourceId = entry.SourceKind == MiningOutputSourceKind.Deposit
+                ? "restored.deposit"
+                : "restored.terrain";
+            MiningOutputPlan plan = new MiningOutputPlan(
+                entry.Cell,
+                entry.SourceKind,
+                itemId,
+                entry.Quantity,
+                sourceId,
+                sourceVersion: 1,
+                depositInstanceId: entry.SourceKind == MiningOutputSourceKind.Deposit
+                    ? "restored.deposit.instance"
+                    : null);
+            restored.Record(plan, stackId);
+        }
+
+        return restored;
+    }
 }
 
 }
