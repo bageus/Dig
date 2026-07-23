@@ -10,22 +10,8 @@ namespace Dig.Tests
         public void World_overlay_projects_depth_designations_to_visible_open_face()
         {
             string root = FindRepositoryRoot();
-            string render = File.ReadAllText(Path.Combine(
-                root,
-                "unity",
-                "Dig.Unity",
-                "Assets",
-                "Dig.Unity",
-                "Runtime",
-                "DigWorldOverlayRenderer.Render.cs"));
-            string renderer = File.ReadAllText(Path.Combine(
-                root,
-                "unity",
-                "Dig.Unity",
-                "Assets",
-                "Dig.Unity",
-                "Runtime",
-                "DigWorldOverlayRenderer.cs"));
+            string render = ReadRuntime(root, "DigWorldOverlayRenderer.Render.cs");
+            string renderer = ReadRuntime(root, "DigWorldOverlayRenderer.cs");
 
             Assert.Contains("PlaceCellAtDepth(marker, cell.X, cell.Y, cell.Z", render);
             Assert.Contains("int visibleFaceZ = z > 0 ? z - 1 : z", renderer);
@@ -36,18 +22,48 @@ namespace Dig.Tests
         public void Excavation_stroke_scans_all_pointer_hits_for_cell_proxy()
         {
             string root = FindRepositoryRoot();
-            string interaction = File.ReadAllText(Path.Combine(
+            string interaction = ReadRuntime(root, "DigWorldInteraction.Excavation.cs");
+
+            Assert.Contains("RaycastHit[] hits = GetPointerHits()", interaction);
+            Assert.Contains("ResolveExcavationPaintTarget(hits[index])", interaction);
+            Assert.DoesNotContain("Physics.Raycast(ray, out RaycastHit hit, 500f)", interaction);
+        }
+
+        [Fact]
+        public void Terrain_cell_refresh_preserves_active_excavation_proxy()
+        {
+            string root = FindRepositoryRoot();
+            string visual = ReadRuntime(root, "DigCellVisual.cs");
+
+            Assert.Contains("private void Awake()", visual);
+            Assert.Contains("collider.enabled = false", visual);
+            Assert.DoesNotContain("DisableInteractionCollider", visual);
+        }
+
+        [Fact]
+        public void Depth_tool_uses_the_same_hold_and_drag_stroke_contract_as_tunnel_tool()
+        {
+            string root = FindRepositoryRoot();
+            string depth = ReadRuntime(root, "DigWorldInteraction.TunnelDepthExcavation.cs");
+
+            Assert.Contains("Input.GetMouseButton(0)", depth);
+            Assert.Contains("Input.GetMouseButtonUp(0)", depth);
+            Assert.Contains("_excavationStrokePlanner.Resolve", depth);
+            Assert.Contains("ApplyTunnelDepthStroke", depth);
+            Assert.Contains("DesignateTunnelDepthCell", depth);
+            Assert.DoesNotContain("Input.GetMouseButtonDown(0)", depth);
+        }
+
+        private static string ReadRuntime(string root, string fileName)
+        {
+            return File.ReadAllText(Path.Combine(
                 root,
                 "unity",
                 "Dig.Unity",
                 "Assets",
                 "Dig.Unity",
                 "Runtime",
-                "DigWorldInteraction.Excavation.cs"));
-
-            Assert.Contains("RaycastHit[] hits = GetPointerHits()", interaction);
-            Assert.Contains("ResolveExcavationPaintTarget(hits[index])", interaction);
-            Assert.DoesNotContain("Physics.Raycast(ray, out RaycastHit hit, 500f)", interaction);
+                fileName));
         }
 
         private static string FindRepositoryRoot()
