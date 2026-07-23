@@ -230,6 +230,8 @@ def check_navigation_and_marquee_contracts(
         "pending manual excavation retries",
         ("RetryPendingManualExcavations(tick)",),
     ))
+
+    # Forced excavation is no longer represented by persistent JobSystem groups.
     errors.extend(require_fragments(
         multi_worker,
         texts.get(multi_worker, ""),
