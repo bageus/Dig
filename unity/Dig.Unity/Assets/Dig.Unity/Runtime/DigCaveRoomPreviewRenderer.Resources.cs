@@ -21,6 +21,7 @@ namespace Dig.Unity
                 _overlays.RegisterLayer(OverlayLayerKind.Preview, _root);
             }
 
+            EnsureFillRenderer();
             while (_edges.Count < EdgeCount)
             {
                 CreateEdge("box");
@@ -30,6 +31,31 @@ namespace Dig.Unity
             {
                 CreateEdge("invalid cross");
             }
+        }
+
+        private void EnsureFillRenderer()
+        {
+            if (_fillRenderer != null)
+            {
+                return;
+            }
+
+            GameObject fillObject = new GameObject("Cave room preview fill");
+            fillObject.transform.SetParent(_root, worldPositionStays: true);
+            _fillFilter = fillObject.AddComponent<MeshFilter>();
+            _fillRenderer = fillObject.AddComponent<MeshRenderer>();
+            _fillMesh = new Mesh { name = "Cave room preview fill mesh" };
+            _fillMesh.MarkDynamic();
+            _fillFilter.sharedMesh = _fillMesh;
+            _overlays!.ConfigureRenderer(
+                _fillRenderer,
+                OverlayLayerKind.Preview,
+                OverlaySemanticKind.PreviewValid);
+            _fillProperties = new MaterialPropertyBlock();
+            _fillProperties.SetColor("_BaseColor", RoomPreviewColor);
+            _fillProperties.SetColor("_Color", RoomPreviewColor);
+            _fillRenderer.SetPropertyBlock(_fillProperties);
+            _fillRenderer.enabled = false;
         }
 
         private void CreateEdge(string role)
@@ -46,6 +72,11 @@ namespace Dig.Unity
 
         private void OnDestroy()
         {
+            if (_fillMesh != null)
+            {
+                Destroy(_fillMesh);
+            }
+
             if (_root != null && _overlays != null)
             {
                 _overlays.UnregisterLayer(OverlayLayerKind.Preview, _root);

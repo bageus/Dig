@@ -86,24 +86,48 @@ namespace Dig.Unity
                 return;
             }
 
-            Ray ray = _camera!.ScreenPointToRay(Input.mousePosition);
-            if (!Physics.Raycast(ray, out RaycastHit hit, 500f)
-                || !_renderer!.TryGetCell(hit, out DigCellVisual cell)
-                || cell.Model.IsSolid)
+            CellId? entrance = ResolveCaveRoomPreviewEntrance();
+            if (!entrance.HasValue)
             {
                 _caveRoomPreviewRenderer.Clear();
                 return;
             }
 
-            CellId entrance = new CellId(cell.Model.X, cell.Model.Y, cell.Model.Z);
             CaveRoomPlanResult result = _session!.PlanCaveRoom(
                 _caveRoomPreset.Value,
-                entrance);
+                entrance.Value);
             _hoveredCaveRoomPlan = result;
             _caveRoomPreviewRenderer.Show(
                 CaveRoomPresetCatalog.Get(_caveRoomPreset.Value),
-                entrance,
+                entrance.Value,
                 result.Succeeded);
+        }
+
+        private CellId? ResolveCaveRoomPreviewEntrance()
+        {
+            RaycastHit[] hits = GetPointerHits();
+            for (int index = 0; index < hits.Length; index++)
+            {
+                if (_renderer!.TryGetCell(hits[index], out DigCellVisual cell))
+                {
+                    return new CellId(cell.Model.X, cell.Model.Y, cell.Model.Z);
+                }
+            }
+
+            Ray ray = _camera!.ScreenPointToRay(Input.mousePosition);
+            float frontDepth = DigTunnelProjection.CellWorldPosition(
+                new CellId(0, 0, 0)).z;
+            Plane frontLayer = new Plane(Vector3.forward, new Vector3(0f, 0f, frontDepth));
+            if (!frontLayer.Raycast(ray, out float distance))
+            {
+                return null;
+            }
+
+            Vector3 point = ray.GetPoint(distance);
+            return new CellId(
+                Mathf.RoundToInt(point.x),
+                Mathf.RoundToInt(-point.y),
+                0);
         }
 
         private void RefreshCompletedCaveRooms(bool force = false)
@@ -169,7 +193,7 @@ namespace Dig.Unity
             {
                 _hud.SetStatus(
                     $"{plan.Preset.Kind} cave queued: " +
-                    $"{plan.FrontExcavationCells.Count} Z0 Dig Jobs, " +
+                    $"{plan.VolumeCells.Count} Dig Jobs, " +
                     $"depth {plan.Preset.Depth}.");
             }
 

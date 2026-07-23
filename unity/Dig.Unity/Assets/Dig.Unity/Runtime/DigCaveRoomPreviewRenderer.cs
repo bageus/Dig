@@ -13,10 +13,17 @@ namespace Dig.Unity
         private const int TotalEdgeCount = 14;
         private const int BoxEdgeCount = EdgeCount;
 
+        private static readonly Color RoomPreviewColor =
+            new Color(0.55f, 0.72f, 0.92f, 0.34f);
+
         private readonly List<LineRenderer> _edges =
             new List<LineRenderer>(TotalEdgeCount);
         private Transform? _root;
         private DigOverlayManager? _overlays;
+        private MeshFilter? _fillFilter;
+        private MeshRenderer? _fillRenderer;
+        private Mesh? _fillMesh;
+        private MaterialPropertyBlock? _fillProperties;
 
         private static Vector3[] CreateCorners(
             CaveRoomPreset preset,

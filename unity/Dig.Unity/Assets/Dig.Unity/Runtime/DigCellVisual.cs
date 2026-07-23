@@ -7,9 +7,13 @@ namespace Dig.Unity
     [DisallowMultipleComponent]
     public sealed class DigCellVisual : MonoBehaviour
     {
+        private static readonly Color TunnelDesignationColor =
+            new Color(0.68f, 0.86f, 0.62f, 1f);
+
         private Renderer? _renderer;
         private MaterialPropertyBlock? _properties;
         private Color _baseColor;
+        private Color? _designationTint;
         private bool _selected;
         private bool _rejected;
 
@@ -23,7 +27,12 @@ namespace Dig.Unity
         public void Configure(WorldCellViewModel model, Color baseColor)
         {
             Model = model;
-            _baseColor = baseColor;
+            _baseColor = model.IsDesignated ? TunnelDesignationColor : baseColor;
+            if (!model.IsDesignated)
+            {
+                _designationTint = null;
+            }
+
             _rejected = false;
             AlignWithChunkBuilderSpace(model);
             EnsureRenderState();
@@ -39,6 +48,12 @@ namespace Dig.Unity
         internal void SetRejected(bool rejected)
         {
             _rejected = rejected;
+            RefreshColor();
+        }
+
+        internal void SetDesignationTint(Color? color)
+        {
+            _designationTint = color;
             RefreshColor();
         }
 
@@ -68,11 +83,12 @@ namespace Dig.Unity
 
         private void RefreshColor()
         {
+            Color baseColor = _designationTint ?? _baseColor;
             Color color = _rejected
-                ? Color.Lerp(_baseColor, Color.red, 0.82f)
+                ? Color.Lerp(baseColor, Color.red, 0.82f)
                 : _selected
-                    ? Color.Lerp(_baseColor, Color.white, 0.45f)
-                    : _baseColor;
+                    ? Color.Lerp(baseColor, Color.white, 0.45f)
+                    : baseColor;
             ApplyColor(color);
         }
 

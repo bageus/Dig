@@ -106,6 +106,11 @@ internal sealed partial class DigWorldSession
         return _terrainDeposits.Reveal(cell, tick);
     }
 
+    internal int RevealTerrainDepositsAdjacentTo(CellId excavatedCell, long tick)
+    {
+        return _terrainDeposits.RevealAdjacentTo(excavatedCell, tick);
+    }
+
     internal void DepleteTerrainDeposit(CellId cell, long tick)
     {
         _terrainDeposits.Deplete(cell, tick);

@@ -8,7 +8,7 @@ namespace Dig.Unity
     internal sealed class DigTerrainChunkVisual : MonoBehaviour
     {
         private static readonly Color DesignatedColor =
-            new Color(0.95f, 0.47f, 0.12f, 1f);
+            new Color(0.68f, 0.86f, 0.62f, 1f);
         private MeshFilter? _filter;
         private MeshRenderer? _renderer;
         private Mesh? _mesh;
@@ -71,8 +71,6 @@ namespace Dig.Unity
 
         internal static Vector3 TransformBuilderPosition(Vector3 position)
         {
-            // The chunk builder stores coordinates as (logical X, depth Z,
-            // vertical Y). Unity runtime projection uses (X, -Y, depth Z).
             return new Vector3(position.x, -position.z, position.y);
         }
 

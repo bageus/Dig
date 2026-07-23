@@ -23,6 +23,11 @@ namespace Dig.Unity
             {
                 _edges[index].enabled = false;
             }
+
+            if (_fillRenderer != null)
+            {
+                _fillRenderer.enabled = false;
+            }
         }
     }
 }
