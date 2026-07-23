@@ -17,6 +17,8 @@ namespace Dig.Tests
                 runtime, "DigWorldRenderer.DepthDesignation.cs"));
             string roomResources = File.ReadAllText(Path.Combine(
                 runtime, "DigCaveRoomPreviewRenderer.Resources.cs"));
+            string roomFill = File.ReadAllText(Path.Combine(
+                runtime, "DigCaveRoomPreviewRenderer.Fill.cs"));
             string roomShow = File.ReadAllText(Path.Combine(
                 runtime, "DigCaveRoomPreviewRenderer.Show.cs"));
             string roomInput = File.ReadAllText(Path.Combine(
@@ -27,9 +29,10 @@ namespace Dig.Tests
             Assert.Contains("DigTunnelProjection.CellWorldPosition(target)", depth);
             Assert.Contains("Vector3.one * 0.94f", depth);
             Assert.Contains("DepthDesignationColor", depth);
-            Assert.Contains("renderQueue = (int)RenderQueue.Transparent", roomResources);
-            Assert.Contains("_fillMaterial.SetFloat(\"_Cull\", 0f)", roomResources);
-            Assert.Contains("_fillMaterial.SetFloat(\"_ZWrite\", 0f)", roomResources);
+            Assert.Contains("_overlays!.ConfigureRenderer(", roomResources);
+            Assert.Contains("MaterialPropertyBlock", roomResources);
+            Assert.DoesNotContain("new Material(", roomResources);
+            Assert.Contains("1, 2, 0, 2, 3, 0", roomFill);
             Assert.Contains("UpdateFill(corners)", roomShow);
             Assert.Contains("ResolveCaveRoomPreviewEntrance", roomInput);
             Assert.Contains("Plane frontLayer", roomInput);
