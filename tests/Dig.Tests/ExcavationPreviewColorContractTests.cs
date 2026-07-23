@@ -27,7 +27,7 @@ namespace Dig.Tests
             Assert.Contains("new Color(0.68f, 0.86f, 0.62f, 1f)", terrain);
             Assert.Contains("PrimitiveType.Cube", depth);
             Assert.Contains("DigTunnelProjection.CellWorldPosition(target)", depth);
-            Assert.Contains("Vector3.one * 0.94f", depth);
+            Assert.Contains("new Vector3(0.94f, 0.94f, 0.025f)", depth);
             Assert.Contains("DepthDesignationColor", depth);
             Assert.Contains("_overlays!.ConfigureRenderer(", roomResources);
             Assert.Contains("MaterialPropertyBlock", roomResources);

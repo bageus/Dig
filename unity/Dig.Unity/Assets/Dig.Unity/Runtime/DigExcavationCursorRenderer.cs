@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Dig.Domain.World;
 using Dig.Presentation.Overlays;
+using Dig.Presentation.World;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -10,6 +11,8 @@ namespace Dig.Unity
     internal sealed class DigExcavationCursorRenderer : MonoBehaviour
     {
         private const float FaceOffset = 0.025f;
+        private const float MarkerThickness = 0.025f;
+        private const float DesignationOverlap = 1.015f;
         private static readonly Color TunnelColor =
             new Color(0.68f, 0.86f, 0.62f, 0.72f);
         private static readonly Color DepthColor =
@@ -17,6 +20,10 @@ namespace Dig.Unity
 
         private readonly Dictionary<CellId, GameObject> _tunnelDesignations =
             new Dictionary<CellId, GameObject>();
+        private readonly HashSet<CellId> _visibleDesignations =
+            new HashSet<CellId>();
+        private readonly List<CellId> _removedDesignations =
+            new List<CellId>();
         private GameObject? _marker;
         private DigOverlayManager? _overlays;
         private MaterialPropertyBlock? _properties;
@@ -29,7 +36,7 @@ namespace Dig.Unity
         internal void Show(CellId cell, bool depth)
         {
             _marker ??= CreateMarker("Excavation tool cursor", sortingOrder: 50);
-            PlaceMarker(_marker, cell, depth ? DepthColor : TunnelColor);
+            PlaceMarker(_marker, cell, depth ? DepthColor : TunnelColor, overlap: false);
         }
 
         internal void Hide()
@@ -44,12 +51,7 @@ namespace Dig.Unity
         {
             if (!active)
             {
-                if (_tunnelDesignations.TryGetValue(cell, out GameObject? existing))
-                {
-                    Destroy(existing);
-                    _tunnelDesignations.Remove(cell);
-                }
-
+                RemoveTunnelDesignation(cell);
                 return;
             }
 
@@ -61,7 +63,51 @@ namespace Dig.Unity
                 _tunnelDesignations.Add(cell, marker);
             }
 
-            PlaceMarker(marker, cell, TunnelColor);
+            PlaceMarker(marker, cell, TunnelColor, overlap: true);
+        }
+
+        internal void SynchronizeTunnelDesignations(WorldViewModel world)
+        {
+            _visibleDesignations.Clear();
+            foreach (WorldChunkViewModel chunk in world.Chunks)
+            {
+                foreach (WorldCellViewModel cell in chunk.Cells)
+                {
+                    if (!cell.IsDesignated || cell.Z != 0)
+                    {
+                        continue;
+                    }
+
+                    CellId id = new CellId(cell.X, cell.Y, cell.Z);
+                    _visibleDesignations.Add(id);
+                    SetTunnelDesignation(id, active: true);
+                }
+            }
+
+            _removedDesignations.Clear();
+            foreach (CellId cell in _tunnelDesignations.Keys)
+            {
+                if (!_visibleDesignations.Contains(cell))
+                {
+                    _removedDesignations.Add(cell);
+                }
+            }
+
+            for (int index = 0; index < _removedDesignations.Count; index++)
+            {
+                RemoveTunnelDesignation(_removedDesignations[index]);
+            }
+        }
+
+        private void RemoveTunnelDesignation(CellId cell)
+        {
+            if (!_tunnelDesignations.TryGetValue(cell, out GameObject? existing))
+            {
+                return;
+            }
+
+            Destroy(existing);
+            _tunnelDesignations.Remove(cell);
         }
 
         private GameObject CreateMarker(string markerName, int sortingOrder)
@@ -87,7 +133,11 @@ namespace Dig.Unity
             return marker;
         }
 
-        private void PlaceMarker(GameObject marker, CellId cell, Color color)
+        private void PlaceMarker(
+            GameObject marker,
+            CellId cell,
+            Color color,
+            bool overlap)
         {
             Vector3 center = DigTunnelProjection.CellWorldPosition(cell);
             marker.transform.position = center + new Vector3(
@@ -95,7 +145,11 @@ namespace Dig.Unity
                 0f,
                 DigTunnelProjection.RockCellHalfExtent + FaceOffset);
             marker.transform.rotation = Quaternion.identity;
-            marker.transform.localScale = new Vector3(0.94f, 0.94f, 0.025f);
+            float faceSize = overlap ? DesignationOverlap : 0.94f;
+            marker.transform.localScale = new Vector3(
+                faceSize,
+                faceSize,
+                MarkerThickness);
 
             Renderer renderer = marker.GetComponent<Renderer>();
             _properties ??= new MaterialPropertyBlock();
