@@ -7,7 +7,7 @@ namespace Dig.Tests
     public sealed class DepthDesignationOverlayContractTests
     {
         [Fact]
-        public void World_overlay_projects_depth_designations_to_visible_open_face()
+        public void World_overlay_projects_designations_to_visible_front_face()
         {
             string root = FindRepositoryRoot();
             string render = ReadRuntime(root, "DigWorldOverlayRenderer.Render.cs");
@@ -15,7 +15,10 @@ namespace Dig.Tests
 
             Assert.Contains("PlaceCellAtDepth(marker, cell.X, cell.Y, cell.Z", render);
             Assert.Contains("int visibleFaceZ = z > 0 ? z - 1 : z", renderer);
-            Assert.Contains("new CellId(x, y, visibleFaceZ)", renderer);
+            Assert.Contains("DigTunnelProjection.CellWorldPosition(", renderer);
+            Assert.Contains("DigTunnelProjection.RockCellHalfExtent + DesignationFaceOffset", renderer);
+            Assert.Contains("Quaternion.Euler(90f, 0f, 0f)", renderer);
+            Assert.DoesNotContain("DigTunnelProjection.FloorWorldPosition(\n            new CellId(x, y, visibleFaceZ)", renderer);
         }
 
         [Fact]
