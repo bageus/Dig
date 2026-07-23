@@ -110,11 +110,13 @@ public sealed class DirectExcavationOrderPlayModeTests
         return new WorldViewModel(
             2,
             1,
+            WorldSize.RequiredDepth,
             2,
             1,
             new[]
             {
                 new WorldChunkViewModel(
+                    0,
                     0,
                     0,
                     1,
@@ -126,6 +128,7 @@ public sealed class DirectExcavationOrderPlayModeTests
     {
         return new WorldCellViewModel(
             x,
+            0,
             0,
             "test.rock",
             isSolid: true,

@@ -7,6 +7,7 @@ namespace Dig.Unity
     {
         private const float ResidentScreenPickPadding = 8f;
         private DigAgentVisual? _hoveredResident;
+        private DigWorldItemVisual? _hoveredWorldItem;
 
         private RaycastHit[] GetPointerHits()
         {
@@ -25,23 +26,54 @@ namespace Dig.Unity
 
             SynchronizeTunnelInteractionTargets();
             DigAgentVisual? next = null;
+            DigWorldItemVisual? nextItem = null;
             if (!_hud.ContainsScreenPoint(Input.mousePosition))
             {
                 RaycastHit[] hits = GetPointerHits();
-                if (TryResolveAgentHit(hits, out DigAgentVisual candidate))
+                if (_agentRenderer.SelectedCount > 0
+                    && TryResolvePickupItemHit(hits, out DigWorldItemVisual pickupItem))
+                {
+                    nextItem = pickupItem;
+                }
+                else if (TryResolveAgentHit(hits, out DigAgentVisual candidate))
                 {
                     next = candidate;
                 }
             }
 
-            if (ReferenceEquals(next, _hoveredResident))
+            if (!ReferenceEquals(next, _hoveredResident))
             {
-                return;
+                _hoveredResident?.SetHovered(false);
+                _hoveredResident = next;
+                _hoveredResident?.SetHovered(true);
             }
 
-            _hoveredResident?.SetHovered(false);
-            _hoveredResident = next;
-            _hoveredResident?.SetHovered(true);
+            if (!ReferenceEquals(nextItem, _hoveredWorldItem))
+            {
+                _hoveredWorldItem?.SetHovered(false);
+                _hoveredWorldItem = nextItem;
+                _hoveredWorldItem?.SetHovered(true);
+            }
+        }
+
+        private bool TryResolvePickupItemHit(
+            RaycastHit[] hits,
+            out DigWorldItemVisual item)
+        {
+            for (int index = 0; index < hits.Length; index++)
+            {
+                if (_itemRenderer != null
+                    && _itemRenderer.TryGetItem(hits[index], out DigWorldItemVisual candidate)
+                    && !candidate.Model.IsBuildingBox
+                    && candidate.Model.CanPickup)
+                {
+                    item = candidate;
+                    return true;
+                }
+            }
+
+            item = null!;
+            return false;
         }
 
         private bool TryResolveAgentHit(

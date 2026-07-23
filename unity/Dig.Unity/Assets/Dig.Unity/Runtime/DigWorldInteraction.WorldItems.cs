@@ -1,4 +1,5 @@
 using Dig.Domain.Core;
+using Dig.Domain.Inventory;
 using Dig.Presentation.Input;
 
 namespace Dig.Unity
@@ -15,9 +16,26 @@ namespace Dig.Unity
                 return;
             }
 
-            Result result = _terrainSession!.CreateWorldItemPickup(
-                decision.TargetEntityId.Value.ToString(),
-                decision.ActorId.Value.ToString(),
+            string residentId = decision.ActorId.Value.ToString();
+            string stackId = decision.TargetEntityId.Value.ToString();
+            Result capacity = _terrainSession!.ValidateResidentCanPickupStack(
+                residentId,
+                stackId);
+            if (capacity.IsFailure)
+            {
+                _hud!.SetCommandResult(capacity);
+                if (capacity.Error == InventoryErrors.ResidentInventoryCapacityExceeded)
+                {
+                    _agentRenderer!.PlayInventoryFullReaction(residentId);
+                    _hud.SetStatus("Resident inventory is full.");
+                }
+
+                return;
+            }
+
+            Result result = _terrainSession.CreateWorldItemPickup(
+                stackId,
+                residentId,
                 decision.TargetCell.Value,
                 _simulation!.CurrentTick);
             _hud!.SetCommandResult(result);

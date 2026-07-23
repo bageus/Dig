@@ -109,6 +109,21 @@ namespace Dig.Unity
                 visibleDecorations);
         }
 
+        private static long CombineVersion(
+            long worldVersion,
+            long depthVersion,
+            long depositVersion)
+        {
+            unchecked
+            {
+                ulong mixed = (ulong)worldVersion * 1099511628211UL;
+                mixed ^= (ulong)depthVersion;
+                mixed *= 1099511628211UL;
+                mixed ^= (ulong)depositVersion;
+                return (long)(mixed & (ulong)long.MaxValue);
+            }
+        }
+
         internal void Invalidate()
         {
             _initialized = false;

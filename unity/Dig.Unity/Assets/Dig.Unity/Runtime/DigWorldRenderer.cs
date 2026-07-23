@@ -16,8 +16,8 @@ namespace Dig.Unity
             new Dictionary<ChunkId, Transform>();
         private readonly HashSet<CellId> _visibleCells =
             new HashSet<CellId>();
-        private readonly HashSet<CellId> _visibleChunks =
-            new HashSet<CellId>();
+        private readonly HashSet<ChunkId> _visibleChunks =
+            new HashSet<ChunkId>();
         private readonly HashSet<CellId> _solidCells =
             new HashSet<CellId>();
         private readonly HashSet<CellId> _walkSurfaceCells =
@@ -26,8 +26,8 @@ namespace Dig.Unity
             new HashSet<CellId>();
         private readonly List<CellId> _removedCells =
             new List<CellId>();
-        private readonly List<CellId> _removedChunks =
-            new List<CellId>();
+        private readonly List<ChunkId> _removedChunks =
+            new List<ChunkId>();
         private Transform? _visualRoot;
         private DigCellVisual? _selected;
 
