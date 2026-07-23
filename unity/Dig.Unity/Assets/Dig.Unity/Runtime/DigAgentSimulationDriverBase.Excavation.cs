@@ -106,11 +106,27 @@ namespace Dig.Unity
                 AgentSession!.CancelManualTunnelMovement(residentIds[index]);
             }
 
-            Result result = TerrainSession!.AssignExcavationClusterToResidents(
+            IReadOnlyList<AgentViewModel> agents = AgentSession!.LoadView();
+            Dictionary<EntityId, CellId> residentCells =
+                new Dictionary<EntityId, CellId>();
+            for (int index = 0; index < agents.Count; index++)
+            {
+                AgentViewModel agent = agents[index];
+                residentCells[EntityId.Parse(agent.Id)] = new CellId(
+                    agent.CellX,
+                    agent.CellY,
+                    agent.CellZ);
+            }
+
+            TerrainSession!.BindManualExcavationResidentState(
+                residentId => residentCells.TryGetValue(residentId, out CellId cell)
+                    ? cell
+                    : (CellId?)null,
+                residentId => 0);
+            Result result = TerrainSession.AssignExcavationClusterToResidents(
                 seed,
                 residentIds,
                 CurrentTick);
-            IReadOnlyList<AgentViewModel> agents = AgentSession!.LoadView();
             TerrainSession.SynchronizeDesignations(CurrentTick, agents);
             RefreshExcavationPresentation(agents);
             Hud!.SetAgentSelection(
