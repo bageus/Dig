@@ -31,9 +31,6 @@ namespace Dig.Unity
             IReadOnlyList<AgentViewModel> agents = AgentSession!.LoadView();
             TerrainSession!.SynchronizeDesignations(CurrentTick, agents, priority);
             RefreshExcavationPresentation(agents);
-            DigExcavationCursorRenderer? overlays =
-                GetComponent<DigExcavationCursorRenderer>();
-            overlays?.SetTunnelDesignation(cell, active);
             return Result.Success();
         }
 
@@ -78,13 +75,6 @@ namespace Dig.Unity
             }
 
             WorldSession.CommitExcavationErase(expanded);
-            DigExcavationCursorRenderer? overlays =
-                GetComponent<DigExcavationCursorRenderer>();
-            for (int index = 0; index < expanded.Count; index++)
-            {
-                overlays?.SetTunnelDesignation(expanded[index], active: false);
-            }
-
             IReadOnlyList<AgentViewModel> agents = AgentSession!.LoadView();
             RefreshExcavationPresentation(agents);
             return erased;
@@ -160,6 +150,9 @@ namespace Dig.Unity
                 TerrainSession.GetStorageStatus(),
                 TerrainSession.LoadRoutes());
             JobRenderer!.Render(jobs);
+            DigExcavationCursorRenderer? excavationOverlays =
+                GetComponent<DigExcavationCursorRenderer>();
+            excavationOverlays?.SynchronizeTunnelDesignations(world);
             Hud!.SetWorld(world);
             Hud.SetAgents(agents, AgentSession!.Tick);
             Hud.SetJobs(jobs);
