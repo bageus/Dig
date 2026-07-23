@@ -30,15 +30,19 @@ def check_tunnel_depth_contracts(
             "TryHandleExcavationStroke()",
         ),
     ))
+    drawing_text = texts.get(drawing, "")
     errors.extend(require_fragments(
         drawing,
-        texts.get(drawing, ""),
-        "depth drawing mode",
+        drawing_text,
+        "shared excavation drawing state",
         (
             "Depth = 3",
             "DigExcavationDrawingMode.Depth",
-            "designate one deeper layer",
-            "if (_excavationMode == DigExcavationDrawingMode.Depth)",
+            "ExcavationStrokePlanner",
+            "_excavationStrokePlanner",
+            "_excavationAnchor",
+            "_excavationAxis",
+            "_lastExcavationPaintCell",
         ),
     ))
     depth_text = texts.get(depth_input, "")
@@ -50,7 +54,6 @@ def check_tunnel_depth_contracts(
             "Input.GetMouseButton(0)",
             "Input.GetMouseButtonUp(0)",
             "ResetExcavationStroke()",
-            "ExcavationStrokePlanner",
             "_excavationStrokePlanner.Resolve(",
             "_excavationAnchor",
             "_excavationAxis",
