@@ -116,13 +116,17 @@ namespace Dig.Unity
                 return false;
             }
 
-            Ray ray = _camera!.ScreenPointToRay(Input.mousePosition);
-            if (!Physics.Raycast(ray, out RaycastHit hit, 500f))
+            RaycastHit[] hits = GetPointerHits();
+            CellId? rawTarget = null;
+            for (int index = 0; index < hits.Length; index++)
             {
-                return false;
+                rawTarget = ResolveExcavationPaintTarget(hits[index]);
+                if (rawTarget.HasValue)
+                {
+                    break;
+                }
             }
 
-            CellId? rawTarget = ResolveExcavationPaintTarget(hit);
             if (!rawTarget.HasValue)
             {
                 return false;
@@ -330,13 +334,6 @@ namespace Dig.Unity
             }
 
             return null;
-        }
-
-        private static bool UsesTunnelCellInteraction(DigExcavationDrawingMode mode)
-        {
-            return mode == DigExcavationDrawingMode.Tunnel
-                || mode == DigExcavationDrawingMode.Delete
-                || mode == DigExcavationDrawingMode.Depth;
         }
 
         private void ResetExcavationStroke()

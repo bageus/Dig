@@ -114,7 +114,9 @@ public sealed partial class DigWorldOverlayRenderer : MonoBehaviour
         float elevation,
         float scale = 0.72f)
     {
-        Vector3 floor = DigTunnelProjection.FloorWorldPosition(new CellId(x, y, z));
+        int visibleFaceZ = z > 0 ? z - 1 : z;
+        Vector3 floor = DigTunnelProjection.FloorWorldPosition(
+            new CellId(x, y, visibleFaceZ));
         marker.transform.position = floor + (Vector3.up * elevation);
         marker.transform.rotation = Quaternion.identity;
         marker.transform.localScale = new Vector3(scale, 0.035f, scale);
