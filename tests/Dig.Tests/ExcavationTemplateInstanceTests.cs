@@ -39,7 +39,7 @@ public sealed class ExcavationTemplateInstanceTests
     public void Progress_is_independent_of_worker_completion_order_and_idempotent()
     {
         CaveRoomPlan plan = CreatePlan(CaveRoomPresetKind.Small);
-        CaveRoomTemplateInstanceFactory factory = new CaveRoomTemplateInstanceFactory();
+        ExcavationTemplateInstanceFactory factory = new ExcavationTemplateInstanceFactory();
         CaveRoomTemplatePlacementUnlock unlock = CaptureUnlock(
             CaveRoomPresetKind.Small,
             maximumStoneworkUnits: 0);
