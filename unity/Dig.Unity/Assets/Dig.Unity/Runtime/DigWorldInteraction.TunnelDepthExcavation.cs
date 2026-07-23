@@ -112,6 +112,7 @@ namespace Dig.Unity
 
             _lastExcavationPaintCell = source;
             CellId target = new CellId(source.X, source.Y, source.Z + 1);
+            _renderer!.SetDepthDesignationTint(target);
             _hud!.SetStatus(
                 $"Depth excavation marked through X={target.X}, Y={target.Y}, Z={target.Z}.");
             return Result.Success();
