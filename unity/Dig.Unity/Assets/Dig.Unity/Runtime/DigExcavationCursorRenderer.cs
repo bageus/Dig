@@ -27,6 +27,7 @@ namespace Dig.Unity
         private GameObject? _marker;
         private DigOverlayManager? _overlays;
         private MaterialPropertyBlock? _properties;
+        private long _synchronizedWorldVersion = long.MinValue;
 
         internal void Initialize(DigOverlayManager overlays)
         {
@@ -68,6 +69,12 @@ namespace Dig.Unity
 
         internal void SynchronizeTunnelDesignations(WorldViewModel world)
         {
+            if (world.Version == _synchronizedWorldVersion)
+            {
+                return;
+            }
+
+            _synchronizedWorldVersion = world.Version;
             _visibleDesignations.Clear();
             foreach (WorldChunkViewModel chunk in world.Chunks)
             {
@@ -97,6 +104,11 @@ namespace Dig.Unity
             {
                 RemoveTunnelDesignation(_removedDesignations[index]);
             }
+        }
+
+        internal void InvalidateDesignationSynchronization()
+        {
+            _synchronizedWorldVersion = long.MinValue;
         }
 
         private void RemoveTunnelDesignation(CellId cell)
