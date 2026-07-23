@@ -16,11 +16,7 @@ namespace Dig.Unity
 
         private void Awake()
         {
-            Collider? collider = GetComponent<Collider>();
-            if (collider != null)
-            {
-                collider.enabled = false;
-            }
+            DisableInteractionCollider();
         }
 
         public void Configure(WorldCellViewModel model, Color baseColor)
@@ -42,6 +38,15 @@ namespace Dig.Unity
         {
             _rejected = rejected;
             RefreshColor();
+        }
+
+        private void DisableInteractionCollider()
+        {
+            Collider? collider = GetComponent<Collider>();
+            if (collider != null)
+            {
+                collider.enabled = false;
+            }
         }
 
         private void RefreshColor()
