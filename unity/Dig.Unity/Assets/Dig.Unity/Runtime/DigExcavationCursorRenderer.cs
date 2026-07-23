@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Dig.Domain.World;
 using Dig.Presentation.Overlays;
 using UnityEngine;
@@ -14,9 +15,9 @@ namespace Dig.Unity
         private static readonly Color DepthColor =
             new Color(0.74f, 0.62f, 0.90f, 0.72f);
 
+        private readonly Dictionary<CellId, GameObject> _tunnelDesignations =
+            new Dictionary<CellId, GameObject>();
         private GameObject? _marker;
-        private Renderer? _renderer;
-        private MaterialPropertyBlock? _properties;
         private DigOverlayManager? _overlays;
 
         internal void Initialize(DigOverlayManager overlays)
@@ -26,21 +27,8 @@ namespace Dig.Unity
 
         internal void Show(CellId cell, bool depth)
         {
-            EnsureMarker();
-            Vector3 center = DigTunnelProjection.CellWorldPosition(cell);
-            _marker!.transform.position = center + new Vector3(
-                0f,
-                0f,
-                DigTunnelProjection.RockCellHalfExtent + FaceOffset);
-            _marker.transform.rotation = Quaternion.identity;
-            _marker.transform.localScale = new Vector3(0.94f, 0.94f, 0.025f);
-
-            Color color = depth ? DepthColor : TunnelColor;
-            _properties!.Clear();
-            _properties.SetColor("_BaseColor", color);
-            _properties.SetColor("_Color", color);
-            _renderer!.SetPropertyBlock(_properties);
-            _marker.SetActive(true);
+            _marker ??= CreateMarker("Excavation tool cursor", sortingOrder: 50);
+            PlaceMarker(_marker, cell, depth ? DepthColor : TunnelColor);
         }
 
         internal void Hide()
@@ -51,31 +39,69 @@ namespace Dig.Unity
             }
         }
 
-        private void EnsureMarker()
+        internal void SetTunnelDesignation(CellId cell, bool active)
         {
-            if (_marker != null)
+            if (!active)
             {
+                if (_tunnelDesignations.TryGetValue(cell, out GameObject? existing))
+                {
+                    Destroy(existing);
+                    _tunnelDesignations.Remove(cell);
+                }
+
                 return;
             }
 
-            _marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            _marker.name = "Excavation tool cursor";
-            _marker.transform.SetParent(transform, worldPositionStays: true);
-            Collider collider = _marker.GetComponent<Collider>();
+            if (!_tunnelDesignations.TryGetValue(cell, out GameObject? marker))
+            {
+                marker = CreateMarker(
+                    $"Tunnel designation {cell.X},{cell.Y},{cell.Z}",
+                    sortingOrder: 40);
+                _tunnelDesignations.Add(cell, marker);
+            }
+
+            PlaceMarker(marker, cell, TunnelColor);
+        }
+
+        private GameObject CreateMarker(string markerName, int sortingOrder)
+        {
+            GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            marker.name = markerName;
+            marker.transform.SetParent(transform, worldPositionStays: true);
+            Collider collider = marker.GetComponent<Collider>();
             if (collider != null)
             {
                 Destroy(collider);
             }
 
-            _renderer = _marker.GetComponent<Renderer>();
+            Renderer renderer = marker.GetComponent<Renderer>();
             _overlays!.ConfigureRenderer(
-                _renderer,
+                renderer,
                 OverlayLayerKind.Preview,
                 OverlaySemanticKind.PreviewValid);
-            _renderer.shadowCastingMode = ShadowCastingMode.Off;
-            _renderer.receiveShadows = false;
-            _renderer.sortingOrder = 50;
-            _properties = new MaterialPropertyBlock();
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            renderer.sortingOrder = sortingOrder;
+            marker.SetActive(false);
+            return marker;
+        }
+
+        private static void PlaceMarker(GameObject marker, CellId cell, Color color)
+        {
+            Vector3 center = DigTunnelProjection.CellWorldPosition(cell);
+            marker.transform.position = center + new Vector3(
+                0f,
+                0f,
+                DigTunnelProjection.RockCellHalfExtent + FaceOffset);
+            marker.transform.rotation = Quaternion.identity;
+            marker.transform.localScale = new Vector3(0.94f, 0.94f, 0.025f);
+
+            Renderer renderer = marker.GetComponent<Renderer>();
+            MaterialPropertyBlock properties = new MaterialPropertyBlock();
+            properties.SetColor("_BaseColor", color);
+            properties.SetColor("_Color", color);
+            renderer.SetPropertyBlock(properties);
+            marker.SetActive(true);
         }
     }
 }
