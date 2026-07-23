@@ -57,7 +57,14 @@ public sealed class TerrainDepositState
 
     public bool TryGet(CellId cell, out TerrainDepositInstance deposit)
     {
-        return _byCell.TryGetValue(cell, out deposit!);
+        if (_byCell.TryGetValue(cell, out TerrainDepositInstance? value))
+        {
+            deposit = value;
+            return true;
+        }
+
+        deposit = null!;
+        return false;
     }
 
     public bool Reveal(CellId cell, long version)
