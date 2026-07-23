@@ -107,14 +107,14 @@ namespace Dig.Unity
             DigItemVisualResolution resolution,
             int index)
         {
-            GameObject instance = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            instance.name = $"Raw material lump {index}";
-            instance.transform.SetParent(transform, worldPositionStays: false);
-            instance.transform.localPosition = Vector3.zero;
+            GameObject instance = DigVisualPrefabFactory.Create(
+                resolution.Asset,
+                transform,
+                $"Raw material lump {index}",
+                PrimitiveType.Cube);
             instance.transform.localRotation = Quaternion.Euler(17f, 31f, 9f);
-            instance.transform.localScale = Vector3.one;
-            DigVisualPrefabRoot root = instance.AddComponent<DigVisualPrefabRoot>();
-            DigVisualTintTarget tint = instance.AddComponent<DigVisualTintTarget>();
+            instance.transform.localScale = new Vector3(1.12f, 0.86f, 0.97f);
+            DigVisualTintTarget tint = instance.GetComponent<DigVisualTintTarget>();
             tint.Configure(resolution.Asset.Material, _baseTint);
             return instance;
         }
