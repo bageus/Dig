@@ -21,20 +21,25 @@ namespace Dig.Tests
         }
 
         [Fact]
-        public void Chunk_builder_axes_are_transformed_to_the_runtime_projection_contract()
+        public void Only_designated_submesh_vertices_are_projected_to_runtime_axes()
         {
             string root = FindRepositoryRoot();
             string visual = ReadRuntime(root, "DigTerrainChunkVisual.cs");
-            string projection = ReadRuntime(root, "DigTunnelProjection.cs");
 
+            Assert.Contains("ProjectDesignatedGeometry(data", visual);
             Assert.Contains(
-                "return new Vector3(position.x, -position.z, position.y);",
+                "data.MaterialKeys[submesh].State != DigTerrainSurfaceState.Designated",
                 visual);
-            Assert.Contains("_mesh.vertices = TransformPositions(data.Vertices);", visual);
-            Assert.Contains("_mesh.normals = TransformDirections(data.Normals);", visual);
-            Assert.Contains("cell.X,", projection);
-            Assert.Contains("-cell.Y,", projection);
-            Assert.Contains("DepthOrigin + (cell.Z * DepthSpacing)", projection);
+            Assert.Contains("data.Triangles[submesh]", visual);
+            Assert.Contains(
+                "vertices[vertex] = TransformBuilderPosition(vertices[vertex]);",
+                visual);
+            Assert.DoesNotContain(
+                "_mesh.vertices = TransformPositions(data.Vertices);",
+                visual);
+            Assert.DoesNotContain(
+                "_mesh.normals = TransformDirections(data.Normals);",
+                visual);
         }
 
         private static string ReadRuntime(string root, string fileName)
