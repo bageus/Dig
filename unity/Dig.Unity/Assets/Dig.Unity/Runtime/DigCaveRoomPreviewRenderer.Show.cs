@@ -20,6 +20,7 @@ namespace Dig.Unity
 
             EnsureResources();
             Vector3[] corners = CreateCorners(preset, entrance);
+            UpdateFill(corners);
             Vector2Int[] connections = CreateBoxConnections();
             OverlaySemanticKind semantic = valid
                 ? OverlaySemanticKind.PreviewValid
