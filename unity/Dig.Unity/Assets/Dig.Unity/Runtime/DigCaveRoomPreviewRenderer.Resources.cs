@@ -1,6 +1,7 @@
 using System;
 using Dig.Presentation.Overlays;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Dig.Unity
 {
@@ -55,6 +56,8 @@ namespace Dig.Unity
             _fillProperties.SetColor("_BaseColor", RoomPreviewColor);
             _fillProperties.SetColor("_Color", RoomPreviewColor);
             _fillRenderer.SetPropertyBlock(_fillProperties);
+            _fillRenderer.shadowCastingMode = ShadowCastingMode.Off;
+            _fillRenderer.receiveShadows = false;
             _fillRenderer.enabled = false;
         }
 

@@ -7,28 +7,35 @@ namespace Dig.Tests
     public sealed class ExcavationPreviewColorContractTests
     {
         [Fact]
-        public void Tunnel_room_and_depth_previews_have_distinct_cell_based_colors()
+        public void Tunnel_room_and_depth_previews_use_runtime_visible_geometry()
         {
             string root = FindRepositoryRoot();
             string runtime = Path.Combine(
                 root, "unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime");
             string terrain = File.ReadAllText(Path.Combine(runtime, "DigTerrainChunkVisual.cs"));
-            string cell = File.ReadAllText(Path.Combine(runtime, "DigCellVisual.cs"));
             string depth = File.ReadAllText(Path.Combine(
-                runtime, "DigWorldInteraction.TunnelDepthExcavation.cs"));
-            string room = File.ReadAllText(Path.Combine(
+                runtime, "DigWorldRenderer.DepthDesignation.cs"));
+            string roomResources = File.ReadAllText(Path.Combine(
+                runtime, "DigCaveRoomPreviewRenderer.Resources.cs"));
+            string roomFill = File.ReadAllText(Path.Combine(
+                runtime, "DigCaveRoomPreviewRenderer.Fill.cs"));
+            string roomShow = File.ReadAllText(Path.Combine(
                 runtime, "DigCaveRoomPreviewRenderer.Show.cs"));
             string roomInput = File.ReadAllText(Path.Combine(
                 runtime, "DigWorldInteraction.CaveRooms.cs"));
 
             Assert.Contains("new Color(0.68f, 0.86f, 0.62f, 1f)", terrain);
-            Assert.Contains("DepthDesignationColor", cell + File.ReadAllText(Path.Combine(
-                runtime, "DigWorldRenderer.DepthDesignation.cs")));
-            Assert.Contains("SetDepthDesignationTint(target)", depth);
-            Assert.Contains("UpdateFill(corners)", room);
+            Assert.Contains("PrimitiveType.Cube", depth);
+            Assert.Contains("DigTunnelProjection.CellWorldPosition(target)", depth);
+            Assert.Contains("Vector3.one * 0.94f", depth);
+            Assert.Contains("DepthDesignationColor", depth);
+            Assert.Contains("_overlays!.ConfigureRenderer(", roomResources);
+            Assert.Contains("MaterialPropertyBlock", roomResources);
+            Assert.DoesNotContain("new Material(", roomResources);
+            Assert.Contains("1, 2, 0, 2, 3, 0", roomFill);
+            Assert.Contains("UpdateFill(corners)", roomShow);
             Assert.Contains("ResolveCaveRoomPreviewEntrance", roomInput);
             Assert.Contains("Plane frontLayer", roomInput);
-            Assert.DoesNotContain("|| cell.Model.IsSolid", roomInput);
         }
 
         private static string FindRepositoryRoot()
