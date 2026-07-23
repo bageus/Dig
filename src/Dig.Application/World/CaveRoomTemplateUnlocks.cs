@@ -8,28 +8,25 @@ namespace Dig.Application.World
 
 public sealed class CaveRoomTemplateCandidate
 {
-    public CaveRoomTemplateCandidate(
-        string residentId,
-        int stonework,
-        bool isEligible)
+    public CaveRoomTemplateCandidate(string residentId, int stoneworkUnits, bool isEligible)
     {
         if (string.IsNullOrWhiteSpace(residentId))
         {
             throw new ArgumentException("Resident id is required.", nameof(residentId));
         }
 
-        if (stonework < 0)
+        if (stoneworkUnits < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(stonework));
+            throw new ArgumentOutOfRangeException(nameof(stoneworkUnits));
         }
 
         ResidentId = residentId.Trim();
-        Stonework = stonework;
+        StoneworkUnits = stoneworkUnits;
         IsEligible = isEligible;
     }
 
     public string ResidentId { get; }
-    public int Stonework { get; }
+    public int StoneworkUnits { get; }
     public bool IsEligible { get; }
 }
 
@@ -38,20 +35,20 @@ public sealed class CaveRoomTemplateUnlockState
     internal CaveRoomTemplateUnlockState(
         CaveRoomPreset preset,
         bool isUnlocked,
-        int maximumStonework,
+        int maximumStoneworkUnits,
         string? qualifyingResidentId,
         string reason)
     {
         Preset = preset ?? throw new ArgumentNullException(nameof(preset));
         IsUnlocked = isUnlocked;
-        MaximumStonework = maximumStonework;
+        MaximumStoneworkUnits = maximumStoneworkUnits;
         QualifyingResidentId = qualifyingResidentId;
         Reason = reason ?? throw new ArgumentNullException(nameof(reason));
     }
 
     public CaveRoomPreset Preset { get; }
     public bool IsUnlocked { get; }
-    public int MaximumStonework { get; }
+    public int MaximumStoneworkUnits { get; }
     public string? QualifyingResidentId { get; }
     public string Reason { get; }
 }
@@ -59,23 +56,21 @@ public sealed class CaveRoomTemplateUnlockState
 public sealed class CaveRoomTemplateUnlockSnapshot
 {
     internal CaveRoomTemplateUnlockSnapshot(
-        int maximumStonework,
+        int maximumStoneworkUnits,
         string? qualifyingResidentId,
         IReadOnlyList<CaveRoomTemplateUnlockState> templates)
     {
-        MaximumStonework = maximumStonework;
+        MaximumStoneworkUnits = maximumStoneworkUnits;
         QualifyingResidentId = qualifyingResidentId;
         Templates = templates;
     }
 
-    public int MaximumStonework { get; }
+    public int MaximumStoneworkUnits { get; }
     public string? QualifyingResidentId { get; }
     public IReadOnlyList<CaveRoomTemplateUnlockState> Templates { get; }
 
-    public CaveRoomTemplateUnlockState Get(CaveRoomPresetKind kind)
-    {
-        return Templates.Single(value => value.Preset.Kind == kind);
-    }
+    public CaveRoomTemplateUnlockState Get(CaveRoomPresetKind kind) =>
+        Templates.Single(value => value.Preset.Kind == kind);
 }
 
 public sealed class CaveRoomTemplateUnlockEvaluator
@@ -90,39 +85,39 @@ public sealed class CaveRoomTemplateUnlockEvaluator
 
         CaveRoomTemplateCandidate? qualifying = candidates
             .Where(candidate => candidate != null && candidate.IsEligible)
-            .OrderByDescending(candidate => candidate.Stonework)
+            .OrderByDescending(candidate => candidate.StoneworkUnits)
             .ThenBy(candidate => candidate.ResidentId, StringComparer.Ordinal)
             .FirstOrDefault();
 
-        int maximumStonework = qualifying?.Stonework ?? 0;
+        int maximum = qualifying?.StoneworkUnits ?? 0;
         string? residentId = qualifying?.ResidentId;
         CaveRoomTemplateUnlockState[] states = CaveRoomPresetCatalog.Definitions
             .OrderBy(preset => preset.Kind)
-            .Select(preset => CreateState(preset, maximumStonework, residentId))
+            .Select(preset => CreateState(preset, maximum, residentId))
             .ToArray();
 
         return new CaveRoomTemplateUnlockSnapshot(
-            maximumStonework,
+            maximum,
             residentId,
             new ReadOnlyCollection<CaveRoomTemplateUnlockState>(states));
     }
 
     private static CaveRoomTemplateUnlockState CreateState(
         CaveRoomPreset preset,
-        int maximumStonework,
+        int maximum,
         string? residentId)
     {
-        bool unlocked = maximumStonework >= preset.RequiredStonework;
+        bool unlocked = maximum >= preset.RequiredStoneworkUnits;
         string reason = unlocked
-            ? preset.RequiredStonework == 0
+            ? preset.RequiredStoneworkUnits == 0
                 ? "Доступно с начала игры."
-                : $"Доступно: Камень {maximumStonework} из {preset.RequiredStonework}."
-            : $"Требуется Камень {preset.RequiredStonework}; сейчас максимум {maximumStonework}.";
+                : $"Доступно: Камень {maximum / 100} из {preset.RequiredStoneworkUnits / 100}."
+            : $"Требуется Камень {preset.RequiredStoneworkUnits / 100}; сейчас максимум {maximum / 100}.";
 
         return new CaveRoomTemplateUnlockState(
             preset,
             unlocked,
-            maximumStonework,
+            maximum,
             residentId,
             reason);
     }
@@ -133,8 +128,8 @@ public sealed class CaveRoomTemplatePlacementUnlock
     public CaveRoomTemplatePlacementUnlock(
         string templateId,
         int templateVersion,
-        int requiredStonework,
-        int maximumStonework,
+        int requiredStoneworkUnits,
+        int maximumStoneworkUnits,
         string? qualifyingResidentId)
     {
         if (string.IsNullOrWhiteSpace(templateId))
@@ -147,22 +142,22 @@ public sealed class CaveRoomTemplatePlacementUnlock
             throw new ArgumentOutOfRangeException(nameof(templateVersion));
         }
 
-        if (requiredStonework < 0 || maximumStonework < requiredStonework)
+        if (requiredStoneworkUnits < 0 || maximumStoneworkUnits < requiredStoneworkUnits)
         {
-            throw new ArgumentOutOfRangeException(nameof(maximumStonework));
+            throw new ArgumentOutOfRangeException(nameof(maximumStoneworkUnits));
         }
 
         TemplateId = templateId.Trim();
         TemplateVersion = templateVersion;
-        RequiredStonework = requiredStonework;
-        MaximumStonework = maximumStonework;
+        RequiredStoneworkUnits = requiredStoneworkUnits;
+        MaximumStoneworkUnits = maximumStoneworkUnits;
         QualifyingResidentId = qualifyingResidentId;
     }
 
     public string TemplateId { get; }
     public int TemplateVersion { get; }
-    public int RequiredStonework { get; }
-    public int MaximumStonework { get; }
+    public int RequiredStoneworkUnits { get; }
+    public int MaximumStoneworkUnits { get; }
     public string? QualifyingResidentId { get; }
 
     public static CaveRoomTemplatePlacementUnlock Capture(
@@ -181,8 +176,8 @@ public sealed class CaveRoomTemplatePlacementUnlock
         return new CaveRoomTemplatePlacementUnlock(
             state.Preset.Id,
             state.Preset.Version,
-            state.Preset.RequiredStonework,
-            state.MaximumStonework,
+            state.Preset.RequiredStoneworkUnits,
+            state.MaximumStoneworkUnits,
             state.QualifyingResidentId);
     }
 }
