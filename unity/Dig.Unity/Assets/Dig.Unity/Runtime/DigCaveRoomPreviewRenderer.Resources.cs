@@ -48,31 +48,16 @@ namespace Dig.Unity
             _fillMesh = new Mesh { name = "Cave room preview fill mesh" };
             _fillMesh.MarkDynamic();
             _fillFilter.sharedMesh = _fillMesh;
-
-            Shader? shader = Shader.Find("Universal Render Pipeline/Unlit")
-                ?? Shader.Find("Unlit/Color")
-                ?? Shader.Find("Sprites/Default");
-            if (shader == null)
-            {
-                throw new InvalidOperationException("No supported room preview shader was found.");
-            }
-
-            _fillMaterial = new Material(shader)
-            {
-                name = "Cave room preview translucent fill",
-                color = RoomPreviewColor,
-                renderQueue = (int)RenderQueue.Transparent,
-            };
-            _fillMaterial.SetColor("_BaseColor", RoomPreviewColor);
-            _fillMaterial.SetColor("_Color", RoomPreviewColor);
-            _fillMaterial.SetFloat("_Surface", 1f);
-            _fillMaterial.SetFloat("_ZWrite", 0f);
-            _fillMaterial.SetFloat("_Cull", 0f);
-            _fillMaterial.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            _fillRenderer.sharedMaterial = _fillMaterial;
+            _overlays!.ConfigureRenderer(
+                _fillRenderer,
+                OverlayLayerKind.Preview,
+                OverlaySemanticKind.PreviewValid);
+            _fillProperties = new MaterialPropertyBlock();
+            _fillProperties.SetColor("_BaseColor", RoomPreviewColor);
+            _fillProperties.SetColor("_Color", RoomPreviewColor);
+            _fillRenderer.SetPropertyBlock(_fillProperties);
             _fillRenderer.shadowCastingMode = ShadowCastingMode.Off;
             _fillRenderer.receiveShadows = false;
-            _fillRenderer.sortingOrder = 20;
             _fillRenderer.enabled = false;
         }
 
@@ -93,11 +78,6 @@ namespace Dig.Unity
             if (_fillMesh != null)
             {
                 Destroy(_fillMesh);
-            }
-
-            if (_fillMaterial != null)
-            {
-                Destroy(_fillMaterial);
             }
 
             if (_root != null && _overlays != null)
