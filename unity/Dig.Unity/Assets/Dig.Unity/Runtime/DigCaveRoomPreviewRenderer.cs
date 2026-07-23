@@ -12,6 +12,8 @@ namespace Dig.Unity
         private const int InvalidCrossEdgeCount = 2;
         private const int TotalEdgeCount = 14;
         private const int BoxEdgeCount = EdgeCount;
+        private const float PreviewThickness = 0.025f;
+        private const float PreviewFaceOffset = 0.03f;
 
         private static readonly Color RoomPreviewColor =
             new Color(0.55f, 0.72f, 0.92f, 0.34f);
@@ -37,13 +39,12 @@ namespace Dig.Unity
             float topRight = topMinX + preset.TopWidth - 0.5f;
             float bottom = -entrance.Y - 0.5f;
             float top = -entrance.Y + preset.Height - 0.5f;
-            float firstDepth = DigTunnelProjection.CellWorldPosition(
+            float frontLayer = DigTunnelProjection.CellWorldPosition(
                 new CellId(entrance.X, entrance.Y, 0)).z;
-            float lastDepth = DigTunnelProjection.CellWorldPosition(
-                new CellId(entrance.X, entrance.Y, preset.Depth - 1)).z;
-            float halfDepth = Mathf.Abs(DigTunnelProjection.DepthSpacing) * 0.47f;
-            float front = Mathf.Max(firstDepth, lastDepth) + halfDepth;
-            float back = Mathf.Min(firstDepth, lastDepth) - halfDepth;
+            float front = frontLayer
+                + DigTunnelProjection.RockCellHalfExtent
+                + PreviewFaceOffset;
+            float back = front - PreviewThickness;
             return new[]
             {
                 new Vector3(baseLeft, bottom, front),
