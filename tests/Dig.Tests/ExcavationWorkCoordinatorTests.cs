@@ -37,6 +37,32 @@ namespace Dig.Tests
         }
 
         [Fact]
+        public void High_skill_workers_reserve_one_distinct_current_quarter_each()
+        {
+            ExcavationWorkCoordinator coordinator = new ExcavationWorkCoordinator();
+            ExcavationWorkTarget target = new ExcavationWorkTarget(new CellId(5, 5), 0);
+            EntityId first = EntityId.Parse("00000000-0000-0000-0000-000000000009");
+            EntityId second = EntityId.Parse("00000000-0000-0000-0000-00000000000a");
+
+            ExcavationWorkerAssignment firstAssignment = coordinator.Assign(
+                first,
+                target,
+                ExcavationApproachSide.Left,
+                miningSkill: 100);
+            ExcavationWorkerAssignment secondAssignment = coordinator.Assign(
+                second,
+                target,
+                ExcavationApproachSide.Right,
+                miningSkill: 100);
+
+            Assert.True(IsSingleQuarter(firstAssignment.ReservedQuarters));
+            Assert.True(IsSingleQuarter(secondAssignment.ReservedQuarters));
+            Assert.Equal(
+                ExcavationQuarter.None,
+                firstAssignment.ReservedQuarters & secondAssignment.ReservedQuarters);
+        }
+
+        [Fact]
         public void Quarter_completion_is_attributed_to_finishing_worker()
         {
             ExcavationWorkCoordinator coordinator = new ExcavationWorkCoordinator();
@@ -111,6 +137,12 @@ namespace Dig.Tests
             Assert.True(coordinator.GetState(target).IsComplete);
             Assert.Null(coordinator.GetAssignment(first));
             Assert.Null(coordinator.GetAssignment(second));
+        }
+
+        private static bool IsSingleQuarter(ExcavationQuarter quarters)
+        {
+            int value = (int)quarters;
+            return value != 0 && (value & (value - 1)) == 0;
         }
     }
 }
