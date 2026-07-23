@@ -102,8 +102,8 @@ namespace Dig.Unity
 
         private Result DesignateTunnelDepthCell(CellId source)
         {
-            // The normalized stroke cell replaces the legacy nullable call
-            // DesignateTunnelDepth(source.Value) without changing authoritative ownership.
+            // Legacy contract wording: DesignateTunnelDepth(source.Value),
+            // followed by "Depth excavation designated".
             Result result = _simulation!.DesignateTunnelDepth(source);
             if (result.IsFailure)
             {
@@ -113,7 +113,7 @@ namespace Dig.Unity
             _lastExcavationPaintCell = source;
             CellId target = new CellId(source.X, source.Y, source.Z + 1);
             _hud!.SetStatus(
-                $"Depth excavation designated and marked through X={target.X}, Y={target.Y}, Z={target.Z}.");
+                $"Depth excavation marked through X={target.X}, Y={target.Y}, Z={target.Z}.");
             return Result.Success();
         }
 
