@@ -120,17 +120,17 @@ def main() -> int:
     cave_path = RUNTIME / "DigCaveRoomPreviewRenderer.cs"
     cave = combined("DigCaveRoomPreviewRenderer")
     errors.extend(require(cave_path, cave, (
-        "EdgeCount = 14",
+        "EdgeCount = 12",
         "OverlaySemanticKind.PreviewValid",
-        "OverlaySemanticKind.PreviewInvalid",
-        "ConfigureInvalidMarker",
-        "new Vector2Int(0, 2)",
-        "new Vector2Int(1, 3)",
         "RegisterLayer(OverlayLayerKind.Preview",
         "while (_edges.Count < EdgeCount)",
+        "RoomPreviewColor",
+        "UpdateFill(corners)",
     )))
     errors.extend(reject(cave_path, cave, (
         "new Material(", "_validMaterial", "_invalidMaterial",
+        "OverlaySemanticKind.PreviewInvalid",
+        "invalid cross",
     )))
 
     metadata_path = RUNTIME / "DigOverlayMetadata.cs"

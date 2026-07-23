@@ -27,11 +27,6 @@ namespace Dig.Unity
             {
                 CreateEdge("box");
             }
-
-            while (_edges.Count < TotalEdgeCount)
-            {
-                CreateEdge("invalid cross");
-            }
         }
 
         private void EnsureFillRenderer()

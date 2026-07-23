@@ -33,6 +33,7 @@ namespace Dig.Tests
             Assert.Contains("DesignationOverlap = 1.015f", cursor);
             Assert.Contains("MarkerThickness = 0.025f", cursor);
             Assert.Contains("SynchronizeTunnelDesignations", cursor);
+            Assert.Contains("!cell.IsSolid", cursor);
             Assert.Contains("SynchronizeTunnelDesignations(world)", excavation);
             Assert.Contains("ResolveTunnelCursorTarget", cursorDriver);
             Assert.Contains("ResolveDepthCursorTarget", cursorDriver);

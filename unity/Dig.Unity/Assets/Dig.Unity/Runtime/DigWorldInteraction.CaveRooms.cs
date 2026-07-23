@@ -36,19 +36,21 @@ namespace Dig.Unity
                 return;
             }
 
-            if (!CanUseCavePreset(kind, out string skillDetail))
-            {
-                _hud!.SetStatus(skillDetail);
-                return;
-            }
-
-            CaveRoomPresetCatalog.Get(kind);
+            CaveRoomPreset preset = CaveRoomPresetCatalog.Get(kind);
             _excavationMode = DigExcavationDrawingMode.None;
             ResetExcavationStroke();
             _caveRoomPreset = kind;
             _hoveredCaveRoomPlan = null;
             SetTunnelDigInteractionActive(active: true);
-            CaveRoomPreset preset = CaveRoomPresetCatalog.Get(kind);
+
+            if (!CanUseCavePreset(kind, out string skillDetail))
+            {
+                _hud!.SetStatus(
+                    $"{kind} cave preview: base {preset.BaseWidth}, top {preset.TopWidth}, " +
+                    $"depth {preset.Depth}, height {preset.Height}. {skillDetail}");
+                return;
+            }
+
             _hud!.SetStatus(
                 $"{kind} cave active: base {preset.BaseWidth}, top {preset.TopWidth}, " +
                 $"depth {preset.Depth}, height {preset.Height}.");
@@ -75,12 +77,6 @@ namespace Dig.Unity
                 return;
             }
 
-            if (!CanUseCavePreset(_caveRoomPreset.Value, out _))
-            {
-                _caveRoomPreviewRenderer.Clear();
-                return;
-            }
-
             if (!CanActivateExcavationDrawing
                 || _buildingPlacementMode.HasValue
                 || _hud!.ContainsScreenPoint(Input.mousePosition))
@@ -96,16 +92,18 @@ namespace Dig.Unity
                 return;
             }
 
+            CaveRoomPresetKind kind = _caveRoomPreset.Value;
             CaveRoomPlanResult result = _session!.PlanCaveRoom(
-                _caveRoomPreset.Value,
+                kind,
                 entrance.Value);
             _hoveredCaveRoomPlan = result;
             _caveRoomPreviewRenderer.Show(
-                CaveRoomPresetCatalog.Get(_caveRoomPreset.Value),
+                CaveRoomPresetCatalog.Get(kind),
                 entrance.Value,
                 result.Succeeded);
 
-            if (Input.GetMouseButtonDown(0) && result.Succeeded)
+            bool skillAllowed = CanUseCavePreset(kind, out _);
+            if (Input.GetMouseButtonDown(0) && result.Succeeded && skillAllowed)
             {
                 ApplyCaveRoomPlan(result.Plan!);
                 _roomPlacementHandledThisFrame = true;
@@ -175,7 +173,6 @@ namespace Dig.Unity
             if (!CanUseCavePreset(_caveRoomPreset.Value, out string skillDetail))
             {
                 _hud!.SetStatus(skillDetail);
-                DisableCaveRoomPlanning();
                 return true;
             }
 
