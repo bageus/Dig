@@ -44,17 +44,25 @@ def check_depth_terrain_contracts(
             "ToCellKeys(protectedCells)",
         ),
     ))
+    driver_text = texts.get(driver_path, "")
     errors.extend(require_fragments(
         driver_path,
-        texts.get(driver_path, ""),
+        driver_text,
         "authoritative World excavation refresh",
         (
             "WorldSession!.ExcavateSpatialCell(commit.Target)",
             "AgentSession!.CompleteTunnelDepthExcavation(",
             "WorldSession.LoadSnapshot()",
             "WorldRenderer!.Render(WorldSession.LoadView())",
-            "WorldSession!.ActivateCaveRoomVolume(plan)",
+            "RefreshCaveRoomRuntime",
+            "AgentSession.SynchronizeNavigation(",
         ),
+    ))
+    errors.extend(reject_fragments(
+        driver_path,
+        driver_text,
+        "instant cave room volume mutation",
+        ("ActivateCaveRoomVolume",),
     ))
     errors.extend(require_fragments(
         bootstrap_path,
