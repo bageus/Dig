@@ -44,8 +44,9 @@ namespace Dig.Tests
             Assert.Contains("PreviewThickness = 0.025f", roomPreview);
             Assert.Contains("new CellId(entrance.X, entrance.Y, 0)", roomPreview);
 
-            Assert.Contains("TryAssignSpatialExcavation", depth);
-            Assert.Contains("IsAvailableForAutomaticPlanning", depth);
+            Assert.Contains("AgentSession.LoadView()", depth);
+            Assert.Contains("TerrainSession.DesignateSpatialExcavation(", depth);
+            Assert.Contains("planned.Plan!", depth);
             Assert.Contains("RemoveDepthDesignationTint(commit.Target)", depth);
             Assert.Contains("RemoveDepthDesignationTint", depthOverlay);
             Assert.Contains("targetZ > 0", jobs);
