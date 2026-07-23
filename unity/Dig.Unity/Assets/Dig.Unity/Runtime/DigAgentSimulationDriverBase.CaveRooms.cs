@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.World;
 using Dig.Domain.Core;
 using Dig.Domain.World;
@@ -44,6 +45,19 @@ namespace Dig.Unity
             if (designated.IsFailure)
             {
                 return designated;
+            }
+
+            string? availableResident = agents
+                .Where(agent => agent.IsAvailableForAutomaticPlanning)
+                .Select(agent => agent.Id)
+                .FirstOrDefault();
+            if (availableResident != null)
+            {
+                TerrainSession.TryAssignSpatialExcavation(
+                    planned.Plan!.Source,
+                    new[] { availableResident },
+                    CurrentTick,
+                    out _);
             }
 
             IReadOnlyList<JobOverlayViewModel> jobs = TerrainSession.LoadJobs();
