@@ -11,6 +11,7 @@ namespace Dig.Unity
         private DigCaveRoomPreviewRenderer? _caveRoomPreviewRenderer;
         private DigCaveRoomFloorRenderer? _caveRoomFloorRenderer;
         private CaveRoomPlanResult? _hoveredCaveRoomPlan;
+        private bool _roomPlacementHandledThisFrame;
         private long _lastCaveRoomRuntimeTick = -1;
         private readonly CaveRoomSkillAccessPolicy _caveRoomSkillAccess =
             new CaveRoomSkillAccessPolicy();
@@ -57,6 +58,7 @@ namespace Dig.Unity
         {
             _caveRoomPreset = null;
             _hoveredCaveRoomPlan = null;
+            _roomPlacementHandledThisFrame = false;
             _caveRoomPreviewRenderer?.Clear();
             SetTunnelDigInteractionActive(
                 UsesTunnelCellInteraction(_excavationMode));
@@ -64,6 +66,7 @@ namespace Dig.Unity
 
         private void UpdateCaveRoomPreview()
         {
+            _roomPlacementHandledThisFrame = false;
             RefreshCompletedCaveRooms();
             _hoveredCaveRoomPlan = null;
             if (!_caveRoomPreset.HasValue || _caveRoomPreviewRenderer == null)
@@ -101,6 +104,12 @@ namespace Dig.Unity
                 CaveRoomPresetCatalog.Get(_caveRoomPreset.Value),
                 entrance.Value,
                 result.Succeeded);
+
+            if (Input.GetMouseButtonDown(0) && result.Succeeded)
+            {
+                ApplyCaveRoomPlan(result.Plan!);
+                _roomPlacementHandledThisFrame = true;
+            }
         }
 
         private CellId? ResolveCaveRoomPreviewEntrance()
@@ -153,6 +162,11 @@ namespace Dig.Unity
 
         private bool TryHandleCaveRoomPlacement()
         {
+            if (_roomPlacementHandledThisFrame)
+            {
+                return true;
+            }
+
             if (!_caveRoomPreset.HasValue || !Input.GetMouseButtonDown(0))
             {
                 return false;
@@ -184,11 +198,16 @@ namespace Dig.Unity
                 return true;
             }
 
-            CaveRoomPlan plan = hovered.Plan!;
+            ApplyCaveRoomPlan(hovered.Plan!);
+            return true;
+        }
+
+        private void ApplyCaveRoomPlan(CaveRoomPlan plan)
+        {
             Result result = _simulation!.ApplyCaveRoomPlan(
                 plan,
                 _excavationPriority);
-            _hud.SetCommandResult(result);
+            _hud!.SetCommandResult(result);
             if (result.IsSuccess)
             {
                 _hud.SetStatus(
@@ -196,8 +215,6 @@ namespace Dig.Unity
                     $"{plan.VolumeCells.Count} Dig Jobs, " +
                     $"depth {plan.Preset.Depth}.");
             }
-
-            return true;
         }
 
         private bool CanUseCavePreset(
