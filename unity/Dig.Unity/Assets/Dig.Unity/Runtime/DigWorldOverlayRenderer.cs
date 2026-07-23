@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Domain.World;
 using Dig.Presentation.Overlays;
 using UnityEngine;
 
@@ -101,6 +102,20 @@ public sealed partial class DigWorldOverlayRenderer : MonoBehaviour
         float scale = 0.72f)
     {
         marker.transform.position = new Vector3(x, elevation, y);
+        marker.transform.rotation = Quaternion.identity;
+        marker.transform.localScale = new Vector3(scale, 0.035f, scale);
+    }
+
+    private static void PlaceCellAtDepth(
+        GameObject marker,
+        int x,
+        int y,
+        int z,
+        float elevation,
+        float scale = 0.72f)
+    {
+        Vector3 floor = DigTunnelProjection.FloorWorldPosition(new CellId(x, y, z));
+        marker.transform.position = floor + (Vector3.up * elevation);
         marker.transform.rotation = Quaternion.identity;
         marker.transform.localScale = new Vector3(scale, 0.035f, scale);
     }
