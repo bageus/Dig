@@ -124,6 +124,7 @@ public sealed partial class DigWorldOverlayRenderer : MonoBehaviour
             DigTunnelProjection.RockCellHalfExtent + DesignationFaceOffset);
         marker.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
         marker.transform.localScale = new Vector3(scale, 0.035f, scale);
+        marker.SetActive(false);
     }
 }
 }
