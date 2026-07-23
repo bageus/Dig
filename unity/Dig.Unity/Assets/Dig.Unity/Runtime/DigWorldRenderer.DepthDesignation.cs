@@ -23,9 +23,14 @@ namespace Dig.Unity
             GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
             marker.name = $"Depth designation cell {target}";
             marker.transform.SetParent(transform, worldPositionStays: true);
-            marker.transform.position = DigTunnelProjection.CellWorldPosition(target);
+            Vector3 position = DigTunnelProjection.CellWorldPosition(target);
+            position.z = DigTunnelProjection.CellWorldPosition(
+                new CellId(target.X, target.Y, 0)).z
+                + DigTunnelProjection.RockCellHalfExtent
+                + 0.025f;
+            marker.transform.position = position;
             marker.transform.rotation = Quaternion.identity;
-            marker.transform.localScale = Vector3.one * 0.94f;
+            marker.transform.localScale = new Vector3(0.94f, 0.94f, 0.025f);
 
             Collider? collider = marker.GetComponent<Collider>();
             if (collider != null)
@@ -50,6 +55,17 @@ namespace Dig.Unity
             properties.SetColor("_Color", DepthDesignationColor);
             renderer.SetPropertyBlock(properties);
             _depthDesignationCells.Add(target, marker);
+        }
+
+        internal void RemoveDepthDesignationTint(CellId target)
+        {
+            if (!_depthDesignationCells.TryGetValue(target, out GameObject? marker))
+            {
+                return;
+            }
+
+            Destroy(marker);
+            _depthDesignationCells.Remove(target);
         }
     }
 }
