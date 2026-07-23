@@ -23,7 +23,7 @@ namespace Dig.Unity
         private MeshFilter? _fillFilter;
         private MeshRenderer? _fillRenderer;
         private Mesh? _fillMesh;
-        private MaterialPropertyBlock? _fillProperties;
+        private Material? _fillMaterial;
 
         private static Vector3[] CreateCorners(
             CaveRoomPreset preset,
