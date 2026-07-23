@@ -2,14 +2,41 @@ using Dig.Domain.Core;
 using Dig.Domain.World;
 using Dig.Presentation.Input;
 using Dig.Presentation.Inventory;
+using UnityEngine;
 
 namespace Dig.Unity
 {
     public sealed partial class DigWorldInteraction
     {
+        private const float InventoryDoubleClickSeconds = 0.36f;
+        private string? _lastActivatedInventoryStackId;
+        private float _lastInventoryActivationTime = float.NegativeInfinity;
+
         internal void ActivateResidentInventorySlot(
             ResidentInventorySlotViewModel slot)
         {
+            if (slot == null)
+            {
+                throw new System.ArgumentNullException(nameof(slot));
+            }
+
+            float now = Time.unscaledTime;
+            bool doubleClick = string.Equals(
+                    _lastActivatedInventoryStackId,
+                    slot.StackId,
+                    System.StringComparison.Ordinal)
+                && now - _lastInventoryActivationTime <= InventoryDoubleClickSeconds;
+            _lastActivatedInventoryStackId = doubleClick ? null : slot.StackId;
+            _lastInventoryActivationTime = doubleClick
+                ? float.NegativeInfinity
+                : now;
+
+            if (doubleClick)
+            {
+                DropResidentInventorySlot(slot);
+                return;
+            }
+
             RouteResidentInventorySlot(
                 slot,
                 PointerButtonKind.Left,
@@ -19,6 +46,7 @@ namespace Dig.Unity
         internal void UseResidentInventorySlot(
             ResidentInventorySlotViewModel slot)
         {
+            ResetInventoryClickSequence();
             RouteResidentInventorySlot(
                 slot,
                 PointerButtonKind.Left,
@@ -28,10 +56,17 @@ namespace Dig.Unity
         internal void DropResidentInventorySlot(
             ResidentInventorySlotViewModel slot)
         {
+            ResetInventoryClickSequence();
             RouteResidentInventorySlot(
                 slot,
                 PointerButtonKind.Right,
                 altPressed: false);
+        }
+
+        private void ResetInventoryClickSequence()
+        {
+            _lastActivatedInventoryStackId = null;
+            _lastInventoryActivationTime = float.NegativeInfinity;
         }
 
         private void RouteResidentInventorySlot(
