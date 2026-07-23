@@ -214,12 +214,12 @@ public sealed class MiningOutputCommitState
                 $"Mining output for cell {plan.Cell} was already committed.");
         }
 
-        TerrainDepositInstance? deposit = ValidateDepositPlan(plan, deposits);
+        TerrainDepositInstance? deposit = ValidateDepositPlan(plan, deposits, tick);
         ValidateWorldStack(plan, stackId, inventory);
 
         if (!plan.IsEmpty)
         {
-            Dig.Domain.Core.Result added = inventory.AddStack(
+            Result added = inventory.AddStack(
                 stackId,
                 plan.ItemId,
                 plan.Quantity,
@@ -251,7 +251,8 @@ public sealed class MiningOutputCommitState
 
     private static TerrainDepositInstance? ValidateDepositPlan(
         MiningOutputPlan plan,
-        TerrainDepositState deposits)
+        TerrainDepositState deposits,
+        long tick)
     {
         bool hasDeposit = deposits.TryGet(plan.Cell, out TerrainDepositInstance current);
         if (plan.SourceKind == MiningOutputSourceKind.Terrain)
@@ -267,6 +268,7 @@ public sealed class MiningOutputCommitState
 
         if (!hasDeposit
             || current.IsDepleted
+            || current.Version > tick
             || !string.Equals(
                 current.InstanceId,
                 plan.DepositInstanceId,
