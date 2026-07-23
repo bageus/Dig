@@ -69,8 +69,13 @@ namespace Dig.Unity
 
         private void EnsurePool(DigItemVisualResolution resolution)
         {
-            string key = resolution.Asset.StableId;
-            int capacity = Mathf.Clamp(resolution.MaxVisibleInstances, 1, 4);
+            bool rawMaterial = TryResolveRawMaterialTint(Model.ItemId, out Color materialTint);
+            string key = rawMaterial
+                ? $"raw-material:{Model.ItemId}"
+                : resolution.Asset.StableId;
+            int capacity = rawMaterial
+                ? 1
+                : Mathf.Clamp(resolution.MaxVisibleInstances, 1, 4);
             if (_assetKey == key && _poolCapacity == capacity && _instances.Count == capacity)
             {
                 return;
@@ -79,14 +84,16 @@ namespace Dig.Unity
             ClearChildren();
             _assetKey = key;
             _poolCapacity = capacity;
-            _baseTint = resolution.Asset.Tint;
+            _baseTint = rawMaterial ? materialTint : resolution.Asset.Tint;
             for (int index = 0; index < capacity; index++)
             {
-                GameObject instance = DigVisualPrefabFactory.Create(
-                    resolution.Asset,
-                    transform,
-                    $"Item instance {index}",
-                    PrimitiveType.Cube);
+                GameObject instance = rawMaterial
+                    ? CreateRawMaterialLump(resolution, index)
+                    : DigVisualPrefabFactory.Create(
+                        resolution.Asset,
+                        transform,
+                        $"Item instance {index}",
+                        PrimitiveType.Cube);
                 SetLayerRecursively(instance, layer: 2);
                 DisableColliders(instance);
                 _instances.Add(instance);
@@ -94,6 +101,22 @@ namespace Dig.Unity
             }
 
             RebuildCount++;
+        }
+
+        private GameObject CreateRawMaterialLump(
+            DigItemVisualResolution resolution,
+            int index)
+        {
+            GameObject instance = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            instance.name = $"Raw material lump {index}";
+            instance.transform.SetParent(transform, worldPositionStays: false);
+            instance.transform.localPosition = Vector3.zero;
+            instance.transform.localRotation = Quaternion.Euler(17f, 31f, 9f);
+            instance.transform.localScale = Vector3.one;
+            DigVisualPrefabRoot root = instance.AddComponent<DigVisualPrefabRoot>();
+            DigVisualTintTarget tint = instance.AddComponent<DigVisualTintTarget>();
+            tint.Configure(resolution.Asset.Material, _baseTint);
+            return instance;
         }
 
         private void ApplyRoot(
@@ -135,7 +158,10 @@ namespace Dig.Unity
             ItemStackVisualLayoutViewModel layout,
             DigItemVisualResolution resolution)
         {
-            int visible = Math.Min(layout.Instances.Count, _instances.Count);
+            bool rawMaterial = TryResolveRawMaterialTint(Model.ItemId, out _);
+            int visible = rawMaterial
+                ? Math.Min(1, _instances.Count)
+                : Math.Min(layout.Instances.Count, _instances.Count);
             Color tint = ResolveReservationTint(layout.ReservationState);
             for (int index = 0; index < _instances.Count; index++)
             {
@@ -147,17 +173,29 @@ namespace Dig.Unity
                     continue;
                 }
 
-                ItemStackLayoutInstanceViewModel placement = layout.Instances[index];
-                float scaleFactor = placement.ScalePercent / 100f;
-                instance.transform.localPosition = new Vector3(
-                    placement.OffsetXPercent * 0.01f,
-                    index * 0.025f,
-                    placement.OffsetYPercent * 0.01f);
-                instance.transform.localRotation = ResolveRotation(
-                    resolution.RotationPolicy,
-                    layout.QuantityBand,
-                    placement.QuarterTurns);
-                instance.transform.localScale = resolution.WorldScale * scaleFactor;
+                if (rawMaterial)
+                {
+                    instance.transform.localPosition = Vector3.zero;
+                    instance.transform.localRotation = Quaternion.Euler(17f, 31f, 9f);
+                    instance.transform.localScale = Vector3.Scale(
+                        resolution.WorldScale,
+                        new Vector3(1.12f, 0.86f, 0.97f));
+                }
+                else
+                {
+                    ItemStackLayoutInstanceViewModel placement = layout.Instances[index];
+                    float scaleFactor = placement.ScalePercent / 100f;
+                    instance.transform.localPosition = new Vector3(
+                        placement.OffsetXPercent * 0.01f,
+                        index * 0.025f,
+                        placement.OffsetYPercent * 0.01f);
+                    instance.transform.localRotation = ResolveRotation(
+                        resolution.RotationPolicy,
+                        layout.QuantityBand,
+                        placement.QuarterTurns);
+                    instance.transform.localScale = resolution.WorldScale * scaleFactor;
+                }
+
                 _tints[index].SetTint(tint);
             }
 
@@ -200,6 +238,43 @@ namespace Dig.Unity
                     Color.Lerp(_baseTint, Color.black, 0.28f),
                 _ => _baseTint,
             };
+        }
+
+        private static bool TryResolveRawMaterialTint(string itemId, out Color tint)
+        {
+            string value = itemId?.ToLowerInvariant() ?? string.Empty;
+            if (value.Contains("gold"))
+            {
+                tint = new Color(0.95f, 0.78f, 0.12f, 1f);
+                return true;
+            }
+
+            if (value.Contains("iron"))
+            {
+                tint = new Color(0.92f, 0.43f, 0.12f, 1f);
+                return true;
+            }
+
+            if (value.Contains("coal"))
+            {
+                tint = new Color(0.055f, 0.055f, 0.065f, 1f);
+                return true;
+            }
+
+            if (value.Contains("crystal"))
+            {
+                tint = new Color(0.25f, 0.78f, 0.96f, 1f);
+                return true;
+            }
+
+            if (value.Contains("stone") || value.Contains("rock"))
+            {
+                tint = new Color(0.48f, 0.50f, 0.53f, 1f);
+                return true;
+            }
+
+            tint = Color.white;
+            return false;
         }
 
         private void ClearChildren()
