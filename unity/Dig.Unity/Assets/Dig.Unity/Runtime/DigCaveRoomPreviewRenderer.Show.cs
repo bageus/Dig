@@ -22,22 +22,22 @@ namespace Dig.Unity
             Vector3[] corners = CreateCorners(preset, entrance);
             UpdateFill(corners);
             Vector2Int[] connections = CreateBoxConnections();
-            OverlaySemanticKind semantic = valid
-                ? OverlaySemanticKind.PreviewValid
-                : OverlaySemanticKind.PreviewInvalid;
             for (int index = 0; index < connections.Length; index++)
             {
                 LineRenderer edge = _edges[index];
                 _overlays!.ConfigureLineRenderer(
                     edge,
                     OverlayLayerKind.Preview,
-                    semantic);
+                    OverlaySemanticKind.PreviewValid);
                 edge.enabled = true;
                 edge.SetPosition(0, corners[connections[index].x]);
                 edge.SetPosition(1, corners[connections[index].y]);
             }
 
-            ConfigureInvalidMarker(corners, valid, semantic);
+            ConfigureInvalidMarker(
+                corners,
+                valid: true,
+                OverlaySemanticKind.PreviewValid);
         }
     }
 }
