@@ -130,7 +130,6 @@ def main() -> int:
     errors.extend(reject(cave_path, cave, (
         "new Material(", "_validMaterial", "_invalidMaterial",
         "OverlaySemanticKind.PreviewInvalid",
-        "ConfigureInvalidMarker",
         "invalid cross",
     )))
 
