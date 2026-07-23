@@ -7,7 +7,7 @@ namespace Dig.Tests
     public sealed class DepthDesignationOverlayContractTests
     {
         [Fact]
-        public void World_overlay_projects_designations_to_authoritative_depth()
+        public void World_overlay_projects_depth_designations_to_visible_open_face()
         {
             string root = FindRepositoryRoot();
             string render = File.ReadAllText(Path.Combine(
@@ -28,7 +28,26 @@ namespace Dig.Tests
                 "DigWorldOverlayRenderer.cs"));
 
             Assert.Contains("PlaceCellAtDepth(marker, cell.X, cell.Y, cell.Z", render);
-            Assert.Contains("DigTunnelProjection.FloorWorldPosition(new CellId(x, y, z))", renderer);
+            Assert.Contains("int visibleFaceZ = z > 0 ? z - 1 : z", renderer);
+            Assert.Contains("new CellId(x, y, visibleFaceZ)", renderer);
+        }
+
+        [Fact]
+        public void Excavation_stroke_scans_all_pointer_hits_for_cell_proxy()
+        {
+            string root = FindRepositoryRoot();
+            string interaction = File.ReadAllText(Path.Combine(
+                root,
+                "unity",
+                "Dig.Unity",
+                "Assets",
+                "Dig.Unity",
+                "Runtime",
+                "DigWorldInteraction.Excavation.cs"));
+
+            Assert.Contains("RaycastHit[] hits = GetPointerHits()", interaction);
+            Assert.Contains("ResolveExcavationPaintTarget(hits[index])", interaction);
+            Assert.DoesNotContain("Physics.Raycast(ray, out RaycastHit hit, 500f)", interaction);
         }
 
         private static string FindRepositoryRoot()
