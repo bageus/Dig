@@ -18,6 +18,7 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(preset));
             }
 
+            _ = valid;
             EnsureResources();
             Vector3[] corners = CreateCorners(preset, entrance);
             UpdateFill(corners);
@@ -33,11 +34,6 @@ namespace Dig.Unity
                 edge.SetPosition(0, corners[connections[index].x]);
                 edge.SetPosition(1, corners[connections[index].y]);
             }
-
-            ConfigureInvalidMarker(
-                corners,
-                valid: true,
-                OverlaySemanticKind.PreviewValid);
         }
     }
 }
