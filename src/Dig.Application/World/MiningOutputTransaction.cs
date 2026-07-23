@@ -181,12 +181,11 @@ public sealed class MiningOutputCommitState
         return _commits.ContainsKey(cell);
     }
 
-    public MiningOutputCommit Commit(
+    public void Validate(
         MiningOutputPlan plan,
         EntityId stackId,
         InventoryState inventory,
-        TerrainDepositState deposits,
-        long tick)
+        TerrainDepositState deposits)
     {
         if (plan == null)
         {
@@ -203,39 +202,27 @@ public sealed class MiningOutputCommitState
             throw new ArgumentNullException(nameof(deposits));
         }
 
-        if (tick < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(tick));
-        }
-
         if (_commits.ContainsKey(plan.Cell))
         {
             throw new InvalidOperationException(
                 $"Mining output for cell {plan.Cell} was already committed.");
         }
 
-        TerrainDepositInstance? deposit = ValidateDepositPlan(plan, deposits, tick);
+        ValidateDepositPlan(plan, deposits);
         ValidateWorldStack(plan, stackId, inventory);
+    }
 
-        if (!plan.IsEmpty)
+    public MiningOutputCommit Record(MiningOutputPlan plan, EntityId stackId)
+    {
+        if (plan == null)
         {
-            Result added = inventory.AddStack(
-                stackId,
-                plan.ItemId,
-                plan.Quantity,
-                ItemLocation.InWorld(plan.Cell),
-                tick);
-            if (added.IsFailure)
-            {
-                throw new InvalidOperationException(
-                    $"Mining output world stack preflight diverged: {added.Error}");
-            }
+            throw new ArgumentNullException(nameof(plan));
         }
 
-        if (deposit != null && !deposits.Deplete(plan.Cell, tick))
+        if (_commits.ContainsKey(plan.Cell))
         {
             throw new InvalidOperationException(
-                "Deposit changed after mining output preflight.");
+                $"Mining output for cell {plan.Cell} was already committed.");
         }
 
         MiningOutputCommit committed = new MiningOutputCommit(
@@ -249,10 +236,9 @@ public sealed class MiningOutputCommitState
         return committed;
     }
 
-    private static TerrainDepositInstance? ValidateDepositPlan(
+    private static void ValidateDepositPlan(
         MiningOutputPlan plan,
-        TerrainDepositState deposits,
-        long tick)
+        TerrainDepositState deposits)
     {
         bool hasDeposit = deposits.TryGet(plan.Cell, out TerrainDepositInstance current);
         if (plan.SourceKind == MiningOutputSourceKind.Terrain)
@@ -263,12 +249,11 @@ public sealed class MiningOutputCommitState
                     "Terrain output cannot be committed while a deposit occupies the cell.");
             }
 
-            return null;
+            return;
         }
 
         if (!hasDeposit
             || current.IsDepleted
-            || current.Version > tick
             || !string.Equals(
                 current.InstanceId,
                 plan.DepositInstanceId,
@@ -280,8 +265,6 @@ public sealed class MiningOutputCommitState
             throw new InvalidOperationException(
                 "Deposit output plan no longer matches authoritative deposit state.");
         }
-
-        return current;
     }
 
     private static void ValidateWorldStack(

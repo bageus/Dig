@@ -83,24 +83,6 @@ internal sealed partial class DigWorldSession
             inputs);
     }
 
-    internal bool TryGetTerrainDepositOutput(
-        CellId cell,
-        out ItemId outputItemId,
-        out int outputQuantity)
-    {
-        if (_terrainDeposits.TryGet(cell, out TerrainDepositInstance deposit)
-            && !deposit.IsDepleted)
-        {
-            outputItemId = deposit.Definition.OutputItemId;
-            outputQuantity = deposit.RemainingYield;
-            return true;
-        }
-
-        outputItemId = default;
-        outputQuantity = 0;
-        return false;
-    }
-
     internal bool RevealTerrainDeposit(CellId cell, long tick)
     {
         return _terrainDeposits.Reveal(cell, tick);
@@ -127,6 +109,7 @@ internal sealed partial class DigWorldSession
 
     private void InitializeDemoDeposits(int seed)
     {
+        _miningOutputWorldSeed = seed;
         WorldViewModel world = LoadView();
         CellId[] candidates = world.Chunks
             .SelectMany(chunk => chunk.Cells)
