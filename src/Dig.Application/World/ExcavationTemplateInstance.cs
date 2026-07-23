@@ -85,9 +85,7 @@ public sealed class ExcavationTemplateInstance
             throw new ArgumentException("Template style id is required.", nameof(styleId));
         }
 
-        CellId[] mask = plan.VolumeCells
-            .OrderBy(cell => cell)
-            .ToArray();
+        CellId[] mask = plan.VolumeCells.OrderBy(cell => cell).ToArray();
         if (mask.Length == 0 || mask.Distinct().Count() != mask.Length)
         {
             throw new ArgumentException(
@@ -189,22 +187,6 @@ public sealed class ExcavationTemplateInstance
         }
 
         LifecycleState = ExcavationTemplateLifecycleState.Cancelled;
-    }
-}
-
-public sealed class ExcavationTemplateInstanceFactory
-{
-    public ExcavationTemplateInstance Create(
-        string instanceId,
-        CaveRoomPlan plan,
-        CaveRoomTemplatePlacementUnlock unlock,
-        string styleId)
-    {
-        return new ExcavationTemplateInstance(
-            instanceId,
-            plan,
-            unlock,
-            styleId);
     }
 }
 
