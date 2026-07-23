@@ -14,6 +14,15 @@ namespace Dig.Unity
 
         public WorldCellViewModel Model { get; private set; }
 
+        private void Awake()
+        {
+            Collider? collider = GetComponent<Collider>();
+            if (collider != null)
+            {
+                collider.enabled = false;
+            }
+        }
+
         public void Configure(WorldCellViewModel model, Color baseColor)
         {
             Model = model;
