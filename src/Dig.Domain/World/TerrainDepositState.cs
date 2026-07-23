@@ -17,6 +17,68 @@ public sealed class TerrainDepositState
             _byCell.Values.OrderBy(value => value.Cell).ToArray());
     }
 
+    public TerrainDepositSaveSnapshot CaptureSaveSnapshot(int generatorVersion)
+    {
+        TerrainDepositSaveEntry[] deposits = _byCell.Values
+            .OrderBy(value => value.Cell)
+            .Select(value => new TerrainDepositSaveEntry(
+                value.InstanceId,
+                value.Definition.Id,
+                value.Cell,
+                value.IsRevealed,
+                value.RemainingYield,
+                value.Version))
+            .ToArray();
+        return new TerrainDepositSaveSnapshot(
+            TerrainDepositSaveSnapshot.CurrentFormatVersion,
+            generatorVersion,
+            deposits);
+    }
+
+    public void RestoreSaveSnapshot(
+        TerrainDepositSaveSnapshot snapshot,
+        TerrainDepositCatalog catalog)
+    {
+        if (snapshot == null)
+        {
+            throw new ArgumentNullException(nameof(snapshot));
+        }
+
+        if (catalog == null)
+        {
+            throw new ArgumentNullException(nameof(catalog));
+        }
+
+        if (snapshot.FormatVersion != TerrainDepositSaveSnapshot.CurrentFormatVersion)
+        {
+            throw new InvalidOperationException(
+                $"Unsupported terrain deposit save format version {snapshot.FormatVersion}.");
+        }
+
+        TerrainDepositInstance[] restored = new TerrainDepositInstance[snapshot.Deposits.Count];
+        for (int index = 0; index < snapshot.Deposits.Count; index++)
+        {
+            TerrainDepositSaveEntry entry = snapshot.Deposits[index];
+            TerrainDepositDefinition? definition = catalog.Get(entry.DefinitionId);
+            if (definition == null)
+            {
+                throw new InvalidOperationException(
+                    $"Unknown terrain deposit definition '{entry.DefinitionId}' "
+                    + $"for instance '{entry.InstanceId}'.");
+            }
+
+            restored[index] = new TerrainDepositInstance(
+                entry.InstanceId,
+                entry.Cell,
+                definition,
+                entry.IsRevealed,
+                entry.RemainingYield,
+                entry.Version);
+        }
+
+        ReplaceAll(restored);
+    }
+
     public void ReplaceAll(IEnumerable<TerrainDepositInstance> deposits)
     {
         if (deposits == null)
