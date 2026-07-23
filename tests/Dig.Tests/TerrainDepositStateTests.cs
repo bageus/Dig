@@ -67,6 +67,29 @@ public sealed class TerrainDepositStateTests
         Assert.Equal(Iron.MaximumYield, unchanged.RemainingYield);
     }
 
+    [Fact]
+    public void Reveal_adjacent_to_uses_six_xyz_neighbors_and_is_idempotent()
+    {
+        TerrainDepositState state = new TerrainDepositState();
+        TerrainDepositInstance left = Deposit("deposit-left", 1, 2, 1);
+        TerrainDepositInstance right = Deposit("deposit-right", 3, 2, 1);
+        TerrainDepositInstance above = Deposit("deposit-above", 2, 2, 2);
+        TerrainDepositInstance diagonal = Deposit("deposit-diagonal", 3, 3, 1);
+        state.ReplaceAll(new[] { diagonal, above, right, left });
+
+        Assert.Equal(3, state.RevealAdjacentTo(new CellId(2, 2, 1), version: 20));
+        Assert.Equal(0, state.RevealAdjacentTo(new CellId(2, 2, 1), version: 21));
+
+        Assert.True(state.TryGet(left.Cell, out TerrainDepositInstance leftChanged));
+        Assert.True(state.TryGet(right.Cell, out TerrainDepositInstance rightChanged));
+        Assert.True(state.TryGet(above.Cell, out TerrainDepositInstance aboveChanged));
+        Assert.True(leftChanged.IsRevealed);
+        Assert.True(rightChanged.IsRevealed);
+        Assert.True(aboveChanged.IsRevealed);
+        Assert.True(state.TryGet(diagonal.Cell, out TerrainDepositInstance diagonalUnchanged));
+        Assert.False(diagonalUnchanged.IsRevealed);
+    }
+
     private static TerrainDepositInstance Deposit(string id, int x, int y, int z)
     {
         return new TerrainDepositInstance(

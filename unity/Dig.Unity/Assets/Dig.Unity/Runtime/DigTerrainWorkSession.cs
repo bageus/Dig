@@ -194,6 +194,7 @@ internal sealed partial class DigTerrainWorkSession
             _worldSession.DepleteTerrainDeposit(targetCell, tick);
         }
 
+        _worldSession.RevealTerrainDepositsAdjacentTo(targetCell, tick);
         _routePlans.Remove(job.Id);
         Result refresh = RefreshNavigation();
         if (refresh.IsFailure)

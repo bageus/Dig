@@ -79,6 +79,21 @@ public sealed class TerrainDepositState
         return true;
     }
 
+    public int RevealAdjacentTo(CellId excavatedCell, long version)
+    {
+        int revealed = 0;
+        CellId[] neighbors = CreateNeighbors(excavatedCell);
+        for (int index = 0; index < neighbors.Length; index++)
+        {
+            if (Reveal(neighbors[index], version))
+            {
+                revealed++;
+            }
+        }
+
+        return revealed;
+    }
+
     public bool Deplete(CellId cell, long version)
     {
         if (!_byCell.TryGetValue(cell, out TerrainDepositInstance? current)
@@ -89,6 +104,28 @@ public sealed class TerrainDepositState
 
         _byCell[cell] = current.Deplete(Math.Max(current.Version + 1, version));
         return true;
+    }
+
+    private static CellId[] CreateNeighbors(CellId cell)
+    {
+        List<CellId> neighbors = new List<CellId>(6)
+        {
+            new CellId(cell.X - 1, cell.Y, cell.Z),
+            new CellId(cell.X + 1, cell.Y, cell.Z),
+            new CellId(cell.X, cell.Y - 1, cell.Z),
+            new CellId(cell.X, cell.Y + 1, cell.Z),
+        };
+        if (cell.Z > CellId.MinimumDepth)
+        {
+            neighbors.Add(new CellId(cell.X, cell.Y, cell.Z - 1));
+        }
+
+        if (cell.Z < CellId.MaximumDepth)
+        {
+            neighbors.Add(new CellId(cell.X, cell.Y, cell.Z + 1));
+        }
+
+        return neighbors.OrderBy(value => value).ToArray();
     }
 }
 
