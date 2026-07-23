@@ -9,7 +9,20 @@ namespace Dig.Unity
 
         private void LateUpdate()
         {
+            SynchronizeExcavationDesignations();
             UpdateExcavationCursorPreview();
+        }
+
+        private void SynchronizeExcavationDesignations()
+        {
+            if (!IsInitialized())
+            {
+                return;
+            }
+
+            EnsureExcavationCursorRenderer();
+            _excavationCursorRenderer!.SynchronizeTunnelDesignations(
+                _session!.LoadView());
         }
 
         private void UpdateExcavationCursorPreview()
