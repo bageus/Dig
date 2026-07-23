@@ -1,3 +1,4 @@
+using Dig.Domain.World;
 using Dig.Presentation.World;
 using UnityEngine;
 
@@ -22,6 +23,12 @@ namespace Dig.Unity
         public void Configure(WorldCellViewModel model, Color baseColor)
         {
             Model = model;
+            if (model.IsSolid)
+            {
+                transform.position = DigTunnelProjection.CellWorldPosition(
+                    new CellId(model.X, model.Y, model.Z));
+            }
+
             _baseColor = baseColor;
             _rejected = false;
             EnsureRenderState();
