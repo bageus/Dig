@@ -127,6 +127,7 @@ internal sealed partial class DigWorldSession
 
     private void InitializeDemoDeposits(int seed)
     {
+        _miningOutputWorldSeed = seed;
         WorldViewModel world = LoadView();
         CellId[] candidates = world.Chunks
             .SelectMany(chunk => chunk.Cells)
