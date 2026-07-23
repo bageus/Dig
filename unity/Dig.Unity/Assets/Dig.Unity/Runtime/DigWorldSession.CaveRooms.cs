@@ -47,18 +47,21 @@ namespace Dig.Unity
                 return Result.Failure(ProtectedRock);
             }
 
-            List<CellId> applied = new List<CellId>();
-            for (int index = 0; index < plan.FrontExcavationCells.Count; index++)
+            for (int index = 0; index < plan.VolumeCells.Count; index++)
             {
-                CellId cell = plan.FrontExcavationCells[index];
-                Result result = SetDesignation(cell, active: true);
-                if (result.IsFailure)
+                if (IsProtected(plan.VolumeCells[index]))
                 {
-                    RollBackDesignations(applied);
-                    return result;
+                    return Result.Failure(ProtectedRock);
                 }
+            }
 
-                applied.Add(cell);
+            _tick = checked(_tick + 1);
+            Result<WorldMutationResult> designated = _repository.Get().SetDigDesignations(
+                plan.VolumeCells,
+                _tick);
+            if (designated.IsFailure)
+            {
+                return Result.Failure(designated.Error!);
             }
 
             _caveRoomPlans.Add(plan);
@@ -81,12 +84,12 @@ namespace Dig.Unity
             {
                 CaveRoomPlan plan = _caveRoomPlans[index];
                 if (completed.Contains(plan)
-                    || !plan.FrontExcavationCells.Any(expanded.Contains))
+                    || !plan.VolumeCells.Any(expanded.Contains))
                 {
                     continue;
                 }
 
-                expanded.UnionWith(plan.FrontExcavationCells);
+                expanded.UnionWith(plan.VolumeCells);
             }
 
             return expanded.OrderBy(cell => cell).ToArray();
@@ -99,8 +102,8 @@ namespace Dig.Unity
                 .SelectMany(chunk => chunk.Cells)
                 .ToDictionary(cell => cell.Id);
             _caveRoomPlans.RemoveAll(plan =>
-                plan.FrontExcavationCells.Any(erased.Contains)
-                && plan.FrontExcavationCells.Any(cell => world[cell].IsSolid));
+                plan.VolumeCells.Any(erased.Contains)
+                && plan.VolumeCells.Any(cell => world[cell].IsSolid));
             RemoveTunnelPlans(cells);
         }
 
@@ -111,18 +114,10 @@ namespace Dig.Unity
                 .SelectMany(chunk => chunk.Cells)
                 .ToDictionary(cell => cell.Id);
             return _caveRoomPlans
-                .Where(plan => plan.FrontExcavationCells.All(cell =>
+                .Where(plan => plan.VolumeCells.All(cell =>
                     cells.TryGetValue(cell, out CellSnapshot value)
                     && !value.IsSolid))
                 .ToArray();
-        }
-
-        private void RollBackDesignations(IReadOnlyList<CellId> cells)
-        {
-            for (int index = cells.Count - 1; index >= 0; index--)
-            {
-                SetDesignation(cells[index], active: false);
-            }
         }
     }
 }
