@@ -160,16 +160,24 @@ namespace Dig.Unity
             return Result.Success();
         }
 
-        private Result DesignateTunnelDepthCell(CellId source)
+        private Result DesignateTunnelDepthCell(CellId? source)
         {
-            Result result = DesignateTunnelDepth(source);
+            if (!source.HasValue)
+            {
+                return Result.Failure(new DomainError(
+                    "unity.excavation.depth_source_missing",
+                    "Depth excavation source is missing."));
+            }
+
+            Result result = DesignateTunnelDepth(source.Value);
             if (result.IsFailure)
             {
                 return result;
             }
 
-            _lastExcavationPaintCell = source;
-            CellId target = new CellId(source.X, source.Y, source.Z + 1);
+            CellId sourceCell = source.Value;
+            _lastExcavationPaintCell = sourceCell;
+            CellId target = new CellId(sourceCell.X, sourceCell.Y, sourceCell.Z + 1);
             _renderer!.SetDepthDesignationTint(target);
             _hud!.SetStatus(
                 $"Depth excavation designated. Depth excavation marked through "
