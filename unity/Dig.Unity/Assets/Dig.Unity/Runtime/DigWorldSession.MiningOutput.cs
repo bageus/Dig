@@ -1,4 +1,5 @@
 using System;
+using Dig.Domain.Core;
 using Dig.Domain.World;
 
 namespace Dig.Unity
