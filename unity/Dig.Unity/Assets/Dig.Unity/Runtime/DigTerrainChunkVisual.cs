@@ -7,9 +7,12 @@ namespace Dig.Unity
     [DisallowMultipleComponent]
     internal sealed class DigTerrainChunkVisual : MonoBehaviour
     {
+        private static readonly Color DesignatedColor =
+            new Color(0.95f, 0.47f, 0.12f, 1f);
         private MeshFilter? _filter;
         private MeshRenderer? _renderer;
         private Mesh? _mesh;
+        private MaterialPropertyBlock? _propertyBlock;
 
         internal ulong Signature { get; private set; }
         internal bool IsInitialized => _mesh != null;
@@ -56,12 +59,31 @@ namespace Dig.Unity
 
             _mesh.RecalculateBounds();
             _renderer!.sharedMaterials = materials;
+            ApplySurfaceStateTints(data);
             gameObject.SetActive(data.Vertices.Length > 0);
         }
 
         internal Mesh? ResolveMesh()
         {
             return _mesh;
+        }
+
+        private void ApplySurfaceStateTints(DigTerrainChunkMeshData data)
+        {
+            _propertyBlock ??= new MaterialPropertyBlock();
+            for (int index = 0; index < data.MaterialKeys.Length; index++)
+            {
+                if (data.MaterialKeys[index].State != DigTerrainSurfaceState.Designated)
+                {
+                    _renderer!.SetPropertyBlock(null, index);
+                    continue;
+                }
+
+                _propertyBlock.Clear();
+                _propertyBlock.SetColor("_BaseColor", DesignatedColor);
+                _propertyBlock.SetColor("_Color", DesignatedColor);
+                _renderer!.SetPropertyBlock(_propertyBlock, index);
+            }
         }
 
         private void EnsureComponents()
