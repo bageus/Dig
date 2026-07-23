@@ -167,8 +167,8 @@ public sealed class TerrainDepositInstance
             Cell,
             Definition,
             isRevealed: true,
-            RemainingYield,
-            version);
+            remainingYield: RemainingYield,
+            version: version);
     }
 
     public TerrainDepositInstance Deplete(long version)
@@ -187,9 +187,9 @@ public sealed class TerrainDepositInstance
             InstanceId,
             Cell,
             Definition,
-            IsRevealed,
+            isRevealed: IsRevealed,
             remainingYield: 0,
-            version);
+            version: version);
     }
 }
 
