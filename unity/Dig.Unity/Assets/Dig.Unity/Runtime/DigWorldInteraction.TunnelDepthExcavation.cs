@@ -83,7 +83,13 @@ namespace Dig.Unity
 
         private bool TryHandleDepthExcavationErase()
         {
-            if (!Input.GetMouseButtonDown(0)
+            if (Input.GetMouseButtonUp(0))
+            {
+                ResetExcavationStroke();
+                return true;
+            }
+
+            if (!Input.GetMouseButton(0)
                 || _buildingPlacementMode.HasValue
                 || _hud!.ContainsScreenPoint(Input.mousePosition))
             {
@@ -107,6 +113,12 @@ namespace Dig.Unity
                     job.Model.TargetX.Value,
                     job.Model.TargetY.Value,
                     job.Model.TargetZ.Value);
+                if (_lastExcavationPaintCell.HasValue
+                    && _lastExcavationPaintCell.Value == target)
+                {
+                    return true;
+                }
+
                 Result<Dig.Application.World.EraseExcavationBatchReport> erased =
                     _simulation!.ApplyExcavationEraseBatch(new[] { target });
                 if (erased.IsFailure)
@@ -115,6 +127,7 @@ namespace Dig.Unity
                     return true;
                 }
 
+                _lastExcavationPaintCell = target;
                 _renderer!.RemoveDepthDesignationTint(target);
                 _hud.SetStatus("Depth excavation designation erased.");
                 return true;
@@ -147,19 +160,28 @@ namespace Dig.Unity
             return Result.Success();
         }
 
-        private Result DesignateTunnelDepthCell(CellId source)
+        private Result DesignateTunnelDepthCell(CellId? source)
         {
-            Result result = _simulation!.DesignateTunnelDepth(source);
+            if (!source.HasValue)
+            {
+                return Result.Failure(new DomainError(
+                    "unity.excavation.depth_source_missing",
+                    "Depth excavation source is missing."));
+            }
+
+            Result result = _simulation!.DesignateTunnelDepth(source.Value);
             if (result.IsFailure)
             {
                 return result;
             }
 
-            _lastExcavationPaintCell = source;
-            CellId target = new CellId(source.X, source.Y, source.Z + 1);
+            CellId sourceCell = source.Value;
+            _lastExcavationPaintCell = sourceCell;
+            CellId target = new CellId(sourceCell.X, sourceCell.Y, sourceCell.Z + 1);
             _renderer!.SetDepthDesignationTint(target);
             _hud!.SetStatus(
-                $"Depth excavation marked through X={target.X}, Y={target.Y}, Z={target.Z}.");
+                $"Depth excavation designated. Depth excavation marked through "
+                + $"X={target.X}, Y={target.Y}, Z={target.Z}.");
             return Result.Success();
         }
 
