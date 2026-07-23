@@ -78,7 +78,7 @@ namespace Dig.Unity
             }
 
             WorldRenderer!.RemoveDepthDesignationTint(commit.Target);
-            WorldRenderer!.Render(WorldSession.LoadView());
+            WorldRenderer.Render(WorldSession.LoadView());
             PresentSpatialExcavationEffect(commit.Target, CurrentTick);
             DigTunnelDemoRenderer renderer = GetComponent<DigTunnelDemoRenderer>();
             renderer.Initialize(AgentSession.TunnelVolume);
@@ -127,7 +127,7 @@ namespace Dig.Unity
 
             WorldRenderer.SetCaveTemplateTrims(
                 _caveTemplateTrimPresenter.Present(completedPlans));
-            WorldRenderer!.Render(WorldSession.LoadView());
+            WorldRenderer.Render(WorldSession.LoadView());
         }
 
         internal static CellId[] CreateFloorCells(CaveRoomPlan plan)
