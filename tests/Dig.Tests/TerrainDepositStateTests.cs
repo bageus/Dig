@@ -90,6 +90,70 @@ public sealed class TerrainDepositStateTests
         Assert.False(diagonalUnchanged.IsRevealed);
     }
 
+    [Fact]
+    public void Save_snapshot_round_trip_preserves_xyz_reveal_depletion_and_versions()
+    {
+        TerrainDepositState source = new TerrainDepositState();
+        TerrainDepositInstance revealed = Deposit("deposit-revealed", 1, 2, 3).Reveal(7);
+        TerrainDepositInstance depleted = Deposit("deposit-depleted", 4, 5, 0)
+            .Reveal(8)
+            .Deplete(9);
+        source.ReplaceAll(new[] { depleted, revealed });
+
+        TerrainDepositSaveSnapshot snapshot = source.CaptureSaveSnapshot(generatorVersion: 4);
+        TerrainDepositState restored = new TerrainDepositState();
+        restored.RestoreSaveSnapshot(
+            snapshot,
+            new TerrainDepositCatalog(new[] { Iron }));
+
+        Assert.Equal(TerrainDepositSaveSnapshot.CurrentFormatVersion, snapshot.FormatVersion);
+        Assert.Equal(4, snapshot.GeneratorVersion);
+        Assert.Equal(
+            source.Snapshot().Select(Describe),
+            restored.Snapshot().Select(Describe));
+    }
+
+    [Fact]
+    public void Restore_unknown_definition_is_explanatory_and_atomic()
+    {
+        TerrainDepositState state = new TerrainDepositState();
+        TerrainDepositInstance existing = Deposit("existing", 2, 2, 1);
+        state.ReplaceAll(new[] { existing });
+        TerrainDepositSaveSnapshot snapshot = new TerrainDepositSaveSnapshot(
+            TerrainDepositSaveSnapshot.CurrentFormatVersion,
+            generatorVersion: 1,
+            new[]
+            {
+                new TerrainDepositSaveEntry(
+                    "unknown-instance",
+                    "deposit.missing",
+                    new CellId(3, 3, 2),
+                    isRevealed: true,
+                    remainingYield: 1,
+                    version: 5),
+            });
+
+        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() =>
+            state.RestoreSaveSnapshot(snapshot, new TerrainDepositCatalog(new[] { Iron })));
+
+        Assert.Contains("deposit.missing", error.Message, StringComparison.Ordinal);
+        Assert.Equal(new[] { Describe(existing) }, state.Snapshot().Select(Describe));
+    }
+
+    private static string Describe(TerrainDepositInstance value)
+    {
+        return string.Join(
+            "|",
+            value.InstanceId,
+            value.Definition.Id,
+            value.Cell.X,
+            value.Cell.Y,
+            value.Cell.Z,
+            value.IsRevealed,
+            value.RemainingYield,
+            value.Version);
+    }
+
     private static TerrainDepositInstance Deposit(string id, int x, int y, int z)
     {
         return new TerrainDepositInstance(
