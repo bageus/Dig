@@ -19,8 +19,8 @@ public sealed class AtomicDigDesignationTests
         Assert.True(result.IsSuccess);
         Assert.Equal(1, world.Version);
         Assert.Equal(2, result.Value.ChangedCellCount);
-        Assert.Equal(CellDesignation.Dig, world.GetCell(first).Value.Designation);
-        Assert.Equal(CellDesignation.Dig, world.GetCell(second).Value.Designation);
+        Assert.Equal(CellDesignation.Dig, world.GetCell(first).Value.State.Designation);
+        Assert.Equal(CellDesignation.Dig, world.GetCell(second).Value.State.Designation);
     }
 
     [Fact]
@@ -34,7 +34,7 @@ public sealed class AtomicDigDesignationTests
 
         Assert.True(result.IsFailure);
         Assert.Equal(0, world.Version);
-        Assert.Equal(CellDesignation.None, world.GetCell(valid).Value.Designation);
+        Assert.Equal(CellDesignation.None, world.GetCell(valid).Value.State.Designation);
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public sealed class AtomicDigDesignationTests
 
         Assert.True(result.IsFailure);
         Assert.Equal(versionBefore, world.Version);
-        Assert.Equal(CellDesignation.None, world.GetCell(valid).Value.Designation);
+        Assert.Equal(CellDesignation.None, world.GetCell(valid).Value.State.Designation);
     }
 
     private static WorldState CreateWorld()
