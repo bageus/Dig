@@ -16,6 +16,13 @@ public sealed partial class DigWorldInteraction
             return false;
         }
 
+        // Excavation drawing owns the left mouse button while an excavation tool is active.
+        // Resident, creature and world-item shortcuts must not cancel or consume that stroke.
+        if (_excavationMode != DigExcavationDrawingMode.None)
+        {
+            return false;
+        }
+
         RaycastHit[] hits = GetPointerHits();
         if (_agentRenderer!.SelectedCount > 0
             && TryResolveHostileCreatureHit(hits, out DigCreatureVisual creature))
