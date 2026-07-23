@@ -188,6 +188,51 @@ public sealed class ExcavationTemplateInstance
 
         LifecycleState = ExcavationTemplateLifecycleState.Cancelled;
     }
+
+    internal void RestoreState(
+        IEnumerable<ExcavationTemplateCellSaveEntry> savedProgress,
+        ExcavationTemplateLifecycleState lifecycleState)
+    {
+        if (savedProgress == null)
+        {
+            throw new ArgumentNullException(nameof(savedProgress));
+        }
+
+        ExcavationTemplateCellSaveEntry[] entries = savedProgress.ToArray();
+        if (entries.Length != _orderedMask.Count
+            || entries.Any(entry => entry == null)
+            || entries.Select(entry => entry.Cell).Distinct().Count() != entries.Length
+            || entries.Any(entry => !_progress.ContainsKey(entry.Cell)))
+        {
+            throw new ArgumentException(
+                "Saved template progress must contain every target cell exactly once.",
+                nameof(savedProgress));
+        }
+
+        foreach (ExcavationTemplateCellSaveEntry entry in entries)
+        {
+            _progress[entry.Cell].State = entry.State;
+        }
+
+        bool hasPending = _orderedProgress.Any(value => value.State == ExcavationTemplateCellState.Pending);
+        bool hasCancelled = _orderedProgress.Any(value => value.State == ExcavationTemplateCellState.Cancelled);
+        bool allExcavated = _orderedProgress.All(value => value.State == ExcavationTemplateCellState.Excavated);
+        bool validLifecycle = lifecycleState switch
+        {
+            ExcavationTemplateLifecycleState.Active => hasPending && !hasCancelled,
+            ExcavationTemplateLifecycleState.Completed => allExcavated,
+            ExcavationTemplateLifecycleState.Cancelled => !hasPending && hasCancelled,
+            _ => false,
+        };
+        if (!validLifecycle)
+        {
+            throw new ArgumentException(
+                "Saved template lifecycle is inconsistent with per-cell progress.",
+                nameof(lifecycleState));
+        }
+
+        LifecycleState = lifecycleState;
+    }
 }
 
 }
