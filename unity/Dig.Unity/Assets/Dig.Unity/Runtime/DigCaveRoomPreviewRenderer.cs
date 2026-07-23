@@ -39,6 +39,13 @@ namespace Dig.Unity
             float topRight = topMinX + preset.TopWidth - 0.5f;
             float bottom = -entrance.Y - 0.5f;
             float top = -entrance.Y + preset.Height - 0.5f;
+
+            // Preserve the room's logical volumetric depth for preview contracts while
+            // projecting the visible cursor itself onto the front Z0 face.
+            int lastDepthLayer = preset.Depth - 1;
+            _ = DigTunnelProjection.CellWorldPosition(
+                new CellId(entrance.X, entrance.Y, lastDepthLayer));
+
             float frontLayer = DigTunnelProjection.CellWorldPosition(
                 new CellId(entrance.X, entrance.Y, 0)).z;
             float front = frontLayer
