@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Dig.Domain.Core;
 using Dig.Domain.World;
+using Dig.Presentation.Agents;
 
 namespace Dig.Unity
 {
@@ -68,12 +69,61 @@ namespace Dig.Unity
             return _excavationQuarterWork.ApplySwing(workerId, seed);
         }
 
+        internal IReadOnlyList<ExcavationQuarterCompletion>
+            AdvanceReadyManualQuarterExcavations(
+                long tick,
+                IReadOnlyList<AgentViewModel> agents)
+        {
+            if (agents == null)
+            {
+                throw new ArgumentNullException(nameof(agents));
+            }
+
+            List<ExcavationQuarterCompletion> completed =
+                new List<ExcavationQuarterCompletion>();
+            for (int index = 0; index < agents.Count; index++)
+            {
+                AgentViewModel agent = agents[index];
+                ExcavationWorkerAssignment? assignment =
+                    _excavationQuarterWork.GetAssignment(EntityId.Parse(agent.Id));
+                if (assignment == null || !IsAtManualExcavationApproach(agent, assignment.Target))
+                {
+                    continue;
+                }
+
+                IReadOnlyList<ExcavationQuarterCompletion> swing =
+                    AdvanceManualQuarterExcavation(agent.Id, tick, worldSeed: 0UL);
+                for (int completionIndex = 0;
+                    completionIndex < swing.Count;
+                    completionIndex++)
+                {
+                    completed.Add(swing[completionIndex]);
+                }
+            }
+
+            return completed;
+        }
+
         internal ExcavationQuarterState LoadExcavationQuarterState(
             CellId targetCell,
             int targetZ)
         {
             return _excavationQuarterWork.GetState(
                 new ExcavationWorkTarget(targetCell, targetZ));
+        }
+
+        private static bool IsAtManualExcavationApproach(
+            AgentViewModel agent,
+            ExcavationWorkTarget target)
+        {
+            if (agent.CellZ != target.Z)
+            {
+                return false;
+            }
+
+            int distance = Math.Abs(agent.CellX - target.CellId.X)
+                + Math.Abs(agent.CellY - target.CellId.Y);
+            return distance == 1;
         }
 
         private static ExcavationApproachSide ResolveExcavationApproach(
