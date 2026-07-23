@@ -18,19 +18,19 @@ public sealed class CaveRoomTemplateUnlockTests
         Assert.Collection(
             presets,
             value => AssertPreset(value, "excavation.template.cave.small", 5, 3, 3, 2, 0),
-            value => AssertPreset(value, "excavation.template.cave.medium", 8, 6, 3, 3, 20),
-            value => AssertPreset(value, "excavation.template.cave.large", 12, 8, 5, 4, 40),
-            value => AssertPreset(value, "excavation.template.cave.tall", 10, 6, 7, 4, 60));
+            value => AssertPreset(value, "excavation.template.cave.medium", 8, 6, 3, 3, 2_000),
+            value => AssertPreset(value, "excavation.template.cave.large", 12, 8, 5, 4, 4_000),
+            value => AssertPreset(value, "excavation.template.cave.tall", 10, 6, 7, 4, 6_000));
     }
 
     [Theory]
     [InlineData(0, true, false, false, false)]
-    [InlineData(19, true, false, false, false)]
-    [InlineData(20, true, true, false, false)]
-    [InlineData(40, true, true, true, false)]
-    [InlineData(60, true, true, true, true)]
+    [InlineData(1_999, true, false, false, false)]
+    [InlineData(2_000, true, true, false, false)]
+    [InlineData(4_000, true, true, true, false)]
+    [InlineData(6_000, true, true, true, true)]
     public void Thresholds_are_evaluated_from_maximum_eligible_stonework(
-        int stonework,
+        int stoneworkUnits,
         bool small,
         bool medium,
         bool large,
@@ -39,8 +39,8 @@ public sealed class CaveRoomTemplateUnlockTests
         CaveRoomTemplateUnlockSnapshot snapshot =
             new CaveRoomTemplateUnlockEvaluator().Evaluate(new[]
             {
-                new CaveRoomTemplateCandidate("resident.b", stonework, isEligible: true),
-                new CaveRoomTemplateCandidate("resident.hidden", 100, isEligible: false),
+                new CaveRoomTemplateCandidate("resident.b", stoneworkUnits, isEligible: true),
+                new CaveRoomTemplateCandidate("resident.hidden", 10_000, isEligible: false),
             });
 
         Assert.Equal(small, snapshot.Get(CaveRoomPresetKind.Small).IsUnlocked);
@@ -54,8 +54,8 @@ public sealed class CaveRoomTemplateUnlockTests
     {
         CaveRoomTemplateCandidate[] candidates =
         {
-            new CaveRoomTemplateCandidate("resident.z", 40, isEligible: true),
-            new CaveRoomTemplateCandidate("resident.a", 40, isEligible: true),
+            new CaveRoomTemplateCandidate("resident.z", 4_000, isEligible: true),
+            new CaveRoomTemplateCandidate("resident.a", 4_000, isEligible: true),
         };
 
         CaveRoomTemplateUnlockSnapshot first =
@@ -65,7 +65,7 @@ public sealed class CaveRoomTemplateUnlockTests
 
         Assert.Equal("resident.a", first.QualifyingResidentId);
         Assert.Equal(first.QualifyingResidentId, reversed.QualifyingResidentId);
-        Assert.Equal(first.MaximumStonework, reversed.MaximumStonework);
+        Assert.Equal(first.MaximumStoneworkUnits, reversed.MaximumStoneworkUnits);
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public sealed class CaveRoomTemplateUnlockTests
         CaveRoomTemplateUnlockEvaluator evaluator = new CaveRoomTemplateUnlockEvaluator();
         CaveRoomTemplateUnlockState unlocked = evaluator.Evaluate(new[]
         {
-            new CaveRoomTemplateCandidate("resident.master", 60, isEligible: true),
+            new CaveRoomTemplateCandidate("resident.master", 6_000, isEligible: true),
         }).Get(CaveRoomPresetKind.Tall);
 
         CaveRoomTemplatePlacementUnlock captured =
@@ -84,7 +84,7 @@ public sealed class CaveRoomTemplateUnlockTests
 
         Assert.False(afterLoss.IsUnlocked);
         Assert.Equal("excavation.template.cave.tall", captured.TemplateId);
-        Assert.Equal(60, captured.MaximumStonework);
+        Assert.Equal(6_000, captured.MaximumStoneworkUnits);
         Assert.Equal("resident.master", captured.QualifyingResidentId);
     }
 
@@ -106,7 +106,7 @@ public sealed class CaveRoomTemplateUnlockTests
         int topWidth,
         int height,
         int depth,
-        int requiredStonework)
+        int requiredStoneworkUnits)
     {
         Assert.Equal(id, preset.Id);
         Assert.Equal(1, preset.Version);
@@ -114,7 +114,7 @@ public sealed class CaveRoomTemplateUnlockTests
         Assert.Equal(topWidth, preset.TopWidth);
         Assert.Equal(height, preset.Height);
         Assert.Equal(depth, preset.Depth);
-        Assert.Equal(requiredStonework, preset.RequiredStonework);
+        Assert.Equal(requiredStoneworkUnits, preset.RequiredStoneworkUnits);
     }
 }
 
