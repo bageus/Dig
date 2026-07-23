@@ -117,9 +117,12 @@ public sealed partial class DigAgentVisual : MonoBehaviour
         _freeformDestinationOffsetX = Mathf.Clamp(offsetX, -limit, limit);
         if (_currentX == cell.X && _currentY == cell.Y && _currentZ == cell.Z)
         {
-            _previousVisualX = cell.X + _freeformDestinationOffsetX;
-            _currentVisualX = _previousVisualX;
-            transform.position = ToWorld(_currentVisualX, cell.Y, cell.Z);
+            _currentVisualX = cell.X + _freeformDestinationOffsetX;
+            if (_duration <= 0f)
+            {
+                _previousVisualX = _currentVisualX;
+                transform.position = ToWorld(_currentVisualX, cell.Y, cell.Z);
+            }
         }
     }
 
