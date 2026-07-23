@@ -21,24 +21,29 @@ namespace Dig.Tests
         }
 
         [Fact]
-        public void Only_designated_submesh_vertices_are_projected_to_runtime_axes()
+        public void Chunk_geometry_remains_in_the_side_view_roots_local_space()
         {
             string root = FindRepositoryRoot();
             string visual = ReadRuntime(root, "DigTerrainChunkVisual.cs");
 
-            Assert.Contains("ProjectDesignatedGeometry(data", visual);
+            Assert.Contains("_mesh.vertices = data.Vertices;", visual);
+            Assert.Contains("_mesh.normals = data.Normals;", visual);
+            Assert.DoesNotContain("ProjectDesignatedGeometry", visual);
+            Assert.DoesNotContain("TransformBuilderPosition", visual);
+        }
+
+        [Fact]
+        public void Solid_excavation_proxies_use_projection_world_positions()
+        {
+            string root = FindRepositoryRoot();
+            string visual = ReadRuntime(root, "DigCellVisual.cs");
+
+            Assert.Contains("if (model.IsSolid)", visual);
             Assert.Contains(
-                "data.MaterialKeys[submesh].State != DigTerrainSurfaceState.Designated",
-                visual);
-            Assert.Contains("data.Triangles[submesh]", visual);
-            Assert.Contains(
-                "vertices[vertex] = TransformBuilderPosition(vertices[vertex]);",
+                "transform.position = DigTunnelProjection.CellWorldPosition(",
                 visual);
             Assert.DoesNotContain(
-                "_mesh.vertices = TransformPositions(data.Vertices);",
-                visual);
-            Assert.DoesNotContain(
-                "_mesh.normals = TransformDirections(data.Normals);",
+                "transform.localPosition = DigTunnelProjection.CellWorldPosition(",
                 visual);
         }
 
