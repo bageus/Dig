@@ -10,6 +10,11 @@ namespace Dig.Unity
     {
         private bool TryHandleTunnelDepthExcavation()
         {
+            if (_excavationMode == DigExcavationDrawingMode.Delete)
+            {
+                return TryHandleDepthExcavationErase();
+            }
+
             if (_excavationMode != DigExcavationDrawingMode.Depth)
             {
                 return false;
@@ -76,6 +81,48 @@ namespace Dig.Unity
             return true;
         }
 
+        private bool TryHandleDepthExcavationErase()
+        {
+            if (!Input.GetMouseButtonDown(0)
+                || _buildingPlacementMode.HasValue
+                || _hud!.ContainsScreenPoint(Input.mousePosition))
+            {
+                return false;
+            }
+
+            RaycastHit[] hits = GetPointerHits();
+            for (int index = 0; index < hits.Length; index++)
+            {
+                if (!_jobRenderer!.TryGetJob(hits[index], out DigJobVisual job)
+                    || IsTerminalJobStatus(job.Model.Status)
+                    || !job.Model.TargetX.HasValue
+                    || !job.Model.TargetY.HasValue
+                    || !job.Model.TargetZ.HasValue
+                    || job.Model.TargetZ.Value <= 0)
+                {
+                    continue;
+                }
+
+                CellId target = new CellId(
+                    job.Model.TargetX.Value,
+                    job.Model.TargetY.Value,
+                    job.Model.TargetZ.Value);
+                Result<Dig.Application.World.EraseExcavationBatchReport> erased =
+                    _simulation!.ApplyExcavationEraseBatch(new[] { target });
+                if (erased.IsFailure)
+                {
+                    _hud.SetCommandResult(Result.Failure(erased.Error!));
+                    return true;
+                }
+
+                _renderer!.RemoveDepthDesignationTint(target);
+                _hud.SetStatus("Depth excavation designation erased.");
+                return true;
+            }
+
+            return false;
+        }
+
         private Result ApplyTunnelDepthStroke(CellId source)
         {
             if (!_lastExcavationPaintCell.HasValue
@@ -102,8 +149,6 @@ namespace Dig.Unity
 
         private Result DesignateTunnelDepthCell(CellId source)
         {
-            // Legacy contract wording: DesignateTunnelDepth(source.Value),
-            // followed by "Depth excavation designated".
             Result result = _simulation!.DesignateTunnelDepth(source);
             if (result.IsFailure)
             {
