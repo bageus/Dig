@@ -45,8 +45,9 @@ namespace Dig.Unity
             _mesh.indexFormat = data.Vertices.Length > ushort.MaxValue
                 ? IndexFormat.UInt32
                 : IndexFormat.UInt16;
-            _mesh.vertices = TransformPositions(data.Vertices);
-            _mesh.normals = TransformDirections(data.Normals);
+            ProjectDesignatedGeometry(data, out Vector3[] vertices, out Vector3[] normals);
+            _mesh.vertices = vertices;
+            _mesh.normals = normals;
             _mesh.colors = data.Colors;
             _mesh.subMeshCount = data.Triangles.Length;
             for (int index = 0; index < data.Triangles.Length; index++)
@@ -75,26 +76,35 @@ namespace Dig.Unity
             return new Vector3(position.x, -position.z, position.y);
         }
 
-        private static Vector3[] TransformPositions(Vector3[] source)
+        private static void ProjectDesignatedGeometry(
+            DigTerrainChunkMeshData data,
+            out Vector3[] vertices,
+            out Vector3[] normals)
         {
-            Vector3[] result = new Vector3[source.Length];
-            for (int index = 0; index < source.Length; index++)
+            vertices = (Vector3[])data.Vertices.Clone();
+            normals = (Vector3[])data.Normals.Clone();
+            bool[] projected = new bool[vertices.Length];
+            for (int submesh = 0; submesh < data.MaterialKeys.Length; submesh++)
             {
-                result[index] = TransformBuilderPosition(source[index]);
+                if (data.MaterialKeys[submesh].State != DigTerrainSurfaceState.Designated)
+                {
+                    continue;
+                }
+
+                int[] indices = data.Triangles[submesh];
+                for (int index = 0; index < indices.Length; index++)
+                {
+                    int vertex = indices[index];
+                    if (projected[vertex])
+                    {
+                        continue;
+                    }
+
+                    vertices[vertex] = TransformBuilderPosition(vertices[vertex]);
+                    normals[vertex] = TransformBuilderPosition(normals[vertex]);
+                    projected[vertex] = true;
+                }
             }
-
-            return result;
-        }
-
-        private static Vector3[] TransformDirections(Vector3[] source)
-        {
-            Vector3[] result = new Vector3[source.Length];
-            for (int index = 0; index < source.Length; index++)
-            {
-                result[index] = TransformBuilderPosition(source[index]);
-            }
-
-            return result;
         }
 
         private void ApplySurfaceStateTints(DigTerrainChunkMeshData data)
