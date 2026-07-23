@@ -64,10 +64,32 @@ public sealed class MaterialDefinition
         MaterialId id,
         bool isSolid,
         int hardness)
+        : this(
+            id,
+            id.ToString(),
+            isSolid,
+            hardness,
+            isMineable: isSolid,
+            outputProfile: null)
+    {
+    }
+
+    public MaterialDefinition(
+        MaterialId id,
+        string displayName,
+        bool isSolid,
+        int hardness,
+        bool isMineable,
+        TerrainOutputProfile? outputProfile)
     {
         if (id.IsEmpty)
         {
             throw new ArgumentException("Material id cannot be empty.", nameof(id));
+        }
+
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            throw new ArgumentException("Material display name is required.", nameof(displayName));
         }
 
         if (hardness < 0)
@@ -82,16 +104,39 @@ public sealed class MaterialDefinition
                 nameof(hardness));
         }
 
+        if (!isSolid && isMineable)
+        {
+            throw new ArgumentException(
+                "Non-solid materials cannot be mineable.",
+                nameof(isMineable));
+        }
+
+        if (!isMineable && outputProfile != null)
+        {
+            throw new ArgumentException(
+                "Unmineable materials cannot have an output profile.",
+                nameof(outputProfile));
+        }
+
         Id = id;
+        DisplayName = displayName.Trim();
         IsSolid = isSolid;
         Hardness = hardness;
+        IsMineable = isMineable;
+        OutputProfile = outputProfile;
     }
 
     public MaterialId Id { get; }
 
+    public string DisplayName { get; }
+
     public bool IsSolid { get; }
 
     public int Hardness { get; }
+
+    public bool IsMineable { get; }
+
+    public TerrainOutputProfile? OutputProfile { get; }
 }
 
 public sealed class MaterialCatalog
