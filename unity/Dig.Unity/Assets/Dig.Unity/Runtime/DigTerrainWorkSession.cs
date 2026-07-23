@@ -5,6 +5,7 @@ using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Navigation;
+using Dig.Application.World;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
@@ -37,6 +38,8 @@ internal sealed partial class DigTerrainWorkSession
     private readonly TerrainWorkRoutePlanner _routePlanner;
     private readonly TraversalProfile _profile;
     private readonly Dictionary<EntityId, EntityId> _outputStackIds;
+    private readonly MiningOutputResolver _miningOutputResolver = new MiningOutputResolver();
+    private readonly MiningOutputCommitState _miningOutputCommits = new MiningOutputCommitState();
     private readonly Dictionary<EntityId, TerrainWorkRoutePlan> _routePlans =
         new Dictionary<EntityId, TerrainWorkRoutePlan>();
     private bool _worldChanged;
@@ -166,20 +169,38 @@ internal sealed partial class DigTerrainWorkSession
 
         DigJobDefinition terrainJob = (DigJobDefinition)job.Definition;
         CellId targetCell = terrainJob.Target.CellId;
-        bool producesOutput = _worldSession.TryGetTerrainDepositOutput(
-            targetCell,
-            out ItemId outputItemId,
-            out int outputQuantity);
-        CompleteTerrainWorkCommand command = producesOutput
-            ? new CompleteTerrainWorkCommand(
-                job.Id,
+        MiningOutputPlan output;
+        try
+        {
+            output = _miningOutputResolver.Resolve(
+                _worldSession.MiningOutputWorldSeed,
+                _worldSession.MiningOutputGeneratorVersion,
+                targetCell,
+                _worldSession.ResolveTerrainMaterial(targetCell),
+                _worldSession.TerrainDeposits);
+            _miningOutputCommits.Validate(
+                output,
                 _outputStackIds[job.Id],
-                outputItemId,
-                outputQuantity,
+                _inventoryRepository.Get(),
+                _worldSession.TerrainDeposits);
+        }
+        catch (Exception error)
+        {
+            return Result.Failure(new DomainError(
+                "terrain_work.mining_output_invalid",
+                error.Message));
+        }
+
+        CompleteTerrainWorkCommand command = output.IsEmpty
+            ? CompleteTerrainWorkCommand.WithoutOutput(
+                job.Id,
                 _worldSession.EmptyMaterialId,
                 tick)
-            : CompleteTerrainWorkCommand.WithoutOutput(
+            : new CompleteTerrainWorkCommand(
                 job.Id,
+                _outputStackIds[job.Id],
+                output.ItemId,
+                output.Quantity,
                 _worldSession.EmptyMaterialId,
                 tick);
         EntityId worker = job.AssignedAgentId!.Value;
@@ -189,11 +210,12 @@ internal sealed partial class DigTerrainWorkSession
             return Result.Failure(completion.Error!);
         }
 
-        if (producesOutput)
+        if (output.SourceKind == MiningOutputSourceKind.Deposit)
         {
             _worldSession.DepleteTerrainDeposit(targetCell, tick);
         }
 
+        _miningOutputCommits.Record(output, _outputStackIds[job.Id]);
         _worldSession.RevealTerrainDepositsAdjacentTo(targetCell, tick);
         _routePlans.Remove(job.Id);
         Result refresh = RefreshNavigation();
@@ -203,7 +225,7 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         _worldChanged = true;
-        PublishTerrainCompletionEffects(job.Id, targetCell, tick, producesOutput);
+        PublishTerrainCompletionEffects(job.Id, targetCell, tick, !output.IsEmpty);
         return ContinueManualExcavation(job.Id, worker, tick);
     }
 
