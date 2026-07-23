@@ -112,21 +112,14 @@ namespace Dig.Unity
             for (int index = 0; index < completedPlans.Count; index++)
             {
                 CaveRoomPlan plan = completedPlans[index];
-
                 string key = CreateCaveRoomKey(plan);
                 if (!_activatedCaveRooms.Add(key))
                 {
                     continue;
                 }
 
-                Result activated = WorldSession!.ActivateCaveRoomVolume(plan);
-                if (activated.IsFailure)
-                {
-                    throw new InvalidOperationException(activated.Error!.ToString());
-                }
-
                 AgentSession.SynchronizeNavigation(
-                    WorldSession.LoadSnapshot(),
+                    WorldSession!.LoadSnapshot(),
                     WorldSession.PlannedVerticalTunnelCells);
                 floorRenderer.AddRoomFloor(plan);
             }

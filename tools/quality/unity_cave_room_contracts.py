@@ -21,15 +21,18 @@ def check_cave_room_runtime_contracts(
     agent_session = runtime_root / "DigAgentSession.TunnelTopology.cs"
     bootstrap = runtime_root / "DigUnityBootstrap.cs"
     errors: list[str] = []
+    room_session_text = texts.get(room_session, "")
     errors.extend(require_fragments(
         room_session,
-        texts.get(room_session, ""),
-        "completed cave room tracking and immutability",
+        room_session_text,
+        "atomic full-volume cave room lifecycle",
         (
             "_caveRoomPlans",
             "LoadCompletedCaveRoomPlans",
             "GetCompletedCaveRoomPlans",
-            "FrontExcavationCells.All",
+            "SetDigDesignations(",
+            "plan.VolumeCells",
+            "VolumeCells.All",
             "!value.IsSolid",
             "IReadOnlyList<CaveRoomPlan> completed",
             "completed);",
@@ -83,7 +86,6 @@ def check_cave_room_runtime_contracts(
             "CompleteSpatialExcavationJob(",
             "TunnelDepthExcavations",
             "RefreshCaveRoomRuntime",
-            "WorldSession!.ActivateCaveRoomVolume(plan)",
             "AgentSession.SynchronizeNavigation(",
             "WorldRenderer.Render(WorldSession!.LoadView())",
             "CreateFloorCells",
@@ -93,9 +95,10 @@ def check_cave_room_runtime_contracts(
     for forbidden in (
         "AgentSession.ExcavateTunnelDepth",
         "internal TunnelDepthExcavationPlanResult ExcavateTunnelDepth",
+        "ActivateCaveRoomVolume",
     ):
-        if forbidden in runtime_text:
-            errors.append(f"{room_runtime}: instant depth mutation remains: {forbidden!r}")
+        if forbidden in runtime_text or forbidden in room_session_text:
+            errors.append(f"{room_runtime}: instant excavation mutation remains: {forbidden!r}")
     if "SynchronizeCompletedCaveRoomProtection" in runtime_text:
         errors.append(f"{room_runtime}: player-dug rooms must not become protected")
     room_floor_text = texts.get(room_floor, "")
