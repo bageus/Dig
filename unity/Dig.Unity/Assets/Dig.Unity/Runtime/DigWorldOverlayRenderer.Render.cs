@@ -49,7 +49,7 @@ public sealed partial class DigWorldOverlayRenderer
                         "Designation",
                         OverlayLayerKind.Designation,
                         OverlaySemanticKind.Designation);
-                    PlaceCellAtDepth(marker, cell.X, cell.Y, cell.Z, 0.08f);
+                    PlaceExcavationDesignation(marker, cell.X, cell.Y, cell.Z);
                 }
 
                 if (!cell.IsExplored && fogCount < MaximumDiagnosticMarkers)
