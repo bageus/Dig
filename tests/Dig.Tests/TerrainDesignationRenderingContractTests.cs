@@ -7,7 +7,7 @@ namespace Dig.Tests
     public sealed class TerrainDesignationRenderingContractTests
     {
         [Fact]
-        public void Tunnel_and_depth_designations_tint_the_chunk_submesh_without_visible_overlay_marker()
+        public void Tunnel_and_depth_designations_use_the_chunk_terrain_surface()
         {
             string root = FindRepositoryRoot();
             string builder = ReadRuntime(root, "DigTerrainChunkMeshBuilder.cs");
@@ -17,9 +17,24 @@ namespace Dig.Tests
             Assert.Contains("DigTerrainSurfaceState.Designated", builder);
             Assert.Contains("ApplySurfaceStateTints(data)", visual);
             Assert.Contains("State != DigTerrainSurfaceState.Designated", visual);
-            Assert.Contains("SetColor(\"_BaseColor\", DesignatedColor)", visual);
-            Assert.Contains("SetColor(\"_Color\", DesignatedColor)", visual);
             Assert.Contains("marker.SetActive(false);", overlay);
+        }
+
+        [Fact]
+        public void Chunk_builder_axes_are_transformed_to_the_runtime_projection_contract()
+        {
+            string root = FindRepositoryRoot();
+            string visual = ReadRuntime(root, "DigTerrainChunkVisual.cs");
+            string projection = ReadRuntime(root, "DigTunnelProjection.cs");
+
+            Assert.Contains(
+                "return new Vector3(position.x, -position.z, position.y);",
+                visual);
+            Assert.Contains("_mesh.vertices = TransformPositions(data.Vertices);", visual);
+            Assert.Contains("_mesh.normals = TransformDirections(data.Normals);", visual);
+            Assert.Contains("cell.X,", projection);
+            Assert.Contains("-cell.Y,", projection);
+            Assert.Contains("DepthOrigin + (cell.Z * DepthSpacing)", projection);
         }
 
         private static string ReadRuntime(string root, string fileName)

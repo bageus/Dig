@@ -45,8 +45,8 @@ namespace Dig.Unity
             _mesh.indexFormat = data.Vertices.Length > ushort.MaxValue
                 ? IndexFormat.UInt32
                 : IndexFormat.UInt16;
-            _mesh.vertices = data.Vertices;
-            _mesh.normals = data.Normals;
+            _mesh.vertices = TransformPositions(data.Vertices);
+            _mesh.normals = TransformDirections(data.Normals);
             _mesh.colors = data.Colors;
             _mesh.subMeshCount = data.Triangles.Length;
             for (int index = 0; index < data.Triangles.Length; index++)
@@ -66,6 +66,35 @@ namespace Dig.Unity
         internal Mesh? ResolveMesh()
         {
             return _mesh;
+        }
+
+        internal static Vector3 TransformBuilderPosition(Vector3 position)
+        {
+            // The chunk builder stores coordinates as (logical X, depth Z,
+            // vertical Y). Unity runtime projection uses (X, -Y, depth Z).
+            return new Vector3(position.x, -position.z, position.y);
+        }
+
+        private static Vector3[] TransformPositions(Vector3[] source)
+        {
+            Vector3[] result = new Vector3[source.Length];
+            for (int index = 0; index < source.Length; index++)
+            {
+                result[index] = TransformBuilderPosition(source[index]);
+            }
+
+            return result;
+        }
+
+        private static Vector3[] TransformDirections(Vector3[] source)
+        {
+            Vector3[] result = new Vector3[source.Length];
+            for (int index = 0; index < source.Length; index++)
+            {
+                result[index] = TransformBuilderPosition(source[index]);
+            }
+
+            return result;
         }
 
         private void ApplySurfaceStateTints(DigTerrainChunkMeshData data)
