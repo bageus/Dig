@@ -155,14 +155,21 @@ def check_excavation_contracts(
     errors.extend(require_fragments(
         room_session,
         texts.get(room_session, ""),
-        "cave room designation transaction",
+        "atomic full-volume cave room designation",
         (
             "CaveRoomPlanner",
             "PlanCaveRoom",
             "ApplyCaveRoomPlan",
-            "FrontExcavationCells",
-            "RollBackDesignations",
+            "plan.VolumeCells",
+            "SetDigDesignations",
+            "VolumeCells.All",
         ),
+    ))
+    errors.extend(reject_fragments(
+        room_session,
+        texts.get(room_session, ""),
+        "legacy per-cell cave room designation rollback",
+        ("RollBackDesignations", "FrontExcavationCells"),
     ))
 
     drawing_text = texts.get(drawing, "")
