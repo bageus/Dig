@@ -258,9 +258,9 @@ public static class DefaultTerrainMaterials
             id,
             displayName,
             isSolid: true,
-            hardness,
+            hardness: hardness,
             isMineable: true,
-            profile);
+            outputProfile: profile);
     }
 
     private static TerrainOutputProfile Profile(
