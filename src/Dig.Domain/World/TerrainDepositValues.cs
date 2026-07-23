@@ -150,6 +150,27 @@ public sealed class TerrainDepositInstance
 
     public bool IsDepleted => RemainingYield == 0;
 
+    public TerrainDepositInstance Reveal(long version)
+    {
+        if (version < Version)
+        {
+            throw new ArgumentOutOfRangeException(nameof(version));
+        }
+
+        if (IsRevealed)
+        {
+            return this;
+        }
+
+        return new TerrainDepositInstance(
+            InstanceId,
+            Cell,
+            Definition,
+            isRevealed: true,
+            remainingYield: RemainingYield,
+            version: version);
+    }
+
     public TerrainDepositInstance Deplete(long version)
     {
         if (version < Version)
@@ -157,13 +178,18 @@ public sealed class TerrainDepositInstance
             throw new ArgumentOutOfRangeException(nameof(version));
         }
 
+        if (IsDepleted)
+        {
+            return this;
+        }
+
         return new TerrainDepositInstance(
             InstanceId,
             Cell,
             Definition,
-            IsRevealed,
+            isRevealed: IsRevealed,
             remainingYield: 0,
-            version);
+            version: version);
     }
 }
 
