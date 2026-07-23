@@ -214,7 +214,7 @@ namespace Dig.Domain.World
                 assignment.MiningSkill,
                 deterministicSeed,
                 ReservedByOthers(assignment));
-            assignment.ReservedQuarters = plan.Quarters;
+            assignment.ReservedQuarters = FirstQuarter(plan.Quarters);
         }
 
         private ExcavationQuarter ReservedByOthers(
@@ -243,6 +243,16 @@ namespace Dig.Domain.World
             {
                 _assignments.Remove(workers[index]);
             }
+        }
+
+        private static ExcavationQuarter FirstQuarter(ExcavationQuarter quarters)
+        {
+            foreach (ExcavationQuarter quarter in Enumerate(quarters))
+            {
+                return quarter;
+            }
+
+            return ExcavationQuarter.None;
         }
 
         private static IEnumerable<ExcavationQuarter> Enumerate(
