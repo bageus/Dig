@@ -19,6 +19,7 @@ namespace Dig.Unity
             new Dictionary<CellId, GameObject>();
         private GameObject? _marker;
         private DigOverlayManager? _overlays;
+        private MaterialPropertyBlock? _properties;
 
         internal void Initialize(DigOverlayManager overlays)
         {
@@ -86,7 +87,7 @@ namespace Dig.Unity
             return marker;
         }
 
-        private static void PlaceMarker(GameObject marker, CellId cell, Color color)
+        private void PlaceMarker(GameObject marker, CellId cell, Color color)
         {
             Vector3 center = DigTunnelProjection.CellWorldPosition(cell);
             marker.transform.position = center + new Vector3(
@@ -97,10 +98,11 @@ namespace Dig.Unity
             marker.transform.localScale = new Vector3(0.94f, 0.94f, 0.025f);
 
             Renderer renderer = marker.GetComponent<Renderer>();
-            MaterialPropertyBlock properties = new MaterialPropertyBlock();
-            properties.SetColor("_BaseColor", color);
-            properties.SetColor("_Color", color);
-            renderer.SetPropertyBlock(properties);
+            _properties ??= new MaterialPropertyBlock();
+            _properties.Clear();
+            _properties.SetColor("_BaseColor", color);
+            _properties.SetColor("_Color", color);
+            renderer.SetPropertyBlock(_properties);
             marker.SetActive(true);
         }
     }
