@@ -83,24 +83,6 @@ internal sealed partial class DigWorldSession
             inputs);
     }
 
-    internal bool TryGetTerrainDepositOutput(
-        CellId cell,
-        out ItemId outputItemId,
-        out int outputQuantity)
-    {
-        if (_terrainDeposits.TryGet(cell, out TerrainDepositInstance deposit)
-            && !deposit.IsDepleted)
-        {
-            outputItemId = deposit.Definition.OutputItemId;
-            outputQuantity = deposit.RemainingYield;
-            return true;
-        }
-
-        outputItemId = default;
-        outputQuantity = 0;
-        return false;
-    }
-
     internal bool RevealTerrainDeposit(CellId cell, long tick)
     {
         return _terrainDeposits.Reveal(cell, tick);
