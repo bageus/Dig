@@ -309,7 +309,8 @@ namespace Dig.Unity
             }
 
             if (_renderer!.TryGetCell(hit, out DigCellVisual cell)
-                && cell.Model.IsDesignated)
+                && cell.Model.IsDesignated
+                && cell.Model.Z == 0)
             {
                 return new CellId(cell.Model.X, cell.Model.Y, cell.Model.Z);
             }
@@ -328,7 +329,8 @@ namespace Dig.Unity
                 return new CellId(job.Model.TargetX.Value, job.Model.TargetY.Value, job.Model.TargetZ ?? 0);
             }
 
-            if (_renderer!.TryGetCell(hit, out DigCellVisual cell))
+            if (_renderer!.TryGetCell(hit, out DigCellVisual cell)
+                && cell.Model.Z == 0)
             {
                 return new CellId(cell.Model.X, cell.Model.Y, cell.Model.Z);
             }
