@@ -140,10 +140,10 @@ public sealed class ExcavationTemplateInstanceTests
                 new CellId(12, 9, z),
             })
             .ToArray();
-        return new CaveRoomPlan(
+        return CaveRoomPlan.CreateSnapshot(
             preset,
             anchor,
-            volume.Where(cell => cell.Z == 0 && cell != anchor).ToArray(),
+            volume.Where(cell => cell.Z == 0 && cell != anchor),
             volume,
             Array.Empty<CellId>());
     }
