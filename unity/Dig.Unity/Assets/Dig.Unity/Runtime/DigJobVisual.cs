@@ -54,13 +54,22 @@ namespace Dig.Unity
 
             if (model.HasTarget)
             {
+                int targetZ = model.TargetZ!.Value;
                 Vector3 position = DigTunnelProjection.CellWorldPosition(
                     new CellId(
                         model.TargetX!.Value,
                         model.TargetY!.Value,
-                        model.TargetZ!.Value));
-                position.y += 0.72f;
-                position.z += 0.18f;
+                        targetZ));
+                if (targetZ > 0)
+                {
+                    position.z += DigTunnelProjection.RockCellHalfExtent + 0.08f;
+                }
+                else
+                {
+                    position.y += 0.72f;
+                    position.z += 0.18f;
+                }
+
                 transform.position = position;
             }
 
