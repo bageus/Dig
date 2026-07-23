@@ -10,6 +10,7 @@ namespace Dig.Unity
 public sealed partial class DigWorldOverlayRenderer : MonoBehaviour
 {
     private const int MaximumDiagnosticMarkers = 256;
+    private const float FrontFaceOffset = 0.012f;
     private readonly List<GameObject> _selection = new List<GameObject>();
     private readonly List<GameObject> _designations = new List<GameObject>();
     private readonly List<GameObject> _buildingFootprints = new List<GameObject>();
@@ -104,6 +105,26 @@ public sealed partial class DigWorldOverlayRenderer : MonoBehaviour
         marker.transform.position = new Vector3(x, elevation, y);
         marker.transform.rotation = Quaternion.identity;
         marker.transform.localScale = new Vector3(scale, 0.035f, scale);
+    }
+
+    private static void PlaceExcavationDesignation(
+        GameObject marker,
+        int x,
+        int y,
+        int z,
+        float scale = 0.72f)
+    {
+        if (z == 0)
+        {
+            Vector3 cell = DigTunnelProjection.CellWorldPosition(new CellId(x, y, z));
+            marker.transform.position = cell + (Vector3.forward
+                * (DigTunnelProjection.RockCellHalfExtent + FrontFaceOffset));
+            marker.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            marker.transform.localScale = new Vector3(scale, 0.035f, scale);
+            return;
+        }
+
+        PlaceCellAtDepth(marker, x, y, z, 0.08f, scale);
     }
 
     private static void PlaceCellAtDepth(
