@@ -14,12 +14,16 @@ namespace Dig.Unity
 
         public WorldCellViewModel Model { get; private set; }
 
+        private void Awake()
+        {
+            DisableInteractionCollider();
+        }
+
         public void Configure(WorldCellViewModel model, Color baseColor)
         {
             Model = model;
             _baseColor = baseColor;
             _rejected = false;
-            DisableInteractionCollider();
             EnsureRenderState();
             RefreshColor();
         }

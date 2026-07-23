@@ -30,35 +30,48 @@ def check_tunnel_depth_contracts(
             "TryHandleExcavationStroke()",
         ),
     ))
+    drawing_text = texts.get(drawing, "")
     errors.extend(require_fragments(
         drawing,
-        texts.get(drawing, ""),
-        "single-click depth mode",
+        drawing_text,
+        "shared excavation drawing state",
         (
             "Depth = 3",
             "DigExcavationDrawingMode.Depth",
-            "designate one deeper layer",
-            "if (_excavationMode == DigExcavationDrawingMode.Depth)",
+            "ExcavationStrokePlanner",
+            "_excavationStrokePlanner",
+            "_excavationAnchor",
+            "_excavationAxis",
+            "_lastExcavationPaintCell",
         ),
     ))
     depth_text = texts.get(depth_input, "")
     errors.extend(require_fragments(
         depth_input,
         depth_text,
-        "one-layer spatial tunnel depth interaction",
+        "stroke-based spatial tunnel depth interaction",
         (
-            "Input.GetMouseButtonDown(0)",
+            "Input.GetMouseButton(0)",
+            "Input.GetMouseButtonUp(0)",
+            "ResetExcavationStroke()",
+            "_excavationStrokePlanner.Resolve(",
+            "_excavationAnchor",
+            "_excavationAxis",
+            "_lastExcavationPaintCell",
+            "ApplyTunnelDepthStroke",
+            "DesignateTunnelDepthCell",
             "ResolveTunnelDepthSource",
+            "GetPointerHits()",
             "TryGetWalkSurface",
             "TryGetCell",
             "_caveRoomFloorRenderer.TryGetCell",
             "tunnelCell.Cell.Z > selected.Value.Z",
-            "DesignateTunnelDepth",
-            "Depth excavation designated",
-            "A worker must reach the open face",
+            "DesignateTunnelDepth(source)",
+            "Depth excavation marked through",
         ),
     ))
     for forbidden in (
+        "Input.GetMouseButtonDown(0)",
         "tunnelCell.CanExcavateDepth",
         "!tunnelCell.IsVerticalTunnel",
         "ExcavateTunnelDepth",
