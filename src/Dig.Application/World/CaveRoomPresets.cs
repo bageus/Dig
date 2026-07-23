@@ -30,7 +30,7 @@ public sealed class CaveRoomPreset
         int topWidth,
         int height,
         int depth,
-        int requiredStonework)
+        int requiredStoneworkUnits)
     {
         if (string.IsNullOrWhiteSpace(id))
         {
@@ -57,9 +57,9 @@ public sealed class CaveRoomPreset
             throw new ArgumentOutOfRangeException(nameof(depth));
         }
 
-        if (requiredStonework < 0)
+        if (requiredStoneworkUnits < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(requiredStonework));
+            throw new ArgumentOutOfRangeException(nameof(requiredStoneworkUnits));
         }
 
         Kind = kind;
@@ -70,7 +70,7 @@ public sealed class CaveRoomPreset
         TopWidth = topWidth;
         Height = height;
         Depth = depth;
-        RequiredStonework = requiredStonework;
+        RequiredStoneworkUnits = requiredStoneworkUnits;
     }
 
     public CaveRoomPresetKind Kind { get; }
@@ -81,7 +81,7 @@ public sealed class CaveRoomPreset
     public int TopWidth { get; }
     public int Height { get; }
     public int Depth { get; }
-    public int RequiredStonework { get; }
+    public int RequiredStoneworkUnits { get; }
     public bool AllowsMirror => false;
     public string PassageAxis => "X";
 
@@ -118,7 +118,7 @@ public static class CaveRoomPresetCatalog
                     6,
                     3,
                     3,
-                    20),
+                    2_000),
                 [CaveRoomPresetKind.Large] = new CaveRoomPreset(
                     CaveRoomPresetKind.Large,
                     "excavation.template.cave.large",
@@ -128,7 +128,7 @@ public static class CaveRoomPresetCatalog
                     8,
                     5,
                     4,
-                    40),
+                    4_000),
                 [CaveRoomPresetKind.Tall] = new CaveRoomPreset(
                     CaveRoomPresetKind.Tall,
                     "excavation.template.cave.tall",
@@ -138,7 +138,7 @@ public static class CaveRoomPresetCatalog
                     6,
                     7,
                     4,
-                    60),
+                    6_000),
             });
 
     public static IReadOnlyCollection<CaveRoomPreset> Definitions =>
