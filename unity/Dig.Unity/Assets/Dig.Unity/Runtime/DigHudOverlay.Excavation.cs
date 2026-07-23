@@ -21,27 +21,28 @@ namespace Dig.Unity
 
             _excavationControls.EnsureDefaultExcavationDrawingMode();
             GUILayout.BeginHorizontal();
-            GUI.enabled = _excavationControls.CanActivateExcavationDrawing;
+            GUI.enabled = true;
             if (GUILayout.Button("Tunnel", GUILayout.Width(76f)))
             {
-                _excavationControls.SetExcavationDrawingMode(
+                _excavationControls.ActivateExcavationDrawingMode(
                     DigExcavationDrawingMode.Tunnel);
             }
 
             if (GUILayout.Button("Depth", GUILayout.Width(66f)))
             {
-                _excavationControls.SetExcavationDrawingMode(
+                _excavationControls.ActivateExcavationDrawingMode(
                     DigExcavationDrawingMode.Depth);
             }
 
             if (GUILayout.Button("Delete", GUILayout.Width(68f)))
             {
-                _excavationControls.SetExcavationDrawingMode(
+                _excavationControls.ActivateExcavationDrawingMode(
                     DigExcavationDrawingMode.Delete);
             }
 
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
+            GUI.enabled = _excavationControls.CanActivateExcavationDrawing;
             if (GUILayout.Button("□", GUILayout.Width(58f)))
             {
                 _excavationControls.SetCaveRoomPlanningPreset(
@@ -70,7 +71,7 @@ namespace Dig.Unity
             GUI.enabled = true;
             if (!_excavationControls.CanActivateExcavationDrawing)
             {
-                GUILayout.Label("Clear the dwarf selection to edit excavation plans.");
+                GUILayout.Label("Tunnel tools clear dwarf selection automatically; clear it manually for room plans.");
             }
             else if (_excavationControls.CaveRoomPreset.HasValue)
             {
@@ -79,7 +80,7 @@ namespace Dig.Unity
             else if (_excavationControls.ExcavationModeLabel == "Depth")
             {
                 GUILayout.Label(
-                    "Depth: click an open tunnel or room cell to create a Z+1 Dig job, up to Z=3.");
+                    "Depth: hold LMB over open tunnel or room cells to create Z+1 Dig jobs, up to Z=3.");
             }
             else
             {
