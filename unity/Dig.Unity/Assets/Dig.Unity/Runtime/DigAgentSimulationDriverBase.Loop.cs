@@ -94,6 +94,9 @@ namespace Dig.Unity
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
             if (result.IsSuccess)
             {
+                TerrainSession.AdvanceReadyManualQuarterExcavations(
+                    AgentSession.Tick,
+                    agents);
                 result = TerrainSession.AdvanceSpatialExcavationWork(
                     AgentSession.Tick,
                     agents);
