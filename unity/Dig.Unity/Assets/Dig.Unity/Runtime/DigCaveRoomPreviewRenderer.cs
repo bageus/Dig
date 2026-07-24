@@ -16,7 +16,7 @@ namespace Dig.Unity
         private const float PreviewFaceOffset = 0.03f;
 
         private static readonly Color RoomPreviewColor =
-            new Color(0.55f, 0.72f, 0.92f, 0.34f);
+            new Color(0.55f, 0.72f, 0.92f, 0.16f);
 
         private readonly List<LineRenderer> _edges =
             new List<LineRenderer>(TotalEdgeCount);
