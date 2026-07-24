@@ -57,8 +57,13 @@ internal sealed partial class DigTerrainWorkSession
                 journal);
         AssignInitialDigJobs(jobs, candidates, journal);
         AdvanceJobHandler advance = CreateAdvanceHandler(jobs, journal);
+        AgentViewModel firstResident = agents[0];
         InventoryState inventory = CreateDemoResidentInventory(
-            worldSession.TerrainDepositDefinitions);
+            worldSession.TerrainDepositDefinitions,
+            new CellId(
+                firstResident.CellX,
+                firstResident.CellY,
+                firstResident.CellZ));
         InMemoryInventoryRepository inventoryRepository =
             new InMemoryInventoryRepository(inventory);
         TraversalProfile profile = TraversalProfile.CreateFreeMover();
