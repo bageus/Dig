@@ -21,7 +21,7 @@ public sealed class ResidentExcavationFeedbackContractTests
         Assert.Contains("UpdateSelectedResidentCommandCursor();", cursorLoop);
         Assert.Contains("_agentRenderer.SelectedCount > 0", cursor);
         Assert.Contains("TryResolveExplicitExcavationHoverTarget", cursor);
-        Assert.Contains("CreateShovelCursorTexture", cursor);
+        Assert.Contains("CreateShovelCursorFrames", cursor);
         Assert.Contains("Cursor.SetCursor", cursor);
     }
 
@@ -56,6 +56,49 @@ public sealed class ResidentExcavationFeedbackContractTests
         Assert.Contains("ClimbWallDepthOffset", movement);
         Assert.Contains("ApplyClimbPose", movement);
         Assert.Contains("ApplyClimbPose", rig);
+    }
+
+    [Fact]
+    public void Command_cursor_and_depth_jobs_use_world_targets_without_circles()
+    {
+        string root = FindRepositoryRoot();
+        string runtime = RuntimeRoot();
+        string cursor = File.ReadAllText(Path.Combine(
+            runtime,
+            "DigWorldInteraction.DirectCommandCursor.cs"));
+        string textures = File.ReadAllText(Path.Combine(
+            runtime,
+            "DigWorldInteraction.DirectCommandCursor.Textures.cs"));
+        string movement = File.ReadAllText(Path.Combine(
+            runtime,
+            "DigWorldInteraction.TunnelMovement.cs"));
+        string excavationCursor = File.ReadAllText(Path.Combine(
+            runtime,
+            "DigWorldInteraction.ExcavationCursor.cs"));
+        string jobRenderer = File.ReadAllText(Path.Combine(
+            runtime,
+            "DigJobRenderer.cs"));
+        string activity = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "Dig.Presentation.Abstractions",
+            "Agents",
+            "ResidentActivityPresenter.cs"));
+
+        Assert.Contains("TryResolvePickableItemHoverTarget", cursor);
+        Assert.Contains("DirectCommandCursorKind.Pickup", cursor);
+        Assert.Contains("PlayMovementCursorFeedback", cursor);
+        Assert.Contains("DirectCommandCursorKind.Movement", cursor);
+        Assert.Contains("CreatePickupCursorFrames", textures);
+        Assert.Contains("CreateMovementCursorFrames", textures);
+        Assert.Contains("CreateShovelCursorFrames", textures);
+        Assert.Contains("PlayMovementCursorFeedback();", movement);
+        Assert.Contains("TryGetDepthDesignation(hit", movement);
+        Assert.Contains("directDepthCommand", excavationCursor);
+        Assert.Contains("ShouldRenderWorldMarker", jobRenderer);
+        Assert.Contains("model.TargetZ.Value <= 0", jobRenderer);
+        Assert.Contains("definition is SpatialDigJobDefinition", activity);
+        Assert.Contains("JobToolKind.Mining", activity);
     }
 
     private static string RuntimeRoot()
