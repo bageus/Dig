@@ -8,6 +8,9 @@ namespace Dig.Unity
 {
     public sealed partial class DigCaveRoomPreviewRenderer
     {
+        private static readonly Color MissingTunnelColor =
+            new Color(0.92f, 0.22f, 0.18f, 0.72f);
+
         internal void Show(
             CaveRoomPreset preset,
             CellId entrance,
@@ -21,18 +24,29 @@ namespace Dig.Unity
             EnsureResources();
             Vector3[] corners = CreateCorners(preset, entrance);
             UpdateFill(corners);
-            Vector2Int[] connections = CreateBoxConnections();
-            for (int index = 0; index < connections.Length; index++)
+
+            for (int index = 0; index < _edges.Count; index++)
             {
-                LineRenderer edge = _edges[index];
-                _overlays!.ConfigureLineRenderer(
-                    edge,
-                    OverlayLayerKind.Preview,
-                    OverlaySemanticKind.PreviewValid);
-                edge.enabled = true;
-                edge.SetPosition(0, corners[connections[index].x]);
-                edge.SetPosition(1, corners[connections[index].y]);
+                _edges[index].enabled = false;
             }
+
+            if (valid)
+            {
+                return;
+            }
+
+            // Keep the room body readable without a green box outline. When the
+            // entrance/support tunnel is missing, mark only the bottom opening in red.
+            LineRenderer missingTunnel = _edges[0];
+            _overlays!.ConfigureLineRenderer(
+                missingTunnel,
+                OverlayLayerKind.Preview,
+                OverlaySemanticKind.PreviewValid);
+            missingTunnel.startColor = MissingTunnelColor;
+            missingTunnel.endColor = MissingTunnelColor;
+            missingTunnel.enabled = true;
+            missingTunnel.SetPosition(0, corners[0]);
+            missingTunnel.SetPosition(1, corners[1]);
         }
     }
 }

@@ -122,15 +122,25 @@ namespace Dig.Unity
                     || (_itemRenderer != null
                         && _itemRenderer.TryGetItem(hit, out _)))
                 {
-                    return false;
+                    // A resident or item may overlap the highlighted excavation in
+                    // screen space. Keep scanning the ordered hit stack instead of
+                    // cancelling the explicit work command at the first blocker.
+                    continue;
                 }
 
                 CellId? surfaceTarget = ResolveExcavationTarget(hit);
                 if (surfaceTarget.HasValue)
                 {
-                    return AssignSurfaceExcavation(
+                    if (!PrepareExplicitExcavationResidents(residentIds))
+                    {
+                        return true;
+                    }
+
+                    bool assigned = AssignSurfaceExcavation(
                         surfaceTarget.Value,
                         residentIds);
+                    RefreshDirectCommandPresentation();
+                    return assigned;
                 }
 
                 if (_jobRenderer!.TryGetJob(hit, out DigJobVisual job))
@@ -140,7 +150,12 @@ namespace Dig.Unity
                         || !job.Model.TargetY.HasValue
                         || !job.Model.TargetZ.HasValue)
                     {
-                        return false;
+                        continue;
+                    }
+
+                    if (!PrepareExplicitExcavationResidents(residentIds))
+                    {
+                        return true;
                     }
 
                     CellId workCell = new CellId(
@@ -153,12 +168,13 @@ namespace Dig.Unity
                         out Result assignment);
                     if (!found)
                     {
-                        return false;
+                        continue;
                     }
 
                     _hud!.SetCommandResult(assignment);
                     if (assignment.IsSuccess)
                     {
+                        RefreshDirectCommandPresentation();
                         _hud.SetStatus(
                             $"Assigned {residentIds.Count} selected dwarf(s) to spatial excavation "
                             + $"near X={workCell.X}, Y={workCell.Y}, Z={workCell.Z}.");
@@ -173,6 +189,21 @@ namespace Dig.Unity
                 }
             }
 
+            return false;
+        }
+
+        private bool PrepareExplicitExcavationResidents(
+            IReadOnlyList<string> residentIds)
+        {
+            Result prepared = _terrainSession!.PrepareResidentsForDirectCommand(
+                residentIds,
+                _simulation!.CurrentTick);
+            if (prepared.IsSuccess)
+            {
+                return true;
+            }
+
+            _hud!.SetCommandResult(prepared);
             return false;
         }
 

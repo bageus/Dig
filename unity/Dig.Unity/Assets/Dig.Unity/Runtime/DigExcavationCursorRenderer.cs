@@ -14,9 +14,9 @@ namespace Dig.Unity
         private const float MarkerThickness = 0.025f;
         private const float DesignationOverlap = 1.015f;
         private static readonly Color TunnelColor =
-            new Color(0.68f, 0.86f, 0.62f, 0.72f);
+            new Color(0.68f, 0.86f, 0.62f, 0.32f);
         private static readonly Color DepthColor =
-            new Color(0.74f, 0.62f, 0.90f, 0.72f);
+            new Color(0.74f, 0.62f, 0.90f, 0.28f);
 
         private readonly Dictionary<CellId, GameObject> _tunnelDesignations =
             new Dictionary<CellId, GameObject>();

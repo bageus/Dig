@@ -102,12 +102,28 @@ namespace Dig.Unity
                 entrance.Value,
                 result.Succeeded);
 
-            bool skillAllowed = CanUseCavePreset(kind, out _);
-            if (Input.GetMouseButtonDown(0) && result.Succeeded && skillAllowed)
+            bool skillAllowed = CanUseCavePreset(kind, out string skillDetail);
+            if (!Input.GetMouseButtonDown(0))
             {
-                ApplyCaveRoomPlan(result.Plan!);
-                _roomPlacementHandledThisFrame = true;
+                return;
             }
+
+            // The room tool owns its LMB click even for an invalid preview. This
+            // prevents marquee/movement handlers from consuming the placement click.
+            _roomPlacementHandledThisFrame = true;
+            if (!skillAllowed)
+            {
+                _hud.SetStatus(skillDetail);
+                return;
+            }
+
+            if (!result.Succeeded)
+            {
+                _hud.SetStatus(result.Detail);
+                return;
+            }
+
+            ApplyCaveRoomPlan(result.Plan!);
         }
 
         private CellId? ResolveCaveRoomPreviewEntrance()

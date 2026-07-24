@@ -20,6 +20,8 @@ namespace Dig.Tests
                 runtime, "DigWorldInteraction.CaveRooms.cs"));
             string roomPreview = File.ReadAllText(Path.Combine(
                 runtime, "DigCaveRoomPreviewRenderer.cs"));
+            string roomPreviewShow = File.ReadAllText(Path.Combine(
+                runtime, "DigCaveRoomPreviewRenderer.Show.cs"));
             string depth = File.ReadAllText(Path.Combine(
                 runtime, "DigAgentSimulationDriverBase.CaveRooms.cs"));
             string excavation = File.ReadAllText(Path.Combine(
@@ -28,8 +30,8 @@ namespace Dig.Tests
                 runtime, "DigWorldRenderer.DepthDesignation.cs"));
             string jobs = File.ReadAllText(Path.Combine(runtime, "DigJobVisual.cs"));
 
-            Assert.Contains("new Color(0.68f, 0.86f, 0.62f, 0.72f)", cursor);
-            Assert.Contains("new Color(0.74f, 0.62f, 0.90f, 0.72f)", cursor);
+            Assert.Contains("new Color(0.68f, 0.86f, 0.62f, 0.32f)", cursor);
+            Assert.Contains("new Color(0.74f, 0.62f, 0.90f, 0.28f)", cursor);
             Assert.Contains("DesignationOverlap = 1.015f", cursor);
             Assert.Contains("MarkerThickness = 0.025f", cursor);
             Assert.Contains("SynchronizeTunnelDesignations", cursor);
@@ -39,11 +41,16 @@ namespace Dig.Tests
             Assert.Contains("ResolveDepthCursorTarget", cursorDriver);
             Assert.Contains("ProjectPointerToLayer(0)", cursorDriver);
 
-            Assert.Contains("Input.GetMouseButtonDown(0) && result.Succeeded", rooms);
+            Assert.Contains("if (!Input.GetMouseButtonDown(0))", rooms);
             Assert.Contains("_roomPlacementHandledThisFrame = true", rooms);
+            Assert.Contains("if (!result.Succeeded)", rooms);
             Assert.Contains("ApplyCaveRoomPlan(result.Plan!)", rooms);
             Assert.Contains("PreviewThickness = 0.025f", roomPreview);
+            Assert.Contains("new Color(0.55f, 0.72f, 0.92f, 0.16f)", roomPreview);
             Assert.Contains("new CellId(entrance.X, entrance.Y, 0)", roomPreview);
+            Assert.DoesNotContain("OverlaySemanticKind.PreviewInvalid", roomPreviewShow);
+            Assert.Contains("missingTunnel.startColor = MissingTunnelColor", roomPreviewShow);
+            Assert.Contains("missingTunnel.endColor = MissingTunnelColor", roomPreviewShow);
 
             Assert.Contains("AgentSession.LoadView()", depth);
             Assert.Contains("TerrainSession.DesignateSpatialExcavation(", depth);
