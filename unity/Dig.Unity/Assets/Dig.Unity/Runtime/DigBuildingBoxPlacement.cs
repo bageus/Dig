@@ -4,6 +4,7 @@ using System.Linq;
 using Dig.Application.Buildings;
 using Dig.Application.Inventory;
 using Dig.Domain.Buildings;
+using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
@@ -23,6 +24,7 @@ namespace Dig.Unity
             "unity.building_box.source_unavailable",
             "The selected BuildingBox is missing or unavailable.");
 
+        private BuildingCatalog? _buildingBoxCatalog;
         private BuildingDefinition? _buildingBoxDefinition;
         private BuildingBoxPlacementPresenter? _buildingBoxPlacementPresenter;
         private ConfirmBuildingBoxPlacementHandler? _buildingBoxPlacementHandler;
@@ -38,11 +40,12 @@ namespace Dig.Unity
                 throw new InvalidOperationException("Building demo state must be initialized first.");
             }
 
+            _buildingBoxCatalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             _buildingBoxDefinition = definition ?? throw new ArgumentNullException(nameof(definition));
             BuildingPlacementValidator validator = new BuildingPlacementValidator();
             _buildingBoxPlacementPresenter = new BuildingBoxPlacementPresenter(validator);
             _buildingBoxPlacementHandler = new ConfirmBuildingBoxPlacementHandler(
-                catalog ?? throw new ArgumentNullException(nameof(catalog)),
+                _buildingBoxCatalog,
                 _worldSession.Repository,
                 _buildingsRepository,
                 _buildingInventoryRepository,
@@ -68,8 +71,12 @@ namespace Dig.Unity
 
             ItemStackSnapshot? stack = _buildingInventoryRepository!.Get().GetStack(
                 EntityId.Parse(stackId));
-            BuildingBoxPolicy policy = _buildingBoxDefinition!.BoxPolicy!;
+            BuildingDefinition? definition = stack == null
+                ? null
+                : ResolveBuildingBoxDefinition(stack.ItemId);
+            BuildingBoxPolicy? policy = definition?.BoxPolicy;
             if (stack == null
+                || policy == null
                 || stack.ItemId != policy.BoxItemId
                 || stack.Quantity != 1
                 || stack.AvailableQuantity != 1)
@@ -79,7 +86,7 @@ namespace Dig.Unity
             }
 
             return Result<BuildingBoxPlacementModeState>.Success(
-                new BuildingBoxPlacementModeState(stack.StackId, _buildingBoxDefinition.Id));
+                new BuildingBoxPlacementModeState(stack.StackId, definition!.Id));
         }
 
         internal BuildingBoxGhostViewModel PreviewBuildingBoxPlacement(
@@ -90,10 +97,11 @@ namespace Dig.Unity
             InventoryState inventory = _buildingInventoryRepository!.Get();
             ItemStackSnapshot? stack = inventory.GetStack(mode.SourceStackId);
             ItemDefinition? item = stack == null ? null : inventory.Catalog.Get(stack.ItemId);
+            BuildingDefinition definition = _buildingBoxCatalog!.Get(mode.DefinitionId);
             return _buildingBoxPlacementPresenter!.Preview(
                 stack,
                 item,
-                _buildingBoxDefinition!,
+                definition,
                 origin,
                 mode.Orientation,
                 _worldSession.LoadSnapshot(),
@@ -131,6 +139,22 @@ namespace Dig.Unity
 
         internal string BuildingBoxName => _buildingBoxDefinition?.Name ?? "BuildingBox";
 
+        private BuildingDefinition? ResolveBuildingBoxDefinition(ItemId boxItemId)
+        {
+            if (_buildingBoxDefinition?.BoxPolicy?.BoxItemId == boxItemId)
+            {
+                return _buildingBoxDefinition;
+            }
+
+            if (boxItemId == CampfireBuildingBoxContent.CampfireBoxItemId)
+            {
+                return _buildingBoxCatalog!.Get(
+                    CampfireBuildingBoxContent.CampfireBuildingId);
+            }
+
+            return null;
+        }
+
         private IReadOnlyCollection<CellId> GetBuildingPlacementReachableCells()
         {
             return _worldSession.LoadView().Chunks
@@ -144,7 +168,8 @@ namespace Dig.Unity
 
         private void EnsureBuildingBoxPlacementInitialized()
         {
-            if (_buildingBoxDefinition == null
+            if (_buildingBoxCatalog == null
+                || _buildingBoxDefinition == null
                 || _buildingBoxPlacementPresenter == null
                 || _buildingBoxPlacementHandler == null
                 || _buildingInventoryRepository == null
