@@ -15,7 +15,7 @@ namespace Dig.Unity
         {
             GameObject instance = asset.Prefab == null
                 ? GameObject.CreatePrimitive(fallbackPrimitive)
-                : Object.Instantiate(asset.Prefab);
+                : UnityEngine.Object.Instantiate(asset.Prefab);
             instance.name = instanceName;
             instance.transform.SetParent(parent, worldPositionStays: false);
             instance.transform.localPosition = Vector3.zero;
