@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Dig.Application.Buildings;
-using Dig.Domain.Buildings;
 using Dig.Domain.Content;
 
 namespace Dig.Presentation.Buildings
@@ -36,20 +35,36 @@ public sealed class PackableBuildingExecutionPresenter
             throw new ArgumentOutOfRangeException(nameof(tick));
         }
 
-        PackableBuildingExecutionViewModel[] values = executions.CreateSnapshot()
-            .Select(snapshot => Project(snapshot, tick))
+        List<PackableBuildingExecutionViewModel> projected =
+            new List<PackableBuildingExecutionViewModel>();
+        foreach (PackableBuildingExecutionSnapshot snapshot in executions.CreateSnapshot())
+        {
+            if (!_content.TryGet(
+                    snapshot.DefinitionId,
+                    out PackableBuildingContentDefinition? content)
+                || !_visuals.TryGet(
+                    snapshot.DefinitionId,
+                    out PackableBuildingVisualProfile? visuals))
+            {
+                continue;
+            }
+
+            projected.Add(Project(snapshot, tick, content!, visuals!));
+        }
+
+        PackableBuildingExecutionViewModel[] values = projected
             .OrderBy(value => value.PackageId, StringComparer.Ordinal)
             .ThenBy(value => value.OperationId, StringComparer.Ordinal)
             .ToArray();
         return new ReadOnlyCollection<PackableBuildingExecutionViewModel>(values);
     }
 
-    private PackableBuildingExecutionViewModel Project(
+    private static PackableBuildingExecutionViewModel Project(
         PackableBuildingExecutionSnapshot snapshot,
-        long tick)
+        long tick,
+        PackableBuildingContentDefinition content,
+        PackableBuildingVisualProfile visuals)
     {
-        PackableBuildingContentDefinition content = _content.Get(snapshot.DefinitionId);
-        PackableBuildingVisualProfile visuals = _visuals.Get(snapshot.DefinitionId);
         ResolveIterationProgress(
             snapshot.IterationClock,
             tick,
