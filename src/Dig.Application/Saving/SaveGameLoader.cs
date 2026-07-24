@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Dig.Application.Buildings;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -124,6 +125,15 @@ public sealed partial class SaveGameLoader
                 return Result<LoadedGameState>.Failure(references.Error!);
             }
 
+            Result<PackableBuildingExecutionRegistry> packableExecutions =
+                PackableBuildingExecutionSaveDataAdapter.Decode(
+                    document.PackableBuildingExecutions
+                        ?? new PackableBuildingExecutionsSaveData());
+            if (packableExecutions.IsFailure)
+            {
+                return Result<LoadedGameState>.Failure(packableExecutions.Error!);
+            }
+
             IReadOnlyDictionary<EntityId, Dig.Domain.Agents.AgentSkillProgressionSnapshot>
                 agentSkills = BuildAgentSkills(document.AgentSkills);
             IReadOnlyDictionary<EntityId, bool> agentAutomaticPlanning =
@@ -146,7 +156,8 @@ public sealed partial class SaveGameLoader
                 agentSkills,
                 agentAutomaticPlanning,
                 agentPositions,
-                terrainDeposits));
+                terrainDeposits,
+                packableExecutions.Value));
         }
         catch (UnknownTerrainDepositDefinitionException)
         {
@@ -234,7 +245,6 @@ public sealed partial class SaveGameLoader
             data.Version,
             new ReadOnlyCollection<ChunkSnapshot>(chunks));
     }
-
 
     private static IReadOnlyDictionary<EntityId, CellId> BuildAgentPositions(
         AgentPositionsSaveData data,
