@@ -42,6 +42,11 @@ namespace Dig.Unity
             for (int index = 0; index < jobs.Count; index++)
             {
                 JobOverlayViewModel model = jobs[index];
+                if (!ShouldRenderWorldMarker(model))
+                {
+                    continue;
+                }
+
                 visibleIds.Add(model.Id);
                 OverlaySemanticKind semantic = ResolveSemantic(model);
                 if (_jobs.TryGetValue(model.Id, out DigJobVisual? visual))
@@ -165,6 +170,11 @@ namespace Dig.Unity
             _visualRoot = new GameObject("Job Overlay").transform;
             _visualRoot.SetParent(transform, worldPositionStays: false);
             _overlays.RegisterLayer(OverlayLayerKind.Jobs, _visualRoot);
+        }
+
+        private static bool ShouldRenderWorldMarker(JobOverlayViewModel model)
+        {
+            return !model.TargetZ.HasValue || model.TargetZ.Value <= 0;
         }
 
         private static OverlaySemanticKind ResolveSemantic(

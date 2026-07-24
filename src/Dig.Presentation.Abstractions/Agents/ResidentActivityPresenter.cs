@@ -101,7 +101,9 @@ internal static class ResidentActivityPresenter
         JobDefinition definition,
         JobStageKind stage)
     {
-        if (definition is DigJobDefinition)
+        if (definition is DigJobDefinition
+            || definition is SpatialDigJobDefinition
+            || definition.PreferredToolKind == JobToolKind.Mining)
         {
             return ResidentActivityKind.Dig;
         }
@@ -154,6 +156,7 @@ internal static class ResidentActivityPresenter
         return definition switch
         {
             DigJobDefinition dig => dig.Target.CellId,
+            SpatialDigJobDefinition spatial => spatial.Target.TargetCell,
             HaulJobDefinition haul when haul.Destination.HasCell => haul.Destination.CellId,
             ProductionWorkJobDefinition production => production.WorkPosition,
             HealingJobDefinition healing => healing.WorkPosition,

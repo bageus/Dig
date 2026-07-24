@@ -36,8 +36,12 @@ namespace Dig.Unity
             }
 
             bool erase = _excavationMode == DigExcavationDrawingMode.Delete;
+            bool directDepthCommand = _excavationMode == DigExcavationDrawingMode.None
+                && !_caveRoomPreset.HasValue
+                && _agentRenderer != null
+                && _agentRenderer.SelectedCount > 0;
             _renderer!.SetDepthDesignationInteractionActive(
-                erase && !_caveRoomPreset.HasValue);
+                (erase && !_caveRoomPreset.HasValue) || directDepthCommand);
             if (_hud!.ContainsScreenPoint(Input.mousePosition)
                 || _buildingPlacementMode.HasValue
                 || _caveRoomPreset.HasValue
