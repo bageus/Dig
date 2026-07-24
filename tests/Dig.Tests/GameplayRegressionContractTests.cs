@@ -40,6 +40,23 @@ public sealed class GameplayRegressionContractTests
     }
 
     [Fact]
+    public void Commanded_excavation_workers_do_not_exhaust_movement_cadence()
+    {
+        string runtime = RuntimeRoot();
+        string cadence = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigTerrainWorkSession.MovementCadence.cs")));
+        string state = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigTerrainWorkManualExcavation.State.cs")));
+
+        Assert.Contains("IsManualExcavationAgent(residentId)", cadence);
+        Assert.Contains("IsResidentMovementDue(residentId,tick)", cadence);
+        Assert.Contains("privateboolIsManualExcavationAgent(EntityIdagentId)", state);
+        Assert.Contains("value.AgentId==agentId", state);
+    }
+
+    [Fact]
     public void Vertical_climbing_uses_authoritative_cell_transition_despite_visual_offset()
     {
         string movement = Normalize(File.ReadAllText(Path.Combine(
@@ -71,6 +88,23 @@ public sealed class GameplayRegressionContractTests
     }
 
     [Fact]
+    public void Resident_and_building_selection_open_the_matching_roster_tab()
+    {
+        string runtime = RuntimeRoot();
+        string decisions = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigWorldInteraction.Decisions.cs")));
+        string tabs = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigGameHudCanvas.SelectionTabs.cs")));
+
+        Assert.Contains("ActivateResidentRosterForSelection()", decisions);
+        Assert.Contains("ActivateBuildingRosterForSelection()", decisions);
+        Assert.Contains("SelectRightPanelTab(RightPanelTab.Residents)", tabs);
+        Assert.Contains("SelectRightPanelTab(RightPanelTab.Buildings)", tabs);
+    }
+
+    [Fact]
     public void Building_box_left_click_starts_cursor_placement_instead_of_drop()
     {
         string runtime = RuntimeRoot();
@@ -90,7 +124,7 @@ public sealed class GameplayRegressionContractTests
     }
 
     [Fact]
-    public void Building_placement_follows_side_view_cells_and_uses_the_building_silhouette()
+    public void Building_placement_prefers_visible_tunnel_cells_and_changes_visual_by_depth()
     {
         string runtime = RuntimeRoot();
         string interaction = Normalize(File.ReadAllText(Path.Combine(
@@ -104,9 +138,14 @@ public sealed class GameplayRegressionContractTests
             "DigBuildingBoxGhostRenderer.Representatives.cs")));
 
         Assert.Contains("TryResolveBuildingPlacementOrigin(GetPointerHits()", interaction);
-        Assert.Contains("TryResolveTunnelDestination(hit,outorigin,out_)", interaction);
+        Assert.Contains("TryResolveTunnelDestination(hits[index],outorigin,out_)", interaction);
+        Assert.Contains("_renderer!.TryGetCell(hits[index]", interaction);
+        Assert.True(
+            interaction.IndexOf("TryResolveTunnelDestination", StringComparison.Ordinal)
+            < interaction.IndexOf("_renderer!.TryGetCell", StringComparison.Ordinal));
         Assert.Contains("DigTunnelProjection.CellWorldPosition(preview.Origin)", ghost);
-        Assert.Contains("DigTunnelProjection.CellWorldPosition(cell)", ghost);
+        Assert.Contains("preview.Origin.Z==0", representatives);
+        Assert.Contains("BuildingVisualState.BuildingBox", representatives);
         Assert.Contains("BuildingVisualState.Completed", representatives);
     }
 

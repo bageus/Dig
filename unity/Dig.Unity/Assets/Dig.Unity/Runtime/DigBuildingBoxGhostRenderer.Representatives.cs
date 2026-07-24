@@ -1,3 +1,4 @@
+using Dig.Domain.Buildings;
 using Dig.Presentation.Buildings;
 using UnityEngine;
 
@@ -21,13 +22,16 @@ namespace Dig.Unity
         private DigBuildingVisualResolution Resolve(BuildingBoxGhostViewModel preview)
         {
             string stableId = preview.DefinitionId.ToString();
+            BuildingVisualState visualState = preview.Origin.Z == 0
+                ? BuildingVisualState.BuildingBox
+                : BuildingVisualState.Completed;
             DigBuildingVisualResolution catalogResolution = default;
             bool hasCatalogResolution = visualCatalog != null;
             if (visualCatalog != null)
             {
                 catalogResolution = visualCatalog.ResolveBuilding(
                     stableId,
-                    BuildingVisualState.Completed);
+                    visualState);
                 if (catalogResolution.HasProfile)
                 {
                     return catalogResolution;
@@ -37,7 +41,7 @@ namespace Dig.Unity
             if (_representatives != null
                 && _representatives.TryResolve(
                     stableId,
-                    BuildingVisualState.Completed,
+                    visualState,
                     out DigBuildingVisualResolution representative))
             {
                 return representative;
@@ -48,8 +52,6 @@ namespace Dig.Unity
                 return catalogResolution;
             }
 
-            // The confirmed delivery site is projected separately as
-            // BuildingVisualState.BuildingBox until the dwarf arrives.
             return new DigBuildingVisualResolution(
                 DigVisualAsset.CreateRuntimeFallback(stableId, Color.white),
                 Vector2Int.one,

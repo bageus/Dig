@@ -113,17 +113,27 @@ namespace Dig.Unity
             RaycastHit[] hits,
             out CellId origin)
         {
+            if (hits == null)
+            {
+                throw new ArgumentNullException(nameof(hits));
+            }
+
+            // Side-view terrain colliders can sit in front of the visible tunnel floor.
+            // Prefer the explicit tunnel/cave interaction surface so the ghost follows
+            // the cell under the cursor instead of getting pinned to the front rock layer.
             for (int index = 0; index < hits.Length; index++)
             {
-                RaycastHit hit = hits[index];
-                if (_renderer!.TryGetCell(hit, out DigCellVisual cell))
+                if (TryResolveTunnelDestination(hits[index], out origin, out _))
                 {
-                    origin = new CellId(cell.Model.X, cell.Model.Y, cell.Model.Z);
                     return true;
                 }
+            }
 
-                if (TryResolveTunnelDestination(hit, out origin, out _))
+            for (int index = 0; index < hits.Length; index++)
+            {
+                if (_renderer!.TryGetCell(hits[index], out DigCellVisual cell))
                 {
+                    origin = new CellId(cell.Model.X, cell.Model.Y, cell.Model.Z);
                     return true;
                 }
             }
