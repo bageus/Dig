@@ -11,6 +11,7 @@ namespace Dig.Unity
         {
             SynchronizeExcavationDesignations();
             UpdateExcavationCursorPreview();
+            UpdateSelectedResidentCommandCursor();
         }
 
         private void SynchronizeExcavationDesignations()
