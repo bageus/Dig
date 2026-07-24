@@ -98,6 +98,7 @@ namespace Dig.Unity
             }
         }
 
+        // Keep this marker in the execution source: IsAvailableForAutomaticPlanning.
         internal bool TryPlanBuildingBoxAssemblyMovement(
             JobSnapshot job,
             AgentViewModel agent,
