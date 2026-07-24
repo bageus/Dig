@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Dig.Domain.Core;
+using Dig.Domain.World;
 
 namespace Dig.Unity
 {
@@ -27,7 +28,7 @@ namespace Dig.Unity
             if (_manualGroups.TryGetValue(groupId, out ManualExcavationGroup? group))
             {
                 group.Remove(jobId);
-                if (group.JobIds.Count == 0)
+                if (group.JobIds.Count == 0 && !HasPendingManualTargets(group))
                 {
                     _manualGroups.Remove(groupId);
                 }
@@ -68,20 +69,32 @@ namespace Dig.Unity
         private sealed class ManualExcavationGroup
         {
             private readonly List<EntityId> _jobIds;
+            private readonly List<CellId> _targetCells;
 
             internal ManualExcavationGroup(
                 EntityId id,
                 EntityId agentId,
-                IEnumerable<EntityId> jobIds)
+                IEnumerable<EntityId> jobIds,
+                IEnumerable<CellId> targetCells)
             {
                 Id = id;
                 AgentId = agentId;
                 _jobIds = jobIds.Distinct().ToList();
+                _targetCells = targetCells.Distinct().ToList();
             }
 
             internal EntityId Id { get; }
             internal EntityId AgentId { get; }
             internal IReadOnlyList<EntityId> JobIds => _jobIds;
+            internal IReadOnlyList<CellId> TargetCells => _targetCells;
+
+            internal void Add(EntityId jobId)
+            {
+                if (!_jobIds.Contains(jobId))
+                {
+                    _jobIds.Add(jobId);
+                }
+            }
 
             internal void Remove(EntityId jobId)
             {
