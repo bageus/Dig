@@ -106,24 +106,31 @@ public sealed class BuildingBoxPlacementPresenter
                 placement.Error!.Code);
         }
 
-        PackableBuildingContentDefinition content = _packableCatalog.Get(definition.Id);
-        PackableBuildingSurfacePolicy policy = content.Placement.ToSurfacePolicy();
-        IReadOnlyList<BuildingPlacementSurfaceCell> surfaceCells =
-            _surfaceFacts.Project(policy, origin, world);
-        PackableBuildingPlacementPolicyResult physical = _physicalValidator.Validate(
-            policy,
-            origin,
-            surfaceCells,
-            occupiedCells);
-        if (!physical.Succeeded)
+        IReadOnlyList<CellId> previewFootprint = placement.Footprint;
+        if (_packableCatalog.TryGet(
+            definition.Id,
+            out PackableBuildingContentDefinition? content))
         {
-            return Invalid(
-                sourceStack!.StackId,
-                definition,
+            PackableBuildingSurfacePolicy policy = content!.Placement.ToSurfacePolicy();
+            IReadOnlyList<BuildingPlacementSurfaceCell> surfaceCells =
+                _surfaceFacts.Project(policy, origin, world);
+            PackableBuildingPlacementPolicyResult physical = _physicalValidator.Validate(
+                policy,
                 origin,
-                orientation,
-                physical.Footprint.CoveredCells,
-                physical.Error!.Code);
+                surfaceCells,
+                occupiedCells);
+            if (!physical.Succeeded)
+            {
+                return Invalid(
+                    sourceStack!.StackId,
+                    definition,
+                    origin,
+                    orientation,
+                    physical.Footprint.CoveredCells,
+                    physical.Error!.Code);
+            }
+
+            previewFootprint = physical.Footprint.CoveredCells;
         }
 
         return new BuildingBoxGhostViewModel(
@@ -131,7 +138,7 @@ public sealed class BuildingBoxPlacementPresenter
             definition.Id,
             origin,
             orientation,
-            physical.Footprint.CoveredCells,
+            previewFootprint,
             placement.WorkPosition,
             isValid: true,
             reasonCode: null);
