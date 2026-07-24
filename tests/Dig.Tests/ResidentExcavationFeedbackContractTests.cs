@@ -101,6 +101,36 @@ public sealed class ResidentExcavationFeedbackContractTests
         Assert.Contains("JobToolKind.Mining", activity);
     }
 
+    [Fact]
+    public void Building_boxes_are_selectable_buildings_with_alt_pickup_feedback()
+    {
+        string runtime = RuntimeRoot();
+        string priority = File.ReadAllText(Path.Combine(
+            runtime,
+            "DigWorldInteraction.ResidentCommandPriority.cs"));
+        string cursor = File.ReadAllText(Path.Combine(
+            runtime,
+            "DigWorldInteraction.DirectCommandCursor.cs"));
+        string roster = File.ReadAllText(Path.Combine(
+            runtime,
+            "DigGameHudCanvas.Roster.cs"));
+        string management = File.ReadAllText(Path.Combine(
+            runtime,
+            "DigGameHudCanvas.ManagementBuildings.cs"));
+        string gravity = File.ReadAllText(Path.Combine(
+            runtime,
+            "DigTerrainWorkSession.WorldItemGravity.cs"));
+
+        Assert.Contains("TryResolveBuildingBoxHit", priority);
+        Assert.Contains("IsAltPressed()", priority);
+        Assert.Contains("SelectBuildingBox(buildingBox.Model)", priority);
+        Assert.Contains("TryResolveBuildingBoxHoverTarget", cursor);
+        Assert.Contains("SelectBuildingBoxFromHud", roster);
+        Assert.Contains("SelectBuildingBoxFromManagement", management);
+        Assert.Contains("WorldItemGravityPolicy.ResolveLandingCell", gravity);
+        Assert.Contains("MoveAvailable", gravity);
+    }
+
     private static string RuntimeRoot()
     {
         return Path.Combine(

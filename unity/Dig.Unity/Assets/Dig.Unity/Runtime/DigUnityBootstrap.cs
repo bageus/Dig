@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Domain.Core;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Buildings;
@@ -72,6 +73,12 @@ namespace Dig.Unity
             terrainSession.PlanMovement(agents);
             terrainSession.InitializeBuildingDemo(worldSession.Journal);
             terrainSession.InitializeToolAwareJobAssignment(worldSession.Journal);
+            Result settledItems = terrainSession.SettleWorldItems(agentSession.Tick);
+            if (settledItems.IsFailure)
+            {
+                throw new InvalidOperationException(settledItems.Error!.ToString());
+            }
+
             IReadOnlyList<JobOverlayViewModel> jobs = terrainSession.LoadJobs();
             IReadOnlyList<WorldItemViewModel> items = terrainSession.LoadAllWorldItems();
             IReadOnlyList<RouteViewModel> routes = terrainSession.LoadRoutes();

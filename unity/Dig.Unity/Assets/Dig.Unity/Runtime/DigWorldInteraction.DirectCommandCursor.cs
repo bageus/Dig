@@ -54,6 +54,14 @@ namespace Dig.Unity
             {
                 if (_excavationMode == DigExcavationDrawingMode.None
                     && !_caveRoomPreset.HasValue
+                    && IsAltPressed()
+                    && TryResolveBuildingBoxHoverTarget(hits))
+                {
+                    return DirectCommandCursorKind.Pickup;
+                }
+
+                if (_excavationMode == DigExcavationDrawingMode.None
+                    && !_caveRoomPreset.HasValue
                     && TryResolvePickableItemHoverTarget(hits))
                 {
                     return DirectCommandCursorKind.Pickup;
@@ -74,6 +82,12 @@ namespace Dig.Unity
             }
 
             return DirectCommandCursorKind.Default;
+        }
+
+        private bool TryResolveBuildingBoxHoverTarget(RaycastHit[] hits)
+        {
+            return TryResolveBuildingBoxHit(hits, out DigWorldItemVisual item)
+                && item.Model.AvailableQuantity == 1;
         }
 
         private bool TryResolvePickableItemHoverTarget(RaycastHit[] hits)

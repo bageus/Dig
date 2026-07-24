@@ -138,6 +138,11 @@ namespace Dig.Unity
                 result = TerrainSession.AdvanceBuildingPacking(AgentSession.Tick, agents);
             }
 
+            if (result.IsSuccess)
+            {
+                result = TerrainSession.SettleWorldItems(AgentSession.Tick);
+            }
+
             if (result.IsFailure)
             {
                 // A domain/job failure belongs to the affected command. Disabling the
