@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Messaging;
@@ -12,124 +11,6 @@ using Dig.Domain.World;
 
 namespace Dig.Application.Jobs
 {
-
-public static class TerrainWorkCompletionErrors
-{
-    public static readonly DomainError JobTypeUnsupported = new DomainError(
-        "terrain_work.job_type_unsupported",
-        "The requested job is not a terrain work job.");
-
-    public static readonly DomainError JobNotReady = new DomainError(
-        "terrain_work.job_not_ready",
-        "The terrain work job is not waiting at its finalization stage.");
-
-    public static readonly DomainError TargetNotSolid = new DomainError(
-        "terrain_work.target_not_solid",
-        "The target cell is no longer solid.");
-
-    public static readonly DomainError TargetNotDesignated = new DomainError(
-        "terrain_work.target_not_designated",
-        "The target cell is no longer designated.");
-
-    public static readonly DomainError UnknownOutputItem = new DomainError(
-        "terrain_work.output_item_unknown",
-        "The output item is not registered in Inventory.");
-}
-
-public sealed class CompleteTerrainWorkCommand
-    : ICommand<Result<TerrainWorkCompletionResult>>
-{
-    public CompleteTerrainWorkCommand(
-        EntityId jobId,
-        EntityId outputStackId,
-        ItemId outputItemId,
-        int outputQuantity,
-        MaterialId emptyMaterialId,
-        long tick)
-        : this(
-            jobId,
-            outputStackId,
-            outputItemId,
-            outputQuantity,
-            emptyMaterialId,
-            tick,
-            producesOutput: true)
-    {
-    }
-
-    private CompleteTerrainWorkCommand(
-        EntityId jobId,
-        EntityId outputStackId,
-        ItemId outputItemId,
-        int outputQuantity,
-        MaterialId emptyMaterialId,
-        long tick,
-        bool producesOutput)
-    {
-        JobId = jobId;
-        OutputStackId = outputStackId;
-        OutputItemId = outputItemId;
-        OutputQuantity = outputQuantity;
-        EmptyMaterialId = emptyMaterialId;
-        Tick = tick;
-        ProducesOutput = producesOutput;
-    }
-
-    public EntityId JobId { get; }
-    public EntityId OutputStackId { get; }
-    public ItemId OutputItemId { get; }
-    public int OutputQuantity { get; }
-    public MaterialId EmptyMaterialId { get; }
-    public long Tick { get; }
-    public bool ProducesOutput { get; }
-
-    public static CompleteTerrainWorkCommand WithoutOutput(
-        EntityId jobId,
-        MaterialId emptyMaterialId,
-        long tick)
-    {
-        return new CompleteTerrainWorkCommand(
-            jobId,
-            default,
-            default,
-            outputQuantity: 0,
-            emptyMaterialId,
-            tick,
-            producesOutput: false);
-    }
-}
-
-public sealed class TerrainWorkCompletionResult
-{
-    public TerrainWorkCompletionResult(
-        EntityId jobId,
-        CellId targetCell,
-        EntityId outputStackId,
-        ItemId outputItemId,
-        int outputQuantity,
-        bool producedOutput,
-        long worldVersion,
-        long inventoryVersion)
-    {
-        JobId = jobId;
-        TargetCell = targetCell;
-        OutputStackId = outputStackId;
-        OutputItemId = outputItemId;
-        OutputQuantity = outputQuantity;
-        ProducedOutput = producedOutput;
-        WorldVersion = worldVersion;
-        InventoryVersion = inventoryVersion;
-    }
-
-    public EntityId JobId { get; }
-    public CellId TargetCell { get; }
-    public EntityId OutputStackId { get; }
-    public ItemId OutputItemId { get; }
-    public int OutputQuantity { get; }
-    public bool ProducedOutput { get; }
-    public long WorldVersion { get; }
-    public long InventoryVersion { get; }
-}
 
 public sealed class CompleteTerrainWorkCommandHandler
     : ICommandHandler<CompleteTerrainWorkCommand, Result<TerrainWorkCompletionResult>>
@@ -236,8 +117,11 @@ public sealed class CompleteTerrainWorkCommandHandler
         }
 
         InventoryState inventory = _inventoryRepository.Get();
-        EntityId[] outputUnitIds = CreateOutputUnitIds(command);
-        Result validation = ValidateOutput(inventory, command, outputUnitIds);
+        EntityId[] outputUnitIds = TerrainWorkOutputUnits.CreateIds(command);
+        Result validation = TerrainWorkOutputUnits.Validate(
+            inventory,
+            command,
+            outputUnitIds);
         if (validation.IsFailure)
         {
             return Result<TerrainWorkCompletionResult>.Failure(validation.Error!);
@@ -303,68 +187,6 @@ public sealed class CompleteTerrainWorkCommandHandler
             throw new InvalidOperationException(
                 $"Completed terrain job skill grant failed: {applied.Error}");
         }
-    }
-
-    private static EntityId[] CreateOutputUnitIds(CompleteTerrainWorkCommand command)
-    {
-        if (!command.ProducesOutput)
-        {
-            return Array.Empty<EntityId>();
-        }
-
-        string seed = command.OutputStackId.ToString();
-        EntityId[] ids = new EntityId[command.OutputQuantity];
-        ids[0] = command.OutputStackId;
-
-        for (int index = 1; index < ids.Length; index++)
-        {
-            ids[index] = EntityId.Parse(CreateDerivedEntityId(seed, index));
-        }
-
-        return ids;
-    }
-
-    private static string CreateDerivedEntityId(string seed, int index)
-    {
-        const int suffixLength = 8;
-        string prefix = seed.Substring(0, seed.Length - suffixLength);
-        uint seedSuffix = Convert.ToUInt32(seed.Substring(seed.Length - suffixLength), 16);
-        uint derivedSuffix = checked(seedSuffix + (uint)index);
-        return prefix + derivedSuffix.ToString("x8");
-    }
-
-    private static Result ValidateOutput(
-        InventoryState inventory,
-        CompleteTerrainWorkCommand command,
-        IReadOnlyList<EntityId> outputUnitIds)
-    {
-        if (!command.ProducesOutput)
-        {
-            return Result.Success();
-        }
-
-        if (!inventory.Catalog.Contains(command.OutputItemId))
-        {
-            return Result.Failure(TerrainWorkCompletionErrors.UnknownOutputItem);
-        }
-
-        if (command.OutputQuantity <= 0)
-        {
-            return Result.Failure(InventoryErrors.InvalidQuantity);
-        }
-
-        foreach (EntityId outputUnitId in outputUnitIds)
-        {
-            if (inventory.GetStack(outputUnitId) is not null)
-            {
-                return Result.Failure(InventoryErrors.StackAlreadyExists);
-            }
-        }
-
-        ItemDefinition definition = inventory.Catalog.Get(command.OutputItemId);
-        return command.OutputQuantity > definition.MaximumStackSize
-            ? Result.Failure(InventoryErrors.StackSizeExceeded)
-            : Result.Success();
     }
 
     private static void EnsureCommitStep(bool succeeded, DomainError? error)
