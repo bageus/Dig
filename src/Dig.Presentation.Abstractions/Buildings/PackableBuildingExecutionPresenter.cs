@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Dig.Application.Buildings;
+using Dig.Domain.Buildings;
 using Dig.Domain.Content;
 
 namespace Dig.Presentation.Buildings
