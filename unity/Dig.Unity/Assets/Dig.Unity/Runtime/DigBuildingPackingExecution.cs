@@ -16,7 +16,6 @@ using Dig.Presentation.Navigation;
 
 namespace Dig.Unity
 {
-
 internal sealed partial class DigTerrainWorkSession
 {
     private readonly Dictionary<EntityId, BuildingPackingRoutePlan> _buildingPackingRoutes =
