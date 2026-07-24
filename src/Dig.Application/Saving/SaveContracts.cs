@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.Serialization;
+using Dig.Application.Buildings;
 using Dig.Domain.Agents;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
@@ -118,6 +119,10 @@ public sealed class SaveGameDocument
     [DataMember(Order = 10)]
     public MiningOutputCommitsSaveData MiningOutput { get; set; } =
         new MiningOutputCommitsSaveData();
+
+    [DataMember(Order = 11)]
+    public PackableBuildingExecutionsSaveData PackableBuildingExecutions { get; set; } =
+        new PackableBuildingExecutionsSaveData();
 }
 
 public sealed class LoadedGameState
@@ -132,7 +137,8 @@ public sealed class LoadedGameState
         IReadOnlyDictionary<EntityId, AgentSkillProgressionSnapshot>? agentSkills = null,
         IReadOnlyDictionary<EntityId, bool>? agentAutomaticPlanning = null,
         IReadOnlyDictionary<EntityId, CellId>? agentPositions = null,
-        IReadOnlyCollection<TerrainDepositInstance>? terrainDeposits = null)
+        IReadOnlyCollection<TerrainDepositInstance>? terrainDeposits = null,
+        PackableBuildingExecutionRegistry? packableBuildingExecutions = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -158,6 +164,8 @@ public sealed class LoadedGameState
                 .OrderBy(value => value.Cell)
                 .ThenBy(value => value.InstanceId, StringComparer.Ordinal)
                 .ToArray());
+        PackableBuildingExecutions = packableBuildingExecutions
+            ?? new PackableBuildingExecutionRegistry();
     }
 
     public SaveMetadataData Metadata { get; }
@@ -170,6 +178,7 @@ public sealed class LoadedGameState
     public IReadOnlyDictionary<EntityId, bool> AgentAutomaticPlanning { get; }
     public IReadOnlyDictionary<EntityId, CellId> AgentPositions { get; }
     public IReadOnlyList<TerrainDepositInstance> TerrainDeposits { get; }
+    public PackableBuildingExecutionRegistry PackableBuildingExecutions { get; }
 }
 
 public sealed class SaveMigrationReport
@@ -260,7 +269,8 @@ public sealed class SaveGameContext
         JobSystem jobs,
         BuildingsState buildings,
         IReadOnlyCollection<AgentState> agents,
-        IReadOnlyCollection<TerrainDepositInstance>? terrainDeposits = null)
+        IReadOnlyCollection<TerrainDepositInstance>? terrainDeposits = null,
+        PackableBuildingExecutionRegistry? packableBuildingExecutions = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -274,6 +284,8 @@ public sealed class SaveGameContext
                 .OrderBy(value => value.Cell)
                 .ThenBy(value => value.InstanceId, StringComparer.Ordinal)
                 .ToList());
+        PackableBuildingExecutions = packableBuildingExecutions
+            ?? new PackableBuildingExecutionRegistry();
     }
 
     public SaveMetadataData Metadata { get; }
@@ -283,6 +295,7 @@ public sealed class SaveGameContext
     public BuildingsState Buildings { get; }
     public IReadOnlyList<AgentState> Agents { get; }
     public IReadOnlyList<TerrainDepositInstance> TerrainDeposits { get; }
+    public PackableBuildingExecutionRegistry PackableBuildingExecutions { get; }
 }
 
 }
