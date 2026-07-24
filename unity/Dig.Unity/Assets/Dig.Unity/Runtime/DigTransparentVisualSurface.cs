@@ -21,13 +21,12 @@ namespace Dig.Unity
             {
                 Renderer renderer = renderers[rendererIndex];
                 Material[] sources = renderer.sharedMaterials;
-                Material[] transparent = new Material[sources.Length];
+                Material[] transparent = (Material[])sources.Clone();
                 for (int materialIndex = 0; materialIndex < sources.Length; materialIndex++)
                 {
-                    Material source = sources[materialIndex];
+                    Material? source = sources[materialIndex];
                     if (source == null)
                     {
-                        transparent[materialIndex] = source;
                         continue;
                     }
 
