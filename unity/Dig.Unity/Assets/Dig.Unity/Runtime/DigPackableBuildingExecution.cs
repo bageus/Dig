@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Dig.Application.Agents;
 using Dig.Application.Buildings;
 using Dig.Domain.Buildings;
@@ -10,9 +9,6 @@ namespace Dig.Unity
 
 internal sealed partial class DigTerrainWorkSession
 {
-    private readonly Dictionary<EntityId, PackableBuildingIterationClock>
-        _packableBuildingIterationClocks =
-            new Dictionary<EntityId, PackableBuildingIterationClock>();
     private PackableBuildingExecutionRegistry? _packableBuildingExecutions;
     private CampfireIterationProgressionService? _campfireIterationProgression;
 
@@ -72,10 +68,9 @@ internal sealed partial class DigTerrainWorkSession
                 "Packable building iteration progression is not initialized.");
         }
 
-        if (!_packableBuildingIterationClocks.TryGetValue(
-                operationId,
-                out PackableBuildingIterationClock clock)
-            || clock.WorkerId != workerId)
+        PackableBuildingIterationClockSnapshot? clock =
+            _packableBuildingExecutions.GetIterationClock(operationId);
+        if (clock == null)
         {
             Result<int> duration = _campfireIterationProgression.ResolveDurationSeconds(workerId);
             if (duration.IsFailure)
@@ -83,13 +78,23 @@ internal sealed partial class DigTerrainWorkSession
                 return Result.Failure(duration.Error!);
             }
 
-            _packableBuildingIterationClocks[operationId] =
-                new PackableBuildingIterationClock(workerId, tick, duration.Value);
-            return Result.Success();
+            return _packableBuildingExecutions.BeginIteration(
+                operationId,
+                workerId,
+                tick,
+                duration.Value);
         }
 
-        long completionTick = checked(clock.StartTick + clock.DurationSeconds);
-        if (tick < completionTick)
+        Result<bool> ready = _packableBuildingExecutions.IsIterationReady(
+            operationId,
+            workerId,
+            tick);
+        if (ready.IsFailure)
+        {
+            return Result.Failure(ready.Error!);
+        }
+
+        if (!ready.Value)
         {
             return Result.Success();
         }
@@ -100,34 +105,11 @@ internal sealed partial class DigTerrainWorkSession
             return applied;
         }
 
-        Result completed = _campfireIterationProgression.CompleteIteration(
+        return _campfireIterationProgression.CompleteIteration(
             _packableBuildingExecutions,
             operationId,
             workerId,
             tick);
-        if (completed.IsSuccess)
-        {
-            _packableBuildingIterationClocks.Remove(operationId);
-        }
-
-        return completed;
-    }
-
-    private readonly struct PackableBuildingIterationClock
-    {
-        public PackableBuildingIterationClock(
-            EntityId workerId,
-            long startTick,
-            int durationSeconds)
-        {
-            WorkerId = workerId;
-            StartTick = startTick;
-            DurationSeconds = durationSeconds;
-        }
-
-        public EntityId WorkerId { get; }
-        public long StartTick { get; }
-        public int DurationSeconds { get; }
     }
 }
 
