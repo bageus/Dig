@@ -26,6 +26,7 @@ namespace Dig.Unity
         private AddBuildingBoxAssemblyWorkHandler? _buildingBoxAssemblyWork;
         private CompleteBuildingBoxAssemblyHandler? _buildingBoxAssemblyComplete;
         private NavigationPathfinder? _buildingBoxAssemblyPathfinder;
+        private PackableBuildingExecutionRegistry? _packableBuildingExecutions;
 
         private void InitializeBuildingBoxAssemblyExecution(InMemoryExecutionJournal journal)
         {
@@ -34,6 +35,7 @@ namespace Dig.Unity
                 throw new InvalidOperationException("BuildingBox state must be initialized first.");
             }
 
+            _packableBuildingExecutions ??= new PackableBuildingExecutionRegistry();
             _buildingBoxAssemblyCandidates = new InMemoryJobCandidateProvider();
             _buildingBoxAssemblyAssignment = new AssignAvailableJobsHandler(
                 _jobRepository,
@@ -164,6 +166,8 @@ namespace Dig.Unity
                 Result executed = ExecuteBuildingBoxAssemblyStep(
                     evaluated.Value,
                     assembly,
+                    building!,
+                    job.AssignedAgentId.Value,
                     new CellId(agent.CellX, agent.CellY, agent.CellZ),
                     tick);
                 if (executed.IsFailure)
@@ -219,14 +223,54 @@ namespace Dig.Unity
         private Result ExecuteBuildingBoxAssemblyStep(
             BuildingBoxAssemblyExecutionStepKind step,
             BuildingBoxAssemblyJobDefinition assembly,
+            BuildingSnapshot building,
+            EntityId workerId,
             CellId workerCell,
             long tick)
         {
+            if (step == BuildingBoxAssemblyExecutionStepKind.None)
+            {
+                return Result.Success();
+            }
+
+            Result<PackableBuildingExecutionState> execution =
+                _packableBuildingExecutions!.GetOrCreate(
+                    assembly.Id,
+                    assembly.BuildingId,
+                    building.Definition.Id,
+                    PackableBuildingOperationKind.Unpack,
+                    building.Definition.RequiredWork);
+            if (execution.IsFailure)
+            {
+                return Result.Failure(execution.Error!);
+            }
+
+            if (step == BuildingBoxAssemblyExecutionStepKind.StartJob)
+            {
+                Result started = _packableBuildingExecutions.StartOrResume(assembly.Id, workerId);
+                return started.IsFailure
+                    ? started
+                    : _advanceHandler.Handle(new AdvanceJobCommand(assembly.Id, tick));
+            }
+
+            if (step == BuildingBoxAssemblyExecutionStepKind.AddWork)
+            {
+                Result added = _buildingBoxAssemblyWork!.Handle(
+                    new AddBuildingBoxAssemblyWorkCommand(
+                        assembly.BuildingId,
+                        assembly.Id,
+                        workAmount: 1,
+                        tick: tick));
+                if (added.IsFailure)
+                {
+                    return added;
+                }
+
+                return _packableBuildingExecutions.CompleteIteration(assembly.Id, workerId);
+            }
+
             return step switch
             {
-                BuildingBoxAssemblyExecutionStepKind.None => Result.Success(),
-                BuildingBoxAssemblyExecutionStepKind.StartJob =>
-                    _advanceHandler.Handle(new AdvanceJobCommand(assembly.Id, tick)),
                 BuildingBoxAssemblyExecutionStepKind.AcquireBox =>
                     _buildingBoxAssemblyAcquire!.Handle(
                         new AcquireBuildingBoxForAssemblyCommand(
@@ -241,12 +285,6 @@ namespace Dig.Unity
                         assembly.BuildingId,
                         assembly.Id,
                         tick)),
-                BuildingBoxAssemblyExecutionStepKind.AddWork =>
-                    _buildingBoxAssemblyWork!.Handle(new AddBuildingBoxAssemblyWorkCommand(
-                        assembly.BuildingId,
-                        assembly.Id,
-                        workAmount: 1,
-                        tick: tick)),
                 BuildingBoxAssemblyExecutionStepKind.CompleteAssembly =>
                     _buildingBoxAssemblyComplete!.Handle(
                         new CompleteBuildingBoxAssemblyCommand(
@@ -316,7 +354,8 @@ namespace Dig.Unity
                 || _buildingBoxAssemblyCommit == null
                 || _buildingBoxAssemblyWork == null
                 || _buildingBoxAssemblyComplete == null
-                || _buildingBoxAssemblyPathfinder == null)
+                || _buildingBoxAssemblyPathfinder == null
+                || _packableBuildingExecutions == null)
             {
                 throw new InvalidOperationException(
                     "BuildingBox assembly execution is not initialized.");
