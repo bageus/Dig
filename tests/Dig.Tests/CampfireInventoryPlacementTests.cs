@@ -44,7 +44,7 @@ public sealed class CampfireInventoryPlacementTests
             ItemLocation.InResidentSlot(
                 ResidentId,
                 ResidentInventoryCompartment.Main,
-                index: 0),
+                slotIndex: 0),
             tick: 0).IsSuccess);
 
         ResidentInventoryLayoutViewModel layout =
