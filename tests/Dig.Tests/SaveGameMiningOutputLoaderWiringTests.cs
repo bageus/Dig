@@ -52,7 +52,8 @@ public sealed class SaveGameMiningOutputLoaderWiringTests
         Assert.True(loaded.IsSuccess);
         Assert.True(loaded.Value.MiningOutput.Commits.IsCommitted(cell));
         Assert.True(loaded.Value.MiningOutput.Integrity.IsValid);
-        Assert.Equal(1, loaded.Value.MiningOutput.Integrity.CommittedStackCount);
+        Assert.Equal(2, loaded.Value.MiningOutput.Integrity.CommittedQuantity);
+        Assert.Equal(2, loaded.Value.MiningOutput.Integrity.TrackedWorldQuantity);
     }
 
     [Fact]
