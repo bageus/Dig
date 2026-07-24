@@ -114,6 +114,10 @@ public sealed class SaveGameDocument
     [DataMember(Order = 9)]
     public TerrainDepositsSaveData TerrainDeposits { get; set; } =
         new TerrainDepositsSaveData();
+
+    [DataMember(Order = 10)]
+    public MiningOutputCommitsSaveData MiningOutput { get; set; } =
+        new MiningOutputCommitsSaveData();
 }
 
 public sealed class LoadedGameState
@@ -280,4 +284,5 @@ public sealed class SaveGameContext
     public IReadOnlyList<AgentState> Agents { get; }
     public IReadOnlyList<TerrainDepositInstance> TerrainDeposits { get; }
 }
+
 }
