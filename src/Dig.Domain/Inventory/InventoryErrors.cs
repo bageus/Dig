@@ -14,6 +14,9 @@ public static class InventoryErrors
     public static readonly DomainError InvalidQuantity = new DomainError(
         "inventory.invalid_quantity",
         "The requested item quantity is invalid.");
+    public static readonly DomainError UnitLocationRequiresSingleItem = new DomainError(
+        "inventory.unit_location_requires_single_item",
+        "World and resident inventory locations accept exactly one physical item entity.");
     public static readonly DomainError InsufficientAvailableQuantity = new DomainError(
         "inventory.insufficient_available_quantity",
         "The item stack does not have enough unreserved quantity.");
