@@ -24,6 +24,45 @@ public sealed partial class DigWorldInteraction
         }
 
         RaycastHit[] hits = GetPointerHits();
+        if (TryResolveBuildingBoxHit(hits, out DigWorldItemVisual buildingBox))
+        {
+            CancelResidentMarquee();
+            DisableExcavationDrawing();
+            DisableCaveRoomPlanning();
+            if (IsAltPressed())
+            {
+                if (_agentRenderer!.SelectedCount == 0)
+                {
+                    SelectBuildingBox(buildingBox.Model);
+                    _hud.SetStatus("Select a dwarf before ordering BuildingBox pickup.");
+                    return true;
+                }
+
+                ContextPointerTarget boxTarget = new ContextPointerTarget(
+                    ContextWorldTargetKind.BuildingBox,
+                    EntityId.Parse(buildingBox.Model.StackId),
+                    new CellId(
+                        buildingBox.Model.CellX,
+                        buildingBox.Model.CellY,
+                        buildingBox.Model.CellZ),
+                    reachable: true,
+                    supportsAltInteraction: buildingBox.Model.AvailableQuantity == 1);
+                ApplyDecision(
+                    _inputRouter.Route(
+                        new ContextPointerEvent(
+                            PointerInputSurface.World,
+                            PointerButtonKind.Left,
+                            altPressed: true),
+                        BuildState(PointerButtonKind.Left),
+                        boxTarget),
+                    item: buildingBox);
+                return true;
+            }
+
+            SelectBuildingBox(buildingBox.Model);
+            return true;
+        }
+
         if (_agentRenderer!.SelectedCount > 0
             && TryResolveHostileCreatureHit(hits, out DigCreatureVisual creature))
         {
@@ -103,6 +142,24 @@ public sealed partial class DigWorldInteraction
         DisableExcavationDrawing();
         DisableCaveRoomPlanning();
         return true;
+    }
+
+    private bool TryResolveBuildingBoxHit(
+        RaycastHit[] hits,
+        out DigWorldItemVisual item)
+    {
+        for (int index = 0; index < hits.Length; index++)
+        {
+            if (_itemRenderer != null
+                && _itemRenderer.TryGetItem(hits[index], out item)
+                && item.Model.IsBuildingBox)
+            {
+                return true;
+            }
+        }
+
+        item = null!;
+        return false;
     }
 
     private bool TryResolveWorldItemHit(
