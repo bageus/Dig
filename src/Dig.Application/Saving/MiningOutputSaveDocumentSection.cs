@@ -46,7 +46,8 @@ public sealed class MiningOutputSaveDocumentSection
             _coordinator.Capture(commits, inventory);
         if (captured.IsFailure)
         {
-            return Result<MiningOutputCommitsSaveData>.Failure(captured.Error);
+            return Result<MiningOutputCommitsSaveData>.Failure(
+                captured.Error ?? MiningOutputSaveErrors.InvalidSnapshot);
         }
 
         MiningOutputSaveWorldValidationReport worldValidation =
