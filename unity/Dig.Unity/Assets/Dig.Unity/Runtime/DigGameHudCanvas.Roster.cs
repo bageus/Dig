@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Buildings;
+using Dig.Presentation.Inventory;
 using Dig.Presentation.Jobs;
 using UnityEngine;
 using UnityEngine.UI;
@@ -48,6 +49,12 @@ public sealed partial class DigGameHudCanvas
             .OrderBy(building => building.Name, StringComparer.Ordinal)
             .ThenBy(building => building.Id, StringComparer.Ordinal)
             .ToArray();
+        IReadOnlyList<WorldItemViewModel> buildingBoxes = _terrainSession
+            .LoadAllWorldItems()
+            .Where(item => item.IsBuildingBox)
+            .OrderBy(item => item.ItemId, StringComparer.Ordinal)
+            .ThenBy(item => item.StackId, StringComparer.Ordinal)
+            .ToArray();
         IReadOnlyList<JobOverlayViewModel> jobs = _terrainSession.LoadJobs()
             .OrderBy(job => IsTerminalStatus(job.Status))
             .ThenByDescending(job => job.Priority)
@@ -63,7 +70,7 @@ public sealed partial class DigGameHudCanvas
             return;
         }
 
-        string signature = BuildRosterSignature(residents, buildings, jobs);
+        string signature = BuildRosterSignature(residents, buildings, buildingBoxes, jobs);
         if (string.Equals(signature, _lastRosterSignature, StringComparison.Ordinal))
         {
             return;
@@ -75,7 +82,7 @@ public sealed partial class DigGameHudCanvas
         switch (_rightTab)
         {
             case RightPanelTab.Buildings:
-                BuildBuildingRows(buildings);
+                BuildBuildingRows(buildings, buildingBoxes);
                 break;
             case RightPanelTab.Jobs:
                 BuildJobRows(jobs, residents);
@@ -85,9 +92,11 @@ public sealed partial class DigGameHudCanvas
         }
     }
 
-    private void BuildBuildingRows(IReadOnlyList<BuildingWorldViewModel> buildings)
+    private void BuildBuildingRows(
+        IReadOnlyList<BuildingWorldViewModel> buildings,
+        IReadOnlyList<WorldItemViewModel> buildingBoxes)
     {
-        if (buildings.Count == 0)
+        if (buildings.Count == 0 && buildingBoxes.Count == 0)
         {
             AddEmptyRosterMessage("No completed buildings");
             return;
@@ -114,6 +123,30 @@ public sealed partial class DigGameHudCanvas
             {
                 row.GetComponent<Image>().color =
                     new Color(0.48f, 0.36f, 0.22f, 0.96f);
+            }
+        }
+
+        string? selectedBoxId = _interaction!.SelectedBuildingBox?.StackId;
+        for (int index = 0; index < buildingBoxes.Count; index++)
+        {
+            WorldItemViewModel box = buildingBoxes[index];
+            string id = box.StackId;
+            bool isSelected = string.Equals(id, selectedBoxId, StringComparison.Ordinal);
+            string marker = isSelected ? "■ " : string.Empty;
+            string label = marker
+                + "BuildingBox"
+                + $" · Cell {box.CellX},{box.CellY}, Z{box.CellZ}";
+            Button row = CreateButton(
+                $"BuildingBox {id}",
+                _rightContent!,
+                label,
+                () => _interaction.SelectBuildingBoxFromHud(id),
+                preferredHeight: 36f);
+            ConfigureSingleLineRosterRow(row);
+            if (isSelected)
+            {
+                row.GetComponent<Image>().color =
+                    new Color(0.52f, 0.34f, 0.16f, 0.96f);
             }
         }
     }
@@ -187,6 +220,7 @@ public sealed partial class DigGameHudCanvas
     private string BuildRosterSignature(
         IReadOnlyList<ResidentRosterRowViewModel> residents,
         IReadOnlyList<BuildingWorldViewModel> buildings,
+        IReadOnlyList<WorldItemViewModel> buildingBoxes,
         IReadOnlyList<JobOverlayViewModel> jobs)
     {
         string residentVersions = string.Join(
@@ -201,6 +235,11 @@ public sealed partial class DigGameHudCanvas
         string buildingVersions = string.Join(
             ",",
             buildings.Select(building => $"{building.Id}:{building.Version}"));
+        string buildingBoxVersions = string.Join(
+            ",",
+            buildingBoxes.Select(item =>
+                $"{item.StackId}:{item.Quantity}:{item.ReservedQuantity}:"
+                + $"{item.CellX}:{item.CellY}:{item.CellZ}"));
         string jobVersions = string.Join(
             ",",
             jobs.Select(job =>
@@ -208,7 +247,8 @@ public sealed partial class DigGameHudCanvas
                 + $"{job.AssignedAgentId}:{job.RetryCount}"));
         return $"{_rightTab}|{_agentRenderer!.SelectedAgentId}|"
             + $"{_buildingRenderer!.SelectedBuildingId}|{_jobRenderer!.SelectedJobId}|"
-            + $"{residentVersions}|{buildingVersions}|{jobVersions}";
+            + $"{_interaction!.SelectedBuildingBox?.StackId}|"
+            + $"{residentVersions}|{buildingVersions}|{buildingBoxVersions}|{jobVersions}";
     }
 
     private static bool IsTerminalStatus(string status)
