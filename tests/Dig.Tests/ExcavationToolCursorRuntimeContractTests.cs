@@ -26,12 +26,15 @@ namespace Dig.Tests
                 runtime, "DigAgentSimulationDriverBase.CaveRooms.cs"));
             string excavation = File.ReadAllText(Path.Combine(
                 runtime, "DigAgentSimulationDriverBase.Excavation.cs"));
+            string depthInteraction = File.ReadAllText(Path.Combine(
+                runtime, "DigWorldInteraction.TunnelDepthExcavation.cs"));
             string depthOverlay = File.ReadAllText(Path.Combine(
                 runtime, "DigWorldRenderer.DepthDesignation.cs"));
             string jobs = File.ReadAllText(Path.Combine(runtime, "DigJobVisual.cs"));
 
             Assert.Contains("new Color(0.68f, 0.86f, 0.62f, 0.32f)", cursor);
             Assert.Contains("new Color(0.74f, 0.62f, 0.90f, 0.28f)", cursor);
+            Assert.Contains("new Color(0.58f, 0.58f, 0.58f, 0.42f)", cursor);
             Assert.Contains("DesignationOverlap = 1.015f", cursor);
             Assert.Contains("MarkerThickness = 0.025f", cursor);
             Assert.Contains("SynchronizeTunnelDesignations", cursor);
@@ -39,7 +42,19 @@ namespace Dig.Tests
             Assert.Contains("SynchronizeTunnelDesignations(world)", excavation);
             Assert.Contains("ResolveTunnelCursorTarget", cursorDriver);
             Assert.Contains("ResolveDepthCursorTarget", cursorDriver);
+            Assert.Contains("ResolveExcavationEraseTarget", cursorDriver);
             Assert.Contains("ProjectPointerToLayer(0)", cursorDriver);
+            Assert.Contains("SetDepthDesignationInteractionActive", cursorDriver);
+
+            Assert.Contains("ApplyImmediateExcavationErase", depthInteraction);
+            Assert.Contains("ExpandExcavationEraseCells", depthInteraction);
+            Assert.Contains("ApplyExcavationEraseBatch(expanded)", depthInteraction);
+            Assert.Contains("TryGetDepthDesignation", depthInteraction);
+            Assert.Contains("job.Model.TargetZ.Value", depthInteraction);
+            Assert.Contains("cell.Model.IsDesignated", depthInteraction);
+            Assert.Contains("RemoveDepthDesignationTint(expanded[index])", depthInteraction);
+            Assert.Contains("TryGetDepthDesignation", depthOverlay);
+            Assert.Contains("SetDepthDesignationInteractionActive", depthOverlay);
 
             Assert.Contains("if (!Input.GetMouseButtonDown(0))", rooms);
             Assert.Contains("_roomPlacementHandledThisFrame = true", rooms);
@@ -56,7 +71,6 @@ namespace Dig.Tests
             Assert.Contains("TerrainSession.DesignateSpatialExcavation(", depth);
             Assert.Contains("planned.Plan!", depth);
             Assert.Contains("RemoveDepthDesignationTint(commit.Target)", depth);
-            Assert.Contains("RemoveDepthDesignationTint", depthOverlay);
             Assert.Contains("targetZ > 0", jobs);
             Assert.Contains("RockCellHalfExtent + 0.08f", jobs);
         }
