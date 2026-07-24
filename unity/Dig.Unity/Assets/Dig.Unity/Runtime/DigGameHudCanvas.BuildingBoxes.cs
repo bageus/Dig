@@ -10,15 +10,18 @@ namespace Dig.Unity
         private readonly BuildingBoxFunctionsPresenter _buildingBoxFunctionsPresenter =
             new BuildingBoxFunctionsPresenter();
 
-        private void LateUpdate()
+        private void OnGUI()
         {
-            WorldItemViewModel? selected = _interaction?.SelectedBuildingBox;
-            if (selected == null)
+            if (!_initialized || Event.current.type != EventType.Repaint)
             {
                 return;
             }
 
-            ShowBuildingBoxFunctions(selected);
+            WorldItemViewModel? selected = _interaction?.SelectedBuildingBox;
+            if (selected != null)
+            {
+                ShowBuildingBoxFunctions(selected);
+            }
         }
 
         private void ShowBuildingBoxFunctions(WorldItemViewModel item)
