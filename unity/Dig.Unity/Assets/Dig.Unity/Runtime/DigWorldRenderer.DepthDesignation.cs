@@ -11,7 +11,10 @@ namespace Dig.Unity
             new Color(0.74f, 0.62f, 0.90f, 0.72f);
         private readonly Dictionary<CellId, GameObject> _depthDesignationCells =
             new Dictionary<CellId, GameObject>();
+        private readonly Dictionary<Collider, CellId> _depthDesignationTargets =
+            new Dictionary<Collider, CellId>();
         private DigRenderMaterialLibrary? _depthMaterialLibrary;
+        private bool _depthDesignationInteractionActive;
 
         internal void SetDepthDesignationTint(CellId target)
         {
@@ -32,10 +35,11 @@ namespace Dig.Unity
             marker.transform.rotation = Quaternion.identity;
             marker.transform.localScale = new Vector3(0.94f, 0.94f, 0.025f);
 
-            Collider? collider = marker.GetComponent<Collider>();
+            Collider collider = marker.GetComponent<Collider>();
             if (collider != null)
             {
-                Destroy(collider);
+                collider.enabled = _depthDesignationInteractionActive;
+                _depthDesignationTargets.Add(collider, target);
             }
 
             _depthMaterialLibrary ??= GetComponent<DigRenderMaterialLibrary>()
@@ -57,11 +61,43 @@ namespace Dig.Unity
             _depthDesignationCells.Add(target, marker);
         }
 
+        internal bool TryGetDepthDesignation(
+            RaycastHit hit,
+            out CellId target)
+        {
+            if (hit.collider != null
+                && _depthDesignationTargets.TryGetValue(hit.collider, out target))
+            {
+                return true;
+            }
+
+            target = default;
+            return false;
+        }
+
+        internal void SetDepthDesignationInteractionActive(bool active)
+        {
+            _depthDesignationInteractionActive = active;
+            foreach (Collider collider in _depthDesignationTargets.Keys)
+            {
+                if (collider != null)
+                {
+                    collider.enabled = active;
+                }
+            }
+        }
+
         internal void RemoveDepthDesignationTint(CellId target)
         {
             if (!_depthDesignationCells.TryGetValue(target, out GameObject? marker))
             {
                 return;
+            }
+
+            Collider collider = marker.GetComponent<Collider>();
+            if (collider != null)
+            {
+                _depthDesignationTargets.Remove(collider);
             }
 
             Destroy(marker);

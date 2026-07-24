@@ -7,7 +7,7 @@ namespace Dig.Tests
     public sealed class DirectCommandExcavationLifecycleContractTests
     {
         [Fact]
-        public void Direct_commands_release_pickups_and_dig_work_and_depth_can_be_erased()
+        public void Direct_commands_release_pickups_and_all_pending_excavation_can_be_erased()
         {
             string root = FindRepositoryRoot();
             string runtime = Path.Combine(
@@ -36,9 +36,12 @@ namespace Dig.Tests
             Assert.Contains("_session!.LoadView()", cursorDriver);
 
             Assert.Contains("TryHandleDepthExcavationErase", depth);
-            Assert.Contains("job.Model.TargetZ.Value <= 0", depth);
-            Assert.Contains("ApplyExcavationEraseBatch(new[] { target })", depth);
-            Assert.Contains("RemoveDepthDesignationTint(target)", depth);
+            Assert.Contains("ResolveExcavationEraseTarget", depth);
+            Assert.Contains("job.Model.TargetZ.Value", depth);
+            Assert.DoesNotContain("job.Model.TargetZ.Value <= 0", depth);
+            Assert.Contains("ExpandExcavationEraseCells", depth);
+            Assert.Contains("ApplyExcavationEraseBatch(expanded)", depth);
+            Assert.Contains("RemoveDepthDesignationTint(expanded[index])", depth);
         }
 
         private static string FindRepositoryRoot()

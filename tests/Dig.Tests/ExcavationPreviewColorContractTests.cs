@@ -12,7 +12,10 @@ namespace Dig.Tests
             string root = FindRepositoryRoot();
             string runtime = Path.Combine(
                 root, "unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime");
-            string terrain = File.ReadAllText(Path.Combine(runtime, "DigTerrainChunkVisual.cs"));
+            string terrain = File.ReadAllText(Path.Combine(
+                runtime, "DigTerrainChunkVisual.cs"));
+            string cursor = File.ReadAllText(Path.Combine(
+                runtime, "DigExcavationCursorRenderer.cs"));
             string depth = File.ReadAllText(Path.Combine(
                 runtime, "DigWorldRenderer.DepthDesignation.cs"));
             string roomResources = File.ReadAllText(Path.Combine(
@@ -24,7 +27,10 @@ namespace Dig.Tests
             string roomInput = File.ReadAllText(Path.Combine(
                 runtime, "DigWorldInteraction.CaveRooms.cs"));
 
-            Assert.Contains("new Color(0.68f, 0.86f, 0.62f, 1f)", terrain);
+            Assert.Contains("new Color(0.68f, 0.86f, 0.62f, 0.32f)", cursor);
+            Assert.Contains("SetTunnelDesignation", cursor);
+            Assert.Contains("PrimitiveType.Cube", cursor);
+            Assert.DoesNotContain("DesignatedColor", terrain);
             Assert.Contains("PrimitiveType.Cube", depth);
             Assert.Contains("DigTunnelProjection.CellWorldPosition(target)", depth);
             Assert.Contains("new Vector3(0.94f, 0.94f, 0.025f)", depth);

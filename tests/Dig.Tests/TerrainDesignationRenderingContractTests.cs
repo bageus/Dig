@@ -7,39 +7,31 @@ namespace Dig.Tests
     public sealed class TerrainDesignationRenderingContractTests
     {
         [Fact]
-        public void Tunnel_and_depth_designations_use_the_chunk_terrain_surface()
+        public void Tunnel_designation_tint_is_an_overlay_and_does_not_recolor_rock()
         {
             string root = FindRepositoryRoot();
             string builder = ReadRuntime(root, "DigTerrainChunkMeshBuilder.cs");
             string visual = ReadRuntime(root, "DigTerrainChunkVisual.cs");
-            string overlay = ReadRuntime(root, "DigWorldOverlayRenderer.cs");
+            string cursor = ReadRuntime(root, "DigExcavationCursorRenderer.cs");
 
             Assert.Contains("DigTerrainSurfaceState.Designated", builder);
-            Assert.Contains("ApplySurfaceStateTints(data)", visual);
-            Assert.Contains("State != DigTerrainSurfaceState.Designated", visual);
-            Assert.Contains("marker.SetActive(false);", overlay);
+            Assert.Contains("SynchronizeTunnelDesignations", cursor);
+            Assert.Contains("SetTunnelDesignation", cursor);
+            Assert.Contains("_mesh.vertices = data.Vertices;", visual);
+            Assert.Contains("_mesh.normals = data.Normals;", visual);
+            Assert.DoesNotContain("ApplySurfaceStateTints", visual);
+            Assert.DoesNotContain("DesignatedColor", visual);
         }
 
         [Fact]
-        public void Only_designated_submesh_vertices_are_projected_to_runtime_axes()
+        public void Designation_changes_do_not_reproject_the_terrain_mesh()
         {
             string root = FindRepositoryRoot();
             string visual = ReadRuntime(root, "DigTerrainChunkVisual.cs");
 
-            Assert.Contains("ProjectDesignatedGeometry(data", visual);
-            Assert.Contains(
-                "data.MaterialKeys[submesh].State != DigTerrainSurfaceState.Designated",
-                visual);
-            Assert.Contains("data.Triangles[submesh]", visual);
-            Assert.Contains(
-                "vertices[vertex] = TransformBuilderPosition(vertices[vertex]);",
-                visual);
-            Assert.DoesNotContain(
-                "_mesh.vertices = TransformPositions(data.Vertices);",
-                visual);
-            Assert.DoesNotContain(
-                "_mesh.normals = TransformDirections(data.Normals);",
-                visual);
+            Assert.DoesNotContain("ProjectDesignatedGeometry", visual);
+            Assert.DoesNotContain("TransformBuilderPosition", visual);
+            Assert.DoesNotContain("data.Triangles[submesh]", visual);
         }
 
         private static string ReadRuntime(string root, string fileName)

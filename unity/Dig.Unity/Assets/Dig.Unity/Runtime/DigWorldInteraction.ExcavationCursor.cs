@@ -27,20 +27,35 @@ namespace Dig.Unity
 
         private void UpdateExcavationCursorPreview()
         {
-            if (!IsInitialized()
-                || _hud!.ContainsScreenPoint(Input.mousePosition)
+            if (!IsInitialized())
+            {
+                _renderer?.SetDepthDesignationInteractionActive(active: false);
+                _excavationCursorRenderer?.Hide();
+                return;
+            }
+
+            bool erase = _excavationMode == DigExcavationDrawingMode.Delete;
+            _renderer!.SetDepthDesignationInteractionActive(
+                erase && !_caveRoomPreset.HasValue);
+            if (_hud!.ContainsScreenPoint(Input.mousePosition)
                 || _buildingPlacementMode.HasValue
                 || _caveRoomPreset.HasValue
-                || _excavationMode == DigExcavationDrawingMode.None
-                || _excavationMode == DigExcavationDrawingMode.Delete)
+                || _excavationMode == DigExcavationDrawingMode.None)
             {
                 _excavationCursorRenderer?.Hide();
                 return;
             }
 
-            CellId? target = _excavationMode == DigExcavationDrawingMode.Depth
-                ? ResolveDepthCursorTarget()
-                : ResolveTunnelCursorTarget();
+            CellId? target = erase
+                ? ResolveExcavationEraseTarget()
+                : _excavationMode == DigExcavationDrawingMode.Depth
+                    ? ResolveDepthCursorTarget()
+                    : ResolveTunnelCursorTarget();
+            if (!target.HasValue && erase)
+            {
+                target = ProjectPointerToLayer(0);
+            }
+
             if (!target.HasValue)
             {
                 _excavationCursorRenderer?.Hide();
@@ -50,7 +65,8 @@ namespace Dig.Unity
             EnsureExcavationCursorRenderer();
             _excavationCursorRenderer!.Show(
                 target.Value,
-                _excavationMode == DigExcavationDrawingMode.Depth);
+                _excavationMode == DigExcavationDrawingMode.Depth,
+                erase);
         }
 
         private CellId? ResolveTunnelCursorTarget()
