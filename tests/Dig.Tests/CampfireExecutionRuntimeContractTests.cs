@@ -27,6 +27,9 @@ public sealed class CampfireExecutionRuntimeContractTests
         string shared = Normalize(File.ReadAllText(Path.Combine(
             runtime,
             "DigPackableBuildingExecution.cs")));
+        string equipment = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigResidentEquipment.cs")));
 
         Assert.Contains("PackableBuildingExecutionRegistry", assembly);
         Assert.Contains("PackableBuildingOperationKind.Unpack", assembly);
@@ -47,6 +50,13 @@ public sealed class CampfireExecutionRuntimeContractTests
             < shared.IndexOf(
                 "_campfireIterationProgression.CompleteIteration",
                 StringComparison.Ordinal));
+
+        Assert.DoesNotContain(
+            "_buildingBoxAssemblyWork.SetWorkDuePolicy",
+            equipment);
+        Assert.DoesNotContain(
+            "_buildingPackingWork.SetWorkDuePolicy",
+            equipment);
     }
 
     private static string Normalize(string source)
