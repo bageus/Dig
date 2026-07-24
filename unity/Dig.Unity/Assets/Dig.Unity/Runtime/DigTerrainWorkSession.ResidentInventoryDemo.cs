@@ -12,7 +12,8 @@ namespace Dig.Unity
 internal sealed partial class DigTerrainWorkSession
 {
     private static InventoryState CreateDemoResidentInventory(
-        IReadOnlyList<TerrainDepositDefinition> depositDefinitions)
+        IReadOnlyList<TerrainDepositDefinition> depositDefinitions,
+        CellId campfireBoxCell)
     {
         if (depositDefinitions == null)
         {
@@ -63,7 +64,10 @@ internal sealed partial class DigTerrainWorkSession
                 }),
         };
         InventoryState inventory = new InventoryState(new ItemCatalog(
-            resourceItems.Concat(baseItems).Concat(expansions.Items)));
+            resourceItems
+                .Concat(baseItems)
+                .Append(CampfireBuildingBoxContent.Definition.BoxItem)
+                .Concat(expansions.Items)));
         EntityId residentId = DemoId('a', 1);
         AddResidentStack(
             inventory,
@@ -107,6 +111,12 @@ internal sealed partial class DigTerrainWorkSession
             residentId,
             ResidentInventoryCompartment.Weapon,
             1);
+        Require(inventory.AddStack(
+            DemoId('7', 1),
+            CampfireBuildingBoxContent.CampfireBoxItemId,
+            1,
+            ItemLocation.InWorld(campfireBoxCell),
+            tick: 0));
         return inventory;
     }
 
