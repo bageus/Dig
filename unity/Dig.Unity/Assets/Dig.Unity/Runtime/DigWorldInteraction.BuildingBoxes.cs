@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 using Dig.Presentation.Buildings;
@@ -40,6 +42,26 @@ namespace Dig.Unity
             _buildingBoxGhostRenderer?.Clear();
             _hud?.ClearBuildingPlacement();
             _hud?.SetStatus("Building placement cancelled.");
+        }
+
+        internal void SelectBuildingBoxFromHud(string stackId)
+        {
+            if (string.IsNullOrWhiteSpace(stackId))
+            {
+                throw new ArgumentException("BuildingBox stack id is required.", nameof(stackId));
+            }
+
+            WorldItemViewModel? item = _terrainSession!.LoadAllWorldItems()
+                .FirstOrDefault(value => value.IsBuildingBox
+                    && string.Equals(value.StackId, stackId, StringComparison.Ordinal));
+            if (item == null)
+            {
+                _selectedBuildingBox = null;
+                _hud?.SetStatus("building_box.selection.stale");
+                return;
+            }
+
+            SelectBuildingBox(item);
         }
 
         internal void ActivateSelectedBuildingBoxFromHud()
@@ -110,13 +132,7 @@ namespace Dig.Unity
         {
             if (item != null)
             {
-                _selectedBuildingBox = item.Model;
-                _selectedCell = null;
-                _renderer!.Select(null);
-                _agentRenderer!.Select(null);
-                _jobRenderer!.Select(null);
-                _buildingRenderer!.Select(null);
-                _hud!.SetStatus("BuildingBox selected.");
+                SelectBuildingBox(item.Model);
                 return;
             }
 
@@ -130,6 +146,19 @@ namespace Dig.Unity
             BeginBuildingPlacement(
                 stackId,
                 decision.TargetCell ?? new CellId(0, 0, 0));
+        }
+
+        private void SelectBuildingBox(WorldItemViewModel item)
+        {
+            _selectedBuildingBox = item
+                ?? throw new ArgumentNullException(nameof(item));
+            _selectedCell = null;
+            _renderer!.Select(null);
+            _agentRenderer!.ClearSelection();
+            _jobRenderer!.Select(null);
+            _buildingRenderer!.Select(null);
+            _hud!.SetBuildingSelection(null);
+            _hud.SetStatus("BuildingBox selected.");
         }
 
         private void BeginBuildingPlacement(string stackId, CellId origin)
