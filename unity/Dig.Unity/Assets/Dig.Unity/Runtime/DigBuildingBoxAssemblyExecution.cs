@@ -369,17 +369,5 @@ namespace Dig.Unity
                     "BuildingBox assembly execution is not initialized.");
             }
         }
-
-        private sealed class BuildingBoxAssemblyRoutePlan
-        {
-            public BuildingBoxAssemblyRoutePlan(CellId target, PathResult path)
-            {
-                Target = target;
-                Path = path;
-            }
-
-            public CellId Target { get; }
-            public PathResult Path { get; }
-        }
     }
 }
