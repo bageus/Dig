@@ -63,8 +63,9 @@ namespace Dig.Unity
             if (_manualGroupByJob.TryGetValue(jobId, out EntityId groupId)
                 && _manualGroups.TryGetValue(groupId, out ManualExcavationGroup? group))
             {
+                _manualGroupByJob.Remove(jobId);
                 group.Remove(jobId);
-                if (group.JobIds.Count == 0)
+                if (group.JobIds.Count == 0 && !HasPendingManualTargets(group))
                 {
                     _manualGroups.Remove(groupId);
                 }
