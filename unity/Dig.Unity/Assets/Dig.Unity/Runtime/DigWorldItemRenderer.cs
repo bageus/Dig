@@ -13,6 +13,7 @@ namespace Dig.Unity
         private const int MaximumPooledRoots = 64;
         private const float CampfireBoxFootprintSide = 0.35355339f;
         private const float CampfireBoxHeight = 0.30f;
+        private const float WorldItemFrontDepthOffset = 0.22f;
 
         private static readonly Color CampfireBoxTint =
             new Color(0.66f, 0.38f, 0.16f, 1f);
@@ -137,7 +138,7 @@ namespace Dig.Unity
                 item.CellZ) + new Vector3(
                     cellOffset.x,
                     floorOffset,
-                    cellOffset.y);
+                    cellOffset.y + WorldItemFrontDepthOffset);
         }
 
         private static Vector2 ResolveCellOffset(int slot)
