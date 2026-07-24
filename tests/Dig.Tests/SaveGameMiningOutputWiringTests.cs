@@ -68,7 +68,8 @@ public sealed class SaveGameMiningOutputWiringTests
                 "Stone",
                 isSolid: true,
                 hardness: 10,
-                isMineable: true),
+                isMineable: true,
+                outputProfile: null),
         });
 
         Result<WorldState> world = WorldState.CreateFilled(
