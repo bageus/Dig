@@ -55,7 +55,8 @@ public sealed class SaveGameService
             context.Jobs,
             context.Buildings,
             context.Agents,
-            context.TerrainDeposits));
+            context.TerrainDeposits,
+            context.PackableBuildingExecutions));
     }
 
     public Result<LoadedGameState> Load(
@@ -188,4 +189,5 @@ public sealed class SaveGameService
         return loaded;
     }
 }
+
 }
