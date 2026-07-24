@@ -14,7 +14,12 @@ public interface IAgentSkillGrantService
         SkillGrantBundle bundle);
 }
 
-public sealed class AgentSkillGrantService : IAgentSkillGrantService
+public interface IAgentSkillLevelReader
+{
+    Result<int> GetSkillUnits(EntityId agentId, AgentSkillId skillId);
+}
+
+public sealed class AgentSkillGrantService : IAgentSkillGrantService, IAgentSkillLevelReader
 {
     private readonly IAgentRepository _agents;
     private readonly IEventSink _events;
@@ -41,6 +46,33 @@ public sealed class AgentSkillGrantService : IAgentSkillGrantService
         return agent.IsAlive
             ? Result.Success()
             : Result.Failure(AgentErrors.AgentDead);
+    }
+
+    public Result<int> GetSkillUnits(EntityId agentId, AgentSkillId skillId)
+    {
+        if (agentId.IsEmpty)
+        {
+            throw new ArgumentException("Agent id cannot be empty.", nameof(agentId));
+        }
+
+        if (!AgentSkillCatalog.Contains(skillId))
+        {
+            throw new ArgumentException("Unknown authoritative skill.", nameof(skillId));
+        }
+
+        AgentState? agent = _agents.Get(agentId);
+        if (agent is null)
+        {
+            return Result<int>.Failure(AgentApplicationErrors.NotFound);
+        }
+
+        if (!agent.IsAlive)
+        {
+            return Result<int>.Failure(AgentErrors.AgentDead);
+        }
+
+        return Result<int>.Success(
+            agent.CreateSkillProgressionSnapshot().GetLevel(skillId));
     }
 
     public Result<SkillRedistributionReport> ApplyConfirmed(

@@ -90,11 +90,40 @@ public static class CampfireLogisticsTimingPolicy
 
 public sealed class CampfireIterationProgressionService
 {
+    private static readonly DomainError SkillReaderUnavailable = new DomainError(
+        "campfire.logistics.skill_reader_unavailable",
+        "Authoritative Logistics skill levels are unavailable.");
+
     private readonly IAgentSkillGrantService _skillGrants;
+    private readonly IAgentSkillLevelReader? _skillLevels;
 
     public CampfireIterationProgressionService(IAgentSkillGrantService skillGrants)
+        : this(skillGrants, skillGrants as IAgentSkillLevelReader)
+    {
+    }
+
+    public CampfireIterationProgressionService(
+        IAgentSkillGrantService skillGrants,
+        IAgentSkillLevelReader? skillLevels)
     {
         _skillGrants = skillGrants ?? throw new ArgumentNullException(nameof(skillGrants));
+        _skillLevels = skillLevels;
+    }
+
+    public Result<int> ResolveDurationSeconds(EntityId workerId)
+    {
+        if (_skillLevels == null)
+        {
+            return Result<int>.Failure(SkillReaderUnavailable);
+        }
+
+        Result<int> logistics = _skillLevels.GetSkillUnits(
+            workerId,
+            AgentSkillCatalog.Logistics);
+        return logistics.IsFailure
+            ? Result<int>.Failure(logistics.Error!)
+            : Result<int>.Success(
+                CampfireLogisticsTimingPolicy.ResolveDurationSeconds(logistics.Value));
     }
 
     public Result CompleteIteration(

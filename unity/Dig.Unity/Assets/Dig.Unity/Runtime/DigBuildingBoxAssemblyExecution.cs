@@ -35,6 +35,7 @@ namespace Dig.Unity
             }
 
             _packableBuildingExecutions ??= new PackableBuildingExecutionRegistry();
+            InitializePackableBuildingIterationProgression();
             _buildingBoxAssemblyCandidates = new InMemoryJobCandidateProvider();
             _buildingBoxAssemblyAssignment = new AssignAvailableJobsHandler(
                 _jobRepository,
@@ -257,20 +258,16 @@ namespace Dig.Unity
 
             if (step == BuildingBoxAssemblyExecutionStepKind.AddWork)
             {
-                Result added = _buildingBoxAssemblyWork!.Handle(
-                    new AddBuildingBoxAssemblyWorkCommand(
-                        assembly.BuildingId,
-                        assembly.Id,
-                        workAmount: 1,
-                        tick: tick));
-                if (added.IsFailure)
-                {
-                    return added;
-                }
-
-                return _packableBuildingExecutions!.CompleteIteration(
+                return ExecutePackableBuildingIteration(
                     assembly.Id,
-                    workerId);
+                    workerId,
+                    tick,
+                    () => _buildingBoxAssemblyWork!.Handle(
+                        new AddBuildingBoxAssemblyWorkCommand(
+                            assembly.BuildingId,
+                            assembly.Id,
+                            workAmount: 1,
+                            tick: tick)));
             }
 
             return ExecuteBuildingBoxAssemblyTransition(step, assembly, workerCell, tick);
@@ -319,7 +316,8 @@ namespace Dig.Unity
                 || _buildingBoxAssemblyWork == null
                 || _buildingBoxAssemblyComplete == null
                 || _buildingBoxAssemblyPathfinder == null
-                || _packableBuildingExecutions == null)
+                || _packableBuildingExecutions == null
+                || _campfireIterationProgression == null)
             {
                 throw new InvalidOperationException(
                     "BuildingBox assembly execution is not initialized.");

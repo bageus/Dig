@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using Dig.Application.Agents;
 using Dig.Application.Buildings;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
@@ -8,7 +10,29 @@ namespace Dig.Unity
 
 internal sealed partial class DigTerrainWorkSession
 {
+    private readonly Dictionary<EntityId, PackableBuildingIterationClock>
+        _packableBuildingIterationClocks =
+            new Dictionary<EntityId, PackableBuildingIterationClock>();
     private PackableBuildingExecutionRegistry? _packableBuildingExecutions;
+    private CampfireIterationProgressionService? _campfireIterationProgression;
+
+    private void InitializePackableBuildingIterationProgression()
+    {
+        if (_packableBuildingExecutions == null)
+        {
+            throw new InvalidOperationException(
+                "Packable building execution registry is not initialized.");
+        }
+
+        if (_skillGrants is not IAgentSkillLevelReader skillLevels)
+        {
+            throw new InvalidOperationException(
+                "The campfire runtime requires authoritative agent skill levels.");
+        }
+
+        _campfireIterationProgression ??=
+            new CampfireIterationProgressionService(_skillGrants, skillLevels);
+    }
 
     private Result<PackableBuildingExecutionState> GetOrCreatePackableBuildingExecution(
         EntityId operationId,
@@ -31,30 +55,79 @@ internal sealed partial class DigTerrainWorkSession
             totalIterations);
     }
 
-    private Result StartOrResumePackableBuildingExecution(
+    private Result ExecutePackableBuildingIteration(
         EntityId operationId,
-        EntityId workerId)
+        EntityId workerId,
+        long tick,
+        Func<Result> applyAuthoritativeWork)
     {
-        if (_packableBuildingExecutions == null)
+        if (applyAuthoritativeWork == null)
         {
-            throw new InvalidOperationException(
-                "Packable building execution registry is not initialized.");
+            throw new ArgumentNullException(nameof(applyAuthoritativeWork));
         }
 
-        return _packableBuildingExecutions.StartOrResume(operationId, workerId);
+        if (_packableBuildingExecutions == null || _campfireIterationProgression == null)
+        {
+            throw new InvalidOperationException(
+                "Packable building iteration progression is not initialized.");
+        }
+
+        if (!_packableBuildingIterationClocks.TryGetValue(
+                operationId,
+                out PackableBuildingIterationClock clock)
+            || clock.WorkerId != workerId)
+        {
+            Result<int> duration = _campfireIterationProgression.ResolveDurationSeconds(workerId);
+            if (duration.IsFailure)
+            {
+                return Result.Failure(duration.Error!);
+            }
+
+            _packableBuildingIterationClocks[operationId] =
+                new PackableBuildingIterationClock(workerId, tick, duration.Value);
+            return Result.Success();
+        }
+
+        long completionTick = checked(clock.StartTick + clock.DurationSeconds);
+        if (tick < completionTick)
+        {
+            return Result.Success();
+        }
+
+        Result applied = applyAuthoritativeWork();
+        if (applied.IsFailure)
+        {
+            return applied;
+        }
+
+        Result completed = _campfireIterationProgression.CompleteIteration(
+            _packableBuildingExecutions,
+            operationId,
+            workerId,
+            tick);
+        if (completed.IsSuccess)
+        {
+            _packableBuildingIterationClocks.Remove(operationId);
+        }
+
+        return completed;
     }
 
-    private Result CompletePackableBuildingIteration(
-        EntityId operationId,
-        EntityId workerId)
+    private readonly struct PackableBuildingIterationClock
     {
-        if (_packableBuildingExecutions == null)
+        public PackableBuildingIterationClock(
+            EntityId workerId,
+            long startTick,
+            int durationSeconds)
         {
-            throw new InvalidOperationException(
-                "Packable building execution registry is not initialized.");
+            WorkerId = workerId;
+            StartTick = startTick;
+            DurationSeconds = durationSeconds;
         }
 
-        return _packableBuildingExecutions.CompleteIteration(operationId, workerId);
+        public EntityId WorkerId { get; }
+        public long StartTick { get; }
+        public int DurationSeconds { get; }
     }
 }
 
