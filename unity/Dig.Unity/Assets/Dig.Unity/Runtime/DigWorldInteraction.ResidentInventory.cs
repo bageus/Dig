@@ -43,6 +43,47 @@ namespace Dig.Unity
                 altPressed: false);
         }
 
+        internal void BeginResidentInventoryBuildingPlacement(
+            ResidentInventoryLayoutSlotViewModel slot)
+        {
+            if (slot == null)
+            {
+                throw new System.ArgumentNullException(nameof(slot));
+            }
+
+            ResetInventoryClickSequence();
+            if (!slot.CanStartPlacement
+                || _agentRenderer?.SelectedModel == null
+                || _hud == null)
+            {
+                _hud?.SetStatus("input.inventory.building_placement_unavailable");
+                return;
+            }
+
+            var resident = _agentRenderer.SelectedModel;
+            EntityId residentId = EntityId.Parse(resident.Id);
+            EntityId stackId = EntityId.Parse(slot.StackId);
+            ContextInputState state = new ContextInputState(
+                selectedResidentId: residentId,
+                selectedResidentAlive: resident.IsAlive,
+                selectedInventoryStackId: stackId,
+                selectedInventoryItemUsable: false,
+                selectedInventoryItemIsBuildingBox: true,
+                canUseSelectedInventoryItem: false,
+                canDropSelectedInventoryItem: slot.CanDrop);
+            ContextPointerTarget target = new ContextPointerTarget(
+                ContextWorldTargetKind.GenericItem,
+                stackId,
+                new CellId(resident.CellX, resident.CellY, resident.CellZ));
+            ApplyDecision(_inputRouter.Route(
+                new ContextPointerEvent(
+                    PointerInputSurface.ResidentInventory,
+                    PointerButtonKind.Left,
+                    altPressed: false),
+                state,
+                target));
+        }
+
         internal void UseResidentInventorySlot(
             ResidentInventorySlotViewModel slot)
         {
