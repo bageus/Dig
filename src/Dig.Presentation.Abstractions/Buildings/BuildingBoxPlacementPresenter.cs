@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Dig.Domain.Buildings;
+using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
@@ -24,10 +25,29 @@ public sealed class BuildingBoxPlacementPresenter
         "The BuildingBox placement preview is not valid for confirmation.");
 
     private readonly BuildingPlacementValidator _validator;
+    private readonly PackableBuildingPlacementPolicyValidator _physicalValidator;
+    private readonly BuildingPlacementSurfaceFactProjector _surfaceFacts;
+    private readonly PackableBuildingContentCatalog _packableCatalog;
 
     public BuildingBoxPlacementPresenter(BuildingPlacementValidator validator)
+        : this(
+            validator,
+            new PackableBuildingPlacementPolicyValidator(),
+            CampfireBuildingBoxContent.Catalog)
+    {
+    }
+
+    public BuildingBoxPlacementPresenter(
+        BuildingPlacementValidator validator,
+        PackableBuildingPlacementPolicyValidator physicalValidator,
+        PackableBuildingContentCatalog packableCatalog)
     {
         _validator = validator ?? throw new ArgumentNullException(nameof(validator));
+        _physicalValidator = physicalValidator
+            ?? throw new ArgumentNullException(nameof(physicalValidator));
+        _surfaceFacts = new BuildingPlacementSurfaceFactProjector(_physicalValidator);
+        _packableCatalog = packableCatalog
+            ?? throw new ArgumentNullException(nameof(packableCatalog));
     }
 
     public BuildingBoxGhostViewModel Preview(
@@ -86,12 +106,39 @@ public sealed class BuildingBoxPlacementPresenter
                 placement.Error!.Code);
         }
 
+        IReadOnlyList<CellId> previewFootprint = placement.Footprint;
+        if (_packableCatalog.TryGet(
+            definition.Id,
+            out PackableBuildingContentDefinition? content))
+        {
+            PackableBuildingSurfacePolicy policy = content!.Placement.ToSurfacePolicy();
+            IReadOnlyList<BuildingPlacementSurfaceCell> surfaceCells =
+                _surfaceFacts.Project(policy, origin, world);
+            PackableBuildingPlacementPolicyResult physical = _physicalValidator.Validate(
+                policy,
+                origin,
+                surfaceCells,
+                occupiedCells);
+            if (!physical.Succeeded)
+            {
+                return Invalid(
+                    sourceStack!.StackId,
+                    definition,
+                    origin,
+                    orientation,
+                    physical.Footprint.CoveredCells,
+                    physical.Error!.Code);
+            }
+
+            previewFootprint = physical.Footprint.CoveredCells;
+        }
+
         return new BuildingBoxGhostViewModel(
             sourceStack!.StackId,
             definition.Id,
             origin,
             orientation,
-            placement.Footprint,
+            previewFootprint,
             placement.WorkPosition,
             isValid: true,
             reasonCode: null);

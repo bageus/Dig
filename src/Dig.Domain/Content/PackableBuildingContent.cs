@@ -178,10 +178,17 @@ public sealed class PackableBuildingContentCatalog
 
     public IReadOnlyList<PackableBuildingContentDefinition> Definitions { get; }
 
+    public bool TryGet(
+        BuildingDefinitionId id,
+        out PackableBuildingContentDefinition? definition)
+    {
+        return _byBuilding.TryGetValue(id, out definition);
+    }
+
     public PackableBuildingContentDefinition Get(BuildingDefinitionId id)
     {
-        return _byBuilding.TryGetValue(id, out PackableBuildingContentDefinition? value)
-            ? value
+        return TryGet(id, out PackableBuildingContentDefinition? value)
+            ? value!
             : throw new KeyNotFoundException($"Unknown packable building '{id}'.");
     }
 
