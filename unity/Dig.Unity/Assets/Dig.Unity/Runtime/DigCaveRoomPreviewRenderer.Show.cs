@@ -8,6 +8,9 @@ namespace Dig.Unity
 {
     public sealed partial class DigCaveRoomPreviewRenderer
     {
+        private static readonly Color MissingTunnelColor =
+            new Color(0.92f, 0.22f, 0.18f, 0.72f);
+
         internal void Show(
             CaveRoomPreset preset,
             CellId entrance,
@@ -38,7 +41,9 @@ namespace Dig.Unity
             _overlays!.ConfigureLineRenderer(
                 missingTunnel,
                 OverlayLayerKind.Preview,
-                OverlaySemanticKind.PreviewInvalid);
+                OverlaySemanticKind.PreviewValid);
+            missingTunnel.startColor = MissingTunnelColor;
+            missingTunnel.endColor = MissingTunnelColor;
             missingTunnel.enabled = true;
             missingTunnel.SetPosition(0, corners[0]);
             missingTunnel.SetPosition(1, corners[1]);
