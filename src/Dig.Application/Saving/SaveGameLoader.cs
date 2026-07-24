@@ -126,9 +126,10 @@ public sealed partial class SaveGameLoader
             }
 
             Result<PackableBuildingExecutionRegistry> packableExecutions =
-                PackableBuildingExecutionSaveDataAdapter.Decode(
-                    document.PackableBuildingExecutions
-                        ?? new PackableBuildingExecutionsSaveData());
+                RestorePackableBuildingExecutions(
+                    document.PackableBuildingExecutions,
+                    jobs.Value,
+                    buildings.Value);
             if (packableExecutions.IsFailure)
             {
                 return Result<LoadedGameState>.Failure(packableExecutions.Error!);
