@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using Dig.Application.Jobs;
+using Dig.Application.World;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 using UnityEngine;
@@ -96,44 +98,90 @@ namespace Dig.Unity
                 return false;
             }
 
-            RaycastHit[] hits = GetPointerHits();
-            for (int index = 0; index < hits.Length; index++)
+            CellId? target = ResolveExcavationEraseTarget();
+            if (!target.HasValue)
             {
-                if (!_jobRenderer!.TryGetJob(hits[index], out DigJobVisual job)
-                    || IsTerminalJobStatus(job.Model.Status)
-                    || !job.Model.TargetX.HasValue
-                    || !job.Model.TargetY.HasValue
-                    || !job.Model.TargetZ.HasValue
-                    || job.Model.TargetZ.Value <= 0)
-                {
-                    continue;
-                }
-
-                CellId target = new CellId(
-                    job.Model.TargetX.Value,
-                    job.Model.TargetY.Value,
-                    job.Model.TargetZ.Value);
-                if (_lastExcavationPaintCell.HasValue
-                    && _lastExcavationPaintCell.Value == target)
-                {
-                    return true;
-                }
-
-                Result<Dig.Application.World.EraseExcavationBatchReport> erased =
-                    _simulation!.ApplyExcavationEraseBatch(new[] { target });
-                if (erased.IsFailure)
-                {
-                    _hud.SetCommandResult(Result.Failure(erased.Error!));
-                    return true;
-                }
-
-                _lastExcavationPaintCell = target;
-                _renderer!.RemoveDepthDesignationTint(target);
-                _hud.SetStatus("Depth excavation designation erased.");
                 return true;
             }
 
-            return false;
+            if (_lastExcavationPaintCell.HasValue
+                && _lastExcavationPaintCell.Value == target.Value)
+            {
+                return true;
+            }
+
+            Result result = ApplyImmediateExcavationErase(target.Value);
+            _hud.SetCommandResult(result);
+            if (result.IsSuccess)
+            {
+                _lastExcavationPaintCell = target.Value;
+            }
+
+            return true;
+        }
+
+        private CellId? ResolveExcavationEraseTarget()
+        {
+            RaycastHit[] hits = GetPointerHits();
+            for (int index = 0; index < hits.Length; index++)
+            {
+                RaycastHit hit = hits[index];
+                if (_renderer!.TryGetDepthDesignation(hit, out CellId depthTarget))
+                {
+                    return depthTarget;
+                }
+
+                if (_jobRenderer!.TryGetJob(hit, out DigJobVisual job)
+                    && !IsTerminalJobStatus(job.Model.Status)
+                    && job.Model.TargetX.HasValue
+                    && job.Model.TargetY.HasValue
+                    && job.Model.TargetZ.HasValue)
+                {
+                    return new CellId(
+                        job.Model.TargetX.Value,
+                        job.Model.TargetY.Value,
+                        job.Model.TargetZ.Value);
+                }
+
+                if (_renderer.TryGetCell(hit, out DigCellVisual cell)
+                    && cell.Model.IsDesignated)
+                {
+                    return new CellId(cell.Model.X, cell.Model.Y, cell.Model.Z);
+                }
+
+                if (_renderer.TryGetWalkSurface(hit, out CellId walkSurface)
+                    && _session!.IsPlannedHorizontalTunnel(walkSurface))
+                {
+                    return walkSurface;
+                }
+            }
+
+            return null;
+        }
+
+        private Result ApplyImmediateExcavationErase(CellId target)
+        {
+            IReadOnlyList<CellId> expanded =
+                _session!.ExpandExcavationEraseCells(new[] { target });
+            Result<EraseExcavationBatchReport> erased =
+                _simulation!.ApplyExcavationEraseBatch(expanded);
+            if (erased.IsFailure)
+            {
+                return Result.Failure(erased.Error!);
+            }
+
+            for (int index = 0; index < expanded.Count; index++)
+            {
+                if (expanded[index].Z > 0)
+                {
+                    _renderer!.RemoveDepthDesignationTint(expanded[index]);
+                }
+            }
+
+            _hud!.SetStatus(
+                $"Removed {erased.Value.DesignationCount} designation(s) and cancelled "
+                + $"{erased.Value.CancelledJobIds.Count} job(s).");
+            return Result.Success();
         }
 
         private Result ApplyTunnelDepthStroke(CellId source)
