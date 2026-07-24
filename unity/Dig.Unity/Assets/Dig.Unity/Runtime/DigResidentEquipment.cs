@@ -16,7 +16,6 @@ namespace Dig.Unity
             new ResidentEquipmentPresenter();
         private EquipmentRates? _residentEquipmentRates;
         private ResidentWorkRatePresenter? _residentWorkRatePresenter;
-        private bool _constructionCadenceConfigured;
 
         internal EquipmentRates ResidentEquipmentRates =>
             _residentEquipmentRates ??= CreateDemoEquipmentRates();
@@ -29,7 +28,6 @@ namespace Dig.Unity
 
         internal IReadOnlyList<ResidentEquipmentViewModel> LoadResidentEquipment()
         {
-            ConfigureConstructionWorkCadence();
             InventorySnapshot[] snapshots = LoadResidentEquipmentSnapshots();
             return _residentEquipmentPresenter.Present(snapshots);
         }
@@ -42,7 +40,6 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(agents));
             }
 
-            ConfigureConstructionWorkCadence();
             InventorySnapshot[] snapshots = LoadResidentEquipmentSnapshots();
             return ResidentWorkRatePresenter.Present(
                 agents.Select(agent => agent.Id),
@@ -85,31 +82,6 @@ namespace Dig.Unity
                 workKind,
                 baseIntervalTicks,
                 snapshots);
-        }
-
-        private bool IsConstructionWorkDue(EntityId residentId, long tick)
-        {
-            int intervalTicks = ResolveConstructionWorkInterval(
-                residentId.ToString(),
-                ResidentConstructionBaseIntervalTicks);
-            return EquipmentWorkCadence.IsDue(tick, intervalTicks);
-        }
-
-        private void ConfigureConstructionWorkCadence()
-        {
-            if (_constructionCadenceConfigured)
-            {
-                return;
-            }
-
-            if (_buildingBoxAssemblyWork == null || _buildingPackingWork == null)
-            {
-                return;
-            }
-
-            _buildingBoxAssemblyWork.SetWorkDuePolicy(IsConstructionWorkDue);
-            _buildingPackingWork.SetWorkDuePolicy(IsConstructionWorkDue);
-            _constructionCadenceConfigured = true;
         }
 
         private InventorySnapshot[] LoadResidentEquipmentSnapshots()
