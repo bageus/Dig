@@ -183,6 +183,9 @@ public sealed class ResidentInventoryLayoutViewModel
 
 public sealed class ResidentInventoryLayoutPresenter
 {
+    private static readonly ItemCategoryId BuildingBoxCategoryId =
+        new ItemCategoryId("building.box");
+
     private readonly ItemId _buildingBoxItemId;
 
     public ResidentInventoryLayoutPresenter(ItemId buildingBoxItemId)
@@ -267,7 +270,8 @@ public sealed class ResidentInventoryLayoutPresenter
 
     private ResidentInventorySlotVisualKind ResolveVisualKind(ItemDefinition definition)
     {
-        if (definition.Id == _buildingBoxItemId)
+        if (definition.Id == _buildingBoxItemId
+            || definition.HasCategory(BuildingBoxCategoryId))
         {
             return ResidentInventorySlotVisualKind.BuildingBox;
         }
