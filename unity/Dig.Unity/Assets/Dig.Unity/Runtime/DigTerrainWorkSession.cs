@@ -114,7 +114,8 @@ internal sealed partial class DigTerrainWorkSession
                 && route.Succeeded
                 && route.WorkCell.HasValue
                 && agent.CellX == route.WorkCell.Value.X
-                && agent.CellY == route.WorkCell.Value.Y)
+                && agent.CellY == route.WorkCell.Value.Y
+                && agent.CellZ == route.WorkCell.Value.Z)
             {
                 result = AdvanceAtWorkCell(job, tick);
             }
@@ -152,21 +153,35 @@ internal sealed partial class DigTerrainWorkSession
             return _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick));
         }
 
-        if (tick % 3 != 0)
+        if (job.Stage == JobStageKind.Finalize)
+        {
+            return CompleteTerrainJobAtWorkCell(job, tick);
+        }
+
+        if (tick % 3 != 0 || job.Stage != JobStageKind.PerformWork)
         {
             return Result.Success();
         }
 
-        if (job.Stage == JobStageKind.PerformWork)
+        Result advanced = _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick));
+        if (advanced.IsFailure)
         {
-            return _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick));
+            return advanced;
         }
 
-        if (job.Stage != JobStageKind.Finalize)
+        JobSnapshot? updated = _jobRepository.Get().Get(job.Id);
+        if (updated == null)
         {
-            return Result.Success();
+            return Result.Failure(JobErrors.NotFound);
         }
 
+        return updated.Stage == JobStageKind.Finalize
+            ? CompleteTerrainJobAtWorkCell(updated, tick)
+            : Result.Success();
+    }
+
+    private Result CompleteTerrainJobAtWorkCell(JobSnapshot job, long tick)
+    {
         DigJobDefinition terrainJob = (DigJobDefinition)job.Definition;
         CellId targetCell = terrainJob.Target.CellId;
         MiningOutputPlan output;
