@@ -135,16 +135,20 @@ public sealed class ConfirmBuildingBoxPlacementHandler
             return Result.Failure(placement.Error!);
         }
 
-        PackableBuildingContentDefinition content = _packableCatalog.Get(definition.Id);
-        PackableBuildingSurfacePolicy policy = content.Placement.ToSurfacePolicy();
-        PackableBuildingPlacementPolicyResult physical = _physicalValidator.Validate(
-            policy,
-            command.Origin,
-            _surfaceFacts.Project(policy, command.Origin, world),
-            occupiedCells);
-        if (!physical.Succeeded)
+        if (_packableCatalog.TryGet(
+            definition.Id,
+            out PackableBuildingContentDefinition? content))
         {
-            return Result.Failure(physical.Error!);
+            PackableBuildingSurfacePolicy policy = content!.Placement.ToSurfacePolicy();
+            PackableBuildingPlacementPolicyResult physical = _physicalValidator.Validate(
+                policy,
+                command.Origin,
+                _surfaceFacts.Project(policy, command.Origin, world),
+                occupiedCells);
+            if (!physical.Succeeded)
+            {
+                return Result.Failure(physical.Error!);
+            }
         }
 
         Result reserved = inventory.ReserveQuantity(
