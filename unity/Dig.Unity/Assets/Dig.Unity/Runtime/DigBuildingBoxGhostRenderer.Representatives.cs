@@ -25,7 +25,9 @@ namespace Dig.Unity
             bool hasCatalogResolution = visualCatalog != null;
             if (visualCatalog != null)
             {
-                catalogResolution = ResolveCatalogBuildingBox(stableId);
+                catalogResolution = visualCatalog.ResolveBuilding(
+                    stableId,
+                    BuildingVisualState.Completed);
                 if (catalogResolution.HasProfile)
                 {
                     return catalogResolution;
@@ -35,7 +37,7 @@ namespace Dig.Unity
             if (_representatives != null
                 && _representatives.TryResolve(
                     stableId,
-                    BuildingVisualState.BuildingBox,
+                    BuildingVisualState.Completed,
                     out DigBuildingVisualResolution representative))
             {
                 return representative;
@@ -46,6 +48,8 @@ namespace Dig.Unity
                 return catalogResolution;
             }
 
+            // The confirmed delivery site is projected separately as
+            // BuildingVisualState.BuildingBox until the dwarf arrives.
             return new DigBuildingVisualResolution(
                 DigVisualAsset.CreateRuntimeFallback(stableId, Color.white),
                 Vector2Int.one,
