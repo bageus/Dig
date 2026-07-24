@@ -107,7 +107,7 @@ public sealed class MiningOutputIntegrityDiagnosticsTests
                 version: 1,
                 entries: new[]
                 {
-                    new TerrainOutputEntry(Stone, probabilityPermille: 1_000, quantity, quantity),
+                    new TerrainOutputEntry(Stone, 1_000, quantity, quantity),
                 })),
             new TerrainDepositState());
     }
