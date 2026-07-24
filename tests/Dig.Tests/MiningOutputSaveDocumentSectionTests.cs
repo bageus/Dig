@@ -13,6 +13,8 @@ public sealed class MiningOutputSaveDocumentSectionTests
     private static readonly ItemId Stone = new ItemId("material.stone");
     private static readonly EntityId StackId =
         EntityId.Parse("75000000000000000000000000000001");
+    private static readonly EntityId EmptyOutputCommitId =
+        EntityId.Parse("75000000000000000000000000000003");
 
     [Fact]
     public void Capture_and_restore_reuse_existing_integrity_and_data_contract_boundaries()
@@ -53,7 +55,7 @@ public sealed class MiningOutputSaveDocumentSectionTests
     {
         CellId cell = new CellId(4, 1, 0);
         MiningOutputCommitState commits = new MiningOutputCommitState();
-        commits.Record(ResolveStone(cell, quantity: 0), EntityId.Empty);
+        commits.Record(ResolveStone(cell, quantity: 0), EmptyOutputCommitId);
 
         Result<MiningOutputCommitsSaveData> captured =
             new MiningOutputSaveDocumentSection().Capture(
