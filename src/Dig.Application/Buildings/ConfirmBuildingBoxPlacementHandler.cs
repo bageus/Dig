@@ -4,9 +4,11 @@ using Dig.Application.Jobs;
 using Dig.Application.Messaging;
 using Dig.Application.World;
 using Dig.Domain.Buildings;
+using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
+using Dig.Domain.World;
 
 namespace Dig.Application.Buildings
 {
@@ -20,6 +22,9 @@ public sealed class ConfirmBuildingBoxPlacementHandler
     private readonly IInventoryRepository _inventoryRepository;
     private readonly IJobRepository _jobRepository;
     private readonly BuildingPlacementValidator _validator;
+    private readonly PackableBuildingPlacementPolicyValidator _physicalValidator;
+    private readonly BuildingPlacementSurfaceFactProjector _surfaceFacts;
+    private readonly PackableBuildingContentCatalog _packableCatalog;
     private readonly IEventSink _eventSink;
 
     public ConfirmBuildingBoxPlacementHandler(
@@ -29,6 +34,29 @@ public sealed class ConfirmBuildingBoxPlacementHandler
         IInventoryRepository inventoryRepository,
         IJobRepository jobRepository,
         BuildingPlacementValidator validator,
+        IEventSink eventSink)
+        : this(
+            catalog,
+            worldRepository,
+            buildingsRepository,
+            inventoryRepository,
+            jobRepository,
+            validator,
+            new PackableBuildingPlacementPolicyValidator(),
+            CampfireBuildingBoxContent.Catalog,
+            eventSink)
+    {
+    }
+
+    public ConfirmBuildingBoxPlacementHandler(
+        BuildingCatalog catalog,
+        IWorldRepository worldRepository,
+        IBuildingsRepository buildingsRepository,
+        IInventoryRepository inventoryRepository,
+        IJobRepository jobRepository,
+        BuildingPlacementValidator validator,
+        PackableBuildingPlacementPolicyValidator physicalValidator,
+        PackableBuildingContentCatalog packableCatalog,
         IEventSink eventSink)
     {
         _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
@@ -41,6 +69,11 @@ public sealed class ConfirmBuildingBoxPlacementHandler
         _jobRepository = jobRepository
             ?? throw new ArgumentNullException(nameof(jobRepository));
         _validator = validator ?? throw new ArgumentNullException(nameof(validator));
+        _physicalValidator = physicalValidator
+            ?? throw new ArgumentNullException(nameof(physicalValidator));
+        _surfaceFacts = new BuildingPlacementSurfaceFactProjector(_physicalValidator);
+        _packableCatalog = packableCatalog
+            ?? throw new ArgumentNullException(nameof(packableCatalog));
         _eventSink = eventSink ?? throw new ArgumentNullException(nameof(eventSink));
     }
 
@@ -88,16 +121,30 @@ public sealed class ConfirmBuildingBoxPlacementHandler
             return Result.Failure(BuildingBoxErrors.BoxMustBeSingle);
         }
 
+        WorldSnapshot world = _worldRepository.Get().CreateSnapshot();
+        var occupiedCells = buildings.GetOccupiedCells();
         BuildingPlacementResult placement = _validator.Validate(
             definition,
             command.Origin,
             command.Orientation,
-            _worldRepository.Get().CreateSnapshot(),
-            buildings.GetOccupiedCells(),
+            world,
+            occupiedCells,
             command.ReachableCells);
         if (!placement.Succeeded)
         {
             return Result.Failure(placement.Error!);
+        }
+
+        PackableBuildingContentDefinition content = _packableCatalog.Get(definition.Id);
+        PackableBuildingSurfacePolicy policy = content.Placement.ToSurfacePolicy();
+        PackableBuildingPlacementPolicyResult physical = _physicalValidator.Validate(
+            policy,
+            command.Origin,
+            _surfaceFacts.Project(policy, command.Origin, world),
+            occupiedCells);
+        if (!physical.Succeeded)
+        {
+            return Result.Failure(physical.Error!);
         }
 
         Result reserved = inventory.ReserveQuantity(
