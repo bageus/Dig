@@ -54,7 +54,11 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         BuildingDefinition definition = CreateDemoBuildingDefinition();
-        BuildingCatalog catalog = new BuildingCatalog(new[] { definition });
+        BuildingCatalog catalog = new BuildingCatalog(new[]
+        {
+            definition,
+            CampfireBuildingBoxContent.Definition.Building,
+        });
         CellId origin = FindDemoBuildingOrigin();
         CellId workPosition = new CellId(origin.X, origin.Y - 1, origin.Z);
         EntityId buildingId = DemoId('b', 1);
