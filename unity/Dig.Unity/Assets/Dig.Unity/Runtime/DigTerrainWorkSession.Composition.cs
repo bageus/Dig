@@ -5,6 +5,7 @@ using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Navigation;
+using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
@@ -190,6 +191,12 @@ internal sealed partial class DigTerrainWorkSession
             journal,
             new InventoryWorldPresenter(
                 new GetInventorySnapshotQueryHandler(inventory),
+                new Dictionary<ItemId, WorldItemInteractionKind>
+                {
+                    [DemoBuildingBoxItemId] = WorldItemInteractionKind.BuildingBox,
+                    [CampfireBuildingBoxContent.CampfireBoxItemId] =
+                        WorldItemInteractionKind.BuildingBox,
+                },
                 WorldItemInteractionKind.Pickup),
             new NavigationRoutePresenter(),
             jobs,
