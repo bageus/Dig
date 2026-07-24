@@ -15,11 +15,38 @@ namespace Dig.Unity
     {
         private readonly Dictionary<EntityId, ManualTunnelMovementOrder> _manualTunnelMovements =
             new Dictionary<EntityId, ManualTunnelMovementOrder>();
+        private readonly TunnelTrafficCoordinator _tunnelTraffic =
+            new TunnelTrafficCoordinator();
         private TunnelNavigationVolume? _tunnelVolume;
         private PlanAgentTunnelRouteCommandHandler? _tunnelRoutePlanner;
         private PlanAgentsTunnelRoutesCommandHandler? _groupTunnelRoutePlanner;
         private InMemoryExecutionJournal? _tunnelJournal;
         private DomainError? _manualTunnelMovementWarning;
+
+        private void BeginTunnelTrafficTick(long tick)
+        {
+            _tunnelTraffic.BeginTick(tick);
+        }
+
+        private Result MoveThroughTunnelTraffic(AgentState agent, CellId destination)
+        {
+            CellId current = agent.Position;
+            if (!_tunnelTraffic.CanMove(agent.Id, current, destination, _tick))
+            {
+                return Result.Success();
+            }
+
+            Result moved = _movementHandler.Handle(new MoveAgentCommand(
+                agent.Id,
+                destination,
+                _tick));
+            if (moved.IsSuccess)
+            {
+                _tunnelTraffic.RecordMove(agent.Id, current, destination, _tick);
+            }
+
+            return moved;
+        }
 
         internal TunnelNavigationVolume TunnelVolume => _tunnelVolume
             ?? throw new InvalidOperationException("Tunnel movement is not initialized.");
@@ -164,7 +191,14 @@ namespace Dig.Unity
                 }
             }
 
+            CellId current = agent.Position;
             CellId next = order.NextCell;
+            if (!_tunnelTraffic.CanMove(agent.Id, current, next, _tick))
+            {
+                result = Result.Success();
+                return true;
+            }
+
             Result moved = agent.MoveTo(next, _tick);
             if (moved.IsFailure)
             {
@@ -173,6 +207,7 @@ namespace Dig.Unity
                 return true;
             }
 
+            _tunnelTraffic.RecordMove(agent.Id, current, next, _tick);
             _repository.Save(agent);
             _tunnelJournal!.Append(agent.DequeueUncommittedEvents());
             order.ConfirmStep(next);

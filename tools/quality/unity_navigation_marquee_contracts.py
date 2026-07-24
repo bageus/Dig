@@ -231,17 +231,17 @@ def check_navigation_and_marquee_contracts(
         ("RetryPendingManualExcavations(tick)",),
     ))
 
-    # Forced excavation is no longer represented by persistent JobSystem groups.
+    # Forced excavation uses the same authoritative JobSystem movement and completion path.
     errors.extend(require_fragments(
         multi_worker,
         texts.get(multi_worker, ""),
-        "independent multi-worker quarter excavation",
+        "authoritative multi-worker excavation groups",
         (
             "AssignExcavationClusterToResidents",
-            "AssignManualQuarterExcavation(",
-            "Existing automatic jobs keep their owner",
-            "BindManualExcavationResidentState",
-            "ResolveManualMiningSkill",
+            "CreateManualExcavationGroups",
+            "RegisterManualExcavationGroup",
+            "AssignNextManualExcavation",
+            "ReleaseAssignmentsForAgents",
         ),
     ))
 

@@ -69,13 +69,36 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         _spatialDigJobs[plan.Target] = jobId;
-        _candidateProvider!.SetCandidates(
-            jobId,
-            CreateSpatialCandidates(agents, plan.Source));
         _jobRepository.Save(jobs);
         _journal.Append(jobs.DequeueUncommittedEvents());
-        _assignmentHandler!.Handle(new AssignAvailableJobsCommand(tick));
+        SynchronizeSpatialExcavations(tick, agents);
         return Result.Success();
+    }
+
+    internal void SynchronizeSpatialExcavations(
+        long tick,
+        IReadOnlyList<AgentViewModel> agents)
+    {
+        if (agents == null)
+        {
+            throw new ArgumentNullException(nameof(agents));
+        }
+
+        RequireSpatialExcavationInitialized();
+        foreach (JobSnapshot job in LoadActiveSpatialJobs())
+        {
+            if (job.Status != JobStatus.Available)
+            {
+                continue;
+            }
+
+            CellId work = ((SpatialDigJobDefinition)job.Definition).Target.WorkCell;
+            _candidateProvider!.SetCandidates(
+                job.Id,
+                CreateSpatialCandidates(agents, work));
+        }
+
+        _assignmentHandler!.Handle(new AssignAvailableJobsCommand(tick));
     }
 
     internal bool TryAssignSpatialExcavation(
@@ -238,7 +261,7 @@ internal sealed partial class DigTerrainWorkSession
         return job != null && !job.IsTerminal;
     }
 
-    private static IReadOnlyList<JobCandidate> CreateSpatialCandidates(
+    private IReadOnlyList<JobCandidate> CreateSpatialCandidates(
         IReadOnlyList<AgentViewModel> agents,
         CellId workCell)
     {
@@ -248,7 +271,7 @@ internal sealed partial class DigTerrainWorkSession
                 distanceCost: Math.Abs(agent.CellX - workCell.X)
                     + Math.Abs(agent.CellY - workCell.Y)
                     + Math.Abs(agent.CellZ - workCell.Z),
-                isAvailable: agent.IsAvailableForAutomaticPlanning
+                isAvailable: IsAvailableForAutomaticWork(agent)
                     && string.Equals(
                         agent.ScheduledActivity,
                         ScheduleActivity.Work.ToString(),

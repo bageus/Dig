@@ -53,15 +53,23 @@ internal sealed partial class DigAgentSession
             return true;
         }
 
+        CellId current = agent.Position;
         CellId next = path.Path.Cells.Count > 1
             ? path.Path.Cells[1]
             : destination;
+        if (!_tunnelTraffic.CanMove(agent.Id, current, next, _tick))
+        {
+            result = Result.Success();
+            return true;
+        }
+
         result = agent.MoveTo(next, _tick);
         if (result.IsFailure)
         {
             return true;
         }
 
+        _tunnelTraffic.RecordMove(agent.Id, current, next, _tick);
         _repository.Save(agent);
         _tunnelJournal.Append(agent.DequeueUncommittedEvents());
         return true;

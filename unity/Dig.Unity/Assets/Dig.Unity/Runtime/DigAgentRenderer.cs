@@ -50,6 +50,7 @@ namespace Dig.Unity
                 CreateAgent(model);
             }
 
+            ApplyCrowdingOffsets(agents);
             List<string> removed = new List<string>();
             foreach (KeyValuePair<string, DigAgentVisual> pair in _agents)
             {
