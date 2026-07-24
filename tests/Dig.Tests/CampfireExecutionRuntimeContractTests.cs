@@ -8,7 +8,7 @@ namespace Dig.Tests
 public sealed class CampfireExecutionRuntimeContractTests
 {
     [Fact]
-    public void Assembly_and_packing_runtime_record_authoritative_iterations_once()
+    public void Assembly_and_packing_runtime_gate_and_record_authoritative_iterations_once()
     {
         string root = FindRepositoryRoot();
         string runtime = Path.Combine(
@@ -24,21 +24,29 @@ public sealed class CampfireExecutionRuntimeContractTests
         string packing = Normalize(File.ReadAllText(Path.Combine(
             runtime,
             "DigBuildingPackingExecution.cs")));
+        string shared = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigPackableBuildingExecution.cs")));
 
         Assert.Contains("PackableBuildingExecutionRegistry", assembly);
         Assert.Contains("PackableBuildingOperationKind.Unpack", assembly);
         Assert.Contains("StartOrResume(assembly.Id,workerId)", assembly);
-        Assert.Contains("CompleteIteration(assembly.Id,workerId)", assembly);
-        Assert.True(
-            assembly.IndexOf("_buildingBoxAssemblyWork!.Handle", StringComparison.Ordinal)
-            < assembly.IndexOf("CompleteIteration(assembly.Id,workerId)", StringComparison.Ordinal));
+        Assert.Contains("ExecutePackableBuildingIteration(assembly.Id,workerId,tick", assembly);
+        Assert.Contains("_buildingBoxAssemblyWork!.Handle", assembly);
 
         Assert.Contains("PackableBuildingOperationKind.Pack", packing);
         Assert.Contains("StartOrResume(jobId,workerId)", packing);
-        Assert.Contains("CompleteIteration(jobId,workerId)", packing);
+        Assert.Contains("ExecutePackableBuildingIteration(jobId,workerId,tick", packing);
+        Assert.Contains("_buildingPackingWork!.Handle", packing);
+
+        Assert.Contains("ResolveDurationSeconds(workerId)", shared);
+        Assert.Contains("applyAuthoritativeWork()", shared);
+        Assert.Contains("_campfireIterationProgression.CompleteIteration", shared);
         Assert.True(
-            packing.IndexOf("_buildingPackingWork!.Handle", StringComparison.Ordinal)
-            < packing.IndexOf("CompleteIteration(jobId,workerId)", StringComparison.Ordinal));
+            shared.IndexOf("applyAuthoritativeWork()", StringComparison.Ordinal)
+            < shared.IndexOf(
+                "_campfireIterationProgression.CompleteIteration",
+                StringComparison.Ordinal));
     }
 
     private static string Normalize(string source)
