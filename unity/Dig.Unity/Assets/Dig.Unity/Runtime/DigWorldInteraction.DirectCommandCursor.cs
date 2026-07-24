@@ -68,7 +68,7 @@ namespace Dig.Unity
             }
 
             if (_excavationMode == DigExcavationDrawingMode.Depth
-                && ResolveTunnelDepthSource(hits).HasValue)
+                && ResolveTunnelDepthSource().HasValue)
             {
                 return DirectCommandCursorKind.Shovel;
             }
