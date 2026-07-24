@@ -111,7 +111,7 @@ public sealed class CampfireIterationProgressionService
         PackableBuildingExecutionState? execution = executions.Get(operationId);
         if (execution == null)
         {
-            return Result.Failure(Dig.Domain.Buildings.BuildingBoxErrors.JobTypeMismatch);
+            return Result.Failure(BuildingBoxErrors.JobTypeMismatch);
         }
 
         SkillGrantBundle grant = CampfireLogisticsTimingPolicy.CreateIterationGrant(
