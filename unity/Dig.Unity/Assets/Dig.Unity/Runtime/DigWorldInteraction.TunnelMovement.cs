@@ -92,6 +92,7 @@ namespace Dig.Unity
             _hud!.SetCommandResult(result);
             if (result.IsSuccess)
             {
+                PlayMovementCursorFeedback();
                 RefreshDirectCommandPresentation();
                 _hud!.SetStatus(
                     $"Moving {residentIds.Count} dwarf(s) to the selected point "
@@ -128,6 +129,13 @@ namespace Dig.Unity
                     continue;
                 }
 
+                if (_renderer!.TryGetDepthDesignation(hit, out CellId depthTarget))
+                {
+                    return AssignSpatialExcavation(
+                        new CellId(depthTarget.X, depthTarget.Y, depthTarget.Z - 1),
+                        residentIds);
+                }
+
                 CellId? surfaceTarget = ResolveExcavationTarget(hit);
                 if (surfaceTarget.HasValue)
                 {
@@ -153,34 +161,11 @@ namespace Dig.Unity
                         continue;
                     }
 
-                    if (!PrepareExplicitExcavationResidents(residentIds))
-                    {
-                        return true;
-                    }
-
                     CellId workCell = new CellId(
                         job.Model.TargetX.Value,
                         job.Model.TargetY.Value,
                         job.Model.TargetZ.Value - 1);
-                    bool found = _simulation!.TryAssignSpatialExcavation(
-                        workCell,
-                        residentIds,
-                        out Result assignment);
-                    if (!found)
-                    {
-                        continue;
-                    }
-
-                    _hud!.SetCommandResult(assignment);
-                    if (assignment.IsSuccess)
-                    {
-                        RefreshDirectCommandPresentation();
-                        _hud.SetStatus(
-                            $"Assigned {residentIds.Count} selected dwarf(s) to spatial excavation "
-                            + $"near X={workCell.X}, Y={workCell.Y}, Z={workCell.Z}.");
-                    }
-
-                    return true;
+                    return AssignSpatialExcavation(workCell, residentIds);
                 }
 
                 if (TryResolveTunnelDestination(hit, out _, out _))
@@ -190,6 +175,36 @@ namespace Dig.Unity
             }
 
             return false;
+        }
+
+        private bool AssignSpatialExcavation(
+            CellId workCell,
+            IReadOnlyList<string> residentIds)
+        {
+            if (!PrepareExplicitExcavationResidents(residentIds))
+            {
+                return true;
+            }
+
+            bool found = _simulation!.TryAssignSpatialExcavation(
+                workCell,
+                residentIds,
+                out Result assignment);
+            if (!found)
+            {
+                return false;
+            }
+
+            _hud!.SetCommandResult(assignment);
+            if (assignment.IsSuccess)
+            {
+                RefreshDirectCommandPresentation();
+                _hud.SetStatus(
+                    $"Assigned {residentIds.Count} selected dwarf(s) to spatial excavation "
+                    + $"near X={workCell.X}, Y={workCell.Y}, Z={workCell.Z}.");
+            }
+
+            return true;
         }
 
         private bool PrepareExplicitExcavationResidents(
