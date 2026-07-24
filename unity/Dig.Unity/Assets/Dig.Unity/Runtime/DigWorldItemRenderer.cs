@@ -85,9 +85,10 @@ namespace Dig.Unity
                 cellSlots.TryGetValue(cell, out int slot);
                 cellSlots[cell] = slot + 1;
 
+                DigItemVisualResolution resolution = Resolve(item.ItemId);
                 ItemStackVisualLayoutViewModel layout = _layoutPresenter.Present(item);
-                visual.Configure(item, layout, Resolve(item.ItemId));
-                visual.SetCellOffset(ResolveCellOffset(slot));
+                visual.Configure(item, layout, resolution);
+                PlaceOnFloor(visual, item, resolution, ResolveCellOffset(slot));
             }
 
             RemoveMissing(visible);
@@ -111,6 +112,24 @@ namespace Dig.Unity
 
             visual = null!;
             return false;
+        }
+
+        private static void PlaceOnFloor(
+            DigWorldItemVisual visual,
+            WorldItemViewModel item,
+            DigItemVisualResolution resolution,
+            Vector2 cellOffset)
+        {
+            float floorOffset = -DigTunnelProjection.RockCellHalfExtent
+                + (resolution.WorldScale.y * 0.5f)
+                + 0.02f;
+            visual.transform.position = DigTunnelProjection.ResidentWorldPosition(
+                item.CellX,
+                item.CellY,
+                item.CellZ) + new Vector3(
+                    cellOffset.x,
+                    floorOffset,
+                    cellOffset.y);
         }
 
         private static Vector2 ResolveCellOffset(int slot)
