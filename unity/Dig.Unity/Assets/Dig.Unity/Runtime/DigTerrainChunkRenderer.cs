@@ -184,7 +184,9 @@ namespace Dig.Unity
             {
                 DigTerrainMaterialKey key = keys[index];
                 Material? material = null;
-                if (key.State == DigTerrainSurfaceState.Solid && catalog != null)
+                bool usesTerrainSurface = key.State == DigTerrainSurfaceState.Solid
+                    || key.State == DigTerrainSurfaceState.Designated;
+                if (usesTerrainSurface && catalog != null)
                 {
                     material = key.HasVisibleDeposit
                         ? catalog.ResolveDeposit(key.DepositId, key.DepositState)
@@ -203,8 +205,11 @@ namespace Dig.Unity
             {
                 _materials = GetComponent<DigRenderMaterialLibrary>();
                 if (_materials == null)
+                {
                     _materials = gameObject.AddComponent<DigRenderMaterialLibrary>();
+                }
             }
+
             return _materials.Resolve(
                 RenderMaterialSemantic.Terrain,
                 RenderSurfaceKind.Lit,
@@ -256,6 +261,5 @@ namespace Dig.Unity
                 Destroy(visual.gameObject);
             }
         }
-
     }
 }
