@@ -26,7 +26,6 @@ namespace Dig.Unity
         private AddBuildingBoxAssemblyWorkHandler? _buildingBoxAssemblyWork;
         private CompleteBuildingBoxAssemblyHandler? _buildingBoxAssemblyComplete;
         private NavigationPathfinder? _buildingBoxAssemblyPathfinder;
-        private PackableBuildingExecutionRegistry? _packableBuildingExecutions;
 
         private void InitializeBuildingBoxAssemblyExecution(InMemoryExecutionJournal journal)
         {
@@ -234,7 +233,7 @@ namespace Dig.Unity
             }
 
             Result<PackableBuildingExecutionState> execution =
-                _packableBuildingExecutions!.GetOrCreate(
+                GetOrCreatePackableBuildingExecution(
                     assembly.Id,
                     assembly.BuildingId,
                     building.Definition.Id,
@@ -247,7 +246,7 @@ namespace Dig.Unity
 
             if (step == BuildingBoxAssemblyExecutionStepKind.StartJob)
             {
-                Result started = _packableBuildingExecutions.StartOrResume(assembly.Id, workerId);
+                Result started = StartOrResumePackableBuildingExecution(assembly.Id, workerId);
                 return started.IsFailure
                     ? started
                     : _advanceHandler.Handle(new AdvanceJobCommand(assembly.Id, tick));
@@ -266,9 +265,18 @@ namespace Dig.Unity
                     return added;
                 }
 
-                return _packableBuildingExecutions.CompleteIteration(assembly.Id, workerId);
+                return CompletePackableBuildingIteration(assembly.Id, workerId);
             }
 
+            return ExecuteBuildingBoxAssemblyTransition(step, assembly, workerCell, tick);
+        }
+
+        private Result ExecuteBuildingBoxAssemblyTransition(
+            BuildingBoxAssemblyExecutionStepKind step,
+            BuildingBoxAssemblyJobDefinition assembly,
+            CellId workerCell,
+            long tick)
+        {
             return step switch
             {
                 BuildingBoxAssemblyExecutionStepKind.AcquireBox =>
