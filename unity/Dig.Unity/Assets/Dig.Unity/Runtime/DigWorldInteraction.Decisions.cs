@@ -99,6 +99,7 @@ public sealed partial class DigWorldInteraction
             _hud!.SetAgentSelection(
                 selected?.Model,
                 _agentRenderer.SelectedCount);
+            _hud.ActivateResidentRosterForSelection();
         }
 
         if (decision.Effects.HasFlag(PresentationInputEffect.SelectBuilding))
@@ -121,6 +122,7 @@ public sealed partial class DigWorldInteraction
             _agentRenderer!.ClearSelection();
             _jobRenderer!.Select(null);
             _hud!.SetBuildingSelection(selected?.Model);
+            _hud.ActivateBuildingRosterForSelection();
         }
 
         if (decision.Effects.HasFlag(PresentationInputEffect.FocusResident)
