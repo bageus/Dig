@@ -247,7 +247,9 @@ namespace Dig.Unity
 
             if (step == BuildingBoxAssemblyExecutionStepKind.StartJob)
             {
-                Result started = StartOrResumePackableBuildingExecution(assembly.Id, workerId);
+                Result started = _packableBuildingExecutions!.StartOrResume(
+                    assembly.Id,
+                    workerId);
                 return started.IsFailure
                     ? started
                     : _advanceHandler.Handle(new AdvanceJobCommand(assembly.Id, tick));
@@ -266,7 +268,9 @@ namespace Dig.Unity
                     return added;
                 }
 
-                return CompletePackableBuildingIteration(assembly.Id, workerId);
+                return _packableBuildingExecutions!.CompleteIteration(
+                    assembly.Id,
+                    workerId);
             }
 
             return ExecuteBuildingBoxAssemblyTransition(step, assembly, workerCell, tick);
