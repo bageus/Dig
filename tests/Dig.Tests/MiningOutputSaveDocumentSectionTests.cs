@@ -53,7 +53,7 @@ public sealed class MiningOutputSaveDocumentSectionTests
     {
         CellId cell = new CellId(4, 1, 0);
         MiningOutputCommitState commits = new MiningOutputCommitState();
-        commits.Record(ResolveStone(cell, quantity: 0));
+        commits.Record(ResolveStone(cell, quantity: 0), EntityId.Empty);
 
         Result<MiningOutputCommitsSaveData> captured =
             new MiningOutputSaveDocumentSection().Capture(
