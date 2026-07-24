@@ -139,8 +139,10 @@ namespace Dig.Unity
 
             if (result.IsFailure)
             {
+                // A domain/job failure belongs to the affected command. Disabling the
+                // component here permanently stopped every resident and all later direct
+                // orders, even though the player could still issue input successfully.
                 Hud!.SetCommandResult(result);
-                enabled = false;
                 return;
             }
 
