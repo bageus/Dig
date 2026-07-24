@@ -101,16 +101,35 @@ namespace Dig.Unity
                 return;
             }
 
-            Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
-            if (!Physics.Raycast(ray, out RaycastHit hit, 500f)
-                || !_renderer.TryGetCell(hit, out DigCellVisual cell))
+            if (!TryResolveBuildingPlacementOrigin(GetPointerHits(), out CellId origin))
             {
                 return;
             }
 
-            UpdateBuildingPlacement(
-                _buildingPlacementMode.Value,
-                new CellId(cell.Model.X, cell.Model.Y, cell.Model.Z));
+            UpdateBuildingPlacement(_buildingPlacementMode.Value, origin);
+        }
+
+        private bool TryResolveBuildingPlacementOrigin(
+            RaycastHit[] hits,
+            out CellId origin)
+        {
+            for (int index = 0; index < hits.Length; index++)
+            {
+                RaycastHit hit = hits[index];
+                if (_renderer!.TryGetCell(hit, out DigCellVisual cell))
+                {
+                    origin = new CellId(cell.Model.X, cell.Model.Y, cell.Model.Z);
+                    return true;
+                }
+
+                if (TryResolveTunnelDestination(hit, out origin, out _))
+                {
+                    return true;
+                }
+            }
+
+            origin = default;
+            return false;
         }
 
         private void UpdateBuildingPlacement(
@@ -176,6 +195,11 @@ namespace Dig.Unity
             {
                 _hud!.SetCommandResult(Result.Failure(started.Error!));
                 return;
+            }
+
+            if (TryResolveBuildingPlacementOrigin(GetPointerHits(), out CellId hoveredOrigin))
+            {
+                origin = hoveredOrigin;
             }
 
             BuildingBoxPlacementModeState mode = started.Value;

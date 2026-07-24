@@ -138,20 +138,22 @@ namespace Dig.Unity
 
         private void ApplyCommandCursor(DirectCommandCursorKind kind)
         {
+            if (kind == DirectCommandCursorKind.Default)
+            {
+                if (_commandCursorKind != DirectCommandCursorKind.Default
+                    || _commandCursorFrame != -1)
+                {
+                    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+                }
+
+                _commandCursorKind = DirectCommandCursorKind.Default;
+                _commandCursorFrame = -1;
+                return;
+            }
+
             if (_commandCursorKind != kind)
             {
                 BeginCommandCursorAnimation(kind);
-            }
-
-            if (kind == DirectCommandCursorKind.Default)
-            {
-                if (_commandCursorFrame != -1)
-                {
-                    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-                    _commandCursorFrame = -1;
-                }
-
-                return;
             }
 
             Texture2D[] frames = ResolveCommandCursorFrames(kind);
