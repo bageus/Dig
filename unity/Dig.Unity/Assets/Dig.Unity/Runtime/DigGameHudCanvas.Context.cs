@@ -178,8 +178,19 @@ public sealed partial class DigGameHudCanvas
     private void ShowBuildingFunctions(BuildingWorldViewModel building)
     {
         BuildingFunctionsViewModel functions = building.Functions;
+        long tick = _simulation?.CurrentTick ?? 0;
+        PackableBuildingExecutionViewModel? operation = _terrainSession!
+            .LoadPackableBuildingExecutions(tick)
+            .FirstOrDefault(value => string.Equals(
+                value.PackageId,
+                building.Id,
+                StringComparison.Ordinal));
+        string progressSignature = operation == null
+            ? "none"
+            : $"{operation.Status}:{operation.CompletedIterations}:"
+                + $"{operation.ElapsedIterationSeconds}:{operation.ActiveWorkerId}";
         string signature = $"building:{building.Id}:{building.Version}:"
-            + $"{functions.IsPacking}:{functions.PackingCompletedWork}";
+            + $"{functions.IsPacking}:{functions.PackingCompletedWork}:{progressSignature}";
         if (!ApplyContextSignature(signature))
         {
             return;
@@ -191,21 +202,38 @@ public sealed partial class DigGameHudCanvas
             _bottomContent!,
             building.Name.ToUpperInvariant(),
             preferredWidth: 900f);
+        string detailsText = operation == null
+            ? $"Durability {functions.Durability}/{functions.MaximumDurability}"
+            : FormatPackableBuildingProgress(operation);
         Text details = CreateText(
             "Details",
             section,
-            $"Durability {functions.Durability}/{functions.MaximumDurability}",
+            detailsText,
             18,
             TextAnchor.MiddleCenter);
         details.gameObject.AddComponent<LayoutElement>().preferredHeight = 32f;
         BuildingFunctionActionViewModel action = functions.Actions[0];
+        string buttonLabel = operation?.IsInterrupted == true
+            ? "Continue"
+            : functions.IsPacking ? "Packing in progress" : "Pack into a box";
         Button pack = CreateButton(
             "Pack",
             section,
-            functions.IsPacking ? "Packing in progress" : "Pack into a box",
+            buttonLabel,
             () => ExecutePacking(building.Id),
             preferredHeight: 44f);
         pack.interactable = action.IsEnabled;
+        SetButtonActive(pack, operation != null && !operation.IsTerminal);
+    }
+
+    private static string FormatPackableBuildingProgress(
+        PackableBuildingExecutionViewModel operation)
+    {
+        string direction = operation.Operation.ToString();
+        string worker = operation.ActiveWorkerId ?? "Unassigned";
+        int percent = operation.IterationProgressBasisPoints / 100;
+        return $"{direction} · Iteration {operation.CurrentIteration}/"
+            + $"{operation.TotalIterations} · {percent}% · Worker {worker}";
     }
 
     private void ShowBuildingPlacement()
