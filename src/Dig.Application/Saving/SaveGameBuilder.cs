@@ -38,6 +38,8 @@ public sealed partial class SaveGameBuilder
             AgentSkills = BuildAgentSkills(context.Agents),
             AgentPositions = BuildAgentPositions(context.Agents),
             TerrainDeposits = BuildTerrainDeposits(context.TerrainDeposits),
+            PackableBuildingExecutions = PackableBuildingExecutionSaveDataAdapter.Encode(
+                context.PackableBuildingExecutions),
         };
     }
 
@@ -265,7 +267,6 @@ public sealed partial class SaveGameBuilder
 
         return data;
     }
-
 
     private static TerrainDepositsSaveData BuildTerrainDeposits(
         IEnumerable<TerrainDepositInstance> deposits)
