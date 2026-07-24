@@ -14,7 +14,7 @@ public sealed partial class InventoryState
         ItemLocation location,
         long tick)
     {
-        return AddStack(itemEntityId, itemId, quantity: 1, location, tick);
+        return AddStack(itemEntityId, itemId, 1, location, tick);
     }
 
     public Result AddUnits(
@@ -55,7 +55,7 @@ public sealed partial class InventoryState
         {
             _stacks.Add(
                 ids[index],
-                new ItemStackState(ids[index], itemId, quantity: 1, location));
+                new ItemStackState(ids[index], itemId, 1, location));
         }
 
         IncrementVersion();
