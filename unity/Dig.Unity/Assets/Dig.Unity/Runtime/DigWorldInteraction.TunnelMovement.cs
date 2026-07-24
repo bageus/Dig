@@ -79,21 +79,21 @@ namespace Dig.Unity
 
             CellId destination = target.MovementCell;
             Result result = residentIds.Count == 1
-                ? _simulation.MoveResidentThroughTunnel(
+                ? _simulation!.MoveResidentThroughTunnel(
                     residentIds[0],
                     destination,
                     target.MovementOffsetX,
                     _tunnelRenderer)
-                : _simulation.MoveResidentsThroughTunnel(
+                : _simulation!.MoveResidentsThroughTunnel(
                     residentIds,
                     destination,
                     target.MovementOffsetX,
                     _tunnelRenderer);
-            _hud.SetCommandResult(result);
+            _hud!.SetCommandResult(result);
             if (result.IsSuccess)
             {
                 RefreshDirectCommandPresentation();
-                _hud.SetStatus(
+                _hud!.SetStatus(
                     $"Moving {residentIds.Count} dwarf(s) to the selected point "
                     + $"through hidden cell X={destination.X}, Y={destination.Y}, Z={destination.Z}.");
             }
