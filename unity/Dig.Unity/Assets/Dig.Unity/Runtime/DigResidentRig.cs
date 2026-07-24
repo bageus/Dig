@@ -103,6 +103,25 @@ public sealed class DigResidentRig : MonoBehaviour
         }
     }
 
+    internal void ApplyClimbPose(float normalizedProgress, bool ascending)
+    {
+        float progress = Mathf.Clamp01(normalizedProgress);
+        float phase = (progress * Mathf.PI * 4f)
+            + (ascending ? 0f : Mathf.PI);
+        float armSwing = Mathf.Sin(phase) * 24f;
+        float legSwing = Mathf.Cos(phase) * 18f;
+        ResetPose();
+        transform.localRotation = Quaternion.Euler(
+            ascending ? 5f : -5f,
+            0f,
+            Mathf.Sin(phase) * 4f);
+        SetLimbPose(
+            -68f + armSwing,
+            -68f - armSwing,
+            16f - legSwing,
+            16f + legSwing);
+    }
+
     private void SetLimbPose(float leftArm, float rightArm, float leftLeg, float rightLeg)
     {
         _leftArm!.localRotation = Quaternion.Euler(leftArm, 0f, 0f);
