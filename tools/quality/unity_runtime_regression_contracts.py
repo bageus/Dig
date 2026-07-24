@@ -134,12 +134,12 @@ def check_runtime_regression_contracts(
             "string.Equals(status, \"Completed\", StringComparison.Ordinal)",
             "string.Equals(status, \"Cancelled\", StringComparison.Ordinal)",
             "string.Equals(status, \"Failed\", StringComparison.Ordinal)")),
-        (multi_worker, "forced excavation independent from job ownership", (
+        (multi_worker, "forced excavation follows authoritative jobs", (
             "AssignExcavationClusterToResidents",
-            "AssignManualQuarterExcavation(",
-            "Existing automatic jobs keep their owner",
-            "BindManualExcavationResidentState",
-            "ResolveManualMiningSkill")),
+            "CreateManualExcavationGroups",
+            "RegisterManualExcavationGroup",
+            "AssignNextManualExcavation",
+            "ReleaseAssignmentsForAgents")),
     )
     for path, name, fragments in checks:
         errors.extend(require_fragments(path, texts.get(path, ""), name, fragments))
