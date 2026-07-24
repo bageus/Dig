@@ -15,7 +15,7 @@ public sealed class CampfirePlacementPolicyTests
     [Fact]
     public void Campfire_uses_two_by_two_logical_coverage_for_one_point_five_square()
     {
-        PackableBuildingSurfacePolicy policy = CampfireBuildingBoxContent.Create()
+        PackableBuildingSurfacePolicy policy = CampfireBuildingBoxContent.Definition
             .Placement
             .ToSurfacePolicy();
 
@@ -33,7 +33,7 @@ public sealed class CampfirePlacementPolicyTests
     [Fact]
     public void Campfire_accepts_complete_flat_outdoor_surface()
     {
-        PackableBuildingSurfacePolicy policy = CampfireBuildingBoxContent.Create()
+        PackableBuildingSurfacePolicy policy = CampfireBuildingBoxContent.Definition
             .Placement
             .ToSurfacePolicy();
         CellId origin = new CellId(2, 3, 0);
@@ -50,7 +50,7 @@ public sealed class CampfirePlacementPolicyTests
     [Fact]
     public void Campfire_rejects_any_tunnel_cell_under_physical_footprint()
     {
-        PackableBuildingSurfacePolicy policy = CampfireBuildingBoxContent.Create()
+        PackableBuildingSurfacePolicy policy = CampfireBuildingBoxContent.Definition
             .Placement
             .ToSurfacePolicy();
         CellId origin = new CellId(2, 3, 0);
@@ -74,7 +74,7 @@ public sealed class CampfirePlacementPolicyTests
     [Fact]
     public void Campfire_rejects_non_flat_surface()
     {
-        PackableBuildingSurfacePolicy policy = CampfireBuildingBoxContent.Create()
+        PackableBuildingSurfacePolicy policy = CampfireBuildingBoxContent.Definition
             .Placement
             .ToSurfacePolicy();
         CellId origin = new CellId(2, 3, 0);
@@ -98,7 +98,7 @@ public sealed class CampfirePlacementPolicyTests
     [Fact]
     public void Campfire_rejects_overlap_in_any_conservatively_covered_cell()
     {
-        PackableBuildingSurfacePolicy policy = CampfireBuildingBoxContent.Create()
+        PackableBuildingSurfacePolicy policy = CampfireBuildingBoxContent.Definition
             .Placement
             .ToSurfacePolicy();
         CellId origin = new CellId(2, 3, 0);
@@ -117,7 +117,7 @@ public sealed class CampfirePlacementPolicyTests
     [Fact]
     public void Campfire_requires_surface_facts_for_every_covered_cell()
     {
-        PackableBuildingSurfacePolicy policy = CampfireBuildingBoxContent.Create()
+        PackableBuildingSurfacePolicy policy = CampfireBuildingBoxContent.Definition
             .Placement
             .ToSurfacePolicy();
         CellId origin = new CellId(2, 3, 0);
