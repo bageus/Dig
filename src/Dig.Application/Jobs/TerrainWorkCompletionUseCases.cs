@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Messaging;
@@ -235,7 +236,8 @@ public sealed class CompleteTerrainWorkCommandHandler
         }
 
         InventoryState inventory = _inventoryRepository.Get();
-        Result validation = ValidateOutput(inventory, command);
+        EntityId[] outputUnitIds = CreateOutputUnitIds(command);
+        Result validation = ValidateOutput(inventory, command, outputUnitIds);
         if (validation.IsFailure)
         {
             return Result<TerrainWorkCompletionResult>.Failure(validation.Error!);
@@ -249,10 +251,9 @@ public sealed class CompleteTerrainWorkCommandHandler
 
         if (command.ProducesOutput)
         {
-            Result added = inventory.AddStack(
-                command.OutputStackId,
+            Result added = inventory.AddUnits(
+                outputUnitIds,
                 command.OutputItemId,
-                command.OutputQuantity,
                 ItemLocation.InWorld(terrainJob.Target.CellId),
                 command.Tick);
             EnsureCommitStep(added.IsSuccess, added.Error);
@@ -304,9 +305,38 @@ public sealed class CompleteTerrainWorkCommandHandler
         }
     }
 
+    private static EntityId[] CreateOutputUnitIds(CompleteTerrainWorkCommand command)
+    {
+        if (!command.ProducesOutput)
+        {
+            return Array.Empty<EntityId>();
+        }
+
+        string seed = command.OutputStackId.ToString();
+        EntityId[] ids = new EntityId[command.OutputQuantity];
+        ids[0] = command.OutputStackId;
+
+        for (int index = 1; index < ids.Length; index++)
+        {
+            ids[index] = EntityId.Parse(CreateDerivedEntityId(seed, index));
+        }
+
+        return ids;
+    }
+
+    private static string CreateDerivedEntityId(string seed, int index)
+    {
+        const int suffixLength = 8;
+        string prefix = seed.Substring(0, seed.Length - suffixLength);
+        uint seedSuffix = Convert.ToUInt32(seed.Substring(seed.Length - suffixLength), 16);
+        uint derivedSuffix = checked(seedSuffix + (uint)index);
+        return prefix + derivedSuffix.ToString("x8");
+    }
+
     private static Result ValidateOutput(
         InventoryState inventory,
-        CompleteTerrainWorkCommand command)
+        CompleteTerrainWorkCommand command,
+        IReadOnlyList<EntityId> outputUnitIds)
     {
         if (!command.ProducesOutput)
         {
@@ -318,14 +348,17 @@ public sealed class CompleteTerrainWorkCommandHandler
             return Result.Failure(TerrainWorkCompletionErrors.UnknownOutputItem);
         }
 
-        if (inventory.GetStack(command.OutputStackId) is not null)
-        {
-            return Result.Failure(InventoryErrors.StackAlreadyExists);
-        }
-
         if (command.OutputQuantity <= 0)
         {
             return Result.Failure(InventoryErrors.InvalidQuantity);
+        }
+
+        foreach (EntityId outputUnitId in outputUnitIds)
+        {
+            if (inventory.GetStack(outputUnitId) is not null)
+            {
+                return Result.Failure(InventoryErrors.StackAlreadyExists);
+            }
         }
 
         ItemDefinition definition = inventory.Catalog.Get(command.OutputItemId);
