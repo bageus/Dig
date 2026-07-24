@@ -35,6 +35,7 @@ internal sealed partial class DigTerrainWorkSession
             throw new InvalidOperationException("Building demo state must be initialized first.");
         }
 
+        _packableBuildingExecutions ??= new PackableBuildingExecutionRegistry();
         _buildingPackingCandidates = new InMemoryJobCandidateProvider();
         _buildingPackingAssignment = new AssignAvailableJobsHandler(
             _jobRepository,
@@ -183,6 +184,8 @@ internal sealed partial class DigTerrainWorkSession
 
         result = ExecuteBuildingPackingStep(
             evaluated.Value,
+            building!,
+            job.AssignedAgentId!.Value,
             packing.BuildingId,
             job.Id,
             tick);
@@ -248,23 +251,56 @@ internal sealed partial class DigTerrainWorkSession
 
     private Result ExecuteBuildingPackingStep(
         BuildingBoxPackingExecutionStepKind step,
+        BuildingSnapshot building,
+        EntityId workerId,
         EntityId buildingId,
         EntityId jobId,
         long tick)
     {
+        if (step == BuildingBoxPackingExecutionStepKind.None)
+        {
+            return Result.Success();
+        }
+
+        Result<PackableBuildingExecutionState> execution =
+            _packableBuildingExecutions!.GetOrCreate(
+                jobId,
+                buildingId,
+                building.Definition.Id,
+                PackableBuildingOperationKind.Pack,
+                building.Definition.BoxPolicy!.PackingWork);
+        if (execution.IsFailure)
+        {
+            return Result.Failure(execution.Error!);
+        }
+
+        if (step == BuildingBoxPackingExecutionStepKind.StartJob)
+        {
+            Result started = _packableBuildingExecutions.StartOrResume(jobId, workerId);
+            return started.IsFailure
+                ? started
+                : _advanceHandler.Handle(new AdvanceJobCommand(jobId, tick));
+        }
+
+        if (step == BuildingBoxPackingExecutionStepKind.AddWork)
+        {
+            Result added = _buildingPackingWork!.Handle(new AddBuildingBoxPackingWorkCommand(
+                buildingId,
+                jobId,
+                workAmount: 1,
+                tick: tick));
+            if (added.IsFailure)
+            {
+                return added;
+            }
+
+            return _packableBuildingExecutions.CompleteIteration(jobId, workerId);
+        }
+
         return step switch
         {
-            BuildingBoxPackingExecutionStepKind.None => Result.Success(),
-            BuildingBoxPackingExecutionStepKind.StartJob =>
-                _advanceHandler.Handle(new AdvanceJobCommand(jobId, tick)),
             BuildingBoxPackingExecutionStepKind.AdvanceStage =>
                 _advanceHandler.Handle(new AdvanceJobCommand(jobId, tick)),
-            BuildingBoxPackingExecutionStepKind.AddWork =>
-                _buildingPackingWork!.Handle(new AddBuildingBoxPackingWorkCommand(
-                    buildingId,
-                    jobId,
-                    workAmount: 1,
-                    tick: tick)),
             BuildingBoxPackingExecutionStepKind.CompletePacking =>
                 _buildingPackingCompletion!.Handle(new CompleteBuildingBoxPackingCommand(
                     buildingId,
@@ -303,7 +339,8 @@ internal sealed partial class DigTerrainWorkSession
             || _buildingPackingWork == null
             || _buildingPackingCompletion == null
             || _buildingInventoryPresenter == null
-            || _buildingPackingPathfinder == null)
+            || _buildingPackingPathfinder == null
+            || _packableBuildingExecutions == null)
         {
             throw new InvalidOperationException(
                 "Building packing execution is not initialized.");
