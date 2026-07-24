@@ -60,10 +60,24 @@ public sealed class SaveGameMiningOutputWiringTests
 
     private static WorldState CreateWorld()
     {
-        return new WorldState(
+        MaterialId stone = new MaterialId("terrain.stone");
+        MaterialCatalog materials = new MaterialCatalog(new[]
+        {
+            new MaterialDefinition(
+                stone,
+                "Stone",
+                isSolid: true,
+                hardness: 10,
+                isMineable: true),
+        });
+
+        Result<WorldState> world = WorldState.CreateFilled(
             new WorldSize(4, 4, 4),
             chunkSize: 2,
-            new MaterialId("terrain.stone"));
+            materials,
+            stone);
+        Assert.True(world.IsSuccess);
+        return world.Value;
     }
 
     private static MiningOutputPlan ResolveStone(CellId cell)
