@@ -9,6 +9,8 @@ namespace Dig.Unity
         private Renderer[] _renderers = Array.Empty<Renderer>();
         private MaterialPropertyBlock? _properties;
 
+        internal Color CurrentTint { get; private set; } = Color.white;
+
         public void Configure(Material? material, Color tint)
         {
             EnsureRenderers();
@@ -27,6 +29,7 @@ namespace Dig.Unity
         public void SetTint(Color tint)
         {
             EnsureRenderers();
+            CurrentTint = tint;
             _properties ??= new MaterialPropertyBlock();
             for (int index = 0; index < _renderers.Length; index++)
             {
