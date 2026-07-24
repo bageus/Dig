@@ -50,10 +50,17 @@ public sealed class TerrainWorkCompletionTests
         CellSnapshot cell = world.GetCell(Target).Value;
         Assert.False(cell.IsSolid);
         Assert.Equal(CellDesignation.None, cell.State.Designation);
-        ItemStackSnapshot stack = Assert.IsType<ItemStackSnapshot>(
-            inventory.GetStack(outputId));
-        Assert.Equal(12, stack.Quantity);
-        Assert.Equal(ItemLocation.InWorld(Target), stack.Location);
+        ItemStackSnapshot[] outputUnits = inventory.CreateSnapshot().Stacks
+            .Where(stack => stack.ItemId == RockItem)
+            .OrderBy(stack => stack.StackId.ToString(), StringComparer.Ordinal)
+            .ToArray();
+        Assert.Equal(12, outputUnits.Length);
+        Assert.All(outputUnits, stack =>
+        {
+            Assert.Equal(1, stack.Quantity);
+            Assert.Equal(ItemLocation.InWorld(Target), stack.Location);
+        });
+        Assert.Equal(outputId, outputUnits[0].StackId);
         Assert.Equal(JobStatus.Completed, jobs.Get(JobId)!.Status);
         Assert.Empty(jobs.GetReservations());
         Assert.Contains(journal.Events, item => item is CellChanged);
@@ -210,22 +217,19 @@ public sealed class TerrainWorkCompletionTests
         InventoryState inventory = CreateInventory();
         EntityId later = Id("60000000000000000000000000000002");
         EntityId earlier = Id("60000000000000000000000000000001");
-        Assert.True(inventory.AddStack(
+        Assert.True(inventory.AddUnit(
             later,
             RockItem,
-            4,
             ItemLocation.InWorld(new CellId(4, 1)),
             tick: 1).IsSuccess);
-        Assert.True(inventory.AddStack(
+        Assert.True(inventory.AddUnit(
             earlier,
             RockItem,
-            3,
             ItemLocation.InWorld(new CellId(2, 1)),
             tick: 1).IsSuccess);
-        Assert.True(inventory.AddStack(
+        Assert.True(inventory.AddUnit(
             Id("60000000000000000000000000000003"),
             RockItem,
-            2,
             ItemLocation.InAgent(Id("10000000000000000000000000000001")),
             tick: 1).IsSuccess);
         InMemoryInventoryRepository repository = new InMemoryInventoryRepository(inventory);
