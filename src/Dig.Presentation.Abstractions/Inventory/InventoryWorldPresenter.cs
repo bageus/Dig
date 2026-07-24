@@ -11,9 +11,9 @@ namespace Dig.Presentation.Inventory
 public sealed class InventoryWorldPresenter
 {
     private readonly GetInventorySnapshotQueryHandler _queryHandler;
-    private readonly WorldItemInteractionKind _interactionKind;
-    private readonly ItemId? _interactiveItemId;
-    private readonly WorldItemInteractionKind _fallbackInteractionKind;
+    private readonly WorldItemInteractionKind _defaultInteractionKind;
+    private readonly IReadOnlyDictionary<ItemId, WorldItemInteractionKind>
+        _interactionOverrides;
 
     public InventoryWorldPresenter(
         GetInventorySnapshotQueryHandler queryHandler,
@@ -22,22 +22,65 @@ public sealed class InventoryWorldPresenter
         WorldItemInteractionKind fallbackInteractionKind = WorldItemInteractionKind.None)
     {
         _queryHandler = queryHandler ?? throw new ArgumentNullException(nameof(queryHandler));
-        if (!Enum.IsDefined(typeof(WorldItemInteractionKind), interactionKind)
-            || !Enum.IsDefined(typeof(WorldItemInteractionKind), fallbackInteractionKind))
+        ValidateInteractionKind(interactionKind, nameof(interactionKind));
+        ValidateInteractionKind(
+            fallbackInteractionKind,
+            nameof(fallbackInteractionKind));
+
+        Dictionary<ItemId, WorldItemInteractionKind> overrides =
+            new Dictionary<ItemId, WorldItemInteractionKind>();
+        if (interactiveItemId.HasValue)
         {
-            throw new ArgumentOutOfRangeException(nameof(interactionKind));
+            if (interactiveItemId.Value.IsEmpty)
+            {
+                throw new ArgumentException(
+                    "Interactive item id cannot be empty.",
+                    nameof(interactiveItemId));
+            }
+
+            overrides.Add(interactiveItemId.Value, interactionKind);
+            _defaultInteractionKind = fallbackInteractionKind;
+        }
+        else
+        {
+            _defaultInteractionKind = interactionKind;
         }
 
-        if (interactiveItemId.HasValue && interactiveItemId.Value.IsEmpty)
+        _interactionOverrides = overrides;
+    }
+
+    public InventoryWorldPresenter(
+        GetInventorySnapshotQueryHandler queryHandler,
+        IReadOnlyDictionary<ItemId, WorldItemInteractionKind> interactionOverrides,
+        WorldItemInteractionKind fallbackInteractionKind)
+    {
+        _queryHandler = queryHandler ?? throw new ArgumentNullException(nameof(queryHandler));
+        if (interactionOverrides == null)
         {
-            throw new ArgumentException(
-                "Interactive item id cannot be empty.",
-                nameof(interactiveItemId));
+            throw new ArgumentNullException(nameof(interactionOverrides));
         }
 
-        _interactionKind = interactionKind;
-        _interactiveItemId = interactiveItemId;
-        _fallbackInteractionKind = fallbackInteractionKind;
+        ValidateInteractionKind(
+            fallbackInteractionKind,
+            nameof(fallbackInteractionKind));
+        Dictionary<ItemId, WorldItemInteractionKind> overrides =
+            new Dictionary<ItemId, WorldItemInteractionKind>();
+        foreach (KeyValuePair<ItemId, WorldItemInteractionKind> pair
+            in interactionOverrides)
+        {
+            if (pair.Key.IsEmpty)
+            {
+                throw new ArgumentException(
+                    "Interaction override item ids cannot be empty.",
+                    nameof(interactionOverrides));
+            }
+
+            ValidateInteractionKind(pair.Value, nameof(interactionOverrides));
+            overrides.Add(pair.Key, pair.Value);
+        }
+
+        _defaultInteractionKind = fallbackInteractionKind;
+        _interactionOverrides = overrides;
     }
 
     public IReadOnlyList<WorldItemViewModel> Load()
@@ -64,14 +107,21 @@ public sealed class InventoryWorldPresenter
 
     private WorldItemInteractionKind ResolveInteraction(ItemId itemId)
     {
-        if (!_interactiveItemId.HasValue)
-        {
-            return _interactionKind;
-        }
+        return _interactionOverrides.TryGetValue(
+            itemId,
+            out WorldItemInteractionKind interaction)
+            ? interaction
+            : _defaultInteractionKind;
+    }
 
-        return _interactiveItemId.Value == itemId
-            ? _interactionKind
-            : _fallbackInteractionKind;
+    private static void ValidateInteractionKind(
+        WorldItemInteractionKind interactionKind,
+        string parameterName)
+    {
+        if (!Enum.IsDefined(typeof(WorldItemInteractionKind), interactionKind))
+        {
+            throw new ArgumentOutOfRangeException(parameterName);
+        }
     }
 }
 
