@@ -83,10 +83,17 @@ public sealed class PackableBuildingVisualCatalog
             values.ToDictionary(value => value.DefinitionId));
     }
 
+    public bool TryGet(
+        BuildingDefinitionId definitionId,
+        out PackableBuildingVisualProfile? profile)
+    {
+        return _profiles.TryGetValue(definitionId, out profile);
+    }
+
     public PackableBuildingVisualProfile Get(BuildingDefinitionId definitionId)
     {
-        return _profiles.TryGetValue(definitionId, out PackableBuildingVisualProfile? profile)
-            ? profile
+        return TryGet(definitionId, out PackableBuildingVisualProfile? profile)
+            ? profile!
             : throw new KeyNotFoundException(
                 $"Unknown packable building presentation profile '{definitionId}'.");
     }
