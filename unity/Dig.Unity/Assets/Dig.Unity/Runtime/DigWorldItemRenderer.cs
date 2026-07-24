@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Domain.Content;
 using Dig.Presentation.Inventory;
 using UnityEngine;
 
@@ -10,7 +11,11 @@ namespace Dig.Unity
     {
         private const string CatalogResourcePath = "Dig/VisualCatalogs/Items";
         private const int MaximumPooledRoots = 64;
+        private const float CampfireBoxFootprintSide = 0.35355339f;
+        private const float CampfireBoxHeight = 0.30f;
 
+        private static readonly Color CampfireBoxTint =
+            new Color(0.66f, 0.38f, 0.16f, 1f);
         private static readonly Vector2[] CellItemOffsets =
         {
             new Vector2(-0.24f, -0.10f),
@@ -88,7 +93,10 @@ namespace Dig.Unity
                 DigItemVisualResolution resolution = Resolve(item.ItemId);
                 ItemStackVisualLayoutViewModel layout = _layoutPresenter.Present(item);
                 visual.Configure(item, layout, resolution);
-                PlaceOnFloor(visual, item, resolution, ResolveCellOffset(slot));
+                Vector2 cellOffset = IsCampfireBox(item.ItemId)
+                    ? Vector2.zero
+                    : ResolveCellOffset(slot);
+                PlaceOnFloor(visual, item, resolution, cellOffset);
             }
 
             RemoveMissing(visible);
@@ -147,11 +155,16 @@ namespace Dig.Unity
 
         private DigItemVisualResolution Resolve(string itemId)
         {
-            if (visualCatalog != null)
-            {
-                return visualCatalog.ResolveItem(itemId);
-            }
+            DigItemVisualResolution resolution = visualCatalog != null
+                ? visualCatalog.ResolveItem(itemId)
+                : CreateFallbackResolution(itemId);
+            return IsCampfireBox(itemId)
+                ? CreateCampfireBoxResolution(itemId, resolution)
+                : resolution;
+        }
 
+        private static DigItemVisualResolution CreateFallbackResolution(string itemId)
+        {
             return new DigItemVisualResolution(
                 DigVisualAsset.CreateRuntimeFallback(itemId, Color.magenta),
                 icon: null,
@@ -162,6 +175,36 @@ namespace Dig.Unity
                 DigItemColliderPolicy.InteractiveOnly,
                 maxVisibleInstances: 4,
                 hasProfile: false);
+        }
+
+        private static DigItemVisualResolution CreateCampfireBoxResolution(
+            string itemId,
+            DigItemVisualResolution resolution)
+        {
+            DigVisualAsset asset = resolution.Asset.IsFallback
+                ? DigVisualAsset.CreateRuntimeFallback(itemId, CampfireBoxTint)
+                : resolution.Asset;
+            return new DigItemVisualResolution(
+                asset,
+                resolution.Icon,
+                DigItemCarrySocketPolicy.Cargo,
+                new Vector3(
+                    CampfireBoxFootprintSide,
+                    CampfireBoxHeight,
+                    CampfireBoxFootprintSide),
+                resolution.CarryScale,
+                DigItemRotationPolicy.Fixed,
+                DigItemColliderPolicy.InteractiveOnly,
+                maxVisibleInstances: 1,
+                hasProfile: true);
+        }
+
+        private static bool IsCampfireBox(string itemId)
+        {
+            return string.Equals(
+                itemId,
+                CampfireBuildingBoxContent.CampfireBoxItemId.ToString(),
+                StringComparison.Ordinal);
         }
 
         private DigWorldItemVisual AcquireVisual()
