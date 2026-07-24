@@ -132,7 +132,8 @@ namespace Dig.Unity
         {
             if (item != null)
             {
-                SelectBuildingBox(item.Model);
+                _selectedBuildingBox = item.Model;
+                SelectBuildingBox(_selectedBuildingBox);
                 return;
             }
 
