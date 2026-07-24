@@ -11,6 +11,15 @@ namespace Dig.Unity
         private const string CatalogResourcePath = "Dig/VisualCatalogs/Items";
         private const int MaximumPooledRoots = 64;
 
+        private static readonly Vector2[] CellItemOffsets =
+        {
+            new Vector2(-0.24f, -0.10f),
+            new Vector2(0.24f, -0.10f),
+            new Vector2(-0.12f, 0.13f),
+            new Vector2(0.12f, 0.13f),
+            new Vector2(0f, 0f),
+        };
+
         [SerializeField]
         private DigItemVisualCatalog? visualCatalog;
 
@@ -60,6 +69,8 @@ namespace Dig.Unity
 
             EnsureRoot();
             HashSet<string> visible = new HashSet<string>(StringComparer.Ordinal);
+            Dictionary<(int X, int Y, int Z), int> cellSlots =
+                new Dictionary<(int X, int Y, int Z), int>();
             for (int index = 0; index < items.Count; index++)
             {
                 WorldItemViewModel item = items[index];
@@ -70,8 +81,13 @@ namespace Dig.Unity
                     _visuals.Add(item.StackId, visual);
                 }
 
+                (int X, int Y, int Z) cell = (item.CellX, item.CellY, item.CellZ);
+                cellSlots.TryGetValue(cell, out int slot);
+                cellSlots[cell] = slot + 1;
+
                 ItemStackVisualLayoutViewModel layout = _layoutPresenter.Present(item);
                 visual.Configure(item, layout, Resolve(item.ItemId));
+                visual.SetCellOffset(ResolveCellOffset(slot));
             }
 
             RemoveMissing(visible);
@@ -95,6 +111,19 @@ namespace Dig.Unity
 
             visual = null!;
             return false;
+        }
+
+        private static Vector2 ResolveCellOffset(int slot)
+        {
+            if (slot < CellItemOffsets.Length)
+            {
+                return CellItemOffsets[slot];
+            }
+
+            int ringSlot = slot - CellItemOffsets.Length;
+            float angle = ringSlot * 2.39996323f;
+            float radius = Mathf.Min(0.32f, 0.20f + ((ringSlot / 6) * 0.04f));
+            return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
         }
 
         private DigItemVisualResolution Resolve(string itemId)
