@@ -346,18 +346,5 @@ internal sealed partial class DigTerrainWorkSession
                 "Building packing execution is not initialized.");
         }
     }
-
-    private sealed class BuildingPackingRoutePlan
-    {
-        public BuildingPackingRoutePlan(CellId target, PathResult path)
-        {
-            Target = target;
-            Path = path;
-        }
-
-        public CellId Target { get; }
-
-        public PathResult Path { get; }
-    }
 }
 }
