@@ -23,6 +23,12 @@ public sealed class PackableBuildingExecutionPresenterTests
         EntityId.Parse("88000000000000000000000000000005");
     private static readonly EntityId WorkerB =
         EntityId.Parse("88000000000000000000000000000006");
+    private static readonly EntityId LegacyOperation =
+        EntityId.Parse("88000000000000000000000000000007");
+    private static readonly EntityId LegacyPackage =
+        EntityId.Parse("88000000000000000000000000000008");
+    private static readonly BuildingDefinitionId LegacyWorkshopDefinition =
+        new BuildingDefinitionId("demo.workshop.box");
 
     [Fact]
     public void Active_unpack_projects_partial_visual_and_clamped_progress()
@@ -119,6 +125,23 @@ public sealed class PackableBuildingExecutionPresenterTests
             .ToArray();
 
         Assert.Equal(new[] { OperationA.ToString(), OperationB.ToString() }, operationIds);
+    }
+
+    [Fact]
+    public void Unsupported_legacy_packable_operations_are_not_projected()
+    {
+        PackableBuildingExecutionRegistry executions = new PackableBuildingExecutionRegistry();
+        Assert.True(executions.GetOrCreate(
+            LegacyOperation,
+            LegacyPackage,
+            LegacyWorkshopDefinition,
+            PackableBuildingOperationKind.Unpack,
+            totalIterations: 3).IsSuccess);
+
+        PackableBuildingExecutionViewModel[] values =
+            CreatePresenter().Load(executions, tick: 0).ToArray();
+
+        Assert.Empty(values);
     }
 
     private static PackableBuildingExecutionRegistry CreateRegistry(
