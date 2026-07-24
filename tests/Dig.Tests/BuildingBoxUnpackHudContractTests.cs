@@ -16,6 +16,8 @@ namespace Dig.Tests
                 runtime, "DigWorldInteraction.BuildingBoxes.cs"));
             string hud = File.ReadAllText(Path.Combine(
                 runtime, "DigGameHudCanvas.BuildingBoxes.cs"));
+            string context = File.ReadAllText(Path.Combine(
+                runtime, "DigGameHudCanvas.Context.cs"));
 
             Assert.Contains("_selectedBuildingBox = item.Model", interaction);
             Assert.Contains("ActivateSelectedBuildingBoxFromHud", interaction);
@@ -24,6 +26,8 @@ namespace Dig.Tests
             Assert.Contains("BuildingBoxFunctionsPresenter", hud);
             Assert.Contains("SetButtonActive(unpack, action.IsActive)", hud);
             Assert.Contains("action.IsActive ? \"Cancel unpacking\" : \"Unpack\"", hud);
+            Assert.Contains("ShowBuildingBoxFunctions(buildingBox)", context);
+            Assert.DoesNotContain("private void OnGUI()", hud);
         }
 
         private static string FindRepositoryRoot()

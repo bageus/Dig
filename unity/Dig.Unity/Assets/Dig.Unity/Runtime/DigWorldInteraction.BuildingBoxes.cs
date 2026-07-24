@@ -153,6 +153,12 @@ namespace Dig.Unity
             {
                 _selectedBuildingBox = item.Model;
                 SelectBuildingBox(_selectedBuildingBox);
+                BeginBuildingPlacement(
+                    _selectedBuildingBox.StackId,
+                    new CellId(
+                        _selectedBuildingBox.CellX,
+                        _selectedBuildingBox.CellY,
+                        _selectedBuildingBox.CellZ));
                 return;
             }
 

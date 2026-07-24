@@ -23,6 +23,13 @@ public sealed partial class DigGameHudCanvas
             return;
         }
 
+        WorldItemViewModel? buildingBox = _interaction.SelectedBuildingBox;
+        if (buildingBox != null)
+        {
+            ShowBuildingBoxFunctions(buildingBox);
+            return;
+        }
+
         if (_technologyDescriptionId != null)
         {
             ShowTechnologyDescriptionPanel(_technologyDescriptionId);
@@ -178,6 +185,12 @@ public sealed partial class DigGameHudCanvas
     private void ShowBuildingFunctions(BuildingWorldViewModel building)
     {
         BuildingFunctionsViewModel functions = building.Functions;
+        if (!building.IsSelectable || functions.Actions.Count == 0)
+        {
+            ShowBuildingProgress(building);
+            return;
+        }
+
         long tick = _simulation?.CurrentTick ?? 0;
         PackableBuildingExecutionViewModel? operation = _terrainSession!
             .LoadPackableBuildingExecutions(tick)

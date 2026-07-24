@@ -62,6 +62,7 @@ namespace Dig.Unity
 
                 if (_excavationMode == DigExcavationDrawingMode.None
                     && !_caveRoomPreset.HasValue
+                    && IsAltPressed()
                     && TryResolvePickableItemHoverTarget(hits))
                 {
                     return DirectCommandCursorKind.Pickup;

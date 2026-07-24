@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Inventory;
 using Dig.Domain.Core;
@@ -59,6 +60,43 @@ public sealed class WorldItemInteractionTests
         Assert.Equal(WorldItemInteractionKind.BuildingBox, box.InteractionKind);
         Assert.False(tool.IsBuildingBox);
         Assert.Equal(WorldItemInteractionKind.None, tool.InteractionKind);
+    }
+
+    [Fact]
+    public void Presenter_projects_two_box_types_once_and_keeps_other_items_as_pickups()
+    {
+        ItemId workshopBox = new ItemId("test.box.workshop");
+        ItemId campfireBox = new ItemId("test.box.campfire");
+        ItemId stone = new ItemId("test.stone");
+        InventoryState inventory = new InventoryState(new ItemCatalog(new[]
+        {
+            new ItemDefinition(workshopBox, "Workshop box", 1, false),
+            new ItemDefinition(campfireBox, "Campfire box", 1, false),
+            new ItemDefinition(stone, "Stone", 20, false),
+        }));
+        Assert.True(inventory.AddStack(
+            Id(11), workshopBox, 1, ItemLocation.InWorld(new CellId(1, 1)), 0).IsSuccess);
+        Assert.True(inventory.AddStack(
+            Id(12), campfireBox, 1, ItemLocation.InWorld(new CellId(2, 1)), 0).IsSuccess);
+        Assert.True(inventory.AddStack(
+            Id(13), stone, 3, ItemLocation.InWorld(new CellId(3, 1)), 0).IsSuccess);
+        InMemoryInventoryRepository repository = new InMemoryInventoryRepository(inventory);
+
+        WorldItemViewModel[] projected = new InventoryWorldPresenter(
+            new GetInventorySnapshotQueryHandler(repository),
+            new Dictionary<ItemId, WorldItemInteractionKind>
+            {
+                [workshopBox] = WorldItemInteractionKind.BuildingBox,
+                [campfireBox] = WorldItemInteractionKind.BuildingBox,
+            },
+            WorldItemInteractionKind.Pickup).Load().ToArray();
+
+        Assert.Equal(3, projected.Length);
+        Assert.Equal(3, projected.Select(item => item.StackId).Distinct().Count());
+        Assert.All(
+            projected.Where(item => item.ItemId != stone.ToString()),
+            item => Assert.True(item.IsBuildingBox));
+        Assert.True(projected.Single(item => item.ItemId == stone.ToString()).CanPickup);
     }
 
     private static EntityId Id(int value)

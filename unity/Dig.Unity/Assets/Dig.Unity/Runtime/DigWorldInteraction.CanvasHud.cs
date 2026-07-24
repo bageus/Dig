@@ -55,9 +55,9 @@ public sealed partial class DigWorldInteraction
                 value.Id,
                 buildingId,
                 StringComparison.Ordinal));
-        if (building == null || !building.IsSelectable)
+        if (building == null)
         {
-            _hud!.SetStatus("input.building.stale_or_incomplete");
+            _hud!.SetStatus("input.building.stale");
             return;
         }
 

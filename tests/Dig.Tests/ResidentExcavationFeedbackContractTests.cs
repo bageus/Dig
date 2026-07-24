@@ -120,15 +120,41 @@ public sealed class ResidentExcavationFeedbackContractTests
         string gravity = File.ReadAllText(Path.Combine(
             runtime,
             "DigTerrainWorkSession.WorldItemGravity.cs"));
+        string itemRenderer = File.ReadAllText(Path.Combine(
+            runtime,
+            "DigWorldItemRenderer.cs"));
+        string context = File.ReadAllText(Path.Combine(
+            runtime,
+            "DigGameHudCanvas.Context.cs"));
+        string boxHud = File.ReadAllText(Path.Combine(
+            runtime,
+            "DigGameHudCanvas.BuildingBoxes.cs"));
+        string itemProjection = File.ReadAllText(Path.Combine(
+            runtime,
+            "DigBuildingPackingExecution.cs"));
 
-        Assert.Contains("TryResolveBuildingBoxHit", priority);
-        Assert.Contains("IsAltPressed()", priority);
-        Assert.Contains("SelectBuildingBox(buildingBox.Model)", priority);
+        int boxPriority = priority.IndexOf(
+            "TryResolveBuildingBoxHit",
+            StringComparison.Ordinal);
+        int excavationGuard = priority.IndexOf(
+            "_excavationMode != DigExcavationDrawingMode.None",
+            StringComparison.Ordinal);
+        Assert.True(boxPriority >= 0 && boxPriority < excavationGuard);
+        Assert.Contains("altPressed: altPressed", priority);
+        Assert.Contains("BeginBuildingPlacement(", priority + File.ReadAllText(Path.Combine(
+            runtime,
+            "DigWorldInteraction.BuildingBoxes.cs")));
         Assert.Contains("TryResolveBuildingBoxHoverTarget", cursor);
+        Assert.Contains("&& IsAltPressed()", cursor);
         Assert.Contains("SelectBuildingBoxFromHud", roster);
+        Assert.DoesNotContain("Where(building => building.IsSelectable)", roster);
         Assert.Contains("SelectBuildingBoxFromManagement", management);
         Assert.Contains("WorldItemGravityPolicy.ResolveLandingCell", gravity);
         Assert.Contains("MoveAvailable", gravity);
+        Assert.Contains("WorldItemFrontDepthOffset", itemRenderer);
+        Assert.Contains("SelectedBuildingBox", context);
+        Assert.DoesNotContain("private void OnGUI()", boxHud);
+        Assert.DoesNotContain("Concat(_buildingInventoryPresenter.Load())", itemProjection);
     }
 
     private static string RuntimeRoot()

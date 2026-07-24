@@ -45,7 +45,6 @@ public sealed partial class DigGameHudCanvas
         IReadOnlyList<ResidentRosterRowViewModel> residents = residentRoster.Rows;
         IReadOnlyList<BuildingWorldViewModel> buildings = _terrainSession!
             .LoadBuildings()
-            .Where(building => building.IsSelectable)
             .OrderBy(building => building.Name, StringComparer.Ordinal)
             .ThenBy(building => building.Id, StringComparer.Ordinal)
             .ToArray();
@@ -111,7 +110,7 @@ public sealed partial class DigGameHudCanvas
             string marker = isSelected ? "■ " : string.Empty;
             string label = marker
                 + building.Name
-                + $" · Cell {building.OriginX},{building.OriginY}";
+                + $" · {building.Status} · Cell {building.OriginX},{building.OriginY}";
             Button row = CreateButton(
                 $"Building {id}",
                 _rightContent!,
