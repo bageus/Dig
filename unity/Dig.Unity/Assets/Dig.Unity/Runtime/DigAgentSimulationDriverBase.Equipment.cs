@@ -24,6 +24,7 @@ namespace Dig.Unity
             AgentRenderer.RenderEquipment(TerrainSession.LoadResidentEquipment());
             AgentRenderer.RenderInventoryAttachments(
                 TerrainSession.LoadResidentInventoryAttachments());
+            AgentRenderer.SynchronizeWorkFacing(TerrainSession.LoadJobs());
             Hud.SetResidentWorkRates(TerrainSession.LoadResidentWorkRates(agents));
         }
     }
