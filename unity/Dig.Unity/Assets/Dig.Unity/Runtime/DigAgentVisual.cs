@@ -35,6 +35,7 @@ public sealed partial class DigAgentVisual : MonoBehaviour
     private double _currentVisualX;
     private CellId? _freeformDestinationCell;
     private float _freeformDestinationOffsetX;
+    private float _crowdingOffsetX;
     private float _elapsed;
     private float _duration;
 
@@ -126,6 +127,17 @@ public sealed partial class DigAgentVisual : MonoBehaviour
         }
     }
 
+    internal void SetCrowdingOffset(float offsetX)
+    {
+        _crowdingOffsetX = Mathf.Clamp(offsetX, -0.36f, 0.36f);
+        _currentVisualX = ResolveVisualX(_currentX, _currentY, _currentZ);
+        if (_duration <= 0f)
+        {
+            _previousVisualX = _currentVisualX;
+            transform.position = ToWorld(_currentVisualX, _currentY, _currentZ);
+        }
+    }
+
     private double ResolveVisualX(int cellX, int cellY, int cellZ)
     {
         return _freeformDestinationCell.HasValue
@@ -133,7 +145,7 @@ public sealed partial class DigAgentVisual : MonoBehaviour
             && _freeformDestinationCell.Value.Y == cellY
             && _freeformDestinationCell.Value.Z == cellZ
                 ? cellX + _freeformDestinationOffsetX
-                : cellX;
+                : cellX + _crowdingOffsetX;
     }
 
     internal void SetEquipment(ResidentEquipmentViewModel? equipment,
