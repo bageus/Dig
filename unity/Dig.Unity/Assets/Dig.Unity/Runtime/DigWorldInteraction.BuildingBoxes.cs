@@ -2,6 +2,7 @@ using Dig.Domain.Core;
 using Dig.Domain.World;
 using Dig.Presentation.Buildings;
 using Dig.Presentation.Input;
+using Dig.Presentation.Inventory;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -12,6 +13,12 @@ namespace Dig.Unity
         private DigBuildingBoxGhostRenderer? _buildingBoxGhostRenderer;
         private BuildingBoxPlacementModeState? _buildingPlacementMode;
         private BuildingBoxGhostViewModel? _buildingPlacementPreview;
+        private WorldItemViewModel? _selectedBuildingBox;
+
+        internal WorldItemViewModel? SelectedBuildingBox => _selectedBuildingBox;
+
+        internal string? ActiveBuildingPlacementStackId =>
+            _buildingPlacementMode?.SourceStackId.ToString();
 
         internal void RotateBuildingPlacement(bool clockwise)
         {
@@ -33,6 +40,32 @@ namespace Dig.Unity
             _buildingBoxGhostRenderer?.Clear();
             _hud?.ClearBuildingPlacement();
             _hud?.SetStatus("Building placement cancelled.");
+        }
+
+        internal void ActivateSelectedBuildingBoxFromHud()
+        {
+            if (_selectedBuildingBox == null)
+            {
+                _hud?.SetStatus("building_box.action.no_selection");
+                return;
+            }
+
+            string stackId = _selectedBuildingBox.StackId;
+            if (string.Equals(
+                ActiveBuildingPlacementStackId,
+                stackId,
+                System.StringComparison.Ordinal))
+            {
+                CancelBuildingPlacement();
+                return;
+            }
+
+            BeginBuildingPlacement(
+                stackId,
+                new CellId(
+                    _selectedBuildingBox.CellX,
+                    _selectedBuildingBox.CellY,
+                    _selectedBuildingBox.CellZ));
         }
 
         private void UpdateBuildingPlacementHover()
@@ -75,13 +108,32 @@ namespace Dig.Unity
             ContextInputDecision decision,
             DigWorldItemVisual? item)
         {
-            string? stackId = decision.TargetEntityId?.ToString() ?? item?.Model.StackId;
+            if (item != null)
+            {
+                _selectedBuildingBox = item.Model;
+                _selectedCell = null;
+                _renderer!.Select(null);
+                _agentRenderer!.Select(null);
+                _jobRenderer!.Select(null);
+                _buildingRenderer!.Select(null);
+                _hud!.SetStatus("BuildingBox selected.");
+                return;
+            }
+
+            string? stackId = decision.TargetEntityId?.ToString();
             if (stackId == null)
             {
                 _hud!.SetStatus("input.building_box.missing_stack");
                 return;
             }
 
+            BeginBuildingPlacement(
+                stackId,
+                decision.TargetCell ?? new CellId(0, 0, 0));
+        }
+
+        private void BeginBuildingPlacement(string stackId, CellId origin)
+        {
             Result<BuildingBoxPlacementModeState> started =
                 _terrainSession!.BeginBuildingBoxPlacement(stackId);
             if (started.IsFailure)
@@ -90,10 +142,6 @@ namespace Dig.Unity
                 return;
             }
 
-            CellId origin = decision.TargetCell
-                ?? (item == null
-                    ? new CellId(0, 0, 0)
-                    : new CellId(item.Model.CellX, item.Model.CellY, item.Model.CellZ));
             BuildingBoxPlacementModeState mode = started.Value;
             BuildingBoxGhostViewModel preview =
                 _terrainSession.PreviewBuildingBoxPlacement(mode, origin);
@@ -131,6 +179,7 @@ namespace Dig.Unity
             var jobs = _terrainSession.LoadJobs();
             _jobRenderer!.Render(jobs);
             _hud!.SetJobs(jobs);
+            _selectedBuildingBox = null;
             CancelBuildingPlacement();
             _hud!.SetStatus("BuildingBox plan created.");
         }
@@ -156,6 +205,7 @@ namespace Dig.Unity
                 return;
             }
 
+            _selectedBuildingBox = null;
             var jobs = _terrainSession.LoadJobs();
             _jobRenderer!.Render(jobs);
             _hud!.SetJobs(jobs);
