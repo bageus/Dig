@@ -25,6 +25,7 @@ namespace Dig.Unity
             {
                 EntityId residentId = EntityId.Parse(residentIds[residentIndex]);
                 ClearManualGroupForAgent(residentId);
+                CancelManualQuarterExcavation(residentId.ToString());
                 JobSnapshot[] assigned = CollectAssignedActiveJobs(jobs, residentId);
                 for (int jobIndex = 0; jobIndex < assigned.Length; jobIndex++)
                 {
@@ -56,7 +57,8 @@ namespace Dig.Unity
                 if (!job.IsTerminal
                     && job.AssignedAgentId == residentId
                     && (job.Definition is WorldItemPickupJobDefinition
-                        || job.Definition is DigJobDefinition))
+                        || job.Definition is DigJobDefinition
+                        || job.Definition is SpatialDigJobDefinition))
                 {
                     assigned.Add(job);
                 }
