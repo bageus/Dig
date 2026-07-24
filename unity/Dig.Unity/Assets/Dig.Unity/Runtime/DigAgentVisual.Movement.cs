@@ -39,12 +39,12 @@ public sealed partial class DigAgentVisual
 
     private void Face(Vector3 direction)
     {
-        _isClimbing = Mathf.Abs(direction.y) > 0.001f
-            && Mathf.Abs(direction.x) < 0.001f
-            && Mathf.Abs(direction.z) < 0.001f;
+        _isClimbing = _previousX == _currentX
+            && _previousZ == _currentZ
+            && _previousY != _currentY;
         if (_isClimbing)
         {
-            _climbingAscending = direction.y > 0f;
+            _climbingAscending = _currentY < _previousY;
             FaceAwayFromMainCamera();
             _rig?.ApplyClimbPose(0f, _climbingAscending);
             return;
