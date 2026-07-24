@@ -205,9 +205,8 @@ namespace Dig.Unity
 
             if (_buildingRenderer!.TryGetBuilding(hit, out DigBuildingVisual building))
             {
-                ContextWorldTargetKind kind = building.Model.IsSelectable
-                    ? ContextWorldTargetKind.CompletedBuilding
-                    : ContextWorldTargetKind.None;
+                ContextWorldTargetKind kind =
+                    ContextWorldTargetKind.CompletedBuilding;
                 ContextPointerTarget target = new ContextPointerTarget(
                     kind,
                     EntityId.Parse(building.Model.Id),
