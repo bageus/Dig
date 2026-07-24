@@ -13,7 +13,7 @@ internal sealed partial class DigTerrainWorkSession
 {
     private static InventoryState CreateDemoResidentInventory(
         IReadOnlyList<TerrainDepositDefinition> depositDefinitions,
-        CellId campfireBoxCell)
+        CellId residentStartCell)
     {
         if (depositDefinitions == null)
         {
@@ -111,6 +111,10 @@ internal sealed partial class DigTerrainWorkSession
             residentId,
             ResidentInventoryCompartment.Weapon,
             1);
+        CellId campfireBoxCell = new CellId(
+            residentStartCell.X - 1,
+            residentStartCell.Y,
+            residentStartCell.Z);
         Require(inventory.AddStack(
             DemoId('7', 1),
             CampfireBuildingBoxContent.CampfireBoxItemId,
