@@ -17,6 +17,8 @@ namespace Dig.Unity
             new Color(0.68f, 0.86f, 0.62f, 0.32f);
         private static readonly Color DepthColor =
             new Color(0.74f, 0.62f, 0.90f, 0.28f);
+        private static readonly Color EraseColor =
+            new Color(0.58f, 0.58f, 0.58f, 0.42f);
 
         private readonly Dictionary<CellId, GameObject> _tunnelDesignations =
             new Dictionary<CellId, GameObject>();
@@ -34,10 +36,15 @@ namespace Dig.Unity
             _overlays = overlays;
         }
 
-        internal void Show(CellId cell, bool depth)
+        internal void Show(CellId cell, bool depth, bool erase)
         {
             _marker ??= CreateMarker("Excavation tool cursor", sortingOrder: 50);
-            PlaceMarker(_marker, cell, depth ? DepthColor : TunnelColor, overlap: false);
+            Color color = erase
+                ? EraseColor
+                : depth
+                    ? DepthColor
+                    : TunnelColor;
+            PlaceMarker(_marker, cell, color, overlap: false);
         }
 
         internal void Hide()
