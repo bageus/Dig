@@ -50,9 +50,9 @@ public sealed class ExcavationContinuationRuntimeContractTests
         string visual = Normalize(File.ReadAllText(Path.Combine(
             runtime, "DigAgentVisual.cs")));
 
-        Assert.Contains("_tunnelTraffic.BeginTick(_tick)", session);
-        Assert.Contains("_tunnelTraffic.CanMove", session);
-        Assert.Contains("_tunnelTraffic.RecordMove", session);
+        Assert.Contains("BeginTunnelTrafficTick(_tick)", session);
+        Assert.Contains("MoveThroughTunnelTraffic(agent,destination)", session);
+        Assert.Contains("_tunnelTraffic.BeginTick(tick)", manual);
         Assert.Contains("_tunnelTraffic.CanMove", manual);
         Assert.Contains("_tunnelTraffic.RecordMove", manual);
         Assert.Contains("_tunnelTraffic.CanMove", spatial);
