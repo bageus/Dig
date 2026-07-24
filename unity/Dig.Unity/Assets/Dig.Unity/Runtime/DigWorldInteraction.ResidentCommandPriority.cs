@@ -16,51 +16,48 @@ public sealed partial class DigWorldInteraction
             return false;
         }
 
-        // Excavation drawing owns the left mouse button while an excavation tool is active.
-        // Resident, creature and world-item shortcuts must not cancel or consume that stroke.
-        if (_excavationMode != DigExcavationDrawingMode.None)
-        {
-            return false;
-        }
-
         RaycastHit[] hits = GetPointerHits();
+        // BuildingBoxes remain actionable while the excavation palette is active.
+        // Otherwise the default tunnel tool consumes the click before placement or pickup.
         if (TryResolveBuildingBoxHit(hits, out DigWorldItemVisual buildingBox))
         {
             CancelResidentMarquee();
             DisableExcavationDrawing();
             DisableCaveRoomPlanning();
-            if (IsAltPressed())
+            ContextPointerTarget boxTarget = new ContextPointerTarget(
+                ContextWorldTargetKind.BuildingBox,
+                EntityId.Parse(buildingBox.Model.StackId),
+                new CellId(
+                    buildingBox.Model.CellX,
+                    buildingBox.Model.CellY,
+                    buildingBox.Model.CellZ),
+                reachable: true,
+                supportsAltInteraction: buildingBox.Model.AvailableQuantity == 1);
+            bool altPressed = IsAltPressed();
+            if (altPressed && _agentRenderer!.SelectedCount == 0)
             {
-                if (_agentRenderer!.SelectedCount == 0)
-                {
-                    SelectBuildingBox(buildingBox.Model);
-                    _hud.SetStatus("Select a dwarf before ordering BuildingBox pickup.");
-                    return true;
-                }
-
-                ContextPointerTarget boxTarget = new ContextPointerTarget(
-                    ContextWorldTargetKind.BuildingBox,
-                    EntityId.Parse(buildingBox.Model.StackId),
-                    new CellId(
-                        buildingBox.Model.CellX,
-                        buildingBox.Model.CellY,
-                        buildingBox.Model.CellZ),
-                    reachable: true,
-                    supportsAltInteraction: buildingBox.Model.AvailableQuantity == 1);
-                ApplyDecision(
-                    _inputRouter.Route(
-                        new ContextPointerEvent(
-                            PointerInputSurface.World,
-                            PointerButtonKind.Left,
-                            altPressed: true),
-                        BuildState(PointerButtonKind.Left),
-                        boxTarget),
-                    item: buildingBox);
+                SelectBuildingBox(buildingBox.Model);
+                _hud.SetStatus("Select a dwarf before ordering BuildingBox pickup.");
                 return true;
             }
 
-            SelectBuildingBox(buildingBox.Model);
+            ApplyDecision(
+                _inputRouter.Route(
+                    new ContextPointerEvent(
+                        PointerInputSurface.World,
+                        PointerButtonKind.Left,
+                        altPressed: altPressed),
+                    BuildState(PointerButtonKind.Left),
+                    boxTarget),
+                item: buildingBox);
             return true;
+        }
+
+        // Excavation drawing owns ground clicks while a tool is active, but not the
+        // BuildingBox branch above.
+        if (_excavationMode != DigExcavationDrawingMode.None)
+        {
+            return false;
         }
 
         if (_agentRenderer!.SelectedCount > 0
@@ -86,7 +83,7 @@ public sealed partial class DigWorldInteraction
             ContextPointerTarget itemTarget = new ContextPointerTarget(
                 ContextWorldTargetKind.GenericItem,
                 EntityId.Parse(item.Model.StackId),
-                new CellId(item.Model.CellX, item.Model.CellY),
+                new CellId(item.Model.CellX, item.Model.CellY, item.Model.CellZ),
                 reachable: true,
                 supportsAltInteraction: item.Model.CanPickup);
             ApplyDecision(
@@ -94,7 +91,7 @@ public sealed partial class DigWorldInteraction
                     new ContextPointerEvent(
                         PointerInputSurface.World,
                         PointerButtonKind.Left,
-                        altPressed: true),
+                        altPressed: IsAltPressed()),
                     BuildState(PointerButtonKind.Left),
                     itemTarget),
                 item: item);
