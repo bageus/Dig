@@ -263,7 +263,7 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         Result<PackableBuildingExecutionState> execution =
-            _packableBuildingExecutions!.GetOrCreate(
+            GetOrCreatePackableBuildingExecution(
                 jobId,
                 buildingId,
                 building.Definition.Id,
@@ -276,7 +276,7 @@ internal sealed partial class DigTerrainWorkSession
 
         if (step == BuildingBoxPackingExecutionStepKind.StartJob)
         {
-            Result started = _packableBuildingExecutions.StartOrResume(jobId, workerId);
+            Result started = StartOrResumePackableBuildingExecution(jobId, workerId);
             return started.IsFailure
                 ? started
                 : _advanceHandler.Handle(new AdvanceJobCommand(jobId, tick));
@@ -294,7 +294,7 @@ internal sealed partial class DigTerrainWorkSession
                 return added;
             }
 
-            return _packableBuildingExecutions.CompleteIteration(jobId, workerId);
+            return CompletePackableBuildingIteration(jobId, workerId);
         }
 
         return step switch
