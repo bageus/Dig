@@ -47,6 +47,11 @@ public sealed partial class InventoryState : AggregateRoot
             return Result.Failure(InventoryErrors.InvalidQuantity);
         }
 
+        if (RequiresUnitEntity(location) && quantity != 1)
+        {
+            return Result.Failure(InventoryErrors.UnitLocationRequiresSingleItem);
+        }
+
         if (quantity > definition.MaximumStackSize)
         {
             return Result.Failure(InventoryErrors.StackSizeExceeded);
@@ -184,6 +189,12 @@ public sealed partial class InventoryState : AggregateRoot
     private void IncrementVersion()
     {
         Version = checked(Version + 1);
+    }
+
+    private static bool RequiresUnitEntity(ItemLocation location)
+    {
+        return location.Kind == ItemLocationKind.World
+            || location.Kind == ItemLocationKind.AgentInventory;
     }
 
     private static void ValidateJobId(EntityId jobId)
