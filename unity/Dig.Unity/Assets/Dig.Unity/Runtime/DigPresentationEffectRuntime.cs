@@ -12,7 +12,7 @@ using UnityEngine;
 namespace Dig.Unity
 {
 [DisallowMultipleComponent]
-public sealed class DigPresentationEffectRuntime : MonoBehaviour
+public sealed partial class DigPresentationEffectRuntime : MonoBehaviour
 {
     private const int AmbientDustIntervalTicks = 6;
     private readonly PresentationDomainEffectProjector _projector =
@@ -76,6 +76,7 @@ public sealed class DigPresentationEffectRuntime : MonoBehaviour
         Dictionary<string, PresentationEffectFact> frame =
             new Dictionary<string, PresentationEffectFact>(_queued, StringComparer.Ordinal);
         AddPersistentEmitters(frame, tick);
+        AddPackableBuildingIterationEffects(frame, tick);
         _bridge!.Present(new List<PresentationEffectFact>(frame.Values), _camera);
         _queued.Clear();
     }
