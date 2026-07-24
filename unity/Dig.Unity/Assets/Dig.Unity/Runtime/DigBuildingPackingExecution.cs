@@ -235,18 +235,10 @@ internal sealed partial class DigTerrainWorkSession
 
     internal IReadOnlyList<WorldItemViewModel> LoadAllWorldItems()
     {
-        IReadOnlyList<WorldItemViewModel> terrainItems = _inventoryPresenter.Load();
-        if (_buildingInventoryPresenter == null)
-        {
-            return terrainItems;
-        }
-
-        return terrainItems
-            .Concat(_buildingInventoryPresenter.Load())
-            .OrderBy(item => item.CellY)
-            .ThenBy(item => item.CellX)
-            .ThenBy(item => item.StackId, StringComparer.Ordinal)
-            .ToArray();
+        // The demo uses one authoritative inventory repository for terrain output,
+        // ordinary world items, and BuildingBoxes. Project it exactly once; concatenating
+        // a second presenter produced duplicate stack ids with conflicting interaction kinds.
+        return _inventoryPresenter.Load();
     }
 
     private Result ExecuteBuildingPackingStep(
