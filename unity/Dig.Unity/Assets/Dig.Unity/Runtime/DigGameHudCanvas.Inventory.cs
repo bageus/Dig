@@ -179,7 +179,13 @@ public sealed partial class DigGameHudCanvas
 
         bool altPressed = Input.GetKey(KeyCode.LeftAlt)
             || Input.GetKey(KeyCode.RightAlt);
-        if (eventData.button == PointerEventData.InputButton.Right
+        if (eventData.button == PointerEventData.InputButton.Left
+            && !altPressed
+            && slot.CanStartPlacement)
+        {
+            _interaction!.BeginResidentInventoryBuildingPlacement(slot);
+        }
+        else if (eventData.button == PointerEventData.InputButton.Right
             || eventData.clickCount >= 2)
         {
             if (!ConfirmExpansionSpill(slot))
@@ -211,10 +217,6 @@ public sealed partial class DigGameHudCanvas
                     ? "This item is already held."
                     : "This item cannot be used now.");
             }
-        }
-        else if (slot.CanStartPlacement)
-        {
-            _interaction!.ActivateResidentInventoryLayoutSlot(slot);
         }
         else if (!slot.IsHeld)
         {
