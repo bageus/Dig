@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Inventory;
 using UnityEngine;
@@ -11,6 +12,41 @@ public sealed partial class DigAgentRenderer
     private const float ResidentWorldScale = 0.5f;
     private readonly ResidentVisualPresenter _residentVisualPresenter = new ResidentVisualPresenter();
     private DigResidentVisualCatalog? _residentVisualCatalog;
+
+    private void ApplyCrowdingOffsets(IReadOnlyList<AgentViewModel> agents)
+    {
+        Dictionary<string, List<AgentViewModel>> occupants =
+            new Dictionary<string, List<AgentViewModel>>(StringComparer.Ordinal);
+        for (int index = 0; index < agents.Count; index++)
+        {
+            AgentViewModel agent = agents[index];
+            string cell = $"{agent.CellX}:{agent.CellY}:{agent.CellZ}";
+            if (!occupants.TryGetValue(cell, out List<AgentViewModel>? values))
+            {
+                values = new List<AgentViewModel>();
+                occupants.Add(cell, values);
+            }
+
+            values.Add(agent);
+        }
+
+        foreach (List<AgentViewModel> values in occupants.Values)
+        {
+            values.Sort((left, right) => string.Compare(
+                left.Id,
+                right.Id,
+                StringComparison.Ordinal));
+            for (int index = 0; index < values.Count; index++)
+            {
+                float centered = index - ((values.Count - 1) * 0.5f);
+                float offset = values.Count == 1 ? 0f : centered * 0.18f;
+                if (_agents.TryGetValue(values[index].Id, out DigAgentVisual? visual))
+                {
+                    visual.SetCrowdingOffset(offset);
+                }
+            }
+        }
+    }
 
     private void CreateResidentAgent(AgentViewModel model)
     {
