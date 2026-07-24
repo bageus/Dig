@@ -22,6 +22,24 @@ public sealed class GameplayRegressionContractTests
     }
 
     [Fact]
+    public void Surface_excavation_rebinds_remaining_cells_after_job_reconciliation()
+    {
+        string runtime = RuntimeRoot();
+        string manual = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigTerrainWorkManualExcavation.cs")));
+        string state = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigTerrainWorkManualExcavation.State.cs")));
+
+        Assert.Contains("RefreshManualExcavationGroupJobs(group)", manual);
+        Assert.Contains("group.TargetCells", manual);
+        Assert.Contains("HasPendingManualTargets(group)", manual);
+        Assert.Contains("internalIReadOnlyList<CellId>TargetCells", state);
+        Assert.Contains("internalvoidAdd(EntityIdjobId)", state);
+    }
+
+    [Fact]
     public void Vertical_climbing_uses_authoritative_cell_transition_despite_visual_offset()
     {
         string movement = Normalize(File.ReadAllText(Path.Combine(
@@ -33,6 +51,23 @@ public sealed class GameplayRegressionContractTests
         Assert.Contains("_previousY!=_currentY", movement);
         Assert.Contains("_climbingAscending=_currentY<_previousY", movement);
         Assert.DoesNotContain("Mathf.Abs(direction.x)<0.001f", movement);
+    }
+
+    [Fact]
+    public void Movement_cursor_is_cleared_as_soon_as_command_feedback_expires()
+    {
+        string runtime = RuntimeRoot();
+        string cursor = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigWorldInteraction.DirectCommandCursor.cs")));
+        string movement = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigWorldInteraction.TunnelMovement.cs")));
+
+        Assert.Contains("Time.unscaledTime<_movementCursorExpiresAt", cursor);
+        Assert.Contains("kind==DirectCommandCursorKind.Default", cursor);
+        Assert.Contains("Cursor.SetCursor(null,Vector2.zero,CursorMode.Auto)", cursor);
+        Assert.Contains("PlayMovementCursorFeedback()", movement);
     }
 
     [Fact]
@@ -52,6 +87,27 @@ public sealed class GameplayRegressionContractTests
         Assert.Contains("ResetInventoryClickSequence()", interaction);
         Assert.Contains("PointerInputSurface.ResidentInventory", interaction);
         Assert.Contains("PointerButtonKind.Left", interaction);
+    }
+
+    [Fact]
+    public void Building_placement_follows_side_view_cells_and_uses_the_building_silhouette()
+    {
+        string runtime = RuntimeRoot();
+        string interaction = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigWorldInteraction.BuildingBoxes.cs")));
+        string ghost = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigBuildingBoxGhostRenderer.cs")));
+        string representatives = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigBuildingBoxGhostRenderer.Representatives.cs")));
+
+        Assert.Contains("TryResolveBuildingPlacementOrigin(GetPointerHits()", interaction);
+        Assert.Contains("TryResolveTunnelDestination(hit,outorigin,out_)", interaction);
+        Assert.Contains("DigTunnelProjection.CellWorldPosition(preview.Origin)", ghost);
+        Assert.Contains("DigTunnelProjection.CellWorldPosition(cell)", ghost);
+        Assert.Contains("BuildingVisualState.Completed", representatives);
     }
 
     private static string RuntimeRoot()
