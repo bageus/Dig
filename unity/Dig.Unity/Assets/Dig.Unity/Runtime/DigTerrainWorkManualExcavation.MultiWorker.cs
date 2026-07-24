@@ -108,15 +108,15 @@ namespace Dig.Unity
             IReadOnlyList<EntityId> agents,
             IReadOnlyList<JobSnapshot> jobs)
         {
-            List<EntityId>[] buckets = new List<EntityId>[agents.Count];
+            List<JobSnapshot>[] buckets = new List<JobSnapshot>[agents.Count];
             for (int index = 0; index < buckets.Length; index++)
             {
-                buckets[index] = new List<EntityId>();
+                buckets[index] = new List<JobSnapshot>();
             }
 
             for (int index = 0; index < jobs.Count; index++)
             {
-                buckets[index % buckets.Length].Add(jobs[index].Id);
+                buckets[index % buckets.Length].Add(jobs[index]);
             }
 
             List<ManualExcavationGroup> groups =
@@ -129,9 +129,11 @@ namespace Dig.Unity
                 }
 
                 groups.Add(new ManualExcavationGroup(
-                    buckets[index][0],
+                    buckets[index][0].Id,
                     agents[index],
-                    buckets[index]));
+                    buckets[index].Select(job => job.Id),
+                    buckets[index].Select(job =>
+                        ((DigJobDefinition)job.Definition).Target.CellId)));
             }
 
             return groups;

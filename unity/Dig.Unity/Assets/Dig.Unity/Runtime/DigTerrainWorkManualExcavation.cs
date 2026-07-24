@@ -74,7 +74,8 @@ namespace Dig.Unity
             ManualExcavationGroup group = new ManualExcavationGroup(
                 groupId,
                 agentId,
-                jobIds);
+                jobIds,
+                cluster);
             _manualGroups[groupId] = group;
             for (int index = 0; index < jobIds.Count; index++)
             {
@@ -121,9 +122,14 @@ namespace Dig.Unity
 
             group.Remove(completedJobId);
             _manualGroupByJob.Remove(completedJobId);
+            RefreshManualExcavationGroupJobs(group);
             if (group.JobIds.Count == 0)
             {
-                _manualGroups.Remove(groupId);
+                if (!HasPendingManualTargets(group))
+                {
+                    _manualGroups.Remove(groupId);
+                }
+
                 return Result.Success();
             }
 
@@ -142,6 +148,17 @@ namespace Dig.Unity
             for (int index = 0; index < groups.Length; index++)
             {
                 ManualExcavationGroup group = groups[index];
+                RefreshManualExcavationGroupJobs(group);
+                if (group.JobIds.Count == 0)
+                {
+                    if (!HasPendingManualTargets(group))
+                    {
+                        ClearManualGroup(group);
+                    }
+
+                    continue;
+                }
+
                 bool alreadyAssigned = group.JobIds
                     .Select(jobId => _jobRepository.Get().Get(jobId))
                     .Any(job => job != null
@@ -165,6 +182,37 @@ namespace Dig.Unity
             }
 
             return Result.Success();
+        }
+
+        private void RefreshManualExcavationGroupJobs(ManualExcavationGroup group)
+        {
+            Dictionary<CellId, JobSnapshot> activeByCell = CollectActiveDigJobs();
+            for (int index = 0; index < group.TargetCells.Count; index++)
+            {
+                CellId target = group.TargetCells[index];
+                if (!activeByCell.TryGetValue(target, out JobSnapshot? job)
+                    || job.IsTerminal
+                    || IsOwnedByOtherResident(job, group.AgentId))
+                {
+                    continue;
+                }
+
+                if (_manualGroupByJob.TryGetValue(job.Id, out EntityId existingGroup)
+                    && existingGroup != group.Id)
+                {
+                    continue;
+                }
+
+                group.Add(job.Id);
+                _manualGroupByJob[job.Id] = group.Id;
+                _candidateProvider!.SetCandidates(job.Id, NoCandidates);
+            }
+        }
+
+        private bool HasPendingManualTargets(ManualExcavationGroup group)
+        {
+            HashSet<CellId> designated = new HashSet<CellId>(CollectDesignatedCells());
+            return group.TargetCells.Any(designated.Contains);
         }
 
         private Result AssignNextManualExcavation(

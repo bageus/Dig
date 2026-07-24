@@ -120,10 +120,9 @@ namespace Dig.Unity
             BuildingBoxGhostViewModel preview,
             DigBuildingVisualResolution resolution)
         {
-            _previewContainer!.localPosition = new Vector3(
-                preview.Origin.X,
-                0.03f,
-                preview.Origin.Y);
+            _previewContainer!.localPosition =
+                DigTunnelProjection.CellWorldPosition(preview.Origin)
+                + (Vector3.up * 0.03f);
             _previewContainer.localRotation = ResolveOrientation(preview.Orientation)
                 * (preview.IsValid
                     ? Quaternion.identity
@@ -171,7 +170,9 @@ namespace Dig.Unity
             CellId cell = preview.WorkPosition.Value;
             _workMarker!.SetActive(true);
             _workMarker.name = $"Building work position {cell}";
-            _workMarker.transform.localPosition = new Vector3(cell.X, 0.24f, cell.Y);
+            _workMarker.transform.localPosition =
+                DigTunnelProjection.CellWorldPosition(cell)
+                + (Vector3.up * 0.24f);
             _workMarker.transform.localRotation = preview.IsValid
                 ? Quaternion.identity
                 : Quaternion.Euler(0f, 45f, 0f);
