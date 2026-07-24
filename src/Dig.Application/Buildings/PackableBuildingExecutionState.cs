@@ -17,6 +17,39 @@ public enum PackableBuildingExecutionStatus
     Cancelled = 4,
 }
 
+public sealed class PackableBuildingIterationClockSnapshot
+{
+    public PackableBuildingIterationClockSnapshot(
+        EntityId workerId,
+        long startTick,
+        int durationSeconds)
+    {
+        if (workerId.IsEmpty)
+        {
+            throw new ArgumentException("Worker id is required.", nameof(workerId));
+        }
+
+        if (startTick < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(startTick));
+        }
+
+        if (durationSeconds <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(durationSeconds));
+        }
+
+        WorkerId = workerId;
+        StartTick = startTick;
+        DurationSeconds = durationSeconds;
+    }
+
+    public EntityId WorkerId { get; }
+    public long StartTick { get; }
+    public int DurationSeconds { get; }
+    public long CompletionTick => checked(StartTick + DurationSeconds);
+}
+
 public sealed class PackableBuildingExecutionSnapshot
 {
     public PackableBuildingExecutionSnapshot(
@@ -28,11 +61,18 @@ public sealed class PackableBuildingExecutionSnapshot
         int totalIterations,
         int completedIterations,
         EntityId? activeWorkerId,
-        IReadOnlyCollection<EntityId> completedByWorkers)
+        IReadOnlyCollection<EntityId> completedByWorkers,
+        PackableBuildingIterationClockSnapshot? iterationClock = null)
     {
         if (operationId.IsEmpty || packageId.IsEmpty || definitionId.IsEmpty)
         {
             throw new ArgumentException("Operation, package and definition ids are required.");
+        }
+
+        if (!Enum.IsDefined(typeof(PackableBuildingOperationKind), operation)
+            || !Enum.IsDefined(typeof(PackableBuildingExecutionStatus), status))
+        {
+            throw new ArgumentOutOfRangeException(nameof(status));
         }
 
         if (totalIterations <= 0
@@ -49,6 +89,19 @@ public sealed class PackableBuildingExecutionSnapshot
                 nameof(completedByWorkers));
         }
 
+        bool active = status == PackableBuildingExecutionStatus.Active;
+        if (active != activeWorkerId.HasValue
+            || (!active && iterationClock is not null)
+            || (iterationClock is not null && iterationClock.WorkerId != activeWorkerId!.Value)
+            || (status == PackableBuildingExecutionStatus.Planned && completedIterations != 0)
+            || (status == PackableBuildingExecutionStatus.Completed
+                && completedIterations != totalIterations)
+            || (status != PackableBuildingExecutionStatus.Completed
+                && completedIterations == totalIterations))
+        {
+            throw new ArgumentException("Packable building execution state is inconsistent.");
+        }
+
         OperationId = operationId;
         PackageId = packageId;
         DefinitionId = definitionId;
@@ -59,6 +112,7 @@ public sealed class PackableBuildingExecutionSnapshot
         ActiveWorkerId = activeWorkerId;
         CompletedByWorkers = new ReadOnlyCollection<EntityId>(
             completedByWorkers.ToArray());
+        IterationClock = iterationClock;
     }
 
     public EntityId OperationId { get; }
@@ -70,11 +124,13 @@ public sealed class PackableBuildingExecutionSnapshot
     public int CompletedIterations { get; }
     public EntityId? ActiveWorkerId { get; }
     public IReadOnlyList<EntityId> CompletedByWorkers { get; }
+    public PackableBuildingIterationClockSnapshot? IterationClock { get; }
 }
 
 public sealed class PackableBuildingExecutionState
 {
     private readonly List<EntityId> _completedByWorkers = new List<EntityId>();
+    private PackableBuildingIterationClockSnapshot? _iterationClock;
 
     public PackableBuildingExecutionState(
         EntityId operationId,
@@ -101,6 +157,19 @@ public sealed class PackableBuildingExecutionState
         Status = PackableBuildingExecutionStatus.Planned;
     }
 
+    private PackableBuildingExecutionState(PackableBuildingExecutionSnapshot snapshot)
+    {
+        OperationId = snapshot.OperationId;
+        PackageId = snapshot.PackageId;
+        DefinitionId = snapshot.DefinitionId;
+        Operation = snapshot.Operation;
+        TotalIterations = snapshot.TotalIterations;
+        Status = snapshot.Status;
+        ActiveWorkerId = snapshot.ActiveWorkerId;
+        _completedByWorkers.AddRange(snapshot.CompletedByWorkers);
+        _iterationClock = snapshot.IterationClock;
+    }
+
     public EntityId OperationId { get; }
     public EntityId PackageId { get; }
     public BuildingDefinitionId DefinitionId { get; }
@@ -109,6 +178,14 @@ public sealed class PackableBuildingExecutionState
     public int CompletedIterations => _completedByWorkers.Count;
     public PackableBuildingExecutionStatus Status { get; private set; }
     public EntityId? ActiveWorkerId { get; private set; }
+    public PackableBuildingIterationClockSnapshot? IterationClock => _iterationClock;
+
+    public static PackableBuildingExecutionState Restore(
+        PackableBuildingExecutionSnapshot snapshot)
+    {
+        return new PackableBuildingExecutionState(
+            snapshot ?? throw new ArgumentNullException(nameof(snapshot)));
+    }
 
     public Result Start(EntityId workerId)
     {
@@ -125,7 +202,60 @@ public sealed class PackableBuildingExecutionState
 
         Status = PackableBuildingExecutionStatus.Active;
         ActiveWorkerId = workerId;
+        _iterationClock = null;
         return Result.Success();
+    }
+
+    public Result BeginIteration(EntityId workerId, long startTick, int durationSeconds)
+    {
+        if (workerId.IsEmpty)
+        {
+            throw new ArgumentException("Worker id is required.", nameof(workerId));
+        }
+
+        if (startTick < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(startTick));
+        }
+
+        if (durationSeconds <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(durationSeconds));
+        }
+
+        if (Status != PackableBuildingExecutionStatus.Active
+            || ActiveWorkerId != workerId)
+        {
+            return Result.Failure(BuildingBoxErrors.InvalidJobStage);
+        }
+
+        _iterationClock ??= new PackableBuildingIterationClockSnapshot(
+            workerId,
+            startTick,
+            durationSeconds);
+        return Result.Success();
+    }
+
+    public Result<bool> IsIterationReady(EntityId workerId, long tick)
+    {
+        if (workerId.IsEmpty)
+        {
+            throw new ArgumentException("Worker id is required.", nameof(workerId));
+        }
+
+        if (tick < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(tick));
+        }
+
+        if (Status != PackableBuildingExecutionStatus.Active
+            || ActiveWorkerId != workerId)
+        {
+            return Result<bool>.Failure(BuildingBoxErrors.InvalidJobStage);
+        }
+
+        return Result<bool>.Success(
+            _iterationClock is not null && tick >= _iterationClock.CompletionTick);
     }
 
     public Result Interrupt()
@@ -137,6 +267,7 @@ public sealed class PackableBuildingExecutionState
 
         Status = PackableBuildingExecutionStatus.Interrupted;
         ActiveWorkerId = null;
+        _iterationClock = null;
         return Result.Success();
     }
 
@@ -158,6 +289,7 @@ public sealed class PackableBuildingExecutionState
             return Result.Failure(BuildingErrors.WorkIncomplete);
         }
 
+        _iterationClock = null;
         _completedByWorkers.Add(workerId);
         if (CompletedIterations == TotalIterations)
         {
@@ -178,6 +310,7 @@ public sealed class PackableBuildingExecutionState
 
         Status = PackableBuildingExecutionStatus.Cancelled;
         ActiveWorkerId = null;
+        _iterationClock = null;
         return Result.Success();
     }
 
@@ -192,7 +325,8 @@ public sealed class PackableBuildingExecutionState
             TotalIterations,
             CompletedIterations,
             ActiveWorkerId,
-            _completedByWorkers);
+            _completedByWorkers,
+            _iterationClock);
     }
 }
 
