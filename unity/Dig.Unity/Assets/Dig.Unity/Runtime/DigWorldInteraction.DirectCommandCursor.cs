@@ -6,23 +6,80 @@ namespace Dig.Unity
 {
     public sealed partial class DigWorldInteraction
     {
-        private const int ShovelCursorSize = 32;
+        private const float CommandCursorFrameSeconds = 0.11f;
+        private const float MovementCursorDurationSeconds = 0.85f;
         private static readonly Vector2 ShovelCursorHotspot = new Vector2(16f, 27f);
-        private Texture2D? _shovelCursorTexture;
-        private bool _shovelCursorApplied;
+        private static readonly Vector2 PickupCursorHotspot = new Vector2(16f, 27f);
+        private static readonly Vector2 MovementCursorHotspot = new Vector2(16f, 27f);
+
+        private Texture2D[]? _shovelCursorFrames;
+        private Texture2D[]? _pickupCursorFrames;
+        private Texture2D[]? _movementCursorFrames;
+        private DirectCommandCursorKind _commandCursorKind;
+        private int _commandCursorFrame = -1;
+        private float _commandCursorAnimationStartedAt;
+        private float _movementCursorExpiresAt;
+
+        private enum DirectCommandCursorKind
+        {
+            Default = 0,
+            Shovel = 1,
+            Pickup = 2,
+            Movement = 3,
+        }
 
         private void UpdateSelectedResidentCommandCursor()
         {
-            bool showShovel = IsInitialized()
-                && _agentRenderer != null
-                && _agentRenderer.SelectedCount > 0
-                && _excavationMode == DigExcavationDrawingMode.None
-                && !_buildingPlacementMode.HasValue
-                && !_caveRoomPreset.HasValue
-                && _hud != null
-                && !_hud.ContainsScreenPoint(Input.mousePosition)
-                && TryResolveExplicitExcavationHoverTarget(GetPointerHits());
-            SetShovelCursor(showShovel);
+            DirectCommandCursorKind kind = ResolveCommandCursorKind();
+            ApplyCommandCursor(kind);
+        }
+
+        private DirectCommandCursorKind ResolveCommandCursorKind()
+        {
+            if (Time.unscaledTime < _movementCursorExpiresAt)
+            {
+                return DirectCommandCursorKind.Movement;
+            }
+
+            if (!IsInitialized()
+                || _hud == null
+                || _hud.ContainsScreenPoint(Input.mousePosition)
+                || _buildingPlacementMode.HasValue)
+            {
+                return DirectCommandCursorKind.Default;
+            }
+
+            RaycastHit[] hits = GetPointerHits();
+            if (_agentRenderer != null && _agentRenderer.SelectedCount > 0)
+            {
+                if (_excavationMode == DigExcavationDrawingMode.None
+                    && !_caveRoomPreset.HasValue
+                    && TryResolvePickableItemHoverTarget(hits))
+                {
+                    return DirectCommandCursorKind.Pickup;
+                }
+
+                if (_excavationMode == DigExcavationDrawingMode.None
+                    && !_caveRoomPreset.HasValue
+                    && TryResolveExplicitExcavationHoverTarget(hits))
+                {
+                    return DirectCommandCursorKind.Shovel;
+                }
+            }
+
+            if (_excavationMode == DigExcavationDrawingMode.Depth
+                && ResolveTunnelDepthSource(hits).HasValue)
+            {
+                return DirectCommandCursorKind.Shovel;
+            }
+
+            return DirectCommandCursorKind.Default;
+        }
+
+        private bool TryResolvePickableItemHoverTarget(RaycastHit[] hits)
+        {
+            return TryResolveWorldItemHit(hits, out DigWorldItemVisual item)
+                && item.Model.CanPickup;
         }
 
         private bool TryResolveExplicitExcavationHoverTarget(RaycastHit[] hits)
@@ -35,6 +92,11 @@ namespace Dig.Unity
             for (int index = 0; index < hits.Length; index++)
             {
                 RaycastHit hit = hits[index];
+                if (_renderer!.TryGetDepthDesignation(hit, out _))
+                {
+                    return true;
+                }
+
                 if (_agentRenderer!.TryGetAgent(hit, out _)
                     || (_buildingRenderer != null
                         && _buildingRenderer.TryGetBuilding(hit, out _))
@@ -48,123 +110,121 @@ namespace Dig.Unity
                 {
                     return true;
                 }
-
-                if (_jobRenderer!.TryGetJob(hit, out DigJobVisual job)
-                    && !IsTerminalJobStatus(job.Model.Status)
-                    && job.Model.TargetX.HasValue
-                    && job.Model.TargetY.HasValue
-                    && job.Model.TargetZ.HasValue
-                    && job.Model.TargetZ.Value > 0)
-                {
-                    return true;
-                }
             }
 
             return false;
         }
 
-        private void SetShovelCursor(bool active)
+        private void PlayMovementCursorFeedback()
         {
-            if (_shovelCursorApplied == active)
+            _movementCursorExpiresAt = Time.unscaledTime + MovementCursorDurationSeconds;
+            BeginCommandCursorAnimation(DirectCommandCursorKind.Movement);
+        }
+
+        private void ApplyCommandCursor(DirectCommandCursorKind kind)
+        {
+            if (_commandCursorKind != kind)
+            {
+                BeginCommandCursorAnimation(kind);
+            }
+
+            if (kind == DirectCommandCursorKind.Default)
+            {
+                if (_commandCursorFrame != -1)
+                {
+                    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+                    _commandCursorFrame = -1;
+                }
+
+                return;
+            }
+
+            Texture2D[] frames = ResolveCommandCursorFrames(kind);
+            int frame = Mathf.FloorToInt(
+                (Time.unscaledTime - _commandCursorAnimationStartedAt)
+                / CommandCursorFrameSeconds) % frames.Length;
+            if (_commandCursorFrame == frame)
             {
                 return;
             }
 
-            _shovelCursorApplied = active;
-            if (!active)
-            {
-                Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-                return;
-            }
-
-            _shovelCursorTexture ??= CreateShovelCursorTexture();
+            _commandCursorFrame = frame;
             Cursor.SetCursor(
-                _shovelCursorTexture,
-                ShovelCursorHotspot,
+                frames[frame],
+                ResolveCommandCursorHotspot(kind),
                 CursorMode.Auto);
         }
 
-        private static Texture2D CreateShovelCursorTexture()
+        private void BeginCommandCursorAnimation(DirectCommandCursorKind kind)
         {
-            Texture2D texture = new Texture2D(
-                ShovelCursorSize,
-                ShovelCursorSize,
-                TextureFormat.RGBA32,
-                mipChain: false)
+            _commandCursorKind = kind;
+            _commandCursorAnimationStartedAt = Time.unscaledTime;
+            _commandCursorFrame = -1;
+        }
+
+        private Texture2D[] ResolveCommandCursorFrames(DirectCommandCursorKind kind)
+        {
+            switch (kind)
             {
-                name = "Direct excavation shovel cursor",
-                filterMode = FilterMode.Point,
-                wrapMode = TextureWrapMode.Clamp,
-                hideFlags = HideFlags.HideAndDontSave,
+                case DirectCommandCursorKind.Shovel:
+                    return _shovelCursorFrames ??= CreateShovelCursorFrames();
+                case DirectCommandCursorKind.Pickup:
+                    return _pickupCursorFrames ??= CreatePickupCursorFrames();
+                case DirectCommandCursorKind.Movement:
+                    return _movementCursorFrames ??= CreateMovementCursorFrames();
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(kind));
+            }
+        }
+
+        private static Vector2 ResolveCommandCursorHotspot(DirectCommandCursorKind kind)
+        {
+            return kind switch
+            {
+                DirectCommandCursorKind.Shovel => ShovelCursorHotspot,
+                DirectCommandCursorKind.Pickup => PickupCursorHotspot,
+                DirectCommandCursorKind.Movement => MovementCursorHotspot,
+                _ => Vector2.zero,
             };
-            Color32[] pixels = new Color32[ShovelCursorSize * ShovelCursorSize];
-            Color32 outline = new Color32(39, 31, 25, 255);
-            Color32 handle = new Color32(139, 91, 52, 255);
-            Color32 metal = new Color32(184, 193, 198, 255);
-            Color32 highlight = new Color32(232, 238, 240, 255);
-
-            FillRect(pixels, 12, 25, 20, 29, outline);
-            FillRect(pixels, 14, 26, 18, 27, handle);
-            FillRect(pixels, 15, 8, 17, 25, outline);
-            FillRect(pixels, 16, 9, 16, 24, handle);
-            for (int y = 2; y <= 9; y++)
-            {
-                int inset = Math.Max(0, 5 - y);
-                FillRect(pixels, 9 + inset, y, 23 - inset, y, outline);
-                if (y > 2)
-                {
-                    FillRect(pixels, 11 + inset, y, 21 - inset, y, metal);
-                }
-            }
-
-            FillRect(pixels, 13, 7, 19, 8, outline);
-            FillRect(pixels, 14, 7, 18, 7, metal);
-            SetPixel(pixels, 18, 7, highlight);
-            SetPixel(pixels, 19, 6, highlight);
-            texture.SetPixels32(pixels);
-            texture.Apply(updateMipmaps: false, makeNoLongerReadable: false);
-            return texture;
-        }
-
-        private static void FillRect(
-            Color32[] pixels,
-            int minX,
-            int minY,
-            int maxX,
-            int maxY,
-            Color32 color)
-        {
-            for (int y = minY; y <= maxY; y++)
-            {
-                for (int x = minX; x <= maxX; x++)
-                {
-                    SetPixel(pixels, x, y, color);
-                }
-            }
-        }
-
-        private static void SetPixel(Color32[] pixels, int x, int y, Color32 color)
-        {
-            if (x < 0 || y < 0 || x >= ShovelCursorSize || y >= ShovelCursorSize)
-            {
-                return;
-            }
-
-            pixels[(y * ShovelCursorSize) + x] = color;
         }
 
         private void OnDisable()
         {
-            SetShovelCursor(active: false);
+            ResetCommandCursor();
         }
 
         private void OnDestroy()
         {
-            SetShovelCursor(active: false);
-            if (_shovelCursorTexture != null)
+            ResetCommandCursor();
+            DestroyCommandCursorFrames(_shovelCursorFrames);
+            DestroyCommandCursorFrames(_pickupCursorFrames);
+            DestroyCommandCursorFrames(_movementCursorFrames);
+            _shovelCursorFrames = null;
+            _pickupCursorFrames = null;
+            _movementCursorFrames = null;
+        }
+
+        private void ResetCommandCursor()
+        {
+            _movementCursorExpiresAt = 0f;
+            _commandCursorKind = DirectCommandCursorKind.Default;
+            _commandCursorFrame = -1;
+            Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+        }
+
+        private void DestroyCommandCursorFrames(Texture2D[]? frames)
+        {
+            if (frames == null)
             {
-                Destroy(_shovelCursorTexture);
-                _shovelCursorTexture = null;
+                return;
+            }
+
+            for (int index = 0; index < frames.Length; index++)
+            {
+                if (frames[index] != null)
+                {
+                    Destroy(frames[index]);
+                }
             }
         }
     }
