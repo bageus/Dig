@@ -185,6 +185,7 @@ namespace Dig.Unity
             }
 
             _tick = checked(_tick + 1);
+            BeginTunnelTrafficTick(_tick);
             movementTargets = ApplyMovementTargetFilter(movementTargets, _tick);
             _autonomy.Execute(new SimulationContext(_tick, _simulationState));
             IReadOnlyList<AgentState> agents = _repository.GetAll();
@@ -230,10 +231,7 @@ namespace Dig.Unity
                     destination = new CellId(cell.X, cell.Y, cell.Z);
                 }
 
-                Result result = _movementHandler.Handle(new MoveAgentCommand(
-                    agent.Id,
-                    destination,
-                    _tick));
+                Result result = MoveThroughTunnelTraffic(agent, destination);
                 if (result.IsFailure)
                 {
                     CancelManualMovementWithWarning(agent.Id, result.Error!);
