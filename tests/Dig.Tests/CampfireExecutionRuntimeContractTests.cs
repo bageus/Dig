@@ -18,27 +18,36 @@ public sealed class CampfireExecutionRuntimeContractTests
             "Assets",
             "Dig.Unity",
             "Runtime");
-        string assembly = File.ReadAllText(Path.Combine(
+        string assembly = Normalize(File.ReadAllText(Path.Combine(
             runtime,
-            "DigBuildingBoxAssemblyExecution.cs"));
-        string packing = File.ReadAllText(Path.Combine(
+            "DigBuildingBoxAssemblyExecution.cs")));
+        string packing = Normalize(File.ReadAllText(Path.Combine(
             runtime,
-            "DigBuildingPackingExecution.cs"));
+            "DigBuildingPackingExecution.cs")));
 
         Assert.Contains("PackableBuildingExecutionRegistry", assembly);
         Assert.Contains("PackableBuildingOperationKind.Unpack", assembly);
-        Assert.Contains("StartOrResume(assembly.Id, workerId)", assembly);
-        Assert.Contains("CompleteIteration(assembly.Id, workerId)", assembly);
+        Assert.Contains("StartOrResume(assembly.Id,workerId)", assembly);
+        Assert.Contains("CompleteIteration(assembly.Id,workerId)", assembly);
         Assert.True(
             assembly.IndexOf("_buildingBoxAssemblyWork!.Handle", StringComparison.Ordinal)
-            < assembly.IndexOf("CompleteIteration(assembly.Id, workerId)", StringComparison.Ordinal));
+            < assembly.IndexOf("CompleteIteration(assembly.Id,workerId)", StringComparison.Ordinal));
 
         Assert.Contains("PackableBuildingOperationKind.Pack", packing);
-        Assert.Contains("StartOrResume(jobId, workerId)", packing);
-        Assert.Contains("CompleteIteration(jobId, workerId)", packing);
+        Assert.Contains("StartOrResume(jobId,workerId)", packing);
+        Assert.Contains("CompleteIteration(jobId,workerId)", packing);
         Assert.True(
             packing.IndexOf("_buildingPackingWork!.Handle", StringComparison.Ordinal)
-            < packing.IndexOf("CompleteIteration(jobId, workerId)", StringComparison.Ordinal));
+            < packing.IndexOf("CompleteIteration(jobId,workerId)", StringComparison.Ordinal));
+    }
+
+    private static string Normalize(string source)
+    {
+        return source
+            .Replace(" ", string.Empty, StringComparison.Ordinal)
+            .Replace("\t", string.Empty, StringComparison.Ordinal)
+            .Replace("\r", string.Empty, StringComparison.Ordinal)
+            .Replace("\n", string.Empty, StringComparison.Ordinal);
     }
 
     private static string FindRepositoryRoot()
