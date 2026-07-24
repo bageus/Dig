@@ -55,6 +55,21 @@ public sealed class CampfireLogisticsProgressionTests
     }
 
     [Fact]
+    public void Runtime_duration_uses_the_authoritative_workers_logistics_value()
+    {
+        RecordingSkillGrants grants = new RecordingSkillGrants();
+        grants.SkillUnits[WorkerA] = 80 * AgentSkillCatalog.UnitsPerPoint;
+        CampfireIterationProgressionService progression =
+            new CampfireIterationProgressionService(grants, grants);
+
+        Result<int> duration = progression.ResolveDurationSeconds(WorkerA);
+
+        Assert.True(duration.IsSuccess);
+        Assert.Equal(300, duration.Value);
+        Assert.Equal(AgentSkillCatalog.Logistics, grants.LastReadSkill);
+    }
+
+    [Fact]
     public void Completed_iterations_award_point_seven_to_the_authoritative_worker_once()
     {
         RecordingSkillGrants grants = new RecordingSkillGrants();
@@ -106,13 +121,21 @@ public sealed class CampfireLogisticsProgressionTests
         return executions;
     }
 
-    private sealed class RecordingSkillGrants : IAgentSkillGrantService
+    private sealed class RecordingSkillGrants : IAgentSkillGrantService, IAgentSkillLevelReader
     {
         public List<SkillGrantBundle> Applied { get; } = new List<SkillGrantBundle>();
+        public Dictionary<EntityId, int> SkillUnits { get; } = new Dictionary<EntityId, int>();
+        public AgentSkillId LastReadSkill { get; private set; }
 
         public Result Validate(SkillGrantBundle bundle)
         {
             return Result.Success();
+        }
+
+        public Result<int> GetSkillUnits(EntityId agentId, AgentSkillId skillId)
+        {
+            LastReadSkill = skillId;
+            return Result<int>.Success(SkillUnits.TryGetValue(agentId, out int value) ? value : 0);
         }
 
         public Result<SkillRedistributionReport> ApplyConfirmed(SkillGrantBundle bundle)
