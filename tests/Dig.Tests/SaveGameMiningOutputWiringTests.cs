@@ -46,8 +46,10 @@ public sealed class SaveGameMiningOutputWiringTests
             new BuildingsState());
 
         Result<SaveGameDocument> result =
-            new SaveGameBuilder(new JobDefinitionSaveRegistry(
-                System.Array.Empty<IJobDefinitionSaveCodec>()))
+            new SaveGameBuilder(new JobDefinitionSaveRegistry(new IJobDefinitionSaveCodec[]
+            {
+                new EmptyJobDefinitionSaveCodec(),
+            }))
                 .Build(context, commits);
 
         Assert.True(result.IsSuccess);
@@ -117,6 +119,26 @@ public sealed class SaveGameMiningOutputWiringTests
                 maximumStackSize: 20,
                 isTool: false),
         }));
+    }
+
+    private sealed class EmptyJobDefinitionSaveCodec : IJobDefinitionSaveCodec
+    {
+        public string TypeId => "test.empty";
+
+        public bool CanEncode(JobDefinition definition)
+        {
+            return false;
+        }
+
+        public JobDefinitionSaveData Encode(JobDefinition definition)
+        {
+            throw new System.NotSupportedException();
+        }
+
+        public JobDefinition Decode(JobDefinitionSaveData data)
+        {
+            throw new System.NotSupportedException();
+        }
     }
 }
 
