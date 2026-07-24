@@ -36,6 +36,7 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         _packableBuildingExecutions ??= new PackableBuildingExecutionRegistry();
+        InitializePackableBuildingIterationProgression();
         _buildingPackingCandidates = new InMemoryJobCandidateProvider();
         _buildingPackingAssignment = new AssignAvailableJobsHandler(
             _jobRepository,
@@ -284,17 +285,15 @@ internal sealed partial class DigTerrainWorkSession
 
         if (step == BuildingBoxPackingExecutionStepKind.AddWork)
         {
-            Result added = _buildingPackingWork!.Handle(new AddBuildingBoxPackingWorkCommand(
-                buildingId,
+            return ExecutePackableBuildingIteration(
                 jobId,
-                workAmount: 1,
-                tick: tick));
-            if (added.IsFailure)
-            {
-                return added;
-            }
-
-            return _packableBuildingExecutions!.CompleteIteration(jobId, workerId);
+                workerId,
+                tick,
+                () => _buildingPackingWork!.Handle(new AddBuildingBoxPackingWorkCommand(
+                    buildingId,
+                    jobId,
+                    workAmount: 1,
+                    tick: tick)));
         }
 
         return step switch
@@ -340,11 +339,13 @@ internal sealed partial class DigTerrainWorkSession
             || _buildingPackingCompletion == null
             || _buildingInventoryPresenter == null
             || _buildingPackingPathfinder == null
-            || _packableBuildingExecutions == null)
+            || _packableBuildingExecutions == null
+            || _campfireIterationProgression == null)
         {
             throw new InvalidOperationException(
                 "Building packing execution is not initialized.");
         }
     }
 }
+
 }
