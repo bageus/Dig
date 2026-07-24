@@ -17,6 +17,11 @@ namespace Dig.Unity
             return _manualGroupByJob.ContainsKey(jobId);
         }
 
+        private bool IsManualExcavationAgent(EntityId agentId)
+        {
+            return _manualGroups.Values.Any(value => value.AgentId == agentId);
+        }
+
         private void RemoveManualExcavationJob(EntityId jobId)
         {
             if (!_manualGroupByJob.TryGetValue(jobId, out EntityId groupId))
