@@ -20,12 +20,12 @@ def check_automatic_planning_contracts(
     driver_hud_path = runtime_root / "DigAgentSimulationDriverBase.Hud.cs"
     candidate_paths = (
         runtime_root / "DigTerrainWorkSession.cs",
-        runtime_root / "DigTerrainSpatialExcavation.cs",
         runtime_root / "DigTerrainHauling.cs",
         runtime_root / "DigBuildingBoxAssemblyExecution.cs",
         runtime_root / "DigBuildingPackingExecution.cs",
         runtime_root / "DigJobSession.cs",
     )
+    spatial_path = runtime_root / "DigTerrainSpatialExcavation.cs"
     dynamic_path = runtime_root / "DigTerrainWorkDesignations.cs"
     movement_path = runtime_root / "DigTerrainWorkDirectMovement.cs"
 
@@ -67,6 +67,12 @@ def check_automatic_planning_contracts(
             "alive-only automatic assignment eligibility",
             ("isAvailable: agent.IsAlive",),
         ))
+    errors.extend(require_fragments(
+        spatial_path,
+        texts.get(spatial_path, ""),
+        "spatial excavation automatic assignment policy",
+        ("IsAvailableForAutomaticWork(agent)",),
+    ))
     errors.extend(require_fragments(
         dynamic_path,
         texts.get(dynamic_path, ""),
