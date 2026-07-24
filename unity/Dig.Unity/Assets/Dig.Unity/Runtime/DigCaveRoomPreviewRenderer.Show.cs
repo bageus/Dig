@@ -33,11 +33,6 @@ namespace Dig.Unity
                 edge.SetPosition(0, corners[connections[index].x]);
                 edge.SetPosition(1, corners[connections[index].y]);
             }
-
-            ConfigureInvalidMarker(
-                corners,
-                valid: true,
-                OverlaySemanticKind.PreviewValid);
         }
     }
 }
