@@ -1,3 +1,5 @@
+> **Audit status (2026-07-26): partial production wiring.** `MiningOutputCommitState` has dedicated builder/loader overloads, but `SaveGameService` and `SaveGameContext` do not currently use them, so normal saves omit the mining-output exactly-once ledger. Tracked by #94/#13 and [`implemented-systems-audit-2026-07-26.md`](implemented-systems-audit-2026-07-26.md).
+
 # Save, load and migrations
 
 ## State ownership
@@ -15,10 +17,11 @@ Meshes, colliders, navigation results, UI selection, animation state and other r
 
 ## Format and deterministic serialization
 
-`SaveGameDocument` has an explicit `FormatVersion`. The current version is 4 and
+`SaveGameDocument` has an explicit `FormatVersion`. The current version is 5 and
 uses data-contract DTOs rather than serializing aggregates or private runtime
 fields. Version 4 adds the separately owned `AgentSkills` section described by
-[`ADR-0002`](../adr/0002-save-v4-agent-skill-progression.md).
+[`ADR-0002`](../adr/0002-save-v4-agent-skill-progression.md). Version 5 stores
+authoritative XYZ coordinates and migrates legacy 2D coordinates to `Z=0`.
 
 `SaveGameBuilder` sorts every unordered collection before serialization:
 
@@ -26,7 +29,7 @@ fields. Version 4 adds the separately owned `AgentSkills` section described by
 - item stacks and item reservations by stable entity id;
 - jobs by stable job id;
 - job reservations by job id and typed reservation key;
-- job codec properties and dependencies by ordinal stable id.
+- job codec properties and dependencies by ordinal stable id;
 - residents and their 12 skill values by stable agent and skill ids;
 - applied skill source keys and migration steps by ordinal value.
 
@@ -67,13 +70,14 @@ A saved job type without a registered codec returns `save.job_type.unknown`. New
 `SaveMigrationPipeline` applies exactly one ordered step per version. A migration declares a stable id, source version and next version. Missing steps and future versions return `save.version.unsupported`.
 
 The retained `save-v0.json` fixture verifies the complete sequential migration to
-v4 and idempotent replay. `save-v3.json` verifies that v3→v4 adds an empty skill
-section without inventing resident progression. A separate precision-v0 fixture
-case verifies integer largest-remainder conversion, capacity scaling and migration
-diagnostics. Values and capacity use the same rational scale; migration rejects
-documents whose converted value sum would exceed the converted capacity rather
-than silently inflating capacity. Future format changes must add another fixture and a sequential
-migration; existing fixtures remain immutable.
+the current format and idempotent replay. `save-v3.json` verifies that v3→v4 adds
+an empty skill section without inventing resident progression. The v4→v5 step
+maps legacy coordinates deterministically to `Z=0`. A separate precision-v0
+fixture verifies integer largest-remainder conversion, capacity scaling and
+migration diagnostics. Values and capacity use the same rational scale;
+migration rejects documents whose converted value sum would exceed the converted
+capacity rather than silently inflating capacity. Future format changes must add
+another fixture and a sequential migration; existing fixtures remain immutable.
 
 ## Slots and atomic writes
 
@@ -109,4 +113,4 @@ Automated coverage includes:
 - deterministic precision migration, exact capacity preservation and its report;
 - service-level load into a live agent repository followed by idempotent grant replay.
 
-The normal Quality workflow still runs architecture and file-size checks, C# compatibility, Release build, all tests, headless smoke and both deterministic soak profiles.
+The normal Quality workflow runs architecture/source-contract checks, Release build and .NET tests. It does not currently run Unity Play Mode or the documented standard/large soak profiles; those evidence gaps are tracked by #15 and the current audit.
