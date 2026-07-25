@@ -1,6 +1,6 @@
 # HUD гномов, выбор, контекстная панель и уведомления
 
-Статус: целевая спецификация. Главная задача: #113. Связи: #70, #89, #93, #107, #114–#118, #159.
+Статус: целевая спецификация. Главная задача: #113. Связи: #70, #89, #93, #107, #114–#118, #159, #390.
 
 ## Владение состоянием
 
@@ -90,9 +90,10 @@ Inspector показывает requested/applied gains, free capacity, overflow,
 
 - ЛКМ по HUD row или world resident выбирает того же resident;
 - выбранный resident подсвечивается в HUD и мире;
+- LMB по completed building или BuildingBox открывает building roster и подсвечивает соответствующую строку;
 - новый выбор заменяет прежний;
 - ПКМ снимает selection;
-- двойной ЛКМ по row центрирует camera;
+- двойной ЛКМ по resident row центрирует camera;
 - camera focus не меняет logical position.
 
 ## Нижняя контекстная панель
@@ -115,30 +116,44 @@ Weapon отделён слева, Cargo справа.
 
 Показываются production, research, storage/service modes, workers/visitors, active orders, progress и diagnostics. Справа — packing button.
 
-### Активна BuildingBox
+### Выбрана BuildingBox
 
-Показываются building name, orientation, ghost preview, valid state и reason code.
+Обычный LMB выбирает коробку и показывает:
+
+- building name и box state;
+- authoritative world/inventory location;
+- доступность pickup/placement;
+- кнопку «Распаковать»;
+- diagnostics/reason code при недоступности.
+
+Selection BuildingBox сам по себе не показывает активный ghost и не включает placement mode.
+
+### Активен placement mode
+
+После кнопки «Распаковать» системный 2D cursor скрывается, а в мире отображаются 3D ghost и footprint. Панель показывает building definition, orientation, validity, reason code и отмену. ПКМ отменяет preview и снимает building/box selection.
 
 ## Input routing
 
 После UI shielding один click создаёт не более одной command:
 
-1. placement LMB;
-2. Alt+LMB use item;
-3. selected inventory stack drop;
-4. Alt+LMB world BuildingBox — pickup order;
-5. LMB BuildingBox — placement mode;
+1. active placement mode: LMB подтверждает preview, RMB отменяет preview/selection;
+2. `Alt + LMB` world BuildingBox — pickup order выбранному resident;
+3. LMB world BuildingBox — selection + building menu, без placement;
+4. UI button «Распаковать» — вход в placement mode;
+5. selected inventory stack drop согласно отдельному inventory contract;
 6. selected resident + hostile target — соответствующий игровой приказ;
 7. selected resident + reachable ground — move;
-8. no resident selection — active excavation tool.
+8. active excavation tool — terrain designation/command.
 
-Unsupported Alt interaction трактуется как ground click. Generic world item не подбирается обычным LMB без отдельного interaction contract.
+Unsupported Alt interaction не должен создавать скрытый pickup. Generic world item не подбирается обычным LMB без отдельного interaction contract.
 
-ПКМ снимает resident selection, отменяет placement либо dismiss notification согласно текущему контексту.
+ПКМ снимает selection, отменяет placement либо dismiss notification согласно текущему контексту. Для BuildingBox/placement ПКМ не расходует и не перемещает коробку.
 
 ## BuildingBox flow
 
-Production создаёт физическую коробку. Placement резервирует конкретную коробку. Свободный resident доставляет её и собирает building. Packing job после commit создаёт ровно одну коробку. UI не создаёт и не удаляет quantity.
+Production создаёт физическую коробку. Обычный LMB выбирает её. Кнопка «Распаковать» создаёт только uncommitted placement preview. Подтверждённый valid placement резервирует конкретную коробку и создаёт plan. Свободный resident доставляет её и собирает building. Packing job после commit создаёт ровно одну коробку. UI не создаёт и не удаляет quantity.
+
+Точное поведение LMB на Z0 и запуск unpacking из resident inventory остаются в открытых вопросах `building-box-placement-and-packing.md`.
 
 ## Notifications
 
@@ -175,6 +190,8 @@ Roster virtualized; изменение одной row не пересоздаё�
 - UI gain/loss report совпадает с Domain;
 - continuous effects отображаются без double application;
 - panel modes взаимоисключающие;
+- world BuildingBox LMB выбирает box и не включает placement;
+- «Распаковать» включает только 3D ghost/footprint;
 - no click-through/double command;
 - BuildingBox quantity сохраняется;
 - notifications используют typed events и установленный lifecycle;
