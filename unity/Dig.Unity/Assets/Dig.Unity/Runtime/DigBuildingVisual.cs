@@ -166,11 +166,10 @@ namespace Dig.Unity
 
         private void ApplyPlacement(DigBuildingVisualResolution resolution)
         {
-            transform.localPosition = DigTunnelProjection.CellWorldPosition(
-                new Dig.Domain.World.CellId(
-                    Model.OriginX,
-                    Model.OriginY,
-                    Model.OriginZ));
+            transform.localPosition = DigTunnelProjection.ResidentWorldPosition(
+                Model.OriginX,
+                Model.OriginY,
+                Model.OriginZ) + (Vector3.up * DigTunnelProjection.ResidentFootSink);
             transform.localRotation = ResolveOrientation(Model.Orientation);
             transform.localScale = Vector3.one;
 
