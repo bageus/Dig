@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dig.Domain.Buildings;
+using Dig.Presentation.Agents;
 using Dig.Presentation.Buildings;
 using Dig.Presentation.Inventory;
 using UnityEngine;
@@ -20,13 +21,19 @@ public sealed partial class DigGameHudCanvas
             .LoadAllWorldItems()
             .Where(item => item.IsBuildingBox)
             .ToArray();
+        ResidentRosterViewModel residentRoster = _simulation!.LoadResidentRoster(null);
+        IReadOnlyList<HeldBuildingBoxRosterEntry> heldBuildingBoxes =
+            LoadHeldBuildingBoxes(residentRoster.Rows);
         string signature = "buildings:"
             + string.Join("|", buildings.Select(value =>
                 value.Id + ":" + value.Version + ":" + value.Status))
             + ":boxes:"
             + string.Join("|", buildingBoxes.Select(value =>
                 value.StackId + ":" + value.Quantity + ":" + value.ReservedQuantity
-                + ":" + value.CellX + ":" + value.CellY + ":" + value.CellZ));
+                + ":" + value.CellX + ":" + value.CellY + ":" + value.CellZ))
+            + ":held:"
+            + string.Join("|", heldBuildingBoxes.Select(value =>
+                value.StackId + ":" + value.ResidentId + ":" + value.ReservedQuantity));
         if (string.Equals(signature, _managementSignature, StringComparison.Ordinal))
         {
             return;
@@ -38,12 +45,14 @@ public sealed partial class DigGameHudCanvas
             new[] { "All buildings" },
             activeTab: 0,
             selectTab: _ => { });
-        BuildBuildingManagementTable(buildings, buildingBoxes);
+        BuildBuildingManagementTable(
+            buildings, buildingBoxes, heldBuildingBoxes);
     }
 
     private void BuildBuildingManagementTable(
         IReadOnlyList<BuildingWorldViewModel> buildings,
-        IReadOnlyList<WorldItemViewModel> buildingBoxes)
+        IReadOnlyList<WorldItemViewModel> buildingBoxes,
+        IReadOnlyList<HeldBuildingBoxRosterEntry> heldBuildingBoxes)
     {
         ManagementColumn[] columns =
         {
@@ -55,7 +64,9 @@ public sealed partial class DigGameHudCanvas
             Column("management.progress", 150f),
         };
         BuildManagementHeader(columns);
-        if (buildings.Count == 0 && buildingBoxes.Count == 0)
+        if (buildings.Count == 0
+            && buildingBoxes.Count == 0
+            && heldBuildingBoxes.Count == 0)
         {
             BuildManagementEmptyState(
                 DigManagementLocalization.Resolve("management.buildings.empty"));
@@ -127,6 +138,39 @@ public sealed partial class DigGameHudCanvas
                 columns[5].Width,
                 new Color(0.20f, 0.52f, 0.84f, 1f));
         }
+        foreach (HeldBuildingBoxRosterEntry box in heldBuildingBoxes)
+        {
+            string residentId = box.ResidentId;
+            RectTransform row = CreateManagementRow(
+                "Held BuildingBox " + box.StackId, 38f);
+            ConfigureManagementSelection(
+                row,
+                () => SelectResidentFromBuildingManagement(residentId));
+            CreateManagementTextCell(row, box.DisplayName, columns[0].Width);
+            CreateManagementTextCell(row, box.ItemId, columns[1].Width);
+            CreateManagementTextCell(
+                row,
+                "Held by " + box.ResidentName,
+                columns[2].Width,
+                TextAnchor.MiddleCenter);
+            CreateManagementTextCell(
+                row,
+                "Inventory",
+                columns[3].Width,
+                TextAnchor.MiddleCenter);
+            CreateManagementBarCell(
+                row,
+                box.Quantity - box.ReservedQuantity,
+                box.Quantity,
+                columns[4].Width,
+                new Color(0.64f, 0.42f, 0.20f, 1f));
+            CreateManagementBarCell(
+                row,
+                box.ReservedQuantity == 0 ? 1 : 0,
+                1,
+                columns[5].Width,
+                new Color(0.20f, 0.52f, 0.84f, 1f));
+        }
     }
 
     private static void ConfigureManagementSelection(
@@ -149,6 +193,13 @@ public sealed partial class DigGameHudCanvas
     {
         CloseManagementOverlay();
         _interaction!.SelectBuildingBoxFromHud(stackId);
+        InvalidateAll();
+    }
+
+    private void SelectResidentFromBuildingManagement(string residentId)
+    {
+        CloseManagementOverlay();
+        _interaction!.SelectResidentFromHud(residentId);
         InvalidateAll();
     }
 

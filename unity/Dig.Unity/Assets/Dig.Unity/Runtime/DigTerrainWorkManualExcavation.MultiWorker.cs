@@ -86,9 +86,13 @@ namespace Dig.Unity
             {
                 ManualExcavationGroup group = created[index];
                 RegisterManualExcavationGroup(group);
+                CellId assignmentAnchor = ResolveManualResidentCell(
+                    group.AgentId,
+                    seed,
+                    index);
                 Result assigned = AssignNextManualExcavation(
                     group,
-                    preferredCell: seed,
+                    preferredCell: assignmentAnchor,
                     tick);
                 if (assigned.IsFailure && !IsWaitingForExcavationFront(assigned))
                 {

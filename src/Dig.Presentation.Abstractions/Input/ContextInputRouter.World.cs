@@ -67,7 +67,7 @@ public sealed partial class ContextInputRouter
             return MoveFallback(state, target);
         }
 
-        if (pointer.AltPressed && target.Kind == ContextWorldTargetKind.GenericItem)
+        if (target.Kind == ContextWorldTargetKind.GenericItem)
         {
             if (state.HasUsableResidentSelection
                 && target.SupportsAltInteraction

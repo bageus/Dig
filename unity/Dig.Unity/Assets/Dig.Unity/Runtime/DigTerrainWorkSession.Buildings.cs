@@ -260,6 +260,10 @@ internal sealed partial class DigTerrainWorkSession
                 .Where(value => !occupied.Contains(value)
                     && cells.TryGetValue(value, out WorldCellViewModel workCell)
                     && !workCell.IsSolid)
+                .OrderBy(value => value.Y == origin.Y ? 0 : 1)
+                .ThenBy(value => Math.Abs(value.X - origin.X)
+                    + Math.Abs(value.Y - origin.Y))
+                .ThenBy(value => value)
                 .Select(value => (CellId?)value)
                 .FirstOrDefault();
             if (workPosition.HasValue)
