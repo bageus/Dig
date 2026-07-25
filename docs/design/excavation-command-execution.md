@@ -15,106 +15,140 @@ Parent feature: [#87](https://github.com/bageus/Dig/issues/87).
 
 ## 1. Назначение
 
-Система обеспечивает непрерывное выполнение тоннеля, глубины или комнаты после первой клетки и объединяет прямые приказы с общим Jobs lifecycle.
+Система обеспечивает непрерывное выполнение тоннеля, глубины или комнаты после первой клетки и объединяет прямые приказы с обычным Jobs lifecycle.
 
 ## 2. Владение состоянием
 
-- World владеет designations, их connectivity и фактом excavation commit клетки.
-- Jobs владеет job identity, stage, assignment, progress и terminal state.
+- World владеет designations, connectivity и excavation commit клетки.
+- Jobs владеет job identity, priority, assignment, progress и terminal state.
 - Reservations владеет worker/tool/position claims.
-- Agents владеет active action и player override, связывающий resident с excavation zone.
+- Agents владеет только текущим active action конкретного resident.
 - Presentation показывает designation, cursor и typed status, но не хранит progress.
 
-Отдельный presentation/manual timer не может быть вторым источником work progress.
+Прямой приказ не создаёт второго timer, отдельного manual job owner или постоянного эксклюзивного закрепления resident за зоной.
 
-## 3. Подтверждённый workflow designation
+## 3. Обычный workflow designation
 
 1. Player рисует tunnel/depth/room cells.
 2. Application валидирует target mask и создаёт/reconciles ordinary excavation jobs.
 3. Job matching назначает подходящих residents.
 4. Resident идёт к рабочей позиции, выполняет work и commit клетки.
-5. Remaining designated cells сохраняются и получают/сохраняют jobs.
-6. Resident или planner продолжает следующую доступную клетку.
-7. Status для tunnel/depth/room action — «Копает».
+5. Remaining cells сохраняются и продолжают иметь jobs.
+6. Свободные residents берут следующие доступные jobs.
+7. Status tunnel/depth/room action — «Копает».
 
-## 4. Подтверждённый direct order contract
+## 4. Прямой приказ выбранному resident
 
-- прямой приказ выбранному resident использует те же jobs, reservations и commit;
-- direct order закрепляет resident за **всей связанной выделенной excavation zone**, а не только за следующей клеткой;
-- resident продолжает работу, пока в этой связанной зоне остаются доступные незавершённые клетки;
-- если во время выполнения к зоне добавляются связанные клетки тоннеля, глубины или комнаты, они входят в тот же direct order и resident продолжает копать их;
-- расширение зоны не создаёт второй progress timer и не сбрасывает уже выполненную работу;
-- replacement/reconciliation job повторно связывается с remaining target zone;
-- completed job id удаляется из indexes, но direct group живёт, пока есть связанные designated cells;
-- ошибка одного job не отключает общий simulation driver;
-- повторные ticks переоценивают pending zone и доступные jobs.
+Прямой приказ:
 
-Direct order заканчивается, когда связанная зона полностью завершена, явно отменена или перестала существовать. Точные правила split/merge и отмены остаются открытыми.
+- использует те же ordinary excavation jobs, reservations и commit;
+- инициирует немедленную попытку назначить выбранному resident доступную работу в указанной связанной зоне;
+- не закрепляет resident за зоной до полного завершения;
+- не удаляет jobs этой зоны из общего списка;
+- не запрещает другим свободным residents подключаться к той же зоне;
+- не создаёт эксклюзивный player override на все remaining cells;
+- после completion/release/blocked выбранный resident подчиняется обычному planner/job matching.
 
-## 5. Dynamic zone membership
+Таким образом, прямой приказ является приоритетным пользовательским запуском работы, а не персональной долгосрочной собственностью зоны.
 
-Zone membership должна пересчитываться из authoritative designations, а не храниться только как список job ids.
+## 5. Связанная excavation zone
+
+Direct target определяется связанной группой незавершённых tunnel/depth/room designations.
 
 Подтверждено:
 
-- новая связанная клетка присоединяется к выполняемой зоне;
-- тип designation может быть tunnel, depth или room;
-- завершённая клетка удаляется из remaining set, но не разрывает player override автоматически;
-- повторная отрисовка поверх уже входящей клетки не дублирует job;
-- связь resident с зоной переживает job reconciliation.
+- новые связанные клетки, добавленные во время копки, входят в ту же zone;
+- jobs для новых клеток появляются через обычный reconciliation;
+- любой свободный подходящий resident может взять новый job;
+- несколько residents могут одновременно работать в разных допустимых позициях одной zone;
+- одна exclusive work position не может быть занята двумя residents;
+- повторная отрисовка существующей клетки не дублирует job;
+- completion одной клетки не уничтожает remaining zone.
 
-Не утверждены adjacency rule, поведение при слиянии двух direct zones и выбор компоненты после разделения eraser-ом.
+Zone membership пересчитывается из authoritative designations, а не хранится как список job ids.
 
-## 6. Eraser
+## 6. Reconciliation и ошибки
 
-Eraser удаляет selected unfinished designations, active/nonterminal jobs и связанные reservations. Уже committed empty terrain не восстанавливается. Eraser не должен удалять unrelated jobs в той же клетке.
+- completed job удаляется из indexes;
+- remaining cell получает или сохраняет ordinary job;
+- failed/cancelled job не останавливает simulation driver;
+- повторные ticks переоценивают pending cells и candidates;
+- ошибка одного resident/job не блокирует других workers зоны;
+- временно освобождённый job возвращается в общий matching pool.
 
-Если eraser разделяет direct zone на несколько компонент, дальнейшая привязка resident определяется после ответа на Q-DIG-007.
+## 7. Eraser
 
-## 7. Invariants
+Eraser удаляет выбранные unfinished designations, active/nonterminal jobs и связанные reservations.
 
-- одна клетка имеет не более одного активного excavation commit path;
-- direct и automatic workers не получают одну exclusive work position одновременно;
-- completed/failed/cancelled job не остаётся в direct group indexes;
-- remaining target cells не теряются при job replacement;
+Уже committed empty terrain не восстанавливается. Eraser не удаляет unrelated jobs в той же клетке.
+
+При split/merge зоны jobs пересобираются из оставшихся designations. Точная adjacency и priority policy остаются открытыми.
+
+## 8. Инварианты
+
+- одна клетка имеет не более одного active excavation commit path;
+- один resident выполняет не более одного active excavation job;
+- одна exclusive work position не принадлежит двум workers;
+- direct order не удаляет zone jobs из общего списка;
+- другие свободные residents могут подключаться к direct-started zone;
+- remaining cells не теряются при job replacement;
 - динамически добавленная связанная клетка не требует повторного direct click;
 - work progress изменяется одним authoritative cadence;
-- next-cell continuation не зависит от Unity frame rate;
-- direct override ссылается на authoritative zone identity/connectivity, а не на presentation stroke.
+- continuation не зависит от Unity frame rate;
+- Presentation не владеет zone membership или progress.
 
-## 8. Решённые вопросы
+## 9. Решённые вопросы
 
-- **Q-DIG-001:** direct order закрепляет выбранного resident за всей связанной excavation zone до её завершения или явной отмены.
-- **Q-DIG-008:** связанные клетки, добавленные во время работы, автоматически входят в active direct zone, включая tunnel, depth и room designations.
+- **Q-DIG-001:** direct order относится к связанной excavation zone, но не закрепляет выбранного resident за ней до завершения.
+- **Q-DIG-002:** другие automatic residents могут одновременно подключаться к той же zone через обычный job matching.
+- **Q-DIG-008:** связанные tunnel/depth/room cells, добавленные во время работы, автоматически входят в active zone.
 
-## 9. Открытые вопросы
+## 10. Открытые вопросы
 
-- **Q-DIG-002:** могут ли другие automatic residents одновременно подключаться к зоне, за которой закреплён direct resident?
 - **Q-DIG-003:** порядок клеток: frontier, nearest reachable, drawing order или stable CellId?
-- **Q-DIG-004:** поведение при временно недостижимой следующей клетке.
-- **Q-DIG-005:** новый direct order заменяет текущую zone, ставится в очередь или разрешён только после отмены старой?
-- **Q-DIG-006:** отдельная отмена player override без стирания designation.
-- **Q-DIG-007:** что происходит при split/merge: resident выбирает компоненту с текущей рабочей клеткой, всю объединённую зону или получает новый выбор?
-- **Q-DIG-009:** какая adjacency определяет «связанную» зону в 3D и могут ли разные Z-слои соединяться только через designated depth cells?
+- **Q-DIG-004:** что происходит при временно недостижимой следующей клетке?
+- **Q-DIG-005:** новый direct order заменяет текущий active action выбранного resident, ставится в очередь или отклоняется?
+- **Q-DIG-006:** требуется ли отдельная отмена direct priority без стирания designation?
+- **Q-DIG-007:** как split/merge влияет на zone priority и порядок jobs?
+- **Q-DIG-009:** какая adjacency определяет связанность в 3D?
+- **Q-DIG-010:** существует ли числовой priority boost для direct-started zone и когда он заканчивается?
 
-## 10. Save/Load
+## 11. Save/Load
 
-Сохраняются designations, jobs, assignments, stages, progress, reservations и player override/zone identity, если оно влияет на выбор. После загрузки connectivity и indexes полностью rebuildable из authoritative snapshots. Presentation cursor и hover не сохраняются.
+Сохраняются designations, jobs, assignments, stages, progress и reservations.
 
-## 11. Диагностика и acceptance
+Если direct order создаёт сохраняемый priority marker, он должен иметь stable zone identity и rebuildable connectivity. Если direct order только немедленно назначает job, отдельное состояние direct zone не сохраняется.
 
-Диагностика показывает zone id/connectivity version, remaining cells, dynamically joined cells, active/replacement job ids, assigned resident, candidate rejection, route, tool, cadence, progress owner и last transition.
+Presentation cursor и hover не сохраняются.
+
+## 12. Диагностика
+
+Диагностика показывает:
+
+- zone id/connectivity version;
+- remaining и dynamically joined cells;
+- active/replacement job ids;
+- workers, work positions и reservations;
+- direct command source;
+- priority reason;
+- candidate rejection;
+- route, tool, cadence и progress owner;
+- last transition и failure reason.
+
+## 13. Acceptance
 
 Обязательные scenarios:
 
 - 10+ последовательных tunnel cells;
+- несколько residents одновременно копают одну zone;
+- direct order выбранному resident не блокирует подключение других;
 - добавление новых связанных tunnel cells во время копки;
-- присоединение depth и room cells к active zone;
+- присоединение depth и room cells;
 - depth excavation без circle marker dependency;
 - room template до полного завершения;
-- direct order после первой клетки;
-- automatic workers после direct order согласно будущей Q-DIG-002 policy;
+- selected resident освобождает/завершает job, а zone продолжает выполняться;
 - unreachable/retry;
 - erase части плана и split zone;
 - save/load mid-zone;
-- failure одного job без остановки симуляции.
+- failure одного job без остановки симуляции;
+- Unity Play Mode проверяет cursor, status, job list и продолжение после первой клетки.

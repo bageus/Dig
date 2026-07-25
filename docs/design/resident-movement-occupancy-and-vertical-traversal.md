@@ -14,110 +14,130 @@ Tracking issue: [#386](https://github.com/bageus/Dig/issues/386).
 
 ## 1. Назначение
 
-Система разрешает естественное встречное движение в достаточно широком тоннеле. Гномы обходят друг друга внутри визуальной ширины прохода, не блокируют маршрут из-за совпадения logical cell и не проходят телами друг сквозь друга.
+Система обеспечивает непрерывное движение residents в горизонтальных и вертикальных тоннелях без блокировки из-за совпадения logical cell.
 
 ## 2. Владение состоянием
 
-- Agents владеет authoritative logical cell каждого resident.
+- Agents владеет authoritative logical cell resident.
 - Navigation владеет route/traversal result.
-- Movement/Application валидирует cell transition и конфликтующие переходы одного tick.
-- Presentation владеет interpolation, directional lateral lane, local avoidance и climbing animation.
+- Movement/Application валидирует cell transitions.
+- Presentation владеет interpolation, directional lane, spacing, local avoidance и climbing animation.
 
-Visual lane не является отдельной навигационной клеткой и не сохраняется.
+Visual lane и spacing не являются отдельными навигационными клетками и не сохраняются.
 
-## 3. Подтверждённое горизонтальное движение
+## 3. Горизонтальные directional lanes
 
-- обычный тоннель визуально достаточно широк для обхода гномов;
-- гном, движущийся вправо, идёт немного правее центральной линии тоннеля;
-- гном, движущийся влево, идёт немного левее центральной линии тоннеля;
-- встречные гномы проходят рядом по разным lateral lanes, а не сквозь друг друга;
-- если гном стоит по центру тоннеля, движущиеся гномы обходят его по свободной стороне;
-- несколько residents могут иметь одну logical cell, поскольку logical cell не моделирует точную ширину тела;
-- authoritative route остаётся клеточным, а lateral displacement является rebuildable Presentation state;
-- direct opposite swap `A -> B cell` и `B -> A cell` одним simulation step остаётся запрещённым как логический transition;
-- local avoidance не должен телепортировать, пропускать route cell или менять job reachability.
+- гном, движущийся вправо, идёт немного правее центра тоннеля;
+- гном, движущийся влево, идёт немного левее центра;
+- встречные гномы проходят рядом по разным lanes;
+- stationary resident в центре обходится по свободной стороне;
+- совпадение logical cell само по себе не блокирует проход;
+- local avoidance не меняет route, job reachability или authoritative position.
 
-Таким образом, обычное горизонтальное движение не должно использовать «одна клетка — один гном» как блокирующую occupancy policy.
+Обычный горизонтальный тоннель не использует правило «одна клетка — один гном».
 
-## 4. Directional lane и local avoidance
+## 4. Несколько гномов одного направления
 
-Базовые visual targets:
+Гномы, движущиеся в одном направлении, идут цепочкой по одной directional lane.
 
-- движение вправо — правая lateral lane;
-- движение влево — левая lateral lane;
-- stationary/working resident — центральная или рабочая позиция;
-- обход stationary actor — временный offset в свободную сторону с возвратом на directional lane.
+Правила:
 
-Lane resolver должен быть deterministic для одинакового snapshot и не зависеть от порядка Unity objects. Visual bodies не должны пересекаться на экране, но physics collider не становится вторым владельцем logical movement.
+- порядок цепочки определяется текущим направлением и положением вдоль маршрута;
+- идущий сзади сохраняет визуальный интервал;
+- обгон внутри обычной клетки не требуется;
+- chain spacing не блокирует logical route навсегда;
+- временное сближение не должно превращаться в проход тел друг сквозь друга;
+- при остановке переднего resident следующие замедляются или ждут, сохраняя bounded replan policy.
 
-Количество гномов одного направления, выбор стороны при нескольких obstacles и поведение в сужениях остаются открытыми.
+Количество параллельных sub-lanes для одного направления не используется.
 
-## 5. Conflict resolution
+## 5. Встречное горизонтальное движение
 
-Решение logical transitions учитывает полный набор planned movements одного tick. Partial per-agent commit не должен зависеть от случайного порядка объектов.
+- противоположные направления используют разные lateral lanes;
+- direct opposite logical swap одним simulation step запрещён;
+- несколько residents могут временно находиться в одной logical cell;
+- visual bodies не должны проходить друг сквозь друга;
+- stationary center resident не создаёт permanent wait при наличии свободной стороны.
 
-Подтверждено:
-
-- совпадение destination logical cell само по себе не блокирует нормальный горизонтальный проход;
-- direct swap одним tick запрещён;
-- visual lane/local avoidance решает обычный обход в широком тоннеле;
-- permanent wait из-за stationary resident в центре запрещён, если существует визуально свободная сторона.
-
-Hard deadlock policy требуется только для геометрии, где обход действительно невозможен: vertical passage, doorway, ladder/elevator link или специально узкий footprint.
+Hard deadlock policy требуется только для действительно однополосной геометрии.
 
 ## 6. Vertical traversal
 
-Для перехода между связанными vertical tunnel cells:
+Для связанного vertical tunnel:
 
 - Domain/Navigation проверяет допустимый transition;
-- resident начинает climbing visual state;
+- resident входит в climbing visual state;
 - корпус ориентируется спиной к основной камере;
 - руки и ноги получают climbing animation;
-- interpolation идёт между projected centers/surfaces;
-- после authoritative arrival visual возвращается к normal locomotion;
+- interpolation идёт между vertical cells;
+- после arrival visual возвращается к normal locomotion;
 - interruption/replan не оставляет resident в climbing pose.
 
-Правила встречного движения двух climbers в одной вертикальной колонне остаются открытыми.
+### Встреча двух climbers
+
+Два гнома, движущиеся навстречу в одном vertical tunnel, не блокируют друг друга и проходят друг сквозь друга.
+
+Это явное исключение из горизонтального правила визуального непересечения:
+
+- ожидание у входа не требуется;
+- priority/retreat не требуется;
+- vertical traversal обоих residents продолжает выполняться;
+- Presentation допускает кратковременное visual overlap;
+- authoritative positions и routes остаются валидными и не создают duplicate actor.
+
+Точная техническая реализация same-tick crossing должна быть deterministic, но observable behavior зафиксировано: два climbers продолжают движение без блокировки.
 
 ## 7. Инварианты
 
 - один resident имеет одну authoritative logical position;
-- один tick не содержит взаимный direct swap;
-- visual overlap не используется как collision authority;
+- horizontal direct swap одним tick запрещён;
+- horizontal lane выбирается по направлению, а не по случайному object order;
+- residents одного направления движутся цепочкой;
+- stationary actor не блокирует широкий тоннель при доступном обходе;
+- vertical opposite climbers не блокируют друг друга;
+- vertical visual overlap разрешён только как утверждённое traversal-исключение;
 - shared-cell policy не создаёт teleport или route skip;
-- right/left lane выбирается из направления движения, а не из случайного object order;
-- stationary center actor не блокирует широкий тоннель, если доступна обходная visual lane;
-- save/load восстанавливает cells и active action, но не lateral offsets;
-- падение в vertical shaft не является обычным climbing transition и описывается в #396.
+- save/load не сохраняет lateral offsets, chain spacing или interpolation.
 
 ## 8. Решённые вопросы
 
-- **Q-MOVE-001 (обычный горизонтальный тоннель):** жёсткий лимит occupancy по logical cell не используется для блокировки прохода; точная body capacity решается visual lanes/local avoidance.
-- **Q-MOVE-002:** встречные гномы могут пройти через одну logical cell за несколько ticks по разным visual lanes, но direct logical swap одним tick запрещён.
-- **Q-MOVE-003 (обычный тоннель):** directional lanes устраняют необходимость приоритета между встречными residents при наличии места для обхода.
-- **Q-MOVE-004 (обычный тоннель):** stationary resident обходится, а не заставляет другого retreat/wait.
+- **Q-MOVE-001:** горизонтальный проход не использует жёсткий occupancy limit по logical cell.
+- **Q-MOVE-002:** встречные horizontal residents проходят по разным lanes; direct logical swap одним tick запрещён.
+- **Q-MOVE-003:** directional lanes устраняют необходимость приоритета в широком тоннеле.
+- **Q-MOVE-004:** stationary resident обходится.
+- **Q-MOVE-007:** residents одного направления идут цепочкой по одной lane.
+- **Q-MOVE-009:** opposite climbers в vertical tunnel проходят друг сквозь друга без ожидания.
 
 ## 9. Открытые вопросы
 
 - **Q-MOVE-005:** применяется ли wall-climb visual к ladders/elevators до отдельных animations?
-- **Q-MOVE-006:** могут ли building footprints/work positions физически сужать тоннель и отключать обычный обход?
-- **Q-MOVE-007:** сколько visual sub-lanes используется для нескольких гномов, движущихся в одном направлении, и должны ли они выстраиваться друг за другом?
-- **Q-MOVE-008:** как выбирается сторона обхода, если stationary actor не по центру или обе стороны частично заняты?
-- **Q-MOVE-009:** что происходит при встрече двух climbers в vertical tunnel: ожидание у входа, priority или возможность разойтись?
-- **Q-MOVE-010:** какие geometry links считаются реально однополосными и требуют deadlock recovery?
+- **Q-MOVE-006:** могут ли building footprints/work positions сужать тоннель и отключать обычный обход?
+- **Q-MOVE-008:** как выбирается сторона обхода, если stationary actor смещён или обе стороны заняты?
+- **Q-MOVE-010:** какие geometry links, кроме vertical tunnel, считаются реально однополосными?
+- **Q-MOVE-011:** точный минимальный visual interval цепочки и реакция на резкую остановку переднего resident.
 
-## 10. Диагностика и acceptance
+## 10. Диагностика
 
-Показываются route, next cell, logical transitions, current directional lane, avoidance target, rejected direct swap, obstacle actor, wait duration и visual locomotion mode.
+Показываются:
 
-Тесты:
+- route и next cell;
+- logical transition;
+- directional lane;
+- chain predecessor и spacing target;
+- avoidance target;
+- rejected horizontal swap;
+- vertical crossing state;
+- wait/replan reason;
+- current locomotion mode.
 
-- два residents навстречу используют разные lanes;
-- движущийся resident обходит stationary center resident;
-- три и более residents в одном участке;
-- несколько residents одного направления;
-- no direct swap property;
-- doorway/vertical single-lane recovery после утверждения policy;
-- vertical up/down transition;
+## 11. Acceptance
+
+- два horizontal residents навстречу используют разные lanes;
+- moving resident обходит stationary center resident;
+- несколько residents одного направления идут цепочкой;
+- остановка переднего resident не создаёт permanent overlap;
+- no horizontal direct swap property;
+- два opposite climbers проходят друг сквозь друга без блокировки;
+- vertical up/down climbing animation;
 - interruption и save/load mid-route;
-- Play Mode проверка отсутствия visual pass-through.
+- Play Mode проверяет horizontal no-pass-through и разрешённое vertical overlap.
