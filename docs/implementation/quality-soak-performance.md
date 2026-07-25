@@ -1,10 +1,12 @@
+> **Audit status (2026-07-26): DRAFT evidence.** Headless soak code and historical baselines exist, but current `.github/workflows/quality.yml` does not invoke the standard/large soak commands and does not run Unity Play Mode tests. Sections that describe CI artifacts are historical behavior until #15 is completed again. See [`implemented-systems-audit-2026-07-26.md`](implemented-systems-audit-2026-07-26.md).
+
 # Quality soak, performance budgets and invariants
 
 ## Purpose
 
 The quality soak is a deterministic headless scenario for detecting cross-system regressions before UI or content scale hides them. It is not a benchmark of final release hardware. It establishes reproducible CI baselines, identifies expensive systems and fails on structural corruption.
 
-The implementation completes issue #15 and extends the normal quality workflow rather than creating a separate test pipeline.
+The implementation was originally used to complete issue #15, but the current quality workflow no longer invokes the soak profiles. Issue #15 must remain open until the blocking CI gate is restored and Unity Play Mode evidence is added.
 
 ## Profiles and commands
 
@@ -183,7 +185,7 @@ Measured result:
 
 ## Large settlement baseline
 
-Issue #39 adds a second CI profile rather than replacing the fast standard regression. The first 64-resident Linux run produced:
+Issue #39 added a second profile rather than replacing the fast standard regression. The first 64-resident Linux run produced:
 
 | Result | Value |
 |---|---:|
@@ -217,8 +219,8 @@ The large profile exposes population-scale costs while retaining the same author
 
 `SettlementInvariantChecker` checks positive quantities and reservations, reservation capacity, Jobs worker ownership, hauling external links, terminal cleanup, Storage incoming links and resident food/facility targets. Failed checks retain deterministic sorting by code, entity and detail.
 
-## CI artifacts
+## CI evidence
 
-GitHub Actions runs the normal headless smoke, then both deterministic profiles. `soak-report-standard.json` and `soak-report-large.json` are uploaded even when a profile fails and are retained for fourteen days.
+Historical GitHub Actions runs executed the normal headless smoke and both deterministic profiles and uploaded `soak-report-standard.json` and `soak-report-large.json`.
 
-Each report contains profile identity, load parameters, state hash and replay result, quantity conservation, active/completed hauling counts, reservation counts, journal pressure, per-system performance summaries, budget violations, invariant violations and overall success.
+The current `.github/workflows/quality.yml` does not execute those commands and does not invoke Unity Test Runner. Until the workflow is restored, the baselines above are historical evidence only, not a current blocking quality gate. Current CI artifacts cover Python source contracts and .NET build/tests.
