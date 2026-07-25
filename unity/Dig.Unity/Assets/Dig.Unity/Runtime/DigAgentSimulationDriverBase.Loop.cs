@@ -143,13 +143,14 @@ namespace Dig.Unity
                 result = TerrainSession.SettleWorldItems(AgentSession.Tick);
             }
 
+            DomainError? tickWarning = null;
             if (result.IsFailure)
             {
-                // A domain/job failure belongs to the affected command. Disabling the
-                // component here permanently stopped every resident and all later direct
-                // orders, even though the player could still issue input successfully.
+                tickWarning = result.Error;
+                // Keep the global presentation/control loop alive. A single stale or
+                // retried job must not hide authoritative movement and make every dwarf
+                // appear frozen until a later successful tick.
                 Hud!.SetCommandResult(result);
-                return;
             }
 
             IReadOnlyList<JobOverlayViewModel> jobs = TerrainSession.LoadJobs();
@@ -196,6 +197,10 @@ namespace Dig.Unity
             if (movementWarning != null)
             {
                 Hud.SetStatus($"Manual movement cancelled: {movementWarning}");
+            }
+            else if (tickWarning != null)
+            {
+                Hud.SetStatus($"Work command deferred: {tickWarning}");
             }
         }
     }

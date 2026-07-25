@@ -12,6 +12,10 @@ namespace Dig.Unity
             SynchronizeExcavationDesignations();
             UpdateExcavationCursorPreview();
             UpdateSelectedResidentCommandCursor();
+            if (IsInitialized())
+            {
+                UpdateWorldObjectHover();
+            }
         }
 
         private void SynchronizeExcavationDesignations()

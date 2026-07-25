@@ -16,6 +16,7 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(agents));
             }
 
+            DomainError? firstError = null;
             for (int index = 0; index < agents.Count; index++)
             {
                 AgentViewModel agent = agents[index];
@@ -25,14 +26,16 @@ namespace Dig.Unity
                 Result result = TerrainSession.Advance(
                     effectiveTick,
                     new[] { agent });
-                if (result.IsFailure)
+                if (result.IsFailure && firstError == null)
                 {
-                    return result;
+                    firstError = result.Error;
                 }
             }
 
             TerrainSession!.ReconcileChangedTerrain(tick, agents);
-            return Result.Success();
+            return firstError == null
+                ? Result.Success()
+                : Result.Failure(firstError!);
         }
     }
 }

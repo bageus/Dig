@@ -162,7 +162,9 @@ public sealed class BuildingPlacementValidator
                 && !snapshot.IsSolid
                 && snapshot.State.IsExplored)
             .Where(reachable.Contains)
-            .OrderBy(cell => cell)
+            .OrderBy(cell => cell.Y == origin.Y ? 0 : 1)
+            .ThenBy(cell => Math.Abs(cell.X - origin.X) + Math.Abs(cell.Y - origin.Y))
+            .ThenBy(cell => cell)
             .Cast<CellId?>()
             .FirstOrDefault();
         if (!workPosition.HasValue)

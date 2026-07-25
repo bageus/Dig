@@ -67,13 +67,11 @@ namespace Dig.Unity
                 .ToArray();
             for (int index = 0; index < assignments.Length; index++)
             {
-                Result released = _releaseAssignment!.Handle(
+                // Direct movement owns the resident immediately. A stale work release
+                // is reconciled by the owning job system and must never block the
+                // authoritative manual movement order for this or other residents.
+                _releaseAssignment!.Handle(
                     new ReleaseJobAssignmentCommand(assignments[index].Id, tick));
-                if (released.IsFailure)
-                {
-                    return released;
-                }
-
                 RemoveAllRoutePlans(assignments[index].Id);
             }
 

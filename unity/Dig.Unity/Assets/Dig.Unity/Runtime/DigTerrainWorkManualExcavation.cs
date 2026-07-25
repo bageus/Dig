@@ -220,6 +220,8 @@ namespace Dig.Unity
             CellId? preferredCell,
             long tick)
         {
+            CellId? assignmentAnchor = preferredCell
+                ?? _manualExcavationResidentCell?.Invoke(group.AgentId);
             Dictionary<CellId, CellSnapshot> cells = CollectWorldCells();
             JobSnapshot? next = group.JobIds
                 .Select(jobId => _jobRepository.Get().Get(jobId))
@@ -227,10 +229,10 @@ namespace Dig.Unity
                     && !job.IsTerminal
                     && job.Definition is DigJobDefinition
                     && !IsOwnedByOtherResident(job, group.AgentId))
-                .OrderByDescending(job => Preferred(job!, preferredCell))
+                .OrderByDescending(job => Preferred(job!, assignmentAnchor))
                 .ThenBy(job => Distance(
                     ((DigJobDefinition)job!.Definition).Target.CellId,
-                    preferredCell))
+                    assignmentAnchor))
                 .ThenBy(job => job!.Id.ToString(), StringComparer.Ordinal)
                 .FirstOrDefault(job => IsExcavationFrontier(
                     ((DigJobDefinition)job!.Definition).Target.CellId,

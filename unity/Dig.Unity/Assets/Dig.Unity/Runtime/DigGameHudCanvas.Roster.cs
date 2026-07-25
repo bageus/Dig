@@ -54,6 +54,8 @@ public sealed partial class DigGameHudCanvas
             .OrderBy(item => item.ItemId, StringComparer.Ordinal)
             .ThenBy(item => item.StackId, StringComparer.Ordinal)
             .ToArray();
+        IReadOnlyList<HeldBuildingBoxRosterEntry> heldBuildingBoxes =
+            LoadHeldBuildingBoxes(residents);
         IReadOnlyList<JobOverlayViewModel> jobs = _terrainSession.LoadJobs()
             .OrderBy(job => IsTerminalStatus(job.Status))
             .ThenByDescending(job => job.Priority)
@@ -69,7 +71,8 @@ public sealed partial class DigGameHudCanvas
             return;
         }
 
-        string signature = BuildRosterSignature(residents, buildings, buildingBoxes, jobs);
+        string signature = BuildRosterSignature(
+            residents, buildings, buildingBoxes, heldBuildingBoxes, jobs);
         if (string.Equals(signature, _lastRosterSignature, StringComparison.Ordinal))
         {
             return;
@@ -81,7 +84,7 @@ public sealed partial class DigGameHudCanvas
         switch (_rightTab)
         {
             case RightPanelTab.Buildings:
-                BuildBuildingRows(buildings, buildingBoxes);
+                BuildBuildingRows(buildings, buildingBoxes, heldBuildingBoxes);
                 break;
             case RightPanelTab.Jobs:
                 BuildJobRows(jobs, residents);
@@ -93,9 +96,12 @@ public sealed partial class DigGameHudCanvas
 
     private void BuildBuildingRows(
         IReadOnlyList<BuildingWorldViewModel> buildings,
-        IReadOnlyList<WorldItemViewModel> buildingBoxes)
+        IReadOnlyList<WorldItemViewModel> buildingBoxes,
+        IReadOnlyList<HeldBuildingBoxRosterEntry> heldBuildingBoxes)
     {
-        if (buildings.Count == 0 && buildingBoxes.Count == 0)
+        if (buildings.Count == 0
+            && buildingBoxes.Count == 0
+            && heldBuildingBoxes.Count == 0)
         {
             AddEmptyRosterMessage("No completed buildings");
             return;
@@ -147,6 +153,20 @@ public sealed partial class DigGameHudCanvas
                 row.GetComponent<Image>().color =
                     new Color(0.52f, 0.34f, 0.16f, 0.96f);
             }
+        }
+
+        for (int index = 0; index < heldBuildingBoxes.Count; index++)
+        {
+            HeldBuildingBoxRosterEntry box = heldBuildingBoxes[index];
+            string residentId = box.ResidentId;
+            string label = box.DisplayName + $" · Held by {box.ResidentName}";
+            Button row = CreateButton(
+                $"Held BuildingBox {box.StackId}",
+                _rightContent!,
+                label,
+                () => _interaction!.SelectResidentFromHud(residentId),
+                preferredHeight: 36f);
+            ConfigureSingleLineRosterRow(row);
         }
     }
 
@@ -220,6 +240,7 @@ public sealed partial class DigGameHudCanvas
         IReadOnlyList<ResidentRosterRowViewModel> residents,
         IReadOnlyList<BuildingWorldViewModel> buildings,
         IReadOnlyList<WorldItemViewModel> buildingBoxes,
+        IReadOnlyList<HeldBuildingBoxRosterEntry> heldBuildingBoxes,
         IReadOnlyList<JobOverlayViewModel> jobs)
     {
         string residentVersions = string.Join(
@@ -239,6 +260,11 @@ public sealed partial class DigGameHudCanvas
             buildingBoxes.Select(item =>
                 $"{item.StackId}:{item.Quantity}:{item.ReservedQuantity}:"
                 + $"{item.CellX}:{item.CellY}:{item.CellZ}"));
+        string heldBoxVersions = string.Join(
+            ",",
+            heldBuildingBoxes.Select(item =>
+                $"{item.StackId}:{item.Quantity}:{item.ReservedQuantity}:"
+                + $"{item.ResidentId}:{item.ResidentName}"));
         string jobVersions = string.Join(
             ",",
             jobs.Select(job =>
@@ -247,7 +273,8 @@ public sealed partial class DigGameHudCanvas
         return $"{_rightTab}|{_agentRenderer!.SelectedAgentId}|"
             + $"{_buildingRenderer!.SelectedBuildingId}|{_jobRenderer!.SelectedJobId}|"
             + $"{_interaction!.SelectedBuildingBox?.StackId}|"
-            + $"{residentVersions}|{buildingVersions}|{buildingBoxVersions}|{jobVersions}";
+            + $"{residentVersions}|{buildingVersions}|{buildingBoxVersions}|"
+            + $"{heldBoxVersions}|{jobVersions}";
     }
 
     private static bool IsTerminalStatus(string status)

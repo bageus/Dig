@@ -78,11 +78,18 @@ internal sealed partial class DigTerrainWorkSession
                 return Result.Failure(duration.Error!);
             }
 
-            return _packableBuildingExecutions.BeginIteration(
+            // Runtime compresses each authoritative ten-minute work iteration into one
+            // simulation step. Three pack/unpack iterations therefore complete in about
+            // three real seconds without changing the domain timing/skill metadata.
+            Result begun = _packableBuildingExecutions.BeginIteration(
                 operationId,
                 workerId,
-                tick,
-                duration.Value);
+                Math.Max(0L, tick - 1L),
+                durationSeconds: 1);
+            if (begun.IsFailure)
+            {
+                return begun;
+            }
         }
 
         Result<bool> ready = _packableBuildingExecutions.IsIterationReady(

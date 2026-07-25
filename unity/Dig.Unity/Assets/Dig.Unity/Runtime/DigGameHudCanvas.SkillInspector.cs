@@ -127,7 +127,7 @@ public sealed partial class DigGameHudCanvas
 
     private static string FormatPoints(int units)
     {
-        return (units / (float)AgentSkillCatalog.UnitsPerPoint).ToString("0.##");
+        return (units / AgentSkillCatalog.UnitsPerPoint).ToString();
     }
 
     private static string FormatDiagnosticUnits(int units)
