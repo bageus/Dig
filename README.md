@@ -42,8 +42,11 @@ unity/
 tools/quality/                   Architecture and file-size checks
 
 docs/
+  systems/                       Required system-title index and source-of-truth links
+  design/                        Authoritative gameplay and UX specifications
   architecture/                  System and module design
   implementation/                Notes for implemented systems
+  development/                   Specification workflow, templates and project instructions
   adr/                           Architecture decision records
 ```
 
@@ -82,6 +85,12 @@ See [`docs/implementation/quality-soak-performance.md`](docs/implementation/qual
 For an existing checkout that previously showed CS8773, pull the latest `main`, reopen the project and allow the local package to reimport. If the Console still contains stale compiler output, run **Assets > Reimport All** or close Unity and remove the generated `unity/Dig.Unity/Library` directory before reopening.
 
 See [`docs/implementation/unity-presentation-host.md`](docs/implementation/unity-presentation-host.md) for the integration overview, [`docs/implementation/unity-world-vertical-slice.md`](docs/implementation/unity-world-vertical-slice.md) for world interaction, [`docs/implementation/unity-resident-presentation.md`](docs/implementation/unity-resident-presentation.md) for resident visuals and AI diagnostics, and [`docs/implementation/unity-csharp-compatibility.md`](docs/implementation/unity-csharp-compatibility.md) for compiler rules.
+
+## System requirements workflow
+
+Every feature or bug investigation starts from [`docs/systems/README.md`](docs/systems/README.md), which maps system titles and aliases to authoritative specifications, implementation notes and tracking issues. Missing or contradictory behavior is handled through the questionnaire workflow in [`docs/development/system-specification-workflow.md`](docs/development/system-specification-workflow.md).
+
+The ready-to-paste ChatGPT Project Instructions are stored in [`docs/development/chatgpt-project-instructions.md`](docs/development/chatgpt-project-instructions.md).
 
 ## Architectural rules
 
