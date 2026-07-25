@@ -164,9 +164,13 @@ public sealed class GameplayRegressionContractTests
         Assert.True(
             interaction.IndexOf("TryResolveTunnelDestination", StringComparison.Ordinal)
             < interaction.IndexOf("_renderer!.TryGetCell", StringComparison.Ordinal));
-        Assert.Contains("DigTunnelProjection.CellWorldPosition(preview.Origin)", ghost);
+        Assert.Contains("DigTunnelProjection.ResidentWorldPosition", ghost);
         Assert.Contains("_root.SetParent(transform,worldPositionStays:true)", ghost);
         Assert.Contains("_root.SetParent(transform,worldPositionStays:true)", buildings);
+        string buildingVisual = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigBuildingVisual.cs")));
+        Assert.Contains("DigTunnelProjection.ResidentWorldPosition", buildingVisual);
         Assert.Contains("preview.Origin.Z==0", representatives);
         Assert.Contains("BuildingVisualState.BuildingBox", representatives);
         Assert.Contains("BuildingVisualState.Completed", representatives);
