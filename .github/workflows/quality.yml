@@ -16,17 +16,34 @@ jobs:
           ref: fix/runtime-selection-excavation-item-placement
           fetch-depth: 0
           show-progress: false
+      - name: Assemble staged runtime patch
+        shell: bash
+        run: |
+          set -u
+          mkdir -p patch-diagnostics/chunks
+          cp .dig-runtime-patch/part-* patch-diagnostics/chunks/
+          cat .dig-runtime-patch/part-* | tr -d '\r\n\t ' > patch-diagnostics/runtime-selected.tar.gz.b64
+          wc -c patch-diagnostics/runtime-selected.tar.gz.b64 > patch-diagnostics/size.txt
+          sha256sum patch-diagnostics/runtime-selected.tar.gz.b64 .dig-runtime-patch/part-* > patch-diagnostics/hashes.txt
+          base64 --decode patch-diagnostics/runtime-selected.tar.gz.b64 > patch-diagnostics/runtime-selected.tar.gz 2> patch-diagnostics/base64-error.txt || true
+          sha256sum patch-diagnostics/runtime-selected.tar.gz >> patch-diagnostics/hashes.txt
+          tar -tzf patch-diagnostics/runtime-selected.tar.gz > patch-diagnostics/tar-list.txt 2> patch-diagnostics/tar-error.txt || true
+      - name: Upload staged patch diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staged-runtime-patch-diagnostics
+          path: patch-diagnostics
+          retention-days: 1
       - name: Materialize staged runtime patch
         shell: bash
         run: |
           set -euo pipefail
-          cat .dig-runtime-patch/part-* | tr -d '\r\n\t ' > /tmp/runtime-selected.tar.gz.b64
-          test "$(wc -c < /tmp/runtime-selected.tar.gz.b64)" -eq 80156
-          echo "c2002b1592c4232d17878aae8b7e9b7d7448c4403bdcf7b5020c787218853a14  /tmp/runtime-selected.tar.gz.b64" | sha256sum --check
-          base64 --decode /tmp/runtime-selected.tar.gz.b64 > /tmp/runtime-selected.tar.gz
-          echo "8204754bea34a59299e9eb77822cf6280eedc10f38f6c61ae9f09f18119c52ca  /tmp/runtime-selected.tar.gz" | sha256sum --check
-          tar -xzf /tmp/runtime-selected.tar.gz -C .
-          rm -rf .dig-runtime-patch
+          test "$(wc -c < patch-diagnostics/runtime-selected.tar.gz.b64)" -eq 80156
+          echo "c2002b1592c4232d17878aae8b7e9b7d7448c4403bdcf7b5020c787218853a14  patch-diagnostics/runtime-selected.tar.gz.b64" | sha256sum --check
+          echo "8204754bea34a59299e9eb77822cf6280eedc10f38f6c61ae9f09f18119c52ca  patch-diagnostics/runtime-selected.tar.gz" | sha256sum --check
+          tar -xzf patch-diagnostics/runtime-selected.tar.gz -C .
+          rm -rf .dig-runtime-patch patch-diagnostics
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
