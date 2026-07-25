@@ -155,7 +155,9 @@ public sealed class DeepGameplayInteractionRegressionTests
         Assert.DoesNotContain("Hud!.SetCommandResult(result);return;", loop);
         Assert.Contains("ReconcileChangedTerrain(tick,agents)", agentAdvance);
         Assert.Contains("firstError==null", agentAdvance);
-        Assert.Contains("mustneverblocktheauthoritativemanualmovementorder", directMovement);
+        Assert.Contains("_releaseAssignment!.Handle", directMovement);
+        Assert.Contains("RemoveAllRoutePlans(assignments[index].Id)", directMovement);
+        Assert.DoesNotContain("Resultreleased=_releaseAssignment", directMovement);
         Assert.Contains("_manualExcavationResidentCell?.Invoke(group.AgentId)", manual);
         Assert.Contains("ResolveManualResidentCell(group.AgentId", multiWorker);
     }
