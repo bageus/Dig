@@ -31,6 +31,7 @@ namespace Dig.Unity
                 }
             }
 
+            TerrainSession!.ReconcileChangedTerrain(tick, agents);
             return Result.Success();
         }
     }

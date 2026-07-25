@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
+using Dig.Domain.Buildings;
 using Dig.Domain.Core;
+using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.Navigation;
 using Dig.Domain.World;
@@ -53,13 +55,31 @@ namespace Dig.Unity
                 throw new ArgumentException("Stack and resident ids are required.");
             }
 
+            EntityId parsedStackId = EntityId.Parse(stackId);
+            ItemStackSnapshot? stack = _buildingInventoryRepository!.Get().GetStack(
+                parsedStackId);
+            BuildingDefinition? building = stack == null
+                ? null
+                : ResolveBuildingBoxDefinition(stack.ItemId);
+            BuildingBoxPolicy? policy = building?.BoxPolicy;
+            if (stack == null
+                || policy == null
+                || stack.ItemId != policy.BoxItemId
+                || !stack.Location.HasCell
+                || stack.Location.CellId != sourceCell
+                || stack.Quantity != 1
+                || stack.AvailableQuantity != 1)
+            {
+                return Result.Failure(PlacementSourceUnavailable);
+            }
+
             long sequence = checked(_nextPickupSequence + 1);
             _nextPickupSequence = sequence;
             return _buildingBoxPickupCreate!.Handle(new CreateBuildingBoxPickupCommand(
                 DemoId('2', sequence),
-                EntityId.Parse(stackId),
+                parsedStackId,
                 EntityId.Parse(residentId),
-                _buildingBoxDefinition!.BoxPolicy!.BoxItemId,
+                policy.BoxItemId,
                 sourceCell,
                 priority: 700,
                 tick: tick));
@@ -119,7 +139,9 @@ namespace Dig.Unity
                     continue;
                 }
 
-                if (agent.CellX != pickup.SourceCell.X || agent.CellY != pickup.SourceCell.Y)
+                if (agent.CellX != pickup.SourceCell.X
+                    || agent.CellY != pickup.SourceCell.Y
+                    || agent.CellZ != pickup.SourceCell.Z)
                 {
                     continue;
                 }

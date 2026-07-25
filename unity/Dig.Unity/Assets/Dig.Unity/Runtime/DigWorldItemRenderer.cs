@@ -129,7 +129,7 @@ namespace Dig.Unity
             DigItemVisualResolution resolution,
             Vector2 cellOffset)
         {
-            float floorOffset = -DigTunnelProjection.RockCellHalfExtent
+            float floorOffset = DigTunnelProjection.ResidentFootSink
                 + (resolution.WorldScale.y * 0.5f)
                 + 0.02f;
             visual.transform.position = DigTunnelProjection.ResidentWorldPosition(
@@ -263,7 +263,9 @@ namespace Dig.Unity
             }
 
             _root = new GameObject("World Item Visuals").transform;
-            _root.SetParent(transform, worldPositionStays: false);
+            // Item roots use world-space tunnel projection and must not inherit the
+            // terrain bootstrap rotation. This also keeps fallen boxes upright.
+            _root.SetParent(transform, worldPositionStays: true);
         }
     }
 }

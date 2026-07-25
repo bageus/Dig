@@ -40,6 +40,24 @@ public sealed class GameplayRegressionContractTests
     }
 
     [Fact]
+    public void Terrain_frontier_is_reconciled_once_with_the_full_resident_roster()
+    {
+        string runtime = RuntimeRoot();
+        string session = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigTerrainWorkSession.cs")));
+        string advance = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigAgentSimulationDriverBase.AgentAdvance.cs")));
+
+        Assert.Contains("ReconcileChangedTerrain(tick,agents)", advance);
+        Assert.Contains("SynchronizeDesignations(tick,agents,DefaultExcavationPriority)", session);
+        Assert.DoesNotContain(
+            "if(_worldChanged){SynchronizeDesignations(tick,agents,DefaultExcavationPriority);}",
+            session.Substring(0, session.IndexOf("ReconcileChangedTerrain", StringComparison.Ordinal)));
+    }
+
+    [Fact]
     public void Commanded_excavation_workers_do_not_exhaust_movement_cadence()
     {
         string runtime = RuntimeRoot();
@@ -136,6 +154,9 @@ public sealed class GameplayRegressionContractTests
         string representatives = Normalize(File.ReadAllText(Path.Combine(
             runtime,
             "DigBuildingBoxGhostRenderer.Representatives.cs")));
+        string buildings = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigBuildingRenderer.cs")));
 
         Assert.Contains("TryResolveBuildingPlacementOrigin(GetPointerHits()", interaction);
         Assert.Contains("TryResolveTunnelDestination(hits[index],outorigin,out_)", interaction);
@@ -143,10 +164,46 @@ public sealed class GameplayRegressionContractTests
         Assert.True(
             interaction.IndexOf("TryResolveTunnelDestination", StringComparison.Ordinal)
             < interaction.IndexOf("_renderer!.TryGetCell", StringComparison.Ordinal));
-        Assert.Contains("DigTunnelProjection.CellWorldPosition(preview.Origin)", ghost);
+        Assert.Contains("DigTunnelProjection.ResidentWorldPosition", ghost);
+        Assert.Contains("_root.SetParent(transform,worldPositionStays:true)", ghost);
+        Assert.Contains("_root.SetParent(transform,worldPositionStays:true)", buildings);
+        string buildingVisual = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigBuildingVisual.cs")));
+        Assert.Contains("DigTunnelProjection.ResidentWorldPosition", buildingVisual);
         Assert.Contains("preview.Origin.Z==0", representatives);
         Assert.Contains("BuildingVisualState.BuildingBox", representatives);
         Assert.Contains("BuildingVisualState.Completed", representatives);
+    }
+
+    [Fact]
+    public void Building_box_runtime_uses_actual_box_type_floor_projection_and_lower_campfire()
+    {
+        string runtime = RuntimeRoot();
+        string pickup = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigBuildingBoxPickupExecution.cs")));
+        string items = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigWorldItemRenderer.cs")));
+        string boxes = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigWorldInteraction.BuildingBoxes.cs")));
+        string buildings = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigTerrainWorkSession.Buildings.cs")));
+
+        Assert.Contains("ResolveBuildingBoxDefinition(stack.ItemId)", pickup);
+        Assert.Contains("policy.BoxItemId", pickup);
+        Assert.Contains("agent.CellZ!=pickup.SourceCell.Z", pickup);
+        Assert.Contains("DigTunnelProjection.ResidentFootSink", items);
+        Assert.Contains("worldPositionStays:true", items);
+        Assert.Contains("ActivateBuildingRosterForSelection()", boxes);
+        Assert.Contains("CampfireBuildingBoxContent.Definition.Building", buildings);
+        Assert.Contains("new[]{workshop,campfire}", buildings);
+        Assert.Contains("FindLowerCavePlacement", buildings);
+        Assert.Contains("OrderByDescending(value=>value.Y)", buildings);
+        Assert.Contains("belowCell.IsSolid", buildings);
     }
 
     private static string RuntimeRoot()

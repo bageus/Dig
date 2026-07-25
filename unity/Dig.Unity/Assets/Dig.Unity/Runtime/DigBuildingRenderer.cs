@@ -202,7 +202,10 @@ namespace Dig.Unity
             }
 
             _root = new GameObject("Building Visuals").transform;
-            _root.SetParent(transform, worldPositionStays: false);
+            // Building positions are already projected into world-space side-view
+            // coordinates. Preserve the root's world identity instead of inheriting
+            // the bootstrap's terrain-only rotation.
+            _root.SetParent(transform, worldPositionStays: true);
         }
 
         private void LogRepresentativeValidation()

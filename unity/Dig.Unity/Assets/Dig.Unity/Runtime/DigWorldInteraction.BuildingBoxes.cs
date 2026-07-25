@@ -194,6 +194,7 @@ namespace Dig.Unity
             _jobRenderer!.Select(null);
             _buildingRenderer!.Select(null);
             _hud!.SetBuildingSelection(null);
+            _hud.ActivateBuildingRosterForSelection();
             _hud.SetStatus("BuildingBox selected.");
         }
 
