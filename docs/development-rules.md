@@ -42,6 +42,21 @@
 
 Логику нельзя распределять случайным образом между UI, анимациями, сценами, объектами движка и обработчиками ввода.
 
+### 3.1. Индекс систем и сверка требований
+
+Перед изменением поведения необходимо:
+
+1. найти систему по заголовкам и aliases в [`systems/README.md`](systems/README.md);
+2. прочитать authoritative design, tracking issue, implementation notes и фактический код;
+3. проверить полный workflow: запуск, success, повтор, cancel, blocked/failure/retry, save/load и UI feedback;
+4. при конфликте запроса и документации спросить, что становится новым источником истины;
+5. при отсутствии системы создать specification по [`development/system-specification-template.md`](development/system-specification-template.md), issue-опросник и запись в индексе;
+6. после ответа сначала обновить design/issue, затем код.
+
+Подробный процесс: [`development/system-specification-workflow.md`](development/system-specification-workflow.md).
+
+Нельзя молча заполнять отсутствующие бизнес-решения предположениями. Implementation notes и текущий код описывают фактическую реализацию, но не переопределяют утверждённый design.
+
 ## 4. Архитектурные границы
 
 Используются слои:
@@ -161,6 +176,8 @@ Data -> Domain через валидированные определения
 
 Исправление ошибки должно по возможности сопровождаться тестом, который воспроизводит её до исправления.
 
+Для runtime/Unity interaction source-contract проверки и успешной компиляции недостаточно. Нужен end-to-end или Play Mode сценарий, который проходит routing, authoritative commit, job/action execution, presentation refresh, повторный следующий шаг и cancel/failure/retry. Статус `VERIFIED` без такого evidence запрещён.
+
 ## 11. Изменение архитектуры
 
 Существенное архитектурное решение оформляется ADR в `docs/adr/`.
@@ -186,5 +203,9 @@ ADR обязателен для:
 - добавлены необходимые тесты;
 - добавлена диагностика для неочевидного поведения;
 - сохранение поддержано либо явно не требуется;
+- authoritative system specification и `docs/systems/README.md` обновлены;
+- документ и tracking issue связаны в обе стороны;
+- открытые бизнес-вопросы закрыты либо явно оставлены в статусе `QUESTIONNAIRE`;
 - документация обновлена;
-- критерии приёмки GitHub Issue выполнены.
+- критерии приёмки GitHub Issue выполнены;
+- для runtime interaction указан фактически пройденный end-to-end evidence.

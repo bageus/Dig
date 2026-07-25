@@ -1,0 +1,142 @@
+# Индекс систем Dig
+
+Статус: обязательная точка входа для поиска требований.
+
+Tracking issues: [#385](https://github.com/bageus/Dig/issues/385), [#393](https://github.com/bageus/Dig/issues/393), [#394](https://github.com/bageus/Dig/issues/394).
+
+## Как использовать индекс
+
+1. Найти заголовок или alias, совпадающий с запросом.
+2. Открыть authoritative specification.
+3. Открыть tracking issue и implementation map.
+4. При `QUESTIONNAIRE` не придумывать открытые бизнес-правила — задать перечисленные вопросы.
+5. Если подходящего заголовка нет, использовать [`../development/system-specification-template.md`](../development/system-specification-template.md) и процесс [`../development/system-specification-workflow.md`](../development/system-specification-workflow.md).
+
+Статусы:
+
+- `DRAFT` — отдельная полная спецификация ещё не утверждена;
+- `QUESTIONNAIRE` — есть открытые вопросы, влияющие на observable behavior;
+- `APPROVED` — требования утверждены;
+- `IMPLEMENTED` — требования реализованы и покрыты автоматическими тестами;
+- `VERIFIED` — дополнительно проверен полный runtime/Play Mode workflow.
+
+Статус относится к полноте описания и evidence, а не гарантирует отсутствие багов.
+
+## Системы, описанные в текущих проектных чатах
+
+| Заголовок | Aliases | Статус | Authoritative specification | Tracking |
+|---|---|---|---|---|
+| Контекстный ввод, курсоры и selection | cursor, shovel, pickup arrow, movement feet, erase, input priority, roster tab | `QUESTIONNAIRE` | [`contextual-input-cursors-and-selection.md`](../design/contextual-input-cursors-and-selection.md) | [#390](https://github.com/bageus/Dig/issues/390) |
+| BuildingBox placement, assembly и packing | коробка здания, распаковка, ghost, pack, unpack | `QUESTIONNAIRE` | [`building-box-placement-and-packing.md`](../design/building-box-placement-and-packing.md) + input/item contracts | [#118](https://github.com/bageus/Dig/issues/118), [#390](https://github.com/bageus/Dig/issues/390) |
+| Мировые предметы: gravity, visibility, selection, pickup | падение коробки, предмет на полу, Alt+LMB | `QUESTIONNAIRE` | [`world-item-gravity-selection-and-pickup.md`](../design/world-item-gravity-selection-and-pickup.md) | [#387](https://github.com/bageus/Dig/issues/387) |
+| Многоклеточная копка и прямые приказы | tunnel chain, depth, room, manual excavation, next cell | `QUESTIONNAIRE` | [`excavation-command-execution.md`](../design/excavation-command-execution.md) | [#388](https://github.com/bageus/Dig/issues/388) |
+| Excavation plans, rooms, depth и deposits | тоннель, глубина, комната, eraser, жила | `APPROVED` | [`excavation-room-templates-and-deposits.md`](../design/excavation-room-templates-and-deposits.md) | [#87](https://github.com/bageus/Dig/issues/87) |
+| Resident movement, shared cell и vertical climbing | обход гномов, collision, swap, карабканье | `QUESTIONNAIRE` | [`resident-movement-occupancy-and-vertical-traversal.md`](../design/resident-movement-occupancy-and-vertical-traversal.md) | [#386](https://github.com/bageus/Dig/issues/386) |
+| Resident/building roster synchronization | открыть вкладку, подсветить строку, world/HUD selection | `QUESTIONNAIRE` | [`contextual-input-cursors-and-selection.md`](../design/contextual-input-cursors-and-selection.md) | [#390](https://github.com/bageus/Dig/issues/390) |
+| Demo campfire + packed box | нижняя пещера, готовый костёр, коробка костра | `QUESTIONNAIRE` | [`demo-starting-scenario.md`](../design/demo-starting-scenario.md) | [#389](https://github.com/bageus/Dig/issues/389) |
+| Simulation/job fault isolation | один job не останавливает всех гномов | `QUESTIONNAIRE` | [`excavation-command-execution.md`](../design/excavation-command-execution.md), [`../implementation/simulation-runtime.md`](../implementation/simulation-runtime.md) | [#388](https://github.com/bageus/Dig/issues/388) |
+
+## Runtime foundation
+
+| Заголовок | Aliases | Статус | Authoritative specification | Implementation / issue |
+|---|---|---|---|---|
+| Simulation loop и fixed ticks | runtime, time, scheduler, cadence | `IMPLEMENTED` | [`../architecture/systems-core.md`](../architecture/systems-core.md#1-runtime-и-фундамент) | [`../implementation/simulation-runtime.md`](../implementation/simulation-runtime.md), [#2](https://github.com/bageus/Dig/issues/2) |
+| Entity identity | stable ID, entity registry | `IMPLEMENTED` | [`../architecture/systems-core.md`](../architecture/systems-core.md#1-runtime-и-фундамент) | [#1](https://github.com/bageus/Dig/issues/1) |
+| Commands, events и queries | CQRS, command pipeline, event journal | `IMPLEMENTED` | [`../development-rules.md`](../development-rules.md#6-команды-события-и-запросы) | [`../architecture/module-contracts.md`](../architecture/module-contracts.md) |
+| Ошибкоустойчивость simulation execution | driver failure, job exception, fault isolation | `DRAFT` | [`excavation-command-execution.md`](../design/excavation-command-execution.md) | [#388](https://github.com/bageus/Dig/issues/388) |
+
+## Мир, копание и exploration
+
+| Заголовок | Aliases | Статус | Authoritative specification | Implementation / issue |
+|---|---|---|---|---|
+| 3D cell world и глубина | XYZ, Z0..3, layered world | `APPROVED` | [`../design/world-3d-depth.md`](../design/world-3d-depth.md) | [`../implementation/world-state.md`](../implementation/world-state.md), [#88](https://github.com/bageus/Dig/issues/88) |
+| Excavation plans и cave templates | tunnel, room, depth designation | `APPROVED` | [`../design/excavation-room-templates-and-deposits.md`](../design/excavation-room-templates-and-deposits.md) | [`../implementation/z0-excavation-planning.md`](../implementation/z0-excavation-planning.md), [#87](https://github.com/bageus/Dig/issues/87) |
+| Excavation execution | direct dig, automatic dig, continuation | `QUESTIONNAIRE` | [`../design/excavation-command-execution.md`](../design/excavation-command-execution.md) | [`../implementation/unity-terrain-work-vertical-slice.md`](../implementation/unity-terrain-work-vertical-slice.md), [#388](https://github.com/bageus/Dig/issues/388) |
+| Terrain resources и processing | ore, terrain output, refinery | `APPROVED` | [`../design/terrain-resource-output-and-processing.md`](../design/terrain-resource-output-and-processing.md) | [`../implementation/mining-output-save-data-contract.md`](../implementation/mining-output-save-data-contract.md), [#109](https://github.com/bageus/Dig/issues/109) |
+| Deposits и depletion | resource veins, coal, crystal | `APPROVED` | [`../design/excavation-room-templates-and-deposits.md`](../design/excavation-room-templates-and-deposits.md) | [#91](https://github.com/bageus/Dig/issues/91) |
+| Procedural generation | seed, deterministic world | `IMPLEMENTED` | [`../architecture/systems-core.md`](../architecture/systems-core.md#2-мир) | [`../implementation/world-generation.md`](../implementation/world-generation.md), [#3](https://github.com/bageus/Dig/issues/3) |
+| Fog of war и exploration | reveal, vision source, hidden hauling | `APPROVED` | [`../design/exploration-fog-of-war.md`](../design/exploration-fog-of-war.md) | [#165](https://github.com/bageus/Dig/issues/165) |
+
+## Navigation и residents
+
+| Заголовок | Aliases | Статус | Authoritative specification | Implementation / issue |
+|---|---|---|---|---|
+| Traversability, regions и pathfinding | route, walkability, replan | `IMPLEMENTED` | [`../architecture/systems-core.md`](../architecture/systems-core.md#3-навигация) | [`../implementation/navigation.md`](../implementation/navigation.md), [#4](https://github.com/bageus/Dig/issues/4) |
+| Resident movement occupancy | shared cell, passing, no swap | `QUESTIONNAIRE` | [`../design/resident-movement-occupancy-and-vertical-traversal.md`](../design/resident-movement-occupancy-and-vertical-traversal.md) | [`../implementation/layered-tunnel-movement.md`](../implementation/layered-tunnel-movement.md), [#386](https://github.com/bageus/Dig/issues/386) |
+| Ladders, elevators и mobility | vertical links, personal mobility | `APPROVED` | [`../design/ladders-and-elevators.md`](../design/ladders-and-elevators.md) | [#51](https://github.com/bageus/Dig/issues/51) |
+| Agent state, needs и Utility AI | dwarf AI, schedule, player override | `IMPLEMENTED` | [`../architecture/systems-core.md`](../architecture/systems-core.md#4-жители), [`../design/needs-continuous-actions.md`](../design/needs-continuous-actions.md) | [`../implementation/agents-utility-ai.md`](../implementation/agents-utility-ai.md), [#5](https://github.com/bageus/Dig/issues/5) |
+| Automatic planning toggle | auto jobs, manual mode | `IMPLEMENTED` | [`../architecture/systems-core.md`](../architecture/systems-core.md#4-жители) | [`../implementation/resident-automatic-planning-toggle.md`](../implementation/resident-automatic-planning-toggle.md) |
+| Resident activity statuses | копает, несёт, строит, blocked | `APPROVED` | [`../design/resident-hud-selection-and-notifications.md`](../design/resident-hud-selection-and-notifications.md) | [`../implementation/resident-roster-read-models.md`](../implementation/resident-roster-read-models.md), [#113](https://github.com/bageus/Dig/issues/113) |
+
+## Jobs, reservations, inventory и hauling
+
+| Заголовок | Aliases | Статус | Authoritative specification | Implementation / issue |
+|---|---|---|---|---|
+| Job lifecycle и matching | jobs, candidate, claimed, blocked | `IMPLEMENTED` | [`../architecture/systems-core.md`](../architecture/systems-core.md#5-работа-и-резервирования) | [`../implementation/jobs-reservations.md`](../implementation/jobs-reservations.md), [#6](https://github.com/bageus/Dig/issues/6) |
+| Reservations | worker, item, position claim | `IMPLEMENTED` | [`../architecture/systems-core.md`](../architecture/systems-core.md#5-работа-и-резервирования) | [`../implementation/jobs-reservations.md`](../implementation/jobs-reservations.md), [#6](https://github.com/bageus/Dig/issues/6) |
+| Item catalog и Inventory | stack, quantity, location | `IMPLEMENTED` | [`../architecture/systems-core.md`](../architecture/systems-core.md#6-предметы-и-логистика) | [`../implementation/inventory-storage-hauling.md`](../implementation/inventory-storage-hauling.md), [#7](https://github.com/bageus/Dig/issues/7) |
+| World item gravity и pickup | item fall, visible floor item, Alt pickup | `QUESTIONNAIRE` | [`../design/world-item-gravity-selection-and-pickup.md`](../design/world-item-gravity-selection-and-pickup.md) | [`../implementation/world-item-pickup-equipment.md`](../implementation/world-item-pickup-equipment.md), [#387](https://github.com/bageus/Dig/issues/387) |
+| Resident inventory | Weapon, Main, Cargo, extensions | `APPROVED` | [`../design/resident-inventory-expansion.md`](../design/resident-inventory-expansion.md) | [`../implementation/resident-inventory-actions.md`](../implementation/resident-inventory-actions.md), [#64](https://github.com/bageus/Dig/issues/64) |
+| Storage, demand и hauling | stockpile, filters, delivery | `APPROVED` | [`../design/material-demand-and-hauling.md`](../design/material-demand-and-hauling.md) | [`../implementation/inventory-storage-hauling.md`](../implementation/inventory-storage-hauling.md), [#27](https://github.com/bageus/Dig/issues/27) |
+| Unit item entities | individual tools, equipment identity | `IMPLEMENTED` | [`../architecture/systems-core.md`](../architecture/systems-core.md#6-предметы-и-логистика) | [`../implementation/unit-item-entities.md`](../implementation/unit-item-entities.md) |
+
+## Buildings, economy и technology
+
+| Заголовок | Aliases | Статус | Authoritative specification | Implementation / issue |
+|---|---|---|---|---|
+| Building definitions и content | building catalog, services | `APPROVED` | [`../design/content/buildings.md`](../design/content/buildings.md) | [`../implementation/buildings-construction.md`](../implementation/buildings-construction.md), [#8](https://github.com/bageus/Dig/issues/8) |
+| BuildingBox lifecycle | placement, ghost, assembly, packing | `QUESTIONNAIRE` | [`../design/building-box-placement-and-packing.md`](../design/building-box-placement-and-packing.md), [`../design/contextual-input-cursors-and-selection.md`](../design/contextual-input-cursors-and-selection.md) | [`../implementation/packable-building-lifecycle.md`](../implementation/packable-building-lifecycle.md), [#118](https://github.com/bageus/Dig/issues/118) |
+| Construction | plan, work positions, progress | `IMPLEMENTED` | [`../architecture/systems-gameplay.md`](../architecture/systems-gameplay.md#1-строительство-и-экономика) | [`../implementation/buildings-construction.md`](../implementation/buildings-construction.md), [#8](https://github.com/bageus/Dig/issues/8) |
+| Building functions и roster | production panel, pack button, building list | `QUESTIONNAIRE` | [`../design/resident-hud-selection-and-notifications.md`](../design/resident-hud-selection-and-notifications.md), [`../design/contextual-input-cursors-and-selection.md`](../design/contextual-input-cursors-and-selection.md) | [`../implementation/building-functions-panel.md`](../implementation/building-functions-panel.md), [#113](https://github.com/bageus/Dig/issues/113) |
+| Production | recipes, queues, outputs | `IMPLEMENTED` | [`../architecture/systems-gameplay.md`](../architecture/systems-gameplay.md#1-строительство-и-экономика) | [#9](https://github.com/bageus/Dig/issues/9) |
+| Energy | generators, consumers, pause | `APPROVED` | [`../design/energy-generation-and-production-pausing.md`](../design/energy-generation-and-production-pausing.md) | [#49](https://github.com/bageus/Dig/issues/49) |
+| Technology tree | prerequisites, unlocks | `APPROVED` | [`../design/technology-tree.md`](../design/technology-tree.md) | [#126](https://github.com/bageus/Dig/issues/126) |
+| Research execution и UI | availability, duration, worker | `APPROVED` | [`../design/research-availability-duration-and-ui.md`](../design/research-availability-duration-and-ui.md) | [#125](https://github.com/bageus/Dig/issues/125) |
+
+## HUD, input и Presentation
+
+| Заголовок | Aliases | Статус | Authoritative specification | Implementation / issue |
+|---|---|---|---|---|
+| Context input router | click priority, Alt, cursor | `QUESTIONNAIRE` | [`../design/contextual-input-cursors-and-selection.md`](../design/contextual-input-cursors-and-selection.md) | [`../implementation/context-input-router.md`](../implementation/context-input-router.md), [#390](https://github.com/bageus/Dig/issues/390) |
+| Resident HUD и roster | top panel, needs, status | `APPROVED` | [`../design/resident-hud-selection-and-notifications.md`](../design/resident-hud-selection-and-notifications.md) | [`../implementation/resident-roster-read-models.md`](../implementation/resident-roster-read-models.md), [#113](https://github.com/bageus/Dig/issues/113) |
+| Notifications | ticker, attack, hunger, completion | `APPROVED` | [`../design/resident-hud-selection-and-notifications.md`](../design/resident-hud-selection-and-notifications.md) | [`../implementation/unity-notification-ticker.md`](../implementation/unity-notification-ticker.md), [#113](https://github.com/bageus/Dig/issues/113) |
+| Settlement management | building/jobs/resident lists | `IMPLEMENTED` | [`../architecture/systems-gameplay.md`](../architecture/systems-gameplay.md#6-presentation) | [`../implementation/settlement-management-menu.md`](../implementation/settlement-management-menu.md) |
+| World/agent/building/item visuals | renderers, prefabs, projection | `IMPLEMENTED` | [`../architecture/systems-gameplay.md`](../architecture/systems-gameplay.md#6-presentation) | [`../implementation/unity-visual-asset-pipeline.md`](../implementation/unity-visual-asset-pipeline.md), [#14](https://github.com/bageus/Dig/issues/14) |
+| Side-view camera и depth projection | 2.5D camera, Z layers | `IMPLEMENTED` | [`../design/world-3d-depth.md`](../design/world-3d-depth.md) | [`../implementation/unity-side-view-camera.md`](../implementation/unity-side-view-camera.md), [#14](https://github.com/bageus/Dig/issues/14) |
+
+## Progression, society и health
+
+| Заголовок | Aliases | Статус | Authoritative specification | Implementation / issue |
+|---|---|---|---|---|
+| Skills и capacity | 12 skills, gain/loss | `APPROVED` | [`../design/skills-and-progression.md`](../design/skills-and-progression.md) | [`../implementation/skills-progression-system.md`](../implementation/skills-progression-system.md), [#107](https://github.com/bageus/Dig/issues/107) |
+| Sleep и beds | comfort, personal bed | `APPROVED` | [`../design/sleep-comfort-and-bed-assignment.md`](../design/sleep-comfort-and-bed-assignment.md) | [#40](https://github.com/bageus/Dig/issues/40) |
+| Leisure | activity selection, variety | `APPROVED` | [`../design/leisure-variety-and-selection.md`](../design/leisure-variety-and-selection.md) | [#41](https://github.com/bageus/Dig/issues/41) |
+| Relationships, pregnancy и birth | family, partner, child | `APPROVED` | [`../design/partnership-pregnancy-and-birth.md`](../design/partnership-pregnancy-and-birth.md) | [`../implementation/society-lifecycle.md`](../implementation/society-lifecycle.md) |
+| Childhood и school | inheritance, education | `APPROVED` | [`../design/childhood-school-and-inheritance.md`](../design/childhood-school-and-inheritance.md) | [`../implementation/society-lifecycle.md`](../implementation/society-lifecycle.md) |
+| Death, graves и return | resurrection, rejuvenation | `APPROVED` | [`../design/death-graves-resurrection-and-rejuvenation.md`](../design/death-graves-resurrection-and-rejuvenation.md) | [`../implementation/society-lifecycle.md`](../implementation/society-lifecycle.md) |
+| Health и hospital | treatment, doctor, queue | `APPROVED` | [`../design/health-hospital-and-treatment.md`](../design/health-hospital-and-treatment.md) | [#130](https://github.com/bageus/Dig/issues/130) |
+| Role headwear | work hats, appearance | `APPROVED` | [`../design/resident-role-headwear.md`](../design/resident-role-headwear.md) | [`../implementation/resident-equipment-visuals.md`](../implementation/resident-equipment-visuals.md) |
+
+## Ecology, conflict и access
+
+| Заголовок | Aliases | Статус | Authoritative specification | Implementation / issue |
+|---|---|---|---|---|
+| Creatures и ecology | spawn, drops, behavior | `APPROVED` | [`../design/ecology-creatures-and-special-drops.md`](../design/ecology-creatures-and-special-drops.md) | [`../implementation/unity-creature-visual-pipeline.md`](../implementation/unity-creature-visual-pipeline.md) |
+| Combat, factions и strategy | attack, defense, diplomacy | `DRAFT` | [`../architecture/systems-gameplay.md`](../architecture/systems-gameplay.md#4-конфликт) | [`../implementation/combat-factions-strategy.md`](../implementation/combat-factions-strategy.md), [#10](https://github.com/bageus/Dig/issues/10) |
+| Doors и access | lock, public/private, passage | `APPROVED` | [`../design/doors-access-and-lifecycle.md`](../design/doors-access-and-lifecycle.md) | [#46](https://github.com/bageus/Dig/issues/46) |
+
+## Platform, save, quality и demo
+
+| Заголовок | Aliases | Статус | Authoritative specification | Implementation / issue |
+|---|---|---|---|---|
+| Save/load/migrations | snapshots, versions, restore | `IMPLEMENTED` | [`../architecture/systems-gameplay.md`](../architecture/systems-gameplay.md#5-сохранение-и-загрузка) | [`../implementation/save-load-migrations.md`](../implementation/save-load-migrations.md), [#13](https://github.com/bageus/Dig/issues/13) |
+| Content validation | stable IDs, schema, references | `IMPLEMENTED` | [`../architecture/systems-gameplay.md`](../architecture/systems-gameplay.md#2-прогрессия-и-контент) | [`../design/content/README.md`](../design/content/README.md) |
+| Diagnostics, performance и soak | reasons, budgets, deterministic replay | `IMPLEMENTED` | [`../development-rules.md`](../development-rules.md#9-наблюдаемость) | [`../implementation/quality-soak-performance.md`](../implementation/quality-soak-performance.md), [#15](https://github.com/bageus/Dig/issues/15) |
+| Unity presentation host | bootstrap, modules, runtime scene | `IMPLEMENTED` | [`../architecture/overview.md`](../architecture/overview.md) | [`../implementation/unity-presentation-host.md`](../implementation/unity-presentation-host.md), [#14](https://github.com/bageus/Dig/issues/14) |
+| Demo starting scenario | completed campfire, packed box | `QUESTIONNAIRE` | [`../design/demo-starting-scenario.md`](../design/demo-starting-scenario.md) | [#389](https://github.com/bageus/Dig/issues/389) |
+
+## Реестр открытых проектных вопросов
+
+Общие вопросы: [`../design/open-questions.md`](../design/open-questions.md).
+
+Вновь обнаруженные вопросы сначала записываются в authoritative system file и tracking issue. Общий реестр используется для cross-system или balance-вопросов, но не заменяет локальный questionnaire системы.
