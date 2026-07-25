@@ -20,8 +20,8 @@ Tracking issue: [#396](https://github.com/bageus/Dig/issues/396).
 - все свободные мировые предметы используют общую fall policy;
 - свободный world item автоматически входит в fall workflow сразу после обнаружения потери допустимой опоры; отдельный удар, приказ или interaction не требуется;
 - та же пространственная модель landing применяется к residents и enemies;
-- resident или enemy **не** начинает падение только из-за исчезновения опоры;
-- resident или enemy начинает падение после подтверждённого внешнего воздействия — knockback, push или другого impact result, который перемещает actor в открытый vertical tunnel;
+- для resident/enemy в текущей модели мира не существует обычного `SupportLost` trigger: actor либо стоит в валидной traversable cell, либо карабкается по валидному vertical link;
+- resident или enemy начинает падение только после подтверждённого внешнего воздействия — knockback, push или другого impact result, который сталкивает actor в открытый vertical tunnel;
 - после начала падения сущность движется вниз до первой допустимой опоры;
 - residents и enemies не получают fall damage;
 - landing не создаёт stun, knockdown или death только из-за высоты падения;
@@ -32,11 +32,14 @@ Tracking issue: [#396](https://github.com/bageus/Dig/issues/396).
 
 Правило нулевого урона относится именно к результату падения. Отдельный удар, вызвавший knockback, может наносить собственный combat damage по правилам Combat.
 
+Если в будущем появятся разрушаемые платформы, обрушения или другая механика, способная удалить traversable cell/vertical link под actor, она должна быть описана отдельной спецификацией. Текущая fall system не должна придумывать такой workflow заранее.
+
 ## 3. Владение состоянием
 
-- World предоставляет vertical cells и support snapshot.
+- World предоставляет vertical cells и support snapshot для items, а также valid traversal links для actors.
 - Inventory владеет authoritative location предметов и инициирует item fall при подтверждённой потере опоры.
 - Agents/Creatures владеют authoritative position и active state живых сущностей.
+- Navigation гарантирует, что обычное движение actor выполняется только через валидные horizontal/vertical transitions.
 - Combat создаёт knockback/push/impact result, являющийся trigger падения actor, но не меняет чужое состояние напрямую.
 - Jobs/Reservations освобождают или переводят active work при падении actor.
 - Presentation отображает trajectory и impact, но не выбирает trigger или landing cell.
@@ -55,13 +58,15 @@ Held, reserved или site item не считается свободным и и
 
 ### 4.2 Resident или enemy
 
-1. Combat/interaction system подтверждает внешний impact result: knockback, push или эквивалентное воздействие.
-2. Result должен фактически переместить actor в открытый vertical shaft; одной потери опоры недостаточно.
-3. Fall resolver проверяет vertical column и выбирает первую допустимую landing support.
-4. Active route, action, job и reservation обрабатываются по interruption policy.
-5. Authoritative position переходит к landing state по утверждённой timing policy.
-6. Presentation воспроизводит падение и обновляет collider.
-7. Actor завершает landing без fall damage/stun/knockdown/death.
+1. При обычном движении actor находится в валидной traversable cell либо выполняет climbing transition по валидному vertical link.
+2. Обычный movement/navigation workflow не создаёт для actor событие `SupportLost`.
+3. Combat/interaction system подтверждает внешний impact result: knockback, push или эквивалентное воздействие.
+4. Result должен фактически столкнуть actor в открытый vertical shaft.
+5. Fall resolver проверяет vertical column и выбирает первую допустимую landing support.
+6. Active route, action, job и reservation обрабатываются по interruption policy.
+7. Authoritative position переходит к landing state по утверждённой timing policy.
+8. Presentation воспроизводит падение и обновляет collider.
+9. Actor завершает landing без fall damage/stun/knockdown/death.
 
 ## 5. Landing result
 
@@ -80,7 +85,8 @@ Held, reserved или site item не считается свободным и и
 - одна сущность имеет одну authoritative position/location;
 - падение не создаёт duplicate item quantity или actor;
 - свободный unsupported item не ожидает отдельного воздействия для начала fall workflow;
-- resident/enemy не получает actor-fall transition только от support-loss event;
+- обычное движение resident/enemy не создаёт unsupported actor state;
+- climbing actor опирается на valid vertical traversal link, а не на исчезающую floor support;
 - actor-fall transition требует подтверждённого external impact result;
 - landing cell определяется одинаково при replay и save/load;
 - visual не остаётся в воздухе после authoritative landing;
@@ -94,6 +100,7 @@ Held, reserved или site item не считается свободным и и
 
 - **Q-FALL-001:** свободные предметы падают автоматически после потери опоры; residents/enemies падают только после внешнего воздействия, которое сталкивает их в vertical shaft.
 - **Q-FALL-004:** residents и enemies не получают fall damage, stun, knockdown или death независимо от высоты.
+- **Q-FALL-012:** сценарий «у actor исчезла опора без внешнего воздействия» отсутствует в текущей модели. Resident/enemy либо стоит в валидной cell, либо карабкается по валидному vertical link; отдельный workflow не требуется.
 
 ## 8. Открытые вопросы
 
@@ -106,7 +113,6 @@ Held, reserved или site item не считается свободным и и
 - **Q-FALL-009:** combat attribution, hostility и experience за knockback-caused fall.
 - **Q-FALL-010:** save/load mid-fall сохраняет falling state или вычисленную landing cell?
 - **Q-FALL-011:** какое состояние получает actor сразу после landing, если его previous action/job был прерван?
-- **Q-FALL-012:** что происходит с resident/enemy, если опора под ним исчезла без внешнего воздействия: остаётся ли actor на месте, переходит ли в climbing/edge-hold state или должен использоваться другой workflow?
 
 ## 9. Диагностика
 
@@ -114,8 +120,8 @@ Inspector показывает:
 
 - entity kind;
 - source cell;
-- trigger kind: `SupportLost` для item либо конкретный `Knockback/Push/Impact` для actor;
-- support snapshot/version;
+- trigger kind: `SupportLost` только для item либо конкретный `Knockback/Push/Impact` для actor;
+- support/traversal snapshot version;
 - landing cell;
 - fall distance;
 - interrupted action/job;
@@ -127,7 +133,7 @@ Inspector показывает:
 ## 10. Acceptance после закрытия опросника
 
 - свободный item автоматически начинает fall workflow после потери опоры без дополнительного воздействия;
-- support loss сам по себе не запускает resident/enemy fall;
+- обычный movement/climbing actor не создаёт `SupportLost` fall trigger;
 - подтверждённый knockback/push в shaft запускает resident/enemy fall;
 - item, resident и enemy используют согласованный deterministic landing resolver;
 - любой fall distance для resident/enemy даёт zero fall damage;
@@ -135,4 +141,4 @@ Inspector показывает:
 - active jobs/routes/reservations корректно завершаются или приостанавливаются;
 - несколько сущностей в одной vertical column не создают nondeterministic order;
 - save/load и replay дают тот же trigger/landing result;
-- Play Mode проверяет item support-loss trigger, actor impact-only trigger, trajectory, collider, authoritative cell и отсутствие fall damage.
+- Play Mode проверяет item support-loss trigger, actor impact-only trigger, normal climbing without false fall, trajectory, collider, authoritative cell и отсутствие fall damage.

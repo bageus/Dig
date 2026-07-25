@@ -70,8 +70,13 @@ Hard deadlock policy требуется только для действител
 - корпус ориентируется спиной к основной камере;
 - руки и ноги получают climbing animation;
 - interpolation идёт между vertical cells;
+- resident во время перехода считается карабкающимся по валидному vertical link, а не стоящим на отдельной floor support;
+- обычный climbing workflow не генерирует `SupportLost` и не переводит actor в падение;
+- падение возможно только после внешнего knockback/push/impact, описанного в [`entity-fall-knockback-and-vertical-shafts.md`](entity-fall-knockback-and-vertical-shafts.md);
 - после arrival visual возвращается к normal locomotion;
 - interruption/replan не оставляет resident в climbing pose.
+
+В текущей модели vertical tunnel не разрушается под уже выполняющим переход actor. Если позже появятся обрушения, разрушаемые платформы или удаление активного traversal link, это потребует отдельной спецификации и не выводится из текущих правил движения.
 
 ### Встреча двух climbers
 
@@ -96,6 +101,8 @@ Hard deadlock policy требуется только для действител
 - stationary actor не блокирует широкий тоннель при доступном обходе;
 - vertical opposite climbers не блокируют друг друга;
 - vertical visual overlap разрешён только как утверждённое traversal-исключение;
+- valid climbing transition не создаёт unsupported actor state;
+- actor не падает из vertical tunnel без подтверждённого external impact result;
 - shared-cell policy не создаёт teleport или route skip;
 - save/load не сохраняет lateral offsets, chain spacing или interpolation.
 
@@ -107,6 +114,7 @@ Hard deadlock policy требуется только для действител
 - **Q-MOVE-004:** stationary resident обходится.
 - **Q-MOVE-007:** residents одного направления идут цепочкой по одной lane.
 - **Q-MOVE-009:** opposite climbers в vertical tunnel проходят друг сквозь друга без ожидания.
+- **Q-MOVE-012:** vertical climbing использует валидный traversal link; сценарий самопроизвольной потери опоры во время обычного перехода отсутствует.
 
 ## 9. Открытые вопросы
 
@@ -127,6 +135,8 @@ Hard deadlock policy требуется только для действител
 - avoidance target;
 - rejected horizontal swap;
 - vertical crossing state;
+- active vertical link;
+- external impact fall trigger, если он был;
 - wait/replan reason;
 - current locomotion mode.
 
@@ -138,6 +148,7 @@ Hard deadlock policy требуется только для действител
 - остановка переднего resident не создаёт permanent overlap;
 - no horizontal direct swap property;
 - два opposite climbers проходят друг сквозь друга без блокировки;
-- vertical up/down climbing animation;
-- interruption и save/load mid-route;
-- Play Mode проверяет horizontal no-pass-through и разрешённое vertical overlap.
+- normal vertical climbing не запускает fall без external impact;
+- knockback/push в open shaft передаёт управление fall system;
+- interruption и save/load mid-route сохраняют authoritative cell/action, но не presentation offsets;
+- Play Mode подтверждает horizontal no-pass-through и разрешённый vertical overlap.
