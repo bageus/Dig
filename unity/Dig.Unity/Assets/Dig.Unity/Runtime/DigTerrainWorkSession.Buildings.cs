@@ -53,43 +53,43 @@ internal sealed partial class DigTerrainWorkSession
             return;
         }
 
-        BuildingDefinition definition = CreateDemoBuildingDefinition();
+        BuildingDefinition workshopDefinition = CreateDemoBuildingDefinition();
+        BuildingDefinition campfireDefinition =
+            CampfireBuildingBoxContent.Definition.Building;
         BuildingCatalog catalog = new BuildingCatalog(new[]
         {
-            definition,
-            CampfireBuildingBoxContent.Definition.Building,
+            workshopDefinition,
+            campfireDefinition,
         });
-        CellId origin = FindDemoBuildingOrigin();
-        CellId workPosition = new CellId(origin.X, origin.Y - 1, origin.Z);
-        EntityId buildingId = DemoId('b', 1);
-        EntityId sourceStackId = DemoId('c', 1);
-        EntityId assemblyJobId = DemoId('d', 1);
-        CreateCompletedAssemblyJob(
-            buildingId,
-            sourceStackId,
-            assemblyJobId,
-            origin,
-            workPosition,
+
+        CellId workshopOrigin = FindDemoBuildingOrigin();
+        CellId workshopWorkPosition = new CellId(
+            workshopOrigin.X,
+            workshopOrigin.Y - 1,
+            workshopOrigin.Z);
+        BuildingSnapshot workshop = CreateCompletedDemoBuilding(
+            catalog.Get(workshopDefinition.Id),
+            DemoId('b', 1),
+            DemoId('c', 1),
+            DemoId('d', 1),
+            workshopOrigin,
+            workshopWorkPosition,
             journal);
 
-        BuildingSnapshot snapshot = new BuildingSnapshot(
-            buildingId,
-            catalog.Get(definition.Id),
-            origin,
-            BuildingOrientation.North,
-            definition.ResolveFootprint(origin, BuildingOrientation.North),
-            workPosition,
-            BuildingStatus.Completed,
-            definition.RequiredWork,
-            definition.MaximumDurability,
-            version: 1,
-            diagnosticReason: null,
-            boxPlan: new BuildingBoxPlanSnapshot(
-                sourceStackId,
-                assemblyJobId,
-                BuildingBoxCommitState.Consumed));
+        DemoBuildingPlacement campfirePlacement = FindLowerCavePlacement(
+            campfireDefinition,
+            workshop.Footprint);
+        BuildingSnapshot campfire = CreateCompletedDemoBuilding(
+            catalog.Get(campfireDefinition.Id),
+            DemoId('b', 2),
+            DemoId('c', 2),
+            DemoId('d', 2),
+            campfirePlacement.Origin,
+            campfirePlacement.WorkPosition,
+            journal);
+
         BuildingsState buildings = BuildingsState.RestoreWithPacking(
-            new[] { snapshot }).Value;
+            new[] { workshop, campfire }).Value;
         _buildingsRepository = new InMemoryBuildingsRepository(buildings);
         _buildingInventoryRepository = _inventoryRepository;
 
@@ -103,7 +103,7 @@ internal sealed partial class DigTerrainWorkSession
                 _jobRepository,
                 journal));
         InitializeBuildingPackingExecution(journal);
-        InitializeBuildingBoxWorldInput(catalog, definition, journal);
+        InitializeBuildingBoxWorldInput(catalog, workshopDefinition, journal);
     }
 
     public IReadOnlyList<BuildingWorldViewModel> LoadBuildings()
@@ -145,6 +145,40 @@ internal sealed partial class DigTerrainWorkSession
             tick: tick);
     }
 
+    private BuildingSnapshot CreateCompletedDemoBuilding(
+        BuildingDefinition definition,
+        EntityId buildingId,
+        EntityId sourceStackId,
+        EntityId assemblyJobId,
+        CellId origin,
+        CellId workPosition,
+        InMemoryExecutionJournal journal)
+    {
+        CreateCompletedAssemblyJob(
+            buildingId,
+            sourceStackId,
+            assemblyJobId,
+            origin,
+            workPosition,
+            journal);
+        return new BuildingSnapshot(
+            buildingId,
+            definition,
+            origin,
+            BuildingOrientation.North,
+            definition.ResolveFootprint(origin, BuildingOrientation.North),
+            workPosition,
+            BuildingStatus.Completed,
+            definition.RequiredWork,
+            definition.MaximumDurability,
+            version: 1,
+            diagnosticReason: null,
+            boxPlan: new BuildingBoxPlanSnapshot(
+                sourceStackId,
+                assemblyJobId,
+                BuildingBoxCommitState.Consumed));
+    }
+
     private void CreateCompletedAssemblyJob(
         EntityId buildingId,
         EntityId sourceStackId,
@@ -171,6 +205,83 @@ internal sealed partial class DigTerrainWorkSession
         Require(jobs.Complete(assemblyJobId, tick: 0));
         _jobRepository.Save(jobs);
         journal.Append(jobs.DequeueUncommittedEvents());
+    }
+
+    private DemoBuildingPlacement FindLowerCavePlacement(
+        BuildingDefinition definition,
+        IReadOnlyCollection<CellId> excludedCells)
+    {
+        Dictionary<CellId, WorldCellViewModel> cells = _worldSession.LoadView().Chunks
+            .SelectMany(chunk => chunk.Cells)
+            .ToDictionary(
+                value => new CellId(value.X, value.Y, value.Z));
+        HashSet<CellId> occupied = new HashSet<CellId>(excludedCells);
+        foreach (ItemStackSnapshot stack
+            in _inventoryRepository.Get().CreateSnapshot().Stacks)
+        {
+            if (stack.Location.Kind == ItemLocationKind.World
+                && stack.Location.HasCell)
+            {
+                occupied.Add(stack.Location.CellId);
+            }
+        }
+
+        foreach (CellId origin in cells.Values
+            .Where(value => !value.IsSolid && value.Y > 0)
+            .Select(value => new CellId(value.X, value.Y, value.Z))
+            .Where(value => !occupied.Contains(value))
+            .OrderByDescending(value => value.Y)
+            .ThenByDescending(value => value.Z)
+            .ThenBy(value => value.X))
+        {
+            CellId below = new CellId(origin.X, origin.Y + 1, origin.Z);
+            if (!cells.TryGetValue(below, out WorldCellViewModel belowCell)
+                || !belowCell.IsSolid)
+            {
+                continue;
+            }
+
+            CellId[] footprint = definition.ResolveFootprint(
+                    origin,
+                    BuildingOrientation.North)
+                .ToArray();
+            if (footprint.Any(value => occupied.Contains(value)
+                || !cells.TryGetValue(
+                    value,
+                    out WorldCellViewModel footprintCell)
+                || footprintCell.IsSolid))
+            {
+                continue;
+            }
+
+            CellId? workPosition = definition.ResolveWorkPositions(
+                    origin,
+                    BuildingOrientation.North)
+                .Where(value => !occupied.Contains(value)
+                    && cells.TryGetValue(value, out WorldCellViewModel workCell)
+                    && !workCell.IsSolid)
+                .Select(value => (CellId?)value)
+                .FirstOrDefault();
+            if (workPosition.HasValue)
+            {
+                return new DemoBuildingPlacement(origin, workPosition.Value);
+            }
+        }
+
+        throw new InvalidOperationException(
+            "The demo world has no lower cave floor for the completed campfire.");
+    }
+
+    private readonly struct DemoBuildingPlacement
+    {
+        internal DemoBuildingPlacement(CellId origin, CellId workPosition)
+        {
+            Origin = origin;
+            WorkPosition = workPosition;
+        }
+
+        internal CellId Origin { get; }
+        internal CellId WorkPosition { get; }
     }
 
     private CellId FindDemoBuildingOrigin()
