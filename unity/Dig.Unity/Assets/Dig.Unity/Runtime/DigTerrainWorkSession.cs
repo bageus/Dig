@@ -130,12 +130,25 @@ internal sealed partial class DigTerrainWorkSession
             }
         }
 
-        if (_worldChanged)
+        return Result.Success();
+    }
+
+    internal void ReconcileChangedTerrain(
+        long tick,
+        IReadOnlyList<AgentViewModel> agents)
+    {
+        if (agents == null)
         {
-            SynchronizeDesignations(tick, agents, DefaultExcavationPriority);
+            throw new ArgumentNullException(nameof(agents));
         }
 
-        return Result.Success();
+        if (_worldChanged)
+        {
+            // Rebuild frontier jobs once after every resident has advanced. Doing this
+            // from per-resident Advance calls used a one-agent candidate set and could
+            // leave the remaining tunnel cells without a worker after the first dig.
+            SynchronizeDesignations(tick, agents, DefaultExcavationPriority);
+        }
     }
 
     public bool ConsumeWorldChanged()
