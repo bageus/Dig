@@ -121,8 +121,11 @@ namespace Dig.Unity
             DigBuildingVisualResolution resolution)
         {
             _previewContainer!.localPosition =
-                DigTunnelProjection.CellWorldPosition(preview.Origin)
-                + (Vector3.up * 0.03f);
+                DigTunnelProjection.ResidentWorldPosition(
+                    preview.Origin.X,
+                    preview.Origin.Y,
+                    preview.Origin.Z)
+                + (Vector3.up * (DigTunnelProjection.ResidentFootSink + 0.03f));
             _previewContainer.localRotation = ResolveOrientation(preview.Orientation)
                 * (preview.IsValid
                     ? Quaternion.identity
@@ -171,8 +174,8 @@ namespace Dig.Unity
             _workMarker!.SetActive(true);
             _workMarker.name = $"Building work position {cell}";
             _workMarker.transform.localPosition =
-                DigTunnelProjection.CellWorldPosition(cell)
-                + (Vector3.up * 0.24f);
+                DigTunnelProjection.ResidentWorldPosition(cell.X, cell.Y, cell.Z)
+                + (Vector3.up * (DigTunnelProjection.ResidentFootSink + 0.24f));
             _workMarker.transform.localRotation = preview.IsValid
                 ? Quaternion.identity
                 : Quaternion.Euler(0f, 45f, 0f);
