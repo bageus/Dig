@@ -189,7 +189,10 @@ namespace Dig.Unity
             if (_root == null)
             {
                 _root = new GameObject("Building Placement Ghost").transform;
-                _root.SetParent(transform, worldPositionStays: false);
+                // Preview coordinates come from DigTunnelProjection and are already
+                // world-space. Keep the ghost root unrotated so the preview stays
+                // under the pointer instead of being rotated outside the play area.
+                _root.SetParent(transform, worldPositionStays: true);
                 _previewContainer = new GameObject("Preview").transform;
                 _previewContainer.SetParent(_root, worldPositionStays: false);
             }
