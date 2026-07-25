@@ -1,3 +1,5 @@
+> **Implementation status: DRAFT.** The unit creation API exists, but the repository-wide migration is incomplete. Tracking issue: [#347](https://github.com/bageus/Dig/issues/347). Audit: [`implemented-systems-audit-2026-07-26.md`](implemented-systems-audit-2026-07-26.md).
+
 # Unit item entities
 
 ## Invariant
