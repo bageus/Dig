@@ -80,7 +80,10 @@ public sealed class DeepGameplayInteractionRegressionTests
                 new CellOffset(1, 0),
                 new CellOffset(0, 1),
             },
-            Array.Empty<BuildingMaterialRequirement>(),
+            new[]
+            {
+                new BuildingMaterialRequirement(new ItemId("stone"), 1),
+            },
             requiredWork: 3,
             maximumDurability: 100);
         CellId origin = new CellId(3, 3);
@@ -152,7 +155,7 @@ public sealed class DeepGameplayInteractionRegressionTests
         Assert.DoesNotContain("Hud!.SetCommandResult(result);return;", loop);
         Assert.Contains("ReconcileChangedTerrain(tick,agents)", agentAdvance);
         Assert.Contains("firstError==null", agentAdvance);
-        Assert.DoesNotContain("returnreleased", directMovement);
+        Assert.Contains("mustneverblocktheauthoritativemanualmovementorder", directMovement);
         Assert.Contains("_manualExcavationResidentCell?.Invoke(group.AgentId)", manual);
         Assert.Contains("ResolveManualResidentCell(group.AgentId", multiWorker);
     }
