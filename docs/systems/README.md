@@ -2,7 +2,9 @@
 
 Статус: обязательная точка входа для поиска требований.
 
-Tracking issues: [#385](https://github.com/bageus/Dig/issues/385), [#393](https://github.com/bageus/Dig/issues/393), [#394](https://github.com/bageus/Dig/issues/394).
+Tracking issues: [#385](https://github.com/bageus/Dig/issues/385), [#393](https://github.com/bageus/Dig/issues/393), [#394](https://github.com/bageus/Dig/issues/394), [#403](https://github.com/bageus/Dig/issues/403).
+
+Актуальный аудит полноты описания, реализации и test evidence: [`../implementation/implemented-systems-audit-2026-07-26.md`](../implementation/implemented-systems-audit-2026-07-26.md).
 
 ## Как использовать индекс
 
@@ -80,7 +82,7 @@ Tracking issues: [#385](https://github.com/bageus/Dig/issues/385), [#393](https:
 | World item gravity и pickup | item fall, visible floor item, Alt pickup | `QUESTIONNAIRE` | [`../design/world-item-gravity-selection-and-pickup.md`](../design/world-item-gravity-selection-and-pickup.md) | [`../implementation/world-item-pickup-equipment.md`](../implementation/world-item-pickup-equipment.md), [#387](https://github.com/bageus/Dig/issues/387) |
 | Resident inventory | Weapon, Main, Cargo, extensions | `APPROVED` | [`../design/resident-inventory-expansion.md`](../design/resident-inventory-expansion.md) | [`../implementation/resident-inventory-actions.md`](../implementation/resident-inventory-actions.md), [#64](https://github.com/bageus/Dig/issues/64) |
 | Storage, demand и hauling | stockpile, filters, delivery | `APPROVED` | [`../design/material-demand-and-hauling.md`](../design/material-demand-and-hauling.md) | [`../implementation/inventory-storage-hauling.md`](../implementation/inventory-storage-hauling.md), [#27](https://github.com/bageus/Dig/issues/27) |
-| Unit item entities | individual tools, equipment identity | `IMPLEMENTED` | [`../architecture/systems-core.md`](../architecture/systems-core.md#6-предметы-и-логистика) | [`../implementation/unit-item-entities.md`](../implementation/unit-item-entities.md) |
+| Unit item entities | individual tools, equipment identity | `DRAFT` | [`../architecture/systems-core.md`](../architecture/systems-core.md#6-предметы-и-логистика) | [`../implementation/unit-item-entities.md`](../implementation/unit-item-entities.md), [#347](https://github.com/bageus/Dig/issues/347) |
 
 ## Buildings, economy и technology
 
@@ -132,9 +134,9 @@ Tracking issues: [#385](https://github.com/bageus/Dig/issues/385), [#393](https:
 
 | Заголовок | Aliases | Статус | Authoritative specification | Implementation / issue |
 |---|---|---|---|---|
-| Save/load/migrations | snapshots, versions, restore | `IMPLEMENTED` | [`../architecture/systems-gameplay.md`](../architecture/systems-gameplay.md#5-сохранение-и-загрузка) | [`../implementation/save-load-migrations.md`](../implementation/save-load-migrations.md), [#13](https://github.com/bageus/Dig/issues/13) |
+| Save/load/migrations | snapshots, versions, restore | `DRAFT` | [`../architecture/systems-gameplay.md`](../architecture/systems-gameplay.md#5-сохранение-и-загрузка) | [`../implementation/save-load-migrations.md`](../implementation/save-load-migrations.md), [#13](https://github.com/bageus/Dig/issues/13) |
 | Content validation | stable IDs, schema, references | `IMPLEMENTED` | [`../architecture/systems-gameplay.md`](../architecture/systems-gameplay.md#2-прогрессия-и-контент) | [`../design/content/README.md`](../design/content/README.md) |
-| Diagnostics, performance и soak | reasons, budgets, deterministic replay | `IMPLEMENTED` | [`../development-rules.md`](../development-rules.md#9-наблюдаемость) | [`../implementation/quality-soak-performance.md`](../implementation/quality-soak-performance.md), [#15](https://github.com/bageus/Dig/issues/15) |
+| Diagnostics, performance и soak | reasons, budgets, deterministic replay | `DRAFT` | [`../development-rules.md`](../development-rules.md#9-наблюдаемость) | [`../implementation/quality-soak-performance.md`](../implementation/quality-soak-performance.md), [#15](https://github.com/bageus/Dig/issues/15) |
 | Unity presentation host | bootstrap, modules, runtime scene | `IMPLEMENTED` | [`../architecture/overview.md`](../architecture/overview.md) | [`../implementation/unity-presentation-host.md`](../implementation/unity-presentation-host.md), [#14](https://github.com/bageus/Dig/issues/14) |
 | Demo starting scenario | completed campfire, packed box in lower cave | `QUESTIONNAIRE` | [`../design/demo-starting-scenario.md`](../design/demo-starting-scenario.md) | [#389](https://github.com/bageus/Dig/issues/389) |
 
