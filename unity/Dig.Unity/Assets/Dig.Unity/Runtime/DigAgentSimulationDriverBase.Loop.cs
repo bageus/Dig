@@ -143,9 +143,10 @@ namespace Dig.Unity
                 result = TerrainSession.SettleWorldItems(AgentSession.Tick);
             }
 
-            DomainError? tickWarning = result.IsFailure ? result.Error : null;
-            if (tickWarning != null)
+            DomainError? tickWarning = null;
+            if (result.IsFailure)
             {
+                tickWarning = result.Error;
                 // Keep the global presentation/control loop alive. A single stale or
                 // retried job must not hide authoritative movement and make every dwarf
                 // appear frozen until a later successful tick.
