@@ -109,10 +109,9 @@
       }
     },
     "com.unity.test-framework": {
-      "version": "1.4.6",
+      "version": "1.6.0",
       "depth": 0,
-      "source": "registry",
-      "url": "https://packages.unity.com",
+      "source": "builtin",
       "dependencies": {
         "com.unity.ext.nunit": "2.0.3",
         "com.unity.modules.imgui": "1.0.0",
