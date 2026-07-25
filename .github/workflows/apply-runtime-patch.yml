@@ -1,0 +1,33 @@
+name: Apply runtime patch
+
+on:
+  push:
+    branches:
+      - fix/runtime-selection-excavation-item-placement
+    paths:
+      - .github/workflows/apply-runtime-patch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/runtime-selection-excavation-item-placement
+      - name: Apply staged runtime sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .dig-runtime-patch/part-* > /tmp/runtime-selected.tar.gz.b64
+          base64 --decode /tmp/runtime-selected.tar.gz.b64 > /tmp/runtime-selected.tar.gz
+          tar -xzf /tmp/runtime-selected.tar.gz -C .
+          rm -rf .dig-runtime-patch
+          rm -f .github/workflows/apply-runtime-patch.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix runtime selection, excavation and item placement"
+          git push origin HEAD:fix/runtime-selection-excavation-item-placement
