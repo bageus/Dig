@@ -14,28 +14,30 @@ Tracking issue: [#387](https://github.com/bageus/Dig/issues/387).
 
 ## 1. Назначение
 
-Система задаёт lifecycle свободного world item после появления, стабилизации на опоре, отображения, selection и pickup. BuildingBox использует тот же authoritative Inventory location и дополнительные BuildingBox interactions.
+Система задаёт lifecycle свободного world item после появления, автоматической реакции на потерю опоры, landing, отображения, selection и pickup. BuildingBox использует тот же authoritative Inventory location и дополнительные BuildingBox interactions.
 
-Общая будущая система падения residents/enemies и combat knockback описывается отдельно в `entity-fall-knockback-and-vertical-shafts.md`.
+Общая система landing для residents/enemies и combat knockback описывается отдельно в `entity-fall-knockback-and-vertical-shafts.md`. В отличие от предметов, actors не начинают падение только из-за потери опоры: для них требуется внешнее воздействие.
 
 ## 2. Владение состоянием
 
-- Inventory владеет ItemStack, quantity, reservations и `ItemLocation`.
+- Inventory владеет ItemStack, quantity, reservations, `ItemLocation` и authoritative item-fall transition.
 - World/Navigation предоставляет immutable support/traversability snapshot.
 - Jobs/Agents владеют pickup action и worker assignment.
 - Presentation владеет visual offset, animation, collider, selection highlight и hover feedback, но не местоположением предмета.
 
-## 3. Подтверждённый workflow стабилизации предмета
+## 3. Подтверждённый workflow падения и стабилизации предмета
 
-1. Свободный, не удерживаемый и не зарезервированный world item проверяет опору.
-2. В открытом vertical tunnel item должен оказаться на первой допустимой плоской поверхности.
-3. Inventory атомарно изменяет world cell ровно один раз.
-4. Renderer обновляет visual в той же projected cell над floor, а collider следует visual.
-5. Item остаётся видимым и доступным для raycast.
+1. Свободный, не удерживаемый и не зарезервированный world item проверяет допустимую опору.
+2. При обнаружении потери опоры item автоматически начинает fall workflow; отдельный удар, приказ или interaction не требуется.
+3. В открытом vertical tunnel fall resolver выбирает первую допустимую плоскую поверхность.
+4. Inventory изменяет authoritative world location по утверждённой timing policy ровно один раз.
+5. Renderer воспроизводит падение/landing и показывает item в той же projected cell над floor.
+6. Collider следует visual и authoritative location.
+7. Item остаётся видимым и доступным для raycast.
 
-Коробки и обычные предметы используют общую item gravity/support policy, если item definition не задаёт исключение.
+Коробки и обычные предметы используют общую item gravity/support policy, если item definition не задаёт утверждённое исключение.
 
-Точное время и визуальный процесс падения пока не утверждены. Demo-коробка костра на текущем этапе сразу находится в нижней пещере и не используется как демонстрация падения.
+«Сразу после потери опоры» означает отсутствие отдельного trigger-воздействия. Остаётся открытым, выполняется ли authoritative relocation атомарно или существует falling state на несколько simulation ticks. Demo-коробка костра на текущем этапе сразу находится в нижней пещере и не используется как демонстрация падения.
 
 ## 4. Подтверждённый pickup contract
 
@@ -63,7 +65,7 @@ BuildingBox остаётся Inventory item. Его строка в building ros
 ## 6. Видимость и spatial consistency
 
 - visual не может быть скрыт floor geometry при наличии selectable logical item;
-- collider не может оставаться в старой клетке после стабилизации/падения;
+- collider не может оставаться в старой клетке после падения/landing;
 - visual front offset является производным Presentation параметром;
 - root transform не должен повторно применять terrain rotation к уже спроецированной world position;
 - при rebuild visual полностью восстанавливается из Inventory snapshot;
@@ -72,25 +74,28 @@ BuildingBox остаётся Inventory item. Его строка в building ros
 ## 7. Инварианты
 
 - один stack имеет ровно одно authoritative location;
-- падение/стабилизация не меняет quantity;
+- свободный unsupported world item автоматически входит в fall workflow;
+- падение/landing не меняет quantity;
 - reserved/held/site item не падает без явной policy;
 - hidden-but-clickable и visible-but-stale states запрещены;
 - pickup hover и pickup command используют одинаковую target availability;
 - BuildingBox не проектируется одновременно как generic item и отдельный duplicate stack visual;
-- обычный LMB selection не создаёт pickup order и не запускает placement.
+- обычный LMB selection не создаёт pickup order и не запускает placement;
+- support-loss detection не зависит от Unity frame rate.
 
 ## 8. Решённые вопросы
 
 - **Q-ITEM-001:** обычный LMB по world BuildingBox только выбирает коробку; placement запускается кнопкой «Распаковать» в building menu.
 - **Q-ITEM-002:** выбор BuildingBox является взаимоисключающим selection и переключает HUD на выбранную коробку.
-- **Q-ITEM-006 (частично):** текущая demo-сцена не обязана показывать процесс падения; generalized visual/actor fall оформлен отдельной системой #396.
+- **Q-ITEM-006 (trigger):** свободный item автоматически начинает падение после потери опоры без отдельного воздействия; timing/state model остаётся открытым.
+- **Q-ITEM-008:** текущая demo-сцена не обязана показывать процесс падения; generalized visual/actor fall оформлен отдельной системой #396.
 
 ## 9. Открытые вопросы
 
 - **Q-ITEM-003:** обычные generic items получают информационный selection по LMB или не реагируют без `Alt`?
 - **Q-ITEM-004:** policy нескольких предметов в одной клетке: visual slots, capacity или world pile entity?
 - **Q-ITEM-005:** точное определение допустимой плоской опоры.
-- **Q-ITEM-006:** item fall выполняется мгновенной Domain-транзакцией с visual animation или существует authoritative falling state на несколько ticks?
+- **Q-ITEM-006 (timing):** item fall выполняется мгновенной Domain-транзакцией с visual animation или существует authoritative falling state на несколько ticks?
 - **Q-ITEM-007:** можно ли выбирать/распаковывать BuildingBox из resident inventory через тот же building menu?
 
 ## 10. Save/Load
@@ -99,10 +104,11 @@ BuildingBox остаётся Inventory item. Его строка в building ros
 
 ## 11. Диагностика и тесты
 
-Диагностика показывает stack id, item id, source/landing cell, support reason, reservation/held state, selected entity, visual projected position и collider owner.
+Диагностика показывает stack id, item id, source/landing cell, `trigger = SupportLost`, support reason/version, reservation/held state, selected entity, visual projected position и collider owner.
 
 Acceptance включает:
 
+- автоматический fall trigger сразу после потери опоры без отдельного воздействия;
 - стабилизацию через несколько открытых клеток;
 - остановку на первой опоре;
 - несколько item types, включая campfire BuildingBox;
