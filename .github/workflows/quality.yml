@@ -20,12 +20,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat .dig-runtime-patch/part-* > /tmp/runtime-selected.tar.gz.b64
+          cat .dig-runtime-patch/part-* | tr -d '\r\n\t ' > /tmp/runtime-selected.tar.gz.b64
+          test "$(wc -c < /tmp/runtime-selected.tar.gz.b64)" -eq 80156
+          echo "c2002b1592c4232d17878aae8b7e9b7d7448c4403bdcf7b5020c787218853a14  /tmp/runtime-selected.tar.gz.b64" | sha256sum --check
           base64 --decode /tmp/runtime-selected.tar.gz.b64 > /tmp/runtime-selected.tar.gz
+          echo "8204754bea34a59299e9eb77822cf6280eedc10f38f6c61ae9f09f18119c52ca  /tmp/runtime-selected.tar.gz" | sha256sum --check
           tar -xzf /tmp/runtime-selected.tar.gz -C .
           rm -rf .dig-runtime-patch
-          rm -f .github/workflows/apply-runtime-patch.yml
-          git checkout origin/main -- .github/workflows/quality.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
