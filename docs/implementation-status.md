@@ -1,28 +1,17 @@
 # Состояние реализации
 
-## Архитектурный фундамент
+Статус: актуальная навигационная страница, не authoritative specification.
 
-Ветка `agent/architecture-foundation` реализует первый технический этап roadmap и Issue #1.
+Последний аудит: [`implementation/implemented-systems-audit-2026-07-26.md`](implementation/implemented-systems-audit-2026-07-26.md), tracking [#403](https://github.com/bageus/Dig/issues/403).
 
-Реализовано:
+## Источник истины
 
-- независимые от движка проекты Domain, Application, Infrastructure и Presentation Abstractions;
-- стабильный `EntityId`;
-- явный `Result` с кодируемыми ошибками;
-- базовый aggregate root и буфер доменных событий;
-- пример авторитетного состояния колонии;
-- пример Command, Event и Query;
-- in-memory адаптеры для тестового вертикального прохода;
-- read-only presenter;
-- автоматические тесты архитектурных границ;
-- проверка лимита 350 строк;
-- проверка разрешённых ссылок между проектами;
-- проверка запрещённых зависимостей Domain;
-- GitHub Actions для quality checks, build и tests;
-- ADR и checklist добавления модулей.
+Для определения состояния конкретной системы сначала открыть [`systems/README.md`](systems/README.md), затем связанный authoritative design и tracking issue.
 
-## Ограничения текущего этапа
+Эта страница больше не перечисляет системы вручную: такой список быстро устаревает и создаёт второй источник истины.
 
-Это архитектурный каркас, а не игровой прототип. Пока отсутствуют simulation loop, мир, жители, работы, навигация и конкретный адаптер Unity или Godot.
+## Текущее общее состояние
 
-Следующий этап: Issue #2 — детерминированный simulation loop, tick scheduler и реестр сущностей.
+В репозитории реализованы Domain/Application/Infrastructure/Presentation foundations, simulation, world, agents, jobs, inventory, buildings и Unity presentation vertical slices. Однако `IMPLEMENTED` не означает `VERIFIED`: полный Unity Play Mode workflow пока не запускается текущим CI.
+
+Известные системные расхождения и завышенные статусы перечислены в актуальном аудите. Историческое утверждение о том, что simulation loop, world, residents, jobs, navigation и Unity adapter отсутствуют, относилось только к первому architecture-foundation этапу и больше не применимо.
