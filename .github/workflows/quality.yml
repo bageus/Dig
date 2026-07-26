@@ -1,33 +1,130 @@
 name: Quality
 
 on:
+  push:
   pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  apply-focused-ci-fix:
+  build-and-test:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout feature branch
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: fix/runtime-selection-excavation-item-placement
-          fetch-depth: 0
           show-progress: false
-      - name: Apply focused runtime fix
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run architecture, file-size and C# compatibility checks
+        run: python tools/quality/check_quality.py
+
+      - name: Validate Unity built-in modules
+        run: python tools/quality/check_unity_modules.py
+
+      - name: Validate Unity source contracts
         shell: bash
         run: |
-          set -euo pipefail
-          base64 --decode .dig-ci-fix.patch.gz.b64 | gzip -dc > /tmp/fix.patch
-          git apply --check /tmp/fix.patch
-          git apply /tmp/fix.patch
-          rm -f .dig-ci-fix.patch.gz.b64
-          rm -f .github/workflows/apply-focused-ci-fix.yml
-          git checkout origin/main -- .github/workflows/quality.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Fix CI and complete runtime interaction wiring"
-          git push origin HEAD:fix/runtime-selection-excavation-item-placement
+          set -o pipefail
+          python tools/quality/check_unity_source_contracts.py 2>&1 | tee unity-source-contracts.log
+
+      - name: Validate Unity native field initialization
+        run: python tools/quality/check_unity_native_field_initializers.py
+
+      - name: Validate chunked terrain interaction boundary
+        run: python tools/quality/check_unity_terrain_chunk_contracts.py
+
+      - name: Validate terrain visual profiles
+        run: python tools/quality/check_unity_terrain_visual_profiles.py
+
+      - name: Validate terrain deposit presentation
+        run: python tools/quality/check_unity_terrain_deposit_contracts.py
+
+      - name: Validate cave template trim presentation
+        run: python tools/quality/check_unity_cave_template_trim_contracts.py
+
+      - name: Validate terrain accessibility and LOD
+        run: python tools/quality/check_unity_terrain_accessibility_lod_contracts.py
+
+      - name: Validate building prefab presentation
+        run: python tools/quality/check_unity_building_visual_contracts.py
+
+      - name: Validate item prefab and bounded stack presentation
+        run: python tools/quality/check_unity_item_visual_contracts.py
+
+      - name: Validate unified overlay presentation
+        run: python tools/quality/check_unity_overlay_contracts.py
+
+      - name: Validate resident rig presentation
+        run: python tools/quality/check_unity_resident_visual_contracts.py
+
+      - name: Validate creature visual presentation
+        run: python tools/quality/check_unity_creature_visual_contracts.py
+
+      - name: Validate stylized rendering and VFX
+        run: python tools/quality/check_unity_stylized_render_vfx_contracts.py
+
+      - name: Validate URP completion contracts
+        run: python tools/quality/check_unity_urp_completion_contracts.py
+
+      - name: Validate presentation effect projection
+        run: python tools/quality/check_unity_presentation_effect_projection_contracts.py
+
+      - name: Validate adaptive HUD startup
+        run: python tools/quality/check_unity_hud_startup_contracts.py
+
+      - name: Validate skills progression integration
+        run: python tools/quality/check_unity_skills_progression_contracts.py
+
+      - name: Upload Unity source contract log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-source-contracts-log
+          path: unity-source-contracts.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore Dig.sln
+
+      - name: Build
+        shell: bash
+        run: |
+          set -o pipefail
+          dotnet build Dig.sln --configuration Release --no-restore 2>&1 | tee build.log
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Test
+        shell: bash
+        run: |
+          set -o pipefail
+          dotnet test Dig.sln --configuration Release --no-build --verbosity normal 2>&1 | tee test.log
+
+      - name: Upload test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-log
+          path: test.log
+          if-no-files-found: ignore
+          retention-days: 7
