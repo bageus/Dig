@@ -9,6 +9,7 @@ using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.World;
+using Dig.Infrastructure.Saving;
 using Xunit;
 
 namespace Dig.Tests
@@ -81,7 +82,7 @@ public sealed class SaveGameServiceMiningOutputIntegrationTests
             loadedManual.Value.TerrainDeposits,
             loadedManual.Value.PackableBuildingExecutions,
             loadedManual.Value.MiningOutput.Commits));
-        DataContractJsonCaveCodec codec = new DataContractJsonSaveCodec();
+        DataContractJsonSaveCodec codec = new DataContractJsonSaveCodec();
         Assert.Equal(codec.Serialize(manual), codec.Serialize(rebuilt));
     }
 
