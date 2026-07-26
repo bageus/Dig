@@ -126,6 +126,40 @@ public sealed class ExcavationAssignmentTests
     }
 
     [Fact]
+    public void Spatial_assignment_prefers_closest_target_when_work_cell_is_shared()
+    {
+        NavigationSnapshot navigation = CreateOpenNavigation();
+        JobSystem jobs = new JobSystem();
+        EntityId fartherBottomJob = Id("1");
+        EntityId nearerTopJob = Id("f");
+        CellId sharedWorkCell = new CellId(5, 1, 0);
+        AddAvailableSpatial(
+            jobs,
+            fartherBottomJob,
+            target: new CellId(5, 3, 0),
+            work: sharedWorkCell);
+        AddAvailableSpatial(
+            jobs,
+            nearerTopJob,
+            target: new CellId(5, 2, 0),
+            work: sharedWorkCell);
+        DirectJobWorker worker = new DirectJobWorker(Id("a"), sharedWorkCell);
+        DirectSpatialJobAssignmentPlanner planner =
+            new DirectSpatialJobAssignmentPlanner(new NavigationPathfinder());
+
+        Result<DirectJobAssignmentPlan> result = planner.Plan(
+            new[] { worker },
+            jobs.GetAll(),
+            navigation);
+
+        DirectJobAssignment assignment = Assert.Single(result.Value.Assignments);
+        Assert.Equal(nearerTopJob, assignment.JobId);
+        Assert.Equal(new CellId(5, 2, 0), assignment.Target);
+        Assert.Equal(1, assignment.TargetDistance);
+        Assert.Equal(0, assignment.RouteCost);
+    }
+
+    [Fact]
     public void Explicit_assignment_redirects_selected_agent_and_releases_previous_jobs()
     {
         InMemoryJobRepository repository = new InMemoryJobRepository();
