@@ -48,7 +48,7 @@ namespace Dig.Unity
 
         private void SelectCell(DigCellVisual cell)
         {
-            _selectedBuildingBox = null;
+            ClearBuildingBoxSelection();
             _selectedCell = cell;
             _agentRenderer!.Select(null);
             _jobRenderer!.Select(null);
@@ -59,7 +59,7 @@ namespace Dig.Unity
 
         private void SelectJob(DigJobVisual job)
         {
-            _selectedBuildingBox = null;
+            ClearBuildingBoxSelection();
             _selectedCell = null;
             _renderer!.Select(null);
             _agentRenderer!.Select(null);
@@ -82,6 +82,7 @@ namespace Dig.Unity
                 CancelBuildingPlacement();
             }
 
+            ClearBuildingBoxSelection();
             DisableExcavationDrawing();
             DisableCaveRoomPlanning();
             _selectedCell = null;
@@ -107,7 +108,7 @@ namespace Dig.Unity
 
             DisableExcavationDrawing();
             DisableCaveRoomPlanning();
-            _selectedBuildingBox = null;
+            ClearBuildingBoxSelection();
             _selectedCell = null;
             _renderer!.Select(null);
             _agentRenderer!.ClearSelection();
