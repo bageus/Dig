@@ -61,6 +61,8 @@ public sealed class ExcavationContinuationRuntimeContractTests
             runtime, "DigAgentSession.SpatialWorkMovement.cs")));
         string renderer = Normalize(File.ReadAllText(Path.Combine(
             runtime, "DigAgentRenderer.cs")));
+        string residentRig = Normalize(File.ReadAllText(Path.Combine(
+            runtime, "DigAgentRenderer.ResidentRig.cs")));
         string visual = Normalize(File.ReadAllText(Path.Combine(
             runtime, "DigAgentVisual.cs")));
 
@@ -71,8 +73,10 @@ public sealed class ExcavationContinuationRuntimeContractTests
         Assert.Contains("_tunnelTraffic.RecordMove", manual);
         Assert.Contains("_tunnelTraffic.CanMove", spatial);
         Assert.Contains("_tunnelTraffic.RecordMove", spatial);
-        Assert.Contains("ApplyCrowdingOffsets(agents)", renderer);
-        Assert.Contains("SetCrowdingOffset", visual);
+        Assert.DoesNotContain("ApplyCrowdingOffsets(agents)", renderer);
+        Assert.DoesNotContain("SetCrowdingOffset", residentRig);
+        Assert.Contains("ResidentDirectionalLaneResolver.Resolve", visual);
+        Assert.Contains("_directionalLaneOffsetX", visual);
     }
 
     private static string RuntimeRoot()
