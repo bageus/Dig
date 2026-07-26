@@ -100,22 +100,11 @@ namespace Dig.Unity
         {
             if (_selectedBuildingBoxVisual != null)
             {
-                _selectedBuildingBoxVisual
-                    .GetComponent<DigBuildingBoxSelectionHighlight>()?
-                    .SetHighlighted(false);
+                _selectedBuildingBoxVisual.SetSelectionHighlighted(false);
             }
 
             _selectedBuildingBoxVisual = visual;
-            if (_selectedBuildingBoxVisual == null)
-            {
-                return;
-            }
-
-            DigBuildingBoxSelectionHighlight highlight =
-                _selectedBuildingBoxVisual.GetComponent<DigBuildingBoxSelectionHighlight>()
-                ?? _selectedBuildingBoxVisual.gameObject
-                    .AddComponent<DigBuildingBoxSelectionHighlight>();
-            highlight.SetHighlighted(true);
+            _selectedBuildingBoxVisual?.SetSelectionHighlighted(true);
         }
 
         private void ClearBuildingBoxSelection()
