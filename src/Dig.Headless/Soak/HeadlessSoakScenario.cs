@@ -57,8 +57,9 @@ internal static class HeadlessSoakScenario
             configuration.ResidentCount);
         InMemoryJobRepository jobRepository = new InMemoryJobRepository();
 
-        EntityId[] haulingWorkers = Enumerable.Range(0, configuration.HaulingWorkerCount)
-            .Select(_ => Register(state))
+        EntityId[] haulingWorkers = agentRepository.GetAll()
+            .Take(configuration.HaulingWorkerCount)
+            .Select(agent => agent.Id)
             .ToArray();
         ResidentSettlementSystem settlement = new ResidentSettlementSystem(
             agentRepository,
