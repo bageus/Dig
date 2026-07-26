@@ -72,6 +72,15 @@ public sealed class ExcavationClusterPlanner
         }
 
         yield return new CellId(cell.X, cell.Y + 1, cell.Z);
+        if (cell.Z > CellId.MinimumDepth)
+        {
+            yield return new CellId(cell.X, cell.Y, cell.Z - 1);
+        }
+
+        if (cell.Z < CellId.MaximumDepth)
+        {
+            yield return new CellId(cell.X, cell.Y, cell.Z + 1);
+        }
     }
 
     private static int Distance(CellId first, CellId second)

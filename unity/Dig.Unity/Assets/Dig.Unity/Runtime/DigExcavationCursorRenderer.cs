@@ -74,6 +74,17 @@ namespace Dig.Unity
             PlaceMarker(marker, cell, TunnelColor, overlap: true);
         }
 
+        internal void SetTunnelDesignationProgress(
+            CellId cell,
+            ExcavationQuarter completed)
+        {
+            if (_tunnelDesignations.TryGetValue(cell, out GameObject? marker))
+            {
+                marker.GetComponent<DigExcavationQuarterMarker>()?
+                    .SetProgress(completed);
+            }
+        }
+
         internal void SynchronizeTunnelDesignations(WorldViewModel world)
         {
             if (world.Version == _synchronizedWorldVersion)
@@ -176,6 +187,10 @@ namespace Dig.Unity
             _properties.SetColor("_BaseColor", color);
             _properties.SetColor("_Color", color);
             renderer.SetPropertyBlock(_properties);
+            DigExcavationQuarterMarker quarters =
+                marker.GetComponent<DigExcavationQuarterMarker>()
+                ?? marker.AddComponent<DigExcavationQuarterMarker>();
+            quarters.Initialize(color);
             marker.SetActive(true);
         }
     }

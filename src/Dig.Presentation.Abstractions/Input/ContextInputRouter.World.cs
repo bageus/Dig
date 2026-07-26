@@ -83,12 +83,12 @@ public sealed partial class ContextInputRouter
             return MoveFallback(state, target);
         }
 
-        if (target.Kind == ContextWorldTargetKind.BuildingBox)
+        if (target.Kind == ContextWorldTargetKind.BuildingBox
+            && target.EntityId.HasValue)
         {
             return Local(
-                PresentationInputEffect.StartBuildingPlacement,
+                PresentationInputEffect.SelectBuildingBox,
                 consumesPointer: true,
-                actorId: state.SelectedResidentId,
                 targetEntityId: target.EntityId,
                 targetCell: target.Cell);
         }

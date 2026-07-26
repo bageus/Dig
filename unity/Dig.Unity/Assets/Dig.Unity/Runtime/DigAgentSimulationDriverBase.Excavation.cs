@@ -122,7 +122,10 @@ namespace Dig.Unity
                 residentId => residentCells.TryGetValue(residentId, out CellId cell)
                     ? cell
                     : (CellId?)null,
-                residentId => 0);
+                residentId => AgentSession.GetSkillLevel(
+                    residentId,
+                    Dig.Domain.Agents.AgentSkillCatalog.Stonework)
+                    / Dig.Domain.Agents.AgentSkillCatalog.UnitsPerPoint);
             Result result = TerrainSession.AssignExcavationClusterToResidents(
                 seed,
                 residentIds,

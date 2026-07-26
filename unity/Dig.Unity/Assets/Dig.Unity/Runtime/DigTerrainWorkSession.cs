@@ -117,7 +117,7 @@ internal sealed partial class DigTerrainWorkSession
                 && agent.CellY == route.WorkCell.Value.Y
                 && agent.CellZ == route.WorkCell.Value.Z)
             {
-                result = AdvanceAtWorkCell(job, tick);
+                result = AdvanceAtWorkCell(job, agent, tick);
             }
             else
             {
@@ -158,7 +158,7 @@ internal sealed partial class DigTerrainWorkSession
         return changed;
     }
 
-    private Result AdvanceAtWorkCell(JobSnapshot job, long tick)
+    private Result AdvanceAtWorkCell(JobSnapshot job, AgentViewModel agent, long tick)
     {
         if (job.Status == JobStatus.Claimed
             || job.Stage == JobStageKind.TravelToTarget)
@@ -172,6 +172,21 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         if (tick % 3 != 0 || job.Stage != JobStageKind.PerformWork)
+        {
+            return Result.Success();
+        }
+
+        DigJobDefinition definition = (DigJobDefinition)job.Definition;
+        EntityId workerId = job.AssignedAgentId!.Value;
+        CellId residentCell = new CellId(agent.CellX, agent.CellY, agent.CellZ);
+        bool quartersComplete = AdvanceExcavationQuarterWork(
+            workerId,
+            new ExcavationWorkTarget(
+                definition.Target.CellId,
+                definition.Target.CellId.Z),
+            residentCell,
+            tick);
+        if (!quartersComplete)
         {
             return Result.Success();
         }
@@ -245,6 +260,7 @@ internal sealed partial class DigTerrainWorkSession
 
         _miningOutputCommits.Record(output, _outputStackIds[job.Id]);
         _worldSession.RevealTerrainDepositsAdjacentTo(targetCell, tick);
+        CompleteExcavationQuarterTarget(targetCell);
         _routePlans.Remove(job.Id);
         Result refresh = RefreshNavigation();
         if (refresh.IsFailure)

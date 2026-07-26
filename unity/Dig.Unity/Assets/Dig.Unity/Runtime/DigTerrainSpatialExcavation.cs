@@ -183,6 +183,20 @@ internal sealed partial class DigTerrainWorkSession
             else if (snapshot.Stage == JobStageKind.PerformWork
                 && tick % SpatialExcavationWorkCadence == 0)
             {
+                SpatialDigJobDefinition definition =
+                    (SpatialDigJobDefinition)snapshot.Definition;
+                bool quartersComplete = AdvanceExcavationQuarterWork(
+                    snapshot.AssignedAgentId.Value,
+                    new ExcavationWorkTarget(
+                        definition.Target.TargetCell,
+                        definition.Target.TargetCell.Z),
+                    new CellId(agent.CellX, agent.CellY, agent.CellZ),
+                    tick);
+                if (!quartersComplete)
+                {
+                    continue;
+                }
+
                 advanced = jobs.AdvanceStage(snapshot.Id, tick);
             }
             else
@@ -234,6 +248,7 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         _spatialDigJobs.Remove(spatial.Target.TargetCell);
+        CompleteExcavationQuarterTarget(spatial.Target.TargetCell);
         _jobRepository.Save(jobs);
         _journal.Append(jobs.DequeueUncommittedEvents());
         _worldChanged = true;

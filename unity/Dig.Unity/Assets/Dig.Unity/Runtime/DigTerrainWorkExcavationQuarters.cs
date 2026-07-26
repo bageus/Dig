@@ -10,6 +10,13 @@ namespace Dig.Unity
     {
         private readonly ExcavationWorkCoordinator _excavationQuarterWork =
             new ExcavationWorkCoordinator();
+        private Func<EntityId, int>? _excavationMiningSkill;
+
+        internal void BindExcavationSkillSource(Func<EntityId, int> skillSource)
+        {
+            _excavationMiningSkill = skillSource
+                ?? throw new ArgumentNullException(nameof(skillSource));
+        }
 
         internal ExcavationWorkerAssignment AssignManualQuarterExcavation(
             string residentId,
@@ -23,13 +30,10 @@ namespace Dig.Unity
                 throw new ArgumentException("Resident id is required.", nameof(residentId));
             }
 
-            ExcavationApproachSide approach = ResolveExcavationApproach(
-                residentCell,
-                targetCell);
-            return _excavationQuarterWork.Assign(
+            return EnsureExcavationQuarterAssignment(
                 EntityId.Parse(residentId),
                 new ExcavationWorkTarget(targetCell, targetZ),
-                approach,
+                residentCell,
                 miningSkill);
         }
 
@@ -74,34 +78,16 @@ namespace Dig.Unity
                 long tick,
                 IReadOnlyList<AgentViewModel> agents)
         {
+            // Quarter work is advanced by the owning Dig/SpatialDig job at its
+            // authoritative PerformWork cadence. Keeping this compatibility hook as a
+            // no-op prevents a second Presentation/runtime timer from double-applying
+            // swings.
             if (agents == null)
             {
                 throw new ArgumentNullException(nameof(agents));
             }
 
-            List<ExcavationQuarterCompletion> completed =
-                new List<ExcavationQuarterCompletion>();
-            for (int index = 0; index < agents.Count; index++)
-            {
-                AgentViewModel agent = agents[index];
-                ExcavationWorkerAssignment? assignment =
-                    _excavationQuarterWork.GetAssignment(EntityId.Parse(agent.Id));
-                if (assignment == null || !IsAtManualExcavationApproach(agent, assignment.Target))
-                {
-                    continue;
-                }
-
-                IReadOnlyList<ExcavationQuarterCompletion> swing =
-                    AdvanceManualQuarterExcavation(agent.Id, tick, worldSeed: 0UL);
-                for (int completionIndex = 0;
-                    completionIndex < swing.Count;
-                    completionIndex++)
-                {
-                    completed.Add(swing[completionIndex]);
-                }
-            }
-
-            return completed;
+            return Array.Empty<ExcavationQuarterCompletion>();
         }
 
         internal ExcavationQuarterState LoadExcavationQuarterState(
@@ -112,18 +98,68 @@ namespace Dig.Unity
                 new ExcavationWorkTarget(targetCell, targetZ));
         }
 
-        private static bool IsAtManualExcavationApproach(
-            AgentViewModel agent,
-            ExcavationWorkTarget target)
+        internal IReadOnlyList<ExcavationQuarterProgressSnapshot>
+            LoadExcavationQuarterProgress()
         {
-            if (agent.CellZ != target.Z)
+            return _excavationQuarterWork.GetProgress();
+        }
+
+        private bool AdvanceExcavationQuarterWork(
+            EntityId workerId,
+            ExcavationWorkTarget target,
+            CellId residentCell,
+            long tick)
+        {
+            int skill = ResolveExcavationMiningSkill(workerId);
+            EnsureExcavationQuarterAssignment(
+                workerId,
+                target,
+                residentCell,
+                skill);
+            ulong seed = BuildExcavationSeed(
+                _worldSession.MiningOutputWorldSeed,
+                tick,
+                workerId);
+            _excavationQuarterWork.ApplySwing(workerId, seed);
+            return _excavationQuarterWork.GetState(target).IsComplete;
+        }
+
+        private ExcavationWorkerAssignment EnsureExcavationQuarterAssignment(
+            EntityId workerId,
+            ExcavationWorkTarget target,
+            CellId residentCell,
+            int miningSkill)
+        {
+            _excavationQuarterWork.CancelAssignmentsExcept(target, workerId);
+            ExcavationWorkerAssignment? existing =
+                _excavationQuarterWork.GetAssignment(workerId);
+            if (existing != null && existing.Target.Equals(target))
             {
-                return false;
+                return existing;
             }
 
-            int distance = Math.Abs(agent.CellX - target.CellId.X)
-                + Math.Abs(agent.CellY - target.CellId.Y);
-            return distance == 1;
+            ExcavationApproachSide approach = ResolveExcavationApproach(
+                residentCell,
+                target.CellId);
+            return _excavationQuarterWork.Assign(
+                workerId,
+                target,
+                approach,
+                Math.Max(0, Math.Min(100, miningSkill)));
+        }
+
+        private int ResolveExcavationMiningSkill(EntityId workerId)
+        {
+            int value = _excavationMiningSkill?.Invoke(workerId)
+                ?? _manualExcavationMiningSkill?.Invoke(workerId)
+                ?? 0;
+            return Math.Max(0, Math.Min(100, value));
+        }
+
+        private void CompleteExcavationQuarterTarget(CellId target)
+        {
+            _excavationQuarterWork.Remove(
+                new ExcavationWorkTarget(target, target.Z));
         }
 
         private static ExcavationApproachSide ResolveExcavationApproach(

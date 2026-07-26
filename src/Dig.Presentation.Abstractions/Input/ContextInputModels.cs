@@ -58,6 +58,7 @@ public enum PresentationInputEffect
     CancelBuildingPlacement = 64,
     KeepBuildingPreview = 128,
     ShowReason = 256,
+    SelectBuildingBox = 512,
 }
 
 public enum ApplicationInputCommandKind
