@@ -25,7 +25,19 @@ Tracking issues: [#387](https://github.com/bageus/Dig/issues/387), [#388](https:
 
 World selection, HUD selection и management selection используют один selected building id. Один ЛКМ не может одновременно выбрать здание и выдать приказ перемещения.
 
-## 2. BuildingBox unpacking preview
+## 2. Выбор BuildingBox и синхронизация мира со списком
+
+Обычный ЛКМ по world BuildingBox обязан завершаться через игровой runtime router и единый selection path:
+
+1. выбирается конкретный `StackId` коробки;
+2. world visual этой же коробки получает selection highlight;
+3. правая панель переключается на Buildings и подсвечивает строку той же коробки;
+4. открывается меню BuildingBox с действием `Unpack`;
+5. movement, excavation и placement command этим же кликом не создаются.
+
+Выбор BuildingBox из Buildings roster/management использует тот же selected `StackId`, вызывает тот же runtime selection path и немедленно подсвечивает соответствующую физическую коробку в мире. World click и HUD click не могут владеть разными selected ids. Incompatible resident, job, completed-building, cell и inventory selection очищаются вместе с переключением на BuildingBox.
+
+## 3. BuildingBox unpacking preview
 
 Кнопка `Unpack` выбранной BuildingBox включает placement mode и показывает полупрозрачную 3D-модель конечного здания, а не модель упакованной коробки.
 
@@ -36,7 +48,7 @@ World selection, HUD selection и management selection используют од
 - invalid target остаётся preview с reason code;
 - RMB отменяет preview без расходования коробки.
 
-## 3. World item pickup и collision
+## 4. World item pickup и collision
 
 - `Alt + ЛКМ` для pickup требуется только BuildingBox;
 - обычный generic world item подбирается обычным ЛКМ при выбранном resident;
@@ -45,7 +57,7 @@ World selection, HUD selection и management selection используют од
 - world item collider остаётся raycastable, но не является физическим препятствием для resident movement;
 - предметы не входят в Navigation occupancy и гномы проходят через их visual/collider.
 
-## 4. Размещение предмета из resident inventory
+## 5. Размещение предмета из resident inventory
 
 Один ЛКМ по доступному generic item в resident inventory включает локальный item placement mode:
 
@@ -61,7 +73,7 @@ World selection, HUD selection и management selection используют од
 
 BuildingBox inventory action остаётся отдельным unpacking workflow и использует building ghost, а не generic item ghost.
 
-## 5. Excavation quarter progress
+## 6. Excavation quarter progress
 
 Каждая excavation target cell выполняется через четыре authoritative quarters:
 
@@ -75,13 +87,16 @@ BuildingBox inventory action остаётся отдельным unpacking workf
 - quarter completion сохраняется в едином excavation progress owner;
 - Job не переходит в `Finalize`, пока не завершены все четыре quarters;
 - completed quarter немедленно отображается и на designation overlay, и на самой породе;
+- завершённая четверть удаляет/скрывает соответствующую геометрию породы и открывает пространство за ней;
+- завершённую четверть запрещено имитировать чёрной заливкой или непрозрачной чёрной пластиной;
+- оставшиеся четверти сохраняют material/tint породы, а designation остаётся отдельным overlay;
 - 1/4, 2/4 и 3/4 должны визуально отличаться;
 - retry/reassignment не сбрасывает completed quarters;
 - completion одной клетки не удаляет remaining designations/jobs connected zone;
 - Z0 tunnel, vertical/depth excavation и cave-room child cells используют тот же observable progress contract;
 - ошибка одной клетки не прекращает simulation loop и не блокирует остальных residents.
 
-## 6. Cave-room preview и execution
+## 7. Cave-room preview и execution
 
 При активном room tool и валидном entrance:
 
@@ -92,19 +107,21 @@ BuildingBox inventory action остаётся отдельным unpacking workf
 - room остаётся видимой как plan до фактического excavation completion;
 - progress room вычисляется из completed child cells/quarters, а не из локальной анимации.
 
-## 7. Acceptance
+## 8. Acceptance
 
 Обязательные regression scenarios:
 
 1. resident selected -> LMB completed building -> building functions + Buildings tab + highlighted row, без move order;
-2. selected BuildingBox -> `Unpack` -> completed-building ghost под pointer на Z0;
-3. selected resident -> LMB generic world item -> pickup order без Alt;
-4. resident проходит через world item collider;
-5. inventory item single LMB -> transparent item ghost -> valid world drop;
-6. inventory item double LMB -> drop at resident cell -> fall through open vertical tunnel;
-7. horizontal и vertical excavation минимум 10 cells без остановки;
-8. 1/4, 2/4, 3/4 progress видим на designation и rock;
-9. cave-room valid preview видим и child jobs продолжаются до полного plan completion;
-10. failure/retry одного excavation job не блокирует другие commands/residents.
+2. world BuildingBox LMB -> выбран тот же `StackId`, world highlight + Buildings row + `Unpack`, без preview/движения/копки;
+3. Buildings roster BuildingBox click -> та же физическая коробка подсвечена в runtime;
+4. selected BuildingBox -> `Unpack` -> completed-building ghost под pointer на Z0;
+5. selected resident -> LMB generic world item -> pickup order без Alt;
+6. resident проходит через world item collider;
+7. inventory item single LMB -> transparent item ghost -> valid world drop;
+8. inventory item double LMB -> drop at resident cell -> fall through open vertical tunnel;
+9. horizontal и vertical excavation минимум 10 cells без остановки;
+10. 1/4, 2/4, 3/4 progress видим как реально удалённые quarters породы без чёрной заливки;
+11. cave-room valid preview видим и child jobs продолжаются до полного plan completion;
+12. failure/retry одного excavation job не блокирует другие commands/residents.
 
-Unit/source-contract tests не заменяют Unity Play Mode validation для pointer routing, ghost visibility, partial terrain presentation и длительного excavation workflow.
+Unit/source-contract tests не заменяют Unity Play Mode validation для pointer routing, world/HUD selection synchronization, ghost visibility, partial terrain geometry и длительного excavation workflow.
