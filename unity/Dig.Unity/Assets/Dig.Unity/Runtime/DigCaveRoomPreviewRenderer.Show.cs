@@ -62,7 +62,7 @@ namespace Dig.Unity
             _overlays!.ConfigureLineRenderer(
                 missingTunnel,
                 OverlayLayerKind.Preview,
-                OverlaySemanticKind.PreviewInvalid);
+                OverlaySemanticKind.PreviewValid);
             missingTunnel.startColor = MissingTunnelColor;
             missingTunnel.endColor = MissingTunnelColor;
             missingTunnel.enabled = true;
