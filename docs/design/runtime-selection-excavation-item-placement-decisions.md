@@ -92,6 +92,8 @@ BuildingBox inventory action остаётся отдельным unpacking workf
 - оставшиеся четверти сохраняют material/tint породы, а designation остаётся отдельным overlay;
 - 1/4, 2/4 и 3/4 должны визуально отличаться;
 - retry/reassignment не сбрасывает completed quarters;
+- interruption, release, cancel или Eraser удаляют только оставшуюся работу: уже завершённые quarters не восстанавливаются и остаются отсутствующими в terrain visual;
+- повторное designation частично выкопанной клетки продолжает с сохранённого completed-quarter mask, а не начинает 0/4;
 - completion одной клетки не удаляет remaining designations/jobs connected zone;
 - Z0 tunnel, vertical/depth excavation и cave-room child cells используют тот же observable progress contract;
 - ошибка одной клетки не прекращает simulation loop и не блокирует остальных residents.
@@ -121,7 +123,8 @@ BuildingBox inventory action остаётся отдельным unpacking workf
 8. inventory item double LMB -> drop at resident cell -> fall through open vertical tunnel;
 9. horizontal и vertical excavation минимум 10 cells без остановки;
 10. 1/4, 2/4, 3/4 progress видим как реально удалённые quarters породы без чёрной заливки;
-11. cave-room valid preview видим и child jobs продолжаются до полного plan completion;
-12. failure/retry одного excavation job не блокирует другие commands/residents.
+11. interruption/erase после partial progress оставляет удалённые quarters, а повторное designation продолжает с того же mask;
+12. cave-room valid preview видим и child jobs продолжаются до полного plan completion;
+13. failure/retry одного excavation job не блокирует другие commands/residents.
 
 Unit/source-contract tests не заменяют Unity Play Mode validation для pointer routing, world/HUD selection synchronization, ghost visibility, partial terrain geometry и длительного excavation workflow.

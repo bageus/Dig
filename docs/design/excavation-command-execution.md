@@ -89,7 +89,7 @@ Zone membership пересчитывается из authoritative designations, 
 
 Eraser удаляет выбранные unfinished designations, active/nonterminal jobs и связанные reservations.
 
-Уже committed empty terrain не восстанавливается. Eraser не удаляет unrelated jobs в той же клетке.
+Уже committed empty terrain и завершённые quarters не восстанавливаются. Eraser снимает designation/job только с оставшейся части клетки; повторное назначение продолжает работу с сохранённого quarter mask. Eraser не удаляет unrelated jobs в той же клетке.
 
 При split/merge зоны jobs пересобираются из оставшихся designations. Persistent zone priority отсутствует.
 
@@ -109,6 +109,7 @@ Eraser удаляет выбранные unfinished designations, active/nonterm
 - remaining cells не теряются при job replacement;
 - динамически добавленная связанная клетка не требует повторного direct click;
 - work progress изменяется одним authoritative cadence;
+- каждое завершение quarter немедленно удаляет соответствующую геометрию породы; отмена/release/reassignment не возвращает её;
 - continuation не зависит от Unity frame rate;
 - при наличии нескольких допустимых excavation jobs resident получает ближайшую reachable cell независимо от horizontal/vertical/room plan kind;
 - Presentation не владеет zone membership или progress.
@@ -172,6 +173,7 @@ Presentation cursor и hover не сохраняются.
 - room template до полного завершения;
 - selected resident освобождает/завершает job, а zone продолжает выполняться;
 - unreachable cell остаётся в job list и переоценивается без принудительного движения resident в тупик;
+- interruption или erase после 1/4, 2/4 и 3/4 оставляет реально удалённые quarters; повторное designation продолжает с сохранённого mask;
 - erase части плана и split zone;
 - save/load mid-zone;
 - failure одного job без остановки симуляции;
