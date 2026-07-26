@@ -1,4 +1,4 @@
-> **Audit status (2026-07-26): DRAFT evidence.** Headless soak code and historical baselines exist, but current `.github/workflows/quality.yml` does not invoke the standard/large soak commands and does not run Unity Play Mode tests. Sections that describe CI artifacts are historical behavior until #15 is completed again. See [`implemented-systems-audit-2026-07-26.md`](implemented-systems-audit-2026-07-26.md).
+> **Audit status (2026-07-26): PARTIAL REMEDIATION.** PR #412 restores blocking headless smoke plus the `standard` and `large` deterministic soak profiles in `.github/workflows/quality.yml`, with retained reports and logs. Unity Play Mode is still not executed, so #15 remains open and this system stays `DRAFT` until Unity test evidence is added. See [`implemented-systems-audit-2026-07-26.md`](implemented-systems-audit-2026-07-26.md).
 
 # Quality soak, performance budgets and invariants
 
@@ -6,7 +6,7 @@
 
 The quality soak is a deterministic headless scenario for detecting cross-system regressions before UI or content scale hides them. It is not a benchmark of final release hardware. It establishes reproducible CI baselines, identifies expensive systems and fails on structural corruption.
 
-The implementation was originally used to complete issue #15, but the current quality workflow no longer invokes the soak profiles. Issue #15 must remain open until the blocking CI gate is restored and Unity Play Mode evidence is added.
+The headless implementation originally completed the deterministic part of issue #15. PR #412 restores the blocking smoke and soak gates and adds a source contract that prevents them from being silently removed. Issue #15 remains open until Unity Play Mode evidence is added.
 
 ## Profiles and commands
 
@@ -55,7 +55,7 @@ One run contains:
 - a bounded execution journal;
 - recurring world item creation;
 - deterministic automatic hauling;
-- profile-scaled independent hauling workers;
+- profile-scaled hauling workers selected from the authoritative resident repository;
 - per-tick cross-system invariant validation;
 - a final twenty-tick drain after resource spawning stops.
 
@@ -77,8 +77,8 @@ Performance samples, wall-clock time and retained event ordering outside authori
 Adding logical resident positions in issue #52 intentionally changed both profile hashes. The current position-aware hashes are:
 
 ```text
-standard: 8DF64EE713D040AFF7EB8330B5557B8C672D2C103FAD8E3F527544284F514659
-large:    2AFB7E6757414C9A2DA34D8005C3478C74028DA7D38B7A35CD9BF95F1D45669A
+standard: 6C7E4D06A3C97F1F05F64E208E393C97C7316891E148E726ECEC53A481E58AD7
+large:    8CDFAFF348C42E690D665441B66364CBEC53D490233B7AE2A6AC02CFFE885DC2
 ```
 
 Both position-aware baseline runs matched deterministic replay and contained zero invariant and performance-budget violations.
@@ -112,7 +112,7 @@ Large dedicated budgets:
 
 | System | Average execution | Average allocation | Maximum execution |
 |---|---:|---:|---:|
-| `agents.settlement` | 1800 microseconds | 325000 bytes | 100 milliseconds |
+| `agents.settlement` | 1800 microseconds | 400000 bytes | 75 milliseconds |
 | `soak.hauling` | 150 microseconds | 20000 bytes | 100 milliseconds |
 | `soak.invariants` | 500 microseconds | 175000 bytes | 50 milliseconds |
 
@@ -211,6 +211,23 @@ Large system baseline:
 
 The large profile exposes population-scale costs while retaining the same authoritative mechanics. Its state hash differs from standard because load parameters and initial state differ, but repeated large runs must match each other.
 
+## Restored CI incident and remediation
+
+The first restored `standard` soak exposed a real integration defect: the scenario created hauling worker entity IDs in `SimulationState.Entities` without adding matching residents to `IAgentRepository`. Hauling completion correctly attempted a skill grant and failed with `agents.repository.not_found`. The scenario now selects its hauling workers from registered residents, and `HeadlessSoakScenarioTests` requires at least one completed hauling job so this path cannot regress behind source-only checks.
+
+The restored gate also exposed stale profiling costs. `SettlementInvariantChecker` was materializing full resident snapshots every tick only to inspect active targets. It now uses the owner-provided allocation-free `AgentState.ActiveActionTarget` query. On the restored standard CI profile this changed invariant checks from approximately `60,550` allocated bytes and `266.39 us` per execution to `64` bytes and `21.69 us`.
+
+The large settlement budget was calibrated from retained current Linux CI evidence rather than guessed: `agents.settlement` currently averages `375,810` allocated bytes and `1,255.41 us`, so the blocking limits are `400,000` bytes and `1,800 us`. The `large` step uses `if: always()` only so its diagnostics still run when `standard` fails; it has no `continue-on-error` and remains a blocking gate.
+
+Final restored evidence is Quality run `30221694341`:
+
+| Profile | Result | Elapsed | Completed hauling | Active jobs/reservations | Deterministic replay |
+|---|---|---:|---:|---:|---|
+| `standard` | passed | 578.91 ms | 100 | 0 | matched |
+| `large` | passed | 1386.50 ms | 50 | 0 | matched |
+
+Both reports contain zero budget and invariant violations. Stage 2 v2 run `30221694265` and v3 run `30221694264` also passed for the same branch head.
+
 ## Bounded diagnostics
 
 `InMemoryExecutionJournal` retains up to `1000` commands and `5000` events. When a capacity is reached, it removes the oldest entries and increments dropped-entry counters. Both JSON reports expose retained and dropped totals.
@@ -221,6 +238,14 @@ The large profile exposes population-scale costs while retaining the same author
 
 ## CI evidence
 
-Historical GitHub Actions runs executed the normal headless smoke and both deterministic profiles and uploaded `soak-report-standard.json` and `soak-report-large.json`.
+The current `.github/workflows/quality.yml` runs, in blocking order:
 
-The current `.github/workflows/quality.yml` does not execute those commands and does not invoke Unity Test Runner. Until the workflow is restored, the baselines above are historical evidence only, not a current blocking quality gate. Current CI artifacts cover Python source contracts and .NET build/tests.
+1. architecture and Unity source contracts;
+2. Release restore/build and the complete .NET test suite;
+3. the normal headless smoke scenario;
+4. the `standard` deterministic soak profile;
+5. the `large` deterministic soak profile.
+
+The workflow uploads `headless-smoke-log`, `soak-report-standard` and `soak-report-large` artifacts. Each soak artifact retains both the JSON report and console log. `tools/quality/check_quality_workflow_contracts.py` fails when these commands or artifacts are removed or changed to non-blocking execution.
+
+Unity Test Runner is still not invoked. Therefore these runs provide current deterministic headless evidence, but they do not verify Unity scene bootstrap, pointer routing, renderers, colliders or Play Mode workflows. Those remaining requirements stay tracked by #15.

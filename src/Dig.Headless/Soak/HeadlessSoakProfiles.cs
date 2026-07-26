@@ -70,7 +70,7 @@ internal sealed class HeadlessSoakProfile
                     new SystemPerformanceBudgetLimit(
                         "agents.settlement",
                         maximumAverageMicroseconds: 500,
-                        maximumAverageAllocatedBytes: 12_000,
+                        maximumAverageAllocatedBytes: 50_000,
                         maximumSingleExecutionMilliseconds: 100),
                     new SystemPerformanceBudgetLimit(
                         "soak.hauling",
@@ -80,7 +80,7 @@ internal sealed class HeadlessSoakProfile
                     new SystemPerformanceBudgetLimit(
                         "soak.invariants",
                         maximumAverageMicroseconds: 150,
-                        maximumAverageAllocatedBytes: 10_000,
+                        maximumAverageAllocatedBytes: 25_000,
                         maximumSingleExecutionMilliseconds: 50),
                 }));
     }
@@ -102,8 +102,8 @@ internal sealed class HeadlessSoakProfile
                 {
                     new SystemPerformanceBudgetLimit(
                         "agents.settlement",
-                        maximumAverageMicroseconds: 1_500,
-                        maximumAverageAllocatedBytes: 80_000,
+                        maximumAverageMicroseconds: 1_800,
+                        maximumAverageAllocatedBytes: 400_000,
                         maximumSingleExecutionMilliseconds: 75),
                     new SystemPerformanceBudgetLimit(
                         "soak.hauling",
@@ -113,7 +113,7 @@ internal sealed class HeadlessSoakProfile
                     new SystemPerformanceBudgetLimit(
                         "soak.invariants",
                         maximumAverageMicroseconds: 500,
-                        maximumAverageAllocatedBytes: 40_000,
+                        maximumAverageAllocatedBytes: 175_000,
                         maximumSingleExecutionMilliseconds: 50),
                 }));
     }

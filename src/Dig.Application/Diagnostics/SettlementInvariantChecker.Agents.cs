@@ -14,8 +14,7 @@ public sealed partial class SettlementInvariantChecker
         BuildingFacilitiesState facilities = Require(_currentFacilities);
         foreach (AgentState agentState in _agents.GetAll())
         {
-            AgentSnapshot agent = agentState.CreateSnapshot(tick);
-            AgentActivityTarget? target = agent.ActiveAction?.Target;
+            AgentActivityTarget? target = agentState.ActiveActionTarget;
             if (!target.HasValue)
             {
                 continue;
@@ -25,13 +24,13 @@ public sealed partial class SettlementInvariantChecker
             {
                 if (!inventory.HasReservation(
                     target.Value.EntityId,
-                    agent.Id,
+                    agentState.Id,
                     minimumQuantity: 1))
                 {
                     Add(
                         "agents.food_target_unreserved",
                         "Active food action has no matching item reservation.",
-                        agent.Id);
+                        agentState.Id);
                 }
 
                 continue;
@@ -44,12 +43,12 @@ public sealed partial class SettlementInvariantChecker
                     target.Value.EntityId,
                     out BuildingFacilityInspection facility)
                 || facility.Definition.Kind != expected
-                || facility.ReservedAgentId != agent.Id)
+                || facility.ReservedAgentId != agentState.Id)
             {
                 Add(
                     "agents.facility_target_unreserved",
                     "Active facility action has no matching facility reservation.",
-                    agent.Id);
+                    agentState.Id);
             }
         }
     }
@@ -65,7 +64,7 @@ public sealed partial class SettlementInvariantChecker
         }
 
         AgentState? agentState = _agents.Get(reservation.AgentId);
-        AgentActivityTarget? target = agentState?.CreateSnapshot(0).ActiveAction?.Target;
+        AgentActivityTarget? target = agentState?.ActiveActionTarget;
         if (!target.HasValue || target.Value.EntityId != reservation.FacilityId)
         {
             Add(
