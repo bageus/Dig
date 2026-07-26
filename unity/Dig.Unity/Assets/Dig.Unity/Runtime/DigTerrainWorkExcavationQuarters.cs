@@ -117,7 +117,7 @@ namespace Dig.Unity
                 residentCell,
                 skill);
             ulong seed = BuildExcavationSeed(
-                _worldSession.MiningOutputWorldSeed,
+                unchecked((ulong)(uint)_worldSession.MiningOutputWorldSeed),
                 tick,
                 workerId);
             _excavationQuarterWork.ApplySwing(workerId, seed);
