@@ -75,19 +75,25 @@ public sealed class CaveRoomPlan
         IEnumerable<CellId> volumeCells,
         IEnumerable<CellId> roofCells)
     {
+        if (preset == null)
+        {
+            throw new ArgumentNullException(nameof(preset));
+        }
+
+        CellId[] front = OrderedUnique(
+            frontExcavationCells,
+            nameof(frontExcavationCells));
         CellId[] volume = OrderedUnique(volumeCells, nameof(volumeCells));
-        CellId[] baseTunnel = volume
-            .Where(cell => cell.Z == CellId.MinimumDepth && cell.Y == entrance.Y)
-            .ToArray();
-        CellId[] excavation = volume.Except(baseTunnel).OrderBy(cell => cell).ToArray();
-        return CreateSnapshot(
+        CellId[] roof = OrderedUnique(roofCells, nameof(roofCells));
+        ValidateLegacySnapshot(front, volume);
+        return new CaveRoomPlan(
             preset,
             entrance,
-            frontExcavationCells,
-            excavation,
-            baseTunnel,
+            front,
             volume,
-            roofCells);
+            Array.Empty<CellId>(),
+            volume,
+            roof);
     }
 
     public static CaveRoomPlan CreateSnapshot(
@@ -157,6 +163,34 @@ public sealed class CaveRoomPlan
             baseTunnel,
             volume,
             roof);
+    }
+
+    private static void ValidateLegacySnapshot(
+        IReadOnlyCollection<CellId> front,
+        IReadOnlyCollection<CellId> volume)
+    {
+        if (volume.Count == 0)
+        {
+            throw new ArgumentException(
+                "Cave room volume cannot be empty.",
+                nameof(volume));
+        }
+
+        if (volume.Any(cell =>
+                cell.Z < CellId.MinimumDepth || cell.Z > CellId.MaximumDepth))
+        {
+            throw new ArgumentException(
+                "Cave room volume contains an invalid depth.",
+                nameof(volume));
+        }
+
+        if (front.Any(cell =>
+                cell.Z != CellId.MinimumDepth || !volume.Contains(cell)))
+        {
+            throw new ArgumentException(
+                "Front excavation cells must belong to the Z0 room mask.",
+                nameof(front));
+        }
     }
 
     private static IReadOnlyList<CellId> Copy(
