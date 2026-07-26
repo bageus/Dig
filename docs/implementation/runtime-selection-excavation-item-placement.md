@@ -44,7 +44,9 @@ Quarter work явно переводит signed generation seed в его 32-bit
 
 ### Continuation и cave rooms
 
-Manual connected-zone planning был ограничен radius 4 и XY adjacency. Frontier/cluster resolution учитывает соседние Z layers и весь connected target set. Room preview всегда рисует front silhouette; depth designations и quarter masks синхронизируются из authoritative world/job state.
+Manual connected-zone planning был ограничен radius 4 и XY adjacency. Frontier/cluster resolution учитывает соседние Z layers и весь connected target set. Если назначенный ordinary Dig job после refresh не имеет успешного route/work cell, assignment снимается, quarter state сохраняется, а job возвращается в общий pool вместо вечного `Claimed/InProgress` без движения.
+
+Room commit раньше передавал `VolumeCells` в atomic `SetDigDesignations`, хотя volume включал уже открытую entrance cell; Domain корректно отклонял весь batch. План разделяет полный `VolumeCells`, открытый `BaseTunnelCells` и фактический `ExcavationCells`. Commit назначает только rock mask. Planner требует полный сквозной base tunnel, проверяет mineability каждой остальной 3D-клетки и возвращает per-cell diagnostics. Runtime разрешает pointer на породе над тоннелем и preview красит конкретные missing/unmineable/protected cells.
 
 ## Изменённые owners
 
@@ -67,6 +69,8 @@ Manual connected-zone planning был ограничен radius 4 и XY adjacenc
 - shared-work-cell spatial assignment выбирает ближайшую target cell, даже если дальний job имеет меньший id;
 - source contract: tunnel drag stage-ит designations и reconciles jobs только после release;
 - automatic ordinary/spatial selection использует target-distance → route-cost → CellId → JobId;
+- unroutable assigned Dig job releases its worker reservation without losing quarter progress;
+- room commit uses `ExcavationCells`, full base-tunnel validation and per-cell invalid preview diagnostics;
 - Unity quarter seed type normalization, current excavation skill source и guarded non-null resident IDs;
 - 12-cell horizontal/depth connected cluster;
 - room outline and quarter marker synchronization.
