@@ -59,16 +59,21 @@ namespace Dig.Unity
             }
 
             ResetInventoryClickSequence();
-            if (!slot.CanStartPlacement
-                || _agentRenderer?.SelectedModel == null
-                || _hud == null)
+            var resident = _agentRenderer?.SelectedModel;
+            if (!slot.CanStartPlacement || resident == null || _hud == null)
             {
                 _hud?.SetStatus("input.inventory.building_placement_unavailable");
                 return;
             }
 
-            var resident = _agentRenderer.SelectedModel;
-            EntityId residentId = EntityId.Parse(resident.Id);
+            string? residentIdValue = resident.Id;
+            if (string.IsNullOrWhiteSpace(residentIdValue))
+            {
+                _hud.SetStatus("input.inventory.building_placement_unavailable");
+                return;
+            }
+
+            EntityId residentId = EntityId.Parse(residentIdValue);
             EntityId stackId = EntityId.Parse(slot.StackId);
             ContextInputState state = new ContextInputState(
                 selectedResidentId: residentId,
@@ -127,14 +132,21 @@ namespace Dig.Unity
                 throw new System.ArgumentNullException(nameof(slot));
             }
 
-            if (_agentRenderer?.SelectedModel == null || _hud == null)
+            var resident = _agentRenderer?.SelectedModel;
+            if (resident == null || _hud == null)
             {
                 _hud?.SetStatus("input.inventory.resident_not_selected");
                 return;
             }
 
-            var resident = _agentRenderer.SelectedModel;
-            EntityId residentId = EntityId.Parse(resident.Id);
+            string? residentIdValue = resident.Id;
+            if (string.IsNullOrWhiteSpace(residentIdValue))
+            {
+                _hud.SetStatus("input.inventory.resident_not_selected");
+                return;
+            }
+
+            EntityId residentId = EntityId.Parse(residentIdValue);
             EntityId stackId = EntityId.Parse(slot.StackId);
             ContextInputState state = new ContextInputState(
                 selectedResidentId: residentId,
