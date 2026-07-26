@@ -24,6 +24,7 @@
     <ProjectReference Include="../../src/Dig.Domain/Dig.Domain.csproj" />
     <ProjectReference Include="../../src/Dig.Infrastructure/Dig.Infrastructure.csproj" />
     <ProjectReference Include="../../src/Dig.Presentation.Abstractions/Dig.Presentation.Abstractions.csproj" />
+    <ProjectReference Include="../../src/Dig.Headless/Dig.Headless.csproj" />
   </ItemGroup>
 
   <ItemGroup>
