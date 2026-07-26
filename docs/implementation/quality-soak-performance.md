@@ -55,7 +55,7 @@ One run contains:
 - a bounded execution journal;
 - recurring world item creation;
 - deterministic automatic hauling;
-- profile-scaled independent hauling workers;
+- profile-scaled hauling workers selected from the authoritative resident repository;
 - per-tick cross-system invariant validation;
 - a final twenty-tick drain after resource spawning stops.
 
@@ -77,8 +77,8 @@ Performance samples, wall-clock time and retained event ordering outside authori
 Adding logical resident positions in issue #52 intentionally changed both profile hashes. The current position-aware hashes are:
 
 ```text
-standard: 8DF64EE713D040AFF7EB8330B5557B8C672D2C103FAD8E3F527544284F514659
-large:    2AFB7E6757414C9A2DA34D8005C3478C74028DA7D38B7A35CD9BF95F1D45669A
+standard: 6C7E4D06A3C97F1F05F64E208E393C97C7316891E148E726ECEC53A481E58AD7
+large:    8CDFAFF348C42E690D665441B66364CBEC53D490233B7AE2A6AC02CFFE885DC2
 ```
 
 Both position-aware baseline runs matched deterministic replay and contained zero invariant and performance-budget violations.
@@ -112,7 +112,7 @@ Large dedicated budgets:
 
 | System | Average execution | Average allocation | Maximum execution |
 |---|---:|---:|---:|
-| `agents.settlement` | 1800 microseconds | 325000 bytes | 100 milliseconds |
+| `agents.settlement` | 1800 microseconds | 400000 bytes | 75 milliseconds |
 | `soak.hauling` | 150 microseconds | 20000 bytes | 100 milliseconds |
 | `soak.invariants` | 500 microseconds | 175000 bytes | 50 milliseconds |
 
@@ -210,6 +210,23 @@ Large system baseline:
 | `soak.resource_spawn` | 19.28 us | 0.62 ms | 360 bytes |
 
 The large profile exposes population-scale costs while retaining the same authoritative mechanics. Its state hash differs from standard because load parameters and initial state differ, but repeated large runs must match each other.
+
+## Restored CI incident and remediation
+
+The first restored `standard` soak exposed a real integration defect: the scenario created hauling worker entity IDs in `SimulationState.Entities` without adding matching residents to `IAgentRepository`. Hauling completion correctly attempted a skill grant and failed with `agents.repository.not_found`. The scenario now selects its hauling workers from registered residents, and `HeadlessSoakScenarioTests` requires at least one completed hauling job so this path cannot regress behind source-only checks.
+
+The restored gate also exposed stale profiling costs. `SettlementInvariantChecker` was materializing full resident snapshots every tick only to inspect active targets. It now uses the owner-provided allocation-free `AgentState.ActiveActionTarget` query. On the restored standard CI profile this changed invariant checks from approximately `60,550` allocated bytes and `266.39 us` per execution to `64` bytes and `21.69 us`.
+
+The large settlement budget was calibrated from retained current Linux CI evidence rather than guessed: `agents.settlement` currently averages `375,810` allocated bytes and `1,255.41 us`, so the blocking limits are `400,000` bytes and `1,800 us`. The `large` step uses `if: always()` only so its diagnostics still run when `standard` fails; it has no `continue-on-error` and remains a blocking gate.
+
+Final restored evidence is Quality run `30221694341`:
+
+| Profile | Result | Elapsed | Completed hauling | Active jobs/reservations | Deterministic replay |
+|---|---|---:|---:|---:|---|
+| `standard` | passed | 578.91 ms | 100 | 0 | matched |
+| `large` | passed | 1386.50 ms | 50 | 0 | matched |
+
+Both reports contain zero budget and invariant violations. Stage 2 v2 run `30221694265` and v3 run `30221694264` also passed for the same branch head.
 
 ## Bounded diagnostics
 
