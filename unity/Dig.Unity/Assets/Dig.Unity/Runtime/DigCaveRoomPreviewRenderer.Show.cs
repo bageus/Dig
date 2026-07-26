@@ -65,7 +65,7 @@ namespace Dig.Unity
                     value.Reason == CaveRoomPlanFailureReason.BaseTunnelMissing))
             {
                 LineRenderer missingTunnel = _edges[0];
-                _overlays.ConfigureLineRenderer(
+                _overlays!.ConfigureLineRenderer(
                     missingTunnel,
                     OverlayLayerKind.Preview,
                     OverlaySemanticKind.PreviewInvalid);

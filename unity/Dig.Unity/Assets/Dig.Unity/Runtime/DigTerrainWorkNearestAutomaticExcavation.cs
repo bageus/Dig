@@ -68,7 +68,7 @@ namespace Dig.Unity
             HashSet<EntityId> alreadyAssigned = new HashSet<EntityId>(
                 _jobRepository.Get().GetAll()
                     .Where(job => !job.IsTerminal && job.AssignedAgentId.HasValue)
-                    .Select(job => job.AssignedAgentId.Value));
+                    .Select(job => job.AssignedAgentId.GetValueOrDefault()));
             AgentViewModel[] availableAgents = agents
                 .Where(agent => !string.IsNullOrWhiteSpace(agent.Id))
                 .Where(IsAvailableForAutomaticWork)

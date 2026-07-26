@@ -40,7 +40,9 @@ Tunnel drag теперь сначала stage-ит все World designations, а
 
 ### Unity compiler guards
 
-Quarter work явно переводит signed generation seed в его 32-bit unsigned representation перед расширением до `ulong`. Skill resolution использует единственный актуальный source, привязанный через `BindExcavationSkillSource`; ссылка на удалённый legacy `_manualExcavationMiningSkill` устранена. Inventory routing проверяет nullable selected resident id до `EntityId.Parse` и после guard явно передаёт non-null значение для Unity Roslyn. Это устраняет diagnostics `CS1503`, `CS0103` и `CS8604` без изменения authoritative gameplay state.
+Quarter work явно переводит signed generation seed в его 32-bit unsigned representation перед расширением до `ulong`. Skill resolution использует единственный актуальный source, привязанный через `BindExcavationSkillSource`; ссылка на удалённый legacy `_manualExcavationMiningSkill` устранена.
+
+После разделения tunnel-stroke batching на partial-файл Unity не видел `ExcavationStrokeAxis`, потому что `using` directives не распространяются между partial declarations. `DigWorldInteraction.ExcavationStrokeBatch.cs` теперь явно импортирует `Dig.Application.Jobs`. Nullable diagnostics устранены в тех же runtime paths: assigned agent извлекается через `GetValueOrDefault()` после `HasValue`, cave-room overlay field помечен non-null после `EnsureResources`, а resident id нормализуется в non-null string до guard и `EntityId.Parse`.
 
 ### Continuation и cave rooms
 
@@ -69,9 +71,10 @@ Room commit раньше передавал `VolumeCells` в atomic `SetDigDesig
 - shared-work-cell spatial assignment выбирает ближайшую target cell, даже если дальний job имеет меньший id;
 - source contract: tunnel drag stage-ит designations и reconciles jobs только после release;
 - automatic ordinary/spatial selection использует target-distance → route-cost → CellId → JobId;
+- source contract требует namespace import для `ExcavationStrokeAxis` и non-null projections для agent, overlay и inventory ids;
 - unroutable assigned Dig job releases its worker reservation without losing quarter progress;
 - room commit uses `ExcavationCells`, full base-tunnel validation and per-cell invalid preview diagnostics;
-- Unity quarter seed type normalization, current excavation skill source и guarded non-null resident IDs;
+- Unity quarter seed type normalization и current excavation skill source;
 - 12-cell horizontal/depth connected cluster;
 - room outline and quarter marker synchronization.
 
