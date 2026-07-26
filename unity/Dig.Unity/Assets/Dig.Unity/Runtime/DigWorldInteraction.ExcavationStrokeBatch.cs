@@ -1,3 +1,4 @@
+using Dig.Application.Jobs;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 
