@@ -7,7 +7,7 @@ namespace Dig.Unity
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(BoxCollider))]
-    public sealed class DigWorldItemVisual : MonoBehaviour
+    public sealed partial class DigWorldItemVisual : MonoBehaviour
     {
         private readonly List<GameObject> _instances = new List<GameObject>();
         private readonly List<DigVisualTintTarget> _tints =
@@ -49,6 +49,7 @@ namespace Dig.Unity
         internal void PrepareForPool()
         {
             EnsureCollider();
+            _selectionHighlighted = false;
             _interactionCollider!.enabled = false;
             gameObject.layer = 2;
             for (int index = 0; index < _instances.Count; index++)
@@ -162,7 +163,8 @@ namespace Dig.Unity
             int visible = rawMaterial
                 ? Math.Min(1, _instances.Count)
                 : Math.Min(layout.Instances.Count, _instances.Count);
-            Color tint = ResolveReservationTint(layout.ReservationState);
+            _reservationState = layout.ReservationState;
+            Color tint = ResolveCurrentTint();
             for (int index = 0; index < _instances.Count; index++)
             {
                 GameObject instance = _instances[index];

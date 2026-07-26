@@ -49,6 +49,7 @@ namespace Dig.Unity
                 return;
             }
 
+            CommitPendingExcavationStroke();
             DisableCaveRoomPlanning();
             _excavationMode = mode;
             SetTunnelDigInteractionActive(UsesTunnelCellInteraction(mode));
@@ -73,6 +74,7 @@ namespace Dig.Unity
 
         private void DisableExcavationDrawing()
         {
+            CommitPendingExcavationStroke();
             _excavationMode = DigExcavationDrawingMode.None;
             SetTunnelDigInteractionActive(active: false);
             ResetExcavationStroke();
@@ -94,6 +96,11 @@ namespace Dig.Unity
                 {
                     ApplyExcavationEraseBatch();
                 }
+                else
+                {
+                    CommitPendingExcavationStroke();
+                }
+
                 ResetExcavationStroke();
                 return wasEditing;
             }
@@ -106,6 +113,7 @@ namespace Dig.Unity
 
             if (!CanActivateExcavationDrawing)
             {
+                CommitPendingExcavationStroke();
                 ResetExcavationStroke();
                 return false;
             }
@@ -235,10 +243,7 @@ namespace Dig.Unity
                 return Result.Failure(DigWorldSession.ProtectedRock);
             }
 
-            Result result = _simulation!.ApplyExcavationDesignation(
-                target,
-                active,
-                _excavationPriority);
+            Result result = StageExcavationCell(target, active);
             if (result.IsFailure)
             {
                 return result;
@@ -336,14 +341,6 @@ namespace Dig.Unity
             }
 
             return null;
-        }
-
-        private void ResetExcavationStroke()
-        {
-            _excavationAxis = ExcavationStrokeAxis.None;
-            _excavationAnchor = null;
-            _lastExcavationPaintCell = null;
-            _excavationEraseBatch.Clear();
         }
     }
 }

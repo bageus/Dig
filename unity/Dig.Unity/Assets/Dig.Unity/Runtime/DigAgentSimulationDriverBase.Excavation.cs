@@ -17,9 +17,7 @@ namespace Dig.Unity
         {
             if (!IsInitialized())
             {
-                return Result.Failure(new DomainError(
-                    "unity.excavation.not_initialized",
-                    "Excavation controls are not initialized."));
+                return ExcavationNotInitialized();
             }
 
             Result changed = WorldSession!.SetDesignation(cell, active);
@@ -34,13 +32,41 @@ namespace Dig.Unity
             return Result.Success();
         }
 
+        internal Result StageExcavationDesignation(CellId cell, bool active)
+        {
+            if (!IsInitialized())
+            {
+                return ExcavationNotInitialized();
+            }
+
+            Result changed = WorldSession!.SetDesignation(cell, active);
+            if (changed.IsFailure)
+            {
+                return changed;
+            }
+
+            RefreshExcavationPresentation(AgentSession!.LoadView());
+            return Result.Success();
+        }
+
+        internal Result CommitExcavationDesignationBatch(int priority)
+        {
+            if (!IsInitialized())
+            {
+                return ExcavationNotInitialized();
+            }
+
+            IReadOnlyList<AgentViewModel> agents = AgentSession!.LoadView();
+            TerrainSession!.SynchronizeDesignations(CurrentTick, agents, priority);
+            RefreshExcavationPresentation(agents);
+            return Result.Success();
+        }
+
         internal Result ApplyCaveRoomPlan(CaveRoomPlan plan, int priority)
         {
             if (!IsInitialized())
             {
-                return Result.Failure(new DomainError(
-                    "unity.excavation.not_initialized",
-                    "Excavation controls are not initialized."));
+                return ExcavationNotInitialized();
             }
 
             Result changed = WorldSession!.ApplyCaveRoomPlan(plan);
@@ -91,9 +117,7 @@ namespace Dig.Unity
         {
             if (!IsInitialized())
             {
-                return Result.Failure(new DomainError(
-                    "unity.excavation.not_initialized",
-                    "Excavation controls are not initialized."));
+                return ExcavationNotInitialized();
             }
 
             if (residentIds == null)
@@ -136,6 +160,13 @@ namespace Dig.Unity
                 AgentRenderer!.SelectedModel,
                 AgentRenderer.SelectedCount);
             return result;
+        }
+
+        private static Result ExcavationNotInitialized()
+        {
+            return Result.Failure(new DomainError(
+                "unity.excavation.not_initialized",
+                "Excavation controls are not initialized."));
         }
 
         private void RefreshExcavationPresentation(

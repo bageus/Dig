@@ -160,25 +160,39 @@ namespace Dig.Tests
         }
 
         [Fact]
-        public void Runtime_keeps_box_selection_quarter_geometry_and_nearest_dig_wired()
+        public void Runtime_keeps_box_only_selection_and_nearest_stroke_assignment_wired()
         {
             string runtime = RuntimeRoot();
             string decisions = Read(runtime, "DigWorldInteraction.Decisions.cs");
             string boxSelection = Read(
                 runtime,
                 "DigWorldInteraction.BuildingBoxSelection.cs");
+            string itemSelection = Read(runtime, "DigWorldItemVisual.Selection.cs");
             string roster = Read(runtime, "DigGameHudCanvas.Roster.cs");
             string cell = Read(runtime, "DigCellVisual.cs");
             string marker = Read(runtime, "DigExcavationQuarterMarker.cs");
             string cursor = Read(runtime, "DigWorldInteraction.ExcavationCursor.cs");
             string nearest = Read(runtime, "DigTerrainWorkNearestAutomaticExcavation.cs");
+            string stroke = Read(runtime, "DigWorldInteraction.Excavation.cs");
+            string strokeBatch = Read(
+                runtime,
+                "DigWorldInteraction.ExcavationStrokeBatch.cs");
+            string driver = Read(
+                runtime,
+                "DigAgentSimulationDriverBase.Excavation.cs");
             string designations = Read(runtime, "DigTerrainWorkDesignations.cs");
             string spatial = Read(runtime, "DigTerrainSpatialExcavation.cs");
 
             Assert.Contains("PresentationInputEffect.SelectBuildingBox", decisions);
             Assert.Contains("SelectBuildingBox(item.Model,item)", decisions);
-            Assert.Contains("DigBuildingBoxSelectionHighlight", boxSelection);
+            Assert.Contains("SetSelectionHighlighted(false)", boxSelection);
+            Assert.Contains("SetSelectionHighlighted(true)", boxSelection);
             Assert.Contains("ResolveWorldItemVisual(item.StackId)", boxSelection);
+            Assert.Contains("Color.Lerp(tint,SelectionColor", itemSelection);
+            Assert.DoesNotContain("DigBuildingBoxSelectionHighlight", boxSelection);
+            Assert.False(File.Exists(Path.Combine(
+                runtime,
+                "DigBuildingBoxSelectionHighlight.cs")));
             Assert.Contains("SelectBuildingBoxFromHud(id)", roster);
             Assert.Contains("SetExcavationProgress(ExcavationQuartercompleted)", cell);
             Assert.Contains("_quarterRenderers[index].gameObject.SetActive(!excavated)", cell);
@@ -186,9 +200,13 @@ namespace Dig.Tests
             Assert.DoesNotContain("ExcavatedColor", marker);
             Assert.Contains("ClearExcavationQuarterProgress()", cursor);
             Assert.Contains("SetExcavationQuarterProgress", cursor);
-            Assert.Contains("_directAssignmentPlanner!.Plan", nearest);
-            Assert.Contains("_directSpatialAssignmentPlanner!.Plan", nearest);
-            Assert.Contains("JobStatus.Available", nearest);
+            Assert.Contains("OrderBy(value=>value!.TargetDistance)", nearest);
+            Assert.Contains("StageExcavationCell(target,active)", stroke);
+            Assert.Contains("CommitPendingExcavationStroke()", stroke);
+            Assert.Contains("StageExcavationDesignation", strokeBatch);
+            Assert.Contains("CommitExcavationDesignationBatch", strokeBatch);
+            Assert.Contains("StageExcavationDesignation", driver);
+            Assert.Contains("CommitExcavationDesignationBatch", driver);
             Assert.Contains("AssignNearestAutomaticDigJobs(agents,cells,tick)", designations);
             Assert.Contains("AssignNearestAutomaticSpatialJobs(agents,tick)", spatial);
         }

@@ -159,7 +159,8 @@ namespace Dig.Unity
         {
             return new[] { dig, spatial }
                 .Where(value => value != null)
-                .OrderBy(value => value!.RouteCost)
+                .OrderBy(value => value!.TargetDistance)
+                .ThenBy(value => value!.RouteCost)
                 .ThenBy(value => value!.Target)
                 .ThenBy(
                     value => value!.JobId.ToString(),
