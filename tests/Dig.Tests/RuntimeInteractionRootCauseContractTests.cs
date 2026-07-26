@@ -138,7 +138,7 @@ namespace Dig.Tests
         }
 
         [Fact]
-        public void Unity_runtime_uses_current_skill_source_and_guarded_resident_ids()
+        public void Unity_runtime_uses_non_nullable_guarded_resident_ids()
         {
             string runtime = RuntimeRoot();
             string quarters = Read(runtime, "DigTerrainWorkExcavationQuarters.cs");
@@ -151,11 +151,13 @@ namespace Dig.Tests
             Assert.DoesNotContain("_manualExcavationMiningSkill", quarters);
             Assert.Equal(
                 2,
-                CountOccurrences(inventory, "string?residentIdValue=resident.Id;"));
+                CountOccurrences(
+                    inventory,
+                    "stringresidentIdValue=resident.Id??string.Empty;"));
             Assert.Equal(
                 2,
-                CountOccurrences(inventory, "EntityId.Parse(residentIdValue!)"));
-            Assert.DoesNotContain("EntityId.Parse(residentIdValue)", inventory);
+                CountOccurrences(inventory, "EntityId.Parse(residentIdValue)"));
+            Assert.DoesNotContain("string?residentIdValue", inventory);
             Assert.DoesNotContain("EntityId.Parse(resident.Id)", inventory);
         }
 
@@ -182,6 +184,7 @@ namespace Dig.Tests
                 "DigAgentSimulationDriverBase.Excavation.cs");
             string designations = Read(runtime, "DigTerrainWorkDesignations.cs");
             string spatial = Read(runtime, "DigTerrainSpatialExcavation.cs");
+            string roomPreview = Read(runtime, "DigCaveRoomPreviewRenderer.Show.cs");
 
             Assert.Contains("PresentationInputEffect.SelectBuildingBox", decisions);
             Assert.Contains("SelectBuildingBox(item.Model,item)", decisions);
@@ -201,14 +204,20 @@ namespace Dig.Tests
             Assert.Contains("ClearExcavationQuarterProgress()", cursor);
             Assert.Contains("SetExcavationQuarterProgress", cursor);
             Assert.Contains("OrderBy(value=>value!.TargetDistance)", nearest);
+            Assert.Contains("AssignedAgentId.GetValueOrDefault()", nearest);
+            Assert.DoesNotContain("AssignedAgentId.Value", nearest);
             Assert.Contains("StageExcavationCell(target,active)", stroke);
             Assert.Contains("CommitPendingExcavationStroke()", stroke);
+            Assert.Contains("usingDig.Application.Jobs;", strokeBatch);
             Assert.Contains("StageExcavationDesignation", strokeBatch);
             Assert.Contains("CommitExcavationDesignationBatch", strokeBatch);
             Assert.Contains("StageExcavationDesignation", driver);
             Assert.Contains("CommitExcavationDesignationBatch", driver);
             Assert.Contains("AssignNearestAutomaticDigJobs(agents,cells,tick)", designations);
             Assert.Contains("AssignNearestAutomaticSpatialJobs(agents,tick)", spatial);
+            Assert.Equal(
+                2,
+                CountOccurrences(roomPreview, "_overlays!.ConfigureLineRenderer("));
         }
 
         private static int CountOccurrences(string source, string value)
