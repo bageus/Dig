@@ -224,24 +224,18 @@ def check_navigation_and_marquee_contracts(
             "tunnelRenderer.Initialize(AgentSession.TunnelVolume)",
         ),
     ))
-    errors.extend(require_fragments(
-        designations,
-        texts.get(designations, ""),
-        "pending manual excavation retries",
-        ("RetryPendingManualExcavations(tick)",),
-    ))
-
     # Forced excavation uses the same authoritative JobSystem movement and completion path.
     errors.extend(require_fragments(
         multi_worker,
         texts.get(multi_worker, ""),
-        "authoritative multi-worker excavation groups",
+        "authoritative stateless multi-worker excavation",
         (
             "AssignExcavationClusterToResidents",
-            "CreateManualExcavationGroups",
-            "RegisterManualExcavationGroup",
-            "AssignNextManualExcavation",
+            "CollectDesignatedCells()",
+            "CollectTemplateRoomGroups(designated)",
+            "_directAssignmentPlanner!.Plan",
             "ReleaseAssignmentsForAgents",
+            "AssignSpecificJobCommand",
         ),
     ))
 

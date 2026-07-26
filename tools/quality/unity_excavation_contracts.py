@@ -34,6 +34,7 @@ def check_excavation_contracts(
     room_preview = runtime_root / "DigCaveRoomPreviewRenderer.cs"
     designations = runtime_root / "DigTerrainWorkDesignations.cs"
     manual = runtime_root / "DigTerrainWorkManualExcavation.cs"
+    spatial_assignment = runtime_root / "DigTerrainSpatialExcavation.Assignment.cs"
     driver = runtime_root / "DigAgentSimulationDriverBase.Excavation.cs"
     room_driver = runtime_root / "DigAgentSimulationDriverBase.CaveRooms.cs"
     session = runtime_root / "DigAgentSession.TunnelMovement.cs"
@@ -244,14 +245,38 @@ def check_excavation_contracts(
             "IsExcavationFrontier",
             "NoCandidates",
             "Math.Abs(agent.CellZ - target.Z)",
-            "IsManualExcavationJob(job.Id)",
+            "CreateDynamicCandidates(agents, definition.Target.CellId)",
         ),
     ))
     errors.extend(require_fragments(
         manual,
         texts.get(manual, ""),
-        "manual excavation cluster",
-        ("radius: int.MaxValue", "AssignSpecificJobCommand", "ContinueManualExcavation", "AssignNextManualExcavation"),
+        "stateless direct excavation assignment",
+        (
+            "DirectJobAssignmentPlanner",
+            "AssignExcavationClusterToResidents",
+            "Direct excavation assignment is not initialized.",
+        ),
+    ))
+    errors.extend(require_fragments(
+        spatial_assignment,
+        texts.get(spatial_assignment, ""),
+        "shared ordinary spatial excavation assignment",
+        (
+            "CollectTemplateRoomGroups(designated)",
+            "_directSpatialAssignmentPlanner!.Plan",
+            "AssignSpecificJobCommand",
+        ),
+    ))
+    errors.extend(reject_fragments(
+        spatial_assignment,
+        texts.get(spatial_assignment, ""),
+        "legacy spatial direct ownership",
+        (
+            "SpatialManualAssignmentRadius",
+            "SetCandidates",
+            "NoCandidates",
+        ),
     ))
     errors.extend(require_fragments(
         driver,

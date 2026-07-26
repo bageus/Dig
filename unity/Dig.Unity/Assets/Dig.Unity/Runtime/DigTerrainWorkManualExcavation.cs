@@ -1,9 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using Dig.Application.Jobs;
 using Dig.Domain.Core;
-using Dig.Domain.Jobs;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 
@@ -13,16 +10,21 @@ namespace Dig.Unity
     {
         private static readonly DomainError NoExcavationFront = new DomainError(
             "unity.excavation.no_reachable_front",
-            "The selected excavation group has no reachable front cell.");
+            "The selected excavation zone has no reachable front cell.");
         private AssignSpecificJobHandler? _specificAssignment;
         private ReleaseJobAssignmentHandler? _releaseAssignment;
         private ExcavationClusterPlanner? _clusterPlanner;
+        private DirectJobAssignmentPlanner? _directAssignmentPlanner;
+        private DirectSpatialJobAssignmentPlanner? _directSpatialAssignmentPlanner;
 
         internal void InitializeManualExcavation(InMemoryExecutionJournal journal)
         {
             _specificAssignment = new AssignSpecificJobHandler(_jobRepository, journal);
             _releaseAssignment = new ReleaseJobAssignmentHandler(_jobRepository, journal);
             _clusterPlanner = new ExcavationClusterPlanner();
+            _directAssignmentPlanner = new DirectJobAssignmentPlanner(_routePlanner);
+            _directSpatialAssignmentPlanner = new DirectSpatialJobAssignmentPlanner(
+                new Dig.Domain.Navigation.NavigationPathfinder());
         }
 
         internal Result AssignExcavationCluster(
@@ -35,244 +37,10 @@ namespace Dig.Unity
                 throw new ArgumentException("Resident id is required.", nameof(residentId));
             }
 
-            RequireManualExcavationInitialized();
-            EntityId agentId = EntityId.Parse(residentId);
-            ClearManualGroupForAgent(agentId);
-            IReadOnlyList<CellId> cluster = _clusterPlanner!.Select(
+            return AssignExcavationClusterToResidents(
                 seed,
-                CollectDesignatedCells(),
-                radius: int.MaxValue);
-            if (cluster.Count == 0)
-            {
-                return Result.Failure(JobErrors.NotFound);
-            }
-
-            Dictionary<CellId, JobSnapshot> jobsByCell = CollectActiveDigJobs();
-            List<EntityId> jobIds = new List<EntityId>();
-            for (int index = 0; index < cluster.Count; index++)
-            {
-                if (!jobsByCell.TryGetValue(cluster[index], out JobSnapshot? job)
-                    || IsOwnedByOtherResident(job, agentId))
-                {
-                    continue;
-                }
-
-                jobIds.Add(job.Id);
-            }
-
-            if (jobIds.Count == 0)
-            {
-                return Result.Failure(JobErrors.NotFound);
-            }
-
-            for (int index = 0; index < jobIds.Count; index++)
-            {
-                RemoveJobFromExistingManualGroup(jobIds[index]);
-            }
-
-            EntityId groupId = jobIds[0];
-            ManualExcavationGroup group = new ManualExcavationGroup(
-                groupId,
-                agentId,
-                jobIds,
-                cluster);
-            _manualGroups[groupId] = group;
-            for (int index = 0; index < jobIds.Count; index++)
-            {
-                EntityId jobId = jobIds[index];
-                _manualGroupByJob[jobId] = groupId;
-                _candidateProvider!.SetCandidates(jobId, NoCandidates);
-                JobSnapshot? job = _jobRepository.Get().Get(jobId);
-                if (job != null
-                    && job.AssignedAgentId == agentId
-                    && (job.Status == JobStatus.Claimed
-                        || job.Status == JobStatus.InProgress))
-                {
-                    Result released = _releaseAssignment!.Handle(
-                        new ReleaseJobAssignmentCommand(jobId, tick));
-                    if (released.IsFailure)
-                    {
-                        ClearManualGroup(group);
-                        return released;
-                    }
-                }
-            }
-
-            Result assigned = AssignNextManualExcavation(group, seed, tick);
-            if (assigned.IsFailure && !IsWaitingForExcavationFront(assigned))
-            {
-                ClearManualGroup(group);
-                return assigned;
-            }
-
-            return Result.Success();
-        }
-
-        internal Result ContinueManualExcavation(
-            EntityId completedJobId,
-            EntityId agentId,
-            long tick)
-        {
-            if (!_manualGroupByJob.TryGetValue(completedJobId, out EntityId groupId)
-                || !_manualGroups.TryGetValue(groupId, out ManualExcavationGroup? group)
-                || group.AgentId != agentId)
-            {
-                return Result.Success();
-            }
-
-            group.Remove(completedJobId);
-            _manualGroupByJob.Remove(completedJobId);
-            RefreshManualExcavationGroupJobs(group);
-            if (group.JobIds.Count == 0)
-            {
-                if (!HasPendingManualTargets(group))
-                {
-                    _manualGroups.Remove(groupId);
-                }
-
-                return Result.Success();
-            }
-
-            Result assigned = AssignNextManualExcavation(group, preferredCell: null, tick);
-            return IsWaitingForExcavationFront(assigned)
-                ? Result.Success()
-                : assigned;
-        }
-
-        internal Result RetryPendingManualExcavations(long tick)
-        {
-            ManualExcavationGroup[] groups = _manualGroups.Values
-                .OrderBy(value => value.AgentId.ToString(), StringComparer.Ordinal)
-                .ThenBy(value => value.Id.ToString(), StringComparer.Ordinal)
-                .ToArray();
-            for (int index = 0; index < groups.Length; index++)
-            {
-                ManualExcavationGroup group = groups[index];
-                RefreshManualExcavationGroupJobs(group);
-                if (group.JobIds.Count == 0)
-                {
-                    if (!HasPendingManualTargets(group))
-                    {
-                        ClearManualGroup(group);
-                    }
-
-                    continue;
-                }
-
-                bool alreadyAssigned = group.JobIds
-                    .Select(jobId => _jobRepository.Get().Get(jobId))
-                    .Any(job => job != null
-                        && !job.IsTerminal
-                        && job.AssignedAgentId == group.AgentId
-                        && (job.Status == JobStatus.Claimed
-                            || job.Status == JobStatus.InProgress));
-                if (alreadyAssigned)
-                {
-                    continue;
-                }
-
-                Result assigned = AssignNextManualExcavation(
-                    group,
-                    preferredCell: null,
-                    tick);
-                if (assigned.IsFailure && !IsWaitingForExcavationFront(assigned))
-                {
-                    return assigned;
-                }
-            }
-
-            return Result.Success();
-        }
-
-        private void RefreshManualExcavationGroupJobs(ManualExcavationGroup group)
-        {
-            Dictionary<CellId, JobSnapshot> activeByCell = CollectActiveDigJobs();
-            for (int index = 0; index < group.TargetCells.Count; index++)
-            {
-                CellId target = group.TargetCells[index];
-                if (!activeByCell.TryGetValue(target, out JobSnapshot? job)
-                    || job.IsTerminal
-                    || IsOwnedByOtherResident(job, group.AgentId))
-                {
-                    continue;
-                }
-
-                if (_manualGroupByJob.TryGetValue(job.Id, out EntityId existingGroup)
-                    && existingGroup != group.Id)
-                {
-                    continue;
-                }
-
-                group.Add(job.Id);
-                _manualGroupByJob[job.Id] = group.Id;
-                _candidateProvider!.SetCandidates(job.Id, NoCandidates);
-            }
-        }
-
-        private bool HasPendingManualTargets(ManualExcavationGroup group)
-        {
-            HashSet<CellId> designated = new HashSet<CellId>(CollectDesignatedCells());
-            return group.TargetCells.Any(designated.Contains);
-        }
-
-        private Result AssignNextManualExcavation(
-            ManualExcavationGroup group,
-            CellId? preferredCell,
-            long tick)
-        {
-            CellId? assignmentAnchor = preferredCell
-                ?? _manualExcavationResidentCell?.Invoke(group.AgentId);
-            Dictionary<CellId, CellSnapshot> cells = CollectWorldCells();
-            JobSnapshot? next = group.JobIds
-                .Select(jobId => _jobRepository.Get().Get(jobId))
-                .Where(job => job != null
-                    && !job.IsTerminal
-                    && job.Definition is DigJobDefinition
-                    && !IsOwnedByOtherResident(job, group.AgentId))
-                .OrderByDescending(job => Preferred(job!, assignmentAnchor))
-                .ThenBy(job => Distance(
-                    ((DigJobDefinition)job!.Definition).Target.CellId,
-                    assignmentAnchor))
-                .ThenBy(job => job!.Id.ToString(), StringComparer.Ordinal)
-                .FirstOrDefault(job => IsExcavationFrontier(
-                    ((DigJobDefinition)job!.Definition).Target.CellId,
-                    cells));
-            if (next == null)
-            {
-                return Result.Failure(NoExcavationFront);
-            }
-
-            return _specificAssignment!.Handle(new AssignSpecificJobCommand(
-                next.Id,
-                group.AgentId,
-                tick));
-        }
-
-        private void ClearManualGroup(ManualExcavationGroup group)
-        {
-            EntityId[] jobIds = group.JobIds.ToArray();
-            for (int index = 0; index < jobIds.Length; index++)
-            {
-                _manualGroupByJob.Remove(jobIds[index]);
-            }
-
-            _manualGroups.Remove(group.Id);
-        }
-
-        private static bool IsWaitingForExcavationFront(Result result)
-        {
-            return result.IsFailure
-                && string.Equals(
-                    result.Error?.Code,
-                    NoExcavationFront.Code,
-                    StringComparison.Ordinal);
-        }
-
-        private static bool IsOwnedByOtherResident(JobSnapshot job, EntityId residentId)
-        {
-            return (job.Status == JobStatus.Claimed || job.Status == JobStatus.InProgress)
-                && job.AssignedAgentId.HasValue
-                && job.AssignedAgentId.Value != residentId;
+                new[] { residentId },
+                tick);
         }
 
         private void RequireManualExcavationInitialized()
@@ -280,10 +48,12 @@ namespace Dig.Unity
             if (_specificAssignment == null
                 || _releaseAssignment == null
                 || _clusterPlanner == null
+                || _directAssignmentPlanner == null
+                || _directSpatialAssignmentPlanner == null
                 || _candidateProvider == null)
             {
                 throw new InvalidOperationException(
-                    "Manual excavation is not initialized.");
+                    "Direct excavation assignment is not initialized.");
             }
         }
     }

@@ -22,21 +22,27 @@ public sealed class GameplayRegressionContractTests
     }
 
     [Fact]
-    public void Surface_excavation_rebinds_remaining_cells_after_job_reconciliation()
+    public void Direct_excavation_rebuilds_zone_membership_without_a_manual_owner()
     {
         string runtime = RuntimeRoot();
-        string manual = Normalize(File.ReadAllText(Path.Combine(
+        string multi = Normalize(File.ReadAllText(Path.Combine(
             runtime,
-            "DigTerrainWorkManualExcavation.cs")));
+            "DigTerrainWorkManualExcavation.MultiWorker.cs")));
         string state = Normalize(File.ReadAllText(Path.Combine(
             runtime,
             "DigTerrainWorkManualExcavation.State.cs")));
+        string designations = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigTerrainWorkDesignations.cs")));
 
-        Assert.Contains("RefreshManualExcavationGroupJobs(group)", manual);
-        Assert.Contains("group.TargetCells", manual);
-        Assert.Contains("HasPendingManualTargets(group)", manual);
-        Assert.Contains("internalIReadOnlyList<CellId>TargetCells", state);
-        Assert.Contains("internalvoidAdd(EntityIdjobId)", state);
+        Assert.Contains("CollectDesignatedCells()", multi);
+        Assert.Contains("CollectTemplateRoomGroups(designated)", multi);
+        Assert.Contains("_directAssignmentPlanner!.Plan", multi);
+        Assert.Contains("AssignSpecificJobCommand", multi);
+        Assert.DoesNotContain("ManualExcavationGroup", multi);
+        Assert.DoesNotContain("NoCandidates", multi);
+        Assert.DoesNotContain("_manualGroups", state);
+        Assert.DoesNotContain("IsManualExcavationJob", designations);
     }
 
     [Fact]
@@ -58,7 +64,7 @@ public sealed class GameplayRegressionContractTests
     }
 
     [Fact]
-    public void Commanded_excavation_workers_do_not_exhaust_movement_cadence()
+    public void Direct_excavation_uses_the_ordinary_resident_movement_cadence()
     {
         string runtime = RuntimeRoot();
         string cadence = Normalize(File.ReadAllText(Path.Combine(
@@ -68,10 +74,9 @@ public sealed class GameplayRegressionContractTests
             runtime,
             "DigTerrainWorkManualExcavation.State.cs")));
 
-        Assert.Contains("IsManualExcavationAgent(residentId)", cadence);
         Assert.Contains("IsResidentMovementDue(residentId,tick)", cadence);
-        Assert.Contains("privateboolIsManualExcavationAgent(EntityIdagentId)", state);
-        Assert.Contains("value.AgentId==agentId", state);
+        Assert.DoesNotContain("IsManualExcavationAgent", cadence);
+        Assert.DoesNotContain("_manualGroups", state);
     }
 
     [Fact]

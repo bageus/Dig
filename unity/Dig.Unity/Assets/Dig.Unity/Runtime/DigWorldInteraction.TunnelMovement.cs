@@ -242,7 +242,7 @@ namespace Dig.Unity
             if (result.IsSuccess)
             {
                 _hud.SetStatus(
-                    $"{residentIds.Count} selected dwarf(s) assigned across connected excavation cells within radius 4.");
+                    $"{residentIds.Count} selected dwarf(s) assigned across the connected excavation zone.");
             }
 
             return true;

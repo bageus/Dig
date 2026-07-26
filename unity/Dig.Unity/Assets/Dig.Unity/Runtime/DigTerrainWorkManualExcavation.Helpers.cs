@@ -1,6 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dig.Application.World;
 using Dig.Domain.Jobs;
 using Dig.Domain.World;
 
@@ -18,6 +18,23 @@ namespace Dig.Unity
                 .ToArray();
         }
 
+        private IReadOnlyCollection<IReadOnlyCollection<CellId>> CollectTemplateRoomGroups(
+            IReadOnlyCollection<CellId> designatedCells)
+        {
+            HashSet<CellId> designated = new HashSet<CellId>(designatedCells);
+            return _templateInstances.Values
+                .Where(instance => instance.LifecycleState
+                    == ExcavationTemplateLifecycleState.Active)
+                .OrderBy(instance => instance.Id, System.StringComparer.Ordinal)
+                .Select(instance => (IReadOnlyCollection<CellId>)instance.OrderedMask
+                    .Where(designated.Contains)
+                    .OrderBy(cell => cell)
+                    .ToArray())
+                .Where(group => group.Count > 0)
+                .ToArray();
+        }
+
+
         private Dictionary<CellId, CellSnapshot> CollectWorldCells()
         {
             return _worldSession.LoadSnapshot().Chunks
@@ -29,27 +46,12 @@ namespace Dig.Unity
         {
             return _jobRepository.Get().GetAll()
                 .Where(job => !job.IsTerminal && job.Definition is DigJobDefinition)
+                .GroupBy(job => ((DigJobDefinition)job.Definition).Target.CellId)
                 .ToDictionary(
-                    job => ((DigJobDefinition)job.Definition).Target.CellId,
-                    job => job);
-        }
-
-        private static int Preferred(JobSnapshot job, CellId? preferredCell)
-        {
-            if (!preferredCell.HasValue || job.Definition is not DigJobDefinition dig)
-            {
-                return 0;
-            }
-
-            return dig.Target.CellId == preferredCell.Value ? 1 : 0;
-        }
-
-        private static int Distance(CellId cell, CellId? preferredCell)
-        {
-            return preferredCell.HasValue
-                ? Math.Abs(cell.X - preferredCell.Value.X)
-                    + Math.Abs(cell.Y - preferredCell.Value.Y)
-                : 0;
+                    group => group.Key,
+                    group => group
+                        .OrderBy(job => job.Id.ToString(), System.StringComparer.Ordinal)
+                        .First());
         }
     }
 }

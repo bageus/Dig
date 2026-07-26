@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Jobs;
 using Dig.Domain.Core;
 using Dig.Domain.Jobs;
+using Dig.Domain.Navigation;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Xunit;
@@ -11,55 +15,114 @@ namespace Dig.Tests
 public sealed class ExcavationAssignmentTests
 {
     [Fact]
-    public void Cluster_contains_only_connected_designations_within_radius_four()
+    public void Cluster_contains_the_complete_connected_xy_zone_without_radius_limit()
     {
-        CellId seed = new CellId(5, 5);
-        CellId[] designated =
-        {
+        CellId seed = new CellId(2, 2);
+        CellId[] designated = Enumerable.Range(0, 12)
+            .Select(offset => new CellId(seed.X + offset, seed.Y, seed.Z))
+            .Append(new CellId(seed.X, seed.Y + 2, seed.Z))
+            .ToArray();
+
+        IReadOnlyList<CellId> selected = new ExcavationClusterPlanner().Select(
             seed,
-            new CellId(6, 5),
-            new CellId(7, 5),
-            new CellId(7, 6),
-            new CellId(8, 6),
-            new CellId(9, 6),
-            new CellId(10, 6),
-            new CellId(5, 7),
-        };
+            designated);
 
-        var selected = new ExcavationClusterPlanner().Select(seed, designated);
-
-        Assert.Equal(
-            new[]
-            {
-                seed,
-                new CellId(6, 5),
-                new CellId(7, 5),
-                new CellId(7, 6),
-                new CellId(8, 6),
-            },
-            selected);
+        Assert.Equal(12, selected.Count);
+        Assert.Contains(new CellId(seed.X + 11, seed.Y, seed.Z), selected);
+        Assert.DoesNotContain(new CellId(seed.X, seed.Y + 2, seed.Z), selected);
     }
 
     [Fact]
-    public void Unlimited_cluster_keeps_full_connected_horizontal_and_depth_zone()
+    public void Cluster_links_room_cells_across_z_but_not_unrelated_z_neighbors()
     {
-        CellId seed = new CellId(2, 2, 0);
-        CellId[] designated = new CellId[12];
-        for (int index = 0; index < 10; index++)
+        CellId seed = new CellId(4, 4, 0);
+        CellId sameLayer = new CellId(5, 4, 0);
+        CellId roomDepth = new CellId(4, 4, 1);
+        CellId unrelatedDepth = new CellId(5, 4, 1);
+        CellId[] designated = { seed, sameLayer, roomDepth, unrelatedDepth };
+        IReadOnlyCollection<CellId>[] roomGroups =
         {
-            designated[index] = new CellId(2 + index, 2, 0);
-        }
+            new[] { seed, roomDepth },
+        };
 
-        designated[10] = new CellId(11, 2, 1);
-        designated[11] = new CellId(11, 2, 2);
-
-        var selected = new ExcavationClusterPlanner().Select(
+        IReadOnlyList<CellId> selected = new ExcavationClusterPlanner().Select(
             seed,
             designated,
-            radius: int.MaxValue);
+            roomGroups);
 
-        Assert.Equal(12, selected.Count);
-        Assert.Contains(new CellId(11, 2, 2), selected);
+        Assert.Contains(seed, selected);
+        Assert.Contains(sameLayer, selected);
+        Assert.Contains(roomDepth, selected);
+        Assert.DoesNotContain(unrelatedDepth, selected);
+    }
+
+    [Fact]
+    public void Direct_assignment_selects_nearest_reachable_distinct_jobs()
+    {
+        NavigationSnapshot navigation = CreateOpenNavigation();
+        JobSystem jobs = new JobSystem();
+        EntityId leftJob = Id("1");
+        EntityId rightJob = Id("2");
+        AddAvailable(jobs, leftJob, new CellId(2, 1));
+        AddAvailable(jobs, rightJob, new CellId(8, 1));
+        DirectJobWorker[] workers =
+        {
+            new DirectJobWorker(Id("a"), new CellId(0, 1)),
+            new DirectJobWorker(Id("b"), new CellId(10, 1)),
+        };
+        DirectJobAssignmentPlanner planner = new DirectJobAssignmentPlanner(
+            new TerrainWorkRoutePlanner(new NavigationPathfinder()));
+
+        Result<DirectJobAssignmentPlan> result = planner.Plan(
+            workers,
+            jobs.GetAll(),
+            navigation);
+
+        Assert.True(result.IsSuccess, result.Error?.ToString());
+        Assert.Equal(2, result.Value.Assignments.Count);
+        Assert.Equal(leftJob, result.Value.Assignments[0].JobId);
+        Assert.Equal(workers[0].AgentId, result.Value.Assignments[0].AgentId);
+        Assert.Equal(rightJob, result.Value.Assignments[1].JobId);
+        Assert.Equal(workers[1].AgentId, result.Value.Assignments[1].AgentId);
+        Assert.Equal(2, result.Value.Assignments.Select(value => value.JobId).Distinct().Count());
+    }
+
+    [Fact]
+    public void Direct_spatial_assignment_selects_nearest_reachable_work_cells()
+    {
+        NavigationSnapshot navigation = CreateOpenNavigation();
+        JobSystem jobs = new JobSystem();
+        EntityId leftJob = Id("6");
+        EntityId rightJob = Id("7");
+        AddAvailableSpatial(
+            jobs,
+            leftJob,
+            target: new CellId(2, 2),
+            work: new CellId(2, 1));
+        AddAvailableSpatial(
+            jobs,
+            rightJob,
+            target: new CellId(8, 2),
+            work: new CellId(8, 1));
+        DirectJobWorker[] workers =
+        {
+            new DirectJobWorker(Id("f"), new CellId(0, 1)),
+            new DirectJobWorker(Id("9"), new CellId(10, 1)),
+        };
+        DirectSpatialJobAssignmentPlanner planner =
+            new DirectSpatialJobAssignmentPlanner(new NavigationPathfinder());
+
+        Result<DirectJobAssignmentPlan> result = planner.Plan(
+            workers,
+            jobs.GetAll(),
+            navigation);
+
+        Assert.True(result.IsSuccess, result.Error?.ToString());
+        Assert.Equal(2, result.Value.Assignments.Count);
+        Assert.Equal(rightJob, result.Value.Assignments[0].JobId);
+        Assert.Equal(workers[1].AgentId, result.Value.Assignments[0].AgentId);
+        Assert.Equal(leftJob, result.Value.Assignments[1].JobId);
+        Assert.Equal(workers[0].AgentId, result.Value.Assignments[1].AgentId);
     }
 
     [Fact]
@@ -68,10 +131,10 @@ public sealed class ExcavationAssignmentTests
         InMemoryJobRepository repository = new InMemoryJobRepository();
         InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
         JobSystem jobs = repository.Get();
-        EntityId firstJob = Id("1");
-        EntityId targetJob = Id("2");
-        EntityId selectedAgent = Id("a");
-        EntityId automaticAgent = Id("b");
+        EntityId firstJob = Id("3");
+        EntityId targetJob = Id("4");
+        EntityId selectedAgent = Id("c");
+        EntityId automaticAgent = Id("d");
         AddAvailable(jobs, firstJob, new CellId(2, 2));
         AddAvailable(jobs, targetJob, new CellId(3, 2));
         Assert.True(jobs.Claim(firstJob, selectedAgent, tick: 1).IsSuccess);
@@ -100,8 +163,8 @@ public sealed class ExcavationAssignmentTests
         InMemoryJobRepository repository = new InMemoryJobRepository();
         InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
         JobSystem jobs = repository.Get();
-        EntityId jobId = Id("3");
-        EntityId agentId = Id("c");
+        EntityId jobId = Id("5");
+        EntityId agentId = Id("e");
         AddAvailable(jobs, jobId, new CellId(4, 2));
         Assert.True(jobs.Claim(jobId, agentId, tick: 1).IsSuccess);
         Assert.True(jobs.Start(jobId, tick: 1).IsSuccess);
@@ -118,6 +181,37 @@ public sealed class ExcavationAssignmentTests
         Assert.DoesNotContain(
             repository.Get().GetReservations(),
             value => value.JobId == jobId);
+    }
+
+    private static NavigationSnapshot CreateOpenNavigation()
+    {
+        Result<WorldState> world = WorldState.CreateFilled(
+            new WorldSize(12, 4),
+            chunkSize: 4,
+            NavigationTestFactory.CreateMaterials(),
+            NavigationTestFactory.Air,
+            explored: true);
+        Assert.True(world.IsSuccess);
+        NavigationMap map = NavigationTestFactory.BuildMap(
+            world.Value,
+            TraversalProfile.CreateFreeMover());
+        return NavigationTestFactory.GetSnapshot(map);
+    }
+
+    private static void AddAvailableSpatial(
+        JobSystem jobs,
+        EntityId id,
+        CellId target,
+        CellId work)
+    {
+        SpatialDigJobDefinition definition = new SpatialDigJobDefinition(
+            id,
+            new SpatialDigJobTarget(target, work),
+            priority: 700,
+            createdTick: 0,
+            JobRetryPolicy.Default);
+        Assert.True(jobs.Add(definition).IsSuccess);
+        Assert.True(jobs.MakeAvailable(id, tick: 0).IsSuccess);
     }
 
     private static void AddAvailable(JobSystem jobs, EntityId id, CellId cell)

@@ -11,17 +11,27 @@ public sealed class ExcavationClusterPlanner
 {
     public IReadOnlyList<CellId> Select(
         CellId seed,
+        IReadOnlyCollection<CellId> designatedCells)
+    {
+        return Select(
+            seed,
+            designatedCells,
+            Array.Empty<IReadOnlyCollection<CellId>>());
+    }
+
+    public IReadOnlyList<CellId> Select(
+        CellId seed,
         IReadOnlyCollection<CellId> designatedCells,
-        int radius = 4)
+        IReadOnlyCollection<IReadOnlyCollection<CellId>> linkedGroups)
     {
         if (designatedCells is null)
         {
             throw new ArgumentNullException(nameof(designatedCells));
         }
 
-        if (radius < 0)
+        if (linkedGroups is null)
         {
-            throw new ArgumentOutOfRangeException(nameof(radius));
+            throw new ArgumentNullException(nameof(linkedGroups));
         }
 
         HashSet<CellId> designated = new HashSet<CellId>(designatedCells);
@@ -30,6 +40,7 @@ public sealed class ExcavationClusterPlanner
             return Array.Empty<CellId>();
         }
 
+        Dictionary<CellId, CellId[]> links = BuildLinks(designated, linkedGroups);
         Queue<CellId> frontier = new Queue<CellId>();
         HashSet<CellId> visited = new HashSet<CellId> { seed };
         List<CellId> selected = new List<CellId>();
@@ -38,27 +49,94 @@ public sealed class ExcavationClusterPlanner
         {
             CellId current = frontier.Dequeue();
             selected.Add(current);
-            foreach (CellId neighbor in Neighbors(current))
-            {
-                if (Distance(seed, neighbor) > radius
-                    || !designated.Contains(neighbor)
-                    || !visited.Add(neighbor))
-                {
-                    continue;
-                }
-
-                frontier.Enqueue(neighbor);
-            }
+            EnqueueNeighbors(current, designated, links, visited, frontier);
         }
 
         return new ReadOnlyCollection<CellId>(selected
             .OrderBy(cell => Distance(seed, cell))
-            .ThenBy(cell => cell.Y)
-            .ThenBy(cell => cell.X)
+            .ThenBy(cell => cell)
             .ToArray());
     }
 
-    private static IEnumerable<CellId> Neighbors(CellId cell)
+    private static Dictionary<CellId, CellId[]> BuildLinks(
+        ISet<CellId> designated,
+        IReadOnlyCollection<IReadOnlyCollection<CellId>> linkedGroups)
+    {
+        Dictionary<CellId, HashSet<CellId>> mutable =
+            new Dictionary<CellId, HashSet<CellId>>();
+        foreach (IReadOnlyCollection<CellId> group in linkedGroups)
+        {
+            if (group == null)
+            {
+                throw new ArgumentException(
+                    "Linked excavation groups cannot contain null.",
+                    nameof(linkedGroups));
+            }
+
+            CellId[] active = group
+                .Where(designated.Contains)
+                .Distinct()
+                .OrderBy(cell => cell)
+                .ToArray();
+            for (int sourceIndex = 0; sourceIndex < active.Length; sourceIndex++)
+            {
+                if (!mutable.TryGetValue(active[sourceIndex], out HashSet<CellId>? targets))
+                {
+                    targets = new HashSet<CellId>();
+                    mutable.Add(active[sourceIndex], targets);
+                }
+
+                for (int targetIndex = 0; targetIndex < active.Length; targetIndex++)
+                {
+                    if (sourceIndex != targetIndex)
+                    {
+                        targets.Add(active[targetIndex]);
+                    }
+                }
+            }
+        }
+
+        return mutable.ToDictionary(
+            pair => pair.Key,
+            pair => pair.Value.OrderBy(cell => cell).ToArray());
+    }
+
+    private static void EnqueueNeighbors(
+        CellId current,
+        ISet<CellId> designated,
+        IReadOnlyDictionary<CellId, CellId[]> links,
+        ISet<CellId> visited,
+        Queue<CellId> frontier)
+    {
+        foreach (CellId neighbor in HorizontalNeighbors(current))
+        {
+            TryEnqueue(neighbor, designated, visited, frontier);
+        }
+
+        if (!links.TryGetValue(current, out CellId[]? linked))
+        {
+            return;
+        }
+
+        for (int index = 0; index < linked.Length; index++)
+        {
+            TryEnqueue(linked[index], designated, visited, frontier);
+        }
+    }
+
+    private static void TryEnqueue(
+        CellId cell,
+        ISet<CellId> designated,
+        ISet<CellId> visited,
+        Queue<CellId> frontier)
+    {
+        if (designated.Contains(cell) && visited.Add(cell))
+        {
+            frontier.Enqueue(cell);
+        }
+    }
+
+    private static IEnumerable<CellId> HorizontalNeighbors(CellId cell)
     {
         if (cell.X > 0)
         {

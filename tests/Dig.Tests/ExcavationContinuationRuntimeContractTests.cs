@@ -15,6 +15,8 @@ public sealed class ExcavationContinuationRuntimeContractTests
             runtime, "DigAgentSimulationDriverBase.Loop.cs")));
         string spatial = Normalize(File.ReadAllText(Path.Combine(
             runtime, "DigTerrainSpatialExcavation.cs")));
+        string spatialAssignment = Normalize(File.ReadAllText(Path.Combine(
+            runtime, "DigTerrainSpatialExcavation.Assignment.cs")));
         string multi = Normalize(File.ReadAllText(Path.Combine(
             runtime, "DigTerrainWorkManualExcavation.MultiWorker.cs")));
         string direct = Normalize(File.ReadAllText(Path.Combine(
@@ -25,11 +27,23 @@ public sealed class ExcavationContinuationRuntimeContractTests
         Assert.Contains("CreateSpatialCandidates(agents,work)", spatial);
         Assert.Contains("IsAvailableForAutomaticWork(agent)", spatial);
 
-        Assert.Contains("CreateManualExcavationGroups", multi);
-        Assert.Contains("RegisterManualExcavationGroup", multi);
-        Assert.Contains("AssignNextManualExcavation", multi);
+        Assert.Contains("CollectDesignatedCells()", multi);
+        Assert.Contains("CollectTemplateRoomGroups(designated)", multi);
+        Assert.Contains("_directAssignmentPlanner!.Plan", multi);
+        Assert.Contains("AssignSpecificJobCommand", multi);
         Assert.Contains("ReleaseAssignmentsForAgents", multi);
+        Assert.DoesNotContain("ManualExcavationGroup", multi);
+        Assert.DoesNotContain("NoCandidates", multi);
+        Assert.DoesNotContain("radius: 4", multi);
         Assert.DoesNotContain("AssignManualQuarterExcavation(", multi);
+
+        Assert.Contains("_clusterPlanner!.Select", spatialAssignment);
+        Assert.Contains("CollectTemplateRoomGroups(designated)", spatialAssignment);
+        Assert.Contains("_directSpatialAssignmentPlanner!.Plan", spatialAssignment);
+        Assert.Contains("AssignSpecificJobCommand", spatialAssignment);
+        Assert.DoesNotContain("SpatialManualAssignmentRadius", spatialAssignment);
+        Assert.DoesNotContain("SetCandidates", spatialAssignment);
+        Assert.DoesNotContain("NoCandidates", spatialAssignment);
 
         Assert.Contains("CancelManualQuarterExcavation", direct);
         Assert.Contains("SpatialDigJobDefinition", direct);

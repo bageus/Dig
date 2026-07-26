@@ -136,13 +136,28 @@ def check_runtime_regression_contracts(
             "string.Equals(status, \"Failed\", StringComparison.Ordinal)")),
         (multi_worker, "forced excavation follows authoritative jobs", (
             "AssignExcavationClusterToResidents",
-            "CreateManualExcavationGroups",
-            "RegisterManualExcavationGroup",
-            "AssignNextManualExcavation",
-            "ReleaseAssignmentsForAgents")),
+            "CollectDesignatedCells()",
+            "CollectTemplateRoomGroups(designated)",
+            "_directAssignmentPlanner!.Plan",
+            "ReleaseAssignmentsForAgents",
+            "AssignSpecificJobCommand")),
     )
     for path, name, fragments in checks:
         errors.extend(require_fragments(path, texts.get(path, ""), name, fragments))
+
+    multi_worker_text = texts.get(multi_worker, "")
+    for fragment in (
+        "ManualExcavationGroup",
+        "CreateManualExcavationGroups",
+        "RegisterManualExcavationGroup",
+        "AssignNextManualExcavation",
+        "radius: 4",
+        "NoCandidates",
+    ):
+        if fragment in multi_worker_text:
+            errors.append(
+                f"{multi_worker}: obsolete direct excavation ownership remains: {fragment!r}"
+            )
 
     forbidden_by_path = {
         renderer: ("AnimateRoute(",),

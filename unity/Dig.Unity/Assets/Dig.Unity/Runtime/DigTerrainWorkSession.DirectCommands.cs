@@ -24,7 +24,6 @@ namespace Dig.Unity
             for (int residentIndex = 0; residentIndex < residentIds.Count; residentIndex++)
             {
                 EntityId residentId = EntityId.Parse(residentIds[residentIndex]);
-                ClearManualGroupForAgent(residentId);
                 CancelManualQuarterExcavation(residentId.ToString());
                 JobSnapshot[] assigned = CollectAssignedActiveJobs(jobs, residentId);
                 for (int jobIndex = 0; jobIndex < assigned.Length; jobIndex++)

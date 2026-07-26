@@ -246,7 +246,6 @@ internal sealed partial class DigTerrainWorkSession
                 output.Quantity,
                 _worldSession.EmptyMaterialId,
                 tick);
-        EntityId worker = job.AssignedAgentId!.Value;
         Result<TerrainWorkCompletionResult> completion = _completionHandler.Handle(command);
         if (completion.IsFailure)
         {
@@ -268,9 +267,10 @@ internal sealed partial class DigTerrainWorkSession
             return refresh;
         }
 
+        MarkTemplateCellExcavated(targetCell);
         _worldChanged = true;
         PublishTerrainCompletionEffects(job.Id, targetCell, tick, !output.IsEmpty);
-        return ContinueManualExcavation(job.Id, worker, tick);
+        return Result.Success();
     }
 
     private static bool IsActive(JobSnapshot job)

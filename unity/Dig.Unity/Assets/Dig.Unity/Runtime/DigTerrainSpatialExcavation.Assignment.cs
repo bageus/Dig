@@ -4,14 +4,13 @@ using System.Linq;
 using Dig.Application.Jobs;
 using Dig.Domain.Core;
 using Dig.Domain.Jobs;
+using Dig.Domain.Navigation;
 using Dig.Domain.World;
 
 namespace Dig.Unity
 {
     internal sealed partial class DigTerrainWorkSession
     {
-        private const int SpatialManualAssignmentRadius = 4;
-
         private bool TryAssignSpatialExcavationGroup(
             CellId workCell,
             IReadOnlyList<string> residentIds,
@@ -24,19 +23,8 @@ namespace Dig.Unity
             }
 
             RequireSpatialExcavationInitialized();
-            EntityId[] residents = residentIds
-                .Where(value => !string.IsNullOrWhiteSpace(value))
-                .Select(EntityId.Parse)
-                .Distinct()
-                .OrderBy(value => value.ToString(), StringComparer.Ordinal)
-                .ToArray();
-            if (residents.Length == 0 || residents.Length != residentIds.Count)
-            {
-                throw new ArgumentException(
-                    "Resident ids must be non-empty and unique.",
-                    nameof(residentIds));
-            }
-
+            RequireManualExcavationInitialized();
+            EntityId[] residents = ParseDirectExcavationAgents(residentIds);
             HashSet<EntityId> selectedResidents = new HashSet<EntityId>(residents);
             JobSnapshot[] active = LoadActiveSpatialJobs().ToArray();
             JobSnapshot? target = active
@@ -56,19 +44,25 @@ namespace Dig.Unity
                 return true;
             }
 
+            CellId[] designated = active
+                .Select(value => ((SpatialDigJobDefinition)value.Definition)
+                    .Target.TargetCell)
+                .Distinct()
+                .OrderBy(cell => cell)
+                .ToArray();
+            CellId seed = ((SpatialDigJobDefinition)target.Definition)
+                .Target.TargetCell;
+            HashSet<CellId> cluster = new HashSet<CellId>(_clusterPlanner!.Select(
+                seed,
+                designated,
+                CollectTemplateRoomGroups(designated)));
             JobSnapshot[] jobs = active
+                .Where(value => cluster.Contains(
+                    ((SpatialDigJobDefinition)value.Definition).Target.TargetCell))
                 .Where(value => !IsSpatialJobOwnedByUnselectedResident(
                     value,
                     selectedResidents))
-                .Where(value => SpatialDistance(
-                    ((SpatialDigJobDefinition)value.Definition).Target.WorkCell,
-                    workCell) <= SpatialManualAssignmentRadius)
-                .OrderByDescending(value => value.Id == target.Id)
-                .ThenBy(value => SpatialDistance(
-                    ((SpatialDigJobDefinition)value.Definition).Target.WorkCell,
-                    workCell))
-                .ThenBy(value => value.Id.ToString(), StringComparer.Ordinal)
-                .Take(residents.Length)
+                .OrderBy(value => value.Id.ToString(), StringComparer.Ordinal)
                 .ToArray();
             if (jobs.Length == 0)
             {
@@ -76,31 +70,56 @@ namespace Dig.Unity
                 return true;
             }
 
+            Result released = ReleaseAssignmentsForAgents(selectedResidents, tick);
+            if (released.IsFailure)
+            {
+                result = released;
+                return true;
+            }
+
             for (int index = 0; index < residents.Length; index++)
             {
-                Result released = ReleaseSpatialResidentAssignment(residents[index], tick);
-                if (released.IsFailure)
-                {
-                    result = released;
-                    return true;
-                }
+                CancelManualQuarterExcavation(residents[index].ToString());
+            }
+
+            Result<NavigationSnapshot> navigation = LoadDirectAssignmentNavigation();
+            if (navigation.IsFailure)
+            {
+                result = Result.Failure(navigation.Error!);
+                return true;
+            }
+
+            DirectJobWorker[] workers = residents
+                .Select((residentId, index) => new DirectJobWorker(
+                    residentId,
+                    ResolveDirectResidentCell(residentId, workCell, index)))
+                .ToArray();
+            Result<DirectJobAssignmentPlan> planned =
+                _directSpatialAssignmentPlanner!.Plan(
+                    workers,
+                    jobs,
+                    navigation.Value);
+            if (planned.IsFailure)
+            {
+                result = Result.Failure(planned.Error!);
+                return true;
+            }
+
+            if (planned.Value.Assignments.Count == 0)
+            {
+                result = Result.Failure(NoExcavationFront);
+                return true;
             }
 
             List<(EntityId JobId, EntityId ResidentId)> assigned =
                 new List<(EntityId JobId, EntityId ResidentId)>();
-            for (int index = 0; index < jobs.Length; index++)
+            for (int index = 0; index < planned.Value.Assignments.Count; index++)
             {
-                JobSnapshot? refreshed = _jobRepository.Get().Get(jobs[index].Id);
-                if (refreshed == null || refreshed.IsTerminal)
-                {
-                    continue;
-                }
-
-                _candidateProvider!.SetCandidates(refreshed.Id, NoCandidates);
+                DirectJobAssignment assignment = planned.Value.Assignments[index];
                 Result claimed = _specificAssignment!.Handle(
                     new AssignSpecificJobCommand(
-                        refreshed.Id,
-                        residents[index],
+                        assignment.JobId,
+                        assignment.AgentId,
                         tick));
                 if (claimed.IsFailure)
                 {
@@ -109,24 +128,11 @@ namespace Dig.Unity
                     return true;
                 }
 
-                assigned.Add((refreshed.Id, residents[index]));
+                assigned.Add((assignment.JobId, assignment.AgentId));
             }
 
-            result = assigned.Count == 0
-                ? Result.Failure(JobErrors.NotFound)
-                : Result.Success();
+            result = Result.Success();
             return true;
-        }
-
-        private Result ReleaseSpatialResidentAssignment(EntityId residentId, long tick)
-        {
-            JobSnapshot? current = _jobRepository.Get().GetAll()
-                .FirstOrDefault(value => !value.IsTerminal
-                    && value.AssignedAgentId == residentId);
-            return current == null
-                ? Result.Success()
-                : _releaseAssignment!.Handle(
-                    new ReleaseJobAssignmentCommand(current.Id, tick));
         }
 
         private void RollbackSpatialAssignments(
@@ -154,13 +160,6 @@ namespace Dig.Unity
             return (job.Status == JobStatus.Claimed || job.Status == JobStatus.InProgress)
                 && job.AssignedAgentId.HasValue
                 && !selectedResidents.Contains(job.AssignedAgentId.Value);
-        }
-
-        private static int SpatialDistance(CellId left, CellId right)
-        {
-            return Math.Abs(left.X - right.X)
-                + Math.Abs(left.Y - right.Y)
-                + Math.Abs(left.Z - right.Z);
         }
     }
 }
