@@ -24,6 +24,10 @@ Generic item pickup больше не зависит от `Alt`; `Alt` оста�
 
 `ExcavationWorkCoordinator` существовал, но runtime jobs обходили его и переводили работу в `Finalize` напрямую. Теперь tunnel и spatial excavation выполняют один authoritative quarter swing на work cadence, остаются в `PerformWork` до 4/4, сохраняют completed mask при reassignment/retry и удаляют состояние только после terrain commit.
 
+### Unity compiler guards
+
+Quarter work явно переводит signed generation seed в его 32-bit unsigned representation перед расширением до `ulong`. Inventory routing проверяет nullable selected resident id до `EntityId.Parse` в обоих путях. Это устраняет Unity diagnostics `CS1503` и `CS8604` без изменения authoritative gameplay state.
+
 ### Continuation и cave rooms
 
 Manual connected-zone planning был ограничен radius 4 и XY adjacency. Frontier/cluster resolution теперь учитывает соседние Z layers и весь connected target set. Room preview всегда рисует front silhouette; depth designations и quarter masks синхронизируются из authoritative world/job state.
@@ -43,6 +47,7 @@ Manual connected-zone planning был ограничен radius 4 и XY adjacenc
 - final-building unpack ghost on Z0;
 - inventory item placement and trigger-collider source contracts;
 - low-skill quarter assignment stability and 4/4 finalization gate;
+- Unity quarter seed type normalization and nullable resident-id guards;
 - 12-cell horizontal/depth connected cluster;
 - room outline and quarter marker synchronization.
 
