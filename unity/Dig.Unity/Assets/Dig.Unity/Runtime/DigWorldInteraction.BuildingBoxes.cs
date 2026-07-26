@@ -15,9 +15,6 @@ namespace Dig.Unity
         private DigBuildingBoxGhostRenderer? _buildingBoxGhostRenderer;
         private BuildingBoxPlacementModeState? _buildingPlacementMode;
         private BuildingBoxGhostViewModel? _buildingPlacementPreview;
-        private WorldItemViewModel? _selectedBuildingBox;
-
-        internal WorldItemViewModel? SelectedBuildingBox => _selectedBuildingBox;
 
         internal string? ActiveBuildingPlacementStackId =>
             _buildingPlacementMode?.SourceStackId.ToString();
@@ -42,52 +39,6 @@ namespace Dig.Unity
             _buildingBoxGhostRenderer?.Clear();
             _hud?.ClearBuildingPlacement();
             _hud?.SetStatus("Building placement cancelled.");
-        }
-
-        internal void SelectBuildingBoxFromHud(string stackId)
-        {
-            if (string.IsNullOrWhiteSpace(stackId))
-            {
-                throw new ArgumentException("BuildingBox stack id is required.", nameof(stackId));
-            }
-
-            WorldItemViewModel? item = _terrainSession!.LoadAllWorldItems()
-                .FirstOrDefault(value => value.IsBuildingBox
-                    && string.Equals(value.StackId, stackId, StringComparison.Ordinal));
-            if (item == null)
-            {
-                _selectedBuildingBox = null;
-                _hud?.SetStatus("building_box.selection.stale");
-                return;
-            }
-
-            SelectBuildingBox(item);
-        }
-
-        internal void ActivateSelectedBuildingBoxFromHud()
-        {
-            if (_selectedBuildingBox == null)
-            {
-                _hud?.SetStatus("building_box.action.no_selection");
-                return;
-            }
-
-            string stackId = _selectedBuildingBox.StackId;
-            if (string.Equals(
-                ActiveBuildingPlacementStackId,
-                stackId,
-                System.StringComparison.Ordinal))
-            {
-                CancelBuildingPlacement();
-                return;
-            }
-
-            BeginBuildingPlacement(
-                stackId,
-                new CellId(
-                    _selectedBuildingBox.CellX,
-                    _selectedBuildingBox.CellY,
-                    _selectedBuildingBox.CellZ));
         }
 
         private bool TryHandleBuildingPlacementClick()
@@ -145,9 +96,6 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(hits));
             }
 
-            // Side-view terrain colliders can sit in front of the visible tunnel floor.
-            // Prefer the explicit tunnel/cave interaction surface so the ghost follows
-            // the cell under the cursor instead of getting pinned to the front rock layer.
             for (int index = 0; index < hits.Length; index++)
             {
                 if (TryResolveTunnelDestination(hits[index], out origin, out _))
@@ -173,9 +121,8 @@ namespace Dig.Unity
             BuildingBoxPlacementModeState mode,
             CellId origin)
         {
-            BuildingBoxGhostViewModel preview = _terrainSession!.PreviewBuildingBoxPlacement(
-                mode,
-                origin);
+            BuildingBoxGhostViewModel preview = _terrainSession!
+                .PreviewBuildingBoxPlacement(mode, origin);
             _buildingPlacementMode = mode;
             _buildingPlacementPreview = preview;
             _buildingBoxGhostRenderer!.Render(preview);
@@ -188,14 +135,13 @@ namespace Dig.Unity
         {
             if (item != null)
             {
-                _selectedBuildingBox = item.Model;
-                SelectBuildingBox(_selectedBuildingBox);
+                SelectBuildingBox(item.Model, item);
                 BeginBuildingPlacement(
-                    _selectedBuildingBox.StackId,
+                    item.Model.StackId,
                     new CellId(
-                        _selectedBuildingBox.CellX,
-                        _selectedBuildingBox.CellY,
-                        _selectedBuildingBox.CellZ));
+                        item.Model.CellX,
+                        item.Model.CellY,
+                        item.Model.CellZ));
                 return;
             }
 
@@ -211,20 +157,6 @@ namespace Dig.Unity
                 decision.TargetCell ?? new CellId(0, 0, 0));
         }
 
-        private void SelectBuildingBox(WorldItemViewModel item)
-        {
-            _selectedBuildingBox = item
-                ?? throw new ArgumentNullException(nameof(item));
-            _selectedCell = null;
-            _renderer!.Select(null);
-            _agentRenderer!.ClearSelection();
-            _jobRenderer!.Select(null);
-            _buildingRenderer!.Select(null);
-            _hud!.SetBuildingSelection(null);
-            _hud.ActivateBuildingRosterForSelection();
-            _hud.SetStatus("BuildingBox selected.");
-        }
-
         private void BeginBuildingPlacement(string stackId, CellId origin)
         {
             Result<BuildingBoxPlacementModeState> started =
@@ -235,7 +167,9 @@ namespace Dig.Unity
                 return;
             }
 
-            if (TryResolveBuildingPlacementOrigin(GetPointerHits(), out CellId hoveredOrigin))
+            if (TryResolveBuildingPlacementOrigin(
+                GetPointerHits(),
+                out CellId hoveredOrigin))
             {
                 origin = hoveredOrigin;
             }
@@ -252,17 +186,18 @@ namespace Dig.Unity
             _buildingRenderer!.Select(null);
             _buildingBoxGhostRenderer!.Render(preview);
             _hud!.SetBuildingPlacement(mode, preview);
-            _hud!.SetStatus("Building placement active.");
+            _hud.SetStatus("Building placement active.");
         }
 
         private void ConfirmBuildingPlacement()
         {
-            if (_buildingPlacementPreview == null)
+            if (_buildingPlacementPreview == null || !_buildingPlacementMode.HasValue)
             {
                 _hud!.SetStatus("input.building_placement.missing_preview");
                 return;
             }
 
+            string sourceStackId = _buildingPlacementMode.Value.SourceStackId.ToString();
             Result result = _terrainSession!.ConfirmBuildingBoxPlacement(
                 _buildingPlacementPreview,
                 _simulation!.CurrentTick);
@@ -276,10 +211,24 @@ namespace Dig.Unity
             _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
             var jobs = _terrainSession.LoadJobs();
             _jobRenderer!.Render(jobs);
-            _hud!.SetJobs(jobs);
-            _selectedBuildingBox = null;
+            _hud.SetJobs(jobs);
+            WorldItemViewModel? source = _terrainSession.LoadAllWorldItems()
+                .FirstOrDefault(value => value.IsBuildingBox
+                    && string.Equals(
+                        value.StackId,
+                        sourceStackId,
+                        StringComparison.Ordinal));
+            if (source != null)
+            {
+                SelectBuildingBox(source);
+            }
+            else
+            {
+                ClearBuildingBoxSelection();
+            }
+
             CancelBuildingPlacement();
-            _hud!.SetStatus("BuildingBox plan created.");
+            _hud.SetStatus("BuildingBox plan created.");
         }
 
         private void CreateBuildingBoxPickup(ContextInputDecision decision)
@@ -303,12 +252,12 @@ namespace Dig.Unity
                 return;
             }
 
-            _selectedBuildingBox = null;
+            ClearBuildingBoxSelection();
             var jobs = _terrainSession.LoadJobs();
             _jobRenderer!.Render(jobs);
-            _hud!.SetJobs(jobs);
+            _hud.SetJobs(jobs);
             _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
-            _hud!.SetStatus("BuildingBox pickup order created.");
+            _hud.SetStatus("BuildingBox pickup order created.");
         }
     }
 }

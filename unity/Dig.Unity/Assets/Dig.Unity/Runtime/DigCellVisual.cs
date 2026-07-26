@@ -1,6 +1,7 @@
 using Dig.Domain.World;
 using Dig.Presentation.World;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Dig.Unity
 {
@@ -9,13 +10,30 @@ namespace Dig.Unity
     {
         private static readonly Color TunnelDesignationColor =
             new Color(0.68f, 0.86f, 0.62f, 1f);
+        private static readonly ExcavationQuarter[] ExcavationQuarters =
+        {
+            ExcavationQuarter.UpperLeft,
+            ExcavationQuarter.LowerLeft,
+            ExcavationQuarter.UpperRight,
+            ExcavationQuarter.LowerRight,
+        };
+        private static readonly Vector2[] ExcavationQuarterOffsets =
+        {
+            new Vector2(-0.252f, 0.252f),
+            new Vector2(-0.252f, -0.252f),
+            new Vector2(0.252f, 0.252f),
+            new Vector2(0.252f, -0.252f),
+        };
 
+        private readonly Renderer[] _quarterRenderers = new Renderer[4];
         private Renderer? _renderer;
         private MaterialPropertyBlock? _properties;
         private Color _baseColor;
         private Color? _designationTint;
+        private ExcavationQuarter _completedExcavationQuarters;
         private bool _selected;
         private bool _rejected;
+        private bool _quarterGeometryInitialized;
 
         public WorldCellViewModel Model { get; private set; }
 
@@ -33,9 +51,15 @@ namespace Dig.Unity
                 _designationTint = null;
             }
 
+            if (!model.IsSolid || !model.IsDesignated)
+            {
+                _completedExcavationQuarters = ExcavationQuarter.None;
+            }
+
             _rejected = false;
             AlignWithChunkBuilderSpace(model);
             EnsureRenderState();
+            RefreshExcavationGeometry();
             RefreshColor();
         }
 
@@ -54,6 +78,13 @@ namespace Dig.Unity
         internal void SetDesignationTint(Color? color)
         {
             _designationTint = color;
+            RefreshColor();
+        }
+
+        internal void SetExcavationProgress(ExcavationQuarter completed)
+        {
+            _completedExcavationQuarters = completed;
+            RefreshExcavationGeometry();
             RefreshColor();
         }
 
@@ -81,6 +112,86 @@ namespace Dig.Unity
             }
         }
 
+        private void RefreshExcavationGeometry()
+        {
+            EnsureRenderState();
+            if (_renderer == null)
+            {
+                return;
+            }
+
+            bool showQuarters = Model.IsSolid
+                && Model.IsDesignated
+                && _completedExcavationQuarters != ExcavationQuarter.None;
+            _renderer.enabled = !showQuarters;
+            if (!showQuarters)
+            {
+                SetQuarterGeometryActive(active: false);
+                return;
+            }
+
+            EnsureQuarterGeometry();
+            for (int index = 0; index < ExcavationQuarters.Length; index++)
+            {
+                bool excavated = (_completedExcavationQuarters
+                    & ExcavationQuarters[index]) != 0;
+                _quarterRenderers[index].gameObject.SetActive(!excavated);
+            }
+        }
+
+        private void EnsureQuarterGeometry()
+        {
+            if (_quarterGeometryInitialized)
+            {
+                return;
+            }
+
+            EnsureRenderState();
+            Material? material = _renderer?.sharedMaterial;
+            for (int index = 0; index < ExcavationQuarters.Length; index++)
+            {
+                GameObject quarter = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                quarter.name = $"Rock {ExcavationQuarters[index]}";
+                quarter.transform.SetParent(transform, worldPositionStays: false);
+                quarter.transform.localPosition = new Vector3(
+                    ExcavationQuarterOffsets[index].x,
+                    ExcavationQuarterOffsets[index].y,
+                    0f);
+                quarter.transform.localRotation = Quaternion.identity;
+                quarter.transform.localScale = new Vector3(0.486f, 0.486f, 1f);
+                Collider collider = quarter.GetComponent<Collider>();
+                if (collider != null)
+                {
+                    Destroy(collider);
+                }
+
+                Renderer renderer = quarter.GetComponent<Renderer>();
+                if (material != null)
+                {
+                    renderer.sharedMaterial = material;
+                }
+
+                renderer.shadowCastingMode = ShadowCastingMode.On;
+                renderer.receiveShadows = true;
+                _quarterRenderers[index] = renderer;
+            }
+
+            _quarterGeometryInitialized = true;
+        }
+
+        private void SetQuarterGeometryActive(bool active)
+        {
+            if (!_quarterGeometryInitialized)
+            {
+                return;
+            }
+
+            for (int index = 0; index < _quarterRenderers.Length; index++)
+            {
+                _quarterRenderers[index].gameObject.SetActive(active);
+            }
+        }
+
         private void RefreshColor()
         {
             Color baseColor = _designationTint ?? _baseColor;
@@ -89,34 +200,34 @@ namespace Dig.Unity
                 : _selected
                     ? Color.Lerp(baseColor, Color.white, 0.45f)
                     : baseColor;
-            ApplyColor(color);
+            ApplyColor(_renderer, color);
+            if (_quarterGeometryInitialized)
+            {
+                for (int index = 0; index < _quarterRenderers.Length; index++)
+                {
+                    ApplyColor(_quarterRenderers[index], color);
+                }
+            }
         }
 
         private void EnsureRenderState()
         {
-            if (_renderer == null)
-            {
-                _renderer = GetComponent<Renderer>();
-            }
-
-            if (_properties == null)
-            {
-                _properties = new MaterialPropertyBlock();
-            }
+            _renderer ??= GetComponent<Renderer>();
+            _properties ??= new MaterialPropertyBlock();
         }
 
-        private void ApplyColor(Color color)
+        private void ApplyColor(Renderer? renderer, Color color)
         {
             EnsureRenderState();
-            if (_renderer == null || _properties == null)
+            if (renderer == null || _properties == null)
             {
                 return;
             }
 
-            _renderer.GetPropertyBlock(_properties);
+            renderer.GetPropertyBlock(_properties);
             _properties.SetColor("_BaseColor", color);
             _properties.SetColor("_Color", color);
-            _renderer.SetPropertyBlock(_properties);
+            renderer.SetPropertyBlock(_properties);
         }
     }
 }

@@ -191,9 +191,9 @@ public sealed class GameplayRegressionContractTests
         string items = Normalize(File.ReadAllText(Path.Combine(
             runtime,
             "DigWorldItemRenderer.cs")));
-        string boxes = Normalize(File.ReadAllText(Path.Combine(
+        string boxSelection = Normalize(File.ReadAllText(Path.Combine(
             runtime,
-            "DigWorldInteraction.BuildingBoxes.cs")));
+            "DigWorldInteraction.BuildingBoxSelection.cs")));
         string buildings = Normalize(File.ReadAllText(Path.Combine(
             runtime,
             "DigTerrainWorkSession.Buildings.cs")));
@@ -203,7 +203,7 @@ public sealed class GameplayRegressionContractTests
         Assert.Contains("agent.CellZ!=pickup.SourceCell.Z", pickup);
         Assert.Contains("DigTunnelProjection.ResidentFootSink", items);
         Assert.Contains("worldPositionStays:true", items);
-        Assert.Contains("ActivateBuildingRosterForSelection()", boxes);
+        Assert.Contains("ActivateBuildingRosterForSelection()", boxSelection);
         Assert.Contains("CampfireBuildingBoxContent.Definition.Building", buildings);
         Assert.Contains("new[]{workshop,campfire}", buildings);
         Assert.Contains("FindLowerCavePlacement", buildings);

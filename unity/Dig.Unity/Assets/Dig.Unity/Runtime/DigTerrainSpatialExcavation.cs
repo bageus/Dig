@@ -98,6 +98,7 @@ internal sealed partial class DigTerrainWorkSession
                 CreateSpatialCandidates(agents, work));
         }
 
+        AssignNearestAutomaticSpatialJobs(agents, tick);
         _assignmentHandler!.Handle(new AssignAvailableJobsCommand(tick));
     }
 

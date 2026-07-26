@@ -23,9 +23,6 @@ namespace Dig.Unity
             new Vector2(0.252f, -0.252f),
         };
 
-        private static readonly Color ExcavatedColor =
-            new Color(0.055f, 0.065f, 0.075f, 0.90f);
-
         private readonly Renderer[] _renderers = new Renderer[4];
         private MaterialPropertyBlock? _properties;
         private Color _designationColor;
@@ -90,22 +87,21 @@ namespace Dig.Unity
             {
                 bool excavated = (_completed & Quarters[index]) != 0;
                 Renderer renderer = _renderers[index];
+                renderer.enabled = !excavated;
+                if (excavated)
+                {
+                    continue;
+                }
+
                 _properties ??= new MaterialPropertyBlock();
                 _properties.Clear();
-                Color color = excavated ? ExcavatedColor : _designationColor;
-                _properties.SetColor("_BaseColor", color);
-                _properties.SetColor("_Color", color);
+                _properties.SetColor("_BaseColor", _designationColor);
+                _properties.SetColor("_Color", _designationColor);
                 renderer.SetPropertyBlock(_properties);
                 Transform part = renderer.transform;
                 Vector2 offset = Offsets[index];
-                part.localPosition = new Vector3(
-                    offset.x,
-                    offset.y,
-                    excavated ? -0.32f : 0f);
-                part.localScale = new Vector3(
-                    excavated ? 0.45f : 0.486f,
-                    excavated ? 0.45f : 0.486f,
-                    excavated ? 0.42f : 1f);
+                part.localPosition = new Vector3(offset.x, offset.y, 0f);
+                part.localScale = new Vector3(0.486f, 0.486f, 1f);
             }
         }
     }

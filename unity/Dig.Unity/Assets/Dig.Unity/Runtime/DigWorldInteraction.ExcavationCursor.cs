@@ -39,9 +39,13 @@ namespace Dig.Unity
             }
 
             EnsureExcavationCursorRenderer();
+            _renderer!.ClearExcavationQuarterProgress();
             foreach (ExcavationQuarterProgressSnapshot progress
                 in _terrainSession!.LoadExcavationQuarterProgress())
             {
+                _renderer.SetExcavationQuarterProgress(
+                    progress.Target.CellId,
+                    progress.Completed);
                 if (progress.Target.CellId.Z == 0)
                 {
                     _excavationCursorRenderer!.SetTunnelDesignationProgress(
