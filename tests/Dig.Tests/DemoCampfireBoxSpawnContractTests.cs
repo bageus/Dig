@@ -42,6 +42,9 @@ public sealed class DemoCampfireBoxSpawnContractTests
         Assert.Contains("residentStartCell.Y", inventory);
         Assert.Contains("residentStartCell.Z", inventory);
         Assert.Contains("ItemLocation.InWorld(campfireBoxCell)", inventory);
+        Assert.Contains("AddResidentUnit(", inventory);
+        Assert.Contains("inventory.AddUnit(", inventory);
+        Assert.DoesNotContain("inventory.AddStack(", inventory);
         Assert.Contains("CampfireBoxFootprintSide = 0.35355339f", renderer);
         Assert.Contains("CampfireBoxHeight = 0.30f", renderer);
         Assert.Contains("IsCampfireBox(item.ItemId)", renderer);
