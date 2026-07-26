@@ -30,16 +30,21 @@ Parent feature: [#87](https://github.com/bageus/Dig/issues/87).
 ## 3. Обычный workflow designation
 
 1. Player рисует tunnel/depth/room cells.
-2. Application валидирует target mask и создаёт/reconciles ordinary excavation jobs.
-3. Для каждого свободного подходящего resident job matching рассматривает все доступные excavation jobs и выбирает ближайшую достижимую target cell по фактической длине Navigation route.
-4. При одинаковой длине маршрута применяется deterministic tie-break по `CellId`, затем по `JobId`.
-5. Более дальняя достижимая excavation cell не назначается resident, пока существует более близкая допустимая cell того же доступного excavation pool.
-6. Resident идёт к рабочей позиции, выполняет work и commit клетки.
-7. Remaining cells сохраняются и продолжают иметь jobs.
-8. Свободные residents независимо выбирают свои ближайшие доступные jobs; один job/work position не назначается двум residents.
-9. Status tunnel/depth/room action — «Копает».
+2. Все клетки одного завершённого drag stroke или template command сначала вносятся в World как единый logical designation batch; job reconciliation и automatic assignment запускаются только после завершения batch, а не после первой нарисованной клетки.
+3. Application валидирует target mask и создаёт/reconciles ordinary excavation jobs для полного доступного batch.
+4. Для каждого свободного подходящего resident job matching рассматривает все доступные excavation jobs и отбрасывает targets без достижимой work position.
+5. Среди достижимых targets выбирается клетка с минимальной 3D grid-distance от текущей клетки resident до самой excavation target cell: `|dx| + |dy| + |dz|`.
+6. Navigation route cost до work position используется после target distance: сначала как обязательная проверка reachability, затем как tie-break между одинаково близкими target cells.
+7. Если target distance и route cost равны, применяется deterministic tie-break по `CellId`, затем по `JobId`.
+8. Более дальняя excavation target cell не назначается resident, пока существует более близкая достижимая target cell того же доступного excavation pool.
+9. Resident идёт к рабочей позиции, выполняет work и commit клетки.
+10. Remaining cells сохраняются и продолжают иметь jobs.
+11. Свободные residents независимо выбирают свои ближайшие доступные jobs; один job/work position не назначается двум residents.
+12. Status tunnel/depth/room action — «Копает».
 
-Правило nearest-reachable применяется одинаково к horizontal tunnel, vertical/depth excavation и child cells комнаты. Оно относится и к automatic planner, и к direct command; direct command отличается приоритетным запуском выбранного resident, а не способом выбора target.
+Правило nearest-target применяется одинаково к horizontal tunnel, вертикальному тоннелю на фронтальном срезе, vertical/depth excavation и child cells комнаты. Оно относится и к automatic planner, и к direct command; direct command отличается приоритетным запуском выбранного resident, а не способом выбора target.
+
+Несколько spatial jobs могут иметь одну и ту же или одинаково удалённую work position. Это не делает более глубокую/нижнюю target cell равной верхней: первичным остаётся расстояние от resident до самой target cell. Поэтому при копке сверху вниз верхняя правая/левая клетка выбирается раньше нижней клетки, если она ближе к resident и достижима.
 
 ## 4. Прямой приказ выбранному resident
 
@@ -51,7 +56,7 @@ Parent feature: [#87](https://github.com/bageus/Dig/issues/87).
 - не удаляет jobs этой зоны из общего списка;
 - не запрещает другим свободным residents подключаться к той же зоне;
 - не создаёт эксклюзивный player override на все remaining cells;
-- новый direct order заменяет текущее небоевое action выбранного resident и немедленно пытается назначить ближайшую доступную excavation cell;
+- новый direct order заменяет текущее небоевое action resident и немедленно пытается назначить ближайшую достижимую excavation target cell по тому же target-distance → route-cost → CellId → JobId правилу;
 - combat/self-defense interruption имеет приоритет выше direct order и любых jobs;
 - после completion/release/blocked выбранный resident подчиняется обычному planner/job matching.
 
@@ -71,7 +76,7 @@ Direct target определяется связанной группой нез�
 - повторная отрисовка существующей клетки не дублирует job;
 - completion одной клетки не уничтожает remaining zone.
 
-Zone membership пересчитывается из authoritative designations, а не хранится как список job ids. Для любой попытки назначения конкретному resident берётся ближайшая достижимая cell по фактической длине маршрута; равные варианты используют deterministic tie-break. Это правило не ограничено direct order.
+Zone membership пересчитывается из authoritative designations, а не хранится как список job ids. Для любой попытки назначения конкретному resident берётся ближайшая достижимая target cell по 3D grid-distance; фактический Navigation route до work position проверяет reachability и разрешает равенство. Это правило не ограничено direct order.
 
 ## 6. Reconciliation и ошибки
 
@@ -109,14 +114,15 @@ Eraser удаляет выбранные unfinished designations, active/nonterm
 - динамически добавленная связанная клетка не требует повторного direct click;
 - work progress изменяется одним authoritative cadence;
 - continuation не зависит от Unity frame rate;
-- при наличии нескольких допустимых excavation jobs resident получает ближайшую reachable cell независимо от horizontal/vertical/room plan kind;
+- drag-stroke creation order не может определить первый assigned job: assignment начинается после reconciliation полного stroke batch;
+- при наличии нескольких допустимых excavation jobs resident получает ближайшую reachable target cell независимо от horizontal/vertical/room plan kind;
 - Presentation не владеет zone membership или progress.
 
 ## 9. Решённые вопросы
 
 - **Q-DIG-001:** direct order относится к связанной excavation zone, но не закрепляет выбранного resident за ней до завершения.
 - **Q-DIG-002:** другие automatic residents могут одновременно подключаться к той же zone через обычный job matching.
-- **Q-DIG-003:** выбранному resident назначается ближайшая достижимая excavation cell.
+- **Q-DIG-003:** выбранному resident назначается ближайшая достижимая excavation target cell.
 - **Q-DIG-004:** временно недостижимая cell остаётся обычным job; planner периодически повторяет попытку без forced movement в тупик.
 - **Q-DIG-005:** direct order заменяет текущее небоевое action resident; self-defense/combat выше по приоритету.
 - **Q-DIG-006:** отдельной отмены direct priority нет.
@@ -124,7 +130,9 @@ Eraser удаляет выбранные unfinished designations, active/nonterm
 - **Q-DIG-008:** связанные tunnel/depth/room cells, добавленные во время работы, автоматически входят в active zone.
 - **Q-DIG-009:** обычная зона использует X/Y adjacency внутри слоя; room instance дополнительно объединяет свои child cells на следующих Z-слоях. Произвольная Z adjacency не объединяет разные plans.
 - **Q-DIG-010:** числового priority boost нет; ordinary jobs равны, direct player command выше jobs, combat defense выше direct jobs.
-- **Q-DIG-011:** nearest-reachable selection является общим правилом для automatic и direct excavation, включая horizontal, vertical/depth и room cells.
+- **Q-DIG-011:** nearest-target selection является общим правилом для automatic и direct excavation, включая horizontal, vertical/depth и room cells.
+- **Q-DIG-012:** первичный proximity key — 3D Manhattan distance до самой target cell; route до work position является reachability gate и вторичным tie-break.
+- **Q-DIG-013:** ordinary drag stroke reconciles/assigns jobs один раз после завершения stroke, поэтому первый painted/created job не получает скрытый приоритет.
 
 ## 10. Открытые вопросы
 
@@ -149,7 +157,7 @@ Presentation cursor и hover не сохраняются.
 - direct command source;
 - priority reason;
 - candidate rejection;
-- route cost и nearest-target tie-break reason;
+- target distance, route cost и nearest-target tie-break reason;
 - tool, cadence и progress owner;
 - last transition и failure reason.
 
@@ -159,11 +167,12 @@ Presentation cursor и hover не сохраняются.
 
 - 10+ последовательных tunnel cells;
 - несколько residents одновременно копают одну zone;
-- direct order заменяет текущее небоевое action выбранного resident, выбирает ближайшую reachable cell и не блокирует подключение других;
+- direct order заменяет текущее небоевое action выбранного resident, выбирает ближайшую reachable target cell и не блокирует подключение других;
 - automatic resident при нескольких available jobs выбирает ближайшую reachable horizontal cell;
-- automatic resident при vertical/depth plan сначала выбирает ближайшую по route cell, а не дальний child job по порядку id/creation;
-- room child jobs также выбираются по ближайшему фактическому route;
-- равные route costs дают deterministic CellId/JobId tie-break;
+- vertical front-slice tunnel, нарисованный сверху вниз или снизу вверх, после release назначает resident ближайшую верхнюю правую/левую клетку, а не первую созданную нижнюю клетку;
+- automatic resident при vertical/depth plan сначала выбирает ближайшую target cell, даже если несколько jobs имеют одинаковую work position/route;
+- room child jobs также выбираются по расстоянию до target cell;
+- равные target distances используют route cost, затем deterministic CellId/JobId tie-break;
 - добавление новых связанных tunnel cells во время копки;
 - X/Y continuation для tunnel/depth без случайного объединения по Z;
 - room instance продолжает child cells на следующих Z-слоях;
@@ -174,4 +183,4 @@ Presentation cursor и hover не сохраняются.
 - erase части плана и split zone;
 - save/load mid-zone;
 - failure одного job без остановки симуляции;
-- Unity Play Mode проверяет cursor, status, job list, nearest target и продолжение после первой клетки.
+- Unity Play Mode проверяет cursor, status, полный stroke batch, выбранный nearest target и продолжение после первой клетки.
