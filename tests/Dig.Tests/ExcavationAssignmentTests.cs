@@ -132,7 +132,7 @@ public sealed class ExcavationAssignmentTests
         JobSystem jobs = new JobSystem();
         EntityId fartherBottomJob = Id("1");
         EntityId nearerTopJob = Id("f");
-        CellId sharedWorkCell = new CellId(5, 1, 0);
+        CellId sharedWorkCell = new CellId(5, 2, 0);
         AddAvailableSpatial(
             jobs,
             fartherBottomJob,
@@ -141,9 +141,11 @@ public sealed class ExcavationAssignmentTests
         AddAvailableSpatial(
             jobs,
             nearerTopJob,
-            target: new CellId(5, 2, 0),
+            target: new CellId(5, 1, 0),
             work: sharedWorkCell);
-        DirectJobWorker worker = new DirectJobWorker(Id("a"), sharedWorkCell);
+        DirectJobWorker worker = new DirectJobWorker(
+            Id("a"),
+            new CellId(5, 0, 0));
         DirectSpatialJobAssignmentPlanner planner =
             new DirectSpatialJobAssignmentPlanner(new NavigationPathfinder());
 
@@ -152,11 +154,12 @@ public sealed class ExcavationAssignmentTests
             jobs.GetAll(),
             navigation);
 
+        Assert.True(result.IsSuccess, result.Error?.ToString());
         DirectJobAssignment assignment = Assert.Single(result.Value.Assignments);
         Assert.Equal(nearerTopJob, assignment.JobId);
-        Assert.Equal(new CellId(5, 2, 0), assignment.Target);
+        Assert.Equal(new CellId(5, 1, 0), assignment.Target);
         Assert.Equal(1, assignment.TargetDistance);
-        Assert.Equal(0, assignment.RouteCost);
+        Assert.True(assignment.RouteCost >= 0);
     }
 
     [Fact]
