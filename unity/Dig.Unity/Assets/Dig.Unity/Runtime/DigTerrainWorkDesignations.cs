@@ -117,6 +117,7 @@ namespace Dig.Unity
                     CreateDynamicCandidates(agents, definition.Target.CellId));
             }
 
+            AssignNearestAutomaticDigJobs(agents, cells, tick);
             _assignmentHandler.Handle(new AssignAvailableJobsCommand(tick));
         }
 
