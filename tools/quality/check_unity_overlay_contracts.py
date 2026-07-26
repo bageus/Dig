@@ -122,6 +122,7 @@ def main() -> int:
     errors.extend(require(cave_path, cave, (
         "EdgeCount = 12",
         "OverlaySemanticKind.PreviewValid",
+        "OverlaySemanticKind.PreviewInvalid",
         "RegisterLayer(OverlayLayerKind.Preview",
         "while (_edges.Count < EdgeCount)",
         "RoomPreviewColor",
@@ -129,7 +130,6 @@ def main() -> int:
     )))
     errors.extend(reject(cave_path, cave, (
         "new Material(", "_validMaterial", "_invalidMaterial",
-        "OverlaySemanticKind.PreviewInvalid",
         "invalid cross",
     )))
 

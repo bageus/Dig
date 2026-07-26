@@ -65,9 +65,12 @@ public sealed class CaveRoomPlanningTests
         Assert.Contains(new CellId(10, 9, 0), plan.VolumeCells);
         Assert.Contains(new CellId(10, 9, 1), plan.VolumeCells);
         Assert.Equal(24, plan.VolumeCells.Count);
+        Assert.Equal(19, plan.ExcavationCells.Count);
+        Assert.Equal(5, plan.BaseTunnelCells.Count);
         Assert.Equal(new[] { 5, 4, 3 }, RowWidths(plan));
         Assert.Equal(3, plan.RoofCells.Count);
         Assert.DoesNotContain(new CellId(10, 9), plan.FrontExcavationCells);
+        Assert.DoesNotContain(plan.BaseTunnelCells, plan.ExcavationCells.Contains);
     }
 
     [Fact]
@@ -140,6 +143,30 @@ public sealed class CaveRoomPlanningTests
     }
 
     [Fact]
+    public void Room_reports_every_missing_base_tunnel_cell()
+    {
+        WorldSnapshot world = CreateWorld(
+            horizontalTunnelY: null,
+            additionalAir: new[]
+            {
+                new CellId(9, 9),
+                new CellId(10, 9),
+            });
+        ExcavationBoundaryPolicy boundary = new ExcavationBoundaryPolicy(20, 14, 2);
+
+        CaveRoomPlanResult result = new CaveRoomPlanner().Plan(
+            world,
+            boundary,
+            CaveRoomPresetKind.Small,
+            new CellId(10, 9));
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(CaveRoomPlanFailureReason.BaseTunnelMissing, result.FailureReason);
+        Assert.Equal(3, result.InvalidCells.Count(value =>
+            value.Reason == CaveRoomPlanFailureReason.BaseTunnelMissing));
+    }
+
+    [Fact]
     public void Room_requires_an_open_horizontal_tunnel_entrance()
     {
         WorldSnapshot world = CreateWorld(horizontalTunnelY: null, verticalTunnelX: 10);
@@ -153,8 +180,67 @@ public sealed class CaveRoomPlanningTests
 
         Assert.False(result.Succeeded);
         Assert.Equal(
-            CaveRoomPlanFailureReason.EntranceNotHorizontalTunnel,
+            CaveRoomPlanFailureReason.BaseTunnelMissing,
             result.FailureReason);
+        Assert.Equal(4, result.InvalidCells.Count(value =>
+            value.Reason == CaveRoomPlanFailureReason.BaseTunnelMissing));
+    }
+
+    [Fact]
+    public void Room_reports_unmineable_cells_above_the_tunnel()
+    {
+        MaterialId rock = new MaterialId("test.rock");
+        MaterialId unmineable = new MaterialId("test.unmineable");
+        MaterialId air = new MaterialId("test.air");
+        MaterialCatalog materials = new MaterialCatalog(new[]
+        {
+            new MaterialDefinition(rock, isSolid: true, hardness: 100),
+            new MaterialDefinition(
+                unmineable,
+                "Unmineable",
+                isSolid: true,
+                hardness: 100,
+                isMineable: false,
+                outputProfile: null),
+            new MaterialDefinition(air, isSolid: false, hardness: 0),
+        });
+        WorldState state = WorldState.CreateFilled(
+            new WorldSize(20, 14),
+            chunkSize: 5,
+            materials,
+            rock,
+            explored: true).Value;
+        CellState empty = new CellState(
+            air,
+            CellDesignation.None,
+            isExplored: true,
+            damage: 0,
+            temperature: 20);
+        List<TerrainChange> changes = Enumerable.Range(1, 18)
+            .Select(x => new TerrainChange(new CellId(x, 9), empty))
+            .ToList();
+        changes.Add(new TerrainChange(
+            new CellId(10, 8),
+            new CellState(
+                unmineable,
+                CellDesignation.None,
+                isExplored: true,
+                damage: 0,
+                temperature: 20)));
+        state.ApplyTerrainChanges(changes, tick: 1);
+
+        CaveRoomPlanResult result = new CaveRoomPlanner().Plan(
+            state.CreateSnapshot(),
+            materials,
+            new ExcavationBoundaryPolicy(20, 14, 2),
+            CaveRoomPresetKind.Small,
+            new CellId(10, 9));
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(CaveRoomPlanFailureReason.UnmineableRock, result.FailureReason);
+        Assert.Contains(result.InvalidCells, value =>
+            value.Cell == new CellId(10, 8)
+            && value.Reason == CaveRoomPlanFailureReason.UnmineableRock);
     }
 
     [Fact]
@@ -245,7 +331,6 @@ public sealed class CaveRoomPlanningTests
                     empty));
             }
         }
-
         if (additionalAir != null)
         {
             foreach (CellId cell in additionalAir)
@@ -253,12 +338,10 @@ public sealed class CaveRoomPlanningTests
                 changes.Add(new TerrainChange(cell, empty));
             }
         }
-
         if (changes.Count > 0)
         {
             world.ApplyTerrainChanges(changes, tick: 1);
         }
-
         return world.CreateSnapshot();
     }
 }

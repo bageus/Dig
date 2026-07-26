@@ -81,6 +81,7 @@ Zone membership пересчитывается из authoritative designations, 
 - повторные ticks переоценивают pending cells и candidates;
 - ошибка одного resident/job не блокирует других workers зоны;
 - временно освобождённый job возвращается в общий matching pool;
+- если уже назначенный excavation job после navigation refresh больше не имеет достижимой work position/path, runtime снимает assignment, отменяет только worker reservation, сохраняет authoritative quarter progress и возвращает job в `Available` для повторного matching;
 - если у designated cell пока нет достижимой work position, она остаётся в job list и периодически переоценивается обычным planner без forced movement в тупик;
 - на текущем тестовом этапе все ordinary jobs имеют одинаковый числовой priority; direct order является наивысшим player-command override, но не создаёт сохраняемый numeric zone boost.
 

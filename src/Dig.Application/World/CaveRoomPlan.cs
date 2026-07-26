@@ -18,6 +18,26 @@ public enum CaveRoomPlanFailureReason
     RoomObstructed = 6,
     MissingRoof = 7,
     NothingToExcavate = 8,
+    BaseTunnelMissing = 9,
+    UnmineableRock = 10,
+}
+
+public readonly struct CaveRoomInvalidCell
+{
+    public CaveRoomInvalidCell(CellId cell, CaveRoomPlanFailureReason reason)
+    {
+        if (reason == CaveRoomPlanFailureReason.None)
+        {
+            throw new ArgumentOutOfRangeException(nameof(reason));
+        }
+
+        Cell = cell;
+        Reason = reason;
+    }
+
+    public CellId Cell { get; }
+
+    public CaveRoomPlanFailureReason Reason { get; }
 }
 
 public sealed class CaveRoomPlan
@@ -26,12 +46,16 @@ public sealed class CaveRoomPlan
         CaveRoomPreset preset,
         CellId entrance,
         IReadOnlyList<CellId> frontExcavationCells,
+        IReadOnlyList<CellId> excavationCells,
+        IReadOnlyList<CellId> baseTunnelCells,
         IReadOnlyList<CellId> volumeCells,
         IReadOnlyList<CellId> roofCells)
     {
         Preset = preset ?? throw new ArgumentNullException(nameof(preset));
         Entrance = entrance;
         FrontExcavationCells = Copy(frontExcavationCells, nameof(frontExcavationCells));
+        ExcavationCells = Copy(excavationCells, nameof(excavationCells));
+        BaseTunnelCells = Copy(baseTunnelCells, nameof(baseTunnelCells));
         VolumeCells = Copy(volumeCells, nameof(volumeCells));
         RoofCells = Copy(roofCells, nameof(roofCells));
     }
@@ -39,6 +63,8 @@ public sealed class CaveRoomPlan
     public CaveRoomPreset Preset { get; }
     public CellId Entrance { get; }
     public IReadOnlyList<CellId> FrontExcavationCells { get; }
+    public IReadOnlyList<CellId> ExcavationCells { get; }
+    public IReadOnlyList<CellId> BaseTunnelCells { get; }
     public IReadOnlyList<CellId> VolumeCells { get; }
     public IReadOnlyList<CellId> RoofCells { get; }
 
@@ -54,7 +80,39 @@ public sealed class CaveRoomPlan
             throw new ArgumentNullException(nameof(preset));
         }
 
+        CellId[] front = OrderedUnique(
+            frontExcavationCells,
+            nameof(frontExcavationCells));
+        CellId[] volume = OrderedUnique(volumeCells, nameof(volumeCells));
+        CellId[] roof = OrderedUnique(roofCells, nameof(roofCells));
+        ValidateLegacySnapshot(front, volume);
+        return new CaveRoomPlan(
+            preset,
+            entrance,
+            front,
+            volume,
+            Array.Empty<CellId>(),
+            volume,
+            roof);
+    }
+
+    public static CaveRoomPlan CreateSnapshot(
+        CaveRoomPreset preset,
+        CellId entrance,
+        IEnumerable<CellId> frontExcavationCells,
+        IEnumerable<CellId> excavationCells,
+        IEnumerable<CellId> baseTunnelCells,
+        IEnumerable<CellId> volumeCells,
+        IEnumerable<CellId> roofCells)
+    {
+        if (preset == null)
+        {
+            throw new ArgumentNullException(nameof(preset));
+        }
+
         CellId[] front = OrderedUnique(frontExcavationCells, nameof(frontExcavationCells));
+        CellId[] excavation = OrderedUnique(excavationCells, nameof(excavationCells));
+        CellId[] baseTunnel = OrderedUnique(baseTunnelCells, nameof(baseTunnelCells));
         CellId[] volume = OrderedUnique(volumeCells, nameof(volumeCells));
         CellId[] roof = OrderedUnique(roofCells, nameof(roofCells));
         if (volume.Length == 0)
@@ -62,19 +120,77 @@ public sealed class CaveRoomPlan
             throw new ArgumentException("Cave room volume cannot be empty.", nameof(volumeCells));
         }
 
+        if (baseTunnel.Length < 2)
+        {
+            throw new ArgumentException(
+                "Cave room base tunnel must contain left and right entrance cells.",
+                nameof(baseTunnelCells));
+        }
+
         if (volume.Any(cell => cell.Z < CellId.MinimumDepth || cell.Z > CellId.MaximumDepth))
         {
             throw new ArgumentException("Cave room volume contains an invalid depth.", nameof(volumeCells));
         }
 
-        if (front.Any(cell => cell.Z != CellId.MinimumDepth || !volume.Contains(cell)))
+        if (baseTunnel.Any(cell => cell.Z != CellId.MinimumDepth
+                || cell.Y != entrance.Y
+                || !volume.Contains(cell)))
         {
             throw new ArgumentException(
-                "Front excavation cells must belong to the Z0 volume slice.",
+                "Base tunnel cells must belong to the complete Z0 base row.",
+                nameof(baseTunnelCells));
+        }
+
+        if (excavation.Any(cell => !volume.Contains(cell) || baseTunnel.Contains(cell)))
+        {
+            throw new ArgumentException(
+                "Excavation cells must belong to the room volume and exclude the open base tunnel.",
+                nameof(excavationCells));
+        }
+
+        if (front.Any(cell => cell.Z != CellId.MinimumDepth || !excavation.Contains(cell)))
+        {
+            throw new ArgumentException(
+                "Front excavation cells must belong to the Z0 excavation mask.",
                 nameof(frontExcavationCells));
         }
 
-        return new CaveRoomPlan(preset, entrance, front, volume, roof);
+        return new CaveRoomPlan(
+            preset,
+            entrance,
+            front,
+            excavation,
+            baseTunnel,
+            volume,
+            roof);
+    }
+
+    private static void ValidateLegacySnapshot(
+        IReadOnlyCollection<CellId> front,
+        IReadOnlyCollection<CellId> volume)
+    {
+        if (volume.Count == 0)
+        {
+            throw new ArgumentException(
+                "Cave room volume cannot be empty.",
+                nameof(volume));
+        }
+
+        if (volume.Any(cell =>
+                cell.Z < CellId.MinimumDepth || cell.Z > CellId.MaximumDepth))
+        {
+            throw new ArgumentException(
+                "Cave room volume contains an invalid depth.",
+                nameof(volume));
+        }
+
+        if (front.Any(cell =>
+                cell.Z != CellId.MinimumDepth || !volume.Contains(cell)))
+        {
+            throw new ArgumentException(
+                "Front excavation cells must belong to the Z0 room mask.",
+                nameof(front));
+        }
     }
 
     private static IReadOnlyList<CellId> Copy(
@@ -109,36 +225,47 @@ public sealed class CaveRoomPlanResult
     private CaveRoomPlanResult(
         CaveRoomPlan? plan,
         CaveRoomPlanFailureReason failureReason,
-        string detail)
+        string detail,
+        IReadOnlyList<CaveRoomInvalidCell> invalidCells)
     {
         Plan = plan;
         FailureReason = failureReason;
         Detail = detail;
+        InvalidCells = new ReadOnlyCollection<CaveRoomInvalidCell>(
+            invalidCells?.ToArray() ?? throw new ArgumentNullException(nameof(invalidCells)));
     }
 
     public bool Succeeded => Plan != null;
     public CaveRoomPlan? Plan { get; }
     public CaveRoomPlanFailureReason FailureReason { get; }
     public string Detail { get; }
+    public IReadOnlyList<CaveRoomInvalidCell> InvalidCells { get; }
 
     internal static CaveRoomPlanResult Success(CaveRoomPlan plan)
     {
         return new CaveRoomPlanResult(
             plan ?? throw new ArgumentNullException(nameof(plan)),
             CaveRoomPlanFailureReason.None,
-            "The cave room can be excavated from this horizontal tunnel cell.");
+            "The cave room can be excavated above this complete through tunnel.",
+            Array.Empty<CaveRoomInvalidCell>());
     }
 
     internal static CaveRoomPlanResult Failure(
         CaveRoomPlanFailureReason reason,
-        string detail)
+        string detail,
+        IEnumerable<CaveRoomInvalidCell>? invalidCells = null)
     {
         if (reason == CaveRoomPlanFailureReason.None)
         {
             throw new ArgumentOutOfRangeException(nameof(reason));
         }
 
-        return new CaveRoomPlanResult(null, reason, detail);
+        return new CaveRoomPlanResult(
+            null,
+            reason,
+            detail,
+            invalidCells?.OrderBy(cell => cell.Cell).ThenBy(cell => cell.Reason).ToArray()
+                ?? Array.Empty<CaveRoomInvalidCell>());
     }
 }
 
