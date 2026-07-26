@@ -90,6 +90,33 @@ namespace Dig.Unity
                     _selectedBuildingBox.CellZ));
         }
 
+        private bool TryHandleBuildingPlacementClick()
+        {
+            if (!_buildingPlacementMode.HasValue
+                || !Input.GetMouseButtonDown(0))
+            {
+                return false;
+            }
+
+            if (_hud == null || _hud.ContainsScreenPoint(Input.mousePosition))
+            {
+                return true;
+            }
+
+            UpdateBuildingPlacementHover();
+            if (_buildingPlacementPreview == null
+                || !_buildingPlacementPreview.IsValid)
+            {
+                _hud.SetStatus(
+                    _buildingPlacementPreview?.ReasonCode
+                    ?? "input.building_placement.invalid");
+                return true;
+            }
+
+            ConfirmBuildingPlacement();
+            return true;
+        }
+
         private void UpdateBuildingPlacementHover()
         {
             if (!_buildingPlacementMode.HasValue

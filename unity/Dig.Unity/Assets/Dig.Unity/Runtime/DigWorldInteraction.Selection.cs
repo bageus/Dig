@@ -76,6 +76,7 @@ namespace Dig.Unity
 
         private void ToggleResidentSelection(DigAgentVisual agent)
         {
+            CancelInventoryItemPlacement();
             if (_buildingPlacementMode.HasValue)
             {
                 CancelBuildingPlacement();
@@ -98,6 +99,7 @@ namespace Dig.Unity
 
         private void CancelCurrentInteraction()
         {
+            CancelInventoryItemPlacement();
             if (_buildingPlacementMode.HasValue)
             {
                 CancelBuildingPlacement();
