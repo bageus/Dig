@@ -91,6 +91,31 @@ namespace Dig.Tests
             Assert.Contains("edge.enabled=true", room);
         }
 
+        [Fact]
+        public void Unity_bootstrap_keeps_required_adapter_identifiers_intact()
+        {
+            string bootstrap = Read(RuntimeRoot(), "DigUnityBootstrap.cs");
+
+            Assert.Contains("BindExcavationSkillSource", bootstrap);
+            Assert.Contains("GetStorageStatus()", bootstrap);
+            Assert.Contains("DigStockpileRendererstockpileRenderer", bootstrap);
+            Assert.Contains("SetStorageStatus(storage)", bootstrap);
+            Assert.Contains("SetSimulationControls(simulation)", bootstrap);
+            Assert.Contains(
+                "SetToolAssignmentControls(terrainSession,jobRenderer)",
+                bootstrap);
+            Assert.Contains(
+                "SetBuildingControls(terrainSession,buildingRenderer,jobRenderer)",
+                bootstrap);
+            Assert.Contains("stringstage", bootstrap);
+            Assert.Contains("cameraObject.tag=\"MainCamera\"", bootstrap);
+            Assert.DoesNotContain("GetSD()", bootstrap);
+            Assert.DoesNotContain("DigSckpileRenderer", bootstrap);
+            Assert.DoesNotContain("controlD", bootstrap);
+            Assert.DoesNotContain("stringsage", bootstrap);
+            Assert.DoesNotContain("cameraObject.ag", bootstrap);
+        }
+
         private static string Read(string runtime, string file)
         {
             return Normalize(File.ReadAllText(Path.Combine(runtime, file)));

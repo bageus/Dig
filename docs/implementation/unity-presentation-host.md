@@ -75,6 +75,12 @@ The shared source uses nullable reference annotations in its public contracts. T
 
 After changing the response file, allow Unity to recompile scripts. If old diagnostics remain cached, reopen the project or use **Assets > Reimport All**.
 
+## Bootstrap source integrity
+
+`DigUnityBootstrap` is the engine entry point that wires the demo sessions, HUD, renderers and runtime drivers. `RuntimeInteractionRootCauseContractTests.Unity_bootstrap_keeps_required_adapter_identifiers_intact` protects the required storage, stockpile, HUD-control, presentation-stage and camera-tag identifiers while preserving the excavation-skill binding introduced by the runtime interaction work.
+
+This regression guard exists because token-level source corruption in the bootstrap can prevent Unity from compiling before any Play Mode scenario starts, even when engine-independent projects still build successfully.
+
 ## Generated files
 
 Unity-generated folders such as `Library`, `Temp`, `Logs`, `UserSettings`, builds and generated IDE files are ignored. Project assets, scripts, scenes, settings and their `.meta` files should be committed.

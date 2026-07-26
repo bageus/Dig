@@ -88,7 +88,7 @@ namespace Dig.Unity
             IReadOnlyList<WorldItemViewModel> items = terrainSession.LoadAllWorldItems();
             IReadOnlyList<RouteViewModel> routes = terrainSession.LoadRoutes();
             IReadOnlyList<BuildingWorldViewModel> buildings = terrainSession.LoadBuildings();
-            DigStorageStatus storage = terrainSession.GetS           D();
+            DigStorageStatus storage = terrainSession.GetStorageStatus();
 
             _startupStage = "creating Unity adapters";
             Camera targetCamera = EnsureCamera();
@@ -116,7 +116,7 @@ namespace Dig.Unity
             DigWorldItemRenderer itemRenderer = GetOrAdd<DigWorldItemRenderer>(gameObject);
             DigBuildingBoxGhostRenderer ghostRenderer =
                 GetOrAdd<DigBuildingBoxGhostRenderer>(gameObject);
-            DigS  ckpileRenderer s  ckpileRenderer = GetOrAdd<DigS  ckpileRenderer>(gameObject);
+            DigStockpileRenderer stockpileRenderer = GetOrAdd<DigStockpileRenderer>(gameObject);
             DigNavigationRouteRenderer routeRenderer =
                 GetOrAdd<DigNavigationRouteRenderer>(gameObject);
             DigTunnelDemoRenderer tunnelRenderer = GetOrAdd<DigTunnelDemoRenderer>(gameObject);
@@ -136,11 +136,11 @@ namespace Dig.Unity
             hud.SetWorld(world);
             hud.SetAgents(agents, agentSession.Tick);
             hud.SetJobs(jobs);
-            hud.SetSt          D(storage);
-            hud.SetSimulationControlD(simulation);
-            hud.SetToolAssignmentControlD(terrainSession, jobRenderer);
-            hud.SetBuildingControlD(terrainSession, buildingRenderer, jobRenderer);
-            hud.SetStatus("Binding runtime controlD...");
+            hud.SetStorageStatus(storage);
+            hud.SetSimulationControls(simulation);
+            hud.SetToolAssignmentControls(terrainSession, jobRenderer);
+            hud.SetBuildingControls(terrainSession, buildingRenderer, jobRenderer);
+            hud.SetStatus("Binding runtime controls...");
 
             _startupStage = "initializing interaction and simulation";
             worldOverlayRenderer.Initialize(
@@ -152,14 +152,14 @@ namespace Dig.Unity
             interaction.Initialize(
                 targetCamera, cameraController, worldSession, worldRenderer,
                 agentRenderer, creatureRenderer, jobRenderer, buildingRenderer, itemRenderer,
-                ghostRenderer, terrainSession, s  ckpileRenderer, agentSession,
+                ghostRenderer, terrainSession, stockpileRenderer, agentSession,
                 simulation, hud);
             interaction.SetTunnelMovement(tunnelRenderer);
             interaction.SetCaveRoomRenderers(caveRoomPreviewRenderer, caveRoomFloorRenderer);
             simulation.Initialize(
                 worldSession, worldRenderer, agentSession, agentRenderer,
                 terrainSession, jobRenderer, buildingRenderer, itemRenderer,
-                s  ckpileRenderer, routeRenderer, worldOverlayRenderer, hud);
+                stockpileRenderer, routeRenderer, worldOverlayRenderer, hud);
 
             _startupStage = "binding uGUI game HUD";
             gameHud.Initialize(
@@ -191,8 +191,8 @@ namespace Dig.Unity
             RunPresentationStage("rendering world items", visualWarnings,
                 () => itemRenderer.Render(items));
             RunPresentationStage("clearing building ghost", visualWarnings, ghostRenderer.Clear);
-            RunPresentationStage("rendering s  ckpile", visualWarnings,
-                () => s  ckpileRenderer.Render(storage));
+            RunPresentationStage("rendering stockpile", visualWarnings,
+                () => stockpileRenderer.Render(storage));
             RunPresentationStage("rendering navigation routes", visualWarnings,
                 () => routeRenderer.Render(routes));
             RunPresentationStage("rendering world overlays", visualWarnings, () =>
@@ -223,16 +223,16 @@ namespace Dig.Unity
         }
 
         private void RunPresentationStage(
-            string s age, ICollection<string> warnings, Action action)
+            string stage, ICollection<string> warnings, Action action)
         {
-            _startupStage = s age;
+            _startupStage = stage;
             try
             {
                 action();
             }
             catch (Exception exception)
             {
-                string warning = $"{s age}: {exception.GetType().Name}: {exception.Message}";
+                string warning = $"{stage}: {exception.GetType().Name}: {exception.Message}";
                 warnings.Add(warning);
                 Debug.LogException(exception, this);
             }
@@ -273,7 +273,7 @@ namespace Dig.Unity
             if (camera == null)
             {
                 GameObject cameraObject = new GameObject("Main Camera");
-                cameraObject. ag = "MainCamera";
+                cameraObject.tag = "MainCamera";
                 camera = cameraObject.AddComponent<Camera>();
                 cameraObject.AddComponent<AudioListener>();
             }
