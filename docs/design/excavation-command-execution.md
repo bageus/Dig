@@ -86,7 +86,13 @@ Eraser удаляет выбранные unfinished designations, active/nonterm
 
 Уже committed empty terrain не восстанавливается. Eraser не удаляет unrelated jobs в той же клетке.
 
-При split/merge зоны jobs пересобираются из оставшихся designations. Точная adjacency остаётся открытой; persistent zone priority отсутствует.
+При split/merge зоны jobs пересобираются из оставшихся designations. Persistent zone priority отсутствует.
+
+Связанность определяется так:
+
+- обычные tunnel/depth designations объединяются только через face-neighbor X/Y в одном Z-слое;
+- room instance является единой зоной по своему authoritative template/instance id и включает связанные child cells следующих Z-слоёв;
+- произвольные Z-соседи разных room/tunnel plans не объединяются только из-за совпадения X/Y.
 
 ## 8. Инварианты
 
@@ -111,11 +117,12 @@ Eraser удаляет выбранные unfinished designations, active/nonterm
 - **Q-DIG-006:** отдельной отмены direct priority нет.
 - **Q-DIG-007:** persistent zone priority отсутствует, поэтому split/merge только пересобирает ordinary jobs из оставшихся designations.
 - **Q-DIG-008:** связанные tunnel/depth/room cells, добавленные во время работы, автоматически входят в active zone.
+- **Q-DIG-009:** обычная зона использует X/Y adjacency внутри слоя; room instance дополнительно объединяет свои child cells на следующих Z-слоях. Произвольная Z adjacency не объединяет разные plans.
 - **Q-DIG-010:** числового priority boost нет; ordinary jobs равны, direct player command выше jobs, combat defense выше direct jobs.
 
 ## 10. Открытые вопросы
 
-- **Q-DIG-009:** какие face-neighbor transitions объединяют tunnel/depth/room designations в одну 3D zone: только X/Y внутри слоя или также Z-переходы между слоями? До решения реализация сохраняет существующую adjacency и не вводит новую форму связанности.
+Открытых observable business-вопросов для текущего direct/automatic excavation workflow нет. Новые нестандартные 3D shapes требуют отдельного решения, а не расширения adjacency по предположению.
 
 ## 11. Save/Load
 
@@ -147,7 +154,8 @@ Presentation cursor и hover не сохраняются.
 - несколько residents одновременно копают одну zone;
 - direct order заменяет текущее небоевое action выбранного resident, выбирает ближайшую reachable cell и не блокирует подключение других;
 - добавление новых связанных tunnel cells во время копки;
-- присоединение depth и room cells;
+- X/Y continuation для tunnel/depth без случайного объединения по Z;
+- room instance продолжает child cells на следующих Z-слоях;
 - depth excavation без circle marker dependency;
 - room template до полного завершения;
 - selected resident освобождает/завершает job, а zone продолжает выполняться;
