@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Dig.Application.Inventory;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -12,6 +13,55 @@ namespace Dig.Unity
         private DropResidentInventoryStackHandler? _residentTerrainInventoryDrop;
         private UseResidentInventoryItemHandler? _residentBuildingInventoryUse;
         private UseResidentInventoryItemHandler? _residentTerrainInventoryUse;
+
+        internal Result ValidateResidentInventoryDrop(
+            string residentId,
+            string stackId,
+            CellId destination)
+        {
+            EntityId actor = ParseInventoryEntityId(residentId, nameof(residentId));
+            EntityId stack = ParseInventoryEntityId(stackId, nameof(stackId));
+            InventoryState? inventory = _buildingInventoryRepository?.Get();
+            ItemStackSnapshot? snapshot = inventory?.GetStack(stack);
+            if (snapshot == null)
+            {
+                inventory = _inventoryRepository.Get();
+                snapshot = inventory.GetStack(stack);
+            }
+
+            if (snapshot == null)
+            {
+                return Result.Failure(InventoryErrors.StackNotFound);
+            }
+
+            if (!snapshot.Location.HasOwner || snapshot.Location.OwnerId != actor)
+            {
+                return Result.Failure(new DomainError(
+                    "inventory.drop.not_owned",
+                    "The stack is not owned by the selected resident."));
+            }
+
+            CellSnapshot? target = _worldSession.LoadSnapshot().Chunks
+                .SelectMany(chunk => chunk.Cells)
+                .Where(cell => cell.Id == destination)
+                .Select(cell => (CellSnapshot?)cell)
+                .FirstOrDefault();
+            if (!target.HasValue)
+            {
+                return Result.Failure(new DomainError(
+                    "inventory.drop.out_of_bounds",
+                    "The item drop target is outside the world."));
+            }
+
+            if (target.Value.IsSolid || !target.Value.State.IsExplored)
+            {
+                return Result.Failure(new DomainError(
+                    "inventory.drop.target_blocked",
+                    "The item drop target must be an explored open cell."));
+            }
+
+            return Result.Success();
+        }
 
         internal Result DropResidentInventoryStack(
             string residentId,

@@ -56,6 +56,24 @@ namespace Dig.Domain.World
         public bool CompletedCell { get; }
     }
 
+
+    public readonly struct ExcavationQuarterProgressSnapshot
+    {
+        public ExcavationQuarterProgressSnapshot(
+            ExcavationWorkTarget target,
+            ExcavationQuarter completed)
+        {
+            Target = target;
+            Completed = completed;
+        }
+
+        public ExcavationWorkTarget Target { get; }
+
+        public ExcavationQuarter Completed { get; }
+
+        public bool IsComplete => Completed == ExcavationQuarter.All;
+    }
+
     public sealed class ExcavationWorkerAssignment
     {
         internal ExcavationWorkerAssignment(
@@ -116,11 +134,50 @@ namespace Dig.Domain.World
             return _assignments.Remove(workerId);
         }
 
+        public void CancelAssignmentsExcept(
+            ExcavationWorkTarget target,
+            EntityId workerId)
+        {
+            EntityId[] stale = _assignments.Values
+                .Where(value => value.Target.Equals(target)
+                    && value.WorkerId != workerId)
+                .Select(value => value.WorkerId)
+                .ToArray();
+            for (int index = 0; index < stale.Length; index++)
+            {
+                _assignments.Remove(stale[index]);
+            }
+        }
+
         public ExcavationWorkerAssignment? GetAssignment(EntityId workerId)
         {
             return _assignments.TryGetValue(workerId, out ExcavationWorkerAssignment? value)
                 ? value
                 : null;
+        }
+
+        public ExcavationQuarterState? FindState(ExcavationWorkTarget target)
+        {
+            return _states.TryGetValue(target, out ExcavationQuarterState? state)
+                ? state
+                : null;
+        }
+
+        public IReadOnlyList<ExcavationQuarterProgressSnapshot> GetProgress()
+        {
+            return _states
+                .OrderBy(pair => pair.Key.CellId)
+                .ThenBy(pair => pair.Key.Z)
+                .Select(pair => new ExcavationQuarterProgressSnapshot(
+                    pair.Key,
+                    pair.Value.Completed))
+                .ToArray();
+        }
+
+        public bool Remove(ExcavationWorkTarget target)
+        {
+            CancelAssignmentsFor(target);
+            return _states.Remove(target);
         }
 
         public ExcavationQuarterState GetState(ExcavationWorkTarget target)
@@ -165,9 +222,13 @@ namespace Dig.Domain.World
                 assignment.MiningSkill,
                 deterministicSeed,
                 reserved: ReservedByOthers(assignment));
-            ExcavationQuarter selected = plan.Quarters == ExcavationQuarter.None
+            // Low-skill work finishes its reserved quarter before choosing another one.
+            // Replanning a different random quarter on every tick scattered hidden
+            // swing progress across the cell and made excavation appear to stop. Skilled
+            // workers may still complete the additional quarters selected by the policy.
+            ExcavationQuarter selected = assignment.MiningSkill <= 40
                 ? reserved
-                : plan.Quarters;
+                : reserved | plan.Quarters;
             assignment.ReservedQuarters = selected;
 
             List<ExcavationQuarterCompletion> completed =

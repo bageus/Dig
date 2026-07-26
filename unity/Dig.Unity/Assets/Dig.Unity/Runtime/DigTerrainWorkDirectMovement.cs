@@ -37,6 +37,7 @@ namespace Dig.Unity
 
             foreach (EntityId agentId in agents)
             {
+                _excavationQuarterWork.Cancel(agentId);
                 ClearManualGroupForAgent(agentId);
             }
 

@@ -142,7 +142,7 @@ public sealed class GameplayRegressionContractTests
     }
 
     [Fact]
-    public void Building_placement_prefers_visible_tunnel_cells_and_changes_visual_by_depth()
+    public void Building_placement_prefers_visible_tunnel_cells_and_uses_final_building_visual()
     {
         string runtime = RuntimeRoot();
         string interaction = Normalize(File.ReadAllText(Path.Combine(
@@ -171,8 +171,8 @@ public sealed class GameplayRegressionContractTests
             runtime,
             "DigBuildingVisual.cs")));
         Assert.Contains("DigTunnelProjection.ResidentWorldPosition", buildingVisual);
-        Assert.Contains("preview.Origin.Z==0", representatives);
-        Assert.Contains("BuildingVisualState.BuildingBox", representatives);
+        Assert.DoesNotContain("preview.Origin.Z==0", representatives);
+        Assert.DoesNotContain("BuildingVisualState.BuildingBox", representatives);
         Assert.Contains("BuildingVisualState.Completed", representatives);
     }
 

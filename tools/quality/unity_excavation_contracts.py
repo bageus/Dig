@@ -251,7 +251,7 @@ def check_excavation_contracts(
         manual,
         texts.get(manual, ""),
         "manual excavation cluster",
-        ("radius: 4", "AssignSpecificJobCommand", "ContinueManualExcavation", "AssignNextManualExcavation"),
+        ("radius: int.MaxValue", "AssignSpecificJobCommand", "ContinueManualExcavation", "AssignNextManualExcavation"),
     ))
     errors.extend(require_fragments(
         driver,

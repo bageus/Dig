@@ -41,7 +41,7 @@ namespace Dig.Unity
             IReadOnlyList<CellId> cluster = _clusterPlanner!.Select(
                 seed,
                 CollectDesignatedCells(),
-                radius: 4);
+                radius: int.MaxValue);
             if (cluster.Count == 0)
             {
                 return Result.Failure(JobErrors.NotFound);

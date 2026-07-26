@@ -64,7 +64,7 @@ namespace Dig.Unity
         private void EnsureCollider()
         {
             _interactionCollider ??= GetComponent<BoxCollider>();
-            _interactionCollider.isTrigger = false;
+            _interactionCollider.isTrigger = true;
         }
 
         private void EnsurePool(DigItemVisualResolution resolution)

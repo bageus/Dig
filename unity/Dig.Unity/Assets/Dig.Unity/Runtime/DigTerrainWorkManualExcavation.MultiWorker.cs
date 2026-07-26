@@ -49,7 +49,7 @@ namespace Dig.Unity
             IReadOnlyList<CellId> cluster = _clusterPlanner!.Select(
                 seed,
                 CollectDesignatedCells(),
-                radius: 4);
+                radius: int.MaxValue);
             Dictionary<CellId, JobSnapshot> jobsByCell = CollectActiveDigJobs();
             HashSet<EntityId> selected = new HashSet<EntityId>(agents);
             JobSnapshot[] jobs = cluster
@@ -177,13 +177,13 @@ namespace Dig.Unity
             switch (workerIndex % 4)
             {
                 case 0:
-                    return new CellId(target.X - 1, target.Y);
+                    return new CellId(target.X - 1, target.Y, target.Z);
                 case 1:
-                    return new CellId(target.X + 1, target.Y);
+                    return new CellId(target.X + 1, target.Y, target.Z);
                 case 2:
-                    return new CellId(target.X, target.Y + 1);
+                    return new CellId(target.X, target.Y + 1, target.Z);
                 default:
-                    return new CellId(target.X, target.Y - 1);
+                    return new CellId(target.X, target.Y - 1, target.Z);
             }
         }
 

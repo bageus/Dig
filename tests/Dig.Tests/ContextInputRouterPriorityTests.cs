@@ -128,7 +128,7 @@ public sealed class ContextInputRouterPriorityTests
     }
 
     [Fact]
-    public void Plain_world_building_box_enters_placement_without_command()
+    public void Plain_world_building_box_selects_without_starting_placement()
     {
         ContextInputDecision decision = WorldLeft(
             new ContextInputState(selectedResidentId: Resident),
@@ -138,12 +138,12 @@ public sealed class ContextInputRouterPriorityTests
                 Cell));
 
         Assert.False(decision.HasApplicationCommand);
-        Assert.Equal(PresentationInputEffect.StartBuildingPlacement, decision.Effects);
+        Assert.Equal(PresentationInputEffect.SelectBuildingBox, decision.Effects);
         Assert.Equal(Target, decision.TargetEntityId);
     }
 
     [Fact]
-    public void Inventory_building_box_enters_the_same_placement_effect()
+    public void Inventory_building_box_enters_the_placement_effect()
     {
         ContextInputDecision decision = _router.Route(
             new ContextPointerEvent(

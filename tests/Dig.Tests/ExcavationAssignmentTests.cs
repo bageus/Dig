@@ -41,6 +41,28 @@ public sealed class ExcavationAssignmentTests
     }
 
     [Fact]
+    public void Unlimited_cluster_keeps_full_connected_horizontal_and_depth_zone()
+    {
+        CellId seed = new CellId(2, 2, 0);
+        CellId[] designated = new CellId[12];
+        for (int index = 0; index < 10; index++)
+        {
+            designated[index] = new CellId(2 + index, 2, 0);
+        }
+
+        designated[10] = new CellId(11, 2, 1);
+        designated[11] = new CellId(11, 2, 2);
+
+        var selected = new ExcavationClusterPlanner().Select(
+            seed,
+            designated,
+            radius: int.MaxValue);
+
+        Assert.Equal(12, selected.Count);
+        Assert.Contains(new CellId(11, 2, 2), selected);
+    }
+
+    [Fact]
     public void Explicit_assignment_redirects_selected_agent_and_releases_previous_jobs()
     {
         InMemoryJobRepository repository = new InMemoryJobRepository();
