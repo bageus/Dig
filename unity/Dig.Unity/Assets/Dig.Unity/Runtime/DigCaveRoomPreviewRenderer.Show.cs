@@ -9,7 +9,9 @@ namespace Dig.Unity
     public sealed partial class DigCaveRoomPreviewRenderer
     {
         private static readonly Color MissingTunnelColor =
-            new Color(0.92f, 0.22f, 0.18f, 0.72f);
+            new Color(0.92f, 0.22f, 0.18f, 0.84f);
+        private static readonly Color ValidOutlineColor =
+            new Color(0.55f, 0.82f, 0.96f, 0.92f);
 
         internal void Show(
             CaveRoomPreset preset,
@@ -32,16 +34,35 @@ namespace Dig.Unity
 
             if (valid)
             {
+                Vector2Int[] frontEdges =
+                {
+                    new Vector2Int(0, 1),
+                    new Vector2Int(1, 2),
+                    new Vector2Int(2, 3),
+                    new Vector2Int(3, 0),
+                };
+                for (int index = 0; index < frontEdges.Length; index++)
+                {
+                    LineRenderer edge = _edges[index];
+                    _overlays!.ConfigureLineRenderer(
+                        edge,
+                        OverlayLayerKind.Preview,
+                        OverlaySemanticKind.PreviewValid);
+                    edge.startColor = ValidOutlineColor;
+                    edge.endColor = ValidOutlineColor;
+                    edge.enabled = true;
+                    edge.SetPosition(0, corners[frontEdges[index].x]);
+                    edge.SetPosition(1, corners[frontEdges[index].y]);
+                }
+
                 return;
             }
 
-            // Keep the room body readable without a green box outline. When the
-            // entrance/support tunnel is missing, mark only the bottom opening in red.
             LineRenderer missingTunnel = _edges[0];
             _overlays!.ConfigureLineRenderer(
                 missingTunnel,
                 OverlayLayerKind.Preview,
-                OverlaySemanticKind.PreviewValid);
+                OverlaySemanticKind.PreviewInvalid);
             missingTunnel.startColor = MissingTunnelColor;
             missingTunnel.endColor = MissingTunnelColor;
             missingTunnel.enabled = true;

@@ -137,6 +137,12 @@ namespace Dig.Unity
             return _presenter.Load(_tick);
         }
 
+        internal int GetSkillLevel(EntityId agentId, AgentSkillId skillId)
+        {
+            AgentState? agent = _repository.Get(agentId);
+            return agent?.CreateSnapshot(_tick).GetSkillLevel(skillId) ?? 0;
+        }
+
         internal int GetMaximumSkillLevel(AgentSkillId skillId)
         {
             return _repository.GetAll()

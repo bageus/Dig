@@ -1,0 +1,110 @@
+# Runtime selection, excavation progress и item placement
+
+Статус: `APPROVED`.
+
+Tracking issues: [#387](https://github.com/bageus/Dig/issues/387), [#388](https://github.com/bageus/Dig/issues/388), [#390](https://github.com/bageus/Dig/issues/390), [#398](https://github.com/bageus/Dig/issues/398).
+
+Этот документ является утверждённым дополнением к:
+
+- [`contextual-input-cursors-and-selection.md`](contextual-input-cursors-and-selection.md);
+- [`building-box-placement-and-packing.md`](building-box-placement-and-packing.md);
+- [`world-item-gravity-selection-and-pickup.md`](world-item-gravity-selection-and-pickup.md);
+- [`excavation-command-execution.md`](excavation-command-execution.md).
+
+При расхождении по перечисленным ниже пунктам это дополнение имеет приоритет как более позднее подтверждённое решение пользователя.
+
+## 1. Выбор построенного здания
+
+Обычный ЛКМ по completed building:
+
+1. выбирает именно здание до обработки movement/excavation target под ним;
+2. открывает нижнее меню функций здания;
+3. переключает правую панель на список Buildings;
+4. подсвечивает строку того же здания;
+5. снимает несовместимый resident, job, BuildingBox и inventory selection.
+
+World selection, HUD selection и management selection используют один selected building id. Один ЛКМ не может одновременно выбрать здание и выдать приказ перемещения.
+
+## 2. BuildingBox unpacking preview
+
+Кнопка `Unpack` выбранной BuildingBox включает placement mode и показывает полупрозрачную 3D-модель конечного здания, а не модель упакованной коробки.
+
+- ghost следует pointer в world-space;
+- ghost и footprint показывают тот definition/orientation, который будет подтверждён командой;
+- Z0 не переключает ghost обратно в `BuildingBox` visual state;
+- preview не меняет Inventory/Buildings/Jobs;
+- invalid target остаётся preview с reason code;
+- RMB отменяет preview без расходования коробки.
+
+## 3. World item pickup и collision
+
+- `Alt + ЛКМ` для pickup требуется только BuildingBox;
+- обычный generic world item подбирается обычным ЛКМ при выбранном resident;
+- object target обрабатывается раньше movement target на той же pointer ray;
+- hover и click используют одинаковый stack/reachability resolver;
+- world item collider остаётся raycastable, но не является физическим препятствием для resident movement;
+- предметы не входят в Navigation occupancy и гномы проходят через их visual/collider.
+
+## 4. Размещение предмета из resident inventory
+
+Один ЛКМ по доступному generic item в resident inventory включает локальный item placement mode:
+
+- item visual становится полупрозрачным world-space ghost;
+- ghost следует pointer по валидным world cells;
+- authoritative stack остаётся в исходном inventory slot до успешной команды;
+- ЛКМ по валидной клетке выполняет `DropInventoryStack`;
+- invalid target не меняет Inventory и показывает reason;
+- RMB отменяет preview;
+- успешный drop очищает selection/preview.
+
+Двойной ЛКМ по item в inventory выполняет немедленный drop в authoritative клетке resident. После drop обычная world-item gravity policy автоматически перемещает unsupported item вниз до первой допустимой опоры в vertical tunnel.
+
+BuildingBox inventory action остаётся отдельным unpacking workflow и использует building ghost, а не generic item ghost.
+
+## 5. Excavation quarter progress
+
+Каждая excavation target cell выполняется через четыре authoritative quarters:
+
+- `UpperLeft`;
+- `LowerLeft`;
+- `UpperRight`;
+- `LowerRight`.
+
+Случайный/deterministic выбор текущего quarter и количества swings не может быть скрытым Presentation-only состоянием.
+
+- quarter completion сохраняется в едином excavation progress owner;
+- Job не переходит в `Finalize`, пока не завершены все четыре quarters;
+- completed quarter немедленно отображается и на designation overlay, и на самой породе;
+- 1/4, 2/4 и 3/4 должны визуально отличаться;
+- retry/reassignment не сбрасывает completed quarters;
+- completion одной клетки не удаляет remaining designations/jobs connected zone;
+- Z0 tunnel, vertical/depth excavation и cave-room child cells используют тот же observable progress contract;
+- ошибка одной клетки не прекращает simulation loop и не блокирует остальных residents.
+
+## 6. Cave-room preview и execution
+
+При активном room tool и валидном entrance:
+
+- полный front silhouette room preview всегда видим до клика;
+- valid preview не исчезает из-за отключения invalid outline;
+- click создаёт child designations/jobs для полного plan mask;
+- pending room cells отображаются как excavation designations;
+- room остаётся видимой как plan до фактического excavation completion;
+- progress room вычисляется из completed child cells/quarters, а не из локальной анимации.
+
+## 7. Acceptance
+
+Обязательные regression scenarios:
+
+1. resident selected -> LMB completed building -> building functions + Buildings tab + highlighted row, без move order;
+2. selected BuildingBox -> `Unpack` -> completed-building ghost под pointer на Z0;
+3. selected resident -> LMB generic world item -> pickup order без Alt;
+4. resident проходит через world item collider;
+5. inventory item single LMB -> transparent item ghost -> valid world drop;
+6. inventory item double LMB -> drop at resident cell -> fall through open vertical tunnel;
+7. horizontal и vertical excavation минимум 10 cells без остановки;
+8. 1/4, 2/4, 3/4 progress видим на designation и rock;
+9. cave-room valid preview видим и child jobs продолжаются до полного plan completion;
+10. failure/retry одного excavation job не блокирует другие commands/residents.
+
+Unit/source-contract tests не заменяют Unity Play Mode validation для pointer routing, ghost visibility, partial terrain presentation и длительного excavation workflow.

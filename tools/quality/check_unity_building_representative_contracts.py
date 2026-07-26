@@ -214,6 +214,9 @@ def validate_runtime() -> list[str]:
     errors.extend(require(ghost_path, ghost, (
         "DigRepresentativeBuildingPrefabLibrary.Acquire()",
         "_representatives.TryResolve(",
+        "BuildingVisualState.Completed",
+    )))
+    errors.extend(reject(ghost_path, ghost, (
         "BuildingVisualState.BuildingBox",
     )))
     return errors

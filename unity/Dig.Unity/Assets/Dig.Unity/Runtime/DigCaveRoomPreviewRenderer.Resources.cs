@@ -40,6 +40,8 @@ namespace Dig.Unity
             fillObject.transform.SetParent(_root, worldPositionStays: true);
             _fillFilter = fillObject.AddComponent<MeshFilter>();
             _fillRenderer = fillObject.AddComponent<MeshRenderer>();
+            DigTransparentVisualSurface transparent =
+                fillObject.AddComponent<DigTransparentVisualSurface>();
             _fillMesh = new Mesh { name = "Cave room preview fill mesh" };
             _fillMesh.MarkDynamic();
             _fillFilter.sharedMesh = _fillMesh;
@@ -51,6 +53,7 @@ namespace Dig.Unity
             _fillProperties.SetColor("_BaseColor", RoomPreviewColor);
             _fillProperties.SetColor("_Color", RoomPreviewColor);
             _fillRenderer.SetPropertyBlock(_fillProperties);
+            transparent.Configure(fixedOpacity: null);
             _fillRenderer.shadowCastingMode = ShadowCastingMode.Off;
             _fillRenderer.receiveShadows = false;
             _fillRenderer.enabled = false;

@@ -82,13 +82,20 @@ namespace Dig.Unity
                 return;
             }
 
+            UpdateBuildingPlacementHover();
+            UpdateInventoryItemPlacementHover();
+            if (TryHandleBuildingPlacementClick()
+                || TryHandleInventoryItemPlacementClick())
+            {
+                return;
+            }
+
             if (TryHandlePriorityResidentPointerInput())
             {
                 return;
             }
 
             HandleStoragePlacement();
-            UpdateBuildingPlacementHover();
             UpdateCaveRoomPreview();
             if (TryHandleResidentMarqueeSelection()
                 || TryHandleCaveRoomPlacement()

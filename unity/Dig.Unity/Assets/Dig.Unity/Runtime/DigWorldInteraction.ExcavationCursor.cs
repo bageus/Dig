@@ -10,6 +10,7 @@ namespace Dig.Unity
         private void LateUpdate()
         {
             SynchronizeExcavationDesignations();
+            SynchronizeExcavationQuarterProgress();
             UpdateExcavationCursorPreview();
             UpdateSelectedResidentCommandCursor();
             if (IsInitialized())
@@ -28,6 +29,26 @@ namespace Dig.Unity
             EnsureExcavationCursorRenderer();
             _excavationCursorRenderer!.SynchronizeTunnelDesignations(
                 _session!.LoadView());
+        }
+
+        private void SynchronizeExcavationQuarterProgress()
+        {
+            if (!IsInitialized())
+            {
+                return;
+            }
+
+            EnsureExcavationCursorRenderer();
+            foreach (ExcavationQuarterProgressSnapshot progress
+                in _terrainSession!.LoadExcavationQuarterProgress())
+            {
+                if (progress.Target.CellId.Z == 0)
+                {
+                    _excavationCursorRenderer!.SetTunnelDesignationProgress(
+                        progress.Target.CellId,
+                        progress.Completed);
+                }
+            }
         }
 
         private void UpdateExcavationCursorPreview()

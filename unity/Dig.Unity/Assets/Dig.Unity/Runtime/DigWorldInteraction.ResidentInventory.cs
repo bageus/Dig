@@ -33,7 +33,14 @@ namespace Dig.Unity
 
             if (doubleClick)
             {
+                CancelInventoryItemPlacement();
                 DropResidentInventorySlot(slot);
+                return;
+            }
+
+            if (!slot.IsBuildingBox && slot.CanDrop)
+            {
+                BeginInventoryItemPlacement(slot);
                 return;
             }
 

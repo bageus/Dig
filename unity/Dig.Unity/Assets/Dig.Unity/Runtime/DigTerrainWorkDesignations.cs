@@ -145,6 +145,12 @@ namespace Dig.Unity
                 new CellId(target.X + 1, target.Y, target.Z),
                 target.Y > 0 ? new CellId(target.X, target.Y - 1, target.Z) : target,
                 new CellId(target.X, target.Y + 1, target.Z),
+                target.Z > CellId.MinimumDepth
+                    ? new CellId(target.X, target.Y, target.Z - 1)
+                    : target,
+                target.Z < CellId.MaximumDepth
+                    ? new CellId(target.X, target.Y, target.Z + 1)
+                    : target,
             };
             for (int index = 0; index < neighbors.Length; index++)
             {

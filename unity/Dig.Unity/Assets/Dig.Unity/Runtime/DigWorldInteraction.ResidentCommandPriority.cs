@@ -17,6 +17,27 @@ public sealed partial class DigWorldInteraction
         }
 
         RaycastHit[] hits = GetPointerHits();
+        if (TryResolveCompletedBuildingHit(hits, out DigBuildingVisual completedBuilding))
+        {
+            CancelResidentMarquee();
+            DisableExcavationDrawing();
+            DisableCaveRoomPlanning();
+            ContextPointerTarget buildingTarget = new ContextPointerTarget(
+                ContextWorldTargetKind.CompletedBuilding,
+                EntityId.Parse(completedBuilding.Model.Id),
+                new CellId(
+                    completedBuilding.Model.OriginX,
+                    completedBuilding.Model.OriginY,
+                    completedBuilding.Model.OriginZ));
+            ApplyDecision(
+                _inputRouter.Route(
+                    Pointer(PointerButtonKind.Left),
+                    BuildState(PointerButtonKind.Left),
+                    buildingTarget),
+                building: completedBuilding);
+            return true;
+        }
+
         // BuildingBoxes remain actionable while the excavation palette is active.
         // Otherwise the default tunnel tool consumes the click before placement or pickup.
         if (TryResolveBuildingBoxHit(hits, out DigWorldItemVisual buildingBox))
@@ -139,6 +160,23 @@ public sealed partial class DigWorldInteraction
         DisableExcavationDrawing();
         DisableCaveRoomPlanning();
         return true;
+    }
+
+    private bool TryResolveCompletedBuildingHit(
+        RaycastHit[] hits,
+        out DigBuildingVisual building)
+    {
+        for (int index = 0; index < hits.Length; index++)
+        {
+            if (_buildingRenderer != null
+                && _buildingRenderer.TryGetBuilding(hits[index], out building))
+            {
+                return true;
+            }
+        }
+
+        building = null!;
+        return false;
     }
 
     private bool TryResolveBuildingBoxHit(
