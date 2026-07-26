@@ -26,7 +26,7 @@ Generic item pickup больше не зависит от `Alt`; `Alt` оста�
 
 ### Unity compiler guards
 
-Quarter work явно переводит signed generation seed в его 32-bit unsigned representation перед расширением до `ulong`. Inventory routing проверяет nullable selected resident id до `EntityId.Parse` в обоих путях. Это устраняет Unity diagnostics `CS1503` и `CS8604` без изменения authoritative gameplay state.
+Quarter work явно переводит signed generation seed в его 32-bit unsigned representation перед расширением до `ulong`. Skill resolution использует единственный актуальный source, привязанный через `BindExcavationSkillSource`; ссылка на удалённый legacy `_manualExcavationMiningSkill` устранена. Inventory routing проверяет nullable selected resident id до `EntityId.Parse` и после guard явно передаёт non-null значение для Unity Roslyn, который не использует `IsNullOrWhiteSpace` как достаточное nullable narrowing. Это устраняет diagnostics `CS1503`, `CS0103` и `CS8604` без изменения authoritative gameplay state.
 
 ### Continuation и cave rooms
 
@@ -47,7 +47,7 @@ Manual connected-zone planning был ограничен radius 4 и XY adjacenc
 - final-building unpack ghost on Z0;
 - inventory item placement and trigger-collider source contracts;
 - low-skill quarter assignment stability and 4/4 finalization gate;
-- Unity quarter seed type normalization and nullable resident-id guards;
+- Unity quarter seed type normalization, current excavation skill source и guarded non-null resident IDs;
 - 12-cell horizontal/depth connected cluster;
 - room outline and quarter marker synchronization.
 
