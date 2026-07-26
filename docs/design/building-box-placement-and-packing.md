@@ -78,7 +78,7 @@ Placement mode включается только кнопкой «Распако
 
 Нажатие кнопки не меняет Inventory quantity/location и не создаёт reservation. Оно создаёт только локальный preview mode.
 
-Activation path для BuildingBox в resident inventory остаётся открытым в Q-BBOX-002.
+Для BuildingBox в resident inventory отдельная кнопка не требуется: обычный LMB по занятому inventory slot сразу включает тот же placement mode с 3D ghost конечного здания и footprint. Коробка остаётся в inventory до успешного authoritative command.
 
 ## 6. Preview
 
@@ -129,21 +129,13 @@ Activation path для BuildingBox в resident inventory остаётся отк
 5. размещает коробку в world location;
 6. завершает plan.
 
-После commit коробка остаётся BuildingBox и может быть выбрана, подобрана или снова использована через кнопку «Распаковать».
+После commit коробка остаётся BuildingBox и может быть выбрана или подобрана. Дальнейший переход от доставленной коробки к сборке конечного здания остаётся отдельным открытым workflow Q-BBOX-006.
 
-## 9. Building assembly plan
+## 9. Поверхность и будущая сборка здания
 
-Plan конечного здания является отдельным workflow и не должен смешиваться с Z0 BuildingBox placement plan.
+Для текущего BuildingBox workflow валидной поверхностью подтверждения является только Z0. Поверхности других depth layers и любые специальные direct-assembly surfaces не разрешены.
 
-Если placement policy разрешает подтверждение конечного здания на другой валидной поверхности, такой plan:
-
-1. повторно валидирует footprint, orientation и work positions;
-2. резервирует BuildingBox;
-3. создаёт building assembly plan;
-4. создаёт delivery/assembly jobs;
-5. расходует коробку ровно один раз только при успешном completion здания.
-
-Наличие двух plan kinds не означает два authoritative locations одной коробки.
+Подтверждение placement на Z0 создаёт BuildingBox placement plan из раздела 7, а не completed building. Как именно доставленная коробка затем переводится в building assembly workflow, должно быть отдельно подтверждено в Q-BBOX-006. До этого direct building assembly не должен молча запускаться из placement confirmation.
 
 ## 10. Отмена и ошибки
 
@@ -232,21 +224,23 @@ Inspector показывает:
 ## 16. Решённые вопросы
 
 - **Q-BBOX-001:** ЛКМ на валидной Z0-позиции создаёт BuildingBox placement plan, а не plan конечного здания.
+- **Q-BBOX-002:** обычный LMB по BuildingBox в resident inventory сразу включает placement mode с 3D ghost/footprint.
 - **Q-BBOX-003:** Z0 confirmation размещает коробку через plan; после успешного создания plan placement mode закрывается.
+- **Q-BBOX-004:** после успешного создания plan исходная коробка остаётся selected; world visual, building row или inventory slot подсвечиваются синим как объект запланированного действия.
+- **Q-BBOX-005:** BuildingBox placement разрешён только на Z0; другие поверхности не принимают confirmation.
 
 ## 17. Открытые вопросы
 
-- **Q-BBOX-002:** как запускается unpacking для BuildingBox в resident inventory?
-- **Q-BBOX-004:** что становится selected после успешного создания BuildingBox placement plan или building assembly plan?
-- **Q-BBOX-005:** какие поверхности кроме Z0 разрешают непосредственный building assembly plan?
+- **Q-BBOX-006:** после доставки BuildingBox placement plan коробка остаётся ожидающим отдельной команды объектом или тот же workflow автоматически запускает сборку конечного здания?
 
 ## 18. Тесты
 
 Обязательны:
 
 - world box LMB выбирает box, но не включает placement;
-- кнопка «Распаковать» включает 3D ghost/footprint и скрывает 2D cursor;
-- valid Z0 click создаёт BuildingBox placement plan и закрывает mode;
+- inventory BuildingBox LMB сразу включает тот же 3D ghost/footprint mode;
+- кнопка «Распаковать» для world box включает 3D ghost/footprint и скрывает 2D cursor;
+- valid Z0 click создаёт BuildingBox placement plan, закрывает mode и оставляет source box selected с синей planned-подсветкой;
 - Z0 plan после delivery оставляет box, а не completed building;
 - invalid target не создаёт reservation;
 - ПКМ отменяет preview и selection;
