@@ -35,6 +35,8 @@ World selection, HUD selection и management selection используют од
 4. открывается меню BuildingBox с действием `Unpack`;
 5. movement, excavation и placement command этим же кликом не создаются.
 
+Selection highlight изменяет только renderers фактической модели выбранной коробки. Запрещено создавать collider-sized cube/surface вокруг stack, подсвечивать клетку, пол, соседние world items или другие коробки в той же клетке. Подсветка строки Buildings roster остаётся отдельной HUD-проекцией и не расширяет world highlight.
+
 Выбор BuildingBox из Buildings roster/management использует тот же selected `StackId`, вызывает тот же runtime selection path и немедленно подсвечивает соответствующую физическую коробку в мире. World click и HUD click не могут владеть разными selected ids. Incompatible resident, job, completed-building, cell и inventory selection очищаются вместе с переключением на BuildingBox.
 
 ## 3. BuildingBox unpacking preview
@@ -112,8 +114,8 @@ BuildingBox inventory action остаётся отдельным unpacking workf
 Обязательные regression scenarios:
 
 1. resident selected -> LMB completed building -> building functions + Buildings tab + highlighted row, без move order;
-2. world BuildingBox LMB -> выбран тот же `StackId`, world highlight + Buildings row + `Unpack`, без preview/движения/копки;
-3. Buildings roster BuildingBox click -> та же физическая коробка подсвечена в runtime;
+2. world BuildingBox LMB -> выбран тот же `StackId`, подсвечены только renderers модели этой коробки + Buildings row + `Unpack`, без collider-sized highlight surface, preview, движения или копки;
+3. Buildings roster BuildingBox click -> только та же физическая коробка подсвечена в runtime; клетка, пол и соседние items не меняют tint/geometry;
 4. selected BuildingBox -> `Unpack` -> completed-building ghost под pointer на Z0;
 5. selected resident -> LMB generic world item -> pickup order без Alt;
 6. resident проходит через world item collider;
