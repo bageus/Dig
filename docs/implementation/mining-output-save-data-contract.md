@@ -17,6 +17,17 @@ JSON codec:
 `MiningOutputCommitSaveSnapshot`. Snapshot constructors continue to own invariant
 validation, duplicate-cell rejection and deterministic ordering.
 
-This slice intentionally does not create another save coordinator, Inventory owner,
-or mining output restore path. Wiring the DTO into `SaveGameDocument`, migrations,
-and aggregate loader/builder orchestration remains the next #94 slice.
+The DTO is wired into the normal production orchestration without creating another
+state owner:
+
+- `SaveGameContext.MiningOutputCommits` carries the authoritative ledger reference;
+- `SaveGameBuilder.Build(context)` validates Inventory/world integrity and captures it;
+- `SaveGameService.Save` and `Autosave` use that normal builder path;
+- `SaveGameLoader.Load` restores the ledger and exposes it through
+  `LoadedGameState.MiningOutput`;
+- `DigTerrainWorkSession` accepts the restored commit state during composition instead
+  of always creating a fresh empty ledger.
+
+A missing section from an older document restores as an empty ledger. A malformed,
+out-of-bounds or Inventory-mismatched section fails with a typed mining-output save
+diagnostic rather than replaying output.

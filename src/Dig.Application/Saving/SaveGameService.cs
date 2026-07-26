@@ -56,7 +56,8 @@ public sealed class SaveGameService
             context.Buildings,
             context.Agents,
             context.TerrainDeposits,
-            context.PackableBuildingExecutions));
+            context.PackableBuildingExecutions,
+            context.MiningOutputCommits));
     }
 
     public Result<LoadedGameState> Load(

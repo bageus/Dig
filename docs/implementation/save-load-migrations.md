@@ -1,4 +1,4 @@
-> **Audit status (2026-07-26): partial production wiring.** `MiningOutputCommitState` has dedicated builder/loader overloads, but `SaveGameService` and `SaveGameContext` do not currently use them, so normal saves omit the mining-output exactly-once ledger. Tracked by #94/#13 and [`implemented-systems-audit-2026-07-26.md`](implemented-systems-audit-2026-07-26.md).
+> **Audit status (2026-07-27): mining-output production wiring implemented.** Normal manual saves, autosaves and loads now capture, validate and restore `MiningOutputCommitState` through `SaveGameContext`, `SaveGameBuilder`, `SaveGameLoader` and `LoadedGameState`. The broader save system remains `DRAFT` until the complete Unity save/load composition and Play Mode evidence tracked by #13/#15/#94 are present.
 
 # Save, load and migrations
 
@@ -11,7 +11,8 @@ The first vertical slice persists:
 - `WorldState` cells, designations, exploration, damage, temperature and chunk versions;
 - `InventoryState` stacks, stable item/content ids, locations and quantity reservations;
 - `JobSystem` definitions, lifecycle state, assigned workers, retry metadata and the complete reservation ledger;
-- slot metadata, world seed, generator version and simulation tick.
+- slot metadata, world seed, generator version and simulation tick;
+- the mining-output exactly-once commit ledger, including empty commits and stable output stack ids.
 
 Meshes, colliders, navigation results, UI selection, animation state and other rebuildable projections are deliberately absent from the document.
 
@@ -47,7 +48,8 @@ Each state owner exposes a restore factory:
 - `JobSystem.Restore` validates job references and restores every reservation with its original acquired tick.
 
 `SaveGameLoader` applies format and skill-precision migrations first, reconstructs
-the authoritative owners, then validates cross-system references. An Inventory
+the authoritative owners, then validates cross-system references and restores the
+mining-output ledger against the loaded Inventory and authoritative world bounds. An Inventory
 reservation must point to an existing non-terminal Job. Loaded skill snapshots
 are applied to the existing resident owner by
 `SaveGameService.Load(..., IAgentRepository)`, which delegates to
@@ -56,6 +58,10 @@ The restorer validates that every saved resident exists before it mutates any
 aggregate, so a missing recipient cannot produce a partial skills restore.
 
 Restore does not publish gameplay events. Loading recreates a confirmed state; it does not replay commands or side effects.
+
+`LoadedGameState.MiningOutput` exposes the restored ledger and its integrity report.
+`DigTerrainWorkSession` accepts that same `MiningOutputCommitState` during composition,
+so a loaded session does not silently start with an empty exactly-once owner.
 
 Derived caches are rebuilt outside the save document from the restored authoritative snapshots. Old navigation paths or presentation objects cannot be applied merely because they existed before saving.
 
@@ -111,6 +117,11 @@ Automated coverage includes:
 - migration of the retained v0 and v3 fixtures;
 - skill capacity, report and source-key round trip;
 - deterministic precision migration, exact capacity preservation and its report;
-- service-level load into a live agent repository followed by idempotent grant replay.
+- service-level load into a live agent repository followed by idempotent grant replay;
+- manual save and autosave round-trip of mining-output commits through the normal `SaveGameService` API;
+- deterministic reserialization of a loaded mining-output ledger;
+- duplicate mining output rejection after load and typed Inventory/world integrity failures.
 
-The normal Quality workflow runs architecture/source-contract checks, Release build and .NET tests. It does not currently run Unity Play Mode or the documented standard/large soak profiles; those evidence gaps are tracked by #15 and the current audit.
+The normal Quality workflow runs architecture/source-contract checks, Release build,
+.NET tests, headless smoke and both deterministic soak profiles. Unity Play Mode is
+not yet a blocking CI gate; that remaining evidence gap is tracked by #15.
