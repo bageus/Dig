@@ -7,19 +7,14 @@ namespace Dig.Unity
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(BoxCollider))]
-    public sealed class DigWorldItemVisual : MonoBehaviour
+    public sealed partial class DigWorldItemVisual : MonoBehaviour
     {
-        private static readonly Color SelectionColor =
-            new Color(0.18f, 0.58f, 1f, 1f);
-
         private readonly List<GameObject> _instances = new List<GameObject>();
         private readonly List<DigVisualTintTarget> _tints =
             new List<DigVisualTintTarget>();
         private BoxCollider? _interactionCollider;
         private string _assetKey = string.Empty;
         private Color _baseTint = Color.white;
-        private ItemReservationVisualState _reservationState;
-        private bool _selectionHighlighted;
         private int _poolCapacity;
 
         public WorldItemViewModel Model { get; private set; } = null!;
@@ -27,22 +22,10 @@ namespace Dig.Unity
         internal string QuantityBadge { get; private set; } = string.Empty;
         internal int VisibleInstanceCount { get; private set; }
         internal int RebuildCount { get; private set; }
-        internal bool IsSelectionHighlighted => _selectionHighlighted;
 
         internal void InvalidateAsset()
         {
             _assetKey = string.Empty;
-        }
-
-        internal void SetSelectionHighlighted(bool highlighted)
-        {
-            if (_selectionHighlighted == highlighted)
-            {
-                return;
-            }
-
-            _selectionHighlighted = highlighted;
-            ApplyCurrentTint();
         }
 
         internal void Configure(
@@ -219,27 +202,6 @@ namespace Dig.Unity
             }
 
             VisibleInstanceCount = visible;
-        }
-
-        private void ApplyCurrentTint()
-        {
-            Color tint = ResolveCurrentTint();
-            int visible = Math.Min(VisibleInstanceCount, _tints.Count);
-            for (int index = 0; index < visible; index++)
-            {
-                if (_instances[index].activeSelf)
-                {
-                    _tints[index].SetTint(tint);
-                }
-            }
-        }
-
-        private Color ResolveCurrentTint()
-        {
-            Color tint = ResolveReservationTint(_reservationState);
-            return _selectionHighlighted
-                ? Color.Lerp(tint, SelectionColor, 0.48f)
-                : tint;
         }
 
         private void ApplyInteraction(DigItemVisualResolution resolution)
