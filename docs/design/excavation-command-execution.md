@@ -1,6 +1,6 @@
 # Выполнение прямой и автоматической многоклеточной копки
 
-Статус: `QUESTIONNAIRE`.
+Статус: `APPROVED`.
 
 Tracking issue: [#388](https://github.com/bageus/Dig/issues/388).
 
