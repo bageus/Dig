@@ -1,6 +1,6 @@
 # Выполнение прямой и автоматической многоклеточной копки
 
-Статус: `QUESTIONNAIRE`.
+Статус: `APPROVED`.
 
 Tracking issue: [#388](https://github.com/bageus/Dig/issues/388).
 
@@ -47,6 +47,8 @@ Parent feature: [#87](https://github.com/bageus/Dig/issues/87).
 - не удаляет jobs этой зоны из общего списка;
 - не запрещает другим свободным residents подключаться к той же зоне;
 - не создаёт эксклюзивный player override на все remaining cells;
+- новый direct order заменяет текущее небоевое action выбранного resident и немедленно пытается назначить ближайшую доступную excavation cell;
+- combat/self-defense interruption имеет приоритет выше direct order и любых jobs;
 - после completion/release/blocked выбранный resident подчиняется обычному planner/job matching.
 
 Таким образом, прямой приказ является приоритетным пользовательским запуском работы, а не персональной долгосрочной собственностью зоны.
@@ -65,7 +67,7 @@ Direct target определяется связанной группой нез�
 - повторная отрисовка существующей клетки не дублирует job;
 - completion одной клетки не уничтожает remaining zone.
 
-Zone membership пересчитывается из authoritative designations, а не хранится как список job ids.
+Zone membership пересчитывается из authoritative designations, а не хранится как список job ids. Для выбора работы конкретному resident берётся ближайшая достижимая cell по фактической длине маршрута; равные варианты должны иметь deterministic tie-break.
 
 ## 6. Reconciliation и ошибки
 
@@ -74,7 +76,9 @@ Zone membership пересчитывается из authoritative designations, 
 - failed/cancelled job не останавливает simulation driver;
 - повторные ticks переоценивают pending cells и candidates;
 - ошибка одного resident/job не блокирует других workers зоны;
-- временно освобождённый job возвращается в общий matching pool.
+- временно освобождённый job возвращается в общий matching pool;
+- если у designated cell пока нет достижимой work position, direct order не заставляет resident идти в тупик: job остаётся в списке и периодически переоценивается обычным planner;
+- на текущем тестовом этапе все ordinary jobs имеют одинаковый числовой priority; direct order является наивысшим player-command override, но не создаёт сохраняемый numeric zone boost.
 
 ## 7. Eraser
 
@@ -82,7 +86,13 @@ Eraser удаляет выбранные unfinished designations, active/nonterm
 
 Уже committed empty terrain не восстанавливается. Eraser не удаляет unrelated jobs в той же клетке.
 
-При split/merge зоны jobs пересобираются из оставшихся designations. Точная adjacency и priority policy остаются открытыми.
+При split/merge зоны jobs пересобираются из оставшихся designations. Persistent zone priority отсутствует.
+
+Связанность определяется так:
+
+- обычные tunnel/depth designations объединяются только через face-neighbor X/Y в одном Z-слое;
+- room instance является единой зоной по своему authoritative template/instance id и включает связанные child cells следующих Z-слоёв;
+- произвольные Z-соседи разных room/tunnel plans не объединяются только из-за совпадения X/Y.
 
 ## 8. Инварианты
 
@@ -101,17 +111,18 @@ Eraser удаляет выбранные unfinished designations, active/nonterm
 
 - **Q-DIG-001:** direct order относится к связанной excavation zone, но не закрепляет выбранного resident за ней до завершения.
 - **Q-DIG-002:** другие automatic residents могут одновременно подключаться к той же zone через обычный job matching.
+- **Q-DIG-003:** выбранному resident назначается ближайшая достижимая excavation cell.
+- **Q-DIG-004:** временно недостижимая cell остаётся обычным job; direct order не назначает resident в тупик, planner периодически повторяет попытку.
+- **Q-DIG-005:** direct order заменяет текущее небоевое action resident; self-defense/combat выше по приоритету.
+- **Q-DIG-006:** отдельной отмены direct priority нет.
+- **Q-DIG-007:** persistent zone priority отсутствует, поэтому split/merge только пересобирает ordinary jobs из оставшихся designations.
 - **Q-DIG-008:** связанные tunnel/depth/room cells, добавленные во время работы, автоматически входят в active zone.
+- **Q-DIG-009:** обычная зона использует X/Y adjacency внутри слоя; room instance дополнительно объединяет свои child cells на следующих Z-слоях. Произвольная Z adjacency не объединяет разные plans.
+- **Q-DIG-010:** числового priority boost нет; ordinary jobs равны, direct player command выше jobs, combat defense выше direct jobs.
 
 ## 10. Открытые вопросы
 
-- **Q-DIG-003:** порядок клеток: frontier, nearest reachable, drawing order или stable CellId?
-- **Q-DIG-004:** что происходит при временно недостижимой следующей клетке?
-- **Q-DIG-005:** новый direct order заменяет текущий active action выбранного resident, ставится в очередь или отклоняется?
-- **Q-DIG-006:** требуется ли отдельная отмена direct priority без стирания designation?
-- **Q-DIG-007:** как split/merge влияет на zone priority и порядок jobs?
-- **Q-DIG-009:** какая adjacency определяет связанность в 3D?
-- **Q-DIG-010:** существует ли числовой priority boost для direct-started zone и когда он заканчивается?
+Открытых observable business-вопросов для текущего direct/automatic excavation workflow нет. Новые нестандартные 3D shapes требуют отдельного решения, а не расширения adjacency по предположению.
 
 ## 11. Save/Load
 
@@ -141,13 +152,14 @@ Presentation cursor и hover не сохраняются.
 
 - 10+ последовательных tunnel cells;
 - несколько residents одновременно копают одну zone;
-- direct order выбранному resident не блокирует подключение других;
+- direct order заменяет текущее небоевое action выбранного resident, выбирает ближайшую reachable cell и не блокирует подключение других;
 - добавление новых связанных tunnel cells во время копки;
-- присоединение depth и room cells;
+- X/Y continuation для tunnel/depth без случайного объединения по Z;
+- room instance продолжает child cells на следующих Z-слоях;
 - depth excavation без circle marker dependency;
 - room template до полного завершения;
 - selected resident освобождает/завершает job, а zone продолжает выполняться;
-- unreachable/retry;
+- unreachable cell остаётся в job list и переоценивается без принудительного движения resident в тупик;
 - erase части плана и split zone;
 - save/load mid-zone;
 - failure одного job без остановки симуляции;

@@ -78,7 +78,7 @@ Placement mode включается только кнопкой «Распако
 
 Нажатие кнопки не меняет Inventory quantity/location и не создаёт reservation. Оно создаёт только локальный preview mode.
 
-Activation path для BuildingBox в resident inventory остаётся открытым в Q-BBOX-002.
+Для BuildingBox в resident inventory отдельная кнопка не требуется: обычный LMB по занятому inventory slot сразу включает тот же placement mode с 3D ghost конечного здания и footprint. Коробка остаётся в inventory до успешного authoritative command.
 
 ## 6. Preview
 
@@ -92,31 +92,31 @@ Activation path для BuildingBox в resident inventory остаётся отк
 - клик по невалидной позиции ничего не создаёт и показывает reason code;
 - ПКМ отменяет preview и selection.
 
-## 7. Подтверждение на Z0
+## 7. Подтверждение на Z0 и видимость pending plan
 
-ЛКМ по валидной позиции Z0 создаёт `BuildingPlan`, назначением которого является размещение самой BuildingBox в выбранной клетке.
+Размещение коробки и распаковка конечного здания разрешены только на валидной позиции Z0. Placement mode должен содержать выбранный игроком intent:
 
-Этот plan:
+- **перенести как коробку** — создаётся `BuildingBox placement plan`;
+- **распаковать как строение** — создаётся `Building assembly plan`.
 
-- не является plan строительства или сборки конечного здания;
-- не создаёт completed building;
-- не расходует коробку как материал здания;
-- резервирует конкретную BuildingBox для доставки/размещения;
-- после выполнения оставляет ту же коробку обычным world BuildingBox в целевой клетке;
-- закрывает placement mode сразу после успешного создания plan.
+До момента фактического pickup назначенным гномом:
 
-В документации это называется **BuildingBox placement plan**. Точное имя enum/type в коде должно следовать существующей архитектуре, но observable contract остаётся указанным выше.
+- исходная BuildingBox продолжает физически отображаться в своей authoritative location;
+- в целевой позиции отображается неавторитетный призрак результата plan;
+- для box-placement plan это призрак коробки;
+- для assembly plan это призрак конечного здания и footprint;
+- исходная коробка, её world row или inventory slot остаются подсвечены синим как объект запланированного действия.
 
-Команда подтверждения атомарно:
+Успешное подтверждение атомарно:
 
 1. повторно валидирует целевую Z0-клетку;
 2. проверяет существование и доступность выбранной коробки;
-3. резервирует коробку за plan;
-4. создаёт BuildingBox placement plan;
+3. резервирует конкретную коробку за одним plan;
+4. создаёт выбранный plan kind и связанные ordinary jobs;
 5. публикует событие создания plan;
-6. закрывает preview mode.
+6. закрывает interactive placement mode, сохраняя planned projection и синюю selection-подсветку.
 
-Одна коробка не может быть зарезервирована двумя plans.
+Одна коробка не может быть зарезервирована двумя plans. Preview до подтверждения и planned projection после подтверждения не меняют authoritative location коробки.
 
 ## 8. Доставка BuildingBox placement plan
 
@@ -124,24 +124,28 @@ Activation path для BuildingBox в resident inventory остаётся отк
 
 1. получает обычный delivery job;
 2. идёт к зарезервированной коробке;
-3. подбирает её через Inventory transaction;
-4. несёт к целевой Z0-клетке;
-5. размещает коробку в world location;
-6. завершает plan.
+3. до pickup исходная коробка остаётся видимой в source location, а target box ghost остаётся видимым;
+4. подбирает коробку через Inventory transaction — только после этого source visual исчезает;
+5. несёт её к целевой Z0-клетке;
+6. размещает ту же Inventory entity в world location;
+7. завершает plan и заменяет target ghost физическим world visual.
 
-После commit коробка остаётся BuildingBox и может быть выбрана, подобрана или снова использована через кнопку «Распаковать».
+После commit коробка остаётся BuildingBox и может быть выбрана, подобрана или использована для отдельного assembly plan.
 
 ## 9. Building assembly plan
 
-Plan конечного здания является отдельным workflow и не должен смешиваться с Z0 BuildingBox placement plan.
+Plan конечного здания является отдельным plan kind и разрешён только на валидной позиции Z0.
 
-Если placement policy разрешает подтверждение конечного здания на другой валидной поверхности, такой plan:
+Он:
 
 1. повторно валидирует footprint, orientation и work positions;
 2. резервирует BuildingBox;
-3. создаёт building assembly plan;
-4. создаёт delivery/assembly jobs;
-5. расходует коробку ровно один раз только при успешном completion здания.
+3. сохраняет source physical box до pickup;
+4. показывает target building ghost/footprint на протяжении pending delivery и assembly;
+5. создаёт delivery/assembly jobs;
+6. после доставки автоматически продолжает assembly конечного здания;
+7. расходует коробку ровно один раз только при успешном completion здания;
+8. заменяет planned ghost completed-building visual после commit.
 
 Наличие двух plan kinds не означает два authoritative locations одной коробки.
 
@@ -223,31 +227,37 @@ Inspector показывает:
 - placement начинается только через кнопку «Распаковать»;
 - preview не резервирует и не расходует коробку;
 - одна коробка принадлежит не более чем одному active plan;
-- Z0 BuildingBox placement plan не создаёт completed building;
-- успешный Z0 plan сохраняет коробку как BuildingBox в target cell;
-- building assembly расходует коробку только при completion;
+- box-placement plan не создаёт completed building;
+- успешный box-placement plan сохраняет коробку как BuildingBox в target Z0 cell;
+- assembly plan автоматически продолжает сборку после доставки и расходует коробку только при completion;
+- до pickup source physical visual и target planned ghost существуют одновременно без дублирования authoritative entity;
 - cancel/retry/save-load не теряют и не дублируют коробки;
 - UI не изменяет Buildings или Inventory напрямую.
 
 ## 16. Решённые вопросы
 
 - **Q-BBOX-001:** ЛКМ на валидной Z0-позиции создаёт BuildingBox placement plan, а не plan конечного здания.
+- **Q-BBOX-002:** обычный LMB по BuildingBox в resident inventory сразу включает placement mode с 3D ghost/footprint.
 - **Q-BBOX-003:** Z0 confirmation размещает коробку через plan; после успешного создания plan placement mode закрывается.
+- **Q-BBOX-004:** после успешного создания plan исходная коробка остаётся selected; world visual, building row или inventory slot подсвечиваются синим как объект запланированного действия.
+- **Q-BBOX-005:** box-placement и building-assembly confirmation разрешены только на Z0; другие поверхности не принимают confirmation.
+- **Q-BBOX-006:** box-placement plan после доставки оставляет коробку, а assembly plan после доставки автоматически продолжает сборку конечного здания.
 
 ## 17. Открытые вопросы
 
-- **Q-BBOX-002:** как запускается unpacking для BuildingBox в resident inventory?
-- **Q-BBOX-004:** что становится selected после успешного создания BuildingBox placement plan или building assembly plan?
-- **Q-BBOX-005:** какие поверхности кроме Z0 разрешают непосредственный building assembly plan?
+- **Q-BBOX-007:** каким конкретным UI-контролом внутри placement mode игрок выбирает intent «перенести как коробку» или «распаковать как строение»? Нельзя молча назначить modifier или второй button без подтверждения.
 
 ## 18. Тесты
 
 Обязательны:
 
 - world box LMB выбирает box, но не включает placement;
-- кнопка «Распаковать» включает 3D ghost/footprint и скрывает 2D cursor;
-- valid Z0 click создаёт BuildingBox placement plan и закрывает mode;
-- Z0 plan после delivery оставляет box, а не completed building;
+- inventory BuildingBox LMB сразу включает тот же 3D ghost/footprint mode;
+- кнопка «Распаковать» для world box включает 3D ghost/footprint и скрывает 2D cursor;
+- valid Z0 confirmation создаёт выбранный plan kind, закрывает interactive mode и оставляет source box selected с синей planned-подсветкой;
+- до pickup source box остаётся физически видимым, а target показывает соответствующий ghost;
+- box-placement plan после delivery оставляет box;
+- assembly plan после delivery автоматически продолжает assembly и завершает building;
 - invalid target не создаёт reservation;
 - ПКМ отменяет preview и selection;
 - конкурирующие plans за одну коробку;
