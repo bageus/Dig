@@ -4,6 +4,8 @@ namespace Dig.Domain.Agents
 
 public sealed partial class AgentState
 {
+    public AgentActivityTarget? ActiveActionTarget => _activeAction?.Target;
+
     public void RecordBlockedIntent(AgentIntentKind intentKind, string reason, long tick)
     {
         ValidateTick(tick);
