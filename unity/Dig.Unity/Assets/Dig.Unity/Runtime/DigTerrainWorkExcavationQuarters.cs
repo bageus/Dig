@@ -150,9 +150,7 @@ namespace Dig.Unity
 
         private int ResolveExcavationMiningSkill(EntityId workerId)
         {
-            int value = _excavationMiningSkill?.Invoke(workerId)
-                ?? _manualExcavationMiningSkill?.Invoke(workerId)
-                ?? 0;
+            int value = _excavationMiningSkill?.Invoke(workerId) ?? 0;
             return Math.Max(0, Math.Min(100, value));
         }
 
