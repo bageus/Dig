@@ -69,42 +69,42 @@ internal sealed partial class DigTerrainWorkSession
                 .Append(CampfireBuildingBoxContent.Definition.BoxItem)
                 .Concat(expansions.Items)));
         EntityId residentId = DemoId('a', 1);
-        AddResidentStack(
+        AddResidentUnit(
             inventory,
             DemoId('3', 1),
             DemoLargeBasketItemId,
             residentId,
             ResidentInventoryCompartment.Main,
             0);
-        AddResidentStack(
+        AddResidentUnit(
             inventory,
             DemoId('4', 1),
             DemoHarnessItemId,
             residentId,
             ResidentInventoryCompartment.Main,
             1);
-        AddResidentStack(
+        AddResidentUnit(
             inventory,
             DemoId('5', 1),
             DemoBasketItemId,
             residentId,
             ResidentInventoryCompartment.Main,
             2);
-        AddResidentStack(
+        AddResidentUnit(
             inventory,
             DemoId('6', 1),
             DemoScabbardItemId,
             residentId,
             ResidentInventoryCompartment.Main,
             3);
-        AddResidentStack(
+        AddResidentUnit(
             inventory,
             DemoId('1', 1),
             DemoResidentToolItemId,
             residentId,
             ResidentInventoryCompartment.Weapon,
             0);
-        AddResidentStack(
+        AddResidentUnit(
             inventory,
             DemoId('2', 1),
             DemoResidentHammerItemId,
@@ -115,27 +115,25 @@ internal sealed partial class DigTerrainWorkSession
             residentStartCell.X - 1,
             residentStartCell.Y,
             residentStartCell.Z);
-        Require(inventory.AddStack(
+        Require(inventory.AddUnit(
             DemoId('7', 1),
             CampfireBuildingBoxContent.CampfireBoxItemId,
-            1,
             ItemLocation.InWorld(campfireBoxCell),
             tick: 0));
         return inventory;
     }
 
-    private static void AddResidentStack(
+    private static void AddResidentUnit(
         InventoryState inventory,
-        EntityId stackId,
+        EntityId itemEntityId,
         ItemId itemId,
         EntityId residentId,
         ResidentInventoryCompartment compartment,
         int slotIndex)
     {
-        Require(inventory.AddStack(
-            stackId,
+        Require(inventory.AddUnit(
+            itemEntityId,
             itemId,
-            1,
             ItemLocation.InResidentSlot(residentId, compartment, slotIndex),
             tick: 0));
     }
