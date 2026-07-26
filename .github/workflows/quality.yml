@@ -148,6 +148,7 @@ jobs:
             --report soak-report-standard.json 2>&1 | tee soak-standard.log
 
       - name: Run large settlement deterministic soak
+        if: always()
         shell: bash
         run: |
           set -o pipefail
