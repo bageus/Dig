@@ -6,6 +6,8 @@ Authoritative design: [`../design/runtime-selection-excavation-item-placement-de
 
 Tracking: [#387](https://github.com/bageus/Dig/issues/387), [#388](https://github.com/bageus/Dig/issues/388), [#390](https://github.com/bageus/Dig/issues/390), [#398](https://github.com/bageus/Dig/issues/398).
 
+Clean verification PR: [#407](https://github.com/bageus/Dig/pull/407).
+
 ## Исправленные первопричины
 
 ### World selection и input priority
@@ -38,7 +40,7 @@ Manual connected-zone planning был ограничен radius 4 и XY adjacenc
 
 ## Regression coverage
 
-- input router: BuildingBox selection versus pickup and generic item pickup;
+- input router: BuildingBox selection versus pickup и generic item pickup;
 - completed-building selection before movement;
 - final-building unpack ghost on Z0;
 - inventory item placement and trigger-collider source contracts;
