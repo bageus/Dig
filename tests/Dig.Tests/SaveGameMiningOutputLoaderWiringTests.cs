@@ -36,16 +36,16 @@ public sealed class SaveGameMiningOutputLoaderWiringTests
             CreateWorld(),
             inventory,
             new JobSystem(),
-            new BuildingsState());
-        SaveGameBuilder builder = new SaveGameBuilder(CreateJobRegistry());
-        Result<SaveGameDocument> saved = builder.Build(context, commits);
-        Assert.True(saved.IsSuccess);
+            new BuildingsState(),
+            System.Array.Empty<Dig.Domain.Agents.AgentState>(),
+            miningOutputCommits: commits);
+        SaveGameDocument saved = new SaveGameBuilder(CreateJobRegistry()).Build(context);
 
         SaveGameLoader loader = new SaveGameLoader(
             new SaveMigrationPipeline(System.Array.Empty<ISaveMigration>()),
             CreateJobRegistry());
-        Result<LoadedGameWithMiningOutput> loaded = loader.LoadWithMiningOutput(
-            saved.Value,
+        Result<LoadedGameState> loaded = loader.Load(
+            saved,
             CreateMaterialCatalog(),
             CreateItemCatalog());
 
@@ -78,10 +78,10 @@ public sealed class SaveGameMiningOutputLoaderWiringTests
             HasStack = true,
         });
 
-        Result<LoadedGameWithMiningOutput> loaded = new SaveGameLoader(
+        Result<LoadedGameState> loaded = new SaveGameLoader(
             new SaveMigrationPipeline(System.Array.Empty<ISaveMigration>()),
             CreateJobRegistry())
-            .LoadWithMiningOutput(
+            .Load(
                 document,
                 CreateMaterialCatalog(),
                 CreateItemCatalog());

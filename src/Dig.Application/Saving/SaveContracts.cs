@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.Serialization;
 using Dig.Application.Buildings;
+using Dig.Application.World;
 using Dig.Domain.Agents;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
@@ -138,7 +139,8 @@ public sealed class LoadedGameState
         IReadOnlyDictionary<EntityId, bool>? agentAutomaticPlanning = null,
         IReadOnlyDictionary<EntityId, CellId>? agentPositions = null,
         IReadOnlyCollection<TerrainDepositInstance>? terrainDeposits = null,
-        PackableBuildingExecutionRegistry? packableBuildingExecutions = null)
+        PackableBuildingExecutionRegistry? packableBuildingExecutions = null,
+        RestoredMiningOutputState? miningOutput = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -166,6 +168,17 @@ public sealed class LoadedGameState
                 .ToArray());
         PackableBuildingExecutions = packableBuildingExecutions
             ?? new PackableBuildingExecutionRegistry();
+        if (miningOutput is null)
+        {
+            MiningOutputCommitState emptyCommits = new MiningOutputCommitState();
+            miningOutput = new RestoredMiningOutputState(
+                emptyCommits,
+                new MiningOutputIntegrityDiagnostics().Inspect(
+                    emptyCommits,
+                    inventory));
+        }
+
+        MiningOutput = miningOutput;
     }
 
     public SaveMetadataData Metadata { get; }
@@ -179,6 +192,7 @@ public sealed class LoadedGameState
     public IReadOnlyDictionary<EntityId, CellId> AgentPositions { get; }
     public IReadOnlyList<TerrainDepositInstance> TerrainDeposits { get; }
     public PackableBuildingExecutionRegistry PackableBuildingExecutions { get; }
+    public RestoredMiningOutputState MiningOutput { get; }
 }
 
 public sealed class SaveMigrationReport
@@ -270,7 +284,8 @@ public sealed class SaveGameContext
         BuildingsState buildings,
         IReadOnlyCollection<AgentState> agents,
         IReadOnlyCollection<TerrainDepositInstance>? terrainDeposits = null,
-        PackableBuildingExecutionRegistry? packableBuildingExecutions = null)
+        PackableBuildingExecutionRegistry? packableBuildingExecutions = null,
+        MiningOutputCommitState? miningOutputCommits = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -286,6 +301,7 @@ public sealed class SaveGameContext
                 .ToList());
         PackableBuildingExecutions = packableBuildingExecutions
             ?? new PackableBuildingExecutionRegistry();
+        MiningOutputCommits = miningOutputCommits ?? new MiningOutputCommitState();
     }
 
     public SaveMetadataData Metadata { get; }
@@ -296,6 +312,7 @@ public sealed class SaveGameContext
     public IReadOnlyList<AgentState> Agents { get; }
     public IReadOnlyList<TerrainDepositInstance> TerrainDeposits { get; }
     public PackableBuildingExecutionRegistry PackableBuildingExecutions { get; }
+    public MiningOutputCommitState MiningOutputCommits { get; }
 }
 
 }

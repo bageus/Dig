@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dig.Domain.Buildings;
+using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.World;
@@ -26,6 +27,19 @@ public sealed partial class SaveGameBuilder
             throw new ArgumentNullException(nameof(context));
         }
 
+        Result<SaveGameDocument> result = Build(
+            context,
+            context.MiningOutputCommits);
+        if (result.IsFailure)
+        {
+            throw new InvalidOperationException(result.Error!.ToString());
+        }
+
+        return result.Value;
+    }
+
+    private SaveGameDocument BuildCore(SaveGameContext context)
+    {
         ValidateMetadata(context.Metadata);
         return new SaveGameDocument
         {

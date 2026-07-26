@@ -43,21 +43,22 @@ public sealed class SaveGameMiningOutputWiringTests
             CreateWorld(),
             inventory,
             new JobSystem(),
-            new BuildingsState());
+            new BuildingsState(),
+            System.Array.Empty<Dig.Domain.Agents.AgentState>(),
+            miningOutputCommits: commits);
 
-        Result<SaveGameDocument> result =
+        SaveGameDocument document =
             new SaveGameBuilder(new JobDefinitionSaveRegistry(new IJobDefinitionSaveCodec[]
             {
                 new EmptyJobDefinitionSaveCodec(),
             }))
-                .Build(context, commits);
+                .Build(context);
 
-        Assert.True(result.IsSuccess);
-        Assert.Single(result.Value.MiningOutput.Commits);
-        Assert.Equal(cell.X, result.Value.MiningOutput.Commits[0].X);
-        Assert.Equal(cell.Y, result.Value.MiningOutput.Commits[0].Y);
-        Assert.Equal(cell.Z, result.Value.MiningOutput.Commits[0].Z);
-        Assert.Equal(StackId.ToString(), result.Value.MiningOutput.Commits[0].StackId);
+        Assert.Single(document.MiningOutput.Commits);
+        Assert.Equal(cell.X, document.MiningOutput.Commits[0].X);
+        Assert.Equal(cell.Y, document.MiningOutput.Commits[0].Y);
+        Assert.Equal(cell.Z, document.MiningOutput.Commits[0].Z);
+        Assert.Equal(StackId.ToString(), document.MiningOutput.Commits[0].StackId);
     }
 
     private static WorldState CreateWorld()

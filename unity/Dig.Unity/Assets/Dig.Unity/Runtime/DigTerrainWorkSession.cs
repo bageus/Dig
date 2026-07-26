@@ -39,7 +39,7 @@ internal sealed partial class DigTerrainWorkSession
     private readonly TraversalProfile _profile;
     private readonly Dictionary<EntityId, EntityId> _outputStackIds;
     private readonly MiningOutputResolver _miningOutputResolver = new MiningOutputResolver();
-    private readonly MiningOutputCommitState _miningOutputCommits = new MiningOutputCommitState();
+    private readonly MiningOutputCommitState _miningOutputCommits;
     private readonly Dictionary<EntityId, TerrainWorkRoutePlan> _routePlans =
         new Dictionary<EntityId, TerrainWorkRoutePlan>();
     private bool _worldChanged;
@@ -58,7 +58,8 @@ internal sealed partial class DigTerrainWorkSession
         TerrainWorkRoutePlanner routePlanner,
         TraversalProfile profile,
         Dictionary<EntityId, EntityId> outputStackIds,
-        IAgentSkillGrantService skillGrants)
+        IAgentSkillGrantService skillGrants,
+        MiningOutputCommitState? miningOutputCommits)
     {
         _advanceHandler = advanceHandler;
         _completionHandler = completionHandler;
@@ -75,7 +76,10 @@ internal sealed partial class DigTerrainWorkSession
         _outputStackIds = outputStackIds;
         _skillGrants = skillGrants
             ?? throw new ArgumentNullException(nameof(skillGrants));
+        _miningOutputCommits = miningOutputCommits ?? new MiningOutputCommitState();
     }
+
+    internal MiningOutputCommitState MiningOutputCommits => _miningOutputCommits;
 
     public IReadOnlyList<JobOverlayViewModel> LoadJobs()
     {
