@@ -1,0 +1,119 @@
+ICAgICAgewogICAgICAgICAgICAgRGlnVGVycmFpblN1cmZhY2VSb2xlIHJlc29sdmVkUm9sZSA9IHNuYXBzaG90LklzQ3V0YXdheShuZWlnaGJvdXIpCi0gICAgICAgICAgICAgICAgPyBEaWdUZXJyYWluU3VyZmFjZVJvbGUuRnJlc2hDdXQKLSAgICAgICAgICAgICAgICA6IHJvbGU7CisgICAgICAgICAgICAgICAgfHwgc25hcHNob3QuSXNQYXJ0aWFsRXhjYXZhdGlvbihuZWlnaGJvdXIpCisgICAgICAgICAgICAgICAgICAgID8gRGlnVGVycmFpblN1cmZhY2VSb2xlLkZyZXNoQ3V0CisgICAgICAgICAgICAgICAgICAgIDogcm9sZTsKICAgICAgICAgICAgIHJldHVybiBHZXRTdWJtZXNoKAogICAgICAgICAgICAgICAgIFJlc29sdmVUZXJyYWluS2V5KGNlbGwsIGlzUHJvdGVjdGVkLCByZXNvbHZlZFJvbGUpLAogICAgICAgICAgICAgICAgIGtleXMsCmRpZmYgLS1naXQgYS91bml0eS9EaWcuVW5pdHkvQXNzZXRzL0RpZy5Vbml0eS9SdW50aW1lL0RpZ1RlcnJhaW5DaHVua1JlbmRlcmVyLmNzIGIvdW5pdHkvRGlnLlVbml0eS9Bc3NldHMvRGlnLlVuaXR5L1J1bnRpbWUvRGlnVGVycmFpbkNodW5rUmVuZGVyZXIuY3MKaW5kZXggMDQzMWEyOC4uNmFjZGJhNyAxMDA2NDQKLS0tIGEvdW5pdHkvRGlnLlVuaXR5L0Fzc2V0cy9EaWcuVW5pdHkvUnVudGltZS9EaWdUZXJyYWluQ2h1bmtSZW5kZXJlci5jcworKysgYi91bml0eS9EaWcuVW5pdHkvQXNzZXRzL0RpZy5Vbml0eS9SdW50aW1lL0RpZ1RlcnJhaW5DaHVua1JlbmRlcmVyLmNzCkBAIC0xMjksNiArMTI5LDkgQEAgbmFtZXNwYWNlIERpZy5Vbml0eQogICAgICAgICAgICAgICAgIE1peChyZWYgaGFzaCwgY2VsbC5Jc0Rlc2lnbmF0ZWQgPyAxVUwgOiAwVUwsIHByaW1lKTsKICAgICAgICAgICAgICAgICBNaXgocmVmIGhhc2gsICh1bG9uZykodWludCljZWxsLkhhcmRuZXNzLCBwcmltZSk7CiAgICAgICAgICAgICAgICAgTWl4KHJlZiBoYXNoLCBzbmFwc2hvdC5Jc0N1dGF3YXkoY2VsbC5LZXkpID8gMVVMIDogMFVMLCBwcmltZSk7CisgICAgICAgICAgICAgICAgTWl4KHJlZiBoYXNoLAorICAgICAgICAgICAgICAgICAgICBzbmFwc2hvdC5Jc1BhcnRpYWxFeGNhdmF0aW9uKGNlbGwuS2V5KSA/IDFVTCA6IDBVTCwKKyAgICAgICAgICAgICAgICAgICAgcHJpbWUpOwogICAgICAgICAgICAgICAgIE1peChyZWYgaGFzaCwgc25hcHNob3QuSXNQcm90ZWN0ZWQoY2VsbC5LZXkpID8gMVVMIDogMFVMLCBwcmltZSk7CiAgICAgICAgICAgICAgICAgTWl4RGVwb3NpdChyZWYgaGFzaCwgY2VsbC5LZXksIHNuYXBzaG90LCBwcmltZSk7CiAgICAgICAgICAgICAgICAgTWl4TmVpZ2hib3VyKHJlZiBoYXNoLCBjZWxsLktleS5PZmZzZXQoLTEsIDAsIDApLCBzbmFwc2hvdCwgcHJpbWUpOwpkaWZmIC0tZ2l0IGEvdW5pdHkvRGlnLlVuaXR5L0Fzc2V0cy9EaWcuVW5pdHkvUnVudGltZS9EaWdUZXJyYWluUmVuZGVyU25hcHNob3QuY3MgYi91bml0eS9EaWcuVW5pdHkvQXNzZXRzL0RpZy5Vbml0eS9SdW50aW1lL0RpZ1RlcnJhaW5SZW5kZXJTbmFwc2hvdC5jcwpindex bc7a1c9..2a4fe3b 100644
+--- a/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainRenderSnapshot.cs
++++ b/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainRenderSnapshot.cs
+@@ -9,6 +9,7 @@ namespace Dig.Unity
+     {
+         private readonly HashSet<DigTerrainCellKey> _solidCells;
+         private readonly HashSet<DigTerrainCellKey> _cutawayCells;
++        private readonly HashSet<DigTerrainCellKey> _partialExcavationCells;
+         private readonly HashSet<DigTerrainCellKey> _protectedCells;
+         private readonly HashSet<DigTerrainChunkKey> _dirtyChunks;
+         private readonly Dictionary<
+@@ -24,6 +25,7 @@ namespace Dig.Unity
+             IReadOnlyCollection<DigTerrainRenderChunk> chunks,
+             IEnumerable<DigTerrainCellKey> solidCells,
+             IEnumerable<DigTerrainCellKey> cutawayCells,
++            IEnumerable<DigTerrainCellKey> partialExcavationCells,
+             IEnumerable<DigTerrainCellKey> protectedCells,
+             IEnumerable<DigTerrainChunkKey> dirtyChunks,
+             IReadOnlyDictionary<
+@@ -69,6 +71,8 @@ namespace Dig.Unity
+                 new List<DigTerrainRenderChunk>(chunks));
+             _solidCells = new HashSet<DigTerrainCellKey>(solidCells);
+             _cutawayCells = new HashSet<DigTerrainCellKey>(cutawayCells);
++            _partialExcavationCells = new HashSet<DigTerrainCellKey>(
++                partialExcavationCells);
+             _protectedCells = new HashSet<DigTerrainCellKey>(protectedCells);
+             _dirtyChunks = new HashSet<DigTerrainChunkKey>(dirtyChunks);
+             _depositDecorations = new Dictionary<
+@@ -98,6 +102,11 @@ namespace Dig.Unity
+             return _cutawayCells.Contains(cell);
+         }
+ 
++        internal bool IsPartialExcavation(DigTerrainCellKey cell)
++        {
++            return _partialExcavationCells.Contains(cell);
++        }
++
+         internal bool IsProtected(DigTerrainCellKey cell)
+         {
+             return _protectedCells.Contains(cell);
+@@ -105,7 +114,9 @@ namespace Dig.Unity
+ 
+         internal bool IsRenderedSolid(DigTerrainCellKey cell)
+         {
+-            return IsSolid(cell) && !IsCutaway(cell);
++            return IsSolid(cell)
++                && !IsCutaway(cell)
++                && !IsPartialExcavation(cell);
+         }
+ 
+         internal bool IsDirty(DigTerrainChunkKey chunk)
+diff --git a/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainRenderSnapshotBuilder.cs b/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainRenderSnapshotBuilder.cs
+index e1c28d2..46041b1 100644
+--- a/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainRenderSnapshotBuilder.cs
++++ b/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainRenderSnapshotBuilder.cs
+@@ -11,6 +11,8 @@ namespace Dig.Unity
+             new Dictionary<DigTerrainChunkKey, long>();
+         private readonly HashSet<DigTerrainCellKey> _previousCutaway =
+             new HashSet<DigTerrainCellKey>();
++        private readonly HashSet<DigTerrainCellKey> _previousPartialExcavation =
++            new HashSet<DigTerrainCellKey>();
+         private readonly HashSet<DigTerrainCellKey> _previousProtected =
+             new HashSet<DigTerrainCellKey>();
+         private bool _initialized;
+@@ -21,6 +23,7 @@ namespace Dig.Unity
+             WorldViewModel world,
+             TerrainDepositDecorationVolumeViewModel? depositDecorations,
+             IEnumerable<CellId> cutawayCells,
++            IEnumerable<CellId> partialExcavationCells,
+             IEnumerable<CellId> protectedCells)
+         {
+             if (world == null)
+@@ -55,12 +58,19 @@ namespace Dig.Unity
+             }
+ 
+             HashSet<DigTerrainCellKey> currentCutaway = ToCellKeys(cutawayCells);
++            HashSet<DigTerrainCellKey> currentPartialExcavation =
++                ToCellKeys(partialExcavationCells);
+             HashSet<DigTerrainCellKey> currentProtected = ToCellKeys(protectedCells);
+             MarkMembershipChanges(
+                 _previousCutaway,
+                 currentCutaway,
+                 world.ChunkSize,
+                 dirty);
++            MarkMembershipChanges(
++                _previousPartialExcavation,
++                currentPartialExcavation,
++                world.ChunkSize,
++                dirty);
+             MarkMembershipChanges(
+                 _previousProtected,
+                 currentProtected,
+@@ -90,6 +100,7 @@ namespace Dig.Unity
+ 
+             Replace(_versions, versions);
+             Replace(_previousCutaway, currentCutaway);
++            Replace(_previousPartialExcavation, currentPartialExcavation);
+             Replace(_previousProtected, currentProtected);
+             _initialized = true;
+ 
+@@ -107,6 +118,7 @@ namespace Dig.Unity
+                 chunks,
+                 solid,
+                 currentCutaway,
++                currentPartialExcavation,
+                 currentProtected,
+                 dirty,
+                 decorationMap);
+diff --git a/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkNavigation.cs b/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkNavigation.cs
+index 2eb7094..64fe27c 100644
+--- a/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkNavigation.cs
++++ b/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkNavigation.cs
+@@ -175,7 +175,7 @@ namespace Dig.Unity
+ 
+         private Result RefreshNavigation()
+         {
+-            IReadOnlyList<ChunkId> dirty = _worldSession.DrainDirtyChunks();
++            IReadOnlyList<ChunkId> dirty = _worldSession.PeekDirtyChunks();
+             if (dirty.Count == 0
