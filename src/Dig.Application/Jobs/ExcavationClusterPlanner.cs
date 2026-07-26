@@ -49,7 +49,7 @@ public sealed class ExcavationClusterPlanner
         {
             CellId current = frontier.Dequeue();
             selected.Add(current);
-            EnqueueNeighbors(current, designated, links, visited, frontier);
+            EnqueueNeighbors(seed, current, designated, links, visited, frontier);
         }
 
         return new ReadOnlyCollection<CellId>(selected
@@ -102,6 +102,7 @@ public sealed class ExcavationClusterPlanner
     }
 
     private static void EnqueueNeighbors(
+        CellId seed,
         CellId current,
         ISet<CellId> designated,
         IReadOnlyDictionary<CellId, CellId[]> links,
@@ -110,7 +111,10 @@ public sealed class ExcavationClusterPlanner
     {
         foreach (CellId neighbor in HorizontalNeighbors(current))
         {
-            TryEnqueue(neighbor, designated, visited, frontier);
+            if (CanTraverseHorizontal(seed, current, neighbor, links))
+            {
+                TryEnqueue(neighbor, designated, visited, frontier);
+            }
         }
 
         if (!links.TryGetValue(current, out CellId[]? linked))
@@ -122,6 +126,20 @@ public sealed class ExcavationClusterPlanner
         {
             TryEnqueue(linked[index], designated, visited, frontier);
         }
+    }
+
+    private static bool CanTraverseHorizontal(
+        CellId seed,
+        CellId current,
+        CellId neighbor,
+        IReadOnlyDictionary<CellId, CellId[]> links)
+    {
+        if (current.Z == seed.Z || !links.TryGetValue(current, out CellId[]? linked))
+        {
+            return true;
+        }
+
+        return linked.Contains(neighbor);
     }
 
     private static void TryEnqueue(
