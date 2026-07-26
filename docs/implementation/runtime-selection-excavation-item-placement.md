@@ -48,4 +48,4 @@ Manual connected-zone planning был ограничен radius 4 и XY adjacenc
 
 ## Проверка
 
-Выполнены repository quality, C# compatibility, module-boundary и Unity source-contract checks. `.NET` build/tests выполняются в GitHub Actions. Полный Unity Play Mode workflow остаётся обязательным для перевода связанных runtime systems в `VERIFIED`.
+Локально выполнены repository quality, C# compatibility, module-boundary и Unity source-contract checks. После восстановления полного runtime wiring запущена повторная GitHub Actions проверка `.NET` build/tests. Полный Unity Play Mode workflow остаётся обязательным для перевода связанных runtime systems в `VERIFIED`.
