@@ -138,6 +138,38 @@ namespace Dig.Tests
             Assert.DoesNotContain("EntityId.Parse(resident.Id)", inventory);
         }
 
+        [Fact]
+        public void Runtime_keeps_box_selection_quarter_geometry_and_nearest_dig_wired()
+        {
+            string runtime = RuntimeRoot();
+            string decisions = Read(runtime, "DigWorldInteraction.Decisions.cs");
+            string boxes = Read(runtime, "DigWorldInteraction.BuildingBoxes.cs");
+            string roster = Read(runtime, "DigGameHudCanvas.Roster.cs");
+            string cell = Read(runtime, "DigCellVisual.cs");
+            string marker = Read(runtime, "DigExcavationQuarterMarker.cs");
+            string cursor = Read(runtime, "DigWorldInteraction.ExcavationCursor.cs");
+            string nearest = Read(runtime, "DigTerrainWorkNearestAutomaticExcavation.cs");
+            string designations = Read(runtime, "DigTerrainWorkDesignations.cs");
+            string spatial = Read(runtime, "DigTerrainSpatialExcavation.cs");
+
+            Assert.Contains("PresentationInputEffect.SelectBuildingBox", decisions);
+            Assert.Contains("SelectBuildingBox(item.Model,item)", decisions);
+            Assert.Contains("DigBuildingBoxSelectionHighlight", boxes);
+            Assert.Contains("ResolveWorldItemVisual(item.StackId)", boxes);
+            Assert.Contains("SelectBuildingBoxFromHud(id)", roster);
+            Assert.Contains("SetExcavationProgress(ExcavationQuartercompleted)", cell);
+            Assert.Contains("_quarterRenderers[index].gameObject.SetActive(!excavated)", cell);
+            Assert.Contains("renderer.enabled=!excavated", marker);
+            Assert.DoesNotContain("ExcavatedColor", marker);
+            Assert.Contains("ClearExcavationQuarterProgress()", cursor);
+            Assert.Contains("SetExcavationQuarterProgress", cursor);
+            Assert.Contains("_directAssignmentPlanner!.Plan", nearest);
+            Assert.Contains("_directSpatialAssignmentPlanner!.Plan", nearest);
+            Assert.Contains("JobStatus.Available", nearest);
+            Assert.Contains("AssignNearestAutomaticDigJobs(agents,cells,tick)", designations);
+            Assert.Contains("AssignNearestAutomaticSpatialJobs(agents,tick)", spatial);
+        }
+
         private static int CountOccurrences(string source, string value)
         {
             int count = 0;
