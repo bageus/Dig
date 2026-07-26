@@ -67,7 +67,6 @@ namespace Dig.Unity
                 EntityId jobId = result.Value.CancelledJobIds[index];
                 _routePlans.Remove(jobId);
                 _outputStackIds.Remove(jobId);
-                RemoveManualExcavationJob(jobId);
             }
 
             return result;
@@ -93,7 +92,6 @@ namespace Dig.Unity
             {
                 _routePlans.Remove(cancelledJobId);
                 _outputStackIds.Remove(cancelledJobId);
-                RemoveManualExcavationJob(cancelledJobId);
             }
 
             foreach (CreatedDigDesignationJob created in report.Created)
@@ -108,8 +106,7 @@ namespace Dig.Unity
                 .Where(value => value.Definition is DigJobDefinition && !value.IsTerminal))
             {
                 DigJobDefinition definition = (DigJobDefinition)job.Definition;
-                if (IsManualExcavationJob(job.Id)
-                    || !IsExcavationFrontier(definition.Target.CellId, cells))
+                if (!IsExcavationFrontier(definition.Target.CellId, cells))
                 {
                     _candidateProvider.SetCandidates(job.Id, NoCandidates);
                     continue;
@@ -121,11 +118,6 @@ namespace Dig.Unity
             }
 
             _assignmentHandler.Handle(new AssignAvailableJobsCommand(tick));
-            Result pending = RetryPendingManualExcavations(tick);
-            if (pending.IsFailure)
-            {
-                throw new InvalidOperationException(pending.Error!.ToString());
-            }
         }
 
         private static bool IsExcavationFrontier(

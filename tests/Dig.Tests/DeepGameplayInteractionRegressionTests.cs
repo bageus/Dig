@@ -158,8 +158,10 @@ public sealed class DeepGameplayInteractionRegressionTests
         Assert.Contains("_releaseAssignment!.Handle", directMovement);
         Assert.Contains("RemoveAllRoutePlans(assignments[index].Id)", directMovement);
         Assert.DoesNotContain("Resultreleased=_releaseAssignment", directMovement);
-        Assert.Contains("_manualExcavationResidentCell?.Invoke(group.AgentId)", manual);
-        Assert.Contains("ResolveManualResidentCell(group.AgentId", multiWorker);
+        Assert.Contains("DirectJobAssignmentPlanner", manual);
+        Assert.DoesNotContain("ManualExcavationGroup", manual);
+        Assert.Contains("ResolveDirectResidentCell(agentId,seed,index)", multiWorker);
+        Assert.Contains("_specificAssignment!.Handle", multiWorker);
     }
 
     [Fact]

@@ -26,8 +26,7 @@ namespace Dig.Unity
             foreach (KeyValuePair<string, CellId> movement in plannedMovement)
             {
                 EntityId residentId = EntityId.Parse(movement.Key);
-                if (IsManualExcavationAgent(residentId)
-                    || (_isManualMovementActive?.Invoke(movement.Key) ?? false)
+                if ((_isManualMovementActive?.Invoke(movement.Key) ?? false)
                     || _inventoryRepository.Get().IsResidentMovementDue(residentId, tick))
                 {
                     due.Add(movement.Key, movement.Value);

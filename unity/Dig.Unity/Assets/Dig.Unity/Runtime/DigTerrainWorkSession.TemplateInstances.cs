@@ -10,6 +10,9 @@ namespace Dig.Unity
 
 internal sealed partial class DigTerrainWorkSession
 {
+    private readonly Dictionary<string, ExcavationTemplateInstance> _templateInstances =
+        new Dictionary<string, ExcavationTemplateInstance>(StringComparer.Ordinal);
+
     internal Result PlaceTemplateInstance(
         ExcavationTemplateInstance instance,
         long tick,
@@ -33,8 +36,20 @@ internal sealed partial class DigTerrainWorkSession
             return Result.Failure(committed.Error!);
         }
 
+        _templateInstances[instance.Id] = instance;
         SynchronizeDesignations(tick, agents, priority);
         return Result.Success();
+    }
+
+    private void MarkTemplateCellExcavated(CellId cell)
+    {
+        foreach (ExcavationTemplateInstance instance in _templateInstances.Values)
+        {
+            if (instance.LifecycleState == ExcavationTemplateLifecycleState.Active)
+            {
+                instance.MarkExcavated(cell);
+            }
+        }
     }
 }
 

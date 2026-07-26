@@ -29,6 +29,21 @@ Deleting and rebuilding every renderer does not change any of these authoritativ
 
 Cancellation uses the ordinary `JobSystem.Cancel` path, so Agent, Position and Designation reservations are released by the existing ledger. Runtime-generated job and output-stack ids come from a deterministic monotonic demo source. Unity does not invent lifecycle state.
 
+## Direct and continuous excavation assignment
+
+Direct excavation uses the same ordinary jobs as automatic planning. The Unity adapter does not keep a `ManualExcavationGroup`, fixed target list, radius-limited cluster or hidden `NoCandidates` pool.
+
+`ExcavationClusterPlanner` rebuilds zone membership from current designations:
+
+- ordinary tunnel and depth zones use X/Y face adjacency inside one Z layer;
+- an active `ExcavationTemplateInstance` links its own designated room cells across Z layers;
+- unrelated cells are never joined only because their X/Y coordinates match;
+- there is no radius limit, so a chain longer than ten cells remains one zone.
+
+A direct order releases the selected residents' current non-combat job assignments, then `DirectJobAssignmentPlanner` greedily assigns distinct ordinary jobs by actual Navigation route cost. Unreachable jobs remain available for later reconciliation; they are not removed from the job list and no resident is forced toward an invalid work position. Jobs not selected by the direct order retain their normal candidate sets, so other free residents can work in the same zone.
+
+Template instances are retained by the terrain session as plan provenance for zone connectivity and their per-cell progress is updated after terrain commit. Production save composition still needs the broader #94/#13 wiring described by the current audit.
+
 ## Completion use case
 
 `CompleteTerrainWorkCommandHandler` is the Application boundary for the final stage. Before changing state it verifies:
@@ -93,12 +108,12 @@ Until #115 is implemented, the current vertical slice keeps its existing right-c
 
 - resource output is a fixed demo rock item and quantity;
 - dropped resources are not yet connected to the final demand/fog-aware storage policy;
-- residents without an assigned terrain job continue using the earlier deterministic demo movement;
+- residents without an assigned terrain job continue using the ordinary automatic planner;
 - contextual resident input from #115 is not yet implemented;
 - Unity Play Mode still needs local verification because CI validates the shared C# contracts and compatibility baseline without launching the editor.
 
 ## Validation
 
-Engine-independent tests cover planning, source and capacity reservations, worker assignment, all hauling stages, final stored quantity and complete reservation cleanup. The normal workflow also runs architecture checks, Unity C# 9 and module gates, Release build, all tests, headless smoke and standard/large deterministic soak profiles.
+Engine-independent tests cover connected-zone selection without a radius limit, room-instance Z connectivity, nearest reachable direct assignment, source and capacity reservations, worker assignment, final stored quantity and reservation cleanup. The normal workflow runs architecture checks, Unity source contracts, Release build and all .NET tests. Standard/large soak and Unity Play Mode remain tracked by #15 and are not current CI evidence.
 
 Future input tests must additionally cover HUD shielding, selected-resident right-click clearing, no-resident designation, selected-stack drop priority and the rule that one pointer event produces no more than one command.
