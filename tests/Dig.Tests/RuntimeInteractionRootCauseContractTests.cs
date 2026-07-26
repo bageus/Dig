@@ -92,6 +92,27 @@ namespace Dig.Tests
         }
 
         [Fact]
+        public void Runtime_releases_unroutable_dig_jobs_and_commits_only_room_rock()
+        {
+            string runtime = RuntimeRoot();
+            string navigation = Read(runtime, "DigTerrainWorkNavigation.cs");
+            string roomSession = Read(runtime, "DigWorldSession.CaveRooms.cs");
+            string roomInput = Read(runtime, "DigWorldInteraction.CaveRooms.cs");
+            string invalidCells = Read(
+                runtime,
+                "DigCaveRoomPreviewRenderer.InvalidCells.cs");
+
+            Assert.Contains("ReleaseUnroutableExcavationAssignment", navigation);
+            Assert.Contains("ReleaseJobAssignmentCommand(job.Id,tick)", navigation);
+            Assert.Contains("_excavationQuarterWork.Cancel", navigation);
+            Assert.Contains("SetDigDesignations(plan.ExcavationCells", roomSession);
+            Assert.DoesNotContain("SetDigDesignations(plan.VolumeCells", roomSession);
+            Assert.Contains("TryResolveCaveRoomPreview", roomInput);
+            Assert.Contains("CaveRoomPlanFailureReason.BaseTunnelMissing", roomInput);
+            Assert.Contains("OverlaySemanticKind.PreviewInvalid", invalidCells);
+        }
+
+        [Fact]
         public void Unity_bootstrap_keeps_required_adapter_identifiers_intact()
         {
             string bootstrap = Read(RuntimeRoot(), "DigUnityBootstrap.cs");
