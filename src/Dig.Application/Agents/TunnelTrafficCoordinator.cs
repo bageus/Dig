@@ -46,7 +46,8 @@ public sealed class TunnelTrafficCoordinator
             TunnelTrafficTransition transition = _committed[index];
             if (transition.ResidentId != residentId
                 && transition.From == to
-                && transition.To == from)
+                && transition.To == from
+                && IsHorizontalTransition(from, to))
             {
                 return false;
             }
@@ -71,10 +72,15 @@ public sealed class TunnelTrafficCoordinator
         if (!CanMove(residentId, from, to, tick))
         {
             throw new InvalidOperationException(
-                "Residents cannot exchange tunnel cells in the same simulation tick.");
+                "Residents cannot exchange horizontal tunnel cells in the same simulation tick.");
         }
 
         _committed.Add(new TunnelTrafficTransition(residentId, from, to));
+    }
+
+    private static bool IsHorizontalTransition(CellId from, CellId to)
+    {
+        return from.Y == to.Y;
     }
 
     private static void ValidateResident(EntityId residentId)

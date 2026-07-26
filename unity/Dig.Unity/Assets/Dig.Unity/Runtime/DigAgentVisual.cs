@@ -35,7 +35,8 @@ public sealed partial class DigAgentVisual : MonoBehaviour
     private double _currentVisualX;
     private CellId? _freeformDestinationCell;
     private float _freeformDestinationOffsetX;
-    private float _crowdingOffsetX;
+    private float _directionalLaneOffsetX;
+    private ResidentDirectionalLane _directionalLane;
     private float _elapsed;
     private float _duration;
 
@@ -88,7 +89,11 @@ public sealed partial class DigAgentVisual : MonoBehaviour
         bool moving = _currentX != model.CellX || _currentY != model.CellY
             || _currentZ != model.CellZ;
         ApplyAction(moving);
-        if (!moving) return;
+        if (!moving)
+        {
+            RecenterAfterHorizontalMovement();
+            return;
+        }
         if (_freeformDestinationCell.HasValue
             && _currentX == _freeformDestinationCell.Value.X
             && _currentY == _freeformDestinationCell.Value.Y
@@ -105,6 +110,15 @@ public sealed partial class DigAgentVisual : MonoBehaviour
         _currentX = model.CellX;
         _currentY = model.CellY;
         _currentZ = model.CellZ;
+        ResidentDirectionalLanePreference lane = ResidentDirectionalLaneResolver.Resolve(
+            _previousX,
+            _previousY,
+            _previousZ,
+            _currentX,
+            _currentY,
+            _currentZ);
+        _directionalLane = lane.Lane;
+        _directionalLaneOffsetX = (float)lane.OffsetX;
         _currentVisualX = ResolveVisualX(model.CellX, model.CellY, model.CellZ);
         _elapsed = 0f;
         _duration = Mathf.Max(0.01f, duration);
@@ -127,15 +141,22 @@ public sealed partial class DigAgentVisual : MonoBehaviour
         }
     }
 
-    internal void SetCrowdingOffset(float offsetX)
+    internal ResidentDirectionalLane DirectionalLane => _directionalLane;
+
+    internal float DirectionalLaneOffsetX => _directionalLaneOffsetX;
+
+    private void RecenterAfterHorizontalMovement()
     {
-        _crowdingOffsetX = Mathf.Clamp(offsetX, -0.36f, 0.36f);
-        _currentVisualX = ResolveVisualX(_currentX, _currentY, _currentZ);
-        if (_duration <= 0f)
+        if (_duration > 0f || _directionalLane == ResidentDirectionalLane.Center)
         {
-            _previousVisualX = _currentVisualX;
-            transform.position = ToWorld(_currentVisualX, _currentY, _currentZ);
+            return;
         }
+
+        _directionalLane = ResidentDirectionalLane.Center;
+        _directionalLaneOffsetX = 0f;
+        _currentVisualX = ResolveVisualX(_currentX, _currentY, _currentZ);
+        _previousVisualX = _currentVisualX;
+        transform.position = ToWorld(_currentVisualX, _currentY, _currentZ);
     }
 
     private double ResolveVisualX(int cellX, int cellY, int cellZ)
@@ -145,7 +166,7 @@ public sealed partial class DigAgentVisual : MonoBehaviour
             && _freeformDestinationCell.Value.Y == cellY
             && _freeformDestinationCell.Value.Z == cellZ
                 ? cellX + _freeformDestinationOffsetX
-                : cellX + _crowdingOffsetX;
+                : cellX + _directionalLaneOffsetX;
     }
 
     internal void SetEquipment(ResidentEquipmentViewModel? equipment,
