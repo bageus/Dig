@@ -59,13 +59,15 @@ Pickup cursor без `Alt` запрещён.
 В active placement mode:
 
 - LMB по невалидной позиции не создаёт command и показывает reason;
-- LMB по валидной Z0-позиции создаёт BuildingBox placement plan;
-- plan размещает саму коробку, а не completed building;
-- успешное создание plan закрывает placement mode;
+- LMB по валидной Z0-позиции создаёт выбранный intent: box-placement plan либо building-assembly plan;
+- успешное создание plan закрывает interactive placement mode;
+- до authoritative pickup source BuildingBox остаётся физически видимой в своей location;
+- target продолжает показывать planned ghost: box ghost для переноса либо building ghost/footprint для assembly;
+- source box остаётся selected и подсвечивается синим в мире/списке строений либо в resident inventory slot;
+- box-placement completion оставляет ту же коробку в target cell;
+- assembly plan после delivery автоматически продолжает сборку конечного здания;
 - RMB отменяет preview и снимает BuildingBox/building selection;
 - отмена не меняет quantity/location коробки.
-
-После успешного создания plan исходная коробка остаётся selected и подсвечивается синим в мире/списке строений либо в resident inventory slot.
 
 ## 6. Синхронизация выбора
 
@@ -103,7 +105,8 @@ Pickup cursor без `Alt` запрещён.
 - UI shielding выполняется до world command;
 - LMB по BuildingBox не запускает unpacking;
 - placement начинается только через «Распаковать»;
-- valid Z0 confirmation создаёт BuildingBox placement plan и закрывает mode;
+- valid Z0 confirmation создаёт выбранный plan kind и закрывает interactive mode;
+- до pickup source physical box и target planned ghost отображаются одновременно без дублирования authoritative entity;
 - hidden stale target не остаётся кликабельным;
 - selection и highlighted row определяются одним selected entity id;
 - Presentation не создаёт Domain state до command;
@@ -114,8 +117,8 @@ Pickup cursor без `Alt` запрещён.
 - **Q-INPUT-001:** системный 2D cursor скрыт.
 - **Q-INPUT-002:** используются 3D ghost и footprint.
 - **Q-INPUT-004:** LMB по BuildingBox только выбирает её; unpacking запускается кнопкой.
-- **Q-INPUT-007:** valid Z0 LMB создаёт BuildingBox placement plan и закрывает placement mode.
-- **Q-INPUT-008:** после успешного plan исходная коробка остаётся selected и получает синюю planned-подсветку.
+- **Q-INPUT-007:** valid Z0 confirmation создаёт выбранный box-placement или building-assembly plan и закрывает interactive placement mode.
+- **Q-INPUT-008:** после успешного plan source BuildingBox остаётся selected и получает синюю planned-подсветку до pickup/commit/cancel.
 - **Q-INPUT-009:** inventory BuildingBox LMB сразу запускает placement mode.
 
 ## 11. Открытые вопросы
@@ -128,8 +131,9 @@ Pickup cursor без `Alt` запрещён.
 
 - world BuildingBox LMB выбирает объект без preview;
 - «Распаковать» для world box и обычный inventory LMB включают один 3D ghost/footprint workflow;
-- valid Z0 click создаёт box placement plan, закрывает mode и сохраняет синюю planned-подсветку source box;
-- plan не создаёт completed building;
+- valid Z0 confirmation создаёт выбранный plan kind, закрывает interactive mode и сохраняет синюю planned-подсветку source box;
+- до pickup source physical box остаётся видимой, target planned ghost сохраняется;
+- box-placement plan не создаёт completed building, assembly plan автоматически продолжает assembly после delivery;
 - Play Mode matrix покрывает cursor modes;
 - overlap targets создают одну command;
 - `Alt` gating совпадает для hover и click;
