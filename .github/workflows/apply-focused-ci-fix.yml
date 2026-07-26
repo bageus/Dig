@@ -1,0 +1,35 @@
+name: Apply focused CI fix
+
+on:
+  push:
+    branches:
+      - fix/runtime-selection-excavation-item-placement
+    paths:
+      - .github/workflows/apply-focused-ci-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/runtime-selection-excavation-item-placement
+          fetch-depth: 0
+          show-progress: false
+      - name: Apply source follow-up
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 --decode .dig-ci-fix.patch.gz.b64 | gzip -dc > /tmp/fix.patch
+          git apply --check /tmp/fix.patch
+          git apply /tmp/fix.patch
+          rm -f .dig-ci-fix.patch.gz.b64
+          rm -f .github/workflows/apply-focused-ci-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix CI and complete runtime interaction wiring"
+          git push origin HEAD:fix/runtime-selection-excavation-item-placement
