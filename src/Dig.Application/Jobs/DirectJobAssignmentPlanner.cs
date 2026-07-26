@@ -34,16 +34,38 @@ public sealed class DirectJobAssignment
         EntityId agentId,
         CellId target,
         int routeCost)
+        : this(jobId, agentId, target, routeCost, routeCost)
     {
+    }
+
+    public DirectJobAssignment(
+        EntityId jobId,
+        EntityId agentId,
+        CellId target,
+        int targetDistance,
+        int routeCost)
+    {
+        if (targetDistance < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(targetDistance));
+        }
+
+        if (routeCost < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(routeCost));
+        }
+
         JobId = jobId;
         AgentId = agentId;
         Target = target;
+        TargetDistance = targetDistance;
         RouteCost = routeCost;
     }
 
     public EntityId JobId { get; }
     public EntityId AgentId { get; }
     public CellId Target { get; }
+    public int TargetDistance { get; }
     public int RouteCost { get; }
 }
 
@@ -114,6 +136,7 @@ public sealed class DirectJobAssignmentPlanner
                 selected.Job.Id,
                 worker.AgentId,
                 selected.Target,
+                selected.TargetDistance,
                 selected.RouteCost));
             remaining.Remove(selected.Job);
         }
@@ -143,11 +166,13 @@ public sealed class DirectJobAssignmentPlanner
             reachable.Add(new RouteCandidate(
                 job,
                 definition.Target.CellId,
+                DirectJobDistance.Between(worker.Start, definition.Target.CellId),
                 planned.Value.PathResult.Path!.TotalCost));
         }
 
         return reachable
-            .OrderBy(candidate => candidate.RouteCost)
+            .OrderBy(candidate => candidate.TargetDistance)
+            .ThenBy(candidate => candidate.RouteCost)
             .ThenBy(candidate => candidate.Target)
             .ThenBy(candidate => candidate.Job.Id.ToString(), StringComparer.Ordinal)
             .FirstOrDefault();
@@ -155,19 +180,24 @@ public sealed class DirectJobAssignmentPlanner
 
     private sealed class RouteCandidate
     {
-        public RouteCandidate(JobSnapshot job, CellId target, int routeCost)
+        public RouteCandidate(
+            JobSnapshot job,
+            CellId target,
+            int targetDistance,
+            int routeCost)
         {
             Job = job;
             Target = target;
+            TargetDistance = targetDistance;
             RouteCost = routeCost;
         }
 
         public JobSnapshot Job { get; }
         public CellId Target { get; }
+        public int TargetDistance { get; }
         public int RouteCost { get; }
     }
 }
-
 
 public sealed class DirectSpatialJobAssignmentPlanner
 {
@@ -222,6 +252,7 @@ public sealed class DirectSpatialJobAssignmentPlanner
                 selected.Job.Id,
                 worker.AgentId,
                 selected.Target,
+                selected.TargetDistance,
                 selected.RouteCost));
             remaining.Remove(selected.Job);
         }
@@ -254,11 +285,13 @@ public sealed class DirectSpatialJobAssignmentPlanner
             reachable.Add(new SpatialRouteCandidate(
                 job,
                 definition.Target.TargetCell,
+                DirectJobDistance.Between(worker.Start, definition.Target.TargetCell),
                 path.Path!.TotalCost));
         }
 
         return reachable
-            .OrderBy(candidate => candidate.RouteCost)
+            .OrderBy(candidate => candidate.TargetDistance)
+            .ThenBy(candidate => candidate.RouteCost)
             .ThenBy(candidate => candidate.Target)
             .ThenBy(candidate => candidate.Job.Id.ToString(), StringComparer.Ordinal)
             .FirstOrDefault();
@@ -266,16 +299,32 @@ public sealed class DirectSpatialJobAssignmentPlanner
 
     private sealed class SpatialRouteCandidate
     {
-        public SpatialRouteCandidate(JobSnapshot job, CellId target, int routeCost)
+        public SpatialRouteCandidate(
+            JobSnapshot job,
+            CellId target,
+            int targetDistance,
+            int routeCost)
         {
             Job = job;
             Target = target;
+            TargetDistance = targetDistance;
             RouteCost = routeCost;
         }
 
         public JobSnapshot Job { get; }
         public CellId Target { get; }
+        public int TargetDistance { get; }
         public int RouteCost { get; }
+    }
+}
+
+internal static class DirectJobDistance
+{
+    internal static int Between(CellId start, CellId target)
+    {
+        return Math.Abs(start.X - target.X)
+            + Math.Abs(start.Y - target.Y)
+            + Math.Abs(start.Z - target.Z);
     }
 }
 
