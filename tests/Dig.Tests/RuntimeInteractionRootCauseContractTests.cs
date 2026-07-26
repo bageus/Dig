@@ -116,6 +116,42 @@ namespace Dig.Tests
             Assert.DoesNotContain("cameraObject.ag", bootstrap);
         }
 
+        [Fact]
+        public void Unity_runtime_normalizes_seed_and_validates_selected_resident_ids()
+        {
+            string runtime = RuntimeRoot();
+            string quarters = Read(runtime, "DigTerrainWorkExcavationQuarters.cs");
+            string inventory = Read(runtime, "DigWorldInteraction.ResidentInventory.cs");
+
+            Assert.Contains(
+                "unchecked((ulong)(uint)_worldSession.MiningOutputWorldSeed)",
+                quarters);
+            Assert.Equal(
+                2,
+                CountOccurrences(inventory, "string?residentIdValue=resident.Id;"));
+            Assert.Equal(
+                2,
+                CountOccurrences(inventory, "EntityId.Parse(residentIdValue)"));
+            Assert.DoesNotContain("EntityId.Parse(resident.Id)", inventory);
+        }
+
+        private static int CountOccurrences(string source, string value)
+        {
+            int count = 0;
+            int startIndex = 0;
+            while (true)
+            {
+                int index = source.IndexOf(value, startIndex, StringComparison.Ordinal);
+                if (index < 0)
+                {
+                    return count;
+                }
+
+                count++;
+                startIndex = index + value.Length;
+            }
+        }
+
         private static string Read(string runtime, string file)
         {
             return Normalize(File.ReadAllText(Path.Combine(runtime, file)));
