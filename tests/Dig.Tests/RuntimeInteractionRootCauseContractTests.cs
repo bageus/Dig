@@ -143,7 +143,9 @@ namespace Dig.Tests
         {
             string runtime = RuntimeRoot();
             string decisions = Read(runtime, "DigWorldInteraction.Decisions.cs");
-            string boxes = Read(runtime, "DigWorldInteraction.BuildingBoxes.cs");
+            string boxSelection = Read(
+                runtime,
+                "DigWorldInteraction.BuildingBoxSelection.cs");
             string roster = Read(runtime, "DigGameHudCanvas.Roster.cs");
             string cell = Read(runtime, "DigCellVisual.cs");
             string marker = Read(runtime, "DigExcavationQuarterMarker.cs");
@@ -154,8 +156,8 @@ namespace Dig.Tests
 
             Assert.Contains("PresentationInputEffect.SelectBuildingBox", decisions);
             Assert.Contains("SelectBuildingBox(item.Model,item)", decisions);
-            Assert.Contains("DigBuildingBoxSelectionHighlight", boxes);
-            Assert.Contains("ResolveWorldItemVisual(item.StackId)", boxes);
+            Assert.Contains("DigBuildingBoxSelectionHighlight", boxSelection);
+            Assert.Contains("ResolveWorldItemVisual(item.StackId)", boxSelection);
             Assert.Contains("SelectBuildingBoxFromHud(id)", roster);
             Assert.Contains("SetExcavationProgress(ExcavationQuartercompleted)", cell);
             Assert.Contains("_quarterRenderers[index].gameObject.SetActive(!excavated)", cell);
