@@ -45,7 +45,9 @@ Pickup cursor без `Alt` запрещён.
 
 Он не включает placement mode и не создаёт plan.
 
-Кнопка «Распаковать» включает placement mode:
+Кнопка «Распаковать» для world BuildingBox включает placement mode. Обычный LMB по BuildingBox в resident inventory включает этот же mode сразу, без промежуточной кнопки.
+
+В placement mode:
 
 - системный 2D cursor скрывается;
 - в мире отображаются 3D ghost и footprint;
@@ -63,7 +65,7 @@ Pickup cursor без `Alt` запрещён.
 - RMB отменяет preview и снимает BuildingBox/building selection;
 - отмена не меняет quantity/location коробки.
 
-Selection после успешного plan остаётся открытым вопросом Q-INPUT-008.
+После успешного создания plan исходная коробка остаётся selected и подсвечивается синим в мире/списке строений либо в resident inventory slot.
 
 ## 6. Синхронизация выбора
 
@@ -113,19 +115,20 @@ Selection после успешного plan остаётся открытым �
 - **Q-INPUT-002:** используются 3D ghost и footprint.
 - **Q-INPUT-004:** LMB по BuildingBox только выбирает её; unpacking запускается кнопкой.
 - **Q-INPUT-007:** valid Z0 LMB создаёт BuildingBox placement plan и закрывает placement mode.
+- **Q-INPUT-008:** после успешного plan исходная коробка остаётся selected и получает синюю planned-подсветку.
+- **Q-INPUT-009:** inventory BuildingBox LMB сразу запускает placement mode.
 
 ## 11. Открытые вопросы
 
 - **Q-INPUT-003:** полный порядок overlap targets.
 - **Q-INPUT-005:** duration анимации ног и rejected move feedback.
 - **Q-INPUT-006:** accessibility option и UI scaling cursor animations.
-- **Q-INPUT-008:** selection после успешного BuildingBox placement plan или building assembly plan.
 
 ## 12. Acceptance
 
 - world BuildingBox LMB выбирает объект без preview;
-- «Распаковать» включает 3D ghost/footprint;
-- valid Z0 click создаёт box placement plan и закрывает mode;
+- «Распаковать» для world box и обычный inventory LMB включают один 3D ghost/footprint workflow;
+- valid Z0 click создаёт box placement plan, закрывает mode и сохраняет синюю planned-подсветку source box;
 - plan не создаёт completed building;
 - Play Mode matrix покрывает cursor modes;
 - overlap targets создают одну command;
