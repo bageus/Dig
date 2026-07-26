@@ -49,6 +49,19 @@ public sealed class TunnelTrafficCoordinatorTests
         Assert.False(traffic.CanMove(ResidentB, right, left, tick: 20));
         Assert.True(traffic.CanMove(ResidentB, right, left, tick: 21));
     }
+
+    [Fact]
+    public void Opposite_vertical_climbers_may_cross_in_one_tick()
+    {
+        TunnelTrafficCoordinator traffic = new TunnelTrafficCoordinator();
+        CellId lower = new CellId(2, 3, 0);
+        CellId upper = new CellId(2, 4, 0);
+
+        traffic.RecordMove(ResidentA, lower, upper, tick: 30);
+
+        Assert.True(traffic.CanMove(ResidentB, upper, lower, tick: 30));
+        traffic.RecordMove(ResidentB, upper, lower, tick: 30);
+    }
 }
 
 }

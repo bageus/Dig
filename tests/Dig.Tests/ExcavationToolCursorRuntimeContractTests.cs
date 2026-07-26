@@ -63,7 +63,8 @@ namespace Dig.Tests
             Assert.Contains("PreviewThickness = 0.025f", roomPreview);
             Assert.Contains("new Color(0.55f, 0.72f, 0.92f, 0.16f)", roomPreview);
             Assert.Contains("new CellId(entrance.X, entrance.Y, 0)", roomPreview);
-            Assert.DoesNotContain("OverlaySemanticKind.PreviewInvalid", roomPreviewShow);
+            Assert.Contains("OverlaySemanticKind.PreviewInvalid", roomPreviewShow);
+            Assert.Contains("UpdateInvalidCells(result.InvalidCells)", roomPreviewShow);
             Assert.Contains("missingTunnel.startColor = MissingTunnelColor", roomPreviewShow);
             Assert.Contains("missingTunnel.endColor = MissingTunnelColor", roomPreviewShow);
 

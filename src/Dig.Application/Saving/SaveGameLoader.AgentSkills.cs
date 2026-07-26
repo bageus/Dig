@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
+using Dig.Domain.World;
 
 namespace Dig.Application.Saving
 {
@@ -144,6 +146,37 @@ public sealed partial class SaveGameLoader
             losses,
             resultingValues);
     }
+    private static IReadOnlyDictionary<EntityId, CellId> BuildAgentPositions(
+        AgentPositionsSaveData data,
+        WorldSaveData world)
+    {
+        if (data is null || data.Agents is null)
+        {
+            throw new InvalidOperationException("Agent positions save data is missing.");
+        }
+
+        WorldSize size = new WorldSize(world.Width, world.Height, world.Depth);
+        Dictionary<EntityId, CellId> result = new Dictionary<EntityId, CellId>();
+        foreach (AgentPositionSaveData saved in data.Agents
+            .OrderBy(value => value.AgentId, StringComparer.Ordinal))
+        {
+            if (saved is null)
+            {
+                throw new InvalidOperationException("Agent position entry is missing.");
+            }
+
+            EntityId id = EntityId.Parse(saved.AgentId);
+            CellId position = new CellId(saved.X, saved.Y, saved.Z);
+            if (!size.Contains(position) || !result.TryAdd(id, position))
+            {
+                throw new InvalidOperationException("Agent position is invalid or duplicated.");
+            }
+        }
+
+        return new ReadOnlyDictionary<EntityId, CellId>(result);
+    }
+
+
 }
 
 }

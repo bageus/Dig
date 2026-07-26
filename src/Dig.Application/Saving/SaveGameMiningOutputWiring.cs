@@ -35,7 +35,7 @@ public sealed partial class SaveGameBuilder
                 miningOutput.Error ?? MiningOutputSaveErrors.InvalidSnapshot);
         }
 
-        SaveGameDocument document = Build(context);
+        SaveGameDocument document = BuildCore(context);
         document.MiningOutput = miningOutput.Value;
         return Result<SaveGameDocument>.Success(document);
     }

@@ -40,7 +40,8 @@ namespace Dig.Tests
             Assert.DoesNotContain("new Material(", roomResources);
             Assert.Contains("1, 2, 0, 2, 3, 0", roomFill);
             Assert.Contains("UpdateFill(corners)", roomShow);
-            Assert.Contains("ResolveCaveRoomPreviewEntrance", roomInput);
+            Assert.Contains("TryResolveCaveRoomPreview", roomInput);
+            Assert.Contains("ResolveCaveRoomPointerCell", roomInput);
             Assert.Contains("Plane frontLayer", roomInput);
         }
 

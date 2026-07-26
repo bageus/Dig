@@ -5,6 +5,7 @@ using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Navigation;
+using Dig.Application.World;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -27,7 +28,8 @@ internal sealed partial class DigTerrainWorkSession
         DigWorldSession worldSession,
         IReadOnlyList<AgentViewModel> agents,
         InMemoryExecutionJournal journal,
-        IAgentSkillGrantService skillGrants)
+        IAgentSkillGrantService skillGrants,
+        MiningOutputCommitState? miningOutputCommits = null)
     {
         if (worldSession == null || agents == null)
         {
@@ -81,7 +83,8 @@ internal sealed partial class DigTerrainWorkSession
             inventoryRepository,
             navigation,
             profile,
-            outputStackIds);
+            outputStackIds,
+            miningOutputCommits);
     }
 
     private static Dictionary<EntityId, EntityId> CreateInitialDigJobs(
@@ -179,7 +182,8 @@ internal sealed partial class DigTerrainWorkSession
         InMemoryInventoryRepository inventory,
         InMemoryNavigationRepository navigation,
         TraversalProfile profile,
-        Dictionary<EntityId, EntityId> outputIds)
+        Dictionary<EntityId, EntityId> outputIds,
+        MiningOutputCommitState? miningOutputCommits)
     {
         return new DigTerrainWorkSession(
             advance,
@@ -206,7 +210,8 @@ internal sealed partial class DigTerrainWorkSession
             new TerrainWorkRoutePlanner(new NavigationPathfinder()),
             profile,
             outputIds,
-            skills);
+            skills,
+            miningOutputCommits);
     }
 }
 

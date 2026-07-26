@@ -45,20 +45,22 @@ public sealed partial class SaveGameLoader
                 loaded.Error ?? SaveErrors.InvalidDocument);
         }
 
-        Result<RestoredMiningOutputState> miningOutput =
-            _miningOutputSection.Restore(
-                document.MiningOutput ?? new MiningOutputCommitsSaveData(),
-                loaded.Value.Inventory,
-                loaded.Value.World.Size);
-        if (miningOutput.IsFailure)
-        {
-            return Result<LoadedGameWithMiningOutput>.Failure(
-                miningOutput.Error ?? MiningOutputSaveErrors.InvalidSnapshot);
-        }
-
         return Result<LoadedGameWithMiningOutput>.Success(
-            new LoadedGameWithMiningOutput(loaded.Value, miningOutput.Value));
+            new LoadedGameWithMiningOutput(
+                loaded.Value,
+                loaded.Value.MiningOutput));
     }
+    private Result<RestoredMiningOutputState> RestoreMiningOutput(
+        SaveGameDocument document,
+        InventoryState inventory,
+        WorldSize worldSize)
+    {
+        return _miningOutputSection.Restore(
+            document.MiningOutput ?? new MiningOutputCommitsSaveData(),
+            inventory,
+            worldSize);
+    }
+
 }
 
 }

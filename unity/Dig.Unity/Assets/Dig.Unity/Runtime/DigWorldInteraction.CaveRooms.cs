@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using Dig.Application.World;
 using Dig.Domain.Core;
 using Dig.Domain.World;
@@ -85,22 +87,20 @@ namespace Dig.Unity
                 return;
             }
 
-            CellId? entrance = ResolveCaveRoomPreviewEntrance();
-            if (!entrance.HasValue)
+            if (!TryResolveCaveRoomPreview(
+                    out CellId entrance,
+                    out CaveRoomPlanResult result))
             {
                 _caveRoomPreviewRenderer.Clear();
                 return;
             }
 
             CaveRoomPresetKind kind = _caveRoomPreset.Value;
-            CaveRoomPlanResult result = _session!.PlanCaveRoom(
-                kind,
-                entrance.Value);
             _hoveredCaveRoomPlan = result;
             _caveRoomPreviewRenderer.Show(
                 CaveRoomPresetCatalog.Get(kind),
-                entrance.Value,
-                result.Succeeded);
+                entrance,
+                result);
 
             bool skillAllowed = CanUseCavePreset(kind, out string skillDetail);
             if (!Input.GetMouseButtonDown(0))
@@ -126,7 +126,64 @@ namespace Dig.Unity
             ApplyCaveRoomPlan(result.Plan!);
         }
 
-        private CellId? ResolveCaveRoomPreviewEntrance()
+        private bool TryResolveCaveRoomPreview(
+            out CellId entrance,
+            out CaveRoomPlanResult result)
+        {
+            entrance = default;
+            result = null!;
+            CellId? pointerCell = ResolveCaveRoomPointerCell();
+            if (!pointerCell.HasValue || !_caveRoomPreset.HasValue)
+            {
+                return false;
+            }
+
+            CaveRoomPresetKind kind = _caveRoomPreset.Value;
+            CaveRoomPreset preset = CaveRoomPresetCatalog.Get(kind);
+            CaveRoomPlanResult? best = null;
+            CellId bestEntrance = default;
+            int bestScore = int.MaxValue;
+            for (int verticalOffset = 0;
+                verticalOffset < preset.Height;
+                verticalOffset++)
+            {
+                CellId candidate = new CellId(
+                    pointerCell.Value.X,
+                    pointerCell.Value.Y + verticalOffset,
+                    CellId.MinimumDepth);
+                CaveRoomPlanResult planned = _session!.PlanCaveRoom(kind, candidate);
+                if (planned.Succeeded)
+                {
+                    entrance = candidate;
+                    result = planned;
+                    return true;
+                }
+
+                int baseInvalid = planned.InvalidCells.Count(value =>
+                    value.Reason == CaveRoomPlanFailureReason.BaseTunnelMissing);
+                int score = checked(
+                    (baseInvalid * 1_000)
+                    + (planned.InvalidCells.Count * 10)
+                    + verticalOffset);
+                if (score < bestScore)
+                {
+                    best = planned;
+                    bestEntrance = candidate;
+                    bestScore = score;
+                }
+            }
+
+            if (best == null)
+            {
+                return false;
+            }
+
+            entrance = bestEntrance;
+            result = best;
+            return true;
+        }
+
+        private CellId? ResolveCaveRoomPointerCell()
         {
             RaycastHit[] hits = GetPointerHits();
             for (int index = 0; index < hits.Length; index++)
