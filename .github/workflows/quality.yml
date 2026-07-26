@@ -25,6 +25,9 @@ jobs:
       - name: Run architecture, file-size and C# compatibility checks
         run: python tools/quality/check_quality.py
 
+      - name: Validate quality workflow gates
+        run: python tools/quality/check_quality_workflow_contracts.py
+
       - name: Validate Unity built-in modules
         run: python tools/quality/check_unity_modules.py
 
@@ -128,3 +131,58 @@ jobs:
           path: test.log
           if-no-files-found: ignore
           retention-days: 7
+
+      - name: Run headless smoke test
+        shell: bash
+        run: |
+          set -o pipefail
+          dotnet run --project src/Dig.Headless/Dig.Headless.csproj --configuration Release --no-build 2>&1 | tee headless-smoke.log
+
+      - name: Run standard deterministic soak
+        shell: bash
+        run: |
+          set -o pipefail
+          dotnet run --project src/Dig.Headless/Dig.Headless.csproj \
+            --configuration Release --no-build -- \
+            --soak --profile standard \
+            --report soak-report-standard.json 2>&1 | tee soak-standard.log
+
+      - name: Run large settlement deterministic soak
+        shell: bash
+        run: |
+          set -o pipefail
+          dotnet run --project src/Dig.Headless/Dig.Headless.csproj \
+            --configuration Release --no-build -- \
+            --soak --profile large \
+            --report soak-report-large.json 2>&1 | tee soak-large.log
+
+      - name: Upload headless smoke log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: headless-smoke-log
+          path: headless-smoke.log
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload standard soak report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: soak-report-standard
+          path: |
+            soak-report-standard.json
+            soak-standard.log
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload large soak report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: soak-report-large
+          path: |
+            soak-report-large.json
+            soak-large.log
+          if-no-files-found: warn
+          retention-days: 14
