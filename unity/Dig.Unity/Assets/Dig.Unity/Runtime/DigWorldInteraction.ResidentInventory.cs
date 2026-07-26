@@ -73,7 +73,7 @@ namespace Dig.Unity
                 return;
             }
 
-            EntityId residentId = EntityId.Parse(residentIdValue);
+            EntityId residentId = EntityId.Parse(residentIdValue!);
             EntityId stackId = EntityId.Parse(slot.StackId);
             ContextInputState state = new ContextInputState(
                 selectedResidentId: residentId,
@@ -146,7 +146,7 @@ namespace Dig.Unity
                 return;
             }
 
-            EntityId residentId = EntityId.Parse(residentIdValue);
+            EntityId residentId = EntityId.Parse(residentIdValue!);
             EntityId stackId = EntityId.Parse(slot.StackId);
             ContextInputState state = new ContextInputState(
                 selectedResidentId: residentId,
