@@ -146,7 +146,7 @@ namespace Dig.Tests
             string boxSelection = Read(
                 runtime,
                 "DigWorldInteraction.BuildingBoxSelection.cs");
-            string itemVisual = Read(runtime, "DigWorldItemVisual.cs");
+            string itemSelection = Read(runtime, "DigWorldItemVisual.Selection.cs");
             string roster = Read(runtime, "DigGameHudCanvas.Roster.cs");
             string cell = Read(runtime, "DigCellVisual.cs");
             string marker = Read(runtime, "DigExcavationQuarterMarker.cs");
@@ -167,7 +167,7 @@ namespace Dig.Tests
             Assert.Contains("SetSelectionHighlighted(false)", boxSelection);
             Assert.Contains("SetSelectionHighlighted(true)", boxSelection);
             Assert.Contains("ResolveWorldItemVisual(item.StackId)", boxSelection);
-            Assert.Contains("Color.Lerp(tint,SelectionColor", itemVisual);
+            Assert.Contains("Color.Lerp(tint,SelectionColor", itemSelection);
             Assert.DoesNotContain("DigBuildingBoxSelectionHighlight", boxSelection);
             Assert.False(File.Exists(Path.Combine(
                 runtime,
