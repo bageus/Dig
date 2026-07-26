@@ -117,7 +117,7 @@ namespace Dig.Tests
         }
 
         [Fact]
-        public void Unity_runtime_normalizes_seed_and_validates_selected_resident_ids()
+        public void Unity_runtime_uses_current_skill_source_and_guarded_resident_ids()
         {
             string runtime = RuntimeRoot();
             string quarters = Read(runtime, "DigTerrainWorkExcavationQuarters.cs");
@@ -126,12 +126,15 @@ namespace Dig.Tests
             Assert.Contains(
                 "unchecked((ulong)(uint)_worldSession.MiningOutputWorldSeed)",
                 quarters);
+            Assert.Contains("_excavationMiningSkill?.Invoke(workerId)??0", quarters);
+            Assert.DoesNotContain("_manualExcavationMiningSkill", quarters);
             Assert.Equal(
                 2,
                 CountOccurrences(inventory, "string?residentIdValue=resident.Id;"));
             Assert.Equal(
                 2,
-                CountOccurrences(inventory, "EntityId.Parse(residentIdValue)"));
+                CountOccurrences(inventory, "EntityId.Parse(residentIdValue!)"));
+            Assert.DoesNotContain("EntityId.Parse(residentIdValue)", inventory);
             Assert.DoesNotContain("EntityId.Parse(resident.Id)", inventory);
         }
 
