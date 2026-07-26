@@ -1,4 +1,4 @@
-> **Audit status (2026-07-26): DRAFT evidence.** Headless soak code and historical baselines exist, but current `.github/workflows/quality.yml` does not invoke the standard/large soak commands and does not run Unity Play Mode tests. Sections that describe CI artifacts are historical behavior until #15 is completed again. See [`implemented-systems-audit-2026-07-26.md`](implemented-systems-audit-2026-07-26.md).
+> **Audit status (2026-07-26): PARTIAL REMEDIATION.** PR #412 restores blocking headless smoke plus the `standard` and `large` deterministic soak profiles in `.github/workflows/quality.yml`, with retained reports and logs. Unity Play Mode is still not executed, so #15 remains open and this system stays `DRAFT` until Unity test evidence is added. See [`implemented-systems-audit-2026-07-26.md`](implemented-systems-audit-2026-07-26.md).
 
 # Quality soak, performance budgets and invariants
 
@@ -6,7 +6,7 @@
 
 The quality soak is a deterministic headless scenario for detecting cross-system regressions before UI or content scale hides them. It is not a benchmark of final release hardware. It establishes reproducible CI baselines, identifies expensive systems and fails on structural corruption.
 
-The implementation was originally used to complete issue #15, but the current quality workflow no longer invokes the soak profiles. Issue #15 must remain open until the blocking CI gate is restored and Unity Play Mode evidence is added.
+The headless implementation originally completed the deterministic part of issue #15. PR #412 restores the blocking smoke and soak gates and adds a source contract that prevents them from being silently removed. Issue #15 remains open until Unity Play Mode evidence is added.
 
 ## Profiles and commands
 
@@ -221,6 +221,14 @@ The large profile exposes population-scale costs while retaining the same author
 
 ## CI evidence
 
-Historical GitHub Actions runs executed the normal headless smoke and both deterministic profiles and uploaded `soak-report-standard.json` and `soak-report-large.json`.
+The current `.github/workflows/quality.yml` runs, in blocking order:
 
-The current `.github/workflows/quality.yml` does not execute those commands and does not invoke Unity Test Runner. Until the workflow is restored, the baselines above are historical evidence only, not a current blocking quality gate. Current CI artifacts cover Python source contracts and .NET build/tests.
+1. architecture and Unity source contracts;
+2. Release restore/build and the complete .NET test suite;
+3. the normal headless smoke scenario;
+4. the `standard` deterministic soak profile;
+5. the `large` deterministic soak profile.
+
+The workflow uploads `headless-smoke-log`, `soak-report-standard` and `soak-report-large` artifacts. Each soak artifact retains both the JSON report and console log. `tools/quality/check_quality_workflow_contracts.py` fails when these commands or artifacts are removed or changed to non-blocking execution.
+
+Unity Test Runner is still not invoked. Therefore these runs provide current deterministic headless evidence, but they do not verify Unity scene bootstrap, pointer routing, renderers, colliders or Play Mode workflows. Those remaining requirements stay tracked by #15.
