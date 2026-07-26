@@ -31,8 +31,12 @@ namespace Dig.Unity
             _hud?.SetCommandResult(result);
         }
 
-        private void ClearPendingExcavationStroke()
+        private void ResetExcavationStroke()
         {
+            _excavationAxis = ExcavationStrokeAxis.None;
+            _excavationAnchor = null;
+            _lastExcavationPaintCell = null;
+            _excavationEraseBatch.Clear();
             _excavationDesignationBatchDirty = false;
         }
     }
