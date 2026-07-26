@@ -31,7 +31,7 @@ namespace Dig.Unity
                 spatial: false,
                 requireWorkSchedule: false,
                 tick);
-            SuppressAvailableExcavationCandidates<DigJobDefinition>();
+            SuppressAvailableExcavationCandidates(spatial: false);
         }
 
         private void AssignNearestAutomaticSpatialJobs(
@@ -49,7 +49,7 @@ namespace Dig.Unity
                 spatial: true,
                 requireWorkSchedule: true,
                 tick);
-            SuppressAvailableExcavationCandidates<SpatialDigJobDefinition>();
+            SuppressAvailableExcavationCandidates(spatial: true);
         }
 
         private void AssignNearestAutomaticJobs(
@@ -69,10 +69,10 @@ namespace Dig.Unity
                 return;
             }
 
-            HashSet<EntityId> alreadyAssigned = _jobRepository.Get().GetAll()
-                .Where(job => !job.IsTerminal && job.AssignedAgentId.HasValue)
-                .Select(job => job.AssignedAgentId!.Value)
-                .ToHashSet();
+            HashSet<EntityId> alreadyAssigned = new HashSet<EntityId>(
+                _jobRepository.Get().GetAll()
+                    .Where(job => !job.IsTerminal && job.AssignedAgentId.HasValue)
+                    .Select(job => job.AssignedAgentId.Value));
             DirectJobWorker[] workers = agents
                 .Where(agent => !string.IsNullOrWhiteSpace(agent.Id))
                 .Where(IsAvailableForAutomaticWork)
@@ -122,12 +122,13 @@ namespace Dig.Unity
             }
         }
 
-        private void SuppressAvailableExcavationCandidates<TDefinition>()
-            where TDefinition : JobDefinition
+        private void SuppressAvailableExcavationCandidates(bool spatial)
         {
             foreach (JobSnapshot job in _jobRepository.Get().GetAll()
-                .Where(value => value.Status == JobStatus.Available
-                    && value.Definition is TDefinition))
+                .Where(value => value.Status == JobStatus.Available)
+                .Where(value => spatial
+                    ? value.Definition is SpatialDigJobDefinition
+                    : value.Definition is DigJobDefinition))
             {
                 _candidateProvider!.SetCandidates(job.Id, NoCandidates);
             }
