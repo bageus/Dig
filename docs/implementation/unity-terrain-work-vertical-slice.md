@@ -40,7 +40,7 @@ Direct excavation uses the same ordinary jobs as automatic planning. The Unity a
 - unrelated cells are never joined only because their X/Y coordinates match;
 - there is no radius limit, so a chain longer than ten cells remains one zone.
 
-A direct order releases the selected residents' current non-combat job assignments, then `DirectJobAssignmentPlanner` greedily assigns distinct ordinary jobs by actual Navigation route cost. Unreachable jobs remain available for later reconciliation; they are not removed from the job list and no resident is forced toward an invalid work position. Jobs not selected by the direct order retain their normal candidate sets, so other free residents can work in the same zone.
+A direct order releases the selected residents' current non-combat job assignments, then `DirectJobAssignmentPlanner` greedily assigns distinct ordinary jobs by actual Navigation route cost. Unreachable jobs remain available for later reconciliation; they are not removed from the job list and no resident is forced toward an invalid work position. If an already assigned Dig job loses every valid route/work cell after a navigation refresh, Unity releases that assignment, preserves the cell's quarter-progress owner and retries normal matching on a later tick. Jobs not selected by the direct order retain their normal candidate sets, so other free residents can work in the same zone.
 
 Template instances are retained by the terrain session as plan provenance for zone connectivity and their per-cell progress is updated after terrain commit. Production save composition still needs the broader #94/#13 wiring described by the current audit.
 

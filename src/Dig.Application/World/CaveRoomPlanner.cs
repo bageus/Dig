@@ -15,6 +15,40 @@ public sealed class CaveRoomPlanner
         CellId entrance,
         IReadOnlyCollection<CaveRoomPlan>? completedPlans = null)
     {
+        return PlanCore(
+            world,
+            materials: null,
+            boundary,
+            kind,
+            entrance,
+            completedPlans);
+    }
+
+    public CaveRoomPlanResult Plan(
+        WorldSnapshot world,
+        MaterialCatalog materials,
+        ExcavationBoundaryPolicy boundary,
+        CaveRoomPresetKind kind,
+        CellId entrance,
+        IReadOnlyCollection<CaveRoomPlan>? completedPlans = null)
+    {
+        return PlanCore(
+            world,
+            materials ?? throw new ArgumentNullException(nameof(materials)),
+            boundary,
+            kind,
+            entrance,
+            completedPlans);
+    }
+
+    private CaveRoomPlanResult PlanCore(
+        WorldSnapshot world,
+        MaterialCatalog? materials,
+        ExcavationBoundaryPolicy boundary,
+        CaveRoomPresetKind kind,
+        CellId entrance,
+        IReadOnlyCollection<CaveRoomPlan>? completedPlans)
+    {
         if (world is null)
         {
             throw new ArgumentNullException(nameof(world));
@@ -42,94 +76,74 @@ public sealed class CaveRoomPlanner
         Dictionary<CellId, CellSnapshot> cells = world.Chunks
             .SelectMany(chunk => chunk.Cells)
             .ToDictionary(cell => cell.Id);
-        if (!world.Size.Contains(entrance)
-            || !cells.TryGetValue(entrance, out CellSnapshot entranceCell))
-        {
-            return CaveRoomPlanResult.Failure(
-                CaveRoomPlanFailureReason.EntranceOutOfBounds,
-                "The room entrance is outside the world.");
-        }
-
-        if (entranceCell.IsSolid)
-        {
-            return CaveRoomPlanResult.Failure(
-                CaveRoomPlanFailureReason.EntranceBlocked,
-                "The room entrance must be an excavated tunnel cell.");
-        }
-
-        bool horizontalTunnel = entrance.X > 0
-                && IsOpen(cells, new CellId(entrance.X - 1, entrance.Y, entrance.Z))
-            || entrance.X + 1 < world.Size.Width
-                && IsOpen(cells, new CellId(entrance.X + 1, entrance.Y, entrance.Z));
-        if (!horizontalTunnel)
-        {
-            return CaveRoomPlanResult.Failure(
-                CaveRoomPlanFailureReason.EntranceNotHorizontalTunnel,
-                "Cave rooms can only be attached to a horizontal tunnel.");
-        }
-
-        HashSet<CellId> upgradeOpenCells = BuildUpgradeOpenCells(
-            completedPlans,
-            entrance);
         CaveRoomPreset preset = CaveRoomPresetCatalog.Get(kind);
+        List<CaveRoomInvalidCell> invalid = new List<CaveRoomInvalidCell>();
+        List<CellId> baseTunnel = new List<CellId>(preset.BaseWidth);
         List<CellId> front = new List<CellId>();
+        List<CellId> excavation = new List<CellId>();
         List<CellId> volume = new List<CellId>();
+
         for (int level = 0; level < preset.Height; level++)
         {
-            CaveRoomPlanResult? failure = AddRow(
-                world,
-                boundary,
-                cells,
-                upgradeOpenCells,
-                preset,
-                entrance,
-                level,
-                front,
-                volume);
-            if (failure != null)
+            int y = entrance.Y - level;
+            int rowWidth = InterpolateWidth(preset, level);
+            int minX = entrance.X - ((rowWidth - 1) / 2);
+            for (int offset = 0; offset < rowWidth; offset++)
             {
-                return failure;
+                int x = minX + offset;
+                for (int z = 0; z < preset.Depth; z++)
+                {
+                    CellId cell = new CellId(x, y, z);
+                    volume.Add(cell);
+                    bool openBaseTunnelCell = level == 0 && z == CellId.MinimumDepth;
+                    ValidateVolumeCell(
+                        world,
+                        materials,
+                        boundary,
+                        cells,
+                        cell,
+                        openBaseTunnelCell,
+                        invalid,
+                        excavation,
+                        front);
+                    if (openBaseTunnelCell)
+                    {
+                        baseTunnel.Add(cell);
+                    }
+                }
             }
         }
 
-        List<CellId> roof = new List<CellId>(preset.TopWidth);
-        int roofY = entrance.Y - preset.Height;
-        int roofMinX = entrance.X - ((preset.TopWidth - 1) / 2);
-        for (int offset = 0; offset < preset.TopWidth; offset++)
+        List<CellId> roof = ValidateRoof(
+            world,
+            cells,
+            preset,
+            entrance,
+            invalid);
+        if (invalid.Count > 0)
         {
-            int x = roofMinX + offset;
-            if (!Contains(world.Size, x, roofY))
-            {
-                return CaveRoomPlanResult.Failure(
-                    CaveRoomPlanFailureReason.MissingRoof,
-                    "One complete row of solid rock must remain above the room.");
-            }
-
-            CellId roofCell = new CellId(x, roofY, entrance.Z);
-            if (!cells.TryGetValue(roofCell, out CellSnapshot roofSnapshot)
-                || !roofSnapshot.IsSolid)
-            {
-                return CaveRoomPlanResult.Failure(
-                    CaveRoomPlanFailureReason.MissingRoof,
-                    "One complete row of solid rock must remain above the room.");
-            }
-
-            roof.Add(roofCell);
+            CaveRoomPlanFailureReason reason = SelectPrimaryFailure(invalid);
+            return CaveRoomPlanResult.Failure(
+                reason,
+                FailureDetail(reason),
+                invalid);
         }
 
-        if (front.Count == 0)
+        if (excavation.Count == 0)
         {
             return CaveRoomPlanResult.Failure(
                 CaveRoomPlanFailureReason.NothingToExcavate,
-                "The selected room cross-section is already open on Z=0.");
+                "The selected room volume contains no mineable rock.");
         }
 
         return CaveRoomPlanResult.Success(new CaveRoomPlan(
             preset,
             entrance,
-            front,
-            volume,
-            roof));
+            front.OrderBy(cell => cell).ToArray(),
+            excavation.OrderBy(cell => cell).ToArray(),
+            baseTunnel.OrderBy(cell => cell).ToArray(),
+            volume.OrderBy(cell => cell).ToArray(),
+            roof.OrderBy(cell => cell).ToArray()));
     }
 
     public static int InterpolateWidth(CaveRoomPreset preset, int level)
@@ -155,108 +169,142 @@ public sealed class CaveRoomPlanner
         return (int)Math.Round(width, MidpointRounding.AwayFromZero);
     }
 
-    private static HashSet<CellId> BuildUpgradeOpenCells(
-        IReadOnlyCollection<CaveRoomPlan>? completedPlans,
-        CellId entrance)
+    private static void ValidateVolumeCell(
+        WorldSnapshot world,
+        MaterialCatalog? materials,
+        ExcavationBoundaryPolicy boundary,
+        IReadOnlyDictionary<CellId, CellSnapshot> cells,
+        CellId cell,
+        bool openBaseTunnelCell,
+        ICollection<CaveRoomInvalidCell> invalid,
+        ICollection<CellId> excavation,
+        ICollection<CellId> front)
     {
-        HashSet<CellId> cells = new HashSet<CellId>();
-        if (completedPlans == null)
+        if (!world.Size.Contains(cell) || !cells.TryGetValue(cell, out CellSnapshot snapshot))
         {
-            return cells;
+            invalid.Add(new CaveRoomInvalidCell(
+                cell,
+                CaveRoomPlanFailureReason.RoomOutOfBounds));
+            return;
         }
 
-        foreach (CaveRoomPlan plan in completedPlans)
+        if (boundary.IsProtected(cell))
         {
-            if (plan.Entrance != entrance)
+            invalid.Add(new CaveRoomInvalidCell(
+                cell,
+                CaveRoomPlanFailureReason.ProtectedRock));
+            return;
+        }
+
+        if (openBaseTunnelCell)
+        {
+            if (snapshot.IsSolid)
             {
+                invalid.Add(new CaveRoomInvalidCell(
+                    cell,
+                    CaveRoomPlanFailureReason.BaseTunnelMissing));
+            }
+
+            return;
+        }
+
+        if (!snapshot.IsSolid)
+        {
+            invalid.Add(new CaveRoomInvalidCell(
+                cell,
+                CaveRoomPlanFailureReason.RoomObstructed));
+            return;
+        }
+
+        MaterialDefinition? material = materials?.Get(snapshot.State.MaterialId);
+        if (material != null && !material.IsMineable)
+        {
+            invalid.Add(new CaveRoomInvalidCell(
+                cell,
+                CaveRoomPlanFailureReason.UnmineableRock));
+            return;
+        }
+
+        excavation.Add(cell);
+        if (cell.Z == CellId.MinimumDepth)
+        {
+            front.Add(cell);
+        }
+    }
+
+    private static List<CellId> ValidateRoof(
+        WorldSnapshot world,
+        IReadOnlyDictionary<CellId, CellSnapshot> cells,
+        CaveRoomPreset preset,
+        CellId entrance,
+        ICollection<CaveRoomInvalidCell> invalid)
+    {
+        List<CellId> roof = new List<CellId>(preset.TopWidth);
+        int roofY = entrance.Y - preset.Height;
+        int roofMinX = entrance.X - ((preset.TopWidth - 1) / 2);
+        for (int offset = 0; offset < preset.TopWidth; offset++)
+        {
+            CellId roofCell = new CellId(
+                roofMinX + offset,
+                roofY,
+                CellId.MinimumDepth);
+            if (!world.Size.Contains(roofCell)
+                || !cells.TryGetValue(roofCell, out CellSnapshot roofSnapshot)
+                || !roofSnapshot.IsSolid)
+            {
+                invalid.Add(new CaveRoomInvalidCell(
+                    roofCell,
+                    CaveRoomPlanFailureReason.MissingRoof));
                 continue;
             }
 
-            for (int index = 0; index < plan.VolumeCells.Count; index++)
-            {
-                CellId cell = plan.VolumeCells[index];
-                if (cell.Z == 0)
-                {
-                    cells.Add(new CellId(cell.X, cell.Y, cell.Z));
-                }
-            }
+            roof.Add(roofCell);
         }
 
-        return cells;
+        return roof;
     }
 
-    private static CaveRoomPlanResult? AddRow(
-        WorldSnapshot world,
-        ExcavationBoundaryPolicy boundary,
-        IReadOnlyDictionary<CellId, CellSnapshot> cells,
-        ISet<CellId> upgradeOpenCells,
-        CaveRoomPreset preset,
-        CellId entrance,
-        int level,
-        ICollection<CellId> front,
-        ICollection<CellId> volume)
+    private static CaveRoomPlanFailureReason SelectPrimaryFailure(
+        IReadOnlyCollection<CaveRoomInvalidCell> invalid)
     {
-        int y = entrance.Y - level;
-        int rowWidth = InterpolateWidth(preset, level);
-        int minX = entrance.X - ((rowWidth - 1) / 2);
-        for (int offset = 0; offset < rowWidth; offset++)
+        CaveRoomPlanFailureReason[] priority =
         {
-            int x = minX + offset;
-            if (!Contains(world.Size, x, y))
+            CaveRoomPlanFailureReason.RoomOutOfBounds,
+            CaveRoomPlanFailureReason.ProtectedRock,
+            CaveRoomPlanFailureReason.UnmineableRock,
+            CaveRoomPlanFailureReason.BaseTunnelMissing,
+            CaveRoomPlanFailureReason.RoomObstructed,
+            CaveRoomPlanFailureReason.MissingRoof,
+        };
+        for (int index = 0; index < priority.Length; index++)
+        {
+            if (invalid.Any(value => value.Reason == priority[index]))
             {
-                return CaveRoomPlanResult.Failure(
-                    CaveRoomPlanFailureReason.RoomOutOfBounds,
-                    "The room outline leaves the world bounds.");
-            }
-
-            CellId cell = new CellId(x, y, entrance.Z);
-            if (!cells.TryGetValue(cell, out CellSnapshot snapshot))
-            {
-                return CaveRoomPlanResult.Failure(
-                    CaveRoomPlanFailureReason.RoomOutOfBounds,
-                    "The room outline leaves the world bounds.");
-            }
-
-            if (boundary.IsProtected(cell))
-            {
-                return CaveRoomPlanResult.Failure(
-                    CaveRoomPlanFailureReason.ProtectedRock,
-                    "The room overlaps a protected rock cell.");
-            }
-
-            if (level > 0
-                && !snapshot.IsSolid
-                && !upgradeOpenCells.Contains(cell))
-            {
-                return CaveRoomPlanResult.Failure(
-                    CaveRoomPlanFailureReason.RoomObstructed,
-                    "Only a completed room at the same entrance may overlap the new room.");
-            }
-
-            if (snapshot.IsSolid)
-            {
-                front.Add(cell);
-            }
-
-            for (int z = 0; z < preset.Depth; z++)
-            {
-                volume.Add(new CellId(cell.X, cell.Y, z));
+                return priority[index];
             }
         }
 
-        return null;
+        return invalid.First().Reason;
     }
 
-    private static bool Contains(WorldSize size, int x, int y)
+    private static string FailureDetail(CaveRoomPlanFailureReason reason)
     {
-        return x >= 0 && y >= 0 && x < size.Width && y < size.Height;
-    }
-
-    private static bool IsOpen(
-        IReadOnlyDictionary<CellId, CellSnapshot> cells,
-        CellId cell)
-    {
-        return cells.TryGetValue(cell, out CellSnapshot snapshot) && !snapshot.IsSolid;
+        return reason switch
+        {
+            CaveRoomPlanFailureReason.RoomOutOfBounds =>
+                "The room outline leaves the world bounds.",
+            CaveRoomPlanFailureReason.ProtectedRock =>
+                "The room overlaps a protected rock cell.",
+            CaveRoomPlanFailureReason.UnmineableRock =>
+                "Every room excavation cell above the tunnel must be mineable rock.",
+            CaveRoomPlanFailureReason.BaseTunnelMissing =>
+                "The complete bottom row must already be an open through tunnel.",
+            CaveRoomPlanFailureReason.RoomObstructed =>
+                "Every room cell above the tunnel must still contain mineable rock.",
+            CaveRoomPlanFailureReason.MissingRoof =>
+                "One complete row of solid rock must remain above the room.",
+            _ => "The cave room placement is invalid.",
+        };
     }
 }
 

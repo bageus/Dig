@@ -28,6 +28,11 @@ namespace Dig.Unity
             {
                 _fillRenderer.enabled = false;
             }
+
+            for (int index = 0; index < _invalidCellMarkers.Count; index++)
+            {
+                _invalidCellMarkers[index].SetActive(false);
+            }
         }
     }
 }

@@ -40,7 +40,9 @@ Quarter work явно переводит signed generation seed в его 32-bit
 
 ### Continuation и cave rooms
 
-Manual connected-zone planning был ограничен radius 4 и XY adjacency. Frontier/cluster resolution теперь учитывает соседние Z layers и весь connected target set. Room preview всегда рисует front silhouette; depth designations и quarter masks синхронизируются из authoritative world/job state.
+Manual connected-zone planning был ограничен radius 4 и XY adjacency. Frontier/cluster resolution теперь учитывает соседние Z layers и весь connected target set. Если назначенный ordinary Dig job после refresh не имеет успешного route/work cell, assignment снимается, quarter state сохраняется, а job возвращается в общий pool вместо вечного `Claimed/InProgress` без движения.
+
+Room commit раньше передавал `VolumeCells` в atomic `SetDigDesignations`, хотя volume включал уже открытую entrance cell; Domain корректно отклонял весь batch. План теперь разделяет полный `VolumeCells`, открытый `BaseTunnelCells` и фактический `ExcavationCells`. Commit назначает только rock mask. Planner требует полный сквозной base tunnel, проверяет mineability каждой остальной 3D-клетки и возвращает per-cell diagnostics. Runtime разрешает pointer на породе над тоннелем и preview красит конкретные missing/unmineable/protected cells.
 
 ## Изменённые owners
 

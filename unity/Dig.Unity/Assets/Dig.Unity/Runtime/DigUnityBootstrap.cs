@@ -75,7 +75,7 @@ namespace Dig.Unity
                     Dig.Domain.Agents.AgentSkillCatalog.Stonework)
                 / Dig.Domain.Agents.AgentSkillCatalog.UnitsPerPoint);
             terrainSession.InitializeHauling(worldSession.Journal);
-            terrainSession.PlanMovement(agents);
+            terrainSession.PlanMovement(agents, tick: 0);
             terrainSession.InitializeBuildingDemo(worldSession.Journal);
             terrainSession.InitializeToolAwareJobAssignment(worldSession.Journal);
             Result settledItems = terrainSession.SettleWorldItems(agentSession.Tick);

@@ -15,11 +15,17 @@ namespace Dig.Unity
     internal sealed partial class DigTerrainWorkSession
     {
         public IReadOnlyDictionary<string, CellId> PlanMovement(
-            IReadOnlyList<AgentViewModel> agents)
+            IReadOnlyList<AgentViewModel> agents,
+            long tick)
         {
             if (agents == null)
             {
                 throw new ArgumentNullException(nameof(agents));
+            }
+
+            if (tick < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(tick));
             }
 
             Result refresh = RefreshNavigation();
@@ -97,15 +103,18 @@ namespace Dig.Unity
                     navigation);
                 if (planned.IsFailure)
                 {
+                    ReleaseUnroutableExcavationAssignment(job, tick);
                     continue;
                 }
 
                 TerrainWorkRoutePlan route = planned.Value;
-                _routePlans[job.Id] = route;
                 if (!route.Succeeded || !route.WorkCell.HasValue)
                 {
+                    ReleaseUnroutableExcavationAssignment(job, tick);
                     continue;
                 }
+
+                _routePlans[job.Id] = route;
 
                 NavigationPath path = route.PathResult.Path!;
                 movement[agentId] = path.Cells.Count > 1
@@ -114,6 +123,29 @@ namespace Dig.Unity
             }
 
             return movement;
+        }
+
+
+        private void ReleaseUnroutableExcavationAssignment(
+            JobSnapshot job,
+            long tick)
+        {
+            if (job.Definition is not DigJobDefinition
+                || !job.AssignedAgentId.HasValue
+                || _releaseAssignment == null)
+            {
+                return;
+            }
+
+            Result released = _releaseAssignment.Handle(
+                new ReleaseJobAssignmentCommand(job.Id, tick));
+            if (released.IsFailure)
+            {
+                return;
+            }
+
+            _excavationQuarterWork.Cancel(job.AssignedAgentId.Value);
+            _routePlans.Remove(job.Id);
         }
 
         public IReadOnlyList<RouteViewModel> LoadRoutes()

@@ -20,6 +20,7 @@ namespace Dig.Unity
             IReadOnlyList<CaveRoomPlan> completed = GetCompletedCaveRoomPlans(snapshot);
             return _caveRoomPlanner.Plan(
                 snapshot,
+                _repository.Get().Materials,
                 _boundaryPolicy,
                 kind,
                 entrance,
@@ -47,9 +48,9 @@ namespace Dig.Unity
                 return Result.Failure(ProtectedRock);
             }
 
-            for (int index = 0; index < plan.VolumeCells.Count; index++)
+            for (int index = 0; index < plan.ExcavationCells.Count; index++)
             {
-                if (IsProtected(plan.VolumeCells[index]))
+                if (IsProtected(plan.ExcavationCells[index]))
                 {
                     return Result.Failure(ProtectedRock);
                 }
@@ -57,7 +58,7 @@ namespace Dig.Unity
 
             _tick = checked(_tick + 1);
             Result<WorldMutationResult> designated = _repository.Get().SetDigDesignations(
-                plan.VolumeCells,
+                plan.ExcavationCells,
                 _tick);
             if (designated.IsFailure)
             {
