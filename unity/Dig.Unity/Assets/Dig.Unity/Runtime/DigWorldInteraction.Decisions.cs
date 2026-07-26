@@ -68,6 +68,18 @@ public sealed partial class DigWorldInteraction
             StartBuildingPlacement(decision, item);
         }
 
+        if (decision.Effects.HasFlag(PresentationInputEffect.SelectBuildingBox))
+        {
+            if (item != null && item.Model.IsBuildingBox)
+            {
+                SelectBuildingBox(item.Model, item);
+            }
+            else if (decision.TargetEntityId.HasValue)
+            {
+                SelectBuildingBoxFromHud(decision.TargetEntityId.Value.ToString());
+            }
+        }
+
         if (decision.Effects.HasFlag(PresentationInputEffect.DeselectResident))
         {
             _agentRenderer!.ClearSelection();
@@ -77,7 +89,7 @@ public sealed partial class DigWorldInteraction
 
         if (decision.Effects.HasFlag(PresentationInputEffect.SelectResident))
         {
-            _selectedBuildingBox = null;
+            ClearBuildingBoxSelection();
             DisableExcavationDrawing();
             DisableCaveRoomPlanning();
             ClearSelectedInventoryStack();
@@ -104,7 +116,7 @@ public sealed partial class DigWorldInteraction
 
         if (decision.Effects.HasFlag(PresentationInputEffect.SelectBuilding))
         {
-            _selectedBuildingBox = null;
+            ClearBuildingBoxSelection();
             ClearSelectedInventoryStack();
             DigBuildingVisual? selected = building;
             if (selected == null && decision.TargetEntityId.HasValue)
