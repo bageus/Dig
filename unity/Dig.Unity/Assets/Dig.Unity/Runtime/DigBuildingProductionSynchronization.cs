@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Agents;
+using Dig.Application.Jobs;
 using Dig.Application.Production;
 using Dig.Domain.Agents;
 using Dig.Domain.Buildings;

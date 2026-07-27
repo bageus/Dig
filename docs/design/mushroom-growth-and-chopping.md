@@ -54,6 +54,7 @@ Automatic job generation и самостоятельный выбор грибо
    - завершает job и освобождает worker/site/work-position reservations;
    - выдаёт resident `0.8` point навыка `skill.woodworking` через idempotent grant source.
 8. Drops становятся обычными world items и могут быть подняты существующим pickup workflow.
+9. После completion шляпки и ножка не являются mushroom targets: у них нет `DigMushroomVisual`, mushroom collider или chop command. Если physical drop находится перед regrown mushroom в pointer hit stack, foreground world item блокирует axe target; `Alt+LMB` использует обычный pickup workflow.
 
 ### Повторный direct order
 
@@ -222,6 +223,7 @@ SourceId = mushroom chop completion generation
 8. mushroom geometry стоит вертикально основанием на walk surface; URP presentation не может отображаться magenta из-за неподдерживаемого shader;
 9. `Large` визуально только немного выше resident: ориентир — около 110% высоты resident interaction collider, а не кратно выше гнома;
 10. `AbsentRegrowing` не имеет mushroom geometry, collider или direct interaction target.
+11. Физическая шляпка/ножка после рубки остаётся foreground world-item target: она может подсвечиваться/подниматься как материал и никогда не маршрутизируется в `ChopMushroom`, даже если site уже успел отрасти в той же cell.
 
 Автоматический job UI и auto-designation гриба остаются будущим scope.
 
@@ -244,6 +246,8 @@ SourceId = mushroom chop completion generation
 - один completion generation создаёт drops и skill grant максимум один раз;
 - drop quantities зависят только от authoritative stage policy, не от animation;
 - каждый drop — отдельная Inventory unit entity quantity 1;
+- cap/leg drop не имеет mushroom target identity и не может принимать chop command;
+- foreground drop collider блокирует выбор regrown mushroom за ним, пока pointer направлен на материал;
 - item pickup не изменяет mushroom growth state;
 - building footprint никогда не занимает mushroom site cell, даже когда гриб отсутствует;
 - world item placement в site cell разрешён;
@@ -344,7 +348,8 @@ Unity Play Mode:
 - hit bands use current Woodworking and deterministic required swings;
 - one site cannot be chopped concurrently by two residents;
 - successful chop atomically removes visible mushroom, creates stage drops и gives `0.8` Woodworking;
-- caps/leg are ordinary pickable unit items;
+- caps/leg are ordinary pickable unit items, have no mushroom target/collider identity and cannot be chopped;
+- when a drop is in front of a regrown mushroom, pointer hover/cursor/LMB resolve the drop first; `Alt+LMB` starts ordinary pickup instead of another chop;
 - site reappears in the same cell after absent/regrowth duration;
 - building placement is blocked in the permanent site cell, item placement is not;
 - save/load/retry never duplicate mushroom drops or skill progress;
@@ -363,3 +368,4 @@ Unity Play Mode:
 | 2026-07-27 | Зафиксированы site lifecycle, четыре видимые стадии, 15 игровых минут/1 секунда test profile, direct axe workflow, Woodworking hit bands, +0.8 grant, stage drops, exclusive worker takeover, permanent building block и два demo sites. Противоречия вынесены в Q-MUSH-001..003. | Пользователь | Все разделы, #423 |
 | 2026-07-27 | Q-MUSH-001=A: absent не интерактивен; Q-MUSH-002=B: takeover/interruption сбрасывает progress; Q-MUSH-003=A: рост и remaining duration замораживаются на время active chop. Статус повышен до APPROVED. | Пользователь | Workflow, state machine, conflicts, save/test acceptance, #423 |
 | 2026-07-27 | По runtime screenshot подтверждены обязательные исправления presentation/input: вертикальная установка на walk surface, URP-compatible material, Large около 110% resident height, hover highlight, единый hover/cursor/LMB target без перехвата overlapping building, статус «Добывает гриб» и chopping pose. | Пользователь | Workflow, Input/UI/Presentation, Play Mode acceptance, #423 |
+| 2026-07-28 | По повторному runtime screenshot уточнено: side-view bootstrap rotation не должна передаваться mushroom root; growing mushroom обязан оставаться world-upright. После рубки cap/leg — только foreground pickable materials без mushroom identity; они блокируют axe target для regrown site за ними. | Пользователь | Workflow, Input/UI/Presentation, invariants, Play Mode acceptance, #423 |
