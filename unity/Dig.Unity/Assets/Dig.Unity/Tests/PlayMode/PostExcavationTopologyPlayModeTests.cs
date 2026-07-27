@@ -61,10 +61,10 @@ public sealed class PostExcavationTopologyPlayModeTests
 
     private static IEnumerable<CellId> HorizontalNeighbours(CellId cell)
     {
-        yield return cell.Offset(-1, 0, 0);
-        yield return cell.Offset(1, 0, 0);
-        yield return cell.Offset(0, -1, 0);
-        yield return cell.Offset(0, 1, 0);
+        yield return new CellId(cell.X - 1, cell.Y, cell.Z);
+        yield return new CellId(cell.X + 1, cell.Y, cell.Z);
+        yield return new CellId(cell.X, cell.Y - 1, cell.Z);
+        yield return new CellId(cell.X, cell.Y + 1, cell.Z);
     }
 
     private static IDictionary RenderedCells(DigTunnelDemoRenderer renderer)
