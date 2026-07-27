@@ -56,22 +56,48 @@ public sealed class BarrelAttackApplicationTests
     [Fact]
     public void Concurrent_attacks_are_allowed_but_only_first_commit_creates_contents()
     {
+        CellId firstWorkPosition = new CellId(4, 6, 0);
+        CellId secondWorkPosition = new CellId(6, 6, 0);
         Harness harness = CreateHarness(Ore);
         Assert.True(harness.Start.Handle(new StartDirectBarrelAttackCommand(
             FirstJobId,
             BarrelId,
             FirstWorkerId,
-            new CellId(4, 6, 0),
+            firstWorkPosition,
             900,
             1)).IsSuccess);
         Assert.True(harness.Start.Handle(new StartDirectBarrelAttackCommand(
             SecondJobId,
             BarrelId,
             SecondWorkerId,
-            new CellId(6, 6, 0),
+            secondWorkPosition,
             900,
             1)).IsSuccess);
-        Assert.Equal(2, harness.Jobs.GetReservations().Count);
+
+        ReservationSnapshot[] reservations = harness.Jobs.GetReservations().ToArray();
+        Assert.Equal(3, reservations.Count(value => value.JobId == FirstJobId));
+        Assert.Equal(3, reservations.Count(value => value.JobId == SecondJobId));
+        Assert.Contains(reservations, value =>
+            value.JobId == FirstJobId
+            && value.Key == ReservationKey.ForJob(FirstJobId));
+        Assert.Contains(reservations, value =>
+            value.JobId == FirstJobId
+            && value.Key == ReservationKey.ForAgent(FirstWorkerId));
+        Assert.Contains(reservations, value =>
+            value.JobId == FirstJobId
+            && value.Key == ReservationKey.ForPosition(firstWorkPosition));
+        Assert.Contains(reservations, value =>
+            value.JobId == SecondJobId
+            && value.Key == ReservationKey.ForJob(SecondJobId));
+        Assert.Contains(reservations, value =>
+            value.JobId == SecondJobId
+            && value.Key == ReservationKey.ForAgent(SecondWorkerId));
+        Assert.Contains(reservations, value =>
+            value.JobId == SecondJobId
+            && value.Key == ReservationKey.ForPosition(secondWorkPosition));
+        Assert.DoesNotContain(reservations, value =>
+            value.Key == ReservationKey.ForEcologyTarget(BarrelId));
+
         Assert.True(harness.Arrive.Handle(new ArriveAtBarrelCommand(FirstJobId, 2)).IsSuccess);
         Assert.True(harness.Arrive.Handle(new ArriveAtBarrelCommand(SecondJobId, 2)).IsSuccess);
         Assert.True(harness.Hit.Handle(new CompleteBarrelHitCommand(FirstJobId, 3)).IsSuccess);
