@@ -77,7 +77,11 @@ public sealed class BuildingBoxGhostViewModel
         IsValid = isValid;
         ReasonCode = string.IsNullOrWhiteSpace(reasonCode) ? null : reasonCode.Trim();
         PlacementKind = placementKind;
-        IsVisible = isVisible;
+        IsVisible = isVisible
+            && !string.Equals(
+                ReasonCode,
+                PackableBuildingPlacementErrors.SurfaceMissing.Code,
+                StringComparison.Ordinal);
     }
 
     public EntityId? SourceStackId { get; }
