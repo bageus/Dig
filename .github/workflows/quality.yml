@@ -56,6 +56,8 @@ jobs:
           name: post-excavation-topology-diagnostics
           path: |
             /tmp/post-excavation-topology-diagnostics.txt
+            /tmp/post-excavation-topology.b64
+            /tmp/post-excavation-topology.patch.gz
             /tmp/post-excavation-topology.patch
           if-no-files-found: warn
           retention-days: 2
