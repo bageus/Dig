@@ -28,8 +28,9 @@ namespace Dig.Unity
             HashSet<EntityId> selectedResidents = new HashSet<EntityId>(residents);
             JobSnapshot[] active = LoadActiveSpatialJobs().ToArray();
             JobSnapshot? target = active
-                .Where(value => ((SpatialDigJobDefinition)value.Definition)
-                    .Target.WorkCell == workCell)
+                .Where(value => IsSpatialSourceCell(
+                    ((SpatialDigJobDefinition)value.Definition).Target,
+                    workCell))
                 .OrderBy(value => value.Id.ToString(), StringComparer.Ordinal)
                 .FirstOrDefault();
             if (target == null)
@@ -133,6 +134,16 @@ namespace Dig.Unity
 
             result = Result.Success();
             return true;
+        }
+
+
+        private static bool IsSpatialSourceCell(
+            SpatialDigJobTarget target,
+            CellId source)
+        {
+            return target.TargetCell.X == source.X
+                && target.TargetCell.Y == source.Y
+                && target.TargetCell.Z == source.Z + 1;
         }
 
         private void RollbackSpatialAssignments(

@@ -19,15 +19,19 @@ public sealed class TunnelDepthExcavationPlan
 {
     internal TunnelDepthExcavationPlan(
         CellId source,
-        CellId target)
+        CellId target,
+        CellId workCell)
     {
         Source = source;
         Target = target;
+        WorkCell = workCell;
     }
 
     public CellId Source { get; }
 
     public CellId Target { get; }
+
+    public CellId WorkCell { get; }
 }
 
 public sealed class TunnelDepthExcavationPlanResult
@@ -116,8 +120,50 @@ public sealed class TunnelDepthExcavationPolicy
         }
 
         return TunnelDepthExcavationPlanResult.Success(
-            new TunnelDepthExcavationPlan(source, target));
+            new TunnelDepthExcavationPlan(
+                source,
+                target,
+                ResolveWorkCell(volume, source, target)));
     }
+    private static CellId ResolveWorkCell(
+        TunnelNavigationVolume volume,
+        CellId source,
+        CellId target)
+    {
+        if (!volume.IsVerticalTunnel(source))
+        {
+            return source;
+        }
+
+        CellId[] candidates =
+        {
+            new CellId(source.X - 1, source.Y, source.Z),
+            new CellId(source.X + 1, source.Y, source.Z),
+            new CellId(target.X - 1, target.Y, target.Z),
+            new CellId(target.X + 1, target.Y, target.Z),
+        };
+        for (int index = 0; index < candidates.Length; index++)
+        {
+            CellId candidate = candidates[index];
+            if (!volume.Contains(candidate)
+                || !volume.IsOpen(candidate)
+                || (candidate.Z == source.Z
+                    && volume.IsVerticalTunnel(candidate)))
+            {
+                continue;
+            }
+
+            if (volume.FindPath(source, candidate).Succeeded)
+            {
+                return candidate;
+            }
+        }
+
+        // A shaft cell remains a valid work position. Presentation renders this
+        // as a stationary climbing/mining stance rather than standing in air.
+        return source;
+    }
+
 }
 
 }

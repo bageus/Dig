@@ -64,6 +64,7 @@ namespace Dig.Unity
             Result terrain = AgentSession!.CompleteTunnelDepthExcavation(
                 commit.Target,
                 WorldSession.LoadSnapshot(),
+                WorldSession.PlannedTunnelCells,
                 WorldSession.PlannedVerticalTunnelCells);
             if (terrain.IsFailure)
             {
@@ -122,6 +123,7 @@ namespace Dig.Unity
 
                 AgentSession.SynchronizeNavigation(
                     WorldSession!.LoadSnapshot(),
+                    WorldSession.PlannedTunnelCells,
                     WorldSession.PlannedVerticalTunnelCells);
                 floorRenderer.AddRoomFloor(plan);
             }

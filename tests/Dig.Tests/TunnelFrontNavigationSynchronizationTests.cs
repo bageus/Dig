@@ -19,7 +19,10 @@ public sealed class TunnelFrontNavigationSynchronizationTests
         });
         CellId start = new CellId(1, 2, 0);
         TunnelNavigationVolume synchronized =
-            TunnelNavigationVolume.FromWorldSnapshot(world, new CellId[0]);
+            TunnelNavigationVolume.FromWorldSnapshot(
+                world,
+                new CellId[0],
+                new CellId[0]);
         TunnelPathResult route = synchronized.FindPath(
             start,
             new CellId(3, 2, 0));
@@ -35,7 +38,10 @@ public sealed class TunnelFrontNavigationSynchronizationTests
         CellId lower = new CellId(2, 3);
         WorldSnapshot world = CreateWorld(new[] { upper, lower });
         TunnelNavigationVolume synchronized =
-            TunnelNavigationVolume.FromWorldSnapshot(world, new[] { upper, lower });
+            TunnelNavigationVolume.FromWorldSnapshot(
+                world,
+                new[] { upper, lower },
+                new[] { upper, lower });
         TunnelPathResult route = synchronized.FindPath(
             new CellId(upper.X, upper.Y, 0),
             new CellId(lower.X, lower.Y, 0));
@@ -51,12 +57,40 @@ public sealed class TunnelFrontNavigationSynchronizationTests
         CellId shaft = new CellId(2, 2, 0);
         WorldSnapshot world = CreateWorld(new[] { entry, shaft });
         TunnelNavigationVolume synchronized =
-            TunnelNavigationVolume.FromWorldSnapshot(world, new[] { shaft });
+            TunnelNavigationVolume.FromWorldSnapshot(
+                world,
+                new[] { shaft },
+                new[] { shaft });
 
         Assert.True(synchronized.IsOpen(entry));
         Assert.True(synchronized.IsVerticalTunnel(shaft));
         Assert.True(synchronized.CanTraverseStep(entry, shaft));
         Assert.True(synchronized.FindPath(entry, shaft).Succeeded);
+    }
+
+    [Fact]
+    public void Completed_planned_tunnel_cells_remain_traversable_without_floor_support()
+    {
+        CellId first = new CellId(1, 2, 0);
+        CellId second = new CellId(2, 2, 0);
+        CellId third = new CellId(3, 2, 0);
+        WorldSnapshot world = CreateWorld(new[]
+        {
+            first,
+            second,
+            third,
+            new CellId(1, 3, 0),
+            new CellId(2, 3, 0),
+            new CellId(3, 3, 0),
+        });
+        TunnelNavigationVolume synchronized =
+            TunnelNavigationVolume.FromWorldSnapshot(
+                world,
+                new[] { first, second, third },
+                new CellId[0]);
+
+        Assert.True(synchronized.FindPath(first, third).Succeeded);
+        Assert.False(synchronized.IsVerticalTunnel(second));
     }
 
     [Fact]
@@ -69,7 +103,10 @@ public sealed class TunnelFrontNavigationSynchronizationTests
             new CellId(3, 3),
         });
         TunnelNavigationVolume synchronized =
-            TunnelNavigationVolume.FromWorldSnapshot(world, new CellId[0]);
+            TunnelNavigationVolume.FromWorldSnapshot(
+                world,
+                new CellId[0],
+                new CellId[0]);
 
         Assert.False(synchronized.IsOpen(new CellId(unsupported.X, unsupported.Y, 0)));
     }

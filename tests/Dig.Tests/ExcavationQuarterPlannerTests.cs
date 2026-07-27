@@ -96,8 +96,33 @@ namespace Dig.Tests
                     skill,
                     seed);
 
-                Assert.InRange(Count(plan.Quarters), minimum, maximum);
+                int stagedMinimum = System.Math.Min(minimum, 2);
+                int stagedMaximum = System.Math.Min(maximum, 2);
+                Assert.InRange(Count(plan.Quarters), stagedMinimum, stagedMaximum);
+                Assert.Equal(
+                    ExcavationQuarter.None,
+                    plan.Quarters & ~ExcavationQuarterPlanner.CandidatesFor(
+                        ExcavationApproachSide.Right));
                 Assert.Equal(1, plan.RequiredSwingsPerQuarter);
+            }
+        }
+
+        [Fact]
+        public void Downward_high_skill_swing_completes_upper_band_before_lower_band()
+        {
+            ExcavationQuarterPlanner planner = new ExcavationQuarterPlanner();
+
+            for (ulong seed = 0; seed < 64; seed++)
+            {
+                ExcavationSwingPlan first = planner.Plan(
+                    new ExcavationQuarterState(),
+                    ExcavationApproachSide.Above,
+                    miningSkill: 100,
+                    deterministicSeed: seed);
+
+                Assert.Equal(
+                    ExcavationQuarter.UpperLeft | ExcavationQuarter.UpperRight,
+                    first.Quarters);
             }
         }
 

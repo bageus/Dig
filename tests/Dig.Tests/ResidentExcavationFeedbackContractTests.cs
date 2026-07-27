@@ -46,12 +46,18 @@ public sealed class ResidentExcavationFeedbackContractTests
             "DigResidentRig.cs"));
 
         Assert.Contains(
-            "AgentRenderer.SynchronizeWorkFacing(TerrainSession.LoadJobs());",
+            "AgentRenderer.SynchronizeWorkFacing(",
             equipment);
+        Assert.Contains("AgentSession.TunnelVolume", equipment);
+        Assert.Contains("WorldSession.LoadSnapshot()", equipment);
         Assert.Contains("JobStageKind.PerformWork", facing);
         Assert.Contains("JobToolKind.Mining", facing);
         Assert.Contains("SetWorkTarget", facing);
+        Assert.Contains("tunnelVolume.IsVerticalTunnel", facing);
+        Assert.Contains("current.Y + 1", facing);
         Assert.Contains("DigTunnelProjection.CellWorldPosition", visual);
+        Assert.Contains("_climbingWorkPose", visual);
+        Assert.Contains("ApplyClimbPose", visual);
         Assert.Contains("FaceAwayFromMainCamera", movement);
         Assert.Contains("ClimbWallDepthOffset", movement);
         Assert.Contains("ApplyClimbPose", movement);

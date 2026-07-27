@@ -92,7 +92,7 @@ def check_tunnel_depth_contracts(
             "TunnelDepthExcavations",
             "PlanTunnelDepthExcavation",
             "CompleteTunnelDepthExcavation",
-            "SynchronizeNavigation(world, plannedVerticalCells)",
+            "SynchronizeNavigation(world, plannedTunnelCells, plannedVerticalCells)",
         ),
     ))
     errors.extend(require_fragments(
