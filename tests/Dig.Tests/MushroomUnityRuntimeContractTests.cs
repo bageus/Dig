@@ -56,6 +56,22 @@ public sealed class MushroomUnityRuntimeContractTests
         Assert.DoesNotContain("MushroomBuildingBlockedCells", items);
     }
 
+    [Fact]
+    public void PlayMode_tests_respect_domain_and_runtime_visibility_boundaries()
+    {
+        string playMode = PlayModeRoot();
+        string topology = Read(playMode, "PostExcavationTopologyPlayModeTests.cs");
+        string mushrooms = Read(playMode, "MushroomChoppingPlayModeTests.cs");
+
+        Assert.DoesNotContain(".Offset(", topology);
+        Assert.Contains("newCellId(cell.X-1,cell.Y,cell.Z)", topology);
+        Assert.Contains("newCellId(cell.X,cell.Y+1,cell.Z)", topology);
+        Assert.DoesNotContain("renderer.Render(", mushrooms);
+        Assert.DoesNotContain("renderer.ActiveCount", mushrooms);
+        Assert.Contains("Invoke(renderer,\"Render\",(object)new[]{large})", mushrooms);
+        Assert.Contains("GetProperty(renderer,\"ActiveCount\")", mushrooms);
+    }
+
     private static int Count(string source, string value)
     {
         int count = 0;
@@ -69,8 +85,8 @@ public sealed class MushroomUnityRuntimeContractTests
         return count;
     }
 
-    private static string Read(string runtime, string file) => Normalize(
-        File.ReadAllText(Path.Combine(runtime, file)));
+    private static string Read(string root, string file) => Normalize(
+        File.ReadAllText(Path.Combine(root, file)));
 
     private static string RuntimeRoot() => Path.Combine(
         FindRepositoryRoot(),
@@ -79,6 +95,15 @@ public sealed class MushroomUnityRuntimeContractTests
         "Assets",
         "Dig.Unity",
         "Runtime");
+
+    private static string PlayModeRoot() => Path.Combine(
+        FindRepositoryRoot(),
+        "unity",
+        "Dig.Unity",
+        "Assets",
+        "Dig.Unity",
+        "Tests",
+        "PlayMode");
 
     private static string FindRepositoryRoot()
     {
