@@ -30,7 +30,7 @@ namespace Dig.Tests
             Assert.Contains("BuildingVisualState.Completed", representatives);
             Assert.Contains("SynchronizeBuildingBoxRelocation", driver);
             Assert.Contains("TryPlanBuildingBoxRelocationMovement", pickup);
-            Assert.Contains("box.Location.OwnerId", relocation);
+            Assert.Contains("relocation.StartsHeld", relocation);
             Assert.Contains("ItemLocation.InWorld(relocation.DestinationCell.Value)", relocation);
             Assert.Contains("ResidentInventorySlotVisualKind.BuildingBox", inventory);
             Assert.Contains("newColor(0.10f,0.34f,0.72f,0.96f)", inventory);
