@@ -54,6 +54,35 @@ public sealed class BuildingPlacementTests
     }
 
     [Fact]
+    public void Permanent_mushroom_site_blocks_building_but_not_world_items()
+    {
+        WorldState world = CreateEmptyWorld();
+        CellId origin = new CellId(3, 3);
+        BuildingPlacementResult placement = new BuildingPlacementValidator().Validate(
+            CreateDefinition(),
+            origin,
+            BuildingOrientation.North,
+            world.CreateSnapshot(),
+            Array.Empty<CellId>(),
+            new[] { new CellId(3, 2) },
+            ecologyBlockedCells: new[] { origin });
+
+        Assert.False(placement.Succeeded);
+        Assert.Equal(BuildingErrors.PlacementEcologyBlocked, placement.Error);
+
+        ItemId cap = new ItemId("material.mushroom_cap");
+        InventoryState inventory = new InventoryState(new ItemCatalog(new[]
+        {
+            new ItemDefinition(cap, "Mushroom cap", 100, isTool: false),
+        }));
+        Assert.True(inventory.AddUnit(
+            EntityId.Parse("71000000000000000000000000000003"),
+            cap,
+            ItemLocation.InWorld(origin),
+            tick: 0).IsSuccess);
+    }
+
+    [Fact]
     public void Placement_reports_unreachable_work_position()
     {
         WorldState world = CreateEmptyWorld();

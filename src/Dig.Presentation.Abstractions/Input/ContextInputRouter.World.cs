@@ -93,6 +93,31 @@ public sealed partial class ContextInputRouter
                 targetCell: target.Cell);
         }
 
+        if (target.Kind == ContextWorldTargetKind.Mushroom)
+        {
+            if (state.HasUsableResidentSelection
+                && target.Reachable
+                && target.EntityId.HasValue
+                && target.Cell.HasValue)
+            {
+                return Command(
+                    ApplicationInputCommandKind.ChopMushroom,
+                    state.SelectedResidentId,
+                    target.EntityId,
+                    target.Cell);
+            }
+
+            return Local(
+                PresentationInputEffect.ShowReason,
+                consumesPointer: true,
+                actorId: state.SelectedResidentId,
+                targetEntityId: target.EntityId,
+                targetCell: target.Cell,
+                reasonCode: state.HasUsableResidentSelection
+                    ? "input.mushroom.unreachable_or_absent"
+                    : "input.mushroom.resident_required");
+        }
+
         if (state.HasUsableResidentSelection
             && target.Kind == ContextWorldTargetKind.HostileResident)
         {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Dig.Application.Agents;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
+using Dig.Domain.Ecology;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
 
@@ -57,7 +58,8 @@ public sealed class SaveGameService
             context.Agents,
             context.TerrainDeposits,
             context.PackableBuildingExecutions,
-            context.MiningOutputCommits));
+            context.MiningOutputCommits,
+            context.Mushrooms));
     }
 
     public Result<LoadedGameState> Load(
@@ -112,6 +114,27 @@ public sealed class SaveGameService
         string slotId,
         MaterialCatalog materials,
         ItemCatalog items,
+        MushroomCatalog mushrooms)
+    {
+        if (mushrooms is null)
+        {
+            throw new ArgumentNullException(nameof(mushrooms));
+        }
+
+        SaveGameDocument document = _store.Load(slotId);
+        return _loader.Load(
+            document,
+            materials,
+            items,
+            buildingCatalog: null,
+            terrainDepositCatalog: null,
+            mushroomCatalog: mushrooms);
+    }
+
+    public Result<LoadedGameState> Load(
+        string slotId,
+        MaterialCatalog materials,
+        ItemCatalog items,
         BuildingCatalog buildingCatalog,
         TerrainDepositCatalog terrainDeposits)
     {
@@ -127,6 +150,36 @@ public sealed class SaveGameService
             items,
             buildingCatalog,
             terrainDeposits);
+    }
+
+    public Result<LoadedGameState> Load(
+        string slotId,
+        MaterialCatalog materials,
+        ItemCatalog items,
+        BuildingCatalog buildingCatalog,
+        TerrainDepositCatalog terrainDeposits,
+        MushroomCatalog mushrooms)
+    {
+        if (buildingCatalog is null
+            || terrainDeposits is null
+            || mushrooms is null)
+        {
+            throw new ArgumentNullException(
+                buildingCatalog is null
+                    ? nameof(buildingCatalog)
+                    : terrainDeposits is null
+                        ? nameof(terrainDeposits)
+                        : nameof(mushrooms));
+        }
+
+        SaveGameDocument document = _store.Load(slotId);
+        return _loader.Load(
+            document,
+            materials,
+            items,
+            buildingCatalog,
+            terrainDeposits,
+            mushrooms);
     }
 
     public Result<LoadedGameState> Load(

@@ -27,6 +27,7 @@ public enum ContextWorldTargetKind
     BuildingBox = 4,
     CompletedBuilding = 5,
     GenericItem = 6,
+    Mushroom = 7,
 }
 
 public enum ContextPanelMode
@@ -72,6 +73,7 @@ public enum ApplicationInputCommandKind
     MoveResident = 6,
     ApplyExcavation = 7,
     PickupWorldItem = 8,
+    ChopMushroom = 9,
 }
 
 public readonly struct ContextPointerEvent

@@ -161,6 +161,39 @@ public sealed class ContextInputRouterPriorityTests
     }
 
     [Fact]
+    public void Reachable_mushroom_creates_direct_chop_before_movement()
+    {
+        ContextInputDecision decision = WorldLeft(
+            new ContextInputState(selectedResidentId: Resident),
+            new ContextPointerTarget(
+                ContextWorldTargetKind.Mushroom,
+                Target,
+                Cell,
+                reachable: true));
+
+        AssertCommand(decision, ApplicationInputCommandKind.ChopMushroom);
+        Assert.Equal(Resident, decision.ActorId);
+        Assert.Equal(Target, decision.TargetEntityId);
+        Assert.Equal(Cell, decision.TargetCell);
+    }
+
+    [Fact]
+    public void Mushroom_without_selected_resident_is_consumed_with_reason()
+    {
+        ContextInputDecision decision = WorldLeft(
+            new ContextInputState(),
+            new ContextPointerTarget(
+                ContextWorldTargetKind.Mushroom,
+                Target,
+                Cell,
+                reachable: true));
+
+        Assert.False(decision.HasApplicationCommand);
+        Assert.True(decision.ConsumesPointer);
+        Assert.Equal("input.mushroom.resident_required", decision.ReasonCode);
+    }
+
+    [Fact]
     public void Hostile_target_precedes_movement()
     {
         ContextInputDecision decision = WorldLeft(

@@ -287,6 +287,7 @@ public sealed class SaveMigrationAndCorruptionTests
             new SaveVersionTwoPackingMigration(),
             new SaveVersionThreeAgentSkillsMigration(),
             new SaveVersionFourAuthoritativeCoordinatesMigration(),
+            new SaveVersionFiveMushroomsMigration(),
         });
     }
 

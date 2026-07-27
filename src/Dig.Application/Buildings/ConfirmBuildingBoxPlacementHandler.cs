@@ -129,7 +129,8 @@ public sealed class ConfirmBuildingBoxPlacementHandler
             command.Orientation,
             world,
             occupiedCells,
-            command.ReachableCells);
+            command.ReachableCells,
+            command.EcologyBlockedCells);
         if (!placement.Succeeded)
         {
             return Result.Failure(placement.Error!);

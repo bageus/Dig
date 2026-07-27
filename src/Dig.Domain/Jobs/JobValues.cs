@@ -37,6 +37,7 @@ public enum ReservationKind
     Position = 4,
     Designation = 5,
     Destination = 6,
+    EcologyTarget = 7,
 }
 
 public readonly struct JobRetryPolicy
@@ -104,6 +105,11 @@ public readonly struct ReservationKey : IEquatable<ReservationKey>, IComparable<
     public static ReservationKey ForDestination(EntityId destinationId)
     {
         return ForEntity(ReservationKind.Destination, destinationId);
+    }
+
+    public static ReservationKey ForEcologyTarget(EntityId siteId)
+    {
+        return ForEntity(ReservationKind.EcologyTarget, siteId);
     }
 
     public static ReservationKey ForPosition(CellId cellId)
@@ -193,4 +199,5 @@ public sealed class JobBlockReason
         return $"{Code}: {Message}";
     }
 }
+
 }
