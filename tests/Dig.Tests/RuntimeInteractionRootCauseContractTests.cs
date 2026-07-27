@@ -143,6 +143,23 @@ namespace Dig.Tests
         }
 
         [Fact]
+        public void Unity_simulation_and_mushroom_adapters_keep_compile_safe_references()
+        {
+            string runtime = RuntimeRoot();
+            string loop = Read(runtime, "DigAgentSimulationDriverBase.Loop.cs");
+            string mushrooms = Read(runtime, "DigWorldInteraction.Mushrooms.cs");
+
+            Assert.Contains("AgentRenderer!.SelectedAgentId", loop);
+            Assert.Contains("BuildingRenderer!.SelectedBuildingId", loop);
+            Assert.Contains(
+                "MushroomRenderer!.Render(TerrainSession!.LoadMushrooms())",
+                loop);
+            Assert.DoesNotContain("BuildingRender!", loop);
+            Assert.Contains("_hud!.SetCommandResult(result)", mushrooms);
+            Assert.Contains("_hud!.SetStatus(\"Dwarforderedtochopmushroom.\")", mushrooms);
+        }
+
+        [Fact]
         public void Unity_runtime_uses_non_nullable_guarded_resident_ids()
         {
             string runtime = RuntimeRoot();
