@@ -40,7 +40,13 @@ public sealed partial class TunnelNavigationVolume
 
             CellId cell = snapshot.Id;
             bool plannedVertical = verticalPlans.Contains(cell);
-            if (!plannedVertical && !IsSupported(cells, world.Size, cell))
+            bool verticalEndpoint = IsVerticalEndpoint(
+                verticalPlans,
+                world.Size,
+                cell);
+            if (!plannedVertical
+                && !verticalEndpoint
+                && !IsSupported(cells, world.Size, cell))
             {
                 continue;
             }
@@ -59,6 +65,17 @@ public sealed partial class TunnelNavigationVolume
             open,
             vertical,
             demoLayout);
+    }
+
+    private static bool IsVerticalEndpoint(
+        HashSet<CellId> verticalPlans,
+        WorldSize size,
+        CellId cell)
+    {
+        CellId above = new CellId(cell.X, cell.Y - 1, cell.Z);
+        CellId below = new CellId(cell.X, cell.Y + 1, cell.Z);
+        return (size.Contains(above) && verticalPlans.Contains(above))
+            || (size.Contains(below) && verticalPlans.Contains(below));
     }
 
     private static bool IsSupported(
