@@ -3,253 +3,181 @@ using UnityEngine;
 
 namespace Dig.Unity
 {
-    public sealed partial class DigWorldInteraction
+
+public sealed partial class DigWorldInteraction
+{
+    private const int CommandCursorSize = 32;
+
+    private static Texture2D[] CreateShovelCursorFrames() =>
+        CreateToolFrames("Shovel", DrawShovel);
+
+    private static Texture2D[] CreatePickupCursorFrames() =>
+        CreateToolFrames("Pickup", DrawPickupArrow);
+
+    private static Texture2D[] CreateMovementCursorFrames() =>
+        CreateToolFrames("Movement", DrawWalkingFeet);
+
+    private static Texture2D[] CreateAxeCursorFrames() =>
+        CreateToolFrames("Axe", DrawAxe);
+
+    private static Texture2D[] CreateSwordCursorFrames() =>
+        CreateToolFrames("Sword", DrawSword);
+
+    private static Texture2D[] CreateToolFrames(
+        string name,
+        Action<Color32[], int> draw)
     {
-        private const int CommandCursorSize = 32;
-
-        private static Texture2D[] CreateShovelCursorFrames()
+        Texture2D[] frames = new Texture2D[4];
+        for (int index = 0; index < frames.Length; index++)
         {
-            Texture2D[] frames = new Texture2D[4];
-            int[] offsets = { -1, 0, 1, 0 };
-            for (int index = 0; index < frames.Length; index++)
+            Color32[] pixels = new Color32[CommandCursorSize * CommandCursorSize];
+            draw(pixels, index);
+            frames[index] = CreateCursorTexture($"{name} cursor {index}", pixels);
+        }
+
+        return frames;
+    }
+
+    private static Texture2D CreateCursorTexture(string name, Color32[] pixels)
+    {
+        Texture2D texture = new Texture2D(
+            CommandCursorSize,
+            CommandCursorSize,
+            TextureFormat.RGBA32,
+            mipChain: false)
+        {
+            name = name,
+            filterMode = FilterMode.Point,
+            wrapMode = TextureWrapMode.Clamp,
+            hideFlags = HideFlags.HideAndDontSave,
+        };
+        texture.SetPixels32(pixels);
+        texture.Apply(updateMipmaps: false, makeNoLongerReadable: false);
+        return texture;
+    }
+
+    private static void DrawShovel(Color32[] pixels, int phase)
+    {
+        int offset = phase == 0 ? -1 : phase == 2 ? 1 : 0;
+        Color32 outline = new Color32(39, 31, 25, 255);
+        Color32 handle = new Color32(139, 91, 52, 255);
+        Color32 metal = new Color32(184, 193, 198, 255);
+        FillRect(pixels, 15 + offset, 8, 17 + offset, 25, outline);
+        FillRect(pixels, 16 + offset, 9, 16 + offset, 24, handle);
+        FillRect(pixels, 10 + offset, 2, 22 + offset, 8, outline);
+        FillRect(pixels, 12 + offset, 3, 20 + offset, 7, metal);
+    }
+
+    private static void DrawPickupArrow(Color32[] pixels, int phase)
+    {
+        int rise = phase == 1 ? 2 : phase == 2 ? 3 : phase == 3 ? 1 : 0;
+        Color32 outline = new Color32(28, 35, 43, 255);
+        Color32 fill = new Color32(128, 210, 244, 255);
+        FillRect(pixels, 14, 5 + rise, 18, 21 + rise, outline);
+        FillRect(pixels, 15, 6 + rise, 17, 20 + rise, fill);
+        for (int row = 0; row < 7; row++)
+        {
+            FillRect(pixels, 9 + row, 20 + rise + row, 23 - row, 20 + rise + row, outline);
+            if (row > 0 && row < 6)
             {
-                Color32[] pixels = NewCursorPixels();
-                DrawShovel(pixels, offsets[index], index);
-                frames[index] = CreateCursorTexture(
-                    $"Direct excavation shovel cursor {index}",
-                    pixels);
+                FillRect(pixels, 11 + row, 20 + rise + row, 21 - row, 20 + rise + row, fill);
             }
-
-            return frames;
-        }
-
-        private static Texture2D[] CreatePickupCursorFrames()
-        {
-            Texture2D[] frames = new Texture2D[4];
-            int[] rises = { 0, 1, 3, 1 };
-            for (int index = 0; index < frames.Length; index++)
-            {
-                Color32[] pixels = NewCursorPixels();
-                DrawPickupArrow(pixels, rises[index], index);
-                frames[index] = CreateCursorTexture(
-                    $"Pickup arrow cursor {index}",
-                    pixels);
-            }
-
-            return frames;
-        }
-
-        private static Texture2D[] CreateAxeCursorFrames()
-        {
-            Texture2D[] frames = new Texture2D[4];
-            int[] rotations = { -2, 0, 2, 0 };
-            for (int index = 0; index < frames.Length; index++)
-            {
-                Color32[] pixels = NewCursorPixels();
-                DrawAxe(pixels, rotations[index], index);
-                frames[index] = CreateCursorTexture(
-                    $"Mushroom axe cursor {index}",
-                    pixels);
-            }
-
-            return frames;
-        }
-
-        private static Texture2D[] CreateMovementCursorFrames()
-        {
-            Texture2D[] frames = new Texture2D[4];
-            for (int index = 0; index < frames.Length; index++)
-            {
-                Color32[] pixels = NewCursorPixels();
-                DrawWalkingFeet(pixels, index);
-                frames[index] = CreateCursorTexture(
-                    $"Movement feet cursor {index}",
-                    pixels);
-            }
-
-            return frames;
-        }
-
-        private static Color32[] NewCursorPixels()
-        {
-            return new Color32[CommandCursorSize * CommandCursorSize];
-        }
-
-        private static Texture2D CreateCursorTexture(string name, Color32[] pixels)
-        {
-            Texture2D texture = new Texture2D(
-                CommandCursorSize,
-                CommandCursorSize,
-                TextureFormat.RGBA32,
-                mipChain: false)
-            {
-                name = name,
-                filterMode = FilterMode.Point,
-                wrapMode = TextureWrapMode.Clamp,
-                hideFlags = HideFlags.HideAndDontSave,
-            };
-            texture.SetPixels32(pixels);
-            texture.Apply(updateMipmaps: false, makeNoLongerReadable: false);
-            return texture;
-        }
-
-        private static void DrawShovel(Color32[] pixels, int offsetX, int phase)
-        {
-            Color32 outline = new Color32(39, 31, 25, 255);
-            Color32 handle = new Color32(139, 91, 52, 255);
-            Color32 metal = new Color32(184, 193, 198, 255);
-            Color32 highlight = new Color32(232, 238, 240, 255);
-            int x = offsetX;
-
-            FillRect(pixels, 12 + x, 25, 20 + x, 29, outline);
-            FillRect(pixels, 14 + x, 26, 18 + x, 27, handle);
-            FillRect(pixels, 15 + x, 8, 17 + x, 25, outline);
-            FillRect(pixels, 16 + x, 9, 16 + x, 24, handle);
-            for (int y = 2; y <= 9; y++)
-            {
-                int inset = Math.Max(0, 5 - y);
-                FillRect(pixels, 9 + inset + x, y, 23 - inset + x, y, outline);
-                if (y > 2)
-                {
-                    FillRect(pixels, 11 + inset + x, y, 21 - inset + x, y, metal);
-                }
-            }
-
-            FillRect(pixels, 13 + x, 7, 19 + x, 8, outline);
-            FillRect(pixels, 14 + x, 7, 18 + x, 7, metal);
-            int sparkX = phase % 2 == 0 ? 22 + x : 20 + x;
-            int sparkY = phase < 2 ? 8 : 5;
-            SetPixel(pixels, sparkX, sparkY, highlight);
-            SetPixel(pixels, sparkX - 1, sparkY, highlight);
-            SetPixel(pixels, sparkX, sparkY + 1, highlight);
-        }
-
-        private static void DrawAxe(Color32[] pixels, int offset, int phase)
-        {
-            Color32 outline = new Color32(38, 29, 23, 255);
-            Color32 handle = new Color32(143, 87, 43, 255);
-            Color32 metal = new Color32(184, 194, 201, 255);
-            Color32 shine = new Color32(238, 244, 246, 255);
-            for (int step = 0; step < 19; step++)
-            {
-                int x = 9 + step / 2 + offset;
-                int y = 5 + step;
-                FillRect(pixels, x - 1, y, x + 1, y + 1, outline);
-                SetPixel(pixels, x, y, handle);
-            }
-
-            FillRect(pixels, 14 + offset, 20, 26 + offset, 27, outline);
-            FillRect(pixels, 15 + offset, 21, 24 + offset, 26, metal);
-            FillRect(pixels, 23 + offset, 22, 27 + offset, 25, outline);
-            FillRect(pixels, 23 + offset, 23, 26 + offset, 24, metal);
-            int spark = phase % 2 == 0 ? 25 : 22;
-            SetPixel(pixels, spark + offset, 27, shine);
-        }
-
-        private static void DrawPickupArrow(Color32[] pixels, int rise, int phase)
-        {
-            Color32 outline = new Color32(28, 35, 43, 255);
-            Color32 fill = new Color32(128, 210, 244, 255);
-            Color32 highlight = new Color32(223, 248, 255, 255);
-            int baseY = 5 + rise;
-
-            FillRect(pixels, 14, baseY, 18, baseY + 15, outline);
-            FillRect(pixels, 15, baseY + 1, 17, baseY + 14, fill);
-            for (int row = 0; row < 7; row++)
-            {
-                FillRect(
-                    pixels,
-                    9 + row,
-                    baseY + 14 + row,
-                    23 - row,
-                    baseY + 14 + row,
-                    outline);
-                if (row > 0 && row < 6)
-                {
-                    FillRect(
-                        pixels,
-                        11 + row,
-                        baseY + 14 + row,
-                        21 - row,
-                        baseY + 14 + row,
-                        fill);
-                }
-            }
-
-            SetPixel(pixels, 16, baseY + 18, highlight);
-            int trailY = Math.Max(1, baseY - 2 - (phase % 2));
-            FillRect(pixels, 15, trailY, 17, trailY, new Color32(128, 210, 244, 150));
-        }
-
-        private static void DrawWalkingFeet(Color32[] pixels, int phase)
-        {
-            Color32 outline = new Color32(43, 32, 26, 255);
-            Color32 leather = new Color32(151, 92, 48, 255);
-            Color32 sole = new Color32(77, 58, 45, 255);
-            bool leftForward = phase % 2 == 0;
-            int bounce = phase == 1 || phase == 3 ? 1 : 0;
-
-            DrawBoot(
-                pixels,
-                leftForward ? 8 : 10,
-                leftForward ? 12 + bounce : 7 + bounce,
-                mirror: false,
-                outline,
-                leather,
-                sole);
-            DrawBoot(
-                pixels,
-                leftForward ? 18 : 16,
-                leftForward ? 7 + bounce : 12 + bounce,
-                mirror: true,
-                outline,
-                leather,
-                sole);
-        }
-
-        private static void DrawBoot(
-            Color32[] pixels,
-            int x,
-            int y,
-            bool mirror,
-            Color32 outline,
-            Color32 leather,
-            Color32 sole)
-        {
-            FillRect(pixels, x, y + 5, x + 5, y + 13, outline);
-            FillRect(pixels, x + 1, y + 6, x + 4, y + 12, leather);
-            int toeMin = mirror ? x - 3 : x + 2;
-            int toeMax = mirror ? x + 3 : x + 8;
-            FillRect(pixels, toeMin, y + 1, toeMax, y + 6, outline);
-            FillRect(pixels, toeMin + 1, y + 2, toeMax - 1, y + 5, leather);
-            FillRect(pixels, toeMin, y, toeMax, y + 1, sole);
-        }
-
-        private static void FillRect(
-            Color32[] pixels,
-            int minX,
-            int minY,
-            int maxX,
-            int maxY,
-            Color32 color)
-        {
-            for (int y = minY; y <= maxY; y++)
-            {
-                for (int x = minX; x <= maxX; x++)
-                {
-                    SetPixel(pixels, x, y, color);
-                }
-            }
-        }
-
-        private static void SetPixel(Color32[] pixels, int x, int y, Color32 color)
-        {
-            if (x < 0 || y < 0 || x >= CommandCursorSize || y >= CommandCursorSize)
-            {
-                return;
-            }
-
-            pixels[(y * CommandCursorSize) + x] = color;
         }
     }
+
+    private static void DrawWalkingFeet(Color32[] pixels, int phase)
+    {
+        Color32 outline = new Color32(43, 32, 26, 255);
+        Color32 leather = new Color32(151, 92, 48, 255);
+        bool leftForward = phase % 2 == 0;
+        int bounce = phase == 1 || phase == 3 ? 1 : 0;
+        DrawBoot(pixels, leftForward ? 7 : 10, leftForward ? 13 + bounce : 8 + bounce, false, outline, leather);
+        DrawBoot(pixels, leftForward ? 19 : 16, leftForward ? 8 + bounce : 13 + bounce, true, outline, leather);
+    }
+
+    private static void DrawAxe(Color32[] pixels, int phase)
+    {
+        int offset = phase == 0 ? -2 : phase == 2 ? 2 : 0;
+        Color32 outline = new Color32(38, 29, 23, 255);
+        Color32 handle = new Color32(143, 87, 43, 255);
+        Color32 metal = new Color32(184, 194, 201, 255);
+        DrawDiagonal(pixels, 8 + offset, 5, 19, outline, handle);
+        FillRect(pixels, 14 + offset, 20, 27 + offset, 27, outline);
+        FillRect(pixels, 16 + offset, 21, 25 + offset, 26, metal);
+    }
+
+    private static void DrawSword(Color32[] pixels, int phase)
+    {
+        int offset = phase == 0 ? -2 : phase == 2 ? 2 : 0;
+        Color32 outline = new Color32(28, 30, 35, 255);
+        Color32 blade = new Color32(204, 214, 222, 255);
+        Color32 grip = new Color32(124, 72, 38, 255);
+        DrawDiagonal(pixels, 7 + offset, 5, 20, outline, blade);
+        FillRect(pixels, 5 + offset, 3, 13 + offset, 6, outline);
+        FillRect(pixels, 7 + offset, 4, 12 + offset, 5, grip);
+        FillRect(pixels, 3 + offset, 1, 7 + offset, 4, outline);
+        FillRect(pixels, 4 + offset, 2, 6 + offset, 3, grip);
+    }
+
+    private static void DrawDiagonal(
+        Color32[] pixels,
+        int startX,
+        int startY,
+        int length,
+        Color32 outline,
+        Color32 fill)
+    {
+        for (int step = 0; step < length; step++)
+        {
+            int x = startX + step;
+            int y = startY + step;
+            FillRect(pixels, x - 1, y - 1, x + 1, y + 1, outline);
+            SetPixel(pixels, x, y, fill);
+        }
+    }
+
+    private static void DrawBoot(
+        Color32[] pixels,
+        int x,
+        int y,
+        bool mirror,
+        Color32 outline,
+        Color32 leather)
+    {
+        FillRect(pixels, x, y + 4, x + 5, y + 12, outline);
+        FillRect(pixels, x + 1, y + 5, x + 4, y + 11, leather);
+        int toeMin = mirror ? x - 3 : x + 2;
+        int toeMax = mirror ? x + 3 : x + 8;
+        FillRect(pixels, toeMin, y, toeMax, y + 5, outline);
+        FillRect(pixels, toeMin + 1, y + 1, toeMax - 1, y + 4, leather);
+    }
+
+    private static void FillRect(
+        Color32[] pixels,
+        int minX,
+        int minY,
+        int maxX,
+        int maxY,
+        Color32 color)
+    {
+        for (int y = minY; y <= maxY; y++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                SetPixel(pixels, x, y, color);
+            }
+        }
+    }
+
+    private static void SetPixel(Color32[] pixels, int x, int y, Color32 color)
+    {
+        if (x < 0 || y < 0 || x >= CommandCursorSize || y >= CommandCursorSize)
+        {
+            return;
+        }
+
+        pixels[(y * CommandCursorSize) + x] = color;
+    }
+}
+
 }
