@@ -54,6 +54,12 @@ Save format v6 содержит mushroom section со stage/deadline/generation/
 - mushroom application fixtures используют реальные Woodworking bands и проверяют grant как увеличение исходного уровня на `0.8`;
 - временные source-export workflow и технический PR не входят в итоговый diff.
 
+## Unity Play Mode compiler boundary
+
+`Dig.Unity.PlayModeTests` собирается отдельной assembly. Поэтому test code не может напрямую вызывать `internal DigMushroomRenderer.Render` или читать `internal ActiveCount`, даже когда runtime и test namespaces совпадают. Play Mode regression теперь вызывает эти members через существующий reflection helper и продолжает проверять observable geometry/collider/absence behavior, не расширяя production API только ради теста.
+
+Repository source contract запрещает прямые `renderer.Render(...)` и `renderer.ActiveCount` в этой test assembly, чтобы ошибка снова не проявлялась только после входа Unity в Safe Mode.
+
 ## Выполненные проверки
 
 На head `ec59dc944dadac73183039a1eecb77b9b672af73` фактически прошли:
