@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - fix/mushroom-upright-material-targeting
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
