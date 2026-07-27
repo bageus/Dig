@@ -60,6 +60,7 @@ namespace Dig.Unity
                 return world;
             }
 
+            TerrainSession!.MarkAuthoritativeWorldChanged();
             Result terrain = AgentSession!.CompleteTunnelDepthExcavation(
                 commit.Target,
                 WorldSession.LoadSnapshot(),
