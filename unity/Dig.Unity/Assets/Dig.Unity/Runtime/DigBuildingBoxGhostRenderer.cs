@@ -59,6 +59,12 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(preview));
             }
 
+            if (!preview.IsVisible)
+            {
+                Clear();
+                return;
+            }
+
             EnsureResources();
             DigBuildingVisualResolution resolution = Resolve(preview);
             EnsurePreviewInstance(preview, resolution);
