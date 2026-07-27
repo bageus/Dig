@@ -33,7 +33,7 @@ jobs:
           base64 --decode /tmp/building-production.patch.gz.b64 \
             | gzip --decompress \
             > /tmp/building-production.patch
-          echo "02a377cc8860848f51fa9d25dcb19da58e69e6fb97b6979220cb7f7869960579  /tmp/building-production.patch" \
+          echo "929dac4bb0a6a5e7e50aea90dcb1b4ab90440addae87b2bb8b6f3afeca34a8df  /tmp/building-production.patch" \
             | sha256sum --check
           git apply --check /tmp/building-production.patch
           git apply --index /tmp/building-production.patch
