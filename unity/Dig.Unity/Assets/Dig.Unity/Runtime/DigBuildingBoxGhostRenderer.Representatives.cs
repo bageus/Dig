@@ -22,17 +22,14 @@ namespace Dig.Unity
         private DigBuildingVisualResolution Resolve(BuildingBoxGhostViewModel preview)
         {
             string stableId = preview.DefinitionId.ToString();
-            // Unpacking previews the final building definition on every supported
-            // layer. The packed-box visual belongs to world/inventory presentation,
-            // never to the placement cursor.
-            BuildingVisualState visualState = BuildingVisualState.Completed;
+            BuildingVisualState visualState = preview.PlacementKind == BuildingBoxPlacementKind.RelocateBox
+                ? BuildingVisualState.BuildingBox
+                : BuildingVisualState.Completed;
             DigBuildingVisualResolution catalogResolution = default;
             bool hasCatalogResolution = visualCatalog != null;
             if (visualCatalog != null)
             {
-                catalogResolution = visualCatalog.ResolveBuilding(
-                    stableId,
-                    visualState);
+                catalogResolution = visualCatalog.ResolveBuilding(stableId, visualState);
                 if (catalogResolution.HasProfile)
                 {
                     return catalogResolution;
