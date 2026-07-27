@@ -73,6 +73,7 @@ namespace Dig.Unity
                 world,
                 _terrainDepositDecorations,
                 _tunnelCutaway,
+                _excavationQuarterProgress.Keys,
                 _protectedCells);
             EnsureTerrainChunkRenderer().Render(snapshot, terrainVisualCatalog);
         }

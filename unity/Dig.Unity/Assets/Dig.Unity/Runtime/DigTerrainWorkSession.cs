@@ -256,6 +256,10 @@ internal sealed partial class DigTerrainWorkSession
             return Result.Failure(completion.Error!);
         }
 
+        // The terrain commit above is already authoritative. Mark the world dirty
+        // before any derived navigation refresh so Presentation cannot miss the open
+        // cell when navigation fails and the tick returns a recoverable warning.
+        _worldChanged = true;
         if (output.SourceKind == MiningOutputSourceKind.Deposit)
         {
             _worldSession.DepleteTerrainDeposit(targetCell, tick);
@@ -265,16 +269,11 @@ internal sealed partial class DigTerrainWorkSession
         _worldSession.RevealTerrainDepositsAdjacentTo(targetCell, tick);
         CompleteExcavationQuarterTarget(targetCell);
         _routePlans.Remove(job.Id);
-        Result refresh = RefreshNavigation();
-        if (refresh.IsFailure)
-        {
-            return refresh;
-        }
-
         MarkTemplateCellExcavated(targetCell);
-        _worldChanged = true;
         PublishTerrainCompletionEffects(job.Id, targetCell, tick, !output.IsEmpty);
-        return Result.Success();
+
+        Result refresh = RefreshNavigation();
+        return refresh.IsFailure ? refresh : Result.Success();
     }
 
     private static bool IsActive(JobSnapshot job)

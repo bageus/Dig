@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Dig.Domain.World;
 using UnityEngine;
 
@@ -39,18 +40,17 @@ namespace Dig.Unity
             }
 
             EnsureExcavationCursorRenderer();
-            _renderer!.ClearExcavationQuarterProgress();
-            foreach (ExcavationQuarterProgressSnapshot progress
-                in _terrainSession!.LoadExcavationQuarterProgress())
+            IReadOnlyList<ExcavationQuarterProgressSnapshot> progress =
+                _terrainSession!.LoadExcavationQuarterProgress();
+            _renderer!.SynchronizeExcavationQuarterProgress(progress);
+            for (int index = 0; index < progress.Count; index++)
             {
-                _renderer.SetExcavationQuarterProgress(
-                    progress.Target.CellId,
-                    progress.Completed);
-                if (progress.Target.CellId.Z == 0)
+                ExcavationQuarterProgressSnapshot snapshot = progress[index];
+                if (snapshot.Target.CellId.Z == 0)
                 {
                     _excavationCursorRenderer!.SetTunnelDesignationProgress(
-                        progress.Target.CellId,
-                        progress.Completed);
+                        snapshot.Target.CellId,
+                        snapshot.Completed);
                 }
             }
         }

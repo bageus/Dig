@@ -32,6 +32,8 @@ Generic item pickup больше не зависит от `Alt`; `Alt` оста�
 
 Старый quarter marker закрашивал completed part почти чёрным кубом. Solid cell переключается на четыре части породы при первом completed quarter; завершённая часть геометрии отключается, а remaining parts сохраняют material/tint породы. Designation overlay отдельно скрывает completed quarter и больше не создаёт чёрную пластину.
 
+Исправлен второй слой той же ошибки: combined terrain mesh продолжал рисовать полный solid cube под per-cell quarters, поэтому фактически удалённая часть оставалась закрыта общей геометрией. Частично выкопанная клетка исключается из combined mesh, remaining quarter geometry остаётся видимой даже после снятия designation, а повторное назначение продолжает с сохранённого mask. Full 4/4 commit помечает World changed до Navigation refresh; dirty chunks дренируются только после успешного rebuild, поэтому ошибка derived navigation больше не оставляет завершённую клетку визуально целой до ручного redraw.
+
 ### Nearest automatic excavation и drag-stroke batching
 
 PR #414 сравнивал Navigation route до work position, но ordinary tunnel tool по-прежнему вызывал `SynchronizeDesignations` после каждой нарисованной клетки. Первый painted/created job мог быть claimed до появления остальных клеток stroke, поэтому порядок рисования скрыто переопределял nearest rule. Особенно заметно это было на вертикальном front-slice tunnel: нижняя правая клетка могла назначаться раньше ближайшей верхней.

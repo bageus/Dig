@@ -129,6 +129,9 @@ namespace Dig.Unity
                 Mix(ref hash, cell.IsDesignated ? 1UL : 0UL, prime);
                 Mix(ref hash, (ulong)(uint)cell.Hardness, prime);
                 Mix(ref hash, snapshot.IsCutaway(cell.Key) ? 1UL : 0UL, prime);
+                Mix(ref hash,
+                    snapshot.IsPartialExcavation(cell.Key) ? 1UL : 0UL,
+                    prime);
                 Mix(ref hash, snapshot.IsProtected(cell.Key) ? 1UL : 0UL, prime);
                 MixDeposit(ref hash, cell.Key, snapshot, prime);
                 MixNeighbour(ref hash, cell.Key.Offset(-1, 0, 0), snapshot, prime);

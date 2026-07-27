@@ -46,7 +46,7 @@ namespace Dig.Unity
             for (int index = 0; index < chunk.Cells.Count; index++)
             {
                 DigTerrainRenderCell cell = chunk.Cells[index];
-                if (!cell.IsSolid || snapshot.IsCutaway(cell.Key))
+                if (!cell.IsSolid || !snapshot.IsRenderedSolid(cell.Key))
                 {
                     continue;
                 }
@@ -149,8 +149,9 @@ namespace Dig.Unity
             Dictionary<DigTerrainMaterialKey, int> submeshes)
         {
             DigTerrainSurfaceRole resolvedRole = snapshot.IsCutaway(neighbour)
-                ? DigTerrainSurfaceRole.FreshCut
-                : role;
+                || snapshot.IsPartialExcavation(neighbour)
+                    ? DigTerrainSurfaceRole.FreshCut
+                    : role;
             return GetSubmesh(
                 ResolveTerrainKey(cell, isProtected, resolvedRole),
                 keys,

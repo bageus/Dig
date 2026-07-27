@@ -11,6 +11,8 @@ namespace Dig.Unity
             new Dictionary<DigTerrainChunkKey, long>();
         private readonly HashSet<DigTerrainCellKey> _previousCutaway =
             new HashSet<DigTerrainCellKey>();
+        private readonly HashSet<DigTerrainCellKey> _previousPartialExcavation =
+            new HashSet<DigTerrainCellKey>();
         private readonly HashSet<DigTerrainCellKey> _previousProtected =
             new HashSet<DigTerrainCellKey>();
         private bool _initialized;
@@ -21,6 +23,7 @@ namespace Dig.Unity
             WorldViewModel world,
             TerrainDepositDecorationVolumeViewModel? depositDecorations,
             IEnumerable<CellId> cutawayCells,
+            IEnumerable<CellId> partialExcavationCells,
             IEnumerable<CellId> protectedCells)
         {
             if (world == null)
@@ -55,10 +58,17 @@ namespace Dig.Unity
             }
 
             HashSet<DigTerrainCellKey> currentCutaway = ToCellKeys(cutawayCells);
+            HashSet<DigTerrainCellKey> currentPartialExcavation =
+                ToCellKeys(partialExcavationCells);
             HashSet<DigTerrainCellKey> currentProtected = ToCellKeys(protectedCells);
             MarkChangedCells(
                 _previousCutaway,
                 currentCutaway,
+                world.ChunkSize,
+                dirtyOrigins);
+            MarkChangedCells(
+                _previousPartialExcavation,
+                currentPartialExcavation,
                 world.ChunkSize,
                 dirtyOrigins);
             MarkChangedCells(
@@ -87,6 +97,7 @@ namespace Dig.Unity
             chunks.Sort(CompareChunks);
             Replace(_chunkVersions, currentVersions);
             Replace(_previousCutaway, currentCutaway);
+            Replace(_previousPartialExcavation, currentPartialExcavation);
             Replace(_previousProtected, currentProtected);
             _chunkSize = world.ChunkSize;
             _depth = depth;
@@ -104,6 +115,7 @@ namespace Dig.Unity
                 chunks,
                 solid,
                 currentCutaway,
+                currentPartialExcavation,
                 currentProtected,
                 dirty,
                 visibleDecorations);

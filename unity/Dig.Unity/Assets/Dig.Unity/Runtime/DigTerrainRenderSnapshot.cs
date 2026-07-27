@@ -9,6 +9,7 @@ namespace Dig.Unity
     {
         private readonly HashSet<DigTerrainCellKey> _solidCells;
         private readonly HashSet<DigTerrainCellKey> _cutawayCells;
+        private readonly HashSet<DigTerrainCellKey> _partialExcavationCells;
         private readonly HashSet<DigTerrainCellKey> _protectedCells;
         private readonly HashSet<DigTerrainChunkKey> _dirtyChunks;
         private readonly Dictionary<
@@ -24,6 +25,7 @@ namespace Dig.Unity
             IReadOnlyCollection<DigTerrainRenderChunk> chunks,
             IEnumerable<DigTerrainCellKey> solidCells,
             IEnumerable<DigTerrainCellKey> cutawayCells,
+            IEnumerable<DigTerrainCellKey> partialExcavationCells,
             IEnumerable<DigTerrainCellKey> protectedCells,
             IEnumerable<DigTerrainChunkKey> dirtyChunks,
             IReadOnlyDictionary<
@@ -69,6 +71,8 @@ namespace Dig.Unity
                 new List<DigTerrainRenderChunk>(chunks));
             _solidCells = new HashSet<DigTerrainCellKey>(solidCells);
             _cutawayCells = new HashSet<DigTerrainCellKey>(cutawayCells);
+            _partialExcavationCells = new HashSet<DigTerrainCellKey>(
+                partialExcavationCells);
             _protectedCells = new HashSet<DigTerrainCellKey>(protectedCells);
             _dirtyChunks = new HashSet<DigTerrainChunkKey>(dirtyChunks);
             _depositDecorations = new Dictionary<
@@ -98,6 +102,11 @@ namespace Dig.Unity
             return _cutawayCells.Contains(cell);
         }
 
+        internal bool IsPartialExcavation(DigTerrainCellKey cell)
+        {
+            return _partialExcavationCells.Contains(cell);
+        }
+
         internal bool IsProtected(DigTerrainCellKey cell)
         {
             return _protectedCells.Contains(cell);
@@ -105,7 +114,9 @@ namespace Dig.Unity
 
         internal bool IsRenderedSolid(DigTerrainCellKey cell)
         {
-            return IsSolid(cell) && !IsCutaway(cell);
+            return IsSolid(cell)
+                && !IsCutaway(cell)
+                && !IsPartialExcavation(cell);
         }
 
         internal bool IsDirty(DigTerrainChunkKey chunk)

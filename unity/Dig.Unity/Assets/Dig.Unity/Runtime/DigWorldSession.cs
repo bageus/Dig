@@ -198,6 +198,11 @@ internal sealed partial class DigWorldSession
             : Result.Failure(result.Error!);
     }
 
+    internal IReadOnlyList<ChunkId> PeekDirtyChunks()
+    {
+        return _repository.Get().PeekDirtyChunks();
+    }
+
     internal IReadOnlyList<ChunkId> DrainDirtyChunks()
     {
         return _repository.Get().DrainDirtyChunks();
