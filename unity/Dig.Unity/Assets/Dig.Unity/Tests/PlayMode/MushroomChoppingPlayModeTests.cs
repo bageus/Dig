@@ -81,17 +81,20 @@ public sealed class MushroomChoppingPlayModeTests
             definitionId,
             MushroomStage.Large);
 
-        renderer.Render(new[] { large });
+        Invoke(renderer, "Render", (object)new[] { large });
 
         DigMushroomVisual visual = _root.GetComponentInChildren<DigMushroomVisual>();
         Assert.That(visual, Is.Not.Null);
         Assert.That(visual.GetComponent<BoxCollider>().size.y, Is.GreaterThan(1f));
 
-        renderer.Render(new[]
-        {
-            Snapshot(siteId, definitionId, MushroomStage.AbsentRegrowing),
-        });
-        Assert.That(renderer.ActiveCount, Is.EqualTo(0));
+        Invoke(
+            renderer,
+            "Render",
+            (object)new[]
+            {
+                Snapshot(siteId, definitionId, MushroomStage.AbsentRegrowing),
+            });
+        Assert.That((int)GetProperty(renderer, "ActiveCount"), Is.EqualTo(0));
     }
 
     private static MushroomSiteSnapshot Snapshot(
