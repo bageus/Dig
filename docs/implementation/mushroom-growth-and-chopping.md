@@ -1,10 +1,10 @@
 # Mushroom growth and direct chopping implementation
 
-Статус: implementation slice rebased на текущий `main`; автоматические build/test evidence выполняются в PR #424.
+Статус: `IMPLEMENTED` — implementation slice rebased на текущий `main`; Quality run #5267 и Stage 2 source exports прошли.
 
 Authoritative design: [`../design/mushroom-growth-and-chopping.md`](../design/mushroom-growth-and-chopping.md).
 Tracking issue: [#423](https://github.com/bageus/Dig/issues/423).
-Rebased implementation commit: `b2e2a7c9fe9bf5406eac51cbb4636789b71d8b82`.
+Validated implementation head: `ec59dc944dadac73183039a1eecb77b9b672af73`.
 
 ## Реализованные владельцы
 
@@ -50,16 +50,21 @@ Save format v6 содержит mushroom section со stage/deadline/generation/
 - сохранён утверждённый depth-based BuildingBox workflow: Z0 relocation остаётся world-item placement, ecology blocking применяется к Z1–Z3 assembly footprint;
 - исправлена незакрытая область имён в `JobValues.cs`, которая останавливала Release build;
 - исправлено ожидание `StageStartedTick` после переходов `Tiny -> Small -> Medium -> Large`;
+- save migration tests учитывают обязательный шаг `save.v5_to_v6.mushrooms`;
+- mushroom application fixtures используют реальные Woodworking bands и проверяют grant как увеличение исходного уровня на `0.8`;
 - временные source-export workflow и технический PR не входят в итоговый diff.
 
-## Проверки в PR
+## Выполненные проверки
 
-- Domain lifecycle, growth pause, takeover reset, drop matrix, skill bands и permanent blocked cells;
-- Application direct start/arrival/swings/finalize/cancel, unit outputs и exactly-once skill grant;
-- save/load mid-chop, active job cross-reference и v5→v6 migration;
-- input router priority and reason codes;
-- BuildingBox preview/confirmation ecology blocking;
-- Unity source contracts;
-- checked-in Play Mode fixture для двух demo sites, visible/absent renderer и Large scale.
+На head `ec59dc944dadac73183039a1eecb77b9b672af73` фактически прошли:
 
-Unity Editor/Play Mode нельзя считать пройденным, пока fixture реально не выполнен Unity Test Runner.
+- architecture, file-size и C# compatibility gates;
+- все Unity source-contract validators;
+- .NET restore и Release build;
+- полный `Dig.Tests`;
+- headless smoke;
+- standard deterministic soak;
+- large-settlement deterministic soak;
+- Stage 2 v2/v3 source exports.
+
+Unity Editor/Play Mode нельзя считать пройденным, пока fixture реально не выполнен Unity Test Runner. Поэтому статус не повышается до `VERIFIED`.
