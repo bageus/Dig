@@ -100,3 +100,20 @@ Regression coverage now includes:
 - an expanded Unity Play Mode fixture for two demo sites, direct start/arrive/swings/completion, exact Large drops, same-cell regrowth, URP material, base alignment, resident-relative height, hover highlight and absent-stage removal.
 
 The system remains `IMPLEMENTED` until this expanded fixture is actually executed by Unity Test Runner. Source-contract success alone is not runtime verification.
+
+
+## World orientation and material-targeting follow-up (2026-07-28)
+
+The second runtime screenshot exposed two gaps in the previous source and Play Mode contracts:
+
+- `DigUnityBootstrap` rotates the shared side-view root by 90 degrees, while `DigMushroomRenderer` parented its world-projected root with `worldPositionStays: false`; local identity therefore inherited the bootstrap rotation and laid the mushroom on the floor;
+- pointer resolvers scanned the complete sorted hit stack independently for each target type, so a regrown mushroom behind a foreground cap/leg could still win the mushroom branch even though the player was pointing at a physical material.
+
+The correction keeps Domain/Application completion unchanged and fixes the Unity adapter boundary:
+
+- `DigMushroomRenderer` now mirrors the world-item renderer and keeps its root in world orientation with `SetParent(..., worldPositionStays: true)`;
+- mushroom, BuildingBox, generic-item and completed-building resolvers stop at the first relevant foreground item/mushroom boundary instead of scanning through it;
+- reachable hover and pickup reuse the same foreground-aware item resolver;
+- cap/leg remain quantity-one `WorldItemInteractionKind.Pickup` entities and never acquire `DigMushroomVisual` identity.
+
+Regression coverage now rotates the renderer parent exactly like the runtime bootstrap, verifies world-up stem/collider orientation, renders completion drops as pickup-only world visuals, and exercises a physical foreground item ray before a regrown mushroom. The system remains `IMPLEMENTED` until Unity Test Runner executes the checked-in Play Mode scenarios.

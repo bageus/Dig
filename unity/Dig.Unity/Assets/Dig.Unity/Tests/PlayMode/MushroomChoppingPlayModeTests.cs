@@ -166,6 +166,22 @@ public sealed class MushroomChoppingPlayModeTests
         Assert.That(drops.Count(value => value.ItemId == "material.mushroom_cap"), Is.EqualTo(2));
         Assert.That(drops.Count(value => value.ItemId == "material.mushroom_leg"), Is.EqualTo(1));
         Assert.That(drops.All(value => value.Quantity == 1), Is.True);
+        Assert.That(drops.All(value => value.CanPickup), Is.True);
+        Assert.That(
+            drops.All(value => value.InteractionKind == WorldItemInteractionKind.Pickup),
+            Is.True);
+
+        _root = new GameObject("Mushroom drop renderer test");
+        _root.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+        DigWorldItemRenderer itemRenderer = _root.AddComponent<DigWorldItemRenderer>();
+        itemRenderer.Render(drops);
+        DigWorldItemVisual[] dropVisuals =
+            _root.GetComponentsInChildren<DigWorldItemVisual>();
+        Assert.That(dropVisuals.Length, Is.EqualTo(3));
+        Assert.That(dropVisuals.All(value => value.Model.CanPickup), Is.True);
+        Assert.That(
+            dropVisuals.All(value => value.GetComponentInParent<DigMushroomVisual>() == null),
+            Is.True);
 
         AssertSuccess(Invoke(terrain, "AdvanceMushrooms", completionTick + 1L, agents));
         MushroomSiteSnapshot regrown = ((IEnumerable)Invoke(terrain, "LoadMushrooms"))
@@ -179,6 +195,7 @@ public sealed class MushroomChoppingPlayModeTests
     public void Renderer_places_large_mushroom_upright_slightly_above_resident_and_highlights_hover()
     {
         _root = new GameObject("Mushroom renderer test");
+        _root.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
         DigMushroomRenderer renderer = _root.AddComponent<DigMushroomRenderer>();
         EntityId siteId = EntityId.Parse("80000000000000000000000000000001");
         MushroomDefinitionId definitionId = new MushroomDefinitionId(
@@ -201,6 +218,7 @@ public sealed class MushroomChoppingPlayModeTests
             collider.center.y - (collider.size.y * 0.5f),
             Is.EqualTo(0f).Within(0.0001f));
         Assert.That(visual.transform.rotation, Is.EqualTo(Quaternion.identity));
+        Assert.That(Vector3.Dot(visual.transform.up, Vector3.up), Is.GreaterThan(0.999f));
 
         Renderer[] renderers = visual.GetComponentsInChildren<Renderer>();
         Assert.That(renderers.Length, Is.EqualTo(2));
