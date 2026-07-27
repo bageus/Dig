@@ -4,6 +4,7 @@
 
 Authoritative design: [`../design/mushroom-growth-and-chopping.md`](../design/mushroom-growth-and-chopping.md).
 Tracking issue: [#423](https://github.com/bageus/Dig/issues/423).
+Implementation commit: `ee8f08bc25853f826e25713295d3d95d12e388f1`.
 
 ## Реализованные владельцы
 
