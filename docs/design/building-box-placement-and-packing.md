@@ -106,6 +106,7 @@ Interactive ghost отображается только тогда, когда �
 ### Z1–Z3: unpack/assembly building
 
 - ghost показывает конечную модель здания и footprint;
+- BuildingBox-enabled demo content, включая campfire, должно иметь placement profile, который разрешает supported placement на каждом слое Z1–Z3; визуальный размер `1.5 x 1.5` сам по себе не расширяет logical occupancy за пределы утверждённого building footprint;
 - valid confirmation создаёт BuildingBox assembly plan и job;
 - worker доставляет коробку к site, выполняет unpack/assembly и расходует коробку ровно один раз при completion;
 - после completion ghost заменяется completed-building visual.
@@ -177,7 +178,7 @@ Candidate set содержит только resident, чей `AgentInventory` в
 
 ### Relocation completion
 
-Коробка перемещается в target Z0 world cell, reservation/job завершаются, BuildingBox остаётся доступной для последующего выбора и `Unpack`.
+Worker не обязан входить в target cell коробки. Runtime выбирает ближайшую reachable work cell, ортогонально соседнюю с destination на том же Z0; сама destination используется только как fallback, если соседняя позиция отсутствует. Resident или loose item в destination не блокируют delivery. Когда worker с зарезервированной коробкой достигает допустимой work cell, все немедленные stage transitions дренируются в том же simulation tick, коробка перемещается в target Z0 world cell, reservation/job завершаются, BuildingBox остаётся доступной для последующего выбора и `Unpack`.
 
 ### Assembly completion
 
@@ -273,7 +274,7 @@ Diagnostics/Inspector показывают:
 - Z0 показывает box ghost точно того же размера и с тем же item asset/scale, что фактическая коробка, и создаёт relocation job только на supported cell;
 - после Z0 confirmation planned box ghost остаётся видимым до deposit, затем без скачка размера заменяется фактической коробкой;
 - Z1–Z3 показывают completed-building ghost и создают assembly plan/job;
-- resident и loose item в target cell не блокируют valid preview;
+- resident и loose item в target cell не блокируют valid preview или relocation deposit; worker использует соседнюю reachable work cell;
 - world source подбирается свободным worker и переносится;
 - inventory source job получает только holder resident;
 - carried reserved box синяя в inventory;

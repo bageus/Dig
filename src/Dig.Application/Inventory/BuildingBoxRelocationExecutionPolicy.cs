@@ -1,3 +1,4 @@
+using System;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
@@ -46,7 +47,7 @@ public static class BuildingBoxRelocationExecutionPolicy
             && box.Location.CellId == workerCell
             && workerCell == relocation.SourceCell;
         bool atDestination = relocation.DestinationCell.HasValue
-            && workerCell == relocation.DestinationCell.Value;
+            && IsDepositPosition(workerCell, relocation.DestinationCell.Value);
 
         if (job.Status == JobStatus.Claimed)
         {
@@ -77,6 +78,18 @@ public static class BuildingBoxRelocationExecutionPolicy
                 Success(BuildingBoxRelocationExecutionStepKind.None),
             _ => Failure(BuildingBoxPickupErrors.InvalidJobStage),
         };
+    }
+
+    public static bool IsDepositPosition(CellId workerCell, CellId destinationCell)
+    {
+        if (workerCell.Z != destinationCell.Z)
+        {
+            return false;
+        }
+
+        int distance = Math.Abs(workerCell.X - destinationCell.X)
+            + Math.Abs(workerCell.Y - destinationCell.Y);
+        return distance <= 1;
     }
 
     private static Result<BuildingBoxRelocationExecutionStepKind> Success(

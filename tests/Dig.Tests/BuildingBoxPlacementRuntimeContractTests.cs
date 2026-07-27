@@ -68,6 +68,18 @@ namespace Dig.Tests
                 "Dig.Application",
                 "Inventory",
                 "BuildingBoxRelocationHandlers.cs")));
+            string relocationPolicy = Normalize(File.ReadAllText(Path.Combine(
+                root,
+                "src",
+                "Dig.Application",
+                "Inventory",
+                "BuildingBoxRelocationExecutionPolicy.cs")));
+            string campfireContent = Normalize(File.ReadAllText(Path.Combine(
+                root,
+                "src",
+                "Dig.Domain",
+                "Content",
+                "CampfireBuildingBoxContent.cs")));
             string renderer = Read(runtime, "DigBuildingBoxGhostRenderer.cs");
             string itemGhost = Read(runtime, "DigBuildingBoxGhostRenderer.Items.cs");
             string itemPolicy = Read(runtime, "DigWorldItemVisualPolicy.cs");
@@ -97,7 +109,14 @@ namespace Dig.Tests
             Assert.Contains("ResolveWorldPosition", itemPolicy);
             Assert.Contains("BuildingBoxPickupJobDefinition", plans);
             Assert.Contains("BuildingBoxRelocationExecutionPolicy.Evaluate", execution);
+            Assert.Contains("ResolveBuildingBoxRelocationWorkTarget", execution);
+            Assert.Contains("for(intindex=0;index<5;index++)", execution);
             Assert.Contains("CompleteBuildingBoxRelocationCommand", execution);
+            Assert.Contains("IsDepositPosition(workerCell", relocationPolicy);
+            Assert.Contains("widthCells:1m", campfireContent);
+            Assert.Contains("depthCells:1m", campfireContent);
+            Assert.Contains("outdoorOnly:false", campfireContent);
+            Assert.Contains("allowsTunnel:true", campfireContent);
             Assert.Contains("BuildingBoxAssemblyJobDefinition", direct);
             Assert.Contains("relocation.IsRelocation", direct);
             Assert.Contains("CancelBuildingBoxPlanHandler", cancellation);
@@ -157,6 +176,15 @@ namespace Dig.Tests
                 "Tests",
                 "PlayMode",
                 "BuildingBoxPlacementCursorPlayModeTests.cs")));
+            string deepPlayMode = Normalize(File.ReadAllText(Path.Combine(
+                root,
+                "unity",
+                "Dig.Unity",
+                "Assets",
+                "Dig.Unity",
+                "Tests",
+                "PlayMode",
+                "BuildingBoxDeepPlacementPlayModeTests.cs")));
             string inventoryInteraction = Read(
                 RuntimeRoot(),
                 "DigWorldInteraction.ResidentInventory.cs");
@@ -167,6 +195,9 @@ namespace Dig.Tests
             Assert.Contains("Relocation_preview_and_plan_match_actual_box_size", playMode);
             Assert.Contains("Invoke(ghost,\"RenderPlans\",new[]", playMode);
             Assert.DoesNotContain("ghost.RenderPlans(", playMode);
+            Assert.Contains(
+                "Campfire_building_ghost_is_visible_on_z1_through_z3",
+                deepPlayMode);
             Assert.Contains("Placement_target_resolves_enabled_movement_surface_on_deeper_layer", playMode);
             Assert.Contains("string?stackIdValue=slot.StackId", inventoryInteraction);
             Assert.Contains("string.IsNullOrWhiteSpace(stackIdValue)", inventoryInteraction);
