@@ -1,10 +1,10 @@
 # Mushroom growth and direct chopping implementation
 
-Статус: implementation slice готов на ветке PR #424; автоматические build/test evidence ожидаются.
+Статус: implementation slice rebased на текущий `main`; автоматические build/test evidence выполняются в PR #424.
 
 Authoritative design: [`../design/mushroom-growth-and-chopping.md`](../design/mushroom-growth-and-chopping.md).
 Tracking issue: [#423](https://github.com/bageus/Dig/issues/423).
-Implementation commit: `ee8f08bc25853f826e25713295d3d95d12e388f1`.
+Rebased implementation commit: `b2e2a7c9fe9bf5406eac51cbb4636789b71d8b82`.
 
 ## Реализованные владельцы
 
@@ -43,6 +43,14 @@ Save format v6 содержит mushroom section со stage/deadline/generation/
 - Tiny/Small/Medium/Large имеют разные размеры; Large выше одной world cell и немного выше resident visual;
 - `AbsentRegrowing` не имеет visual или collider;
 - cap/leg definitions добавлены в обычный demo item catalog, поэтому drops сразу используют существующий pickup pipeline.
+
+## Исправление PR #424
+
+- ветка перенесена поверх `main` после merge PR #425;
+- сохранён утверждённый depth-based BuildingBox workflow: Z0 relocation остаётся world-item placement, ecology blocking применяется к Z1–Z3 assembly footprint;
+- исправлена незакрытая область имён в `JobValues.cs`, которая останавливала Release build;
+- исправлено ожидание `StageStartedTick` после переходов `Tiny -> Small -> Medium -> Large`;
+- временные source-export workflow и технический PR не входят в итоговый diff.
 
 ## Проверки в PR
 
