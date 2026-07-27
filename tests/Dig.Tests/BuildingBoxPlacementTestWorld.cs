@@ -9,6 +9,9 @@ namespace Dig.Tests
 {
 internal static class BuildingBoxPlacementTestWorld
 {
+    internal static readonly MaterialId Rock = new MaterialId("rock");
+    internal static readonly MaterialId Air = new MaterialId("air");
+
     internal static WorldSnapshot Supported(
         BuildingDefinition definition,
         CellId origin,
@@ -27,23 +30,17 @@ internal static class BuildingBoxPlacementTestWorld
 
     internal static WorldState SupportedState(IEnumerable<CellId> openCells)
     {
-        MaterialId rock = new MaterialId("rock");
-        MaterialId air = new MaterialId("air");
-        MaterialCatalog materials = new MaterialCatalog(new[]
-        {
-            new MaterialDefinition(rock, isSolid: true, hardness: 100),
-            new MaterialDefinition(air, isSolid: false, hardness: 0),
-        });
+        MaterialCatalog materials = Materials();
         WorldState world = Require(WorldState.CreateFilled(
             new WorldSize(8, 8),
             chunkSize: 4,
             materials,
-            rock,
+            Rock,
             explored: true));
         long tick = 1;
         foreach (CellId cell in openCells.Distinct())
         {
-            Assert.True(world.Excavate(cell, air, tick++).IsSuccess);
+            Assert.True(world.Excavate(cell, Air, tick++).IsSuccess);
         }
 
         return world;
@@ -51,17 +48,25 @@ internal static class BuildingBoxPlacementTestWorld
 
     internal static WorldSnapshot Empty()
     {
-        MaterialId air = new MaterialId("air");
         MaterialCatalog materials = new MaterialCatalog(new[]
         {
-            new MaterialDefinition(air, isSolid: false, hardness: 0),
+            new MaterialDefinition(Air, isSolid: false, hardness: 0),
         });
         return Require(WorldState.CreateFilled(
             new WorldSize(8, 8),
             chunkSize: 4,
             materials,
-            air,
+            Air,
             explored: true)).CreateSnapshot();
+    }
+
+    internal static MaterialCatalog Materials()
+    {
+        return new MaterialCatalog(new[]
+        {
+            new MaterialDefinition(Rock, isSolid: true, hardness: 100),
+            new MaterialDefinition(Air, isSolid: false, hardness: 0),
+        });
     }
 
     private static WorldSnapshot WithOpenCells(IEnumerable<CellId> openCells)
