@@ -10,12 +10,18 @@ public sealed partial class TunnelNavigationVolume
 {
     public static TunnelNavigationVolume FromWorldSnapshot(
         WorldSnapshot world,
+        IReadOnlyCollection<CellId> plannedTunnelCells,
         IReadOnlyCollection<CellId> plannedVerticalCells,
         TunnelDemoLayout? demoLayout = null)
     {
         if (world is null)
         {
             throw new ArgumentNullException(nameof(world));
+        }
+
+        if (plannedTunnelCells is null)
+        {
+            throw new ArgumentNullException(nameof(plannedTunnelCells));
         }
 
         if (plannedVerticalCells is null)
@@ -26,6 +32,8 @@ public sealed partial class TunnelNavigationVolume
         Dictionary<CellId, CellSnapshot> cells = world.Chunks
             .SelectMany(chunk => chunk.Cells)
             .ToDictionary(cell => cell.Id);
+        HashSet<CellId> tunnelPlans = new HashSet<CellId>(
+            plannedTunnelCells.Where(world.Size.Contains));
         HashSet<CellId> verticalPlans = new HashSet<CellId>(
             plannedVerticalCells.Where(world.Size.Contains));
         HashSet<CellId> open = new HashSet<CellId>();
@@ -39,12 +47,13 @@ public sealed partial class TunnelNavigationVolume
             }
 
             CellId cell = snapshot.Id;
+            bool plannedTunnel = tunnelPlans.Contains(cell);
             bool plannedVertical = verticalPlans.Contains(cell);
             bool verticalEndpoint = IsVerticalEndpoint(
                 verticalPlans,
                 world.Size,
                 cell);
-            if (!plannedVertical
+            if (!plannedTunnel
                 && !verticalEndpoint
                 && !IsSupported(cells, world.Size, cell))
             {

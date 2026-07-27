@@ -18,12 +18,14 @@ public sealed class TunnelNavigationExpansionTests
         WorldState world = CreateWorld(new[] { start, entrance });
         TunnelNavigationVolume original = TunnelNavigationVolume.FromWorldSnapshot(
             world.CreateSnapshot(),
+            new CellId[0],
             new CellId[0]);
 
         Assert.True(world.Excavate(deepEntrance, Air, tick: 2).IsSuccess);
         Assert.True(world.Excavate(destination, Air, tick: 3).IsSuccess);
         TunnelNavigationVolume rebuilt = TunnelNavigationVolume.FromWorldSnapshot(
             world.CreateSnapshot(),
+            new CellId[0],
             new CellId[0]);
 
         Assert.False(original.IsOpen(destination));
@@ -43,6 +45,7 @@ public sealed class TunnelNavigationExpansionTests
 
         TunnelNavigationVolume volume = TunnelNavigationVolume.FromWorldSnapshot(
             world.CreateSnapshot(),
+            new[] { new CellId(2, 2, 0), new CellId(99, 2, 0) },
             new[] { new CellId(2, 2, 0), new CellId(99, 2, 0) });
 
         Assert.True(volume.IsOpen(start));

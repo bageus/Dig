@@ -51,7 +51,7 @@ internal sealed partial class DigTerrainWorkSession
         EntityId jobId = _dynamicIds!.Next();
         SpatialDigJobDefinition definition = new SpatialDigJobDefinition(
             jobId,
-            new SpatialDigJobTarget(plan.Target, plan.Source),
+            new SpatialDigJobTarget(plan.Target, plan.WorkCell),
             priority,
             tick,
             new JobRetryPolicy(maximumRetries: 2, retryDelayTicks: 3));

@@ -20,13 +20,17 @@ public sealed class SpatialDigJobTarget
                 nameof(workCell));
         }
 
-        int distance = Math.Abs(targetCell.X - workCell.X)
-            + Math.Abs(targetCell.Y - workCell.Y)
-            + Math.Abs(targetCell.Z - workCell.Z);
-        if (distance != 1)
+        int deltaX = Math.Abs(targetCell.X - workCell.X);
+        int deltaY = Math.Abs(targetCell.Y - workCell.Y);
+        int deltaZ = targetCell.Z - workCell.Z;
+        bool faceNeighbor = deltaX + deltaY + Math.Abs(deltaZ) == 1;
+        bool sourceLayerSideTunnel = deltaX == 1
+            && deltaY == 0
+            && deltaZ == 1;
+        if (!faceNeighbor && !sourceLayerSideTunnel)
         {
             throw new ArgumentException(
-                "The work cell must share one face with the excavation target.",
+                "The work cell must share a face with the target or be an approved side tunnel one depth layer before it.",
                 nameof(workCell));
         }
 

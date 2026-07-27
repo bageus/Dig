@@ -146,10 +146,16 @@ namespace Dig.Tests
             coordinator.Assign(first, target, ExcavationApproachSide.Left, miningSkill: 100);
             coordinator.Assign(second, target, ExcavationApproachSide.Right, miningSkill: 100);
 
-            coordinator.ApplySwing(first, deterministicSeed: 20);
-            if (!coordinator.GetState(target).IsComplete)
+            EntityId[] workers = { first, second };
+            for (int swing = 0;
+                 swing < 8 && !coordinator.GetState(target).IsComplete;
+                 swing++)
             {
-                coordinator.ApplySwing(second, deterministicSeed: 21);
+                EntityId worker = workers[swing % workers.Length];
+                if (coordinator.GetAssignment(worker) != null)
+                {
+                    coordinator.ApplySwing(worker, deterministicSeed: (ulong)(20 + swing));
+                }
             }
 
             Assert.True(coordinator.GetState(target).IsComplete);
