@@ -43,6 +43,20 @@ public sealed class BuildingBoxRelocationTests
     }
 
     [Fact]
+    public void Unsupported_air_target_creates_no_job_or_reservation()
+    {
+        RelocationHarness harness = new RelocationHarness(
+            ItemLocation.InWorld(Source),
+            supportedTarget: false);
+
+        Result created = harness.Create();
+
+        Assert.Equal(BuildingBoxRelocationErrors.TargetUnavailable, created.Error);
+        Assert.Null(harness.Jobs.Get(JobId));
+        Assert.Equal(0, harness.Inventory.GetStack(StackId)!.ReservedQuantity);
+    }
+
+    [Fact]
     public void Inventory_source_is_claimed_only_by_holder_resident()
     {
         RelocationHarness harness = new RelocationHarness(ItemLocation.InAgent(HolderId));
@@ -136,7 +150,9 @@ public sealed class BuildingBoxRelocationTests
 
     private sealed class RelocationHarness
     {
-        public RelocationHarness(ItemLocation sourceLocation)
+        public RelocationHarness(
+            ItemLocation sourceLocation,
+            bool supportedTarget = true)
         {
             Inventory = new InventoryState(new ItemCatalog(new[]
             {
@@ -154,8 +170,14 @@ public sealed class BuildingBoxRelocationTests
                 tick: 0).IsSuccess);
             InventoryRepository = new InMemoryInventoryRepository(Inventory);
             JobRepository = new InMemoryJobRepository();
-            WorldRepository = new InMemoryWorldRepository(
-                BuildingPlacementTests.CreateEmptyWorld());
+            WorldState world = supportedTarget
+                ? BuildingBoxPlacementTestWorld.SupportedState(new[]
+                {
+                    Source,
+                    Destination,
+                })
+                : BuildingPlacementTests.CreateEmptyWorld();
+            WorldRepository = new InMemoryWorldRepository(world);
             BuildingsRepository = new InMemoryBuildingsRepository();
             Journal = new InMemoryExecutionJournal();
         }
