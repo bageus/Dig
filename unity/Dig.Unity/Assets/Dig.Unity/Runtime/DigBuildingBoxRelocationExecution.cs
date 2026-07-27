@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Domain.Core;
@@ -98,25 +97,15 @@ namespace Dig.Unity
                 }
 
                 ItemStackSnapshot? box = inventory.GetStack(relocation.StackId);
-                if (box?.Location.Kind != ItemLocationKind.World
-                    || !box.Location.HasCell)
+                if (box == null)
                 {
                     continue;
                 }
 
-                CellId source = box.Location.CellId;
-                JobCandidate[] candidates = agents
-                    .Where(agent => agent.IsAlive && !string.IsNullOrWhiteSpace(agent.Id))
-                    .Select(agent => new JobCandidate(
-                        EntityId.Parse(agent.Id),
-                        skillLevel: 5_000,
-                        distanceCost: Math.Abs(agent.CellX - source.X)
-                            + Math.Abs(agent.CellY - source.Y)
-                            + Math.Abs(agent.CellZ - source.Z),
-                        isAvailable: true))
-                    .ToArray();
+                IReadOnlyList<JobCandidate> candidates =
+                    CreateBuildingBoxAssemblyCandidates(agents, box);
                 _buildingBoxRelocationCandidates!.SetCandidates(job.Id, candidates);
-                hasAvailable = candidates.Length > 0 || hasAvailable;
+                hasAvailable = candidates.Count > 0 || hasAvailable;
             }
 
             if (hasAvailable)
