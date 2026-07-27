@@ -34,9 +34,7 @@ public sealed class BuildingPlacementSurfaceFactProjector
         Dictionary<CellId, CellSnapshot> cells = CreateCellIndex(world);
         BuildingPhysicalFootprint footprint = _validator.ResolveFootprint(policy, origin);
         CellId[] covered = footprint.CoveredCells.ToArray();
-        Dictionary<(int X, int Z), int> bottomByColumn = covered
-            .GroupBy(cell => (cell.X, cell.Z))
-            .ToDictionary(group => group.Key, group => group.Max(cell => cell.Y));
+        Dictionary<(int X, int Z), int> bottomByColumn = ResolveBottomByColumn(covered);
         Dictionary<(int X, int Z), BuildingPlacementSurfaceCell> supportByColumn =
             new Dictionary<(int X, int Z), BuildingPlacementSurfaceCell>();
 
@@ -73,16 +71,64 @@ public sealed class BuildingPlacementSurfaceFactProjector
 
     public static bool HasSupportingPlane(CellId origin, WorldSnapshot world)
     {
+        return HasSupportingPlane(new[] { origin }, world);
+    }
+
+    public static bool HasSupportingPlane(
+        IReadOnlyCollection<CellId> occupiedCells,
+        WorldSnapshot world)
+    {
+        if (occupiedCells is null || occupiedCells.Count == 0)
+        {
+            throw new ArgumentException(
+                "At least one occupied building cell is required.",
+                nameof(occupiedCells));
+        }
+
         if (world is null)
         {
             throw new ArgumentNullException(nameof(world));
         }
 
         Dictionary<CellId, CellSnapshot> cells = CreateCellIndex(world);
-        return cells.TryGetValue(origin, out CellSnapshot target)
-            && target.State.IsExplored
-            && !target.IsSolid
-            && TryResolveSupport(origin, cells, out _);
+        foreach (CellId occupied in occupiedCells)
+        {
+            if (!cells.TryGetValue(occupied, out CellSnapshot target)
+                || !target.State.IsExplored
+                || target.IsSolid)
+            {
+                return false;
+            }
+        }
+
+        Dictionary<(int X, int Z), int> bottomByColumn = ResolveBottomByColumn(occupiedCells);
+        int? supportElevation = null;
+        foreach (KeyValuePair<(int X, int Z), int> column in bottomByColumn)
+        {
+            CellId bottom = new CellId(column.Key.X, column.Value, column.Key.Z);
+            if (!TryResolveSupport(bottom, cells, out BuildingPlacementSurfaceCell support))
+            {
+                return false;
+            }
+
+            int elevation = checked((int)support.Elevation);
+            if (supportElevation.HasValue && supportElevation.Value != elevation)
+            {
+                return false;
+            }
+
+            supportElevation = elevation;
+        }
+
+        return supportElevation.HasValue;
+    }
+
+    private static Dictionary<(int X, int Z), int> ResolveBottomByColumn(
+        IEnumerable<CellId> occupiedCells)
+    {
+        return occupiedCells
+            .GroupBy(cell => (cell.X, cell.Z))
+            .ToDictionary(group => group.Key, group => group.Max(cell => cell.Y));
     }
 
     private static bool TryResolveSupport(
