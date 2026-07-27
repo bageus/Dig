@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Dig.Application.Ecology;
+using Dig.Application.WorldObjects;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Domain.Buildings;
@@ -37,6 +38,8 @@ namespace Dig.Unity
                             CancelPickupForDirectCommand(jobs, inventory, job, tick),
                         MushroomChopJobDefinition =>
                             CancelMushroomForDirectCommand(job, tick),
+                        BarrelAttackJobDefinition =>
+                            CancelBarrelForDirectCommand(job, tick),
                         BuildingBoxAssemblyJobDefinition =>
                             CancelBuildingBoxForDirectCommand(job, tick),
                         BuildingBoxPickupJobDefinition relocation when relocation.IsRelocation =>
@@ -70,6 +73,7 @@ namespace Dig.Unity
                         || job.Definition is DigJobDefinition
                         || job.Definition is SpatialDigJobDefinition
                         || job.Definition is MushroomChopJobDefinition
+                        || job.Definition is BarrelAttackJobDefinition
                         || job.Definition is BuildingBoxAssemblyJobDefinition
                         || (job.Definition is BuildingBoxPickupJobDefinition relocation
                             && relocation.IsRelocation)))
@@ -109,6 +113,16 @@ namespace Dig.Unity
                 : _cancelMushroomChop.Handle(new CancelMushroomChopCommand(
                     job.Id,
                     "mushroom_direct_command_replaced",
+                    tick));
+        }
+
+        private Result CancelBarrelForDirectCommand(JobSnapshot job, long tick)
+        {
+            return _cancelBarrelAttack == null
+                ? Result.Success()
+                : _cancelBarrelAttack.Handle(new CancelBarrelAttackCommand(
+                    job.Id,
+                    "barrel_direct_command_replaced",
                     tick));
         }
 

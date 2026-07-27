@@ -107,7 +107,7 @@ namespace Dig.Unity
                 _worldSession.LoadSnapshot(),
                 _buildingsRepository!.Get().GetOccupiedCells(),
                 GetBuildingPlacementReachableCells(),
-                MushroomBuildingBlockedCells);
+                BuildingPlacementBlockedCells);
         }
 
         internal Result ConfirmBuildingBoxPlacement(
@@ -144,7 +144,7 @@ namespace Dig.Unity
                     GetBuildingPlacementReachableCells(),
                     priority: 625,
                     tick: tick,
-                    ecologyBlockedCells: MushroomBuildingBlockedCells));
+                    ecologyBlockedCells: BuildingPlacementBlockedCells));
         }
 
         internal string BuildingBoxName => _buildingBoxDefinition?.Name ?? "BuildingBox";
