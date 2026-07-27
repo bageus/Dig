@@ -105,7 +105,8 @@ public sealed partial class BuildingBoxPlacementPresenter
             origin,
             isValid: true,
             reasonCode: null,
-            BuildingBoxPlacementKind.RelocateBox);
+            BuildingBoxPlacementKind.RelocateBox,
+            sourceItemId: sourceStack.ItemId);
     }
 }
 }
