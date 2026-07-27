@@ -34,7 +34,7 @@ public sealed class MushroomChopApplicationTests
         Harness harness = CreateHarness(
             MushroomStage.Large,
             firstRequiredSwings: 2,
-            firstWoodworkingUnits: 6_100);
+            firstWoodworkingUnits: 4_100);
         Result<MushroomChopStartedResult> started = harness.Start.Handle(
             new StartDirectMushroomChopCommand(
                 FirstJobId,
@@ -70,7 +70,7 @@ public sealed class MushroomChopApplicationTests
         Assert.Equal(JobStatus.Completed, harness.Jobs.Get(FirstJobId)!.Status);
         Assert.Empty(harness.Jobs.GetReservations());
         Assert.Equal(MushroomStage.AbsentRegrowing, harness.Mushrooms.Get(SiteId)!.Stage);
-        Assert.Equal(6_100 + MushroomDefinition.WoodworkingGrantUnits, harness.Agents
+        Assert.Equal(4_100 + MushroomDefinition.WoodworkingGrantUnits, harness.Agents
             .Get(FirstWorkerId)!
             .CreateSkillProgressionSnapshot()
             .GetLevel(AgentSkillCatalog.Woodworking));
@@ -82,7 +82,7 @@ public sealed class MushroomChopApplicationTests
                 tick: 6));
         Assert.True(duplicate.IsFailure);
         Assert.Equal(3, harness.Inventory.CreateSnapshot().Stacks.Count);
-        Assert.Equal(6_100 + MushroomDefinition.WoodworkingGrantUnits, harness.Agents
+        Assert.Equal(4_100 + MushroomDefinition.WoodworkingGrantUnits, harness.Agents
             .Get(FirstWorkerId)!
             .CreateSkillProgressionSnapshot()
             .GetLevel(AgentSkillCatalog.Woodworking));
