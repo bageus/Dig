@@ -16,8 +16,6 @@ namespace Dig.Tests
 
 public sealed class BuildingBoxPackingSaveTests
 {
-    private static readonly MaterialId Air = new MaterialId("air");
-
     [Fact]
     public void Active_packing_round_trip_continues_to_one_output_box()
     {
@@ -185,10 +183,7 @@ public sealed class BuildingBoxPackingSaveTests
 
     private static MaterialCatalog CreateMaterials()
     {
-        return new MaterialCatalog(new[]
-        {
-            new MaterialDefinition(Air, isSolid: false, hardness: 0),
-        });
+        return BuildingBoxPlacementTestWorld.Materials();
     }
 
     private static SaveMetadataData Metadata()
@@ -204,4 +199,5 @@ public sealed class BuildingBoxPackingSaveTests
         };
     }
 }
+
 }
