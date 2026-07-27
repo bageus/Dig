@@ -129,7 +129,7 @@ def check_world_renderer_contracts() -> list[str]:
     errors.extend(require(renderer_path, renderer, (
         "Resources.Load<DigItemVisualCatalog>",
         "ItemStackVisualLayoutPresenter",
-        "visualCatalog.ResolveItem(itemId)",
+        "DigWorldItemVisualPolicy.Resolve(visualCatalog, itemId)",
         "Stack<DigWorldItemVisual>",
         "MaximumPooledRoots",
         "PrepareForPool()",
@@ -142,6 +142,17 @@ def check_world_renderer_contracts() -> list[str]:
         "new Material(",
         "_resourceMaterial",
         "_boxMaterial",
+    )))
+
+    policy_path = RUNTIME / "DigWorldItemVisualPolicy.cs"
+    policy = read(policy_path)
+    errors.extend(require(policy_path, policy, (
+        "catalog.ResolveItem(itemId)",
+        "CampfireBoxFootprintSide",
+        "CampfireBoxHeight",
+        "ResolveWorldPosition",
+        "resolution.WorldScale.y * 0.5f",
+        "WorldItemFrontDepthOffset",
     )))
 
     visual_path = RUNTIME / "DigWorldItemVisual.cs"
