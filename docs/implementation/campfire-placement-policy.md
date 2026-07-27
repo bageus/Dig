@@ -6,7 +6,7 @@ The existing `BuildingPlacementValidator` remains the owner of ordinary logical 
 
 `PackableBuildingPlacementPolicyValidator` adds the physical surface gate required by packable content. It consumes immutable surface facts and never reads Unity objects or mutates World, Buildings, Inventory or Jobs.
 
-The Application placement preview and confirmation paths must invoke both validators with the same origin and current facts. Unity only renders the returned validity and reason code.
+The Application placement preview and confirmation paths invoke both validators with the same origin and current facts. Unity only renders the returned visibility, validity and reason code.
 
 ## Campfire footprint
 
@@ -16,23 +16,25 @@ This prevents another building from occupying the partially covered edge area. T
 
 ## Surface facts
 
-Each covered logical cell supplies:
+Surface facts are projected from authoritative World cells rather than inferred from the placement layer:
 
-- the exact XYZ cell;
-- surface elevation;
-- `OutdoorGround` or `Tunnel` classification.
+- every occupied footprint cell must be open and explored;
+- the lower occupied cell of every horizontal/depth footprint column must have an explored solid terrain cell immediately below it at `Y + 1`;
+- the support elevation is the actual Y coordinate of that solid cell;
+- every required support column must resolve to the same elevation for a flat-surface building;
+- surface classification remains `OutdoorGround` or `Tunnel`.
 
-Missing facts fail closed. A campfire succeeds only when all four covered cells are known, outdoor, equal in elevation and unoccupied.
+Missing support fails closed. Interactive placement hides the ghost over unsupported air, and authoritative confirmation repeats the same support projection before creating a plan/job. A campfire additionally succeeds only when all four conservative covered cells are known, outdoor, equal in elevation and unoccupied.
 
 ## Stable failures
 
 The policy returns stable Domain errors for:
 
-- missing surface coverage;
+- missing terrain support or surface coverage;
 - forbidden tunnel placement;
 - a non-flat footprint;
 - physical-footprint overlap.
 
-## Next integration slice
+## Validation
 
-The next #332 slice maps authoritative World/terrain presentation facts into these surface records and calls the policy from both `PreviewBuildingBoxPlacement` and `ConfirmBuildingBoxPlacementHandler`. The same result must drive ghost color and final command acceptance.
+Unit coverage verifies direct support, missing-column rejection, Z0 BuildingBox support and preview/confirmation parity. Runtime source contracts require the ghost renderer to clear invisible unsupported previews and require confirmation/relocation handlers to revalidate support independently of Unity presentation.

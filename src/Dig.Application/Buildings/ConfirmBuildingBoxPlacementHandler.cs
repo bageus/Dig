@@ -136,6 +136,13 @@ public sealed class ConfirmBuildingBoxPlacementHandler
             return Result.Failure(placement.Error!);
         }
 
+        if (!BuildingPlacementSurfaceFactProjector.HasSupportingPlane(
+            placement.Footprint,
+            world))
+        {
+            return Result.Failure(PackableBuildingPlacementErrors.SurfaceMissing);
+        }
+
         if (_packableCatalog.TryGet(
             definition.Id,
             out PackableBuildingContentDefinition? content))
@@ -218,4 +225,5 @@ public sealed class ConfirmBuildingBoxPlacementHandler
         return Result.Success();
     }
 }
+
 }

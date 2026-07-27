@@ -32,7 +32,8 @@ public sealed class BuildingBoxGhostViewModel
         CellId? workPosition,
         bool isValid,
         string? reasonCode,
-        BuildingBoxPlacementKind placementKind = BuildingBoxPlacementKind.AssembleBuilding)
+        BuildingBoxPlacementKind placementKind = BuildingBoxPlacementKind.AssembleBuilding,
+        bool isVisible = true)
     {
         if (sourceStackId.HasValue && sourceStackId.Value.IsEmpty)
         {
@@ -76,6 +77,11 @@ public sealed class BuildingBoxGhostViewModel
         IsValid = isValid;
         ReasonCode = string.IsNullOrWhiteSpace(reasonCode) ? null : reasonCode.Trim();
         PlacementKind = placementKind;
+        IsVisible = isVisible
+            && !string.Equals(
+                ReasonCode,
+                PackableBuildingPlacementErrors.SurfaceMissing.Code,
+                StringComparison.Ordinal);
     }
 
     public EntityId? SourceStackId { get; }
@@ -95,6 +101,8 @@ public sealed class BuildingBoxGhostViewModel
     public string? ReasonCode { get; }
 
     public BuildingBoxPlacementKind PlacementKind { get; }
+
+    public bool IsVisible { get; }
 
     public BuildingBoxGhostStyle Style => IsValid
         ? BuildingBoxGhostStyle.Valid

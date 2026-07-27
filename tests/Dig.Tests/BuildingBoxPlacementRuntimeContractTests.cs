@@ -37,6 +37,61 @@ namespace Dig.Tests
         }
 
         [Fact]
+        public void Supported_surface_and_forced_move_cancellation_stay_wired()
+        {
+            string root = FindRepositoryRoot();
+            string runtime = RuntimeRoot();
+            string support = Normalize(File.ReadAllText(Path.Combine(
+                root,
+                "src",
+                "Dig.Domain",
+                "Buildings",
+                "BuildingPlacementSurfaceFacts.cs")));
+            string presenter = Normalize(File.ReadAllText(Path.Combine(
+                root,
+                "src",
+                "Dig.Presentation.Abstractions",
+                "Buildings",
+                "BuildingBoxPlacementPresenter.cs")));
+            string confirmation = Normalize(File.ReadAllText(Path.Combine(
+                root,
+                "src",
+                "Dig.Application",
+                "Buildings",
+                "ConfirmBuildingBoxPlacementHandler.cs")));
+            string relocation = Normalize(File.ReadAllText(Path.Combine(
+                root,
+                "src",
+                "Dig.Application",
+                "Inventory",
+                "BuildingBoxRelocationHandlers.cs")));
+            string renderer = Read(runtime, "DigBuildingBoxGhostRenderer.cs");
+            string direct = Read(runtime, "DigTerrainWorkSession.DirectCommands.cs");
+            string cancellation = Read(
+                runtime,
+                "DigTerrainWorkSession.BuildingBoxDirectCancellation.cs");
+            string movement = Read(runtime, "DigWorldInteraction.TunnelMovement.cs");
+            string inventoryInput = Read(
+                runtime,
+                "DigWorldInteraction.ResidentInventory.cs");
+
+            Assert.Contains("bottomOccupiedCell.Y+1", support);
+            Assert.Contains("HasSupportingPlane(placement.Footprint,world)", presenter);
+            Assert.Contains("HasSupportingPlane(placement.Footprint,world)", confirmation);
+            Assert.Contains("HasSupportingPlane(command.DestinationCell,world)", relocation);
+            Assert.Contains("if(!preview.IsVisible){Clear();return;}", renderer);
+            Assert.Contains("BuildingBoxAssemblyJobDefinition", direct);
+            Assert.Contains("relocation.IsRelocation", direct);
+            Assert.Contains("CancelBuildingBoxPlanHandler", cancellation);
+            Assert.Contains("inventory.ReleaseReservations(job.Id,tick)", cancellation);
+            Assert.Contains("_buildingRenderer!.Render(_terrainSession.LoadBuildings())", movement);
+            Assert.Contains("_hud.SetAgents(agents,_agentSession.Tick)", movement);
+            Assert.Contains("BeginResidentInventoryBuildingPlacement", inventoryInput);
+            Assert.Contains("PointerInputSurface.ResidentInventory", inventoryInput);
+            Assert.Contains("selectedInventoryItemIsBuildingBox:true", inventoryInput);
+        }
+
+        [Fact]
         public void Domain_and_save_contract_keep_one_relocation_job_owner()
         {
             string root = FindRepositoryRoot();

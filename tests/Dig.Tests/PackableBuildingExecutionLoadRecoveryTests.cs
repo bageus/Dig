@@ -15,7 +15,6 @@ namespace Dig.Tests
 
 public sealed class PackableBuildingExecutionLoadRecoveryTests
 {
-    private static readonly MaterialId Air = new MaterialId("air");
     private static readonly EntityId StaleWorker =
         EntityId.Parse("87000000000000000000000000000001");
 
@@ -158,10 +157,7 @@ public sealed class PackableBuildingExecutionLoadRecoveryTests
 
     private static MaterialCatalog CreateMaterials()
     {
-        return new MaterialCatalog(new[]
-        {
-            new MaterialDefinition(Air, isSolid: false, hardness: 0),
-        });
+        return BuildingBoxPlacementTestWorld.Materials();
     }
 
     private static SaveMetadataData Metadata()

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Dig.Application.Ecology;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
+using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
@@ -36,6 +37,10 @@ namespace Dig.Unity
                             CancelPickupForDirectCommand(jobs, inventory, job, tick),
                         MushroomChopJobDefinition =>
                             CancelMushroomForDirectCommand(job, tick),
+                        BuildingBoxAssemblyJobDefinition =>
+                            CancelBuildingBoxForDirectCommand(job, tick),
+                        BuildingBoxPickupJobDefinition relocation when relocation.IsRelocation =>
+                            CancelBuildingBoxForDirectCommand(job, tick),
                         _ => ReleaseDigWorkForDirectCommand(job, tick),
                     };
                     if (released.IsFailure)
@@ -64,7 +69,10 @@ namespace Dig.Unity
                     && (job.Definition is WorldItemPickupJobDefinition
                         || job.Definition is DigJobDefinition
                         || job.Definition is SpatialDigJobDefinition
-                        || job.Definition is MushroomChopJobDefinition))
+                        || job.Definition is MushroomChopJobDefinition
+                        || job.Definition is BuildingBoxAssemblyJobDefinition
+                        || (job.Definition is BuildingBoxPickupJobDefinition relocation
+                            && relocation.IsRelocation)))
                 {
                     assigned.Add(job);
                 }

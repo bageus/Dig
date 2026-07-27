@@ -2,9 +2,9 @@
 
 Статус реализации: `IMPLEMENTED`, runtime Play Mode verification pending.
 
-Authoritative design: [`../design/runtime-selection-excavation-item-placement-decisions.md`](../design/runtime-selection-excavation-item-placement-decisions.md).
+Authoritative design: [`../design/runtime-selection-excavation-item-placement-decisions.md`](../design/runtime-selection-excavation-item-placement-decisions.md), [`../design/building-box-placement-and-packing.md`](../design/building-box-placement-and-packing.md).
 
-Tracking: [#387](https://github.com/bageus/Dig/issues/387), [#388](https://github.com/bageus/Dig/issues/388), [#390](https://github.com/bageus/Dig/issues/390), [#398](https://github.com/bageus/Dig/issues/398).
+Tracking: [#387](https://github.com/bageus/Dig/issues/387), [#388](https://github.com/bageus/Dig/issues/388), [#390](https://github.com/bageus/Dig/issues/390), [#398](https://github.com/bageus/Dig/issues/398), [#118](https://github.com/bageus/Dig/issues/118).
 
 ## Исправленные первопричины
 
@@ -29,7 +29,25 @@ Placement intent больше не выбирается скрытым усло�
 
 Validation получает building-plan occupancy, но не resident/creature/loose-item occupancy. Поэтому такие объекты не замораживают ghost и не делают пустую terrain cell invalid. Valid preview остаётся зелёным, invalid — красным с reason code.
 
+### BuildingBox terrain support и forced movement
+
+Причина размещения в воздухе состояла в том, что logical placement проверял только open/explored footprint и reachable work position. Surface projector также ошибочно использовал depth `Z` как elevation и не требовал реальную solid terrain cell под footprint.
+
+Теперь BuildingBox preview и authoritative confirmation используют один terrain-support contract:
+
+- для каждой horizontal/depth column выбирается нижняя occupied cell;
+- непосредственно под ней в `Y + 1` должна существовать explored solid terrain cell;
+- все support cells должны иметь одинаковую фактическую Y-высоту;
+- unsupported preview получает `building.placement.surface_missing`, становится `IsVisible == false`, renderer очищает ghost, а confirmation не создаёт reservation/plan/job;
+- Z0 relocation повторяет тот же support check в authoritative relocation handler.
+
+Это применяется ко всем BuildingBox-enabled definitions; packable content дополнительно проходит собственную conservative physical-footprint policy.
+
 World-source relocation использует обычный BuildingBox candidate policy и pickup/carry pipeline. Inventory source сразу claim-ится resident-holder. Exact box reservation сохраняется во время carry; reserved BuildingBox slot отображается синим. Relocation save codec хранит destination и holder-start stage, сохраняя backward compatibility с direct pickup snapshots.
+
+Direct movement теперь включает active BuildingBox relocation/assembly в interruption set. Пока box plan ещё не committed `AtSite`, direct move отменяет job/plan, освобождает item/worker/position reservations, удаляет planned building projection и route, но не перемещает и не пересоздаёт коробку: та же quantity-one entity остаётся в inventory holder resident. Immediate Jobs/Buildings/items/agent HUD refresh снимает синий reserved tint и planned ghost в том же interaction. После `AtSite` сохраняется существующая explicit-cancel policy.
+
+Inventory BuildingBox LMB продолжает немедленно маршрутизироваться через `ResidentInventory` input surface в `BeginResidentInventoryBuildingPlacement`; системный cursor скрывается, а building ghost становится игровым cursor.
 
 ### Item pickup, placement и collision
 
@@ -73,6 +91,7 @@ Room commit раньше передавал `VolumeCells` в atomic `SetDigDesig
 
 - `InventoryState` остаётся единственным владельцем item location/quantity/reservations.
 - `BuildingsState` и building commands остаются владельцами placement/assembly/packing commits.
+- `World` владеет support terrain facts; presentation не может считать projected layer достаточной опорой.
 - `JobSystem` владеет excavation и BuildingBox relocation/assembly lifecycle/stage/worker.
 - `ExcavationWorkCoordinator` владеет per-target completed-quarter mask и active quarter assignments.
 - Unity Presentation владеет только selected ids, renderer tint, transparent ghosts, hover/cursor и partial-progress geometry.
@@ -83,6 +102,11 @@ Room commit раньше передавал `VolumeCells` в atomic `SetDigDesig
 - world/HUD BuildingBox selection effect и shared StackId;
 - Play Mode: selection не создаёт дополнительную geometry и меняет tint только физической коробки;
 - moving BuildingBox ghost follows cells/layers, stays IgnoreRaycast and collider-disabled;
+- supported/unsupported Z0 and assembly preview, hidden ghost over air and confirmation parity;
+- flat lower-footprint support projected from real solid `Y + 1` cells;
+- Z0 relocation handler rejects unsupported air before reservation/job creation;
+- forced direct movement cancels pre-site carried-box plan/job, releases reservations and preserves holder inventory identity/quantity;
+- inventory BuildingBox LMB remains the immediate placement-mode entry;
 - Z0 relocation preview/job versus Z1–Z3 assembly preview/plan;
 - world-source relocation reservation, holder-only inventory assignment, pickup/carry/deposit identity conservation;
 - relocation save codec round-trip и blue reserved inventory projection source contract;
@@ -106,4 +130,4 @@ Room commit раньше передавал `VolumeCells` в atomic `SetDigDesig
 
 ## Проверка
 
-Repository quality, C# compatibility, module-boundary, Unity source-contract и `.NET` build/tests выполняются в GitHub Actions. Добавлены Play Mode source regressions для box-only renderer tint и moving BuildingBox placement ghost. Полный интерактивный Unity Play Mode workflow placement/relocation/assembly и vertical tunnel stroke остаётся обязательным для перевода runtime systems в `VERIFIED`.
+Repository quality, C# compatibility, module-boundary, Unity source-contract и `.NET` build/tests выполняются в GitHub Actions. Полный интерактивный Unity Play Mode workflow placement/relocation/assembly, unsupported-air cursor transitions, forced direct-move cancellation и vertical tunnel stroke остаётся обязательным для перевода runtime systems в `VERIFIED`.

@@ -14,8 +14,6 @@ namespace Dig.Tests
 
 public sealed class PackableBuildingExecutionSaveIntegrationTests
 {
-    private static readonly MaterialId Air = new MaterialId("air");
-
     [Fact]
     public void In_flight_unpack_iteration_survives_full_save_load()
     {
@@ -109,10 +107,7 @@ public sealed class PackableBuildingExecutionSaveIntegrationTests
 
     private static MaterialCatalog CreateMaterials()
     {
-        return new MaterialCatalog(new[]
-        {
-            new MaterialDefinition(Air, isSolid: false, hardness: 0),
-        });
+        return BuildingBoxPlacementTestWorld.Materials();
     }
 
     private static SaveMetadataData Metadata()

@@ -14,7 +14,6 @@ namespace Dig.Tests
 
 internal sealed class BuildingBoxHarness
 {
-    private static readonly MaterialId Air = new MaterialId("air");
     private readonly InMemoryJobCandidateProvider _candidates =
         new InMemoryJobCandidateProvider();
     private long _tick = 1;
@@ -205,16 +204,14 @@ internal sealed class BuildingBoxHarness
 
     private static WorldState CreateWorld()
     {
-        MaterialCatalog materials = new MaterialCatalog(new[]
+        return BuildingBoxPlacementTestWorld.SupportedState(new[]
         {
-            new MaterialDefinition(Air, isSolid: false, hardness: 0),
+            new CellId(1, 1),
+            new CellId(3, 3),
+            new CellId(3, 2),
+            new CellId(5, 5),
+            new CellId(5, 4),
         });
-        return WorldState.CreateFilled(
-            new WorldSize(8, 8),
-            chunkSize: 4,
-            materials,
-            Air,
-            explored: true).Value;
     }
 
     public static EntityId Id(int value)
@@ -222,4 +219,5 @@ internal sealed class BuildingBoxHarness
         return EntityId.Parse(value.ToString("x32"));
     }
 }
+
 }

@@ -129,7 +129,10 @@ public sealed class CreateBuildingBoxRelocationHandler
         WorldSnapshot world = _worldRepository.Get().CreateSnapshot();
         if (!world.Size.Contains(command.DestinationCell)
             || !command.ReachableCells.Contains(command.DestinationCell)
-            || _buildingsRepository.Get().GetOccupiedCells().Contains(command.DestinationCell))
+            || _buildingsRepository.Get().GetOccupiedCells().Contains(command.DestinationCell)
+            || !BuildingPlacementSurfaceFactProjector.HasSupportingPlane(
+                command.DestinationCell,
+                world))
         {
             return Result.Failure(BuildingBoxRelocationErrors.TargetUnavailable);
         }

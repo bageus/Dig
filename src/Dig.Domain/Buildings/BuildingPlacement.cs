@@ -191,4 +191,5 @@ public sealed class BuildingPlacementValidator
         return BuildingPlacementResult.Success(footprint, workPosition.Value);
     }
 }
+
 }
