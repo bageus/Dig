@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Domain.Buildings;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
@@ -75,7 +76,12 @@ public sealed class BuildingBoxPlacementPresenter
             throw new ArgumentNullException(nameof(occupiedCells));
         }
 
-        IReadOnlyList<CellId> footprint = definition.ResolveFootprint(origin, orientation);
+        BuildingBoxPlacementKind kind = origin.Z == 0
+            ? BuildingBoxPlacementKind.RelocateBox
+            : BuildingBoxPlacementKind.AssembleBuilding;
+        IReadOnlyList<CellId> initialFootprint = kind == BuildingBoxPlacementKind.RelocateBox
+            ? new[] { origin }
+            : definition.ResolveFootprint(origin, orientation);
         string? sourceReason = ValidateSource(sourceStack, sourceItem, definition);
         if (sourceReason is not null)
         {
@@ -84,64 +90,28 @@ public sealed class BuildingBoxPlacementPresenter
                 definition,
                 origin,
                 orientation,
-                footprint,
-                sourceReason);
+                initialFootprint,
+                sourceReason,
+                kind);
         }
 
-        BuildingPlacementResult placement = _validator.Validate(
-            definition,
-            origin,
-            orientation,
-            world,
-            occupiedCells,
-            reachableCells);
-        if (!placement.Succeeded)
-        {
-            return Invalid(
-                sourceStack!.StackId,
+        return kind == BuildingBoxPlacementKind.RelocateBox
+            ? PreviewRelocation(
+                sourceStack!,
                 definition,
                 origin,
                 orientation,
-                placement.Footprint,
-                placement.Error!.Code);
-        }
-
-        IReadOnlyList<CellId> previewFootprint = placement.Footprint;
-        if (_packableCatalog.TryGet(
-            definition.Id,
-            out PackableBuildingContentDefinition? content))
-        {
-            PackableBuildingSurfacePolicy policy = content!.Placement.ToSurfacePolicy();
-            IReadOnlyList<BuildingPlacementSurfaceCell> surfaceCells =
-                _surfaceFacts.Project(policy, origin, world);
-            PackableBuildingPlacementPolicyResult physical = _physicalValidator.Validate(
-                policy,
+                world,
+                occupiedCells,
+                reachableCells)
+            : PreviewAssembly(
+                sourceStack!,
+                definition,
                 origin,
-                surfaceCells,
-                occupiedCells);
-            if (!physical.Succeeded)
-            {
-                return Invalid(
-                    sourceStack!.StackId,
-                    definition,
-                    origin,
-                    orientation,
-                    physical.Footprint.CoveredCells,
-                    physical.Error!.Code);
-            }
-
-            previewFootprint = physical.Footprint.CoveredCells;
-        }
-
-        return new BuildingBoxGhostViewModel(
-            sourceStack!.StackId,
-            definition.Id,
-            origin,
-            orientation,
-            previewFootprint,
-            placement.WorkPosition,
-            isValid: true,
-            reasonCode: null);
+                orientation,
+                world,
+                occupiedCells,
+                reachableCells);
     }
 
     public Result<BuildingBoxPlacementConfirmationDraft> CreateConfirmationDraft(
@@ -165,7 +135,161 @@ public sealed class BuildingBoxPlacementPresenter
                 preview.DefinitionId,
                 preview.Origin,
                 preview.Orientation,
-                preview.WorkPosition.Value));
+                preview.WorkPosition.Value,
+                preview.PlacementKind));
+    }
+
+    private BuildingBoxGhostViewModel PreviewAssembly(
+        ItemStackSnapshot sourceStack,
+        BuildingDefinition definition,
+        CellId origin,
+        BuildingOrientation orientation,
+        WorldSnapshot world,
+        IReadOnlyCollection<CellId> occupiedCells,
+        IReadOnlyCollection<CellId> reachableCells)
+    {
+        BuildingPlacementResult placement = _validator.Validate(
+            definition,
+            origin,
+            orientation,
+            world,
+            occupiedCells,
+            reachableCells);
+        if (!placement.Succeeded)
+        {
+            return Invalid(
+                sourceStack.StackId,
+                definition,
+                origin,
+                orientation,
+                placement.Footprint,
+                placement.Error!.Code,
+                BuildingBoxPlacementKind.AssembleBuilding);
+        }
+
+        IReadOnlyList<CellId> previewFootprint = placement.Footprint;
+        if (_packableCatalog.TryGet(
+            definition.Id,
+            out PackableBuildingContentDefinition? content))
+        {
+            PackableBuildingSurfacePolicy policy = content!.Placement.ToSurfacePolicy();
+            IReadOnlyList<BuildingPlacementSurfaceCell> surfaceCells =
+                _surfaceFacts.Project(policy, origin, world);
+            PackableBuildingPlacementPolicyResult physical = _physicalValidator.Validate(
+                policy,
+                origin,
+                surfaceCells,
+                occupiedCells);
+            if (!physical.Succeeded)
+            {
+                return Invalid(
+                    sourceStack.StackId,
+                    definition,
+                    origin,
+                    orientation,
+                    physical.Footprint.CoveredCells,
+                    physical.Error!.Code,
+                    BuildingBoxPlacementKind.AssembleBuilding);
+            }
+
+            previewFootprint = physical.Footprint.CoveredCells;
+        }
+
+        return new BuildingBoxGhostViewModel(
+            sourceStack.StackId,
+            definition.Id,
+            origin,
+            orientation,
+            previewFootprint,
+            placement.WorkPosition,
+            isValid: true,
+            reasonCode: null,
+            BuildingBoxPlacementKind.AssembleBuilding);
+    }
+
+    private static BuildingBoxGhostViewModel PreviewRelocation(
+        ItemStackSnapshot sourceStack,
+        BuildingDefinition definition,
+        CellId origin,
+        BuildingOrientation orientation,
+        WorldSnapshot world,
+        IReadOnlyCollection<CellId> occupiedCells,
+        IReadOnlyCollection<CellId> reachableCells)
+    {
+        CellId[] footprint = { origin };
+        if (!world.Size.Contains(origin))
+        {
+            return Invalid(
+                sourceStack.StackId,
+                definition,
+                origin,
+                orientation,
+                footprint,
+                BuildingErrors.PlacementOutOfBounds.Code,
+                BuildingBoxPlacementKind.RelocateBox);
+        }
+
+        CellSnapshot cell = world.Chunks
+            .SelectMany(chunk => chunk.Cells)
+            .First(value => value.Id == origin);
+        if (cell.IsSolid)
+        {
+            return Invalid(
+                sourceStack.StackId,
+                definition,
+                origin,
+                orientation,
+                footprint,
+                BuildingErrors.PlacementSolid.Code,
+                BuildingBoxPlacementKind.RelocateBox);
+        }
+
+        if (!cell.State.IsExplored)
+        {
+            return Invalid(
+                sourceStack.StackId,
+                definition,
+                origin,
+                orientation,
+                footprint,
+                BuildingErrors.PlacementUnexplored.Code,
+                BuildingBoxPlacementKind.RelocateBox);
+        }
+
+        if (occupiedCells.Contains(origin))
+        {
+            return Invalid(
+                sourceStack.StackId,
+                definition,
+                origin,
+                orientation,
+                footprint,
+                BuildingErrors.PlacementOccupied.Code,
+                BuildingBoxPlacementKind.RelocateBox);
+        }
+
+        if (!reachableCells.Contains(origin))
+        {
+            return Invalid(
+                sourceStack.StackId,
+                definition,
+                origin,
+                orientation,
+                footprint,
+                BuildingErrors.NoReachableWorkPosition.Code,
+                BuildingBoxPlacementKind.RelocateBox);
+        }
+
+        return new BuildingBoxGhostViewModel(
+            sourceStack.StackId,
+            definition.Id,
+            origin,
+            orientation,
+            footprint,
+            origin,
+            isValid: true,
+            reasonCode: null,
+            BuildingBoxPlacementKind.RelocateBox);
     }
 
     private static string? ValidateSource(
@@ -205,7 +329,8 @@ public sealed class BuildingBoxPlacementPresenter
         CellId origin,
         BuildingOrientation orientation,
         IEnumerable<CellId> footprint,
-        string reasonCode)
+        string reasonCode,
+        BuildingBoxPlacementKind kind)
     {
         return new BuildingBoxGhostViewModel(
             sourceStackId,
@@ -215,7 +340,9 @@ public sealed class BuildingBoxPlacementPresenter
             footprint,
             workPosition: null,
             isValid: false,
-            reasonCode);
+            reasonCode,
+            kind);
     }
 }
+
 }
