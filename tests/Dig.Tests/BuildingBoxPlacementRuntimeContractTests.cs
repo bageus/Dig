@@ -176,6 +176,15 @@ namespace Dig.Tests
                 "Tests",
                 "PlayMode",
                 "BuildingBoxPlacementCursorPlayModeTests.cs")));
+            string deepPlayMode = Normalize(File.ReadAllText(Path.Combine(
+                root,
+                "unity",
+                "Dig.Unity",
+                "Assets",
+                "Dig.Unity",
+                "Tests",
+                "PlayMode",
+                "BuildingBoxDeepPlacementPlayModeTests.cs")));
             string inventoryInteraction = Read(
                 RuntimeRoot(),
                 "DigWorldInteraction.ResidentInventory.cs");
@@ -186,7 +195,9 @@ namespace Dig.Tests
             Assert.Contains("Relocation_preview_and_plan_match_actual_box_size", playMode);
             Assert.Contains("Invoke(ghost,\"RenderPlans\",new[]", playMode);
             Assert.DoesNotContain("ghost.RenderPlans(", playMode);
-            Assert.Contains("Campfire_building_ghost_is_visible_on_z1_through_z3", playMode);
+            Assert.Contains(
+                "Campfire_building_ghost_is_visible_on_z1_through_z3",
+                deepPlayMode);
             Assert.Contains("Placement_target_resolves_enabled_movement_surface_on_deeper_layer", playMode);
             Assert.Contains("string?stackIdValue=slot.StackId", inventoryInteraction);
             Assert.Contains("string.IsNullOrWhiteSpace(stackIdValue)", inventoryInteraction);
