@@ -8,6 +8,7 @@ namespace Dig.Unity
         private const float ResidentScreenPickPadding = 8f;
         private DigAgentVisual? _hoveredResident;
         private DigWorldItemVisual? _hoveredWorldItem;
+        private DigMushroomVisual? _hoveredMushroom;
 
         private RaycastHit[] GetPointerHits()
         {
@@ -27,10 +28,15 @@ namespace Dig.Unity
             SynchronizeTunnelInteractionTargets();
             DigAgentVisual? next = null;
             DigWorldItemVisual? nextItem = null;
+            DigMushroomVisual? nextMushroom = null;
             if (!_hud.ContainsScreenPoint(Input.mousePosition))
             {
                 RaycastHit[] hits = GetPointerHits();
-                if (_agentRenderer.SelectedCount > 0
+                if (TryResolveReachableMushroomHit(hits, out DigMushroomVisual mushroom))
+                {
+                    nextMushroom = mushroom;
+                }
+                else if (_agentRenderer.SelectedCount > 0
                     && TryResolvePickupItemHit(hits, out DigWorldItemVisual pickupItem))
                 {
                     nextItem = pickupItem;
@@ -54,6 +60,48 @@ namespace Dig.Unity
                 _hoveredWorldItem = nextItem;
                 _hoveredWorldItem?.SetHovered(true);
             }
+
+            if (!ReferenceEquals(nextMushroom, _hoveredMushroom))
+            {
+                _hoveredMushroom?.SetHovered(false);
+                _hoveredMushroom = nextMushroom;
+                _hoveredMushroom?.SetHovered(true);
+            }
+        }
+
+
+        private void ClearPointerHover()
+        {
+            _hoveredResident?.SetHovered(false);
+            _hoveredWorldItem?.SetHovered(false);
+            _hoveredMushroom?.SetHovered(false);
+            _hoveredResident = null;
+            _hoveredWorldItem = null;
+            _hoveredMushroom = null;
+        }
+
+        private bool TryResolveReachableMushroomHit(
+            RaycastHit[] hits,
+            out DigMushroomVisual mushroom)
+        {
+            Dig.Presentation.Agents.AgentViewModel? selected =
+                _agentRenderer?.SelectedModel;
+            if (selected != null
+                && TryResolveMushroomHit(hits, out DigMushroomVisual candidate)
+                && _terrainSession!.CanDirectChopMushroom(
+                    candidate.Model.SiteId,
+                    new Dig.Domain.World.CellId(
+                        selected.CellX,
+                        selected.CellY,
+                        selected.CellZ),
+                    out _))
+            {
+                mushroom = candidate;
+                return true;
+            }
+
+            mushroom = null!;
+            return false;
         }
 
         private bool TryResolvePickupItemHit(

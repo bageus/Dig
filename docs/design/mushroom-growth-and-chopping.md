@@ -43,16 +43,17 @@ Automatic job generation и самостоятельный выбор грибо
 ### Прямой приказ рубки
 
 1. Игрок выбирает resident.
-2. Pointer на доступном видимом грибе показывает слегка анимированный топор.
-3. LMB создаёт один direct chopping command и один ordinary chopping job, сразу предназначенный выбранному resident.
-4. Resident освобождается от несовместимого небоевого direct action, получает route к допустимой work position и идёт к грибу.
-5. На work position resident выполняет authoritative swings.
-6. После требуемого числа swings одна atomic completion transaction:
+2. Pointer на доступном видимом грибе показывает слегка анимированный топор, а сам гриб получает заметную hover-подсветку.
+3. Hover, cursor и LMB используют одно и то же resolved mushroom target. Если показан топор, тот же LMB обязан создать один direct chopping command и не может вместо этого выбрать перекрывающее гриб строение или выдать другое действие.
+4. LMB создаёт один direct chopping command и один ordinary chopping job, сразу предназначенный выбранному resident.
+5. Resident освобождается от несовместимого небоевого direct action, получает route к допустимой work position и идёт к грибу.
+6. На work position resident выполняет authoritative swings.
+7. После требуемого числа swings одна atomic completion transaction:
    - переводит mushroom site в `AbsentRegrowing`;
    - создаёт точные drop unit entities в той же logical cell;
    - завершает job и освобождает worker/site/work-position reservations;
    - выдаёт resident `0.8` point навыка `skill.woodworking` через idempotent grant source.
-7. Drops становятся обычными world items и могут быть подняты существующим pickup workflow.
+8. Drops становятся обычными world items и могут быть подняты существующим pickup workflow.
 
 ### Повторный direct order
 
@@ -215,10 +216,12 @@ SourceId = mushroom chop completion generation
 2. cursor становится слегка анимированным топором;
 3. LMB выдаёт только mushroom chop command и не создаёт move/excavation/object-selection command тем же event;
 4. недоступный/unreachable/absent target оставляет default cursor и показывает typed reason;
-5. resident status во время travel/work показывает «Рубит гриб»;
-6. visible stage и current chop progress обновляются из authoritative snapshot;
-7. large visual немного выше visual resident;
-8. `AbsentRegrowing` не имеет mushroom geometry, collider или direct interaction target.
+5. resident status во время travel и work показывает «Добывает гриб»;
+6. во время `PerformWork` resident разворачивается к mushroom target и проигрывает повторяющуюся chopping/dig pose на authoritative cadence;
+7. visible stage и current chop progress обновляются из authoritative snapshot;
+8. mushroom geometry стоит вертикально основанием на walk surface; URP presentation не может отображаться magenta из-за неподдерживаемого shader;
+9. `Large` визуально только немного выше resident: ориентир — около 110% высоты resident interaction collider, а не кратно выше гнома;
+10. `AbsentRegrowing` не имеет mushroom geometry, collider или direct interaction target.
 
 Автоматический job UI и auto-designation гриба остаются будущим scope.
 
@@ -320,8 +323,10 @@ Unity Play Mode:
 
 - one surface and one lower-cave mushroom;
 - four visible sizes, Large slightly above resident height;
-- selected resident hover -> animated axe cursor;
-- LMB -> travel -> repeated chop animation -> disappearance;
+- selected resident hover -> highlighted mushroom + animated axe cursor;
+- overlapping building/mushroom hit stack keeps hover/cursor/LMB parity and starts chopping;
+- LMB -> status «Добывает гриб» -> travel -> repeated chop animation -> disappearance;
+- mushroom base remains on walk surface, supported shader is not magenta, Large is only slightly taller than resident;
 - exact physical drops visible/raycastable/pickable;
 - regrowth in same cell;
 - second resident takeover;
@@ -332,7 +337,10 @@ Unity Play Mode:
 - fresh demo session contains exactly two stable mushroom sites: surface and lower cave;
 - each grows `Tiny -> Small -> Medium -> Large` at configured simulation durations;
 - Large stands indefinitely until chopped;
-- direct axe cursor and click use one target decision and one command;
+- direct axe cursor, hover highlight and click use one resolved target decision and one command;
+- когда axe cursor виден, перекрывающее строение или другой world target не перехватывает тот же LMB;
+- mushroom visual вертикален, стоит на walk surface, использует поддерживаемый URP shader и `Large` лишь немного выше resident;
+- active resident status отображается как «Добывает гриб», а `PerformWork` показывает повторяющуюся рубящую pose;
 - hit bands use current Woodworking and deterministic required swings;
 - one site cannot be chopped concurrently by two residents;
 - successful chop atomically removes visible mushroom, creates stage drops и gives `0.8` Woodworking;
@@ -354,3 +362,4 @@ Unity Play Mode:
 |---|---|---|---|
 | 2026-07-27 | Зафиксированы site lifecycle, четыре видимые стадии, 15 игровых минут/1 секунда test profile, direct axe workflow, Woodworking hit bands, +0.8 grant, stage drops, exclusive worker takeover, permanent building block и два demo sites. Противоречия вынесены в Q-MUSH-001..003. | Пользователь | Все разделы, #423 |
 | 2026-07-27 | Q-MUSH-001=A: absent не интерактивен; Q-MUSH-002=B: takeover/interruption сбрасывает progress; Q-MUSH-003=A: рост и remaining duration замораживаются на время active chop. Статус повышен до APPROVED. | Пользователь | Workflow, state machine, conflicts, save/test acceptance, #423 |
+| 2026-07-27 | По runtime screenshot подтверждены обязательные исправления presentation/input: вертикальная установка на walk surface, URP-compatible material, Large около 110% resident height, hover highlight, единый hover/cursor/LMB target без перехвата overlapping building, статус «Добывает гриб» и chopping pose. | Пользователь | Workflow, Input/UI/Presentation, Play Mode acceptance, #423 |
