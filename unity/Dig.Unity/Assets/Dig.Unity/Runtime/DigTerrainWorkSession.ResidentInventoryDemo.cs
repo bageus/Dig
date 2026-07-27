@@ -81,11 +81,16 @@ internal sealed partial class DigTerrainWorkSession
                     ResidentInventoryExpansionContent.RawMaterialCategoryId,
                 }),
         };
-        InventoryState inventory = new InventoryState(new ItemCatalog(
-            resourceItems
-                .Concat(baseItems)
-                .Append(CampfireBuildingBoxContent.Definition.BoxItem)
-                .Concat(expansions.Items)));
+        ItemDefinition[] allItems = resourceItems
+            .Concat(baseItems)
+            .Append(CampfireBuildingBoxContent.Definition.BoxItem)
+            .Concat(expansions.Items)
+            .Concat(CampfireProductionContent.CreateItems())
+            .GroupBy(value => value.Id)
+            .Select(group => group.First())
+            .OrderBy(value => value.Id)
+            .ToArray();
+        InventoryState inventory = new InventoryState(new ItemCatalog(allItems));
         EntityId residentId = DemoId('a', 1);
         AddResidentUnit(
             inventory,

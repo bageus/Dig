@@ -20,7 +20,7 @@ public enum ProductionOrderStatus
     Failed = 6,
 }
 
-public static class ProductionErrors
+public static partial class ProductionErrors
 {
     public static readonly DomainError OrderAlreadyExists = new DomainError(
         "production.order_already_exists",
@@ -74,7 +74,8 @@ public sealed class ProductionOrderSnapshot
         int completedWork,
         long version,
         IReadOnlyCollection<ItemReservationAllocation> inputAllocations,
-        string? reason)
+        string? reason,
+        IReadOnlyCollection<ProductionMaterialStepSnapshot>? materialSteps = null)
     {
         Id = id;
         Recipe = recipe ?? throw new ArgumentNullException(nameof(recipe));
@@ -87,6 +88,10 @@ public sealed class ProductionOrderSnapshot
             inputAllocations.OrderBy(value => value.StackId.ToString(), StringComparer.Ordinal)
                 .ToArray());
         Reason = reason;
+        MaterialSteps = new ReadOnlyCollection<ProductionMaterialStepSnapshot>(
+            (materialSteps ?? Array.Empty<ProductionMaterialStepSnapshot>())
+                .OrderBy(value => value.Index)
+                .ToArray());
     }
 
     public EntityId Id { get; }
@@ -106,6 +111,12 @@ public sealed class ProductionOrderSnapshot
     public IReadOnlyList<ItemReservationAllocation> InputAllocations { get; }
 
     public string? Reason { get; }
+
+    public IReadOnlyList<ProductionMaterialStepSnapshot> MaterialSteps { get; }
+
+    public int CurrentMaterialStepIndex => MaterialSteps.Count == 0
+        ? -1
+        : MaterialSteps.Count(value => value.Consumed);
 
     public bool IsTerminal => Status is ProductionOrderStatus.Completed
         or ProductionOrderStatus.Cancelled
@@ -162,7 +173,7 @@ public sealed class ProductionWorkApplied : IDomainEvent
         if (tick < 0) throw new ArgumentOutOfRangeException(nameof(tick));
         if (orderId.IsEmpty || buildingId.IsEmpty)
             throw new ArgumentException("Order and building ids are required.");
-        if (effectiveWork <= 0 || completedWork <= 0
+        if (effectiveWork <= 0 || completedWork < 0
             || requiredWork <= 0 || completedWork > requiredWork)
             throw new ArgumentOutOfRangeException(nameof(effectiveWork));
         Tick = tick;

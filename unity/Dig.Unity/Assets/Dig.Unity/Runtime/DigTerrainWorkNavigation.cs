@@ -54,6 +54,8 @@ namespace Dig.Unity
             _buildingBoxPickupRoutes.Clear();
             _worldItemPickupRoutes.Clear();
             _buildingBoxAssemblyRoutes.Clear();
+            _buildingProductionRoutes.Clear();
+            _buildingSupplyRoutes.Clear();
             foreach (JobSnapshot job in _jobRepository.Get().GetAll())
             {
                 if (!IsActive(job) || !job.AssignedAgentId.HasValue)
@@ -88,6 +90,16 @@ namespace Dig.Unity
                 }
 
                 if (TryPlanBuildingBoxAssemblyMovement(job, agent, navigation, movement))
+                {
+                    continue;
+                }
+
+                if (TryPlanBuildingSupplyMovement(job, agent, navigation, movement))
+                {
+                    continue;
+                }
+
+                if (TryPlanBuildingProductionMovement(job, agent, navigation, movement))
                 {
                     continue;
                 }
@@ -175,6 +187,7 @@ namespace Dig.Unity
             routes.AddRange(LoadBuildingBoxPickupRoutes());
             routes.AddRange(LoadWorldItemPickupRoutes());
             routes.AddRange(LoadBuildingBoxAssemblyRoutes());
+            routes.AddRange(LoadBuildingProductionRoutes());
             return routes;
         }
 

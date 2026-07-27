@@ -295,4 +295,28 @@ public sealed class SaveVersionFiveMushroomsMigration : ISaveMigration
     }
 }
 
+public sealed class SaveVersionSixBuildingProductionMigration : ISaveMigration
+{
+    public string Id => "save.v6_to_v7.building_production";
+    public int FromVersion => 6;
+    public int ToVersion => 7;
+
+    public void Apply(SaveGameDocument document)
+    {
+        if (document is null)
+        {
+            throw new ArgumentNullException(nameof(document));
+        }
+
+        if (document.FormatVersion != FromVersion)
+        {
+            throw new InvalidOperationException(
+                "Migration received the wrong source version.");
+        }
+
+        document.BuildingProduction ??= new BuildingProductionSaveData();
+        document.FormatVersion = ToVersion;
+    }
+}
+
 }

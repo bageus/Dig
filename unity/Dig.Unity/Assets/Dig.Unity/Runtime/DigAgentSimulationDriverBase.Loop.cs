@@ -75,6 +75,7 @@ namespace Dig.Unity
                 TerrainSession.SynchronizeBuildingBoxRelocation(nextTick, before);
                 TerrainSession.SynchronizeBuildingBoxAssembly(nextTick, before);
                 TerrainSession.SynchronizeBuildingPacking(nextTick, before);
+                TerrainSession.SynchronizeBuildingProduction(nextTick, before);
                 result = TerrainSession.InterruptForManualMovement(
                     AgentSession.ActiveManualTunnelResidentIds,
                     nextTick);
@@ -116,6 +117,13 @@ namespace Dig.Unity
             if (result.IsSuccess)
             {
                 result = TerrainSession.AdvanceMushrooms(AgentSession.Tick, agents);
+            }
+
+            if (result.IsSuccess)
+            {
+                result = TerrainSession.AdvanceBuildingProduction(
+                    AgentSession.Tick,
+                    agents);
             }
 
             if (result.IsSuccess)
@@ -189,6 +197,9 @@ namespace Dig.Unity
             MushroomRenderer!.Render(TerrainSession!.LoadMushrooms());
             JobRenderer.Render(jobs);
             BuildingRenderer.Render(buildings);
+            BuildingInternalStockRenderer!.Render(
+                TerrainSession.LoadAllBuildingProduction(),
+                buildings);
             ItemRenderer!.Render(items);
             StockpileRenderer!.Render(storage);
             RouteRenderer!.Render(routes);

@@ -55,6 +55,10 @@ public sealed partial class SaveGameBuilder
             PackableBuildingExecutions = PackableBuildingExecutionSaveDataAdapter.Encode(
                 context.PackableBuildingExecutions),
             Mushrooms = BuildMushrooms(context.Mushrooms),
+            BuildingProduction = BuildingProductionSaveAdapter.Encode(
+                context.Production,
+                context.BuildingSupply,
+                context.Inventory),
         };
     }
 

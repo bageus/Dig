@@ -56,11 +56,11 @@ internal sealed partial class DigTerrainWorkSession
         BuildingDefinition workshopDefinition = CreateDemoBuildingDefinition();
         BuildingDefinition campfireDefinition =
             CampfireBuildingBoxContent.Definition.Building;
-        BuildingCatalog catalog = new BuildingCatalog(new[]
-        {
-            workshopDefinition,
-            campfireDefinition,
-        });
+        BuildingCatalog catalog = new BuildingCatalog(
+            new[] { workshopDefinition }
+                .Concat(CampfireProductionContent.CreateBuildings())
+                .GroupBy(value => value.Id)
+                .Select(group => group.First()));
 
         CellId workshopOrigin = FindDemoBuildingOrigin();
         CellId workshopWorkPosition = new CellId(
