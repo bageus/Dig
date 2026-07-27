@@ -1,0 +1,96 @@
+name: Rebase PR 441 onto current main
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  actions: read
+  pull-requests: read
+
+jobs:
+  apply:
+    if: github.head_ref == 'fix/pr441-current-main-rebase'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout staging branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 1
+          show-progress: false
+
+      - name: Download verified PR 441 source export
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/8670173975/zip" \
+            --output /tmp/pr441-source.zip
+          echo "4b20e5c08954bb222cf0d7a8831309dfa274e8e2aca8ee9d5d56515a541f5557  /tmp/pr441-source.zip" \
+            | sha256sum --check --strict
+          mkdir -p /tmp/pr441-artifact /tmp/pr441-source
+          unzip -q /tmp/pr441-source.zip -d /tmp/pr441-artifact
+          tar -xzf /tmp/pr441-artifact/dig-stage2-v3-source.tgz -C /tmp/pr441-source
+
+      - name: Resolve authoritative PR file set
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          : > /tmp/pr441-files.txt
+          for page in 1 2; do
+            curl --fail --location --silent --show-error \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/441/files?per_page=100&page=${page}" \
+              --output "/tmp/pr441-files-${page}.json"
+          done
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          paths = []
+          for page in (1, 2):
+              data = json.loads(Path(f"/tmp/pr441-files-{page}.json").read_text())
+              paths.extend(item["filename"] for item in data)
+          unique = sorted(set(paths))
+          Path("/tmp/pr441-files.txt").write_text("\n".join(unique) + "\n")
+          if len(unique) != 123:
+              raise SystemExit(f"Expected 123 PR files, received {len(unique)}")
+          PY
+
+      - name: Apply PR tree onto current main
+        run: |
+          set -euo pipefail
+          while IFS= read -r path; do
+            [ -n "${path}" ] || continue
+            if [ "${path}" = "unity/Dig.Unity/Packages/manifest.json" ]; then
+              continue
+            fi
+            source="/tmp/pr441-source/${path}"
+            if [ -f "${source}" ]; then
+              mkdir -p "$(dirname "${path}")"
+              cp -p "${source}" "${path}"
+            else
+              rm -rf -- "${path}"
+            fi
+          done < /tmp/pr441-files.txt
+          rm -f .github/workflows/rebase-pr441-current-main.yml
+          python3 tools/quality/check_quality.py
+          git diff --check
+
+      - name: Commit clean rebased implementation
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Rebase building production onto current main"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
