@@ -39,11 +39,13 @@ Parent feature: [#87](https://github.com/bageus/Dig/issues/87).
 8. Более дальняя excavation target cell не назначается resident, пока существует более близкая достижимая target cell того же доступного excavation pool.
 9. Resident идёт к рабочей позиции, выполняет work и commit клетки.
 10. После полного `4/4` commit authoritative World, Navigation map, resident tunnel topology и movement surfaces обязаны увидеть открытую клетку в том же simulation tick до следующей попытки маршрута, назначения или движения. Ошибка derived refresh не может оставить визуально открытую клетку логически/физически закрытой.
-11. Открытая frontier cell немедленно становится допустимой work/movement cell для следующей excavation target, если у неё есть floor support либо она является частью vertical tunnel. При vertical stroke переход из поддерживаемой horizontal entry cell в первую vertical cell и обратно является валидным climbing transition; соседние обычные open cells без vertical provenance не получают vertical traversal автоматически.
-12. При копке сверху вниз resident сначала удаляет верхние quarters нижней target cell, визуально ближайшие к его текущей позиции.
+11. Любая полностью открытая cell, принадлежащая authoritative tunnel plan, немедленно остаётся допустимой work/movement cell для следующей excavation target независимо от наличия floor support. `plannedVertical` является только provenance вертикального перехода и не может быть единственным способом сохранить обычную planned tunnel cell в topology. При vertical stroke переход из поддерживаемой horizontal entry cell в первую vertical cell и обратно является валидным climbing transition; соседние обычные open cells без vertical provenance не получают vertical traversal автоматически.
+12. При копке сверху вниз resident полностью удаляет горизонтальную верхнюю пару quarters нижней target cell до перехода к нижней паре; высокий skill не превращает partial progress в вертикальную колонку.
 13. Remaining cells сохраняются и продолжают иметь jobs.
 14. Свободные residents независимо выбирают свои ближайшие доступные jobs; один job/work position не назначается двум residents.
-15. Status tunnel/depth/room action — «Копает».
+15. Если work cell находится в vertical tunnel без floor support, resident выполняет mining в stationary climbing stance спиной к камере, а не стоит в воздухе.
+16. Для depth target из vertical tunnel work position выбирается в таком порядке: достижимая открытая horizontal cell слева/справа на source depth; затем достижимая открытая depth cell слева/справа от target; затем сама vertical source cell с climbing-work stance. Один выбранный work cell остаётся authoritative position reservation job.
+17. Status tunnel/depth/room action — «Копает».
 
 Правило nearest-target применяется одинаково к horizontal tunnel, вертикальному тоннелю на фронтальном срезе, vertical/depth excavation и child cells комнаты. Оно относится и к automatic planner, и к direct command; direct command отличается приоритетным запуском выбранного resident, а не способом выбора target.
 
@@ -119,14 +121,16 @@ Eraser удаляет выбранные unfinished designations, active/nonterm
 - work progress изменяется одним authoritative cadence;
 - каждое завершение quarter немедленно удаляет соответствующую геометрию породы; отмена/release/reassignment не возвращает её;
 - полный `4/4` commit атомарно делает клетку открытой для World, route planning, authoritative resident movement и tunnel interaction surfaces;
-- новая поддерживаемая horizontal cell либо planned vertical cell доступна как следующий work/movement step без повторной разметки;
+- любая открытая authoritative planned tunnel cell доступна как следующий work/movement step без повторной разметки, даже если floor support отсутствует;
 - первый/последний переход между horizontal entry cell и vertical shaft разрешён, если vertical provenance имеет хотя бы shaft endpoint; произвольные stacked open cells без vertical provenance не становятся climbing route;
-- при target ниже resident первыми выбираются верхние quarters target, ближайшие к worker;
+- при target ниже resident сначала полностью завершается верхняя горизонтальная пара quarters target; дальняя пара не выбирается тем же swing, пока near pair unfinished;
 - визуально открытая клетка не может оставаться закрытой в Navigation, resident tunnel topology или collider/movement projection;
 - support-loss предметов, вызванный excavation commit, проверяется до новых pickup/hauling reservations;
 - continuation не зависит от Unity frame rate;
 - drag-stroke creation order не может определить первый assigned job: assignment начинается после reconciliation полного stroke batch;
 - при наличии нескольких допустимых excavation jobs resident получает ближайшую reachable target cell независимо от horizontal/vertical/room plan kind;
+- vertical tunnel work без пола использует climbing presentation, но authoritative work cell/job остаются в Jobs/Navigation;
+- depth excavation допускает side-horizontal и adjacent-depth work positions с одной authoritative reservation;
 - Presentation не владеет zone membership или progress.
 
 ## 9. Решённые вопросы
@@ -181,7 +185,7 @@ Presentation cursor и hover не сохраняются.
 - direct order заменяет текущее небоевое action выбранного resident, выбирает ближайшую reachable target cell и не блокирует подключение других;
 - automatic resident при нескольких available jobs выбирает ближайшую reachable horizontal cell;
 - vertical front-slice tunnel, нарисованный сверху вниз или снизу вверх, после release назначает resident ближайшую верхнюю правую/левую клетку, а не первую созданную нижнюю клетку;
-- automatic resident при vertical/depth plan сначала выбирает ближайшую target cell, даже если несколько jobs имеют одинаковую work position/route;
+- automatic resident при vertical/depth plan сначала выбирает ближайнюю target cell, даже если несколько jobs имеют одинаковую work position/route;
 - room child jobs также выбираются по расстоянию до target cell;
 - равные target distances используют route cost, затем deterministic CellId/JobId tie-break;
 - добавление новых связанных tunnel cells во время копки;
@@ -192,8 +196,11 @@ Presentation cursor и hover не сохраняются.
 - selected resident освобождает/завершает job, а zone продолжает выполняться;
 - unreachable cell остаётся в job list и переоценивается без принудительного движения resident в тупик;
 - interruption или erase после 1/4, 2/4 и 3/4 оставляет реально удалённые quarters; повторное designation продолжает с сохранённого mask;
-- после первой полностью выкопанной horizontal cell resident может войти в неё и продолжить следующую клетку без erase/redraw;
+- после первой и каждой последующей полностью выкопанной planned tunnel cell resident может войти в неё и продолжить следующую клетку без erase/redraw;
 - после полного vertical/depth commit новая клетка входит в climbing/topology projection, а unsupported world item запускает существующий gravity workflow до новых reservations;
+- downward partial excavation при 2/4 удаляет верхнюю горизонтальную половину клетки;
+- mining из unsupported shaft cell показывает stationary climbing stance спиной к камере;
+- depth target выбирает side horizontal work cell, затем adjacent open depth work cell, затем shaft fallback;
 - recoverable failure после World mutation повторно синхронизирует derived topology и не пытается повторно выкопать уже открытую клетку;
 - erase части плана и split zone;
 - save/load mid-zone;

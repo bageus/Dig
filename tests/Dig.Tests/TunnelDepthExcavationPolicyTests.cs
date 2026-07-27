@@ -22,6 +22,7 @@ public sealed class TunnelDepthExcavationPolicyTests
         Assert.True(result.Succeeded, result.Detail);
         Assert.Equal(source, result.Plan!.Source);
         Assert.Equal(new CellId(2, 3, 1), result.Plan.Target);
+        Assert.Equal(source, result.Plan.WorkCell);
     }
 
     [Fact]
@@ -37,6 +38,40 @@ public sealed class TunnelDepthExcavationPolicyTests
 
         Assert.True(result.Succeeded, result.Detail);
         Assert.Equal(new CellId(2, 3, 1), result.Plan!.Target);
+        Assert.Equal(source, result.Plan.WorkCell);
+    }
+
+    [Fact]
+    public void Vertical_source_prefers_adjacent_horizontal_tunnel_work_cell()
+    {
+        CellId source = new CellId(2, 3, 0);
+        CellId leftTunnel = new CellId(1, 3, 0);
+        TunnelNavigationVolume volume = CreateVolume(
+            open: new[] { source, leftTunnel },
+            vertical: new[] { source });
+
+        TunnelDepthExcavationPlanResult result =
+            new TunnelDepthExcavationPolicy().Plan(volume, source);
+
+        Assert.True(result.Succeeded, result.Detail);
+        Assert.Equal(leftTunnel, result.Plan!.WorkCell);
+    }
+
+    [Fact]
+    public void Vertical_source_can_use_adjacent_open_depth_cell()
+    {
+        CellId source = new CellId(2, 3, 0);
+        CellId sideDepth = new CellId(1, 3, 1);
+        CellId connector = new CellId(1, 3, 0);
+        TunnelNavigationVolume volume = CreateVolume(
+            open: new[] { source, connector, sideDepth },
+            vertical: new[] { source, connector });
+
+        TunnelDepthExcavationPlanResult result =
+            new TunnelDepthExcavationPolicy().Plan(volume, source);
+
+        Assert.True(result.Succeeded, result.Detail);
+        Assert.Equal(sideDepth, result.Plan!.WorkCell);
     }
 
     [Fact]

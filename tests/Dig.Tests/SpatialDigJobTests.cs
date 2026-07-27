@@ -49,11 +49,21 @@ public sealed class SpatialDigJobTests
     }
 
     [Fact]
-    public void Adjacent_face_is_required_for_spatial_work_position()
+    public void Source_layer_side_tunnel_is_allowed_for_depth_work()
+    {
+        SpatialDigJobTarget target = new SpatialDigJobTarget(
+            new CellId(4, 5, 2),
+            new CellId(5, 5, 1));
+
+        Assert.Equal(new CellId(5, 5, 1), target.WorkCell);
+    }
+
+    [Fact]
+    public void Unrelated_work_position_is_rejected()
     {
         Assert.Throws<System.ArgumentException>(() => new SpatialDigJobTarget(
             new CellId(4, 5, 2),
-            new CellId(5, 5, 1)));
+            new CellId(6, 5, 1)));
     }
 
     private static EntityId Id(string value)

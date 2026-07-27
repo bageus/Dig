@@ -183,19 +183,17 @@ namespace Dig.Domain.World
             Shuffle(preferred, deterministicSeed ^ 0x9E3779B97F4A7C15UL);
             Shuffle(remaining, deterministicSeed ^ 0xD1B54A32D192ED03UL);
 
+            // Complete the near-side band before touching the opposite band. This
+            // keeps partial progress spatially coherent: digging downward removes
+            // the whole upper row before either lower quarter, even for high skill.
+            List<ExcavationQuarter> activeBand = preferred.Count > 0
+                ? preferred
+                : remaining;
             ExcavationQuarter selected = ExcavationQuarter.None;
-            int take = Math.Min(quarterCount, preferred.Count + remaining.Count);
-            for (int index = 0; index < preferred.Count && index < take; index++)
+            int take = Math.Min(quarterCount, activeBand.Count);
+            for (int index = 0; index < take; index++)
             {
-                selected |= preferred[index];
-            }
-
-            int selectedCount = Count(selected);
-            for (int index = 0;
-                index < remaining.Count && selectedCount < take;
-                index++, selectedCount++)
-            {
-                selected |= remaining[index];
+                selected |= activeBand[index];
             }
 
             return new ExcavationSwingPlan(selected, requiredSwings);

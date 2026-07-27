@@ -144,6 +144,7 @@ internal sealed partial class DigWorldSession
     {
         return TunnelNavigationVolume.FromWorldSnapshot(
             LoadSnapshot(),
+            PlannedTunnelCells,
             PlannedVerticalTunnelCells,
             _demoTunnelLayout);
     }

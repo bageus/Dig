@@ -98,6 +98,7 @@ BuildingBox inventory action остаётся отдельным unpacking workf
 
 - quarter completion сохраняется в едином excavation progress owner;
 - сторона первого доступного quarter определяется фактическим положением resident относительно target, а не порядком enum или случайной проекцией: при копке клетки ниже resident (`target.Y > resident.Y`) сначала выбираются `UpperLeft`/`UpperRight`, то есть визуально ближайшая к resident верхняя часть; при копке клетки выше resident сначала выбираются `LowerLeft`/`LowerRight`; horizontal approach аналогично выбирает ближайшую левую/правую сторону;
+- пока в ближайшей к resident горизонтальной строке/вертикальной колонке остаётся хотя бы один unfinished quarter, один swing не может одновременно перейти на дальнюю строку/колонку даже при высоком mining skill; поэтому копка сверху вниз визуально удаляет сначала всю верхнюю половину клетки, а не вертикальную половину;
 - Job не переходит в `Finalize`, пока не завершены все четыре quarters;
 - completed quarter немедленно отображается и на designation overlay, и на самой породе;
 - завершённая четверть удаляет/скрывает соответствующую геометрию породы и открывает пространство за ней;
@@ -140,7 +141,7 @@ BuildingBox inventory action остаётся отдельным unpacking workf
 12. inventory item single LMB -> transparent item ghost -> valid world drop;
 13. inventory item double LMB -> drop at resident cell -> fall through open vertical tunnel;
 14. horizontal и vertical excavation минимум 10 cells без остановки;
-15. 1/4, 2/4, 3/4 progress видим как реально удалённые quarters породы без чёрной заливки;
+15. 1/4, 2/4, 3/4 progress видим как реально удалённые quarters породы без чёрной заливки; при копке сверху вниз состояние 2/4 является полностью удалённой верхней половиной, а не вертикальной колонкой;
 16. interruption/erase после partial progress оставляет удалённые quarters, а повторное designation продолжает с того же mask;
 17. cave-room valid preview видим и child jobs продолжаются до полного plan completion;
 18. failure/retry одного excavation job не блокирует другие commands/residents.

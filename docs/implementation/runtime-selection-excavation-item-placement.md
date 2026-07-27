@@ -99,6 +99,8 @@ Room commit раньше передавал `VolumeCells` в atomic `SetDigDesig
 
 Approach resolution перенесён в Domain. Shaft entry/exit сохраняет открытый transition endpoint рядом с planned vertical cell и принимает vertical provenance у shaft endpoint. Grounded support приведён к `Y + 1`, а фактическая Inventory relocation unsupported items вынесена в `WorldItemGravitySettlement` и покрыта integration tests. Play Mode fixture остаётся обязательным для финальной runtime verification.
 
+Повторная runtime-проверка после merge #439 обнаружила, что projection всё ещё получала только `plannedVerticalCells`: завершённые обычные planned tunnel cells без floor support выпадали из `TunnelNavigationVolume`, поэтому маршрут продолжался только через первый endpoint. Rebuild теперь принимает полный authoritative `PlannedTunnelCells`; vertical subset определяет только Y transitions. Quarter planner stage-ит ближайшую строку/колонку и не разливает high-skill swing на дальнюю половину. Spatial depth policy выбирает достижимую side-horizontal cell, затем adjacent open depth cell, затем shaft fallback. Unsupported shaft fallback рендерится как stationary climbing-work pose спиной к камере.
+
 ## Изменённые owners
 
 - `InventoryState` остаётся единственным владельцем item location/quantity/reservations.
@@ -129,7 +131,10 @@ Approach resolution перенесён в Domain. Shaft entry/exit сохран�
 - inventory item placement and trigger-collider source contracts;
 - low-skill quarter assignment stability and 4/4 finalization gate;
 - completed quarter removes rock geometry and does not use black fill;
-- full commit rebuilds Navigation, resident tunnel topology and movement surfaces before pickup/reservation work;
+- full commit rebuilds Navigation, resident tunnel topology and movement surfaces from complete planned tunnel provenance before pickup/reservation work;
+- high-skill quarter plans finish the near horizontal row/vertical column before the far band;
+- depth excavation work-cell selection covers side horizontal, adjacent depth and shaft climbing fallback;
+- stationary mining in an unsupported shaft uses climbing pose instead of standing in air;
 - spatial retry accepts an already-open authoritative cell and item support loss is settled before reservations;
 - shared-work-cell spatial assignment выбирает ближайшую target cell, даже если дальний job имеет меньший id;
 - source contract: tunnel drag stage-ит designations и reconciles jobs только после release;

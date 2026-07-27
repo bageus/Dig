@@ -15,6 +15,7 @@ namespace Dig.Unity
             if (AgentRenderer == null
                 || TerrainSession == null
                 || AgentSession == null
+                || WorldSession == null
                 || Hud == null)
             {
                 return;
@@ -24,7 +25,10 @@ namespace Dig.Unity
             AgentRenderer.RenderEquipment(TerrainSession.LoadResidentEquipment());
             AgentRenderer.RenderInventoryAttachments(
                 TerrainSession.LoadResidentInventoryAttachments());
-            AgentRenderer.SynchronizeWorkFacing(TerrainSession.LoadJobs());
+            AgentRenderer.SynchronizeWorkFacing(
+                TerrainSession.LoadJobs(),
+                AgentSession.TunnelVolume,
+                WorldSession.LoadSnapshot());
             Hud.SetResidentWorkRates(TerrainSession.LoadResidentWorkRates(agents));
         }
     }

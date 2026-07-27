@@ -30,6 +30,7 @@ internal sealed partial class DigAgentSession
     internal Result CompleteTunnelDepthExcavation(
         CellId target,
         WorldSnapshot world,
+        IReadOnlyCollection<CellId> plannedTunnelCells,
         IReadOnlyCollection<CellId> plannedVerticalCells)
     {
         TunnelNavigationVolume previous = TunnelVolume;
@@ -61,17 +62,19 @@ internal sealed partial class DigAgentSession
         }
 
         _tunnelDepthExcavations.Add(target);
-        SynchronizeNavigation(world, plannedVerticalCells);
+        SynchronizeNavigation(world, plannedTunnelCells, plannedVerticalCells);
         return Result.Success();
     }
 
     internal void SynchronizeNavigation(
         WorldSnapshot world,
+        IReadOnlyCollection<CellId> plannedTunnelCells,
         IReadOnlyCollection<CellId> plannedVerticalCells)
     {
         RequireTunnelMovement();
         _tunnelVolume = TunnelNavigationVolume.FromWorldSnapshot(
             world,
+            plannedTunnelCells,
             plannedVerticalCells,
             _tunnelVolume!.DemoLayout);
         CreateTunnelRoutePlanners();
