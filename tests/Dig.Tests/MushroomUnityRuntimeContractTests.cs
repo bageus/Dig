@@ -46,6 +46,30 @@ public sealed class MushroomUnityRuntimeContractTests
         Assert.DoesNotContain("Shader.Find(\"Standard\")", visual);
         Assert.DoesNotContain("MushroomStage.Large=>(1.34f", visual);
         Assert.Contains("DigTunnelProjection.ResidentFootSink", renderer);
+        Assert.Contains("SetParent(transform,worldPositionStays:true)", renderer);
+        Assert.DoesNotContain("SetParent(transform,worldPositionStays:false)", renderer);
+    }
+
+
+    [Fact]
+    public void Foreground_mushroom_material_blocks_axes_and_uses_pickup_targeting()
+    {
+        string runtime = RuntimeRoot();
+        string priority = Read(runtime, "DigWorldInteraction.ResidentCommandPriority.cs");
+        string pointerHits = Read(runtime, "DigWorldInteraction.PointerHits.cs");
+
+        int itemBlock = priority.IndexOf(
+            "_itemRenderer.TryGetItem(hits[index],out_)",
+            StringComparison.Ordinal);
+        int mushroomResolution = priority.IndexOf(
+            "_mushroomRenderer.TryGetMushroom(hits[index],outmushroom)",
+            StringComparison.Ordinal);
+        Assert.True(itemBlock >= 0 && itemBlock < mushroomResolution);
+        Assert.Contains("Aphysicaldropinfrontofaregrownsite", priority);
+        Assert.Contains("TryResolveWorldItemHit(hits,outDigWorldItemVisualcandidate)", pointerHits);
+        Assert.Contains("candidate.Model.CanPickup", pointerHits);
+        Assert.Contains("_itemRenderer.TryGetItem(hits[index],out_)", priority);
+        Assert.Contains("building=null!;returnfalse", priority);
     }
 
     [Fact]
@@ -107,6 +131,9 @@ public sealed class MushroomUnityRuntimeContractTests
         string playMode = PlayModeRoot();
         string topology = Read(playMode, "PostExcavationTopologyPlayModeTests.cs");
         string mushrooms = Read(playMode, "MushroomChoppingPlayModeTests.cs");
+        string materialTargeting = Read(
+            playMode,
+            "MushroomMaterialTargetingPlayModeTests.cs");
 
         Assert.DoesNotContain(".Offset(", topology);
         Assert.Contains("newCellId(cell.X-1,cell.Y,cell.Z)", topology);
@@ -118,6 +145,12 @@ public sealed class MushroomUnityRuntimeContractTests
         Assert.Contains("UniversalRenderPipeline/Lit", mushrooms);
         Assert.Contains("Invoke(visual,\"SetHovered\",true)", mushrooms);
         Assert.Contains("collider.center.y-(collider.size.y*0.5f)", mushrooms);
+        Assert.Contains("Quaternion.Euler(90f,0f,0f)", mushrooms);
+        Assert.Contains("drops.All(value=>value.CanPickup)", mushrooms);
+        Assert.Contains("GetComponentInParent<DigMushroomVisual>()", mushrooms);
+        Assert.Contains("TryResolveMushroomHit", materialTargeting);
+        Assert.Contains("TryResolveWorldItemHit", materialTargeting);
+        Assert.Contains("GetComponentInParent<DigMushroomVisual>()", materialTargeting);
     }
 
     private static int Count(string source, string value)

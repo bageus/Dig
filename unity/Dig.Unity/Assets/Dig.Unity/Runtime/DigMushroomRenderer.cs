@@ -81,8 +81,10 @@ public sealed class DigMushroomRenderer : MonoBehaviour
         }
 
         GameObject root = new GameObject("Mushrooms");
-        root.transform.SetParent(transform, worldPositionStays: false);
         _root = root.transform;
+        // Mushroom roots use world-space tunnel projection and must not inherit the
+        // side-view bootstrap rotation. The stem/cap Y axis must remain world-up.
+        _root.SetParent(transform, worldPositionStays: true);
     }
 
     private void RemoveMissing(HashSet<string> visible)

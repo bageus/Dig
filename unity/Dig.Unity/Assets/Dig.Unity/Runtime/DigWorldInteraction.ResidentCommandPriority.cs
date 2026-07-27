@@ -194,6 +194,13 @@ public sealed partial class DigWorldInteraction
     {
         for (int index = 0; index < hits.Length; index++)
         {
+            if (_itemRenderer != null
+                && _itemRenderer.TryGetItem(hits[index], out _))
+            {
+                building = null!;
+                return false;
+            }
+
             if (_buildingRenderer != null
                 && _buildingRenderer.TryGetBuilding(hits[index], out building))
             {
@@ -211,11 +218,26 @@ public sealed partial class DigWorldInteraction
     {
         for (int index = 0; index < hits.Length; index++)
         {
-            if (_itemRenderer != null
-                && _itemRenderer.TryGetItem(hits[index], out item)
-                && item.Model.IsBuildingBox)
+            if (_mushroomRenderer != null
+                && _mushroomRenderer.TryGetMushroom(hits[index], out _))
             {
-                return true;
+                item = null!;
+                return false;
+            }
+
+            if (_itemRenderer != null
+                && _itemRenderer.TryGetItem(
+                    hits[index],
+                    out DigWorldItemVisual candidate))
+            {
+                if (candidate.Model.IsBuildingBox)
+                {
+                    item = candidate;
+                    return true;
+                }
+
+                item = null!;
+                return false;
             }
         }
 
@@ -229,6 +251,15 @@ public sealed partial class DigWorldInteraction
     {
         for (int index = 0; index < hits.Length; index++)
         {
+            // A physical drop in front of a regrown site remains an ordinary item.
+            // Do not scan through it and turn the material into an axe target.
+            if (_itemRenderer != null
+                && _itemRenderer.TryGetItem(hits[index], out _))
+            {
+                mushroom = null!;
+                return false;
+            }
+
             if (_mushroomRenderer != null
                 && _mushroomRenderer.TryGetMushroom(hits[index], out mushroom))
             {
@@ -246,11 +277,26 @@ public sealed partial class DigWorldInteraction
     {
         for (int index = 0; index < hits.Length; index++)
         {
-            if (_itemRenderer != null
-                && _itemRenderer.TryGetItem(hits[index], out item)
-                && !item.Model.IsBuildingBox)
+            if (_mushroomRenderer != null
+                && _mushroomRenderer.TryGetMushroom(hits[index], out _))
             {
-                return true;
+                item = null!;
+                return false;
+            }
+
+            if (_itemRenderer != null
+                && _itemRenderer.TryGetItem(
+                    hits[index],
+                    out DigWorldItemVisual candidate))
+            {
+                if (!candidate.Model.IsBuildingBox)
+                {
+                    item = candidate;
+                    return true;
+                }
+
+                item = null!;
+                return false;
             }
         }
 
