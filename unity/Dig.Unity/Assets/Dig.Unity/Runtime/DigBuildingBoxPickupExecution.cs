@@ -40,6 +40,7 @@ namespace Dig.Unity
                 _jobRepository,
                 journal);
             _buildingBoxPickupPathfinder = new NavigationPathfinder();
+            InitializeBuildingBoxRelocationExecution(journal);
         }
 
         internal Result CreateBuildingBoxPickup(
@@ -96,6 +97,16 @@ namespace Dig.Unity
                 return false;
             }
 
+            if (pickup.IsRelocation)
+            {
+                return TryPlanBuildingBoxRelocationMovement(
+                    job,
+                    pickup,
+                    agent,
+                    navigation,
+                    movement);
+            }
+
             EnsureBuildingBoxPickupInitialized();
             CellId start = new CellId(agent.CellX, agent.CellY, agent.CellZ);
             PathResult path = _buildingBoxPickupPathfinder!.FindPath(
@@ -136,6 +147,21 @@ namespace Dig.Unity
                         job.AssignedAgentId.Value.ToString(),
                         out AgentViewModel? agent))
                 {
+                    continue;
+                }
+
+                if (pickup.IsRelocation)
+                {
+                    Result relocated = AdvanceBuildingBoxRelocation(
+                        job,
+                        pickup,
+                        agent,
+                        tick);
+                    if (relocated.IsFailure)
+                    {
+                        return relocated;
+                    }
+
                     continue;
                 }
 
@@ -183,7 +209,7 @@ namespace Dig.Unity
                     pair.Value.Target.Y,
                     pair.Value.Target.Z,
                     path.Succeeded,
-                    "BuildingBox pickup: " + path.Diagnostics.Detail,
+                    "BuildingBox pickup/relocation: " + path.Diagnostics.Detail,
                     path.Path?.TotalCost ?? 0,
                     path.Diagnostics.SnapshotVersion,
                     cells));
