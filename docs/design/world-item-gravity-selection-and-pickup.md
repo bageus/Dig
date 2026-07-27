@@ -37,6 +37,8 @@ Tracking issue: [#387](https://github.com/bageus/Dig/issues/387).
 
 Коробки и обычные предметы используют общую item gravity/support policy, если item definition не задаёт утверждённое исключение.
 
+Если опора исчезла из-за полного excavation commit, support check использует уже обновлённый authoritative World/topology snapshot и запускается до новых pickup/hauling reservations. Ошибка обновления производной Navigation-проекции не восстанавливает удалённую породу и не отменяет обнаружение потери опоры. Это уточнение не закрывает Q-ITEM-006: текущий runtime может использовать существующую атомарную relocation, а будущая multi-tick animation/state policy остаётся отдельным решением.
+
 «Сразу после потери опоры» означает отсутствие отдельного trigger-воздействия. Остаётся открытым, выполняется ли authoritative relocation атомарно или существует falling state на несколько simulation ticks. Demo-коробка костра на текущем этапе сразу находится в нижней пещере и не используется как демонстрация падения.
 
 ## 4. Подтверждённый pickup contract
@@ -81,7 +83,9 @@ BuildingBox остаётся Inventory item. Его строка в building ros
 - pickup hover и pickup command используют одинаковую target availability;
 - BuildingBox не проектируется одновременно как generic item и отдельный duplicate stack visual;
 - обычный LMB selection не создаёт pickup order и не запускает placement;
-- support-loss detection не зависит от Unity frame rate.
+- support-loss detection не зависит от Unity frame rate;
+- excavation commit не может оставить item на удалённой опоре из-за stale Navigation/presentation state;
+- fall/support reconciliation выполняется раньше новых pickup/hauling reservations.
 
 ## 8. Решённые вопросы
 
@@ -111,6 +115,8 @@ Acceptance включает:
 - автоматический fall trigger сразу после потери опоры без отдельного воздействия;
 - стабилизацию через несколько открытых клеток;
 - остановку на первой опоре;
+- удаление опоры excavation commit-ом запускает тот же fall workflow без erase/redraw или дополнительного interaction;
+- support reconciliation происходит до новых pickup/hauling reservations;
 - несколько item types, включая campfire BuildingBox;
 - visibility + raycast после landing;
 - world box LMB selection без pickup/placement;
