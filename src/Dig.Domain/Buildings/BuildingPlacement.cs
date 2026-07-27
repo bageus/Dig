@@ -151,13 +151,6 @@ public sealed class BuildingPlacementValidator
                 footprint);
         }
 
-        if (!BuildingPlacementSurfaceFactProjector.HasSupportingPlane(footprint, world))
-        {
-            return BuildingPlacementResult.Failure(
-                PackableBuildingPlacementErrors.SurfaceMissing,
-                footprint);
-        }
-
         HashSet<CellId> ecologyBlocked = new HashSet<CellId>(
             ecologyBlockedCells ?? Array.Empty<CellId>());
         if (footprint.Any(ecologyBlocked.Contains))
