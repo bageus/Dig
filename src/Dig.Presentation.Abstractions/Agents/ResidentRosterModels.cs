@@ -52,6 +52,7 @@ public enum ResidentActivityKind
     Idle = 17,
     Work = 18,
     Blocked = 19,
+    GatherMushroom = 20,
 }
 
 public readonly struct ResidentLocalizationArgument

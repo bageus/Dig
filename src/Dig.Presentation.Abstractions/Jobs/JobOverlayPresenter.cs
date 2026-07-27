@@ -100,6 +100,12 @@ public sealed class JobOverlayPresenter
             targetY = spatial.Target.TargetCell.Y;
             targetZ = spatial.Target.TargetCell.Z;
         }
+        else if (job.Definition is MushroomChopJobDefinition mushroom)
+        {
+            targetX = mushroom.TargetCell.X;
+            targetY = mushroom.TargetCell.Y;
+            targetZ = mushroom.TargetCell.Z;
+        }
 
         return new JobOverlayViewModel(
             job.Id.ToString(),
@@ -118,7 +124,8 @@ public sealed class JobOverlayPresenter
             assignmentDiagnostic,
             actions,
             executionReadiness,
-            targetZ);
+            targetZ,
+            isMushroomChop: job.Definition is MushroomChopJobDefinition);
     }
 
     private static IReadOnlyList<JobActionViewModel> MapActions(

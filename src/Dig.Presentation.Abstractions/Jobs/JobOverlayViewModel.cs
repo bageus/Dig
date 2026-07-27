@@ -26,7 +26,8 @@ public sealed class JobOverlayViewModel
         JobAssignmentDiagnosticViewModel? assignmentDiagnostic = null,
         IReadOnlyList<JobActionViewModel>? actions = null,
         JobExecutionReadinessViewModel? executionReadiness = null,
-        int? targetZ = null)
+        int? targetZ = null,
+        bool isMushroomChop = false)
     {
         if (string.IsNullOrWhiteSpace(id)
             || string.IsNullOrWhiteSpace(description)
@@ -97,6 +98,7 @@ public sealed class JobOverlayViewModel
         ExecutionReadiness = executionReadiness ?? new JobExecutionReadinessViewModel(
             JobExecutionReadinessKind.Ready,
             "Ready");
+        IsMushroomChop = isMushroomChop;
     }
 
     public string Id { get; }
@@ -116,6 +118,7 @@ public sealed class JobOverlayViewModel
     public JobAssignmentDiagnosticViewModel? AssignmentDiagnostic { get; }
     public IReadOnlyList<JobActionViewModel> Actions { get; }
     public JobExecutionReadinessViewModel ExecutionReadiness { get; }
+    public bool IsMushroomChop { get; }
     public bool HasTarget => TargetX.HasValue && TargetY.HasValue && TargetZ.HasValue;
 }
 }

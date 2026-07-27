@@ -109,18 +109,7 @@ namespace Dig.Unity
 
         private bool TryResolveMushroomHoverTarget(RaycastHit[] hits)
         {
-            if (!TryResolveMushroomHit(hits, out DigMushroomVisual mushroom))
-            {
-                return false;
-            }
-
-            Dig.Presentation.Agents.AgentViewModel? selected =
-                _agentRenderer!.SelectedModel;
-            return selected != null
-                && _terrainSession!.CanDirectChopMushroom(
-                    mushroom.Model.SiteId,
-                    new CellId(selected.CellX, selected.CellY, selected.CellZ),
-                    out _);
+            return TryResolveReachableMushroomHit(hits, out _);
         }
 
         private bool TryResolveExplicitExcavationHoverTarget(RaycastHit[] hits)
@@ -236,6 +225,7 @@ namespace Dig.Unity
 
         private void OnDisable()
         {
+            ClearPointerHover();
             ResetCommandCursor();
         }
 

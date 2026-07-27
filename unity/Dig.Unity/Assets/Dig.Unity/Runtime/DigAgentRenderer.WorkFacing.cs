@@ -32,10 +32,11 @@ namespace Dig.Unity
 
             Dictionary<string, CellId> workTargets =
                 new Dictionary<string, CellId>(StringComparer.Ordinal);
+            HashSet<string> mushroomWorkers = new HashSet<string>(StringComparer.Ordinal);
             for (int index = 0; index < jobs.Count; index++)
             {
                 JobOverlayViewModel job = jobs[index];
-                if (!IsActiveMiningWork(job)
+                if (!IsActiveToolWork(job)
                     || workTargets.ContainsKey(job.AssignedAgentId!))
                 {
                     continue;
@@ -47,6 +48,10 @@ namespace Dig.Unity
                         job.TargetX!.Value,
                         job.TargetY!.Value,
                         job.TargetZ!.Value));
+                if (job.IsMushroomChop)
+                {
+                    mushroomWorkers.Add(job.AssignedAgentId!);
+                }
             }
 
             HashSet<CellId> solidCells = new HashSet<CellId>(
@@ -55,11 +60,13 @@ namespace Dig.Unity
                     .Select(cell => cell.Id));
             foreach (KeyValuePair<string, DigAgentVisual> pair in _agents)
             {
+                bool hasToolWork = workTargets.ContainsKey(pair.Key);
                 CellId current = new CellId(
                     pair.Value.Model.CellX,
                     pair.Value.Model.CellY,
                     pair.Value.Model.CellZ);
-                bool climbingWork = workTargets.ContainsKey(pair.Key)
+                bool climbingWork = hasToolWork
+                    && !mushroomWorkers.Contains(pair.Key)
                     && tunnelVolume.IsVerticalTunnel(current)
                     && !solidCells.Contains(new CellId(
                         current.X,
@@ -69,15 +76,18 @@ namespace Dig.Unity
                     workTargets.TryGetValue(pair.Key, out CellId target)
                         ? target
                         : (CellId?)null,
-                    climbingWork);
+                    climbingWork,
+                    animateToolWork: hasToolWork);
             }
         }
 
-        private static bool IsActiveMiningWork(JobOverlayViewModel job)
+        private static bool IsActiveToolWork(JobOverlayViewModel job)
         {
+            bool supportedTool = job.PreferredToolKind == JobToolKind.Mining
+                || job.IsMushroomChop;
             return job.AssignedAgentId != null
                 && job.HasTarget
-                && job.PreferredToolKind == JobToolKind.Mining
+                && supportedTool
                 && string.Equals(
                     job.Status,
                     JobStatus.InProgress.ToString(),

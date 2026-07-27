@@ -101,6 +101,11 @@ internal static class ResidentActivityPresenter
         JobDefinition definition,
         JobStageKind stage)
     {
+        if (definition is MushroomChopJobDefinition)
+        {
+            return ResidentActivityKind.GatherMushroom;
+        }
+
         if (definition is DigJobDefinition
             || definition is SpatialDigJobDefinition
             || definition.PreferredToolKind == JobToolKind.Mining)
@@ -147,6 +152,7 @@ internal static class ResidentActivityPresenter
             HealingJobDefinition healing => healing.PatientId.ToString(),
             StrategicExecutionJobDefinition strategic when strategic.TargetFactionId.HasValue =>
                 strategic.TargetFactionId.Value.ToString(),
+            MushroomChopJobDefinition mushroom => mushroom.SiteId.ToString(),
             _ => null,
         };
     }
@@ -161,6 +167,7 @@ internal static class ResidentActivityPresenter
             ProductionWorkJobDefinition production => production.WorkPosition,
             HealingJobDefinition healing => healing.WorkPosition,
             StrategicExecutionJobDefinition strategic => strategic.TargetCell,
+            MushroomChopJobDefinition mushroom => mushroom.TargetCell,
             _ => null,
         };
     }
@@ -196,7 +203,9 @@ internal static class ResidentActivityPresenter
 
     private static string LocalizationKey(ResidentActivityKind kind)
     {
-        return "resident.activity." + kind.ToString().ToLowerInvariant();
+        return kind == ResidentActivityKind.GatherMushroom
+            ? "Добывает гриб"
+            : "resident.activity." + kind.ToString().ToLowerInvariant();
     }
 
     private static IReadOnlyList<ResidentLocalizationArgument> Arguments(

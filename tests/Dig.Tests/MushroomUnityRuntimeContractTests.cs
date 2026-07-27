@@ -7,20 +7,45 @@ namespace Dig.Tests
 public sealed class MushroomUnityRuntimeContractTests
 {
     [Fact]
-    public void Runtime_routes_mushroom_before_ground_movement_and_excavation()
+    public void Hover_cursor_and_click_share_mushroom_priority_over_buildings()
     {
         string runtime = RuntimeRoot();
         string priority = Read(runtime, "DigWorldInteraction.ResidentCommandPriority.cs");
         string decisions = Read(runtime, "DigWorldInteraction.Decisions.cs");
         string cursor = Read(runtime, "DigWorldInteraction.DirectCommandCursor.cs");
+        string pointerHits = Read(runtime, "DigWorldInteraction.PointerHits.cs");
 
+        Assert.True(
+            priority.IndexOf("TryResolveMushroomHit", StringComparison.Ordinal)
+            < priority.IndexOf("TryResolveCompletedBuildingHit", StringComparison.Ordinal));
         Assert.True(
             priority.IndexOf("TryResolveMushroomHit", StringComparison.Ordinal)
             < priority.IndexOf("_excavationMode!=DigExcavationDrawingMode.None", StringComparison.Ordinal));
         Assert.Contains("ContextWorldTargetKind.Mushroom", priority);
         Assert.Contains("ApplicationInputCommandKind.ChopMushroom", decisions);
         Assert.Contains("DirectCommandCursorKind.Axe", cursor);
-        Assert.Contains("TryResolveMushroomHoverTarget", cursor);
+        Assert.Contains("TryResolveReachableMushroomHit(hits,out_)", cursor);
+        Assert.Contains("TryResolveReachableMushroomHit(hits,outDigMushroomVisualmushroom)", pointerHits);
+        Assert.Contains("_hoveredMushroom?.SetHovered(false)", pointerHits);
+        Assert.Contains("_hoveredMushroom?.SetHovered(true)", pointerHits);
+    }
+
+    [Fact]
+    public void Mushroom_visual_is_vertical_small_urp_lit_and_highlightable()
+    {
+        string visual = Read(RuntimeRoot(), "DigMushroomVisual.cs");
+        string renderer = Read(RuntimeRoot(), "DigMushroomRenderer.cs");
+
+        Assert.Contains("Shader.Find(\"UniversalRenderPipeline/Lit\")", visual);
+        Assert.Contains("MushroomStage.Large=>(0.84f,0.62f)", visual);
+        Assert.Contains("_collider!.center=newVector3(0f,height*0.5f,0f)", visual);
+        Assert.Contains("_collider.size=newVector3", visual);
+        Assert.Contains("transform.localRotation=Quaternion.identity", visual);
+        Assert.Contains("internalvoidSetHovered(boolhovered)", visual);
+        Assert.Contains("Color.Lerp(_baseColors[index],Color.white,HoverBlend)", visual);
+        Assert.DoesNotContain("Shader.Find(\"Standard\")", visual);
+        Assert.DoesNotContain("MushroomStage.Large=>(1.34f", visual);
+        Assert.Contains("DigTunnelProjection.ResidentFootSink", renderer);
     }
 
     [Fact]
@@ -46,6 +71,26 @@ public sealed class MushroomUnityRuntimeContractTests
     }
 
     [Fact]
+    public void Mushroom_work_projects_status_target_facing_and_repeating_chop_pose()
+    {
+        string workFacing = Read(RuntimeRoot(), "DigAgentRenderer.WorkFacing.cs");
+        string visualFacing = Read(RuntimeRoot(), "DigAgentVisual.WorkFacing.cs");
+        string movement = Read(RuntimeRoot(), "DigAgentVisual.Movement.cs");
+        string rig = Read(RuntimeRoot(), "DigResidentRig.cs");
+        string presenter = Read(PresentationAgentsRoot(), "ResidentActivityPresenter.cs");
+
+        Assert.Contains("job.IsMushroomChop", workFacing);
+        Assert.Contains("animateToolWork:hasToolWork", workFacing);
+        Assert.Contains("ApplyToolWorkAnimation()", movement);
+        Assert.Contains("ToolWorkAnimationPeriodSeconds", visualFacing);
+        Assert.Contains("ResidentActionVisualState.Dig", visualFacing);
+        Assert.Contains("-58f+swing*0.72f", rig);
+        Assert.Contains("Добываетгриб", presenter);
+        Assert.Contains("definitionisMushroomChopJobDefinition", presenter);
+        Assert.Contains("ResidentActivityKind.GatherMushroom", presenter);
+    }
+
+    [Fact]
     public void Mushroom_site_blocks_buildings_but_not_inventory_items()
     {
         string runtime = RuntimeRoot();
@@ -57,7 +102,7 @@ public sealed class MushroomUnityRuntimeContractTests
     }
 
     [Fact]
-    public void PlayMode_tests_respect_domain_and_runtime_visibility_boundaries()
+    public void PlayMode_tests_respect_boundaries_and_cover_visual_regressions()
     {
         string playMode = PlayModeRoot();
         string topology = Read(playMode, "PostExcavationTopologyPlayModeTests.cs");
@@ -70,6 +115,9 @@ public sealed class MushroomUnityRuntimeContractTests
         Assert.DoesNotContain("renderer.ActiveCount", mushrooms);
         Assert.Contains("Invoke(renderer,\"Render\",(object)new[]{large})", mushrooms);
         Assert.Contains("GetProperty(renderer,\"ActiveCount\")", mushrooms);
+        Assert.Contains("UniversalRenderPipeline/Lit", mushrooms);
+        Assert.Contains("Invoke(visual,\"SetHovered\",true)", mushrooms);
+        Assert.Contains("collider.center.y-(collider.size.y*0.5f)", mushrooms);
     }
 
     private static int Count(string source, string value)
@@ -95,6 +143,12 @@ public sealed class MushroomUnityRuntimeContractTests
         "Assets",
         "Dig.Unity",
         "Runtime");
+
+    private static string PresentationAgentsRoot() => Path.Combine(
+        FindRepositoryRoot(),
+        "src",
+        "Dig.Presentation.Abstractions",
+        "Agents");
 
     private static string PlayModeRoot() => Path.Combine(
         FindRepositoryRoot(),
