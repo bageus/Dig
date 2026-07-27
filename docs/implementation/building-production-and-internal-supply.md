@@ -31,6 +31,7 @@ Save format v7 сохраняет queue, active order/material step, consumed in
 - Unity package manifest/lock синхронизированы с текущим `main`: `com.unity.test-framework` `1.6.0`, source `builtin`.
 - Первый sequential source pickup переводит claimed supply job в `InProgress/AcquireItem` до проверки стадии; последующие источники продолжают тот же job и сохраняют authoritative worker identity.
 - Campfire placement source-contract проверяет generic `BuildingCatalog.FindByBoxItemId`, а не прямую runtime-ссылку на campfire ID.
+- Ветка PR перебазирована поверх актуального `main` после mushroom/BuildingBox Play Mode fixes; новые runtime и presentation изменения `main` сохранены, transport files удалены.
 
 ## Test coverage
 
@@ -44,10 +45,10 @@ Save format v7 сохраняет queue, active order/material step, consumed in
 
 ## CI evidence
 
-Head `c8a1ac42207a0a5703c9d7eb8908a819c04b5ba9`:
+Rebased head `baf061d63cd8670820631debd0d587cbaecd724f`:
 
-- Quality run 5607 (`30310395356`): architecture/file-size/C# compatibility, Unity module/source contracts, Release restore/build, full .NET test suite, headless smoke, standard deterministic soak и large-settlement soak — `success`.
-- Export Stage 2 v2 run 412 (`30310395353`) — `success`.
-- Export Stage 2 v3 run 417 (`30310395374`) — `success`.
+- Quality run 5635 (`30311704660`): architecture/file-size/C# compatibility, Unity module/source contracts, Release restore/build, full .NET test suite, headless smoke, standard deterministic soak и large-settlement soak — `success`.
+- Export Stage 2 v2 run 424 (`30311704639`) — `success`.
+- Export Stage 2 v3 run 429 (`30311704645`) — `success`.
 
 Unity Test Runner фактически не запускался; систему нельзя считать `VERIFIED`, а PR остаётся draft до получения Play Mode evidence или явного принятия этого residual verification work.
