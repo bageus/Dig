@@ -1,4 +1,4 @@
-> **Implementation status: DRAFT.** The unit creation API exists, but the repository-wide migration is incomplete. Tracking issue: [#347](https://github.com/bageus/Dig/issues/347). Audit: [`implemented-systems-audit-2026-07-26.md`](implemented-systems-audit-2026-07-26.md).
+> **Implementation status: DRAFT.** Unit creation, terrain output and Unity demo/bootstrap creation use physical quantity-1 entities, but the repository-wide pickup/drop/hauling/save migration is incomplete. Tracking issue: [#347](https://github.com/bageus/Dig/issues/347). Audit: [`implemented-systems-audit-2026-07-26.md`](implemented-systems-audit-2026-07-26.md).
 
 # Unit item entities
 
@@ -16,16 +16,21 @@ Every physical item in the world or in a resident inventory is represented by on
 
 World batches may contain multiple units at one logical cell because each unit remains independently identifiable and reservable. Resident inventory creation is restricted to one unit per operation so slot validation remains authoritative.
 
-## Migration sequence
+## Completed migration slices
 
-This slice intentionally does not remove the legacy quantity-stack API yet. Existing production and save/load code still creates aggregate stacks and must be migrated without quantity loss.
+- terrain excavation output creates one deterministic Inventory entity per produced unit;
+- Unity demo resident slots create tools and inventory extensions through `AddUnit`;
+- the packed demo campfire BuildingBox is created as one world `AddUnit` entity;
+- source-contract regression rejects a return to legacy `AddStack` in the demo bootstrap path.
 
-The remaining sequence is:
+## Remaining migration sequence
 
-1. replace resource and demo creation with deterministic `AddUnits` calls;
-2. make pickup, drop and hauling move one entity per job;
-3. split legacy world and resident quantities during save loading;
-4. reject quantity greater than one at World and AgentInventory locations;
-5. remove quantity badges from resident and world presentation.
+The legacy quantity-stack API remains available for aggregate storage and compatibility paths. It cannot be removed until the following work is complete without quantity loss:
+
+1. make pickup, drop and hauling move one entity per job;
+2. split legacy world and resident quantities during save loading;
+3. reject quantity greater than one at World and AgentInventory locations;
+4. remove quantity badges from resident and world presentation;
+5. audit remaining production `AddStack` callers and retain it only for explicitly aggregate storage/building inventories.
 
 Storage and building inventories may continue to aggregate until their own migration is complete, but they may not be rendered as one physical item in the world or a resident slot.
