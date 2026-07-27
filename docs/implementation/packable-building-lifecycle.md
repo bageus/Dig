@@ -1,85 +1,138 @@
 # Packable building lifecycle
 
+Статус реализации: `IMPLEMENTED`, Unity Play Mode verification pending.
+
+Authoritative design: [`../design/building-box-placement-and-packing.md`](../design/building-box-placement-and-packing.md).
+
+Tracking: [#118](https://github.com/bageus/Dig/issues/118), [#398](https://github.com/bageus/Dig/issues/398), [#15](https://github.com/bageus/Dig/issues/15).
+
 ## Scope
 
-This document describes the Domain foundation introduced for issue #328. It does not yet implement campfire content, inventory transport, placement, jobs, Unity UI or save/load adapters.
+BuildingBox lifecycle связывает одну quantity-one physical box entity с двумя layer-derived placement intents:
 
-## Authoritative owner
+- Z0: relocation той же коробки;
+- Z1–Z3: delivery/unpack/assembly конечного здания.
 
-`PackableBuildingLifecycle` is the single authoritative owner of whether one logical building package is:
+World selection, resident inventory action, moving preview, Jobs, Inventory reservation, carry, commit, cancel и save/load используют один `StackId`.
 
-- packed in the world;
-- packed in a resident inventory;
-- planned for unpacking;
-- being unpacked;
-- an active building;
-- planned for packing;
-- being packed;
-- interrupted with resumable progress.
+## Authoritative owners
 
-Presentation code may project this state but must not keep a second mutable lifecycle copy.
+- `InventoryState` владеет box entity, item id, quantity, location и item reservation.
+- `BuildingsState` владеет assembly plan, footprint, progress и completed building.
+- `JobSystem` владеет relocation/assembly stage, worker claim и position reservations.
+- `BuildingBoxPlacementPresenter` только проектирует preview и layer-derived `BuildingBoxPlacementKind`.
+- Unity Presentation владеет system cursor visibility, moving ghost, tint и selected ids.
 
-## Identity
+Preview никогда не является второй коробкой, building plan или reservation.
 
-Every lifecycle has:
+## Runtime entry points
 
-- a stable package identity;
-- a stable building-definition identity.
+### World source
 
-Later inventory, world-item and building adapters must reference this identity instead of creating independent packed and unpacked objects at the same time.
+Обычный LMB выбирает world box и открывает Buildings menu. `Unpack` вызывает `BeginBuildingBoxPlacement`.
 
-## Work model
+### Resident inventory source
 
-Packing and unpacking use `PackableBuildingWorkProgress`.
+LMB по BuildingBox slot вызывает тот же `BeginBuildingBoxPlacement` без отдельного menu action.
 
-The progress object owns:
+Оба entry point сохраняют authoritative source location до valid confirmation.
 
-- operation direction;
-- total iteration count;
-- base work minutes required per iteration;
-- completed iteration count;
-- partial work in the current iteration;
-- an immutable projection of iteration-completion records.
+## Moving placement cursor
 
-The Domain model receives normalized base work minutes. A later Logistics policy may convert elapsed game time into base work without changing lifecycle ownership.
+`DigWorldInteraction.BuildingBoxes`:
 
-## Commands and events
+- скрывает system cursor на входе;
+- восстанавливает предыдущую visibility при cancel/confirmation;
+- обновляет preview по terrain hit;
+- если actor/item/открытое пространство не дают terrain hit, проецирует pointer на текущий depth layer;
+- не обновляет renderer повторно, пока origin не изменился;
+- использует IgnoreRaycast/collider-disabled ghost geometry.
 
-The aggregate currently exposes command-like methods for:
+`DigBuildingBoxGhostRenderer` получает `BuildingBoxPlacementKind`:
 
-- planning packing or unpacking;
-- cancelling a planned operation;
-- starting planned work;
-- interrupting active work;
-- resuming interrupted work;
-- advancing normalized work.
+- `RelocateBox` разрешает BuildingBox visual profile;
+- `AssembleBuilding` разрешает Completed visual profile;
+- valid tint зелёный, invalid tint красный.
 
-`PackableBuildingIterationCompletion` represents an already completed fact. Application handlers added in later issues will translate player and job intent into these Domain transitions and publish external events where required.
+## Z0 relocation
 
-## Invariants
+`BuildingBoxPickupJobDefinition` остаётся единым typed job definition для direct pickup и relocation:
 
-- Only stable states may be used to create a new lifecycle.
-- Packing starts only from an active building.
-- Unpacking starts only from a packed form.
-- Cancelling a plan restores its previous stable form.
-- Interrupting work preserves completed and partial iteration progress.
-- Only the active worker receives completion attribution.
-- Every iteration number is recorded once.
-- Final completion converts unpacking to an active building and packing to a world box.
-- Completed work cannot be advanced or finalized again.
+- world relocation stages: `TravelToTarget -> AcquireItem -> TravelToDestination -> DepositItem`;
+- inventory-held relocation stages: `TravelToDestination -> DepositItem`;
+- item reservation принадлежит одному job;
+- source/destination position reservations создаются по фактическому path;
+- save codec сохраняет optional destination и `starts_held`, сохраняя backward compatibility с direct pickup v1.
 
-## Testing
+`CreateBuildingBoxRelocationHandler` повторно валидирует Z0/open/explored/reachable/no-building-overlap target и quantity-one source.
 
-`PackableBuildingLifecycleTests` covers:
+- world source остаётся `Available` и получает обычный nearest candidate matching;
+- inventory source немедленно claim-ится authoritative holder resident;
+- pickup использует `MoveFullyReservedPreservingReservation`;
+- carried box сохраняет reservation и отображается синей в resident inventory;
+- deposit переносит ту же entity в target world cell, сохраняет quantity one и завершает job.
 
-- legal pack and unpack paths;
-- inventory-origin unpacking;
-- cancellation;
-- partial progress preservation;
-- worker replacement;
-- per-iteration attribution;
-- multi-iteration advancement;
-- duplicate-finalization protection;
-- invalid initial states and transitions.
+Relocation не создаёт `BuildingsState` plan и не расходует box.
 
-Save/load round trips are intentionally deferred to #335, after authoritative world and inventory locations are integrated.
+## Z1–Z3 assembly
+
+Существующий `ConfirmBuildingBoxPlacementHandler` создаёт `BuildingBoxAssemblyJobDefinition` и `BuildingsState.PlaceBoxPlan`.
+
+Execution сохраняет прежние гарантии:
+
+- source in world забирает назначенный worker;
+- source in AgentInventory допускает только holder candidate;
+- box reservation сохраняется во время carry;
+- box расходуется только при успешном final assembly completion;
+- cancel/retry сохраняют quantity и не создают duplicate entity.
+
+## Placement blockers
+
+Validation получает только `BuildingsState.GetOccupiedCells()` как dynamic occupancy blocker. Resident, creature и loose world item не передаются в building footprint occupancy.
+
+Terrain/world blockers остаются authoritative:
+
+- out of bounds;
+- solid;
+- unexplored;
+- building/plan overlap;
+- unreachable target/work position;
+- missing/reserved/mismatched source.
+
+## Inventory projection
+
+`DigGameHudCanvas.Inventory` окрашивает reserved BuildingBox slot в синий фон и светло-синий text. Это применяется и к box, которая уже находилась у holder, и к box, которую worker поднял с земли с сохранением reservation.
+
+## Save/load
+
+Assembly продолжает использовать existing building/job/inventory snapshots.
+
+Relocation использует backward-compatible `BuildingBoxPickupJobSaveCodec`:
+
+- старые direct pickup snapshots без destination декодируются прежним образом;
+- relocation дополнительно сохраняет destination XYZ и `starts_held`;
+- Job stage, assignment, Inventory location и reservation восстанавливаются через общий production save path.
+
+Interactive cursor/preview не сохраняются. Confirmed job projection восстанавливается из authoritative Job/Inventory state.
+
+## Regression coverage
+
+- presenter: Z0 single-cell relocation versus Z1–Z3 assembly footprint;
+- confirmation draft сохраняет placement kind;
+- world relocation creates available reserved job;
+- inventory relocation claims holder resident;
+- world pickup/carry/deposit сохраняет StackId и quantity;
+- relocation save codec round-trip;
+- source contracts: hidden/restored cursor, pointer projection fallback, layer-specific visual, relocation dispatch, blue inventory state;
+- Unity Play Mode source: ghost moves between cells/layers and every child remains IgnoreRaycast/collider-disabled.
+
+## Remaining verification
+
+GitHub Actions не выполняет Unity Test Runner. До статуса `VERIFIED` требуется локальный Play Mode workflow:
+
+1. world box selection -> `Unpack`;
+2. moving green/red cursor across Z0 and Z1–Z3;
+3. Z0 relocation from world and holder inventory;
+4. Z1–Z3 assembly from world and holder inventory;
+5. resident/loose item under pointer does not freeze or invalidate ghost;
+6. cancel, route retry and save/load at each confirmed stage.
