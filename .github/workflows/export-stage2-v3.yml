@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/authoritative-xyz-stage2-v3
+      - agent/export-pr424-head
   pull_request:
     branches:
       - main
