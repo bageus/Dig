@@ -145,48 +145,62 @@ namespace Dig.Unity
             AgentViewModel agent,
             long tick)
         {
-            CellId target = ResolveBuildingBoxRelocationTarget(job, relocation);
-            if (agent.CellX != target.X || agent.CellY != target.Y || agent.CellZ != target.Z)
+            CellId workerCell = new CellId(agent.CellX, agent.CellY, agent.CellZ);
+            ItemStackSnapshot? box = _buildingInventoryRepository!.Get().GetStack(
+                relocation.StackId);
+            Result<BuildingBoxRelocationExecutionStepKind> evaluated =
+                BuildingBoxRelocationExecutionPolicy.Evaluate(job, box, workerCell);
+            if (evaluated.IsFailure)
             {
-                return Result.Success();
+                return Result.Failure(evaluated.Error!);
             }
 
-            if (job.Status == JobStatus.Claimed)
-            {
-                return _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick));
-            }
-
-            if (job.Stage == JobStageKind.TravelToTarget
-                || job.Stage == JobStageKind.TravelToDestination)
-            {
-                return _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick));
-            }
-
-            if (job.Stage == JobStageKind.AcquireItem)
-            {
-                Result acquired = _buildingBoxRelocationAcquire!.Handle(
-                    new AcquireBuildingBoxForRelocationCommand(
-                        job.Id,
-                        new CellId(agent.CellX, agent.CellY, agent.CellZ),
-                        tick));
-                return acquired.IsSuccess
-                    ? _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick))
-                    : acquired;
-            }
-
-            if (job.Stage != JobStageKind.DepositItem)
-            {
-                return Result.Success();
-            }
-
-            Result completed = _buildingBoxRelocationComplete!.Handle(
-                new CompleteBuildingBoxRelocationCommand(job.Id, tick));
-            if (completed.IsSuccess)
+            Result executed = ExecuteBuildingBoxRelocationStep(
+                evaluated.Value,
+                job,
+                workerCell,
+                tick);
+            if (executed.IsSuccess
+                && evaluated.Value == BuildingBoxRelocationExecutionStepKind.CompleteRelocation)
             {
                 _buildingBoxPickupRoutes.Remove(job.Id);
             }
 
-            return completed;
+            return executed;
+        }
+
+        private Result ExecuteBuildingBoxRelocationStep(
+            BuildingBoxRelocationExecutionStepKind step,
+            JobSnapshot job,
+            CellId workerCell,
+            long tick)
+        {
+            return step switch
+            {
+                BuildingBoxRelocationExecutionStepKind.None => Result.Success(),
+                BuildingBoxRelocationExecutionStepKind.StartJob =>
+                    _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick)),
+                BuildingBoxRelocationExecutionStepKind.AdvanceStage =>
+                    _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick)),
+                BuildingBoxRelocationExecutionStepKind.AcquireBox =>
+                    AcquireAndAdvanceBuildingBoxRelocation(job.Id, workerCell, tick),
+                BuildingBoxRelocationExecutionStepKind.CompleteRelocation =>
+                    _buildingBoxRelocationComplete!.Handle(
+                        new CompleteBuildingBoxRelocationCommand(job.Id, tick)),
+                _ => Result.Failure(BuildingBoxPickupErrors.InvalidJobStage),
+            };
+        }
+
+        private Result AcquireAndAdvanceBuildingBoxRelocation(
+            EntityId jobId,
+            CellId workerCell,
+            long tick)
+        {
+            Result acquired = _buildingBoxRelocationAcquire!.Handle(
+                new AcquireBuildingBoxForRelocationCommand(jobId, workerCell, tick));
+            return acquired.IsFailure
+                ? acquired
+                : _advanceHandler.Handle(new AdvanceJobCommand(jobId, tick));
         }
 
         private CellId ResolveBuildingBoxRelocationTarget(

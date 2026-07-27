@@ -135,6 +135,9 @@ public sealed class ResidentExcavationFeedbackContractTests
         string itemRenderer = File.ReadAllText(Path.Combine(
             runtime,
             "DigWorldItemRenderer.cs"));
+        string itemPolicy = File.ReadAllText(Path.Combine(
+            runtime,
+            "DigWorldItemVisualPolicy.cs"));
         string context = File.ReadAllText(Path.Combine(
             runtime,
             "DigGameHudCanvas.Context.cs"));
@@ -164,7 +167,8 @@ public sealed class ResidentExcavationFeedbackContractTests
         Assert.Contains("WorldItemGravitySettlement.Settle", gravity);
         Assert.Contains("WorldItemGravityPolicy.ResolveLandingCell", gravitySettlement);
         Assert.Contains("MoveAvailable", gravitySettlement);
-        Assert.Contains("WorldItemFrontDepthOffset", itemRenderer);
+        Assert.Contains("DigWorldItemVisualPolicy.Resolve", itemRenderer);
+        Assert.Contains("WorldItemFrontDepthOffset", itemPolicy);
         Assert.Contains("SelectedBuildingBox", context);
         Assert.DoesNotContain("private void OnGUI()", boxHud);
         Assert.DoesNotContain("Concat(_buildingInventoryPresenter.Load())", itemProjection);

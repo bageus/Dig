@@ -153,6 +153,9 @@ public sealed class GameplayRegressionContractTests
         string interaction = Normalize(File.ReadAllText(Path.Combine(
             runtime,
             "DigWorldInteraction.BuildingBoxes.cs")));
+        string targets = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigWorldInteraction.BuildingBoxTargets.cs")));
         string ghost = Normalize(File.ReadAllText(Path.Combine(
             runtime,
             "DigBuildingBoxGhostRenderer.cs")));
@@ -164,11 +167,16 @@ public sealed class GameplayRegressionContractTests
             "DigBuildingRenderer.cs")));
 
         Assert.Contains("TryResolveBuildingPlacementOrigin(GetPointerHits()", interaction);
-        Assert.Contains("TryResolveTunnelDestination(hits[index],outorigin,out_)", interaction);
-        Assert.Contains("_renderer!.TryGetCell(hits[index]", interaction);
+        Assert.Contains("TryResolveBuildingPlacementMovementSurface(hits,outorigin)", targets);
+        Assert.Contains("TryGetMovementTarget", targets);
+        Assert.Contains("TryResolveTunnelDestination(hits[index],outorigin,out_)", targets);
+        Assert.Contains("_renderer!.TryGetCell(hits[index]", targets);
         Assert.True(
-            interaction.IndexOf("TryResolveTunnelDestination", StringComparison.Ordinal)
-            < interaction.IndexOf("_renderer!.TryGetCell", StringComparison.Ordinal));
+            targets.IndexOf("TryResolveBuildingPlacementMovementSurface", StringComparison.Ordinal)
+            < targets.IndexOf("TryResolveTunnelDestination", StringComparison.Ordinal));
+        Assert.True(
+            targets.IndexOf("TryResolveTunnelDestination", StringComparison.Ordinal)
+            < targets.IndexOf("_renderer!.TryGetCell", StringComparison.Ordinal));
         Assert.Contains("ProjectPointerToLayer(currentLayer)", interaction);
         Assert.Contains("DigTunnelProjection.ResidentWorldPosition", ghost);
         Assert.Contains("_root.SetParent(transform,worldPositionStays:true)", ghost);
@@ -192,6 +200,9 @@ public sealed class GameplayRegressionContractTests
         string items = Normalize(File.ReadAllText(Path.Combine(
             runtime,
             "DigWorldItemRenderer.cs")));
+        string itemPolicy = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigWorldItemVisualPolicy.cs")));
         string boxSelection = Normalize(File.ReadAllText(Path.Combine(
             runtime,
             "DigWorldInteraction.BuildingBoxSelection.cs")));
@@ -202,7 +213,8 @@ public sealed class GameplayRegressionContractTests
         Assert.Contains("ResolveBuildingBoxDefinition(stack.ItemId)", pickup);
         Assert.Contains("policy.BoxItemId", pickup);
         Assert.Contains("agent.CellZ!=pickup.SourceCell.Z", pickup);
-        Assert.Contains("DigTunnelProjection.ResidentFootSink", items);
+        Assert.Contains("DigWorldItemVisualPolicy.Resolve", items);
+        Assert.Contains("DigTunnelProjection.ResidentFootSink", itemPolicy);
         Assert.Contains("worldPositionStays:true", items);
         Assert.Contains("ActivateBuildingRosterForSelection()", boxSelection);
         Assert.Contains("CampfireBuildingBoxContent.Definition.Building", buildings);

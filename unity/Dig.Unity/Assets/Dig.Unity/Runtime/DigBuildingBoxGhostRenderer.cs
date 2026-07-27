@@ -27,6 +27,7 @@ namespace Dig.Unity
         private void Awake()
         {
             InitializeRepresentatives();
+            InitializeItemVisuals();
             if (visualCatalog == null)
             {
                 visualCatalog = Resources.Load<DigBuildingVisualCatalog>(
@@ -66,6 +67,12 @@ namespace Dig.Unity
             }
 
             EnsureResources();
+            if (preview.PlacementKind == BuildingBoxPlacementKind.RelocateBox)
+            {
+                RenderBuildingBoxItemPreview(preview);
+                return;
+            }
+
             DigBuildingVisualResolution resolution = Resolve(preview);
             EnsurePreviewInstance(preview, resolution);
             ApplyPreviewTransform(preview, resolution);
@@ -89,8 +96,9 @@ namespace Dig.Unity
             BuildingBoxGhostViewModel preview,
             DigBuildingVisualResolution resolution)
         {
+            string key = $"building:{resolution.Asset.StableId}";
             if (_previewInstance != null
-                && _assetKey == resolution.Asset.StableId)
+                && _assetKey == key)
             {
                 _previewContainer!.gameObject.SetActive(true);
                 return;
@@ -107,7 +115,7 @@ namespace Dig.Unity
                 _previewContainer!,
                 $"Building ghost {preview.DefinitionId}",
                 PrimitiveType.Cube);
-            _assetKey = resolution.Asset.StableId;
+            _assetKey = key;
             _previewTint = _previewInstance.GetComponent<DigVisualTintTarget>();
             DigBuildingDetailGroup[] groups =
                 _previewInstance.GetComponentsInChildren<DigBuildingDetailGroup>(
@@ -312,7 +320,6 @@ namespace Dig.Unity
             };
             return Quaternion.Euler(0f, yaw, 0f);
         }
-
         private static void DisableColliders(GameObject root)
         {
             Collider[] colliders = root.GetComponentsInChildren<Collider>(includeInactive: true);
@@ -330,10 +337,10 @@ namespace Dig.Unity
                 transforms[index].gameObject.layer = layer;
             }
         }
-
         private void OnDestroy()
         {
             DisposeRepresentatives();
+            DisposeItemVisuals();
             if (_markerMaterial != null)
             {
                 Destroy(_markerMaterial);

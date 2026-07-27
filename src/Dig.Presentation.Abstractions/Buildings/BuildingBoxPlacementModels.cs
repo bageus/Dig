@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
+using Dig.Domain.Inventory;
 using Dig.Domain.World;
 
 namespace Dig.Presentation.Buildings
@@ -33,7 +34,8 @@ public sealed class BuildingBoxGhostViewModel
         bool isValid,
         string? reasonCode,
         BuildingBoxPlacementKind placementKind = BuildingBoxPlacementKind.AssembleBuilding,
-        bool isVisible = true)
+        bool isVisible = true,
+        ItemId? sourceItemId = null)
     {
         if (sourceStackId.HasValue && sourceStackId.Value.IsEmpty)
         {
@@ -69,6 +71,7 @@ public sealed class BuildingBoxGhostViewModel
         }
 
         SourceStackId = sourceStackId;
+        SourceItemId = sourceItemId;
         DefinitionId = definitionId;
         Origin = origin;
         Orientation = orientation;
@@ -85,6 +88,8 @@ public sealed class BuildingBoxGhostViewModel
     }
 
     public EntityId? SourceStackId { get; }
+
+    public ItemId? SourceItemId { get; }
 
     public BuildingDefinitionId DefinitionId { get; }
 
