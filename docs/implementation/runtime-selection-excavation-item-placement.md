@@ -61,6 +61,8 @@ Quarter work явно переводит signed generation seed в его 32-bit
 
 `Dig.Unity.PlayModeTests` является отдельной assembly и не имеет доступа к `internal DigTunnelProjection`. BuildingBox cursor regression теперь проверяет observable transform renderer-а без обращения к runtime-internal helper, поэтому Unity Test Runner компилирует test assembly без `CS0122`. Nullable `ResidentInventoryLayoutSlotViewModel.StackId` теперь явно проверяется и только затем передаётся в `EntityId.Parse`, устраняя `CS8604` без изменения valid inventory workflow.
 
+`PostExcavationTopologyPlayModeTests` больше не полагается на отсутствующий в public Domain contract helper `CellId.Offset`. Четыре горизонтальных соседа строятся через публичный `CellId(x, y, z)` constructor. Это сохраняет black-box проверку topology/movement surfaces и устраняет `CS1061` в Unity test assembly без расширения Domain API ради теста.
+
 ### Continuation и cave rooms
 
 Manual connected-zone planning был ограничен radius 4 и XY adjacency. Frontier/cluster resolution учитывает соседние Z layers и весь connected target set. Если назначенный ordinary Dig job после refresh не имеет успешного route/work cell, assignment снимается, quarter state сохраняется, а job возвращается в общий pool вместо вечного `Claimed/InProgress` без движения.
@@ -85,6 +87,7 @@ Room commit раньше передавал `VolumeCells` в atomic `SetDigDesig
 - world-source relocation reservation, holder-only inventory assignment, pickup/carry/deposit identity conservation;
 - relocation save codec round-trip и blue reserved inventory projection source contract;
 - Play Mode test assembly не обращается к runtime-internal projection helpers; nullable inventory stack ids guard-ятся до parsing;
+- post-excavation Play Mode topology fixture использует только public `CellId` construction и не вызывает отсутствующий `Offset`;
 - completed-building selection before movement;
 - inventory item placement and trigger-collider source contracts;
 - low-skill quarter assignment stability and 4/4 finalization gate;
