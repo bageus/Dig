@@ -16,13 +16,31 @@ jobs:
           ref: fix/post-excavation-topology-and-gravity-v4
           fetch-depth: 0
       - name: Apply post-excavation topology patch
+        id: apply
         shell: bash
         run: |
+          set +e
+          exec > >(tee /tmp/post-excavation-topology-diagnostics.txt) 2>&1
+          set -x
+          cat .github/patches/post-excavation-topology-v4-gz-*.b64 > /tmp/post-excavation-topology.b64
+          wc -c /tmp/post-excavation-topology.b64
+          sha256sum /tmp/post-excavation-topology.b64
+          base64 -d /tmp/post-excavation-topology.b64 > /tmp/post-excavation-topology.patch.gz
+          decode_status=$?
+          wc -c /tmp/post-excavation-topology.patch.gz
+          sha256sum /tmp/post-excavation-topology.patch.gz
+          gzip -t /tmp/post-excavation-topology.patch.gz
+          gzip_status=$?
+          gzip -dc /tmp/post-excavation-topology.patch.gz > /tmp/post-excavation-topology.patch
+          inflate_status=$?
+          wc -c /tmp/post-excavation-topology.patch
+          sha256sum /tmp/post-excavation-topology.patch
+          git apply --check --verbose /tmp/post-excavation-topology.patch
+          check_status=$?
+          if [ "$decode_status" -ne 0 ] || [ "$gzip_status" -ne 0 ] || [ "$inflate_status" -ne 0 ] || [ "$check_status" -ne 0 ]; then
+            exit 1
+          fi
           set -euo pipefail
-          cat .github/patches/post-excavation-topology-v4-gz-*.b64 \
-            | base64 -d \
-            | gzip -d > /tmp/post-excavation-topology.patch
-          git apply --check /tmp/post-excavation-topology.patch
           git apply /tmp/post-excavation-topology.patch
           git rm .github/patches/post-excavation-topology-v4-gz-*.b64
           git checkout origin/main -- .github/workflows/quality.yml
@@ -31,3 +49,13 @@ jobs:
           git add -A
           git commit -m "fix: synchronize post-excavation topology"
           git push origin HEAD:fix/post-excavation-topology-and-gravity-v4
+      - name: Upload topology diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: post-excavation-topology-diagnostics
+          path: |
+            /tmp/post-excavation-topology-diagnostics.txt
+            /tmp/post-excavation-topology.patch
+          if-no-files-found: warn
+          retention-days: 2
