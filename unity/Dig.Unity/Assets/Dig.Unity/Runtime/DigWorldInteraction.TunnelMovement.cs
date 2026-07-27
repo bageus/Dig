@@ -105,9 +105,15 @@ namespace Dig.Unity
         private void RefreshDirectCommandPresentation()
         {
             var jobs = _terrainSession!.LoadJobs();
+            var agents = _agentSession!.LoadView();
             _jobRenderer!.Render(jobs);
+            _buildingRenderer!.Render(_terrainSession.LoadBuildings());
             _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
             _hud!.SetJobs(jobs);
+            _hud.SetAgents(agents, _agentSession.Tick);
+            _hud.SetAgentSelection(
+                _agentRenderer!.SelectedModel,
+                _agentRenderer.SelectedCount);
         }
 
         private bool TryAssignExplicitExcavation(
