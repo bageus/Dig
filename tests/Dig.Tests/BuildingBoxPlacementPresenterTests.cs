@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
@@ -75,7 +74,7 @@ public sealed class BuildingBoxPlacementPresenterTests
     {
         CellId boxTarget = new CellId(4, 3, 0);
         CellId buildingOrigin = new CellId(2, 2, 1);
-        WorldSnapshot air = EmptyWorld();
+        WorldSnapshot air = BuildingBoxPlacementTestWorld.Empty();
 
         BuildingBoxGhostViewModel box = _presenter.Preview(
             Stack(),
@@ -117,7 +116,11 @@ public sealed class BuildingBoxPlacementPresenterTests
             Definition(),
             target,
             BuildingOrientation.North,
-            SupportedWorld(target, BuildingOrientation.North, new[] { target }),
+            BuildingBoxPlacementTestWorld.Supported(
+                Definition(),
+                target,
+                BuildingOrientation.North,
+                new[] { target }),
             occupiedCells: Array.Empty<CellId>(),
             reachableCells: new[] { target });
 
@@ -163,7 +166,11 @@ public sealed class BuildingBoxPlacementPresenterTests
             new[] { new ItemQuantityReservationSnapshot(ReservationJobId, 1) });
         CellId origin = new CellId(2, 2, 1);
         CellId[] reachable = { new CellId(2, 1, 1) };
-        WorldSnapshot world = SupportedWorld(origin, BuildingOrientation.North, reachable);
+        WorldSnapshot world = BuildingBoxPlacementTestWorld.Supported(
+            Definition(),
+            origin,
+            BuildingOrientation.North,
+            reachable);
 
         BuildingBoxGhostViewModel mismatch = _presenter.Preview(
             Stack(),
@@ -224,7 +231,7 @@ public sealed class BuildingBoxPlacementPresenterTests
             Definition(),
             new CellId(2, 2, 1),
             BuildingOrientation.North,
-            EmptyWorld(),
+            BuildingBoxPlacementTestWorld.Empty(),
             Array.Empty<CellId>(),
             new[] { new CellId(2, 1, 1) });
 
@@ -255,7 +262,11 @@ public sealed class BuildingBoxPlacementPresenterTests
             Definition(),
             origin,
             orientation,
-            SupportedWorld(origin, orientation, routes),
+            BuildingBoxPlacementTestWorld.Supported(
+                Definition(),
+                origin,
+                orientation,
+                routes),
             occupied ?? Array.Empty<CellId>(),
             routes);
     }
@@ -290,66 +301,6 @@ public sealed class BuildingBoxPlacementPresenterTests
             quantity: 1,
             ItemLocation.InWorld(new CellId(1, 1)),
             Array.Empty<ItemQuantityReservationSnapshot>());
-    }
-
-    private static WorldSnapshot SupportedWorld(
-        CellId origin,
-        BuildingOrientation orientation,
-        IEnumerable<CellId> reachable)
-    {
-        HashSet<CellId> open = new HashSet<CellId>(
-            Definition().ResolveFootprint(origin, orientation));
-        foreach (CellId cell in reachable)
-        {
-            open.Add(cell);
-        }
-
-        return WorldWithOpenCells(open);
-    }
-
-    private static WorldSnapshot EmptyWorld()
-    {
-        MaterialId air = new MaterialId("air");
-        MaterialCatalog materials = new MaterialCatalog(new[]
-        {
-            new MaterialDefinition(air, isSolid: false, hardness: 0),
-        });
-        return Require(WorldState.CreateFilled(
-            new WorldSize(8, 8),
-            chunkSize: 4,
-            materials,
-            air,
-            explored: true)).CreateSnapshot();
-    }
-
-    private static WorldSnapshot WorldWithOpenCells(IEnumerable<CellId> openCells)
-    {
-        MaterialId rock = new MaterialId("rock");
-        MaterialId air = new MaterialId("air");
-        MaterialCatalog materials = new MaterialCatalog(new[]
-        {
-            new MaterialDefinition(rock, isSolid: true, hardness: 100),
-            new MaterialDefinition(air, isSolid: false, hardness: 0),
-        });
-        WorldState world = Require(WorldState.CreateFilled(
-            new WorldSize(8, 8),
-            chunkSize: 4,
-            materials,
-            rock,
-            explored: true));
-        long tick = 1;
-        foreach (CellId cell in openCells.Distinct())
-        {
-            Assert.True(world.Excavate(cell, air, tick++).IsSuccess);
-        }
-
-        return world.CreateSnapshot();
-    }
-
-    private static T Require<T>(Result<T> result)
-    {
-        Assert.True(result.IsSuccess, result.Error?.ToString());
-        return result.Value;
     }
 
     private static EntityId Id(int value)
