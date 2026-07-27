@@ -46,6 +46,10 @@ public static class BuildingErrors
         "buildings.placement.occupied",
         "The building footprint overlaps another active project or building.");
 
+    public static readonly DomainError PlacementEcologyBlocked = new DomainError(
+        "buildings.placement.ecology_growth_site",
+        "The building footprint overlaps a permanent ecology growth site.");
+
     public static readonly DomainError NoReachableWorkPosition = new DomainError(
         "buildings.placement.no_reachable_work_position",
         "No configured work position is currently reachable.");
@@ -104,7 +108,8 @@ public sealed class BuildingPlacementValidator
         BuildingOrientation orientation,
         WorldSnapshot world,
         IReadOnlyCollection<CellId> occupiedCells,
-        IReadOnlyCollection<CellId> reachableCells)
+        IReadOnlyCollection<CellId> reachableCells,
+        IReadOnlyCollection<CellId>? ecologyBlockedCells = null)
     {
         if (definition is null)
         {
@@ -143,6 +148,15 @@ public sealed class BuildingPlacementValidator
         {
             return BuildingPlacementResult.Failure(
                 BuildingErrors.PlacementUnexplored,
+                footprint);
+        }
+
+        HashSet<CellId> ecologyBlocked = new HashSet<CellId>(
+            ecologyBlockedCells ?? Array.Empty<CellId>());
+        if (footprint.Any(ecologyBlocked.Contains))
+        {
+            return BuildingPlacementResult.Failure(
+                BuildingErrors.PlacementEcologyBlocked,
                 footprint);
         }
 

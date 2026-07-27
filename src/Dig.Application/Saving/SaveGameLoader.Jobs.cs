@@ -101,6 +101,7 @@ public sealed partial class SaveGameLoader
             ReservationKind.Position => ReservationKey.ForPosition(ParseCell(value)),
             ReservationKind.Designation => ReservationKey.ForDesignation(ParseCell(value)),
             ReservationKind.Destination => ReservationKey.ForDestination(EntityId.Parse(value)),
+            ReservationKind.EcologyTarget => ReservationKey.ForEcologyTarget(EntityId.Parse(value)),
             _ => throw new InvalidOperationException("Unsupported reservation kind."),
         };
     }

@@ -39,6 +39,22 @@ namespace Dig.Unity
             return frames;
         }
 
+        private static Texture2D[] CreateAxeCursorFrames()
+        {
+            Texture2D[] frames = new Texture2D[4];
+            int[] rotations = { -2, 0, 2, 0 };
+            for (int index = 0; index < frames.Length; index++)
+            {
+                Color32[] pixels = NewCursorPixels();
+                DrawAxe(pixels, rotations[index], index);
+                frames[index] = CreateCursorTexture(
+                    $"Mushroom axe cursor {index}",
+                    pixels);
+            }
+
+            return frames;
+        }
+
         private static Texture2D[] CreateMovementCursorFrames()
         {
             Texture2D[] frames = new Texture2D[4];
@@ -106,6 +122,28 @@ namespace Dig.Unity
             SetPixel(pixels, sparkX, sparkY, highlight);
             SetPixel(pixels, sparkX - 1, sparkY, highlight);
             SetPixel(pixels, sparkX, sparkY + 1, highlight);
+        }
+
+        private static void DrawAxe(Color32[] pixels, int offset, int phase)
+        {
+            Color32 outline = new Color32(38, 29, 23, 255);
+            Color32 handle = new Color32(143, 87, 43, 255);
+            Color32 metal = new Color32(184, 194, 201, 255);
+            Color32 shine = new Color32(238, 244, 246, 255);
+            for (int step = 0; step < 19; step++)
+            {
+                int x = 9 + step / 2 + offset;
+                int y = 5 + step;
+                FillRect(pixels, x - 1, y, x + 1, y + 1, outline);
+                SetPixel(pixels, x, y, handle);
+            }
+
+            FillRect(pixels, 14 + offset, 20, 26 + offset, 27, outline);
+            FillRect(pixels, 15 + offset, 21, 24 + offset, 26, metal);
+            FillRect(pixels, 23 + offset, 22, 27 + offset, 25, outline);
+            FillRect(pixels, 23 + offset, 23, 26 + offset, 24, metal);
+            int spark = phase % 2 == 0 ? 25 : 22;
+            SetPixel(pixels, spark + offset, 27, shine);
         }
 
         private static void DrawPickupArrow(Color32[] pixels, int rise, int phase)

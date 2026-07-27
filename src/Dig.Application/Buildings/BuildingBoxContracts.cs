@@ -50,7 +50,8 @@ public sealed class ConfirmBuildingBoxPlacementCommand : ICommand<Result>
         BuildingOrientation orientation,
         IReadOnlyCollection<CellId> reachableCells,
         int priority,
-        long tick)
+        long tick,
+        IReadOnlyCollection<CellId>? ecologyBlockedCells = null)
     {
         if (buildingId.IsEmpty || jobId.IsEmpty || sourceStackId.IsEmpty)
         {
@@ -77,6 +78,7 @@ public sealed class ConfirmBuildingBoxPlacementCommand : ICommand<Result>
             ?? throw new ArgumentNullException(nameof(reachableCells));
         Priority = priority;
         Tick = tick;
+        EcologyBlockedCells = ecologyBlockedCells ?? Array.Empty<CellId>();
     }
 
     public EntityId BuildingId { get; }
@@ -88,6 +90,7 @@ public sealed class ConfirmBuildingBoxPlacementCommand : ICommand<Result>
     public IReadOnlyCollection<CellId> ReachableCells { get; }
     public int Priority { get; }
     public long Tick { get; }
+    public IReadOnlyCollection<CellId> EcologyBlockedCells { get; }
 }
 
 public sealed class CommitBuildingBoxToSiteCommand : ICommand<Result>

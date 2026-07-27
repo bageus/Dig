@@ -27,6 +27,10 @@ public static class SaveErrors
     public static readonly DomainError UnknownTerrainDepositDefinition = new DomainError(
         "save.terrain_deposit_definition.unknown",
         "The save references a terrain deposit definition missing from the current catalog.");
+
+    public static readonly DomainError UnknownMushroomDefinition = new DomainError(
+        "save.mushroom_definition.unknown",
+        "The save references a mushroom definition missing from the current catalog.");
 }
 
 public sealed class SaveMigrationPipeline
@@ -263,6 +267,30 @@ public sealed class SaveVersionFourAuthoritativeCoordinatesMigration : ISaveMigr
 
         document.AgentPositions ??= new AgentPositionsSaveData();
         document.TerrainDeposits ??= new TerrainDepositsSaveData();
+        document.FormatVersion = ToVersion;
+    }
+}
+
+public sealed class SaveVersionFiveMushroomsMigration : ISaveMigration
+{
+    public string Id => "save.v5_to_v6.mushrooms";
+    public int FromVersion => 5;
+    public int ToVersion => 6;
+
+    public void Apply(SaveGameDocument document)
+    {
+        if (document is null)
+        {
+            throw new ArgumentNullException(nameof(document));
+        }
+
+        if (document.FormatVersion != FromVersion)
+        {
+            throw new InvalidOperationException(
+                "Migration received the wrong source version.");
+        }
+
+        document.Mushrooms ??= new MushroomSaveData();
         document.FormatVersion = ToVersion;
     }
 }

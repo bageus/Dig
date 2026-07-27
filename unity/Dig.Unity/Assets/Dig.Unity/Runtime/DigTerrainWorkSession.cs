@@ -107,6 +107,11 @@ internal sealed partial class DigTerrainWorkSession
                 continue;
             }
 
+            if (job.Definition is MushroomChopJobDefinition)
+            {
+                continue;
+            }
+
             Result result;
             if (job.Definition is HaulJobDefinition)
             {

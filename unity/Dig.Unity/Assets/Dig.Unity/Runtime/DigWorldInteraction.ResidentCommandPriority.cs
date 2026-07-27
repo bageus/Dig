@@ -74,8 +74,32 @@ public sealed partial class DigWorldInteraction
             return true;
         }
 
+        if (TryResolveMushroomHit(hits, out DigMushroomVisual mushroom))
+        {
+            CancelResidentMarquee();
+            EntityId siteId = mushroom.Model.SiteId;
+            CellId cell = mushroom.Model.Cell;
+            Dig.Presentation.Agents.AgentViewModel? selected =
+                _agentRenderer!.SelectedModel;
+            bool reachable = selected != null
+                && _terrainSession!.CanDirectChopMushroom(
+                    siteId,
+                    new CellId(selected.CellX, selected.CellY, selected.CellZ),
+                    out _);
+            ContextPointerTarget mushroomTarget = new ContextPointerTarget(
+                ContextWorldTargetKind.Mushroom,
+                siteId,
+                cell,
+                reachable: reachable);
+            ApplyDecision(_inputRouter.Route(
+                Pointer(PointerButtonKind.Left),
+                BuildState(PointerButtonKind.Left),
+                mushroomTarget));
+            return true;
+        }
+
         // Excavation drawing owns ground clicks while a tool is active, but not the
-        // BuildingBox branch above.
+        // BuildingBox or direct mushroom branches above.
         if (_excavationMode != DigExcavationDrawingMode.None)
         {
             return false;
@@ -194,6 +218,23 @@ public sealed partial class DigWorldInteraction
         }
 
         item = null!;
+        return false;
+    }
+
+    private bool TryResolveMushroomHit(
+        RaycastHit[] hits,
+        out DigMushroomVisual mushroom)
+    {
+        for (int index = 0; index < hits.Length; index++)
+        {
+            if (_mushroomRenderer != null
+                && _mushroomRenderer.TryGetMushroom(hits[index], out mushroom))
+            {
+                return true;
+            }
+        }
+
+        mushroom = null!;
         return false;
     }
 

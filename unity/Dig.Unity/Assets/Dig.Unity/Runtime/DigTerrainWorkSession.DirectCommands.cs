@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Application.Ecology;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Domain.Core;
@@ -29,9 +30,14 @@ namespace Dig.Unity
                 for (int jobIndex = 0; jobIndex < assigned.Length; jobIndex++)
                 {
                     JobSnapshot job = assigned[jobIndex];
-                    Result released = job.Definition is WorldItemPickupJobDefinition
-                        ? CancelPickupForDirectCommand(jobs, inventory, job, tick)
-                        : ReleaseDigWorkForDirectCommand(job, tick);
+                    Result released = job.Definition switch
+                    {
+                        WorldItemPickupJobDefinition =>
+                            CancelPickupForDirectCommand(jobs, inventory, job, tick),
+                        MushroomChopJobDefinition =>
+                            CancelMushroomForDirectCommand(job, tick),
+                        _ => ReleaseDigWorkForDirectCommand(job, tick),
+                    };
                     if (released.IsFailure)
                     {
                         return released;
@@ -57,7 +63,8 @@ namespace Dig.Unity
                     && job.AssignedAgentId == residentId
                     && (job.Definition is WorldItemPickupJobDefinition
                         || job.Definition is DigJobDefinition
-                        || job.Definition is SpatialDigJobDefinition))
+                        || job.Definition is SpatialDigJobDefinition
+                        || job.Definition is MushroomChopJobDefinition))
                 {
                     assigned.Add(job);
                 }
@@ -85,6 +92,16 @@ namespace Dig.Unity
 
             inventory.ReleaseReservations(job.Id, tick);
             return Result.Success();
+        }
+
+        private Result CancelMushroomForDirectCommand(JobSnapshot job, long tick)
+        {
+            return _cancelMushroomChop == null
+                ? Result.Success()
+                : _cancelMushroomChop.Handle(new CancelMushroomChopCommand(
+                    job.Id,
+                    "mushroom_direct_command_replaced",
+                    tick));
         }
 
         private Result ReleaseDigWorkForDirectCommand(JobSnapshot job, long tick)

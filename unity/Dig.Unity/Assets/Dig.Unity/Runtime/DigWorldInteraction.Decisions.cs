@@ -42,6 +42,9 @@ public sealed partial class DigWorldInteraction
             case ApplicationInputCommandKind.AttackTarget:
                 ApplyAttack(decision);
                 break;
+            case ApplicationInputCommandKind.ChopMushroom:
+                ApplyMushroomChop(decision);
+                break;
             case ApplicationInputCommandKind.ApplyExcavation:
                 ApplyExcavation(decision, cell);
                 break;

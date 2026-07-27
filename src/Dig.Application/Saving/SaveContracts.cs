@@ -8,6 +8,7 @@ using Dig.Application.World;
 using Dig.Domain.Agents;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
+using Dig.Domain.Ecology;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.World;
@@ -17,7 +18,7 @@ namespace Dig.Application.Saving
 
 public static class SaveFormat
 {
-    public const int CurrentVersion = 5;
+    public const int CurrentVersion = 6;
 }
 
 public static class SaveSlotNames
@@ -124,6 +125,9 @@ public sealed class SaveGameDocument
     [DataMember(Order = 11)]
     public PackableBuildingExecutionsSaveData PackableBuildingExecutions { get; set; } =
         new PackableBuildingExecutionsSaveData();
+
+    [DataMember(Order = 12)]
+    public MushroomSaveData Mushrooms { get; set; } = new MushroomSaveData();
 }
 
 public sealed class LoadedGameState
@@ -140,7 +144,8 @@ public sealed class LoadedGameState
         IReadOnlyDictionary<EntityId, CellId>? agentPositions = null,
         IReadOnlyCollection<TerrainDepositInstance>? terrainDeposits = null,
         PackableBuildingExecutionRegistry? packableBuildingExecutions = null,
-        RestoredMiningOutputState? miningOutput = null)
+        RestoredMiningOutputState? miningOutput = null,
+        MushroomState? mushrooms = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -179,6 +184,8 @@ public sealed class LoadedGameState
         }
 
         MiningOutput = miningOutput;
+        Mushrooms = mushrooms ?? new MushroomState(
+            new MushroomCatalog(Array.Empty<MushroomDefinition>()));
     }
 
     public SaveMetadataData Metadata { get; }
@@ -193,6 +200,7 @@ public sealed class LoadedGameState
     public IReadOnlyList<TerrainDepositInstance> TerrainDeposits { get; }
     public PackableBuildingExecutionRegistry PackableBuildingExecutions { get; }
     public RestoredMiningOutputState MiningOutput { get; }
+    public MushroomState Mushrooms { get; }
 }
 
 public sealed class SaveMigrationReport
@@ -285,7 +293,8 @@ public sealed class SaveGameContext
         IReadOnlyCollection<AgentState> agents,
         IReadOnlyCollection<TerrainDepositInstance>? terrainDeposits = null,
         PackableBuildingExecutionRegistry? packableBuildingExecutions = null,
-        MiningOutputCommitState? miningOutputCommits = null)
+        MiningOutputCommitState? miningOutputCommits = null,
+        MushroomState? mushrooms = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -302,6 +311,8 @@ public sealed class SaveGameContext
         PackableBuildingExecutions = packableBuildingExecutions
             ?? new PackableBuildingExecutionRegistry();
         MiningOutputCommits = miningOutputCommits ?? new MiningOutputCommitState();
+        Mushrooms = mushrooms ?? new MushroomState(
+            new MushroomCatalog(Array.Empty<MushroomDefinition>()));
     }
 
     public SaveMetadataData Metadata { get; }
@@ -313,6 +324,7 @@ public sealed class SaveGameContext
     public IReadOnlyList<TerrainDepositInstance> TerrainDeposits { get; }
     public PackableBuildingExecutionRegistry PackableBuildingExecutions { get; }
     public MiningOutputCommitState MiningOutputCommits { get; }
+    public MushroomState Mushrooms { get; }
 }
 
 }

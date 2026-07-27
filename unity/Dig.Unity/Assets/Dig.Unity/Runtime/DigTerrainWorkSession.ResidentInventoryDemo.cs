@@ -62,6 +62,24 @@ internal sealed partial class DigTerrainWorkSession
                 {
                     ResidentInventoryExpansionContent.WeaponCategoryId,
                 }),
+            new ItemDefinition(
+                MushroomCapItemId,
+                "Mushroom cap",
+                1,
+                false,
+                new[]
+                {
+                    ResidentInventoryExpansionContent.RawMaterialCategoryId,
+                }),
+            new ItemDefinition(
+                MushroomLegItemId,
+                "Mushroom leg",
+                1,
+                false,
+                new[]
+                {
+                    ResidentInventoryExpansionContent.RawMaterialCategoryId,
+                }),
         };
         InventoryState inventory = new InventoryState(new ItemCatalog(
             resourceItems

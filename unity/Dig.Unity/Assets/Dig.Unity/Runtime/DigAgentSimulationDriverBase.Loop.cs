@@ -48,7 +48,6 @@ namespace Dig.Unity
             {
                 Playback.SlowDown();
             }
-
             if (Input.GetKeyDown(KeyCode.Equals)
                 || Input.GetKeyDown(KeyCode.KeypadPlus))
             {
@@ -61,7 +60,7 @@ namespace Dig.Unity
             IReadOnlyList<string> selectedAgentIds = AgentRenderer!.SelectedAgentIds;
             string? primarySelectedAgentId = AgentRenderer.SelectedAgentId;
             string? selectedJobId = JobRenderer!.SelectedJobId;
-            string? selectedBuildingId = BuildingRenderer!.SelectedBuildingId;
+            string? selectedBuildingId = BuildingRender!.SelectedBuildingId;
             IReadOnlyList<AgentViewModel> before = AgentSession!.LoadView();
             long nextTick = checked(AgentSession.Tick + 1);
             IReadOnlyList<string> manualMovementIds =
@@ -112,6 +111,11 @@ namespace Dig.Unity
                 {
                     result = CompleteSpatialExcavation(commits[index]);
                 }
+            }
+
+            if (result.IsSuccess)
+            {
+                result = TerrainSession.AdvanceMushrooms(AgentSession.Tick, agents);
             }
 
             if (result.IsSuccess)
@@ -180,6 +184,7 @@ namespace Dig.Unity
 
             AgentRenderer.Render(agents, movementDuration);
             RefreshEquipmentVisuals();
+            MushroomRenderer!.Render(TerrainSession.LoadMushrooms());
             JobRenderer.Render(jobs);
             BuildingRenderer.Render(buildings);
             ItemRenderer!.Render(items);

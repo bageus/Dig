@@ -54,6 +54,7 @@ public sealed partial class SaveGameBuilder
             TerrainDeposits = BuildTerrainDeposits(context.TerrainDeposits),
             PackableBuildingExecutions = PackableBuildingExecutionSaveDataAdapter.Encode(
                 context.PackableBuildingExecutions),
+            Mushrooms = BuildMushrooms(context.Mushrooms),
         };
     }
 
