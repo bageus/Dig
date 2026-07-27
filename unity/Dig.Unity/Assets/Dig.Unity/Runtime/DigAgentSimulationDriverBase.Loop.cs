@@ -58,9 +58,9 @@ namespace Dig.Unity
         private void AdvanceOneTick()
         {
             IReadOnlyList<string> selectedAgentIds = AgentRenderer!.SelectedAgentIds;
-            string? primarySelectedAgentId = AgentRenderer.SelectedAgentId;
+            string? primarySelectedAgentId = AgentRenderer!.SelectedAgentId;
             string? selectedJobId = JobRenderer!.SelectedJobId;
-            string? selectedBuildingId = BuildingRender!.SelectedBuildingId;
+            string? selectedBuildingId = BuildingRenderer!.SelectedBuildingId;
             IReadOnlyList<AgentViewModel> before = AgentSession!.LoadView();
             long nextTick = checked(AgentSession.Tick + 1);
             IReadOnlyList<string> manualMovementIds =
@@ -184,7 +184,7 @@ namespace Dig.Unity
 
             AgentRenderer.Render(agents, movementDuration);
             RefreshEquipmentVisuals();
-            MushroomRenderer!.Render(TerrainSession.LoadMushrooms());
+            MushroomRenderer!.Render(TerrainSession!.LoadMushrooms());
             JobRenderer.Render(jobs);
             BuildingRenderer.Render(buildings);
             ItemRenderer!.Render(items);
