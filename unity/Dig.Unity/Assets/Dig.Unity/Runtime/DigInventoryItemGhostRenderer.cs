@@ -35,13 +35,10 @@ namespace Dig.Unity
                 Rebuild(itemId);
             }
 
-            float floorOffset = DigTunnelProjection.ResidentFootSink
-                + (_resolution.WorldScale.y * 0.5f)
-                + 0.02f;
-            _root!.position = DigTunnelProjection.ResidentWorldPosition(
-                cell.X,
-                cell.Y,
-                cell.Z) + new Vector3(0f, floorOffset, 0.22f);
+            _root!.position = DigWorldItemVisualPolicy.ResolveWorldPosition(
+                cell,
+                _resolution,
+                Vector2.zero);
             _root.rotation = Quaternion.identity;
             _root.localScale = Vector3.one;
             _tint!.SetTint(valid ? ValidTint : InvalidTint);
@@ -75,18 +72,7 @@ namespace Dig.Unity
             }
 
             _itemId = itemId;
-            _resolution = _catalog != null
-                ? _catalog.ResolveItem(itemId)
-                : new DigItemVisualResolution(
-                    DigVisualAsset.CreateRuntimeFallback(itemId, Color.magenta),
-                    icon: null,
-                    DigItemCarrySocketPolicy.None,
-                    new Vector3(0.34f, 0.34f, 0.34f),
-                    new Vector3(0.28f, 0.28f, 0.28f),
-                    DigItemRotationPolicy.Fixed,
-                    DigItemColliderPolicy.None,
-                    maxVisibleInstances: 1,
-                    hasProfile: false);
+            _resolution = DigWorldItemVisualPolicy.Resolve(_catalog, itemId);
             _instance = DigVisualPrefabFactory.Create(
                 _resolution.Asset,
                 _root!,
