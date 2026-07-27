@@ -156,6 +156,7 @@ namespace Dig.Unity
                 plan.ItemId.ToString());
             Transform root = new GameObject(
                 $"Planned BuildingBox {plan.JobId}").transform;
+            root.gameObject.layer = 2;
             root.SetParent(_plannedContainer, worldPositionStays: false);
             GameObject instance = DigVisualPrefabFactory.Create(
                 resolution.Asset,
@@ -171,7 +172,8 @@ namespace Dig.Unity
                 instance.GetComponent<DigTransparentVisualSurface>()
                 ?? instance.AddComponent<DigTransparentVisualSurface>();
             transparent.Configure(fixedOpacity: 0.52f);
-            DigVisualTintTarget tint = instance.GetComponent<DigVisualTintTarget>();
+            DigVisualTintTarget tint = instance.GetComponent<DigVisualTintTarget>()
+                ?? instance.AddComponent<DigVisualTintTarget>();
             return new PlannedBoxVisual(root, tint, resolution);
         }
 
@@ -183,6 +185,7 @@ namespace Dig.Unity
             }
 
             _plannedContainer = new GameObject("Planned BuildingBox Relocations").transform;
+            _plannedContainer.gameObject.layer = 2;
             _plannedContainer.SetParent(_root, worldPositionStays: false);
         }
 
