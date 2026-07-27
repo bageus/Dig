@@ -43,7 +43,7 @@ internal sealed partial class DigTerrainWorkSession
                 return begun;
             }
 
-            Result travelled = _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick));
+            Result travelled = _advanceHandler.Handle(new Dig.Application.Jobs.AdvanceJobCommand(job.Id, tick));
             if (travelled.IsFailure)
             {
                 return travelled;
@@ -51,7 +51,7 @@ internal sealed partial class DigTerrainWorkSession
         }
         else if (job.Stage == JobStageKind.TravelToTarget)
         {
-            Result travelled = _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick));
+            Result travelled = _advanceHandler.Handle(new Dig.Application.Jobs.AdvanceJobCommand(job.Id, tick));
             if (travelled.IsFailure)
             {
                 return travelled;
@@ -170,7 +170,7 @@ internal sealed partial class DigTerrainWorkSession
 
         if (job.Stage == JobStageKind.TravelToDestination)
         {
-            Result advanced = _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick));
+            Result advanced = _advanceHandler.Handle(new Dig.Application.Jobs.AdvanceJobCommand(job.Id, tick));
             if (advanced.IsFailure)
             {
                 return advanced;
