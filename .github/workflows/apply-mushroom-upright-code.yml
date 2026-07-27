@@ -45,3 +45,5 @@ jobs:
           git config user.email "openai-agent@users.noreply.github.com"
           git commit -m "Fix mushroom world orientation and material targeting"
           git push origin HEAD:fix/mushroom-upright-material-targeting
+
+# Triggered after the authoritative docs merge so the runtime patch lands as a clean follow-up commit.
