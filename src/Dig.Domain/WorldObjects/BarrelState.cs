@@ -12,8 +12,10 @@ namespace Dig.Domain.WorldObjects
 public sealed class BarrelState : AggregateRoot
 {
     private readonly BarrelCatalog _catalog;
-    private readonly Dictionary<EntityId, BarrelRecord> _barrels = new Dictionary<EntityId, BarrelRecord>();
-    private readonly Dictionary<CellId, EntityId> _barrelByCell = new Dictionary<CellId, EntityId>();
+    private readonly Dictionary<EntityId, BarrelRecord> _barrels =
+        new Dictionary<EntityId, BarrelRecord>();
+    private readonly Dictionary<CellId, EntityId> _barrelByCell =
+        new Dictionary<CellId, EntityId>();
 
     public BarrelState(BarrelCatalog catalog)
     {
@@ -32,17 +34,21 @@ public sealed class BarrelState : AggregateRoot
         ValidateTick(tick);
         if (barrelId.IsEmpty || definitionId.IsEmpty || contentsItemId.IsEmpty)
         {
-            throw new ArgumentException("Barrel id, definition id and contents item id are required.");
+            throw new ArgumentException(
+                "Barrel id, definition id and contents item id are required.");
         }
 
         if (!_catalog.Contains(definitionId))
         {
-            throw new KeyNotFoundException($"Barrel definition '{definitionId}' was not found.");
+            throw new KeyNotFoundException(
+                $"Barrel definition '{definitionId}' was not found.");
         }
 
         if (!_catalog.Get(definitionId).Supports(contentsItemId))
         {
-            throw new ArgumentException("The contents item is not allowed by the barrel definition.", nameof(contentsItemId));
+            throw new ArgumentException(
+                "The contents item is not allowed by the barrel definition.",
+                nameof(contentsItemId));
         }
 
         if (_barrels.ContainsKey(barrelId))
@@ -162,7 +168,8 @@ public sealed class BarrelState : AggregateRoot
         ValidateTick(tick);
         if (jobId.IsEmpty || workerId.IsEmpty || expectedVersion < 0)
         {
-            throw new ArgumentException("A valid expected version, job and worker are required.");
+            throw new ArgumentException(
+                "A valid expected version, job and worker are required.");
         }
 
         BarrelRecord? barrel = Find(barrelId);
@@ -183,7 +190,8 @@ public sealed class BarrelState : AggregateRoot
 
         if (barrel.ContentsMaterialized)
         {
-            return Result<BarrelDestructionCommit>.Failure(BarrelErrors.ContentsAlreadyMaterialized);
+            return Result<BarrelDestructionCommit>.Failure(
+                BarrelErrors.ContentsAlreadyMaterialized);
         }
 
         CellId cell = barrel.Cell;
@@ -219,7 +227,9 @@ public sealed class BarrelState : AggregateRoot
 
         if (outputUnitId.IsEmpty)
         {
-            throw new ArgumentException("Output unit id cannot be empty.", nameof(outputUnitId));
+            throw new ArgumentException(
+                "Output unit id cannot be empty.",
+                nameof(outputUnitId));
         }
 
         Raise(new BarrelContentsMaterialized(
@@ -237,26 +247,15 @@ public sealed class BarrelState : AggregateRoot
     {
         if (catalog is null || snapshots is null)
         {
-            throw new ArgumentNullException(catalog is null ? nameof(catalog) : nameof(snapshots));
+            throw new ArgumentNullException(
+                catalog is null ? nameof(catalog) : nameof(snapshots));
         }
 
         BarrelState state = new BarrelState(catalog);
         foreach (BarrelSnapshot snapshot in snapshots
             .OrderBy(value => value.BarrelId.ToString(), StringComparer.Ordinal))
         {
-            if (snapshot.BarrelId.IsEmpty
-                || !catalog.Contains(snapshot.DefinitionId)
-                || !catalog.Get(snapshot.DefinitionId).Supports(snapshot.ContentsItemId)
-                || snapshot.ContentsGeneration < 0
-                || snapshot.Version < 0
-                || !Enum.IsDefined(typeof(BarrelLifecycle), snapshot.Lifecycle)
-                || state._barrels.ContainsKey(snapshot.BarrelId)
-                || (snapshot.Lifecycle == BarrelLifecycle.Supported
-                    && state._barrelByCell.ContainsKey(snapshot.Cell))
-                || (snapshot.Lifecycle == BarrelLifecycle.Destroyed
-                    && !snapshot.ContentsMaterialized)
-                || (snapshot.Lifecycle == BarrelLifecycle.Falling
-                    && (!snapshot.FallSourceCell.HasValue || !snapshot.FallLandingCell.HasValue)))
+            if (!IsValidRestoreSnapshot(state, catalog, snapshot))
             {
                 return Result<BarrelState>.Failure(BarrelErrors.InvalidRestore);
             }
@@ -282,6 +281,27 @@ public sealed class BarrelState : AggregateRoot
         return Result<BarrelState>.Success(state);
     }
 
+    private static bool IsValidRestoreSnapshot(
+        BarrelState state,
+        BarrelCatalog catalog,
+        BarrelSnapshot snapshot)
+    {
+        return !snapshot.BarrelId.IsEmpty
+            && catalog.Contains(snapshot.DefinitionId)
+            && catalog.Get(snapshot.DefinitionId).Supports(snapshot.ContentsItemId)
+            && snapshot.ContentsGeneration >= 0
+            && snapshot.Version >= 0
+            && Enum.IsDefined(typeof(BarrelLifecycle), snapshot.Lifecycle)
+            && !state._barrels.ContainsKey(snapshot.BarrelId)
+            && (snapshot.Lifecycle != BarrelLifecycle.Supported
+                || !state._barrelByCell.ContainsKey(snapshot.Cell))
+            && (snapshot.Lifecycle != BarrelLifecycle.Destroyed
+                || snapshot.ContentsMaterialized)
+            && (snapshot.Lifecycle != BarrelLifecycle.Falling
+                || (snapshot.FallSourceCell.HasValue
+                    && snapshot.FallLandingCell.HasValue));
+    }
+
     private BarrelRecord? Find(EntityId barrelId) =>
         _barrels.TryGetValue(barrelId, out BarrelRecord? barrel) ? barrel : null;
 
@@ -291,82 +311,6 @@ public sealed class BarrelState : AggregateRoot
         {
             throw new ArgumentOutOfRangeException(nameof(tick));
         }
-    }
-
-    private sealed class BarrelRecord
-    {
-        public BarrelRecord(
-            EntityId barrelId,
-            BarrelDefinitionId definitionId,
-            CellId cell,
-            BarrelLifecycle lifecycle,
-            ItemId contentsItemId,
-            long contentsGeneration,
-            bool contentsMaterialized,
-            CellId? fallSourceCell,
-            CellId? fallLandingCell,
-            long version)
-        {
-            BarrelId = barrelId;
-            DefinitionId = definitionId;
-            Cell = cell;
-            Lifecycle = lifecycle;
-            ContentsItemId = contentsItemId;
-            ContentsGeneration = contentsGeneration;
-            ContentsMaterialized = contentsMaterialized;
-            FallSourceCell = fallSourceCell;
-            FallLandingCell = fallLandingCell;
-            Version = version;
-        }
-
-        public EntityId BarrelId { get; }
-        public BarrelDefinitionId DefinitionId { get; }
-        public CellId Cell { get; private set; }
-        public BarrelLifecycle Lifecycle { get; private set; }
-        public ItemId ContentsItemId { get; }
-        public long ContentsGeneration { get; }
-        public bool ContentsMaterialized { get; private set; }
-        public CellId? FallSourceCell { get; private set; }
-        public CellId? FallLandingCell { get; private set; }
-        public long Version { get; private set; }
-
-        public void BeginFall(CellId source, CellId landing)
-        {
-            Lifecycle = BarrelLifecycle.Falling;
-            FallSourceCell = source;
-            FallLandingCell = landing;
-            Version = checked(Version + 1);
-        }
-
-        public void Land(CellId landing)
-        {
-            Cell = landing;
-            Lifecycle = BarrelLifecycle.Supported;
-            FallSourceCell = null;
-            FallLandingCell = null;
-            Version = checked(Version + 1);
-        }
-
-        public void Destroy()
-        {
-            Lifecycle = BarrelLifecycle.Destroyed;
-            ContentsMaterialized = true;
-            FallSourceCell = null;
-            FallLandingCell = null;
-            Version = checked(Version + 1);
-        }
-
-        public BarrelSnapshot Snapshot() => new BarrelSnapshot(
-            BarrelId,
-            DefinitionId,
-            Cell,
-            Lifecycle,
-            ContentsItemId,
-            ContentsGeneration,
-            ContentsMaterialized,
-            FallSourceCell,
-            FallLandingCell,
-            Version);
     }
 }
 
