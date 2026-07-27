@@ -178,6 +178,11 @@ namespace Dig.Unity
             return routes;
         }
 
+        internal Result RefreshCommittedTerrainNavigation()
+        {
+            return RefreshNavigation();
+        }
+
         private Result RefreshNavigation()
         {
             IReadOnlyList<ChunkId> dirty = _worldSession.PeekDirtyChunks();

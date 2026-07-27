@@ -71,6 +71,8 @@ Visual lane, overlap offset и interpolation не являются отдель�
 - после arrival visual возвращается к normal locomotion;
 - interruption/replan не оставляет resident в climbing pose.
 
+После полного excavation commit новая открытая horizontal или vertical cell обязана войти в authoritative movement/topology projection до следующей route/movement попытки. Resident не может видеть выкопанную клетку, но получать stale `closed/not traversable` из отдельного tunnel volume или movement surface.
+
 В текущей модели vertical tunnel не разрушается под уже выполняющим переход actor. Если позже появятся обрушения, разрушаемые платформы или удаление активного traversal link, это потребует отдельной спецификации и не выводится из текущих правил движения.
 
 ### Встреча двух climbers
@@ -100,6 +102,8 @@ Visual lane, overlap offset и interpolation не являются отдель�
 - valid climbing transition не создаёт unsupported actor state;
 - actor не падает из vertical tunnel без подтверждённого external impact result;
 - shared-cell policy не создаёт teleport или route skip;
+- full excavation commit синхронизирует World, Navigation map, resident tunnel volume и movement surfaces до следующего authoritative transition;
+- derived refresh failure не оставляет визуально открытую клетку логически закрытой;
 - save/load не сохраняет lateral offsets, overlap offsets или interpolation.
 
 ## 8. Решённые вопросы
@@ -146,6 +150,8 @@ Visual lane, overlap offset и interpolation не являются отдель�
 - no horizontal direct swap property;
 - два opposite climbers проходят друг сквозь друга без блокировки;
 - normal vertical climbing не запускает fall без external impact;
+- после horizontal excavation resident входит в новую cell и продолжает frontier job без redraw;
+- после vertical/depth excavation новая cell сразу доступна valid climbing transition;
 - knockback/push в open shaft передаёт управление fall system;
 - interruption и save/load mid-route сохраняют authoritative cell/action, но не presentation offsets;
 - Play Mode подтверждает directional offsets, разрешённый horizontal overlap fallback и vertical overlap.

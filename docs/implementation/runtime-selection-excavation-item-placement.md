@@ -43,6 +43,8 @@ Generic item pickup больше не зависит от `Alt`; `Alt` оста�
 
 Исправлен второй слой той же ошибки: combined terrain mesh продолжал рисовать полный solid cube под per-cell quarters, поэтому фактически удалённая часть оставалась закрыта общей геометрией. Частично выкопанная клетка исключается из combined mesh, remaining quarter geometry остаётся видимой даже после снятия designation, а повторное назначение продолжает с сохранённого mask. Full 4/4 commit помечает World changed до Navigation refresh; dirty chunks дренируются только после успешного rebuild, поэтому ошибка derived navigation больше не оставляет завершённую клетку визуально целой до ручного redraw.
 
+Оставался третий слой рассинхронизации: ordinary commit обновлял World/Navigation repository, но не пересобирал `DigAgentSession.TunnelVolume` и `DigTunnelDemoRenderer` movement surfaces до следующего interaction refresh. Spatial commit мог изменить World, затем упасть на job/topology cleanup; повторная попытка снова вызывала excavation уже пустой клетки, а общий tick пропускал item gravity. Runtime теперь после любого authoritative terrain commit в том же tick пересобирает Navigation, resident tunnel topology и movement surfaces, затем запускает существующий item support resolver до pickup/hauling reservations. Spatial excavation retry принимает уже открытую authoritative cell как idempotent success и завершает derived cleanup вместо вечного stall.
+
 ### Nearest automatic excavation и drag-stroke batching
 
 PR #414 сравнивал Navigation route до work position, но ordinary tunnel tool по-прежнему вызывал `SynchronizeDesignations` после каждой нарисованной клетки. Первый painted/created job мог быть claimed до появления остальных клеток stroke, поэтому порядок рисования скрыто переопределял nearest rule. Особенно заметно это было на вертикальном front-slice tunnel: нижняя правая клетка могла назначаться раньше ближайшей верхней.
@@ -87,6 +89,8 @@ Room commit раньше передавал `VolumeCells` в atomic `SetDigDesig
 - inventory item placement and trigger-collider source contracts;
 - low-skill quarter assignment stability and 4/4 finalization gate;
 - completed quarter removes rock geometry and does not use black fill;
+- full commit rebuilds Navigation, resident tunnel topology and movement surfaces before pickup/reservation work;
+- spatial retry accepts an already-open authoritative cell and item support loss is settled before reservations;
 - shared-work-cell spatial assignment выбирает ближайшую target cell, даже если дальний job имеет меньший id;
 - source contract: tunnel drag stage-ит designations и reconciles jobs только после release;
 - automatic ordinary/spatial selection использует target-distance → route-cost → CellId → JobId;
