@@ -105,6 +105,8 @@ namespace Dig.Unity
             _buildingBoxPickupRoutes.Remove(jobId);
             _worldItemPickupRoutes.Remove(jobId);
             _buildingBoxAssemblyRoutes.Remove(jobId);
+            _buildingProductionRoutes.Remove(jobId);
+            _buildingSupplyRoutes.Remove(jobId);
         }
     }
 }

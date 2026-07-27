@@ -4,6 +4,7 @@ using Dig.Application.Agents;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Ecology;
+using Dig.Domain.Content;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
 
@@ -59,7 +60,9 @@ public sealed class SaveGameService
             context.TerrainDeposits,
             context.PackableBuildingExecutions,
             context.MiningOutputCommits,
-            context.Mushrooms));
+            context.Mushrooms,
+            context.Production,
+            context.BuildingSupply));
     }
 
     public Result<LoadedGameState> Load(
@@ -192,6 +195,32 @@ public sealed class SaveGameService
         return RestoreAgents(
             Load(slotId, materials, items, buildingCatalog),
             agents);
+    }
+
+    public Result<LoadedGameState> Load(
+        string slotId,
+        MaterialCatalog materials,
+        ItemCatalog items,
+        BuildingCatalog buildingCatalog,
+        TerrainDepositCatalog terrainDeposits,
+        MushroomCatalog mushrooms,
+        ProductionContentCatalog productionContent)
+    {
+        if (buildingCatalog is null || terrainDeposits is null
+            || mushrooms is null || productionContent is null)
+        {
+            throw new ArgumentNullException(nameof(productionContent));
+        }
+
+        SaveGameDocument document = _store.Load(slotId);
+        return _loader.Load(
+            document,
+            materials,
+            items,
+            buildingCatalog,
+            terrainDeposits,
+            mushrooms,
+            productionContent);
     }
 
     public IReadOnlyList<SaveSlotInfo> ListSlots()

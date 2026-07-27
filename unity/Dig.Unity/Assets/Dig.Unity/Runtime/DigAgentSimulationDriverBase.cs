@@ -27,6 +27,7 @@ namespace Dig.Unity
         private protected DigTerrainWorkSession? TerrainSession;
         protected DigJobRenderer? JobRenderer;
         protected DigBuildingRenderer? BuildingRenderer;
+        protected DigBuildingInternalStockRenderer? BuildingInternalStockRenderer;
         protected DigWorldItemRenderer? ItemRenderer;
         protected DigStockpileRenderer? StockpileRenderer;
         protected DigNavigationRouteRenderer? RouteRenderer;
@@ -60,6 +61,7 @@ namespace Dig.Unity
             DigMushroomRenderer mushroomRenderer,
             DigJobRenderer jobRenderer,
             DigBuildingRenderer buildingRenderer,
+            DigBuildingInternalStockRenderer buildingInternalStockRenderer,
             DigWorldItemRenderer itemRenderer,
             DigStockpileRenderer stockpileRenderer,
             DigNavigationRouteRenderer routeRenderer,
@@ -74,6 +76,7 @@ namespace Dig.Unity
             TerrainSession = terrainSession;
             JobRenderer = jobRenderer;
             BuildingRenderer = buildingRenderer;
+            BuildingInternalStockRenderer = buildingInternalStockRenderer;
             ItemRenderer = itemRenderer;
             StockpileRenderer = stockpileRenderer;
             RouteRenderer = routeRenderer;
@@ -142,6 +145,7 @@ namespace Dig.Unity
                 && MushroomRenderer != null
                 && JobRenderer != null
                 && BuildingRenderer != null
+                && BuildingInternalStockRenderer != null
                 && ItemRenderer != null
                 && StockpileRenderer != null
                 && RouteRenderer != null

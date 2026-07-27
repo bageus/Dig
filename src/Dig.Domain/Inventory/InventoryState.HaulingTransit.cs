@@ -82,11 +82,11 @@ public sealed partial class InventoryState
             .Where(stack => stack.Location.HasOwner
                 && stack.Location.OwnerId == residentId)
             .Where(stack => stack.GetReservedQuantity(jobId) > 0)
+            .Where(stack => stack.ItemId == itemId)
             .OrderBy(stack => stack.Location)
             .ThenBy(stack => stack.Id.ToString(), StringComparer.Ordinal)
             .ToArray();
         if (sources.Length == 0
-            || sources.Any(stack => stack.ItemId != itemId)
             || sources.Sum(stack => stack.GetReservedQuantity(jobId)) != quantity)
         {
             return Result.Failure(InventoryErrors.ReservationNotFound);

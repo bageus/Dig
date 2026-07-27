@@ -79,7 +79,8 @@ public sealed class CampfireInventoryPlacementTests
             "CampfireBuildingBoxContent.Definition.Building",
             buildings);
         Assert.Contains("ResolveBuildingBoxDefinition(stack.ItemId)", placement);
-        Assert.Contains(
+        Assert.Contains("FindByBoxItemId(boxItemId)", placement);
+        Assert.DoesNotContain(
             "CampfireBuildingBoxContent.CampfireBoxItemId",
             placement);
         Assert.Contains("_buildingBoxCatalog!.Get(mode.DefinitionId)", placement);

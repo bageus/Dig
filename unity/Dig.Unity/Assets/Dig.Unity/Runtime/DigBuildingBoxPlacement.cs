@@ -52,9 +52,16 @@ namespace Dig.Unity
                 _jobRepository,
                 validator,
                 journal ?? throw new ArgumentNullException(nameof(journal)));
+            Dictionary<ItemId, WorldItemInteractionKind> boxInteractions = catalog
+                .GetAll()
+                .Where(value => value.BoxPolicy != null)
+                .ToDictionary(
+                    value => value.BoxPolicy!.BoxItemId,
+                    _ => WorldItemInteractionKind.BuildingBox);
             _buildingInventoryPresenter = new InventoryWorldPresenter(
                 new GetInventorySnapshotQueryHandler(_buildingInventoryRepository),
-                WorldItemInteractionKind.BuildingBox);
+                boxInteractions,
+                WorldItemInteractionKind.Pickup);
             InitializeResidentInventoryPresentation();
             InitializeBuildingBoxPickupExecution(journal);
             InitializeBuildingBoxAssemblyExecution(journal);
@@ -151,18 +158,7 @@ namespace Dig.Unity
 
         private BuildingDefinition? ResolveBuildingBoxDefinition(ItemId boxItemId)
         {
-            if (_buildingBoxDefinition?.BoxPolicy?.BoxItemId == boxItemId)
-            {
-                return _buildingBoxDefinition;
-            }
-
-            if (boxItemId == CampfireBuildingBoxContent.CampfireBoxItemId)
-            {
-                return _buildingBoxCatalog!.Get(
-                    CampfireBuildingBoxContent.CampfireBuildingId);
-            }
-
-            return null;
+            return _buildingBoxCatalog!.FindByBoxItemId(boxItemId);
         }
 
         private IReadOnlyCollection<CellId> GetBuildingPlacementReachableCells()

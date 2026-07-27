@@ -12,6 +12,9 @@ internal sealed class ProductionOrderState
 {
     private ItemReservationAllocation[] _inputAllocations =
         Array.Empty<ItemReservationAllocation>();
+    private long[] _resolvedStepDurations = Array.Empty<long>();
+    private long _currentStepWork;
+    private int _currentStepIndex;
 
     public ProductionOrderState(
         EntityId id,
@@ -52,8 +55,22 @@ internal sealed class ProductionOrderState
         IncrementVersion();
     }
 
-    public void Start()
+    public void Start(IReadOnlyCollection<long>? resolvedStepDurations = null)
     {
+        if (Recipe.UsesMaterialSteps)
+        {
+            _resolvedStepDurations = (resolvedStepDurations
+                    ?? throw new ArgumentNullException(nameof(resolvedStepDurations)))
+                .ToArray();
+            if (_resolvedStepDurations.Length != Recipe.MaterialSteps.Count
+                || _resolvedStepDurations.Any(value => value <= 0))
+            {
+                throw new ArgumentException(
+                    "Resolved material durations must match recipe steps.",
+                    nameof(resolvedStepDurations));
+            }
+        }
+
         Status = ProductionOrderStatus.InProgress;
         Reason = null;
         IncrementVersion();
@@ -70,6 +87,117 @@ internal sealed class ProductionOrderState
         }
 
         IncrementVersion();
+    }
+
+
+    public ProductionMaterialWorkResult PreviewMaterialWork(long elapsedTicks)
+    {
+        if (!Recipe.UsesMaterialSteps)
+        {
+            throw new InvalidOperationException("Recipe does not use material steps.");
+        }
+
+        if (elapsedTicks <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(elapsedTicks));
+        }
+
+        return ResolveMaterialWork(
+            elapsedTicks,
+            _currentStepIndex,
+            _currentStepWork,
+            out _,
+            out _);
+    }
+
+    public ProductionMaterialWorkResult AddMaterialWork(long elapsedTicks)
+    {
+        ProductionMaterialWorkResult result = ResolveMaterialWork(
+            elapsedTicks,
+            _currentStepIndex,
+            _currentStepWork,
+            out int nextStepIndex,
+            out long nextStepWork);
+        _currentStepIndex = nextStepIndex;
+        _currentStepWork = nextStepWork;
+        CompletedWork = _currentStepIndex;
+        if (_currentStepIndex == _resolvedStepDurations.Length)
+        {
+            Status = ProductionOrderStatus.ReadyToComplete;
+        }
+
+        IncrementVersion();
+        return result;
+    }
+
+    private ProductionMaterialWorkResult ResolveMaterialWork(
+        long elapsedTicks,
+        int stepIndex,
+        long stepWork,
+        out int nextStepIndex,
+        out long nextStepWork)
+    {
+        if (!Recipe.UsesMaterialSteps)
+        {
+            throw new InvalidOperationException("Recipe does not use material steps.");
+        }
+
+        if (elapsedTicks <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(elapsedTicks));
+        }
+
+        List<ItemId> consumed = new List<ItemId>();
+        long remaining = elapsedTicks;
+        while (remaining > 0 && stepIndex < _resolvedStepDurations.Length)
+        {
+            long required = _resolvedStepDurations[stepIndex];
+            long applied = Math.Min(remaining, required - stepWork);
+            stepWork += applied;
+            remaining -= applied;
+            if (stepWork != required)
+            {
+                break;
+            }
+
+            consumed.Add(Recipe.MaterialSteps[stepIndex].ItemId);
+            stepIndex++;
+            stepWork = 0;
+        }
+
+        nextStepIndex = stepIndex;
+        nextStepWork = stepWork;
+        return new ProductionMaterialWorkResult(
+            consumed,
+            stepIndex == _resolvedStepDurations.Length);
+    }
+
+    private IReadOnlyList<ProductionMaterialStepSnapshot> CreateMaterialSteps()
+    {
+        if (!Recipe.UsesMaterialSteps)
+        {
+            return Array.Empty<ProductionMaterialStepSnapshot>();
+        }
+
+        List<ProductionMaterialStepSnapshot> values =
+            new List<ProductionMaterialStepSnapshot>(Recipe.MaterialSteps.Count);
+        for (int index = 0; index < Recipe.MaterialSteps.Count; index++)
+        {
+            long required = index < _resolvedStepDurations.Length
+                ? _resolvedStepDurations[index]
+                : 0;
+            long completed = index < _currentStepIndex
+                ? required
+                : index == _currentStepIndex ? _currentStepWork : 0;
+            values.Add(new ProductionMaterialStepSnapshot(
+                index,
+                Recipe.MaterialSteps[index].ItemId,
+                required,
+                completed,
+                index < _currentStepIndex));
+        }
+
+        return values;
     }
 
     public void Complete()
@@ -104,7 +232,8 @@ internal sealed class ProductionOrderState
             CompletedWork,
             Version,
             _inputAllocations,
-            Reason);
+            Reason,
+            CreateMaterialSteps());
     }
 
     private void IncrementVersion()

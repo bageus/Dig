@@ -77,6 +77,9 @@ namespace Dig.Unity
             terrainSession.InitializeHauling(worldSession.Journal);
             terrainSession.PlanMovement(agents, tick: 0);
             terrainSession.InitializeBuildingDemo(worldSession.Journal);
+            terrainSession.InitializeBuildingProductionDemo(
+                agentSession.Repository,
+                worldSession.Journal);
             terrainSession.InitializeMushroomDemo(agentSession.Tick);
             terrainSession.InitializeToolAwareJobAssignment(worldSession.Journal);
             Result settledItems = terrainSession.SettleWorldItems(agentSession.Tick);
@@ -115,6 +118,8 @@ namespace Dig.Unity
             DigMushroomRenderer mushroomRenderer = GetOrAdd<DigMushroomRenderer>(gameObject);
             DigJobRenderer jobRenderer = GetOrAdd<DigJobRenderer>(gameObject);
             DigBuildingRenderer buildingRenderer = GetOrAdd<DigBuildingRenderer>(gameObject);
+            DigBuildingInternalStockRenderer buildingInternalStockRenderer =
+                GetOrAdd<DigBuildingInternalStockRenderer>(gameObject);
             DigWorldItemRenderer itemRenderer = GetOrAdd<DigWorldItemRenderer>(gameObject);
             DigBuildingBoxGhostRenderer ghostRenderer =
                 GetOrAdd<DigBuildingBoxGhostRenderer>(gameObject);
@@ -160,8 +165,8 @@ namespace Dig.Unity
             interaction.SetCaveRoomRenderers(caveRoomPreviewRenderer, caveRoomFloorRenderer);
             simulation.Initialize(
                 worldSession, worldRenderer, agentSession, agentRenderer,
-                terrainSession, mushroomRenderer, jobRenderer, buildingRenderer, itemRenderer,
-                stockpileRenderer, routeRenderer, worldOverlayRenderer, hud);
+                terrainSession, mushroomRenderer, jobRenderer, buildingRenderer,
+                buildingInternalStockRenderer, itemRenderer, stockpileRenderer, routeRenderer, worldOverlayRenderer, hud);
 
             _startupStage = "binding uGUI game HUD";
             gameHud.Initialize(
@@ -192,6 +197,10 @@ namespace Dig.Unity
                 () => jobRenderer.Render(jobs));
             RunPresentationStage("rendering buildings", visualWarnings,
                 () => buildingRenderer.Render(buildings));
+            RunPresentationStage("rendering internal building stock", visualWarnings, () =>
+                buildingInternalStockRenderer.Render(
+                    terrainSession.LoadAllBuildingProduction(),
+                    buildings));
             RunPresentationStage("rendering world items", visualWarnings,
                 () => itemRenderer.Render(items));
             RunPresentationStage("clearing building ghost", visualWarnings, ghostRenderer.Clear);

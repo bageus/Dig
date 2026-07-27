@@ -8,25 +8,31 @@ using Dig.Domain.Inventory;
 namespace Dig.Domain.Content
 {
 
-public sealed class ProductionContentCatalog
+public sealed partial class ProductionContentCatalog
 {
     private readonly Dictionary<RecipeId, RecipeDefinition> _recipes;
     private readonly Dictionary<TechnologyId, TechnologyDefinition> _technologies;
+    private readonly Dictionary<BuildingDefinitionId, ProductionWorkstationDefinition>
+        _workstations;
 
     private ProductionContentCatalog(
         ItemCatalog items,
         BuildingCatalog buildings,
         IReadOnlyCollection<RecipeDefinition> recipes,
-        IReadOnlyCollection<TechnologyDefinition> technologies)
+        IReadOnlyCollection<TechnologyDefinition> technologies,
+        IReadOnlyCollection<ProductionWorkstationDefinition> workstations)
     {
         Items = items;
         Buildings = buildings;
         _recipes = recipes.ToDictionary(value => value.Id);
         _technologies = technologies.ToDictionary(value => value.Id);
+        _workstations = workstations.ToDictionary(value => value.BuildingId);
         Recipes = new ReadOnlyCollection<RecipeDefinition>(
             recipes.OrderBy(value => value.Id).ToArray());
         Technologies = new ReadOnlyCollection<TechnologyDefinition>(
             technologies.OrderBy(value => value.Id).ToArray());
+        Workstations = new ReadOnlyCollection<ProductionWorkstationDefinition>(
+            workstations.OrderBy(value => value.BuildingId).ToArray());
     }
 
     public ItemCatalog Items { get; }
@@ -36,6 +42,8 @@ public sealed class ProductionContentCatalog
     public IReadOnlyList<RecipeDefinition> Recipes { get; }
 
     public IReadOnlyList<TechnologyDefinition> Technologies { get; }
+
+    public IReadOnlyList<ProductionWorkstationDefinition> Workstations { get; }
 
     public RecipeDefinition GetRecipe(RecipeId id)
     {
@@ -56,6 +64,18 @@ public sealed class ProductionContentCatalog
         return _recipes.ContainsKey(id);
     }
 
+    public ProductionWorkstationDefinition GetWorkstation(BuildingDefinitionId id)
+    {
+        return _workstations.TryGetValue(id, out ProductionWorkstationDefinition? value)
+            ? value
+            : throw new KeyNotFoundException($"Unknown production workstation '{id}'.");
+    }
+
+    public bool ContainsWorkstation(BuildingDefinitionId id)
+    {
+        return _workstations.ContainsKey(id);
+    }
+
     public bool ContainsTechnology(TechnologyId id)
     {
         return _technologies.ContainsKey(id);
@@ -67,7 +87,23 @@ public sealed class ProductionContentCatalog
         IEnumerable<RecipeDefinition> recipes,
         IEnumerable<TechnologyDefinition> technologies)
     {
-        if (items is null || buildings is null || recipes is null || technologies is null)
+        return ValidateAndCreate(
+            items,
+            buildings,
+            recipes,
+            technologies,
+            Array.Empty<ProductionWorkstationDefinition>());
+    }
+
+    public static ContentValidationResult ValidateAndCreate(
+        ItemCatalog items,
+        BuildingCatalog buildings,
+        IEnumerable<RecipeDefinition> recipes,
+        IEnumerable<TechnologyDefinition> technologies,
+        IEnumerable<ProductionWorkstationDefinition> workstations)
+    {
+        if (items is null || buildings is null || recipes is null
+            || technologies is null || workstations is null)
         {
             throw new ArgumentNullException(nameof(items));
         }
@@ -76,9 +112,18 @@ public sealed class ProductionContentCatalog
         TechnologyDefinition[] technologyValues = technologies
             .OrderBy(value => value.Id)
             .ToArray();
+        ProductionWorkstationDefinition[] workstationValues = workstations
+            .OrderBy(value => value.BuildingId)
+            .ToArray();
         List<ContentValidationIssue> issues = new List<ContentValidationIssue>();
         ValidateUniqueIds(recipeValues, technologyValues, issues);
         ValidateRecipes(items, buildings, recipeValues, technologyValues, issues);
+        ValidateWorkstations(
+            items,
+            buildings,
+            recipeValues,
+            workstationValues,
+            issues);
         ValidateTechnologies(items, recipeValues, technologyValues, issues);
         ValidateTechnologyCycles(technologyValues, issues);
 
@@ -91,7 +136,8 @@ public sealed class ProductionContentCatalog
             items,
             buildings,
             recipeValues,
-            technologyValues);
+            technologyValues,
+            workstationValues);
         return new ContentValidationResult(catalog, Array.Empty<ContentValidationIssue>());
     }
 
@@ -279,6 +325,7 @@ public sealed class ProductionContentCatalog
             }
         }
     }
+
 
     private static bool ContainsBuilding(
         BuildingCatalog buildings,

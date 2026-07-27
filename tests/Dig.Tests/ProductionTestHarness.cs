@@ -148,6 +148,7 @@ internal sealed class ProductionTestHarness
         Assert.True(new BeginProductionWorkHandler(
             ProductionRepository,
             JobRepository,
+            Agents,
             Journal).Handle(new BeginProductionWorkCommand(
                 orderId,
                 jobId,
@@ -161,6 +162,7 @@ internal sealed class ProductionTestHarness
     {
         return new ApplyProductionWorkHandler(
             ProductionRepository,
+            InventoryRepository,
             JobRepository,
             Agents,
             Journal).Handle(new ApplyProductionWorkCommand(

@@ -129,13 +129,15 @@ public sealed class CompleteProductionOrderCommand : ICommand<Result>
         EntityId orderId,
         EntityId jobId,
         IReadOnlyCollection<EntityId> outputStackIds,
-        long tick)
+        long tick,
+        ItemLocation? outputLocation = null)
     {
         OrderId = orderId;
         JobId = jobId;
         OutputStackIds = outputStackIds
             ?? throw new ArgumentNullException(nameof(outputStackIds));
         Tick = tick;
+        OutputLocation = outputLocation;
     }
 
     public EntityId OrderId { get; }
@@ -145,6 +147,8 @@ public sealed class CompleteProductionOrderCommand : ICommand<Result>
     public IReadOnlyCollection<EntityId> OutputStackIds { get; }
 
     public long Tick { get; }
+
+    public ItemLocation? OutputLocation { get; }
 }
 
 public sealed class CancelProductionOrderCommand : ICommand<Result>
