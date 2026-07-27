@@ -14,6 +14,7 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         string bootstrap = Read(runtime, "DigUnityBootstrap.cs");
         string execution = Read(runtime, "DigBuildingProductionExecution.cs");
         string synchronization = Read(runtime, "DigBuildingProductionSynchronization.cs");
+        string runtimeExecution = Read(runtime, "DigBuildingProductionRuntime.cs");
         string loop = Read(runtime, "DigAgentSimulationDriverBase.Loop.cs");
         string placement = Read(runtime, "DigBuildingBoxPlacement.cs");
 
@@ -22,6 +23,10 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         Assert.Contains("AdvanceBuildingProduction", loop);
         Assert.Contains("using Dig.Application.Jobs;", execution);
         Assert.Contains("using Dig.Application.Jobs;", synchronization);
+        Assert.Contains(
+            "new Dig.Application.Jobs.AdvanceJobCommand(",
+            runtimeExecution);
+        Assert.DoesNotContain("new AdvanceJobCommand(", runtimeExecution);
         Assert.Contains("CreateBuildingSupplyJobHandler", execution);
         Assert.Contains("AcquireBuildingSupplySourceHandler", execution);
         Assert.Contains("PrepareEligibleProductionOrders", synchronization);
