@@ -28,6 +28,7 @@ public enum ContextWorldTargetKind
     CompletedBuilding = 5,
     GenericItem = 6,
     Mushroom = 7,
+    Barrel = 8,
 }
 
 public enum ContextPanelMode
@@ -74,6 +75,7 @@ public enum ApplicationInputCommandKind
     ApplyExcavation = 7,
     PickupWorldItem = 8,
     ChopMushroom = 9,
+    AttackBarrel = 10,
 }
 
 public readonly struct ContextPointerEvent
@@ -270,4 +272,5 @@ public sealed class ContextInputDecision
     public string? ReasonCode { get; }
     public bool HasApplicationCommand => CommandKind != ApplicationInputCommandKind.None;
 }
+
 }
