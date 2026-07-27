@@ -31,7 +31,10 @@ public sealed class MushroomChopApplicationTests
     [Fact]
     public void Direct_workflow_creates_exact_units_and_grants_woodworking_once()
     {
-        Harness harness = CreateHarness(MushroomStage.Large, firstRequiredSwings: 2);
+        Harness harness = CreateHarness(
+            MushroomStage.Large,
+            firstRequiredSwings: 2,
+            firstWoodworkingUnits: 6_100);
         Result<MushroomChopStartedResult> started = harness.Start.Handle(
             new StartDirectMushroomChopCommand(
                 FirstJobId,
@@ -91,7 +94,9 @@ public sealed class MushroomChopApplicationTests
         Harness harness = CreateHarness(
             MushroomStage.Medium,
             firstRequiredSwings: 5,
-            secondRequiredSwings: 3);
+            secondRequiredSwings: 3,
+            firstWoodworkingUnits: 2_100,
+            secondWoodworkingUnits: 4_100);
         Assert.True(harness.Start.Handle(new StartDirectMushroomChopCommand(
             FirstJobId,
             SiteId,
@@ -154,7 +159,9 @@ public sealed class MushroomChopApplicationTests
     private static Harness CreateHarness(
         MushroomStage stage,
         int firstRequiredSwings,
-        int? secondRequiredSwings = null)
+        int? secondRequiredSwings = null,
+        int firstWoodworkingUnits = 0,
+        int secondWoodworkingUnits = 0)
     {
         MushroomState mushrooms = new MushroomState(new MushroomCatalog(new[]
         {
@@ -169,8 +176,16 @@ public sealed class MushroomChopApplicationTests
         }));
         InMemoryExecutionJournal events = new InMemoryExecutionJournal();
         InMemoryAgentRepository agents = new InMemoryAgentRepository();
-        Assert.True(agents.Add(AgentTestFactory.CreateAgent(id: FirstWorkerId)).IsSuccess);
-        Assert.True(agents.Add(AgentTestFactory.CreateAgent(id: SecondWorkerId)).IsSuccess);
+        AgentState firstWorker = AgentTestFactory.CreateAgent(id: FirstWorkerId);
+        AgentState secondWorker = AgentTestFactory.CreateAgent(id: SecondWorkerId);
+        Assert.True(firstWorker.SetSkillLevel(
+            AgentSkillCatalog.Woodworking,
+            firstWoodworkingUnits).IsSuccess);
+        Assert.True(secondWorker.SetSkillLevel(
+            AgentSkillCatalog.Woodworking,
+            secondWoodworkingUnits).IsSuccess);
+        Assert.True(agents.Add(firstWorker).IsSuccess);
+        Assert.True(agents.Add(secondWorker).IsSuccess);
         AgentSkillGrantService skills = new AgentSkillGrantService(agents, events);
         InMemoryMushroomRepository mushroomRepository = new InMemoryMushroomRepository(mushrooms);
         InMemoryJobRepository jobRepository = new InMemoryJobRepository(jobs);
