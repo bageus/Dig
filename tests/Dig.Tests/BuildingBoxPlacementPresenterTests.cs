@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
@@ -21,7 +22,6 @@ public sealed class BuildingBoxPlacementPresenterTests
     [Fact]
     public void Upper_layer_preview_uses_rotated_footprint_and_work_position()
     {
-        BuildingDefinition definition = Definition();
         CellId origin = new CellId(2, 2, 1);
 
         BuildingBoxGhostViewModel north = Preview(
@@ -34,6 +34,7 @@ public sealed class BuildingBoxPlacementPresenterTests
             reachable: new[] { new CellId(3, 2, 1) });
 
         Assert.True(north.IsValid);
+        Assert.True(north.IsVisible);
         Assert.Equal(BuildingBoxPlacementKind.AssembleBuilding, north.PlacementKind);
         Assert.Equal(BuildingBoxGhostStyle.Valid, north.Style);
         Assert.Equal(
@@ -41,6 +42,7 @@ public sealed class BuildingBoxPlacementPresenterTests
             north.Footprint.ToArray());
         Assert.Equal(new CellId(2, 1, 1), north.WorkPosition);
         Assert.True(east.IsValid);
+        Assert.True(east.IsVisible);
         Assert.Equal(
             new[] { new CellId(2, 2, 1), new CellId(2, 3, 1) },
             east.Footprint.ToArray());
@@ -60,11 +62,48 @@ public sealed class BuildingBoxPlacementPresenterTests
             _presenter.CreateConfirmationDraft(preview);
 
         Assert.True(preview.IsValid);
+        Assert.True(preview.IsVisible);
         Assert.Equal(BuildingBoxPlacementKind.RelocateBox, preview.PlacementKind);
         Assert.Equal(new[] { target }, preview.Footprint);
         Assert.Equal(target, preview.WorkPosition);
         Assert.True(drafted.IsSuccess);
         Assert.Equal(BuildingBoxPlacementKind.RelocateBox, drafted.Value.PlacementKind);
+    }
+
+    [Fact]
+    public void Unsupported_air_hides_box_and_building_ghosts()
+    {
+        CellId boxTarget = new CellId(4, 3, 0);
+        CellId buildingOrigin = new CellId(2, 2, 1);
+        WorldSnapshot air = EmptyWorld();
+
+        BuildingBoxGhostViewModel box = _presenter.Preview(
+            Stack(),
+            Item(),
+            Definition(),
+            boxTarget,
+            BuildingOrientation.North,
+            air,
+            Array.Empty<CellId>(),
+            new[] { boxTarget });
+        BuildingBoxGhostViewModel building = _presenter.Preview(
+            Stack(),
+            Item(),
+            Definition(),
+            buildingOrigin,
+            BuildingOrientation.North,
+            air,
+            Array.Empty<CellId>(),
+            new[] { new CellId(2, 1, 1) });
+
+        Assert.False(box.IsValid);
+        Assert.False(box.IsVisible);
+        Assert.Equal(PackableBuildingPlacementErrors.SurfaceMissing.Code, box.ReasonCode);
+        Assert.True(_presenter.CreateConfirmationDraft(box).IsFailure);
+        Assert.False(building.IsValid);
+        Assert.False(building.IsVisible);
+        Assert.Equal(PackableBuildingPlacementErrors.SurfaceMissing.Code, building.ReasonCode);
+        Assert.True(_presenter.CreateConfirmationDraft(building).IsFailure);
     }
 
     [Fact]
@@ -78,11 +117,12 @@ public sealed class BuildingBoxPlacementPresenterTests
             Definition(),
             target,
             BuildingOrientation.North,
-            World(),
+            SupportedWorld(target, BuildingOrientation.North, new[] { target }),
             occupiedCells: Array.Empty<CellId>(),
             reachableCells: new[] { target });
 
         Assert.True(preview.IsValid);
+        Assert.True(preview.IsVisible);
         Assert.Equal(BuildingBoxPlacementKind.RelocateBox, preview.PlacementKind);
     }
 
@@ -122,6 +162,8 @@ public sealed class BuildingBoxPlacementPresenterTests
             ItemLocation.InWorld(new CellId(1, 1)),
             new[] { new ItemQuantityReservationSnapshot(ReservationJobId, 1) });
         CellId origin = new CellId(2, 2, 1);
+        CellId[] reachable = { new CellId(2, 1, 1) };
+        WorldSnapshot world = SupportedWorld(origin, BuildingOrientation.North, reachable);
 
         BuildingBoxGhostViewModel mismatch = _presenter.Preview(
             Stack(),
@@ -129,18 +171,18 @@ public sealed class BuildingBoxPlacementPresenterTests
             Definition(),
             origin,
             BuildingOrientation.North,
-            World(),
+            world,
             Array.Empty<CellId>(),
-            new[] { new CellId(2, 1, 1) });
+            reachable);
         BuildingBoxGhostViewModel unavailable = _presenter.Preview(
             reserved,
             Item(),
             Definition(),
             origin,
             BuildingOrientation.North,
-            World(),
+            world,
             Array.Empty<CellId>(),
-            new[] { new CellId(2, 1, 1) });
+            reachable);
 
         Assert.False(mismatch.IsValid);
         Assert.Equal(BuildingBoxPreviewReasons.ItemMismatch, mismatch.ReasonCode);
@@ -182,7 +224,7 @@ public sealed class BuildingBoxPlacementPresenterTests
             Definition(),
             new CellId(2, 2, 1),
             BuildingOrientation.North,
-            World(),
+            EmptyWorld(),
             Array.Empty<CellId>(),
             new[] { new CellId(2, 1, 1) });
 
@@ -206,15 +248,16 @@ public sealed class BuildingBoxPlacementPresenterTests
         CellId[]? occupied = null,
         CellId[]? reachable = null)
     {
+        CellId[] routes = reachable ?? Array.Empty<CellId>();
         return _presenter.Preview(
             Stack(),
             Item(),
             Definition(),
             origin,
             orientation,
-            World(),
+            SupportedWorld(origin, orientation, routes),
             occupied ?? Array.Empty<CellId>(),
-            reachable ?? Array.Empty<CellId>());
+            routes);
     }
 
     private static BuildingDefinition Definition()
@@ -249,19 +292,64 @@ public sealed class BuildingBoxPlacementPresenterTests
             Array.Empty<ItemQuantityReservationSnapshot>());
     }
 
-    private static WorldSnapshot World()
+    private static WorldSnapshot SupportedWorld(
+        CellId origin,
+        BuildingOrientation orientation,
+        IEnumerable<CellId> reachable)
+    {
+        HashSet<CellId> open = new HashSet<CellId>(
+            Definition().ResolveFootprint(origin, orientation));
+        foreach (CellId cell in reachable)
+        {
+            open.Add(cell);
+        }
+
+        return WorldWithOpenCells(open);
+    }
+
+    private static WorldSnapshot EmptyWorld()
     {
         MaterialId air = new MaterialId("air");
         MaterialCatalog materials = new MaterialCatalog(new[]
         {
             new MaterialDefinition(air, isSolid: false, hardness: 0),
         });
-        return WorldState.CreateFilled(
+        return Require(WorldState.CreateFilled(
             new WorldSize(8, 8),
             chunkSize: 4,
             materials,
             air,
-            explored: true).Value.CreateSnapshot();
+            explored: true)).CreateSnapshot();
+    }
+
+    private static WorldSnapshot WorldWithOpenCells(IEnumerable<CellId> openCells)
+    {
+        MaterialId rock = new MaterialId("rock");
+        MaterialId air = new MaterialId("air");
+        MaterialCatalog materials = new MaterialCatalog(new[]
+        {
+            new MaterialDefinition(rock, isSolid: true, hardness: 100),
+            new MaterialDefinition(air, isSolid: false, hardness: 0),
+        });
+        WorldState world = Require(WorldState.CreateFilled(
+            new WorldSize(8, 8),
+            chunkSize: 4,
+            materials,
+            rock,
+            explored: true));
+        long tick = 1;
+        foreach (CellId cell in openCells.Distinct())
+        {
+            Assert.True(world.Excavate(cell, air, tick++).IsSuccess);
+        }
+
+        return world.CreateSnapshot();
+    }
+
+    private static T Require<T>(Result<T> result)
+    {
+        Assert.True(result.IsSuccess, result.Error?.ToString());
+        return result.Value;
     }
 
     private static EntityId Id(int value)
