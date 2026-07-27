@@ -22,6 +22,21 @@ public sealed class BuildingBoxPickupJobSaveCodec : IJobDefinitionSaveCodec
     {
         BuildingBoxPickupJobDefinition pickup =
             (BuildingBoxPickupJobDefinition)definition;
+        List<SavePropertyData> properties = new List<SavePropertyData>
+        {
+            Property("stack_id", pickup.StackId.ToString()),
+            Property("source_x", pickup.SourceCell.X),
+            Property("source_y", pickup.SourceCell.Y),
+            Property("source_z", pickup.SourceCell.Z),
+            Property("starts_held", pickup.StartsHeld),
+        };
+        if (pickup.DestinationCell.HasValue)
+        {
+            properties.Add(Property("destination_x", pickup.DestinationCell.Value.X));
+            properties.Add(Property("destination_y", pickup.DestinationCell.Value.Y));
+            properties.Add(Property("destination_z", pickup.DestinationCell.Value.Z));
+        }
+
         return new JobDefinitionSaveData
         {
             JobId = pickup.Id.ToString(),
@@ -32,13 +47,7 @@ public sealed class BuildingBoxPickupJobSaveCodec : IJobDefinitionSaveCodec
             Dependencies = pickup.Dependencies
                 .Select(value => value.ToString())
                 .ToList(),
-            Properties = new List<SavePropertyData>
-            {
-                Property("stack_id", pickup.StackId.ToString()),
-                Property("source_x", pickup.SourceCell.X),
-                Property("source_y", pickup.SourceCell.Y),
-                Property("source_z", pickup.SourceCell.Z),
-            },
+            Properties = properties,
         };
     }
 
@@ -51,17 +60,43 @@ public sealed class BuildingBoxPickupJobSaveCodec : IJobDefinitionSaveCodec
 
         Dictionary<string, string> properties = data.Properties
             .ToDictionary(value => value.Key, value => value.Value, StringComparer.Ordinal);
+        EntityId jobId = EntityId.Parse(data.JobId);
+        EntityId stackId = EntityId.Parse(Required(properties, "stack_id"));
+        CellId source = new CellId(
+            Integer(properties, "source_x"),
+            Integer(properties, "source_y"),
+            Integer(properties, "source_z"));
+        JobRetryPolicy retry = new JobRetryPolicy(
+            data.MaximumRetries,
+            data.RetryDelayTicks);
+        IEnumerable<EntityId> dependencies = data.Dependencies.Select(EntityId.Parse);
+        if (!properties.ContainsKey("destination_x"))
+        {
+            return new BuildingBoxPickupJobDefinition(
+                jobId,
+                stackId,
+                source,
+                data.Priority,
+                data.CreatedTick,
+                retry,
+                dependencies);
+        }
+
+        CellId destination = new CellId(
+            Integer(properties, "destination_x"),
+            Integer(properties, "destination_y"),
+            Integer(properties, "destination_z"));
+        bool startsHeld = Boolean(properties, "starts_held", defaultValue: false);
         return new BuildingBoxPickupJobDefinition(
-            EntityId.Parse(data.JobId),
-            EntityId.Parse(Required(properties, "stack_id")),
-            new CellId(
-                Integer(properties, "source_x"),
-                Integer(properties, "source_y"),
-                Integer(properties, "source_z")),
+            jobId,
+            stackId,
+            source,
+            destination,
+            startsHeld,
             data.Priority,
             data.CreatedTick,
-            new JobRetryPolicy(data.MaximumRetries, data.RetryDelayTicks),
-            data.Dependencies.Select(EntityId.Parse));
+            retry,
+            dependencies);
     }
 
     private static SavePropertyData Property(string key, object value)
@@ -101,6 +136,25 @@ public sealed class BuildingBoxPickupJobSaveCodec : IJobDefinitionSaveCodec
         {
             throw new InvalidOperationException(
                 $"Saved BuildingBox pickup property '{key}' is not an integer.");
+        }
+
+        return parsed;
+    }
+
+    private static bool Boolean(
+        IReadOnlyDictionary<string, string> properties,
+        string key,
+        bool defaultValue)
+    {
+        if (!properties.TryGetValue(key, out string? value))
+        {
+            return defaultValue;
+        }
+
+        if (!bool.TryParse(value, out bool parsed))
+        {
+            throw new InvalidOperationException(
+                $"Saved BuildingBox pickup property '{key}' is not a boolean.");
         }
 
         return parsed;
