@@ -92,6 +92,12 @@ Run it with:
 dotnet run --project src/Dig.Headless/Dig.Headless.csproj
 ```
 
+## Unity adapter compile guards
+
+`DigAgentSimulationDriverBase.Loop` reads renderer selection and refreshes mushroom presentation only after `IsInitialized`, but Unity nullable analysis does not carry that proof across nullable fields. Runtime adapter accesses therefore use the exact initialized fields (`AgentRenderer`, `BuildingRenderer`, `MushroomRenderer`, `TerrainSession`) with explicit non-null projections. The mushroom direct-command adapter follows the same rule for HUD feedback.
+
+A repository source-contract regression rejects the damaged `BuildingRender` identifier and unguarded adapter references. This protects Unity compilation in addition to the Domain/Application build, without moving presentation state into the simulation owner.
+
 ## Validation
 
 Automated tests cover:
@@ -103,4 +109,5 @@ Automated tests cover:
 - registry and random-stream snapshot continuation;
 - entity removal;
 - command journaling and factual domain events;
-- side-effect-free query dispatch.
+- side-effect-free query dispatch;
+- Unity simulation-loop and mushroom-interaction adapter identifier/nullability contracts.
