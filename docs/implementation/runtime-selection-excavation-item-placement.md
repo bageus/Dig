@@ -57,6 +57,8 @@ Quarter work явно переводит signed generation seed в его 32-bit
 
 После persistent-quarter изменения interaction начал вызывать `ClearExcavationQuarterProgress`, но соответствующий метод отсутствовал у `DigExcavationCursorRenderer`. Renderer теперь сбрасывает progress всех существующих tunnel designation markers в `ExcavationQuarter.None` перед проекцией актуального authoritative snapshot; stale quarters не остаются на overlay и Unity compile больше не получает `CS1061`.
 
+`Dig.Unity.PlayModeTests` является отдельной assembly и не имеет доступа к `internal DigTunnelProjection`. BuildingBox cursor regression теперь проверяет observable transform renderer-а без обращения к runtime-internal helper, поэтому Unity Test Runner компилирует test assembly без `CS0122`. Nullable `ResidentInventoryLayoutSlotViewModel.StackId` теперь явно проверяется и только затем передаётся в `EntityId.Parse`, устраняя `CS8604` без изменения valid inventory workflow.
+
 ### Continuation и cave rooms
 
 Manual connected-zone planning был ограничен radius 4 и XY adjacency. Frontier/cluster resolution учитывает соседние Z layers и весь connected target set. Если назначенный ordinary Dig job после refresh не имеет успешного route/work cell, assignment снимается, quarter state сохраняется, а job возвращается в общий pool вместо вечного `Claimed/InProgress` без движения.
@@ -80,6 +82,7 @@ Room commit раньше передавал `VolumeCells` в atomic `SetDigDesig
 - Z0 relocation preview/job versus Z1–Z3 assembly preview/plan;
 - world-source relocation reservation, holder-only inventory assignment, pickup/carry/deposit identity conservation;
 - relocation save codec round-trip и blue reserved inventory projection source contract;
+- Play Mode test assembly не обращается к runtime-internal projection helpers; nullable inventory stack ids guard-ятся до parsing;
 - completed-building selection before movement;
 - inventory item placement and trigger-collider source contracts;
 - low-skill quarter assignment stability and 4/4 finalization gate;
