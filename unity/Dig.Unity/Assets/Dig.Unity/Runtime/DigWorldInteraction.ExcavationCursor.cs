@@ -43,6 +43,7 @@ namespace Dig.Unity
             IReadOnlyList<ExcavationQuarterProgressSnapshot> progress =
                 _terrainSession!.LoadExcavationQuarterProgress();
             _renderer!.SynchronizeExcavationQuarterProgress(progress);
+            _excavationCursorRenderer!.ClearExcavationQuarterProgress();
             for (int index = 0; index < progress.Count; index++)
             {
                 ExcavationQuarterProgressSnapshot snapshot = progress[index];
