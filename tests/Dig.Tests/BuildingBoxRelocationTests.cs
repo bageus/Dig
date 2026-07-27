@@ -56,7 +56,8 @@ public sealed class BuildingBoxRelocationTests
         Assert.Equal(JobStatus.Claimed, job.Status);
         Assert.Equal(HolderId, job.AssignedAgentId);
         Assert.True(relocation.StartsHeld);
-        Assert.Equal(JobStageKind.TravelToDestination, job.Stage);
+        Assert.Equal(JobStageKind.None, job.Stage);
+        Assert.Equal(JobStageKind.TravelToDestination, relocation.Stages[0]);
         Assert.Equal(1, harness.Inventory.GetStack(StackId)!.ReservedQuantity);
     }
 
