@@ -96,7 +96,8 @@ Interactive ghost отображается только тогда, когда �
 
 ### Z0: relocation BuildingBox
 
-- ghost автоматически меняется на модель BuildingBox;
+- ghost автоматически меняется на точную визуальную модель исходного BuildingBox item;
+- размер, asset, scale, floor offset и depth offset Z0 ghost совпадают с фактической коробкой в world;
 - footprint равен одной target cell;
 - valid confirmation создаёт relocation/hauling job для той же коробки;
 - completed building и assembly plan не создаются;
@@ -152,7 +153,7 @@ Interactive ghost отображается только тогда, когда �
 
 - world source box остаётся физически видимой в своей authoritative cell;
 - inventory source box остаётся в своём resident slot;
-- target показывает planned ghost результата;
+- target показывает planned ghost результата; для relocation это точная item-проекция коробки того же размера, которая остаётся до authoritative deposit/cancel/failure;
 - source world visual, Buildings row или inventory slot отображаются синим как зарезервированный объект запланированного действия.
 
 Одна коробка не может принадлежать двум active jobs/plans.
@@ -269,7 +270,8 @@ Diagnostics/Inspector показывают:
 - ghost скрывается над unsupported air и снова появляется над supported plane;
 - valid green / invalid red preview;
 - uneven terrain support отклоняет flat-surface building и не создаёт plan/job;
-- Z0 показывает box ghost и создаёт relocation job только на supported cell;
+- Z0 показывает box ghost точно того же размера и с тем же item asset/scale, что фактическая коробка, и создаёт relocation job только на supported cell;
+- после Z0 confirmation planned box ghost остаётся видимым до deposit, затем без скачка размера заменяется фактической коробкой;
 - Z1–Z3 показывают completed-building ghost и создают assembly plan/job;
 - resident и loose item в target cell не блокируют valid preview;
 - world source подбирается свободным worker и переносится;
