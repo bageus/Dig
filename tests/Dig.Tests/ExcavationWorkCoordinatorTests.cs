@@ -119,6 +119,24 @@ namespace Dig.Tests
         }
 
         [Fact]
+        public void Cancel_and_reassignment_preserve_completed_quarters()
+        {
+            ExcavationWorkCoordinator coordinator = new ExcavationWorkCoordinator();
+            ExcavationWorkTarget target = new ExcavationWorkTarget(new CellId(6, 4), 0);
+            EntityId first = EntityId.Parse("00000000-0000-0000-0000-00000000000b");
+            EntityId second = EntityId.Parse("00000000-0000-0000-0000-00000000000c");
+            coordinator.Assign(first, target, ExcavationApproachSide.Left, miningSkill: 21);
+            coordinator.ApplySwing(first, deterministicSeed: 10);
+            ExcavationQuarter completed = coordinator.GetState(target).Completed;
+
+            Assert.NotEqual(ExcavationQuarter.None, completed);
+            Assert.True(coordinator.Cancel(first));
+            coordinator.Assign(second, target, ExcavationApproachSide.Right, miningSkill: 21);
+
+            Assert.Equal(completed, coordinator.GetState(target).Completed);
+        }
+
+        [Fact]
         public void Completing_cell_cancels_all_assignments_for_that_layer()
         {
             ExcavationWorkCoordinator coordinator = new ExcavationWorkCoordinator();

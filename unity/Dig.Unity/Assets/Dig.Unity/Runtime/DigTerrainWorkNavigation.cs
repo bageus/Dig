@@ -175,7 +175,7 @@ namespace Dig.Unity
 
         private Result RefreshNavigation()
         {
-            IReadOnlyList<ChunkId> dirty = _worldSession.DrainDirtyChunks();
+            IReadOnlyList<ChunkId> dirty = _worldSession.PeekDirtyChunks();
             if (dirty.Count == 0)
             {
                 return Result.Success();
@@ -188,9 +188,13 @@ namespace Dig.Unity
                         _worldSession.LoadSnapshot(),
                         dirty,
                         Array.Empty<TraversalLink>()));
-            return refreshed.IsFailure
-                ? Result.Failure(refreshed.Error!)
-                : Result.Success();
+            if (refreshed.IsFailure)
+            {
+                return Result.Failure(refreshed.Error!);
+            }
+
+            _worldSession.DrainDirtyChunks();
+            return Result.Success();
         }
     }
 }

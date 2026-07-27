@@ -51,7 +51,7 @@ namespace Dig.Unity
                 _designationTint = null;
             }
 
-            if (!model.IsSolid || !model.IsDesignated)
+            if (!model.IsSolid)
             {
                 _completedExcavationQuarters = ExcavationQuarter.None;
             }
@@ -121,7 +121,6 @@ namespace Dig.Unity
             }
 
             bool showQuarters = Model.IsSolid
-                && Model.IsDesignated
                 && _completedExcavationQuarters != ExcavationQuarter.None;
             _renderer.enabled = !showQuarters;
             if (!showQuarters)
