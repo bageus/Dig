@@ -165,6 +165,8 @@ namespace Dig.Tests
             Assert.Contains("Assert.AreEqual(2f,firstPosition.x", playMode);
             Assert.Contains("Assert.AreNotEqual(firstPosition.z,secondPosition.z)", playMode);
             Assert.Contains("Relocation_preview_and_plan_match_actual_box_size", playMode);
+            Assert.Contains("Invoke(ghost,\"RenderPlans\",new[]", playMode);
+            Assert.DoesNotContain("ghost.RenderPlans(", playMode);
             Assert.Contains("Placement_target_resolves_enabled_movement_surface_on_deeper_layer", playMode);
             Assert.Contains("string?stackIdValue=slot.StackId", inventoryInteraction);
             Assert.Contains("string.IsNullOrWhiteSpace(stackIdValue)", inventoryInteraction);
