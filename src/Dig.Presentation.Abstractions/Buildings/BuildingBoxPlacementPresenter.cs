@@ -170,6 +170,21 @@ public sealed partial class BuildingBoxPlacementPresenter
                 BuildingBoxPlacementKind.AssembleBuilding);
         }
 
+        if (!BuildingPlacementSurfaceFactProjector.HasSupportingPlane(
+            placement.Footprint,
+            world))
+        {
+            return Invalid(
+                sourceStack.StackId,
+                definition,
+                origin,
+                orientation,
+                placement.Footprint,
+                PackableBuildingPlacementErrors.SurfaceMissing.Code,
+                BuildingBoxPlacementKind.AssembleBuilding,
+                isVisible: false);
+        }
+
         IReadOnlyList<CellId> previewFootprint = placement.Footprint;
         if (_packableCatalog.TryGet(
             definition.Id,
