@@ -33,3 +33,5 @@ jobs:
           git add -A
           git commit -m "fix: synchronize post-excavation topology"
           git push origin HEAD:fix/post-excavation-topology-and-gravity-v2
+
+# Trigger after the workflow exists on the branch.
