@@ -31,10 +31,10 @@ public sealed partial class DigWorldInteraction
             decision.ActorId.Value,
             workerCell,
             _agentSession!.Tick);
-        _hud.SetCommandResult(result);
+        _hud!.SetCommandResult(result);
         if (result.IsSuccess)
         {
-            _hud.SetStatus("Dwarf ordered to chop mushroom.");
+            _hud!.SetStatus("Dwarf ordered to chop mushroom.");
         }
     }
 }
