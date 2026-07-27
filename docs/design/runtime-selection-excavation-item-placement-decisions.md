@@ -97,6 +97,7 @@ BuildingBox inventory action остаётся отдельным unpacking workf
 Случайный/deterministic выбор текущего quarter и количества swings не может быть скрытым Presentation-only состоянием.
 
 - quarter completion сохраняется в едином excavation progress owner;
+- сторона первого доступного quarter определяется фактическим положением resident относительно target, а не порядком enum или случайной проекцией: при копке клетки ниже resident (`target.Y > resident.Y`) сначала выбираются `UpperLeft`/`UpperRight`, то есть визуально ближайшая к resident верхняя часть; при копке клетки выше resident сначала выбираются `LowerLeft`/`LowerRight`; horizontal approach аналогично выбирает ближайшую левую/правую сторону;
 - Job не переходит в `Finalize`, пока не завершены все четыре quarters;
 - completed quarter немедленно отображается и на designation overlay, и на самой породе;
 - завершённая четверть удаляет/скрывает соответствующую геометрию породы и открывает пространство за ней;

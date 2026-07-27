@@ -33,6 +33,18 @@ namespace Dig.Tests
         }
 
         [Fact]
+        public void Runtime_uses_domain_approach_and_application_item_settlement_owners()
+        {
+            string runtime = RuntimeRoot();
+            string quarters = Read(runtime, "DigTerrainWorkExcavationQuarters.cs");
+            string gravity = Read(runtime, "DigTerrainWorkSession.WorldItemGravity.cs");
+
+            Assert.Contains("ExcavationApproachResolver.Resolve", quarters);
+            Assert.DoesNotContain("ResolveExcavationApproach", quarters);
+            Assert.Contains("WorldItemGravitySettlement.Settle", gravity);
+        }
+
+        [Fact]
         public void Spatial_commit_marks_world_first_and_retry_accepts_open_cell()
         {
             string runtime = RuntimeRoot();

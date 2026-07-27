@@ -39,9 +39,11 @@ Parent feature: [#87](https://github.com/bageus/Dig/issues/87).
 8. Более дальняя excavation target cell не назначается resident, пока существует более близкая достижимая target cell того же доступного excavation pool.
 9. Resident идёт к рабочей позиции, выполняет work и commit клетки.
 10. После полного `4/4` commit authoritative World, Navigation map, resident tunnel topology и movement surfaces обязаны увидеть открытую клетку в том же simulation tick до следующей попытки маршрута, назначения или движения. Ошибка derived refresh не может оставить визуально открытую клетку логически/физически закрытой.
-11. Remaining cells сохраняются и продолжают иметь jobs.
-12. Свободные residents независимо выбирают свои ближайшие доступные jobs; один job/work position не назначается двум residents.
-13. Status tunnel/depth/room action — «Копает».
+11. Открытая frontier cell немедленно становится допустимой work/movement cell для следующей excavation target, если у неё есть floor support либо она является частью vertical tunnel. При vertical stroke переход из поддерживаемой horizontal entry cell в первую vertical cell и обратно является валидным climbing transition; соседние обычные open cells без vertical provenance не получают vertical traversal автоматически.
+12. При копке сверху вниз resident сначала удаляет верхние quarters нижней target cell, визуально ближайшие к его текущей позиции.
+13. Remaining cells сохраняются и продолжают иметь jobs.
+14. Свободные residents независимо выбирают свои ближайшие доступные jobs; один job/work position не назначается двум residents.
+15. Status tunnel/depth/room action — «Копает».
 
 Правило nearest-target применяется одинаково к horizontal tunnel, вертикальному тоннелю на фронтальном срезе, vertical/depth excavation и child cells комнаты. Оно относится и к automatic planner, и к direct command; direct command отличается приоритетным запуском выбранного resident, а не способом выбора target.
 
@@ -117,6 +119,9 @@ Eraser удаляет выбранные unfinished designations, active/nonterm
 - work progress изменяется одним authoritative cadence;
 - каждое завершение quarter немедленно удаляет соответствующую геометрию породы; отмена/release/reassignment не возвращает её;
 - полный `4/4` commit атомарно делает клетку открытой для World, route planning, authoritative resident movement и tunnel interaction surfaces;
+- новая поддерживаемая horizontal cell либо planned vertical cell доступна как следующий work/movement step без повторной разметки;
+- первый/последний переход между horizontal entry cell и vertical shaft разрешён, если vertical provenance имеет хотя бы shaft endpoint; произвольные stacked open cells без vertical provenance не становятся climbing route;
+- при target ниже resident первыми выбираются верхние quarters target, ближайшие к worker;
 - визуально открытая клетка не может оставаться закрытой в Navigation, resident tunnel topology или collider/movement projection;
 - support-loss предметов, вызванный excavation commit, проверяется до новых pickup/hauling reservations;
 - continuation не зависит от Unity frame rate;

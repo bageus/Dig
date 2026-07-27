@@ -191,8 +191,7 @@ public sealed partial class TunnelNavigationVolume
 
         return deltaX == 0
             && deltaZ == 0
-            && IsVerticalTunnel(from)
-            && IsVerticalTunnel(to);
+            && (IsVerticalTunnel(from) || IsVerticalTunnel(to));
     }
 
     public TunnelPathResult FindPath(CellId start, CellId goal)

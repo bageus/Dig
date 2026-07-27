@@ -87,6 +87,16 @@ Manual connected-zone planning был ограничен radius 4 и XY adjacenc
 
 Room commit раньше передавал `VolumeCells` в atomic `SetDigDesignations`, хотя volume включал уже открытую entrance cell; Domain корректно отклонял весь batch. План разделяет полный `VolumeCells`, открытый `BaseTunnelCells` и фактический `ExcavationCells`. Commit назначает только rock mask. Planner требует полный сквозной base tunnel, проверяет mineability каждой остальной 3D-клетки и возвращает per-cell diagnostics. Runtime разрешает pointer на породе над тоннелем и preview красит конкретные missing/unmineable/protected cells.
 
+### Повторный runtime defect: frontier entry, Y-axis и near-side quarter
+
+После PR #432 screenshot/runtime проверка показала три отдельные первопричины, которые source-contract topology rebuild не покрывал:
+
+- `ExcavationApproachSide` инвертировал Y-down координату и при target ниже worker выбирал дальние lower quarters вместо ближайших upper quarters;
+- `TunnelNavigationVolume` требовал vertical provenance одновременно у horizontal entry cell и shaft cell, поэтому первый шаг в вертикальный тоннель оставался unreachable;
+- grounded `NavigationMap` искал floor support по `Y - 1`, тогда как World renderer, tunnel topology и item gravity используют authoritative Y-down направление `Y + 1`.
+
+Approach resolution перенесён в Domain. Shaft entry/exit сохраняет открытый transition endpoint рядом с planned vertical cell и принимает vertical provenance у shaft endpoint. Grounded support приведён к `Y + 1`, а фактическая Inventory relocation unsupported items вынесена в `WorldItemGravitySettlement` и покрыта integration tests. Play Mode fixture остаётся обязательным для финальной runtime verification.
+
 ## Изменённые owners
 
 - `InventoryState` остаётся единственным владельцем item location/quantity/reservations.

@@ -21,6 +21,32 @@ namespace Dig.Tests
             Assert.Equal(expected, ExcavationQuarterPlanner.CandidatesFor(side));
         }
 
+        [Fact]
+        public void Target_below_worker_prefers_visually_nearest_upper_quarters()
+        {
+            ExcavationApproachSide side = ExcavationApproachResolver.Resolve(
+                new CellId(3, 2, 0),
+                new CellId(3, 3, 0));
+
+            Assert.Equal(ExcavationApproachSide.Above, side);
+            Assert.Equal(
+                ExcavationQuarter.UpperLeft | ExcavationQuarter.UpperRight,
+                ExcavationQuarterPlanner.CandidatesFor(side));
+        }
+
+        [Fact]
+        public void Target_above_worker_prefers_visually_nearest_lower_quarters()
+        {
+            ExcavationApproachSide side = ExcavationApproachResolver.Resolve(
+                new CellId(3, 3, 0),
+                new CellId(3, 2, 0));
+
+            Assert.Equal(ExcavationApproachSide.Below, side);
+            Assert.Equal(
+                ExcavationQuarter.LowerLeft | ExcavationQuarter.LowerRight,
+                ExcavationQuarterPlanner.CandidatesFor(side));
+        }
+
         [Theory]
         [InlineData(0, 2, 3)]
         [InlineData(10, 2, 3)]
