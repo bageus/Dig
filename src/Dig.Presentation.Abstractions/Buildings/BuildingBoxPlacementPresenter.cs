@@ -223,7 +223,8 @@ public sealed partial class BuildingBoxPlacementPresenter
             placement.WorkPosition,
             isValid: true,
             reasonCode: null,
-            BuildingBoxPlacementKind.AssembleBuilding);
+            BuildingBoxPlacementKind.AssembleBuilding,
+            sourceItemId: sourceStack.ItemId);
     }
 
     private static string? ValidateSource(
@@ -277,7 +278,8 @@ public sealed partial class BuildingBoxPlacementPresenter
             isValid: false,
             reasonCode,
             kind,
-            isVisible);
+            isVisible,
+            definition.BoxPolicy?.BoxItemId);
     }
 }
 
