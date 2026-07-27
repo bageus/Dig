@@ -62,6 +62,15 @@ Save format v7 добавляет barrel section:
 
 v6→v7 migration добавляет пустую barrel section. Fresh demo bootstrap создаёт fixtures только для новой session; load не должен создавать дополнительные barrels или повторять output.
 
+## CI regression fix
+
+Quality run `30310039384` собрал solution, но один тест завершился ошибкой:
+
+- `Concurrent_attacks_are_allowed_but_only_first_commit_creates_contents` ожидал две записи в общем reservation ledger после запуска двух attack jobs;
+- фактически `JobSystem.Claim` корректно создаёт для каждого job три записи: `ForJob`, `ForAgent` и `ForPosition`;
+- barrel target при этом по-прежнему не имеет `ForEcologyTarget` reservation, поэтому concurrent first-commit-wins contract не нарушался;
+- regression теперь проверяет точные ключи каждого job и отдельно запрещает reservation самой barrel вместо хрупкой проверки общего количества `2`.
+
 ## Regression coverage
 
 Domain/Application:
