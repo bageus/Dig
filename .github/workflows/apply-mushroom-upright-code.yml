@@ -1,0 +1,47 @@
+name: Apply mushroom upright runtime fix
+
+on:
+  push:
+    branches:
+      - fix/mushroom-upright-material-targeting
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: ${{ hashFiles('.github/agent/mushroom-upright-code.patch.gz.b64') != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fix branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/mushroom-upright-material-targeting
+          fetch-depth: 0
+
+      - name: Reconstruct and apply patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 --decode .github/agent/mushroom-upright-code.patch.gz.b64 \
+            | gzip --decompress \
+            > /tmp/mushroom-upright-code.patch
+          echo "497ed3f70e4692c4eed81c94fdebdefb904e0504ddeb114df49ae98cb7d2a0be  /tmp/mushroom-upright-code.patch" \
+            | sha256sum --check
+          git apply --check /tmp/mushroom-upright-code.patch
+          git apply --index /tmp/mushroom-upright-code.patch
+          rm -f \
+            .github/agent/mushroom-upright-code.patch.gz.b64 \
+            .github/workflows/apply-mushroom-upright-code.yml
+          rmdir .github/agent 2>/dev/null || true
+          git add -A
+          git diff --cached --check
+
+      - name: Commit runtime fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-agent"
+          git config user.email "openai-agent@users.noreply.github.com"
+          git commit -m "Fix mushroom world orientation and material targeting"
+          git push origin HEAD:fix/mushroom-upright-material-targeting
