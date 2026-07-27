@@ -15,6 +15,8 @@ namespace Dig.Unity
         private DigBuildingBoxGhostRenderer? _buildingBoxGhostRenderer;
         private BuildingBoxPlacementModeState? _buildingPlacementMode;
         private BuildingBoxGhostViewModel? _buildingPlacementPreview;
+        private bool _buildingPlacementOwnsCursor;
+        private bool _buildingPlacementPreviousCursorVisible;
 
         internal string? ActiveBuildingPlacementStackId =>
             _buildingPlacementMode?.SourceStackId.ToString();
@@ -34,11 +36,21 @@ namespace Dig.Unity
 
         internal void CancelBuildingPlacement()
         {
+            ExitBuildingPlacement(clearGhost: true);
+            _hud?.SetStatus("Building placement cancelled.");
+        }
+
+        private void ExitBuildingPlacement(bool clearGhost)
+        {
             _buildingPlacementMode = null;
             _buildingPlacementPreview = null;
-            _buildingBoxGhostRenderer?.Clear();
+            if (clearGhost)
+            {
+                _buildingBoxGhostRenderer?.Clear();
+            }
+
             _hud?.ClearBuildingPlacement();
-            _hud?.SetStatus("Building placement cancelled.");
+            RestoreBuildingPlacementCursor();
         }
 
         private bool TryHandleBuildingPlacementClick()
@@ -79,7 +91,21 @@ namespace Dig.Unity
                 return;
             }
 
-            if (!TryResolveBuildingPlacementOrigin(GetPointerHits(), out CellId origin))
+            CellId origin;
+            if (!TryResolveBuildingPlacementOrigin(GetPointerHits(), out origin))
+            {
+                int currentLayer = _buildingPlacementPreview?.Origin.Z ?? 0;
+                CellId? projected = ProjectPointerToLayer(currentLayer);
+                if (!projected.HasValue)
+                {
+                    return;
+                }
+
+                origin = projected.Value;
+            }
+
+            if (_buildingPlacementPreview != null
+                && _buildingPlacementPreview.Origin == origin)
             {
                 return;
             }
@@ -173,6 +199,14 @@ namespace Dig.Unity
             {
                 origin = hoveredOrigin;
             }
+            else
+            {
+                CellId? projected = ProjectPointerToLayer(origin.Z);
+                if (projected.HasValue)
+                {
+                    origin = projected.Value;
+                }
+            }
 
             BuildingBoxPlacementModeState mode = started.Value;
             BuildingBoxGhostViewModel preview =
@@ -184,9 +218,12 @@ namespace Dig.Unity
             _agentRenderer!.Select(null);
             _jobRenderer!.Select(null);
             _buildingRenderer!.Select(null);
+            HideSystemCursorForBuildingPlacement();
             _buildingBoxGhostRenderer!.Render(preview);
             _hud!.SetBuildingPlacement(mode, preview);
-            _hud.SetStatus("Building placement active.");
+            _hud.SetStatus(preview.PlacementKind == BuildingBoxPlacementKind.RelocateBox
+                ? "BuildingBox relocation active on Z0."
+                : "Building unpack placement active.");
         }
 
         private void ConfirmBuildingPlacement()
@@ -197,6 +234,7 @@ namespace Dig.Unity
                 return;
             }
 
+            BuildingBoxPlacementKind kind = _buildingPlacementPreview.PlacementKind;
             string sourceStackId = _buildingPlacementMode.Value.SourceStackId.ToString();
             Result result = _terrainSession!.ConfirmBuildingBoxPlacement(
                 _buildingPlacementPreview,
@@ -227,8 +265,33 @@ namespace Dig.Unity
                 ClearBuildingBoxSelection();
             }
 
-            CancelBuildingPlacement();
-            _hud.SetStatus("BuildingBox plan created.");
+            ExitBuildingPlacement(clearGhost: true);
+            _hud.SetStatus(kind == BuildingBoxPlacementKind.RelocateBox
+                ? "BuildingBox relocation job created."
+                : "BuildingBox assembly plan created.");
+        }
+
+        private void HideSystemCursorForBuildingPlacement()
+        {
+            if (_buildingPlacementOwnsCursor)
+            {
+                return;
+            }
+
+            _buildingPlacementPreviousCursorVisible = Cursor.visible;
+            Cursor.visible = false;
+            _buildingPlacementOwnsCursor = true;
+        }
+
+        private void RestoreBuildingPlacementCursor()
+        {
+            if (!_buildingPlacementOwnsCursor)
+            {
+                return;
+            }
+
+            Cursor.visible = _buildingPlacementPreviousCursorVisible;
+            _buildingPlacementOwnsCursor = false;
         }
 
         private void CreateBuildingBoxPickup(ContextInputDecision decision)
