@@ -71,7 +71,8 @@ Visual lane, overlap offset и interpolation не являются отдель�
 - обычный climbing workflow не генерирует `SupportLost` и не переводит actor в падение;
 - падение возможно только после внешнего knockback/push/impact, описанного в [`entity-fall-knockback-and-vertical-shafts.md`](entity-fall-knockback-and-vertical-shafts.md);
 - после arrival visual возвращается к normal locomotion;
-- interruption/replan не оставляет resident в climbing pose.
+- interruption/replan не оставляет resident в climbing pose;
+- resident, выполняющий mining из vertical-tunnel cell без solid floor support, остаётся в stationary climbing stance спиной к камере на всё время `PerformWork`; это presentation валидного удержания за shaft wall, а не actor fall или стояние в воздухе.
 
 После полного excavation commit новая открытая horizontal или vertical cell обязана войти в authoritative movement/topology projection до следующей route/movement попытки. Resident не может видеть выкопанную клетку, но получать stale `closed/not traversable` из отдельного tunnel volume или movement surface.
 
@@ -101,7 +102,7 @@ Visual lane, overlap offset и interpolation не являются отдель�
 - building footprints/work positions не превращают тоннель в one-lane transition;
 - vertical opposite climbers не блокируют друг друга;
 - visual overlap разрешён в horizontal fallback и при vertical crossing;
-- valid climbing transition не создаёт unsupported actor state;
+- valid climbing transition и stationary shaft work не создают unsupported actor state;
 - horizontal-to-shaft entry и shaft-to-horizontal exit не требуют ошибочно помечать horizontal floor cell как vertical tunnel;
 - actor не падает из vertical tunnel без подтверждённого external impact result;
 - shared-cell policy не создаёт teleport или route skip;
@@ -124,6 +125,7 @@ Visual lane, overlap offset и interpolation не являются отдель�
 - **Q-MOVE-011:** минимальный visual interval не задаётся; остановка переднего не создаёт permanent wait.
 - **Q-MOVE-012:** vertical climbing использует валидный traversal link; сценарий самопроизвольной потери опоры во время обычного перехода отсутствует.
 - **Q-MOVE-013:** entry/exit между поддерживаемой horizontal cell и shaft cell является vertical transition, если shaft endpoint имеет vertical provenance; обе клетки не обязаны ошибочно классифицироваться как vertical.
+- **Q-MOVE-014:** mining из shaft cell без пола использует stationary climbing stance спиной к камере; authoritative resident cell остаётся shaft work cell.
 
 ## 9. Открытые вопросы
 
@@ -150,12 +152,13 @@ Visual lane, overlap offset и interpolation не являются отдель�
 - occupied preferred side разрешает visual overlap fallback или alternative route;
 - stationary center resident не создаёт permanent wait;
 - несколько residents одного направления не требуют fixed chain spacing;
-- остановка переднего не блокирует задних навсегда;
+- остановка переднего resident не блокирует задних навсегда;
 - no horizontal direct swap property;
 - два opposite climbers проходят друг сквозь друга без блокировки;
 - normal vertical climbing не запускает fall без external impact;
 - после horizontal excavation resident входит в новую cell и продолжает frontier job без redraw;
 - после vertical/depth excavation новая cell сразу доступна valid climbing transition, включая entry из horizontal floor cell в первую shaft cell;
+- resident, mining sideways/depth from unsupported shaft cell, остаётся спиной к камере в climbing pose до завершения/interrupt;
 - knockback/push в open shaft передаёт управление fall system;
 - interruption и save/load mid-route сохраняют authoritative cell/action, но не presentation offsets;
 - Play Mode подтверждает directional offsets, разрешённый horizontal overlap fallback и vertical overlap.
