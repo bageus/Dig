@@ -233,12 +233,7 @@ public sealed class NavigationMap
             return true;
         }
 
-        if (cell.Id.Y == 0)
-        {
-            return true;
-        }
-
-        CellId belowId = new CellId(cell.Id.X, cell.Id.Y - 1, cell.Id.Z);
+        CellId belowId = new CellId(cell.Id.X, cell.Id.Y + 1, cell.Id.Z);
         return index.TryGetCell(belowId, out CellSnapshot below) && below.IsSolid;
     }
 

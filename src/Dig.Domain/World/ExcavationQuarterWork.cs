@@ -23,6 +23,29 @@ namespace Dig.Domain.World
         Below = 3,
     }
 
+    public static class ExcavationApproachResolver
+    {
+        public static ExcavationApproachSide Resolve(
+            CellId residentCell,
+            CellId targetCell)
+        {
+            int dx = residentCell.X - targetCell.X;
+            int dy = residentCell.Y - targetCell.Y;
+            if (Math.Abs(dx) >= Math.Abs(dy))
+            {
+                return dx < 0
+                    ? ExcavationApproachSide.Left
+                    : ExcavationApproachSide.Right;
+            }
+
+            // World Y grows downward. A smaller resident Y means the worker is
+            // visually above the target and must remove the target's upper face first.
+            return dy < 0
+                ? ExcavationApproachSide.Above
+                : ExcavationApproachSide.Below;
+        }
+    }
+
     public readonly struct ExcavationSwingPlan
     {
         public ExcavationSwingPlan(

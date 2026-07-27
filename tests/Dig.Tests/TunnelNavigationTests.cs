@@ -173,6 +173,26 @@ public sealed class TunnelNavigationTests
     }
 
     [Fact]
+    public void Supported_horizontal_entry_can_step_into_first_vertical_shaft_cell()
+    {
+        CellId entry = new CellId(1, 1, 0);
+        CellId shaft = new CellId(1, 2, 0);
+        TunnelNavigationVolume volume = new TunnelNavigationVolume(
+            width: 4,
+            height: 4,
+            depth: 4,
+            openCells: new[] { entry, shaft },
+            verticalCells: new[] { shaft });
+
+        TunnelPathResult result = volume.FindPath(entry, shaft);
+
+        Assert.True(volume.CanTraverseStep(entry, shaft));
+        Assert.True(volume.CanTraverseStep(shaft, entry));
+        Assert.True(result.Succeeded, result.Detail);
+        Assert.Equal(new[] { entry, shaft }, result.Path!.Cells);
+    }
+
+    [Fact]
     public void Vertical_motion_succeeds_when_both_cells_are_in_the_shaft()
     {
         CellId lower = new CellId(1, 1, 0);

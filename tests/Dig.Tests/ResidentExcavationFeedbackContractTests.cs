@@ -120,6 +120,12 @@ public sealed class ResidentExcavationFeedbackContractTests
         string gravity = File.ReadAllText(Path.Combine(
             runtime,
             "DigTerrainWorkSession.WorldItemGravity.cs"));
+        string gravitySettlement = File.ReadAllText(Path.Combine(
+            FindRepositoryRoot(),
+            "src",
+            "Dig.Application",
+            "Inventory",
+            "WorldItemGravitySettlement.cs"));
         string itemRenderer = File.ReadAllText(Path.Combine(
             runtime,
             "DigWorldItemRenderer.cs"));
@@ -149,8 +155,9 @@ public sealed class ResidentExcavationFeedbackContractTests
         Assert.Contains("SelectBuildingBoxFromHud", roster);
         Assert.DoesNotContain("Where(building => building.IsSelectable)", roster);
         Assert.Contains("SelectBuildingBoxFromManagement", management);
-        Assert.Contains("WorldItemGravityPolicy.ResolveLandingCell", gravity);
-        Assert.Contains("MoveAvailable", gravity);
+        Assert.Contains("WorldItemGravitySettlement.Settle", gravity);
+        Assert.Contains("WorldItemGravityPolicy.ResolveLandingCell", gravitySettlement);
+        Assert.Contains("MoveAvailable", gravitySettlement);
         Assert.Contains("WorldItemFrontDepthOffset", itemRenderer);
         Assert.Contains("SelectedBuildingBox", context);
         Assert.DoesNotContain("private void OnGUI()", boxHud);

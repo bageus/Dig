@@ -146,8 +146,9 @@ public sealed class NavigationMapTests
                 world,
                 TraversalProfile.CreateFreeMover()));
 
-        Assert.True(grounded.IsWalkable(new CellId(1, 1)));
+        Assert.False(grounded.IsWalkable(new CellId(1, 1)));
         Assert.False(grounded.IsWalkable(new CellId(1, 2)));
+        Assert.True(grounded.IsWalkable(new CellId(1, 3)));
         Assert.True(free.IsWalkable(new CellId(1, 2)));
         Assert.True(free.IsWalkable(new CellId(1, 3)));
     }
