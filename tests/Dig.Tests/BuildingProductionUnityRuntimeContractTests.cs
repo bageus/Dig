@@ -21,6 +21,7 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         Assert.Contains("SynchronizeBuildingProduction", loop);
         Assert.Contains("AdvanceBuildingProduction", loop);
         Assert.Contains("using Dig.Application.Jobs;", execution);
+        Assert.Contains("using Dig.Application.Jobs;", synchronization);
         Assert.Contains("CreateBuildingSupplyJobHandler", execution);
         Assert.Contains("AcquireBuildingSupplySourceHandler", execution);
         Assert.Contains("PrepareEligibleProductionOrders", synchronization);
