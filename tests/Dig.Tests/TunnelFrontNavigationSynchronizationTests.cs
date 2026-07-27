@@ -45,6 +45,21 @@ public sealed class TunnelFrontNavigationSynchronizationTests
     }
 
     [Fact]
+    public void First_excavated_vertical_cell_connects_to_supported_horizontal_entry()
+    {
+        CellId entry = new CellId(2, 1, 0);
+        CellId shaft = new CellId(2, 2, 0);
+        WorldSnapshot world = CreateWorld(new[] { entry, shaft });
+        TunnelNavigationVolume synchronized =
+            TunnelNavigationVolume.FromWorldSnapshot(world, new[] { shaft });
+
+        Assert.True(synchronized.IsOpen(entry));
+        Assert.True(synchronized.IsVerticalTunnel(shaft));
+        Assert.True(synchronized.CanTraverseStep(entry, shaft));
+        Assert.True(synchronized.FindPath(entry, shaft).Succeeded);
+    }
+
+    [Fact]
     public void Unsupported_room_air_does_not_become_a_walkable_wall()
     {
         CellId unsupported = new CellId(3, 2);

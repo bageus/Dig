@@ -59,6 +59,35 @@ public sealed class PostExcavationTopologyPlayModeTests
         Assert.That((bool)GetProperty(retry, "IsSuccess"), Is.True);
     }
 
+    [Test]
+    public void First_vertical_shaft_cell_accepts_horizontal_entry_transition()
+    {
+        CellId entry = new CellId(2, 2, 0);
+        CellId shaft = new CellId(2, 3, 0);
+        TunnelNavigationVolume volume = new TunnelNavigationVolume(
+            width: 6,
+            height: 6,
+            depth: 4,
+            openCells: new[] { entry, shaft },
+            verticalCells: new[] { shaft });
+
+        Assert.That(volume.CanTraverseStep(entry, shaft), Is.True);
+        Assert.That(volume.FindPath(entry, shaft).Succeeded, Is.True);
+    }
+
+    [Test]
+    public void Downward_excavation_selects_target_side_nearest_worker()
+    {
+        ExcavationApproachSide side = ExcavationApproachResolver.Resolve(
+            new CellId(2, 2, 0),
+            new CellId(2, 3, 0));
+
+        Assert.That(side, Is.EqualTo(ExcavationApproachSide.Above));
+        Assert.That(
+            ExcavationQuarterPlanner.CandidatesFor(side),
+            Is.EqualTo(ExcavationQuarter.UpperLeft | ExcavationQuarter.UpperRight));
+    }
+
     private static IEnumerable<CellId> HorizontalNeighbours(CellId cell)
     {
         yield return new CellId(cell.X - 1, cell.Y, cell.Z);

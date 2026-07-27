@@ -138,7 +138,7 @@ namespace Dig.Unity
                 return existing;
             }
 
-            ExcavationApproachSide approach = ResolveExcavationApproach(
+            ExcavationApproachSide approach = ExcavationApproachResolver.Resolve(
                 residentCell,
                 target.CellId);
             return _excavationQuarterWork.Assign(
@@ -158,24 +158,6 @@ namespace Dig.Unity
         {
             _excavationQuarterWork.Remove(
                 new ExcavationWorkTarget(target, target.Z));
-        }
-
-        private static ExcavationApproachSide ResolveExcavationApproach(
-            CellId residentCell,
-            CellId targetCell)
-        {
-            int dx = residentCell.X - targetCell.X;
-            int dy = residentCell.Y - targetCell.Y;
-            if (Math.Abs(dx) >= Math.Abs(dy))
-            {
-                return dx < 0
-                    ? ExcavationApproachSide.Left
-                    : ExcavationApproachSide.Right;
-            }
-
-            return dy < 0
-                ? ExcavationApproachSide.Below
-                : ExcavationApproachSide.Above;
         }
 
         private static ulong BuildExcavationSeed(

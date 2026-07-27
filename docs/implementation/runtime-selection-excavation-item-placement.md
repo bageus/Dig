@@ -107,3 +107,13 @@ Room commit раньше передавал `VolumeCells` в atomic `SetDigDesig
 ## Проверка
 
 Repository quality, C# compatibility, module-boundary, Unity source-contract и `.NET` build/tests выполняются в GitHub Actions. Добавлены Play Mode source regressions для box-only renderer tint и moving BuildingBox placement ghost. Полный интерактивный Unity Play Mode workflow placement/relocation/assembly и vertical tunnel stroke остаётся обязательным для перевода runtime systems в `VERIFIED`.
+
+### Повторный runtime defect: frontier entry, Y-axis и near-side quarter
+
+После PR #432 screenshot/runtime проверка показала три отдельные первопричины, которые source-contract topology rebuild не покрывал:
+
+- `ExcavationApproachSide` инвертировал Y-down координату и при target ниже worker выбирал дальние lower quarters вместо ближайших upper quarters;
+- `TunnelNavigationVolume` требовал vertical provenance одновременно у horizontal entry cell и shaft cell, поэтому первый шаг в вертикальный тоннель оставался unreachable;
+- grounded `NavigationMap` искал floor support по `Y - 1`, тогда как World renderer, tunnel topology и item gravity используют authoritative Y-down направление `Y + 1`.
+
+Approach resolution перенесён в Domain, shaft entry/exit принимает vertical provenance у shaft endpoint, grounded support приведён к `Y + 1`, а фактическая Inventory relocation unsupported items вынесена в `WorldItemGravitySettlement` и покрыта integration tests. Play Mode fixture остаётся обязательным для финальной runtime verification.

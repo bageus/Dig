@@ -66,6 +66,8 @@ Visual lane, overlap offset и interpolation не являются отдель�
 - руки и ноги получают climbing animation;
 - interpolation идёт между vertical cells;
 - resident во время перехода считается карабкающимся по валидному vertical link, а не стоящим на отдельной floor support;
+- вход из поддерживаемой horizontal cell в первую открытую vertical-tunnel cell и выход из последней vertical cell в поддерживаемую horizontal cell являются частью того же валидного climbing route: vertical provenance достаточно у shaft endpoint перехода;
+- две соседние по Y обычные open cells без vertical provenance не образуют climbing transition;
 - обычный climbing workflow не генерирует `SupportLost` и не переводит actor в падение;
 - падение возможно только после внешнего knockback/push/impact, описанного в [`entity-fall-knockback-and-vertical-shafts.md`](entity-fall-knockback-and-vertical-shafts.md);
 - после arrival visual возвращается к normal locomotion;
@@ -100,6 +102,7 @@ Visual lane, overlap offset и interpolation не являются отдель�
 - vertical opposite climbers не блокируют друг друга;
 - visual overlap разрешён в horizontal fallback и при vertical crossing;
 - valid climbing transition не создаёт unsupported actor state;
+- horizontal-to-shaft entry и shaft-to-horizontal exit не требуют ошибочно помечать horizontal floor cell как vertical tunnel;
 - actor не падает из vertical tunnel без подтверждённого external impact result;
 - shared-cell policy не создаёт teleport или route skip;
 - full excavation commit синхронизирует World, Navigation map, resident tunnel volume и movement surfaces до следующего authoritative transition;
@@ -120,6 +123,7 @@ Visual lane, overlap offset и interpolation не являются отдель�
 - **Q-MOVE-010:** в текущей системе нет действительно однополосных transitions.
 - **Q-MOVE-011:** минимальный visual interval не задаётся; остановка переднего не создаёт permanent wait.
 - **Q-MOVE-012:** vertical climbing использует валидный traversal link; сценарий самопроизвольной потери опоры во время обычного перехода отсутствует.
+- **Q-MOVE-013:** entry/exit между поддерживаемой horizontal cell и shaft cell является vertical transition, если shaft endpoint имеет vertical provenance; обе клетки не обязаны ошибочно классифицироваться как vertical.
 
 ## 9. Открытые вопросы
 
@@ -151,7 +155,7 @@ Visual lane, overlap offset и interpolation не являются отдель�
 - два opposite climbers проходят друг сквозь друга без блокировки;
 - normal vertical climbing не запускает fall без external impact;
 - после horizontal excavation resident входит в новую cell и продолжает frontier job без redraw;
-- после vertical/depth excavation новая cell сразу доступна valid climbing transition;
+- после vertical/depth excavation новая cell сразу доступна valid climbing transition, включая entry из horizontal floor cell в первую shaft cell;
 - knockback/push в open shaft передаёт управление fall system;
 - interruption и save/load mid-route сохраняют authoritative cell/action, но не presentation offsets;
 - Play Mode подтверждает directional offsets, разрешённый horizontal overlap fallback и vertical overlap.
