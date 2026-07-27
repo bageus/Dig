@@ -81,6 +81,13 @@ internal sealed partial class DigTerrainWorkSession
 
     internal MiningOutputCommitState MiningOutputCommits => _miningOutputCommits;
 
+    internal bool HasWorldChanged => _worldChanged;
+
+    internal void MarkAuthoritativeWorldChanged()
+    {
+        _worldChanged = true;
+    }
+
     public IReadOnlyList<JobOverlayViewModel> LoadJobs()
     {
         return _jobPresenter.LoadIndexed(_journal.JobAssignmentReports);
@@ -264,7 +271,7 @@ internal sealed partial class DigTerrainWorkSession
         // The terrain commit above is already authoritative. Mark the world dirty
         // before any derived navigation refresh so Presentation cannot miss the open
         // cell when navigation fails and the tick returns a recoverable warning.
-        _worldChanged = true;
+        MarkAuthoritativeWorldChanged();
         if (output.SourceKind == MiningOutputSourceKind.Deposit)
         {
             _worldSession.DepleteTerrainDeposit(targetCell, tick);
