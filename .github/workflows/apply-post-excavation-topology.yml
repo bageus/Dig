@@ -35,3 +35,4 @@ jobs:
           git push origin HEAD:fix/post-excavation-topology-and-gravity-v2
 
 # Trigger after the workflow exists on the branch.
+# Synchronize the temporary application PR.
