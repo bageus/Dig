@@ -118,6 +118,8 @@ namespace Dig.Unity
                 result = AdvanceTerrainForAgents(AgentSession.Tick, agents);
             }
 
+            result = ReconcileCommittedTerrainRuntime(result, AgentSession.Tick);
+
             if (result.IsSuccess)
             {
                 result = TerrainSession.AdvanceBuildingBoxPickup(AgentSession.Tick, agents);
