@@ -31,7 +31,7 @@ namespace Dig.Tests
             Assert.Contains("SynchronizeBuildingBoxRelocation", driver);
             Assert.Contains("TryPlanBuildingBoxRelocationMovement", pickup);
             Assert.Contains("relocation.StartsHeld", relocation);
-            Assert.Contains("ItemLocation.InWorld(relocation.DestinationCell.Value)", relocation);
+            Assert.Contains("CompleteBuildingBoxRelocationCommand", relocation);
             Assert.Contains("ResidentInventorySlotVisualKind.BuildingBox", inventory);
             Assert.Contains("newColor(0.10f,0.34f,0.72f,0.96f)", inventory);
         }
@@ -65,6 +65,7 @@ namespace Dig.Tests
             Assert.Contains("ReservationKey.ForPosition(DestinationCell.Value)", definition);
             Assert.Contains("jobs.Claim(command.JobId,stack.Location.OwnerId", handlers);
             Assert.Contains("MoveFullyReservedPreservingReservation", handlers);
+            Assert.Contains("ItemLocation.InWorld(relocation.DestinationCell.Value)", handlers);
             Assert.Contains("MoveReserved(", handlers);
             Assert.Contains("destination_x", codec);
             Assert.Contains("starts_held", codec);
