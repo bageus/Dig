@@ -150,8 +150,23 @@ internal sealed partial class DigWorldSession
 
     internal Result ExcavateSpatialCell(CellId cell)
     {
+        WorldState world = _repository.Get();
+        Result<CellSnapshot> current = world.GetCell(cell);
+        if (current.IsFailure)
+        {
+            return Result.Failure(current.Error!);
+        }
+
+        // A previous finalize attempt may have committed World before a derived
+        // topology/job step failed. Treat the authoritative open cell as success so
+        // the retry can finish synchronization and cleanup instead of stalling forever.
+        if (!current.Value.IsSolid)
+        {
+            return Result.Success();
+        }
+
         _tick = checked(_tick + 1);
-        Result<WorldMutationResult> result = _repository.Get().Excavate(
+        Result<WorldMutationResult> result = world.Excavate(
             cell,
             _emptyMaterialId,
             _tick);

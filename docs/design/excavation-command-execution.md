@@ -38,9 +38,10 @@ Parent feature: [#87](https://github.com/bageus/Dig/issues/87).
 7. Если target distance и route cost равны, применяется deterministic tie-break по `CellId`, затем по `JobId`.
 8. Более дальняя excavation target cell не назначается resident, пока существует более близкая достижимая target cell того же доступного excavation pool.
 9. Resident идёт к рабочей позиции, выполняет work и commit клетки.
-10. Remaining cells сохраняются и продолжают иметь jobs.
-11. Свободные residents независимо выбирают свои ближайшие доступные jobs; один job/work position не назначается двум residents.
-12. Status tunnel/depth/room action — «Копает».
+10. После полного `4/4` commit authoritative World, Navigation map, resident tunnel topology и movement surfaces обязаны увидеть открытую клетку в том же simulation tick до следующей попытки маршрута, назначения или движения. Ошибка derived refresh не может оставить визуально открытую клетку логически/физически закрытой.
+11. Remaining cells сохраняются и продолжают иметь jobs.
+12. Свободные residents независимо выбирают свои ближайшие доступные jobs; один job/work position не назначается двум residents.
+13. Status tunnel/depth/room action — «Копает».
 
 Правило nearest-target применяется одинаково к horizontal tunnel, вертикальному тоннелю на фронтальном срезе, vertical/depth excavation и child cells комнаты. Оно относится и к automatic planner, и к direct command; direct command отличается приоритетным запуском выбранного resident, а не способом выбора target.
 
@@ -115,6 +116,9 @@ Eraser удаляет выбранные unfinished designations, active/nonterm
 - динамически добавленная связанная клетка не требует повторного direct click;
 - work progress изменяется одним authoritative cadence;
 - каждое завершение quarter немедленно удаляет соответствующую геометрию породы; отмена/release/reassignment не возвращает её;
+- полный `4/4` commit атомарно делает клетку открытой для World, route planning, authoritative resident movement и tunnel interaction surfaces;
+- визуально открытая клетка не может оставаться закрытой в Navigation, resident tunnel topology или collider/movement projection;
+- support-loss предметов, вызванный excavation commit, проверяется до новых pickup/hauling reservations;
 - continuation не зависит от Unity frame rate;
 - drag-stroke creation order не может определить первый assigned job: assignment начинается после reconciliation полного stroke batch;
 - при наличии нескольких допустимых excavation jobs resident получает ближайшую reachable target cell независимо от horizontal/vertical/room plan kind;
@@ -183,6 +187,9 @@ Presentation cursor и hover не сохраняются.
 - selected resident освобождает/завершает job, а zone продолжает выполняться;
 - unreachable cell остаётся в job list и переоценивается без принудительного движения resident в тупик;
 - interruption или erase после 1/4, 2/4 и 3/4 оставляет реально удалённые quarters; повторное designation продолжает с сохранённого mask;
+- после первой полностью выкопанной horizontal cell resident может войти в неё и продолжить следующую клетку без erase/redraw;
+- после полного vertical/depth commit новая клетка входит в climbing/topology projection, а unsupported world item запускает существующий gravity workflow до новых reservations;
+- recoverable failure после World mutation повторно синхронизирует derived topology и не пытается повторно выкопать уже открытую клетку;
 - erase части плана и split zone;
 - save/load mid-zone;
 - failure одного job без остановки симуляции;
