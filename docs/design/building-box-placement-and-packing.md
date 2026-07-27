@@ -1,25 +1,30 @@
 # Коробки зданий, размещение, сборка и упаковка
 
-Статус: `QUESTIONNAIRE`.
+Статус: `APPROVED`.
 
 Tracking issues: [#118](https://github.com/bageus/Dig/issues/118), [#390](https://github.com/bageus/Dig/issues/390), [#398](https://github.com/bageus/Dig/issues/398).
 
 ## 1. Назначение
 
-Все размещаемые здания используют единый физический lifecycle коробки. Здание производится как предмет-коробка, выбирается игроком, переводится отдельной кнопкой «Распаковать» в placement mode, размещается через подтверждённый plan workflow, доставляется свободным гномом, собирается и позднее может быть разобрано обратно в коробку.
+Все размещаемые здания используют единый физический lifecycle коробки:
 
-Эта модель заменяет для соответствующего `BuildingDefinition` прямую доставку полного списка строительных материалов. Одновременное применение двух construction policies к одному зданию запрещено.
+```text
+Production -> BuildingBox item -> placement preview -> confirmed plan/job
+-> pickup/carry -> box relocation на Z0 либо unpack/assembly на Z1–Z3
+-> completed building -> Pack -> BuildingBox item
+```
+
+Одна физическая BuildingBox представляет одно здание и существует ровно в одном authoritative location. Для одного `BuildingDefinition` нельзя одновременно использовать BuildingBox policy и legacy material-delivery policy.
 
 ## 2. Владение состоянием
 
-- `InventoryState` владеет коробкой, количеством, местоположением и reservations.
-- `BuildingsState` владеет plans, footprint, orientation, progress, completed state и durability.
-- `Jobs` владеет pickup, delivery, assembly и packing lifecycle, исполнителями и рабочими позициями.
-- `Production` создаёт коробку как обычный output рецепта.
-- `Navigation` проверяет достижимость коробки, площадки и рабочих позиций.
-- `Presentation` владеет selection, меню коробки, preview и локальным placement mode.
+- `InventoryState` владеет BuildingBox entity, item id, quantity, location и item reservations.
+- `BuildingsState` владеет assembly plan, footprint, orientation, progress, completed state и durability.
+- `JobSystem` владеет relocation/delivery/assembly/packing lifecycle, worker claim и position reservations.
+- `Navigation` проверяет достижимость source box, target и work position.
+- `Presentation` владеет selection, меню, системным cursor visibility, moving ghost, footprint и локальным placement mode.
 
-Ghost и footprint не являются авторитетным зданием или коробкой.
+Ghost, cursor и footprint не являются authoritative коробкой, зданием или job.
 
 ## 3. Content model
 
@@ -37,235 +42,226 @@ BuildingDefinition
 - FunctionalCapabilities
 ```
 
-`BuildingBoxItemId` обозначает обычный предмет Inventory:
+BuildingBox:
 
-- одна коробка представляет одно здание;
-- коробки не складываются друг с другом;
-- коробка не является вложенным контейнером материалов;
-- display name не используется как ID;
-- рецепт коробки содержит стоимость производства здания.
+- является quantity-one unit item;
+- не складывается с другими коробками;
+- не является контейнером материалов;
+- определяется стабильными ids, а не display name;
+- расходуется только при успешном completion assembly plan;
+- после relocation plan остаётся той же BuildingBox entity.
 
-## 4. Selection и меню
+## 4. Запуск placement mode
 
-### Обычный ЛКМ по world BuildingBox
+### World BuildingBox
 
-1. выбирает коробку;
-2. снимает несовместимый предыдущий selection;
-3. открывает вкладку/меню строений;
-4. подсвечивает строку этой BuildingBox;
-5. показывает кнопку «Распаковать».
+Обычный ЛКМ:
 
-Обычный ЛКМ сам по себе не включает placement mode, не создаёт plan и не резервирует коробку.
+1. выбирает конкретный `StackId`;
+2. открывает Buildings roster/menu;
+3. подсвечивает только renderer-ы этой коробки и её строку;
+4. показывает кнопку `Unpack`;
+5. не создаёт preview, reservation, plan или job.
 
-### `Alt + ЛКМ`
+Кнопка `Unpack` запускает placement mode для выбранной коробки.
 
-При выбранном resident создаёт pickup order. Он не выбирает коробку для размещения и не запускает preview.
+`Alt + ЛКМ` при выбранном resident остаётся отдельным direct pickup order и не запускает placement mode.
 
-### ПКМ
+### BuildingBox в inventory resident
 
-В любой момент отменяет активный preview и снимает selection BuildingBox/строения. Quantity и authoritative location коробки не меняются.
+Обычный ЛКМ по занятому BuildingBox slot немедленно запускает тот же placement mode. Отдельная кнопка `Unpack` не требуется.
 
-## 5. Запуск unpacking/placement mode
+До успешного confirmation коробка остаётся в исходном authoritative location и не резервируется.
 
-Placement mode включается только кнопкой «Распаковать» в меню выбранной BuildingBox.
+## 5. Cursor и preview
 
-Перед входом проверяется, что:
+При входе в placement mode:
 
-- коробка существует;
-- её `BuildingDefinitionId` известен;
-- она не зарезервирована несовместимой операцией;
-- selection всё ещё указывает на ту же коробку.
+- системный 2D cursor скрывается;
+- 3D ghost становится игровым cursor и непрерывно следует pointer в world-space;
+- изменение pointer cell немедленно обновляет origin, footprint, validity, tint и reason code;
+- ghost не участвует в raycast, physics, Navigation или occupancy;
+- valid preview зелёный, invalid preview красный;
+- при выходе из mode системный cursor восстанавливается;
+- preview не меняет Inventory, Buildings или Jobs.
 
-Нажатие кнопки не меняет Inventory quantity/location и не создаёт reservation. Оно создаёт только локальный preview mode.
+Если pointer находится над объектом, который не должен блокировать placement, resolver продолжает искать world cell под ним либо проецирует pointer на текущий depth layer. Resident, creature и loose world item не удерживают ghost на старой клетке.
 
-Для BuildingBox в resident inventory отдельная кнопка не требуется: обычный LMB по занятому inventory slot сразу включает тот же placement mode с 3D ghost конечного здания и footprint. Коробка остаётся в inventory до успешного authoritative command.
+## 6. Intent определяется depth layer
 
-## 6. Preview
+Отдельного UI selector или modifier для выбора intent нет.
 
-В placement mode:
+### Z0: relocation BuildingBox
 
-- системный 2D cursor скрыт;
-- под pointer отображаются 3D ghost и footprint;
-- ghost существует только внутри игровой зоны;
-- validity вычисляется через World, Buildings и Navigation snapshots;
-- Presentation не изменяет Domain до команды;
-- клик по невалидной позиции ничего не создаёт и показывает reason code;
-- ПКМ отменяет preview и selection.
+- ghost автоматически меняется на модель BuildingBox;
+- footprint равен одной target cell;
+- valid confirmation создаёт relocation/hauling job для той же коробки;
+- completed building и assembly plan не создаются;
+- после delivery та же BuildingBox entity получает world location target Z0 cell.
 
-## 7. Подтверждение на Z0 и видимость pending plan
+### Z1–Z3: unpack/assembly building
 
-Размещение коробки и распаковка конечного здания разрешены только на валидной позиции Z0. Placement mode должен содержать выбранный игроком intent:
+- ghost показывает конечную модель здания и footprint;
+- valid confirmation создаёт BuildingBox assembly plan и job;
+- worker доставляет коробку к site, выполняет unpack/assembly и расходует коробку ровно один раз при completion;
+- после completion ghost заменяется completed-building visual.
 
-- **перенести как коробку** — создаётся `BuildingBox placement plan`;
-- **распаковать как строение** — создаётся `Building assembly plan`.
+Это depth rule является единственным owner выбора plan kind и закрывает прежний вопрос `Move as box` versus `Unpack as building`.
 
-До момента фактического pickup назначенным гномом:
+## 7. Placement validity
 
-- исходная BuildingBox продолжает физически отображаться в своей authoritative location;
-- в целевой позиции отображается неавторитетный призрак результата plan;
-- для box-placement plan это призрак коробки;
-- для assembly plan это призрак конечного здания и footprint;
-- исходная коробка, её world row или inventory slot остаются подсвечены синим как объект запланированного действия.
+Общие blocking conditions:
 
-Успешное подтверждение атомарно:
+- target/footprint выходит за world bounds;
+- terrain target/footprint solid;
+- cell unexplored;
+- footprint пересекает active building или building plan;
+- отсутствует reachable target/work position;
+- source box отсутствует, зарезервирована несовместимой операцией либо больше не quantity-one unit.
 
-1. повторно валидирует целевую Z0-клетку;
-2. проверяет существование и доступность выбранной коробки;
-3. резервирует конкретную коробку за одним plan;
-4. создаёт выбранный plan kind и связанные ordinary jobs;
-5. публикует событие создания plan;
-6. закрывает interactive placement mode, сохраняя planned projection и синюю selection-подсветку.
+Не блокируют placement:
 
-Одна коробка не может быть зарезервирована двумя plans. Preview до подтверждения и planned projection после подтверждения не меняют authoritative location коробки.
+- resident или creature в target cell;
+- loose world item, включая другую не-authoritative визуальную проекцию предмета;
+- presentation overlays и cursor markers.
 
-## 8. Доставка BuildingBox placement plan
+Для Z0 relocation target также должен быть открытой explored reachable cell. Для Z1–Z3 assembly применяется footprint/surface policy соответствующего `BuildingDefinition`.
 
-Свободный подходящий гном:
+ЛКМ по invalid preview не создаёт reservation, plan или job и показывает reason code.
 
-1. получает обычный delivery job;
-2. идёт к зарезервированной коробке;
-3. до pickup исходная коробка остаётся видимой в source location, а target box ghost остаётся видимым;
-4. подбирает коробку через Inventory transaction — только после этого source visual исчезает;
-5. несёт её к целевой Z0-клетке;
-6. размещает ту же Inventory entity в world location;
-7. завершает plan и заменяет target ghost физическим world visual.
+## 8. Confirmation и planned projection
 
-После commit коробка остаётся BuildingBox и может быть выбрана, подобрана или использована для отдельного assembly plan.
+Успешный ЛКМ атомарно:
 
-## 9. Building assembly plan
+1. повторно валидирует source, layer-derived intent и target;
+2. резервирует конкретную BuildingBox за одним job/plan;
+3. создаёт relocation job либо assembly plan/job;
+4. публикует события;
+5. закрывает interactive placement mode и восстанавливает системный cursor;
+6. сохраняет target planned ghost до authoritative delivery/assembly commit;
+7. сохраняет source selection/planned indication.
 
-Plan конечного здания является отдельным plan kind и разрешён только на валидной позиции Z0.
+До фактического pickup:
 
-Он:
+- world source box остаётся физически видимой в своей authoritative cell;
+- inventory source box остаётся в своём resident slot;
+- target показывает planned ghost результата;
+- source world visual, Buildings row или inventory slot отображаются синим как зарезервированный объект запланированного действия.
 
-1. повторно валидирует footprint, orientation и work positions;
-2. резервирует BuildingBox;
-3. сохраняет source physical box до pickup;
-4. показывает target building ghost/footprint на протяжении pending delivery и assembly;
-5. создаёт delivery/assembly jobs;
-6. после доставки автоматически продолжает assembly конечного здания;
-7. расходует коробку ровно один раз только при успешном completion здания;
-8. заменяет planned ghost completed-building visual после commit.
+Одна коробка не может принадлежать двум active jobs/plans.
 
-Наличие двух plan kinds не означает два authoritative locations одной коробки.
+## 9. Worker assignment и execution
 
-## 10. Отмена и ошибки
+### Source box в world
 
-До доставки отмена plan освобождает reservation, коробка остаётся на прежнем месте.
+Обычный matching выбирает свободного подходящего resident. Он:
 
-После pickup, но до commit, отмена:
+1. идёт к source box;
+2. подбирает ту же entity в inventory;
+3. несёт её к target/work position;
+4. выполняет relocation deposit либо assembly workflow.
 
-- закрывает связанные jobs;
-- освобождает worker/position claims;
-- возвращает одну коробку в допустимое world location;
-- не меняет quantity.
+### Source box в resident inventory
 
-Retry не резервирует коробку повторно. Уничтоженная или недоступная коробка переводит plan в диагностируемое blocked/failed состояние.
+Candidate set содержит только resident, чей `AgentInventory` владеет source stack. Job не может получить другой resident до тех пор, пока authoritative location остаётся этим inventory.
 
-## 11. Упаковка completed building
+Во время carry зарезервированная BuildingBox отображается синим в inventory.
 
-Кнопка упаковки создаёт `PackBuilding` command.
+### Relocation completion
 
-После проверки:
+Коробка перемещается в target Z0 world cell, reservation/job завершаются, BuildingBox остаётся доступной для последующего выбора и `Unpack`.
 
-- здание помечается как ожидающее разборки;
-- создаётся общий packing job;
-- гном выполняет разборку;
-- functional places, active orders и reservations завершаются по policy;
-- после commit здание освобождает footprint;
-- в site location создаётся ровно одна BuildingBox.
+### Assembly completion
 
-До commit здание остаётся авторитетным объектом и коробка не существует. После commit здание больше не функционирует.
+После delivery автоматически выполняется unpack/assembly. Коробка расходуется только при успешном completion здания.
 
-## 12. Контекстный ввод
+## 10. Cancel, failure и retry
 
-После UI shielding применяется порядок:
+- RMB отменяет unconfirmed preview, восстанавливает cursor и не меняет quantity/location.
+- Cancel confirmed job до pickup освобождает reservation; коробка остаётся в source location.
+- Cancel после pickup возвращает коробку в допустимое world location и не меняет quantity.
+- Temporary route/source/target block сохраняет job и reservation для retry.
+- Missing/destroyed source или permanently invalid target переводят workflow в typed blocked/failed state.
+- Retry не резервирует коробку повторно и не создаёт duplicate entity.
 
-1. active placement mode: ЛКМ подтверждает preview, ПКМ отменяет mode/selection;
-2. `Alt + ЛКМ` по world BuildingBox создаёт pickup order выбранному resident;
-3. обычный ЛКМ по world BuildingBox выбирает коробку и открывает building menu;
-4. кнопка «Распаковать» включает placement mode;
-5. ЛКМ по completed building выбирает его и открывает функции;
-6. selected resident + reachable free ground создаёт move order;
-7. excavation tools обрабатывают terrain targets после object targets.
+## 11. Packing completed building
 
-Один pointer event создаёт не более одной команды.
+`Pack` создаёт packing job. До commit здание остаётся authoritative и функциональным согласно policy. После успешного completion:
+
+- building освобождает footprint;
+- создаётся ровно одна BuildingBox;
+- completed building больше не функционирует;
+- quantity conservation сохраняется.
+
+## 12. Input priority
+
+После UI shielding:
+
+1. active BuildingBox placement: LMB confirm, RMB cancel;
+2. `Alt + LMB` world BuildingBox: direct pickup выбранному resident;
+3. обычный LMB world BuildingBox: selection/menu;
+4. `Unpack`: placement mode;
+5. inventory BuildingBox LMB: placement mode;
+6. completed building selection;
+7. resident movement;
+8. excavation terrain input.
+
+Один pointer event создаёт не более одной authoritative command.
 
 ## 13. Save/Load
 
 Сохраняются:
 
-- BuildingBox Inventory location и quantity;
-- reservation и owning plan id;
-- plan kind, target, footprint/orientation при необходимости и progress;
-- active delivery/assembly/packing jobs;
-- work/position/item reservations;
+- BuildingBox entity/location/reservation;
+- relocation job destination и stage;
+- assembly plan, footprint/orientation/progress и job stage;
+- worker/item/position reservations;
+- packing lifecycle;
 - migration/version data.
 
-Selection, меню, cursor и uncommitted preview не сохраняются.
+Selection, cursor visibility, interactive preview и hover не сохраняются. После load confirmed planned projection восстанавливается из authoritative job/plan state.
 
 ## 14. Диагностика
 
-Inspector показывает:
+Diagnostics/Inspector показывают:
 
-- BuildingDefinitionId и BuildingBoxItemId;
-- source и target location;
-- selected entity и active menu mode;
-- plan kind: box placement или building assembly;
+- source `StackId`, item id и authoritative location;
+- selected source и active placement layer/intent;
+- ghost origin, footprint, validity и reason;
+- target, job/plan id, stage и assigned worker;
 - reservation owner;
-- pickup/delivery/assembly/packing stage;
-- worker;
-- validation result;
-- commit state коробки;
-- blocked/cancel/failure reason;
-- quantity conservation report.
+- carried-by resident;
+- commit/cancel/retry/failure state;
+- quantity conservation result.
 
 ## 15. Инварианты
 
-- одна коробка имеет одно authoritative location;
-- обычный ЛКМ selection не создаёт plan;
-- placement начинается только через кнопку «Распаковать»;
-- preview не резервирует и не расходует коробку;
-- одна коробка принадлежит не более чем одному active plan;
-- box-placement plan не создаёт completed building;
-- успешный box-placement plan сохраняет коробку как BuildingBox в target Z0 cell;
-- assembly plan автоматически продолжает сборку после доставки и расходует коробку только при completion;
-- до pickup source physical visual и target planned ghost существуют одновременно без дублирования authoritative entity;
+- одна BuildingBox имеет одно authoritative location;
+- preview не резервирует и не мутирует Domain;
+- Z0 всегда означает relocation box, Z1–Z3 всегда означают assembly building;
+- resident/creature/loose item не блокируют placement footprint;
+- holder-owned box job назначается только holder resident;
+- relocation не создаёт completed building и не расходует box;
+- assembly расходует box только при completion;
 - cancel/retry/save-load не теряют и не дублируют коробки;
-- UI не изменяет Buildings или Inventory напрямую.
+- UI не изменяет Inventory/Buildings/Jobs напрямую.
 
-## 16. Решённые вопросы
+## 16. Acceptance
 
-- **Q-BBOX-001:** ЛКМ на валидной Z0-позиции создаёт BuildingBox placement plan, а не plan конечного здания.
-- **Q-BBOX-002:** обычный LMB по BuildingBox в resident inventory сразу включает placement mode с 3D ghost/footprint.
-- **Q-BBOX-003:** Z0 confirmation размещает коробку через plan; после успешного создания plan placement mode закрывается.
-- **Q-BBOX-004:** после успешного создания plan исходная коробка остаётся selected; world visual, building row или inventory slot подсвечиваются синим как объект запланированного действия.
-- **Q-BBOX-005:** box-placement и building-assembly confirmation разрешены только на Z0; другие поверхности не принимают confirmation.
-- **Q-BBOX-006:** box-placement plan после доставки оставляет коробку, а assembly plan после доставки автоматически продолжает сборку конечного здания.
+Обязательны unit, integration, deterministic и Unity Play Mode scenarios:
 
-## 17. Открытые вопросы
-
-- **Q-BBOX-007:** каким конкретным UI-контролом внутри placement mode игрок выбирает intent «перенести как коробку» или «распаковать как строение»? Нельзя молча назначить modifier или второй button без подтверждения.
-
-## 18. Тесты
-
-Обязательны:
-
-- world box LMB выбирает box, но не включает placement;
-- inventory BuildingBox LMB сразу включает тот же 3D ghost/footprint mode;
-- кнопка «Распаковать» для world box включает 3D ghost/footprint и скрывает 2D cursor;
-- valid Z0 confirmation создаёт выбранный plan kind, закрывает interactive mode и оставляет source box selected с синей planned-подсветкой;
-- до pickup source box остаётся физически видимым, а target показывает соответствующий ghost;
-- box-placement plan после delivery оставляет box;
-- assembly plan после delivery автоматически продолжает assembly и завершает building;
-- invalid target не создаёт reservation;
-- ПКМ отменяет preview и selection;
-- конкурирующие plans за одну коробку;
-- доставка другим свободным гномом;
-- cancel до и после pickup;
-- missing box, unreachable source и blocked target;
-- building assembly расходует box ровно один раз;
-- packing и повторное размещение;
-- save/load на каждой authoritative стадии;
-- deterministic replay и quantity conservation;
-- Unity Play Mode для selection, menu, preview, confirmation, shielding и input priority.
+- world LMB selection/menu без preview;
+- `Unpack` и inventory BuildingBox LMB запускают один placement workflow;
+- system cursor скрыт, moving ghost следует pointer по нескольким cells/layers;
+- valid green / invalid red preview;
+- Z0 показывает box ghost и создаёт relocation job;
+- Z1–Z3 показывают completed-building ghost и создают assembly plan/job;
+- resident и loose item в target cell не блокируют valid preview;
+- world source подбирается свободным worker и переносится;
+- inventory source job получает только holder resident;
+- carried reserved box синяя в inventory;
+- RMB cancel и invalid LMB не меняют authoritative state;
+- cancel/retry/save-load на каждой authoritative стадии;
+- relocation сохраняет entity id и quantity;
+- assembly расходует box ровно один раз;
+- repeated placement/packing и deterministic replay.

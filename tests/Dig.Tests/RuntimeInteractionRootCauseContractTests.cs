@@ -61,8 +61,9 @@ namespace Dig.Tests
             Assert.Contains("TryHandleBuildingPlacementClick()", interaction);
             Assert.Contains("TryHandleInventoryItemPlacementClick()", interaction);
             Assert.Contains("ConfirmBuildingPlacement();", boxes);
+            Assert.Contains("BuildingBoxPlacementKind.RelocateBox", boxGhost);
+            Assert.Contains("BuildingVisualState.BuildingBox", boxGhost);
             Assert.Contains("BuildingVisualState.Completed", boxGhost);
-            Assert.DoesNotContain("BuildingVisualState.BuildingBox", boxGhost);
             Assert.Contains("ValidateResidentInventoryDrop", itemPlacement);
             Assert.Contains("DropResidentInventoryStack", itemPlacement);
             Assert.Contains("DigTransparentVisualSurface", itemGhost);

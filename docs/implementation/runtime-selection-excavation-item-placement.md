@@ -18,9 +18,18 @@ Selected-resident movement перехватывал pointer до completed-build
 
 Первый physical highlight создавал отдельный полупрозрачный cube по размеру interaction collider. Он визуально захватывал пространство вокруг коробки и мог выглядеть как подсветка клетки/соседних объектов. Отдельная surface удалена. Selection теперь меняет tint только существующих renderer-ов visual instances выбранной коробки; pool reset снимает tint, а HUD row остаётся независимой проекцией того же `StackId`.
 
-### BuildingBox unpack preview
+### BuildingBox moving placement cursor
 
-Representative ghost resolver выбирал `BuildingVisualState.BuildingBox` для `Z0`, поэтому unpacking визуально оставался коробкой. Unpack preview всегда использует completed-building visual profile, а отдельный confirmation path не зависит от front collider под pointer. После успешного plan source box остаётся selected, если она ещё существует в authoritative world location.
+Старый hover path обновлял preview только при успешном physics hit. Когда pointer шёл над resident, loose item или открытым участком, target cell не разрешалась и ghost оставался в предыдущей позиции. Placement mode теперь скрывает system cursor, использует 3D ghost как игровой cursor, ищет terrain/tunnel cell за неблокирующими объектами и при отсутствии hit проецирует pointer на текущий depth layer. Cancel и successful confirmation восстанавливают прежнюю visibility системного cursor.
+
+Placement intent больше не выбирается скрытым условием renderer-а:
+
+- Z0 создаёт `RelocateBox`, показывает BuildingBox visual и подтверждается typed relocation job;
+- Z1–Z3 создают `AssembleBuilding`, показывают Completed visual/footprint и подтверждаются существующим assembly plan/job.
+
+Validation получает building-plan occupancy, но не resident/creature/loose-item occupancy. Поэтому такие объекты не замораживают ghost и не делают пустую terrain cell invalid. Valid preview остаётся зелёным, invalid — красным с reason code.
+
+World-source relocation использует обычный BuildingBox candidate policy и pickup/carry pipeline. Inventory source сразу claim-ится resident-holder. Exact box reservation сохраняется во время carry; reserved BuildingBox slot отображается синим. Relocation save codec хранит destination и holder-start stage, сохраняя backward compatibility с direct pickup snapshots.
 
 ### Item pickup, placement и collision
 
@@ -58,7 +67,7 @@ Room commit раньше передавал `VolumeCells` в atomic `SetDigDesig
 
 - `InventoryState` остаётся единственным владельцем item location/quantity/reservations.
 - `BuildingsState` и building commands остаются владельцами placement/assembly/packing commits.
-- `JobSystem` остаётся владельцем excavation lifecycle/stage/worker.
+- `JobSystem` владеет excavation и BuildingBox relocation/assembly lifecycle/stage/worker.
 - `ExcavationWorkCoordinator` владеет per-target completed-quarter mask и active quarter assignments.
 - Unity Presentation владеет только selected ids, renderer tint, transparent ghosts, hover/cursor и partial-progress geometry.
 
@@ -67,8 +76,11 @@ Room commit раньше передавал `VolumeCells` в atomic `SetDigDesig
 - input router: BuildingBox selection versus pickup and generic item pickup;
 - world/HUD BuildingBox selection effect и shared StackId;
 - Play Mode: selection не создаёт дополнительную geometry и меняет tint только физической коробки;
+- moving BuildingBox ghost follows cells/layers, stays IgnoreRaycast and collider-disabled;
+- Z0 relocation preview/job versus Z1–Z3 assembly preview/plan;
+- world-source relocation reservation, holder-only inventory assignment, pickup/carry/deposit identity conservation;
+- relocation save codec round-trip и blue reserved inventory projection source contract;
 - completed-building selection before movement;
-- final-building unpack ghost on Z0;
 - inventory item placement and trigger-collider source contracts;
 - low-skill quarter assignment stability and 4/4 finalization gate;
 - completed quarter removes rock geometry and does not use black fill;
@@ -84,4 +96,4 @@ Room commit раньше передавал `VolumeCells` в atomic `SetDigDesig
 
 ## Проверка
 
-Repository quality, C# compatibility, module-boundary, Unity source-contract и `.NET` build/tests выполняются в GitHub Actions. Добавлен Play Mode regression для box-only renderer tint. Полный интерактивный Unity Play Mode workflow вертикального tunnel stroke остаётся обязательным для перевода excavation runtime в `VERIFIED`.
+Repository quality, C# compatibility, module-boundary, Unity source-contract и `.NET` build/tests выполняются в GitHub Actions. Добавлены Play Mode source regressions для box-only renderer tint и moving BuildingBox placement ghost. Полный интерактивный Unity Play Mode workflow placement/relocation/assembly и vertical tunnel stroke остаётся обязательным для перевода runtime systems в `VERIFIED`.

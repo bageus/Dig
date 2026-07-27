@@ -15,6 +15,12 @@ public enum BuildingBoxGhostStyle
     Invalid = 1,
 }
 
+public enum BuildingBoxPlacementKind
+{
+    RelocateBox = 0,
+    AssembleBuilding = 1,
+}
+
 public sealed class BuildingBoxGhostViewModel
 {
     public BuildingBoxGhostViewModel(
@@ -25,7 +31,8 @@ public sealed class BuildingBoxGhostViewModel
         IEnumerable<CellId> footprint,
         CellId? workPosition,
         bool isValid,
-        string? reasonCode)
+        string? reasonCode,
+        BuildingBoxPlacementKind placementKind = BuildingBoxPlacementKind.AssembleBuilding)
     {
         if (sourceStackId.HasValue && sourceStackId.Value.IsEmpty)
         {
@@ -40,6 +47,11 @@ public sealed class BuildingBoxGhostViewModel
         if (footprint is null)
         {
             throw new ArgumentNullException(nameof(footprint));
+        }
+
+        if (!Enum.IsDefined(typeof(BuildingBoxPlacementKind), placementKind))
+        {
+            throw new ArgumentOutOfRangeException(nameof(placementKind));
         }
 
         CellId[] ordered = footprint.Distinct().OrderBy(cell => cell).ToArray();
@@ -63,6 +75,7 @@ public sealed class BuildingBoxGhostViewModel
         WorkPosition = workPosition;
         IsValid = isValid;
         ReasonCode = string.IsNullOrWhiteSpace(reasonCode) ? null : reasonCode.Trim();
+        PlacementKind = placementKind;
     }
 
     public EntityId? SourceStackId { get; }
@@ -81,6 +94,8 @@ public sealed class BuildingBoxGhostViewModel
 
     public string? ReasonCode { get; }
 
+    public BuildingBoxPlacementKind PlacementKind { get; }
+
     public BuildingBoxGhostStyle Style => IsValid
         ? BuildingBoxGhostStyle.Valid
         : BuildingBoxGhostStyle.Invalid;
@@ -93,7 +108,8 @@ public readonly struct BuildingBoxPlacementConfirmationDraft
         BuildingDefinitionId definitionId,
         CellId origin,
         BuildingOrientation orientation,
-        CellId workPosition)
+        CellId workPosition,
+        BuildingBoxPlacementKind placementKind = BuildingBoxPlacementKind.AssembleBuilding)
     {
         if (sourceStackId.IsEmpty)
         {
@@ -105,11 +121,17 @@ public readonly struct BuildingBoxPlacementConfirmationDraft
             throw new ArgumentException("Building definition id cannot be empty.", nameof(definitionId));
         }
 
+        if (!Enum.IsDefined(typeof(BuildingBoxPlacementKind), placementKind))
+        {
+            throw new ArgumentOutOfRangeException(nameof(placementKind));
+        }
+
         SourceStackId = sourceStackId;
         DefinitionId = definitionId;
         Origin = origin;
         Orientation = orientation;
         WorkPosition = workPosition;
+        PlacementKind = placementKind;
     }
 
     public EntityId SourceStackId { get; }
@@ -121,6 +143,8 @@ public readonly struct BuildingBoxPlacementConfirmationDraft
     public BuildingOrientation Orientation { get; }
 
     public CellId WorkPosition { get; }
+
+    public BuildingBoxPlacementKind PlacementKind { get; }
 }
 
 public readonly struct BuildingBoxPlacementModeState
@@ -163,4 +187,5 @@ public readonly struct BuildingBoxPlacementModeState
         return new BuildingBoxPlacementModeState(SourceStackId, DefinitionId, next);
     }
 }
+
 }

@@ -147,7 +147,7 @@ public sealed class GameplayRegressionContractTests
     }
 
     [Fact]
-    public void Building_placement_prefers_visible_tunnel_cells_and_uses_final_building_visual()
+    public void Building_placement_prefers_visible_tunnel_cells_and_switches_visual_by_layer()
     {
         string runtime = RuntimeRoot();
         string interaction = Normalize(File.ReadAllText(Path.Combine(
@@ -169,6 +169,7 @@ public sealed class GameplayRegressionContractTests
         Assert.True(
             interaction.IndexOf("TryResolveTunnelDestination", StringComparison.Ordinal)
             < interaction.IndexOf("_renderer!.TryGetCell", StringComparison.Ordinal));
+        Assert.Contains("ProjectPointerToLayer(currentLayer)", interaction);
         Assert.Contains("DigTunnelProjection.ResidentWorldPosition", ghost);
         Assert.Contains("_root.SetParent(transform,worldPositionStays:true)", ghost);
         Assert.Contains("_root.SetParent(transform,worldPositionStays:true)", buildings);
@@ -176,8 +177,8 @@ public sealed class GameplayRegressionContractTests
             runtime,
             "DigBuildingVisual.cs")));
         Assert.Contains("DigTunnelProjection.ResidentWorldPosition", buildingVisual);
-        Assert.DoesNotContain("preview.Origin.Z==0", representatives);
-        Assert.DoesNotContain("BuildingVisualState.BuildingBox", representatives);
+        Assert.Contains("BuildingBoxPlacementKind.RelocateBox", representatives);
+        Assert.Contains("BuildingVisualState.BuildingBox", representatives);
         Assert.Contains("BuildingVisualState.Completed", representatives);
     }
 

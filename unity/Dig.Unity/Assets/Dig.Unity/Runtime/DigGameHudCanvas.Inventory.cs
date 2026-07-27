@@ -244,6 +244,12 @@ public sealed partial class DigGameHudCanvas
             return new Color(0.06f, 0.07f, 0.09f, 0.72f);
         }
 
+        if (slot.VisualKind == ResidentInventorySlotVisualKind.BuildingBox
+            && slot.ReservedQuantity > 0)
+        {
+            return new Color(0.10f, 0.34f, 0.72f, 0.96f);
+        }
+
         if (slot.IsHeld)
         {
             return new Color(0.12f, 0.34f, 0.48f, 0.96f);
@@ -262,6 +268,12 @@ public sealed partial class DigGameHudCanvas
     private static Color ResolveSlotTextColor(
         ResidentInventoryLayoutSlotViewModel slot)
     {
+        if (slot.VisualKind == ResidentInventorySlotVisualKind.BuildingBox
+            && slot.ReservedQuantity > 0)
+        {
+            return new Color(0.72f, 0.88f, 1f, 1f);
+        }
+
         return slot.VisualKind switch
         {
             ResidentInventorySlotVisualKind.Tool =>

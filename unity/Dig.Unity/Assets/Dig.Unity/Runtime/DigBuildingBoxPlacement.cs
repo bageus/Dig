@@ -122,6 +122,14 @@ namespace Dig.Unity
             }
 
             BuildingBoxPlacementConfirmationDraft draft = drafted.Value;
+            if (draft.PlacementKind == BuildingBoxPlacementKind.RelocateBox)
+            {
+                return CreateBuildingBoxRelocation(
+                    draft.SourceStackId,
+                    draft.Origin,
+                    tick);
+            }
+
             long sequence = checked(_nextPlacementSequence + 1);
             _nextPlacementSequence = sequence;
             return _buildingBoxPlacementHandler!.Handle(

@@ -39,16 +39,26 @@ Selection highlight изменяет только renderers фактическо
 
 Выбор BuildingBox из Buildings roster/management использует тот же selected `StackId`, вызывает тот же runtime selection path и немедленно подсвечивает соответствующую физическую коробку в мире. World click и HUD click не могут владеть разными selected ids. Incompatible resident, job, completed-building, cell и inventory selection очищаются вместе с переключением на BuildingBox.
 
-## 3. BuildingBox unpacking preview
+## 3. BuildingBox unpacking и placement cursor
 
-Кнопка `Unpack` выбранной BuildingBox включает placement mode и показывает полупрозрачную 3D-модель конечного здания, а не модель упакованной коробки.
+Кнопка `Unpack` выбранной world BuildingBox и обычный LMB по BuildingBox в resident inventory включают один placement mode.
 
-- ghost следует pointer в world-space;
-- ghost и footprint показывают тот definition/orientation, который будет подтверждён командой;
-- Z0 не переключает ghost обратно в `BuildingBox` visual state;
+- системный 2D cursor скрывается;
+- полупрозрачный 3D ghost становится игровым cursor и непрерывно следует pointer в world-space;
+- ghost не участвует в raycast/physics/occupancy;
+- valid preview зелёный, invalid preview красный и содержит reason code;
 - preview не меняет Inventory/Buildings/Jobs;
-- invalid target остаётся preview с reason code;
-- RMB отменяет preview без расходования коробки.
+- invalid LMB не создаёт reservation или job;
+- RMB отменяет preview и восстанавливает системный cursor.
+
+Intent определяется target depth без отдельного selector:
+
+- `Z0` показывает ghost BuildingBox и создаёт relocation/hauling job той же коробки;
+- `Z1–Z3` показывают ghost конечного здания с footprint и создают BuildingBox assembly plan/job.
+
+Resident, creature и loose world item в target cell не блокируют placement. Solid/unexplored/out-of-bounds terrain, active building/plan overlap и отсутствие reachable target/work position блокируют.
+
+После confirmation source box остаётся в authoritative location до pickup, target planned ghost остаётся видимым до commit, а зарезервированная source box отображается синим в world/Buildings/inventory projection. Если source box уже в `AgentInventory`, candidate set содержит только resident-holder. Если box лежит в world, обычный matching выбирает свободного worker, который подбирает её в inventory и несёт к target.
 
 ## 4. World item pickup и collision
 
@@ -73,7 +83,7 @@ Selection highlight изменяет только renderers фактическо
 
 Двойной ЛКМ по item в inventory выполняет немедленный drop в authoritative клетке resident. После drop обычная world-item gravity policy автоматически перемещает unsupported item вниз до первой допустимой опоры в vertical tunnel.
 
-BuildingBox inventory action остаётся отдельным unpacking workflow и использует building ghost, а не generic item ghost.
+BuildingBox inventory action остаётся отдельным unpacking workflow и использует layer-derived box/building ghost, а не generic item ghost.
 
 ## 6. Excavation quarter progress
 
@@ -118,15 +128,20 @@ BuildingBox inventory action остаётся отдельным unpacking workf
 1. resident selected -> LMB completed building -> building functions + Buildings tab + highlighted row, без move order;
 2. world BuildingBox LMB -> выбран тот же `StackId`, подсвечены только renderers модели этой коробки + Buildings row + `Unpack`, без collider-sized highlight surface, preview, движения или копки;
 3. Buildings roster BuildingBox click -> только та же физическая коробка подсвечена в runtime; клетка, пол и соседние items не меняют tint/geometry;
-4. selected BuildingBox -> `Unpack` -> completed-building ghost под pointer на Z0;
-5. selected resident -> LMB generic world item -> pickup order без Alt;
-6. resident проходит через world item collider;
-7. inventory item single LMB -> transparent item ghost -> valid world drop;
-8. inventory item double LMB -> drop at resident cell -> fall through open vertical tunnel;
-9. horizontal и vertical excavation минимум 10 cells без остановки;
-10. 1/4, 2/4, 3/4 progress видим как реально удалённые quarters породы без чёрной заливки;
-11. interruption/erase после partial progress оставляет удалённые quarters, а повторное designation продолжает с того же mask;
-12. cave-room valid preview видим и child jobs продолжаются до полного plan completion;
-13. failure/retry одного excavation job не блокирует другие commands/residents.
+4. selected world BuildingBox -> `Unpack` -> hidden system cursor + moving ghost;
+5. inventory BuildingBox LMB -> тот же moving ghost placement mode;
+6. pointer по Z0 -> box ghost -> relocation job; pointer по Z1–Z3 -> completed-building ghost/footprint -> assembly plan/job;
+7. resident/creature/loose item в target cell не блокируют valid placement;
+8. inventory-held source назначается только holder resident и отображается синим while reserved/carried;
+9. world source подбирается worker, переносится в inventory и доставляется к target;
+10. selected resident -> LMB generic world item -> pickup order без Alt;
+11. resident проходит через world item collider;
+12. inventory item single LMB -> transparent item ghost -> valid world drop;
+13. inventory item double LMB -> drop at resident cell -> fall through open vertical tunnel;
+14. horizontal и vertical excavation минимум 10 cells без остановки;
+15. 1/4, 2/4, 3/4 progress видим как реально удалённые quarters породы без чёрной заливки;
+16. interruption/erase после partial progress оставляет удалённые quarters, а повторное designation продолжает с того же mask;
+17. cave-room valid preview видим и child jobs продолжаются до полного plan completion;
+18. failure/retry одного excavation job не блокирует другие commands/residents.
 
-Unit/source-contract tests не заменяют Unity Play Mode validation для pointer routing, world/HUD selection synchronization, ghost visibility, partial terrain geometry и длительного excavation workflow.
+Unit/source-contract tests не заменяют Unity Play Mode validation для pointer routing, world/HUD selection synchronization, moving ghost visibility, depth-derived plan kind, partial terrain geometry и длительного workflow.
