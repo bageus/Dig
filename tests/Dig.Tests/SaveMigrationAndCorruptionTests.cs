@@ -40,6 +40,7 @@ public sealed class SaveMigrationAndCorruptionTests
             "save.v2_to_v3.packing",
             "save.v3_to_v4.agent_skills",
             "save.v4_to_v5.authoritative_xyz",
+            "save.v5_to_v6.mushrooms",
         }, first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
         Assert.Equal(1, document.Metadata.GeneratorVersion);
@@ -69,7 +70,12 @@ public sealed class SaveMigrationAndCorruptionTests
 
         Assert.True(first.IsSuccess);
         Assert.Equal(
-            new[] { "save.v3_to_v4.agent_skills", "save.v4_to_v5.authoritative_xyz" },
+            new[]
+            {
+                "save.v3_to_v4.agent_skills",
+                "save.v4_to_v5.authoritative_xyz",
+                "save.v5_to_v6.mushrooms",
+            },
             first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
         Assert.NotNull(document.AgentSkills);
