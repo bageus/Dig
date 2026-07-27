@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Dig.Domain.Content;
 using Dig.Presentation.Inventory;
 using UnityEngine;
 
@@ -88,7 +87,7 @@ namespace Dig.Unity
                 DigItemVisualResolution resolution = Resolve(item.ItemId);
                 ItemStackVisualLayoutViewModel layout = _layoutPresenter.Present(item);
                 visual.Configure(item, layout, resolution);
-                Vector2 cellOffset = IsCampfireBox(item.ItemId)
+                Vector2 cellOffset = DigWorldItemVisualPolicy.IsCampfireBox(item.ItemId)
                     ? Vector2.zero
                     : ResolveCellOffset(slot);
                 PlaceOnFloor(visual, item, resolution, cellOffset);
