@@ -114,6 +114,7 @@ public sealed class BuildingBoxPlacementPresenter
                 reachableCells,
                 ecologyBlockedCells);
     }
+
     public Result<BuildingBoxPlacementConfirmationDraft> CreateConfirmationDraft(
         BuildingBoxGhostViewModel preview)
     {
@@ -122,7 +123,8 @@ public sealed class BuildingBoxPlacementPresenter
             throw new ArgumentNullException(nameof(preview));
         }
 
-        if (!preview.IsValid
+        if (!preview.IsVisible
+            || !preview.IsValid
             || !preview.SourceStackId.HasValue
             || !preview.WorkPosition.HasValue)
         {
@@ -191,7 +193,8 @@ public sealed class BuildingBoxPlacementPresenter
                     orientation,
                     physical.Footprint.CoveredCells,
                     physical.Error!.Code,
-                    BuildingBoxPlacementKind.AssembleBuilding);
+                    BuildingBoxPlacementKind.AssembleBuilding,
+                    isVisible: physical.Error != PackableBuildingPlacementErrors.SurfaceMissing);
             }
 
             previewFootprint = physical.Footprint.CoveredCells;
@@ -228,7 +231,8 @@ public sealed class BuildingBoxPlacementPresenter
                 orientation,
                 footprint,
                 BuildingErrors.PlacementOutOfBounds.Code,
-                BuildingBoxPlacementKind.RelocateBox);
+                BuildingBoxPlacementKind.RelocateBox,
+                isVisible: false);
         }
 
         CellSnapshot cell = world.Chunks
@@ -255,7 +259,21 @@ public sealed class BuildingBoxPlacementPresenter
                 orientation,
                 footprint,
                 BuildingErrors.PlacementUnexplored.Code,
-                BuildingBoxPlacementKind.RelocateBox);
+                BuildingBoxPlacementKind.RelocateBox,
+                isVisible: false);
+        }
+
+        if (!BuildingPlacementSurfaceFactProjector.HasSupportingPlane(origin, world))
+        {
+            return Invalid(
+                sourceStack.StackId,
+                definition,
+                origin,
+                orientation,
+                footprint,
+                PackableBuildingPlacementErrors.SurfaceMissing.Code,
+                BuildingBoxPlacementKind.RelocateBox,
+                isVisible: false);
         }
 
         if (occupiedCells.Contains(origin))
@@ -332,7 +350,8 @@ public sealed class BuildingBoxPlacementPresenter
         BuildingOrientation orientation,
         IEnumerable<CellId> footprint,
         string reasonCode,
-        BuildingBoxPlacementKind kind)
+        BuildingBoxPlacementKind kind,
+        bool isVisible = true)
     {
         return new BuildingBoxGhostViewModel(
             sourceStackId,
@@ -343,7 +362,8 @@ public sealed class BuildingBoxPlacementPresenter
             workPosition: null,
             isValid: false,
             reasonCode,
-            kind);
+            kind,
+            isVisible);
     }
 }
 
