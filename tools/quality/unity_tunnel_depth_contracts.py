@@ -18,6 +18,9 @@ def check_tunnel_depth_contracts(
     runtime = runtime_root / "DigAgentSimulationDriverBase.CaveRooms.cs"
     loop = runtime_root / "DigAgentSimulationDriverBase.Loop.cs"
     spatial_runtime = runtime_root / "DigTerrainSpatialExcavation.cs"
+    topology_sync = runtime_root / "DigAgentSimulationDriverBase.NavigationSync.cs"
+    work_facing = runtime_root / "DigAgentRenderer.WorkFacing.cs"
+    work_visual = runtime_root / "DigAgentVisual.WorkFacing.cs"
     hud = runtime_root / "DigHudOverlay.Excavation.cs"
     errors: list[str] = []
     errors.extend(require_fragments(
@@ -96,6 +99,35 @@ def check_tunnel_depth_contracts(
         ),
     ))
     errors.extend(require_fragments(
+        topology_sync,
+        texts.get(topology_sync, ""),
+        "complete tunnel-plan topology refresh",
+        (
+            "WorldSession.PlannedTunnelCells",
+            "WorldSession.PlannedVerticalTunnelCells",
+        ),
+    ))
+    errors.extend(require_fragments(
+        work_facing,
+        texts.get(work_facing, ""),
+        "unsupported shaft mining work stance",
+        (
+            "tunnelVolume.IsVerticalTunnel(current)",
+            "current.Y + 1",
+            "climbingWork",
+        ),
+    ))
+    errors.extend(require_fragments(
+        work_visual,
+        texts.get(work_visual, ""),
+        "stationary climbing work presentation",
+        (
+            "_climbingWorkPose",
+            "FaceAwayFromMainCamera()",
+            "ApplyClimbPose",
+        ),
+    ))
+    errors.extend(require_fragments(
         runtime,
         texts.get(runtime, ""),
         "tunnel depth job designation and runtime refresh",
@@ -125,6 +157,7 @@ def check_tunnel_depth_contracts(
         "spatial dig stages and finalization",
         (
             "SpatialDigJobDefinition",
+            "plan.WorkCell",
             "JobStageKind.TravelToTarget",
             "JobStageKind.PerformWork",
             "JobStageKind.Finalize",
