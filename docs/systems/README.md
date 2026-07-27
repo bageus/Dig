@@ -37,6 +37,7 @@ Tracking issues: [#385](https://github.com/bageus/Dig/issues/385), [#393](https:
 | Resident movement, directional lanes и vertical climbing | обход гномов, shared cell, right/left lane, карабканье | `APPROVED` | [`resident-movement-occupancy-and-vertical-traversal.md`](../design/resident-movement-occupancy-and-vertical-traversal.md) | [#386](https://github.com/bageus/Dig/issues/386) |
 | Resident/building roster synchronization | открыть вкладку, подсветить строку, world/HUD selection | `QUESTIONNAIRE` | [`contextual-input-cursors-and-selection.md`](../design/contextual-input-cursors-and-selection.md) | [#390](https://github.com/bageus/Dig/issues/390) |
 | Demo campfire + packed box | нижняя пещера, готовый костёр, коробка костра | `QUESTIONNAIRE` | [`demo-starting-scenario.md`](../design/demo-starting-scenario.md) | [#389](https://github.com/bageus/Dig/issues/389) |
+| Рост и прямая рубка грибов | гриб, mushroom, дерево, рубка, топор, regrowth, mushroom cap, mushroom leg, woodworking | `APPROVED` | [`mushroom-growth-and-chopping.md`](../design/mushroom-growth-and-chopping.md) | [#423](https://github.com/bageus/Dig/issues/423) |
 | Simulation/job fault isolation | один job не останавливает всех гномов | `QUESTIONNAIRE` | [`excavation-command-execution.md`](../design/excavation-command-execution.md), [`../implementation/simulation-runtime.md`](../implementation/simulation-runtime.md) | [#388](https://github.com/bageus/Dig/issues/388) |
 
 ## Runtime foundation
@@ -125,6 +126,7 @@ Tracking issues: [#385](https://github.com/bageus/Dig/issues/385), [#393](https:
 
 | Заголовок | Aliases | Статус | Authoritative specification | Implementation / issue |
 |---|---|---|---|---|
+| Mushroom growth sites и direct chopping | гриб, tree-like harvest, axe cursor, regrowth, cap, leg, woodworking | `APPROVED` | [`../design/mushroom-growth-and-chopping.md`](../design/mushroom-growth-and-chopping.md) | [`../implementation/mushroom-growth-and-chopping.md`](../implementation/mushroom-growth-and-chopping.md), [#423](https://github.com/bageus/Dig/issues/423) |
 | Creatures и ecology | spawn, drops, behavior | `APPROVED` | [`../design/ecology-creatures-and-special-drops.md`](../design/ecology-creatures-and-special-drops.md) | [`../implementation/unity-creature-visual-pipeline.md`](../implementation/unity-creature-visual-pipeline.md) |
 | Combat, factions и strategy | attack, defense, diplomacy | `DRAFT` | [`../architecture/systems-gameplay.md`](../architecture/systems-gameplay.md#4-конфликт) | [`../implementation/combat-factions-strategy.md`](../implementation/combat-factions-strategy.md), [#10](https://github.com/bageus/Dig/issues/10) |
 | Combat knockback into shafts | push, fall attribution, impact | `QUESTIONNAIRE` | [`../design/entity-fall-knockback-and-vertical-shafts.md`](../design/entity-fall-knockback-and-vertical-shafts.md) | [#396](https://github.com/bageus/Dig/issues/396) |
