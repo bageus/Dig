@@ -73,6 +73,7 @@ namespace Dig.Unity
             {
                 TerrainSession.SynchronizeDesignations(nextTick, before);
                 TerrainSession.SynchronizeSpatialExcavations(nextTick, before);
+                TerrainSession.SynchronizeBuildingBoxRelocation(nextTick, before);
                 TerrainSession.SynchronizeBuildingBoxAssembly(nextTick, before);
                 TerrainSession.SynchronizeBuildingPacking(nextTick, before);
                 result = TerrainSession.InterruptForManualMovement(
