@@ -108,16 +108,11 @@ namespace Dig.Unity
             RaycastHit[] hits,
             out DigWorldItemVisual item)
         {
-            for (int index = 0; index < hits.Length; index++)
+            if (TryResolveWorldItemHit(hits, out DigWorldItemVisual candidate)
+                && candidate.Model.CanPickup)
             {
-                if (_itemRenderer != null
-                    && _itemRenderer.TryGetItem(hits[index], out DigWorldItemVisual candidate)
-                    && !candidate.Model.IsBuildingBox
-                    && candidate.Model.CanPickup)
-                {
-                    item = candidate;
-                    return true;
-                }
+                item = candidate;
+                return true;
             }
 
             item = null!;
