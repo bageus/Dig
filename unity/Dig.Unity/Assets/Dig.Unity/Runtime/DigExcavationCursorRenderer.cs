@@ -85,6 +85,15 @@ namespace Dig.Unity
             }
         }
 
+        internal void ClearExcavationQuarterProgress()
+        {
+            foreach (GameObject marker in _tunnelDesignations.Values)
+            {
+                marker.GetComponent<DigExcavationQuarterMarker>()?
+                    .SetProgress(ExcavationQuarter.None);
+            }
+        }
+
         internal void SynchronizeTunnelDesignations(WorldViewModel world)
         {
             if (world.Version == _synchronizedWorldVersion)
