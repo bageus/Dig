@@ -46,6 +46,14 @@ namespace Dig.Unity
                     cellOffset.y + WorldItemFrontDepthOffset);
         }
 
+        internal static bool IsCampfireBox(string itemId)
+        {
+            return string.Equals(
+                itemId,
+                CampfireBuildingBoxContent.CampfireBoxItemId.ToString(),
+                StringComparison.Ordinal);
+        }
+
         private static DigItemVisualResolution CreateFallbackResolution(string itemId)
         {
             return new DigItemVisualResolution(
@@ -80,14 +88,6 @@ namespace Dig.Unity
                 DigItemColliderPolicy.InteractiveOnly,
                 maxVisibleInstances: 1,
                 hasProfile: true);
-        }
-
-        private static bool IsCampfireBox(string itemId)
-        {
-            return string.Equals(
-                itemId,
-                CampfireBuildingBoxContent.CampfireBoxItemId.ToString(),
-                StringComparison.Ordinal);
         }
     }
 }
