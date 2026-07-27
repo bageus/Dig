@@ -81,6 +81,8 @@ Quarter work явно переводит signed generation seed в его 32-bit
 
 `Dig.Unity.PlayModeTests` является отдельной assembly и не имеет доступа к `internal DigTunnelProjection`. BuildingBox cursor regression теперь проверяет observable transform renderer-а без обращения к runtime-internal helper, поэтому Unity Test Runner компилирует test assembly без `CS0122`. Nullable `ResidentInventoryLayoutSlotViewModel.StackId` теперь явно проверяется и только затем передаётся в `EntityId.Parse`, устраняя `CS8604` без изменения valid inventory workflow.
 
+Тот же assembly boundary применяется к `internal DigBuildingBoxGhostRenderer.RenderPlans`: Play Mode regression вызывает projection через существующий reflection helper вместо прямого compile-time вызова. Это устраняет `CS1061` в `Dig.Unity.PlayModeTests`, не раскрывая runtime presentation API только ради теста.
+
 `PostExcavationTopologyPlayModeTests` больше не полагается на отсутствующий в public Domain contract helper `CellId.Offset`. Четыре горизонтальных соседа строятся через публичный `CellId(x, y, z)` constructor. Это сохраняет black-box проверку topology/movement surfaces и устраняет `CS1061` в Unity test assembly без расширения Domain API ради теста.
 
 ### Continuation и cave rooms
