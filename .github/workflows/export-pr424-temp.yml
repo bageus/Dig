@@ -1,0 +1,24 @@
+name: Temporary PR 424 Source Export
+
+on:
+  push:
+    branches:
+      - agent/export-pr424-head
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Pack source tree
+        run: tar --exclude=.git -czf /tmp/pr424-source.tgz .
+      - name: Upload source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr424-source
+          path: /tmp/pr424-source.tgz
+          retention-days: 1
