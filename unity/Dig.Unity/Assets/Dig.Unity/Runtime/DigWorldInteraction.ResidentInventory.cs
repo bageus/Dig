@@ -66,14 +66,14 @@ namespace Dig.Unity
                 return;
             }
 
-            string residentIdValue = resident.Id ?? string.Empty;
+            string? residentIdValue = resident.Id;
             if (string.IsNullOrWhiteSpace(residentIdValue))
             {
                 _hud.SetStatus("input.inventory.building_placement_unavailable");
                 return;
             }
 
-            EntityId residentId = EntityId.Parse(residentIdValue);
+            EntityId residentId = EntityId.Parse(residentIdValue ?? string.Empty);
             EntityId stackId = EntityId.Parse(slot.StackId);
             ContextInputState state = new ContextInputState(
                 selectedResidentId: residentId,
@@ -139,14 +139,14 @@ namespace Dig.Unity
                 return;
             }
 
-            string residentIdValue = resident.Id ?? string.Empty;
+            string? residentIdValue = resident.Id;
             if (string.IsNullOrWhiteSpace(residentIdValue))
             {
                 _hud.SetStatus("input.inventory.resident_not_selected");
                 return;
             }
 
-            EntityId residentId = EntityId.Parse(residentIdValue);
+            EntityId residentId = EntityId.Parse(residentIdValue ?? string.Empty);
             EntityId stackId = EntityId.Parse(slot.StackId);
             ContextInputState state = new ContextInputState(
                 selectedResidentId: residentId,
