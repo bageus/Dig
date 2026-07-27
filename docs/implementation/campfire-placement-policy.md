@@ -10,9 +10,9 @@ The Application placement preview and confirmation paths invoke both validators 
 
 ## Campfire footprint
 
-The campfire content declares a physical square of `1.5 x 1.5` cells. Logical occupancy is conservative: each physical dimension is rounded up, so the current square covers a `2 x 2` logical-cell set anchored at the selected origin.
+Campfire сохраняет визуальный размер `1.5 x 1.5` клетки, но authoritative logical occupancy для BuildingBox placement равен одной anchor cell. В side-view layered world округление визуального размера до `2 x 2` логических клеток ошибочно превращало нижнюю клетку в solid support и скрывало ghost на Z1–Z3.
 
-This prevents another building from occupying the partially covered edge area. The exact physical dimensions remain available for the placement silhouette and final visual scale.
+Placement profile требует ровную опору, но разрешает как outdoor, так и tunnel surface. Поэтому supported anchor cell на Z1, Z2 или Z3 показывает building ghost и может быть подтверждена; Z0 остаётся отдельным relocation intent.
 
 ## Surface facts
 
@@ -24,7 +24,7 @@ Surface facts are projected from authoritative World cells rather than inferred 
 - every required support column must resolve to the same elevation for a flat-surface building;
 - surface classification remains `OutdoorGround` or `Tunnel`.
 
-Missing support fails closed. Interactive placement hides the ghost over unsupported air, and authoritative confirmation repeats the same support projection before creating a plan/job. A campfire additionally succeeds only when all four conservative covered cells are known, outdoor, equal in elevation and unoccupied.
+Missing support fails closed. Interactive placement hides the ghost over unsupported air, and authoritative confirmation repeats the same support projection before creating a plan/job. Campfire succeeds when its single logical anchor cell is known, supported, equal to its only support elevation and unoccupied by another building/plan.
 
 ## Stable failures
 
