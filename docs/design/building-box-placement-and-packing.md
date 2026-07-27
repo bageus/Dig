@@ -21,6 +21,7 @@ Production -> BuildingBox item -> placement preview -> confirmed plan/job
 - `InventoryState` владеет BuildingBox entity, item id, quantity, location и item reservations.
 - `BuildingsState` владеет assembly plan, footprint, orientation, progress, completed state и durability.
 - `JobSystem` владеет relocation/delivery/assembly/packing lifecycle, worker claim и position reservations.
+- `World` владеет terrain cells и фактами физической опоры под footprint.
 - `Navigation` проверяет достижимость source box, target и work position.
 - `Presentation` владеет selection, меню, системным cursor visibility, moving ghost, footprint и локальным placement mode.
 
@@ -69,7 +70,7 @@ BuildingBox:
 
 ### BuildingBox в inventory resident
 
-Обычный ЛКМ по занятому BuildingBox slot немедленно запускает тот же placement mode. Отдельная кнопка `Unpack` не требуется.
+Обычный ЛКМ по занятому BuildingBox slot немедленно запускает тот же placement mode. Отдельная кнопка `Unpack` не требуется. Системный cursor скрывается, а 3D ghost конечного здания становится игровым cursor.
 
 До успешного confirmation коробка остаётся в исходном authoritative location и не резервируется.
 
@@ -86,6 +87,8 @@ BuildingBox:
 - preview не меняет Inventory, Buildings или Jobs.
 
 Если pointer находится над объектом, который не должен блокировать placement, resolver продолжает искать world cell под ним либо проецирует pointer на текущий depth layer. Resident, creature и loose world item не удерживают ghost на старой клетке.
+
+Interactive ghost отображается только тогда, когда под всем опорным краем его footprint существует реальная terrain-плоскость. Если target находится над пустотой либо хотя бы одна требуемая опора отсутствует, placement mode остаётся активным, но ghost скрывается и confirmation запрещён. Это правило одинаково для box ghost на Z0 и building ghost на Z1–Z3.
 
 ## 6. Intent определяется depth layer
 
@@ -115,9 +118,13 @@ BuildingBox:
 - target/footprint выходит за world bounds;
 - terrain target/footprint solid;
 - cell unexplored;
+- под опорным краем box/building footprint отсутствует solid terrain support;
+- опорные клетки footprint находятся на разных высотах при policy `RequiresFlatSurface`;
 - footprint пересекает active building или building plan;
 - отсутствует reachable target/work position;
 - source box отсутствует, зарезервирована несовместимой операцией либо больше не quantity-one unit.
+
+Для side-view footprint опорным краем является нижняя occupied-клетка каждого horizontal/depth column; каждая такая клетка должна иметь solid support непосредственно под ней. Верхние occupied-клетки footprint должны оставаться открытыми, но не требуют отдельной опоры внутри самого footprint.
 
 Не блокируют placement:
 
@@ -125,15 +132,15 @@ BuildingBox:
 - loose world item, включая другую не-authoritative визуальную проекцию предмета;
 - presentation overlays и cursor markers.
 
-Для Z0 relocation target также должен быть открытой explored reachable cell. Для Z1–Z3 assembly применяется footprint/surface policy соответствующего `BuildingDefinition`.
+Для Z0 relocation target также должен быть открытой explored reachable cell с solid support непосредственно под ней. Для Z1–Z3 assembly применяется footprint/surface policy соответствующего `BuildingDefinition`.
 
-ЛКМ по invalid preview не создаёт reservation, plan или job и показывает reason code.
+ЛКМ по invalid preview не создаёт reservation, plan или job и показывает reason code. Preview и authoritative confirmation используют одни и те же World support facts; stale preview не может разместить коробку или здание после исчезновения опоры.
 
 ## 8. Confirmation и planned projection
 
 Успешный ЛКМ атомарно:
 
-1. повторно валидирует source, layer-derived intent и target;
+1. повторно валидирует source, layer-derived intent, target и terrain support;
 2. резервирует конкретную BuildingBox за одним job/plan;
 3. создаёт relocation job либо assembly plan/job;
 4. публикует события;
@@ -179,7 +186,9 @@ Candidate set содержит только resident, чей `AgentInventory` в
 
 - RMB отменяет unconfirmed preview, восстанавливает cursor и не меняет quantity/location.
 - Cancel confirmed job до pickup освобождает reservation; коробка остаётся в source location.
-- Cancel после pickup возвращает коробку в допустимое world location и не меняет quantity.
+- Обычный explicit cancel после pickup возвращает коробку в допустимое world location и не меняет quantity.
+- Если assigned resident уже несёт зарезервированную коробку в своём inventory и получает принудительный direct-move command, active relocation/assembly job и незавершённый plan отменяются, все item/worker/position reservations освобождаются, planned target ghost исчезает, синяя inventory-подсветка снимается, а та же quantity-one коробка остаётся в inventory этого resident.
+- Forced-move cancellation применяется только пока box ещё не committed `AtSite`; после site commit действует обычная explicit-cancel policy.
 - Temporary route/source/target block сохраняет job и reservation для retry.
 - Missing/destroyed source или permanently invalid target переводят workflow в typed blocked/failed state.
 - Retry не резервирует коробку повторно и не создаёт duplicate entity.
@@ -227,7 +236,7 @@ Diagnostics/Inspector показывают:
 
 - source `StackId`, item id и authoritative location;
 - selected source и active placement layer/intent;
-- ghost origin, footprint, validity и reason;
+- ghost origin, footprint, visibility, support facts, validity и reason;
 - target, job/plan id, stage и assigned worker;
 - reservation owner;
 - carried-by resident;
@@ -239,8 +248,11 @@ Diagnostics/Inspector показывают:
 - одна BuildingBox имеет одно authoritative location;
 - preview не резервирует и не мутирует Domain;
 - Z0 всегда означает relocation box, Z1–Z3 всегда означают assembly building;
+- box/building никогда не подтверждаются без solid support под полным опорным краем;
+- flat-surface policy сравнивает реальные высоты terrain support, а не depth layer id;
 - resident/creature/loose item не блокируют placement footprint;
 - holder-owned box job назначается только holder resident;
+- forced direct movement carried-holder-а удаляет active plan/job/reservations, но не перемещает и не дублирует коробку;
 - relocation не создаёт completed building и не расходует box;
 - assembly расходует box только при completion;
 - cancel/retry/save-load не теряют и не дублируют коробки;
@@ -252,14 +264,18 @@ Diagnostics/Inspector показывают:
 
 - world LMB selection/menu без preview;
 - `Unpack` и inventory BuildingBox LMB запускают один placement workflow;
+- inventory LMB немедленно скрывает system cursor и показывает moving building ghost;
 - system cursor скрыт, moving ghost следует pointer по нескольким cells/layers;
+- ghost скрывается над unsupported air и снова появляется над supported plane;
 - valid green / invalid red preview;
-- Z0 показывает box ghost и создаёт relocation job;
+- uneven terrain support отклоняет flat-surface building и не создаёт plan/job;
+- Z0 показывает box ghost и создаёт relocation job только на supported cell;
 - Z1–Z3 показывают completed-building ghost и создают assembly plan/job;
 - resident и loose item в target cell не блокируют valid preview;
 - world source подбирается свободным worker и переносится;
 - inventory source job получает только holder resident;
 - carried reserved box синяя в inventory;
+- forced direct movement во время carry отменяет job/plan, освобождает reservations, убирает planned ghost/blue tint и оставляет ту же коробку в holder inventory;
 - RMB cancel и invalid LMB не меняют authoritative state;
 - cancel/retry/save-load на каждой authoritative стадии;
 - relocation сохраняет entity id и quantity;
