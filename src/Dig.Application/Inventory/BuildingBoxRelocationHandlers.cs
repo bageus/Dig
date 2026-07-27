@@ -137,9 +137,11 @@ public sealed class CreateBuildingBoxRelocationHandler
         CellSnapshot? target = world.Chunks
             .SelectMany(chunk => chunk.Cells)
             .FirstOrDefault(cell => cell.Id == command.DestinationCell);
-        return target is not null && !target.IsSolid && target.State.IsExplored
-            ? Result.Success()
-            : Result.Failure(BuildingBoxRelocationErrors.TargetUnavailable);
+        return target.HasValue
+            && !target.Value.IsSolid
+            && target.Value.State.IsExplored
+                ? Result.Success()
+                : Result.Failure(BuildingBoxRelocationErrors.TargetUnavailable);
     }
 
     private static Result ValidateSource(
