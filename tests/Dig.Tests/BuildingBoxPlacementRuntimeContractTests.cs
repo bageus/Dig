@@ -71,6 +71,32 @@ namespace Dig.Tests
             Assert.Contains("starts_held", codec);
         }
 
+        [Fact]
+        public void Play_mode_cursor_test_respects_runtime_assembly_boundary()
+        {
+            string root = FindRepositoryRoot();
+            string playMode = Normalize(File.ReadAllText(Path.Combine(
+                root,
+                "unity",
+                "Dig.Unity",
+                "Assets",
+                "Dig.Unity",
+                "Tests",
+                "PlayMode",
+                "BuildingBoxPlacementCursorPlayModeTests.cs")));
+            string inventoryInteraction = Read(
+                RuntimeRoot(),
+                "DigWorldInteraction.ResidentInventory.cs");
+
+            Assert.DoesNotContain("DigTunnelProjection", playMode);
+            Assert.Contains("Assert.AreEqual(2f,firstPosition.x", playMode);
+            Assert.Contains("Assert.AreNotEqual(firstPosition.z,secondPosition.z)", playMode);
+            Assert.Contains("string?stackIdValue=slot.StackId", inventoryInteraction);
+            Assert.Contains("string.IsNullOrWhiteSpace(stackIdValue)", inventoryInteraction);
+            Assert.Contains("EntityId.Parse(stackIdValue??string.Empty)", inventoryInteraction);
+            Assert.DoesNotContain("EntityId.Parse(slot.StackId)", inventoryInteraction);
+        }
+
         private static string Read(string runtime, string file)
         {
             return Normalize(File.ReadAllText(Path.Combine(runtime, file)));
