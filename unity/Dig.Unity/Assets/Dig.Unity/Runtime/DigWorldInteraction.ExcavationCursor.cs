@@ -49,11 +49,17 @@ namespace Dig.Unity
                 ExcavationQuarterProgressSnapshot snapshot = progress[index];
                 if (snapshot.Target.CellId.Z == 0)
                 {
-                    _excavationCursorRenderer!.SetTunnelDesignationProgress(
-                        snapshot.Target.CellId,
-                        snapshot.Completed);
+                    SetExcavationQuarterProgress(snapshot);
                 }
             }
+        }
+
+        private void SetExcavationQuarterProgress(
+            ExcavationQuarterProgressSnapshot snapshot)
+        {
+            _excavationCursorRenderer!.SetTunnelDesignationProgress(
+                snapshot.Target.CellId,
+                snapshot.Completed);
         }
 
         private void UpdateExcavationCursorPreview()
