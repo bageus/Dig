@@ -115,6 +115,11 @@ namespace Dig.Unity
 
             if (result.IsSuccess)
             {
+                result = TerrainSession.AdvanceMushrooms(AgentSession.Tick, agents);
+            }
+
+            if (result.IsSuccess)
+            {
                 result = AdvanceTerrainForAgents(AgentSession.Tick, agents);
             }
 
@@ -179,6 +184,7 @@ namespace Dig.Unity
 
             AgentRenderer.Render(agents, movementDuration);
             RefreshEquipmentVisuals();
+            MushroomRenderer!.Render(TerrainSession.LoadMushrooms());
             JobRenderer.Render(jobs);
             BuildingRenderer.Render(buildings);
             ItemRenderer!.Render(items);

@@ -1,6 +1,6 @@
 # Рост, прямая рубка и повторное появление грибов
 
-Статус: `QUESTIONNAIRE`.
+Статус: `APPROVED`.
 
 Tracking issue: [#423](https://github.com/bageus/Dig/issues/423).
 
@@ -63,11 +63,11 @@ Automatic job generation и самостоятельный выбор грибо
 3. target передаётся новому direct job/worker;
 4. два residents не выполняют swings по одному site одновременно.
 
-Точная судьба накопленного chop progress остаётся открытой в Q-MUSH-002.
+Накопленный chop progress при takeover сбрасывается. Новый resident получает новое полное required swing count, рассчитанное по его текущему Woodworking через следующий deterministic random draw. То же правило действует при cancel/interruption: незавершённые удары не сохраняются.
 
 ### Blocked/failure/retry
 
-- отсутствующий гриб не принимает обычный direct chop command, если Q-MUSH-001 подтверждает non-interactive absent stage;
+- `AbsentRegrowing` не имеет target/collider и не принимает direct chop command;
 - unreachable work position возвращает typed reason и не создаёт успешную axe feedback;
 - смерть, удаление или недоступность worker освобождает claim без удаления site;
 - failure одного mushroom job не останавливает simulation loop и другие mushroom sites;
@@ -178,7 +178,7 @@ Successful chop разрешён на каждой видимой стадии. 
 | `Small` | 1 `material.mushroom_cap` |
 | `Medium` | 2 `material.mushroom_cap` unit entities |
 | `Large` | 2 `material.mushroom_cap` + 1 `material.mushroom_leg` unit entities |
-| `AbsentRegrowing` | открыто в Q-MUSH-001 |
+| `AbsentRegrowing` | drops отсутствуют; stage не является chop target |
 
 Production duration каждого перехода — 15 игровых минут. Test configuration подменяет duration data на одну секунду, не меняя state machine или используя Unity frame count как owner.
 
@@ -218,7 +218,7 @@ SourceId = mushroom chop completion generation
 5. resident status во время travel/work показывает «Рубит гриб»;
 6. visible stage и current chop progress обновляются из authoritative snapshot;
 7. large visual немного выше visual resident;
-8. `AbsentRegrowing` не имеет mushroom geometry; допустимость collider/interaction зависит от Q-MUSH-001.
+8. `AbsentRegrowing` не имеет mushroom geometry, collider или direct interaction target.
 
 Автоматический job UI и auto-designation гриба остаются будущим scope.
 
@@ -230,7 +230,7 @@ SourceId = mushroom chop completion generation
 - Mushroom site cell входит в building blocked-cell query на всех стадиях, включая absent/regrowth.
 - World items не входят в этот blocked set: caps, legs и другие items могут лежать в mushroom cell и не мешают regrowth.
 - Mushroom visual/collider не становится Navigation occupancy; work position выбирается рядом с site.
-- Growth and chop transition ordering в одном tick должно быть deterministic; окончательная policy зависит от Q-MUSH-003.
+- На всём протяжении active chopping job, включая travel, stage deadline заморожен. При cancel/interruption оставшееся stage time сохраняется сдвигом deadline на длительность паузы. Successful chop заменяет старый deadline новым `AbsentRegrowing` deadline.
 
 ## 10. Инварианты
 
@@ -335,43 +335,22 @@ Unity Play Mode:
 - direct axe cursor and click use one target decision and one command;
 - hit bands use current Woodworking and deterministic required swings;
 - one site cannot be chopped concurrently by two residents;
-- successful chop atomically removes visible mushroom, creates stage drops and gives `0.8` Woodworking;
+- successful chop atomically removes visible mushroom, creates stage drops и gives `0.8` Woodworking;
 - caps/leg are ordinary pickable unit items;
 - site reappears in the same cell after absent/regrowth duration;
 - building placement is blocked in the permanent site cell, item placement is not;
 - save/load/retry never duplicate mushroom drops or skill progress;
 - Play Mode validates the complete observable workflow, not only source contracts.
 
-## 15. Открытые вопросы
+## 15. Решённые вопросы
 
-### Q-MUSH-001 — что означает стадия 5
-
-В исходном правиле стадия 5 одновременно названа «гриб отсутствует совсем после срубки» и описана как chop target с drop `2 caps + 1 leg`.
-
-- **A:** `AbsentRegrowing` не имеет target/collider, не рубится и не создаёт drops; после timer возвращается `Tiny`.
-- **B:** стадия 5 является видимым пятым грибом и может быть срублена за `2 caps + 1 leg`.
-
-Ответ определяет state machine, input/collider и drop table.
-
-### Q-MUSH-002 — сохраняется ли chop progress при смене worker
-
-- **A:** completed swings принадлежат mushroom site и новый resident продолжает оставшиеся swings.
-- **B:** takeover/cancel сбрасывает progress, новый resident получает полный required swing count.
-
-То же правило применяется к обычному interruption, если не будет отдельно уточнено.
-
-### Q-MUSH-003 — рост во время active chop
-
-Если stage timer заканчивается, пока resident идёт или рубит:
-
-- **A:** stage/growth timer блокируется до завершения/отмены chop job;
-- **B:** growth продолжается, required swings и drops переключаются на новую текущую stage;
-- **C:** visual growth продолжается, но active chop сохраняет stage snapshot, required swings и drops момента command start.
-
-Ответ определяет ordering growth/chop commands в одном tick, save data и presentation.
+- **Q-MUSH-001 = A:** `AbsentRegrowing` не имеет target/collider, не рубится и не создаёт drops; после timer возвращается `Tiny`.
+- **Q-MUSH-002 = B:** takeover, cancel и interruption сбрасывают completed swings. Новый direct worker получает новое полное required swing count по своему текущему Woodworking.
+- **Q-MUSH-003 = A:** stage и remaining growth time замораживаются на всё время active chop job, включая travel. После cancel/interruption deadline сдвигается на длительность паузы; successful chop запускает новый absent/regrowth timer.
 
 ## 16. Журнал решений
 
 | Дата | Решение | Кто подтвердил | Изменённые разделы/issues |
 |---|---|---|---|
 | 2026-07-27 | Зафиксированы site lifecycle, четыре видимые стадии, 15 игровых минут/1 секунда test profile, direct axe workflow, Woodworking hit bands, +0.8 grant, stage drops, exclusive worker takeover, permanent building block и два demo sites. Противоречия вынесены в Q-MUSH-001..003. | Пользователь | Все разделы, #423 |
+| 2026-07-27 | Q-MUSH-001=A: absent не интерактивен; Q-MUSH-002=B: takeover/interruption сбрасывает progress; Q-MUSH-003=A: рост и remaining duration замораживаются на время active chop. Статус повышен до APPROVED. | Пользователь | Workflow, state machine, conflicts, save/test acceptance, #423 |

@@ -11,10 +11,12 @@ namespace Dig.Unity
         private static readonly Vector2 ShovelCursorHotspot = new Vector2(16f, 27f);
         private static readonly Vector2 PickupCursorHotspot = new Vector2(16f, 27f);
         private static readonly Vector2 MovementCursorHotspot = new Vector2(16f, 27f);
+        private static readonly Vector2 AxeCursorHotspot = new Vector2(11f, 27f);
 
         private Texture2D[]? _shovelCursorFrames;
         private Texture2D[]? _pickupCursorFrames;
         private Texture2D[]? _movementCursorFrames;
+        private Texture2D[]? _axeCursorFrames;
         private DirectCommandCursorKind _commandCursorKind;
         private int _commandCursorFrame = -1;
         private float _commandCursorAnimationStartedAt;
@@ -26,6 +28,7 @@ namespace Dig.Unity
             Shovel = 1,
             Pickup = 2,
             Movement = 3,
+            Axe = 4,
         }
 
         private void UpdateSelectedResidentCommandCursor()
@@ -70,6 +73,13 @@ namespace Dig.Unity
 
                 if (_excavationMode == DigExcavationDrawingMode.None
                     && !_caveRoomPreset.HasValue
+                    && TryResolveMushroomHoverTarget(hits))
+                {
+                    return DirectCommandCursorKind.Axe;
+                }
+
+                if (_excavationMode == DigExcavationDrawingMode.None
+                    && !_caveRoomPreset.HasValue
                     && TryResolveExplicitExcavationHoverTarget(hits))
                 {
                     return DirectCommandCursorKind.Shovel;
@@ -95,6 +105,22 @@ namespace Dig.Unity
         {
             return TryResolveWorldItemHit(hits, out DigWorldItemVisual item)
                 && item.Model.CanPickup;
+        }
+
+        private bool TryResolveMushroomHoverTarget(RaycastHit[] hits)
+        {
+            if (!TryResolveMushroomHit(hits, out DigMushroomVisual mushroom))
+            {
+                return false;
+            }
+
+            Dig.Presentation.Agents.AgentViewModel? selected =
+                _agentRenderer!.SelectedModel;
+            return selected != null
+                && _terrainSession!.CanDirectChopMushroom(
+                    mushroom.Model.SiteId,
+                    new CellId(selected.CellX, selected.CellY, selected.CellZ),
+                    out _);
         }
 
         private bool TryResolveExplicitExcavationHoverTarget(RaycastHit[] hits)
@@ -189,6 +215,8 @@ namespace Dig.Unity
                     return _pickupCursorFrames ??= CreatePickupCursorFrames();
                 case DirectCommandCursorKind.Movement:
                     return _movementCursorFrames ??= CreateMovementCursorFrames();
+                case DirectCommandCursorKind.Axe:
+                    return _axeCursorFrames ??= CreateAxeCursorFrames();
                 default:
                     throw new ArgumentOutOfRangeException(nameof(kind));
             }
@@ -201,6 +229,7 @@ namespace Dig.Unity
                 DirectCommandCursorKind.Shovel => ShovelCursorHotspot,
                 DirectCommandCursorKind.Pickup => PickupCursorHotspot,
                 DirectCommandCursorKind.Movement => MovementCursorHotspot,
+                DirectCommandCursorKind.Axe => AxeCursorHotspot,
                 _ => Vector2.zero,
             };
         }
@@ -216,9 +245,11 @@ namespace Dig.Unity
             DestroyCommandCursorFrames(_shovelCursorFrames);
             DestroyCommandCursorFrames(_pickupCursorFrames);
             DestroyCommandCursorFrames(_movementCursorFrames);
+            DestroyCommandCursorFrames(_axeCursorFrames);
             _shovelCursorFrames = null;
             _pickupCursorFrames = null;
             _movementCursorFrames = null;
+            _axeCursorFrames = null;
         }
 
         private void ResetCommandCursor()

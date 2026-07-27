@@ -23,7 +23,8 @@ public sealed class PlaceBuildingCommand : ICommand<Result>
         CellId origin,
         BuildingOrientation orientation,
         IReadOnlyCollection<CellId> reachableCells,
-        long tick)
+        long tick,
+        IReadOnlyCollection<CellId>? ecologyBlockedCells = null)
     {
         BuildingId = buildingId;
         DefinitionId = definitionId;
@@ -32,6 +33,7 @@ public sealed class PlaceBuildingCommand : ICommand<Result>
         ReachableCells = reachableCells
             ?? throw new ArgumentNullException(nameof(reachableCells));
         Tick = tick;
+        EcologyBlockedCells = ecologyBlockedCells ?? Array.Empty<CellId>();
     }
 
     public EntityId BuildingId { get; }
@@ -45,6 +47,8 @@ public sealed class PlaceBuildingCommand : ICommand<Result>
     public IReadOnlyCollection<CellId> ReachableCells { get; }
 
     public long Tick { get; }
+
+    public IReadOnlyCollection<CellId> EcologyBlockedCells { get; }
 }
 
 public sealed class CreateBuildingDeliveryCommand : ICommand<Result>

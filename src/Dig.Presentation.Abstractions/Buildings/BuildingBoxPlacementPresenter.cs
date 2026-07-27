@@ -58,7 +58,8 @@ public sealed class BuildingBoxPlacementPresenter
         BuildingOrientation orientation,
         WorldSnapshot world,
         IReadOnlyCollection<CellId> occupiedCells,
-        IReadOnlyCollection<CellId> reachableCells)
+        IReadOnlyCollection<CellId> reachableCells,
+        IReadOnlyCollection<CellId>? ecologyBlockedCells = null)
     {
         if (definition is null)
         {
@@ -94,7 +95,8 @@ public sealed class BuildingBoxPlacementPresenter
             orientation,
             world,
             occupiedCells,
-            reachableCells);
+            reachableCells,
+            ecologyBlockedCells);
         if (!placement.Succeeded)
         {
             return Invalid(

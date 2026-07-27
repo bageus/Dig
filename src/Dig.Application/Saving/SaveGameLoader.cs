@@ -6,18 +6,16 @@ using Dig.Application.Buildings;
 using Dig.Application.World;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
+using Dig.Domain.Ecology;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.World;
-
 namespace Dig.Application.Saving
 {
-
 public sealed partial class SaveGameLoader
 {
     private readonly SaveMigrationPipeline _migrations;
     private readonly JobDefinitionSaveRegistry _jobDefinitions;
-
     public SaveGameLoader(
         SaveMigrationPipeline migrations,
         JobDefinitionSaveRegistry jobDefinitions)
@@ -26,7 +24,6 @@ public sealed partial class SaveGameLoader
         _jobDefinitions = jobDefinitions
             ?? throw new ArgumentNullException(nameof(jobDefinitions));
     }
-
     public Result<LoadedGameState> Load(
         SaveGameDocument document,
         MaterialCatalog materials,
@@ -37,9 +34,9 @@ public sealed partial class SaveGameLoader
             materials,
             items,
             buildingCatalog: null,
-            terrainDepositCatalog: null);
+            terrainDepositCatalog: null,
+            mushroomCatalog: null);
     }
-
     public Result<LoadedGameState> Load(
         SaveGameDocument document,
         MaterialCatalog materials,
@@ -51,15 +48,31 @@ public sealed partial class SaveGameLoader
             materials,
             items,
             buildingCatalog,
-            terrainDepositCatalog: null);
+            terrainDepositCatalog: null,
+            mushroomCatalog: null);
     }
-
     public Result<LoadedGameState> Load(
         SaveGameDocument document,
         MaterialCatalog materials,
         ItemCatalog items,
         BuildingCatalog? buildingCatalog,
         TerrainDepositCatalog? terrainDepositCatalog)
+    {
+        return Load(
+            document,
+            materials,
+            items,
+            buildingCatalog,
+            terrainDepositCatalog,
+            mushroomCatalog: null);
+    }
+    public Result<LoadedGameState> Load(
+        SaveGameDocument document,
+        MaterialCatalog materials,
+        ItemCatalog items,
+        BuildingCatalog? buildingCatalog,
+        TerrainDepositCatalog? terrainDepositCatalog,
+        MushroomCatalog? mushroomCatalog)
     {
         if (document is null)
         {
@@ -109,6 +122,15 @@ public sealed partial class SaveGameLoader
             if (buildings.IsFailure)
             {
                 return Result<LoadedGameState>.Failure(buildings.Error!);
+            }
+
+            Result<MushroomState> mushrooms = BuildMushroomState(
+                document.Mushrooms,
+                mushroomCatalog,
+                jobs.Value);
+            if (mushrooms.IsFailure)
+            {
+                return Result<LoadedGameState>.Failure(mushrooms.Error!);
             }
 
             Result references = ValidateCrossReferences(inventory.Value, jobs.Value);
@@ -169,7 +191,8 @@ public sealed partial class SaveGameLoader
                 agentPositions,
                 terrainDeposits,
                 packableExecutions.Value,
-                miningOutput.Value));
+                miningOutput.Value,
+                mushrooms.Value));
         }
         catch (UnknownTerrainDepositDefinitionException)
         {

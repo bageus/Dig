@@ -46,7 +46,8 @@ public sealed class PlaceBuildingHandler : ICommandHandler<PlaceBuildingCommand,
             command.Orientation,
             _worldRepository.Get().CreateSnapshot(),
             buildings.GetOccupiedCells(),
-            command.ReachableCells);
+            command.ReachableCells,
+            command.EcologyBlockedCells);
         Result result = buildings.Place(
             command.BuildingId,
             definition,
