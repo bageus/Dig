@@ -111,14 +111,17 @@ namespace Dig.Unity.Tests
             ghost.Render(preview);
             EntityId relocationJobId = EntityId.Parse(
                 "00000000-0000-0000-0000-000000000103");
-            ghost.RenderPlans(new[]
-            {
-                new BuildingBoxRelocationPlanViewModel(
-                    relocationJobId,
-                    parsedStack,
-                    CampfireBuildingBoxContent.CampfireBoxItemId,
-                    new CellId(6, 2, 0)),
-            });
+            Invoke(
+                ghost,
+                "RenderPlans",
+                new[]
+                {
+                    new BuildingBoxRelocationPlanViewModel(
+                        relocationJobId,
+                        parsedStack,
+                        CampfireBuildingBoxContent.CampfireBoxItemId,
+                        new CellId(6, 2, 0)),
+                });
             yield return null;
 
             DigWorldItemVisual actualVisual =
