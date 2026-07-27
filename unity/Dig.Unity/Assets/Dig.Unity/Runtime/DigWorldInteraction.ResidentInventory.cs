@@ -60,7 +60,11 @@ namespace Dig.Unity
 
             ResetInventoryClickSequence();
             var resident = _agentRenderer?.SelectedModel;
-            if (!slot.CanStartPlacement || resident == null || _hud == null)
+            string? stackIdValue = slot.StackId;
+            if (!slot.CanStartPlacement
+                || resident == null
+                || _hud == null
+                || string.IsNullOrWhiteSpace(stackIdValue))
             {
                 _hud?.SetStatus("input.inventory.building_placement_unavailable");
                 return;
@@ -74,7 +78,7 @@ namespace Dig.Unity
             }
 
             EntityId residentId = EntityId.Parse(residentIdValue ?? string.Empty);
-            EntityId stackId = EntityId.Parse(slot.StackId);
+            EntityId stackId = EntityId.Parse(stackIdValue ?? string.Empty);
             ContextInputState state = new ContextInputState(
                 selectedResidentId: residentId,
                 selectedResidentAlive: resident.IsAlive,
@@ -140,14 +144,16 @@ namespace Dig.Unity
             }
 
             string? residentIdValue = resident.Id;
-            if (string.IsNullOrWhiteSpace(residentIdValue))
+            string? stackIdValue = slot.StackId;
+            if (string.IsNullOrWhiteSpace(residentIdValue)
+                || string.IsNullOrWhiteSpace(stackIdValue))
             {
                 _hud.SetStatus("input.inventory.resident_not_selected");
                 return;
             }
 
             EntityId residentId = EntityId.Parse(residentIdValue ?? string.Empty);
-            EntityId stackId = EntityId.Parse(slot.StackId);
+            EntityId stackId = EntityId.Parse(stackIdValue ?? string.Empty);
             ContextInputState state = new ContextInputState(
                 selectedResidentId: residentId,
                 selectedResidentAlive: resident.IsAlive,

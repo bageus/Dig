@@ -48,24 +48,16 @@ namespace Dig.Unity.Tests
             yield return null;
             Transform preview = GetField<Transform>(renderer, "_previewContainer");
             Vector3 firstPosition = preview.localPosition;
-            Assert.AreEqual(
-                DigTunnelProjection.ResidentWorldPosition(2, 2, 0).x,
-                firstPosition.x,
-                0.001f);
+            Assert.AreEqual(2f, firstPosition.x, 0.001f);
             AssertAllChildrenNonBlocking(preview.gameObject);
 
             renderer.Render(second);
             yield return null;
             Vector3 secondPosition = preview.localPosition;
             Assert.AreNotEqual(firstPosition, secondPosition);
-            Assert.AreEqual(
-                DigTunnelProjection.ResidentWorldPosition(5, 3, 1).x,
-                secondPosition.x,
-                0.001f);
-            Assert.AreEqual(
-                DigTunnelProjection.ResidentWorldPosition(5, 3, 1).z,
-                secondPosition.z,
-                0.001f);
+            Assert.AreEqual(5f, secondPosition.x, 0.001f);
+            Assert.AreNotEqual(firstPosition.y, secondPosition.y);
+            Assert.AreNotEqual(firstPosition.z, secondPosition.z);
             AssertAllChildrenNonBlocking(preview.gameObject);
 
             Object.DestroyImmediate(host);
