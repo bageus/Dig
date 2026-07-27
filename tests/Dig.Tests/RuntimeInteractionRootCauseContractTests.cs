@@ -77,6 +77,7 @@ namespace Dig.Tests
             string spatial = Read(runtime, "DigTerrainSpatialExcavation.cs");
             string quarters = Read(runtime, "DigTerrainWorkExcavationQuarters.cs");
             string cursor = Read(runtime, "DigWorldInteraction.ExcavationCursor.cs");
+            string cursorRenderer = Read(runtime, "DigExcavationCursorRenderer.cs");
             string marker = Read(runtime, "DigExcavationQuarterMarker.cs");
             string room = Read(runtime, "DigCaveRoomPreviewRenderer.Show.cs");
 
@@ -85,6 +86,9 @@ namespace Dig.Tests
             Assert.Contains("AdvanceExcavationQuarterWork", spatial);
             Assert.Contains("LoadExcavationQuarterProgress", quarters);
             Assert.Contains("SynchronizeExcavationQuarterProgress", cursor);
+            Assert.Contains("ClearExcavationQuarterProgress()", cursor);
+            Assert.Contains("internalvoidClearExcavationQuarterProgress()", cursorRenderer);
+            Assert.Contains("SetProgress(ExcavationQuarter.None)", cursorRenderer);
             Assert.Contains("ExcavationQuarter.UpperLeft", marker);
             Assert.Contains("ExcavationQuarter.LowerRight", marker);
             Assert.Contains("frontEdges", room);
@@ -151,13 +155,13 @@ namespace Dig.Tests
             Assert.DoesNotContain("_manualExcavationMiningSkill", quarters);
             Assert.Equal(
                 2,
-                CountOccurrences(
-                    inventory,
-                    "stringresidentIdValue=resident.Id??string.Empty;"));
+                CountOccurrences(inventory, "string?residentIdValue=resident.Id;"));
             Assert.Equal(
                 2,
-                CountOccurrences(inventory, "EntityId.Parse(residentIdValue)"));
-            Assert.DoesNotContain("string?residentIdValue", inventory);
+                CountOccurrences(
+                    inventory,
+                    "EntityId.Parse(residentIdValue??string.Empty)"));
+            Assert.DoesNotContain("EntityId.Parse(residentIdValue)", inventory);
             Assert.DoesNotContain("EntityId.Parse(resident.Id)", inventory);
         }
 
