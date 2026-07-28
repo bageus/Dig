@@ -84,7 +84,8 @@ public sealed class CreateWorldItemPickupHandler
             command.DestinationStackId,
             command.Priority,
             command.Tick,
-            JobRetryPolicy.Default);
+            JobRetryPolicy.Default,
+            completionAction: command.CompletionAction);
         Result added = jobs.Add(definition);
         if (added.IsFailure)
         {
