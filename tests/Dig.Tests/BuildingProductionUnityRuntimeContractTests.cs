@@ -32,6 +32,7 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         Assert.DoesNotContain("new AdvanceJobCommand(", runtimeExecution);
         Assert.Contains("CreateBuildingSupplyJobHandler", execution);
         Assert.Contains("AcquireBuildingSupplySourceHandler", execution);
+        Assert.Contains("ThenByDescending(value => value.Sequence)", execution);
         Assert.Contains("PrepareEligibleProductionOrders", synchronization);
         Assert.Contains("AssignProductionJobs", synchronization);
         Assert.Contains("FindByBoxItemId", placement);
@@ -53,7 +54,6 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         Assert.Contains("product.Tooltip", production);
         Assert.Contains("EnqueueBuildingProduction", production);
         Assert.Contains("CancelOneBuildingProduction", production);
-        Assert.Contains("ThenByDescending(value => value.Sequence)", execution);
         Assert.Contains("SetBuildingStockDelivery", production);
         Assert.Contains("IPointerEnterHandler", pointer);
         Assert.Contains("IPointerExitHandler", pointer);
