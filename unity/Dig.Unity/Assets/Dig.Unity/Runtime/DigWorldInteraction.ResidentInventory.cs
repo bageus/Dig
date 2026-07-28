@@ -16,7 +16,7 @@ namespace Dig.Unity
                 throw new System.ArgumentNullException(nameof(slot));
             }
 
-            if (Input.GetKey(KeyCode.D) && !slot.IsBuildingBox)
+            if (Input.GetKey(KeyCode.C) && !slot.IsBuildingBox)
             {
                 CancelInventoryItemPlacement();
                 DropResidentInventorySlot(slot);
