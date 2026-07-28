@@ -20,7 +20,10 @@ public readonly struct CellState : IEquatable<CellState>
         CellDesignation designation,
         bool isExplored,
         ushort damage,
-        short temperature)
+        short temperature,
+        ExcavationQuarter completedExcavationQuarters = ExcavationQuarter.None,
+        ExcavationCutPattern excavationCutPattern = ExcavationCutPattern.None,
+        MaterialId excavationSourceMaterialId = default)
     {
         if (materialId.IsEmpty)
         {
@@ -32,11 +35,36 @@ public readonly struct CellState : IEquatable<CellState>
             throw new ArgumentOutOfRangeException(nameof(designation));
         }
 
+        int quarterValue = (int)completedExcavationQuarters;
+        if ((quarterValue & ~(int)ExcavationQuarter.All) != 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(completedExcavationQuarters));
+        }
+
+        if (!Enum.IsDefined(typeof(ExcavationCutPattern), excavationCutPattern))
+        {
+            throw new ArgumentOutOfRangeException(nameof(excavationCutPattern));
+        }
+
+        if (completedExcavationQuarters != ExcavationQuarter.None
+            && excavationCutPattern == ExcavationCutPattern.None)
+        {
+            throw new ArgumentException(
+                "Partial excavation requires a cut pattern.",
+                nameof(excavationCutPattern));
+        }
+
         MaterialId = materialId;
         Designation = designation;
         IsExplored = isExplored;
         Damage = damage;
         Temperature = temperature;
+        CompletedExcavationQuarters = completedExcavationQuarters;
+        ExcavationCutPattern = excavationCutPattern;
+        ExcavationSourceMaterialId = completedExcavationQuarters != ExcavationQuarter.None
+            && excavationSourceMaterialId.IsEmpty
+                ? materialId
+                : excavationSourceMaterialId;
     }
 
     public MaterialId MaterialId { get; }
@@ -49,6 +77,19 @@ public readonly struct CellState : IEquatable<CellState>
 
     public short Temperature { get; }
 
+    public ExcavationQuarter CompletedExcavationQuarters { get; }
+
+    public ExcavationCutPattern ExcavationCutPattern { get; }
+
+    public MaterialId ExcavationSourceMaterialId { get; }
+
+    public bool HasPartialExcavation =>
+        CompletedExcavationQuarters != ExcavationQuarter.None
+        && CompletedExcavationQuarters != ExcavationQuarter.All;
+
+    public bool IsExcavationOpen =>
+        CompletedExcavationQuarters == ExcavationQuarter.All;
+
     public CellState WithDesignation(CellDesignation designation)
     {
         return new CellState(
@@ -56,7 +97,10 @@ public readonly struct CellState : IEquatable<CellState>
             designation,
             IsExplored,
             Damage,
-            Temperature);
+            Temperature,
+            CompletedExcavationQuarters,
+            ExcavationCutPattern,
+            ExcavationSourceMaterialId);
     }
 
     public CellState WithTerrain(MaterialId materialId, ushort damage = 0)
@@ -69,6 +113,19 @@ public readonly struct CellState : IEquatable<CellState>
             Temperature);
     }
 
+    public CellState WithExcavatedTerrain(MaterialId materialId, ushort damage = 0)
+    {
+        return new CellState(
+            materialId,
+            CellDesignation.None,
+            IsExplored,
+            damage,
+            Temperature,
+            CompletedExcavationQuarters,
+            ExcavationCutPattern,
+            ExcavationSourceMaterialId);
+    }
+
     public CellState WithExplored(bool isExplored)
     {
         return new CellState(
@@ -76,7 +133,27 @@ public readonly struct CellState : IEquatable<CellState>
             Designation,
             isExplored,
             Damage,
-            Temperature);
+            Temperature,
+            CompletedExcavationQuarters,
+            ExcavationCutPattern,
+            ExcavationSourceMaterialId);
+    }
+
+    public CellState WithExcavationProgress(
+        ExcavationQuarter completed,
+        ExcavationCutPattern cutPattern)
+    {
+        return new CellState(
+            MaterialId,
+            Designation,
+            IsExplored,
+            Damage,
+            Temperature,
+            completed,
+            cutPattern,
+            ExcavationSourceMaterialId.IsEmpty
+                ? MaterialId
+                : ExcavationSourceMaterialId);
     }
 
     public bool Equals(CellState other)
@@ -85,7 +162,10 @@ public readonly struct CellState : IEquatable<CellState>
             && Designation == other.Designation
             && IsExplored == other.IsExplored
             && Damage == other.Damage
-            && Temperature == other.Temperature;
+            && Temperature == other.Temperature
+            && CompletedExcavationQuarters == other.CompletedExcavationQuarters
+            && ExcavationCutPattern == other.ExcavationCutPattern
+            && ExcavationSourceMaterialId == other.ExcavationSourceMaterialId;
     }
 
     public override bool Equals(object? obj)
@@ -100,7 +180,10 @@ public readonly struct CellState : IEquatable<CellState>
             Designation,
             IsExplored,
             Damage,
-            Temperature);
+            Temperature,
+            CompletedExcavationQuarters,
+            ExcavationCutPattern,
+            ExcavationSourceMaterialId);
     }
 
     public static bool operator ==(CellState left, CellState right)
@@ -190,5 +273,21 @@ public static class WorldErrors
     public static readonly DomainError InvalidDesignation = new DomainError(
         "world.designation.invalid",
         "The requested cell designation is invalid for the target material.");
+
+    public static readonly DomainError InvalidExcavationQuarter = new DomainError(
+        "world.excavation.quarter_invalid",
+        "Excavation progress requires one quarter at a time.");
+
+    public static readonly DomainError InvalidExcavationCutPattern = new DomainError(
+        "world.excavation.cut_pattern_invalid",
+        "Excavation progress requires a concrete cut pattern.");
+
+    public static readonly DomainError ExcavationQuarterRequiresDesignation = new DomainError(
+        "world.excavation.quarter_requires_designation",
+        "Only a designated solid cell can receive excavation quarter progress.");
+
+    public static readonly DomainError ExcavationCutPatternConflict = new DomainError(
+        "world.excavation.cut_pattern_conflict",
+        "A partially excavated cell cannot change its cut pattern.");
 }
 }

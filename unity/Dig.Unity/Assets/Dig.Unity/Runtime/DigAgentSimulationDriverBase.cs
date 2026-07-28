@@ -24,6 +24,7 @@ namespace Dig.Unity
         private protected DigAgentSession? AgentSession;
         protected DigAgentRenderer? AgentRenderer;
         protected DigMushroomRenderer? MushroomRenderer;
+        protected DigBarrelRenderer? BarrelRenderer;
         private protected DigTerrainWorkSession? TerrainSession;
         protected DigJobRenderer? JobRenderer;
         protected DigBuildingRenderer? BuildingRenderer;
@@ -59,6 +60,7 @@ namespace Dig.Unity
             DigAgentRenderer agentRenderer,
             DigTerrainWorkSession terrainSession,
             DigMushroomRenderer mushroomRenderer,
+            DigBarrelRenderer barrelRenderer,
             DigJobRenderer jobRenderer,
             DigBuildingRenderer buildingRenderer,
             DigBuildingInternalStockRenderer buildingInternalStockRenderer,
@@ -73,6 +75,7 @@ namespace Dig.Unity
             AgentSession = agentSession;
             AgentRenderer = agentRenderer;
             MushroomRenderer = mushroomRenderer;
+            BarrelRenderer = barrelRenderer;
             TerrainSession = terrainSession;
             JobRenderer = jobRenderer;
             BuildingRenderer = buildingRenderer;
@@ -143,6 +146,7 @@ namespace Dig.Unity
                 && AgentRenderer != null
                 && TerrainSession != null
                 && MushroomRenderer != null
+                && BarrelRenderer != null
                 && JobRenderer != null
                 && BuildingRenderer != null
                 && BuildingInternalStockRenderer != null

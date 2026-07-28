@@ -13,13 +13,14 @@ using Dig.Domain.Production;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.World;
+using Dig.Domain.WorldObjects;
 
 namespace Dig.Application.Saving
 {
 
 public static class SaveFormat
 {
-    public const int CurrentVersion = 7;
+    public const int CurrentVersion = 8;
 }
 
 public static class SaveSlotNames
@@ -32,19 +33,14 @@ public sealed class SaveMetadataData
 {
     [DataMember(Order = 1)]
     public string SlotId { get; set; } = string.Empty;
-
     [DataMember(Order = 2)]
     public string DisplayName { get; set; } = string.Empty;
-
     [DataMember(Order = 3)]
     public string SavedAtUtc { get; set; } = string.Empty;
-
     [DataMember(Order = 4)]
     public long SimulationTick { get; set; }
-
     [DataMember(Order = 5)]
     public ulong WorldSeed { get; set; }
-
     [DataMember(Order = 6)]
     public int GeneratorVersion { get; set; }
 }
@@ -93,25 +89,18 @@ public sealed class SaveGameDocument
 {
     [DataMember(Order = 1)]
     public int FormatVersion { get; set; }
-
     [DataMember(Order = 2)]
     public SaveMetadataData Metadata { get; set; } = new SaveMetadataData();
-
     [DataMember(Order = 3)]
     public WorldSaveData World { get; set; } = new WorldSaveData();
-
     [DataMember(Order = 4)]
     public InventorySaveData Inventory { get; set; } = new InventorySaveData();
-
     [DataMember(Order = 5)]
     public JobsSaveData Jobs { get; set; } = new JobsSaveData();
-
     [DataMember(Order = 6)]
     public BuildingsSaveData Buildings { get; set; } = new BuildingsSaveData();
-
     [DataMember(Order = 7)]
     public AgentSkillsSaveData AgentSkills { get; set; } = new AgentSkillsSaveData();
-
     [DataMember(Order = 8)]
     public AgentPositionsSaveData AgentPositions { get; set; } = new AgentPositionsSaveData();
 
@@ -133,6 +122,9 @@ public sealed class SaveGameDocument
     [DataMember(Order = 13)]
     public BuildingProductionSaveData BuildingProduction { get; set; } =
         new BuildingProductionSaveData();
+
+    [DataMember(Order = 14)]
+    public BarrelSaveData Barrels { get; set; } = new BarrelSaveData();
 }
 
 public sealed class LoadedGameState
@@ -152,7 +144,8 @@ public sealed class LoadedGameState
         RestoredMiningOutputState? miningOutput = null,
         MushroomState? mushrooms = null,
         ProductionState? production = null,
-        BuildingSupplyState? buildingSupply = null)
+        BuildingSupplyState? buildingSupply = null,
+        BarrelState? barrels = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -195,6 +188,8 @@ public sealed class LoadedGameState
             new MushroomCatalog(Array.Empty<MushroomDefinition>()));
         Production = production ?? new ProductionState();
         BuildingSupply = buildingSupply ?? new BuildingSupplyState();
+        Barrels = barrels ?? new BarrelState(
+            new BarrelCatalog(Array.Empty<BarrelDefinition>()));
     }
 
     public SaveMetadataData Metadata { get; }
@@ -212,6 +207,7 @@ public sealed class LoadedGameState
     public MushroomState Mushrooms { get; }
     public ProductionState Production { get; }
     public BuildingSupplyState BuildingSupply { get; }
+    public BarrelState Barrels { get; }
 }
 
 public sealed class SaveMigrationReport
@@ -307,7 +303,8 @@ public sealed class SaveGameContext
         MiningOutputCommitState? miningOutputCommits = null,
         MushroomState? mushrooms = null,
         ProductionState? production = null,
-        BuildingSupplyState? buildingSupply = null)
+        BuildingSupplyState? buildingSupply = null,
+        BarrelState? barrels = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -328,6 +325,8 @@ public sealed class SaveGameContext
             new MushroomCatalog(Array.Empty<MushroomDefinition>()));
         Production = production ?? new ProductionState();
         BuildingSupply = buildingSupply ?? new BuildingSupplyState();
+        Barrels = barrels ?? new BarrelState(
+            new BarrelCatalog(Array.Empty<BarrelDefinition>()));
     }
 
     public SaveMetadataData Metadata { get; }
@@ -342,6 +341,7 @@ public sealed class SaveGameContext
     public MushroomState Mushrooms { get; }
     public ProductionState Production { get; }
     public BuildingSupplyState BuildingSupply { get; }
+    public BarrelState Barrels { get; }
 }
 
 }

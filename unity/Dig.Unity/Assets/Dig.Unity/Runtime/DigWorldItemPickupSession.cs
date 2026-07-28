@@ -1,6 +1,9 @@
 using System;
 using System.Linq;
+using System.Collections.Generic;
+using Dig.Application.Agents;
 using Dig.Application.Inventory;
+using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Navigation;
@@ -15,14 +18,18 @@ namespace Dig.Unity
         private CreateWorldItemPickupHandler? _buildingItemPickupCreate;
         private CompleteWorldItemPickupHandler? _terrainItemPickupComplete;
         private CompleteWorldItemPickupHandler? _buildingItemPickupComplete;
+        private StartResidentFoodMealHandler? _startResidentFoodMeal;
         private NavigationPathfinder? _worldItemPickupPathfinder;
+        private readonly Dictionary<EntityId, DirectWorldFoodIntent>
+            _directWorldFoodIntents = new Dictionary<EntityId, DirectWorldFoodIntent>();
         private long _nextWorldItemPickupSequence;
 
         internal Result CreateWorldItemPickup(
             string stackId,
             string residentId,
             CellId sourceCell,
-            long tick)
+            long tick,
+            bool eatAfterPickup = false)
         {
             EnsureWorldItemPickupInitialized();
             if (string.IsNullOrWhiteSpace(stackId)
@@ -32,6 +39,7 @@ namespace Dig.Unity
             }
 
             EntityId stack = EntityId.Parse(stackId);
+            EntityId resident = EntityId.Parse(residentId);
             InMemoryInventoryRepository? repository = ResolveWorldItemRepository(stack);
             if (repository == null)
             {
@@ -47,21 +55,49 @@ namespace Dig.Unity
             EntityId destinationStackId = quantity < snapshot.Quantity
                 ? DemoId('8', sequence)
                 : default;
+            ItemStackSnapshot? source = repository.Get().GetStack(stack);
+            if (eatAfterPickup
+                && source?.ItemId != CampfireProductionContent.GrilledMushroomItemId)
+            {
+                return Result.Failure(new DomainError(
+                    "world_food.unsupported_item",
+                    "Only grilled mushroom supports direct world eating."));
+            }
+
+            Result prepared = PrepareResidentsForDirectCommand(
+                new[] { residentId },
+                tick);
+            if (prepared.IsFailure)
+            {
+                return prepared;
+            }
+
+            long sequence = checked(_nextWorldItemPickupSequence + 1);
+            _nextWorldItemPickupSequence = sequence;
+            EntityId jobId = DemoId('9', sequence);
             CreateWorldItemPickupHandler handler = ReferenceEquals(
                 repository,
                 _buildingInventoryRepository)
                     ? _buildingItemPickupCreate!
                     : _terrainItemPickupCreate!;
-            return handler.Handle(new CreateWorldItemPickupCommand(
-                DemoId('9', sequence),
+            Result created = handler.Handle(new CreateWorldItemPickupCommand(
+                jobId,
                 stack,
-                EntityId.Parse(residentId),
+                resident,
                 sourceCell,
                 snapshot.Location,
                 quantity,
                 destinationStackId,
                 priority: 675,
                 tick));
+            if (created.IsSuccess && eatAfterPickup)
+            {
+                _directWorldFoodIntents[jobId] = new DirectWorldFoodIntent(
+                    resident,
+                    stack);
+            }
+
+            return created;
         }
 
         internal bool TryResolveBuildingInternalStockPickup(
@@ -104,14 +140,16 @@ namespace Dig.Unity
                 && _buildingItemPickupCreate != null
                 && _terrainItemPickupComplete != null
                 && _buildingItemPickupComplete != null
+                && _startResidentFoodMeal != null
                 && _worldItemPickupPathfinder != null)
             {
                 return;
             }
 
-            if (_buildingInventoryRepository == null)
+            if (_buildingInventoryRepository == null || _productionAgents == null)
             {
-                throw new InvalidOperationException("Building inventory must be initialized first.");
+                throw new InvalidOperationException(
+                    "Building inventory and resident state must be initialized first.");
             }
 
             InMemoryExecutionJournal journal = _worldSession.Journal;
@@ -131,6 +169,10 @@ namespace Dig.Unity
                 _buildingInventoryRepository,
                 _jobRepository,
                 journal);
+            _startResidentFoodMeal = new StartResidentFoodMealHandler(
+                _productionAgents,
+                _buildingInventoryRepository,
+                journal);
             _worldItemPickupPathfinder = new NavigationPathfinder();
         }
 
@@ -144,6 +186,18 @@ namespace Dig.Unity
             return _inventoryRepository.Get().GetStack(stackId) != null
                 ? _inventoryRepository
                 : null;
+        }
+
+        private readonly struct DirectWorldFoodIntent
+        {
+            internal DirectWorldFoodIntent(EntityId residentId, EntityId stackId)
+            {
+                ResidentId = residentId;
+                StackId = stackId;
+            }
+
+            internal EntityId ResidentId { get; }
+            internal EntityId StackId { get; }
         }
     }
 }

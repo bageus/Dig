@@ -56,6 +56,12 @@ internal sealed partial class DigTerrainWorkSession
         Require(state.AddSite(DemoId('8', 2), definition.Id, cave, MushroomStage.Tiny, tick));
         _mushroomRepository = new InMemoryMushroomRepository(state);
 
+        if (_buildingInventoryRepository == null)
+        {
+            throw new InvalidOperationException(
+                "Mushroom drops require the shared production inventory.");
+        }
+
         IAgentSkillLevelReader skillReader = _skillGrants as IAgentSkillLevelReader
             ?? throw new InvalidOperationException(
                 "The mushroom demo requires a readable authoritative skill service.");
@@ -79,7 +85,7 @@ internal sealed partial class DigTerrainWorkSession
         _completeMushroomChop = new CompleteMushroomChopCommandHandler(
             _mushroomRepository,
             _jobRepository,
-            _inventoryRepository,
+            _buildingInventoryRepository,
             _skillGrants,
             _journal);
         _cancelMushroomChop = new CancelMushroomChopCommandHandler(
@@ -183,7 +189,7 @@ internal sealed partial class DigTerrainWorkSession
                 continue;
             }
 
-            Result result = AdvanceMushroomAtWorkPosition(job, tick);
+            Result result = AdvanceMushroomJob(job, definition, tick);
             if (result.IsFailure)
             {
                 return result;
@@ -193,53 +199,90 @@ internal sealed partial class DigTerrainWorkSession
         return Result.Success();
     }
 
-    private Result AdvanceMushroomAtWorkPosition(JobSnapshot job, long tick)
+    internal bool TryPlanMushroomMovement(
+        JobSnapshot job,
+        AgentViewModel agent,
+        NavigationSnapshot navigation,
+        IDictionary<string, CellId> movement)
     {
-        if (job.Stage == JobStageKind.TravelToTarget)
+        if (job.Definition is not MushroomChopJobDefinition definition)
         {
-            return _arriveAtMushroom!.Handle(new ArriveAtMushroomCommand(job.Id, tick));
+            return false;
+        }
+
+        CellId start = new CellId(agent.CellX, agent.CellY, agent.CellZ);
+        PathResult path = new NavigationPathfinder().FindPath(
+            navigation,
+            new PathRequest(start, definition.WorkPosition, navigation.NavigationVersion));
+        if (path.Succeeded)
+        {
+            movement[agent.Id] = path.Path!.Cells.Count > 1
+                ? path.Path.Cells[1]
+                : definition.WorkPosition;
+        }
+
+        return true;
+    }
+
+    private Result AdvanceMushroomJob(
+        JobSnapshot job,
+        MushroomChopJobDefinition definition,
+        long tick)
+    {
+        if (job.Status == JobStatus.Claimed
+            || job.Stage == JobStageKind.TravelToTarget)
+        {
+            return _arriveAtMushroom!.Handle(
+                new ArriveAtMushroomCommand(job.Id, tick));
         }
 
         if (job.Stage == JobStageKind.PerformWork)
         {
-            if (tick % 2 != 0)
+            MushroomSiteSnapshot? site = _mushroomRepository!.Get().Get(definition.SiteId);
+            if (site == null)
             {
-                return Result.Success();
+                return Result.Failure(MushroomErrors.SiteNotFound);
             }
 
-            Result<bool> swing = _completeMushroomSwing!.Handle(
-                new CompleteMushroomSwingCommand(job.Id, tick));
-            if (swing.IsFailure)
+            if (site.CompletedSwings < site.RequiredSwings)
             {
-                return Result.Failure(swing.Error!);
+                Result<MushroomSwingCompletedResult> swing = _completeMushroomSwing!.Handle(
+                    new CompleteMushroomSwingCommand(job.Id, tick));
+                if (swing.IsFailure)
+                {
+                    return Result.Failure(swing.Error!);
+                }
+
+                if (!swing.Value!.ReadyToFinalize)
+                {
+                    return Result.Success();
+                }
             }
 
-            if (!swing.Value)
-            {
-                return Result.Success();
-            }
+            return _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick));
         }
 
-        JobSnapshot? updated = _jobRepository.Get().Get(job.Id);
-        if (updated?.Stage != JobStageKind.Finalize)
+        if (job.Stage != JobStageKind.Finalize)
         {
             return Result.Success();
         }
 
-        EntityId outputSeed = DemoId('0', checked(++_nextMushroomOutputSequence));
-        Result<MushroomChopCompletionResult> completion = _completeMushroomChop!.Handle(
-            new CompleteMushroomChopCommand(job.Id, outputSeed, tick));
-        _routePlans.Remove(job.Id);
-        return completion.IsSuccess
+        long sequence = checked(_nextMushroomOutputSequence + 1);
+        _nextMushroomOutputSequence = sequence;
+        Result<MushroomChopCompletedResult> completed = _completeMushroomChop!.Handle(
+            new CompleteMushroomChopCommand(
+                job.Id,
+                DemoId('7', sequence),
+                DemoId('6', sequence),
+                tick));
+        return completed.IsSuccess
             ? Result.Success()
-            : Result.Failure(completion.Error!);
+            : Result.Failure(completed.Error!);
     }
 
     private void EnsureMushroomsInitialized()
     {
-        if (_mushroomRepository == null
-            || _startMushroomChop == null
-            || _completeMushroomChop == null)
+        if (_mushroomRepository == null)
         {
             throw new InvalidOperationException("Mushroom demo is not initialized.");
         }

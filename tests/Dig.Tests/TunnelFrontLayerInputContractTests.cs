@@ -18,9 +18,18 @@ namespace Dig.Tests
                 "Dig.Unity",
                 "Runtime",
                 "DigWorldInteraction.Excavation.cs"));
+            string targets = File.ReadAllText(Path.Combine(
+                root,
+                "unity",
+                "Dig.Unity",
+                "Assets",
+                "Dig.Unity",
+                "Runtime",
+                "DigWorldInteraction.ExcavationTargets.cs"));
 
-            Assert.Equal(2, CountOccurrences(interaction, "&& cell.Model.Z == 0"));
+            Assert.Equal(2, CountOccurrences(targets, "&& cell.Model.Z == 0"));
             Assert.Contains("ResolveExcavationPaintTarget(hits[index])", interaction);
+            Assert.Contains("!cell.Model.IsExcavationOpen", targets);
         }
 
         private static int CountOccurrences(string text, string fragment)

@@ -6,7 +6,6 @@ using Dig.Domain.World;
 
 namespace Dig.Application.Saving
 {
-
 public sealed partial class SaveGameLoader
 {
     private static WorldSnapshot BuildWorldSnapshot(
@@ -39,7 +38,12 @@ public sealed partial class SaveGameLoader
                 .ThenBy(item => item.X))
             {
                 if (savedCell is null
-                    || !Enum.IsDefined(typeof(CellDesignation), savedCell.Designation))
+                    || !Enum.IsDefined(typeof(CellDesignation), savedCell.Designation)
+                    || !Enum.IsDefined(
+                        typeof(ExcavationCutPattern),
+                        savedCell.ExcavationCutPattern)
+                    || (savedCell.CompletedExcavationQuarters
+                        & ~(int)ExcavationQuarter.All) != 0)
                 {
                     throw new InvalidOperationException("World cell save data is invalid.");
                 }
@@ -48,12 +52,19 @@ public sealed partial class SaveGameLoader
                 MaterialDefinition material = materials.Get(materialId)
                     ?? throw new InvalidOperationException(
                         $"Unknown saved material '{materialId}'.");
+                MaterialId sourceMaterialId = string.IsNullOrWhiteSpace(
+                        savedCell.ExcavationSourceMaterialId)
+                    ? default
+                    : new MaterialId(savedCell.ExcavationSourceMaterialId);
                 CellState state = new CellState(
                     materialId,
                     (CellDesignation)savedCell.Designation,
                     savedCell.IsExplored,
                     savedCell.Damage,
-                    savedCell.Temperature);
+                    savedCell.Temperature,
+                    (ExcavationQuarter)savedCell.CompletedExcavationQuarters,
+                    (ExcavationCutPattern)savedCell.ExcavationCutPattern,
+                    sourceMaterialId);
                 cells.Add(new CellSnapshot(
                     new CellId(savedCell.X, savedCell.Y, savedCell.Z),
                     state,
@@ -79,5 +90,4 @@ public sealed partial class SaveGameLoader
 
 
 }
-
 }

@@ -20,8 +20,7 @@ public sealed class ProductionOutputPlacementTests
     {
         WorldState world = CreateWorld();
         BuildingSnapshot building = CreateBuilding(BuildingOrientation.North);
-        CellId front = Assert.IsType<CellId>(
-            ProductionOutputPlacement.CreateCandidates(building, 2)[0]);
+        CellId front = ProductionOutputPlacement.CreateCandidates(building, 2)[0];
         InventoryState inventory = new InventoryState(
             CampfireProductionContentTests.CreateItems());
         Assert.True(inventory.AddStack(
@@ -43,6 +42,36 @@ public sealed class ProductionOutputPlacementTests
     }
 
     [Fact]
+    public void Full_nearest_ring_expands_front_first_without_overwriting_items()
+    {
+        WorldState world = CreateWorld();
+        BuildingSnapshot building = CreateBuilding(BuildingOrientation.North);
+        InventoryState inventory = new InventoryState(
+            CampfireProductionContentTests.CreateItems());
+        CellId[] nearestRing = ProductionOutputPlacement.CreateCandidates(building, 0)
+            .ToArray();
+        for (int index = 0; index < nearestRing.Length; index++)
+        {
+            Assert.True(inventory.AddStack(
+                EntityId.Parse((index + 20).ToString("x32")),
+                CampfireProductionContent.MushroomCapItemId,
+                1,
+                ItemLocation.InWorld(nearestRing[index]),
+                0).IsSuccess);
+        }
+
+        Result<CellId> result = ProductionOutputPlacement.Resolve(
+            building,
+            world.CreateSnapshot(),
+            building.Footprint,
+            inventory.CreateSnapshot().Stacks,
+            maximumLateralDistance: 1);
+
+        Assert.True(result.IsSuccess, result.Error?.ToString());
+        Assert.Equal(new CellId(4, 2, 0), result.Value);
+    }
+
+    [Fact]
     public void Every_orientation_places_output_on_its_facing_side()
     {
         Assert.Equal(new CellId(4, 3, 0), First(BuildingOrientation.North));
@@ -55,7 +84,7 @@ public sealed class ProductionOutputPlacementTests
     {
         return ProductionOutputPlacement.CreateCandidates(
             CreateBuilding(orientation),
-            0).Single();
+            0).First();
     }
 
     private static BuildingSnapshot CreateBuilding(BuildingOrientation orientation)
@@ -90,5 +119,4 @@ public sealed class ProductionOutputPlacementTests
             explored: true).Value;
     }
 }
-
 }

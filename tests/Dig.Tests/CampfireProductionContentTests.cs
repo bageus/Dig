@@ -61,6 +61,23 @@ public sealed class CampfireProductionContentTests
     }
 
     [Fact]
+    public void Grilled_mushroom_consumes_one_cap_creates_two_food_units()
+    {
+        RecipeDefinition recipe = CampfireProductionContent.CreateRecipes(
+                CampfireProductionContent.ProductionMaterialTicks)
+            .Single(value => value.Id == CampfireProductionContent.GrilledMushroomRecipeId);
+        ContentItemQuantity input = Assert.Single(recipe.Inputs);
+        ContentItemQuantity output = Assert.Single(recipe.Outputs);
+        ItemDefinition item = CreateItems().Get(output.ItemId);
+
+        Assert.Equal(CampfireProductionContent.MushroomCapItemId, input.ItemId);
+        Assert.Equal(1, input.Quantity);
+        Assert.Equal(CampfireProductionContent.GrilledMushroomItemId, output.ItemId);
+        Assert.Equal(2, output.Quantity);
+        Assert.Contains(CampfireProductionContent.FoodCategoryId, item.Categories);
+    }
+
+    [Fact]
     public void Material_skills_and_order_grants_match_balance()
     {
         IReadOnlyList<RecipeDefinition> recipes =
@@ -83,18 +100,18 @@ public sealed class CampfireProductionContentTests
     }
 
     [Theory]
-    [InlineData(0, 1500)]
-    [InlineData(25, 1125)]
-    [InlineData(50, 750)]
+    [InlineData(0, 900)]
+    [InlineData(25, 675)]
+    [InlineData(50, 450)]
     [InlineData(100, 1)]
-    public void Material_duration_uses_exact_skill_percentage(
+    public void Grilled_mushroom_duration_is_fifteen_minutes_minus_cooking_percent(
         int skillPoints,
         long expectedTicks)
     {
         Assert.Equal(
             expectedTicks,
             ProductionStepTiming.ResolveDurationTicks(
-                1500,
+                CampfireProductionContent.ProductionMaterialTicks,
                 skillPoints * AgentSkillCatalog.UnitsPerPoint));
     }
 
@@ -105,5 +122,4 @@ public sealed class CampfireProductionContentTests
         return new ItemCatalog(values);
     }
 }
-
 }

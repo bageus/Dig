@@ -109,17 +109,21 @@ public sealed class NavigationPathfinder
         }
 
         NavigationOpenSet open = new NavigationOpenSet();
-        Dictionary<CellId, int> costs = new Dictionary<CellId, int>();
+        Dictionary<CellId, NavigationSearchCost> costs =
+            new Dictionary<CellId, NavigationSearchCost>();
         Dictionary<CellId, CellId> previous = new Dictionary<CellId, CellId>();
-        costs.Add(request.Start, 0);
-        open.Push(new NavigationOpenNode(request.Start, cost: 0, heuristic: 0));
+        NavigationSearchCost startCost = new NavigationSearchCost(0, 0);
+        costs.Add(request.Start, startCost);
+        open.Push(new NavigationOpenNode(request.Start, startCost, heuristic: 0));
         int expandedNodes = 0;
 
         while (open.Count > 0)
         {
             NavigationOpenNode current = open.Pop();
-            if (!costs.TryGetValue(current.Cell, out int currentCost)
-                || current.Cost != currentCost)
+            if (!costs.TryGetValue(
+                    current.Cell,
+                    out NavigationSearchCost currentCost)
+                || !current.Cost.Equals(currentCost))
             {
                 continue;
             }
@@ -130,7 +134,10 @@ public sealed class NavigationPathfinder
                     previous,
                     request.Start,
                     request.Goal);
-                NavigationPath path = CreatePath(snapshot, cells, currentCost);
+                NavigationPath path = CreatePath(
+                    snapshot,
+                    cells,
+                    currentCost.MovementCost);
                 return PathResult.Success(
                     path,
                     new PathSearchDiagnostics(
@@ -156,9 +163,11 @@ public sealed class NavigationPathfinder
 
             foreach (NavigationTransition transition in snapshot.GetTransitions(current.Cell))
             {
-                int candidateCost = checked(currentCost + transition.Cost);
-                if (costs.TryGetValue(transition.Target, out int knownCost)
-                    && knownCost <= candidateCost)
+                NavigationSearchCost candidateCost = currentCost.Advance(transition);
+                if (costs.TryGetValue(
+                        transition.Target,
+                        out NavigationSearchCost knownCost)
+                    && knownCost.CompareTo(candidateCost) <= 0)
                 {
                     continue;
                 }

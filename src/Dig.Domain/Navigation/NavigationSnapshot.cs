@@ -12,16 +12,24 @@ public readonly struct NavigationTransition
     public NavigationTransition(
         CellId target,
         int cost,
-        TraversalLinkKind? linkKind = null)
+        TraversalLinkKind? linkKind = null,
+        TunnelTraversalKind traversalKind = TunnelTraversalKind.SupportedWalk)
     {
         if (cost <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(cost));
         }
 
+        if (traversalKind == TunnelTraversalKind.Invalid
+            || !Enum.IsDefined(typeof(TunnelTraversalKind), traversalKind))
+        {
+            throw new ArgumentOutOfRangeException(nameof(traversalKind));
+        }
+
         Target = target;
         Cost = cost;
         LinkKind = linkKind;
+        TraversalKind = traversalKind;
     }
 
     public CellId Target { get; }
@@ -29,6 +37,8 @@ public readonly struct NavigationTransition
     public int Cost { get; }
 
     public TraversalLinkKind? LinkKind { get; }
+
+    public TunnelTraversalKind TraversalKind { get; }
 }
 
 public sealed class NavigationRegionSnapshot
@@ -71,6 +81,7 @@ public sealed partial class NavigationSnapshot
     private readonly ChunkLayout _layout;
     private readonly Dictionary<ChunkId, NavigationChunkSnapshot> _chunks;
     private readonly Dictionary<CellId, int> _regionsByCell;
+    private readonly HashSet<CellId> _shaftGapCells;
     private readonly Dictionary<CellId, IReadOnlyList<NavigationTransition>> _linkTransitions;
 
     public NavigationSnapshot(
@@ -83,6 +94,7 @@ public sealed partial class NavigationSnapshot
         IReadOnlyCollection<NavigationChunkSnapshot> chunks,
         IReadOnlyDictionary<CellId, int> regionsByCell,
         IReadOnlyCollection<NavigationRegionSnapshot> regions,
+        IReadOnlyCollection<CellId> shaftGapCells,
         IReadOnlyCollection<TraversalLink> links)
     {
         if (profile is null)
@@ -125,6 +137,11 @@ public sealed partial class NavigationSnapshot
             throw new ArgumentNullException(nameof(regions));
         }
 
+        if (shaftGapCells is null)
+        {
+            throw new ArgumentNullException(nameof(shaftGapCells));
+        }
+
         if (links is null)
         {
             throw new ArgumentNullException(nameof(links));
@@ -139,6 +156,12 @@ public sealed partial class NavigationSnapshot
         _layout = new ChunkLayout(worldSize, chunkSize);
         _chunks = chunks.ToDictionary(chunk => chunk.Id);
         _regionsByCell = new Dictionary<CellId, int>(regionsByCell);
+        _shaftGapCells = new HashSet<CellId>(shaftGapCells);
+        if (_shaftGapCells.Any(cell => !worldSize.Contains(cell)))
+        {
+            throw new ArgumentOutOfRangeException(nameof(shaftGapCells));
+        }
+
         Chunks = new ReadOnlyCollection<NavigationChunkSnapshot>(
             chunks.OrderBy(chunk => chunk.Id).ToArray());
         Regions = new ReadOnlyCollection<NavigationRegionSnapshot>(
@@ -176,6 +199,11 @@ public sealed partial class NavigationSnapshot
         ChunkId chunkId = _layout.GetChunk(cellId);
         return _chunks.TryGetValue(chunkId, out NavigationChunkSnapshot? chunk)
             && chunk.Contains(cellId);
+    }
+
+    public bool IsShaftGapCell(CellId cellId)
+    {
+        return _shaftGapCells.Contains(cellId);
     }
 
     public bool TryGetRegion(CellId cellId, out int regionId)

@@ -141,7 +141,15 @@ def main() -> int:
     errors.extend(require(drawing_path, drawing, (
         "SetTunnelDigInteractionActive(UsesTunnelCellInteraction(mode))",
         "UsesTunnelCellInteraction",
+        "ResolveExcavationPaintTarget(hits[index])",
+    )))
+
+    excavation_targets_path, excavation_targets = read(
+        "DigWorldInteraction.ExcavationTargets.cs")
+    errors.extend(require(excavation_targets_path, excavation_targets, (
         "_renderer!.TryGetCell",
+        "cell.Model.IsExcavationOpen",
+        "_session!.IsExcavationOpen(target)",
     )))
 
     if errors:

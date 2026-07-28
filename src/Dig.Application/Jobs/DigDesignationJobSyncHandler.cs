@@ -104,7 +104,9 @@ public sealed class SyncDigDesignationJobsHandler
         {
             foreach (CellSnapshot cell in chunk.Cells)
             {
-                if (cell.IsSolid && cell.State.Designation == CellDesignation.Dig)
+                if (cell.IsSolid
+                    && !cell.State.IsExcavationOpen
+                    && cell.State.Designation == CellDesignation.Dig)
                 {
                     cells.Add(cell.Id);
                 }

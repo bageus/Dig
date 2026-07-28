@@ -9,6 +9,13 @@ using Dig.Domain.World;
 namespace Dig.Application.Jobs
 {
 
+public enum TerrainWorkPosture
+{
+    Standing = 0,
+    DepthBraced = 1,
+    Climbing = 2,
+}
+
 public sealed class TerrainWorkRoutePlan
 {
     public TerrainWorkRoutePlan(
@@ -16,7 +23,8 @@ public sealed class TerrainWorkRoutePlan
         CellId targetCell,
         CellId? workCell,
         PathResult pathResult,
-        int candidateCount)
+        int candidateCount,
+        TerrainWorkPosture posture = TerrainWorkPosture.Standing)
     {
         if (candidateCount < 0)
         {
@@ -27,7 +35,13 @@ public sealed class TerrainWorkRoutePlan
         TargetCell = targetCell;
         WorkCell = workCell;
         PathResult = pathResult ?? throw new ArgumentNullException(nameof(pathResult));
+        if (!Enum.IsDefined(typeof(TerrainWorkPosture), posture))
+        {
+            throw new ArgumentOutOfRangeException(nameof(posture));
+        }
+
         CandidateCount = candidateCount;
+        Posture = posture;
     }
 
     public EntityId JobId { get; }
@@ -35,6 +49,7 @@ public sealed class TerrainWorkRoutePlan
     public CellId? WorkCell { get; }
     public PathResult PathResult { get; }
     public int CandidateCount { get; }
+    public TerrainWorkPosture Posture { get; }
     public bool Succeeded => WorkCell.HasValue && PathResult.Succeeded;
 }
 
@@ -50,7 +65,8 @@ public sealed class TerrainWorkRoutePlanner
     public Result<TerrainWorkRoutePlan> Plan(
         JobSnapshot job,
         CellId start,
-        NavigationSnapshot navigation)
+        NavigationSnapshot navigation,
+        WorldSnapshot? world = null)
     {
         if (job is null)
         {
@@ -82,6 +98,9 @@ public sealed class TerrainWorkRoutePlanner
                     candidateCount: 0));
         }
 
+        Dictionary<CellId, CellSnapshot>? worldCells = world?.Chunks
+            .SelectMany(chunk => chunk.Cells)
+            .ToDictionary(cell => cell.Id);
         List<RouteCandidate> evaluated = new List<RouteCandidate>(candidates.Length);
         foreach (CellId candidate in candidates)
         {
@@ -91,22 +110,29 @@ public sealed class TerrainWorkRoutePlanner
                     start,
                     candidate,
                     navigation.NavigationVersion));
-            evaluated.Add(new RouteCandidate(candidate, path));
+            evaluated.Add(new RouteCandidate(
+                candidate,
+                path,
+                ResolvePosture(candidate, terrainJob.Target.CellId, worldCells)));
         }
 
         RouteCandidate selected = evaluated
             .Where(item => item.Path.Succeeded)
-            .OrderBy(item => item.Path.Path!.TotalCost)
+            .OrderBy(item => item.Posture)
+            .ThenBy(item => item.Path.Path!.TotalCost)
             .ThenBy(item => item.WorkCell)
             .FirstOrDefault()
-            ?? evaluated.OrderBy(item => item.WorkCell).First();
+            ?? evaluated.OrderBy(item => item.Posture)
+                .ThenBy(item => item.WorkCell)
+                .First();
         return Result<TerrainWorkRoutePlan>.Success(
             new TerrainWorkRoutePlan(
                 job.Id,
                 terrainJob.Target.CellId,
                 selected.WorkCell,
                 selected.Path,
-                candidates.Length));
+                candidates.Length,
+                selected.Posture));
     }
 
     private static CellId[] GetCandidateWorkCells(
@@ -137,6 +163,30 @@ public sealed class TerrainWorkRoutePlanner
             .ToArray();
     }
 
+
+    private static TerrainWorkPosture ResolvePosture(
+        CellId workCell,
+        CellId target,
+        IReadOnlyDictionary<CellId, CellSnapshot>? worldCells)
+    {
+        if (worldCells == null)
+        {
+            return TerrainWorkPosture.Standing;
+        }
+
+        CellId below = new CellId(workCell.X, workCell.Y + 1, workCell.Z);
+        if (worldCells.TryGetValue(below, out CellSnapshot support)
+            && support.IsSolid
+            && support.State.CompletedExcavationQuarters == ExcavationQuarter.None)
+        {
+            return TerrainWorkPosture.Standing;
+        }
+
+        return workCell.Z != target.Z
+            ? TerrainWorkPosture.DepthBraced
+            : TerrainWorkPosture.Climbing;
+    }
+
     private static PathResult CreateNoWorkCellResult(
         CellId start,
         NavigationSnapshot navigation)
@@ -156,14 +206,19 @@ public sealed class TerrainWorkRoutePlanner
 
     private sealed class RouteCandidate
     {
-        public RouteCandidate(CellId workCell, PathResult path)
+        public RouteCandidate(
+            CellId workCell,
+            PathResult path,
+            TerrainWorkPosture posture)
         {
             WorkCell = workCell;
             Path = path;
+            Posture = posture;
         }
 
         public CellId WorkCell { get; }
         public PathResult Path { get; }
+        public TerrainWorkPosture Posture { get; }
     }
 }
 

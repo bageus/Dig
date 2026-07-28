@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
@@ -30,9 +31,11 @@ namespace Dig.Unity
                 throw new ArgumentException("Resident id is required.", nameof(residentId));
             }
 
+            ExcavationWorkTarget target = new ExcavationWorkTarget(targetCell, targetZ);
+            SynchronizeExcavationQuarterState(target);
             return EnsureExcavationQuarterAssignment(
                 EntityId.Parse(residentId),
-                new ExcavationWorkTarget(targetCell, targetZ),
+                target,
                 residentCell,
                 miningSkill);
         }
@@ -69,8 +72,19 @@ namespace Dig.Unity
             }
 
             EntityId workerId = EntityId.Parse(residentId);
+            ExcavationWorkerAssignment? assignment =
+                _excavationQuarterWork.GetAssignment(workerId);
+            if (assignment == null)
+            {
+                return Array.Empty<ExcavationQuarterCompletion>();
+            }
+
+            SynchronizeExcavationQuarterState(assignment.Target);
             ulong seed = BuildExcavationSeed(worldSeed, tick, workerId);
-            return _excavationQuarterWork.ApplySwing(workerId, seed);
+            IReadOnlyList<ExcavationQuarterCompletion> completions =
+                _excavationQuarterWork.ApplySwing(workerId, seed);
+            CommitExcavationQuarterCompletions(completions, tick);
+            return completions;
         }
 
         internal IReadOnlyList<ExcavationQuarterCompletion>
@@ -78,10 +92,6 @@ namespace Dig.Unity
                 long tick,
                 IReadOnlyList<AgentViewModel> agents)
         {
-            // Quarter work is advanced by the owning Dig/SpatialDig job at its
-            // authoritative PerformWork cadence. Keeping this compatibility hook as a
-            // no-op prevents a second Presentation/runtime timer from double-applying
-            // swings.
             if (agents == null)
             {
                 throw new ArgumentNullException(nameof(agents));
@@ -94,14 +104,23 @@ namespace Dig.Unity
             CellId targetCell,
             int targetZ)
         {
-            return _excavationQuarterWork.GetState(
-                new ExcavationWorkTarget(targetCell, targetZ));
+            ExcavationWorkTarget target = new ExcavationWorkTarget(targetCell, targetZ);
+            SynchronizeExcavationQuarterState(target);
+            return _excavationQuarterWork.GetState(target);
         }
 
         internal IReadOnlyList<ExcavationQuarterProgressSnapshot>
             LoadExcavationQuarterProgress()
         {
-            return _excavationQuarterWork.GetProgress();
+            return _worldSession.LoadSnapshot().Chunks
+                .SelectMany(chunk => chunk.Cells)
+                .Where(cell => cell.State.CompletedExcavationQuarters
+                    != ExcavationQuarter.None)
+                .OrderBy(cell => cell.Id)
+                .Select(cell => new ExcavationQuarterProgressSnapshot(
+                    new ExcavationWorkTarget(cell.Id, cell.Id.Z),
+                    cell.State.CompletedExcavationQuarters))
+                .ToArray();
         }
 
         private bool AdvanceExcavationQuarterWork(
@@ -110,6 +129,13 @@ namespace Dig.Unity
             CellId residentCell,
             long tick)
         {
+            SynchronizeExcavationQuarterState(target);
+            CellSnapshot before = RequireExcavationCell(target.CellId);
+            if (!before.IsSolid)
+            {
+                return true;
+            }
+
             int skill = ResolveExcavationMiningSkill(workerId);
             EnsureExcavationQuarterAssignment(
                 workerId,
@@ -120,8 +146,16 @@ namespace Dig.Unity
                 unchecked((ulong)(uint)_worldSession.MiningOutputWorldSeed),
                 tick,
                 workerId);
-            _excavationQuarterWork.ApplySwing(workerId, seed);
-            return _excavationQuarterWork.GetState(target).IsComplete;
+            IReadOnlyList<ExcavationQuarterCompletion> completions =
+                _excavationQuarterWork.ApplySwing(workerId, seed);
+            CommitExcavationQuarterCompletions(completions, tick);
+
+            CellSnapshot current = RequireExcavationCell(target.CellId);
+            _excavationQuarterWork.SynchronizeCompleted(
+                target,
+                current.State.CompletedExcavationQuarters);
+            return !current.IsSolid
+                || current.State.CompletedExcavationQuarters == ExcavationQuarter.All;
         }
 
         private ExcavationWorkerAssignment EnsureExcavationQuarterAssignment(
@@ -131,21 +165,99 @@ namespace Dig.Unity
             int miningSkill)
         {
             _excavationQuarterWork.CancelAssignmentsExcept(target, workerId);
+            ExcavationCutPattern cutPattern = ResolveExcavationCutPattern(target.CellId);
+            ExcavationApproachSide approach = ExcavationApproachResolver.Resolve(
+                residentCell,
+                target.CellId,
+                cutPattern);
             ExcavationWorkerAssignment? existing =
                 _excavationQuarterWork.GetAssignment(workerId);
-            if (existing != null && existing.Target.Equals(target))
+            if (existing != null
+                && existing.Target.Equals(target)
+                && existing.Approach == approach)
             {
                 return existing;
             }
 
-            ExcavationApproachSide approach = ExcavationApproachResolver.Resolve(
-                residentCell,
-                target.CellId);
+            if (existing != null)
+            {
+                _excavationQuarterWork.Cancel(workerId);
+            }
+
             return _excavationQuarterWork.Assign(
                 workerId,
                 target,
                 approach,
                 Math.Max(0, Math.Min(100, miningSkill)));
+        }
+
+        private void CommitExcavationQuarterCompletions(
+            IReadOnlyList<ExcavationQuarterCompletion> completions,
+            long tick)
+        {
+            if (completions.Count == 0)
+            {
+                return;
+            }
+
+            WorldState world = _worldSession.Repository.Get();
+            for (int index = 0; index < completions.Count; index++)
+            {
+                ExcavationQuarterCompletion completion = completions[index];
+                ExcavationCutPattern pattern = ResolveExcavationCutPattern(
+                    completion.Target.CellId);
+                Result<WorldMutationResult> committed = world.CommitExcavationQuarter(
+                    completion.Target.CellId,
+                    completion.Quarter,
+                    pattern,
+                    _worldSession.EmptyMaterialId,
+                    tick);
+                if (committed.IsFailure)
+                {
+                    throw new InvalidOperationException(committed.Error!.ToString());
+                }
+            }
+
+            _worldSession.Repository.Save(world);
+            _worldSession.Journal.Append(world.DequeueUncommittedEvents());
+            MarkAuthoritativeWorldChanged();
+        }
+
+        private void SynchronizeExcavationQuarterState(ExcavationWorkTarget target)
+        {
+            CellSnapshot cell = RequireExcavationCell(target.CellId);
+            _excavationQuarterWork.SynchronizeCompleted(
+                target,
+                cell.State.CompletedExcavationQuarters);
+        }
+
+        private CellSnapshot RequireExcavationCell(CellId cellId)
+        {
+            Result<CellSnapshot> cell = _worldSession.Repository.Get().GetCell(cellId);
+            if (cell.IsFailure)
+            {
+                throw new InvalidOperationException(cell.Error!.ToString());
+            }
+
+            return cell.Value;
+        }
+
+        private ExcavationCutPattern ResolveExcavationCutPattern(CellId target)
+        {
+            CellSnapshot cell = RequireExcavationCell(target);
+            if (cell.State.ExcavationCutPattern != ExcavationCutPattern.None)
+            {
+                return cell.State.ExcavationCutPattern;
+            }
+
+            if (_worldSession.PlannedVerticalTunnelCells.Contains(target))
+            {
+                return ExcavationCutPattern.HorizontalRows;
+            }
+
+            return target.Z > CellId.MinimumDepth
+                ? ExcavationCutPattern.DepthFace
+                : ExcavationCutPattern.VerticalColumns;
         }
 
         private int ResolveExcavationMiningSkill(EntityId workerId)

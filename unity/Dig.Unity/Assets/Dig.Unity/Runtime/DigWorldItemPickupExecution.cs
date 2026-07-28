@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Domain.Core;
@@ -108,6 +109,7 @@ namespace Dig.Unity
             InMemoryInventoryRepository? repository = ResolveWorldItemRepository(pickup.StackId);
             if (repository == null)
             {
+                _directWorldFoodIntents.Remove(job.Id);
                 return Result.Failure(WorldItemPickupErrors.StackMissing);
             }
 
@@ -118,12 +120,25 @@ namespace Dig.Unity
                     : _terrainItemPickupComplete!;
             Result completed = handler.Handle(
                 new CompleteWorldItemPickupCommand(job.Id, tick));
-            if (completed.IsSuccess)
+            if (completed.IsFailure)
             {
-                _worldItemPickupRoutes.Remove(job.Id);
+                return completed;
             }
 
-            return completed;
+            _worldItemPickupRoutes.Remove(job.Id);
+            if (!_directWorldFoodIntents.TryGetValue(
+                    job.Id,
+                    out DirectWorldFoodIntent intent))
+            {
+                return Result.Success();
+            }
+
+            _directWorldFoodIntents.Remove(job.Id);
+            return _startResidentFoodMeal!.Handle(
+                new StartResidentFoodMealCommand(
+                    intent.ResidentId,
+                    intent.StackId,
+                    tick));
         }
 
         private sealed class WorldItemPickupRoutePlan

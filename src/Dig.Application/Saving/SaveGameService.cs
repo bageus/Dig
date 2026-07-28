@@ -62,7 +62,8 @@ public sealed class SaveGameService
             context.MiningOutputCommits,
             context.Mushrooms,
             context.Production,
-            context.BuildingSupply));
+            context.BuildingSupply,
+            context.Barrels));
     }
 
     public Result<LoadedGameState> Load(

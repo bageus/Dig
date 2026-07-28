@@ -34,6 +34,7 @@ public sealed partial class DigAgentRenderer
             rig.transform.localScale = resolution.Scale;
             DigAgentVisual agentVisual = root.AddComponent<DigAgentVisual>();
             agentVisual.Initialize(model, _normalMaterial!, _selectedMaterial!, rig, appearance);
+            agentVisual.SetTunnelNavigationVolume(_tunnelVolume);
             agentVisual.SetSelected(_selectedIds.Contains(model.Id));
             AttachEquipmentSafely(agentVisual, model.Id);
             _agents.Add(model.Id, agentVisual);
@@ -72,6 +73,7 @@ public sealed partial class DigAgentRenderer
         renderer.sharedMaterial = _normalMaterial;
         DigAgentVisual agentVisual = root.AddComponent<DigAgentVisual>();
         agentVisual.InitializeSimple(model, _normalMaterial!, _selectedMaterial!);
+        agentVisual.SetTunnelNavigationVolume(_tunnelVolume);
         agentVisual.SetSelected(_selectedIds.Contains(model.Id));
         AttachEquipmentSafely(agentVisual, model.Id);
         _agents.Add(model.Id, agentVisual);
