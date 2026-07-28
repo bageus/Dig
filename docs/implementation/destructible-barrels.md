@@ -109,3 +109,9 @@ Behavioral head `32b1e7e509c6c3f754fd5a910feb97d337865e06` passed:
 - Export Stage 2 v3 run `30345393753` / run 524.
 
 Unity Editor/Play Mode нельзя считать пройденным, пока fixtures реально не выполнены Unity Test Runner. Поэтому система остаётся `IMPLEMENTED`, а не `VERIFIED`.
+
+## Play Mode assembly-reference regression (2026-07-28)
+
+Unity Safe Mode reported `CS0234` in `BarrelDestructionPlayModeTests.cs` because the fixture directly composes `Dig.Application.WorldObjects` handlers and `Dig.Infrastructure.InMemory` repositories while `Dig.Unity.PlayModeTests.asmdef` had `overrideReferences: true` without references to `Dig.Application` or `Dig.Infrastructure`.
+
+The test assembly now explicitly references both project assemblies. `BarrelPlayModeAssemblyReferenceContractTests` requires those references whenever the checked-in barrel integration fixture keeps its Application/Infrastructure imports. Barrel behavior and authoritative ownership are unchanged.
