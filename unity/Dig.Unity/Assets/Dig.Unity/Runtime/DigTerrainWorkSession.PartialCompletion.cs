@@ -31,7 +31,7 @@ internal sealed partial class DigTerrainWorkSession
             job.Id,
             target.Cell,
             tick,
-            producedOutput: false);
+            false);
         Result refresh = RefreshNavigation();
         return refresh.IsFailure ? refresh : Result.Success();
     }
