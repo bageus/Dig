@@ -32,6 +32,25 @@ jobs:
           lfs: true
           show-progress: false
 
+      - name: Validate Unity activation
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${UNITY_EMAIL}" || -z "${UNITY_PASSWORD}" ]]; then
+            echo "::error title=Unity activation missing::Configure UNITY_EMAIL and UNITY_PASSWORD in repository Actions secrets."
+            exit 1
+          fi
+          if [[ -z "${UNITY_LICENSE}" && -z "${UNITY_SERIAL}" ]]; then
+            echo "::error title=Unity activation missing::Configure UNITY_LICENSE for Personal or UNITY_SERIAL for Pro in repository Actions secrets."
+            exit 1
+          fi
+          echo "Unity activation inputs are configured."
+
       - name: Cache Unity Library
         uses: actions/cache@v4
         with:
@@ -61,6 +80,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: unity-playmode-results
-          path: ${{ steps.playmode.outputs.artifactsPath }}
+          path: artifacts/playmode
           if-no-files-found: warn
           retention-days: 14
