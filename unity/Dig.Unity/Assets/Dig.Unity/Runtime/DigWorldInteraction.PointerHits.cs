@@ -187,6 +187,7 @@ namespace Dig.Unity
                     bestDistance = distance;
                     bestDepth = depth;
                     best = candidate;
+                }
             }
 
             agent = best!;
