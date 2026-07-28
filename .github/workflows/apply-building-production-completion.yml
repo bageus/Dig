@@ -1,0 +1,52 @@
+name: Apply building production completion
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/agent/building-production-completion.patch.gz.b64'
+      - '.github/workflows/apply-building-production-completion.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'feature/complete-building-production-workflow'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+
+      - name: Decode and verify patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 --decode .github/agent/building-production-completion.patch.gz.b64 > /tmp/building-production-completion.patch.gz
+          echo '553b968cadb6d7725ef9079051cb18c9bba21168db641c8607f84993c3456a51  /tmp/building-production-completion.patch.gz' | sha256sum --check --strict
+          gzip --decompress --stdout /tmp/building-production-completion.patch.gz > /tmp/building-production-completion.patch
+          echo '94daa9219bee799b879bef565fd1a7ec365f26a35ef2d8a722efa6b8061c1805  /tmp/building-production-completion.patch' | sha256sum --check --strict
+          git apply --check /tmp/building-production-completion.patch
+
+      - name: Apply implementation and remove transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          git apply --index /tmp/building-production-completion.patch
+          git rm .github/agent/building-production-completion.patch.gz.b64
+          git rm .github/workflows/apply-building-production-completion.yml
+          git diff --cached --check
+          python3 tools/quality/check_quality.py
+          python3 tools/quality/check_unity_source_contracts.py
+
+      - name: Commit clean implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'feat: complete building production workflow'
+          git push origin HEAD:${{ github.head_ref }}
