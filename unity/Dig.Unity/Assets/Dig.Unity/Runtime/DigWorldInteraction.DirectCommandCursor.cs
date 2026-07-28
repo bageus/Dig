@@ -33,8 +33,8 @@ namespace Dig.Unity
             Pickup = 2,
             Movement = 3,
             Axe = 4,
-            Eat = 6,
             Sword = 5,
+            Eat = 6,
         }
 
         private void UpdateSelectedResidentCommandCursor()
@@ -64,6 +64,20 @@ namespace Dig.Unity
             {
                 if (_excavationMode == DigExcavationDrawingMode.None
                     && !_caveRoomPreset.HasValue
+                    && TryResolveMushroomHoverTarget(hits))
+                {
+                    return DirectCommandCursorKind.Axe;
+                }
+
+                if (_excavationMode == DigExcavationDrawingMode.None
+                    && !_caveRoomPreset.HasValue
+                    && TryResolveBarrelHoverTarget(hits))
+                {
+                    return DirectCommandCursorKind.Sword;
+                }
+
+                if (_excavationMode == DigExcavationDrawingMode.None
+                    && !_caveRoomPreset.HasValue
                     && TryResolveFoodItemHoverTarget(hits, out _))
                 {
                     return IsAltPressed()
@@ -84,20 +98,6 @@ namespace Dig.Unity
                     && TryResolvePickableItemHoverTarget(hits))
                 {
                     return DirectCommandCursorKind.Pickup;
-                }
-
-                if (_excavationMode == DigExcavationDrawingMode.None
-                    && !_caveRoomPreset.HasValue
-                    && TryResolveBarrelHoverTarget(hits))
-                {
-                    return DirectCommandCursorKind.Sword;
-                }
-
-                if (_excavationMode == DigExcavationDrawingMode.None
-                    && !_caveRoomPreset.HasValue
-                    && TryResolveMushroomHoverTarget(hits))
-                {
-                    return DirectCommandCursorKind.Axe;
                 }
 
                 if (_excavationMode == DigExcavationDrawingMode.None
@@ -259,10 +259,10 @@ namespace Dig.Unity
                     return _movementCursorFrames ??= CreateMovementCursorFrames();
                 case DirectCommandCursorKind.Axe:
                     return _axeCursorFrames ??= CreateAxeCursorFrames();
-                case DirectCommandCursorKind.Eat:
-                    return _eatCursorFrames ??= CreateEatCursorFrames();
                 case DirectCommandCursorKind.Sword:
                     return _swordCursorFrames ??= CreateSwordCursorFrames();
+                case DirectCommandCursorKind.Eat:
+                    return _eatCursorFrames ??= CreateEatCursorFrames();
                 default:
                     throw new ArgumentOutOfRangeException(nameof(kind));
             }
@@ -276,8 +276,8 @@ namespace Dig.Unity
                 DirectCommandCursorKind.Pickup => PickupCursorHotspot,
                 DirectCommandCursorKind.Movement => MovementCursorHotspot,
                 DirectCommandCursorKind.Axe => AxeCursorHotspot,
-                DirectCommandCursorKind.Eat => EatCursorHotspot,
                 DirectCommandCursorKind.Sword => SwordCursorHotspot,
+                DirectCommandCursorKind.Eat => EatCursorHotspot,
                 _ => Vector2.zero,
             };
         }
@@ -295,14 +295,14 @@ namespace Dig.Unity
             DestroyCommandCursorFrames(_pickupCursorFrames);
             DestroyCommandCursorFrames(_movementCursorFrames);
             DestroyCommandCursorFrames(_axeCursorFrames);
-            DestroyCommandCursorFrames(_eatCursorFrames);
             DestroyCommandCursorFrames(_swordCursorFrames);
+            DestroyCommandCursorFrames(_eatCursorFrames);
             _shovelCursorFrames = null;
             _pickupCursorFrames = null;
             _movementCursorFrames = null;
             _axeCursorFrames = null;
-            _eatCursorFrames = null;
             _swordCursorFrames = null;
+            _eatCursorFrames = null;
         }
 
         private void ResetCommandCursor()
