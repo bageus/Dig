@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using Dig.Application.Inventory;
+using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Navigation;
@@ -15,13 +17,16 @@ namespace Dig.Unity
         private CompleteWorldItemPickupHandler? _terrainItemPickupComplete;
         private CompleteWorldItemPickupHandler? _buildingItemPickupComplete;
         private NavigationPathfinder? _worldItemPickupPathfinder;
+        private readonly Dictionary<EntityId, DirectWorldFoodIntent>
+            _directWorldFoodIntents = new Dictionary<EntityId, DirectWorldFoodIntent>();
         private long _nextWorldItemPickupSequence;
 
         internal Result CreateWorldItemPickup(
             string stackId,
             string residentId,
             CellId sourceCell,
-            long tick)
+            long tick,
+            bool eatAfterPickup = false)
         {
             EnsureWorldItemPickupInitialized();
             if (string.IsNullOrWhiteSpace(stackId)
@@ -31,26 +36,53 @@ namespace Dig.Unity
             }
 
             EntityId stack = EntityId.Parse(stackId);
+            EntityId resident = EntityId.Parse(residentId);
             InMemoryInventoryRepository? repository = ResolveWorldItemRepository(stack);
             if (repository == null)
             {
                 return Result.Failure(WorldItemPickupErrors.StackMissing);
             }
 
+            ItemStackSnapshot? source = repository.Get().GetStack(stack);
+            if (eatAfterPickup
+                && source?.ItemId != CampfireProductionContent.GrilledMushroomItemId)
+            {
+                return Result.Failure(new DomainError(
+                    "world_food.unsupported_item",
+                    "Only grilled mushroom supports direct world eating."));
+            }
+
+            Result prepared = PrepareResidentsForDirectCommand(
+                new[] { residentId },
+                tick);
+            if (prepared.IsFailure)
+            {
+                return prepared;
+            }
+
             long sequence = checked(_nextWorldItemPickupSequence + 1);
             _nextWorldItemPickupSequence = sequence;
+            EntityId jobId = DemoId('9', sequence);
             CreateWorldItemPickupHandler handler = ReferenceEquals(
                 repository,
                 _buildingInventoryRepository)
                     ? _buildingItemPickupCreate!
                     : _terrainItemPickupCreate!;
-            return handler.Handle(new CreateWorldItemPickupCommand(
-                DemoId('9', sequence),
+            Result created = handler.Handle(new CreateWorldItemPickupCommand(
+                jobId,
                 stack,
-                EntityId.Parse(residentId),
+                resident,
                 sourceCell,
                 priority: 675,
                 tick));
+            if (created.IsSuccess && eatAfterPickup)
+            {
+                _directWorldFoodIntents[jobId] = new DirectWorldFoodIntent(
+                    resident,
+                    stack);
+            }
+
+            return created;
         }
 
         private void EnsureWorldItemPickupInitialized()
@@ -99,6 +131,18 @@ namespace Dig.Unity
             return _inventoryRepository.Get().GetStack(stackId) != null
                 ? _inventoryRepository
                 : null;
+        }
+
+        private readonly struct DirectWorldFoodIntent
+        {
+            internal DirectWorldFoodIntent(EntityId residentId, EntityId stackId)
+            {
+                ResidentId = residentId;
+                StackId = stackId;
+            }
+
+            internal EntityId ResidentId { get; }
+            internal EntityId StackId { get; }
         }
     }
 }
