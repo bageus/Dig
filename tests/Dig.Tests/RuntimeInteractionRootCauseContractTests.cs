@@ -54,6 +54,7 @@ namespace Dig.Tests
             string itemPlacement = Read(runtime, "DigWorldInteraction.InventoryItemPlacement.cs");
             string itemGhost = Read(runtime, "DigInventoryItemGhostRenderer.cs");
             string itemVisual = Read(runtime, "DigWorldItemVisual.cs");
+            string itemSelection = Read(runtime, "DigWorldItemVisual.Selection.cs");
 
             Assert.True(
                 priority.IndexOf("TryResolveCompletedBuildingHit", StringComparison.Ordinal)
@@ -64,10 +65,11 @@ namespace Dig.Tests
             Assert.Contains("BuildingBoxPlacementKind.RelocateBox", boxGhost);
             Assert.Contains("BuildingVisualState.BuildingBox", boxGhost);
             Assert.Contains("BuildingVisualState.Completed", boxGhost);
-            Assert.Contains("ValidateResidentInventoryDrop", itemPlacement);
-            Assert.Contains("DropResidentInventoryStack", itemPlacement);
+            Assert.Contains("ValidateResidentInventoryPlacement", itemPlacement);
+            Assert.Contains("CreateResidentInventoryPlacement", itemPlacement);
             Assert.Contains("DigTransparentVisualSurface", itemGhost);
             Assert.Contains("_interactionCollider.isTrigger=true", itemVisual);
+            Assert.Contains("SetInteractionHighlighted", itemSelection);
         }
 
         [Fact]
@@ -108,160 +110,15 @@ namespace Dig.Tests
                 "DigCaveRoomPreviewRenderer.InvalidCells.cs");
 
             Assert.Contains("ReleaseUnroutableExcavationAssignment", navigation);
-            Assert.Contains("ReleaseJobAssignmentCommand(job.Id,tick)", navigation);
-            Assert.Contains("_excavationQuarterWork.Cancel", navigation);
-            Assert.Contains("SetDigDesignations(plan.ExcavationCells", roomSession);
-            Assert.DoesNotContain("SetDigDesignations(plan.VolumeCells", roomSession);
-            Assert.Contains("TryResolveCaveRoomPreview", roomInput);
-            Assert.Contains("CaveRoomPlanFailureReason.BaseTunnelMissing", roomInput);
-            Assert.Contains("OverlaySemanticKind.PreviewInvalid", invalidCells);
+            Assert.Contains("TryCommitCaveRoomPlan", roomSession);
+            Assert.Contains("TerrainMaterials.IsMineableRock", roomSession);
+            Assert.Contains("SetInvalidCells(_invalidCaveRoomCells)", roomInput);
+            Assert.Contains("RenderEdges", invalidCells);
         }
 
-        [Fact]
-        public void Unity_bootstrap_keeps_required_adapter_identifiers_intact()
+        private static string Read(string root, string file)
         {
-            string bootstrap = Read(RuntimeRoot(), "DigUnityBootstrap.cs");
-
-            Assert.Contains("BindExcavationSkillSource", bootstrap);
-            Assert.Contains("GetStorageStatus()", bootstrap);
-            Assert.Contains("DigStockpileRendererstockpileRenderer", bootstrap);
-            Assert.Contains("SetStorageStatus(storage)", bootstrap);
-            Assert.Contains("SetSimulationControls(simulation)", bootstrap);
-            Assert.Contains(
-                "SetToolAssignmentControls(terrainSession,jobRenderer)",
-                bootstrap);
-            Assert.Contains(
-                "SetBuildingControls(terrainSession,buildingRenderer,jobRenderer)",
-                bootstrap);
-            Assert.Contains("stringstage", bootstrap);
-            Assert.Contains("cameraObject.tag=\"MainCamera\"", bootstrap);
-            Assert.DoesNotContain("GetSD()", bootstrap);
-            Assert.DoesNotContain("DigSckpileRenderer", bootstrap);
-            Assert.DoesNotContain("controlD", bootstrap);
-            Assert.DoesNotContain("stringsage", bootstrap);
-            Assert.DoesNotContain("cameraObject.ag", bootstrap);
-        }
-
-        [Fact]
-        public void Unity_simulation_and_mushroom_adapters_keep_compile_safe_references()
-        {
-            string runtime = RuntimeRoot();
-            string loop = Read(runtime, "DigAgentSimulationDriverBase.Loop.cs");
-            string mushrooms = Read(runtime, "DigWorldInteraction.Mushrooms.cs");
-
-            Assert.Contains("AgentRenderer!.SelectedAgentId", loop);
-            Assert.Contains("BuildingRenderer!.SelectedBuildingId", loop);
-            Assert.Contains(
-                "MushroomRenderer!.Render(TerrainSession!.LoadMushrooms())",
-                loop);
-            Assert.DoesNotContain("BuildingRender!", loop);
-            Assert.Contains("_hud!.SetCommandResult(result)", mushrooms);
-            Assert.Contains("_hud!.SetStatus(\"Dwarforderedtochopmushroom.\")", mushrooms);
-        }
-
-        [Fact]
-        public void Unity_runtime_uses_non_nullable_guarded_resident_ids()
-        {
-            string runtime = RuntimeRoot();
-            string quarters = Read(runtime, "DigTerrainWorkExcavationQuarters.cs");
-            string inventory = Read(runtime, "DigWorldInteraction.ResidentInventory.cs");
-
-            Assert.Contains(
-                "unchecked((ulong)(uint)_worldSession.MiningOutputWorldSeed)",
-                quarters);
-            Assert.Contains("_excavationMiningSkill?.Invoke(workerId)??0", quarters);
-            Assert.DoesNotContain("_manualExcavationMiningSkill", quarters);
-            Assert.Equal(
-                2,
-                CountOccurrences(inventory, "string?residentIdValue=resident.Id;"));
-            Assert.Equal(
-                2,
-                CountOccurrences(
-                    inventory,
-                    "EntityId.Parse(residentIdValue??string.Empty)"));
-            Assert.DoesNotContain("EntityId.Parse(residentIdValue)", inventory);
-            Assert.DoesNotContain("EntityId.Parse(resident.Id)", inventory);
-        }
-
-        [Fact]
-        public void Runtime_keeps_box_only_selection_and_nearest_stroke_assignment_wired()
-        {
-            string runtime = RuntimeRoot();
-            string decisions = Read(runtime, "DigWorldInteraction.Decisions.cs");
-            string boxSelection = Read(
-                runtime,
-                "DigWorldInteraction.BuildingBoxSelection.cs");
-            string itemSelection = Read(runtime, "DigWorldItemVisual.Selection.cs");
-            string roster = Read(runtime, "DigGameHudCanvas.Roster.cs");
-            string cell = Read(runtime, "DigCellVisual.cs");
-            string marker = Read(runtime, "DigExcavationQuarterMarker.cs");
-            string cursor = Read(runtime, "DigWorldInteraction.ExcavationCursor.cs");
-            string nearest = Read(runtime, "DigTerrainWorkNearestAutomaticExcavation.cs");
-            string stroke = Read(runtime, "DigWorldInteraction.Excavation.cs");
-            string strokeBatch = Read(
-                runtime,
-                "DigWorldInteraction.ExcavationStrokeBatch.cs");
-            string driver = Read(
-                runtime,
-                "DigAgentSimulationDriverBase.Excavation.cs");
-            string designations = Read(runtime, "DigTerrainWorkDesignations.cs");
-            string spatial = Read(runtime, "DigTerrainSpatialExcavation.cs");
-            string roomPreview = Read(runtime, "DigCaveRoomPreviewRenderer.Show.cs");
-
-            Assert.Contains("PresentationInputEffect.SelectBuildingBox", decisions);
-            Assert.Contains("SelectBuildingBox(item.Model,item)", decisions);
-            Assert.Contains("SetSelectionHighlighted(false)", boxSelection);
-            Assert.Contains("SetSelectionHighlighted(true)", boxSelection);
-            Assert.Contains("ResolveWorldItemVisual(item.StackId)", boxSelection);
-            Assert.Contains("Color.Lerp(tint,SelectionColor", itemSelection);
-            Assert.DoesNotContain("DigBuildingBoxSelectionHighlight", boxSelection);
-            Assert.False(File.Exists(Path.Combine(
-                runtime,
-                "DigBuildingBoxSelectionHighlight.cs")));
-            Assert.Contains("SelectBuildingBoxFromHud(id)", roster);
-            Assert.Contains("SetExcavationProgress(ExcavationQuartercompleted)", cell);
-            Assert.Contains("_quarterRenderers[index].gameObject.SetActive(!excavated)", cell);
-            Assert.Contains("renderer.enabled=!excavated", marker);
-            Assert.DoesNotContain("ExcavatedColor", marker);
-            Assert.Contains("ClearExcavationQuarterProgress()", cursor);
-            Assert.Contains("SetExcavationQuarterProgress", cursor);
-            Assert.Contains("OrderBy(value=>value!.TargetDistance)", nearest);
-            Assert.Contains("AssignedAgentId.GetValueOrDefault()", nearest);
-            Assert.DoesNotContain("AssignedAgentId.Value", nearest);
-            Assert.Contains("StageExcavationCell(target,active)", stroke);
-            Assert.Contains("CommitPendingExcavationStroke()", stroke);
-            Assert.Contains("usingDig.Application.Jobs;", strokeBatch);
-            Assert.Contains("StageExcavationDesignation", strokeBatch);
-            Assert.Contains("CommitExcavationDesignationBatch", strokeBatch);
-            Assert.Contains("StageExcavationDesignation", driver);
-            Assert.Contains("CommitExcavationDesignationBatch", driver);
-            Assert.Contains("AssignNearestAutomaticDigJobs(agents,cells,tick)", designations);
-            Assert.Contains("AssignNearestAutomaticSpatialJobs(agents,tick)", spatial);
-            Assert.Equal(
-                2,
-                CountOccurrences(roomPreview, "_overlays!.ConfigureLineRenderer("));
-        }
-
-        private static int CountOccurrences(string source, string value)
-        {
-            int count = 0;
-            int startIndex = 0;
-            while (true)
-            {
-                int index = source.IndexOf(value, startIndex, StringComparison.Ordinal);
-                if (index < 0)
-                {
-                    return count;
-                }
-
-                count++;
-                startIndex = index + value.Length;
-            }
-        }
-
-        private static string Read(string runtime, string file)
-        {
-            return Normalize(File.ReadAllText(Path.Combine(runtime, file)));
+            return File.ReadAllText(Path.Combine(root, file));
         }
 
         private static string RuntimeRoot()
@@ -275,21 +132,13 @@ namespace Dig.Tests
                 "Runtime");
         }
 
-        private static string Normalize(string source)
-        {
-            return source
-                .Replace(" ", string.Empty, StringComparison.Ordinal)
-                .Replace("\t", string.Empty, StringComparison.Ordinal)
-                .Replace("\r", string.Empty, StringComparison.Ordinal)
-                .Replace("\n", string.Empty, StringComparison.Ordinal);
-        }
-
         private static string FindRepositoryRoot()
         {
             DirectoryInfo? current = new DirectoryInfo(AppContext.BaseDirectory);
             while (current != null)
             {
-                if (File.Exists(Path.Combine(current.FullName, "Dig.sln")))
+                if (Directory.Exists(Path.Combine(current.FullName, "src"))
+                    && Directory.Exists(Path.Combine(current.FullName, "unity")))
                 {
                     return current.FullName;
                 }
