@@ -129,7 +129,6 @@ namespace Dig.Unity
                 pickup.StackId);
             if (repository == null)
             {
-                _directWorldFoodIntents.Remove(job.Id);
                 return Result.Failure(WorldItemPickupErrors.StackMissing);
             }
 
@@ -148,7 +147,6 @@ namespace Dig.Unity
             inventory.ReleaseReservations(job.Id, tick);
             repository.Save(inventory);
             _journal.Append(inventory.DequeueUncommittedEvents());
-            _directWorldFoodIntents.Remove(job.Id);
             return Result.Success();
         }
 

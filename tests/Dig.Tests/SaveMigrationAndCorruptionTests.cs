@@ -43,6 +43,7 @@ public sealed class SaveMigrationAndCorruptionTests
             "save.v5_to_v6.mushrooms",
             "save.v6_to_v7.building_production",
             "save.v7_to_v8.world_excavation_progress",
+            "save.v8_to_v9.agent_runtime",
         }, first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
         Assert.Equal(1, document.Metadata.GeneratorVersion);
@@ -52,6 +53,8 @@ public sealed class SaveMigrationAndCorruptionTests
         Assert.Equal(4, document.World.Depth);
         Assert.NotNull(document.AgentPositions);
         Assert.Empty(document.AgentPositions.Agents);
+        Assert.NotNull(document.AgentRuntime);
+        Assert.Empty(document.AgentRuntime.Agents);
         Assert.True(replay.IsSuccess);
         Assert.Empty(replay.Value.AppliedSteps);
     }
@@ -79,6 +82,7 @@ public sealed class SaveMigrationAndCorruptionTests
                 "save.v5_to_v6.mushrooms",
                 "save.v6_to_v7.building_production",
                 "save.v7_to_v8.world_excavation_progress",
+                "save.v8_to_v9.agent_runtime",
             },
             first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
@@ -87,6 +91,8 @@ public sealed class SaveMigrationAndCorruptionTests
         Assert.Equal(4, document.World.Depth);
         Assert.NotNull(document.AgentPositions);
         Assert.Empty(document.AgentPositions.Agents);
+        Assert.NotNull(document.AgentRuntime);
+        Assert.Empty(document.AgentRuntime.Agents);
         Assert.True(replay.IsSuccess);
         Assert.Empty(replay.Value.AppliedSteps);
     }
@@ -300,6 +306,7 @@ public sealed class SaveMigrationAndCorruptionTests
             new SaveVersionFiveMushroomsMigration(),
             new SaveVersionSixBuildingProductionMigration(),
             new SaveVersionSevenWorldExcavationProgressMigration(),
+            new SaveVersionEightAgentRuntimeMigration(),
         });
     }
 
@@ -336,9 +343,6 @@ public sealed class SaveMigrationAndCorruptionTests
         return path;
     }
 
-    private static EntityId Id(string value)
-    {
-        return EntityId.Parse(value);
-    }
+    private static EntityId Id(string value) => EntityId.Parse(value);
 }
 }

@@ -51,6 +51,7 @@ public sealed partial class SaveGameBuilder
             Buildings = BuildBuildings(context.Buildings),
             AgentSkills = BuildAgentSkills(context.Agents),
             AgentPositions = BuildAgentPositions(context.Agents),
+            AgentRuntime = BuildAgentRuntime(context.Agents),
             TerrainDeposits = BuildTerrainDeposits(context.TerrainDeposits),
             PackableBuildingExecutions = PackableBuildingExecutionSaveDataAdapter.Encode(
                 context.PackableBuildingExecutions),

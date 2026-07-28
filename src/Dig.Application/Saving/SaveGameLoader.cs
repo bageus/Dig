@@ -215,6 +215,10 @@ public sealed partial class SaveGameLoader
                 BuildAgentAutomaticPlanning(document.AgentSkills);
             IReadOnlyDictionary<EntityId, CellId> agentPositions =
                 BuildAgentPositions(document.AgentPositions, document.World);
+            IReadOnlyDictionary<EntityId, Dig.Domain.Agents.AgentRuntimeSnapshot>
+                agentRuntime = BuildAgentRuntime(
+                    document.AgentRuntime,
+                    document.Metadata.SimulationTick);
             IReadOnlyCollection<TerrainDepositInstance> terrainDeposits =
                 BuildTerrainDeposits(
                     document.TerrainDeposits,
@@ -246,7 +250,8 @@ public sealed partial class SaveGameLoader
                 mushrooms.Value,
                 buildingProduction.Production,
                 buildingProduction.Supply,
-                barrels.Value));
+                barrels.Value,
+                agentRuntime));
         }
         catch (UnknownTerrainDepositDefinitionException)
         {

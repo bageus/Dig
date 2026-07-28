@@ -109,7 +109,6 @@ namespace Dig.Unity
             InMemoryInventoryRepository? repository = ResolveWorldItemRepository(pickup.StackId);
             if (repository == null)
             {
-                _directWorldFoodIntents.Remove(job.Id);
                 return Result.Failure(WorldItemPickupErrors.StackMissing);
             }
 
@@ -126,18 +125,18 @@ namespace Dig.Unity
             }
 
             _worldItemPickupRoutes.Remove(job.Id);
-            if (!_directWorldFoodIntents.TryGetValue(
-                    job.Id,
-                    out DirectWorldFoodIntent intent))
+            if (pickup.CompletionAction == WorldItemPickupCompletionAction.None)
             {
                 return Result.Success();
             }
 
-            _directWorldFoodIntents.Remove(job.Id);
+            EntityId carriedStackId = pickup.DestinationStackId.IsEmpty
+                ? pickup.StackId
+                : pickup.DestinationStackId;
             return _startResidentFoodMeal!.Handle(
                 new StartResidentFoodMealCommand(
-                    intent.ResidentId,
-                    intent.StackId,
+                    job.AssignedAgentId!.Value,
+                    carriedStackId,
                     tick));
         }
 

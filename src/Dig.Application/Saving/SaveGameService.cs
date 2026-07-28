@@ -240,10 +240,12 @@ public sealed class SaveGameService
 
         IAgentRepository repository = agents
             ?? throw new ArgumentNullException(nameof(agents));
-        foreach (KeyValuePair<EntityId, Dig.Domain.World.CellId> entry
-            in loaded.Value.AgentPositions)
+        HashSet<EntityId> referencedAgents = new HashSet<EntityId>(
+            loaded.Value.AgentPositions.Keys);
+        referencedAgents.UnionWith(loaded.Value.AgentRuntime.Keys);
+        foreach (EntityId agentId in referencedAgents)
         {
-            if (repository.Get(entry.Key) is null)
+            if (repository.Get(agentId) is null)
             {
                 return Result<LoadedGameState>.Failure(
                     AgentApplicationErrors.NotFound);
@@ -255,6 +257,19 @@ public sealed class SaveGameService
         if (skills.IsFailure)
         {
             return Result<LoadedGameState>.Failure(skills.Error!);
+        }
+
+        foreach (KeyValuePair<EntityId, Dig.Domain.Agents.AgentRuntimeSnapshot> entry
+            in loaded.Value.AgentRuntime)
+        {
+            Dig.Domain.Agents.AgentState agent = repository.Get(entry.Key)!;
+            Result restored = agent.RestoreRuntime(entry.Value);
+            if (restored.IsFailure)
+            {
+                return Result<LoadedGameState>.Failure(restored.Error!);
+            }
+
+            repository.Save(agent);
         }
 
         foreach (KeyValuePair<EntityId, Dig.Domain.World.CellId> entry

@@ -48,6 +48,7 @@ public sealed class WorldItemPickupJobSaveCodec : IJobDefinitionSaveCodec
                 Property("destination_stack_id", pickup.DestinationStackId.IsEmpty
                     ? string.Empty
                     : pickup.DestinationStackId.ToString()),
+                Property("completion_action", (int)pickup.CompletionAction),
             },
         };
     }
@@ -72,6 +73,7 @@ public sealed class WorldItemPickupJobSaveCodec : IJobDefinitionSaveCodec
             && !string.IsNullOrWhiteSpace(destinationValue)
                 ? EntityId.Parse(destinationValue)
                 : default;
+        WorldItemPickupCompletionAction completionAction = DecodeCompletionAction(properties);
         return new WorldItemPickupJobDefinition(
             EntityId.Parse(data.JobId),
             EntityId.Parse(Required(properties, "stack_id")),
@@ -82,7 +84,31 @@ public sealed class WorldItemPickupJobSaveCodec : IJobDefinitionSaveCodec
             data.Priority,
             data.CreatedTick,
             new JobRetryPolicy(data.MaximumRetries, data.RetryDelayTicks),
-            data.Dependencies.Select(EntityId.Parse));
+            data.Dependencies.Select(EntityId.Parse),
+            completionAction);
+    }
+
+    private static WorldItemPickupCompletionAction DecodeCompletionAction(
+        IReadOnlyDictionary<string, string> properties)
+    {
+        if (!properties.TryGetValue("completion_action", out string? raw)
+            || string.IsNullOrWhiteSpace(raw))
+        {
+            return WorldItemPickupCompletionAction.None;
+        }
+
+        if (!int.TryParse(
+                raw,
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out int value)
+            || !Enum.IsDefined(typeof(WorldItemPickupCompletionAction), value))
+        {
+            throw new InvalidOperationException(
+                "Saved world item pickup completion action is invalid.");
+        }
+
+        return (WorldItemPickupCompletionAction)value;
     }
 
     private static ItemLocation DecodeSourceLocation(

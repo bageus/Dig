@@ -157,6 +157,14 @@ internal sealed class AgentNeedsState
         Health = Health.AddClamped(delta.Health);
     }
 
+    public void Restore(AgentNeedsSnapshot snapshot)
+    {
+        Nutrition = snapshot.Nutrition;
+        Alertness = snapshot.Alertness;
+        Mood = snapshot.Mood;
+        Health = snapshot.Health;
+    }
+
     public AgentNeedsSnapshot CreateSnapshot()
     {
         return new AgentNeedsSnapshot(Nutrition, Alertness, Mood, Health);
