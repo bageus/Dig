@@ -100,7 +100,63 @@ public sealed class DirectExcavationOrderPlayModeTests
         Assert.That(sameJob.AssignedAgentId, Is.EqualTo(originalOwner));
         Assert.That(
             Invoke(terrain, "LoadManualQuarterAssignment", manualWorker),
-            Is.Not.Null);
+            Is.Null);
+    }
+
+    [Test]
+    public void Combat_interrupt_releases_active_excavation_without_losing_the_job()
+    {
+        Assembly runtime = typeof(DigWorldInteraction).Assembly;
+        object world = InvokeStatic(
+            RequireType(runtime, "Dig.Unity.DigWorldSession"),
+            "CreateDemo",
+            8,
+            8,
+            4);
+        object worldView = Invoke(world, "LoadView");
+        object journal = GetProperty(world, "Journal");
+        object residents = InvokeStatic(
+            RequireType(runtime, "Dig.Unity.DigAgentSession"),
+            "CreateDemo",
+            worldView,
+            journal);
+        IReadOnlyList<AgentViewModel> residentModels =
+            ((IEnumerable)Invoke(residents, "LoadView"))
+                .Cast<AgentViewModel>()
+                .ToArray();
+        object terrain = InvokeStatic(
+            RequireType(runtime, "Dig.Unity.DigTerrainWorkSession"),
+            "CreateDemo",
+            world,
+            residentModels,
+            journal,
+            GetProperty(residents, "SkillGrants"));
+        Invoke(terrain, "InitializeDynamicDesignations", journal);
+        JobOverlayViewModel active =
+            ((IEnumerable)Invoke(terrain, "LoadJobs"))
+                .Cast<JobOverlayViewModel>()
+                .First(value => value.AssignedAgentId != null
+                    && value.TargetX.HasValue
+                    && value.TargetY.HasValue);
+        string worker = active.AssignedAgentId!;
+
+        object result = Invoke(
+            terrain,
+            "InterruptForCombat",
+            new[] { worker },
+            2L);
+
+        Assert.That((bool)GetProperty(result, "IsSuccess"), Is.True);
+        JobOverlayViewModel released =
+            ((IEnumerable)Invoke(terrain, "LoadJobs"))
+                .Cast<JobOverlayViewModel>()
+                .Single(value => value.Id == active.Id);
+        Assert.That(released.AssignedAgentId, Is.Null);
+        Assert.That(released.Status, Is.Not.EqualTo("Completed"));
+        Assert.That(released.Status, Is.Not.EqualTo("Cancelled"));
+        Assert.That(
+            Invoke(terrain, "LoadManualQuarterAssignment", worker),
+            Is.Null);
     }
 
     private static WorldViewModel World()
