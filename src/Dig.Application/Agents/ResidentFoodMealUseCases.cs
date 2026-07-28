@@ -10,6 +10,10 @@ namespace Dig.Application.Agents
 {
     public static class ResidentFoodMealErrors
     {
+        public static readonly DomainError ResidentNotFound = new DomainError(
+            "resident.food_meal.resident_not_found",
+            "The resident does not exist.");
+
         public static readonly DomainError UnsupportedFood = new DomainError(
             "resident.food_meal.unsupported_food",
             "The carried item is not supported food.");
@@ -72,7 +76,7 @@ namespace Dig.Application.Agents
             AgentState? agent = _agents.Get(command.ResidentId);
             if (agent == null)
             {
-                return Result.Failure(AgentErrors.AgentNotFound);
+                return Result.Failure(ResidentFoodMealErrors.ResidentNotFound);
             }
 
             if (!agent.IsAlive)
