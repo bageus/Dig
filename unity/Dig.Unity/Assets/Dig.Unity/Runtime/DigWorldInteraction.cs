@@ -82,6 +82,11 @@ namespace Dig.Unity
                 return;
             }
 
+            if (!_buildingPlacementMode.HasValue)
+            {
+                RefreshBuildingBoxRelocationPlans();
+            }
+
             UpdateResidentHover();
             bool right = Input.GetMouseButtonDown(1);
             if (right && !_hud!.ContainsScreenPoint(Input.mousePosition))

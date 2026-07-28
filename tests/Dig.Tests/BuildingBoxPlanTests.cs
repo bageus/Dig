@@ -13,7 +13,7 @@ public sealed class BuildingBoxPlanTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void Confirm_reserves_one_box_and_creates_available_job(bool carriedByResident)
+    public void Confirm_reserves_one_box_and_creates_source_owned_job(bool carriedByResident)
     {
         BuildingBoxHarness harness = new BuildingBoxHarness(carriedByResident);
 
@@ -27,7 +27,12 @@ public sealed class BuildingBoxPlanTests
         Assert.Equal(harness.JobId, building.BoxPlan.JobId);
         Assert.Equal(1, harness.Inventory.GetStack(harness.SourceStackId)!.ReservedQuantity);
         JobSnapshot job = harness.Jobs.Get(harness.JobId)!;
-        Assert.Equal(JobStatus.Available, job.Status);
+        Assert.Equal(
+            carriedByResident ? JobStatus.Claimed : JobStatus.Available,
+            job.Status);
+        Assert.Equal(
+            carriedByResident ? harness.WorkerId : (EntityId?)null,
+            job.AssignedAgentId);
         Assert.IsType<BuildingBoxAssemblyJobDefinition>(job.Definition);
     }
 

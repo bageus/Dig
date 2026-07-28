@@ -318,7 +318,13 @@ internal sealed partial class DigTerrainWorkSession
             new BuildingDefinitionId("demo.workshop.box"),
             "Box Workshop",
             new[] { new CellOffset(0, 0) },
-            new[] { new CellOffset(0, -1) },
+            new[]
+            {
+                new CellOffset(-1, 0),
+                new CellOffset(1, 0),
+                new CellOffset(0, -1),
+                new CellOffset(0, 1),
+            },
             Array.Empty<BuildingMaterialRequirement>(),
             requiredWork: 3,
             maximumDurability: 100,

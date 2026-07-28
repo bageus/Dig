@@ -55,7 +55,24 @@ namespace Dig.Unity
             CellId destination,
             long tick)
         {
+            return CreateBuildingBoxRelocation(
+                stackId,
+                destination,
+                GetBuildingPlacementReachableCells(),
+                tick);
+        }
+
+        internal Result CreateBuildingBoxRelocation(
+            EntityId stackId,
+            CellId destination,
+            IReadOnlyCollection<CellId> reachableCells,
+            long tick)
+        {
             EnsureBuildingBoxRelocationInitialized();
+            if (reachableCells == null)
+            {
+                throw new ArgumentNullException(nameof(reachableCells));
+            }
             ItemStackSnapshot? stack = _buildingInventoryRepository!.Get().GetStack(stackId);
             var definition = stack == null
                 ? null
@@ -75,7 +92,7 @@ namespace Dig.Unity
                     stackId,
                     definition.BoxPolicy.BoxItemId,
                     destination,
-                    GetBuildingPlacementReachableCells(),
+                    reachableCells,
                     priority: 625,
                     tick));
         }
@@ -227,96 +244,6 @@ namespace Dig.Unity
             return acquired.IsFailure
                 ? acquired
                 : _advanceHandler.Handle(new AdvanceJobCommand(jobId, tick));
-        }
-
-        private CellId ResolveBuildingBoxRelocationTarget(
-            JobSnapshot job,
-            BuildingBoxPickupJobDefinition relocation,
-            CellId start,
-            NavigationSnapshot navigation,
-            out PathResult path)
-        {
-            ItemStackSnapshot? box = _buildingInventoryRepository!.Get().GetStack(
-                relocation.StackId);
-            bool carriedByWorker = job.AssignedAgentId.HasValue
-                && box?.Location == ItemLocation.InAgent(job.AssignedAgentId.Value);
-            bool delivering = relocation.StartsHeld
-                || carriedByWorker
-                || job.Stage == JobStageKind.TravelToDestination
-                || job.Stage == JobStageKind.DepositItem;
-            if (!delivering)
-            {
-                path = FindBuildingBoxRelocationPath(
-                    start,
-                    relocation.SourceCell,
-                    navigation);
-                return relocation.SourceCell;
-            }
-
-            return ResolveBuildingBoxRelocationWorkTarget(
-                start,
-                relocation.DestinationCell!.Value,
-                navigation,
-                out path);
-        }
-
-        private CellId ResolveBuildingBoxRelocationWorkTarget(
-            CellId start,
-            CellId destination,
-            NavigationSnapshot navigation,
-            out PathResult path)
-        {
-            CellId[] candidates =
-            {
-                new CellId(destination.X - 1, destination.Y, destination.Z),
-                new CellId(destination.X + 1, destination.Y, destination.Z),
-                new CellId(destination.X, destination.Y - 1, destination.Z),
-                new CellId(destination.X, destination.Y + 1, destination.Z),
-            };
-            CellId? bestTarget = null;
-            PathResult? bestPath = null;
-            for (int index = 0; index < candidates.Length; index++)
-            {
-                PathResult candidatePath = FindBuildingBoxRelocationPath(
-                    start,
-                    candidates[index],
-                    navigation);
-                if (!candidatePath.Succeeded)
-                {
-                    continue;
-                }
-
-                int candidateCost = candidatePath.Path!.TotalCost;
-                int bestCost = bestPath?.Path?.TotalCost ?? int.MaxValue;
-                if (bestPath == null
-                    || candidateCost < bestCost
-                    || (candidateCost == bestCost
-                        && candidates[index].CompareTo(
-                            bestTarget.GetValueOrDefault()) < 0))
-                {
-                    bestTarget = candidates[index];
-                    bestPath = candidatePath;
-                }
-            }
-
-            if (bestTarget.HasValue)
-            {
-                path = bestPath!;
-                return bestTarget.Value;
-            }
-
-            path = FindBuildingBoxRelocationPath(start, destination, navigation);
-            return destination;
-        }
-
-        private PathResult FindBuildingBoxRelocationPath(
-            CellId start,
-            CellId target,
-            NavigationSnapshot navigation)
-        {
-            return _buildingBoxPickupPathfinder!.FindPath(
-                navigation,
-                new PathRequest(start, target, navigation.NavigationVersion));
         }
 
         private void EnsureBuildingBoxRelocationInitialized()

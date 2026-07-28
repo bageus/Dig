@@ -92,14 +92,24 @@ internal sealed class BuildingBoxHarness
 
     public void AssignAndAdvanceToDeposit()
     {
-        _candidates.SetCandidates(JobId, new[]
+        JobSnapshot job = Jobs.Get(JobId)!;
+        if (job.Status == JobStatus.Available)
         {
-            new JobCandidate(WorkerId, 5000, distanceCost: 1, isAvailable: true),
-        });
-        Assert.Single(new AssignAvailableJobsHandler(
-            JobRepository,
-            _candidates,
-            Journal).Handle(new AssignAvailableJobsCommand(_tick++)).Assignments);
+            _candidates.SetCandidates(JobId, new[]
+            {
+                new JobCandidate(WorkerId, 5000, distanceCost: 1, isAvailable: true),
+            });
+            Assert.Single(new AssignAvailableJobsHandler(
+                JobRepository,
+                _candidates,
+                Journal).Handle(new AssignAvailableJobsCommand(_tick++)).Assignments);
+        }
+        else
+        {
+            Assert.Equal(JobStatus.Claimed, job.Status);
+            Assert.Equal(WorkerId, job.AssignedAgentId);
+        }
+
         Advance();
         Assert.Equal(JobStageKind.AcquireItem, Jobs.Get(JobId)!.Stage);
         Result acquired = new AcquireBuildingBoxForAssemblyHandler(

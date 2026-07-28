@@ -9,6 +9,7 @@ using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
+using Dig.Presentation.Agents;
 using Dig.Presentation.Buildings;
 using Dig.Presentation.Inventory;
 using Dig.Presentation.World;
@@ -100,7 +101,23 @@ namespace Dig.Unity
             BuildingBoxPlacementModeState mode,
             CellId origin)
         {
+            return PreviewBuildingBoxPlacement(
+                mode,
+                origin,
+                Array.Empty<AgentViewModel>());
+        }
+
+        internal BuildingBoxGhostViewModel PreviewBuildingBoxPlacement(
+            BuildingBoxPlacementModeState mode,
+            CellId origin,
+            IReadOnlyList<AgentViewModel> agents)
+        {
             EnsureBuildingBoxPlacementInitialized();
+            if (agents == null)
+            {
+                throw new ArgumentNullException(nameof(agents));
+            }
+
             InventoryState inventory = _buildingInventoryRepository!.Get();
             ItemStackSnapshot? stack = inventory.GetStack(mode.SourceStackId);
             ItemDefinition? item = stack == null ? null : inventory.Catalog.Get(stack.ItemId);
@@ -113,7 +130,7 @@ namespace Dig.Unity
                 mode.Orientation,
                 _worldSession.LoadSnapshot(),
                 _buildingsRepository!.Get().GetOccupiedCells(),
-                GetBuildingPlacementReachableCells(),
+                GetBuildingPlacementReachableCells(mode.SourceStackId, agents),
                 BuildingPlacementBlockedCells);
         }
 
@@ -121,7 +138,23 @@ namespace Dig.Unity
             BuildingBoxGhostViewModel preview,
             long tick)
         {
+            return ConfirmBuildingBoxPlacement(
+                preview,
+                tick,
+                Array.Empty<AgentViewModel>());
+        }
+
+        internal Result ConfirmBuildingBoxPlacement(
+            BuildingBoxGhostViewModel preview,
+            long tick,
+            IReadOnlyList<AgentViewModel> agents)
+        {
             EnsureBuildingBoxPlacementInitialized();
+            if (agents == null)
+            {
+                throw new ArgumentNullException(nameof(agents));
+            }
+
             Result<BuildingBoxPlacementConfirmationDraft> drafted =
                 _buildingBoxPlacementPresenter!.CreateConfirmationDraft(preview);
             if (drafted.IsFailure)
@@ -130,11 +163,14 @@ namespace Dig.Unity
             }
 
             BuildingBoxPlacementConfirmationDraft draft = drafted.Value;
+            IReadOnlyCollection<CellId> reachable =
+                GetBuildingPlacementReachableCells(draft.SourceStackId, agents);
             if (draft.PlacementKind == BuildingBoxPlacementKind.RelocateBox)
             {
                 return CreateBuildingBoxRelocation(
                     draft.SourceStackId,
                     draft.Origin,
+                    reachable,
                     tick);
             }
 
@@ -148,7 +184,7 @@ namespace Dig.Unity
                     draft.DefinitionId,
                     draft.Origin,
                     draft.Orientation,
-                    GetBuildingPlacementReachableCells(),
+                    reachable,
                     priority: 625,
                     tick: tick,
                     ecologyBlockedCells: BuildingPlacementBlockedCells));
@@ -159,17 +195,6 @@ namespace Dig.Unity
         private BuildingDefinition? ResolveBuildingBoxDefinition(ItemId boxItemId)
         {
             return _buildingBoxCatalog!.FindByBoxItemId(boxItemId);
-        }
-
-        private IReadOnlyCollection<CellId> GetBuildingPlacementReachableCells()
-        {
-            return _worldSession.LoadView().Chunks
-                .SelectMany(chunk => chunk.Cells)
-                .Where(cell => !cell.IsSolid)
-                .Select(cell => new CellId(cell.X, cell.Y, cell.Z))
-                .Distinct()
-                .OrderBy(cell => cell)
-                .ToArray();
         }
 
         private void EnsureBuildingBoxPlacementInitialized()

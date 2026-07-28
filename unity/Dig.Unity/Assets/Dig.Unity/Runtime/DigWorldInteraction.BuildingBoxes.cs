@@ -127,7 +127,10 @@ namespace Dig.Unity
             CellId origin)
         {
             BuildingBoxGhostViewModel preview = _terrainSession!
-                .PreviewBuildingBoxPlacement(mode, origin);
+                .PreviewBuildingBoxPlacement(
+                    mode,
+                    origin,
+                    _agentSession!.LoadView());
             _buildingPlacementMode = mode;
             _buildingPlacementPreview = preview;
             _buildingBoxGhostRenderer!.Render(preview);
@@ -189,7 +192,10 @@ namespace Dig.Unity
 
             BuildingBoxPlacementModeState mode = started.Value;
             BuildingBoxGhostViewModel preview =
-                _terrainSession.PreviewBuildingBoxPlacement(mode, origin);
+                _terrainSession.PreviewBuildingBoxPlacement(
+                    mode,
+                    origin,
+                    _agentSession!.LoadView());
             _buildingPlacementMode = mode;
             _buildingPlacementPreview = preview;
             _selectedCell = null;
@@ -217,7 +223,8 @@ namespace Dig.Unity
             string sourceStackId = _buildingPlacementMode.Value.SourceStackId.ToString();
             Result result = _terrainSession!.ConfirmBuildingBoxPlacement(
                 _buildingPlacementPreview,
-                _simulation!.CurrentTick);
+                _simulation!.CurrentTick,
+                _agentSession!.LoadView());
             _hud!.SetCommandResult(result);
             if (result.IsFailure)
             {

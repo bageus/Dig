@@ -182,16 +182,29 @@ public sealed class BuildingBoxAssemblyExecutionPolicyTests
             harness.BuildingId,
             harness.JobId,
             new CellId(3, 3)).IsSuccess);
-        InMemoryJobCandidateProvider candidates = new InMemoryJobCandidateProvider();
-        candidates.SetCandidates(harness.JobId, new[]
+        JobSnapshot job = harness.Jobs.Get(harness.JobId)!;
+        if (job.Status == JobStatus.Available)
         {
-            new JobCandidate(harness.WorkerId, 5_000, distanceCost: 1, isAvailable: true),
-        });
-        JobAssignmentReport assigned = new AssignAvailableJobsHandler(
-            harness.JobRepository,
-            candidates,
-            harness.Journal).Handle(new AssignAvailableJobsCommand(tick: 400));
-        Assert.Single(assigned.Assignments);
+            InMemoryJobCandidateProvider candidates = new InMemoryJobCandidateProvider();
+            candidates.SetCandidates(harness.JobId, new[]
+            {
+                new JobCandidate(
+                    harness.WorkerId,
+                    5_000,
+                    distanceCost: 1,
+                    isAvailable: true),
+            });
+            JobAssignmentReport assigned = new AssignAvailableJobsHandler(
+                harness.JobRepository,
+                candidates,
+                harness.Journal).Handle(new AssignAvailableJobsCommand(tick: 400));
+            Assert.Single(assigned.Assignments);
+        }
+        else
+        {
+            Assert.Equal(JobStatus.Claimed, job.Status);
+            Assert.Equal(harness.WorkerId, job.AssignedAgentId);
+        }
         return harness;
     }
 

@@ -110,7 +110,10 @@ public sealed class BuildingWorldViewModel
         int requiredWork,
         long version,
         IReadOnlyCollection<BuildingFootprintCellViewModel> footprint,
-        BuildingFunctionsViewModel functions)
+        BuildingFunctionsViewModel functions,
+        string? sourceBuildingBoxStackId = null,
+        string? buildingBoxJobId = null,
+        BuildingBoxCommitState? buildingBoxCommitState = null)
     {
         if (string.IsNullOrWhiteSpace(id)
             || string.IsNullOrWhiteSpace(definitionId)
@@ -151,6 +154,18 @@ public sealed class BuildingWorldViewModel
             throw new ArgumentException("Building footprint is required.", nameof(footprint));
         }
 
+        bool hasBoxIdentity = !string.IsNullOrWhiteSpace(sourceBuildingBoxStackId)
+            && !string.IsNullOrWhiteSpace(buildingBoxJobId)
+            && buildingBoxCommitState.HasValue;
+        bool hasPartialBoxIdentity = !string.IsNullOrWhiteSpace(sourceBuildingBoxStackId)
+            || !string.IsNullOrWhiteSpace(buildingBoxJobId)
+            || buildingBoxCommitState.HasValue;
+        if (hasPartialBoxIdentity && !hasBoxIdentity)
+        {
+            throw new ArgumentException(
+                "BuildingBox transformation identity must be complete.");
+        }
+
         Id = id.Trim();
         DefinitionId = definitionId.Trim();
         Name = name.Trim();
@@ -171,6 +186,13 @@ public sealed class BuildingWorldViewModel
                 .ThenBy(cell => cell.X)
                 .ToArray());
         Functions = functions ?? throw new ArgumentNullException(nameof(functions));
+        SourceBuildingBoxStackId = hasBoxIdentity
+            ? sourceBuildingBoxStackId!.Trim()
+            : null;
+        BuildingBoxJobId = hasBoxIdentity
+            ? buildingBoxJobId!.Trim()
+            : null;
+        BuildingBoxCommitState = buildingBoxCommitState;
     }
 
     public string Id { get; }
@@ -189,6 +211,18 @@ public sealed class BuildingWorldViewModel
     public long Version { get; }
     public IReadOnlyList<BuildingFootprintCellViewModel> Footprint { get; }
     public BuildingFunctionsViewModel Functions { get; }
+    public string? SourceBuildingBoxStackId { get; }
+    public string? BuildingBoxJobId { get; }
+    public BuildingBoxCommitState? BuildingBoxCommitState { get; }
+    public bool HasBuildingBoxLifecycle =>
+        SourceBuildingBoxStackId != null
+        && BuildingBoxJobId != null
+        && BuildingBoxCommitState.HasValue;
+    public bool IsPendingBuildingBoxLifecycle =>
+        HasBuildingBoxLifecycle
+        && BuildingBoxCommitState != Dig.Domain.Buildings.BuildingBoxCommitState.Consumed
+        && Status != BuildingStatus.Completed
+        && Status != BuildingStatus.Damaged;
     public bool IsSelectable => Status == BuildingStatus.Completed;
     public double AssemblyProgress => Math.Min(1d, (double)CompletedWork / RequiredWork);
     public BuildingVisualState VisualState => BuildingVisualStateResolver.Resolve(
@@ -242,7 +276,10 @@ public sealed class BuildingWorldPresenter
             snapshot.Definition.RequiredWork,
             snapshot.Version,
             footprint,
-            _functions.Present(snapshot));
+            _functions.Present(snapshot),
+            snapshot.BoxPlan?.SourceStackId.ToString(),
+            snapshot.BoxPlan?.JobId.ToString(),
+            snapshot.BoxPlan?.CommitState);
     }
 }
 }
