@@ -47,6 +47,7 @@ namespace Dig.Unity
                     _selected.Model.Y,
                     _selected.Model.Z);
             EnsureRoot();
+            SynchronizeWorldExcavationProgress(world);
             _visibleCells.Clear();
             _visibleChunks.Clear();
             _solidCells.Clear();
@@ -56,7 +57,7 @@ namespace Dig.Unity
             {
                 foreach (WorldCellViewModel cell in chunk.Cells)
                 {
-                    if (cell.IsSolid)
+                    if (cell.IsSolid && !cell.IsExcavationOpen)
                     {
                         _solidCells.Add(new CellId(cell.X, cell.Y, cell.Z));
                     }
@@ -72,7 +73,7 @@ namespace Dig.Unity
                 {
                     CellId cellKey = new CellId(cell.X, cell.Y, cell.Z);
                     _visibleCells.Add(cellKey);
-                    bool walkSurface = !cell.IsSolid
+                    bool walkSurface = (!cell.IsSolid || cell.IsExcavationOpen)
                         && _solidCells.Contains(new CellId(cell.X, cell.Y + 1, cell.Z));
                     if (walkSurface)
                     {

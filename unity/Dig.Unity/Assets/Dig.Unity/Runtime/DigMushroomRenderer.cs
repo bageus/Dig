@@ -8,7 +8,6 @@ namespace Dig.Unity
 [DisallowMultipleComponent]
 public sealed class DigMushroomRenderer : MonoBehaviour
 {
-    private const float FrontOffset = -0.66f;
     private readonly Dictionary<string, DigMushroomVisual> _visuals =
         new Dictionary<string, DigMushroomVisual>(StringComparer.Ordinal);
     private Transform? _root;
@@ -49,7 +48,7 @@ public sealed class DigMushroomRenderer : MonoBehaviour
                 site.Cell.Z) + new Vector3(
                     0f,
                     DigTunnelProjection.ResidentFootSink,
-                    FrontOffset);
+                    0f);
         }
 
         RemoveMissing(visible);

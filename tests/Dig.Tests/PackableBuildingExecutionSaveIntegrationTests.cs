@@ -103,6 +103,7 @@ public sealed class PackableBuildingExecutionSaveIntegrationTests
             new SaveVersionFourAuthoritativeCoordinatesMigration(),
             new SaveVersionFiveMushroomsMigration(),
             new SaveVersionSixBuildingProductionMigration(),
+            new SaveVersionSevenWorldExcavationProgressMigration(),
         });
     }
 

@@ -5,23 +5,84 @@ using Dig.Domain.World;
 namespace Dig.Domain.Navigation
 {
 
+internal readonly struct NavigationSearchCost
+    : IComparable<NavigationSearchCost>, IEquatable<NavigationSearchCost>
+{
+    public NavigationSearchCost(int shaftGapCount, int movementCost)
+    {
+        if (shaftGapCount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(shaftGapCount));
+        }
+
+        if (movementCost < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(movementCost));
+        }
+
+        ShaftGapCount = shaftGapCount;
+        MovementCost = movementCost;
+    }
+
+    public int ShaftGapCount { get; }
+
+    public int MovementCost { get; }
+
+    public NavigationSearchCost Advance(NavigationTransition transition)
+    {
+        return new NavigationSearchCost(
+            checked(ShaftGapCount
+                + (transition.TraversalKind == TunnelTraversalKind.ShaftGapTraverse
+                    ? 1
+                    : 0)),
+            checked(MovementCost + transition.Cost));
+    }
+
+    public int CompareTo(NavigationSearchCost other)
+    {
+        int gap = ShaftGapCount.CompareTo(other.ShaftGapCount);
+        return gap != 0 ? gap : MovementCost.CompareTo(other.MovementCost);
+    }
+
+    public bool Equals(NavigationSearchCost other)
+    {
+        return ShaftGapCount == other.ShaftGapCount
+            && MovementCost == other.MovementCost;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is NavigationSearchCost other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(ShaftGapCount, MovementCost);
+    }
+}
+
 internal readonly struct NavigationOpenNode
 {
-    public NavigationOpenNode(CellId cell, int cost, int heuristic)
+    public NavigationOpenNode(
+        CellId cell,
+        NavigationSearchCost cost,
+        int heuristic)
     {
+        if (heuristic < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(heuristic));
+        }
+
         Cell = cell;
         Cost = cost;
         Heuristic = heuristic;
-        Total = checked(cost + heuristic);
     }
 
     public CellId Cell { get; }
 
-    public int Cost { get; }
+    public NavigationSearchCost Cost { get; }
 
     public int Heuristic { get; }
-
-    public int Total { get; }
 }
 
 internal sealed class NavigationOpenSet
@@ -94,10 +155,10 @@ internal sealed class NavigationOpenSet
         NavigationOpenNode left,
         NavigationOpenNode right)
     {
-        int total = left.Total.CompareTo(right.Total);
-        if (total != 0)
+        int cost = left.Cost.CompareTo(right.Cost);
+        if (cost != 0)
         {
-            return total;
+            return cost;
         }
 
         int heuristic = left.Heuristic.CompareTo(right.Heuristic);

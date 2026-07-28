@@ -21,6 +21,9 @@ public sealed class CampfireExecutionRuntimeContractTests
         string assembly = Normalize(File.ReadAllText(Path.Combine(
             runtime,
             "DigBuildingBoxAssemblyExecution.cs")));
+        string drain = Normalize(File.ReadAllText(Path.Combine(
+            runtime,
+            "DigBuildingBoxAssemblyTickDrain.cs")));
         string packing = Normalize(File.ReadAllText(Path.Combine(
             runtime,
             "DigBuildingPackingExecution.cs")));
@@ -36,6 +39,14 @@ public sealed class CampfireExecutionRuntimeContractTests
         Assert.Contains("StartOrResume(assembly.Id,workerId)", assembly);
         Assert.Contains("ExecutePackableBuildingIteration(assembly.Id,workerId,tick", assembly);
         Assert.Contains("_buildingBoxAssemblyWork!.Handle", assembly);
+        Assert.Contains("AdvanceBuildingBoxAssemblyJob(job.Id,agent,tick)", assembly);
+
+        Assert.Contains("MaximumImmediateBuildingBoxAssemblyStepsPerTick", drain);
+        Assert.Contains("BuildingBoxAssemblyExecutionPolicy.Evaluate", drain);
+        Assert.Contains("ExecuteBuildingBoxAssemblyStep", drain);
+        Assert.Contains("afterWork?.CompletedWork==completedWorkBefore", drain);
+        Assert.Contains("BuildingBoxAssemblyExecutionStepKind.CompleteAssembly", drain);
+        Assert.Contains("_buildingBoxAssemblyRoutes.Remove(jobId)", drain);
 
         Assert.Contains("PackableBuildingOperationKind.Pack", packing);
         Assert.Contains("StartOrResume(jobId,workerId)", packing);
@@ -43,6 +54,7 @@ public sealed class CampfireExecutionRuntimeContractTests
         Assert.Contains("_buildingPackingWork!.Handle", packing);
 
         Assert.Contains("ResolveDurationSeconds(workerId)", shared);
+        Assert.Contains("durationSeconds:1", shared);
         Assert.Contains("applyAuthoritativeWork()", shared);
         Assert.Contains("_campfireIterationProgression.CompleteIteration", shared);
         Assert.True(

@@ -54,28 +54,33 @@ namespace Dig.Unity
                 }
             }
 
-            HashSet<CellId> solidCells = new HashSet<CellId>(
-                world.Chunks.SelectMany(chunk => chunk.Cells)
-                    .Where(cell => cell.IsSolid)
-                    .Select(cell => cell.Id));
+            Dictionary<CellId, CellSnapshot> worldCells = world.Chunks
+                .SelectMany(chunk => chunk.Cells)
+                .ToDictionary(cell => cell.Id);
             foreach (KeyValuePair<string, DigAgentVisual> pair in _agents)
             {
-                bool hasToolWork = workTargets.ContainsKey(pair.Key);
+                bool hasToolWork = workTargets.TryGetValue(pair.Key, out CellId target);
                 CellId current = new CellId(
                     pair.Value.Model.CellX,
                     pair.Value.Model.CellY,
                     pair.Value.Model.CellZ);
+                CellId below = new CellId(current.X, current.Y + 1, current.Z);
+                bool hasFullSupport = worldCells.TryGetValue(
+                        below,
+                        out CellSnapshot support)
+                    && support.IsSolid
+                    && support.State.CompletedExcavationQuarters == ExcavationQuarter.None;
+                bool targetRemovedSupport = hasToolWork
+                    && target == below
+                    && worldCells.TryGetValue(target, out CellSnapshot targetCell)
+                    && targetCell.State.CompletedExcavationQuarters != ExcavationQuarter.None;
                 bool climbingWork = hasToolWork
                     && !mushroomWorkers.Contains(pair.Key)
-                    && tunnelVolume.IsVerticalTunnel(current)
-                    && !solidCells.Contains(new CellId(
-                        current.X,
-                        current.Y + 1,
-                        current.Z));
+                    && !hasFullSupport
+                    && (tunnelVolume.IsVerticalTunnel(current)
+                        || targetRemovedSupport);
                 pair.Value.SetWorkTarget(
-                    workTargets.TryGetValue(pair.Key, out CellId target)
-                        ? target
-                        : (CellId?)null,
+                    hasToolWork ? target : (CellId?)null,
                     climbingWork,
                     animateToolWork: hasToolWork);
             }

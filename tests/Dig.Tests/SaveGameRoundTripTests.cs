@@ -15,7 +15,6 @@ using Xunit;
 
 namespace Dig.Tests
 {
-
 public sealed class SaveGameRoundTripTests
 {
     private static readonly MaterialId Rock = new MaterialId("terrain.rock");
@@ -51,6 +50,10 @@ public sealed class SaveGameRoundTripTests
         LoadedGameState loaded = loadedResult.Value;
         Assert.Equal(context.Metadata.SimulationTick, loaded.Metadata.SimulationTick);
         AssertWorldEqual(context.World.CreateSnapshot(), loaded.World.CreateSnapshot());
+        CellState partial = loaded.World.GetCell(Target).Value.State;
+        Assert.Equal(ExcavationQuarter.UpperLeft, partial.CompletedExcavationQuarters);
+        Assert.Equal(ExcavationCutPattern.DepthFace, partial.ExcavationCutPattern);
+        Assert.Equal(Rock, partial.ExcavationSourceMaterialId);
         AssertInventoryEqual(
             context.Inventory.CreateSnapshot(),
             loaded.Inventory.CreateSnapshot());
@@ -74,7 +77,6 @@ public sealed class SaveGameRoundTripTests
         Assert.Equal(firstBytes, secondBytes);
         CompleteDigging(context.World, context.Inventory, context.Jobs);
         CompleteDigging(loaded.World, loaded.Inventory, loaded.Jobs);
-
         AssertWorldEqual(context.World.CreateSnapshot(), loaded.World.CreateSnapshot());
         AssertInventoryEqual(
             context.Inventory.CreateSnapshot(),
@@ -164,7 +166,8 @@ public sealed class SaveGameRoundTripTests
             Rock,
             explored: true).Value;
         Assert.True(world.SetDigDesignation(Target, designated: true, tick: 5).IsSuccess);
-
+        Assert.True(world.CommitExcavationQuarter(
+            Target, ExcavationQuarter.UpperLeft, ExcavationCutPattern.DepthFace, Air, tick: 6).IsSuccess);
         InventoryState inventory = new InventoryState(items);
         Assert.True(inventory.AddStack(
             StackId,
@@ -177,7 +180,6 @@ public sealed class SaveGameRoundTripTests
             JobId,
             quantity: 3,
             tick: 7).IsSuccess);
-
         JobSystem jobs = new JobSystem();
         DigJobDefinition definition = new DigJobDefinition(
             JobId,
@@ -201,7 +203,6 @@ public sealed class SaveGameRoundTripTests
                 remainingYield: 7,
                 version: 9),
         };
-
         return new SaveGameContext(
             new SaveMetadataData
             {

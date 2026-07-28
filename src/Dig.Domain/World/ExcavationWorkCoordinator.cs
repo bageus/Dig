@@ -99,7 +99,7 @@ namespace Dig.Domain.World
         public ExcavationQuarter ReservedQuarters { get; internal set; }
     }
 
-    public sealed class ExcavationWorkCoordinator
+    public sealed partial class ExcavationWorkCoordinator
     {
         private readonly Dictionary<ExcavationWorkTarget, ExcavationQuarterState> _states =
             new Dictionary<ExcavationWorkTarget, ExcavationQuarterState>();

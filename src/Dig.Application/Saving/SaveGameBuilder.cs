@@ -59,6 +59,7 @@ public sealed partial class SaveGameBuilder
                 context.Production,
                 context.BuildingSupply,
                 context.Inventory),
+            Barrels = BuildBarrels(context.Barrels),
         };
     }
 
@@ -93,6 +94,11 @@ public sealed partial class SaveGameBuilder
                     IsExplored = cell.State.IsExplored,
                     Damage = cell.State.Damage,
                     Temperature = cell.State.Temperature,
+                    CompletedExcavationQuarters =
+                        (int)cell.State.CompletedExcavationQuarters,
+                    ExcavationCutPattern = (int)cell.State.ExcavationCutPattern,
+                    ExcavationSourceMaterialId =
+                        cell.State.ExcavationSourceMaterialId.ToString(),
                 });
             }
 

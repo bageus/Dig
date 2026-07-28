@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Dig.Domain.Navigation;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Inventory;
 using UnityEngine;
@@ -23,6 +24,7 @@ namespace Dig.Unity
         private Material? _selectedMaterial;
         private Material? _equipmentMaterial;
         private DigAgentVisual? _primarySelected;
+        private TunnelNavigationVolume? _tunnelVolume;
 
         public string? SelectedAgentId => _primarySelected?.Model.Id;
 
@@ -42,6 +44,7 @@ namespace Dig.Unity
                 visibleIds.Add(model.Id);
                 if (_agents.TryGetValue(model.Id, out DigAgentVisual? visual))
                 {
+                    visual.SetTunnelNavigationVolume(_tunnelVolume);
                     visual.SetModel(model, movementDuration);
                     visual.SetSelected(_selectedIds.Contains(model.Id));
                     continue;
@@ -83,6 +86,16 @@ namespace Dig.Unity
             {
                 ResolvePrimarySelection();
                 PublishSelectionSnapshot();
+            }
+        }
+
+
+        internal void SetTunnelNavigationVolume(TunnelNavigationVolume volume)
+        {
+            _tunnelVolume = volume ?? throw new ArgumentNullException(nameof(volume));
+            foreach (DigAgentVisual visual in _agents.Values)
+            {
+                visual.SetTunnelNavigationVolume(_tunnelVolume);
             }
         }
 

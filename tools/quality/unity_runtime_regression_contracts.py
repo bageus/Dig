@@ -21,6 +21,7 @@ def check_runtime_regression_contracts(
     world_input = runtime_root / "DigWorldInteraction.cs"
     priority_input = runtime_root / "DigWorldInteraction.ResidentCommandPriority.cs"
     excavation = runtime_root / "DigWorldInteraction.Excavation.cs"
+    excavation_targets = runtime_root / "DigWorldInteraction.ExcavationTargets.cs"
     depth = runtime_root / "DigWorldInteraction.TunnelDepthExcavation.cs"
     pointer_hits = runtime_root / "DigWorldInteraction.PointerHits.cs"
     targets = runtime_root / "DigWorldInteraction.SelectedResidentTargets.cs"
@@ -88,8 +89,11 @@ def check_runtime_regression_contracts(
         (excavation, "excavation tool pointer fallthrough", (
             "if (!CanActivateExcavationDrawing)",
             "ResetExcavationStroke();",
-            "return false;",
-            "!IsTerminalJobStatus(job.Model.Status)")),
+            "return false;")),
+        (excavation_targets, "world-owned excavation target filtering", (
+            "!IsTerminalJobStatus(job.Model.Status)",
+            "!_session!.IsExcavationOpen(target)",
+            "!cell.Model.IsExcavationOpen")),
         (depth, "depth tool pointer fallthrough", (
             "if (!CanActivateExcavationDrawing)",
             "return false;")),

@@ -61,7 +61,7 @@ public sealed partial class WorldState
 
         CellState current = _cells[GetCellIndex(cellId)];
         return ApplyTerrainChanges(
-            new[] { new TerrainChange(cellId, current.WithTerrain(emptyMaterialId)) },
+            new[] { new TerrainChange(cellId, current.WithExcavatedTerrain(emptyMaterialId)) },
             tick);
     }
 

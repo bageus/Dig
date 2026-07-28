@@ -111,6 +111,31 @@ public sealed partial class ContextInputRouter
                 targetCell: target.Cell);
         }
 
+        if (target.Kind == ContextWorldTargetKind.Barrel)
+        {
+            if (state.HasUsableResidentSelection
+                && target.Reachable
+                && target.EntityId.HasValue
+                && target.Cell.HasValue)
+            {
+                return Command(
+                    ApplicationInputCommandKind.AttackBarrel,
+                    state.SelectedResidentId,
+                    target.EntityId,
+                    target.Cell);
+            }
+
+            return Local(
+                PresentationInputEffect.ShowReason,
+                consumesPointer: true,
+                actorId: state.SelectedResidentId,
+                targetEntityId: target.EntityId,
+                targetCell: target.Cell,
+                reasonCode: state.HasUsableResidentSelection
+                    ? "input.barrel.unreachable_or_unavailable"
+                    : "input.barrel.resident_required");
+        }
+
         if (target.Kind == ContextWorldTargetKind.Mushroom)
         {
             if (state.HasUsableResidentSelection
@@ -148,7 +173,6 @@ public sealed partial class ContextInputRouter
                     targetEntityId: target.EntityId,
                     reasonCode: "input.target.stale_or_dead");
             }
-
             return Command(
                 ApplicationInputCommandKind.AttackTarget,
                 state.SelectedResidentId,
@@ -247,4 +271,5 @@ public sealed partial class ContextInputRouter
             target.Cell);
     }
 }
+
 }

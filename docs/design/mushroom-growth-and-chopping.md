@@ -224,6 +224,7 @@ SourceId = mushroom chop completion generation
 9. `Large` визуально только немного выше resident: ориентир — около 110% высоты resident interaction collider, а не кратно выше гнома;
 10. `AbsentRegrowing` не имеет mushroom geometry, collider или direct interaction target.
 11. Физическая шляпка/ножка после рубки остаётся foreground world-item target: она может подсвечиваться/подниматься как материал и никогда не маршрутизируется в `ChopMushroom`, даже если site уже успел отрасти в той же cell.
+12. Mushroom visual и collider располагаются внутри depth-volume своей authoritative `CellId.Z`: центр по глубине совпадает с `DepthOrigin + Z * DepthSpacing`, декоративный offset не может сдвигать гриб в соседний Z-слой или за заднюю границу `Z=3`.
 
 Автоматический job UI и auto-designation гриба остаются будущим scope.
 
@@ -253,6 +254,7 @@ SourceId = mushroom chop completion generation
 - world item placement в site cell разрешён;
 - два demo sites имеют независимые timers, jobs и drops;
 - Presentation не хранит authoritative growth/chop progress.
+- visual/collider каждого гриба остаётся внутри depth slab его logical `Z=0..3`; presentation offset не меняет слой и не выводит geometry за заднюю плоскость мира.
 
 ## 11. Save/Load и migration
 
@@ -331,6 +333,7 @@ Unity Play Mode:
 - overlapping building/mushroom hit stack keeps hover/cursor/LMB parity and starts chopping;
 - LMB -> status «Добывает гриб» -> travel -> repeated chop animation -> disappearance;
 - mushroom base remains on walk surface, supported shader is not magenta, Large is only slightly taller than resident;
+- для fixture-sites на `Z=0`, `Z=1`, `Z=2` и `Z=3` visual/collider центр совпадает с projection этой клетки и не пересекает соседний depth slab;
 - exact physical drops visible/raycastable/pickable;
 - regrowth in same cell;
 - second resident takeover;
@@ -344,6 +347,7 @@ Unity Play Mode:
 - direct axe cursor, hover highlight and click use one resolved target decision and one command;
 - когда axe cursor виден, перекрывающее строение или другой world target не перехватывает тот же LMB;
 - mushroom visual вертикален, стоит на walk surface, использует поддерживаемый URP shader и `Large` лишь немного выше resident;
+- mushroom visual/collider находится в depth slab authoritative `CellId.Z` для каждого `Z=0..3`; запрещён отдельный front/back offset, который переносит его в соседний слой или за `Z=3`;
 - active resident status отображается как «Добывает гриб», а `PerformWork` показывает повторяющуюся рубящую pose;
 - hit bands use current Woodworking and deterministic required swings;
 - one site cannot be chopped concurrently by two residents;
@@ -369,3 +373,4 @@ Unity Play Mode:
 | 2026-07-27 | Q-MUSH-001=A: absent не интерактивен; Q-MUSH-002=B: takeover/interruption сбрасывает progress; Q-MUSH-003=A: рост и remaining duration замораживаются на время active chop. Статус повышен до APPROVED. | Пользователь | Workflow, state machine, conflicts, save/test acceptance, #423 |
 | 2026-07-27 | По runtime screenshot подтверждены обязательные исправления presentation/input: вертикальная установка на walk surface, URP-compatible material, Large около 110% resident height, hover highlight, единый hover/cursor/LMB target без перехвата overlapping building, статус «Добывает гриб» и chopping pose. | Пользователь | Workflow, Input/UI/Presentation, Play Mode acceptance, #423 |
 | 2026-07-28 | По повторному runtime screenshot уточнено: side-view bootstrap rotation не должна передаваться mushroom root; growing mushroom обязан оставаться world-upright. После рубки cap/leg — только foreground pickable materials без mushroom identity; они блокируют axe target для regrown site за ними. | Пользователь | Workflow, Input/UI/Presentation, invariants, Play Mode acceptance, #423 |
+| 2026-07-28 | По screenshot подтверждено depth-правило: visual/collider гриба обязан оставаться в slab своей authoritative клетки `Z=0..3`; дополнительный offset не может переносить гриб за `Z=3` или в соседний слой. | Пользователь | Input/UI/Presentation, invariants, Play Mode acceptance, #423 |

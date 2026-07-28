@@ -46,6 +46,8 @@ public sealed class MushroomUnityRuntimeContractTests
         Assert.DoesNotContain("Shader.Find(\"Standard\")", visual);
         Assert.DoesNotContain("MushroomStage.Large=>(1.34f", visual);
         Assert.Contains("DigTunnelProjection.ResidentFootSink", renderer);
+        Assert.Contains("site.Cell.Z)+newVector3(0f,DigTunnelProjection.ResidentFootSink,0f)", renderer);
+        Assert.DoesNotContain("FrontOffset", renderer);
         Assert.Contains("SetParent(transform,worldPositionStays:true)", renderer);
         Assert.DoesNotContain("SetParent(transform,worldPositionStays:false)", renderer);
     }
@@ -119,9 +121,13 @@ public sealed class MushroomUnityRuntimeContractTests
     {
         string runtime = RuntimeRoot();
         string placement = Read(runtime, "DigBuildingBoxPlacement.cs");
+        string barrels = Read(runtime, "DigTerrainWorkSession.Barrels.cs");
         string items = Read(runtime, "DigTerrainWorkSession.ResidentInventoryDemo.cs");
 
-        Assert.Equal(2, Count(placement, "MushroomBuildingBlockedCells"));
+        Assert.Equal(2, Count(placement, "BuildingPlacementBlockedCells"));
+        Assert.Contains("MushroomBuildingBlockedCells", barrels);
+        Assert.Contains(".Concat(BarrelBuildingBlockedCells)", barrels);
+        Assert.DoesNotContain("BuildingPlacementBlockedCells", items);
         Assert.DoesNotContain("MushroomBuildingBlockedCells", items);
     }
 
@@ -134,6 +140,9 @@ public sealed class MushroomUnityRuntimeContractTests
         string materialTargeting = Read(
             playMode,
             "MushroomMaterialTargetingPlayModeTests.cs");
+        string depthProjection = Read(
+            playMode,
+            "MushroomDepthProjectionPlayModeTests.cs");
 
         Assert.DoesNotContain(".Offset(", topology);
         Assert.Contains("newCellId(cell.X-1,cell.Y,cell.Z)", topology);
@@ -151,6 +160,12 @@ public sealed class MushroomUnityRuntimeContractTests
         Assert.Contains("TryResolveMushroomHit", materialTargeting);
         Assert.Contains("TryResolveWorldItemHit", materialTargeting);
         Assert.Contains("GetComponentInParent<DigMushroomVisual>()", materialTargeting);
+        Assert.Contains(
+            "Renderer_keeps_mushrooms_inside_authoritative_z0_to_z3_depth_slabs",
+            depthProjection);
+        Assert.Contains("depthOrigin+(z*depthSpacing)", depthProjection);
+        Assert.Contains("collider.bounds.center.z", depthProjection);
+        Assert.Contains("depthSlabHalfExtent", depthProjection);
     }
 
     private static int Count(string source, string value)
