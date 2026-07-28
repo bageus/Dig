@@ -72,7 +72,7 @@ public sealed class WorldOwnedExcavationNavigationTests
     [Fact]
     public void Navigation_pathfinder_prefers_depth_detour_over_excavated_shaft_gap()
     {
-        WorldState world = CreateFilledWorld(new WorldSize(3, 2, 2));
+        WorldState world = CreateFilledWorld(new WorldSize(3, 2, 4));
         long tick = 1;
         CellId start = new CellId(0, 0, 0);
         CellId crossing = new CellId(1, 0, 0);
@@ -134,7 +134,7 @@ public sealed class WorldOwnedExcavationNavigationTests
     [Fact]
     public void Partial_target_below_switches_work_position_to_climbing_posture()
     {
-        WorldState world = CreateFilledWorld(new WorldSize(1, 2, 1));
+        WorldState world = CreateFilledWorld(new WorldSize(1, 2, 4));
         CellId workCell = new CellId(0, 0, 0);
         CellId target = new CellId(0, 1, 0);
         Assert.True(world.Excavate(workCell, Air, tick: 1).IsSuccess);
@@ -163,7 +163,7 @@ public sealed class WorldOwnedExcavationNavigationTests
     [Fact]
     public void Reachable_depth_work_cell_is_preferred_over_hanging_above_target()
     {
-        WorldState world = CreateFilledWorld(new WorldSize(1, 2, 2));
+        WorldState world = CreateFilledWorld(new WorldSize(1, 2, 4));
         CellId current = new CellId(0, 0, 0);
         CellId target = new CellId(0, 1, 0);
         CellId depthBridge = new CellId(0, 0, 1);
