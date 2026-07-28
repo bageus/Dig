@@ -1,11 +1,11 @@
 using System;
 using System.Linq;
-using System.Collections.Generic;
 using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
+using Dig.Domain.Jobs;
 using Dig.Domain.Navigation;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
@@ -20,8 +20,6 @@ namespace Dig.Unity
         private CompleteWorldItemPickupHandler? _buildingItemPickupComplete;
         private StartResidentFoodMealHandler? _startResidentFoodMeal;
         private NavigationPathfinder? _worldItemPickupPathfinder;
-        private readonly Dictionary<EntityId, DirectWorldFoodIntent>
-            _directWorldFoodIntents = new Dictionary<EntityId, DirectWorldFoodIntent>();
         private long _nextWorldItemPickupSequence;
 
         internal Result CreateWorldItemPickup(
@@ -77,7 +75,7 @@ namespace Dig.Unity
                 _buildingInventoryRepository)
                     ? _buildingItemPickupCreate!
                     : _terrainItemPickupCreate!;
-            Result created = handler.Handle(new CreateWorldItemPickupCommand(
+            return handler.Handle(new CreateWorldItemPickupCommand(
                 jobId,
                 stack,
                 resident,
@@ -86,15 +84,10 @@ namespace Dig.Unity
                 quantity,
                 destinationStackId,
                 priority: 675,
-                tick));
-            if (created.IsSuccess && eatAfterPickup)
-            {
-                _directWorldFoodIntents[jobId] = new DirectWorldFoodIntent(
-                    resident,
-                    stack);
-            }
-
-            return created;
+                tick,
+                eatAfterPickup
+                    ? WorldItemPickupCompletionAction.UseConsumable
+                    : WorldItemPickupCompletionAction.None));
         }
 
         internal bool TryResolveBuildingInternalStockPickup(
@@ -183,18 +176,6 @@ namespace Dig.Unity
             return _inventoryRepository.Get().GetStack(stackId) != null
                 ? _inventoryRepository
                 : null;
-        }
-
-        private readonly struct DirectWorldFoodIntent
-        {
-            internal DirectWorldFoodIntent(EntityId residentId, EntityId stackId)
-            {
-                ResidentId = residentId;
-                StackId = stackId;
-            }
-
-            internal EntityId ResidentId { get; }
-            internal EntityId StackId { get; }
         }
     }
 }
