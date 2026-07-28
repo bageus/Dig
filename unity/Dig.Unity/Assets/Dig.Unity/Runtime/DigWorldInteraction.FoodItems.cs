@@ -13,7 +13,7 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(item));
             }
 
-            return HasItemFamily(item.ItemId, "food.");
+            return IsDirectConsumableItemId(item.ItemId);
         }
 
         private static bool IsDirectConsumableItemId(string itemId)
