@@ -28,20 +28,15 @@ jobs:
           from pathlib import Path
           path = Path('src/Dig.Application/Inventory/WorldItemPickupHandlers.cs')
           text = path.read_text()
-          old = '''        int quantity = command.Quantity == 0 ? stack!.Quantity : command.Quantity;
-          Result reserved = inventory.ReserveQuantity('''
-          new = '''        ItemStackSnapshot source = stack!;
-          int quantity = command.Quantity == 0 ? source.Quantity : command.Quantity;
-          Result reserved = inventory.ReserveQuantity('''
-          if text.count(old) != 1:
-              raise SystemExit('Expected quantity block was not found exactly once.')
-          text = text.replace(old, new)
-          old_item = '''                stack.ItemId,
-          quantity,'''
-          new_item = '''                source.ItemId,
-          quantity,'''
+          old_quantity = '        int quantity = command.Quantity == 0 ? stack!.Quantity : command.Quantity;'
+          new_quantity = '        ItemStackSnapshot source = stack!;\n        int quantity = command.Quantity == 0 ? source.Quantity : command.Quantity;'
+          if text.count(old_quantity) != 1:
+              raise SystemExit('Expected quantity line was not found exactly once.')
+          text = text.replace(old_quantity, new_quantity)
+          old_item = '                stack.ItemId,'
+          new_item = '                source.ItemId,'
           if text.count(old_item) != 1:
-              raise SystemExit('Expected item-id use was not found exactly once.')
+              raise SystemExit('Expected item-id line was not found exactly once.')
           path.write_text(text.replace(old_item, new_item))
           PY
           git rm .github/workflows/fix-production-pickup-nullability.yml
