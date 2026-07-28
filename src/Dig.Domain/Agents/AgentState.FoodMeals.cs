@@ -54,7 +54,7 @@ namespace Dig.Domain.Agents
 
             _activeAction = new ActiveAgentAction(
                 AgentIntentKind.Eat,
-                playerOrderId: null,
+                null,
                 tick,
                 biteCount);
             _activeFoodMeal = new ActiveFoodMeal(
