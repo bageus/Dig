@@ -1,7 +1,15 @@
 using System;
+using Dig.Domain.Core;
 
 namespace Dig.Domain.Agents
 {
+
+public static class AgentRuntimeRestoreErrors
+{
+    public static readonly DomainError InvalidFoodMealSnapshot = new DomainError(
+        "agent.runtime.food_meal.invalid_snapshot",
+        "The saved resident meal state is invalid.");
+}
 
 public sealed class AgentRuntimeSnapshot
 {
@@ -122,7 +130,8 @@ public sealed partial class AgentState
             || meal.CompletedBites < 0
             || meal.CompletedBites >= meal.BiteCount)
         {
-            return Result.Failure(FoodMealErrors.InvalidSnapshot);
+            return Result.Failure(
+                AgentRuntimeRestoreErrors.InvalidFoodMealSnapshot);
         }
 
         return Result.Success();
