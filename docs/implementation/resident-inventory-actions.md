@@ -1,10 +1,10 @@
 # Resident inventory actions
 
-Статус реализации: `IMPLEMENTED` in PR #501; final docs-head CI and actual Unity Play Mode verification pending.
+Статус реализации: `IMPLEMENTED` in PR #501; Play Mode compile boundary and runtime placement verification are corrected in PR #504. Actual licensed Unity Play Mode verification remains pending.
 
 Authoritative design: [`../design/runtime-selection-excavation-item-placement-decisions.md`](../design/runtime-selection-excavation-item-placement-decisions.md), [`../design/resident-inventory-expansion.md`](../design/resident-inventory-expansion.md).
 
-Tracking: [#64](https://github.com/bageus/Dig/issues/64), [#67](https://github.com/bageus/Dig/issues/67), [#70](https://github.com/bageus/Dig/issues/70), [#387](https://github.com/bageus/Dig/issues/387), [#390](https://github.com/bageus/Dig/issues/390), [#459](https://github.com/bageus/Dig/issues/459), [PR #479](https://github.com/bageus/Dig/pull/479), [PR #480](https://github.com/bageus/Dig/pull/480), [PR #501](https://github.com/bageus/Dig/pull/501).
+Tracking: [#64](https://github.com/bageus/Dig/issues/64), [#67](https://github.com/bageus/Dig/issues/67), [#70](https://github.com/bageus/Dig/issues/70), [#387](https://github.com/bageus/Dig/issues/387), [#390](https://github.com/bageus/Dig/issues/390), [#459](https://github.com/bageus/Dig/issues/459), [PR #479](https://github.com/bageus/Dig/pull/479), [PR #480](https://github.com/bageus/Dig/pull/480), [PR #501](https://github.com/bageus/Dig/pull/501), [PR #504](https://github.com/bageus/Dig/pull/504).
 
 ## Input routing
 
@@ -16,6 +16,8 @@ Selected-resident HUD читает authoritative resident inventory layout и м
 - `D + ЛКМ` по non-BuildingBox stack отправляет immediate `DropInventoryStack` в current logical resident cell;
 - double click и RMB больше не выполняют quick drop;
 - hover с `D` показывает анимированную стрелку вниз; hover consumable с `Alt` показывает анимированный рот.
+
+`D` одновременно остаётся правой клавишей WASD camera pan. Authoritative runtime input specification therefore requires full arrow-key duplicates: `Left/Right` duplicate `A/D`, and `Down/Up` duplicate `S/W`. PR #504 adds a regression contract for both axis pairs so inventory quick-drop input never leaves camera movement without a keyboard alternative.
 
 ## Input wiring regression — 2026-07-29
 
@@ -68,6 +70,8 @@ Unity runtime использует публичный ownership contract `DropRe
 
 `DigWorldInteraction` хранит HUD как `DigHudOverlay`. Consumable command path обязан использовать тот же adapter type: `DigGameHudCanvas` является внутренним canvas projection overlay и не владеет `SetCommandResult`/`SetJobs` contract напрямую.
 
+PR #501 Play Mode scenarios intentionally reference internal `Dig.Unity` adapters and helpers, but `Dig.Unity.PlayModeTests` was not declared as a friend assembly. Unity therefore emitted the reported `CS0122` errors for `DigProductionIconPointer`, `DigTerrainWorkSession`, `DigInventoryItemGhostRenderer` and `CS1061` for the internal `GetHudModels` helper before any placement scenario could execute. PR #504 adds the explicit `InternalsVisibleTo("Dig.Unity.PlayModeTests")` contract without widening production API visibility.
+
 ## Verification
 
 Добавлены .NET regression tests для:
@@ -79,6 +83,7 @@ Unity runtime использует публичный ownership contract `DropRe
 - placement job save codec и composition-root registration coverage;
 - публичной Unity-доступности resident ownership policy и её location semantics;
 - соответствия world consumable command path фактическому `DigHudOverlay` field contract;
-- фактического HUD delegate в local ghost/job placement pipeline.
+- фактического HUD delegate в local ghost/job placement pipeline;
+- friend-assembly identity и arrow-key camera duplicates.
 
-PR #501 merge-ref Quality run `30406180795` passed architecture/source contracts, Release build, 1101 .NET tests, headless smoke and both deterministic soaks. Unity Play Mode остаётся обязательным для animated cursor, exact hover tint, ghost visibility/colour, multi-order resident execution, input shielding и повторного world pickup/drop workflow. Новый executable test покрывает реальный первый шаг `inventory LMB -> active item ghost` и отсутствие premature drop; hosted `Run Play Mode tests` был skipped activation-gate.
+PR #501 merge-ref Quality run `30406180795` passed architecture/source contracts, Release build, 1101 .NET tests, headless smoke and both deterministic soaks. PR #504 validation is recorded after its final head completes CI. Unity Play Mode remains mandatory for animated cursor, exact hover tint, ghost visibility/colour, multi-order resident execution, input shielding and repeated world pickup/drop workflow.

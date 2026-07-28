@@ -104,7 +104,8 @@ Quick drop использует отдельный явный modifier:
 - `D + ЛКМ` немедленно выполняет `DropInventoryStack` в authoritative current resident cell без placement job;
 - double click и RMB больше не являются quick-drop input;
 - reserved/held/unavailable stack не выбрасывается и возвращает typed reason;
-- после quick drop обычная world-item gravity policy автоматически перемещает unsupported item вниз до первой допустимой опоры в vertical tunnel.
+- после quick drop обычная world-item gravity policy автоматически перемещает unsupported item вниз до первой допустимой опоры в vertical tunnel;
+- поскольку `D` также является правым направлением WASD camera pan, движение камеры обязательно полностью дублируется стрелками: `LeftArrow/RightArrow` дублируют `A/D`, `DownArrow/UpArrow` дублируют `S/W`.
 
 Использование consumable/tool сохраняет отдельный priority:
 
@@ -181,11 +182,12 @@ Quick drop использует отдельный явный modifier:
 15. два и более placement jobs одного resident выполняются строго в порядке создания, без параллельного claim, потери или дублирования items;
 16. blocked destination использует retry/cancel cleanup, а save/load сохраняет очередь и stage;
 17. inventory item D hover -> animated down arrow -> D+LMB immediate drop at resident cell -> fall through open vertical tunnel;
-18. double click/RMB не создают quick drop; Alt use и BuildingBox placement сохраняют priority;
-19. horizontal и vertical excavation минимум 10 cells без остановки;
-20. 1/4, 2/4, 3/4 progress видим как реально удалённые quarters породы без чёрной заливки; при копке сверху вниз состояние 2/4 является полностью удалённой верхней половиной, а не вертикальной колонкой;
-21. interruption/erase после partial progress оставляет удалённые quarters, а повторное designation продолжает с того же mask;
-22. cave-room valid preview видим и child jobs продолжаются до полного plan completion;
-23. failure/retry одного excavation или item-placement job не блокирует другие commands/residents.
+18. camera pan remains available through `Left/Right/Down/Up` as exact directional duplicates of `A/D/S/W`, including while `D` is reserved as the inventory quick-drop modifier;
+19. double click/RMB не создают quick drop; Alt use и BuildingBox placement сохраняют priority;
+20. horizontal и vertical excavation минимум 10 cells без остановки;
+21. 1/4, 2/4, 3/4 progress видим как реально удалённые quarters породы без чёрной заливки; при копке сверху вниз состояние 2/4 является полностью удалённой верхней половиной, а не вертикальной колонкой;
+22. interruption/erase после partial progress оставляет удалённые quarters, а повторное designation продолжает с того же mask;
+23. cave-room valid preview видим и child jobs продолжаются до полного plan completion;
+24. failure/retry одного excavation или item-placement job не блокирует другие commands/residents.
 
 Unit/source-contract tests не заменяют Unity Play Mode validation для pointer routing, world/HUD selection synchronization, animated cursor/highlight, moving ghost visibility, ordered resident-bound placement jobs, depth-derived plan kind, partial terrain geometry и длительного workflow.

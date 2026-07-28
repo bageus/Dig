@@ -65,7 +65,7 @@ internal sealed partial class DigTerrainWorkSession
             new ItemDefinition(
                 MushroomCapItemId,
                 "Mushroom cap",
-                1,
+                100,
                 false,
                 new[]
                 {
@@ -74,7 +74,7 @@ internal sealed partial class DigTerrainWorkSession
             new ItemDefinition(
                 MushroomLegItemId,
                 "Mushroom leg",
-                1,
+                100,
                 false,
                 new[]
                 {

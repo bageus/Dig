@@ -44,6 +44,55 @@ public sealed class ProductionAndInventoryPointerInputRegressionTests
         Assert.Contains("Inventoryitemplacementordercreated", placement);
     }
 
+    [Fact]
+    public void Play_mode_tests_are_friends_of_the_runtime_assembly()
+    {
+        string runtime = RuntimeRoot();
+        string assemblyInfo = Normalize(Read(runtime, "AssemblyInfo.cs"));
+        string testAssembly = Normalize(File.ReadAllText(Path.Combine(
+            FindRepositoryRoot(),
+            "unity",
+            "Dig.Unity",
+            "Assets",
+            "Dig.Unity",
+            "Tests",
+            "PlayMode",
+            "Dig.Unity.PlayModeTests.asmdef")));
+
+        Assert.Contains("InternalsVisibleTo(\"Dig.Unity.PlayModeTests\")", assemblyInfo);
+        Assert.Contains("\"name\":\"Dig.Unity.PlayModeTests\"", testAssembly);
+    }
+
+    [Fact]
+    public void Camera_pan_has_arrow_key_duplicates_for_wasd()
+    {
+        string camera = Normalize(Read(RuntimeRoot(), "DigCameraController.cs"));
+
+        Assert.Contains("KeyCode.A,KeyCode.LeftArrow,KeyCode.D,KeyCode.RightArrow", camera);
+        Assert.Contains("KeyCode.S,KeyCode.DownArrow,KeyCode.W,KeyCode.UpArrow", camera);
+    }
+
+    [Fact]
+    public void Demo_mushroom_materials_keep_production_stack_capacity_for_supply_deposit()
+    {
+        string demo = Normalize(Read(
+            RuntimeRoot(),
+            "DigTerrainWorkSession.ResidentInventoryDemo.cs"));
+
+        Assert.Contains(
+            "newItemDefinition(MushroomCapItemId,\"Mushroomcap\",100,false",
+            demo);
+        Assert.Contains(
+            "newItemDefinition(MushroomLegItemId,\"Mushroomleg\",100,false",
+            demo);
+        Assert.DoesNotContain(
+            "newItemDefinition(MushroomCapItemId,\"Mushroomcap\",1,false",
+            demo);
+        Assert.DoesNotContain(
+            "newItemDefinition(MushroomLegItemId,\"Mushroomleg\",1,false",
+            demo);
+    }
+
     private static string Read(string root, string file)
     {
         return File.ReadAllText(Path.Combine(root, file));
