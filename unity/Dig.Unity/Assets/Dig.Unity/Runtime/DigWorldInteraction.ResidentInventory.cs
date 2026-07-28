@@ -142,7 +142,7 @@ namespace Dig.Unity
                 selectedResidentId: residentId,
                 selectedResidentAlive: resident.IsAlive,
                 selectedInventoryStackId: stackId,
-                selectedInventoryItemUsable: slot.IsTool,
+                selectedInventoryItemUsable: slot.IsTool || slot.IsConsumable,
                 selectedInventoryItemIsBuildingBox: slot.IsBuildingBox,
                 canUseSelectedInventoryItem: slot.CanUse,
                 canDropSelectedInventoryItem: slot.CanDrop);
