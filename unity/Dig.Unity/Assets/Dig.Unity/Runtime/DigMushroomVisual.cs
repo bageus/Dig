@@ -128,6 +128,11 @@ public sealed class DigMushroomVisual : MonoBehaviour
         for (int index = 0; index < _renderers.Length; index++)
         {
             Renderer renderer = _renderers[index];
+            if (renderer == null)
+            {
+                continue;
+            }
+
             Color highlighted = Color.Lerp(_baseColors[index], Color.white, HoverBlend);
             highlighted.a = _baseColors[index].a;
             properties.Clear();
@@ -144,6 +149,11 @@ public sealed class DigMushroomVisual : MonoBehaviour
         for (int index = 0; index < _renderers.Length; index++)
         {
             Renderer renderer = _renderers[index];
+            if (renderer == null)
+            {
+                continue;
+            }
+
             properties.Clear();
             renderer.GetPropertyBlock(properties);
             properties.SetColor(BaseColorId, _baseColors[index]);
