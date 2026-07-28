@@ -141,7 +141,7 @@ namespace Dig.Unity
             foreach (JobSnapshot job in _jobRepository.Get().GetAll())
             {
                 if (!IsActive(job)
-                    || job.Definition is not BuildingBoxAssemblyJobDefinition assembly
+                    || job.Definition is not BuildingBoxAssemblyJobDefinition
                     || !job.AssignedAgentId.HasValue
                     || !agentsById.TryGetValue(
                         job.AssignedAgentId.Value.ToString(),
@@ -150,35 +150,10 @@ namespace Dig.Unity
                     continue;
                 }
 
-                BuildingSnapshot? building = _buildingsRepository!.Get().Get(assembly.BuildingId);
-                ItemStackSnapshot? box = _buildingInventoryRepository!.Get().GetStack(
-                    assembly.SourceStackId);
-                Result<BuildingBoxAssemblyExecutionStepKind> evaluated =
-                    BuildingBoxAssemblyExecutionPolicy.Evaluate(
-                        job,
-                        building,
-                        box,
-                        new CellId(agent.CellX, agent.CellY, agent.CellZ));
-                if (evaluated.IsFailure)
+                Result advanced = AdvanceBuildingBoxAssemblyJob(job.Id, agent, tick);
+                if (advanced.IsFailure)
                 {
-                    return Result.Failure(evaluated.Error!);
-                }
-
-                Result executed = ExecuteBuildingBoxAssemblyStep(
-                    evaluated.Value,
-                    assembly,
-                    building!,
-                    job.AssignedAgentId.Value,
-                    new CellId(agent.CellX, agent.CellY, agent.CellZ),
-                    tick);
-                if (executed.IsFailure)
-                {
-                    return executed;
-                }
-
-                if (evaluated.Value == BuildingBoxAssemblyExecutionStepKind.CompleteAssembly)
-                {
-                    _buildingBoxAssemblyRoutes.Remove(job.Id);
+                    return advanced;
                 }
             }
 
