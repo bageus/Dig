@@ -6,8 +6,6 @@ namespace Dig.Unity
 {
     public sealed partial class DigWorldInteraction
     {
-        private const string GrilledMushroomItemId = "food.grilled_mushroom";
-
         private static bool IsDirectFoodItem(WorldItemViewModel item)
         {
             if (item == null)
@@ -15,10 +13,21 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(item));
             }
 
-            return string.Equals(
-                item.ItemId,
-                GrilledMushroomItemId,
-                StringComparison.Ordinal);
+            return HasItemFamily(item.ItemId, "food.");
+        }
+
+        private static bool IsDirectConsumableItemId(string itemId)
+        {
+            return HasItemFamily(itemId, "food.")
+                || HasItemFamily(itemId, "potion.")
+                || HasItemFamily(itemId, "drink.")
+                || HasItemFamily(itemId, "beverage.");
+        }
+
+        private static bool HasItemFamily(string itemId, string prefix)
+        {
+            return !string.IsNullOrWhiteSpace(itemId)
+                && itemId.StartsWith(prefix, StringComparison.Ordinal);
         }
 
         private static ContextWorldTargetKind ResolveWorldItemTargetKind(
