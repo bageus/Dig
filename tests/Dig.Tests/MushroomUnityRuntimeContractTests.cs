@@ -121,9 +121,13 @@ public sealed class MushroomUnityRuntimeContractTests
     {
         string runtime = RuntimeRoot();
         string placement = Read(runtime, "DigBuildingBoxPlacement.cs");
+        string barrels = Read(runtime, "DigTerrainWorkSession.Barrels.cs");
         string items = Read(runtime, "DigTerrainWorkSession.ResidentInventoryDemo.cs");
 
-        Assert.Equal(2, Count(placement, "MushroomBuildingBlockedCells"));
+        Assert.Equal(2, Count(placement, "BuildingPlacementBlockedCells"));
+        Assert.Contains("MushroomBuildingBlockedCells", barrels);
+        Assert.Contains(".Concat(BarrelBuildingBlockedCells)", barrels);
+        Assert.DoesNotContain("BuildingPlacementBlockedCells", items);
         Assert.DoesNotContain("MushroomBuildingBlockedCells", items);
     }
 
