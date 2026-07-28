@@ -169,6 +169,7 @@ public sealed partial class AgentState : AggregateRoot
         }
 
         _activeAction = null;
+        _activeFoodMeal = null;
         _playerOrder = null;
         Raise(new AgentDied(tick, Id, Position));
     }
