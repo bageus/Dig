@@ -76,7 +76,7 @@ Automatic attack, enemy interaction, procedural spawning, traps/explosions и pl
 4. Общий deterministic landing resolver выбирает первую допустимую твёрдую поверхность ниже.
 5. Barrel меняет authoritative location по принятой item-fall timing policy.
 6. Presentation перемещает visual/collider к landing cell.
-7. Любая высота даёт zero barrel damage и не материализует contents.
+7. Любая высота даёт zero barrel damage и не materialize-ит contents.
 8. После landing barrel снова доступна для direct attack.
 
 ### Demo bootstrap
