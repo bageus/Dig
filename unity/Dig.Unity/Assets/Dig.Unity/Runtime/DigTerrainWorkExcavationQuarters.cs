@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dig.Application.World;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;

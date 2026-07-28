@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using Dig.Application.Ecology;
 using Dig.Application.Jobs;
+using Dig.Application.World;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Xunit;
@@ -80,6 +81,25 @@ public sealed class UnitySafeModeApiDriftContractTests
 
         Assert.Contains("newColor32[CommandCursorSize*CommandCursorSize]", source);
         Assert.DoesNotContain("NewCursorPixels", source);
+    }
+
+    [Fact]
+    public void Cave_room_partial_completion_uses_current_runtime_contracts()
+    {
+        string quarters = ReadRuntime("DigTerrainWorkExcavationQuarters.cs");
+        string partial = ReadRuntime("DigTerrainWorkSession.PartialCompletion.cs");
+        string owner = ReadRuntime("DigTerrainWorkSession.cs");
+
+        Assert.Equal("Dig.Application.World", typeof(CaveRoomExcavationTarget).Namespace);
+        Assert.Contains("usingDig.Application.World;", quarters);
+        Assert.Contains("outCaveRoomExcavationTargetroomTarget", quarters);
+        Assert.Contains(
+            "PublishTerrainCompletionEffects(job.Id,target.Cell,tick,false);",
+            partial);
+        Assert.DoesNotContain("producedOutput:", partial);
+        Assert.Contains(
+            "PublishTerrainCompletionEffects(job.Id,targetCell,tick,!output.IsEmpty);",
+            owner);
     }
 
     private static int Count(string source, string value)
