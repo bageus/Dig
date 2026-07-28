@@ -16,6 +16,7 @@ public sealed partial class DigGameHudCanvas
     private void ShowInventorySlotFeedback(
         ResidentInventoryLayoutSlotViewModel slot)
     {
+        _interaction?.SetInventorySlotHoverFeedback(slot);
         if (_statusText == null)
         {
             return;
@@ -54,6 +55,7 @@ public sealed partial class DigGameHudCanvas
 
     private void HideInventorySlotFeedback()
     {
+        _interaction?.ClearInventorySlotHoverFeedback();
         if (_statusText != null)
         {
             _statusText.text = _status;
