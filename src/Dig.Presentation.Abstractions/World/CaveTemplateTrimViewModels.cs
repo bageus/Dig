@@ -23,13 +23,32 @@ public sealed class CaveTemplateTrimRowViewModel
         int minX,
         int y,
         int width)
+        : this(
+            level,
+            minX,
+            minX + width - 1,
+            y,
+            width,
+            (minX * 2) - 1,
+            ((minX + width) * 2) - 1)
+    {
+    }
+
+    public CaveTemplateTrimRowViewModel(
+        int level,
+        int minX,
+        int maxX,
+        int y,
+        int width,
+        int leftBoundary2,
+        int rightBoundary2)
     {
         if (level < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(level));
         }
 
-        if (minX < 0)
+        if (minX < 0 || maxX < minX)
         {
             throw new ArgumentOutOfRangeException(nameof(minX));
         }
@@ -39,15 +58,18 @@ public sealed class CaveTemplateTrimRowViewModel
             throw new ArgumentOutOfRangeException(nameof(y));
         }
 
-        if (width <= 0)
+        if (width <= 0 || rightBoundary2 - leftBoundary2 != width * 2)
         {
             throw new ArgumentOutOfRangeException(nameof(width));
         }
 
         Level = level;
         MinX = minX;
+        MaxX = maxX;
         Y = y;
         Width = width;
+        LeftBoundary2 = leftBoundary2;
+        RightBoundary2 = rightBoundary2;
     }
 
     public int Level { get; }
@@ -58,7 +80,15 @@ public sealed class CaveTemplateTrimRowViewModel
 
     public int Width { get; }
 
-    public int MaxX => MinX + Width - 1;
+    public int MaxX { get; }
+
+    public int LeftBoundary2 { get; }
+
+    public int RightBoundary2 { get; }
+
+    public float LeftBoundary => LeftBoundary2 * 0.5f;
+
+    public float RightBoundary => RightBoundary2 * 0.5f;
 }
 
 public sealed class CaveTemplateTrimInstanceViewModel

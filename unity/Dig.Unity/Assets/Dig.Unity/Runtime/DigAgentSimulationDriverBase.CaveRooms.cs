@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.World;
 using Dig.Domain.Core;
 using Dig.Domain.World;
@@ -152,19 +153,19 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(plan));
             }
 
-            int minX = CaveRoomPlanner.ResolveRowMinX(
+            CaveRoomRowProfile baseProfile = CaveRoomPlanner.ResolveRowProfile(
                 plan.Preset,
                 plan.Entrance.X,
                 level: 0);
             CellId[] cells = new CellId[
-                plan.Preset.BaseWidth * plan.Preset.Depth];
+                baseProfile.RequiredQuartersByX.Count * plan.Preset.Depth];
             int index = 0;
             for (int z = 0; z < plan.Preset.Depth; z++)
             {
-                for (int offset = 0; offset < plan.Preset.BaseWidth; offset++)
+                foreach (int x in baseProfile.RequiredQuartersByX.Keys.OrderBy(value => value))
                 {
                     cells[index++] = new CellId(
-                        minX + offset,
+                        x,
                         plan.Entrance.Y,
                         z);
                 }

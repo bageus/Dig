@@ -31,18 +31,18 @@ namespace Dig.Unity
             CaveRoomPreset preset,
             CellId entrance)
         {
-            int baseMinX = CaveRoomPlanner.ResolveRowMinX(
+            CaveRoomRowProfile baseProfile = CaveRoomPlanner.ResolveRowProfile(
                 preset,
                 entrance.X,
                 level: 0);
-            int topMinX = CaveRoomPlanner.ResolveRowMinX(
+            CaveRoomRowProfile topProfile = CaveRoomPlanner.ResolveRowProfile(
                 preset,
                 entrance.X,
                 preset.Height - 1);
-            float baseLeft = baseMinX - 0.5f;
-            float baseRight = baseMinX + preset.BaseWidth - 0.5f;
-            float topLeft = topMinX - 0.5f;
-            float topRight = topMinX + preset.TopWidth - 0.5f;
+            float baseLeft = baseProfile.LeftBoundary;
+            float baseRight = baseProfile.RightBoundary;
+            float topLeft = topProfile.LeftBoundary;
+            float topRight = topProfile.RightBoundary;
             float bottom = -entrance.Y - 0.5f;
             float top = -entrance.Y + preset.Height - 0.5f;
 

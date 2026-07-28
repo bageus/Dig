@@ -74,6 +74,22 @@ namespace Dig.Unity
             return GetCompletedCaveRoomPlans(LoadSnapshot());
         }
 
+        internal bool TryGetCaveRoomExcavationTarget(
+            CellId cell,
+            out CaveRoomExcavationTarget target)
+        {
+            for (int index = 0; index < _caveRoomPlans.Count; index++)
+            {
+                if (_caveRoomPlans[index].TryGetExcavationTarget(cell, out target))
+                {
+                    return true;
+                }
+            }
+
+            target = default;
+            return false;
+        }
+
         internal IReadOnlyList<CellId> ExpandExcavationEraseCells(
             IReadOnlyList<CellId> requested)
         {
@@ -115,10 +131,29 @@ namespace Dig.Unity
                 .SelectMany(chunk => chunk.Cells)
                 .ToDictionary(cell => cell.Id);
             return _caveRoomPlans
-                .Where(plan => plan.VolumeCells.All(cell =>
-                    cells.TryGetValue(cell, out CellSnapshot value)
-                    && !value.IsSolid))
+                .Where(plan => plan.ExcavationTargets.All(target =>
+                    IsCaveRoomTargetComplete(target, cells)))
                 .ToArray();
+        }
+
+        private static bool IsCaveRoomTargetComplete(
+            CaveRoomExcavationTarget target,
+            IReadOnlyDictionary<CellId, CellSnapshot> cells)
+        {
+            if (!cells.TryGetValue(target.Cell, out CellSnapshot value))
+            {
+                return false;
+            }
+
+            if (target.IsFullCell)
+            {
+                return !value.IsSolid || value.State.IsExcavationOpen;
+            }
+
+            return value.IsSolid
+                && value.State.Designation != CellDesignation.Dig
+                && (value.State.CompletedExcavationQuarters
+                    & target.RequiredQuarters) == target.RequiredQuarters;
         }
     }
 }

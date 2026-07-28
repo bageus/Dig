@@ -29,7 +29,7 @@ public sealed class CaveRoomPlanningTests
     }
 
     [Theory]
-    [InlineData(CaveRoomPresetKind.Small, 5, 3, 2, 3)]
+    [InlineData(CaveRoomPresetKind.Small, 5, 3, 3, 3)]
     [InlineData(CaveRoomPresetKind.Medium, 8, 6, 3, 3)]
     [InlineData(CaveRoomPresetKind.Large, 12, 8, 4, 5)]
     [InlineData(CaveRoomPresetKind.Tall, 10, 6, 4, 7)]
@@ -49,31 +49,6 @@ public sealed class CaveRoomPlanningTests
     }
 
     [Fact]
-    public void Small_room_is_a_two_deep_trapezoid_anchored_to_tunnel_row()
-    {
-        WorldSnapshot world = CreateWorld(horizontalTunnelY: 9);
-        ExcavationBoundaryPolicy boundary = new ExcavationBoundaryPolicy(20, 14, 2);
-
-        CaveRoomPlanResult result = new CaveRoomPlanner().Plan(
-            world,
-            boundary,
-            CaveRoomPresetKind.Small,
-            new CellId(10, 9));
-
-        Assert.True(result.Succeeded, result.Detail);
-        CaveRoomPlan plan = result.Plan!;
-        Assert.Contains(new CellId(10, 9, 0), plan.VolumeCells);
-        Assert.Contains(new CellId(10, 9, 1), plan.VolumeCells);
-        Assert.Equal(24, plan.VolumeCells.Count);
-        Assert.Equal(19, plan.ExcavationCells.Count);
-        Assert.Equal(5, plan.BaseTunnelCells.Count);
-        Assert.Equal(new[] { 5, 4, 3 }, RowWidths(plan));
-        Assert.Equal(3, plan.RoofCells.Count);
-        Assert.DoesNotContain(new CellId(10, 9), plan.FrontExcavationCells);
-        Assert.DoesNotContain(plan.BaseTunnelCells, plan.ExcavationCells.Contains);
-    }
-
-    [Fact]
     public void Tall_room_leaves_the_protected_upper_rock_row_as_its_roof()
     {
         WorldSnapshot world = CreateWorld(horizontalTunnelY: 9);
@@ -87,7 +62,7 @@ public sealed class CaveRoomPlanningTests
 
         Assert.True(result.Succeeded, result.Detail);
         Assert.All(result.Plan!.RoofCells, cell => Assert.Equal(2, cell.Y));
-        Assert.Equal(new[] { 10, 9, 9, 8, 7, 7, 6 }, RowWidths(result.Plan));
+        Assert.Equal(new[] { 10, 9, 9, 8, 7, 7, 6 }, ProfileWidths(result.Plan));
     }
 
     [Fact]
@@ -277,13 +252,13 @@ public sealed class CaveRoomPlanningTests
         Assert.Equal(CaveRoomPlanFailureReason.ProtectedRock, result.FailureReason);
     }
 
-    private static int[] RowWidths(CaveRoomPlan plan)
+    private static int[] ProfileWidths(CaveRoomPlan plan)
     {
-        return plan.VolumeCells
-            .Where(cell => cell.Z == 0)
-            .GroupBy(cell => cell.Y)
-            .OrderByDescending(group => group.Key)
-            .Select(group => group.Count())
+        return Enumerable.Range(0, plan.Preset.Height)
+            .Select(level => CaveRoomPlanner.ResolveRowProfile(
+                plan.Preset,
+                plan.Entrance.X,
+                level).Width)
             .ToArray();
     }
 

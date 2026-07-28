@@ -90,7 +90,10 @@ public sealed class CaveTemplateTrimPresenterTests
 
         Assert.Equal(new[] { 5, 4, 3 }, instance.Rows.Select(row => row.Width));
         Assert.Equal(new[] { 14, 13, 12 }, instance.Rows.Select(row => row.Y));
-        Assert.Equal(new[] { 14, 15, 15 }, instance.Rows.Select(row => row.MinX));
+        Assert.Equal(new[] { 14, 14, 15 }, instance.Rows.Select(row => row.MinX));
+        Assert.Equal(new[] { 18, 18, 17 }, instance.Rows.Select(row => row.MaxX));
+        Assert.Equal(new[] { 27, 28, 29 }, instance.Rows.Select(row => row.LeftBoundary2));
+        Assert.Equal(new[] { 37, 36, 35 }, instance.Rows.Select(row => row.RightBoundary2));
     }
 
     private static CaveRoomPlan CreatePlan(

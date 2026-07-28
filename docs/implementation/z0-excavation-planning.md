@@ -77,14 +77,14 @@ The room catalog is explicit and deterministic.
 
 | Preset | Base width | Top width | Depth | Height |
 | --- | ---: | ---: | ---: | ---: |
-| Small | 5 | 3 | 2 | 3 |
+| Small | 5 | 3 | 3 | 3 |
 | Medium | 8 | 6 | 3 | 3 |
 | Large | 12 | 8 | 4 | 5 |
 | Tall | 10 | 6 | 4 | 7 |
 
 The selected horizontal-tunnel cell is the deterministic anchor for the complete bottom row. The entire `BaseWidth` row on `Z=0` must already be an open through tunnel; its left and right extremes are the room entrances. The room rises upward and narrows toward the top. Intermediate row widths are linearly interpolated and rounded deterministically.
 
-`CaveRoomPlanner.ResolveRowMinX` owns horizontal row placement for planning, roof validation, preview, completed trim and room floors. When a row width is even and cannot be centered exactly on the integer anchor, the extra half-cell is kept on the right. Thus Small widths `5,4,3` at anchor X use `X-2..X+2`, then `X-1..X+2`, then `X-1..X+1`.
+`CaveRoomPlanner.ResolveRowProfile` owns exact doubled boundaries and physical terrain masks for planning, roof validation, preview, completed trim, side protection and room floors. Every row shares the geometric center of the base. When row/base parity differs, the silhouette uses two boundary half-cells rather than shifting a whole cell: Small `5,4,3` keeps full cells `X-2..X+2` at the base, digs the right half of `X-2`, full `X-1..X+1`, and the left half of `X+2` on the middle row, then uses full `X-1..X+1` at the top. Existing four-quarter state is sufficient.
 
 The cross-section is extruded through the preset depth. `CaveRoomPlan.VolumeCells` owns the complete `XYZ` volume, while `FrontExcavationCells` contains only solid `Z=0` cells that create Dig Jobs.
 
@@ -107,13 +107,14 @@ Completed template provenance creates non-interactive trim, including entrance o
 - Trim is Presentation geometry, not an additional navigation cell.
 - The documented room depth remains fully walkable.
 - Trim rows use the same authoritative row bounds as the excavation mask.
+- The trim root preserves world-space identity under the rotated bootstrap object; it does not inherit the side-view rotation a second time and cannot create a floating duplicate above the scene.
 - The generated natural cave remains separate from user-planned template provenance.
 
 ## Cave-room completion
 
-A room remains closed in depth while any new front excavation cell is still solid. Completion is evaluated once per simulation tick.
+A room remains incomplete while any excavation target has not reached its required quarter mask. Full targets require `4/4` and become air. Boundary half-cell targets require their exact `2/4`, clear their designation/job, remain solid shell cells and create no output or navigation opening. Completion is evaluated once per simulation tick.
 
-When every front Dig Job has removed its target cell:
+When every room target has completed its required mask:
 
 1. deeper cells from `CaveRoomPlan.VolumeCells` are represented as open authoritative World cells;
 2. the full bottom row across the preset depth is added to tunnel navigation;
@@ -126,7 +127,7 @@ When every front Dig Job has removed its target cell:
 
 The authoritative cell progress remains four quarters. Vertical front-slice targets use horizontal rows: `UpperLeft|UpperRight`, then `LowerLeft|LowerRight`.
 
-The side-view root rotates logical vertical onto Unity local Z. Quarter visuals therefore split local X/Z and keep local Y as full depth. After any quarter is committed in the cell directly below a resident, that cell is no longer full standing support. Any active mining direction without full support uses stationary climbing stance immediately, including side excavation from a vertical shaft.
+The side-view root rotates logical vertical onto Unity local Z. Quarter visuals therefore split local X/Z and keep local Y as full depth. After any quarter is committed in the cell directly below a resident, that cell is no longer full standing support. Any mining direction without full support uses stationary climbing stance immediately, including side excavation from a vertical shaft. The posture is derived from World support even after the job leaves `PerformWork`; it remains active until the resident starts another traversal or reaches a supported cell. If no new job/direct order is assigned, the ordinary movement planner sends the resident to the nearest reachable full-support walk cell.
 
 ## Jobs and automatic assignment
 
@@ -138,6 +139,6 @@ Each designated solid cell creates one Dig Job with an exact XYZ target and work
 
 ## Scope boundary
 
-Room geometry, completed room projection, bounded one-cell depth opening, deep floor rendering, deep direct movement, horizontal quarter presentation and unsupported climbing work are implemented.
+Room geometry, centered half-cell boundaries, Small depth 3, completed-room world-space projection, bounded one-cell depth opening, deep floor rendering, deep direct movement, horizontal quarter presentation, terminal unsupported climbing and support recovery are implemented.
 
 Depth excavation uses an exact XYZ Dig Job, worker/position/designation reservations, terrain completion and World-derived navigation. Collapse, material-specific balancing and formation-aware resident occupancy remain later work.

@@ -26,6 +26,7 @@ internal sealed partial class DigTerrainWorkSession
     private const int DefaultExcavationPriority = 750;
     private readonly AdvanceJobHandler _advanceHandler;
     private readonly CompleteTerrainWorkCommandHandler _completionHandler;
+    private readonly CompletePartialTerrainWorkCommandHandler _partialCompletionHandler;
     private readonly JobOverlayPresenter _jobPresenter;
     private readonly InMemoryExecutionJournal _journal;
     private readonly InventoryWorldPresenter _inventoryPresenter;
@@ -36,6 +37,7 @@ internal sealed partial class DigTerrainWorkSession
     private readonly DigWorldSession _worldSession;
     private readonly IAgentSkillGrantService _skillGrants;
     private readonly TerrainWorkRoutePlanner _routePlanner;
+    private readonly UnsupportedResidentRecoveryPlanner _supportRecoveryPlanner;
     private readonly TraversalProfile _profile;
     private readonly Dictionary<EntityId, EntityId> _outputStackIds;
     private readonly MiningOutputResolver _miningOutputResolver = new MiningOutputResolver();
@@ -47,6 +49,7 @@ internal sealed partial class DigTerrainWorkSession
     private DigTerrainWorkSession(
         AdvanceJobHandler advanceHandler,
         CompleteTerrainWorkCommandHandler completionHandler,
+        CompletePartialTerrainWorkCommandHandler partialCompletionHandler,
         JobOverlayPresenter jobPresenter,
         InMemoryExecutionJournal journal,
         InventoryWorldPresenter inventoryPresenter,
@@ -56,6 +59,7 @@ internal sealed partial class DigTerrainWorkSession
         InMemoryNavigationRepository navigationRepository,
         DigWorldSession worldSession,
         TerrainWorkRoutePlanner routePlanner,
+        UnsupportedResidentRecoveryPlanner supportRecoveryPlanner,
         TraversalProfile profile,
         Dictionary<EntityId, EntityId> outputStackIds,
         IAgentSkillGrantService skillGrants,
@@ -63,6 +67,7 @@ internal sealed partial class DigTerrainWorkSession
     {
         _advanceHandler = advanceHandler;
         _completionHandler = completionHandler;
+        _partialCompletionHandler = partialCompletionHandler;
         _jobPresenter = jobPresenter;
         _journal = journal ?? throw new ArgumentNullException(nameof(journal));
         _inventoryPresenter = inventoryPresenter;
@@ -72,6 +77,7 @@ internal sealed partial class DigTerrainWorkSession
         _navigationRepository = navigationRepository;
         _worldSession = worldSession;
         _routePlanner = routePlanner;
+        _supportRecoveryPlanner = supportRecoveryPlanner;
         _profile = profile;
         _outputStackIds = outputStackIds;
         _skillGrants = skillGrants
@@ -229,6 +235,17 @@ internal sealed partial class DigTerrainWorkSession
     {
         DigJobDefinition terrainJob = (DigJobDefinition)job.Definition;
         CellId targetCell = terrainJob.Target.CellId;
+        if (_worldSession.TryGetCaveRoomExcavationTarget(
+                targetCell,
+                out CaveRoomExcavationTarget roomTarget)
+            && !roomTarget.IsFullCell)
+        {
+            return CompletePartialTerrainJobAtWorkCell(
+                job,
+                roomTarget,
+                tick);
+        }
+
         MiningOutputPlan output;
         try
         {
@@ -288,6 +305,7 @@ internal sealed partial class DigTerrainWorkSession
         Result refresh = RefreshNavigation();
         return refresh.IsFailure ? refresh : Result.Success();
     }
+
 
     private static bool IsActive(JobSnapshot job)
     {

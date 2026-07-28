@@ -44,8 +44,11 @@ Parent feature: [#87](https://github.com/bageus/Dig/issues/87).
 13. Remaining cells сохраняются и продолжают иметь jobs.
 14. Свободные residents независимо выбирают свои ближайшие доступные jobs; один job/work position не назначается двум residents.
 15. После каждого World quarter commit work position и support переоцениваются. Любой completed quarter в клетке непосредственно под resident отменяет full standing support: runtime выбирает доступную side/depth work cell либо немедленно переводит resident в stationary climbing stance спиной к камере.
-16. Для depth target из vertical tunnel work position выбирается в таком порядке: достижимая открытая horizontal cell слева/справа на source depth; затем достижимая открытая depth cell слева/справа от target; затем сама vertical source cell с climbing-work stance. Один выбранный work cell остаётся authoritative position reservation job.
-17. Status tunnel/depth/room action — «Копает».
+16. Stationary climbing не зависит от наличия `PerformWork`: после terminal completion/release resident без full support остаётся в climbing stance до начала следующего route или до прибытия в supported cell.
+17. Если после completion resident не получил новый job/direct order, обычный planner строит deterministic recovery route к ближайшей достижимой supported walk cell. Новый назначенный job имеет приоритет над recovery; recovery не создаёт Job и не сохраняет отдельного owner.
+18. Для depth target из vertical tunnel work position выбирается в таком порядке: достижимая открытая horizontal cell слева/справа на source depth; затем достижимая открытая depth cell слева/справа от target; затем сама vertical source cell с climbing-work stance. Один выбранный work cell остаётся authoritative position reservation job.
+19. Template half-cell target хранит required quarter mask. Coordinator рассматривает quarters вне mask как недоступные для этого child job; после required `2/4` World снимает designation и Jobs завершает child job без `Excavate`, material output или navigation opening.
+20. Status tunnel/depth/room action — «Копает».
 
 Правило nearest-target применяется одинаково к horizontal tunnel, вертикальному тоннелю на фронтальном срезе, vertical/depth excavation и child cells комнаты. Оно относится и к automatic planner, и к direct command; direct command отличается приоритетным запуском выбранного resident, а не способом выбора target.
 
@@ -152,6 +155,8 @@ Eraser удаляет выбранные unfinished designations, active/nonterm
 - **Q-DIG-015:** vertical front-slice target всегда режется горизонтальными строками независимо от work position.
 - **Q-DIG-016:** любой partial cut supporting cell отменяет full actor standing support и запускает replan/climbing в том же tick.
 - **Q-DIG-017:** четвёртый quarter делает terrain empty и снимает designation до job/output cleanup; retry обязан быть idempotent.
+- **Q-DIG-018:** centered template rows могут завершать boundary child job на required half-cell `2/4`; противоположная половина остаётся rock и output не создаётся.
+- **Q-DIG-019:** после terminal excavation unsupported resident либо получает следующий job, либо автоматически идёт к ближайшей supported walk cell, оставаясь climbing до landing.
 
 ## 10. Открытые вопросы
 
@@ -204,6 +209,9 @@ Presentation cursor и hover не сохраняются.
 - после полного vertical/depth commit новая клетка входит в climbing/topology projection, а unsupported world item запускает существующий gravity workflow до новых reservations;
 - vertical partial excavation при 1/4 и 2/4 использует верхнюю горизонтальную строку независимо от боковой/depth work position;
 - после первого partial cut под ногами resident в том же tick выбирает side/depth work cell либо stationary climbing stance;
+- после terminal room/tunnel job unsupported resident не возвращается визуально в standing: следующий job начинает route, иначе recovery доводит его до ближайшей supported walk cell;
+- centered Small room (`5 -> 4 -> 3`) использует две half-cell границы на среднем уровне и не открывает лишнюю целую клетку слева или справа;
+- template half-cell job завершается на required `2/4`, не создаёт output и не делает shell-cell navigation-open;
 - depth target выбирает side horizontal work cell, затем adjacent open depth work cell, затем shaft fallback;
 - искусственная ошибка после четвёртого World quarter не оставляет active designation/job на empty cell и не запускает повторную копку;
 - erase части плана и split zone;

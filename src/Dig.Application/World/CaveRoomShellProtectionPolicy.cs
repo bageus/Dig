@@ -19,17 +19,30 @@ public sealed class CaveRoomShellProtectionPolicy
         for (int level = 0; level < plan.Preset.Height; level++)
         {
             int y = plan.Entrance.Y - level;
-            int width = CaveRoomPlanner.InterpolateWidth(plan.Preset, level);
-            int minX = plan.Entrance.X - ((width - 1) / 2);
-            AddIfContained(protectedCells, worldSize, minX - 1, y);
-            AddIfContained(protectedCells, worldSize, minX + width, y);
+            CaveRoomRowProfile profile = CaveRoomPlanner.ResolveRowProfile(
+                plan.Preset,
+                plan.Entrance.X,
+                level);
+            int leftShellX = profile.RequiredQuarters(profile.MinCellX)
+                    == ExcavationQuarter.All
+                ? profile.MinCellX - 1
+                : profile.MinCellX;
+            int rightShellX = profile.RequiredQuarters(profile.MaxCellX)
+                    == ExcavationQuarter.All
+                ? profile.MaxCellX + 1
+                : profile.MaxCellX;
+            AddIfContained(protectedCells, worldSize, leftShellX, y);
+            AddIfContained(protectedCells, worldSize, rightShellX, y);
         }
 
         int floorY = plan.Entrance.Y + 1;
-        int floorMinX = plan.Entrance.X - ((plan.Preset.BaseWidth - 1) / 2);
-        for (int offset = 0; offset < plan.Preset.BaseWidth; offset++)
+        CaveRoomRowProfile baseProfile = CaveRoomPlanner.ResolveRowProfile(
+            plan.Preset,
+            plan.Entrance.X,
+            level: 0);
+        foreach (int x in baseProfile.RequiredQuartersByX.Keys)
         {
-            AddIfContained(protectedCells, worldSize, floorMinX + offset, floorY);
+            AddIfContained(protectedCells, worldSize, x, floorY);
         }
 
         return protectedCells.OrderBy(cell => cell).ToArray();
