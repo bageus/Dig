@@ -96,8 +96,8 @@ namespace Dig.Unity
 
         private FoodDependencyCandidate? ResolveFoodDependencyCandidate(
             IReadOnlyList<AgentViewModel> agents,
-            IReadOnlySet<CellId> revealed,
-            IReadOnlySet<CellId> reachable)
+            HashSet<CellId> revealed,
+            HashSet<CellId> reachable)
         {
             FoodDependencyCandidate? best = null;
             foreach (MushroomSiteSnapshot site in _mushroomRepository!.Get().GetAll()
