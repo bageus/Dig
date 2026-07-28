@@ -16,10 +16,24 @@ namespace Dig.Unity
                 return;
             }
 
-            Result result = _simulation!.MoveResident(
-                decision.ActorId.Value.ToString(),
+            string residentId = decision.ActorId.Value.ToString();
+            Result prepared = _terrainSession!.PrepareResidentsForDirectCommand(
+                new[] { residentId },
+                _simulation!.CurrentTick);
+            if (prepared.IsFailure)
+            {
+                _hud!.SetCommandResult(prepared);
+                return;
+            }
+
+            Result result = _simulation.MoveResident(
+                residentId,
                 decision.TargetCell.Value);
             _hud!.SetCommandResult(result);
+            if (result.IsSuccess)
+            {
+                RefreshDirectCommandPresentation();
+            }
         }
 
         private void ApplyExcavation(

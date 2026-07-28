@@ -15,8 +15,13 @@ public sealed partial class DigGameHudCanvas
 {
     private void RefreshBuildingManagement()
     {
-        IReadOnlyList<BuildingWorldViewModel> buildings =
+        IReadOnlyList<BuildingWorldViewModel> allBuildings =
             _terrainSession!.LoadBuildings();
+        IReadOnlyDictionary<string, BuildingWorldViewModel> boxTransformations =
+            IndexPendingBuildingBoxTransformations(allBuildings);
+        IReadOnlyList<BuildingWorldViewModel> buildings = allBuildings
+            .Where(value => !value.IsPendingBuildingBoxTransformation)
+            .ToArray();
         IReadOnlyList<WorldItemViewModel> buildingBoxes = _terrainSession
             .LoadAllWorldItems()
             .Where(item => item.IsBuildingBox)
@@ -25,8 +30,9 @@ public sealed partial class DigGameHudCanvas
         IReadOnlyList<HeldBuildingBoxRosterEntry> heldBuildingBoxes =
             LoadHeldBuildingBoxes(residentRoster.Rows);
         string signature = "buildings:"
-            + string.Join("|", buildings.Select(value =>
-                value.Id + ":" + value.Version + ":" + value.Status))
+            + string.Join("|", allBuildings.Select(value =>
+                value.Id + ":" + value.Version + ":" + value.Status + ":"
+                + value.BuildingBoxCommitState))
             + ":boxes:"
             + string.Join("|", buildingBoxes.Select(value =>
                 value.StackId + ":" + value.Quantity + ":" + value.ReservedQuantity
@@ -46,13 +52,17 @@ public sealed partial class DigGameHudCanvas
             activeTab: 0,
             selectTab: _ => { });
         BuildBuildingManagementTable(
-            buildings, buildingBoxes, heldBuildingBoxes);
+            buildings,
+            buildingBoxes,
+            heldBuildingBoxes,
+            boxTransformations);
     }
 
     private void BuildBuildingManagementTable(
         IReadOnlyList<BuildingWorldViewModel> buildings,
         IReadOnlyList<WorldItemViewModel> buildingBoxes,
-        IReadOnlyList<HeldBuildingBoxRosterEntry> heldBuildingBoxes)
+        IReadOnlyList<HeldBuildingBoxRosterEntry> heldBuildingBoxes,
+        IReadOnlyDictionary<string, BuildingWorldViewModel> boxTransformations)
     {
         ManagementColumn[] columns =
         {
@@ -66,7 +76,8 @@ public sealed partial class DigGameHudCanvas
         BuildManagementHeader(columns);
         if (buildings.Count == 0
             && buildingBoxes.Count == 0
-            && heldBuildingBoxes.Count == 0)
+            && heldBuildingBoxes.Count == 0
+            && boxTransformations.Count == 0)
         {
             BuildManagementEmptyState(
                 DigManagementLocalization.Resolve("management.buildings.empty"));
@@ -113,11 +124,19 @@ public sealed partial class DigGameHudCanvas
             ConfigureManagementSelection(
                 row,
                 () => SelectBuildingBoxFromManagement(stackId));
-            CreateManagementTextCell(row, "BuildingBox", columns[0].Width);
+            boxTransformations.TryGetValue(
+                stackId,
+                out BuildingWorldViewModel? transformation);
+            CreateManagementTextCell(
+                row,
+                transformation?.Name ?? "BuildingBox",
+                columns[0].Width);
             CreateManagementTextCell(row, box.ItemId, columns[1].Width);
             CreateManagementTextCell(
                 row,
-                box.ReservedQuantity == 0 ? "Packed" : "Reserved",
+                transformation == null
+                    ? (box.ReservedQuantity == 0 ? "Packed" : "Reserved")
+                    : FormatBuildingBoxTransformationStatus(transformation),
                 columns[2].Width,
                 TextAnchor.MiddleCenter);
             CreateManagementTextCell(
@@ -146,11 +165,19 @@ public sealed partial class DigGameHudCanvas
             ConfigureManagementSelection(
                 row,
                 () => SelectResidentFromBuildingManagement(residentId));
-            CreateManagementTextCell(row, box.DisplayName, columns[0].Width);
+            boxTransformations.TryGetValue(
+                box.StackId,
+                out BuildingWorldViewModel? transformation);
+            CreateManagementTextCell(
+                row,
+                transformation?.Name ?? box.DisplayName,
+                columns[0].Width);
             CreateManagementTextCell(row, box.ItemId, columns[1].Width);
             CreateManagementTextCell(
                 row,
-                "Held by " + box.ResidentName,
+                transformation == null
+                    ? "Held by " + box.ResidentName
+                    : FormatBuildingBoxTransformationStatus(transformation),
                 columns[2].Width,
                 TextAnchor.MiddleCenter);
             CreateManagementTextCell(
@@ -168,6 +195,46 @@ public sealed partial class DigGameHudCanvas
                 row,
                 box.ReservedQuantity == 0 ? 1 : 0,
                 1,
+                columns[5].Width,
+                new Color(0.20f, 0.52f, 0.84f, 1f));
+        }
+
+        HashSet<string> physicalStackIds = new HashSet<string>(
+            buildingBoxes.Select(value => value.StackId)
+                .Concat(heldBuildingBoxes.Select(value => value.StackId)),
+            StringComparer.Ordinal);
+        foreach (BuildingWorldViewModel transformation in boxTransformations.Values
+            .Where(value => !physicalStackIds.Contains(value.SourceBuildingBoxStackId!))
+            .OrderBy(value => value.Name, StringComparer.Ordinal))
+        {
+            string jobId = transformation.BuildingBoxJobId!;
+            RectTransform row = CreateManagementRow(
+                "BuildingBox transformation " + transformation.SourceBuildingBoxStackId,
+                38f);
+            ConfigureManagementSelection(
+                row,
+                () => SelectBuildingBoxTransformationFromManagement(jobId));
+            CreateManagementTextCell(row, transformation.Name, columns[0].Width);
+            CreateManagementTextCell(
+                row,
+                transformation.DefinitionId,
+                columns[1].Width);
+            CreateManagementTextCell(
+                row,
+                FormatBuildingBoxTransformationStatus(transformation),
+                columns[2].Width,
+                TextAnchor.MiddleCenter);
+            CreateManagementTextCell(
+                row,
+                transformation.OriginX + ", " + transformation.OriginY,
+                columns[3].Width,
+                TextAnchor.MiddleCenter);
+            CreateManagementBarCell(row, 1, 1, columns[4].Width,
+                new Color(0.64f, 0.42f, 0.20f, 1f));
+            CreateManagementBarCell(
+                row,
+                transformation.CompletedWork,
+                transformation.RequiredWork,
                 columns[5].Width,
                 new Color(0.20f, 0.52f, 0.84f, 1f));
         }
@@ -200,6 +267,13 @@ public sealed partial class DigGameHudCanvas
     {
         CloseManagementOverlay();
         _interaction!.SelectResidentFromHud(residentId);
+        InvalidateAll();
+    }
+
+    private void SelectBuildingBoxTransformationFromManagement(string jobId)
+    {
+        CloseManagementOverlay();
+        _interaction!.SelectJobFromHud(jobId);
         InvalidateAll();
     }
 

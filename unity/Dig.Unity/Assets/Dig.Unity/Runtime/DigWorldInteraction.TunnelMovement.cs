@@ -109,6 +109,7 @@ namespace Dig.Unity
             _jobRenderer!.Render(jobs);
             _buildingRenderer!.Render(_terrainSession.LoadBuildings());
             _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
+            RefreshBuildingBoxRelocationPlans();
             _hud!.SetJobs(jobs);
             _hud.SetAgents(agents, _agentSession.Tick);
             _hud.SetAgentSelection(

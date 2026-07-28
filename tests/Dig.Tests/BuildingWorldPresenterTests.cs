@@ -56,6 +56,26 @@ public sealed class BuildingWorldPresenterTests
     }
 
     [Fact]
+    public void Pending_box_plan_projects_source_stack_job_and_transformation_identity()
+    {
+        BuildingWorldPresenter presenter = new BuildingWorldPresenter(
+            new BuildingFunctionsPresenter());
+        BuildingSnapshot source = Snapshot(
+            Id(1),
+            BuildingStatus.AwaitingBox,
+            boxCommitState: BuildingBoxCommitState.Reserved,
+            completedWork: 0);
+
+        BuildingWorldViewModel model = Assert.Single(presenter.Load(new[] { source }));
+
+        Assert.Equal(source.BoxPlan!.SourceStackId.ToString(), model.SourceBuildingBoxStackId);
+        Assert.Equal(source.BoxPlan.JobId.ToString(), model.BuildingBoxJobId);
+        Assert.Equal(BuildingBoxCommitState.Reserved, model.BuildingBoxCommitState);
+        Assert.True(model.IsBuildingBoxTransformation);
+        Assert.True(model.IsPendingBuildingBoxTransformation);
+    }
+
+    [Fact]
     public void Packing_state_overrides_completed_visual_state()
     {
         BuildingPackingPlanSnapshot active = new BuildingPackingPlanSnapshot(
@@ -151,7 +171,8 @@ public sealed class BuildingWorldPresenterTests
         BuildingStatus status,
         BuildingPackingPlanSnapshot? packingPlan = null,
         BuildingOrientation orientation = BuildingOrientation.North,
-        int? completedWork = null)
+        int? completedWork = null,
+        BuildingBoxCommitState boxCommitState = BuildingBoxCommitState.Consumed)
     {
         BuildingDefinition definition = new BuildingDefinition(
             new BuildingDefinitionId("box.world_presenter"),
@@ -178,7 +199,7 @@ public sealed class BuildingWorldPresenterTests
             boxPlan: new BuildingBoxPlanSnapshot(
                 Id(30 + origin.X),
                 Id(40 + origin.X),
-                BuildingBoxCommitState.Consumed),
+                boxCommitState),
             packingPlan: packingPlan);
     }
 

@@ -159,6 +159,18 @@ Interactive ghost отображается только тогда, когда �
 
 Одна коробка не может принадлежать двум active jobs/plans.
 
+### Buildings roster: transformation, not duplication
+
+Confirmed BuildingBox placement does not create a second independent building row in the Buildings roster. The roster projects one continuous physical lifecycle:
+
+- while the source box remains in world or resident inventory, its existing BuildingBox row remains and shows the reserved target/operation;
+- after assembly commits the box `AtSite`, that same source-stack row becomes an unpacking/assembly progress row;
+- only after successful assembly completion does the row become the completed building row;
+- the internal `BuildingId` used by Buildings/Jobs for the assembly plan is not presented as an additional roster entity before completion;
+- cancel/failure before completion restores the ordinary BuildingBox row and must not leave a stale planned-building row.
+
+At no point may one source BuildingBox simultaneously appear as both a box row and a separate planned-building row.
+
 ## 9. Worker assignment и execution
 
 ### Source box в world
@@ -283,6 +295,7 @@ Diagnostics/Inspector показывают:
 - inventory source job получает только holder resident;
 - carried reserved box синяя в inventory;
 - forced direct movement во время carry отменяет job/plan, освобождает reservations, убирает planned ghost/blue tint и оставляет ту же коробку в holder inventory;
+- confirmation не создаёт параллельную строку нового здания: существующая BuildingBox row последовательно показывает `Reserved -> AtSite/unpacking -> Completed building`; cancel/failure возвращает обычную строку коробки;
 - RMB cancel и invalid LMB не меняют authoritative state;
 - cancel/retry/save-load на каждой authoritative стадии;
 - relocation сохраняет entity id и quantity;

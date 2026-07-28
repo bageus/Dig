@@ -216,6 +216,30 @@ public sealed class ConfirmBuildingBoxPlacementHandler
             return available;
         }
 
+        if (source.Location.Kind == ItemLocationKind.AgentInventory
+            && source.Location.HasOwner)
+        {
+            Result claimed = jobs.Claim(
+                command.JobId,
+                source.Location.OwnerId,
+                command.Tick);
+            if (claimed.IsFailure)
+            {
+                buildings.Cancel(
+                    command.BuildingId,
+                    "box_holder_claim_failed",
+                    command.Tick);
+                jobs.Cancel(
+                    command.JobId,
+                    new JobBlockReason(
+                        "box_holder_claim_failed",
+                        "The BuildingBox holder could not own the direct assembly job."),
+                    command.Tick);
+                inventory.ReleaseReservations(command.JobId, command.Tick);
+                return claimed;
+            }
+        }
+
         _inventoryRepository.Save(inventory);
         _buildingsRepository.Save(buildings);
         _jobRepository.Save(jobs);

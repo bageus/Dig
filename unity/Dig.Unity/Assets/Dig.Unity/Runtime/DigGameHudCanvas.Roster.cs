@@ -43,10 +43,15 @@ public sealed partial class DigGameHudCanvas
         ResidentRosterViewModel residentRoster =
             _simulation!.LoadResidentRoster(selectedResidentId);
         IReadOnlyList<ResidentRosterRowViewModel> residents = residentRoster.Rows;
-        IReadOnlyList<BuildingWorldViewModel> buildings = _terrainSession!
+        IReadOnlyList<BuildingWorldViewModel> allBuildings = _terrainSession!
             .LoadBuildings()
             .OrderBy(building => building.Name, StringComparer.Ordinal)
             .ThenBy(building => building.Id, StringComparer.Ordinal)
+            .ToArray();
+        IReadOnlyDictionary<string, BuildingWorldViewModel> boxTransformations =
+            IndexPendingBuildingBoxTransformations(allBuildings);
+        IReadOnlyList<BuildingWorldViewModel> buildings = allBuildings
+            .Where(building => !building.IsPendingBuildingBoxTransformation)
             .ToArray();
         IReadOnlyList<WorldItemViewModel> buildingBoxes = _terrainSession
             .LoadAllWorldItems()
@@ -72,7 +77,7 @@ public sealed partial class DigGameHudCanvas
         }
 
         string signature = BuildRosterSignature(
-            residents, buildings, buildingBoxes, heldBuildingBoxes, jobs);
+            residents, allBuildings, buildingBoxes, heldBuildingBoxes, jobs);
         if (string.Equals(signature, _lastRosterSignature, StringComparison.Ordinal))
         {
             return;
@@ -84,7 +89,11 @@ public sealed partial class DigGameHudCanvas
         switch (_rightTab)
         {
             case RightPanelTab.Buildings:
-                BuildBuildingRows(buildings, buildingBoxes, heldBuildingBoxes);
+                BuildBuildingRows(
+                    buildings,
+                    buildingBoxes,
+                    heldBuildingBoxes,
+                    boxTransformations);
                 break;
             case RightPanelTab.Jobs:
                 BuildJobRows(jobs, residents);
@@ -97,11 +106,13 @@ public sealed partial class DigGameHudCanvas
     private void BuildBuildingRows(
         IReadOnlyList<BuildingWorldViewModel> buildings,
         IReadOnlyList<WorldItemViewModel> buildingBoxes,
-        IReadOnlyList<HeldBuildingBoxRosterEntry> heldBuildingBoxes)
+        IReadOnlyList<HeldBuildingBoxRosterEntry> heldBuildingBoxes,
+        IReadOnlyDictionary<string, BuildingWorldViewModel> boxTransformations)
     {
         if (buildings.Count == 0
             && buildingBoxes.Count == 0
-            && heldBuildingBoxes.Count == 0)
+            && heldBuildingBoxes.Count == 0
+            && boxTransformations.Count == 0)
         {
             AddEmptyRosterMessage("No completed buildings");
             return;
@@ -139,8 +150,10 @@ public sealed partial class DigGameHudCanvas
             bool isSelected = string.Equals(id, selectedBoxId, StringComparison.Ordinal);
             string marker = isSelected ? "■ " : string.Empty;
             string label = marker
-                + "BuildingBox"
-                + $" · Cell {box.CellX},{box.CellY}, Z{box.CellZ}";
+                + (boxTransformations.TryGetValue(id, out BuildingWorldViewModel plan)
+                    ? FormatBuildingBoxTransformationLabel(plan, "World")
+                    : "BuildingBox"
+                        + $" · Cell {box.CellX},{box.CellY}, Z{box.CellZ}");
             Button row = CreateButton(
                 $"BuildingBox {id}",
                 _rightContent!,
@@ -159,12 +172,37 @@ public sealed partial class DigGameHudCanvas
         {
             HeldBuildingBoxRosterEntry box = heldBuildingBoxes[index];
             string residentId = box.ResidentId;
-            string label = box.DisplayName + $" · Held by {box.ResidentName}";
+            string label = boxTransformations.TryGetValue(
+                box.StackId,
+                out BuildingWorldViewModel plan)
+                    ? FormatBuildingBoxTransformationLabel(
+                        plan,
+                        "Held by " + box.ResidentName)
+                    : box.DisplayName + $" · Held by {box.ResidentName}";
             Button row = CreateButton(
                 $"Held BuildingBox {box.StackId}",
                 _rightContent!,
                 label,
                 () => _interaction!.SelectResidentFromHud(residentId),
+                preferredHeight: 36f);
+            ConfigureSingleLineRosterRow(row);
+        }
+
+        HashSet<string> physicalStackIds = new HashSet<string>(
+            buildingBoxes.Select(value => value.StackId)
+                .Concat(heldBuildingBoxes.Select(value => value.StackId)),
+            StringComparer.Ordinal);
+        foreach (BuildingWorldViewModel plan in boxTransformations.Values
+            .Where(value => !physicalStackIds.Contains(value.SourceBuildingBoxStackId!))
+            .OrderBy(value => value.Name, StringComparer.Ordinal)
+            .ThenBy(value => value.SourceBuildingBoxStackId, StringComparer.Ordinal))
+        {
+            string jobId = plan.BuildingBoxJobId!;
+            Button row = CreateButton(
+                "BuildingBox transformation " + plan.SourceBuildingBoxStackId,
+                _rightContent!,
+                FormatBuildingBoxTransformationLabel(plan, "At site"),
+                () => _interaction!.SelectJobFromHud(jobId),
                 preferredHeight: 36f);
             ConfigureSingleLineRosterRow(row);
         }

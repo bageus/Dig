@@ -87,6 +87,9 @@ namespace Dig.Tests
                 runtime,
                 "DigTerrainWorkSession.BuildingBoxRelocationPresentation.cs");
             string execution = Read(runtime, "DigBuildingBoxRelocationExecution.cs");
+            string relocationNavigation = Read(
+                runtime,
+                "DigBuildingBoxRelocationNavigation.cs");
             string direct = Read(runtime, "DigTerrainWorkSession.DirectCommands.cs");
             string cancellation = Read(
                 runtime,
@@ -109,7 +112,9 @@ namespace Dig.Tests
             Assert.Contains("ResolveWorldPosition", itemPolicy);
             Assert.Contains("BuildingBoxPickupJobDefinition", plans);
             Assert.Contains("BuildingBoxRelocationExecutionPolicy.Evaluate", execution);
-            Assert.Contains("ResolveBuildingBoxRelocationWorkTarget", execution);
+            Assert.Contains(
+                "ResolveBuildingBoxRelocationWorkTarget",
+                relocationNavigation);
             Assert.Contains("for(intindex=0;index<5;index++)", execution);
             Assert.Contains("CompleteBuildingBoxRelocationCommand", execution);
             Assert.Contains("IsDepositPosition(workerCell", relocationPolicy);
