@@ -43,6 +43,12 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         RequireSpatialExcavationInitialized();
+        Result designated = EnsureSpatialExcavationDesignation(plan.Target, tick);
+        if (designated.IsFailure)
+        {
+            return designated;
+        }
+
         if (TryGetActiveSpatialJob(plan.Target, out _))
         {
             return Result.Success();
