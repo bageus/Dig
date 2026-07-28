@@ -53,8 +53,10 @@ public sealed class ResidentExcavationFeedbackContractTests
         Assert.Contains("JobStageKind.PerformWork", facing);
         Assert.Contains("JobToolKind.Mining", facing);
         Assert.Contains("SetWorkTarget", facing);
-        Assert.Contains("tunnelVolume.IsVerticalTunnel", facing);
+        Assert.Contains("RequiresClimbingWorkPose", facing);
+        Assert.Contains("!isNonClimbingWork && !hasFullSupport", facing);
         Assert.Contains("current.Y + 1", facing);
+        Assert.DoesNotContain("tunnelVolume.IsVerticalTunnel(current)", facing);
         Assert.Contains("DigTunnelProjection.CellWorldPosition", visual);
         Assert.Contains("_climbingWorkPose", visual);
         Assert.Contains("ApplyClimbPose", visual);
