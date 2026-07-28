@@ -50,7 +50,8 @@ public sealed class CreateWorldItemPickupHandler
             return validation;
         }
 
-        int quantity = command.Quantity == 0 ? stack!.Quantity : command.Quantity;
+        ItemStackSnapshot source = stack!;
+        int quantity = command.Quantity == 0 ? source.Quantity : command.Quantity;
         Result reserved = inventory.ReserveQuantity(
             command.StackId,
             command.JobId,
@@ -65,7 +66,7 @@ public sealed class CreateWorldItemPickupHandler
             inventory.ReserveResidentSlotCapacity(
                 command.JobId,
                 command.ResidentId,
-                stack.ItemId,
+                source.ItemId,
                 quantity,
                 command.Tick);
         if (capacity.IsFailure)
