@@ -2,7 +2,7 @@
 
 Дата: 2026-07-28  
 Репозиторий: `bageus/Dig`  
-Baseline: `main` после PR #494 (`7d925bfe30da60eac58fa2b4badb1c1067df1557`)  
+Baseline: `main` после PR #495 (`4514edcc529828a6bb3f7fcea67e9ba0631bcb33`)  
 Связанный системный аудит: [#403](https://github.com/bageus/Dig/issues/403)  
 Индекс систем: [`../systems/README.md`](../systems/README.md)
 
@@ -39,9 +39,10 @@ Skill-driven quarter cadence уже интегрирована в общий exc
 - #15 — Unity EditMode/PlayMode evidence всё ещё отсутствует; текущий workflow пропускает фактический Test Runner без activation credentials.
 - #67, #68, #69, #71 — кодовые slices существуют, но в комментариях issues прямо зафиксирована незавершённая runtime-приёмка item/hauling/attachments/save round-trip.
 - #93 — acceptance требует Unity Play Mode для preview, layers, arches, deposits и drops.
+- #118 — BuildingBox workflow после PR #495 имеет статус `IMPLEMENTED`, но issue прямо оставлена для licensed Unity Test Runner и result artifacts.
 - #386 — остаются фактические Play Mode сценарии climbing/gap/recovery/opposite climbers.
 - #388 — остаются combat interruption и полный excavation Play Mode workflow.
-- #398 — BuildingBox runtime workflow остаётся reopened/неподтверждённым.
+- #398 — source/runtime corrections объединены, но полный BuildingBox Play Mode workflow остаётся неподтверждённым.
 - #423 — mushroom system `IMPLEMENTED`, но issue специально оставлена для полного Unity workflow.
 - #433 — issue прямо оставлена открытой только для фактического Unity Test Runner evidence.
 - #443 — barrel workflow получил несколько runtime corrections, но фактическая Play Mode приёмка не выполнена.
@@ -54,11 +55,11 @@ Skill-driven quarter cadence уже интегрирована в общий exc
 ### Foundation, save, presentation и input
 
 - #13, #14;
-- #113, #115, #116, #117, #118;
+- #113, #115, #116, #117;
 - #347;
 - #387, #389, #390, #393, #396, #403.
 
-Причины включают umbrella scope, reopened regressions, открытые business questions, неполную unit-item migration, незавершённую нормализацию authoritative docs и отсутствие полного runtime evidence.
+Причины включают umbrella scope, открытые business questions, неполную unit-item migration, незавершённую нормализацию authoritative docs и отсутствие полного runtime evidence.
 
 ### Excavation, world, resources и hauling
 
@@ -114,7 +115,7 @@ Issue требует stack quantity bands и badges для world/resident stacks
 
 ### #403
 
-Текущий audit report использует baseline после PR #402. После PR #403–#494 часть найденных runtime gaps исправлена, а новые compile/runtime regressions получили owners. #403 остаётся открытой до обновления baseline, матрицы статусов и ссылок на текущие issue owners.
+Текущий audit report использует baseline после PR #402. После PR #403–#495 часть найденных runtime gaps исправлена, а новые compile/runtime regressions получили owners. #403 остаётся открытой до обновления baseline, матрицы статусов и ссылок на текущие issue owners.
 
 ### #423 и #443
 
