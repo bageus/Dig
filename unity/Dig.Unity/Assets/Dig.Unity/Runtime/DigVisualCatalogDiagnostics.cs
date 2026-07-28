@@ -12,10 +12,6 @@ namespace Dig.Unity
         {
             if (catalog == null)
             {
-                Debug.LogWarning(
-                    $"{catalogName} visual catalog is not assigned; "
-                    + "runtime fallback visuals remain active.",
-                    context);
                 return;
             }
 
