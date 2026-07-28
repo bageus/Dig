@@ -17,6 +17,7 @@ public sealed class ProductionAndInventoryPointerInputRegressionTests
         Assert.Contains("()=>QueueBuildingProduction(building.Id,product.RecipeId.ToString())", production);
         Assert.Contains("pointer.RightClicked=product.QueuedCount>0", production);
         Assert.Contains("()=>CancelBuildingProduction(building.Id,product.RecipeId.ToString())", production);
+        Assert.Contains("if(!hasNonTerminalOrder){return;}", production);
         Assert.DoesNotContain("\"Cancel\"+product.RecipeId", production);
         Assert.DoesNotContain("\"−\"", production);
         Assert.Contains("IPointerClickHandler", pointer);
