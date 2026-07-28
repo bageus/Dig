@@ -82,8 +82,8 @@ public sealed class EraseExcavationBatchHandler
         JobSystem jobs = _jobRepository.Get();
         HashSet<CellId> requested = new HashSet<CellId>(command.Cells);
         EntityId[] jobIds = jobs.GetAll()
-            .Where(job => !job.IsTerminal && job.Definition is DigJobDefinition dig
-                && requested.Contains(dig.Target.CellId))
+            .Where(job => !job.IsTerminal
+                && TargetsRequestedCell(job.Definition, requested))
             .Select(job => job.Id)
             .OrderBy(id => id.ToString(), StringComparer.Ordinal)
             .ToArray();
@@ -118,6 +118,19 @@ public sealed class EraseExcavationBatchHandler
             new EraseExcavationBatchReport(
                 mutation.Value.ChangedCellCount,
                 jobIds));
+    }
+
+    private static bool TargetsRequestedCell(
+        JobDefinition definition,
+        ISet<CellId> requested)
+    {
+        return definition switch
+        {
+            DigJobDefinition dig => requested.Contains(dig.Target.CellId),
+            SpatialDigJobDefinition spatial =>
+                requested.Contains(spatial.Target.TargetCell),
+            _ => false,
+        };
     }
 
     private static Result<IReadOnlyList<TerrainChange>> BuildChanges(

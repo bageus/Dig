@@ -54,23 +54,30 @@ public sealed class BuildingProductionPlayModeTests
         Invoke(renderer, "Render", (object)new[] { production }, (object)new[] { building });
 
         Assert.That((int)GetProperty(renderer, "ActiveUnitCount"), Is.EqualTo(14));
-        Renderer[] units = _root.GetComponentsInChildren<Renderer>();
-        Assert.That(units.Length, Is.EqualTo(14));
-        Collider[] colliders = _root.GetComponentsInChildren<Collider>();
-        Assert.That(colliders.Length, Is.EqualTo(14));
-        Assert.That(colliders.All(value => value.isTrigger), Is.True);
+        Assert.That((int)GetProperty(renderer, "ActiveBayCount"), Is.EqualTo(1));
+        Renderer[] renderers = _root.GetComponentsInChildren<Renderer>();
+        Assert.That(renderers.Length, Is.EqualTo(16));
         Component[] visuals = _root.GetComponentsInChildren<Component>()
             .Where(value => value.GetType().Name == "DigBuildingInternalStockVisual")
             .ToArray();
         Assert.That(visuals.Length, Is.EqualTo(14));
         Assert.That(visuals.All(value => (string)GetProperty(value, "BuildingId")
             == buildingId.ToString()), Is.True);
+        Collider[] unitColliders = visuals
+            .Select(value => value.GetComponent<Collider>())
+            .ToArray();
+        Assert.That(unitColliders.All(value => value != null && value.isTrigger), Is.True);
         Assert.That(visuals.Select(value => (string)GetProperty(value, "ItemId"))
             .Distinct().Count(), Is.EqualTo(4));
+        Renderer[] units = visuals.Select(value => value.GetComponent<Renderer>()).ToArray();
         Assert.That(units.Select(value => value.gameObject.name.Split(':')[1])
             .Distinct().Count(), Is.EqualTo(4));
         Assert.That(units.Select(value => Math.Round(value.transform.position.x, 2))
             .Distinct().Count(), Is.GreaterThanOrEqualTo(4));
+        Assert.That(units.All(value => value.transform.position.x > 6.5f), Is.True);
+        Assert.That(_root.GetComponentsInChildren<Collider>()
+            .Where(value => !unitColliders.Contains(value))
+            .All(value => !value.enabled), Is.True);
     }
 
     private static BuildingStockIconViewModel Stock(
@@ -107,7 +114,14 @@ public sealed class BuildingProductionPlayModeTests
             "Campfire",
             originX: 5,
             originY: 5,
+            originZ: 0,
+            orientation: BuildingOrientation.North,
+            workPositionX: 7,
+            workPositionY: 5,
+            workPositionZ: 0,
             status: BuildingStatus.Completed,
+            completedWork: 1,
+            requiredWork: 1,
             version: 0,
             footprint: new[] { new BuildingFootprintCellViewModel(5, 5, 0) },
             functions: functions);

@@ -69,6 +69,12 @@ namespace Dig.Unity
                 _outputStackIds.Remove(jobId);
             }
 
+            for (int index = 0; index < cells.Count; index++)
+            {
+                _spatialDigJobs.Remove(cells[index]);
+                CompleteExcavationQuarterTarget(cells[index]);
+            }
+
             return result;
         }
 

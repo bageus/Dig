@@ -186,6 +186,28 @@ internal sealed partial class DigTerrainWorkSession
             {
                 SpatialDigJobDefinition definition =
                     (SpatialDigJobDefinition)snapshot.Definition;
+                CellSnapshot target = RequireExcavationCell(
+                    definition.Target.TargetCell);
+                if (target.IsSolid
+                    && target.State.Designation != CellDesignation.Dig)
+                {
+                    Result cancelled = jobs.Cancel(
+                        snapshot.Id,
+                        new JobBlockReason(
+                            "designation_erased",
+                            "The spatial excavation designation is no longer active."),
+                        tick);
+                    if (cancelled.IsFailure)
+                    {
+                        return cancelled;
+                    }
+
+                    _spatialDigJobs.Remove(definition.Target.TargetCell);
+                    CompleteExcavationQuarterTarget(definition.Target.TargetCell);
+                    changed = true;
+                    continue;
+                }
+
                 bool quartersComplete = AdvanceExcavationQuarterWork(
                     snapshot.AssignedAgentId.Value,
                     new ExcavationWorkTarget(
