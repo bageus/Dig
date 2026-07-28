@@ -1,6 +1,6 @@
 # Generic building production and internal supply implementation
 
-Статус: revised production-icon input is `IMPLEMENTED` in PR #501. Основной slice merged через PR #441; supply completion through PR #465. Actual licensed Unity Play Mode evidence remains pending.
+Статус: revised production-icon input is `IMPLEMENTED` in PR #501. Основной slice merged через PR #441; supply completion through PR #465. Runtime deposit/Play Mode compile regressions are corrected in PR #504. Actual licensed Unity Play Mode evidence remains pending.
 
 Authoritative design: [`../design/building-production-and-internal-supply.md`](../design/building-production-and-internal-supply.md).
 Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
@@ -45,6 +45,26 @@ Runtime не содержит отдельных production branches для эт
 - Если delivery toggle включён, следующий synchronization снова создаёт replacement demand.
 - Automatic supply planner читает только revealed/reachable/unreserved world stacks. Уже находящийся в произвольном resident inventory material не является автоматическим source; resident inventory используется как зарезервированный transit cargo конкретного supply job.
 
+## Runtime deposit stall correction — 2026-07-29
+
+Observable failure: resident completed the workstation-first/source route, returned to the workstation with reserved mushroom materials in inventory and then remained beside the building without committing internal stock.
+
+Root cause was runtime content composition, not pathfinding:
+
+- authoritative `CampfireProductionContent` defines mushroom cap and leg with `MaximumStackSize = 100`;
+- demo resident inventory redeclared the same IDs with `MaximumStackSize = 1` to attach the raw-material category;
+- `GroupBy(ItemId).First()` retained the demo declaration;
+- supply deposit groups the job-reserved quantity by ItemId and creates one internal stack per group;
+- a quantity of 2–4 caps/legs therefore failed with `InventoryErrors.StackSizeExceeded` after the resident reached `DepositItem`.
+
+PR #504 keeps the raw-material category but aligns both demo definitions with the authoritative stack capacity `100`. The generic supply algorithm remains identical for all materials; differences continue to come only from stock capacity/priority/toggle, source availability, resident slot compatibility and item stack limits.
+
+## Unity test assembly boundary
+
+The Play Mode assembly is named `Dig.Unity.PlayModeTests`. PR #501 added tests that intentionally exercise internal runtime adapters (`DigProductionIconPointer`, `DigTerrainWorkSession`, inventory ghost and HUD projection helpers), but the runtime assembly did not declare a friend-assembly contract, producing the reported `CS0122`/`CS1061` compile errors before Play Mode could start.
+
+PR #504 adds `InternalsVisibleTo("Dig.Unity.PlayModeTests")` in the `Dig.Unity` assembly. Runtime types remain internal to production callers while executable Play Mode tests can compile against the intended test surface.
+
 ## Save/load
 
 Save format v7 сохраняет queue, active order/material step, consumed inputs, delivery toggles, incoming supply batches и production/supply jobs. Loader проверяет building/assembly/production/supply job cross-references и не повторяет уже committed material steps или outputs.
@@ -64,6 +84,7 @@ World-item pickup codec сохраняет optional source kind/owner и destina
 - Completed pickup освобождает перенесённую quantity reservation после successful job completion.
 - Building supply допускает пустой transit-ID list, когда reserved material полностью объединяется с существующим resident stack; deposit IDs остаются обязательными.
 - PR #501 removes the separate minus button and binds decrement to RMB on the same product icon with a zero-count guard.
+- PR #504 restores compatible cap/leg stack sizes and the Unity Play Mode friend-assembly boundary.
 
 ## Test coverage
 
@@ -77,7 +98,8 @@ World-item pickup codec сохраняет optional source kind/owner и destina
 - deterministic front-cell output и BuildingBox identity;
 - save composition, migration, active supply, pickup codec compatibility и mid-step round-trip;
 - Unity source contracts для HUD/input/runtime composition;
-- checked-in Play Mode fixture для trigger piles, building/item identity и non-blocking stock visuals.
+- checked-in Play Mode fixture для trigger piles, building/item identity и non-blocking stock visuals;
+- PR #504 bootstrapped Play Mode scenario adds four mushroom caps at a resident cell, advances the actual simulation, and requires all four units to leave reserved resident transit inventory and appear in the campfire internal stock.
 
 ## CI evidence
 
@@ -88,4 +110,4 @@ PR #501 merge-ref validation:
 - Export Stage 2 v3 run `30406329052` — success;
 - Unity workflow `30406329010` — workflow success, but `Run Play Mode tests` skipped by activation gate and no runtime result artifact was produced.
 
-The system is `IMPLEMENTED`, not `VERIFIED`, until a licensed Unity Test Runner executes the checked-in production pointer scenario.
+PR #504 validation is recorded in the PR after its final head completes CI. The system remains `IMPLEMENTED`, not `VERIFIED`, until a licensed Unity Test Runner executes the checked-in runtime scenarios.
