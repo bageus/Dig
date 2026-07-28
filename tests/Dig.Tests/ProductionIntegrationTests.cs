@@ -119,6 +119,30 @@ public sealed class ProductionIntegrationTests
             tick: 5).IsSuccess);
     }
 
+
+    [Fact]
+    public void Queued_order_cancels_without_a_created_job()
+    {
+        ProductionTestHarness harness = CreateHarness();
+        Assert.True(harness.Enqueue(FirstOrderId, PlateRecipe, tick: 1).IsSuccess);
+        Assert.True(harness.Enqueue(SecondOrderId, PlateRecipe, tick: 2).IsSuccess);
+        CancelProductionOrderHandler cancel = new CancelProductionOrderHandler(
+            harness.ProductionRepository,
+            harness.InventoryRepository,
+            harness.JobRepository,
+            harness.Journal);
+
+        Result cancelled = cancel.Handle(new CancelProductionOrderCommand(
+            SecondOrderId,
+            default,
+            "player_cancelled",
+            tick: 3));
+
+        Assert.True(cancelled.IsSuccess, cancelled.Error?.ToString());
+        Assert.Equal(ProductionOrderStatus.Queued, harness.Production.Get(FirstOrderId)!.Status);
+        Assert.Equal(ProductionOrderStatus.Cancelled, harness.Production.Get(SecondOrderId)!.Status);
+    }
+
     [Fact]
     public void Tool_energy_and_technology_are_explicit_gates()
     {

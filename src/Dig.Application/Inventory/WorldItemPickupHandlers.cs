@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Jobs;
 using Dig.Application.Messaging;
@@ -49,7 +50,7 @@ public sealed class CreateWorldItemPickupHandler
             return validation;
         }
 
-        int quantity = stack!.Quantity;
+        int quantity = command.Quantity == 0 ? stack!.Quantity : command.Quantity;
         Result reserved = inventory.ReserveQuantity(
             command.StackId,
             command.JobId,
@@ -60,11 +61,26 @@ public sealed class CreateWorldItemPickupHandler
             return reserved;
         }
 
+        Result<IReadOnlyList<ResidentInventorySlotClaimSnapshot>> capacity =
+            inventory.ReserveResidentSlotCapacity(
+                command.JobId,
+                command.ResidentId,
+                stack.ItemId,
+                quantity,
+                command.Tick);
+        if (capacity.IsFailure)
+        {
+            inventory.ReleaseReservations(command.JobId, command.Tick);
+            return Result.Failure(capacity.Error!);
+        }
+
         WorldItemPickupJobDefinition definition = new WorldItemPickupJobDefinition(
             command.JobId,
             command.StackId,
             quantity,
             command.SourceCell,
+            command.SourceLocation,
+            command.DestinationStackId,
             command.Priority,
             command.Tick,
             JobRetryPolicy.Default);
@@ -72,6 +88,7 @@ public sealed class CreateWorldItemPickupHandler
         if (added.IsFailure)
         {
             inventory.ReleaseReservations(command.JobId, command.Tick);
+            inventory.ReleaseResidentSlotClaims(command.JobId, command.Tick);
             return added;
         }
 
@@ -100,14 +117,23 @@ public sealed class CreateWorldItemPickupHandler
             return Result.Failure(WorldItemPickupErrors.StackMissing);
         }
 
-        if (stack.Location != ItemLocation.InWorld(command.SourceCell))
+        if (stack.Location != command.SourceLocation)
         {
             return Result.Failure(WorldItemPickupErrors.StackNotInWorld);
         }
 
-        return stack.Quantity > 0 && stack.ReservedQuantity == 0
-            ? Result.Success()
-            : Result.Failure(WorldItemPickupErrors.StackUnavailable);
+        int quantity = command.Quantity == 0 ? stack.Quantity : command.Quantity;
+        if (quantity <= 0 || quantity > stack.AvailableQuantity)
+        {
+            return Result.Failure(WorldItemPickupErrors.StackUnavailable);
+        }
+
+        if (quantity < stack.Quantity && command.DestinationStackId.IsEmpty)
+        {
+            return Result.Failure(InventoryErrors.SplitIdRequired);
+        }
+
+        return Result.Success();
     }
 
     private Result RollBack(
@@ -121,6 +147,7 @@ public sealed class CreateWorldItemPickupHandler
             new JobBlockReason("world_item_pickup_create_failed", error.Message),
             command.Tick);
         inventory.ReleaseReservations(command.JobId, command.Tick);
+        inventory.ReleaseResidentSlotClaims(command.JobId, command.Tick);
         SaveAndPublish(inventory, jobs);
         return Result.Failure(error);
     }
@@ -183,31 +210,20 @@ public sealed class CompleteWorldItemPickupHandler
 
         bool ownsReservation = stack.Reservations.Any(
             value => value.JobId == job.Id && value.Quantity == pickup.Quantity);
-        if (!ownsReservation
-            || stack.Quantity != pickup.Quantity
-            || stack.Location != ItemLocation.InWorld(pickup.SourceCell))
+        if (!ownsReservation || stack.Location != pickup.SourceLocation)
         {
             return Result.Failure(WorldItemPickupErrors.StackUnavailable);
         }
 
-        Result moved = inventory.MoveReserved(
+        Result moved = inventory.AcquireReservedIntoResidentSlots(
             pickup.StackId,
             job.Id,
-            pickup.Quantity,
-            ItemLocation.InAgent(job.AssignedAgentId.Value),
-            splitStackId: default,
+            job.AssignedAgentId.Value,
+            pickup.DestinationStackId,
             command.Tick);
         if (moved.IsFailure)
         {
             return moved;
-        }
-
-        Result normalized = inventory.NormalizeResidentInventory(
-            job.AssignedAgentId.Value,
-            command.Tick);
-        if (normalized.IsFailure)
-        {
-            return normalized;
         }
 
         Result completed = jobs.Complete(job.Id, command.Tick);
@@ -273,6 +289,7 @@ public sealed class CancelWorldItemPickupHandler
         }
 
         inventory.ReleaseReservations(job.Id, command.Tick);
+        inventory.ReleaseResidentSlotClaims(job.Id, command.Tick);
         _inventoryRepository.Save(inventory);
         _jobRepository.Save(jobs);
         _eventSink.Append(inventory.DequeueUncommittedEvents());

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
+using Dig.Domain.Inventory;
 using Dig.Domain.World;
 
 namespace Dig.Domain.Jobs
@@ -24,6 +25,31 @@ public sealed class WorldItemPickupJobDefinition : JobDefinition
         long createdTick,
         JobRetryPolicy retryPolicy,
         IEnumerable<EntityId>? dependencies = null)
+        : this(
+            id,
+            stackId,
+            quantity,
+            sourceCell,
+            ItemLocation.InWorld(sourceCell),
+            destinationStackId: default,
+            priority: priority,
+            createdTick: createdTick,
+            retryPolicy: retryPolicy,
+            dependencies: dependencies)
+    {
+    }
+
+    public WorldItemPickupJobDefinition(
+        EntityId id,
+        EntityId stackId,
+        int quantity,
+        CellId sourceCell,
+        ItemLocation sourceLocation,
+        EntityId destinationStackId,
+        int priority,
+        long createdTick,
+        JobRetryPolicy retryPolicy,
+        IEnumerable<EntityId>? dependencies = null)
         : base(
             id,
             priority,
@@ -34,7 +60,7 @@ public sealed class WorldItemPickupJobDefinition : JobDefinition
     {
         if (stackId.IsEmpty)
         {
-            throw new ArgumentException("World item stack id is required.", nameof(stackId));
+            throw new ArgumentException("Pickup stack id is required.", nameof(stackId));
         }
 
         if (quantity <= 0)
@@ -42,9 +68,19 @@ public sealed class WorldItemPickupJobDefinition : JobDefinition
             throw new ArgumentOutOfRangeException(nameof(quantity));
         }
 
+        if (sourceLocation.Kind != ItemLocationKind.World
+            && sourceLocation.Kind != ItemLocationKind.BuildingInventory)
+        {
+            throw new ArgumentException(
+                "Pickup source must be a world or building location.",
+                nameof(sourceLocation));
+        }
+
         StackId = stackId;
         Quantity = quantity;
         SourceCell = sourceCell;
+        SourceLocation = sourceLocation;
+        DestinationStackId = destinationStackId;
     }
 
     public EntityId StackId { get; }
@@ -53,7 +89,11 @@ public sealed class WorldItemPickupJobDefinition : JobDefinition
 
     public CellId SourceCell { get; }
 
-    public override string Description => $"Pick up world item {StackId} x{Quantity}";
+    public ItemLocation SourceLocation { get; }
+
+    public EntityId DestinationStackId { get; }
+
+    public override string Description => $"Pick up item {StackId} x{Quantity}";
 
     public override IReadOnlyList<ReservationKey> CreateReservationKeys()
     {

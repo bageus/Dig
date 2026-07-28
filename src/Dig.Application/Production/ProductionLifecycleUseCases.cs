@@ -54,7 +54,9 @@ public sealed class CancelProductionOrderHandler
         }
 
         inventory.ReleaseReservations(command.OrderId, command.Tick);
-        JobSnapshot? job = jobs.Get(command.JobId);
+        JobSnapshot? job = command.JobId.IsEmpty
+            ? null
+            : jobs.Get(command.JobId);
         if (job is not null && !job.IsTerminal)
         {
             Result jobCancelled = jobs.Cancel(

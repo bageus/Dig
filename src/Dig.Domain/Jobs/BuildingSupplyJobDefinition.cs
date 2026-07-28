@@ -13,6 +13,7 @@ public sealed class BuildingSupplyJobDefinition : JobDefinition
 {
     private static readonly JobStageKind[] SupplyStages =
     {
+        JobStageKind.TravelToTarget,
         JobStageKind.AcquireItem,
         JobStageKind.TravelToDestination,
         JobStageKind.DepositItem,
