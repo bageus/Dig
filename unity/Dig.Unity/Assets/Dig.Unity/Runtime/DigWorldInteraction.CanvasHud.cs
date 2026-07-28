@@ -104,14 +104,7 @@ public sealed partial class DigWorldInteraction
     internal void SelectResidentInventoryLayoutSlot(
         ResidentInventoryLayoutSlotViewModel slot)
     {
-        EnsureLayoutSlot(slot);
-        _selectedInventoryStackId = slot.StackId;
-        _selectedInventoryItemUsable = slot.CanUse;
-        _selectedInventoryItemIsBuildingBox = slot.CanStartPlacement;
-        _selectedInventoryItemCanUse = slot.CanUse;
-        _selectedInventoryItemCanDrop = slot.CanDrop;
-        _hud!.SetStatus(
-            $"Selected {slot.DisplayName}. LMB on open ground drops it there.");
+        ActivateResidentInventoryLayoutSlot(slot);
     }
 
     internal void ActivateResidentInventoryLayoutSlot(
