@@ -46,6 +46,39 @@ public sealed class EraseExcavationBatchTests
     }
 
     [Fact]
+    public void Batch_cancels_spatial_excavation_for_erased_target()
+    {
+        WorldState world = CreateWorld(out _);
+        Assert.True(world.SetDigDesignation(First, true, 1).IsSuccess);
+        InMemoryWorldRepository worlds = new InMemoryWorldRepository(world);
+        InMemoryJobRepository jobs = new InMemoryJobRepository();
+        EntityId jobId = Id(10);
+        EntityId residentId = Id(110);
+        Assert.True(jobs.Get().Add(new SpatialDigJobDefinition(
+            jobId,
+            new SpatialDigJobTarget(First, new CellId(1, 0)),
+            priority: 750,
+            createdTick: 2,
+            JobRetryPolicy.Default)).IsSuccess);
+        Assert.True(jobs.Get().MakeAvailable(jobId, 2).IsSuccess);
+        Assert.True(jobs.Get().Claim(jobId, residentId, 3).IsSuccess);
+        EraseExcavationBatchHandler handler = new EraseExcavationBatchHandler(
+            worlds,
+            jobs,
+            new InMemoryExecutionJournal());
+
+        Result<EraseExcavationBatchReport> result = handler.Handle(
+            new EraseExcavationBatchCommand(new[] { First }, tick: 4));
+
+        Assert.True(result.IsSuccess, result.Error?.ToString());
+        Assert.Equal(jobId, Assert.Single(result.Value.CancelledJobIds));
+        Assert.Equal(JobStatus.Cancelled, jobs.Get().Get(jobId)!.Status);
+        Assert.Equal(CellDesignation.None,
+            worlds.Get().GetCell(First).Value.State.Designation);
+        Assert.Empty(jobs.Get().GetReservations());
+    }
+
+    [Fact]
     public void Invalid_cell_rejects_entire_batch_without_world_or_job_changes()
     {
         WorldState world = CreateWorld(out _);
