@@ -143,3 +143,11 @@ Regression coverage now:
 - verifies visual/collider center against each authoritative depth projection and keeps collider bounds inside the corresponding half-spacing slab.
 
 The system remains `IMPLEMENTED` until Unity Test Runner executes the checked-in Play Mode scenario.
+
+## Mushroom movement planner duplicate regression (2026-07-28)
+
+A Unity Safe Mode compile reported `CS0111` in `DigTerrainWorkSession.Mushrooms.cs`: the partial `DigTerrainWorkSession` declared `TryPlanMushroomMovement` twice with the same parameters.
+
+The duplicate came from overlapping mushroom and campfire integration changes. `DigTerrainWorkSession.Mushrooms.cs` contained a simplified planner while `DigTerrainWorkSession.MushroomNavigation.cs` already owned the complete route-planning implementation, including `_routePlans` diagnostics. The correction removes the duplicate from `Mushrooms.cs` and keeps `MushroomNavigation.cs` as the single owner. Domain/Application mushroom behavior, work-position selection and navigation policy are unchanged.
+
+`MushroomMovementPlannerSourceContractTests` now scans every `DigTerrainWorkSession*.cs` partial and requires exactly one `bool TryPlanMushroomMovement(...)` declaration, owned by `DigTerrainWorkSession.MushroomNavigation.cs`, with route-plan projection preserved.
