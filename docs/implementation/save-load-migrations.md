@@ -1,6 +1,8 @@
-> **Audit status (2026-07-28): resident runtime and active food meal slice implemented.** Save format v9 now captures current resident needs, last needs tick and active three-bite meal progress. Pickup-then-use intent is persisted in the pickup job codec. The broader save system remains `DRAFT` until the complete Unity save/load composition and Play Mode evidence tracked by #13/#15/#94 are present.
+> **Status (2026-07-29): IMPLEMENTED.** Production composition now registers the complete v0-v9 migration chain and every current concrete job definition. The executable Unity round-trip is checked in; licensed Test Runner evidence is still required for `VERIFIED` and remains tracked by #15.
 
 # Save, load and migrations
+
+Authoritative specification: [`../design/save-load-and-migrations.md`](../design/save-load-and-migrations.md).
 
 ## State ownership
 
@@ -118,3 +120,13 @@ Automated coverage includes:
 - pickup completion-action round trip and backward-compatible missing-property decode.
 
 The normal Quality workflow runs architecture/source-contract checks, Release build, .NET tests, headless smoke and both deterministic soak profiles. Unity Play Mode remains non-blocking when activation is unavailable; that evidence gap is tracked by #15.
+
+## Production composition completion — 2026-07-29
+
+- `Dig.Infrastructure.Saving.SaveGameCompositionRoot` is now the single production factory for the builder, loader, file slot store, complete v0-v9 migration chain and complete job codec registry.
+- Job codecs were added for previously uncovered concrete definitions: `BuildingWorkJobDefinition`, `HealingJobDefinition`, `SpatialDigJobDefinition` and `StrategicExecutionJobDefinition`.
+- `JobDefinitionSaveRegistration` binds every concrete definition type to its codec; composition construction and tests validate coverage against every current concrete `JobDefinition`. A new job type cannot silently reach runtime without save support.
+- `SaveGameLoadContext` and the corresponding `SaveGameService.Load` overload provide one full-catalog load boundary, including agents, production and barrels.
+- `SaveGameCompositionRootTests` covers complete registry coverage, v0-v9 migration and missing-codec round-trips.
+- `SaveGameProductionCompositionPlayModeTests` is the executable Unity regression for production composition and spatial excavation XYZ round-trip.
+- Repository source checks pass locally. Actual licensed Unity Test Runner execution remains required before status `VERIFIED`; that evidence is owned by #15 and does not create a second save-system implementation.
