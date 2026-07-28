@@ -110,4 +110,10 @@ Behavioral head `47205ee1336eae9b3d865e36264cd55d3bff9605` passed:
 - Export Stage 2 v2 `30378034174` / run 573;
 - Export Stage 2 v3 `30378034162` / run 578.
 
-Unity Play Mode workflow `30378034438` / run 60 completed at workflow level, but `Run Play Mode tests` was skipped because activation credentials are not configured. Therefore status remains `IMPLEMENTED`, not `VERIFIED`.
+Final documentation head `fee073f9b86d5cae101284c0f51d3fd656551cdc` passed:
+
+- Quality `30378404874` / run 6306;
+- Export Stage 2 v2 `30378405095` / run 578;
+- Export Stage 2 v3 `30378404856` / run 583.
+
+Unity Play Mode workflow `30378404852` / run 65 completed at workflow level, but `Run Play Mode tests` was skipped because activation credentials are not configured. Therefore status remains `IMPLEMENTED`, not `VERIFIED`.
