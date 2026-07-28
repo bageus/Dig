@@ -162,7 +162,7 @@ Events:
 Queries:
 
 - barrel snapshots/lifecycle/location/version;
-- direct attack target decision and typed reason;
+- direct attack target decision and reason;
 - support/landing decision;
 - active jobs/work positions;
 - contents diagnostics;
