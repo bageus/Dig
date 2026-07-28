@@ -50,7 +50,7 @@ namespace Dig.Unity
                 return DirectCommandCursorKind.Eat;
             }
 
-            return Input.GetKey(KeyCode.D)
+            return Input.GetKey(KeyCode.C)
                 && _hoveredInventoryCanDrop
                 && !_hoveredInventoryIsBuildingBox
                     ? DirectCommandCursorKind.Drop
