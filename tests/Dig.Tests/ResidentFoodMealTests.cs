@@ -34,6 +34,37 @@ namespace Dig.Tests
         }
 
         [Fact]
+        public void Runtime_snapshot_restores_completed_bites_without_replaying_nutrition()
+        {
+            Harness harness = new Harness(foodQuantity: 1, nutrition: 1_000);
+            Assert.True(harness.Start(10).IsSuccess);
+            Assert.False(harness.Advance(11));
+            AgentRuntimeSnapshot saved = harness.Agent.CreateRuntimeSnapshot();
+            AgentState restored = new AgentState(
+                harness.ResidentId,
+                "Restored cook",
+                new AgentNeedsSnapshot(
+                    new NeedValue(9_000),
+                    new NeedValue(9_000),
+                    new NeedValue(9_000),
+                    new NeedValue(10_000)),
+                new DailySchedule(
+                    ticksPerDay: 24,
+                    new[] { new ScheduleSegment(0, 24, ScheduleActivity.Work) }));
+
+            Result result = restored.RestoreRuntime(saved);
+
+            Assert.True(result.IsSuccess, result.Error?.ToString());
+            Assert.Equal(1_500, restored.CreateSnapshot(11).Needs.Nutrition.Points);
+            Assert.Equal(1, restored.CreateFoodMealSnapshot()!.CompletedBites);
+            Assert.Equal(AgentIntentKind.Eat, restored.CreateSnapshot(11).ActiveAction!.Value.IntentKind);
+            Assert.False(restored.AdvanceFoodMealBite(12).Value);
+            Assert.True(restored.AdvanceFoodMealBite(13).Value);
+            Assert.Equal(2_500, restored.CreateSnapshot(13).Needs.Nutrition.Points);
+            Assert.False(restored.HasActiveFoodMeal);
+        }
+
+        [Fact]
         public void Interrupted_meal_keeps_completed_bites_and_loses_consumed_remainder()
         {
             Harness harness = new Harness(foodQuantity: 1, nutrition: 1_000);
