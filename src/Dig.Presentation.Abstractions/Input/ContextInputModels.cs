@@ -87,7 +87,8 @@ public readonly struct ContextPointerEvent
         PointerButtonKind button,
         int clickCount = 1,
         bool altPressed = false,
-        bool isPointerOverBlockingUi = false)
+        bool isPointerOverBlockingUi = false,
+        bool dropPressed = false)
     {
         if (!Enum.IsDefined(typeof(PointerInputSurface), surface))
         {
@@ -109,6 +110,7 @@ public readonly struct ContextPointerEvent
         ClickCount = clickCount;
         AltPressed = altPressed;
         IsPointerOverBlockingUi = isPointerOverBlockingUi;
+        DropPressed = dropPressed;
     }
 
     public PointerInputSurface Surface { get; }
@@ -116,6 +118,7 @@ public readonly struct ContextPointerEvent
     public int ClickCount { get; }
     public bool AltPressed { get; }
     public bool IsPointerOverBlockingUi { get; }
+    public bool DropPressed { get; }
 }
 
 public sealed class ContextInputState

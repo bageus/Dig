@@ -74,7 +74,7 @@ namespace Dig.Unity
 
         private void UpdateInventoryItemPlacement(CellId target)
         {
-            Result validation = _terrainSession!.ValidateResidentInventoryDrop(
+            Result validation = _terrainSession!.ValidateResidentInventoryPlacement(
                 _inventoryItemPlacementResidentId!,
                 _inventoryItemPlacementStackId!,
                 target);
@@ -104,11 +104,11 @@ namespace Dig.Unity
             if (!_inventoryItemPlacementValid
                 || !_inventoryItemPlacementCell.HasValue)
             {
-                _hud.SetStatus("input.inventory.drop.target_blocked");
+                _hud.SetStatus("input.inventory.placement.target_blocked");
                 return true;
             }
 
-            Result result = _terrainSession!.DropResidentInventoryStack(
+            Result result = _terrainSession!.CreateResidentInventoryPlacement(
                 _inventoryItemPlacementResidentId!,
                 _inventoryItemPlacementStackId!,
                 _inventoryItemPlacementCell.Value,
@@ -116,12 +116,9 @@ namespace Dig.Unity
             _hud.SetCommandResult(result);
             if (result.IsSuccess)
             {
-                _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
-                _agentRenderer!.RenderEquipment(
-                    _terrainSession.LoadResidentEquipment());
                 ClearSelectedInventoryStack();
                 CancelInventoryItemPlacement();
-                _hud.SetStatus("Inventory item placed.");
+                _hud.SetStatus("Inventory item placement order created.");
             }
 
             return true;

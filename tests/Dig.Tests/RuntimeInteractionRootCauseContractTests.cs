@@ -54,6 +54,7 @@ namespace Dig.Tests
             string itemPlacement = Read(runtime, "DigWorldInteraction.InventoryItemPlacement.cs");
             string itemGhost = Read(runtime, "DigInventoryItemGhostRenderer.cs");
             string itemVisual = Read(runtime, "DigWorldItemVisual.cs");
+            string itemSelection = Read(runtime, "DigWorldItemVisual.Selection.cs");
 
             Assert.True(
                 priority.IndexOf("TryResolveCompletedBuildingHit", StringComparison.Ordinal)
@@ -64,10 +65,11 @@ namespace Dig.Tests
             Assert.Contains("BuildingBoxPlacementKind.RelocateBox", boxGhost);
             Assert.Contains("BuildingVisualState.BuildingBox", boxGhost);
             Assert.Contains("BuildingVisualState.Completed", boxGhost);
-            Assert.Contains("ValidateResidentInventoryDrop", itemPlacement);
-            Assert.Contains("DropResidentInventoryStack", itemPlacement);
+            Assert.Contains("ValidateResidentInventoryPlacement", itemPlacement);
+            Assert.Contains("CreateResidentInventoryPlacement", itemPlacement);
             Assert.Contains("DigTransparentVisualSurface", itemGhost);
             Assert.Contains("_interactionCollider.isTrigger=true", itemVisual);
+            Assert.Contains("SetInteractionHighlighted", itemSelection);
         }
 
         [Fact]

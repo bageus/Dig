@@ -63,6 +63,50 @@ namespace Dig.Unity
             return Result.Success();
         }
 
+        internal Result ValidateResidentInventoryPlacement(
+            string residentId,
+            string stackId,
+            CellId destination)
+        {
+            EntityId actor = ParseInventoryEntityId(residentId, nameof(residentId));
+            EntityId stack = ParseInventoryEntityId(stackId, nameof(stackId));
+            InventoryState? inventory = _buildingInventoryRepository?.Get();
+            ItemStackSnapshot? snapshot = inventory?.GetStack(stack);
+            if (snapshot == null)
+            {
+                inventory = _inventoryRepository.Get();
+                snapshot = inventory.GetStack(stack);
+            }
+
+            if (snapshot == null)
+            {
+                return Result.Failure(InventoryErrors.StackNotFound);
+            }
+
+            if (inventory == null
+                || snapshot.Location.Kind != ItemLocationKind.AgentInventory
+                || !DropResidentInventoryStackHandler.IsOwnedByResident(
+                    snapshot.Location,
+                    actor)
+                || snapshot.AvailableQuantity != snapshot.Quantity
+                || snapshot.ReservedQuantity != 0
+                || inventory.CreateSnapshot().HeldItems.Any(value => value.StackId == stack))
+            {
+                return Result.Failure(ResidentInventoryPlacementErrors.SourceUnavailable);
+            }
+
+            if (inventory.Catalog.Get(snapshot.ItemId).IsInventoryExpansion)
+            {
+                return Result.Failure(
+                    ResidentInventoryPlacementErrors.ExpansionRequiresExplicitDrop);
+            }
+
+            return CreateResidentInventoryPlacementHandler.ValidateTarget(
+                _worldSession.LoadSnapshot(),
+                destination,
+                GetBuildingPlacementReachableCells());
+        }
+
         internal Result DropResidentInventoryStack(
             string residentId,
             string stackId,

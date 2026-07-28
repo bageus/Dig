@@ -12,18 +12,25 @@ namespace Dig.Unity
                 || !decision.TargetEntityId.HasValue
                 || !decision.TargetCell.HasValue)
             {
-                _hud!.SetStatus("input.world_food.eat_missing_target");
+                _hud!.SetStatus("input.world_consumable.use_missing_target");
                 return;
             }
 
             string residentId = decision.ActorId.Value.ToString();
             string stackId = decision.TargetEntityId.Value.ToString();
-            Result capacity = _terrainSession!.ValidateResidentCanPickupStack(
+            Result effectOwner = _terrainSession!.ValidateWorldConsumableAction(stackId);
+            if (effectOwner.IsFailure)
+            {
+                _hud!.SetCommandResult(effectOwner);
+                return;
+            }
+
+            Result capacity = _terrainSession.ValidateResidentCanPickupStack(
                 residentId,
                 stackId);
             if (capacity.IsFailure)
             {
-                _hud!.SetCommandResult(capacity);
+                _hud.SetCommandResult(capacity);
                 if (capacity.Error == InventoryErrors.ResidentInventoryCapacityExceeded)
                 {
                     _agentRenderer!.PlayInventoryFullReaction(residentId);
@@ -39,7 +46,7 @@ namespace Dig.Unity
                 decision.TargetCell.Value,
                 _simulation!.CurrentTick,
                 eatAfterPickup: true);
-            _hud!.SetCommandResult(result);
+            _hud.SetCommandResult(result);
             if (result.IsFailure)
             {
                 return;
@@ -49,7 +56,7 @@ namespace Dig.Unity
             _jobRenderer!.Render(jobs);
             _hud.SetJobs(jobs);
             _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
-            _hud.SetStatus("Food pickup and eating order created.");
+            _hud.SetStatus("Consumable pickup and use order created.");
         }
     }
 }

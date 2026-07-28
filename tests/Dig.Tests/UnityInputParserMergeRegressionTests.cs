@@ -12,20 +12,28 @@ public sealed class UnityInputParserMergeRegressionTests
     {
         string runtime = RuntimeRoot();
         string cursor = Read(runtime, "DigWorldInteraction.DirectCommandCursor.cs");
+        string itemCursor = Read(runtime, "DigWorldInteraction.ItemInteractionCursor.cs");
         string pointerHits = Read(runtime, "DigWorldInteraction.PointerHits.cs");
         string normalizedCursor = Normalize(cursor);
+        string normalizedItemCursor = Normalize(itemCursor);
         string normalizedPointerHits = Normalize(pointerHits);
 
         Assert.Equal(Count(cursor, '{'), Count(cursor, '}'));
+        Assert.Equal(Count(itemCursor, '{'), Count(itemCursor, '}'));
         Assert.Equal(Count(pointerHits, '{'), Count(pointerHits, '}'));
+        Assert.Contains("TryResolveFoodItemHoverTarget", normalizedCursor);
         Assert.Contains(
-            "&&IsDirectFoodItem(item.Model);}privateboolTryResolveBarrelHoverTarget",
-            normalizedCursor);
+            "privateboolTryResolveFoodItemHoverTarget",
+            normalizedItemCursor);
+        Assert.Contains(
+            "privatevoidSetInteractionHighlightedItem",
+            normalizedItemCursor);
         Assert.Contains(
             "best=candidate;}}agent=best!;returnbest!=null;}privateboolTryProjectResidentBounds",
             normalizedPointerHits);
         Assert.Contains("Eat=6", normalizedCursor);
         Assert.Contains("Sword=5", normalizedCursor);
+        Assert.Contains("Drop=7", normalizedCursor);
     }
 
     [Fact]

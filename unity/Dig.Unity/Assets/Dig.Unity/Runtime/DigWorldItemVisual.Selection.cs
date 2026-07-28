@@ -8,11 +8,15 @@ namespace Dig.Unity
     {
         private static readonly Color SelectionColor =
             new Color(0.18f, 0.58f, 1f, 1f);
+        private static readonly Color InteractionHoverColor =
+            new Color(1f, 0.78f, 0.18f, 1f);
 
         private ItemReservationVisualState _reservationState;
         private bool _selectionHighlighted;
+        private bool _interactionHighlighted;
 
         internal bool IsSelectionHighlighted => _selectionHighlighted;
+        internal bool IsInteractionHighlighted => _interactionHighlighted;
 
         internal void SetSelectionHighlighted(bool highlighted)
         {
@@ -22,6 +26,17 @@ namespace Dig.Unity
             }
 
             _selectionHighlighted = highlighted;
+            ApplyCurrentTint();
+        }
+
+        internal void SetInteractionHighlighted(bool highlighted)
+        {
+            if (_interactionHighlighted == highlighted)
+            {
+                return;
+            }
+
+            _interactionHighlighted = highlighted;
             ApplyCurrentTint();
         }
 
@@ -41,8 +56,13 @@ namespace Dig.Unity
         private Color ResolveCurrentTint()
         {
             Color tint = ResolveReservationTint(_reservationState);
-            return _selectionHighlighted
-                ? Color.Lerp(tint, SelectionColor, 0.48f)
+            if (_selectionHighlighted)
+            {
+                tint = Color.Lerp(tint, SelectionColor, 0.48f);
+            }
+
+            return _interactionHighlighted
+                ? Color.Lerp(tint, InteractionHoverColor, 0.55f)
                 : tint;
         }
     }

@@ -10,6 +10,7 @@ namespace Dig.Unity
         private const float MovementCursorDurationSeconds = 0.85f;
         private static readonly Vector2 ShovelCursorHotspot = new Vector2(16f, 27f);
         private static readonly Vector2 PickupCursorHotspot = new Vector2(16f, 27f);
+        private static readonly Vector2 DropCursorHotspot = new Vector2(16f, 5f);
         private static readonly Vector2 MovementCursorHotspot = new Vector2(16f, 27f);
         private static readonly Vector2 AxeCursorHotspot = new Vector2(11f, 27f);
         private static readonly Vector2 EatCursorHotspot = new Vector2(16f, 16f);
@@ -17,6 +18,7 @@ namespace Dig.Unity
 
         private Texture2D[]? _shovelCursorFrames;
         private Texture2D[]? _pickupCursorFrames;
+        private Texture2D[]? _dropCursorFrames;
         private Texture2D[]? _movementCursorFrames;
         private Texture2D[]? _axeCursorFrames;
         private Texture2D[]? _eatCursorFrames;
@@ -35,11 +37,13 @@ namespace Dig.Unity
             Axe = 4,
             Sword = 5,
             Eat = 6,
+            Drop = 7,
         }
 
         private void UpdateSelectedResidentCommandCursor()
         {
             _barrelRenderer?.SetHighlighted(null);
+            SetInteractionHighlightedItem(null);
             DirectCommandCursorKind kind = ResolveCommandCursorKind();
             ApplyCommandCursor(kind);
         }
@@ -51,12 +55,14 @@ namespace Dig.Unity
                 return DirectCommandCursorKind.Movement;
             }
 
-            if (!IsInitialized()
-                || _hud == null
-                || _hud.ContainsScreenPoint(Input.mousePosition)
-                || _buildingPlacementMode.HasValue)
+            if (!IsInitialized() || _hud == null || _buildingPlacementMode.HasValue)
             {
                 return DirectCommandCursorKind.Default;
+            }
+
+            if (_hud.ContainsScreenPoint(Input.mousePosition))
+            {
+                return ResolveInventoryHoverCursorKind();
             }
 
             RaycastHit[] hits = GetPointerHits();
@@ -78,8 +84,9 @@ namespace Dig.Unity
 
                 if (_excavationMode == DigExcavationDrawingMode.None
                     && !_caveRoomPreset.HasValue
-                    && TryResolveFoodItemHoverTarget(hits, out _))
+                    && TryResolveFoodItemHoverTarget(hits, out DigWorldItemVisual food))
                 {
+                    SetInteractionHighlightedItem(food);
                     return IsAltPressed()
                         ? DirectCommandCursorKind.Eat
                         : DirectCommandCursorKind.Pickup;
@@ -88,15 +95,21 @@ namespace Dig.Unity
                 if (_excavationMode == DigExcavationDrawingMode.None
                     && !_caveRoomPreset.HasValue
                     && IsAltPressed()
-                    && TryResolveBuildingBoxHoverTarget(hits))
+                    && TryResolveBuildingBoxHoverTarget(
+                        hits,
+                        out DigWorldItemVisual buildingBox))
                 {
+                    SetInteractionHighlightedItem(buildingBox);
                     return DirectCommandCursorKind.Pickup;
                 }
 
                 if (_excavationMode == DigExcavationDrawingMode.None
                     && !_caveRoomPreset.HasValue
-                    && TryResolvePickableItemHoverTarget(hits))
+                    && TryResolvePickableItemHoverTarget(
+                        hits,
+                        out DigWorldItemVisual item))
                 {
+                    SetInteractionHighlightedItem(item);
                     return DirectCommandCursorKind.Pickup;
                 }
 
@@ -115,27 +128,6 @@ namespace Dig.Unity
             }
 
             return DirectCommandCursorKind.Default;
-        }
-
-        private bool TryResolveBuildingBoxHoverTarget(RaycastHit[] hits)
-        {
-            return TryResolveBuildingBoxHit(hits, out DigWorldItemVisual item)
-                && item.Model.AvailableQuantity == 1;
-        }
-
-        private bool TryResolvePickableItemHoverTarget(RaycastHit[] hits)
-        {
-            return TryResolveWorldItemHit(hits, out DigWorldItemVisual item)
-                && item.Model.CanPickup;
-        }
-
-        private bool TryResolveFoodItemHoverTarget(
-            RaycastHit[] hits,
-            out DigWorldItemVisual item)
-        {
-            return TryResolveWorldItemHit(hits, out item)
-                && item.Model.CanPickup
-                && IsDirectFoodItem(item.Model);
         }
 
         private bool TryResolveBarrelHoverTarget(RaycastHit[] hits)
@@ -255,6 +247,8 @@ namespace Dig.Unity
                     return _shovelCursorFrames ??= CreateShovelCursorFrames();
                 case DirectCommandCursorKind.Pickup:
                     return _pickupCursorFrames ??= CreatePickupCursorFrames();
+                case DirectCommandCursorKind.Drop:
+                    return _dropCursorFrames ??= CreateDropCursorFrames();
                 case DirectCommandCursorKind.Movement:
                     return _movementCursorFrames ??= CreateMovementCursorFrames();
                 case DirectCommandCursorKind.Axe:
@@ -274,6 +268,7 @@ namespace Dig.Unity
             {
                 DirectCommandCursorKind.Shovel => ShovelCursorHotspot,
                 DirectCommandCursorKind.Pickup => PickupCursorHotspot,
+                DirectCommandCursorKind.Drop => DropCursorHotspot,
                 DirectCommandCursorKind.Movement => MovementCursorHotspot,
                 DirectCommandCursorKind.Axe => AxeCursorHotspot,
                 DirectCommandCursorKind.Sword => SwordCursorHotspot,
@@ -285,20 +280,26 @@ namespace Dig.Unity
         private void OnDisable()
         {
             ClearPointerHover();
+            SetInteractionHighlightedItem(null);
+            ClearInventorySlotHoverFeedback();
             ResetCommandCursor();
         }
 
         private void OnDestroy()
         {
+            SetInteractionHighlightedItem(null);
+            ClearInventorySlotHoverFeedback();
             ResetCommandCursor();
             DestroyCommandCursorFrames(_shovelCursorFrames);
             DestroyCommandCursorFrames(_pickupCursorFrames);
+            DestroyCommandCursorFrames(_dropCursorFrames);
             DestroyCommandCursorFrames(_movementCursorFrames);
             DestroyCommandCursorFrames(_axeCursorFrames);
             DestroyCommandCursorFrames(_swordCursorFrames);
             DestroyCommandCursorFrames(_eatCursorFrames);
             _shovelCursorFrames = null;
             _pickupCursorFrames = null;
+            _dropCursorFrames = null;
             _movementCursorFrames = null;
             _axeCursorFrames = null;
             _swordCursorFrames = null;
