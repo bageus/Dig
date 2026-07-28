@@ -24,9 +24,11 @@ namespace Dig.Unity
         private protected DigAgentSession? AgentSession;
         protected DigAgentRenderer? AgentRenderer;
         protected DigMushroomRenderer? MushroomRenderer;
+        protected DigBarrelRenderer? BarrelRenderer;
         private protected DigTerrainWorkSession? TerrainSession;
         protected DigJobRenderer? JobRenderer;
         protected DigBuildingRenderer? BuildingRenderer;
+        protected DigBuildingInternalStockRenderer? BuildingInternalStockRenderer;
         protected DigWorldItemRenderer? ItemRenderer;
         protected DigStockpileRenderer? StockpileRenderer;
         protected DigNavigationRouteRenderer? RouteRenderer;
@@ -58,8 +60,10 @@ namespace Dig.Unity
             DigAgentRenderer agentRenderer,
             DigTerrainWorkSession terrainSession,
             DigMushroomRenderer mushroomRenderer,
+            DigBarrelRenderer barrelRenderer,
             DigJobRenderer jobRenderer,
             DigBuildingRenderer buildingRenderer,
+            DigBuildingInternalStockRenderer buildingInternalStockRenderer,
             DigWorldItemRenderer itemRenderer,
             DigStockpileRenderer stockpileRenderer,
             DigNavigationRouteRenderer routeRenderer,
@@ -71,9 +75,11 @@ namespace Dig.Unity
             AgentSession = agentSession;
             AgentRenderer = agentRenderer;
             MushroomRenderer = mushroomRenderer;
+            BarrelRenderer = barrelRenderer;
             TerrainSession = terrainSession;
             JobRenderer = jobRenderer;
             BuildingRenderer = buildingRenderer;
+            BuildingInternalStockRenderer = buildingInternalStockRenderer;
             ItemRenderer = itemRenderer;
             StockpileRenderer = stockpileRenderer;
             RouteRenderer = routeRenderer;
@@ -140,8 +146,10 @@ namespace Dig.Unity
                 && AgentRenderer != null
                 && TerrainSession != null
                 && MushroomRenderer != null
+                && BarrelRenderer != null
                 && JobRenderer != null
                 && BuildingRenderer != null
+                && BuildingInternalStockRenderer != null
                 && ItemRenderer != null
                 && StockpileRenderer != null
                 && RouteRenderer != null

@@ -41,6 +41,7 @@ public sealed class SaveMigrationAndCorruptionTests
             "save.v3_to_v4.agent_skills",
             "save.v4_to_v5.authoritative_xyz",
             "save.v5_to_v6.mushrooms",
+            "save.v6_to_v7.building_production",
         }, first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
         Assert.Equal(1, document.Metadata.GeneratorVersion);
@@ -75,6 +76,7 @@ public sealed class SaveMigrationAndCorruptionTests
                 "save.v3_to_v4.agent_skills",
                 "save.v4_to_v5.authoritative_xyz",
                 "save.v5_to_v6.mushrooms",
+            "save.v6_to_v7.building_production",
             },
             first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
@@ -294,6 +296,7 @@ public sealed class SaveMigrationAndCorruptionTests
             new SaveVersionThreeAgentSkillsMigration(),
             new SaveVersionFourAuthoritativeCoordinatesMigration(),
             new SaveVersionFiveMushroomsMigration(),
+            new SaveVersionSixBuildingProductionMigration(),
         });
     }
 

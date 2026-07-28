@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Jobs;
 using Dig.Domain.Core;
+using Dig.Domain.Ecology;
 using Dig.Domain.Jobs;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
@@ -48,6 +49,43 @@ public sealed class JobOverlayPresentationTests
         Assert.Equal(
             new[] { "Agent", "Designation", "Job", "Position" },
             model.Reservations.Select(item => item.Kind));
+    }
+
+    [Fact]
+    public void Presenter_marks_mushroom_work_and_maps_xyz_target()
+    {
+        EntityId jobId = EntityId.Parse("20000000000000000000000000000005");
+        EntityId siteId = EntityId.Parse("21000000000000000000000000000005");
+        EntityId agentId = EntityId.Parse("30000000000000000000000000000005");
+        CellId target = new CellId(7, 6, 2);
+        JobSystem jobs = new JobSystem();
+        MushroomChopJobDefinition definition = new MushroomChopJobDefinition(
+            jobId,
+            siteId,
+            target,
+            new CellId(6, 6, 2),
+            growthGeneration: 1,
+            requiredSwings: 3,
+            priority: 900,
+            createdTick: 4,
+            JobRetryPolicy.Default);
+        Assert.True(jobs.Add(definition).IsSuccess);
+        Assert.True(jobs.MakeAvailable(jobId, tick: 4).IsSuccess);
+        Assert.True(jobs.Claim(jobId, agentId, tick: 5).IsSuccess);
+        Assert.True(jobs.Start(jobId, tick: 6).IsSuccess);
+        Assert.True(jobs.AdvanceStage(jobId, tick: 7).IsSuccess);
+        InMemoryJobRepository repository = new InMemoryJobRepository(jobs);
+
+        JobOverlayViewModel model = Assert.Single(new JobOverlayPresenter(
+            new GetJobsHandler(repository),
+            new GetJobReservationsHandler(repository)).Load());
+
+        Assert.True(model.IsMushroomChop);
+        Assert.Equal(target.X, model.TargetX);
+        Assert.Equal(target.Y, model.TargetY);
+        Assert.Equal(target.Z, model.TargetZ);
+        Assert.Equal("PerformWork", model.Stage);
+        Assert.Equal(agentId.ToString(), model.AssignedAgentId);
     }
 
     [Fact]

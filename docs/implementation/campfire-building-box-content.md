@@ -28,12 +28,13 @@ The existing `BuildingDefinition.RequiredWork` and `BuildingBoxPolicy.PackingWor
 
 The campfire carries declarative placement metadata:
 
-- 1.5 by 1.5 cell physical footprint;
-- flat surface required;
-- outdoor-only;
-- tunnel placement forbidden.
+- 1 by 1 logical placement footprint;
+- representative visual remains approximately 1.5 by 1.5 cells;
+- flat terrain support required;
+- outdoor and tunnel placement allowed on Z1–Z3;
+- Z0 remains BuildingBox relocation only.
 
-The current `BuildingDefinition` retains one logical anchor cell because placement validation for the physical footprint belongs to #332. Presentation and input must not treat this profile as already-authoritative placement approval.
+`BuildingDefinition` and the packable placement profile now agree on one logical anchor cell. Visual size no longer expands logical occupancy into the solid support cell below the building.
 
 ## Ownership
 

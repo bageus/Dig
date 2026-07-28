@@ -11,7 +11,11 @@ public sealed partial class DigAgentVisual
 
     private void Update()
     {
-        if (_duration <= 0f) return;
+        if (_duration <= 0f)
+        {
+            ApplyToolWorkAnimation();
+            return;
+        }
         _elapsed = Mathf.Min(_duration, _elapsed + Time.deltaTime);
         double progress = _elapsed / _duration;
         AgentInterpolatedSpatialPosition position = AgentSpatialPositionInterpolator.Interpolate(

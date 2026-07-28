@@ -37,22 +37,15 @@ Concurrent jobs reserve only independent work positions. Когда два resid
 
 ## Demo bootstrap
 
-Fresh demo создаёт четыре stable barrels:
-
-- две на supported cells верхней поверхности (`Z0`);
-- две на supported cells нижней пещеры (`Z > 0`).
-
-Каждый stable barrel id детерминированно выбирает и сохраняет ровно один item: `material.stone` либо `ore.iron`. Retry/load не должны reroll-ить manifest. Visual height равна `1.05` world unit и остаётся ниже resident interaction height.
+Fresh demo создаёт четыре stable barrels: две на supported cells верхней поверхности (`Z0`) и две на supported cells нижней пещеры (`Z > 0`). Каждый stable barrel id детерминированно выбирает и сохраняет ровно один item: `material.stone` либо `ore.iron`. Visual height равна `1.05` world unit.
 
 ## Support loss и placement
 
-После authoritative excavation/world commit support reconciliation проверяет supported barrels. Unsupported barrel использует общий vertical landing resolver, переходит через `Falling` к первой свободной supported cell и не получает damage, не разрушается и не materialize-ит contents.
-
-Supported barrel cell входит в building-placement blocked set. Barrel не добавляется в Navigation occupancy и не имеет pickup/placement interaction.
+После authoritative excavation/world commit support reconciliation проверяет supported barrels. Unsupported barrel использует общий vertical landing resolver, переходит через `Falling` к первой свободной supported cell и не получает damage, не разрушается и не materialize-ит contents. Supported barrel cell входит в building-placement blocked set, но не добавляется в Navigation occupancy.
 
 ## Save/load
 
-Save format v7 добавляет barrel section:
+Save format v7 хранит production и additive optional barrel section:
 
 - id, definition, cell и lifecycle;
 - contents item id, generation и materialized marker;
@@ -60,16 +53,12 @@ Save format v7 добавляет barrel section:
 - optimistic version;
 - active barrel jobs через `BarrelAttackJobSaveCodec`.
 
-v6→v7 migration добавляет пустую barrel section. Fresh demo bootstrap создаёт fixtures только для новой session; load не должен создавать дополнительные barrels или повторять output.
+v6→v7 migration добавляет production и пустую barrel section; существующий v7 document без barrel section трактуется как пустой. Fresh demo bootstrap создаёт fixtures только для новой session; load не должен создавать дополнительные barrels или повторять output.
 
-## CI regression fix
+## CI regression fixes
 
-Quality run `30310039384` собрал solution, но один тест завершился ошибкой:
-
-- `Concurrent_attacks_are_allowed_but_only_first_commit_creates_contents` ожидал две записи в общем reservation ledger после запуска двух attack jobs;
-- фактически `JobSystem.Claim` корректно создаёт для каждого job три записи: `ForJob`, `ForAgent` и `ForPosition`;
-- barrel target при этом по-прежнему не имеет `ForEcologyTarget` reservation, поэтому concurrent first-commit-wins contract не нарушался;
-- regression теперь проверяет точные ключи каждого job и отдельно запрещает reservation самой barrel вместо хрупкой проверки общего количества `2`.
+- Quality run `30310039384` показал, что concurrent reservation test ожидал две записи, хотя `JobSystem.Claim` корректно создаёт для каждого job `ForJob`, `ForAgent` и `ForPosition`. Regression теперь проверяет точные ключи и отдельно запрещает exclusive barrel target reservation.
+- PR #444 синхронизирован с актуальным `main`; production и barrels совместно используют backward-compatible format v7; отсутствующая barrel section восстанавливается как пустая.
 
 ## Regression coverage
 
@@ -90,6 +79,6 @@ Unity/source contracts:
 - red highlight, animated sword cursor and Russian status;
 - geometry/collider lifecycle;
 - support removal and landing wiring;
-- full Play Mode fixture is checked in for barrel rendering/disappearance.
+- Play Mode fixture for rendering/disappearance.
 
 Unity Editor/Play Mode нельзя считать пройденным, пока fixture реально не выполнен Unity Test Runner. Поэтому система не получает статус `VERIFIED` только по source-contract или .NET checks.

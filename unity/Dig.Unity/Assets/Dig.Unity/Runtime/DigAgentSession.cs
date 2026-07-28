@@ -60,6 +60,8 @@ namespace Dig.Unity
 
         internal IAgentSkillGrantService SkillGrants => _skillGrants;
 
+        internal InMemoryAgentRepository Repository => _repository;
+
         public static DigAgentSession CreateDemo(
             WorldViewModel world,
             TunnelNavigationVolume tunnelVolume,

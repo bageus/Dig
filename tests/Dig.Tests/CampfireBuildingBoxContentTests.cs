@@ -46,16 +46,16 @@ public sealed class CampfireBuildingBoxContentTests
     }
 
     [Fact]
-    public void Campfire_placement_profile_is_flat_outdoor_and_not_tunnel()
+    public void Campfire_placement_profile_is_one_cell_flat_and_tunnel_capable()
     {
         PackableBuildingPlacementProfile placement =
             CampfireBuildingBoxContent.Definition.Placement;
 
-        Assert.Equal(1.5m, placement.WidthCells);
-        Assert.Equal(1.5m, placement.DepthCells);
+        Assert.Equal(1m, placement.WidthCells);
+        Assert.Equal(1m, placement.DepthCells);
         Assert.True(placement.RequiresFlatSurface);
-        Assert.True(placement.OutdoorOnly);
-        Assert.False(placement.AllowsTunnel);
+        Assert.False(placement.OutdoorOnly);
+        Assert.True(placement.AllowsTunnel);
     }
 
     [Fact]

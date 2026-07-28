@@ -117,6 +117,63 @@ public sealed class BuildingBoxRelocationTests
     }
 
     [Fact]
+    public void Held_relocation_starts_before_travel_and_completes_at_destination()
+    {
+        RelocationHarness harness = new RelocationHarness(ItemLocation.InAgent(HolderId));
+        Assert.True(harness.Create().IsSuccess);
+
+        Result<BuildingBoxRelocationExecutionStepKind> start =
+            BuildingBoxRelocationExecutionPolicy.Evaluate(
+                harness.Jobs.Get(JobId),
+                harness.Inventory.GetStack(StackId),
+                Source);
+        Assert.True(start.IsSuccess);
+        Assert.Equal(BuildingBoxRelocationExecutionStepKind.StartJob, start.Value);
+
+        harness.Advance(tick: 2);
+        Result<BuildingBoxRelocationExecutionStepKind> travel =
+            BuildingBoxRelocationExecutionPolicy.Evaluate(
+                harness.Jobs.Get(JobId),
+                harness.Inventory.GetStack(StackId),
+                Destination);
+        Assert.Equal(BuildingBoxRelocationExecutionStepKind.AdvanceStage, travel.Value);
+
+        harness.Advance(tick: 3);
+        Result<BuildingBoxRelocationExecutionStepKind> deposit =
+            BuildingBoxRelocationExecutionPolicy.Evaluate(
+                harness.Jobs.Get(JobId),
+                harness.Inventory.GetStack(StackId),
+                Destination);
+        Assert.Equal(
+            BuildingBoxRelocationExecutionStepKind.CompleteRelocation,
+            deposit.Value);
+    }
+
+    [Fact]
+    public void Relocation_waits_until_carried_box_and_worker_reach_destination()
+    {
+        RelocationHarness harness = new RelocationHarness(ItemLocation.InWorld(Source));
+        Assert.True(harness.Create().IsSuccess);
+        Assert.True(harness.Jobs.Claim(JobId, WorkerId, tick: 2).IsSuccess);
+        harness.Advance(tick: 3);
+        harness.Advance(tick: 4);
+
+        Result<BuildingBoxRelocationExecutionStepKind> acquire =
+            BuildingBoxRelocationExecutionPolicy.Evaluate(
+                harness.Jobs.Get(JobId),
+                harness.Inventory.GetStack(StackId),
+                Source);
+        Assert.Equal(BuildingBoxRelocationExecutionStepKind.AcquireBox, acquire.Value);
+
+        Result<BuildingBoxRelocationExecutionStepKind> away =
+            BuildingBoxRelocationExecutionPolicy.Evaluate(
+                harness.Jobs.Get(JobId),
+                harness.Inventory.GetStack(StackId),
+                Destination);
+        Assert.Equal(BuildingBoxRelocationExecutionStepKind.None, away.Value);
+    }
+
+    [Fact]
     public void Relocation_definition_round_trips_destination_and_holder_start()
     {
         BuildingBoxPickupJobDefinition definition = new BuildingBoxPickupJobDefinition(

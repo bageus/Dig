@@ -45,6 +45,10 @@ Validation получает building-plan occupancy, но не resident/creature
 
 World-source relocation использует обычный BuildingBox candidate policy и pickup/carry pipeline. Inventory source сразу claim-ится resident-holder. Exact box reservation сохраняется во время carry; reserved BuildingBox slot отображается синим. Relocation save codec хранит destination и holder-start stage, сохраняя backward compatibility с direct pickup snapshots.
 
+Z0 interactive и confirmed planned ghost теперь используют тот же item visual resolver, asset, world scale и floor/depth projection, что и физическая BuildingBox в `DigWorldItemRenderer`. Planned relocation projection строится из active authoritative relocation jobs и остаётся видимой до deposit/cancel/failure. Pointer target resolver учитывает normal-mode tunnel movement surfaces, поэтому placement cursor получает реальные Z1–Z3 cells даже при отключённых dig-cell proxy colliders. Relocation execution переведён на детерминированную step policy: held box запускает job до travel, world box проходит pickup, а carried box в `DepositItem` атомарно перемещается в destination world cell и завершает job.
+
+Повторная runtime-проверка выявила две оставшиеся причины. Campfire placement profile консервативно округлял визуальные `1.5 x 1.5` до логических `2 x 2`, из-за чего footprint включал solid floor cell и presenter возвращал invisible `surface_missing` на Z1–Z3; одновременно content запрещал tunnel placement. Campfire теперь занимает одну logical anchor cell, требует support, но разрешает supported Z1–Z3. Relocation больше не требует входа worker в destination: path выбирает ближайшую ортогональную work cell, policy разрешает deposit из неё, а runtime дренирует start/stage/deposit transitions в одном tick после прибытия.
+
 Direct movement теперь включает active BuildingBox relocation/assembly в interruption set. Пока box plan ещё не committed `AtSite`, direct move отменяет job/plan, освобождает item/worker/position reservations, удаляет planned building projection и route, но не перемещает и не пересоздаёт коробку: та же quantity-one entity остаётся в inventory holder resident. Immediate Jobs/Buildings/items/agent HUD refresh снимает синий reserved tint и planned ghost в том же interaction. После `AtSite` сохраняется существующая explicit-cancel policy.
 
 Inventory BuildingBox LMB продолжает немедленно маршрутизироваться через `ResidentInventory` input surface в `BeginResidentInventoryBuildingPlacement`; системный cursor скрывается, а building ghost становится игровым cursor.
@@ -78,6 +82,8 @@ Quarter work явно переводит signed generation seed в его 32-bit
 После persistent-quarter изменения interaction начал вызывать `ClearExcavationQuarterProgress`, но соответствующий метод отсутствовал у `DigExcavationCursorRenderer`. Renderer теперь сбрасывает progress всех существующих tunnel designation markers в `ExcavationQuarter.None` перед проекцией актуального authoritative snapshot; stale quarters не остаются на overlay и Unity compile больше не получает `CS1061`.
 
 `Dig.Unity.PlayModeTests` является отдельной assembly и не имеет доступа к `internal DigTunnelProjection`. BuildingBox cursor regression теперь проверяет observable transform renderer-а без обращения к runtime-internal helper, поэтому Unity Test Runner компилирует test assembly без `CS0122`. Nullable `ResidentInventoryLayoutSlotViewModel.StackId` теперь явно проверяется и только затем передаётся в `EntityId.Parse`, устраняя `CS8604` без изменения valid inventory workflow.
+
+Тот же assembly boundary применяется к `internal DigBuildingBoxGhostRenderer.RenderPlans`: Play Mode regression вызывает projection через существующий reflection helper вместо прямого compile-time вызова. Это устраняет `CS1061` в `Dig.Unity.PlayModeTests`, не раскрывая runtime presentation API только ради теста.
 
 `PostExcavationTopologyPlayModeTests` больше не полагается на отсутствующий в public Domain contract helper `CellId.Offset`. Четыре горизонтальных соседа строятся через публичный `CellId(x, y, z)` constructor. Это сохраняет black-box проверку topology/movement surfaces и устраняет `CS1061` в Unity test assembly без расширения Domain API ради теста.
 
@@ -113,7 +119,8 @@ Approach resolution перенесён в Domain. Shaft entry/exit сохран�
 - input router: BuildingBox selection versus pickup and generic item pickup;
 - world/HUD BuildingBox selection effect и shared StackId;
 - Play Mode: selection не создаёт дополнительную geometry и меняет tint только физической коробки;
-- moving BuildingBox ghost follows cells/layers, stays IgnoreRaycast and collider-disabled;
+- moving BuildingBox ghost follows cells/layers through enabled movement surfaces, stays IgnoreRaycast and collider-disabled;
+- Z0 preview/planned projection matches actual BuildingBox bounds and survives confirmation until deposit;
 - supported/unsupported Z0 and assembly preview, hidden ghost over air and confirmation parity;
 - flat lower-footprint support projected from real solid `Y + 1` cells;
 - Z0 relocation handler rejects unsupported air before reservation/job creation;

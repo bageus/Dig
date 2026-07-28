@@ -5,24 +5,19 @@ using System.Collections.ObjectModel;
 using Dig.Domain.Agents;
 using Dig.Domain.Buildings;
 using Dig.Domain.Inventory;
-
 namespace Dig.Domain.Content
 {
-
 public readonly struct RecipeId : IEquatable<RecipeId>, IComparable<RecipeId>
 {
     private readonly string? _value;
-
     public RecipeId(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
             throw new ArgumentException("Recipe id is required.", nameof(value));
         }
-
         _value = value.Trim();
     }
-
     public bool IsEmpty => string.IsNullOrEmpty(_value);
 
     public int CompareTo(RecipeId other)
@@ -140,6 +135,7 @@ public sealed class RecipeDefinition
 {
     private readonly ContentItemQuantity[] _inputs;
     private readonly ContentItemQuantity[] _outputs;
+    private readonly RecipeMaterialStepDefinition[] _materialSteps;
 
     public RecipeDefinition(
         RecipeId id,
@@ -152,7 +148,10 @@ public sealed class RecipeDefinition
         ItemId? requiredToolItemId = null,
         TechnologyId? requiredTechnologyId = null,
         SkillGrantProfile? skillGrantProfile = null,
-        SkillWorkSpeedCurve? workSpeedCurve = null)
+        SkillWorkSpeedCurve? workSpeedCurve = null,
+        IEnumerable<RecipeMaterialStepDefinition>? materialSteps = null,
+        ProductionSkillGrantScale skillGrantScale =
+            ProductionSkillGrantScale.PerOutputUnit)
     {
         if (id.IsEmpty)
         {
@@ -185,6 +184,10 @@ public sealed class RecipeDefinition
         RequiredTechnologyId = requiredTechnologyId;
         SkillGrantProfile = skillGrantProfile;
         WorkSpeedCurve = workSpeedCurve;
+        SkillGrantScale = skillGrantScale;
+        _materialSteps = (materialSteps ?? Array.Empty<RecipeMaterialStepDefinition>())
+            .ToArray();
+        ValidateMaterialSteps();
     }
 
     public RecipeId Id { get; }
@@ -210,6 +213,41 @@ public sealed class RecipeDefinition
     public SkillGrantProfile? SkillGrantProfile { get; }
 
     public SkillWorkSpeedCurve? WorkSpeedCurve { get; }
+
+    public ProductionSkillGrantScale SkillGrantScale { get; }
+
+    public IReadOnlyList<RecipeMaterialStepDefinition> MaterialSteps =>
+        new ReadOnlyCollection<RecipeMaterialStepDefinition>(_materialSteps);
+
+    public bool UsesMaterialSteps => _materialSteps.Length > 0;
+
+    private void ValidateMaterialSteps()
+    {
+        if (_materialSteps.Length == 0)
+        {
+            return;
+        }
+
+        if (!Enum.IsDefined(typeof(ProductionSkillGrantScale), SkillGrantScale))
+        {
+            throw new ArgumentOutOfRangeException(nameof(SkillGrantScale));
+        }
+
+        Dictionary<ItemId, int> expected = _inputs.ToDictionary(
+            value => value.ItemId,
+            value => value.Quantity);
+        Dictionary<ItemId, int> actual = _materialSteps
+            .GroupBy(value => value.ItemId)
+            .ToDictionary(group => group.Key, group => group.Count());
+        if (expected.Count != actual.Count
+            || expected.Any(pair => !actual.TryGetValue(pair.Key, out int quantity)
+                || quantity != pair.Value))
+        {
+            throw new ArgumentException(
+                "Material steps must cover every recipe input unit exactly.",
+                nameof(MaterialSteps));
+        }
+    }
 
     private static ContentItemQuantity[] NormalizeQuantities(
         IEnumerable<ContentItemQuantity> values,

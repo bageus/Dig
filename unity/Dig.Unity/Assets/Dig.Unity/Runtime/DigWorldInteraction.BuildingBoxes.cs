@@ -21,6 +21,15 @@ namespace Dig.Unity
         internal string? ActiveBuildingPlacementStackId =>
             _buildingPlacementMode?.SourceStackId.ToString();
 
+        private void RefreshBuildingBoxRelocationPlans()
+        {
+            if (_terrainSession != null && _buildingBoxGhostRenderer != null)
+            {
+                _buildingBoxGhostRenderer.RenderPlans(
+                    _terrainSession.LoadBuildingBoxRelocationPlans());
+            }
+        }
+
         internal void RotateBuildingPlacement(bool clockwise)
         {
             if (!_buildingPlacementMode.HasValue || _buildingPlacementPreview == null)
@@ -111,36 +120,6 @@ namespace Dig.Unity
             }
 
             UpdateBuildingPlacement(_buildingPlacementMode.Value, origin);
-        }
-
-        private bool TryResolveBuildingPlacementOrigin(
-            RaycastHit[] hits,
-            out CellId origin)
-        {
-            if (hits == null)
-            {
-                throw new ArgumentNullException(nameof(hits));
-            }
-
-            for (int index = 0; index < hits.Length; index++)
-            {
-                if (TryResolveTunnelDestination(hits[index], out origin, out _))
-                {
-                    return true;
-                }
-            }
-
-            for (int index = 0; index < hits.Length; index++)
-            {
-                if (_renderer!.TryGetCell(hits[index], out DigCellVisual cell))
-                {
-                    origin = new CellId(cell.Model.X, cell.Model.Y, cell.Model.Z);
-                    return true;
-                }
-            }
-
-            origin = default;
-            return false;
         }
 
         private void UpdateBuildingPlacement(
@@ -266,6 +245,7 @@ namespace Dig.Unity
             }
 
             ExitBuildingPlacement(clearGhost: true);
+            RefreshBuildingBoxRelocationPlans();
             _hud.SetStatus(kind == BuildingBoxPlacementKind.RelocateBox
                 ? "BuildingBox relocation job created."
                 : "BuildingBox assembly plan created.");

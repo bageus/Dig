@@ -8,9 +8,19 @@ namespace Dig.Unity
 [RequireComponent(typeof(BoxCollider))]
 public sealed class DigMushroomVisual : MonoBehaviour
 {
+    private const float HoverBlend = 0.48f;
+    private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+    private static readonly int ColorId = Shader.PropertyToID("_Color");
+
     private Transform? _stem;
     private Transform? _cap;
     private BoxCollider? _collider;
+    private Material? _stemMaterial;
+    private Material? _capMaterial;
+    private Renderer[] _renderers = Array.Empty<Renderer>();
+    private Color[] _baseColors = Array.Empty<Color>();
+    private MaterialPropertyBlock? _properties;
+    private bool _hovered;
 
     internal MushroomSiteSnapshot Model { get; private set; } = null!;
 
@@ -19,16 +29,42 @@ public sealed class DigMushroomVisual : MonoBehaviour
         Model = model ?? throw new ArgumentNullException(nameof(model));
         EnsureGeometry();
         (float height, float width) = ResolveSize(model.Stage);
-        _stem!.localPosition = new Vector3(0f, height * 0.42f, 0f);
-        _stem.localScale = new Vector3(width * 0.34f, height * 0.84f, width * 0.34f);
-        _cap!.localPosition = new Vector3(0f, height * 0.88f, 0f);
-        _cap.localScale = new Vector3(width, height * 0.34f, width * 0.82f);
+        transform.localRotation = Quaternion.identity;
+        transform.localScale = Vector3.one;
+        _stem!.localPosition = new Vector3(0f, height * 0.41f, 0f);
+        _stem.localRotation = Quaternion.identity;
+        _stem.localScale = new Vector3(width * 0.30f, height * 0.82f, width * 0.30f);
+        _cap!.localPosition = new Vector3(0f, height * 0.84f, 0f);
+        _cap.localRotation = Quaternion.identity;
+        _cap.localScale = new Vector3(width, height * 0.30f, width * 0.82f);
         _collider!.center = new Vector3(0f, height * 0.5f, 0f);
         _collider.size = new Vector3(
-            Mathf.Max(0.35f, width),
-            Mathf.Max(0.35f, height),
-            Mathf.Max(0.28f, width * 0.72f));
+            Mathf.Max(0.12f, width),
+            height,
+            Mathf.Max(0.10f, width * 0.72f));
         name = $"Mushroom {model.Stage} {model.SiteId}";
+        if (_hovered)
+        {
+            ApplyHover();
+        }
+    }
+
+    internal void SetHovered(bool hovered)
+    {
+        if (_hovered == hovered)
+        {
+            return;
+        }
+
+        _hovered = hovered;
+        if (_hovered)
+        {
+            ApplyHover();
+        }
+        else
+        {
+            RestoreColors();
+        }
     }
 
     private void EnsureGeometry()
@@ -39,45 +75,111 @@ public sealed class DigMushroomVisual : MonoBehaviour
         }
 
         _collider = GetComponent<BoxCollider>();
-        _stem = CreatePrimitive(
-            PrimitiveType.Cylinder,
-            "Stem",
+        Shader shader = Shader.Find("Universal Render Pipeline/Lit")
+            ?? throw new InvalidOperationException("The URP/Lit mushroom shader was not found.");
+        _stemMaterial = CreateMaterial(
+            shader,
+            "Dig Mushroom Stem",
             new Color(0.78f, 0.67f, 0.49f, 1f));
-        _cap = CreatePrimitive(
-            PrimitiveType.Sphere,
-            "Cap",
+        _capMaterial = CreateMaterial(
+            shader,
+            "Dig Mushroom Cap",
             new Color(0.76f, 0.18f, 0.20f, 1f));
+        _stem = CreatePrimitive(PrimitiveType.Cylinder, "Stem", _stemMaterial);
+        _cap = CreatePrimitive(PrimitiveType.Sphere, "Cap", _capMaterial);
+        _renderers = new[]
+        {
+            _stem.GetComponent<Renderer>(),
+            _cap.GetComponent<Renderer>(),
+        };
+        _baseColors = new[] { _stemMaterial.color, _capMaterial.color };
     }
 
-    private Transform CreatePrimitive(PrimitiveType type, string childName, Color color)
+    private Transform CreatePrimitive(PrimitiveType type, string childName, Material material)
     {
         GameObject child = GameObject.CreatePrimitive(type);
         child.name = childName;
+        child.layer = gameObject.layer;
         child.transform.SetParent(transform, worldPositionStays: false);
-        Collider? collider = child.GetComponent<Collider>();
-        if (collider != null)
+        Collider? generated = child.GetComponent<Collider>();
+        if (generated != null)
         {
-            Destroy(collider);
+            generated.enabled = false;
+            Destroy(generated);
         }
 
-        Renderer renderer = child.GetComponent<Renderer>();
-        renderer.material = new Material(Shader.Find("Standard"))
-        {
-            color = color,
-        };
+        child.GetComponent<Renderer>().sharedMaterial = material;
         return child.transform;
+    }
+
+    private static Material CreateMaterial(Shader shader, string name, Color color)
+    {
+        return new Material(shader)
+        {
+            name = name,
+            color = color,
+            enableInstancing = true,
+        };
+    }
+
+    private void ApplyHover()
+    {
+        MaterialPropertyBlock properties = ResolveProperties();
+        for (int index = 0; index < _renderers.Length; index++)
+        {
+            Renderer renderer = _renderers[index];
+            Color highlighted = Color.Lerp(_baseColors[index], Color.white, HoverBlend);
+            highlighted.a = _baseColors[index].a;
+            properties.Clear();
+            renderer.GetPropertyBlock(properties);
+            properties.SetColor(BaseColorId, highlighted);
+            properties.SetColor(ColorId, highlighted);
+            renderer.SetPropertyBlock(properties);
+        }
+    }
+
+    private void RestoreColors()
+    {
+        MaterialPropertyBlock properties = ResolveProperties();
+        for (int index = 0; index < _renderers.Length; index++)
+        {
+            Renderer renderer = _renderers[index];
+            properties.Clear();
+            renderer.GetPropertyBlock(properties);
+            properties.SetColor(BaseColorId, _baseColors[index]);
+            properties.SetColor(ColorId, _baseColors[index]);
+            renderer.SetPropertyBlock(properties);
+        }
+    }
+
+    private MaterialPropertyBlock ResolveProperties()
+    {
+        return _properties ??= new MaterialPropertyBlock();
     }
 
     private static (float Height, float Width) ResolveSize(MushroomStage stage)
     {
         return stage switch
         {
-            MushroomStage.Tiny => (0.34f, 0.30f),
-            MushroomStage.Small => (0.58f, 0.48f),
-            MushroomStage.Medium => (0.88f, 0.68f),
-            MushroomStage.Large => (1.34f, 0.92f),
+            MushroomStage.Tiny => (0.18f, 0.16f),
+            MushroomStage.Small => (0.34f, 0.28f),
+            MushroomStage.Medium => (0.56f, 0.44f),
+            MushroomStage.Large => (0.84f, 0.62f),
             _ => throw new ArgumentOutOfRangeException(nameof(stage)),
         };
+    }
+
+    private void OnDestroy()
+    {
+        if (_stemMaterial != null)
+        {
+            Destroy(_stemMaterial);
+        }
+
+        if (_capMaterial != null)
+        {
+            Destroy(_capMaterial);
+        }
     }
 }
 }

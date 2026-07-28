@@ -31,6 +31,10 @@ public static class SaveErrors
     public static readonly DomainError UnknownMushroomDefinition = new DomainError(
         "save.mushroom_definition.unknown",
         "The save references a mushroom definition missing from the current catalog.");
+
+    public static readonly DomainError UnknownBarrelDefinition = new DomainError(
+        "save.barrel_definition.unknown",
+        "The save references a barrel definition missing from the current catalog.");
 }
 
 public sealed class SaveMigrationPipeline
@@ -291,6 +295,31 @@ public sealed class SaveVersionFiveMushroomsMigration : ISaveMigration
         }
 
         document.Mushrooms ??= new MushroomSaveData();
+        document.FormatVersion = ToVersion;
+    }
+}
+
+public sealed class SaveVersionSixBuildingProductionMigration : ISaveMigration
+{
+    public string Id => "save.v6_to_v7.building_production";
+    public int FromVersion => 6;
+    public int ToVersion => 7;
+
+    public void Apply(SaveGameDocument document)
+    {
+        if (document is null)
+        {
+            throw new ArgumentNullException(nameof(document));
+        }
+
+        if (document.FormatVersion != FromVersion)
+        {
+            throw new InvalidOperationException(
+                "Migration received the wrong source version.");
+        }
+
+        document.BuildingProduction ??= new BuildingProductionSaveData();
+        document.Barrels ??= new BarrelSaveData();
         document.FormatVersion = ToVersion;
     }
 }

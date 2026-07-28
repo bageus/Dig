@@ -13,7 +13,7 @@ public sealed class CampfirePlacementPolicyTests
         new PackableBuildingPlacementPolicyValidator();
 
     [Fact]
-    public void Campfire_uses_two_by_two_logical_coverage_for_one_point_five_square()
+    public void Campfire_uses_one_logical_cell_on_every_supported_depth_layer()
     {
         PackableBuildingSurfacePolicy policy = CampfireBuildingBoxContent.Definition
             .Placement
@@ -23,15 +23,13 @@ public sealed class CampfirePlacementPolicyTests
             policy,
             new CellId(4, 5, 0));
 
-        Assert.Equal(1.5m, footprint.WidthCells);
-        Assert.Equal(1.5m, footprint.DepthCells);
-        Assert.Equal(4, footprint.CoveredCells.Count);
-        Assert.Contains(new CellId(4, 5, 0), footprint.CoveredCells);
-        Assert.Contains(new CellId(5, 6, 0), footprint.CoveredCells);
+        Assert.Equal(1m, footprint.WidthCells);
+        Assert.Equal(1m, footprint.DepthCells);
+        Assert.Equal(new[] { new CellId(4, 5, 0) }, footprint.CoveredCells);
     }
 
     [Fact]
-    public void Campfire_accepts_complete_flat_outdoor_surface()
+    public void Campfire_accepts_complete_flat_tunnel_surface()
     {
         PackableBuildingSurfacePolicy policy = CampfireBuildingBoxContent.Definition
             .Placement
@@ -41,50 +39,53 @@ public sealed class CampfirePlacementPolicyTests
         PackableBuildingPlacementPolicyResult result = _validator.Validate(
             policy,
             origin,
-            FlatSurface(origin, BuildingPlacementSurfaceKind.OutdoorGround),
+            FlatSurface(origin, BuildingPlacementSurfaceKind.Tunnel),
             new CellId[0]);
 
         Assert.True(result.Succeeded, result.Error?.ToString());
     }
 
     [Fact]
-    public void Campfire_rejects_any_tunnel_cell_under_physical_footprint()
+    public void Outdoor_only_profile_still_rejects_tunnel_surface()
     {
-        PackableBuildingSurfacePolicy policy = CampfireBuildingBoxContent.Definition
-            .Placement
-            .ToSurfacePolicy();
-        CellId origin = new CellId(2, 3, 0);
-        List<BuildingPlacementSurfaceCell> surface = FlatSurface(
-            origin,
-            BuildingPlacementSurfaceKind.OutdoorGround);
-        surface[3] = new BuildingPlacementSurfaceCell(
-            surface[3].Cell,
-            elevation: 0m,
-            BuildingPlacementSurfaceKind.Tunnel);
+        PackableBuildingSurfacePolicy policy = new PackableBuildingSurfacePolicy(
+            widthCells: 1m,
+            depthCells: 1m,
+            requiresFlatSurface: true,
+            outdoorOnly: true,
+            allowsTunnel: false);
+        CellId origin = new CellId(2, 3, 1);
 
         PackableBuildingPlacementPolicyResult result = _validator.Validate(
             policy,
             origin,
-            surface,
+            FlatSurface(origin, BuildingPlacementSurfaceKind.Tunnel),
             new CellId[0]);
 
         Assert.Equal(PackableBuildingPlacementErrors.TunnelForbidden, result.Error);
     }
 
     [Fact]
-    public void Campfire_rejects_non_flat_surface()
+    public void Flat_surface_policy_rejects_different_support_elevations()
     {
-        PackableBuildingSurfacePolicy policy = CampfireBuildingBoxContent.Definition
-            .Placement
-            .ToSurfacePolicy();
-        CellId origin = new CellId(2, 3, 0);
-        List<BuildingPlacementSurfaceCell> surface = FlatSurface(
-            origin,
-            BuildingPlacementSurfaceKind.OutdoorGround);
-        surface[1] = new BuildingPlacementSurfaceCell(
-            surface[1].Cell,
-            elevation: 0.25m,
-            BuildingPlacementSurfaceKind.OutdoorGround);
+        PackableBuildingSurfacePolicy policy = new PackableBuildingSurfacePolicy(
+            widthCells: 2m,
+            depthCells: 1m,
+            requiresFlatSurface: true,
+            outdoorOnly: false,
+            allowsTunnel: true);
+        CellId origin = new CellId(2, 3, 1);
+        List<BuildingPlacementSurfaceCell> surface = new List<BuildingPlacementSurfaceCell>
+        {
+            new BuildingPlacementSurfaceCell(
+                origin,
+                elevation: 4m,
+                BuildingPlacementSurfaceKind.Tunnel),
+            new BuildingPlacementSurfaceCell(
+                new CellId(origin.X + 1, origin.Y, origin.Z),
+                elevation: 5m,
+                BuildingPlacementSurfaceKind.Tunnel),
+        };
 
         PackableBuildingPlacementPolicyResult result = _validator.Validate(
             policy,
@@ -107,7 +108,7 @@ public sealed class CampfirePlacementPolicyTests
             policy,
             origin,
             FlatSurface(origin, BuildingPlacementSurfaceKind.OutdoorGround),
-            new[] { new CellId(3, 4, 0) });
+            new[] { origin });
 
         Assert.Equal(
             PackableBuildingPlacementErrors.PhysicalFootprintOccupied,
@@ -141,14 +142,7 @@ public sealed class CampfirePlacementPolicyTests
     {
         return new List<BuildingPlacementSurfaceCell>
         {
-            new BuildingPlacementSurfaceCell(
-                new CellId(origin.X, origin.Y, origin.Z), 0m, kind),
-            new BuildingPlacementSurfaceCell(
-                new CellId(origin.X + 1, origin.Y, origin.Z), 0m, kind),
-            new BuildingPlacementSurfaceCell(
-                new CellId(origin.X, origin.Y + 1, origin.Z), 0m, kind),
-            new BuildingPlacementSurfaceCell(
-                new CellId(origin.X + 1, origin.Y + 1, origin.Z), 0m, kind),
+            new BuildingPlacementSurfaceCell(origin, 0m, kind),
         };
     }
 }

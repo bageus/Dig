@@ -27,6 +27,9 @@ public sealed class DemoCampfireBoxSpawnContractTests
         string renderer = File.ReadAllText(Path.Combine(
             runtime,
             "DigWorldItemRenderer.cs"));
+        string visualPolicy = File.ReadAllText(Path.Combine(
+            runtime,
+            "DigWorldItemVisualPolicy.cs"));
 
         Assert.Contains("AgentViewModel firstResident = agents[0];", composition);
         Assert.Contains("firstResident.CellX", composition);
@@ -45,14 +48,16 @@ public sealed class DemoCampfireBoxSpawnContractTests
         Assert.Contains("AddResidentUnit(", inventory);
         Assert.Contains("inventory.AddUnit(", inventory);
         Assert.DoesNotContain("inventory.AddStack(", inventory);
-        Assert.Contains("CampfireBoxFootprintSide = 0.35355339f", renderer);
-        Assert.Contains("CampfireBoxHeight = 0.30f", renderer);
-        Assert.Contains("IsCampfireBox(item.ItemId)", renderer);
+        Assert.Contains(
+            "DigWorldItemVisualPolicy.IsCampfireBox(item.ItemId)",
+            renderer);
         Assert.Contains("? Vector2.zero", renderer);
+        Assert.Contains("CampfireBoxFootprintSide = 0.35355339f", visualPolicy);
+        Assert.Contains("CampfireBoxHeight = 0.30f", visualPolicy);
         Assert.Contains(
             "DigVisualAsset.CreateRuntimeFallback(itemId, CampfireBoxTint)",
-            renderer);
-        Assert.Contains("maxVisibleInstances: 1", renderer);
+            visualPolicy);
+        Assert.Contains("maxVisibleInstances: 1", visualPolicy);
     }
 
     private static string FindRepositoryRoot()

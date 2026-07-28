@@ -77,7 +77,11 @@ namespace Dig.Unity
             terrainSession.InitializeHauling(worldSession.Journal);
             terrainSession.PlanMovement(agents, tick: 0);
             terrainSession.InitializeBuildingDemo(worldSession.Journal);
+            terrainSession.InitializeBuildingProductionDemo(
+                agentSession.Repository,
+                worldSession.Journal);
             terrainSession.InitializeMushroomDemo(agentSession.Tick);
+            terrainSession.InitializeBarrelDemo(agentSession.Tick);
             terrainSession.InitializeToolAwareJobAssignment(worldSession.Journal);
             Result settledItems = terrainSession.SettleWorldItems(agentSession.Tick);
             if (settledItems.IsFailure)
@@ -113,8 +117,11 @@ namespace Dig.Unity
             DigAgentRenderer agentRenderer = GetOrAdd<DigAgentRenderer>(gameObject);
             DigCreatureRenderer creatureRenderer = GetOrAdd<DigCreatureRenderer>(gameObject);
             DigMushroomRenderer mushroomRenderer = GetOrAdd<DigMushroomRenderer>(gameObject);
+            DigBarrelRenderer barrelRenderer = GetOrAdd<DigBarrelRenderer>(gameObject);
             DigJobRenderer jobRenderer = GetOrAdd<DigJobRenderer>(gameObject);
             DigBuildingRenderer buildingRenderer = GetOrAdd<DigBuildingRenderer>(gameObject);
+            DigBuildingInternalStockRenderer buildingInternalStockRenderer =
+                GetOrAdd<DigBuildingInternalStockRenderer>(gameObject);
             DigWorldItemRenderer itemRenderer = GetOrAdd<DigWorldItemRenderer>(gameObject);
             DigBuildingBoxGhostRenderer ghostRenderer =
                 GetOrAdd<DigBuildingBoxGhostRenderer>(gameObject);
@@ -153,14 +160,16 @@ namespace Dig.Unity
             jobRenderer.Initialize(agentRenderer);
             interaction.Initialize(
                 targetCamera, cameraController, worldSession, worldRenderer,
-                agentRenderer, creatureRenderer, mushroomRenderer, jobRenderer, buildingRenderer, itemRenderer,
+                agentRenderer, creatureRenderer, mushroomRenderer, barrelRenderer,
+                jobRenderer, buildingRenderer, itemRenderer,
                 ghostRenderer, terrainSession, stockpileRenderer, agentSession,
                 simulation, hud);
             interaction.SetTunnelMovement(tunnelRenderer);
             interaction.SetCaveRoomRenderers(caveRoomPreviewRenderer, caveRoomFloorRenderer);
             simulation.Initialize(
                 worldSession, worldRenderer, agentSession, agentRenderer,
-                terrainSession, mushroomRenderer, jobRenderer, buildingRenderer, itemRenderer,
+                terrainSession, mushroomRenderer, barrelRenderer, jobRenderer,
+                buildingRenderer, buildingInternalStockRenderer, itemRenderer,
                 stockpileRenderer, routeRenderer, worldOverlayRenderer, hud);
 
             _startupStage = "binding uGUI game HUD";
@@ -192,6 +201,10 @@ namespace Dig.Unity
                 () => jobRenderer.Render(jobs));
             RunPresentationStage("rendering buildings", visualWarnings,
                 () => buildingRenderer.Render(buildings));
+            RunPresentationStage("rendering internal building stock", visualWarnings, () =>
+                buildingInternalStockRenderer.Render(
+                    terrainSession.LoadAllBuildingProduction(),
+                    buildings));
             RunPresentationStage("rendering world items", visualWarnings,
                 () => itemRenderer.Render(items));
             RunPresentationStage("clearing building ghost", visualWarnings, ghostRenderer.Clear);

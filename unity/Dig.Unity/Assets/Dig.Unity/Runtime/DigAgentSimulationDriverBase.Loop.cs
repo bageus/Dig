@@ -75,6 +75,7 @@ namespace Dig.Unity
                 TerrainSession.SynchronizeBuildingBoxRelocation(nextTick, before);
                 TerrainSession.SynchronizeBuildingBoxAssembly(nextTick, before);
                 TerrainSession.SynchronizeBuildingPacking(nextTick, before);
+                TerrainSession.SynchronizeBuildingProduction(nextTick, before);
                 result = TerrainSession.InterruptForManualMovement(
                     AgentSession.ActiveManualTunnelResidentIds,
                     nextTick);
@@ -115,7 +116,19 @@ namespace Dig.Unity
 
             if (result.IsSuccess)
             {
+                result = TerrainSession.AdvanceBarrels(AgentSession.Tick, agents);
+            }
+
+            if (result.IsSuccess)
+            {
                 result = TerrainSession.AdvanceMushrooms(AgentSession.Tick, agents);
+            }
+
+            if (result.IsSuccess)
+            {
+                result = TerrainSession.AdvanceBuildingProduction(
+                    AgentSession.Tick,
+                    agents);
             }
 
             if (result.IsSuccess)
@@ -143,6 +156,11 @@ namespace Dig.Unity
             if (result.IsSuccess)
             {
                 result = TerrainSession.AdvanceBuildingPacking(AgentSession.Tick, agents);
+            }
+
+            if (result.IsSuccess)
+            {
+                result = TerrainSession.SettleUnsupportedBarrels(AgentSession.Tick);
             }
 
             if (result.IsSuccess)
@@ -187,8 +205,12 @@ namespace Dig.Unity
             AgentRenderer.Render(agents, movementDuration);
             RefreshEquipmentVisuals();
             MushroomRenderer!.Render(TerrainSession!.LoadMushrooms());
+            BarrelRenderer!.Render(TerrainSession.LoadBarrels());
             JobRenderer.Render(jobs);
             BuildingRenderer.Render(buildings);
+            BuildingInternalStockRenderer!.Render(
+                TerrainSession.LoadAllBuildingProduction(),
+                buildings);
             ItemRenderer!.Render(items);
             StockpileRenderer!.Render(storage);
             RouteRenderer!.Render(routes);

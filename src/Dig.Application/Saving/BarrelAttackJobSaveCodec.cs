@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using Dig.Domain.Core;
 using Dig.Domain.Jobs;
 using Dig.Domain.World;
@@ -8,53 +11,85 @@ namespace Dig.Application.Saving
 
 public sealed class BarrelAttackJobSaveCodec : IJobDefinitionSaveCodec
 {
-    public const string KindValue = "barrel_attack";
+    public const string StableTypeId = "job.barrel_attack.v1";
+    public string TypeId => StableTypeId;
+    public bool CanEncode(JobDefinition definition) => definition is BarrelAttackJobDefinition;
 
-    public string Kind => KindValue;
-
-    public bool CanSerialize(JobDefinition definition) =>
-        definition is BarrelAttackJobDefinition;
-
-    public JobDefinitionSaveData Serialize(JobDefinition definition)
+    public JobDefinitionSaveData Encode(JobDefinition definition)
     {
-        BarrelAttackJobDefinition value = definition as BarrelAttackJobDefinition
-            ?? throw new ArgumentException("Expected barrel attack job.", nameof(definition));
+        BarrelAttackJobDefinition job = definition as BarrelAttackJobDefinition
+            ?? throw new ArgumentException("Expected a barrel attack job.", nameof(definition));
         return new JobDefinitionSaveData
         {
-            Kind = Kind,
-            String1 = value.BarrelId.ToString(),
-            Int1 = value.TargetCell.X,
-            Int2 = value.TargetCell.Y,
-            Int3 = value.TargetCell.Z,
-            Int4 = value.WorkPosition.X,
-            Int5 = value.WorkPosition.Y,
-            Int6 = value.WorkPosition.Z,
-            Long1 = value.BarrelVersion,
-            Long2 = value.ContentsGeneration,
+            TypeId = TypeId,
+            JobId = job.Id.ToString(),
+            Priority = job.Priority,
+            CreatedTick = job.CreatedTick,
+            MaximumRetries = job.RetryPolicy.MaximumRetries,
+            RetryDelayTicks = job.RetryPolicy.RetryDelayTicks,
+            Dependencies = job.Dependencies.Select(value => value.ToString()).ToList(),
+            Properties = new List<SavePropertyData>
+            {
+                Property("barrel.id", job.BarrelId.ToString()),
+                Property("target.x", job.TargetCell.X),
+                Property("target.y", job.TargetCell.Y),
+                Property("target.z", job.TargetCell.Z),
+                Property("work.x", job.WorkPosition.X),
+                Property("work.y", job.WorkPosition.Y),
+                Property("work.z", job.WorkPosition.Z),
+                Property("barrel.version", job.BarrelVersion),
+                Property("contents.generation", job.ContentsGeneration),
+            },
         };
     }
 
-    public Result<JobDefinition> Deserialize(JobSaveData job, JobDefinitionSaveData definition)
+    public JobDefinition Decode(JobDefinitionSaveData data)
     {
-        try
-        {
-            return Result<JobDefinition>.Success(new BarrelAttackJobDefinition(
-                EntityId.Parse(job.JobId),
-                EntityId.Parse(definition.String1),
-                new CellId(definition.Int1, definition.Int2, definition.Int3),
-                new CellId(definition.Int4, definition.Int5, definition.Int6),
-                definition.Long1,
-                definition.Long2,
-                job.Priority,
-                job.CreatedTick,
-                new JobRetryPolicy(job.RetryMaxAttempts, job.RetryBackoffTicks),
-                JobSaveCodecSupport.ParseDependencies(job.DependencyIds)));
-        }
-        catch (Exception)
-        {
-            return Result<JobDefinition>.Failure(SaveErrors.InvalidPayload);
-        }
+        Dictionary<string, string> properties = data.Properties.ToDictionary(
+            item => item.Key,
+            item => item.Value,
+            StringComparer.Ordinal);
+        return new BarrelAttackJobDefinition(
+            EntityId.Parse(data.JobId),
+            EntityId.Parse(Get(properties, "barrel.id")),
+            Cell(properties, "target"),
+            Cell(properties, "work"),
+            ParseLong(properties, "barrel.version"),
+            ParseLong(properties, "contents.generation"),
+            data.Priority,
+            data.CreatedTick,
+            new JobRetryPolicy(data.MaximumRetries, data.RetryDelayTicks),
+            data.Dependencies.Select(EntityId.Parse));
     }
+
+    private static CellId Cell(IReadOnlyDictionary<string, string> values, string prefix) =>
+        new CellId(
+            ParseInt(values, prefix + ".x"),
+            ParseInt(values, prefix + ".y"),
+            ParseInt(values, prefix + ".z"));
+
+    private static SavePropertyData Property(string key, object value) =>
+        new SavePropertyData
+        {
+            Key = key,
+            Value = Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty,
+        };
+
+    private static string Get(IReadOnlyDictionary<string, string> values, string key)
+    {
+        if (!values.TryGetValue(key, out string? value) || string.IsNullOrWhiteSpace(value))
+        {
+            throw new InvalidOperationException($"Saved barrel job property '{key}' is invalid.");
+        }
+
+        return value;
+    }
+
+    private static int ParseInt(IReadOnlyDictionary<string, string> values, string key) =>
+        int.Parse(Get(values, key), NumberStyles.Integer, CultureInfo.InvariantCulture);
+
+    private static long ParseLong(IReadOnlyDictionary<string, string> values, string key) =>
+        long.Parse(Get(values, key), NumberStyles.Integer, CultureInfo.InvariantCulture);
 }
 
 }

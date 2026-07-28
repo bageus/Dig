@@ -9,7 +9,7 @@ using Dig.Domain.Inventory;
 namespace Dig.Domain.Production
 {
 
-public sealed class ProductionState : AggregateRoot
+public sealed partial class ProductionState : AggregateRoot
 {
     private readonly Dictionary<EntityId, ProductionOrderState> _orders =
         new Dictionary<EntityId, ProductionOrderState>();
@@ -71,7 +71,10 @@ public sealed class ProductionState : AggregateRoot
         return Result.Success();
     }
 
-    public Result Start(EntityId orderId, long tick)
+    public Result Start(
+        EntityId orderId,
+        long tick,
+        IReadOnlyCollection<long>? resolvedStepDurations = null)
     {
         ValidateTick(tick);
         ProductionOrderState? order = Find(orderId);
@@ -86,7 +89,7 @@ public sealed class ProductionState : AggregateRoot
         }
 
         ProductionOrderStatus previous = order.Status;
-        order.Start();
+        order.Start(resolvedStepDurations);
         RaiseStatusChanged(tick, order, previous, null);
         return Result.Success();
     }
@@ -126,6 +129,7 @@ public sealed class ProductionState : AggregateRoot
 
         return Result.Success();
     }
+
 
     public Result Complete(EntityId orderId, long tick)
     {
@@ -170,6 +174,27 @@ public sealed class ProductionState : AggregateRoot
             .OrderBy(order => order.Sequence)
             .Select(order => order.CreateSnapshot())
             .FirstOrDefault();
+    }
+
+
+    public bool HasActiveOrder(EntityId buildingId)
+    {
+        if (buildingId.IsEmpty)
+        {
+            throw new ArgumentException("Building id is required.", nameof(buildingId));
+        }
+
+        return _orders.Values.Any(order => order.BuildingId == buildingId
+            && order.Status is ProductionOrderStatus.InputsReserved
+                or ProductionOrderStatus.InProgress
+                or ProductionOrderStatus.ReadyToComplete);
+    }
+
+    public int GetQueuedCount(EntityId buildingId, RecipeId recipeId)
+    {
+        return _orders.Values.Count(order => order.BuildingId == buildingId
+            && order.Recipe.Id == recipeId
+            && !order.CreateSnapshot().IsTerminal);
     }
 
     public IReadOnlyList<ProductionOrderSnapshot> GetAll()

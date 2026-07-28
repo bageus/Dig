@@ -80,7 +80,11 @@ public sealed class DigResidentRig : MonoBehaviour
                 SetLimbPose(swing, -swing, -swing, swing);
                 break;
             case ResidentActionVisualState.Dig:
-                SetLimbPose(-55f, -55f, 8f, -8f);
+                SetLimbPose(
+                    -58f + swing * 0.72f,
+                    -48f - swing * 0.38f,
+                    8f,
+                    -8f);
                 break;
             case ResidentActionVisualState.Carry:
                 SetLimbPose(-30f, -30f, 0f, 0f);

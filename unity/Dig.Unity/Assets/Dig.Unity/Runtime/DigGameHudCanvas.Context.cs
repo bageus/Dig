@@ -184,6 +184,11 @@ public sealed partial class DigGameHudCanvas
 
     private void ShowBuildingFunctions(BuildingWorldViewModel building)
     {
+        if (TryShowBuildingProduction(building))
+        {
+            return;
+        }
+
         BuildingFunctionsViewModel functions = building.Functions;
         if (!building.IsSelectable || functions.Actions.Count == 0)
         {

@@ -304,5 +304,25 @@ public sealed class BuildingCatalog
             ? value
             : throw new KeyNotFoundException($"Unknown building definition '{id}'.");
     }
+
+    public IReadOnlyList<BuildingDefinition> GetAll()
+    {
+        return new ReadOnlyCollection<BuildingDefinition>(_definitions.Values
+            .OrderBy(value => value.Id)
+            .ToArray());
+    }
+
+    public BuildingDefinition? FindByBoxItemId(ItemId boxItemId)
+    {
+        if (boxItemId.IsEmpty)
+        {
+            throw new ArgumentException("BuildingBox item id is required.", nameof(boxItemId));
+        }
+
+        return _definitions.Values
+            .Where(value => value.BoxPolicy?.BoxItemId == boxItemId)
+            .OrderBy(value => value.Id)
+            .FirstOrDefault();
+    }
 }
 }

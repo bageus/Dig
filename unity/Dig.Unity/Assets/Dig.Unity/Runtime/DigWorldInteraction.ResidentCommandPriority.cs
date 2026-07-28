@@ -17,6 +17,54 @@ public sealed partial class DigWorldInteraction
         }
 
         RaycastHit[] hits = GetPointerHits();
+        if (TryResolveMushroomHit(hits, out DigMushroomVisual mushroom))
+        {
+            CancelResidentMarquee();
+            EntityId siteId = mushroom.Model.SiteId;
+            CellId cell = mushroom.Model.Cell;
+            Dig.Presentation.Agents.AgentViewModel? selected =
+                _agentRenderer!.SelectedModel;
+            bool reachable = selected != null
+                && _terrainSession!.CanDirectChopMushroom(
+                    siteId,
+                    new CellId(selected.CellX, selected.CellY, selected.CellZ),
+                    out _);
+            ContextPointerTarget mushroomTarget = new ContextPointerTarget(
+                ContextWorldTargetKind.Mushroom,
+                siteId,
+                cell,
+                reachable: reachable);
+            ApplyDecision(_inputRouter.Route(
+                Pointer(PointerButtonKind.Left),
+                BuildState(PointerButtonKind.Left),
+                mushroomTarget));
+            return true;
+        }
+
+        if (TryResolveBarrelHit(hits, out DigBarrelVisual barrel))
+        {
+            CancelResidentMarquee();
+            EntityId barrelId = barrel.Model.BarrelId;
+            CellId cell = barrel.Model.Cell;
+            Dig.Presentation.Agents.AgentViewModel? selected =
+                _agentRenderer!.SelectedModel;
+            bool reachable = selected != null
+                && _terrainSession!.CanDirectAttackBarrel(
+                    barrelId,
+                    new CellId(selected.CellX, selected.CellY, selected.CellZ),
+                    out _);
+            ContextPointerTarget barrelTarget = new ContextPointerTarget(
+                ContextWorldTargetKind.Barrel,
+                barrelId,
+                cell,
+                reachable: reachable);
+            ApplyDecision(_inputRouter.Route(
+                Pointer(PointerButtonKind.Left),
+                BuildState(PointerButtonKind.Left),
+                barrelTarget));
+            return true;
+        }
+
         if (TryResolveCompletedBuildingHit(hits, out DigBuildingVisual completedBuilding))
         {
             CancelResidentMarquee();
@@ -74,29 +122,6 @@ public sealed partial class DigWorldInteraction
             return true;
         }
 
-        if (TryResolveMushroomHit(hits, out DigMushroomVisual mushroom))
-        {
-            CancelResidentMarquee();
-            EntityId siteId = mushroom.Model.SiteId;
-            CellId cell = mushroom.Model.Cell;
-            Dig.Presentation.Agents.AgentViewModel? selected =
-                _agentRenderer!.SelectedModel;
-            bool reachable = selected != null
-                && _terrainSession!.CanDirectChopMushroom(
-                    siteId,
-                    new CellId(selected.CellX, selected.CellY, selected.CellZ),
-                    out _);
-            ContextPointerTarget mushroomTarget = new ContextPointerTarget(
-                ContextWorldTargetKind.Mushroom,
-                siteId,
-                cell,
-                reachable: reachable);
-            ApplyDecision(_inputRouter.Route(
-                Pointer(PointerButtonKind.Left),
-                BuildState(PointerButtonKind.Left),
-                mushroomTarget));
-            return true;
-        }
 
         // Excavation drawing owns ground clicks while a tool is active, but not the
         // BuildingBox or direct mushroom branches above.
@@ -192,6 +217,13 @@ public sealed partial class DigWorldInteraction
     {
         for (int index = 0; index < hits.Length; index++)
         {
+            if (_itemRenderer != null
+                && _itemRenderer.TryGetItem(hits[index], out _))
+            {
+                building = null!;
+                return false;
+            }
+
             if (_buildingRenderer != null
                 && _buildingRenderer.TryGetBuilding(hits[index], out building))
             {
@@ -209,11 +241,26 @@ public sealed partial class DigWorldInteraction
     {
         for (int index = 0; index < hits.Length; index++)
         {
-            if (_itemRenderer != null
-                && _itemRenderer.TryGetItem(hits[index], out item)
-                && item.Model.IsBuildingBox)
+            if (_mushroomRenderer != null
+                && _mushroomRenderer.TryGetMushroom(hits[index], out _))
             {
-                return true;
+                item = null!;
+                return false;
+            }
+
+            if (_itemRenderer != null
+                && _itemRenderer.TryGetItem(
+                    hits[index],
+                    out DigWorldItemVisual candidate))
+            {
+                if (candidate.Model.IsBuildingBox)
+                {
+                    item = candidate;
+                    return true;
+                }
+
+                item = null!;
+                return false;
             }
         }
 
@@ -227,6 +274,15 @@ public sealed partial class DigWorldInteraction
     {
         for (int index = 0; index < hits.Length; index++)
         {
+            // A physical drop in front of a regrown site remains an ordinary item.
+            // Do not scan through it and turn the material into an axe target.
+            if (_itemRenderer != null
+                && _itemRenderer.TryGetItem(hits[index], out _))
+            {
+                mushroom = null!;
+                return false;
+            }
+
             if (_mushroomRenderer != null
                 && _mushroomRenderer.TryGetMushroom(hits[index], out mushroom))
             {
@@ -244,11 +300,26 @@ public sealed partial class DigWorldInteraction
     {
         for (int index = 0; index < hits.Length; index++)
         {
-            if (_itemRenderer != null
-                && _itemRenderer.TryGetItem(hits[index], out item)
-                && !item.Model.IsBuildingBox)
+            if (_mushroomRenderer != null
+                && _mushroomRenderer.TryGetMushroom(hits[index], out _))
             {
-                return true;
+                item = null!;
+                return false;
+            }
+
+            if (_itemRenderer != null
+                && _itemRenderer.TryGetItem(
+                    hits[index],
+                    out DigWorldItemVisual candidate))
+            {
+                if (!candidate.Model.IsBuildingBox)
+                {
+                    item = candidate;
+                    return true;
+                }
+
+                item = null!;
+                return false;
             }
         }
 

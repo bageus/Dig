@@ -5,11 +5,14 @@ using System.Linq;
 using Dig.Application.Buildings;
 using Dig.Application.World;
 using Dig.Domain.Buildings;
+using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Ecology;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
+using Dig.Domain.Production;
 using Dig.Domain.World;
+using Dig.Domain.WorldObjects;
 namespace Dig.Application.Saving
 {
 public sealed partial class SaveGameLoader
@@ -35,7 +38,9 @@ public sealed partial class SaveGameLoader
             items,
             buildingCatalog: null,
             terrainDepositCatalog: null,
-            mushroomCatalog: null);
+            mushroomCatalog: null,
+            productionContent: null,
+            barrelCatalog: null);
     }
     public Result<LoadedGameState> Load(
         SaveGameDocument document,
@@ -49,7 +54,9 @@ public sealed partial class SaveGameLoader
             items,
             buildingCatalog,
             terrainDepositCatalog: null,
-            mushroomCatalog: null);
+            mushroomCatalog: null,
+            productionContent: null,
+            barrelCatalog: null);
     }
     public Result<LoadedGameState> Load(
         SaveGameDocument document,
@@ -64,7 +71,9 @@ public sealed partial class SaveGameLoader
             items,
             buildingCatalog,
             terrainDepositCatalog,
-            mushroomCatalog: null);
+            mushroomCatalog: null,
+            productionContent: null,
+            barrelCatalog: null);
     }
     public Result<LoadedGameState> Load(
         SaveGameDocument document,
@@ -72,7 +81,9 @@ public sealed partial class SaveGameLoader
         ItemCatalog items,
         BuildingCatalog? buildingCatalog,
         TerrainDepositCatalog? terrainDepositCatalog,
-        MushroomCatalog? mushroomCatalog)
+        MushroomCatalog? mushroomCatalog,
+        ProductionContentCatalog? productionContent = null,
+        BarrelCatalog? barrelCatalog = null)
     {
         if (document is null)
         {
@@ -133,7 +144,47 @@ public sealed partial class SaveGameLoader
                 return Result<LoadedGameState>.Failure(mushrooms.Error!);
             }
 
-            Result references = ValidateCrossReferences(inventory.Value, jobs.Value);
+            Result<BarrelState> barrels = BuildBarrelState(
+                document.Barrels,
+                barrelCatalog);
+            if (barrels.IsFailure)
+            {
+                return Result<LoadedGameState>.Failure(barrels.Error!);
+            }
+
+            RestoredBuildingProductionState buildingProduction;
+            bool hasProduction = document.BuildingProduction?.Orders?.Count > 0
+                || document.BuildingProduction?.Supplies?.Count > 0;
+            if (!hasProduction)
+            {
+                buildingProduction = new RestoredBuildingProductionState(
+                    new ProductionState(),
+                    new BuildingSupplyState());
+            }
+            else
+            {
+                if (productionContent is null)
+                {
+                    return Result<LoadedGameState>.Failure(SaveErrors.InvalidDocument);
+                }
+
+                Result<RestoredBuildingProductionState> restoredProduction =
+                    BuildingProductionSaveAdapter.Decode(
+                        document.BuildingProduction,
+                        productionContent,
+                        inventory.Value);
+                if (restoredProduction.IsFailure)
+                {
+                    return Result<LoadedGameState>.Failure(restoredProduction.Error!);
+                }
+
+                buildingProduction = restoredProduction.Value;
+            }
+
+            Result references = ValidateCrossReferences(
+                inventory.Value,
+                jobs.Value,
+                buildingProduction.Production);
             if (references.IsFailure)
             {
                 return Result<LoadedGameState>.Failure(references.Error!);
@@ -192,7 +243,10 @@ public sealed partial class SaveGameLoader
                 terrainDeposits,
                 packableExecutions.Value,
                 miningOutput.Value,
-                mushrooms.Value));
+                mushrooms.Value,
+                buildingProduction.Production,
+                buildingProduction.Supply,
+                barrels.Value));
         }
         catch (UnknownTerrainDepositDefinitionException)
         {
@@ -211,113 +265,6 @@ public sealed partial class SaveGameLoader
         {
             return Result<LoadedGameState>.Failure(SaveErrors.InvalidDocument);
         }
-    }
-
-    private static WorldSnapshot BuildWorldSnapshot(
-        WorldSaveData data,
-        MaterialCatalog materials)
-    {
-        if (data is null || data.Chunks is null)
-        {
-            throw new InvalidOperationException("World save data is missing.");
-        }
-
-        WorldSize size = new WorldSize(data.Width, data.Height, data.Depth);
-        ChunkLayout layout = new ChunkLayout(size, data.ChunkSize);
-        List<ChunkSnapshot> chunks = new List<ChunkSnapshot>();
-        foreach (WorldChunkSaveData savedChunk in data.Chunks
-            .OrderBy(item => item.Z)
-            .ThenBy(item => item.Y)
-            .ThenBy(item => item.X))
-        {
-            if (savedChunk is null || savedChunk.Cells is null)
-            {
-                throw new InvalidOperationException("World chunk save data is missing.");
-            }
-
-            ChunkId chunkId = new ChunkId(savedChunk.X, savedChunk.Y, savedChunk.Z);
-            List<CellSnapshot> cells = new List<CellSnapshot>();
-            foreach (WorldCellSaveData savedCell in savedChunk.Cells
-                .OrderBy(item => item.Z)
-                .ThenBy(item => item.Y)
-                .ThenBy(item => item.X))
-            {
-                if (savedCell is null
-                    || !Enum.IsDefined(typeof(CellDesignation), savedCell.Designation))
-                {
-                    throw new InvalidOperationException("World cell save data is invalid.");
-                }
-
-                MaterialId materialId = new MaterialId(savedCell.MaterialId);
-                MaterialDefinition material = materials.Get(materialId)
-                    ?? throw new InvalidOperationException(
-                        $"Unknown saved material '{materialId}'.");
-                CellState state = new CellState(
-                    materialId,
-                    (CellDesignation)savedCell.Designation,
-                    savedCell.IsExplored,
-                    savedCell.Damage,
-                    savedCell.Temperature);
-                cells.Add(new CellSnapshot(
-                    new CellId(savedCell.X, savedCell.Y, savedCell.Z),
-                    state,
-                    material.IsSolid,
-                    material.Hardness,
-                    data.Version));
-            }
-
-            chunks.Add(new ChunkSnapshot(
-                chunkId,
-                layout.GetBounds(chunkId),
-                data.Version,
-                savedChunk.Version,
-                cells));
-        }
-
-        return new WorldSnapshot(
-            size,
-            data.ChunkSize,
-            data.Version,
-            new ReadOnlyCollection<ChunkSnapshot>(chunks));
-    }
-
-    private static Result ValidateCrossReferences(
-        InventoryState inventory,
-        JobSystem jobs)
-    {
-        InventorySnapshot snapshot = inventory.CreateSnapshot();
-        foreach (ItemStackSnapshot stack in snapshot.Stacks)
-        {
-            foreach (ItemQuantityReservationSnapshot reservation in stack.Reservations)
-            {
-                JobSnapshot? job = jobs.Get(reservation.JobId);
-                if (job is null || job.IsTerminal)
-                {
-                    return Result.Failure(SaveErrors.InvalidDocument);
-                }
-            }
-        }
-
-        foreach (IGrouping<EntityId, ResidentInventorySlotClaimSnapshot> group
-            in snapshot.ResidentSlotClaims.GroupBy(claim => claim.JobId))
-        {
-            JobSnapshot? job = jobs.Get(group.Key);
-            ResidentInventorySlotClaimSnapshot[] claims = group.ToArray();
-            if (job is null
-                || job.IsTerminal
-                || job.Definition is not HaulJobDefinition hauling
-                || !job.AssignedAgentId.HasValue
-                || (job.Status != JobStatus.Claimed
-                    && job.Status != JobStatus.InProgress)
-                || claims.Any(claim => claim.ResidentId != job.AssignedAgentId.Value)
-                || claims.Any(claim => claim.ItemId != hauling.ItemId)
-                || claims.Sum(claim => claim.Quantity) != hauling.Quantity)
-            {
-                return Result.Failure(SaveErrors.InvalidDocument);
-            }
-        }
-
-        return Result.Success();
     }
 
     private static void ValidateMetadata(SaveMetadataData metadata)

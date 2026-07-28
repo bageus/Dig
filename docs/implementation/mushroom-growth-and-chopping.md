@@ -74,3 +74,72 @@ Repository source contract запрещает прямые `renderer.Render(...)
 - Stage 2 v2/v3 source exports.
 
 Unity Editor/Play Mode нельзя считать пройденным, пока fixture реально не выполнен Unity Test Runner. Поэтому статус не повышается до `VERIFIED`.
+
+## Runtime interaction and visual follow-up (2026-07-27)
+
+A screenshot-driven verification found four observable regressions that were not covered by the original partial Play Mode fixture:
+
+- mushroom primitives used the built-in `Standard` shader inside the URP project, so their materials rendered magenta;
+- mushroom dimensions were authored in unscaled world units while residents are rendered under a `0.5` world scale, making `Large` much taller than a resident;
+- axe cursor resolution scanned mushroom hits before other objects, but LMB processed completed buildings first, so an overlapping building could consume the click after an axe cursor had already been shown;
+- mushroom jobs projected as generic work and had no hover highlight, target-facing or repeated work pose.
+
+The follow-up keeps the Domain/Application mushroom state unchanged and fixes the Unity/presentation adapters:
+
+- `DigMushroomVisual` uses `Universal Render Pipeline/Lit`, vertical identity transforms, a walk-surface-based collider and stage sizes ending at `0.84` world units for `Large`;
+- a per-renderer property block supplies reachable-target hover highlighting without mutating shared authoritative state;
+- pointer hover and axe cursor share `TryResolveReachableMushroomHit`, while the raw mushroom LMB branch now precedes completed-building handling;
+- `JobOverlayViewModel.IsMushroomChop` projects the typed job target without claiming that chopping requires an equipped Inventory tool;
+- resident activity projects `GatherMushroom` / `resident.activity.gathermushroom` (`Добывает гриб`);
+- active `PerformWork` mushroom jobs face their XYZ target and drive a repeating `Dig` rig pose until the authoritative job leaves that stage.
+
+Regression coverage now includes:
+
+- source contracts for mushroom-before-building click priority, shared hover/cursor resolver, URP shader, vertical/base-aligned collider, bounded `Large` size, hover property block, typed status and work animation;
+- .NET presenter tests for mushroom XYZ target, `IsMushroomChop` and `Добывает гриб` localization key;
+- an expanded Unity Play Mode fixture for two demo sites, direct start/arrive/swings/completion, exact Large drops, same-cell regrowth, URP material, base alignment, resident-relative height, hover highlight and absent-stage removal.
+
+The system remains `IMPLEMENTED` until this expanded fixture is actually executed by Unity Test Runner. Source-contract success alone is not runtime verification.
+
+
+## World orientation and material-targeting follow-up (2026-07-28)
+
+The second runtime screenshot exposed two gaps in the previous source and Play Mode contracts:
+
+- `DigUnityBootstrap` rotates the shared side-view root by 90 degrees, while `DigMushroomRenderer` parented its world-projected root with `worldPositionStays: false`; local identity therefore inherited the bootstrap rotation and laid the mushroom on the floor;
+- pointer resolvers scanned the complete sorted hit stack independently for each target type, so a regrown mushroom behind a foreground cap/leg could still win the mushroom branch even though the player was pointing at a physical material.
+
+The correction keeps Domain/Application completion unchanged and fixes the Unity adapter boundary:
+
+- `DigMushroomRenderer` now mirrors the world-item renderer and keeps its root in world orientation with `SetParent(..., worldPositionStays: true)`;
+- mushroom, BuildingBox, generic-item and completed-building resolvers stop at the first relevant foreground item/mushroom boundary instead of scanning through it;
+- reachable hover and pickup reuse the same foreground-aware item resolver;
+- cap/leg remain quantity-one `WorldItemInteractionKind.Pickup` entities and never acquire `DigMushroomVisual` identity.
+
+Regression coverage now rotates the renderer parent exactly like the runtime bootstrap, verifies world-up stem/collider orientation, renders completion drops as pickup-only world visuals, and exercises a physical foreground item ray before a regrown mushroom. The system remains `IMPLEMENTED` until Unity Test Runner executes the checked-in Play Mode scenarios.
+
+## Pointer-hit syntax regression (2026-07-28)
+
+A subsequent Unity Safe Mode compile exposed `CS0106` at the declarations of `TryProjectResidentBounds`, `DistanceToRect` and `ComparePointerHits`, followed by `CS1513` at end of `DigWorldInteraction.PointerHits.cs`.
+
+The foreground-targeting follow-up closed the resident candidate comparison `if` but omitted the closing brace of the surrounding `for` loop in `TryResolveAgentNearPointer`. PR #458 restores that method boundary without changing pointer priority or targeting behavior.
+
+`PointerHitUnitySyntaxContractTests` now verifies balanced braces in the partial file and requires the exact `if -> for -> agent assignment -> next method` boundary. On code head `d540b6bdfbece8509437032cfd9202605e78a0d5`, Quality #5755 (`30315315950`), Stage 2 v2 #455 (`30315315946`) and Stage 2 v3 #460 (`30315315930`) passed, including Release build, full `Dig.Tests`, headless smoke and both deterministic soaks.
+
+The fix addresses the reported Unity parser failure at its source. Status remains `IMPLEMENTED` until Unity Editor/Test Runner executes the complete interaction workflow.
+
+
+## Z0-Z3 depth-slab correction (2026-07-28)
+
+A third runtime screenshot showed the upright mushroom behind the `Z=3` back plane. The site cell was valid; the Unity adapter added `FrontOffset = -0.66f` after `ResidentWorldPosition`, while one logical depth step is only `-0.55f`. Presentation therefore moved every mushroom by more than one complete Z layer and could place a `Z=3` site outside the four-layer world.
+
+The correction removes the independent mushroom depth offset. `DigMushroomRenderer` now uses the exact `DepthOrigin + CellId.Z * DepthSpacing` projection already returned by `ResidentWorldPosition`; only the walk-surface Y correction remains. Domain, jobs, navigation, save data and demo site cells are unchanged.
+
+Regression coverage now:
+
+- rejects any `FrontOffset` in the mushroom renderer source contract;
+- requires the renderer position to add `0f` on world Z;
+- renders Large fixtures at `Z=0`, `Z=1`, `Z=2` and `Z=3` under the rotated bootstrap parent;
+- verifies visual/collider center against each authoritative depth projection and keeps collider bounds inside the corresponding half-spacing slab.
+
+The system remains `IMPLEMENTED` until Unity Test Runner executes the checked-in Play Mode scenario.

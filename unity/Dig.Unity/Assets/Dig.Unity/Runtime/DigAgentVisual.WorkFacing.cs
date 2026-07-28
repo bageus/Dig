@@ -1,24 +1,33 @@
 using Dig.Domain.World;
+using Dig.Presentation.Agents;
 using UnityEngine;
 
 namespace Dig.Unity
 {
     public sealed partial class DigAgentVisual
     {
+        private const float ToolWorkAnimationPeriodSeconds = 0.72f;
         private CellId? _workTargetCell;
         private bool _climbingWorkPose;
+        private bool _toolWorkActive;
 
-        internal void SetWorkTarget(CellId? target, bool climbingWork)
+        internal void SetWorkTarget(
+            CellId? target,
+            bool climbingWork,
+            bool animateToolWork)
         {
-            bool restoreAction = _climbingWorkPose && !climbingWork;
+            bool hadWorkPose = _climbingWorkPose || _toolWorkActive;
+            bool willHaveWorkPose = target.HasValue && (climbingWork || animateToolWork);
             _workTargetCell = target;
             _climbingWorkPose = target.HasValue && climbingWork;
-            if (restoreAction && _duration <= 0f)
+            _toolWorkActive = target.HasValue && animateToolWork && !climbingWork;
+            if (hadWorkPose && !willHaveWorkPose && _duration <= 0f)
             {
                 ApplyAction(isMoving: false);
             }
 
             ApplyWorkFacingIfIdle();
+            ApplyToolWorkAnimation();
         }
 
         private void ApplyWorkFacingIfIdle()
@@ -48,6 +57,24 @@ namespace Dig.Unity
             }
 
             FaceAwayFromMainCamera();
+        }
+
+        private void ApplyToolWorkAnimation()
+        {
+            if (!_toolWorkActive || _rig == null || _duration > 0f)
+            {
+                return;
+            }
+
+            float progress = Mathf.Repeat(
+                Time.unscaledTime,
+                ToolWorkAnimationPeriodSeconds) / ToolWorkAnimationPeriodSeconds;
+            _rig.ApplyAction(new ResidentActionVisualViewModel(
+                Model.Id,
+                ResidentActionVisualState.Dig,
+                progress,
+                isLooping: true,
+                version: Model.Version));
         }
     }
 }

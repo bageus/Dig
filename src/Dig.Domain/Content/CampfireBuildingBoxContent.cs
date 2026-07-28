@@ -53,11 +53,11 @@ public static class CampfireBuildingBoxContent
                 packingWork: work.PackingIterations));
         PackableBuildingPlacementProfile placement =
             new PackableBuildingPlacementProfile(
-                widthCells: 1.5m,
-                depthCells: 1.5m,
+                widthCells: 1m,
+                depthCells: 1m,
                 requiresFlatSurface: true,
-                outdoorOnly: true,
-                allowsTunnel: false);
+                outdoorOnly: false,
+                allowsTunnel: true);
         return new PackableBuildingContentDefinition(
             building,
             boxItem,
