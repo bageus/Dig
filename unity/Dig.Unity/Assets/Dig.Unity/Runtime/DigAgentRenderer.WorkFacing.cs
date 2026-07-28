@@ -76,15 +76,13 @@ namespace Dig.Unity
                         out CellSnapshot support)
                     && support.IsSolid
                     && support.State.CompletedExcavationQuarters == ExcavationQuarter.None;
-                bool targetRemovedSupport = hasToolWork
-                    && target == below
-                    && worldCells.TryGetValue(target, out CellSnapshot targetCell)
-                    && targetCell.State.CompletedExcavationQuarters != ExcavationQuarter.None;
+                // Support is authoritative. Once any quarter below is committed, or a
+                // shaft worker has no floor at all, every mining direction uses the
+                // stationary climbing pose. Do not depend on template/shaft provenance:
+                // side excavation from an unsupported cell must behave identically.
                 bool climbingWork = hasToolWork
                     && !nonClimbingWorkers.Contains(pair.Key)
-                    && !hasFullSupport
-                    && (tunnelVolume.IsVerticalTunnel(current)
-                        || targetRemovedSupport);
+                    && !hasFullSupport;
                 bool barrelAttack = hasToolWork && barrelWorkers.Contains(pair.Key);
                 pair.Value.SetWorkTarget(
                     hasToolWork ? target : (CellId?)null,
