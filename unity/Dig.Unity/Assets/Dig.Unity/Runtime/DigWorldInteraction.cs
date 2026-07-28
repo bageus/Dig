@@ -18,6 +18,7 @@ namespace Dig.Unity
         private DigAgentRenderer? _agentRenderer;
         private DigCreatureRenderer? _creatureRenderer;
         private DigMushroomRenderer? _mushroomRenderer;
+        private DigBarrelRenderer? _barrelRenderer;
         private DigJobRenderer? _jobRenderer;
         private DigBuildingRenderer? _buildingRenderer;
         private DigBuildingInternalStockRenderer? _buildingInternalStockRenderer;
@@ -38,6 +39,7 @@ namespace Dig.Unity
             DigAgentRenderer agentRenderer,
             DigCreatureRenderer creatureRenderer,
             DigMushroomRenderer mushroomRenderer,
+            DigBarrelRenderer barrelRenderer,
             DigJobRenderer jobRenderer,
             DigBuildingRenderer buildingRenderer,
             DigBuildingInternalStockRenderer buildingInternalStockRenderer,
@@ -56,6 +58,7 @@ namespace Dig.Unity
             _agentRenderer = agentRenderer;
             _creatureRenderer = creatureRenderer;
             _mushroomRenderer = mushroomRenderer;
+            _barrelRenderer = barrelRenderer;
             _jobRenderer = jobRenderer;
             _buildingRenderer = buildingRenderer;
             _buildingInternalStockRenderer = buildingInternalStockRenderer;
@@ -313,6 +316,7 @@ namespace Dig.Unity
                 && _renderer != null
                 && _agentRenderer != null
                 && _mushroomRenderer != null
+                && _barrelRenderer != null
                 && _jobRenderer != null
                 && _buildingRenderer != null
                 && _buildingInternalStockRenderer != null
