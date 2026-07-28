@@ -1,6 +1,6 @@
 # BuildingBox unpack, relocation and roster lifecycle regression
 
-Status: implementation in [PR #495](https://github.com/bageus/Dig/pull/495), pending final CI and licensed Unity Play Mode execution.
+Status: `IMPLEMENTED` in [PR #495](https://github.com/bageus/Dig/pull/495). Licensed Unity Play Mode execution remains required for `VERIFIED`.
 
 Authoritative design: [`../design/building-box-placement-and-packing.md`](../design/building-box-placement-and-packing.md).
 
@@ -49,5 +49,14 @@ Domain/Application and source-contract coverage verifies:
 - held box confirmation, arrival, `AtSite`, `0/3 -> 1/3 -> 2/3 -> 3/3`, final completion and exactly-once box consumption;
 - held Z0 relocation deposited from an adjacent supported work cell while preserving the same stack id;
 - direct-command cancellation before `AtSite`, removal of the pending plan and preservation of the unreserved box in the holder inventory.
+
+## Validation evidence
+
+Final branch head before documentation evidence: `293015e463c01889ce5e437b00914b137b9a6657`.
+
+- Quality run `30402214511`: architecture, file-size and C# compatibility checks passed; Unity source/presentation contracts passed; Release build passed with zero warnings and zero errors; `1095/1095` .NET tests passed; headless smoke, standard deterministic soak and large-settlement deterministic soak passed.
+- Stage 2 v2 export run `30402214262`: passed.
+- Stage 2 v3 export run `30402214541`: passed.
+- Unity Play Mode workflow `30402214253`: workflow completed, but `Run Play Mode tests` was skipped by the activation gate and no runtime result artifact was produced.
 
 A successful source-contract or .NET run does not by itself mark this runtime workflow `VERIFIED`; the licensed Unity Test Runner must execute these scenarios and publish result artifacts.
