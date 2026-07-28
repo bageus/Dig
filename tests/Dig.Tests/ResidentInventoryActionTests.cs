@@ -49,6 +49,25 @@ public sealed class ResidentInventoryActionTests
     }
 
     [Fact]
+    public void Ownership_policy_is_public_for_unity_and_accepts_only_resident_carried_locations()
+    {
+        EntityId resident = Id(1);
+
+        Assert.True(DropResidentInventoryStackHandler.IsOwnedByResident(
+            ItemLocation.InAgent(resident),
+            resident));
+        Assert.True(DropResidentInventoryStackHandler.IsOwnedByResident(
+            ItemLocation.EquippedBy(resident),
+            resident));
+        Assert.False(DropResidentInventoryStackHandler.IsOwnedByResident(
+            ItemLocation.InAgent(Id(2)),
+            resident));
+        Assert.False(DropResidentInventoryStackHandler.IsOwnedByResident(
+            ItemLocation.InWorld(new CellId(1, 1)),
+            resident));
+    }
+
+    [Fact]
     public void Reserved_stack_cannot_be_dropped()
     {
         Harness harness = new Harness(BoxItemId, quantity: 1);
