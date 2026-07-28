@@ -39,4 +39,4 @@ No Domain/Application state, stable gameplay identity, input behavior, save data
 
 `StylizedMaterialRuntimeContractTests` requires the explicit shader-property utility, rejects the previous direct color API calls and keeps non-null catalog validation active while rejecting the obsolete null-catalog warnings.
 
-The existing barrel Play Mode fixture still exercises custom Lit material creation, rendering and highlight. A licensed Unity Test Runner execution is still required to confirm that the Console stays free of the reported messages.
+`StylizedMaterialConsolePlayModeTests` creates the project-owned stylized Lit barrel material, renders the complete barrel, applies highlight and requires no unexpected Unity log messages. A licensed Unity Test Runner execution is still required to confirm that the Console stays free of the reported messages.
