@@ -45,18 +45,26 @@ namespace Dig.Tests
         }
 
         [Fact]
-        public void Successful_food_pickup_starts_shared_resident_meal()
+        public void Successful_food_pickup_uses_persisted_job_action_and_shared_meal()
         {
             string runtime = RuntimeRoot();
             string session = Read(runtime, "DigWorldItemPickupSession.cs");
             string execution = Read(runtime, "DigWorldItemPickupExecution.cs");
             string directCommands = Read(runtime, "DigTerrainWorkSession.DirectCommands.cs");
+            string codec = File.ReadAllText(Path.Combine(
+                FindRepositoryRoot(),
+                "src",
+                "Dig.Application",
+                "Saving",
+                "WorldItemPickupJobSaveCodec.cs"));
 
-            Assert.Contains("DirectWorldFoodIntent", session);
-            Assert.Contains("StartResidentFoodMealHandler", session);
+            Assert.Contains("WorldItemPickupCompletionAction.UseConsumable", session);
+            Assert.DoesNotContain("DirectWorldFoodIntent", session);
+            Assert.Contains("pickup.CompletionAction", execution);
             Assert.Contains("StartResidentFoodMealCommand", execution);
+            Assert.Contains("completion_action", codec);
             Assert.Contains("InterruptFoodMeal", directCommands);
-            Assert.Contains("_directWorldFoodIntents.Remove(job.Id)", directCommands);
+            Assert.DoesNotContain("_directWorldFoodIntents", directCommands);
         }
 
         private static string Read(string root, string file)
