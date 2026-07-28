@@ -67,6 +67,9 @@ jobs:
       - name: Validate resident rig presentation
         run: python tools/quality/check_unity_resident_visual_contracts.py
 
+      - name: Validate excavation Play Mode verification contracts
+        run: python tools/quality/check_unity_excavation_playmode_contracts.py
+
       - name: Validate creature visual presentation
         run: python tools/quality/check_unity_creature_visual_contracts.py
 
