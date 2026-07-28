@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - '.github/agent/building-production-completion.part04'
+      - '.github/agent/building-production-completion.part03b3'
       - '.github/workflows/apply-building-production-completion.yml'
 
 permissions:
@@ -28,7 +28,13 @@ jobs:
           cat .github/agent/building-production-completion.part00 \
               .github/agent/building-production-completion.part01 \
               .github/agent/building-production-completion.part02 \
-              .github/agent/building-production-completion.part03 \
+              .github/agent/building-production-completion.part03a \
+              .github/agent/building-production-completion.part03b0 \
+              .github/agent/building-production-completion.part03b1 \
+              .github/agent/building-production-completion.part03b2 \
+              .github/agent/building-production-completion.part03b3 \
+              .github/agent/building-production-completion.part03c \
+              .github/agent/building-production-completion.part03d \
               .github/agent/building-production-completion.part04 \
               > /tmp/building-production-completion.patch.gz.b64
           base64 --decode /tmp/building-production-completion.patch.gz.b64 > /tmp/building-production-completion.patch.gz
@@ -47,6 +53,14 @@ jobs:
           git rm .github/agent/building-production-completion.part01
           git rm .github/agent/building-production-completion.part02
           git rm .github/agent/building-production-completion.part03
+          git rm .github/agent/building-production-completion.part03a
+          git rm .github/agent/building-production-completion.part03b
+          git rm .github/agent/building-production-completion.part03b0
+          git rm .github/agent/building-production-completion.part03b1
+          git rm .github/agent/building-production-completion.part03b2
+          git rm .github/agent/building-production-completion.part03b3
+          git rm .github/agent/building-production-completion.part03c
+          git rm .github/agent/building-production-completion.part03d
           git rm .github/agent/building-production-completion.part04
           git rm .github/workflows/apply-building-production-completion.yml
           git diff --cached --check
