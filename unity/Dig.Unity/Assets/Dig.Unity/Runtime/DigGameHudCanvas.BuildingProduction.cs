@@ -195,8 +195,21 @@ public sealed partial class DigGameHudCanvas
 
     private void CancelBuildingProduction(string buildingId, string recipeId)
     {
+        BuildingProductionViewModel? current =
+            _terrainSession!.LoadBuildingProduction(buildingId);
+        bool hasNonTerminalOrder = current?.Products.Any(value =>
+            value.QueuedCount > 0
+            && string.Equals(
+                value.RecipeId.ToString(),
+                recipeId,
+                StringComparison.Ordinal)) == true;
+        if (!hasNonTerminalOrder)
+        {
+            return;
+        }
+
         long tick = _simulation?.CurrentTick ?? 0;
-        Result result = _terrainSession!.CancelOneBuildingProduction(
+        Result result = _terrainSession.CancelOneBuildingProduction(
             buildingId,
             recipeId,
             tick);
