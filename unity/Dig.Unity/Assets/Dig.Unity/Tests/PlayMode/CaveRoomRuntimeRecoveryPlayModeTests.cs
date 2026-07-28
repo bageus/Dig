@@ -79,10 +79,12 @@ public sealed class CaveRoomRuntimeRecoveryPlayModeTests
             new[] { planned.Plan! });
         GameObject root = Own(new GameObject("Rotated side-view root"));
         root.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-        DigCaveTemplateTrimRenderer renderer =
-            root.AddComponent<DigCaveTemplateTrimRenderer>();
+        Type rendererType = typeof(DigAgentRenderer).Assembly.GetType(
+            "Dig.Unity.DigCaveTemplateTrimRenderer")
+            ?? throw new TypeLoadException("Dig.Unity.DigCaveTemplateTrimRenderer");
+        Component renderer = root.AddComponent(rendererType);
 
-        renderer.Render(volume, catalog: null);
+        Invoke(renderer, "Render", volume, null);
         yield return null;
 
         Transform trimRoot = root.transform.Cast<Transform>()
@@ -90,7 +92,7 @@ public sealed class CaveRoomRuntimeRecoveryPlayModeTests
         MeshFilter mesh = trimRoot.GetComponentsInChildren<MeshFilter>()
             .Single(value => value.sharedMesh != null);
         Renderer meshRenderer = mesh.GetComponent<Renderer>();
-        Assert.That(renderer.InstanceCount, Is.EqualTo(1));
+        Assert.That(GetProperty<int>(renderer, "InstanceCount"), Is.EqualTo(1));
         Assert.That(mesh.sharedMesh.vertexCount, Is.GreaterThan(0));
         Assert.That(Quaternion.Angle(trimRoot.rotation, Quaternion.identity),
             Is.LessThan(0.01f));
@@ -233,6 +235,15 @@ public sealed class CaveRoomRuntimeRecoveryPlayModeTests
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         Assert.That(field, Is.Not.Null, name);
         return (T)field!.GetValue(target)!;
+    }
+
+    private static T GetProperty<T>(object target, string name)
+    {
+        PropertyInfo? property = target.GetType().GetProperty(
+            name,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        Assert.That(property, Is.Not.Null, name);
+        return (T)property!.GetValue(target)!;
     }
 
     private static readonly MaterialId Rock = new MaterialId("test.rock");
