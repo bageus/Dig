@@ -1,6 +1,6 @@
 # Resident HUD uninitialized simulation guard — 2026-07-28
 
-Status: `IMPLEMENTED` in branch `fix/resident-work-window-null-guard`; runtime verification pending licensed Unity Play Mode execution.
+Status: `IMPLEMENTED` in [PR #498](https://github.com/bageus/Dig/pull/498); runtime verification pending licensed Unity Play Mode execution.
 
 Authoritative system:
 
@@ -37,6 +37,22 @@ Presentation reads are not authoritative mutations and must represent this state
 
 - `ResidentHudInitializationGuardContractTests` locks the null guards, deterministic defaults, typed mutation rejection and executable Play Mode scenario.
 - `ResidentHudInitializationGuardPlayModeTests` creates the real Unity simulation driver without initialization and invokes the actual HUD bridge. It verifies schedule/planning queries, society/roster reads, mutation failures, readiness and tick projection without an exception.
+
+## Validation evidence
+
+PR head before this documentation-only commit: `6036b1fcce782b8b4e1d4573e84b1f8da20505c3`.
+
+- Quality workflow `30403859585`: success;
+- architecture, file-size, C# compatibility and all Unity source/presentation contracts: success;
+- Release build: success with zero warnings;
+- .NET tests: `1096` passed, `0` failed;
+- headless smoke: success;
+- standard deterministic soak: success;
+- large-settlement deterministic soak: success;
+- Stage 2 v2 export `30403859433`: success;
+- Stage 2 v3 export `30403859516`: success.
+
+Unity workflow `30403859438` completed successfully, but its licensed `Run Play Mode tests` step was skipped by the activation gate. The executable regression is checked in; no `VERIFIED` claim is made.
 
 ## Verification boundary
 
