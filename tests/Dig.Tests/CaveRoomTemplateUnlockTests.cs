@@ -17,7 +17,7 @@ public sealed class CaveRoomTemplateUnlockTests
 
         Assert.Collection(
             presets,
-            value => AssertPreset(value, "excavation.template.cave.small", 5, 3, 3, 2, 0),
+            value => AssertPreset(value, "excavation.template.cave.small", 5, 3, 3, 3, 0),
             value => AssertPreset(value, "excavation.template.cave.medium", 8, 6, 3, 3, 2_000),
             value => AssertPreset(value, "excavation.template.cave.large", 12, 8, 5, 4, 4_000),
             value => AssertPreset(value, "excavation.template.cave.tall", 10, 6, 7, 4, 6_000));
