@@ -1,6 +1,6 @@
 # Generic building production and internal supply implementation
 
-Статус: revised production-icon input is implemented in branch `agent/fix-production-icon-rmb-and-inventory-placement`; final CI and licensed Unity Play Mode evidence are pending. Основной slice merged через PR #441; supply completion through PR #465.
+Статус: revised production-icon input is `IMPLEMENTED` in PR #501. Основной slice merged через PR #441; supply completion through PR #465. Actual licensed Unity Play Mode evidence remains pending.
 
 Authoritative design: [`../design/building-production-and-internal-supply.md`](../design/building-production-and-internal-supply.md).
 Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
@@ -23,12 +23,12 @@ Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
 
 - LMB на product icon вызывает один `EnqueueBuildingProduction`;
 - RMB на том же icon вызывает один `CancelOneBuildingProduction`, только пока projected `QueuedCount > 0`;
-- при нулевом счётчике right-click callback отсутствует, поэтому команда отмены не отправляется и отрицательное значение невозможно;
+- перед cancel Unity повторно читает authoritative production view; при нулевом non-terminal count команда не отправляется;
 - отдельная minus/decrement button больше не создаётся;
 - `CancelOneBuildingProduction` сохраняет authoritative policy: newest queued order first, active order only when queued orders отсутствуют;
 - tooltip, orange shortage state и counter остаются на одном icon.
 
-`DigProductionIconPointer` теперь владеет только pointer presentation events (`hover` и RMB callback), но не меняет Production state напрямую. Command commit остаётся в `DigTerrainWorkSession`/Application handlers.
+`DigProductionIconPointer` владеет только pointer presentation events (`hover` и RMB callback), но не меняет Production state напрямую. Command commit остаётся в `DigTerrainWorkSession`/Application handlers.
 
 ## Campfire content
 
@@ -49,7 +49,7 @@ Runtime не содержит отдельных production branches для эт
 
 Save format v7 сохраняет queue, active order/material step, consumed inputs, delivery toggles, incoming supply batches и production/supply jobs. Loader проверяет building/assembly/production/supply job cross-references и не повторяет уже committed material steps или outputs.
 
-World-item pickup codec сохраняет optional source kind/owner и destination stack ID; старые payload без этих полей восстанавливаются как полный pickup из world cell.
+World-item pickup codec сохраняет optional source kind/owner и destination stack ID; старые payload без этих полей восстанавливаются как полный pickup из world cell. PR #500 registers the complete job codec set through `SaveGameCompositionRoot`.
 
 ## Regression fixes
 
@@ -63,22 +63,29 @@ World-item pickup codec сохраняет optional source kind/owner и destina
 - Release build на первом completion head выявил nullable-flow warning после typed source validation; final code сохраняет validated snapshot для quantity/item-capacity operations.
 - Completed pickup освобождает перенесённую quantity reservation после successful job completion.
 - Building supply допускает пустой transit-ID list, когда reserved material полностью объединяется с существующим resident stack; deposit IDs остаются обязательными.
-- 2026-07-29 production pointer regression removes the separate minus button and binds decrement to RMB on the same product icon.
+- PR #501 removes the separate minus button and binds decrement to RMB on the same product icon with a zero-count guard.
 
 ## Test coverage
 
 - content/catalog validation и точный campfire recipe matrix;
 - queue without inputs, orange shortage, enqueue и one-order decrement;
-- product icon LMB/RMB source contract, absence of a separate minus icon and RMB pointer callback;
+- product icon LMB/RMB source contract, absence of a separate minus icon and zero-count guard;
 - executable Unity Play Mode pointer test verifies that left click does not invoke decrement, one RMB invokes exactly once, and unbound RMB is a no-op;
 - progressive per-material timing/consumption и exactly-once skill grants;
 - mixed/partial protected supply, workstation-first route и последовательный pickup каждого world source;
 - quantity-one direct internal-stock pickup, reserved-quantity protection и replacement demand;
 - deterministic front-cell output и BuildingBox identity;
-- v6→v7 migration, active supply, pickup codec compatibility и mid-step round-trip;
+- save composition, migration, active supply, pickup codec compatibility и mid-step round-trip;
 - Unity source contracts для HUD/input/runtime composition;
 - checked-in Play Mode fixture для trigger piles, building/item identity и non-blocking stock visuals.
 
-## Verification boundary
+## CI evidence
 
-Source contracts, Release build, .NET tests and deterministic soaks must pass on the final branch head. A green Unity workflow counts only when `Run Play Mode tests` actually executes and publishes results; otherwise the system remains `IMPLEMENTED`, not `VERIFIED`.
+PR #501 merge-ref validation:
+
+- Quality run `30406329012`: architecture/file-size/C# compatibility, Unity source/presentation contracts, Release build, 1101 .NET tests, headless smoke, standard deterministic soak and large-settlement soak — success;
+- Export Stage 2 v2 run `30406329013` — success;
+- Export Stage 2 v3 run `30406329052` — success;
+- Unity workflow `30406329010` — workflow success, but `Run Play Mode tests` skipped by activation gate and no runtime result artifact was produced.
+
+The system is `IMPLEMENTED`, not `VERIFIED`, until a licensed Unity Test Runner executes the checked-in production pointer scenario.
