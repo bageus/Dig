@@ -45,15 +45,16 @@ public sealed class MushroomDepthProjectionPlayModeTests
 
         DigMushroomVisual[] visuals = _root
             .GetComponentsInChildren<DigMushroomVisual>()
-            .OrderBy(value => value.Model.Cell.Z)
+            .OrderBy(value => GetModel(value).Cell.Z)
             .ToArray();
         Assert.That(visuals.Length, Is.EqualTo(4));
         for (int z = 0; z < visuals.Length; z++)
         {
             DigMushroomVisual visual = visuals[z];
+            MushroomSiteSnapshot model = GetModel(visual);
             float expectedCenter = depthOrigin + (z * depthSpacing);
             BoxCollider collider = visual.GetComponent<BoxCollider>();
-            Assert.That(visual.Model.Cell.Z, Is.EqualTo(z));
+            Assert.That(model.Cell.Z, Is.EqualTo(z));
             Assert.That(
                 visual.transform.position.z,
                 Is.EqualTo(expectedCenter).Within(0.0001f));
@@ -88,6 +89,20 @@ public sealed class MushroomDepthProjectionPlayModeTests
             completedSwings: 0,
             growthPausedAtTick: null,
             version: 0);
+    }
+
+    private static MushroomSiteSnapshot GetModel(DigMushroomVisual visual)
+    {
+        return (MushroomSiteSnapshot)GetProperty(visual, "Model");
+    }
+
+    private static object GetProperty(object target, string name)
+    {
+        PropertyInfo property = target.GetType().GetProperty(
+            name,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            ?? throw new MissingMemberException(target.GetType().FullName, name);
+        return property.GetValue(target)!;
     }
 
     private static object Invoke(object target, string name, params object[] arguments)

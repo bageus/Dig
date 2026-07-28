@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Linq;
 using System.Reflection;
@@ -39,6 +40,8 @@ public sealed class BarrelDestructionPlayModeTests
         DigBarrelVisual[] visuals = root.GetComponentsInChildren<DigBarrelVisual>();
         Assert.That(visuals, Has.Length.EqualTo(4));
         const float residentWorldHeight = 1.52f * 0.5f;
+        float depthOrigin = GetProjectionConstant("DepthOrigin");
+        float depthSpacing = GetProjectionConstant("DepthSpacing");
         foreach (DigBarrelVisual visual in visuals)
         {
             BoxCollider collider = visual.GetComponent<BoxCollider>();
@@ -46,8 +49,7 @@ public sealed class BarrelDestructionPlayModeTests
             Assert.That(collider.size.y, Is.EqualTo(0.70f).Within(0.0001f));
             Assert.That(collider.size.y, Is.LessThan(residentWorldHeight));
             BarrelSnapshot model = (BarrelSnapshot)GetProperty(visual, "Model");
-            float expectedDepth = DigTunnelProjection.DepthOrigin
-                + (model.Cell.Z * DigTunnelProjection.DepthSpacing);
+            float expectedDepth = depthOrigin + (model.Cell.Z * depthSpacing);
             Assert.That(visual.transform.position.z, Is.EqualTo(expectedDepth).Within(0.0001f));
         }
 
@@ -194,6 +196,21 @@ public sealed class BarrelDestructionPlayModeTests
             fallSourceCell: null,
             fallLandingCell: null,
             version: 0);
+    }
+
+    private static float GetProjectionConstant(string fieldName)
+    {
+        Type projection = typeof(DigBarrelRenderer).Assembly.GetType(
+            "Dig.Unity.DigTunnelProjection")
+            ?? throw new TypeLoadException("Dig.Unity.DigTunnelProjection");
+        FieldInfo field = projection.GetField(
+            fieldName,
+            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+            ?? throw new MissingFieldException(projection.FullName, fieldName);
+        object value = field.IsLiteral
+            ? field.GetRawConstantValue()!
+            : field.GetValue(null)!;
+        return (float)value;
     }
 
     private static object Invoke(object target, string name, params object[] arguments)
