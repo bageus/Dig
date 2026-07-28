@@ -36,6 +36,9 @@ public sealed partial class DigWorldInteraction
             case ApplicationInputCommandKind.PickupWorldItem:
                 CreateWorldItemPickup(decision);
                 break;
+            case ApplicationInputCommandKind.EatWorldItem:
+                CreateWorldFoodPickup(decision);
+                break;
             case ApplicationInputCommandKind.MoveResident:
                 ApplyMove(decision);
                 break;
@@ -156,5 +159,4 @@ public sealed partial class DigWorldInteraction
         }
     }
 }
-
 }
