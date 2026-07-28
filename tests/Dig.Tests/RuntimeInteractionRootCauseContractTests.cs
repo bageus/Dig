@@ -47,14 +47,22 @@ namespace Dig.Tests
         public void Runtime_routes_objects_before_movement_and_uses_explicit_placement_modes()
         {
             string runtime = RuntimeRoot();
-            string priority = Read(runtime, "DigWorldInteraction.ResidentCommandPriority.cs");
-            string interaction = Read(runtime, "DigWorldInteraction.cs");
-            string boxes = Read(runtime, "DigWorldInteraction.BuildingBoxes.cs");
-            string boxGhost = Read(runtime, "DigBuildingBoxGhostRenderer.Representatives.cs");
-            string itemPlacement = Read(runtime, "DigWorldInteraction.InventoryItemPlacement.cs");
-            string itemGhost = Read(runtime, "DigInventoryItemGhostRenderer.cs");
-            string itemVisual = Read(runtime, "DigWorldItemVisual.cs");
-            string itemSelection = Read(runtime, "DigWorldItemVisual.Selection.cs");
+            string priority = Normalize(Read(
+                runtime,
+                "DigWorldInteraction.ResidentCommandPriority.cs"));
+            string interaction = Normalize(Read(runtime, "DigWorldInteraction.cs"));
+            string boxes = Normalize(Read(runtime, "DigWorldInteraction.BuildingBoxes.cs"));
+            string boxGhost = Normalize(Read(
+                runtime,
+                "DigBuildingBoxGhostRenderer.Representatives.cs"));
+            string itemPlacement = Normalize(Read(
+                runtime,
+                "DigWorldInteraction.InventoryItemPlacement.cs"));
+            string itemGhost = Normalize(Read(runtime, "DigInventoryItemGhostRenderer.cs"));
+            string itemVisual = Normalize(Read(runtime, "DigWorldItemVisual.cs"));
+            string itemSelection = Normalize(Read(
+                runtime,
+                "DigWorldItemVisual.Selection.cs"));
 
             Assert.True(
                 priority.IndexOf("TryResolveCompletedBuildingHit", StringComparison.Ordinal)
@@ -76,13 +84,19 @@ namespace Dig.Tests
         public void Runtime_gates_job_finalization_on_visible_quarter_progress()
         {
             string runtime = RuntimeRoot();
-            string terrain = Read(runtime, "DigTerrainWorkSession.cs");
-            string spatial = Read(runtime, "DigTerrainSpatialExcavation.cs");
-            string quarters = Read(runtime, "DigTerrainWorkExcavationQuarters.cs");
-            string cursor = Read(runtime, "DigWorldInteraction.ExcavationCursor.cs");
-            string cursorRenderer = Read(runtime, "DigExcavationCursorRenderer.cs");
-            string marker = Read(runtime, "DigExcavationQuarterMarker.cs");
-            string room = Read(runtime, "DigCaveRoomPreviewRenderer.Show.cs");
+            string terrain = Normalize(Read(runtime, "DigTerrainWorkSession.cs"));
+            string spatial = Normalize(Read(runtime, "DigTerrainSpatialExcavation.cs"));
+            string quarters = Normalize(Read(
+                runtime,
+                "DigTerrainWorkExcavationQuarters.cs"));
+            string cursor = Normalize(Read(
+                runtime,
+                "DigWorldInteraction.ExcavationCursor.cs"));
+            string cursorRenderer = Normalize(Read(
+                runtime,
+                "DigExcavationCursorRenderer.cs"));
+            string marker = Normalize(Read(runtime, "DigExcavationQuarterMarker.cs"));
+            string room = Normalize(Read(runtime, "DigCaveRoomPreviewRenderer.Show.cs"));
 
             Assert.Contains("AdvanceExcavationQuarterWork", terrain);
             Assert.Contains("if(!quartersComplete)", terrain);
@@ -99,22 +113,29 @@ namespace Dig.Tests
         }
 
         [Fact]
-        public void Runtime_releases_unroutable_dig_jobs_and_commits_only_room_rock()
+        public void Runtime_releases_unroutable_dig_jobs_and_commits_only_valid_room_cells()
         {
             string runtime = RuntimeRoot();
-            string navigation = Read(runtime, "DigTerrainWorkNavigation.cs");
-            string roomSession = Read(runtime, "DigWorldSession.CaveRooms.cs");
-            string roomInput = Read(runtime, "DigWorldInteraction.CaveRooms.cs");
-            string invalidCells = Read(
+            string navigation = Normalize(Read(runtime, "DigTerrainWorkNavigation.cs"));
+            string roomSession = Normalize(Read(runtime, "DigWorldSession.CaveRooms.cs"));
+            string roomInput = Normalize(Read(runtime, "DigWorldInteraction.CaveRooms.cs"));
+            string invalidCells = Normalize(Read(
                 runtime,
-                "DigCaveRoomPreviewRenderer.InvalidCells.cs");
+                "DigCaveRoomPreviewRenderer.InvalidCells.cs"));
 
             Assert.Contains("ReleaseUnroutableExcavationAssignment", navigation);
-            Assert.Contains("TryCommitCaveRoomPlan", roomSession);
-            Assert.Contains("TerrainMaterials.IsMineableRock", roomSession);
+            Assert.Contains("ApplyCaveRoomPlan", roomSession);
+            Assert.Contains("SetDigDesignations", roomSession);
+            Assert.Contains("IsProtected(plan.ExcavationCells[index])", roomSession);
             Assert.Contains("SetInvalidCells(_invalidCaveRoomCells)", roomInput);
             Assert.Contains("RenderEdges", invalidCells);
         }
+
+        private static string Normalize(string source) => source
+            .Replace(" ", string.Empty, StringComparison.Ordinal)
+            .Replace("\t", string.Empty, StringComparison.Ordinal)
+            .Replace("\r", string.Empty, StringComparison.Ordinal)
+            .Replace("\n", string.Empty, StringComparison.Ordinal);
 
         private static string Read(string root, string file)
         {
