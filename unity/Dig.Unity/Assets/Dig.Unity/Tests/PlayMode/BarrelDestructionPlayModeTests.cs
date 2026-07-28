@@ -63,7 +63,7 @@ public sealed class BarrelDestructionPlayModeTests
         yield return null;
         Assert.That(root.GetComponentsInChildren<DigBarrelVisual>(), Has.Length.EqualTo(3));
 
-        Object.Destroy(root);
+        UnityEngine.Object.Destroy(root);
         yield return null;
     }
 
@@ -138,7 +138,7 @@ public sealed class BarrelDestructionPlayModeTests
         Assert.That(output.Location, Is.EqualTo(ItemLocation.InWorld(target)));
         Assert.That(inventory.CreateSnapshot().Stacks, Has.Count.EqualTo(1));
 
-        Object.Destroy(root);
+        UnityEngine.Object.Destroy(root);
         yield return null;
     }
 
@@ -175,7 +175,7 @@ public sealed class BarrelDestructionPlayModeTests
         Assert.That(landed.ContentsMaterialized, Is.False);
         Assert.That(visual.transform.position.y, Is.LessThan(sourceY));
 
-        Object.Destroy(root);
+        UnityEngine.Object.Destroy(root);
         yield return null;
     }
 
