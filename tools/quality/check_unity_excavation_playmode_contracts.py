@@ -49,6 +49,7 @@ def reject(path: Path, fragments: tuple[str, ...]) -> list[str]:
 def main() -> int:
     errors: list[str] = []
     world_tests = PLAYMODE / "WorldOwnedExcavationPlayModeTests.cs"
+    continuation_tests = PLAYMODE / "ExcavationContinuationPlayModeTests.cs"
     direct_tests = PLAYMODE / "DirectExcavationOrderPlayModeTests.cs"
     combat = RUNTIME / "DigTerrainWorkCombatInterruption.cs"
     workflow = ROOT / ".github" / "workflows" / "unity-playmode.yml"
@@ -61,6 +62,14 @@ def main() -> int:
         "TunnelTraversalKind.ShaftGapTraverse",
         "TunnelTraversalKind.DepthTraverse",
         "_climbingWorkPose",
+    )))
+    errors.extend(require(continuation_tests, (
+        "Twelve_opened_cells_keep_geometry_cursor_and_route_in_sync",
+        "const int cellCount = 12",
+        "SetTunnelDigInteractionActive",
+        "visual.Model.IsExcavationOpen",
+        "collider.enabled",
+        "volume.FindPath",
     )))
     errors.extend(require(direct_tests, (
         "Manual_cluster_preserves_automatic_job_owner",
