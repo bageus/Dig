@@ -233,6 +233,7 @@ public sealed class CompleteWorldItemPickupHandler
             return completed;
         }
 
+        inventory.ReleaseReservations(job.Id, command.Tick);
         _inventoryRepository.Save(inventory);
         _jobRepository.Save(jobs);
         _eventSink.Append(inventory.DequeueUncommittedEvents());
