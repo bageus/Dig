@@ -29,7 +29,7 @@ Tracking issue: [#443](https://github.com/bageus/Dig/issues/443).
 - test contents: ровно один deterministic-random unit `stone` или `ore` в каждой barrel;
 - contents появляются отдельным world item entity в бывшей logical cell barrel;
 - четыре stable demo barrels: две в нижней пещере и две на верхней поверхности;
-- visual немного ниже resident;
+- visual стоит вертикально по world-up, имеет 70% прежнего presentation-размера и немного ниже resident;
 - barrel не блокирует movement, но блокирует building footprint;
 - barrel нельзя подбирать, переносить или размещать через player UI;
 - automatic falling после потери support без damage или destruction.
@@ -190,7 +190,7 @@ Supported --support lost--> Falling --landing--> Supported
 5. LMB создаёт только barrel attack command и не создаёт move, excavation, item selection/pickup или building command тем же event;
 6. unavailable/unreachable/falling/destroyed target использует default cursor и typed reason;
 7. status во время travel/work: `Атакует бочку`;
-8. visual стоит вертикально основанием на walk surface и немного ниже resident;
+8. visual стоит вертикально по world-up основанием на walk surface; renderer root не наследует terrain/bootstrap rotation; presentation равномерно уменьшена на 30% относительно предыдущего размера (`scale = 0.70`, итоговая высота `0.49` world unit);
 9. destroy commit убирает geometry/collider до следующего pointer resolution;
 10. barrel не имеет pickup/placement affordance.
 
@@ -263,7 +263,7 @@ Deterministic/save:
 Unity Play Mode:
 
 - two upper-surface and two lower-cave barrels;
-- visual slightly below resident;
+- world-upright visual at 70% of the previous presentation size (`0.49` world-unit height), independent from bootstrap rotation;
 - selected resident hover -> red highlight + animated sword cursor;
 - LMB -> travel -> one attack animation -> disappearance;
 - contents visible/raycastable/pickable in former cell;
@@ -275,7 +275,7 @@ Unity Play Mode:
 ## 13. Acceptance
 
 - fresh demo contains exactly four stable barrels: two upper and two lower;
-- each stands on valid support and renders slightly shorter than resident;
+- each stands world-upright on valid support and renders at exactly 70% of the previous presentation size (`0.49` world-unit height);
 - each saved manifest contains exactly one quantity-1 stone or ore;
 - hover/cursor/click parity produces one direct command;
 - one committed hit destroys barrel;
@@ -304,3 +304,4 @@ Unity Play Mode:
 | 2026-07-27 | Зафиксированы destructible barrel, direct attack без progression, red highlight, animated sword cursor, generic contents, disappearance, visual чуть ниже resident, четыре demo barrels и safe falling after support loss. | Пользователь | Все разделы, #443 |
 | 2026-07-28 | Q-BARREL-001=A, 002=A, 003=C, 004=A, 005=A, 006=B; перенос barrel запрещён. Статус повышен до APPROVED. | Пользователь | Workflow, ownership, conflicts, save/test acceptance, #443 |
 | 2026-07-28 | После post-merge audit исправлены Unity interaction wiring, AttackBarrel dispatch, cursor priority/identity, resident attack status/pose, barrel height и Z projection; demo contents теперь зависят от world seed + stable barrel id; добавлены source-contract и Play Mode regression fixtures; система возвращена в обязательный индекс. | Пользователь | Runtime, Input/UI/Presentation, deterministic contents, test evidence, #443, #468 |
+| 2026-07-28 | По runtime screenshot barrel visual обязан стоять вертикально независимо от bootstrap transform и быть равномерно уменьшен на 30% от предыдущего presentation-размера: scale `0.70`, итоговая высота `0.49`. | Пользователь | Scope, Presentation, Play Mode acceptance, #443 |
