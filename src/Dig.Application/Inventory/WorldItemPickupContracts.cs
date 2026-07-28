@@ -1,6 +1,7 @@
 using System;
 using Dig.Application.Messaging;
 using Dig.Domain.Core;
+using Dig.Domain.Jobs;
 using Dig.Domain.World;
 
 namespace Dig.Application.Inventory
@@ -37,7 +38,9 @@ public sealed class CreateWorldItemPickupCommand : ICommand<Result>
         EntityId residentId,
         CellId sourceCell,
         int priority,
-        long tick)
+        long tick,
+        WorldItemPickupCompletionAction completionAction =
+            WorldItemPickupCompletionAction.None)
         : this(
             jobId,
             stackId,
@@ -47,7 +50,8 @@ public sealed class CreateWorldItemPickupCommand : ICommand<Result>
             quantity: 0,
             destinationStackId: default,
             priority: priority,
-            tick: tick)
+            tick: tick,
+            completionAction: completionAction)
     {
     }
 
@@ -60,7 +64,9 @@ public sealed class CreateWorldItemPickupCommand : ICommand<Result>
         int quantity,
         EntityId destinationStackId,
         int priority,
-        long tick)
+        long tick,
+        WorldItemPickupCompletionAction completionAction =
+            WorldItemPickupCompletionAction.None)
     {
         if (jobId.IsEmpty || stackId.IsEmpty || residentId.IsEmpty)
         {
@@ -82,6 +88,11 @@ public sealed class CreateWorldItemPickupCommand : ICommand<Result>
             throw new ArgumentOutOfRangeException(nameof(tick));
         }
 
+        if (!Enum.IsDefined(typeof(WorldItemPickupCompletionAction), completionAction))
+        {
+            throw new ArgumentOutOfRangeException(nameof(completionAction));
+        }
+
         JobId = jobId;
         StackId = stackId;
         ResidentId = residentId;
@@ -91,6 +102,7 @@ public sealed class CreateWorldItemPickupCommand : ICommand<Result>
         DestinationStackId = destinationStackId;
         Priority = priority;
         Tick = tick;
+        CompletionAction = completionAction;
     }
 
     public EntityId JobId { get; }
@@ -102,6 +114,7 @@ public sealed class CreateWorldItemPickupCommand : ICommand<Result>
     public EntityId DestinationStackId { get; }
     public int Priority { get; }
     public long Tick { get; }
+    public WorldItemPickupCompletionAction CompletionAction { get; }
 }
 
 public sealed class CompleteWorldItemPickupCommand : ICommand<Result>
