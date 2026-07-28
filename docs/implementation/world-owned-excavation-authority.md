@@ -1,6 +1,6 @@
 # World-owned excavation authority
 
-Статус: реализация опубликована в draft PR #463; Unity Editor / Play Mode verification остаётся обязательной до статуса `VERIFIED`.
+Статус: архитектурная реализация слита в PR #463. Ветка `agent/finish-world-excavation-verification-v2` добавляет фактические Unity Play Mode regression scenarios и отдельный blocking CI workflow; статус `VERIFIED` допускается только после успешного Unity Test Runner run.
 
 Authoritative specifications:
 
@@ -8,7 +8,7 @@ Authoritative specifications:
 - [`../design/runtime-selection-excavation-item-placement-decisions.md`](../design/runtime-selection-excavation-item-placement-decisions.md);
 - [`../design/resident-movement-occupancy-and-vertical-traversal.md`](../design/resident-movement-occupancy-and-vertical-traversal.md).
 
-Tracking: [#388](https://github.com/bageus/Dig/issues/388), [#386](https://github.com/bageus/Dig/issues/386), [#87](https://github.com/bageus/Dig/issues/87).
+Tracking: [#388](https://github.com/bageus/Dig/issues/388), [#386](https://github.com/bageus/Dig/issues/386), [#87](https://github.com/bageus/Dig/issues/87), [#15](https://github.com/bageus/Dig/issues/15).
 
 ## Исправленная первопричина
 
@@ -50,6 +50,20 @@ Save format v8 сохраняет completed-quarter mask, cut pattern и source 
 
 ## Regression coverage
 
-Добавлены Domain/Application tests для atomic fourth-quarter commit, idempotent retry, source material provenance, vertical horizontal-row ordering, support-loss posture и adjacent-depth work position. Navigation tests покрывают typed shaft-gap transition и предпочтение depth detour как в tunnel volume, так и в общем pathfinder. Save tests переведены на v8 и проверяют migration/round-trip. Unity source contracts требуют World-derived cursor/terrain progress и typed climbing movement.
+Domain/Application tests покрывают atomic fourth-quarter commit, idempotent retry, source material provenance, vertical horizontal-row ordering, support-loss posture, adjacent-depth work position, typed shaft-gap transition, depth detour и save v8 migration/round-trip.
 
-Repository CI не заменяет Unity Test Runner. Финальная runtime проверка должна пройти длинную горизонтальную и вертикальную копку, interruption/retry, вход в каждую открытую cell, cursor removal, item fall, support-loss climbing stance и depth detour в одном Play Mode workflow.
+Unity Play Mode coverage включает:
+
+- реальную 1/4–3/4 quarter geometry и удаление quarter colliders;
+- `4/4` World projection без designation и без Dig interaction collider;
+- двенадцать последовательных открытий с синхронными geometry, interaction proxy и route;
+- `ShaftGapTraverse` climbing presentation при неизменном Y и cleanup после завершения/interrupt;
+- stationary climbing work pose и cleanup;
+- предпочтение depth detour;
+- двух встречных vertical climbers без блокировки;
+- direct excavation без второго manual owner;
+- combat-priority interruption, освобождающий ordinary excavation job без cancellation/completion.
+
+`.github/workflows/unity-playmode.yml` запускает `game-ci/unity-test-runner@v4` на Unity `6000.0.71f1`, `testMode: PlayMode` и сохраняет test artifacts. `tools/quality/check_unity_excavation_playmode_contracts.py` является отдельным source-contract gate, но не заменяет успешный Unity run.
+
+Item support-loss trigger остаётся общим workflow системы #387. Excavation гарантирует, что полный World commit и refresh precede новые pickup/hauling reservations; выбор atomic или multi-tick item falling state не расширяется здесь, пока Q-ITEM-006 остаётся открытым.
