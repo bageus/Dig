@@ -26,8 +26,10 @@ public sealed class MushroomUnityRuntimeContractTests
         Assert.Contains("DirectCommandCursorKind.Axe", cursor);
         Assert.Contains("TryResolveReachableMushroomHit(hits,out_)", cursor);
         Assert.Contains("TryResolveReachableMushroomHit(hits,outDigMushroomVisualmushroom)", pointerHits);
-        Assert.Contains("_hoveredMushroom?.SetHovered(false)", pointerHits);
-        Assert.Contains("_hoveredMushroom?.SetHovered(true)", pointerHits);
+        Assert.DoesNotContain("?.SetHovered", pointerHits);
+        Assert.Contains("if(_hoveredMushroom!=null)", pointerHits);
+        Assert.Contains("_hoveredMushroom.SetHovered(false)", pointerHits);
+        Assert.Contains("_hoveredMushroom.SetHovered(true)", pointerHits);
     }
 
     [Fact]
@@ -43,6 +45,7 @@ public sealed class MushroomUnityRuntimeContractTests
         Assert.Contains("transform.localRotation=Quaternion.identity", visual);
         Assert.Contains("internalvoidSetHovered(boolhovered)", visual);
         Assert.Contains("Color.Lerp(_baseColors[index],Color.white,HoverBlend)", visual);
+        Assert.Equal(2, Count(visual, "if(renderer==null)"));
         Assert.DoesNotContain("Shader.Find(\"Standard\")", visual);
         Assert.DoesNotContain("MushroomStage.Large=>(1.34f", visual);
         Assert.Contains("DigTunnelProjection.ResidentFootSink", renderer);
@@ -143,6 +146,9 @@ public sealed class MushroomUnityRuntimeContractTests
         string depthProjection = Read(
             playMode,
             "MushroomDepthProjectionPlayModeTests.cs");
+        string hoverRemoval = Read(
+            playMode,
+            "MushroomHoverRemovalPlayModeTests.cs");
 
         Assert.DoesNotContain(".Offset(", topology);
         Assert.Contains("newCellId(cell.X-1,cell.Y,cell.Z)", topology);
@@ -166,6 +172,11 @@ public sealed class MushroomUnityRuntimeContractTests
         Assert.Contains("depthOrigin+(z*depthSpacing)", depthProjection);
         Assert.Contains("collider.bounds.center.z", depthProjection);
         Assert.Contains("depthSlabHalfExtent", depthProjection);
+        Assert.Contains(
+            "Destroyed_hovered_mushroom_is_cleared_without_mesh_reference_access",
+            hoverRemoval);
+        Assert.Contains("DestroyImmediate(mushroomRoot)", hoverRemoval);
+        Assert.Contains("Invoke(interaction,\"ClearPointerHover\")", hoverRemoval);
     }
 
     private static int Count(string source, string value)
