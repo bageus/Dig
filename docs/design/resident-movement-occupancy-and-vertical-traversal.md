@@ -72,7 +72,9 @@ Visual lane, overlap offset и interpolation не являются отдель�
 - падение возможно только после внешнего knockback/push/impact, описанного в [`entity-fall-knockback-and-vertical-shafts.md`](entity-fall-knockback-and-vertical-shafts.md);
 - после arrival visual возвращается к normal locomotion;
 - interruption/replan не оставляет resident в climbing pose;
-- resident, выполняющий mining из vertical-tunnel cell без full actor support, остаётся в stationary climbing stance спиной к камере на всё время `PerformWork`; любой completed quarter supporting cell уже отменяет full actor support.
+- resident, выполняющий mining из vertical-tunnel cell без full actor support, остаётся в stationary climbing stance спиной к камере на всё время `PerformWork`; любой completed quarter supporting cell уже отменяет full actor support;
+- terminal completion/release не возвращает unsupported resident в standing pose: climbing сохраняется до следующего traversal или supported landing;
+- если новый job/direct order не назначен, movement planner выбирает ближайшую достижимую supported walk cell и спускает/выводит resident туда обычными typed traversal edges;
 - горизонтальный переход через клетку, где vertical shaft уходит вниз и нет full floor support, является `ShaftGapTraverse`, а не обычной ходьбой; visual использует climbing stance даже при неизменном Y.
 - path selection сначала минимизирует количество `ShaftGapTraverse`, затем длину маршрута и deterministic tie-break. Поэтому доступный depth-обход выбирается раньше прямого перехода через шахту, даже если он длиннее.
 
@@ -126,13 +128,14 @@ Visual lane, overlap offset и interpolation не являются отдель�
 - **Q-MOVE-008:** при занятой preferred side допускается проход сквозь actor либо любой доступный обходной route.
 - **Q-MOVE-009:** opposite climbers в vertical tunnel проходят друг сквозь друга без ожидания.
 - **Q-MOVE-010:** в текущей системе нет действительно однополосных transitions.
-- **Q-MOVE-011:** минимальный visual interval не задаётся; остановка переднего не создаёт permanent wait.
+- **Q-MOVE-011:** минимальный visual interval не задаётся; остановка переднего resident не создаёт permanent wait.
 - **Q-MOVE-012:** vertical climbing использует валидный traversal link; сценарий самопроизвольной потери опоры во время обычного перехода отсутствует.
 - **Q-MOVE-013:** entry/exit между поддерживаемой horizontal cell и shaft cell является vertical transition, если shaft endpoint имеет vertical provenance; обе клетки не обязаны ошибочно классифицироваться как vertical.
 - **Q-MOVE-014:** mining из shaft cell без пола использует stationary climbing stance спиной к камере; authoritative resident cell остаётся shaft work cell.
 - **Q-MOVE-015:** horizontal crossing над открытым vertical shaft является `ShaftGapTraverse` и использует climbing visual.
 - **Q-MOVE-016:** route planner предпочитает любой достижимый route без `ShaftGapTraverse`, включая depth-обход, и только затем сравнивает длину.
 - **Q-MOVE-017:** partial excavation supporting cell отменяет full actor support после первого completed quarter.
+- **Q-MOVE-018:** unsupported posture переживает terminal work state; новый job имеет приоритет, иначе deterministic recovery route ведёт к ближайшей supported walk cell.
 
 ## 9. Открытые вопросы
 
@@ -165,7 +168,9 @@ Visual lane, overlap offset и interpolation не являются отдель�
 - normal vertical climbing не запускает fall без external impact;
 - после horizontal excavation resident входит в новую cell и продолжает frontier job без redraw;
 - после vertical/depth excavation новая cell сразу доступна valid climbing transition, включая entry из horizontal floor cell в первую shaft cell;
-- resident, mining sideways/depth from unsupported или partially cut support, остаётся спиной к камере в climbing pose до завершения/interrupt;
+- resident, mining sideways/depth from unsupported или partially cut support, остаётся спиной к камере в climbing pose во время работы;
+- completion/interrupt без нового job не включает standing на unsupported cell; resident остаётся climbing и достигает nearest supported walk cell;
+- новый reachable job после completion имеет приоритет над idle support recovery;
 - horizontal crossing через shaft gap использует climbing pose, даже если logical Y не меняется;
 - при наличии depth-обхода route не использует shaft-gap crossing;
 - knockback/push в open shaft передаёт управление fall system;
