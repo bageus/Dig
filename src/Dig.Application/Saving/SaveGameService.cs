@@ -224,6 +224,29 @@ public sealed class SaveGameService
             productionContent);
     }
 
+    public Result<LoadedGameState> Load(
+        string slotId,
+        SaveGameLoadContext context)
+    {
+        if (context is null)
+        {
+            throw new ArgumentNullException(nameof(context));
+        }
+
+        SaveGameDocument document = _store.Load(slotId);
+        return RestoreAgents(
+            _loader.Load(
+                document,
+                context.Materials,
+                context.Items,
+                context.Buildings,
+                context.TerrainDeposits,
+                context.Mushrooms,
+                context.Production,
+                context.Barrels),
+            context.Agents);
+    }
+
     public IReadOnlyList<SaveSlotInfo> ListSlots()
     {
         return _store.List();
