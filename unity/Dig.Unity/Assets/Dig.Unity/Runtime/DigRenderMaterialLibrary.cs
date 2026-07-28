@@ -52,8 +52,9 @@ public sealed class DigRenderMaterialLibrary : MonoBehaviour
         Material material = new Material(shader)
         {
             name = "Dig Runtime Fallback " + semantic + " " + surface,
-            color = tint, enableInstancing = true,
+            enableInstancing = true,
         };
+        DigMaterialColorUtility.SetColor(material, tint);
         if (surface == RenderSurfaceKind.Overlay) material.renderQueue = 3000;
         return material;
     }

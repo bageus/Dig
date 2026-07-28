@@ -42,7 +42,9 @@ namespace Dig.Unity
                 }
                 if (color == default && renderer.sharedMaterial != null)
                 {
-                    color = renderer.sharedMaterial.color;
+                    color = DigMaterialColorUtility.GetColor(
+                        renderer.sharedMaterial,
+                        Color.white);
                 }
 
                 colors[index] = color;
