@@ -117,3 +117,13 @@ The correction keeps Domain/Application completion unchanged and fixes the Unity
 - cap/leg remain quantity-one `WorldItemInteractionKind.Pickup` entities and never acquire `DigMushroomVisual` identity.
 
 Regression coverage now rotates the renderer parent exactly like the runtime bootstrap, verifies world-up stem/collider orientation, renders completion drops as pickup-only world visuals, and exercises a physical foreground item ray before a regrown mushroom. The system remains `IMPLEMENTED` until Unity Test Runner executes the checked-in Play Mode scenarios.
+
+## Pointer-hit syntax regression (2026-07-28)
+
+A subsequent Unity Safe Mode compile exposed `CS0106` at the declarations of `TryProjectResidentBounds`, `DistanceToRect` and `ComparePointerHits`, followed by `CS1513` at end of `DigWorldInteraction.PointerHits.cs`.
+
+The foreground-targeting follow-up closed the resident candidate comparison `if` but omitted the closing brace of the surrounding `for` loop in `TryResolveAgentNearPointer`. PR #458 restores that method boundary without changing pointer priority or targeting behavior.
+
+`PointerHitUnitySyntaxContractTests` now verifies balanced braces in the partial file and requires the exact `if -> for -> agent assignment -> next method` boundary. On code head `d540b6bdfbece8509437032cfd9202605e78a0d5`, Quality #5755 (`30315315950`), Stage 2 v2 #455 (`30315315946`) and Stage 2 v3 #460 (`30315315930`) passed, including Release build, full `Dig.Tests`, headless smoke and both deterministic soaks.
+
+The fix addresses the reported Unity parser failure at its source. Status remains `IMPLEMENTED` until Unity Editor/Test Runner executes the complete interaction workflow.
