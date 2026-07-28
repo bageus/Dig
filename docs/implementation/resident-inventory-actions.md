@@ -4,7 +4,7 @@
 
 Authoritative design: [`../design/runtime-selection-excavation-item-placement-decisions.md`](../design/runtime-selection-excavation-item-placement-decisions.md), [`../design/resident-inventory-expansion.md`](../design/resident-inventory-expansion.md).
 
-Tracking: [#64](https://github.com/bageus/Dig/issues/64), [#67](https://github.com/bageus/Dig/issues/67), [#70](https://github.com/bageus/Dig/issues/70), [#387](https://github.com/bageus/Dig/issues/387), [#390](https://github.com/bageus/Dig/issues/390), [#459](https://github.com/bageus/Dig/issues/459), [PR #479](https://github.com/bageus/Dig/pull/479).
+Tracking: [#64](https://github.com/bageus/Dig/issues/64), [#67](https://github.com/bageus/Dig/issues/67), [#70](https://github.com/bageus/Dig/issues/70), [#387](https://github.com/bageus/Dig/issues/387), [#390](https://github.com/bageus/Dig/issues/390), [#459](https://github.com/bageus/Dig/issues/459), [PR #479](https://github.com/bageus/Dig/pull/479), [PR #480](https://github.com/bageus/Dig/pull/480).
 
 ## Input routing
 
@@ -48,6 +48,8 @@ Food в inventory делегируется существующему `StartResi
 
 Unity runtime использует публичный ownership contract `DropResidentInventoryStackHandler.IsOwnedByResident`; helper не должен становиться `internal`, потому что `Dig.Unity` и `Dig.Application` являются разными assemblies. Inventory validation повторно получает authoritative repository через общий `ResolveWorldItemRepository`, а HUD/session references в consumable command path фиксируются как non-null после initialization guard, чтобы Unity nullable compilation не оставляла `CS8602` warnings.
 
+`DigWorldInteraction` хранит HUD как `DigHudOverlay`. Consumable command path обязан использовать тот же adapter type: `DigGameHudCanvas` является внутренним canvas projection overlay и не владеет `SetCommandResult`/`SetJobs` contract напрямую.
+
 ## Verification
 
 Добавлены .NET regression tests для:
@@ -57,6 +59,7 @@ Unity runtime использует публичный ownership contract `DropRe
 - deterministic dependency order;
 - deposit без потери/дублирования quantity;
 - placement job save codec;
-- публичной Unity-доступности resident ownership policy и её location semantics.
+- публичной Unity-доступности resident ownership policy и её location semantics;
+- соответствия world consumable command path фактическому `DigHudOverlay` field contract.
 
 Unity Play Mode остаётся обязательным для animated cursor, exact hover tint, ghost visibility/colour, multi-order resident execution, input shielding и повторного world pickup/drop workflow.
