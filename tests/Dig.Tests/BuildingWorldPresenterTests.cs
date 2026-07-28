@@ -71,8 +71,8 @@ public sealed class BuildingWorldPresenterTests
         Assert.Equal(source.BoxPlan!.SourceStackId.ToString(), model.SourceBuildingBoxStackId);
         Assert.Equal(source.BoxPlan.JobId.ToString(), model.BuildingBoxJobId);
         Assert.Equal(BuildingBoxCommitState.Reserved, model.BuildingBoxCommitState);
-        Assert.True(model.IsBuildingBoxTransformation);
-        Assert.True(model.IsPendingBuildingBoxTransformation);
+        Assert.True(model.HasBuildingBoxLifecycle);
+        Assert.True(model.IsPendingBuildingBoxLifecycle);
     }
 
     [Fact]

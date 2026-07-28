@@ -214,12 +214,12 @@ public sealed class BuildingWorldViewModel
     public string? SourceBuildingBoxStackId { get; }
     public string? BuildingBoxJobId { get; }
     public BuildingBoxCommitState? BuildingBoxCommitState { get; }
-    public bool IsBuildingBoxTransformation =>
+    public bool HasBuildingBoxLifecycle =>
         SourceBuildingBoxStackId != null
         && BuildingBoxJobId != null
         && BuildingBoxCommitState.HasValue;
-    public bool IsPendingBuildingBoxTransformation =>
-        IsBuildingBoxTransformation
+    public bool IsPendingBuildingBoxLifecycle =>
+        HasBuildingBoxLifecycle
         && BuildingBoxCommitState != Dig.Domain.Buildings.BuildingBoxCommitState.Consumed
         && Status != BuildingStatus.Completed
         && Status != BuildingStatus.Damaged;

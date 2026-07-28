@@ -120,7 +120,7 @@ internal static class BuildingBoxRuntimeLifecyclePlayModeHarness
     {
         return Buildings(runtime).Single(value =>
             value.SourceBuildingBoxStackId == sourceStackId.ToString()
-            && value.IsPendingBuildingBoxTransformation);
+            && value.IsPendingBuildingBoxLifecycle);
     }
 
     internal static BuildingWorldViewModel[] Buildings(Runtime runtime)

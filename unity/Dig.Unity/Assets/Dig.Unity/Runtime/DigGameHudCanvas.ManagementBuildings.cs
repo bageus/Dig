@@ -20,7 +20,7 @@ public sealed partial class DigGameHudCanvas
         IReadOnlyDictionary<string, BuildingWorldViewModel> boxTransformations =
             IndexPendingBuildingBoxTransformations(allBuildings);
         IReadOnlyList<BuildingWorldViewModel> buildings = allBuildings
-            .Where(value => !value.IsPendingBuildingBoxTransformation)
+            .Where(value => !value.IsPendingBuildingBoxLifecycle)
             .ToArray();
         IReadOnlyList<WorldItemViewModel> buildingBoxes = _terrainSession
             .LoadAllWorldItems()

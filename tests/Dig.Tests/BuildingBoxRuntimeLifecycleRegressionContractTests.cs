@@ -80,12 +80,12 @@ public sealed class BuildingBoxRuntimeLifecycleRegressionContractTests
             "DigGameHudCanvas.BuildingBoxTransformations.cs");
 
         Assert.Contains("snapshot.BoxPlan?.SourceStackId.ToString()", models);
-        Assert.Contains("IsPendingBuildingBoxTransformation", models);
+        Assert.Contains("IsPendingBuildingBoxLifecycle", models);
         Assert.Contains("IndexPendingBuildingBoxTransformations(allBuildings)", roster);
-        Assert.Contains("!building.IsPendingBuildingBoxTransformation", roster);
+        Assert.Contains("!building.IsPendingBuildingBoxLifecycle", roster);
         Assert.Contains("FormatBuildingBoxTransformationLabel", roster);
         Assert.Contains("IndexPendingBuildingBoxTransformations(allBuildings)", management);
-        Assert.Contains("!value.IsPendingBuildingBoxTransformation", management);
+        Assert.Contains("!value.IsPendingBuildingBoxLifecycle", management);
         Assert.Contains("BuildingBoxCommitState.AtSite", transformations);
     }
 

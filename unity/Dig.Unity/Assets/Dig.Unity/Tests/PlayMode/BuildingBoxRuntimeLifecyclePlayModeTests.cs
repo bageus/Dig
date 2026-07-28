@@ -72,7 +72,7 @@ public sealed class BuildingBoxRuntimeLifecyclePlayModeTests
         BuildingWorldViewModel completedBuilding = Buildings(runtime)
             .Single(value => value.Id == planned.Id);
         Assert.That(completedBuilding.Status, Is.EqualTo(BuildingStatus.Completed));
-        Assert.That(completedBuilding.IsPendingBuildingBoxTransformation, Is.False);
+        Assert.That(completedBuilding.IsPendingBuildingBoxLifecycle, Is.False);
         Assert.That(completedBuilding.SourceBuildingBoxStackId, Is.EqualTo(box.StackId.ToString()));
         Assert.That(runtime.Inventory.GetStack(box.StackId), Is.Null);
         Assert.That(Job(runtime, job.Id).Status, Is.EqualTo(JobStatus.Completed));
@@ -151,7 +151,7 @@ public sealed class BuildingBoxRuntimeLifecyclePlayModeTests
         Assert.That(
             Buildings(runtime).Any(value => value.SourceBuildingBoxStackId
                 == box.StackId.ToString()
-                && value.IsPendingBuildingBoxTransformation),
+                && value.IsPendingBuildingBoxLifecycle),
             Is.False);
         ItemStackSnapshot preserved = runtime.Inventory.GetStack(box.StackId)!;
         Assert.That(preserved.StackId, Is.EqualTo(box.StackId));

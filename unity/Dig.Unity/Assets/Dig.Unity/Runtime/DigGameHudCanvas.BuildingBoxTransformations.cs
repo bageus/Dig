@@ -14,7 +14,7 @@ public sealed partial class DigGameHudCanvas
             IReadOnlyList<BuildingWorldViewModel> buildings)
     {
         return buildings
-            .Where(value => value.IsPendingBuildingBoxTransformation)
+            .Where(value => value.IsPendingBuildingBoxLifecycle)
             .ToDictionary(
                 value => value.SourceBuildingBoxStackId!,
                 value => value,
