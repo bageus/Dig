@@ -89,10 +89,14 @@ Presentation/Unity:
 - `ResidentFoodMealTests` verifies one consumed portion, three exactly-once bites, interruption and runtime restoration after a completed bite.
 - `CampfireFoodSaveTests` verifies save/load of active meal progress and backward-compatible pickup job decoding.
 - `SaveMigrationAndCorruptionTests`, `MushroomSaveRoundTripTests` and `BarrelSaveRoundTripTests` verify the complete v9 migration chain.
-- `CampfireFoodUnityRuntimeContractTests` guards runtime composition, cursor branches, persisted pickup action and shared meal wiring.
+- `CampfireFoodUnityRuntimeContractTests` guards runtime composition, cursor branches, persisted pickup action, shared meal wiring and the Play Mode harness/Application command signature boundary.
 - `CampfireFoodWorkflowPlayModeTests` implements the missing-cap dependency and pickup-to-three-bites runtime scenarios.
 - `CampfireFoodCompletionPlayModeTests` implements repeated production, fully blocked output-ring retry without duplication and cancellation of pickup-then-use without losing food or reservations.
 - `CampfireFoodProductionPlayModeHarness` composes completed campfire, production, inventory, jobs and resident owners for deterministic runtime tests without duplicating gameplay logic.
+
+## Unity harness compile regression (2026-07-28)
+
+Unity Editor reported `CS1739` in `CampfireFoodProductionPlayModeHarness.cs`: the harness called `ApplyProductionWorkCommand` with the obsolete named argument `elapsedTicks`, while the authoritative Application contract exposes `baseWork`. The correction changes only the test harness call to `baseWork: 1`; production timing, work calculation and gameplay behavior are unchanged. A source-contract regression now requires `int baseWork` in `ProductionContracts.cs`, `baseWork: 1` in the Play Mode harness and rejects `elapsedTicks:` in that harness.
 
 ## Verification status
 
