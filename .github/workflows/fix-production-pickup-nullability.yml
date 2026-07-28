@@ -1,0 +1,59 @@
+name: Fix production pickup nullability
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/fix-production-pickup-nullability.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.head_ref == 'feature/complete-building-production-workflow'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+
+      - name: Apply validated nullable-flow correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('src/Dig.Application/Inventory/WorldItemPickupHandlers.cs')
+          text = path.read_text()
+          old = '''        int quantity = command.Quantity == 0 ? stack!.Quantity : command.Quantity;
+          Result reserved = inventory.ReserveQuantity('''
+          new = '''        ItemStackSnapshot source = stack!;
+          int quantity = command.Quantity == 0 ? source.Quantity : command.Quantity;
+          Result reserved = inventory.ReserveQuantity('''
+          if text.count(old) != 1:
+              raise SystemExit('Expected quantity block was not found exactly once.')
+          text = text.replace(old, new)
+          old_item = '''                stack.ItemId,
+          quantity,'''
+          new_item = '''                source.ItemId,
+          quantity,'''
+          if text.count(old_item) != 1:
+              raise SystemExit('Expected item-id use was not found exactly once.')
+          path.write_text(text.replace(old_item, new_item))
+          PY
+          git rm .github/workflows/fix-production-pickup-nullability.yml
+          git diff --check
+          python3 tools/quality/check_quality.py
+
+      - name: Commit clean correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/Dig.Application/Inventory/WorldItemPickupHandlers.cs
+          git commit -m 'fix: preserve validated pickup source snapshot'
+          git push origin HEAD:${{ github.head_ref }}
