@@ -16,47 +16,49 @@ namespace Dig.Unity
                 return;
             }
 
+            DigGameHudCanvas hud = _hud!;
+            DigTerrainWorkSession terrainSession = _terrainSession!;
             string residentId = decision.ActorId.Value.ToString();
             string stackId = decision.TargetEntityId.Value.ToString();
-            Result effectOwner = _terrainSession!.ValidateWorldConsumableAction(stackId);
+            Result effectOwner = terrainSession.ValidateWorldConsumableAction(stackId);
             if (effectOwner.IsFailure)
             {
-                _hud!.SetCommandResult(effectOwner);
+                hud.SetCommandResult(effectOwner);
                 return;
             }
 
-            Result capacity = _terrainSession.ValidateResidentCanPickupStack(
+            Result capacity = terrainSession.ValidateResidentCanPickupStack(
                 residentId,
                 stackId);
             if (capacity.IsFailure)
             {
-                _hud.SetCommandResult(capacity);
+                hud.SetCommandResult(capacity);
                 if (capacity.Error == InventoryErrors.ResidentInventoryCapacityExceeded)
                 {
                     _agentRenderer!.PlayInventoryFullReaction(residentId);
-                    _hud.SetStatus("Resident inventory is full.");
+                    hud.SetStatus("Resident inventory is full.");
                 }
 
                 return;
             }
 
-            Result result = _terrainSession.CreateWorldItemPickup(
+            Result result = terrainSession.CreateWorldItemPickup(
                 stackId,
                 residentId,
                 decision.TargetCell.Value,
                 _simulation!.CurrentTick,
                 eatAfterPickup: true);
-            _hud.SetCommandResult(result);
+            hud.SetCommandResult(result);
             if (result.IsFailure)
             {
                 return;
             }
 
-            var jobs = _terrainSession.LoadJobs();
+            var jobs = terrainSession.LoadJobs();
             _jobRenderer!.Render(jobs);
-            _hud.SetJobs(jobs);
-            _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
-            _hud.SetStatus("Consumable pickup and use order created.");
+            hud.SetJobs(jobs);
+            _itemRenderer!.Render(terrainSession.LoadAllWorldItems());
+            hud.SetStatus("Consumable pickup and use order created.");
         }
     }
 }

@@ -58,7 +58,7 @@ public sealed class DropResidentInventoryStackHandler
         return Result.Success();
     }
 
-    internal static bool IsOwnedByResident(ItemLocation location, EntityId residentId)
+    public static bool IsOwnedByResident(ItemLocation location, EntityId residentId)
     {
         return location.HasOwner
             && location.OwnerId == residentId
