@@ -61,7 +61,13 @@ def main() -> int:
         "ExcavationQuarter.All",
         "TunnelTraversalKind.ShaftGapTraverse",
         "TunnelTraversalKind.DepthTraverse",
+        "TraversalKinds.Contains(TunnelTraversalKind.DepthTraverse)",
+        "TraversalKinds.Contains(TunnelTraversalKind.ShaftGapTraverse)",
         "_climbingWorkPose",
+    )))
+    errors.extend(reject(world_tests, (
+        "Does.Contain(TunnelTraversalKind",
+        "Does.Not.Contain(TunnelTraversalKind",
     )))
     errors.extend(require(continuation_tests, (
         "Twelve_opened_cells_keep_geometry_cursor_and_route_in_sync",

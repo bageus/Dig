@@ -134,10 +134,12 @@ public sealed class WorldOwnedExcavationPlayModeTests
 
         TunnelPathResult route = detour.FindPath(start, goal);
         Assert.That(route.Succeeded, Is.True);
-        Assert.That(route.Path!.TraversalKinds,
-            Does.Contain(TunnelTraversalKind.DepthTraverse));
-        Assert.That(route.Path.TraversalKinds,
-            Does.Not.Contain(TunnelTraversalKind.ShaftGapTraverse));
+        Assert.That(
+            route.Path!.TraversalKinds.Contains(TunnelTraversalKind.DepthTraverse),
+            Is.True);
+        Assert.That(
+            route.Path.TraversalKinds.Contains(TunnelTraversalKind.ShaftGapTraverse),
+            Is.False);
 
         CellId top = new CellId(0, 0, 0);
         CellId bottom = new CellId(0, 1, 0);
