@@ -1,6 +1,6 @@
 # Destructible barrels implementation
 
-Статус: `IMPLEMENTED` — Domain/Application/runtime slice и автоматические regression fixtures добавлены в draft PR #444. Статус `VERIFIED` требует фактического запуска Unity Test Runner.
+Статус: `IMPLEMENTED` — Domain/Application/runtime slice и автоматические regression fixtures реализованы в #444 и выровнены с полным observable workflow в follow-up PR #468. Статус `VERIFIED` требует фактического запуска Unity Test Runner.
 
 Authoritative design: [`../design/destructible-barrels.md`](../design/destructible-barrels.md).
 
@@ -14,18 +14,21 @@ Tracking issue: [#443](https://github.com/bageus/Dig/issues/443).
 - `InventoryState` создаёт ровно один quantity-1 unit в former barrel cell после успешного commit.
 - World/Navigation предоставляет support, deterministic landing и reachable attack positions.
 - building placement получает отдельный immutable set supported barrel cells; movement occupancy не создаётся.
-- Presentation отображает barrel geometry/collider, red hover highlight, sword cursor, attack/fall result и status, но не владеет lifecycle или contents.
+- Presentation отображает barrel geometry/collider, red hover highlight, animated sword cursor, resident attack pose, safe landing result и status, но не владеет lifecycle или contents.
 
 ## Runtime workflow
 
 ```text
 selected resident + reachable barrel hover
+-> shared TryResolveBarrelHit target
 -> red highlight + animated sword cursor
 -> ContextInputRouter: AttackBarrel
+-> DigWorldInteraction.ApplyDecision: ApplyBarrelAttack
 -> PrepareResidentsForDirectCommand
 -> StartDirectBarrelAttackCommand
 -> ordinary JobSystem travel to adjacent work position
 -> ArriveAtBarrelCommand
+-> resident Hit pose during PerformWork
 -> one CompleteBarrelHitCommand
 -> CompleteBarrelDestructionCommand
 -> optimistic first commit wins
@@ -37,15 +40,17 @@ Concurrent jobs reserve only independent work positions. Когда два resid
 
 ## Demo bootstrap
 
-Fresh demo создаёт четыре stable barrels: две на supported cells верхней поверхности (`Z0`) и две на supported cells нижней пещеры (`Z > 0`). Каждый stable barrel id детерминированно выбирает и сохраняет ровно один item: `material.stone` либо `ore.iron`. Visual height равна `1.05` world unit.
+Fresh demo создаёт четыре stable barrels: две на supported cells верхней поверхности (`Z0`) и две на supported cells нижней пещеры (`Z > 0`). Каждый manifest выбирается named deterministic stream из world seed + stable barrel id и сразу сохраняется как ровно один `material.stone` либо `ore.iron`.
+
+Barrel collider/geometry имеет высоту `0.70` world unit. Resident interaction height равна `1.52 * 0.5 = 0.76`, поэтому barrel действительно немного ниже resident. Renderer использует authoritative `DepthOrigin + CellId.Z * DepthSpacing` без отдельного front/back offset.
 
 ## Support loss и placement
 
-После authoritative excavation/world commit support reconciliation проверяет supported barrels. Unsupported barrel использует общий vertical landing resolver, переходит через `Falling` к первой свободной supported cell и не получает damage, не разрушается и не materialize-ит contents. Supported barrel cell входит в building-placement blocked set, но не добавляется в Navigation occupancy.
+После authoritative excavation/world commit support reconciliation проверяет supported barrels. Unsupported barrel использует vertical landing resolver, переходит через `Falling` к первой свободной supported cell и не получает damage, не разрушается и не materialize-ит contents. Supported barrel cell входит в combined building-placement blocked set, но не добавляется в Navigation occupancy.
 
 ## Save/load
 
-Save format v7 хранит production и additive optional barrel section:
+Save format v8 хранит additive barrel section:
 
 - id, definition, cell и lifecycle;
 - contents item id, generation и materialized marker;
@@ -53,12 +58,18 @@ Save format v7 хранит production и additive optional barrel section:
 - optimistic version;
 - active barrel jobs через `BarrelAttackJobSaveCodec`.
 
-v6→v7 migration добавляет production и пустую barrel section; существующий v7 document без barrel section трактуется как пустой. Fresh demo bootstrap создаёт fixtures только для новой session; load не должен создавать дополнительные barrels или повторять output.
+Legacy migration pipeline добавляет пустую barrel section и последовательно доводит document до текущего формата. Fresh demo bootstrap создаёт fixtures только для новой session; load не создаёт дополнительные barrels и не повторяет output.
 
-## CI regression fixes
+## Post-merge alignment fixes
 
-- Quality run `30310039384` показал, что concurrent reservation test ожидал две записи, хотя `JobSystem.Claim` корректно создаёт для каждого job `ForJob`, `ForAgent` и `ForPosition`. Regression теперь проверяет точные ключи и отдельно запрещает exclusive barrel target reservation.
-- PR #444 синхронизирован с актуальным `main`; production и barrels совместно используют backward-compatible format v7; отсутствующая barrel section восстанавливается как пустая.
+- сохранены stable input identities из #467: `Sword = 5`, `Eat = 6`, barrel/food command IDs различны;
+- добавлен общий `TryResolveBarrelHit`, используемый hover/cursor/LMB;
+- `AttackBarrel` подключён к `ApplyBarrelAttack`; команда больше не попадает в unwired default branch;
+- cursor priority выровнен с direct click priority и parser boundary защищён regression;
+- barrel visual уменьшен с `1.05` до `0.70`, depth offset `-0.70` удалён;
+- Job overlay/read model знает `IsBarrelAttack`; resident status — `Атакует бочку`, work pose — `Hit`;
+- demo contents используют `RandomStreamCatalog` с authoritative world seed и stable barrel id;
+- barrel system возвращена в `docs/systems/README.md`; удалена дублирующая строка building production.
 
 ## Regression coverage
 
@@ -75,10 +86,26 @@ Domain/Application:
 
 Unity/source contracts:
 
-- four demo fixtures and stone/iron-ore contents;
-- red highlight, animated sword cursor and Russian status;
-- geometry/collider lifecycle;
-- support removal and landing wiring;
-- Play Mode fixture for rendering/disappearance.
+- exact interaction renderer wiring and `AttackBarrel` dispatch;
+- balanced/unique sword cursor contract;
+- four demo fixtures and world-seed-based stone/iron-ore contents;
+- red highlight, animated sword cursor, Russian status and resident Hit pose;
+- visual below resident and no depth-slab offset;
+- support removal and landing wiring.
 
-Unity Editor/Play Mode нельзя считать пройденным, пока fixture реально не выполнен Unity Test Runner. Поэтому система не получает статус `VERIFIED` только по source-contract или .NET checks.
+Checked-in Unity Play Mode fixtures cover:
+
+- four supported visuals below resident height and inside their authoritative Z slabs;
+- red highlight and destroyed visual removal;
+- Application start → arrive → hit → finalize → exactly-one Inventory world output;
+- unsupported barrel landing without destruction or contents release.
+
+## Validation
+
+Behavioral head `32b1e7e509c6c3f754fd5a910feb97d337865e06` passed:
+
+- Quality run `30345393967` / run 6001: architecture and Unity source contracts, .NET restore/build/test, headless smoke, standard deterministic soak and large-settlement soak;
+- Export Stage 2 v2 run `30345394196` / run 519;
+- Export Stage 2 v3 run `30345393753` / run 524.
+
+Unity Editor/Play Mode нельзя считать пройденным, пока fixtures реально не выполнены Unity Test Runner. Поэтому система остаётся `IMPLEMENTED`, а не `VERIFIED`.
