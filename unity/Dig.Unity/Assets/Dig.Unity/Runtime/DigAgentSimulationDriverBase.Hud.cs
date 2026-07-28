@@ -17,7 +17,7 @@ public abstract partial class DigAgentSimulationDriverBase
         if (AgentSession == null)
         {
             return new SocietySnapshot(
-                version: 0,
+                0,
                 Array.Empty<ResidentSocietySnapshot>(),
                 Array.Empty<SocialBondSnapshot>());
         }
