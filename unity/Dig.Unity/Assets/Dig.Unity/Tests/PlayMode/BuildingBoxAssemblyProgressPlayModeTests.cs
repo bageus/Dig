@@ -57,7 +57,7 @@ namespace Dig.Unity.Tests
             Assert.AreEqual(1f, heights[4], 0.001f);
             Assert.That(host.name, Does.Contain("Completed"));
 
-            Object.DestroyImmediate(host);
+            UnityEngine.Object.DestroyImmediate(host);
         }
 
         private static BuildingWorldViewModel CreateModel(
@@ -80,22 +80,22 @@ namespace Dig.Unity.Tests
                 packingRequiredWork: 0,
                 actions: Array.Empty<BuildingFunctionActionViewModel>());
             return new BuildingWorldViewModel(
-                buildingId.ToString(),
-                definitionId.ToString(),
-                "Box Workshop",
+                id: buildingId.ToString(),
+                definitionId: definitionId.ToString(),
+                name: "Box Workshop",
                 originX: 3,
                 originY: 3,
                 originZ: 1,
-                BuildingOrientation.North,
+                orientation: BuildingOrientation.North,
                 workPositionX: 3,
                 workPositionY: 2,
                 workPositionZ: 1,
-                status,
-                completedWork,
+                status: status,
+                completedWork: completedWork,
                 requiredWork: 3,
-                version,
-                new[] { new BuildingFootprintCellViewModel(3, 3, 1) },
-                functions);
+                version: version,
+                footprint: new[] { new BuildingFootprintCellViewModel(3, 3, 1) },
+                functions: functions);
         }
 
         private static void SetModel(DigBuildingVisual visual, BuildingWorldViewModel model)
