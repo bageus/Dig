@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - '.github/agent/building-production-completion.patch.gz.b64'
+      - '.github/agent/building-production-completion.part04'
       - '.github/workflows/apply-building-production-completion.yml'
 
 permissions:
@@ -25,7 +25,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          base64 --decode .github/agent/building-production-completion.patch.gz.b64 > /tmp/building-production-completion.patch.gz
+          cat .github/agent/building-production-completion.part00 \
+              .github/agent/building-production-completion.part01 \
+              .github/agent/building-production-completion.part02 \
+              .github/agent/building-production-completion.part03 \
+              .github/agent/building-production-completion.part04 \
+              > /tmp/building-production-completion.patch.gz.b64
+          base64 --decode /tmp/building-production-completion.patch.gz.b64 > /tmp/building-production-completion.patch.gz
           echo '553b968cadb6d7725ef9079051cb18c9bba21168db641c8607f84993c3456a51  /tmp/building-production-completion.patch.gz' | sha256sum --check --strict
           gzip --decompress --stdout /tmp/building-production-completion.patch.gz > /tmp/building-production-completion.patch
           echo '94daa9219bee799b879bef565fd1a7ec365f26a35ef2d8a722efa6b8061c1805  /tmp/building-production-completion.patch' | sha256sum --check --strict
@@ -37,6 +43,11 @@ jobs:
           set -euo pipefail
           git apply --index /tmp/building-production-completion.patch
           git rm .github/agent/building-production-completion.patch.gz.b64
+          git rm .github/agent/building-production-completion.part00
+          git rm .github/agent/building-production-completion.part01
+          git rm .github/agent/building-production-completion.part02
+          git rm .github/agent/building-production-completion.part03
+          git rm .github/agent/building-production-completion.part04
           git rm .github/workflows/apply-building-production-completion.yml
           git diff --cached --check
           python3 tools/quality/check_quality.py
