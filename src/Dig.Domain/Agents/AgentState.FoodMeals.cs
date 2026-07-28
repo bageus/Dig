@@ -43,14 +43,33 @@ namespace Dig.Domain.Agents
                 return Result.Failure(FoodMealErrors.AlreadyActive);
             }
 
-            _activeAction = null;
+            if (_activeAction != null)
+            {
+                Raise(new AgentActionInterrupted(
+                    tick,
+                    Id,
+                    _activeAction.IntentKind,
+                    AgentIntentKind.Eat));
+            }
+
+            _activeAction = new ActiveAgentAction(
+                AgentIntentKind.Eat,
+                playerOrderId: null,
+                tick,
+                biteCount);
             _activeFoodMeal = new ActiveFoodMeal(
                 sourceStackId,
                 itemId,
                 totalNutrition,
                 biteCount);
             LastActionSwitchTick = tick;
+            LastActionBlockReason = null;
             Version = checked(Version + 1);
+            Raise(new AgentActionStarted(
+                tick,
+                Id,
+                AgentIntentKind.Eat,
+                playerOrderId: null));
             Raise(new AgentFoodMealStarted(
                 tick,
                 Id,
@@ -74,9 +93,17 @@ namespace Dig.Domain.Agents
                 return Result<bool>.Failure(FoodMealErrors.NotActive);
             }
 
+            if (_activeAction == null
+                || _activeAction.IntentKind != AgentIntentKind.Eat)
+            {
+                throw new InvalidOperationException(
+                    "An active food meal must own the existing Eat action.");
+            }
+
             int nutrition = _activeFoodMeal.ResolveNextBiteNutrition();
             ApplyNeedDelta(new NeedDelta(nutrition, 0, 0, 0), tick);
             _activeFoodMeal.CompleteBite();
+            _activeAction.Advance();
             Version = checked(Version + 1);
             Raise(new AgentFoodBiteCompleted(
                 tick,
@@ -93,7 +120,9 @@ namespace Dig.Domain.Agents
 
             ItemId completedItem = _activeFoodMeal.ItemId;
             _activeFoodMeal = null;
+            _activeAction = null;
             LastActionSwitchTick = tick;
+            Raise(new AgentActionCompleted(tick, Id, AgentIntentKind.Eat));
             Raise(new AgentFoodMealCompleted(tick, Id, completedItem));
             return Result<bool>.Success(true);
         }
@@ -113,8 +142,15 @@ namespace Dig.Domain.Agents
 
             FoodMealSnapshot snapshot = _activeFoodMeal.CreateSnapshot();
             _activeFoodMeal = null;
+            _activeAction = null;
             LastActionSwitchTick = tick;
+            LastActionBlockReason = reason.Trim();
             Version = checked(Version + 1);
+            Raise(new AgentActionInterrupted(
+                tick,
+                Id,
+                AgentIntentKind.Eat,
+                AgentIntentKind.Idle));
             Raise(new AgentFoodMealInterrupted(
                 tick,
                 Id,
