@@ -17,6 +17,9 @@ namespace Dig.Tests
                 runtime,
                 "DigBuildingBoxGhostRenderer.Representatives.cs");
             string relocation = Read(runtime, "DigBuildingBoxRelocationExecution.cs");
+            string relocationNavigation = Read(
+                runtime,
+                "DigBuildingBoxRelocationNavigation.cs");
             string pickup = Read(runtime, "DigBuildingBoxPickupExecution.cs");
             string driver = Read(runtime, "DigAgentSimulationDriverBase.Loop.cs");
             string inventory = Read(runtime, "DigGameHudCanvas.Inventory.cs");
@@ -33,7 +36,7 @@ namespace Dig.Tests
             Assert.Contains("BuildingVisualState.Completed", representatives);
             Assert.Contains("SynchronizeBuildingBoxRelocation", driver);
             Assert.Contains("TryPlanBuildingBoxRelocationMovement", pickup);
-            Assert.Contains("relocation.StartsHeld", relocation);
+            Assert.Contains("relocation.StartsHeld", relocationNavigation);
             Assert.Contains("CompleteBuildingBoxRelocationCommand", relocation);
             Assert.Contains("ResidentInventorySlotVisualKind.BuildingBox", inventory);
             Assert.Contains("newColor(0.10f,0.34f,0.72f,0.96f)", inventory);
