@@ -87,14 +87,22 @@ def main() -> int:
         "_excavationQuarterWork.Cancel",
     )))
     errors.extend(require(workflow, (
-        "Validate Unity activation",
-        "Configure UNITY_EMAIL and UNITY_PASSWORD",
-        "Configure UNITY_LICENSE for Personal or UNITY_SERIAL for Pro",
+        "Resolve Unity activation",
+        "id: activation",
+        "configured=false",
+        "Unity Play Mode skipped",
+        "steps.activation.outputs.configured == 'true'",
+        "Record skipped runtime evidence",
+        "licensed Play Mode evidence remains pending",
         "game-ci/unity-test-runner@v4",
         "unityVersion: 6000.0.71f1",
         "testMode: PlayMode",
         "unity-playmode-results",
         "path: artifacts/playmode",
+    )))
+    errors.extend(reject(workflow, (
+        "Validate Unity activation",
+        "::error title=Unity activation missing",
     )))
 
     if errors:
