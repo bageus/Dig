@@ -4,6 +4,7 @@ using Dig.Application.Inventory;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
+using Dig.Infrastructure.InMemory;
 
 namespace Dig.Unity
 {
@@ -21,14 +22,14 @@ namespace Dig.Unity
         {
             EntityId actor = ParseInventoryEntityId(residentId, nameof(residentId));
             EntityId stack = ParseInventoryEntityId(stackId, nameof(stackId));
-            InventoryState? inventory = _buildingInventoryRepository?.Get();
-            ItemStackSnapshot? snapshot = inventory?.GetStack(stack);
-            if (snapshot == null)
+            InMemoryInventoryRepository? repository = ResolveWorldItemRepository(stack);
+            if (repository == null)
             {
-                inventory = _inventoryRepository.Get();
-                snapshot = inventory.GetStack(stack);
+                return Result.Failure(InventoryErrors.StackNotFound);
             }
 
+            InventoryState inventory = repository.Get();
+            ItemStackSnapshot? snapshot = inventory.GetStack(stack);
             if (snapshot == null)
             {
                 return Result.Failure(InventoryErrors.StackNotFound);
@@ -70,21 +71,20 @@ namespace Dig.Unity
         {
             EntityId actor = ParseInventoryEntityId(residentId, nameof(residentId));
             EntityId stack = ParseInventoryEntityId(stackId, nameof(stackId));
-            InventoryState? inventory = _buildingInventoryRepository?.Get();
-            ItemStackSnapshot? snapshot = inventory?.GetStack(stack);
-            if (snapshot == null)
+            InMemoryInventoryRepository? repository = ResolveWorldItemRepository(stack);
+            if (repository == null)
             {
-                inventory = _inventoryRepository.Get();
-                snapshot = inventory.GetStack(stack);
+                return Result.Failure(InventoryErrors.StackNotFound);
             }
 
+            InventoryState inventory = repository.Get();
+            ItemStackSnapshot? snapshot = inventory.GetStack(stack);
             if (snapshot == null)
             {
                 return Result.Failure(InventoryErrors.StackNotFound);
             }
 
-            if (inventory == null
-                || snapshot.Location.Kind != ItemLocationKind.AgentInventory
+            if (snapshot.Location.Kind != ItemLocationKind.AgentInventory
                 || !DropResidentInventoryStackHandler.IsOwnedByResident(
                     snapshot.Location,
                     actor)
