@@ -87,10 +87,14 @@ def main() -> int:
         "_excavationQuarterWork.Cancel",
     )))
     errors.extend(require(workflow, (
+        "Validate Unity activation",
+        "Configure UNITY_EMAIL and UNITY_PASSWORD",
+        "Configure UNITY_LICENSE for Personal or UNITY_SERIAL for Pro",
         "game-ci/unity-test-runner@v4",
         "unityVersion: 6000.0.71f1",
         "testMode: PlayMode",
         "unity-playmode-results",
+        "path: artifacts/playmode",
     )))
 
     if errors:
