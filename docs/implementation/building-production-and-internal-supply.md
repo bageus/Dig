@@ -1,6 +1,6 @@
 # Generic building production and internal supply implementation
 
-Статус: основной slice merged через PR #441; Unity compile regressions исправлены в PR #452 и PR #457. Завершающий observable workflow опубликован в draft PR #465. Unity Play Mode fixtures checked in, но Unity Test Runner фактически не запускался.
+Статус: `IMPLEMENTED` в PR #465. Основной slice merged через PR #441; Unity compile regressions исправлены в PR #452 и PR #457. Unity Play Mode fixtures checked in, но Unity Test Runner фактически не запускался.
 
 Authoritative design: [`../design/building-production-and-internal-supply.md`](../design/building-production-and-internal-supply.md).
 Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
@@ -23,7 +23,7 @@ Runtime не содержит отдельных production branches для эт
 
 ## Completion workflow in PR #465
 
-- Supply batch по-прежнему атомарно планируется и резервируется command handler до движения worker. После assignment resident сначала приходит к workstation work position и подтверждает начало authoritative route, затем обходит уже зарезервированные world sources и возвращается к зданию для deposit.
+- Supply batch атомарно планируется и резервируется command handler до движения worker. После assignment resident сначала приходит к workstation work position и подтверждает active reserved route, затем обходит world sources и возвращается к зданию для deposit.
 - Internal-stock pile имеет trigger collider и generic `DigBuildingInternalStockVisual`. При одном selected resident обычный LMB создаёт quantity-one pickup только из `AvailableQuantity`; production reservation нельзя украсть. Если delivery toggle включён, следующий synchronization снова создаёт replacement demand.
 - Product row показывает `−` при ненулевой очереди. Один click отменяет newest queued order данного recipe; active order выбирается только когда queued order больше нет. Неиспользованные reservations освобождаются через существующий cancel handler.
 - World-item pickup contracts/save codec расширены source location, quantity и split destination stack ID с backward-compatible defaults для старого world pickup save.
@@ -62,12 +62,13 @@ World-item pickup codec сохраняет optional source kind/owner и destina
 
 ## CI evidence
 
-PR #465 code head `4be0b19e0b57e6a9c50609459130c27afca7bd5d`:
+Validated connector head `48f8f69a27ec5fa8ab052f29731a69e287c67c03`:
 
-- checksum-verified implementation apply — `success`;
-- local `tools/quality/check_quality.py` и `tools/quality/check_unity_source_contracts.py` внутри apply/fix workflows — `success`;
-- Release build на предыдущем connector head — `success`;
-- test failures по stale full-pickup reservation и zero-transit merge исправлены на этом bot-push head;
-- Quality на bot-push head помечен `action_required`; этот docs commit запускает полный контрольный pipeline.
+- Quality run 5927 (`30320277799`) — `success`: architecture/file-size/C# compatibility, Unity source contracts, Release restore/build, full `.NET` test suite, headless smoke, standard deterministic soak и large-settlement soak;
+- Export Stage 2 v2 run 511 (`30320277778`) — `success`;
+- Export Stage 2 v3 run 516 (`30320277775`) — `success`;
+- checksum-verified implementation apply и repository-local quality/source-contract gates — `success`.
+
+Final status/index/design evidence commit is applied after this validated code head. A final docs-only Quality run is required on the PR head before Ready for review.
 
 Unity Test Runner фактически не запускался; систему нельзя считать `VERIFIED` до повторного Unity compile/Play Mode evidence.
