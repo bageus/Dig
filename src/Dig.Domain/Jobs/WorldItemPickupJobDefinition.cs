@@ -8,6 +8,12 @@ using Dig.Domain.World;
 namespace Dig.Domain.Jobs
 {
 
+public enum WorldItemPickupCompletionAction
+{
+    None = 0,
+    UseConsumable = 1,
+}
+
 public sealed class WorldItemPickupJobDefinition : JobDefinition
 {
     private static readonly JobStageKind[] PickupStages =
@@ -24,7 +30,9 @@ public sealed class WorldItemPickupJobDefinition : JobDefinition
         int priority,
         long createdTick,
         JobRetryPolicy retryPolicy,
-        IEnumerable<EntityId>? dependencies = null)
+        IEnumerable<EntityId>? dependencies = null,
+        WorldItemPickupCompletionAction completionAction =
+            WorldItemPickupCompletionAction.None)
         : this(
             id,
             stackId,
@@ -35,7 +43,8 @@ public sealed class WorldItemPickupJobDefinition : JobDefinition
             priority: priority,
             createdTick: createdTick,
             retryPolicy: retryPolicy,
-            dependencies: dependencies)
+            dependencies: dependencies,
+            completionAction: completionAction)
     {
     }
 
@@ -49,7 +58,9 @@ public sealed class WorldItemPickupJobDefinition : JobDefinition
         int priority,
         long createdTick,
         JobRetryPolicy retryPolicy,
-        IEnumerable<EntityId>? dependencies = null)
+        IEnumerable<EntityId>? dependencies = null,
+        WorldItemPickupCompletionAction completionAction =
+            WorldItemPickupCompletionAction.None)
         : base(
             id,
             priority,
@@ -76,11 +87,17 @@ public sealed class WorldItemPickupJobDefinition : JobDefinition
                 nameof(sourceLocation));
         }
 
+        if (!Enum.IsDefined(typeof(WorldItemPickupCompletionAction), completionAction))
+        {
+            throw new ArgumentOutOfRangeException(nameof(completionAction));
+        }
+
         StackId = stackId;
         Quantity = quantity;
         SourceCell = sourceCell;
         SourceLocation = sourceLocation;
         DestinationStackId = destinationStackId;
+        CompletionAction = completionAction;
     }
 
     public EntityId StackId { get; }
@@ -92,6 +109,8 @@ public sealed class WorldItemPickupJobDefinition : JobDefinition
     public ItemLocation SourceLocation { get; }
 
     public EntityId DestinationStackId { get; }
+
+    public WorldItemPickupCompletionAction CompletionAction { get; }
 
     public override string Description => $"Pick up item {StackId} x{Quantity}";
 
