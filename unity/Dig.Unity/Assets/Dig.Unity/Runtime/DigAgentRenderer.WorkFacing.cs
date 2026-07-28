@@ -32,7 +32,8 @@ namespace Dig.Unity
 
             Dictionary<string, CellId> workTargets =
                 new Dictionary<string, CellId>(StringComparer.Ordinal);
-            HashSet<string> mushroomWorkers = new HashSet<string>(StringComparer.Ordinal);
+            HashSet<string> nonClimbingWorkers = new HashSet<string>(StringComparer.Ordinal);
+            HashSet<string> barrelWorkers = new HashSet<string>(StringComparer.Ordinal);
             for (int index = 0; index < jobs.Count; index++)
             {
                 JobOverlayViewModel job = jobs[index];
@@ -48,9 +49,14 @@ namespace Dig.Unity
                         job.TargetX!.Value,
                         job.TargetY!.Value,
                         job.TargetZ!.Value));
-                if (job.IsMushroomChop)
+                if (job.IsMushroomChop || job.IsBarrelAttack)
                 {
-                    mushroomWorkers.Add(job.AssignedAgentId!);
+                    nonClimbingWorkers.Add(job.AssignedAgentId!);
+                }
+
+                if (job.IsBarrelAttack)
+                {
+                    barrelWorkers.Add(job.AssignedAgentId!);
                 }
             }
 
@@ -75,21 +81,24 @@ namespace Dig.Unity
                     && worldCells.TryGetValue(target, out CellSnapshot targetCell)
                     && targetCell.State.CompletedExcavationQuarters != ExcavationQuarter.None;
                 bool climbingWork = hasToolWork
-                    && !mushroomWorkers.Contains(pair.Key)
+                    && !nonClimbingWorkers.Contains(pair.Key)
                     && !hasFullSupport
                     && (tunnelVolume.IsVerticalTunnel(current)
                         || targetRemovedSupport);
+                bool barrelAttack = hasToolWork && barrelWorkers.Contains(pair.Key);
                 pair.Value.SetWorkTarget(
                     hasToolWork ? target : (CellId?)null,
                     climbingWork,
-                    animateToolWork: hasToolWork);
+                    animateToolWork: hasToolWork && !barrelAttack,
+                    animateAttackWork: barrelAttack);
             }
         }
 
         private static bool IsActiveToolWork(JobOverlayViewModel job)
         {
             bool supportedTool = job.PreferredToolKind == JobToolKind.Mining
-                || job.IsMushroomChop;
+                || job.IsMushroomChop
+                || job.IsBarrelAttack;
             return job.AssignedAgentId != null
                 && job.HasTarget
                 && supportedTool
