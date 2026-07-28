@@ -9,7 +9,6 @@ using Dig.Domain.Core;
 using Dig.Domain.Ecology;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
-using Dig.Domain.Navigation;
 using Dig.Domain.Runtime;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
@@ -197,31 +196,6 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         return Result.Success();
-    }
-
-    internal bool TryPlanMushroomMovement(
-        JobSnapshot job,
-        AgentViewModel agent,
-        NavigationSnapshot navigation,
-        IDictionary<string, CellId> movement)
-    {
-        if (job.Definition is not MushroomChopJobDefinition definition)
-        {
-            return false;
-        }
-
-        CellId start = new CellId(agent.CellX, agent.CellY, agent.CellZ);
-        PathResult path = new NavigationPathfinder().FindPath(
-            navigation,
-            new PathRequest(start, definition.WorkPosition, navigation.NavigationVersion));
-        if (path.Succeeded)
-        {
-            movement[agent.Id] = path.Path!.Cells.Count > 1
-                ? path.Path.Cells[1]
-                : definition.WorkPosition;
-        }
-
-        return true;
     }
 
     private Result AdvanceMushroomJob(
