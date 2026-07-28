@@ -72,6 +72,37 @@ public sealed class BuildingBoxAssemblyExecutionPolicyTests
             Evaluate(harness, Building(harness), null, Building(harness).WorkPosition));
     }
 
+    [Fact]
+    public void Carried_box_at_site_can_drain_complete_demo_unpack_in_one_tick()
+    {
+        BuildingBoxHarness harness = CreateAssigned(carriedByResident: true);
+        const long tick = 700;
+
+        for (int step = 0;
+            step < 16 && !harness.Jobs.Get(harness.JobId)!.IsTerminal;
+            step++)
+        {
+            JobSnapshot job = harness.Jobs.Get(harness.JobId)!;
+            BuildingSnapshot building = Building(harness);
+            ItemStackSnapshot? box = harness.Inventory.GetStack(harness.SourceStackId);
+            BuildingBoxAssemblyExecutionStepKind action = Evaluate(
+                harness,
+                building,
+                box,
+                building.WorkPosition);
+            Assert.NotEqual(BuildingBoxAssemblyExecutionStepKind.None, action);
+            Execute(harness, action, building.WorkPosition, tick);
+        }
+
+        BuildingSnapshot completed = Building(harness);
+        Assert.Equal(BuildingStatus.Completed, completed.Status);
+        Assert.Equal(completed.Definition.RequiredWork, completed.CompletedWork);
+        Assert.Equal(BuildingBoxCommitState.Consumed, completed.BoxPlan!.CommitState);
+        Assert.Null(harness.Inventory.GetStack(harness.SourceStackId));
+        Assert.Equal(JobStatus.Completed, harness.Jobs.Get(harness.JobId)!.Status);
+        Assert.Empty(harness.Jobs.GetReservations());
+    }
+
     private static BuildingBoxHarness CreateAssigned(bool carriedByResident = false)
     {
         BuildingBoxHarness harness = new BuildingBoxHarness(carriedByResident);
@@ -198,4 +229,5 @@ public sealed class BuildingBoxAssemblyExecutionPolicyTests
         return harness.Inventory.GetStack(harness.SourceStackId)!;
     }
 }
+
 }
