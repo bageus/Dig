@@ -44,6 +44,10 @@ Food в inventory делегируется существующему `StartResi
 
 Категории `potion`, `drink` и `beverage` используют тот же Alt-hover/Alt+LMB contract. В текущем content нет authoritative potion/drink effect owner, поэтому action возвращает typed `inventory.consumable.effect_owner_unavailable` вместо скрытого consume или выдуманного эффекта.
 
+## Unity compile boundary
+
+Unity runtime использует публичный ownership contract `DropResidentInventoryStackHandler.IsOwnedByResident`; helper не должен становиться `internal`, потому что `Dig.Unity` и `Dig.Application` являются разными assemblies. Inventory validation повторно получает authoritative repository через общий `ResolveWorldItemRepository`, а HUD/session references в consumable command path фиксируются как non-null после initialization guard, чтобы Unity nullable compilation не оставляла `CS8602` warnings.
+
 ## Verification
 
 Добавлены .NET regression tests для:
@@ -52,6 +56,7 @@ Food в inventory делегируется существующему `StartResi
 - exact resident/stack/quantity reservation;
 - deterministic dependency order;
 - deposit без потери/дублирования quantity;
-- placement job save codec.
+- placement job save codec;
+- публичной Unity-доступности resident ownership policy и её location semantics.
 
 Unity Play Mode остаётся обязательным для animated cursor, exact hover tint, ghost visibility/colour, multi-order resident execution, input shielding и повторного world pickup/drop workflow.
