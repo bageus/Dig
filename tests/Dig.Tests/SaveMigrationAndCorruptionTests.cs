@@ -343,9 +343,6 @@ public sealed class SaveMigrationAndCorruptionTests
         return path;
     }
 
-    private static EntityId Id(string value)
-    {
-        return EntityId.Parse(value);
-    }
+    private static EntityId Id(string value) => EntityId.Parse(value);
 }
 }
