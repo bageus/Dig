@@ -10,6 +10,7 @@ using Dig.Presentation.Buildings;
 using Dig.Presentation.Production;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace Dig.Unity.Tests
 {
@@ -25,6 +26,38 @@ public sealed class BuildingProductionPlayModeTests
         {
             UnityEngine.Object.DestroyImmediate(_root);
         }
+    }
+
+    [Test]
+    public void Product_icon_right_click_invokes_one_decrement_and_left_click_does_not()
+    {
+        _root = new GameObject("Production icon pointer test");
+        DigProductionIconPointer pointer = _root.AddComponent<DigProductionIconPointer>();
+        int decrementCount = 0;
+        pointer.RightClicked = () => decrementCount++;
+
+        GameObject eventObject = new GameObject("Event System");
+        eventObject.transform.SetParent(_root.transform);
+        EventSystem eventSystem = eventObject.AddComponent<EventSystem>();
+
+        pointer.OnPointerClick(new PointerEventData(eventSystem)
+        {
+            button = PointerEventData.InputButton.Left,
+        });
+        Assert.That(decrementCount, Is.Zero);
+
+        pointer.OnPointerClick(new PointerEventData(eventSystem)
+        {
+            button = PointerEventData.InputButton.Right,
+        });
+        Assert.That(decrementCount, Is.EqualTo(1));
+
+        pointer.RightClicked = null;
+        pointer.OnPointerClick(new PointerEventData(eventSystem)
+        {
+            button = PointerEventData.InputButton.Right,
+        });
+        Assert.That(decrementCount, Is.EqualTo(1));
     }
 
     [Test]
