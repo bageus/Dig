@@ -1,9 +1,9 @@
 name: Apply Unity input parser fix
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/unity-input-parser-merge-regressions
+      - automation/unity-parser-apply-base
 
 permissions:
   contents: write
