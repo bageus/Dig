@@ -76,7 +76,7 @@ internal sealed partial class DigTerrainWorkSession
             _buildingInventoryRepository.Get().Catalog,
             _buildingBoxCatalog,
             CampfireProductionContent.CreateRecipes(
-                CampfireProductionContent.TestProductionMaterialTicks),
+                CampfireProductionContent.ProductionMaterialTicks),
             Array.Empty<TechnologyDefinition>(),
             new[] { CampfireProductionContent.CreateWorkstation() });
         if (!validated.Succeeded || validated.Catalog == null)
