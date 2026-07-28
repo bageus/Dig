@@ -126,7 +126,7 @@ internal sealed class CampfireFoodProductionPlayModeHarness
             Journal).Handle(new ApplyProductionWorkCommand(
                 orderId,
                 jobId,
-                elapsedTicks: 1,
+                baseWork: 1,
                 conditionEfficiencyBasisPoints: 10_000,
                 tick + 4)));
         Assert.That(

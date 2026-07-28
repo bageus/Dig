@@ -67,6 +67,31 @@ namespace Dig.Tests
             Assert.DoesNotContain("_directWorldFoodIntents", directCommands);
         }
 
+        [Fact]
+        public void Play_mode_production_harness_uses_current_apply_work_parameter_name()
+        {
+            string root = FindRepositoryRoot();
+            string harness = File.ReadAllText(Path.Combine(
+                root,
+                "unity",
+                "Dig.Unity",
+                "Assets",
+                "Dig.Unity",
+                "Tests",
+                "PlayMode",
+                "CampfireFoodProductionPlayModeHarness.cs"));
+            string contracts = File.ReadAllText(Path.Combine(
+                root,
+                "src",
+                "Dig.Application",
+                "Production",
+                "ProductionContracts.cs"));
+
+            Assert.Contains("int baseWork", contracts);
+            Assert.Contains("baseWork: 1", harness);
+            Assert.DoesNotContain("elapsedTicks:", harness);
+        }
+
         private static string Read(string root, string file)
         {
             return File.ReadAllText(Path.Combine(root, file));
