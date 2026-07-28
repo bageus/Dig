@@ -62,7 +62,8 @@ namespace Dig.Unity
             out DigWorldItemVisual item)
         {
             return TryResolveBuildingBoxHit(hits, out item)
-                && item.Model.AvailableQuantity == 1;
+                && item.Model.AvailableQuantity == 1
+                && CanSelectedResidentPickup(item);
         }
 
         private bool TryResolvePickableItemHoverTarget(
@@ -71,7 +72,8 @@ namespace Dig.Unity
         {
             return TryResolveWorldItemHit(hits, out item)
                 && item.Model.CanPickup
-                && !item.Model.IsBuildingBox;
+                && !item.Model.IsBuildingBox
+                && CanSelectedResidentPickup(item);
         }
 
         private bool TryResolveFoodItemHoverTarget(
@@ -80,7 +82,18 @@ namespace Dig.Unity
         {
             return TryResolveWorldItemHit(hits, out item)
                 && item.Model.CanPickup
-                && IsDirectFoodItem(item.Model);
+                && IsDirectFoodItem(item.Model)
+                && CanSelectedResidentPickup(item);
+        }
+
+        private bool CanSelectedResidentPickup(DigWorldItemVisual item)
+        {
+            string? residentId = _agentRenderer?.SelectedModel?.Id;
+            return _terrainSession != null
+                && !string.IsNullOrWhiteSpace(residentId)
+                && _terrainSession.ValidateResidentCanPickupStack(
+                    residentId!,
+                    item.Model.StackId).IsSuccess;
         }
 
         private void SetInteractionHighlightedItem(DigWorldItemVisual? item)
