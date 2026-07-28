@@ -105,7 +105,7 @@ public sealed class DigBarrelVisual : MonoBehaviour
         Renderer renderer = part.GetComponent<Renderer>();
         renderer.sharedMaterial = material;
         _renderers.Add(renderer);
-        _baseColors.Add(material.color);
+        _baseColors.Add(DigMaterialColorUtility.GetColor(material, Color.white));
     }
 
     private void ApplyHighlight()
