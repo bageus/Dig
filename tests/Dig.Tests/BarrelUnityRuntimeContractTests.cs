@@ -16,6 +16,9 @@ public sealed class BarrelUnityRuntimeContractTests
         string visual = Read("unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBarrelVisual.cs");
         string renderer = Read("unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBarrelRenderer.cs");
         string interaction = Read("unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.Barrels.cs");
+        string playMode = Read(
+            "unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/"
+                + "BarrelAttackSurfacePlayModeTests.cs");
 
         Assert.Contains("FindBarrelDemoCells(surface: true, count: 2", session, StringComparison.Ordinal);
         Assert.Contains("surface: false", session, StringComparison.Ordinal);
@@ -29,6 +32,11 @@ public sealed class BarrelUnityRuntimeContractTests
         Assert.Contains("GenerationConflict", session, StringComparison.Ordinal);
         Assert.Contains("SettleUnsupportedBarrels", session, StringComparison.Ordinal);
         Assert.Contains("TryResolveBarrelLanding", navigation, StringComparison.Ordinal);
+        Assert.Contains("IsSupportedBarrelAttackPath", navigation, StringComparison.Ordinal);
+        Assert.Contains("HasFullStandingSupport", navigation, StringComparison.Ordinal);
+        Assert.Contains("TunnelTraversalKind.SupportedWalk", navigation, StringComparison.Ordinal);
+        Assert.Contains(".Where(HasFullStandingSupport)", navigation, StringComparison.Ordinal);
+        Assert.Equal(2, Count(navigation, "IsSupportedBarrelAttackPath(navigation, path.Path)"));
         Assert.Contains("DirectCommandCursorKind.Sword", cursor, StringComparison.Ordinal);
         Assert.Contains("Sword = 5", cursor, StringComparison.Ordinal);
         Assert.Contains("Eat = 6", cursor, StringComparison.Ordinal);
@@ -41,6 +49,12 @@ public sealed class BarrelUnityRuntimeContractTests
         Assert.Contains("visual.transform.rotation = Quaternion.identity", renderer, StringComparison.Ordinal);
         Assert.Contains("TryResolveBarrelHit", interaction, StringComparison.Ordinal);
         Assert.Contains("Атакует бочку", interaction, StringComparison.Ordinal);
+        Assert.Contains(
+            "Barrel_attack_requires_supported_route_and_supported_adjacent_work_cell",
+            playMode,
+            StringComparison.Ordinal);
+        Assert.Contains("IsSupportedBarrelAttackPath", playMode, StringComparison.Ordinal);
+        Assert.Contains("HasFullActorSupport", playMode, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -98,6 +112,20 @@ public sealed class BarrelUnityRuntimeContractTests
         Assert.Contains("public sealed partial class SaveGameBuilder", barrelBuilder, StringComparison.Ordinal);
         Assert.DoesNotContain("public static partial class SaveGameBuilder", barrelBuilder, StringComparison.Ordinal);
         Assert.Contains("List<BarrelEntitySaveData> Barrels", barrelData, StringComparison.Ordinal);
+    }
+
+
+    private static int Count(string source, string value)
+    {
+        int count = 0;
+        int index = 0;
+        while ((index = source.IndexOf(value, index, StringComparison.Ordinal)) >= 0)
+        {
+            count++;
+            index += value.Length;
+        }
+
+        return count;
     }
 
     private static string Read(string relativePath)

@@ -232,8 +232,19 @@ internal sealed partial class DigTerrainWorkSession
                     return Result.Success();
                 }
             }
+            else
+            {
+                Result advanced = _advanceHandler.Handle(
+                    new AdvanceJobCommand(job.Id, tick));
+                if (advanced.IsFailure)
+                {
+                    return advanced;
+                }
+            }
 
-            return _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick));
+            job = _jobRepository.Get().Get(job.Id)
+                ?? throw new InvalidOperationException(
+                    "The active mushroom job disappeared before completion.");
         }
 
         if (job.Stage != JobStageKind.Finalize)
