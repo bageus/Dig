@@ -55,9 +55,7 @@ namespace Dig.Unity
                             tick));
             }
 
-            if (definition.HasCategory(PotionCategoryId)
-                || definition.HasCategory(DrinkCategoryId)
-                || definition.HasCategory(BeverageCategoryId))
+            if (IsPotionOrDrink(definition))
             {
                 return Result.Failure(
                     ResidentInventoryConsumableErrors.EffectOwnerUnavailable);
@@ -67,6 +65,41 @@ namespace Dig.Unity
                 residentId,
                 stackId,
                 tick);
+        }
+
+        internal Result ValidateWorldConsumableAction(string stackId)
+        {
+            if (string.IsNullOrWhiteSpace(stackId))
+            {
+                throw new ArgumentException("Stack id is required.", nameof(stackId));
+            }
+
+            EntityId stack = EntityId.Parse(stackId);
+            InMemoryInventoryRepository? repository = ResolveWorldItemRepository(stack);
+            ItemStackSnapshot? snapshot = repository?.Get().GetStack(stack);
+            if (repository == null || snapshot == null)
+            {
+                return Result.Failure(InventoryErrors.StackNotFound);
+            }
+
+            ItemDefinition definition = repository.Get().Catalog.Get(snapshot.ItemId);
+            if (definition.HasCategory(CampfireProductionContent.FoodCategoryId))
+            {
+                return Result.Success();
+            }
+
+            return IsPotionOrDrink(definition)
+                ? Result.Failure(
+                    ResidentInventoryConsumableErrors.EffectOwnerUnavailable)
+                : Result.Failure(
+                    ResidentInventoryConsumableErrors.EffectOwnerUnavailable);
+        }
+
+        private static bool IsPotionOrDrink(ItemDefinition definition)
+        {
+            return definition.HasCategory(PotionCategoryId)
+                || definition.HasCategory(DrinkCategoryId)
+                || definition.HasCategory(BeverageCategoryId);
         }
     }
 }
