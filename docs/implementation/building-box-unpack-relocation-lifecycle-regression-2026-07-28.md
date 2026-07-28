@@ -1,6 +1,6 @@
 # BuildingBox unpack, relocation and roster lifecycle regression
 
-Status: implementation in branch `agent/fix-building-box-unpack-relocation-lifecycle`.
+Status: implementation in [PR #495](https://github.com/bageus/Dig/pull/495), pending CI and licensed Unity Play Mode execution.
 
 Authoritative design: [`../design/building-box-placement-and-packing.md`](../design/building-box-placement-and-packing.md).
 
