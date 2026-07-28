@@ -4,6 +4,8 @@
 
 The Unity project is a presentation host for Dig. It owns scenes, rendering, input and editor tooling, while authoritative simulation state remains in the engine-independent core under `src/`.
 
+Authoritative system contract: [`../design/presentation-input-ui-and-diagnostics.md`](../design/presentation-input-ui-and-diagnostics.md). Issue #14 closure evidence and the current Unity verification boundary are recorded in [`presentation-issue-14-closure-2026-07-29.md`](presentation-issue-14-closure-2026-07-29.md).
+
 ## Open the project
 
 1. Clone the repository.
@@ -80,6 +82,12 @@ After changing the response file, allow Unity to recompile scripts. If old diagn
 `DigUnityBootstrap` is the engine entry point that wires the demo sessions, HUD, renderers and runtime drivers. `RuntimeInteractionRootCauseContractTests.Unity_bootstrap_keeps_required_adapter_identifiers_intact` protects the required storage, stockpile, HUD-control, presentation-stage and camera-tag identifiers while preserving the excavation-skill binding introduced by the runtime interaction work.
 
 This regression guard exists because token-level source corruption in the bootstrap can prevent Unity from compiling before any Play Mode scenario starts, even when engine-independent projects still build successfully.
+
+## Verification boundary
+
+Repository Quality, Release build, .NET tests, headless smoke and deterministic soak evidence support the `IMPLEMENTED` status. Checked-in Unity Play Mode scenarios are executable but do not count as runtime evidence until the licensed `Run Play Mode tests` workflow step actually executes and publishes result XML/log artifacts.
+
+The latest inspected Unity workflow on PR #498 completed green while that step was skipped by the activation gate. Therefore the Presentation system and issue #14 must not be called `VERIFIED` or closed as completed until a licensed run passes.
 
 ## Generated files
 
