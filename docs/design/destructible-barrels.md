@@ -1,6 +1,6 @@
 # Разрушаемые бочки с содержимым и падением
 
-Статус: `APPROVED`.
+Статус: `IMPLEMENTED`.
 
 Tracking issue: [#443](https://github.com/bageus/Dig/issues/443).
 
@@ -303,3 +303,4 @@ Unity Play Mode:
 |---|---|---|---|
 | 2026-07-27 | Зафиксированы destructible barrel, direct attack без progression, red highlight, animated sword cursor, generic contents, disappearance, visual чуть ниже resident, четыре demo barrels и safe falling after support loss. | Пользователь | Все разделы, #443 |
 | 2026-07-28 | Q-BARREL-001=A, 002=A, 003=C, 004=A, 005=A, 006=B; перенос barrel запрещён. Статус повышен до APPROVED. | Пользователь | Workflow, ownership, conflicts, save/test acceptance, #443 |
+| 2026-07-28 | После post-merge audit исправлены Unity interaction wiring, AttackBarrel dispatch, cursor priority/identity, resident attack status/pose, barrel height и Z projection; demo contents теперь зависят от world seed + stable barrel id; добавлены source-contract и Play Mode regression fixtures; система возвращена в обязательный индекс. | Пользователь | Runtime, Input/UI/Presentation, deterministic contents, test evidence, #443, #468 |
