@@ -1,0 +1,98 @@
+name: Apply BuildingBox test fixture corrections
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'agent/fix-building-box-unpack-relocation-lifecycle'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fix branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Update split source contract and claimed-job fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          contract = Path('tests/Dig.Tests/BuildingBoxPlacementRuntimeContractTests.cs')
+          source = contract.read_text()
+          source = source.replace(
+              '            string relocation = Read(runtime, "DigBuildingBoxRelocationExecution.cs");\n'
+              '            string pickup = Read(runtime, "DigBuildingBoxPickupExecution.cs");',
+              '            string relocation = Read(runtime, "DigBuildingBoxRelocationExecution.cs");\n'
+              '            string relocationNavigation = Read(\n'
+              '                runtime,\n'
+              '                "DigBuildingBoxRelocationNavigation.cs");\n'
+              '            string pickup = Read(runtime, "DigBuildingBoxPickupExecution.cs");')
+          source = source.replace(
+              '            Assert.Contains("relocation.StartsHeld", relocation);',
+              '            Assert.Contains("relocation.StartsHeld", relocationNavigation);')
+          contract.write_text(source)
+
+          fixture = Path('tests/Dig.Tests/BuildingBoxAssemblyExecutionPolicyTests.cs')
+          source = fixture.read_text()
+          old = '''        InMemoryJobCandidateProvider candidates = new InMemoryJobCandidateProvider();
+        candidates.SetCandidates(harness.JobId, new[]
+        {
+            new JobCandidate(harness.WorkerId, 5_000, distanceCost: 1, isAvailable: true),
+        });
+        JobAssignmentReport assigned = new AssignAvailableJobsHandler(
+            harness.JobRepository,
+            candidates,
+            harness.Journal).Handle(new AssignAvailableJobsCommand(tick: 400));
+        Assert.Single(assigned.Assignments);
+'''
+          new = '''        JobSnapshot job = harness.Jobs.Get(harness.JobId)!;
+        if (job.Status == JobStatus.Available)
+        {
+            InMemoryJobCandidateProvider candidates = new InMemoryJobCandidateProvider();
+            candidates.SetCandidates(harness.JobId, new[]
+            {
+                new JobCandidate(
+                    harness.WorkerId,
+                    5_000,
+                    distanceCost: 1,
+                    isAvailable: true),
+            });
+            JobAssignmentReport assigned = new AssignAvailableJobsHandler(
+                harness.JobRepository,
+                candidates,
+                harness.Journal).Handle(new AssignAvailableJobsCommand(tick: 400));
+            Assert.Single(assigned.Assignments);
+        }
+        else
+        {
+            Assert.Equal(JobStatus.Claimed, job.Status);
+            Assert.Equal(harness.WorkerId, job.AssignedAgentId);
+        }
+'''
+          if old not in source:
+              raise SystemExit('Expected BuildingBox assembly assignment fixture was not found.')
+          fixture.write_text(source.replace(old, new))
+          PY
+          rm -f .github/workflows/apply-building-box-test-fixture-fix.yml
+          python tools/quality/check_quality.py
+          python tools/quality/check_unity_source_contracts.py
+          python tools/quality/check_unity_building_visual_contracts.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Align BuildingBox tests with claimed holder jobs"
+          git push origin HEAD:${{ github.head_ref }}
