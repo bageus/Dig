@@ -19,7 +19,7 @@ namespace Dig.Unity
 
         internal Result DesignateTunnelDepth(CellId source)
         {
-            if (AgentSession == null || TerrainSession == null)
+            if (AgentSession == null || TerrainSession == null || WorldSession == null)
             {
                 return Result.Failure(new DomainError(
                     "unity.depth.not_initialized",
@@ -35,15 +35,27 @@ namespace Dig.Unity
                     planned.Detail));
             }
 
+            TunnelDepthExcavationPlan plan = planned.Plan!;
+            Result worldDesignation = WorldSession.SetDesignation(
+                plan.Target,
+                active: true);
+            if (worldDesignation.IsFailure)
+            {
+                return worldDesignation;
+            }
+
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
             Result designated = TerrainSession.DesignateSpatialExcavation(
-                planned.Plan!,
+                plan,
                 agents,
                 DefaultSpatialExcavationPriority,
                 CurrentTick);
             if (designated.IsFailure)
             {
-                return designated;
+                Result rollback = WorldSession.SetDesignation(
+                    plan.Target,
+                    active: false);
+                return rollback.IsFailure ? rollback : designated;
             }
 
             IReadOnlyList<JobOverlayViewModel> jobs = TerrainSession.LoadJobs();
