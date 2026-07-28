@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
@@ -16,6 +17,7 @@ namespace Dig.Unity
         private CreateWorldItemPickupHandler? _buildingItemPickupCreate;
         private CompleteWorldItemPickupHandler? _terrainItemPickupComplete;
         private CompleteWorldItemPickupHandler? _buildingItemPickupComplete;
+        private StartResidentFoodMealHandler? _startResidentFoodMeal;
         private NavigationPathfinder? _worldItemPickupPathfinder;
         private readonly Dictionary<EntityId, DirectWorldFoodIntent>
             _directWorldFoodIntents = new Dictionary<EntityId, DirectWorldFoodIntent>();
@@ -91,14 +93,16 @@ namespace Dig.Unity
                 && _buildingItemPickupCreate != null
                 && _terrainItemPickupComplete != null
                 && _buildingItemPickupComplete != null
+                && _startResidentFoodMeal != null
                 && _worldItemPickupPathfinder != null)
             {
                 return;
             }
 
-            if (_buildingInventoryRepository == null)
+            if (_buildingInventoryRepository == null || _productionAgents == null)
             {
-                throw new InvalidOperationException("Building inventory must be initialized first.");
+                throw new InvalidOperationException(
+                    "Building inventory and resident state must be initialized first.");
             }
 
             InMemoryExecutionJournal journal = _worldSession.Journal;
@@ -117,6 +121,10 @@ namespace Dig.Unity
             _buildingItemPickupComplete = new CompleteWorldItemPickupHandler(
                 _buildingInventoryRepository,
                 _jobRepository,
+                journal);
+            _startResidentFoodMeal = new StartResidentFoodMealHandler(
+                _productionAgents,
+                _buildingInventoryRepository,
                 journal);
             _worldItemPickupPathfinder = new NavigationPathfinder();
         }
