@@ -45,6 +45,8 @@ World-item pickup codec сохраняет optional source kind/owner и destina
 - PR #457 fully qualified три `Dig.Application.Jobs.AdvanceJobCommand` transitions в runtime partial.
 - PR #465 освобождает item reservation и resident slot claims вместе, если создание generalized pickup job завершается ошибкой.
 - Release build на первом completion head выявил nullable-flow warning после typed source validation; final code сохраняет `ItemStackSnapshot source = stack!` и использует validated snapshot для quantity/item-capacity operations.
+- Completed pickup освобождает перенесённую quantity reservation после successful job completion.
+- Building supply допускает пустой transit-ID list, когда reserved material полностью объединяется с существующим resident stack; deposit IDs остаются обязательными.
 
 ## Test coverage
 
@@ -60,11 +62,12 @@ World-item pickup codec сохраняет optional source kind/owner и destina
 
 ## CI evidence
 
-PR #465 code head `560ba55e6d34a7a4a9161c548d3d52bb31391f79`:
+PR #465 code head `4be0b19e0b57e6a9c50609459130c27afca7bd5d`:
 
-- checksum-verified one-shot implementation apply — `success`;
+- checksum-verified implementation apply — `success`;
 - local `tools/quality/check_quality.py` и `tools/quality/check_unity_source_contracts.py` внутри apply/fix workflows — `success`;
-- nullable-flow correction workflow — `success`;
-- Quality на этом bot-push head помечен `action_required`; следующий connector commit запускает Release build, full .NET tests, headless smoke и deterministic soaks.
+- Release build на предыдущем connector head — `success`;
+- test failures по stale full-pickup reservation и zero-transit merge исправлены на этом bot-push head;
+- Quality на bot-push head помечен `action_required`; этот docs commit запускает полный контрольный pipeline.
 
 Unity Test Runner фактически не запускался; систему нельзя считать `VERIFIED` до повторного Unity compile/Play Mode evidence.
