@@ -144,6 +144,43 @@ public sealed class BarrelAttackApplicationTests
         Assert.Empty(harness.Inventory.CreateSnapshot().Stacks);
     }
 
+    [Fact]
+    public void Reserved_worker_is_rejected_without_exception_or_barrel_mutation()
+    {
+        Harness harness = CreateHarness(Stone);
+        EntityId existingJobId = Id("c2000000000000000000000000000099");
+        Assert.True(harness.Jobs.Add(new DigJobDefinition(
+            existingJobId,
+            new DigJobTarget(new CellId(1, 1, 0)),
+            priority: 500,
+            createdTick: 0,
+            retryPolicy: JobRetryPolicy.Default)).IsSuccess);
+        Assert.True(harness.Jobs.MakeAvailable(existingJobId, tick: 0).IsSuccess);
+        Assert.True(harness.Jobs.Claim(existingJobId, FirstWorkerId, tick: 0).IsSuccess);
+        Assert.True(harness.Jobs.Start(existingJobId, tick: 0).IsSuccess);
+
+        Result<BarrelAttackStartedResult> started = harness.Start.Handle(
+            new StartDirectBarrelAttackCommand(
+                FirstJobId,
+                BarrelId,
+                FirstWorkerId,
+                new CellId(4, 6, 0),
+                priority: 900,
+                tick: 1));
+
+        Assert.True(started.IsFailure);
+        Assert.Equal(JobErrors.AgentUnavailable, started.Error);
+        Assert.Null(harness.Jobs.Get(FirstJobId));
+        Assert.Equal(JobStatus.InProgress, harness.Jobs.Get(existingJobId)!.Status);
+        Assert.All(harness.Jobs.GetReservations(), reservation =>
+            Assert.Equal(existingJobId, reservation.JobId));
+        BarrelSnapshot barrel = harness.Barrels.Get(BarrelId)!;
+        Assert.Equal(BarrelLifecycle.Supported, barrel.Lifecycle);
+        Assert.Equal(Stone, barrel.ContentsItemId);
+        Assert.False(barrel.ContentsMaterialized);
+        Assert.Empty(harness.Inventory.CreateSnapshot().Stacks);
+    }
+
     private static Harness CreateHarness(ItemId contents)
     {
         BarrelState barrels = new BarrelState(new BarrelCatalog(new[]
