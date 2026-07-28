@@ -33,6 +33,7 @@ internal sealed partial class DigTerrainWorkSession
         PrepareEligibleProductionOrders(tick);
         AssignProductionJobs(tick, agents);
         CreateEligibleSupplyJobs(tick, agents);
+        CreateEligibleFoodDependencyJobs(tick, agents);
     }
 
     internal Result AdvanceBuildingProduction(
