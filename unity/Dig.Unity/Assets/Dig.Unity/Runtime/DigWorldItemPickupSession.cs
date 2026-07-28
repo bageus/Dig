@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using Dig.Application.Agents;
 using Dig.Application.Inventory;
@@ -45,6 +46,15 @@ namespace Dig.Unity
                 return Result.Failure(WorldItemPickupErrors.StackMissing);
             }
 
+            ItemStackSnapshot snapshot = repository.Get().GetStack(stack)!;
+            long sequence = checked(_nextWorldItemPickupSequence + 1);
+            _nextWorldItemPickupSequence = sequence;
+            bool internalStock = snapshot.Location.Kind
+                == ItemLocationKind.BuildingInventory;
+            int quantity = internalStock ? 1 : snapshot.Quantity;
+            EntityId destinationStackId = quantity < snapshot.Quantity
+                ? DemoId('8', sequence)
+                : default;
             ItemStackSnapshot? source = repository.Get().GetStack(stack);
             if (eatAfterPickup
                 && source?.ItemId != CampfireProductionContent.GrilledMushroomItemId)
@@ -75,6 +85,9 @@ namespace Dig.Unity
                 stack,
                 resident,
                 sourceCell,
+                snapshot.Location,
+                quantity,
+                destinationStackId,
                 priority: 675,
                 tick));
             if (created.IsSuccess && eatAfterPickup)
@@ -85,6 +98,40 @@ namespace Dig.Unity
             }
 
             return created;
+        }
+
+        internal bool TryResolveBuildingInternalStockPickup(
+            string buildingId,
+            string itemId,
+            out string stackId,
+            out CellId workPosition)
+        {
+            stackId = string.Empty;
+            workPosition = default;
+            if (_buildingsRepository == null || _buildingInventoryRepository == null)
+            {
+                return false;
+            }
+
+            EntityId building = EntityId.Parse(buildingId);
+            ItemId item = new ItemId(itemId);
+            ItemStackSnapshot? stack = _buildingInventoryRepository.Get()
+                .CreateSnapshot().Stacks
+                .Where(value => value.ItemId == item
+                    && value.Location == ItemLocation.InBuilding(building)
+                    && value.AvailableQuantity > 0)
+                .OrderBy(value => value.Id.ToString(), StringComparer.Ordinal)
+                .FirstOrDefault();
+            Dig.Domain.Buildings.BuildingSnapshot? buildingSnapshot =
+                _buildingsRepository.Get().Get(building);
+            if (stack == null || buildingSnapshot == null)
+            {
+                return false;
+            }
+
+            stackId = stack.Id.ToString();
+            workPosition = buildingSnapshot.WorkPosition;
+            return true;
         }
 
         private void EnsureWorldItemPickupInitialized()

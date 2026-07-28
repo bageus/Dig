@@ -42,6 +42,8 @@ public sealed class AcquireBuildingSupplyHandler
 
         Result started = jobs.Start(command.JobId, command.Tick);
         if (started.IsFailure) return started;
+        Result checkedStock = jobs.AdvanceStage(command.JobId, command.Tick);
+        if (checkedStock.IsFailure) return checkedStock;
         Result acquired = inventory.AcquireReservedBatchIntoResidentSlots(
             command.JobId,
             job.AssignedAgentId.Value,
@@ -107,24 +109,8 @@ public sealed class AcquireBuildingSupplySourceHandler
         JobSnapshot? job = jobs.Get(command.JobId);
         if (job?.Definition is not BuildingSupplyJobDefinition supply
             || job.AssignedAgentId is not EntityId workerId
-            || (job.Status != JobStatus.Claimed
-                && job.Status != JobStatus.InProgress))
-        {
-            return Result.Failure(JobErrors.InvalidStatus);
-        }
-
-        if (job.Status == JobStatus.Claimed)
-        {
-            Result started = jobs.Start(command.JobId, command.Tick);
-            if (started.IsFailure)
-            {
-                return started;
-            }
-
-            job = jobs.Get(command.JobId);
-        }
-
-        if (job?.Stage != JobStageKind.AcquireItem)
+            || job.Status != JobStatus.InProgress
+            || job.Stage != JobStageKind.AcquireItem)
         {
             return Result.Failure(JobErrors.InvalidStatus);
         }

@@ -65,6 +65,12 @@ public sealed partial class DigWorldInteraction
             return true;
         }
 
+        if (TryHandleBuildingInternalStockPointerInput(hits))
+        {
+            return true;
+        }
+
+
         if (TryResolveCompletedBuildingHit(hits, out DigBuildingVisual completedBuilding))
         {
             CancelResidentMarquee();
@@ -210,6 +216,7 @@ public sealed partial class DigWorldInteraction
         DisableCaveRoomPlanning();
         return true;
     }
+
 
     private bool TryResolveCompletedBuildingHit(
         RaycastHit[] hits,

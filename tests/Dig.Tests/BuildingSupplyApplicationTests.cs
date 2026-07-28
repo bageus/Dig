@@ -1,4 +1,5 @@
 using System.Linq;
+using Dig.Application.Inventory;
 using Dig.Application.Production;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -129,6 +130,11 @@ public sealed class BuildingSupplyApplicationTests
             harness.InventoryRepository,
             harness.JobsRepository,
             harness.Journal);
+        Assert.Equal(JobStatus.Claimed, harness.Jobs.Get(jobId)!.Status);
+        Assert.True(harness.Jobs.Start(jobId, 2).IsSuccess);
+        Assert.Equal(JobStageKind.TravelToTarget, harness.Jobs.Get(jobId)!.Stage);
+        Assert.True(harness.Jobs.AdvanceStage(jobId, 2).IsSuccess);
+        Assert.Equal(JobStageKind.AcquireItem, harness.Jobs.Get(jobId)!.Stage);
 
         Result firstAcquire = acquire.Handle(new AcquireBuildingSupplySourceCommand(
             jobId,
@@ -149,6 +155,78 @@ public sealed class BuildingSupplyApplicationTests
         Assert.Equal(JobStageKind.TravelToDestination, harness.Jobs.Get(jobId)!.Stage);
         Assert.Empty(harness.Inventory.GetResidentSlotClaims(jobId));
         Assert.Null(harness.Inventory.GetStack(legSource));
+    }
+
+
+    [Fact]
+    public void Direct_internal_pickup_creates_replacement_supply_demand()
+    {
+        CampfireProductionTestHarness harness = new CampfireProductionTestHarness();
+        EntityId internalStack = CampfireProductionTestHarness.Id(300);
+        EntityId pickupJob = CampfireProductionTestHarness.Id(301);
+        EntityId carriedStack = CampfireProductionTestHarness.Id(302);
+        ItemId cap = Dig.Domain.Content.CampfireProductionContent.MushroomCapItemId;
+        Assert.True(harness.Inventory.AddStack(
+            internalStack,
+            cap,
+            4,
+            ItemLocation.InBuilding(CampfireProductionTestHarness.BuildingId),
+            0).IsSuccess);
+        CellId work = harness.Buildings.Get(
+            CampfireProductionTestHarness.BuildingId)!.WorkPosition;
+        CreateWorldItemPickupHandler createPickup = new CreateWorldItemPickupHandler(
+            harness.InventoryRepository,
+            harness.JobsRepository,
+            harness.Journal);
+        Assert.True(createPickup.Handle(new CreateWorldItemPickupCommand(
+            pickupJob,
+            internalStack,
+            CampfireProductionTestHarness.WorkerId,
+            work,
+            ItemLocation.InBuilding(CampfireProductionTestHarness.BuildingId),
+            quantity: 1,
+            destinationStackId: carriedStack,
+            priority: 675,
+            tick: 1)).IsSuccess);
+        Assert.True(harness.Jobs.Start(pickupJob, 2).IsSuccess);
+        Assert.True(harness.Jobs.AdvanceStage(pickupJob, 3).IsSuccess);
+        Assert.True(new CompleteWorldItemPickupHandler(
+            harness.InventoryRepository,
+            harness.JobsRepository,
+            harness.Journal).Handle(new CompleteWorldItemPickupCommand(
+                pickupJob,
+                4)).IsSuccess);
+
+        BuildingSupplySnapshot supply = harness.Supply.Get(
+            CampfireProductionTestHarness.BuildingId,
+            harness.Inventory.CreateSnapshot())!;
+        Assert.Equal(1, supply.Stocks.Single(value => value.ItemId == cap).Missing);
+
+        CellId sourceCell = new CellId(1, 1, 0);
+        harness.Inventory.AddStack(
+            CampfireProductionTestHarness.Id(303),
+            cap,
+            1,
+            ItemLocation.InWorld(sourceCell),
+            5);
+        Result replacement = new CreateBuildingSupplyJobHandler(
+            harness.Content,
+            harness.SupplyRepository,
+            harness.ProductionRepository,
+            harness.BuildingsRepository,
+            harness.InventoryRepository,
+            harness.JobsRepository,
+            harness.Journal).Handle(new CreateBuildingSupplyJobCommand(
+                CampfireProductionTestHarness.Id(304),
+                CampfireProductionTestHarness.BuildingId,
+                CampfireProductionTestHarness.WorkerId,
+                new[] { sourceCell },
+                new[] { sourceCell, work },
+                new[] { CampfireProductionTestHarness.Id(305) },
+                new[] { CampfireProductionTestHarness.Id(306) },
+                priority: 500,
+                tick: 6));
+        Assert.True(replacement.IsSuccess, replacement.Error?.ToString());
     }
 
     [Fact]

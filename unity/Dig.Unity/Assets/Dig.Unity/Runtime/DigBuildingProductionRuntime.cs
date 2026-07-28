@@ -131,6 +131,19 @@ internal sealed partial class DigTerrainWorkSession
         AgentViewModel worker,
         long tick)
     {
+        Result checkedStock = AdvanceSupplyWorkstationCheck(
+            job,
+            supply,
+            worker,
+            tick,
+            out JobSnapshot currentJob);
+        if (checkedStock.IsFailure)
+        {
+            return checkedStock;
+        }
+
+        job = currentJob;
+
         if (job.Stage == JobStageKind.AcquireItem)
         {
             ItemReservationAllocation? pending = FindPendingSupplyAllocation(job.Id, supply);
@@ -191,25 +204,6 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         return Result.Success();
-    }
-
-    private ItemReservationAllocation? FindPendingSupplyAllocation(
-        EntityId jobId,
-        BuildingSupplyJobDefinition supply)
-    {
-        InventoryState inventory = _buildingInventoryRepository!.Get();
-        return supply.Allocations
-            .Where(value =>
-            {
-                ItemStackSnapshot? stack = inventory.GetStack(value.StackId);
-                return stack?.Location.Kind == ItemLocationKind.World
-                    && stack.Reservations.Any(reservation =>
-                        reservation.JobId == jobId
-                        && reservation.Quantity > 0);
-            })
-            .OrderBy(value => value.StackId.ToString(), StringComparer.Ordinal)
-            .Select(value => (ItemReservationAllocation?)value)
-            .FirstOrDefault();
     }
 
     private bool PlanBuildingProductionRoute(
@@ -321,6 +315,7 @@ internal sealed partial class DigTerrainWorkSession
             || _beginProduction == null
             || _applyProductionWork == null
             || _completeProduction == null
+            || _cancelProduction == null
             || _createBuildingSupply == null
             || _acquireBuildingSupplySource == null
             || _depositBuildingSupply == null

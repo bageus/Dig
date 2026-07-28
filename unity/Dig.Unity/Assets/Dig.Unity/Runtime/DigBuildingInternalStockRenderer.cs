@@ -67,7 +67,10 @@ public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
             visible.Add(key);
             if (!_units.TryGetValue(key, out GameObject? unit))
             {
-                unit = CreateUnit(stock.ItemId.ToString(), key);
+                unit = CreateUnit(
+                    building.Id,
+                    stock.ItemId.ToString(),
+                    key);
                 _units.Add(key, unit);
             }
 
@@ -76,7 +79,17 @@ public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
         }
     }
 
-    private GameObject CreateUnit(string itemId, string key)
+    internal bool TryGetStock(
+        RaycastHit hit,
+        out DigBuildingInternalStockVisual visual)
+    {
+        visual = hit.collider == null
+            ? null!
+            : hit.collider.GetComponentInParent<DigBuildingInternalStockVisual>();
+        return visual != null;
+    }
+
+    private GameObject CreateUnit(string buildingId, string itemId, string key)
     {
         PrimitiveType primitive = ResolvePrimitive(itemId);
         GameObject unit = GameObject.CreatePrimitive(primitive);
@@ -84,12 +97,9 @@ public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
         unit.transform.SetParent(_root, worldPositionStays: true);
         Renderer renderer = unit.GetComponent<Renderer>();
         renderer.sharedMaterial = ResolveMaterial(itemId);
-        Collider collider = unit.GetComponent<Collider>();
-        if (collider != null)
-        {
-            Destroy(collider);
-        }
-
+        DigBuildingInternalStockVisual visual =
+            unit.AddComponent<DigBuildingInternalStockVisual>();
+        visual.Initialize(buildingId, itemId);
         return unit;
     }
 

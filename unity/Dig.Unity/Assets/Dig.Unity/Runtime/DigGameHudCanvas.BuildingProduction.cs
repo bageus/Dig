@@ -116,6 +116,18 @@ public sealed partial class DigGameHudCanvas
         string hover = product.DisplayName + " ×" + product.OutputQuantity
             + "\n" + product.Tooltip;
         BindIconTooltip(button, tooltip, hover);
+        if (product.QueuedCount > 0)
+        {
+            Button cancel = CreateButton(
+                "Cancel " + product.RecipeId,
+                parent,
+                "−",
+                () => CancelBuildingProduction(
+                    building.Id,
+                    product.RecipeId.ToString()),
+                preferredHeight: 34f);
+            cancel.GetComponentInChildren<Text>().fontSize = 24;
+        }
     }
 
     private void CreateStockIconButton(
@@ -177,6 +189,18 @@ public sealed partial class DigGameHudCanvas
     {
         long tick = _simulation?.CurrentTick ?? 0;
         Result result = _terrainSession!.EnqueueBuildingProduction(
+            buildingId,
+            recipeId,
+            tick);
+        _legacyHud!.SetCommandResult(result);
+        InvalidateAll();
+    }
+
+
+    private void CancelBuildingProduction(string buildingId, string recipeId)
+    {
+        long tick = _simulation?.CurrentTick ?? 0;
+        Result result = _terrainSession!.CancelOneBuildingProduction(
             buildingId,
             recipeId,
             tick);

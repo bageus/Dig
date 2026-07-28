@@ -28,7 +28,7 @@ public sealed class BuildingProductionPlayModeTests
     }
 
     [Test]
-    public void Internal_stock_is_rendered_as_four_separate_non_interactive_piles()
+    public void Internal_stock_is_rendered_as_four_separate_trigger_pickup_piles()
     {
         _root = new GameObject("Building production renderer test");
         DigBuildingInternalStockRenderer renderer =
@@ -56,7 +56,17 @@ public sealed class BuildingProductionPlayModeTests
         Assert.That((int)GetProperty(renderer, "ActiveUnitCount"), Is.EqualTo(14));
         Renderer[] units = _root.GetComponentsInChildren<Renderer>();
         Assert.That(units.Length, Is.EqualTo(14));
-        Assert.That(_root.GetComponentsInChildren<Collider>().Length, Is.EqualTo(0));
+        Collider[] colliders = _root.GetComponentsInChildren<Collider>();
+        Assert.That(colliders.Length, Is.EqualTo(14));
+        Assert.That(colliders.All(value => value.isTrigger), Is.True);
+        Component[] visuals = _root.GetComponentsInChildren<Component>()
+            .Where(value => value.GetType().Name == "DigBuildingInternalStockVisual")
+            .ToArray();
+        Assert.That(visuals.Length, Is.EqualTo(14));
+        Assert.That(visuals.All(value => (string)GetProperty(value, "BuildingId")
+            == buildingId.ToString()), Is.True);
+        Assert.That(visuals.Select(value => (string)GetProperty(value, "ItemId"))
+            .Distinct().Count(), Is.EqualTo(4));
         Assert.That(units.Select(value => value.gameObject.name.Split(':')[1])
             .Distinct().Count(), Is.EqualTo(4));
         Assert.That(units.Select(value => Math.Round(value.transform.position.x, 2))

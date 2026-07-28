@@ -15,6 +15,7 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         string execution = Read(runtime, "DigBuildingProductionExecution.cs");
         string synchronization = Read(runtime, "DigBuildingProductionSynchronization.cs");
         string runtimeExecution = Read(runtime, "DigBuildingProductionRuntime.cs");
+        string supplyCheck = Read(runtime, "DigBuildingProductionSupplyCheck.cs");
         string loop = Read(runtime, "DigAgentSimulationDriverBase.Loop.cs");
         string placement = Read(runtime, "DigBuildingBoxPlacement.cs");
 
@@ -26,9 +27,12 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         Assert.Contains(
             "new Dig.Application.Jobs.AdvanceJobCommand(",
             runtimeExecution);
+        Assert.Contains("JobStageKind.TravelToTarget", supplyCheck);
+        Assert.Contains("AdvanceJobCommand", supplyCheck);
         Assert.DoesNotContain("new AdvanceJobCommand(", runtimeExecution);
         Assert.Contains("CreateBuildingSupplyJobHandler", execution);
         Assert.Contains("AcquireBuildingSupplySourceHandler", execution);
+        Assert.Contains("ThenByDescending(value => value.Sequence)", execution);
         Assert.Contains("PrepareEligibleProductionOrders", synchronization);
         Assert.Contains("AssignProductionJobs", synchronization);
         Assert.Contains("FindByBoxItemId", placement);
@@ -49,21 +53,28 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         Assert.Contains("product.IsOrange", production);
         Assert.Contains("product.Tooltip", production);
         Assert.Contains("EnqueueBuildingProduction", production);
+        Assert.Contains("CancelOneBuildingProduction", production);
         Assert.Contains("SetBuildingStockDelivery", production);
         Assert.Contains("IPointerEnterHandler", pointer);
         Assert.Contains("IPointerExitHandler", pointer);
     }
 
     [Fact]
-    public void Internal_stock_renderer_has_separate_non_interactive_piles()
+    public void Internal_stock_renderer_has_separate_trigger_pickup_piles()
     {
-        string renderer = Read(RuntimeRoot(), "DigBuildingInternalStockRenderer.cs");
-        string loop = Read(RuntimeRoot(), "DigAgentSimulationDriverBase.Loop.cs");
+        string runtime = RuntimeRoot();
+        string renderer = Read(runtime, "DigBuildingInternalStockRenderer.cs");
+        string visual = Read(runtime, "DigBuildingInternalStockVisual.cs");
+        string interaction = Read(runtime, "DigWorldInteraction.BuildingInternalStock.cs");
+        string loop = Read(runtime, "DigAgentSimulationDriverBase.Loop.cs");
 
         Assert.Contains("model.Stocks", renderer);
         Assert.Contains("stockIndex", renderer);
         Assert.Contains("unitIndex", renderer);
-        Assert.Contains("destroy(collider)", Normalize(renderer));
+        Assert.Contains("TryGetStock", renderer);
+        Assert.Contains("collider.isTrigger = true", visual);
+        Assert.Contains("TryResolveBuildingInternalStockPickup", interaction);
+        Assert.Contains("ContextWorldTargetKind.GenericItem", interaction);
         Assert.Contains("buildinginternalstockrenderer!.render", Normalize(loop));
     }
 

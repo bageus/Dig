@@ -20,6 +20,7 @@ namespace Dig.Unity
         private DigMushroomRenderer? _mushroomRenderer;
         private DigJobRenderer? _jobRenderer;
         private DigBuildingRenderer? _buildingRenderer;
+        private DigBuildingInternalStockRenderer? _buildingInternalStockRenderer;
         private DigTerrainWorkSession? _terrainSession;
         private DigStockpileRenderer? _stockpileRenderer;
         private DigAgentSimulationDriver? _simulation;
@@ -39,6 +40,7 @@ namespace Dig.Unity
             DigMushroomRenderer mushroomRenderer,
             DigJobRenderer jobRenderer,
             DigBuildingRenderer buildingRenderer,
+            DigBuildingInternalStockRenderer buildingInternalStockRenderer,
             DigWorldItemRenderer itemRenderer,
             DigBuildingBoxGhostRenderer buildingBoxGhostRenderer,
             DigTerrainWorkSession terrainSession,
@@ -56,6 +58,7 @@ namespace Dig.Unity
             _mushroomRenderer = mushroomRenderer;
             _jobRenderer = jobRenderer;
             _buildingRenderer = buildingRenderer;
+            _buildingInternalStockRenderer = buildingInternalStockRenderer;
             _itemRenderer = itemRenderer;
             _buildingBoxGhostRenderer = buildingBoxGhostRenderer;
             _terrainSession = terrainSession;
@@ -312,6 +315,7 @@ namespace Dig.Unity
                 && _mushroomRenderer != null
                 && _jobRenderer != null
                 && _buildingRenderer != null
+                && _buildingInternalStockRenderer != null
                 && _itemRenderer != null
                 && _buildingBoxGhostRenderer != null
                 && _terrainSession != null

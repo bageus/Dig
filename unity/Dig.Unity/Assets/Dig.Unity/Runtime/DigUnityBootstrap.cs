@@ -160,6 +160,8 @@ namespace Dig.Unity
             jobRenderer.Initialize(agentRenderer);
             interaction.Initialize(
                 targetCamera, cameraController, worldSession, worldRenderer,
+                agentRenderer, creatureRenderer, mushroomRenderer, jobRenderer, buildingRenderer,
+                buildingInternalStockRenderer, itemRenderer, ghostRenderer, terrainSession, stockpileRenderer, agentSession,
                 agentRenderer, creatureRenderer, mushroomRenderer, barrelRenderer,
                 jobRenderer, buildingRenderer, itemRenderer,
                 ghostRenderer, terrainSession, stockpileRenderer, agentSession,

@@ -64,6 +64,7 @@ public sealed class WorldItemPickupTests
         Assert.Equal(JobStatus.Cancelled, harness.Jobs.Get(harness.JobId)!.Status);
         Assert.Equal(0, harness.Inventory.GetStack(harness.StackId)!.ReservedQuantity);
         Assert.Empty(harness.Jobs.GetReservations());
+        Assert.Empty(harness.Inventory.GetResidentSlotClaims(harness.JobId));
     }
 
     [Fact]
@@ -91,7 +92,42 @@ public sealed class WorldItemPickupTests
         Assert.Equal(definition.StackId, decoded.StackId);
         Assert.Equal(8, decoded.Quantity);
         Assert.Equal(new CellId(4, 5), decoded.SourceCell);
+        Assert.Equal(ItemLocation.InWorld(new CellId(4, 5)), decoded.SourceLocation);
+        Assert.True(decoded.DestinationStackId.IsEmpty);
         Assert.Equal(dependency, Assert.Single(decoded.Dependencies));
+    }
+
+
+    [Fact]
+    public void Quantity_one_building_stock_pickup_splits_into_resident_slot_and_round_trips()
+    {
+        EntityId buildingId = Id('6');
+        EntityId destinationId = Id('7');
+        Harness harness = new Harness(
+            quantity: 4,
+            location: ItemLocation.InBuilding(buildingId));
+        Result created = harness.CreateInternal(
+            buildingId,
+            destinationId,
+            quantity: 1);
+        Assert.True(created.IsSuccess, created.Error?.ToString());
+        harness.AdvanceToAcquireItem();
+
+        Result completed = harness.Complete();
+
+        Assert.True(completed.IsSuccess, completed.Error?.ToString());
+        Assert.Equal(3, harness.Inventory.GetStack(harness.StackId)!.Quantity);
+        ItemStackSnapshot carried = harness.Inventory.GetStack(destinationId)!;
+        Assert.Equal(1, carried.Quantity);
+        Assert.Equal(harness.ResidentId, carried.Location.OwnerId);
+
+        WorldItemPickupJobDefinition definition = Assert.IsType<WorldItemPickupJobDefinition>(
+            harness.Jobs.Get(harness.JobId)!.Definition);
+        WorldItemPickupJobSaveCodec codec = new WorldItemPickupJobSaveCodec();
+        WorldItemPickupJobDefinition decoded = Assert.IsType<WorldItemPickupJobDefinition>(
+            codec.Decode(codec.Encode(definition)));
+        Assert.Equal(ItemLocation.InBuilding(buildingId), decoded.SourceLocation);
+        Assert.Equal(destinationId, decoded.DestinationStackId);
     }
 
     private static EntityId Id(char prefix)
@@ -103,7 +139,7 @@ public sealed class WorldItemPickupTests
     {
         private long _tick = 100;
 
-        public Harness(int quantity)
+        public Harness(int quantity, ItemLocation? location = null)
         {
             ItemId = new ItemId("test.rock.chunk");
             StackId = Id('1');
@@ -118,7 +154,7 @@ public sealed class WorldItemPickupTests
                 StackId,
                 ItemId,
                 quantity,
-                ItemLocation.InWorld(SourceCell),
+                location ?? ItemLocation.InWorld(SourceCell),
                 tick: 0).IsSuccess);
             InventoryRepository = new InMemoryInventoryRepository(Inventory);
             JobRepository = new InMemoryJobRepository();
@@ -146,6 +182,27 @@ public sealed class WorldItemPickupTests
                     StackId,
                     residentId ?? ResidentId,
                     SourceCell,
+                    priority: 675,
+                    tick: _tick++));
+        }
+
+
+        public Result CreateInternal(
+            EntityId buildingId,
+            EntityId destinationStackId,
+            int quantity)
+        {
+            return new CreateWorldItemPickupHandler(
+                InventoryRepository,
+                JobRepository,
+                Journal).Handle(new CreateWorldItemPickupCommand(
+                    JobId,
+                    StackId,
+                    ResidentId,
+                    SourceCell,
+                    ItemLocation.InBuilding(buildingId),
+                    quantity,
+                    destinationStackId,
                     priority: 675,
                     tick: _tick++));
         }

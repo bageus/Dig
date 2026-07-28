@@ -13,6 +13,7 @@ public sealed class BuildingSupplyJobDefinition : JobDefinition
 {
     private static readonly JobStageKind[] SupplyStages =
     {
+        JobStageKind.TravelToTarget,
         JobStageKind.AcquireItem,
         JobStageKind.TravelToDestination,
         JobStageKind.DepositItem,
@@ -52,8 +53,14 @@ public sealed class BuildingSupplyJobDefinition : JobDefinition
                 nameof(allocations));
         }
 
-        _transitStackIds = NormalizeIds(transitStackIds, nameof(transitStackIds));
-        _depositStackIds = NormalizeIds(depositStackIds, nameof(depositStackIds));
+        _transitStackIds = NormalizeIds(
+            transitStackIds,
+            nameof(transitStackIds),
+            allowEmpty: true);
+        _depositStackIds = NormalizeIds(
+            depositStackIds,
+            nameof(depositStackIds),
+            allowEmpty: false);
         if (_depositStackIds.Length != _allocations.Select(value => value.ItemId)
             .Distinct().Count())
         {
@@ -81,7 +88,8 @@ public sealed class BuildingSupplyJobDefinition : JobDefinition
 
     private static EntityId[] NormalizeIds(
         IEnumerable<EntityId> ids,
-        string parameterName)
+        string parameterName,
+        bool allowEmpty)
     {
         if (ids is null)
         {
@@ -89,7 +97,7 @@ public sealed class BuildingSupplyJobDefinition : JobDefinition
         }
 
         EntityId[] values = ids.ToArray();
-        if (values.Length == 0
+        if ((!allowEmpty && values.Length == 0)
             || values.Any(value => value.IsEmpty)
             || values.Distinct().Count() != values.Length)
         {

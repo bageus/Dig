@@ -1,6 +1,6 @@
 # Производство в зданиях и внутреннее снабжение
 
-Статус: `APPROVED`.
+Статус: `IMPLEMENTED`.
 
 Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
 
@@ -100,7 +100,7 @@ Selecting a completed workstation opens its building functions panel.
 - Missing current stock colors the icon orange but never prevents enqueue.
 - Internal-stock area contains one icon per `InternalStockRule`; LMB toggles automatic delivery.
 - Stock icon shows current/capacity and incoming quantity.
-- Existing order management may cancel a queued/active order. Cancel releases unconsumed reservations; already consumed material steps remain consumed.
+- Every recipe with a non-terminal queue count exposes a visible decrement control. One activation cancels the newest queued order for that recipe; if no queued order exists, it cancels the active order. Cancel releases unconsumed reservations; already consumed material steps remain consumed.
 
 ## 6. Supply lifecycle
 
@@ -113,6 +113,7 @@ A supply demand exists when all are true:
 
 The demand target is capacity, not only current recipe quantity.
 
+The command handler plans and reserves a deterministic batch from revealed, reachable, unreserved world stacks. After assignment, the resident first travels to the workstation work position and confirms the active reserved supply route before visiting its sources. Internal workstation inventory is a protected automatic source and is excluded from ordinary stockpile/building demands. A direct player pickup remains valid: with one resident selected, ordinary LMB on a visible internal-stock unit creates a quantity-one pickup at the workstation work position. The unit must be currently available rather than reserved by active production. After successful pickup, enabled delivery makes the missing unit eligible for the next supply job.
 Planner reads revealed, reachable, unreserved world stacks. Internal workstation inventory is a protected automatic source and is excluded from ordinary stockpile/building demands. Resident inventory is not a world source. A direct player pickup remains valid.
 
 For a queued `recipe.campfire.food.grilled_mushroom`, the composing campfire-food workflow adds one dependency rule without changing BuildingSupply ownership: when internal stock has no cap, no eligible world cap exists, and a visible/reachable `Large` mushroom exists, one ordinary mushroom-chop job may be created. Its world drop is subsequently reserved and delivered by this normal supply lifecycle. See [`campfire-cooking-and-food-use.md`](campfire-cooking-and-food-use.md).
@@ -130,7 +131,7 @@ Deterministic preference:
 
 If ten units are missing and only six slots are free, the job commits a valid partial plan. After deposit and demand refresh, another supply job may cover the rest.
 
-The worker acquires every reserved allocation, travels to the building, and deposits stacks into `ItemLocation.InBuilding(buildingId)`. Different ItemIds remain separate authoritative stacks and Presentation projects them at distinct anchors.
+The worker follows `workstation check -> every reserved source -> workstation deposit`. It acquires each allocation in deterministic order and deposits stacks into `ItemLocation.InBuilding(buildingId)`. Different ItemIds remain separate authoritative stacks and Presentation projects them at distinct anchors. Internal-stock hit colliders are triggers and do not block navigation.
 
 Failure/cancel/retry releases source quantity, incoming capacity and worker/position reservations atomically.
 
@@ -176,7 +177,7 @@ Output location is the first deterministic free supported explored cell around t
 - One production worker per building.
 - One active supply job per building; its batch may contain several inputs.
 - A source quantity cannot be reserved by two jobs.
-- Direct pickup from workstation stock wins only through an explicit command and invalidates/retries affected production reservations using typed reasons.
+- Direct pickup from workstation stock uses only available quantity through an explicit command; active production reservations remain authoritative and cannot be silently stolen.
 
 ## 11. Save/load and migration
 
@@ -224,7 +225,9 @@ Integration/deterministic:
 - queued blocked order starts after supply;
 - grilled-mushroom order may compose Large mushroom chop -> world cap -> supply -> production;
 - cancel/retry at every supply and production stage;
-- direct pickup from internal stock creates replacement demand;
+- supply route starts with a workstation check before the first world source;
+- direct quantity-one pickup from available internal stock creates replacement demand;
+- queue decrement cancels exactly one newest queued order, then the active order only when no queued order remains;
 - two campfires operate independently;
 - save/load mid-supply and after each material step without duplicates.
 
@@ -232,6 +235,10 @@ Unity Play Mode:
 
 - select unpacked campfire and see six production icons/four stock icons;
 - hover ingredient tooltip, orange shortage, click count;
+- resident supply trip starts at the workstation, visits mixed sources, returns, and shows separated internal stacks;
+- selected resident can LMB an available internal-stock unit and the next synchronization creates replacement demand;
+- visible decrement removes one queued order;
+- complete building box and food output appear in front;
 - resident supply trip with visibly separated internal stacks;
 - complete BuildingBox and food output appear in deterministic surrounding cells;
 - repeated queue item starts the next order;
@@ -248,5 +255,7 @@ Unity Play Mode:
 
 | Date | Decision | Confirmed by |
 |---|---|---|
+| 2026-07-27 | Generic workstation definitions, campfire recipes, internal capacities/toggles, mixed partial supply, protected stock, progressive consumption, deferred replenishment, per-material skill timing and front-cell outputs. | User |
+| 2026-07-28 | Supply workers check the workstation before collection; available internal stock supports quantity-one direct pickup; every recipe exposes explicit one-order decrement. | User |
 | 2026-07-27 | Generic workstation definitions, campfire recipes, internal capacities/toggles, mixed partial supply, protected stock, progressive consumption, deferred replenishment and per-material skill timing. | User |
 | 2026-07-28 | Grilled-mushroom dependency may create a Large-mushroom chop only when no eligible cap exists; the assigned cook finalizes one quantity-two output stack into deterministic front-first surrounding cells. | User |

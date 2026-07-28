@@ -40,6 +40,7 @@ internal sealed partial class DigTerrainWorkSession
     private BeginProductionWorkHandler? _beginProduction;
     private ApplyProductionWorkHandler? _applyProductionWork;
     private CompleteProductionOrderHandler? _completeProduction;
+    private CancelProductionOrderHandler? _cancelProduction;
     private CreateBuildingSupplyJobHandler? _createBuildingSupply;
     private AcquireBuildingSupplySourceHandler? _acquireBuildingSupplySource;
     private DepositBuildingSupplyHandler? _depositBuildingSupply;
@@ -124,6 +125,11 @@ internal sealed partial class DigTerrainWorkSession
             _jobRepository,
             journal,
             _skillGrants);
+        _cancelProduction = new CancelProductionOrderHandler(
+            _productionRepository,
+            _buildingInventoryRepository,
+            _jobRepository,
+            journal);
         _createBuildingSupply = new CreateBuildingSupplyJobHandler(
             _productionContent,
             _buildingSupplyRepository,
@@ -225,6 +231,45 @@ internal sealed partial class DigTerrainWorkSession
             recipe,
             id,
             tick));
+    }
+
+    internal Result CancelOneBuildingProduction(
+        string buildingId,
+        string recipeId,
+        long tick)
+    {
+        EnsureBuildingProductionInitialized();
+        EntityId building = EntityId.Parse(buildingId);
+        RecipeId recipe = new RecipeId(recipeId);
+        ProductionOrderSnapshot? order = _productionRepository!.Get().GetAll()
+            .Where(value => value.BuildingId == building
+                && value.Recipe.Id == recipe
+                && !value.IsTerminal)
+            .OrderBy(value => value.Status == ProductionOrderStatus.Queued ? 0 : 1)
+            .ThenByDescending(value => value.Sequence)
+            .FirstOrDefault();
+        if (order == null)
+        {
+            return Result.Failure(ProductionErrors.OrderNotFound);
+        }
+
+        EntityId jobId = _jobRepository.Get().GetAll()
+            .Where(value => value.Definition is ProductionWorkJobDefinition work
+                && work.OrderId == order.Id
+                && !value.IsTerminal)
+            .Select(value => value.Id)
+            .FirstOrDefault();
+        Result result = _cancelProduction!.Handle(new CancelProductionOrderCommand(
+            order.Id,
+            jobId,
+            "player_cancelled",
+            tick));
+        if (result.IsSuccess && !jobId.IsEmpty)
+        {
+            _buildingProductionRoutes.Remove(jobId);
+        }
+
+        return result;
     }
 
     internal Result SetBuildingStockDelivery(

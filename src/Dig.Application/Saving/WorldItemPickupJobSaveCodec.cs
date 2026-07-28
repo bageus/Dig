@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Dig.Domain.Core;
+using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.World;
 
@@ -38,6 +39,15 @@ public sealed class WorldItemPickupJobSaveCodec : IJobDefinitionSaveCodec
                 Property("source_x", pickup.SourceCell.X),
                 Property("source_y", pickup.SourceCell.Y),
                 Property("source_z", pickup.SourceCell.Z),
+                Property("source_kind", (int)pickup.SourceLocation.Kind),
+                Property(
+                    "source_owner_id",
+                    pickup.SourceLocation.HasOwner
+                        ? pickup.SourceLocation.OwnerId.ToString()
+                        : string.Empty),
+                Property("destination_stack_id", pickup.DestinationStackId.IsEmpty
+                    ? string.Empty
+                    : pickup.DestinationStackId.ToString()),
             },
         };
     }
@@ -51,18 +61,64 @@ public sealed class WorldItemPickupJobSaveCodec : IJobDefinitionSaveCodec
 
         Dictionary<string, string> properties = data.Properties
             .ToDictionary(value => value.Key, value => value.Value, StringComparer.Ordinal);
+        CellId sourceCell = new CellId(
+            Integer(properties, "source_x"),
+            Integer(properties, "source_y"),
+            Integer(properties, "source_z"));
+        ItemLocation sourceLocation = DecodeSourceLocation(properties, sourceCell);
+        EntityId destinationStackId = properties.TryGetValue(
+                "destination_stack_id",
+                out string? destinationValue)
+            && !string.IsNullOrWhiteSpace(destinationValue)
+                ? EntityId.Parse(destinationValue)
+                : default;
         return new WorldItemPickupJobDefinition(
             EntityId.Parse(data.JobId),
             EntityId.Parse(Required(properties, "stack_id")),
             Integer(properties, "quantity"),
-            new CellId(
-                Integer(properties, "source_x"),
-                Integer(properties, "source_y"),
-                Integer(properties, "source_z")),
+            sourceCell,
+            sourceLocation,
+            destinationStackId,
             data.Priority,
             data.CreatedTick,
             new JobRetryPolicy(data.MaximumRetries, data.RetryDelayTicks),
             data.Dependencies.Select(EntityId.Parse));
+    }
+
+    private static ItemLocation DecodeSourceLocation(
+        IReadOnlyDictionary<string, string> properties,
+        CellId sourceCell)
+    {
+        if (!properties.TryGetValue("source_kind", out string? rawKind))
+        {
+            return ItemLocation.InWorld(sourceCell);
+        }
+
+        if (!int.TryParse(
+                rawKind,
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out int kindValue)
+            || !Enum.IsDefined(typeof(ItemLocationKind), kindValue))
+        {
+            throw new InvalidOperationException(
+                "Saved world item pickup source kind is invalid.");
+        }
+
+        ItemLocationKind kind = (ItemLocationKind)kindValue;
+        if (kind == ItemLocationKind.World)
+        {
+            return ItemLocation.InWorld(sourceCell);
+        }
+
+        if (kind == ItemLocationKind.BuildingInventory)
+        {
+            return ItemLocation.InBuilding(EntityId.Parse(
+                Required(properties, "source_owner_id")));
+        }
+
+        throw new InvalidOperationException(
+            "Saved item pickup source must be world or building inventory.");
     }
 
     private static SavePropertyData Property(string key, object value)

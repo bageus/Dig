@@ -38,10 +38,38 @@ public sealed class CreateWorldItemPickupCommand : ICommand<Result>
         CellId sourceCell,
         int priority,
         long tick)
+        : this(
+            jobId,
+            stackId,
+            residentId,
+            sourceCell,
+            Dig.Domain.Inventory.ItemLocation.InWorld(sourceCell),
+            quantity: 0,
+            destinationStackId: default,
+            priority: priority,
+            tick: tick)
+    {
+    }
+
+    public CreateWorldItemPickupCommand(
+        EntityId jobId,
+        EntityId stackId,
+        EntityId residentId,
+        CellId sourceCell,
+        Dig.Domain.Inventory.ItemLocation sourceLocation,
+        int quantity,
+        EntityId destinationStackId,
+        int priority,
+        long tick)
     {
         if (jobId.IsEmpty || stackId.IsEmpty || residentId.IsEmpty)
         {
             throw new ArgumentException("Job, stack and resident ids are required.");
+        }
+
+        if (quantity < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(quantity));
         }
 
         if (priority < 0 || priority > 1000)
@@ -58,6 +86,9 @@ public sealed class CreateWorldItemPickupCommand : ICommand<Result>
         StackId = stackId;
         ResidentId = residentId;
         SourceCell = sourceCell;
+        SourceLocation = sourceLocation;
+        Quantity = quantity;
+        DestinationStackId = destinationStackId;
         Priority = priority;
         Tick = tick;
     }
@@ -66,6 +97,9 @@ public sealed class CreateWorldItemPickupCommand : ICommand<Result>
     public EntityId StackId { get; }
     public EntityId ResidentId { get; }
     public CellId SourceCell { get; }
+    public Dig.Domain.Inventory.ItemLocation SourceLocation { get; }
+    public int Quantity { get; }
+    public EntityId DestinationStackId { get; }
     public int Priority { get; }
     public long Tick { get; }
 }
