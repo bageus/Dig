@@ -16,7 +16,7 @@ namespace Dig.Unity
                 return;
             }
 
-            DigGameHudCanvas hud = _hud!;
+            DigHudOverlay hud = _hud!;
             DigTerrainWorkSession terrainSession = _terrainSession!;
             string residentId = decision.ActorId.Value.ToString();
             string stackId = decision.TargetEntityId.Value.ToString();
