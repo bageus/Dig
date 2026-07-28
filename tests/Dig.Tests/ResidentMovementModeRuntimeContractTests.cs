@@ -29,7 +29,7 @@ public sealed class ResidentMovementModeRuntimeContractTests
         Assert.Contains("ResidentMovementCommandSource.Automatic", modes);
         Assert.Contains("ResidentMovementCommandSource.Manual", manual);
         Assert.Contains("ResidentMovementCommandSource.SpatialWork", spatial);
-        Assert.Contains("IsMovementStepDue(", session);
+        Assert.Contains("IsMovementStepDue(", modes);
         Assert.Contains("IsMovementStepDue(", manual);
         Assert.Contains("IsMovementStepDue(", spatial);
         Assert.Contains("SetMovementModeResolver", driver);
