@@ -33,9 +33,12 @@ public sealed class BarrelUnityRuntimeContractTests
         Assert.Contains("Sword = 5", cursor, StringComparison.Ordinal);
         Assert.Contains("Eat = 6", cursor, StringComparison.Ordinal);
         Assert.Contains("SetHighlighted", cursor, StringComparison.Ordinal);
-        Assert.Contains("VisualHeight => 0.70f", visual, StringComparison.Ordinal);
+        Assert.Contains("PresentationScale = 0.70f", visual, StringComparison.Ordinal);
+        Assert.Contains("VisualHeight => 0.49f", visual, StringComparison.Ordinal);
         Assert.DoesNotContain("FrontOffset", renderer, StringComparison.Ordinal);
         Assert.Contains("DigTunnelProjection.ResidentFootSink", renderer, StringComparison.Ordinal);
+        Assert.Contains("worldPositionStays: true", renderer, StringComparison.Ordinal);
+        Assert.Contains("visual.transform.rotation = Quaternion.identity", renderer, StringComparison.Ordinal);
         Assert.Contains("TryResolveBarrelHit", interaction, StringComparison.Ordinal);
         Assert.Contains("Атакует бочку", interaction, StringComparison.Ordinal);
     }
