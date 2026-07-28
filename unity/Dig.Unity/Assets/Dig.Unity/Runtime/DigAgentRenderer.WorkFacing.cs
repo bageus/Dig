@@ -77,12 +77,15 @@ namespace Dig.Unity
                     && support.IsSolid
                     && support.State.CompletedExcavationQuarters == ExcavationQuarter.None;
                 bool climbingWork = RequiresClimbingWorkPose(
-                    hasToolWork,
                     nonClimbingWorkers.Contains(pair.Key),
-                    hasFullSupport);
+                    hasFullSupport,
+                    tunnelVolume.Contains(current));
                 bool barrelAttack = hasToolWork && barrelWorkers.Contains(pair.Key);
+                CellId? poseTarget = hasToolWork
+                    ? target
+                    : climbingWork ? current : (CellId?)null;
                 pair.Value.SetWorkTarget(
-                    hasToolWork ? target : (CellId?)null,
+                    poseTarget,
                     climbingWork,
                     animateToolWork: hasToolWork && !barrelAttack,
                     animateAttackWork: barrelAttack);
@@ -90,15 +93,14 @@ namespace Dig.Unity
         }
 
         internal static bool RequiresClimbingWorkPose(
-            bool hasToolWork,
             bool isNonClimbingWork,
-            bool hasFullSupport)
+            bool hasFullSupport,
+            bool isOpenTunnelCell)
         {
-            // Support is authoritative. Once any quarter below is committed, or a
-            // shaft worker has no floor at all, every mining direction uses the
-            // stationary climbing pose. Do not depend on template/shaft provenance:
-            // side excavation from an unsupported cell must behave identically.
-            return hasToolWork && !isNonClimbingWork && !hasFullSupport;
+            // World support remains authoritative after a job becomes terminal. An
+            // unsupported resident in an open tunnel keeps the stationary climbing
+            // posture until another route starts or a supported landing is reached.
+            return !isNonClimbingWork && !hasFullSupport && isOpenTunnelCell;
         }
 
         private static bool IsActiveToolWork(JobOverlayViewModel job)

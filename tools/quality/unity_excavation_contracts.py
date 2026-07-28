@@ -161,9 +161,10 @@ def check_excavation_contracts(
             "CaveRoomPlanner",
             "PlanCaveRoom",
             "ApplyCaveRoomPlan",
-            "plan.VolumeCells",
+            "plan.ExcavationCells",
             "SetDigDesignations",
-            "VolumeCells.All",
+            "ExcavationTargets.All",
+            "IsCaveRoomTargetComplete",
         ),
     ))
     errors.extend(reject_fragments(
@@ -222,8 +223,9 @@ def check_excavation_contracts(
         (
             "EdgeCount = 12",
             "CreateCorners",
-            "preset.BaseWidth",
-            "preset.TopWidth",
+            "ResolveRowProfile",
+            "baseProfile.LeftBoundary",
+            "topProfile.RightBoundary",
             "preset.Depth - 1",
         ),
     ))

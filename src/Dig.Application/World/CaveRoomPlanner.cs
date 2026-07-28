@@ -6,7 +6,7 @@ using Dig.Domain.World;
 namespace Dig.Application.World
 {
 
-public sealed class CaveRoomPlanner
+public sealed partial class CaveRoomPlanner
 {
     public CaveRoomPlanResult Plan(
         WorldSnapshot world,
@@ -80,17 +80,20 @@ public sealed class CaveRoomPlanner
         List<CaveRoomInvalidCell> invalid = new List<CaveRoomInvalidCell>();
         List<CellId> baseTunnel = new List<CellId>(preset.BaseWidth);
         List<CellId> front = new List<CellId>();
-        List<CellId> excavation = new List<CellId>();
+        List<CaveRoomExcavationTarget> excavation = new List<CaveRoomExcavationTarget>();
         List<CellId> volume = new List<CellId>();
 
         for (int level = 0; level < preset.Height; level++)
         {
             int y = entrance.Y - level;
-            int rowWidth = InterpolateWidth(preset, level);
-            int minX = ResolveRowMinX(preset, entrance.X, level);
-            for (int offset = 0; offset < rowWidth; offset++)
+            CaveRoomRowProfile profile = ResolveRowProfile(
+                preset,
+                entrance.X,
+                level);
+            foreach (KeyValuePair<int, ExcavationQuarter> part
+                in profile.RequiredQuartersByX.OrderBy(value => value.Key))
             {
-                int x = minX + offset;
+                int x = part.Key;
                 for (int z = 0; z < preset.Depth; z++)
                 {
                     CellId cell = new CellId(x, y, z);
@@ -102,6 +105,7 @@ public sealed class CaveRoomPlanner
                         boundary,
                         cells,
                         cell,
+                        part.Value,
                         openBaseTunnelCell,
                         invalid,
                         excavation,
@@ -140,45 +144,10 @@ public sealed class CaveRoomPlanner
             preset,
             entrance,
             front.OrderBy(cell => cell).ToArray(),
-            excavation.OrderBy(cell => cell).ToArray(),
+            excavation.OrderBy(target => target.Cell).ToArray(),
             baseTunnel.OrderBy(cell => cell).ToArray(),
             volume.OrderBy(cell => cell).ToArray(),
             roof.OrderBy(cell => cell).ToArray()));
-    }
-
-    public static int InterpolateWidth(CaveRoomPreset preset, int level)
-    {
-        if (preset is null)
-        {
-            throw new ArgumentNullException(nameof(preset));
-        }
-
-        if (level < 0 || level >= preset.Height)
-        {
-            throw new ArgumentOutOfRangeException(nameof(level));
-        }
-
-        if (preset.Height == 1)
-        {
-            return preset.BaseWidth;
-        }
-
-        double progress = level / (double)(preset.Height - 1);
-        double width = preset.BaseWidth
-            + ((preset.TopWidth - preset.BaseWidth) * progress);
-        return (int)Math.Round(width, MidpointRounding.AwayFromZero);
-    }
-
-    public static int ResolveRowMinX(
-        CaveRoomPreset preset,
-        int anchorX,
-        int level)
-    {
-        int rowWidth = InterpolateWidth(preset, level);
-        // A cell grid cannot center an even row on an integer anchor exactly. The
-        // approved deterministic tie-break keeps the extra half-cell on the right:
-        // a Small 5->4 transition becomes X-1..X+2, not X-2..X+1.
-        return anchorX - ((rowWidth - 1) / 2);
     }
 
     private static void ValidateVolumeCell(
@@ -187,9 +156,10 @@ public sealed class CaveRoomPlanner
         ExcavationBoundaryPolicy boundary,
         IReadOnlyDictionary<CellId, CellSnapshot> cells,
         CellId cell,
+        ExcavationQuarter requiredQuarters,
         bool openBaseTunnelCell,
         ICollection<CaveRoomInvalidCell> invalid,
-        ICollection<CellId> excavation,
+        ICollection<CaveRoomExcavationTarget> excavation,
         ICollection<CellId> front)
     {
         if (!world.Size.Contains(cell) || !cells.TryGetValue(cell, out CellSnapshot snapshot))
@@ -237,7 +207,7 @@ public sealed class CaveRoomPlanner
             return;
         }
 
-        excavation.Add(cell);
+        excavation.Add(new CaveRoomExcavationTarget(cell, requiredQuarters));
         if (cell.Z == CellId.MinimumDepth)
         {
             front.Add(cell);
@@ -251,13 +221,16 @@ public sealed class CaveRoomPlanner
         CellId entrance,
         ICollection<CaveRoomInvalidCell> invalid)
     {
-        List<CellId> roof = new List<CellId>(preset.TopWidth);
+        CaveRoomRowProfile top = ResolveRowProfile(
+            preset,
+            entrance.X,
+            preset.Height - 1);
+        List<CellId> roof = new List<CellId>(top.RequiredQuartersByX.Count);
         int roofY = entrance.Y - preset.Height;
-        int roofMinX = ResolveRowMinX(preset, entrance.X, preset.Height - 1);
-        for (int offset = 0; offset < preset.TopWidth; offset++)
+        foreach (int x in top.RequiredQuartersByX.Keys.OrderBy(value => value))
         {
             CellId roofCell = new CellId(
-                roofMinX + offset,
+                x,
                 roofY,
                 CellId.MinimumDepth);
             if (!world.Size.Contains(roofCell)

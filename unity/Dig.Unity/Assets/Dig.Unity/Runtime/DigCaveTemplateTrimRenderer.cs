@@ -203,8 +203,11 @@ namespace Dig.Unity
                 CaveTemplateTrimRowViewModel row = instance.Rows[index];
                 Mix(ref hash, (ulong)(uint)row.Level, prime);
                 Mix(ref hash, (ulong)(uint)row.MinX, prime);
+                Mix(ref hash, (ulong)(uint)row.MaxX, prime);
                 Mix(ref hash, (ulong)(uint)row.Y, prime);
                 Mix(ref hash, (ulong)(uint)row.Width, prime);
+                Mix(ref hash, (ulong)(uint)row.LeftBoundary2, prime);
+                Mix(ref hash, (ulong)(uint)row.RightBoundary2, prime);
             }
 
             for (int index = 0; index < instance.ArchDepths.Count; index++)
@@ -252,7 +255,8 @@ namespace Dig.Unity
             }
 
             _root = new GameObject("Cave Template Trim Visuals").transform;
-            _root.SetParent(transform, worldPositionStays: false);
+            _root.SetParent(transform, worldPositionStays: true);
+            _root.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
         }
 
         private void EnsureFallbackShader()

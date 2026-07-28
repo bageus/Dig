@@ -107,7 +107,7 @@ public static class CaveRoomPresetCatalog
                     5,
                     3,
                     3,
-                    2,
+                    3,
                     0),
                 [CaveRoomPresetKind.Medium] = new CaveRoomPreset(
                     CaveRoomPresetKind.Medium,

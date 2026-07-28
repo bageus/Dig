@@ -282,7 +282,7 @@ namespace Dig.Unity
             {
                 _hud.SetStatus(
                     $"{plan.Preset.Kind} cave queued: " +
-                    $"{plan.VolumeCells.Count} Dig Jobs, " +
+                    $"{plan.ExcavationTargets.Count} Dig Jobs, " +
                     $"depth {plan.Preset.Depth}.");
             }
         }

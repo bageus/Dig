@@ -43,6 +43,7 @@ namespace Dig.Unity
             }
 
             NavigationSnapshot navigation = snapshotResult.Value;
+            WorldSnapshot world = _worldSession.LoadSnapshot();
             Dictionary<string, AgentViewModel> agentsById = agents.ToDictionary(
                 agent => agent.Id,
                 StringComparer.Ordinal);
@@ -57,7 +58,13 @@ namespace Dig.Unity
             _buildingBoxAssemblyRoutes.Clear();
             _buildingProductionRoutes.Clear();
             _buildingSupplyRoutes.Clear();
-            foreach (JobSnapshot job in _jobRepository.Get().GetAll())
+            JobSnapshot[] activeJobs = _jobRepository.Get().GetAll()
+                .Where(job => IsActive(job) && job.AssignedAgentId.HasValue)
+                .ToArray();
+            HashSet<string> assignedAgentIds = new HashSet<string>(
+                activeJobs.Select(job => job.AssignedAgentId!.Value.ToString()),
+                StringComparer.Ordinal);
+            foreach (JobSnapshot job in activeJobs)
             {
                 if (!IsActive(job) || !job.AssignedAgentId.HasValue)
                 {
@@ -133,7 +140,7 @@ namespace Dig.Unity
                     job,
                     new CellId(agent.CellX, agent.CellY, agent.CellZ),
                     navigation,
-                    _worldSession.LoadSnapshot());
+                    world);
                 if (planned.IsFailure)
                 {
                     ReleaseUnroutableExcavationAssignment(job, tick);
@@ -153,6 +160,28 @@ namespace Dig.Unity
                 movement[agentId] = path.Cells.Count > 1
                     ? path.Cells[1]
                     : route.WorkCell.Value;
+            }
+
+            foreach (AgentViewModel agent in agents.OrderBy(value => value.Id, StringComparer.Ordinal))
+            {
+                if (assignedAgentIds.Contains(agent.Id) || movement.ContainsKey(agent.Id))
+                {
+                    continue;
+                }
+
+                CellId start = new CellId(agent.CellX, agent.CellY, agent.CellZ);
+                UnsupportedResidentRecoveryPlan? recovery = _supportRecoveryPlanner.Plan(
+                    start,
+                    navigation,
+                    world);
+                if (recovery == null)
+                {
+                    continue;
+                }
+
+                movement[agent.Id] = recovery.Path.Cells.Count > 1
+                    ? recovery.Path.Cells[1]
+                    : recovery.Destination;
             }
 
             return movement;

@@ -8,44 +8,48 @@ Authoritative specifications and tracking:
 - [`../design/resident-movement-occupancy-and-vertical-traversal.md`](../design/resident-movement-occupancy-and-vertical-traversal.md), issue [#386](https://github.com/bageus/Dig/issues/386);
 - [`../design/excavation-room-templates-and-deposits.md`](../design/excavation-room-templates-and-deposits.md), issue [#87](https://github.com/bageus/Dig/issues/87).
 
-## Runtime symptoms
+## Повторно подтверждённые runtime symptoms
 
-- partial excavation of a vertical target appeared as left/right columns instead of horizontal near/top and far/bottom bands;
-- a resident could keep a standing work pose after the first quarter below their feet was committed;
-- unsupported side excavation from a shaft could use an ordinary standing dig pose;
-- even-width cave-room rows could drift between planner, preview, completed trim and floor projection;
-- the Medium room lacked a dedicated runtime regression proving that its preview and completed trim are produced.
+После первого исправления #481 оставались observable regressions:
 
-## Root causes
+- work-facing вычислял unsupported pose только из active `PerformWork`; после terminal completion target очищался, и resident снова отображался стоящим на частично/полностью удалённой опоре;
+- integer-only `ResolveRowMinX` мог только сдвинуть чётную строку Small целой клеткой, поэтому геометрически центрированный профиль `5 -> 4 -> 3` был невозможен;
+- каталог Small всё ещё содержал depth `2`;
+- completed trim создавал mesh в world coordinates, но parenting под уже повёрнутый bootstrap root применял side-view rotation второй раз и давал отдельную проекцию выше основной сцены;
+- после последнего room job не существовало обычного движения к опоре, поэтому unsupported resident мог остаться логически в shaft cell без нового action;
+- Medium имел только preview fixture, но не regression на фактический completed-room renderer.
 
-`DigUnityBootstrap` rotates the side-view root by 90 degrees. `DigCellVisual` built quarter children on local X/Y, but local Y is world depth under that rotation. Logical vertical belongs to local Z. Upper and lower pieces therefore overlapped on screen and split in depth.
+## Исправление ownership и lifecycle
 
-Work-facing presentation additionally required either vertical-tunnel provenance or the exact target-below special case before entering climbing stance. Full support is already authoritative in World; provenance is not required to know that a mining worker has no floor.
-
-Cave-room row centering was duplicated in planner, preview, trim and floor code. The formulas currently agreed, but no single owner or regression prevented drift, and no Medium runtime fixture proved the visible geometry path.
-
-## Correction
-
-- quarter children split local X/Z and retain full local-Y depth;
-- `UpperLeft|UpperRight` is one world-horizontal upper band under the rotated root;
-- any mining work without full support uses stationary climbing stance, independent of shaft/template provenance;
-- climbing work pose is applied immediately even while the final movement interpolation is finishing;
-- `CaveRoomPlanner.ResolveRowMinX` is the single row-bounds owner;
-- an even row uses the deterministic right-biased tie-break: Small `5,4,3` at anchor X has its second row at `X-1..X+2`;
-- planner, roof, preview, completed trim and room floor use that same function;
-- Medium `8,7,6` has planning, trim and Play Mode preview regressions.
-
-The approved four-quarter cell model remains unchanged. Increasing a cell to eight parts is unnecessary for these fixes and would add save/migration and balancing work without resolving the actual presentation-axis bug.
+- `CaveRoomRowProfile` хранит exact doubled boundaries, physical cell range и required `ExcavationQuarter` mask для каждой boundary cell;
+- Small имеет depth `3`; его middle row использует две half-cell границы: справа от левой клетки и слева от правой;
+- `CaveRoomPlan.ExcavationTargets` является единственным источником required mask для room child jobs;
+- coordinator помечает quarters вне required mask недоступными, поэтому half-cell child job заканчивается на `2/4`;
+- `CompletePartialTerrainWorkCommandHandler` снимает designation, завершает job/reservations и skill grant, но не вызывает `World.Excavate`, не создаёт output и не открывает Navigation;
+- room completion проверяет full targets как air, а partial targets как solid shell с выполненным required mask и снятой designation;
+- shell protection использует тот же row profile и защищает обе оставшиеся внешние половины;
+- preview, trim, floor cells и runtime activation используют общий профиль;
+- completed trim root сохраняет world-space identity под rotated bootstrap;
+- work-facing использует World support и open tunnel cell независимо от наличия active mining target;
+- idle/terminal unsupported resident сохраняет climbing stance;
+- `UnsupportedResidentRecoveryPlanner` выбирает reachable full-support destination с минимальным shaft-gap count, route cost и deterministic `CellId`; active assigned job имеет приоритет.
 
 ## Regression coverage
 
-`ExcavationRuntimeRegressionContractTests` covers Small and Medium row masks, completed trim projection, quarter-axis source contracts and unsupported-work posture ownership.
+.NET tests проверяют:
 
-`ExcavationQuarterRoomAndClimbingPlayModeTests` covers:
+- Small depth `3`, exact volume/target counts и centered half-cell masks;
+- Medium `8 -> 7 -> 6` profile и completed trim provenance;
+- partial `2/4` completion без air/output/navigation mutation и rejection незавершённого mask;
+- обе защищённые half-cell shell boundaries;
+- nearest supported recovery, отсутствие recovery на full support и job-before-recovery routing contract;
+- world-space trim root source contract.
 
-- upper-row quarter geometry under the actual 90-degree side-view root;
-- full-depth remaining quarter bounds;
-- unsupported mining posture policy and immediate climbing work state;
-- visible Medium preview mesh with the expected width and height.
+Unity Play Mode fixtures проверяют:
 
-A licensed Unity Test Runner execution is still required to validate the complete input -> job -> quarter commit -> same-tick climbing presentation workflow in the Editor.
+- idle resident остаётся в climbing pose после partial support loss без active Job;
+- Small boundary visuals удаляют внутренние половины с обеих сторон;
+- Medium completed trim создаёт mesh и остаётся на высоте комнаты под реальным `90°` rotated root;
+- существующие quarter-axis и Medium preview scenarios.
+
+Save/load существующего World quarter mask остаётся unchanged: partial boundary progress хранится в тех же `CompletedExcavationQuarters`. Полный runtime save of session-local cave plans остаётся частью открытого parent feature #87 и не объявляется `VERIFIED` этим bugfix.

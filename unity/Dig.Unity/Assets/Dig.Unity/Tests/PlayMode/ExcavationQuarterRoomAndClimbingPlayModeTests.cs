@@ -74,9 +74,10 @@ public sealed class ExcavationQuarterRoomAndClimbingPlayModeTests
             ?? throw new MissingMethodException(
                 typeof(DigAgentRenderer).FullName,
                 "RequiresClimbingWorkPose");
-        Assert.That(posture.Invoke(null, new object[] { true, false, false }), Is.True);
+        Assert.That(posture.Invoke(null, new object[] { false, false, true }), Is.True);
+        Assert.That(posture.Invoke(null, new object[] { false, true, true }), Is.False);
         Assert.That(posture.Invoke(null, new object[] { true, false, true }), Is.False);
-        Assert.That(posture.Invoke(null, new object[] { true, true, false }), Is.False);
+        Assert.That(posture.Invoke(null, new object[] { false, false, false }), Is.False);
 
         GameObject agentRoot = Own(GameObject.CreatePrimitive(PrimitiveType.Capsule));
         DigAgentVisual agent = agentRoot.AddComponent<DigAgentVisual>();

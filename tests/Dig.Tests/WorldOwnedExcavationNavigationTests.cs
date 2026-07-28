@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Dig.Application.Jobs;
+using Dig.Application.Navigation;
 using Dig.Domain.Core;
 using Dig.Domain.Jobs;
 using Dig.Domain.Navigation;
@@ -158,6 +159,74 @@ public sealed class WorldOwnedExcavationNavigationTests
         Assert.True(result.Value.Succeeded);
         Assert.Equal(workCell, result.Value.WorkCell);
         Assert.Equal(TerrainWorkPosture.Climbing, result.Value.Posture);
+    }
+
+    [Fact]
+    public void Unsupported_idle_resident_recovers_to_nearest_supported_cell()
+    {
+        WorldState world = CreateFilledWorld(new WorldSize(3, 3, 4));
+        CellId left = new CellId(0, 0, 0);
+        CellId start = new CellId(1, 0, 0);
+        CellId right = new CellId(2, 0, 0);
+        Assert.True(world.Excavate(left, Air, tick: 1).IsSuccess);
+        Assert.True(world.Excavate(start, Air, tick: 2).IsSuccess);
+        Assert.True(world.Excavate(right, Air, tick: 3).IsSuccess);
+        CellId partialSupport = new CellId(1, 1, 0);
+        Assert.True(world.SetDigDesignation(
+            partialSupport,
+            designated: true,
+            tick: 4).IsSuccess);
+        Assert.True(world.CommitExcavationQuarter(
+            partialSupport,
+            ExcavationQuarter.UpperLeft,
+            ExcavationCutPattern.HorizontalRows,
+            Air,
+            tick: 5).IsSuccess);
+        NavigationMap map = new NavigationMap(
+            TraversalProfile.CreateGroundedDwarf());
+        Assert.True(map.Rebuild(
+            world.CreateSnapshot(),
+            Array.Empty<TraversalLink>()).IsSuccess);
+        NavigationSnapshot navigation = map.GetSnapshot().Value;
+
+        UnsupportedResidentRecoveryPlan? plan =
+            new UnsupportedResidentRecoveryPlanner(
+                new NavigationPathfinder()).Plan(
+                    start,
+                    navigation,
+                    world.CreateSnapshot());
+
+        Assert.NotNull(plan);
+        Assert.Equal(left, plan!.Destination);
+        Assert.Equal(new[] { start, left }, plan.Path.Cells);
+        Assert.Equal(1, plan.ShaftGapCount);
+        Assert.Equal(
+            TunnelTraversalKind.ShaftGapTraverse,
+            navigation.GetTransitions(start)
+                .Single(transition => transition.Target == left)
+                .TraversalKind);
+    }
+
+    [Fact]
+    public void Supported_idle_resident_does_not_create_recovery_route()
+    {
+        WorldState world = CreateFilledWorld(new WorldSize(2, 2, 4));
+        CellId start = new CellId(0, 0, 0);
+        Assert.True(world.Excavate(start, Air, tick: 1).IsSuccess);
+        NavigationMap map = new NavigationMap(
+            TraversalProfile.CreateGroundedDwarf());
+        Assert.True(map.Rebuild(
+            world.CreateSnapshot(),
+            Array.Empty<TraversalLink>()).IsSuccess);
+
+        UnsupportedResidentRecoveryPlan? plan =
+            new UnsupportedResidentRecoveryPlanner(
+                new NavigationPathfinder()).Plan(
+                    start,
+                    map.GetSnapshot().Value,
+                    world.CreateSnapshot());
+
+        Assert.Null(plan);
     }
 
     [Fact]

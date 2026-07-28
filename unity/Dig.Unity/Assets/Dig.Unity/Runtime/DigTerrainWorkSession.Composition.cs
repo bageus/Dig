@@ -189,6 +189,8 @@ internal sealed partial class DigTerrainWorkSession
             advance,
             new CompleteTerrainWorkCommandHandler(
                 jobs, world.Repository, inventory, journal, skills),
+            new CompletePartialTerrainWorkCommandHandler(
+                jobs, world.Repository, journal, skills),
             new JobOverlayPresenter(
                 new GetJobsHandler(jobs),
                 new GetJobReservationsHandler(jobs)),
@@ -208,6 +210,7 @@ internal sealed partial class DigTerrainWorkSession
             navigation,
             world,
             new TerrainWorkRoutePlanner(new NavigationPathfinder()),
+            new UnsupportedResidentRecoveryPlanner(new NavigationPathfinder()),
             profile,
             outputIds,
             skills,

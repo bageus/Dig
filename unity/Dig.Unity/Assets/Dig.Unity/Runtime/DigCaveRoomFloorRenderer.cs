@@ -21,13 +21,16 @@ namespace Dig.Unity
             }
 
             EnsureRoot();
-            int minX = plan.Entrance.X - ((plan.Preset.BaseWidth - 1) / 2);
+            CaveRoomRowProfile baseProfile = CaveRoomPlanner.ResolveRowProfile(
+                plan.Preset,
+                plan.Entrance.X,
+                level: 0);
             for (int z = 0; z < plan.Preset.Depth; z++)
             {
-                for (int offset = 0; offset < plan.Preset.BaseWidth; offset++)
+                foreach (int x in baseProfile.RequiredQuartersByX.Keys)
                 {
                     CellId cell = new CellId(
-                        minX + offset,
+                        x,
                         plan.Entrance.Y,
                         z);
                     if (!_cells.Add(cell))

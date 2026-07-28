@@ -302,8 +302,8 @@ namespace Dig.Unity
             out float bottom,
             out float top)
         {
-            left = row.MinX - CellHalfExtent;
-            right = row.MaxX + CellHalfExtent;
+            left = row.LeftBoundary;
+            right = row.RightBoundary;
             float centerY = -row.Y;
             bottom = centerY - CellHalfExtent;
             top = centerY + CellHalfExtent;

@@ -79,7 +79,9 @@ def main() -> int:
             '"cave.template.medium"',
             '"cave.template.large"',
             '"cave.template.tall"',
-            "CaveRoomPlanner.InterpolateWidth",
+            "CaveRoomPlanner.ResolveRowProfile",
+            "profile.LeftBoundary2",
+            "profile.RightBoundary2",
             "preset.Depth - 1",
             "ResolveVariant",
             "CalculateVersion",
@@ -164,6 +166,8 @@ def main() -> int:
             "AddSideWalls",
             "AddBackWall",
             "instance.Variant",
+            "row.LeftBoundary",
+            "row.RightBoundary",
         ),
     ))
     errors.extend(reject(
@@ -207,6 +211,8 @@ def main() -> int:
             "InstanceCount",
             "VertexCount",
             "TriangleCount",
+            "SetParent(transform, worldPositionStays: true)",
+            "SetPositionAndRotation(Vector3.zero, Quaternion.identity)",
         ),
     ))
     errors.extend(reject(

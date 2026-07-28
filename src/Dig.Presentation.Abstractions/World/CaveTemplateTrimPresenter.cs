@@ -59,16 +59,18 @@ public sealed class CaveTemplateTrimPresenter
             preset.Height];
         for (int level = 0; level < preset.Height; level++)
         {
-            int width = CaveRoomPlanner.InterpolateWidth(preset, level);
-            int minX = CaveRoomPlanner.ResolveRowMinX(
+            CaveRoomRowProfile profile = CaveRoomPlanner.ResolveRowProfile(
                 preset,
                 plan.Entrance.X,
                 level);
             rows[level] = new CaveTemplateTrimRowViewModel(
                 level,
-                minX,
+                profile.MinCellX,
+                profile.MaxCellX,
                 plan.Entrance.Y - level,
-                width);
+                profile.Width,
+                profile.LeftBoundary2,
+                profile.RightBoundary2);
         }
 
         int[] arches = new int[Math.Max(0, preset.Depth - 1)];
@@ -144,8 +146,11 @@ public sealed class CaveTemplateTrimPresenter
                 CaveTemplateTrimRowViewModel row = instance.Rows[rowIndex];
                 Mix(ref hash, (ulong)(uint)row.Level, prime);
                 Mix(ref hash, (ulong)(uint)row.MinX, prime);
+                Mix(ref hash, (ulong)(uint)row.MaxX, prime);
                 Mix(ref hash, (ulong)(uint)row.Y, prime);
                 Mix(ref hash, (ulong)(uint)row.Width, prime);
+                Mix(ref hash, (ulong)(uint)row.LeftBoundary2, prime);
+                Mix(ref hash, (ulong)(uint)row.RightBoundary2, prime);
             }
 
             for (int archIndex = 0; archIndex < instance.ArchDepths.Count; archIndex++)

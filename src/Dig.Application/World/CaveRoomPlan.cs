@@ -46,7 +46,7 @@ public sealed class CaveRoomPlan
         CaveRoomPreset preset,
         CellId entrance,
         IReadOnlyList<CellId> frontExcavationCells,
-        IReadOnlyList<CellId> excavationCells,
+        IReadOnlyList<CaveRoomExcavationTarget> excavationTargets,
         IReadOnlyList<CellId> baseTunnelCells,
         IReadOnlyList<CellId> volumeCells,
         IReadOnlyList<CellId> roofCells)
@@ -54,19 +54,32 @@ public sealed class CaveRoomPlan
         Preset = preset ?? throw new ArgumentNullException(nameof(preset));
         Entrance = entrance;
         FrontExcavationCells = Copy(frontExcavationCells, nameof(frontExcavationCells));
-        ExcavationCells = Copy(excavationCells, nameof(excavationCells));
+        ExcavationTargets = CopyTargets(excavationTargets, nameof(excavationTargets));
+        ExcavationCells = new ReadOnlyCollection<CellId>(
+            ExcavationTargets.Select(target => target.Cell).ToArray());
         BaseTunnelCells = Copy(baseTunnelCells, nameof(baseTunnelCells));
         VolumeCells = Copy(volumeCells, nameof(volumeCells));
         RoofCells = Copy(roofCells, nameof(roofCells));
+        _targetsByCell = ExcavationTargets.ToDictionary(target => target.Cell);
     }
+
+    private readonly IReadOnlyDictionary<CellId, CaveRoomExcavationTarget> _targetsByCell;
 
     public CaveRoomPreset Preset { get; }
     public CellId Entrance { get; }
     public IReadOnlyList<CellId> FrontExcavationCells { get; }
+    public IReadOnlyList<CaveRoomExcavationTarget> ExcavationTargets { get; }
     public IReadOnlyList<CellId> ExcavationCells { get; }
     public IReadOnlyList<CellId> BaseTunnelCells { get; }
     public IReadOnlyList<CellId> VolumeCells { get; }
     public IReadOnlyList<CellId> RoofCells { get; }
+
+    public bool TryGetExcavationTarget(
+        CellId cell,
+        out CaveRoomExcavationTarget target)
+    {
+        return _targetsByCell.TryGetValue(cell, out target);
+    }
 
     public static CaveRoomPlan CreateSnapshot(
         CaveRoomPreset preset,
@@ -80,9 +93,7 @@ public sealed class CaveRoomPlan
             throw new ArgumentNullException(nameof(preset));
         }
 
-        CellId[] front = OrderedUnique(
-            frontExcavationCells,
-            nameof(frontExcavationCells));
+        CellId[] front = OrderedUnique(frontExcavationCells, nameof(frontExcavationCells));
         CellId[] volume = OrderedUnique(volumeCells, nameof(volumeCells));
         CellId[] roof = OrderedUnique(roofCells, nameof(roofCells));
         ValidateLegacySnapshot(front, volume);
@@ -90,7 +101,7 @@ public sealed class CaveRoomPlan
             preset,
             entrance,
             front,
-            volume,
+            FullTargets(volume),
             Array.Empty<CellId>(),
             volume,
             roof);
@@ -105,13 +116,35 @@ public sealed class CaveRoomPlan
         IEnumerable<CellId> volumeCells,
         IEnumerable<CellId> roofCells)
     {
+        return CreateSnapshot(
+            preset,
+            entrance,
+            frontExcavationCells,
+            FullTargets(OrderedUnique(excavationCells, nameof(excavationCells))),
+            baseTunnelCells,
+            volumeCells,
+            roofCells);
+    }
+
+    public static CaveRoomPlan CreateSnapshot(
+        CaveRoomPreset preset,
+        CellId entrance,
+        IEnumerable<CellId> frontExcavationCells,
+        IEnumerable<CaveRoomExcavationTarget> excavationTargets,
+        IEnumerable<CellId> baseTunnelCells,
+        IEnumerable<CellId> volumeCells,
+        IEnumerable<CellId> roofCells)
+    {
         if (preset == null)
         {
             throw new ArgumentNullException(nameof(preset));
         }
 
         CellId[] front = OrderedUnique(frontExcavationCells, nameof(frontExcavationCells));
-        CellId[] excavation = OrderedUnique(excavationCells, nameof(excavationCells));
+        CaveRoomExcavationTarget[] targets = OrderedUniqueTargets(
+            excavationTargets,
+            nameof(excavationTargets));
+        CellId[] excavation = targets.Select(target => target.Cell).ToArray();
         CellId[] baseTunnel = OrderedUnique(baseTunnelCells, nameof(baseTunnelCells));
         CellId[] volume = OrderedUnique(volumeCells, nameof(volumeCells));
         CellId[] roof = OrderedUnique(roofCells, nameof(roofCells));
@@ -145,7 +178,7 @@ public sealed class CaveRoomPlan
         {
             throw new ArgumentException(
                 "Excavation cells must belong to the room volume and exclude the open base tunnel.",
-                nameof(excavationCells));
+                nameof(excavationTargets));
         }
 
         if (front.Any(cell => cell.Z != CellId.MinimumDepth || !excavation.Contains(cell)))
@@ -159,7 +192,7 @@ public sealed class CaveRoomPlan
             preset,
             entrance,
             front,
-            excavation,
+            targets,
             baseTunnel,
             volume,
             roof);
@@ -201,6 +234,14 @@ public sealed class CaveRoomPlan
             cells?.ToArray() ?? throw new ArgumentNullException(parameterName));
     }
 
+    private static IReadOnlyList<CaveRoomExcavationTarget> CopyTargets(
+        IReadOnlyList<CaveRoomExcavationTarget> targets,
+        string parameterName)
+    {
+        return new ReadOnlyCollection<CaveRoomExcavationTarget>(
+            targets?.ToArray() ?? throw new ArgumentNullException(parameterName));
+    }
+
     private static CellId[] OrderedUnique(
         IEnumerable<CellId> cells,
         string parameterName)
@@ -217,6 +258,36 @@ public sealed class CaveRoomPlan
         }
 
         return ordered;
+    }
+
+    private static CaveRoomExcavationTarget[] OrderedUniqueTargets(
+        IEnumerable<CaveRoomExcavationTarget> targets,
+        string parameterName)
+    {
+        if (targets == null)
+        {
+            throw new ArgumentNullException(parameterName);
+        }
+
+        CaveRoomExcavationTarget[] ordered = targets
+            .OrderBy(target => target.Cell)
+            .ToArray();
+        if (ordered.Select(target => target.Cell).Distinct().Count() != ordered.Length)
+        {
+            throw new ArgumentException(
+                "Cave room excavation targets must use unique cells.",
+                parameterName);
+        }
+
+        return ordered;
+    }
+
+    private static CaveRoomExcavationTarget[] FullTargets(
+        IEnumerable<CellId> cells)
+    {
+        return cells.Select(cell => new CaveRoomExcavationTarget(
+            cell,
+            ExcavationQuarter.All)).ToArray();
     }
 }
 

@@ -154,8 +154,10 @@ namespace Dig.Unity
             _excavationQuarterWork.SynchronizeCompleted(
                 target,
                 current.State.CompletedExcavationQuarters);
+            ExcavationQuarter required = ResolveRequiredExcavationQuarters(
+                target.CellId);
             return !current.IsSolid
-                || current.State.CompletedExcavationQuarters == ExcavationQuarter.All;
+                || (current.State.CompletedExcavationQuarters & required) == required;
         }
 
         private ExcavationWorkerAssignment EnsureExcavationQuarterAssignment(
@@ -226,9 +228,20 @@ namespace Dig.Unity
         private void SynchronizeExcavationQuarterState(ExcavationWorkTarget target)
         {
             CellSnapshot cell = RequireExcavationCell(target.CellId);
+            ExcavationQuarter required = ResolveRequiredExcavationQuarters(target.CellId);
+            ExcavationQuarter excluded = ExcavationQuarter.All & ~required;
             _excavationQuarterWork.SynchronizeCompleted(
                 target,
-                cell.State.CompletedExcavationQuarters);
+                cell.State.CompletedExcavationQuarters | excluded);
+        }
+
+        private ExcavationQuarter ResolveRequiredExcavationQuarters(CellId target)
+        {
+            return _worldSession.TryGetCaveRoomExcavationTarget(
+                    target,
+                    out CaveRoomExcavationTarget roomTarget)
+                ? roomTarget.RequiredQuarters
+                : ExcavationQuarter.All;
         }
 
         private CellSnapshot RequireExcavationCell(CellId cellId)
