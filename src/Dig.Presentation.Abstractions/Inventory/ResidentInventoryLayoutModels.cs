@@ -30,7 +30,8 @@ public sealed class ResidentInventoryLayoutSlotViewModel
         int reservedQuantity,
         int heldQuantity,
         ResidentInventorySlotVisualKind visualKind,
-        bool isActiveExpansion)
+        bool isActiveExpansion,
+        bool isConsumable = false)
     {
         if (slotIndex < 0)
         {
@@ -67,6 +68,7 @@ public sealed class ResidentInventoryLayoutSlotViewModel
         HeldQuantity = heldQuantity;
         VisualKind = visualKind;
         IsActiveExpansion = isActiveExpansion;
+        IsConsumable = !empty && isConsumable;
     }
 
     public ResidentInventoryCompartment Compartment { get; }
@@ -91,6 +93,8 @@ public sealed class ResidentInventoryLayoutSlotViewModel
 
     public bool IsActiveExpansion { get; }
 
+    public bool IsConsumable { get; }
+
     public bool IsEmpty => StackId is null;
 
     public bool IsHeld => HeldQuantity > 0;
@@ -99,14 +103,21 @@ public sealed class ResidentInventoryLayoutSlotViewModel
         && ReservedQuantity == 0
         && HeldQuantity == 0;
 
-    public bool CanUse => VisualKind == ResidentInventorySlotVisualKind.Tool
-        && Quantity == 1
-        && AvailableQuantity == 1;
+    public bool CanUse => !IsEmpty
+        && !IsHeld
+        && AvailableQuantity > 0
+        && (IsConsumable
+            || (VisualKind == ResidentInventorySlotVisualKind.Tool
+                && Quantity == 1
+                && AvailableQuantity == 1));
 
     public bool CanStartPlacement =>
         VisualKind == ResidentInventorySlotVisualKind.BuildingBox
         && Quantity == 1
         && AvailableQuantity == 1;
+
+    public bool IsBuildingBox =>
+        VisualKind == ResidentInventorySlotVisualKind.BuildingBox;
 }
 
 public sealed class ResidentInventoryLayoutViewModel
@@ -185,6 +196,14 @@ public sealed class ResidentInventoryLayoutPresenter
 {
     private static readonly ItemCategoryId BuildingBoxCategoryId =
         new ItemCategoryId("building.box");
+    private static readonly ItemCategoryId FoodCategoryId =
+        new ItemCategoryId("food");
+    private static readonly ItemCategoryId PotionCategoryId =
+        new ItemCategoryId("potion");
+    private static readonly ItemCategoryId DrinkCategoryId =
+        new ItemCategoryId("drink");
+    private static readonly ItemCategoryId BeverageCategoryId =
+        new ItemCategoryId("beverage");
 
     private readonly ItemId _buildingBoxItemId;
 
@@ -265,7 +284,8 @@ public sealed class ResidentInventoryLayoutPresenter
             slot.ReservedQuantity,
             heldQuantity,
             ResolveVisualKind(definition),
-            slot.IsActiveExpansion);
+            slot.IsActiveExpansion,
+            IsConsumable(definition));
     }
 
     private ResidentInventorySlotVisualKind ResolveVisualKind(ItemDefinition definition)
@@ -289,6 +309,14 @@ public sealed class ResidentInventoryLayoutPresenter
         return definition.IsTool
             ? ResidentInventorySlotVisualKind.Tool
             : ResidentInventorySlotVisualKind.Generic;
+    }
+
+    private static bool IsConsumable(ItemDefinition definition)
+    {
+        return definition.HasCategory(FoodCategoryId)
+            || definition.HasCategory(PotionCategoryId)
+            || definition.HasCategory(DrinkCategoryId)
+            || definition.HasCategory(BeverageCategoryId);
     }
 }
 

@@ -2,13 +2,15 @@
 
 Статус: `APPROVED`.
 
-Tracking issues: [#387](https://github.com/bageus/Dig/issues/387), [#388](https://github.com/bageus/Dig/issues/388), [#390](https://github.com/bageus/Dig/issues/390), [#398](https://github.com/bageus/Dig/issues/398).
+Tracking issues: [#67](https://github.com/bageus/Dig/issues/67), [#70](https://github.com/bageus/Dig/issues/70), [#387](https://github.com/bageus/Dig/issues/387), [#388](https://github.com/bageus/Dig/issues/388), [#390](https://github.com/bageus/Dig/issues/390), [#398](https://github.com/bageus/Dig/issues/398), [#459](https://github.com/bageus/Dig/issues/459).
 
 Этот документ является утверждённым дополнением к:
 
 - [`contextual-input-cursors-and-selection.md`](contextual-input-cursors-and-selection.md);
 - [`building-box-placement-and-packing.md`](building-box-placement-and-packing.md);
 - [`world-item-gravity-selection-and-pickup.md`](world-item-gravity-selection-and-pickup.md);
+- [`resident-inventory-expansion.md`](resident-inventory-expansion.md);
+- [`campfire-cooking-and-food-use.md`](campfire-cooking-and-food-use.md);
 - [`excavation-command-execution.md`](excavation-command-execution.md).
 
 При расхождении по перечисленным ниже пунктам это дополнение имеет приоритет как более позднее подтверждённое решение пользователя.
@@ -60,30 +62,56 @@ Resident, creature и loose world item в target cell не блокируют pl
 
 После confirmation source box остаётся в authoritative location до pickup, target planned ghost остаётся видимым до commit, а зарезервированная source box отображается синим в world/Buildings/inventory projection. Если source box уже в `AgentInventory`, candidate set содержит только resident-holder. Если box лежит в world, обычный matching выбирает свободного worker, который подбирает её в inventory и несёт к target.
 
-## 4. World item pickup и collision
+## 4. World item pickup, direct use и collision
 
+Для любой pickup/use команды обязателен один выбранный живой resident. Без выбранного resident world item не показывает action cursor/highlight и click не создаёт pickup/use job.
+
+- обычный generic world item, material, food, potion или drink подбирается обычным ЛКМ;
+- hover доступного для pickup non-BuildingBox stack показывает анимированную стрелку вверх и подсвечивает только renderers этого stack;
+- hover highlight является Presentation-состоянием и не заменяет BuildingBox selection highlight;
 - `Alt + ЛКМ` для pickup требуется только BuildingBox;
-- обычный generic world item подбирается обычным ЛКМ при выбранном resident;
+- world BuildingBox показывает стрелку вверх и pickup hover highlight только пока удерживается `Alt`; без `Alt` обычный ЛКМ сохраняет BuildingBox selection/unpack workflow;
+- food, potion и drink без `Alt` используют обычный pickup contract;
+- при удержании `Alt` доступный food, potion или drink показывает анимированный рот; `Alt + ЛКМ` создаёт direct pickup-then-use command для точного stack;
+- конкретный эффект consumable принадлежит его authoritative action/content owner: food использует meal owner, а potion/drink не должны реализовывать эффект в Presentation;
 - object target обрабатывается раньше movement target на той же pointer ray;
-- hover и click используют одинаковый stack/reachability resolver;
+- hover и click используют одинаковый stack/availability resolver;
+- full Inventory, reserved/unavailable stack или stale selected resident возвращают reason и не создают скрытый move/pickup/use;
 - world item collider остаётся raycastable, но не является физическим препятствием для resident movement;
 - предметы не входят в Navigation occupancy и гномы проходят через их visual/collider.
 
-## 5. Размещение предмета из resident inventory
+## 5. Размещение и использование предмета из resident inventory
 
 Один ЛКМ по доступному generic item в resident inventory включает локальный item placement mode:
 
 - item visual становится полупрозрачным world-space ghost;
-- ghost следует pointer по валидным world cells;
-- authoritative stack остаётся в исходном inventory slot до успешной команды;
-- ЛКМ по валидной клетке выполняет `DropInventoryStack`;
-- invalid target не меняет Inventory и показывает reason;
+- ghost следует pointer только по explored open cells с ровной walkable support surface;
+- valid preview зелёный, invalid preview красный и содержит reason code;
+- authoritative stack остаётся в исходном inventory slot до фактического выполнения работы;
+- ЛКМ по valid cell создаёт `ResidentInventoryPlacementJob` для exact resident, stack, available quantity и destination cell, но не переносит stack немедленно;
+- job резервирует exact quantity и destination, привязан к тому же resident и проходит `TravelToDestination -> DepositItem`;
+- несколько placement jobs одного resident образуют deterministic dependency chain по порядку создания и выполняются этим resident последовательно;
+- следующая работа становится available только после terminal-success предыдущей; cancel/failure предыдущей освобождает её reservations и явно разблокирует либо отменяет dependents по общей job policy;
+- destination, ставшая blocked до deposit, переводит job в typed blocked/retry path без потери/дублирования stack;
+- invalid target не меняет Inventory и не создаёт job;
 - RMB отменяет preview;
-- успешный drop очищает selection/preview.
+- успешное создание job очищает selection/preview, но stack остаётся видимым как reserved до deposit;
+- save/load восстанавливает definition, exact resident binding, dependency order, reservation, destination и текущий stage.
 
-Двойной ЛКМ по item в inventory выполняет немедленный drop в authoritative клетке resident. После drop обычная world-item gravity policy автоматически перемещает unsupported item вниз до первой допустимой опоры в vertical tunnel.
+Quick drop использует отдельный явный modifier:
 
-BuildingBox inventory action остаётся отдельным unpacking workflow и использует layer-derived box/building ghost, а не generic item ghost.
+- пока удерживается `D`, hover доступного non-BuildingBox inventory stack показывает анимированную стрелку вниз;
+- `D + ЛКМ` немедленно выполняет `DropInventoryStack` в authoritative current resident cell без placement job;
+- double click и RMB больше не являются quick-drop input;
+- reserved/held/unavailable stack не выбрасывается и возвращает typed reason;
+- после quick drop обычная world-item gravity policy автоматически перемещает unsupported item вниз до первой допустимой опоры в vertical tunnel.
+
+Использование consumable/tool сохраняет отдельный priority:
+
+- `Alt + ЛКМ` по доступному food, potion, drink, tool или weapon отправляет typed use command;
+- при удержании `Alt` consumable slot показывает анимированный рот, а tool/weapon использует свой action feedback;
+- `Alt` use имеет приоритет над generic placement; `D` quick drop имеет приоритет только без `Alt`;
+- BuildingBox inventory action остаётся отдельным unpacking workflow и использует layer-derived box/building ghost, а не generic item ghost/down-arrow quick drop.
 
 ## 6. Excavation quarter progress
 
@@ -145,14 +173,19 @@ BuildingBox inventory action остаётся отдельным unpacking workf
 7. resident/creature/loose item в target cell не блокируют valid placement;
 8. inventory-held source назначается только holder resident и отображается синим while reserved/carried;
 9. world source подбирается worker, переносится в inventory и доставляется к target;
-10. selected resident -> LMB generic world item -> pickup order без Alt;
-11. resident проходит через world item collider;
-12. inventory item single LMB -> transparent item ghost -> valid world drop;
-13. inventory item double LMB -> drop at resident cell -> fall through open vertical tunnel;
-14. horizontal и vertical excavation минимум 10 cells без остановки;
-15. 1/4, 2/4, 3/4 progress видим как реально удалённые quarters породы без чёрной заливки; при копке сверху вниз состояние 2/4 является полностью удалённой верхней половиной, а не вертикальной колонкой;
-16. interruption/erase после partial progress оставляет удалённые quarters, а повторное designation продолжает с того же mask;
-17. cave-room valid preview видим и child jobs продолжаются до полного plan completion;
-18. failure/retry одного excavation job не блокирует другие commands/residents.
+10. selected resident -> hover generic/material/food item -> exact stack highlight + animated pickup arrow -> LMB pickup order без Alt;
+11. world BuildingBox без Alt не показывает pickup arrow; Alt hover показывает arrow, Alt+LMB создаёт pickup;
+12. selected resident -> Alt hover food/consumable -> animated mouth -> Alt+LMB exact pickup-then-use; plain LMB по тому же stack остаётся pickup;
+13. resident проходит через world item collider;
+14. inventory generic item LMB -> transparent ghost -> green valid flat/walkable target -> resident-bound placement job, stack остаётся reserved в slot;
+15. два и более placement jobs одного resident выполняются строго в порядке создания, без параллельного claim, потери или дублирования items;
+16. blocked destination использует retry/cancel cleanup, а save/load сохраняет очередь и stage;
+17. inventory item D hover -> animated down arrow -> D+LMB immediate drop at resident cell -> fall through open vertical tunnel;
+18. double click/RMB не создают quick drop; Alt use и BuildingBox placement сохраняют priority;
+19. horizontal и vertical excavation минимум 10 cells без остановки;
+20. 1/4, 2/4, 3/4 progress видим как реально удалённые quarters породы без чёрной заливки; при копке сверху вниз состояние 2/4 является полностью удалённой верхней половиной, а не вертикальной колонкой;
+21. interruption/erase после partial progress оставляет удалённые quarters, а повторное designation продолжает с того же mask;
+22. cave-room valid preview видим и child jobs продолжаются до полного plan completion;
+23. failure/retry одного excavation или item-placement job не блокирует другие commands/residents.
 
-Unit/source-contract tests не заменяют Unity Play Mode validation для pointer routing, world/HUD selection synchronization, moving ghost visibility, depth-derived plan kind, partial terrain geometry и длительного workflow.
+Unit/source-contract tests не заменяют Unity Play Mode validation для pointer routing, world/HUD selection synchronization, animated cursor/highlight, moving ghost visibility, ordered resident-bound placement jobs, depth-derived plan kind, partial terrain geometry и длительного workflow.

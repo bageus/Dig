@@ -153,12 +153,30 @@ public sealed partial class ContextInputRouter
                 reasonCode: "input.selected_resident.stale_or_dead");
         }
 
-        if (pointer.Button == PointerButtonKind.Right)
+        if (pointer.Button != PointerButtonKind.Left)
         {
-            if (state.HasUsableResidentSelection
-                && state.SelectedInventoryStackId.HasValue
-                && state.CanDropSelectedInventoryItem
-                && target.Cell.HasValue)
+            return None();
+        }
+
+        if (pointer.AltPressed
+            && state.HasUsableResidentSelection
+            && state.SelectedInventoryStackId.HasValue
+            && state.SelectedInventoryItemUsable
+            && state.CanUseSelectedInventoryItem)
+        {
+            return Command(
+                ApplicationInputCommandKind.UseInventoryItem,
+                actorId: state.SelectedResidentId,
+                targetEntityId: state.SelectedInventoryStackId,
+                targetCell: target.Cell);
+        }
+
+        if (pointer.DropPressed
+            && state.HasUsableResidentSelection
+            && state.SelectedInventoryStackId.HasValue
+            && !state.SelectedInventoryItemIsBuildingBox)
+        {
+            if (state.CanDropSelectedInventoryItem && target.Cell.HasValue)
             {
                 return Command(
                     ApplicationInputCommandKind.DropInventoryStack,
@@ -173,19 +191,6 @@ public sealed partial class ContextInputRouter
                 actorId: state.SelectedResidentId,
                 targetEntityId: state.SelectedInventoryStackId,
                 reasonCode: "input.inventory.stack_unavailable");
-        }
-
-        if (pointer.AltPressed
-            && state.HasUsableResidentSelection
-            && state.SelectedInventoryStackId.HasValue
-            && state.SelectedInventoryItemUsable
-            && state.CanUseSelectedInventoryItem)
-        {
-            return Command(
-                ApplicationInputCommandKind.UseInventoryItem,
-                actorId: state.SelectedResidentId,
-                targetEntityId: state.SelectedInventoryStackId,
-                targetCell: target.Cell);
         }
 
         if (state.HasUsableResidentSelection

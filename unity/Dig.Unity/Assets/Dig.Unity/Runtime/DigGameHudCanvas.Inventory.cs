@@ -177,16 +177,24 @@ public sealed partial class DigGameHudCanvas
             return;
         }
 
+        bool leftClick = eventData.button == PointerEventData.InputButton.Left;
         bool altPressed = Input.GetKey(KeyCode.LeftAlt)
             || Input.GetKey(KeyCode.RightAlt);
-        if (eventData.button == PointerEventData.InputButton.Left
-            && !altPressed
-            && slot.CanStartPlacement)
+        bool dropPressed = Input.GetKey(KeyCode.D);
+        if (leftClick && altPressed)
         {
-            _interaction!.BeginResidentInventoryBuildingPlacement(slot);
+            if (slot.CanUse)
+            {
+                _interaction!.UseResidentInventoryLayoutSlot(slot);
+            }
+            else
+            {
+                SetStatus(slot.IsHeld
+                    ? "This item is already held."
+                    : "This item cannot be used now.");
+            }
         }
-        else if (eventData.button == PointerEventData.InputButton.Right
-            || eventData.clickCount >= 2)
+        else if (leftClick && dropPressed && !slot.IsBuildingBox)
         {
             if (!ConfirmExpansionSpill(slot))
             {
@@ -205,32 +213,21 @@ public sealed partial class DigGameHudCanvas
                     : "A reserved item cannot be dropped.");
             }
         }
-        else if (altPressed)
+        else if (leftClick && slot.CanStartPlacement)
         {
-            if (slot.CanUse)
-            {
-                _interaction!.UseResidentInventoryLayoutSlot(slot);
-            }
-            else
-            {
-                SetStatus(slot.IsHeld
-                    ? "This item is already held."
-                    : "This item cannot be used now.");
-            }
+            _interaction!.BeginResidentInventoryBuildingPlacement(slot);
         }
-        else if (!slot.IsHeld)
+        else if (leftClick && !slot.IsHeld)
         {
-            if (!ConfirmExpansionSpill(slot))
-            {
-                InvalidateAll();
-                return;
-            }
-
             _interaction!.SelectResidentInventoryLayoutSlot(slot);
+        }
+        else if (leftClick)
+        {
+            SetStatus("The held item remains in its original slot.");
         }
         else
         {
-            SetStatus("The held item remains in its original slot.");
+            return;
         }
 
         InvalidateAll();

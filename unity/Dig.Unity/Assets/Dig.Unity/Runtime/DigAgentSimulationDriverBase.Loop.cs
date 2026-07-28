@@ -72,6 +72,11 @@ namespace Dig.Unity
             {
                 TerrainSession.SynchronizeDesignations(nextTick, before);
                 TerrainSession.SynchronizeSpatialExcavations(nextTick, before);
+                result = TerrainSession.SynchronizeResidentInventoryPlacement(nextTick);
+            }
+
+            if (result.IsSuccess)
+            {
                 TerrainSession.SynchronizeBuildingBoxRelocation(nextTick, before);
                 TerrainSession.SynchronizeBuildingBoxAssembly(nextTick, before);
                 TerrainSession.SynchronizeBuildingPacking(nextTick, before);
@@ -137,6 +142,13 @@ namespace Dig.Unity
             }
 
             result = ReconcileCommittedTerrainRuntime(result, AgentSession.Tick);
+
+            if (result.IsSuccess)
+            {
+                result = TerrainSession.AdvanceResidentInventoryPlacement(
+                    AgentSession.Tick,
+                    agents);
+            }
 
             if (result.IsSuccess)
             {

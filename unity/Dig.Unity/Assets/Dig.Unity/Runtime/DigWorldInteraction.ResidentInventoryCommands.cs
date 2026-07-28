@@ -14,7 +14,7 @@ public sealed partial class DigWorldInteraction
             return;
         }
 
-        Result result = _terrainSession!.UseResidentInventoryItemWithSlotGuard(
+        Result result = _terrainSession!.UseResidentInventoryActionWithSlotGuard(
             decision.ActorId.Value.ToString(),
             decision.TargetEntityId.Value.ToString(),
             _simulation!.CurrentTick);
@@ -24,7 +24,7 @@ public sealed partial class DigWorldInteraction
             ClearSelectedInventoryStack();
             _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
             _agentRenderer!.RenderEquipment(_terrainSession.LoadResidentEquipment());
-            _hud.SetStatus("Inventory item equipped.");
+            _hud.SetStatus("Inventory item action started.");
         }
     }
 
@@ -49,7 +49,7 @@ public sealed partial class DigWorldInteraction
             ClearSelectedInventoryStack();
             _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
             _agentRenderer!.RenderEquipment(_terrainSession.LoadResidentEquipment());
-            _hud.SetStatus("Inventory stack moved to the selected cell.");
+            _hud.SetStatus("Inventory stack dropped at the resident position.");
         }
     }
 }

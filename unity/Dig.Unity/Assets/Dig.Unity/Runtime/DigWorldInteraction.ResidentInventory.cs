@@ -8,10 +8,6 @@ namespace Dig.Unity
 {
     public sealed partial class DigWorldInteraction
     {
-        private const float InventoryDoubleClickSeconds = 0.36f;
-        private string? _lastActivatedInventoryStackId;
-        private float _lastInventoryActivationTime = float.NegativeInfinity;
-
         internal void ActivateResidentInventorySlot(
             ResidentInventorySlotViewModel slot)
         {
@@ -20,18 +16,7 @@ namespace Dig.Unity
                 throw new System.ArgumentNullException(nameof(slot));
             }
 
-            float now = Time.unscaledTime;
-            bool doubleClick = string.Equals(
-                    _lastActivatedInventoryStackId,
-                    slot.StackId,
-                    System.StringComparison.Ordinal)
-                && now - _lastInventoryActivationTime <= InventoryDoubleClickSeconds;
-            _lastActivatedInventoryStackId = doubleClick ? null : slot.StackId;
-            _lastInventoryActivationTime = doubleClick
-                ? float.NegativeInfinity
-                : now;
-
-            if (doubleClick)
+            if (Input.GetKey(KeyCode.D) && !slot.IsBuildingBox)
             {
                 CancelInventoryItemPlacement();
                 DropResidentInventorySlot(slot);
@@ -47,7 +32,8 @@ namespace Dig.Unity
             RouteResidentInventorySlot(
                 slot,
                 PointerButtonKind.Left,
-                altPressed: false);
+                altPressed: false,
+                dropPressed: false);
         }
 
         internal void BeginResidentInventoryBuildingPlacement(
@@ -58,7 +44,6 @@ namespace Dig.Unity
                 throw new System.ArgumentNullException(nameof(slot));
             }
 
-            ResetInventoryClickSequence();
             var resident = _agentRenderer?.SelectedModel;
             string? stackIdValue = slot.StackId;
             if (!slot.CanStartPlacement
@@ -103,33 +88,32 @@ namespace Dig.Unity
         internal void UseResidentInventorySlot(
             ResidentInventorySlotViewModel slot)
         {
-            ResetInventoryClickSequence();
             RouteResidentInventorySlot(
                 slot,
                 PointerButtonKind.Left,
-                altPressed: true);
+                altPressed: true,
+                dropPressed: false);
         }
 
         internal void DropResidentInventorySlot(
             ResidentInventorySlotViewModel slot)
         {
-            ResetInventoryClickSequence();
             RouteResidentInventorySlot(
                 slot,
-                PointerButtonKind.Right,
-                altPressed: false);
+                PointerButtonKind.Left,
+                altPressed: false,
+                dropPressed: true);
         }
 
         private void ResetInventoryClickSequence()
         {
-            _lastActivatedInventoryStackId = null;
-            _lastInventoryActivationTime = float.NegativeInfinity;
         }
 
         private void RouteResidentInventorySlot(
             ResidentInventorySlotViewModel slot,
             PointerButtonKind button,
-            bool altPressed)
+            bool altPressed,
+            bool dropPressed)
         {
             if (slot == null)
             {
@@ -158,7 +142,7 @@ namespace Dig.Unity
                 selectedResidentId: residentId,
                 selectedResidentAlive: resident.IsAlive,
                 selectedInventoryStackId: stackId,
-                selectedInventoryItemUsable: slot.IsTool,
+                selectedInventoryItemUsable: slot.IsTool || slot.IsConsumable,
                 selectedInventoryItemIsBuildingBox: slot.IsBuildingBox,
                 canUseSelectedInventoryItem: slot.CanUse,
                 canDropSelectedInventoryItem: slot.CanDrop);
@@ -170,7 +154,8 @@ namespace Dig.Unity
                 new ContextPointerEvent(
                     PointerInputSurface.ResidentInventory,
                     button,
-                    altPressed: altPressed),
+                    altPressed: altPressed,
+                    dropPressed: dropPressed),
                 state,
                 target);
             ApplyDecision(decision);
