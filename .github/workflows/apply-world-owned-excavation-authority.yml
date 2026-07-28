@@ -24,6 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
           cat .github/patches/world-owned-excavation-authority.part* > /tmp/excavation-authority.b64
           base64 -d /tmp/excavation-authority.b64 > /tmp/excavation-authority.patch.gz
           echo "f809280a99fd4a0244438d3f3f5951974becaa69eda9a4fd2321eb5cebd87e36  /tmp/excavation-authority.patch.gz" | sha256sum -c -
@@ -31,10 +32,20 @@ jobs:
           echo "23e6da88c8ea75d1664dd9a5ca382420a7b4cb1ffb19a06f9450cf43e60d9dc2  /tmp/excavation-authority.patch" | sha256sum -c -
           git apply --check /tmp/excavation-authority.patch
           git apply /tmp/excavation-authority.patch
+
+          cat .github/patches/world-owned-excavation-authority-new.part* > /tmp/excavation-authority-new.b64
+          base64 -d /tmp/excavation-authority-new.b64 > /tmp/excavation-authority-new.patch.gz
+          echo "cb1ccc9d662af94452ba6fe2b91de5f7fc199502349f4067674cfe9e026be832  /tmp/excavation-authority-new.patch.gz" | sha256sum -c -
+          gzip -dc /tmp/excavation-authority-new.patch.gz > /tmp/excavation-authority-new.patch
+          echo "4b09b47ae5a7f273346f60d6bf8685314cd709e9e695ad0d381dfcb5f3131241  /tmp/excavation-authority-new.patch" | sha256sum -c -
+          git apply --check /tmp/excavation-authority-new.patch
+          git apply /tmp/excavation-authority-new.patch
+
           git diff --check
           python tools/quality/check_quality.py
           python tools/quality/check_unity_source_contracts.py
           git rm .github/patches/world-owned-excavation-authority.part*
+          git rm .github/patches/world-owned-excavation-authority-new.part*
           git rm .github/workflows/apply-world-owned-excavation-authority.yml
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
