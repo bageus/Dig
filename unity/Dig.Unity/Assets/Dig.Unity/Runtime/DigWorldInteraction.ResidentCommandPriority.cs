@@ -151,7 +151,7 @@ public sealed partial class DigWorldInteraction
             DisableExcavationDrawing();
             DisableCaveRoomPlanning();
             ContextPointerTarget itemTarget = new ContextPointerTarget(
-                ContextWorldTargetKind.GenericItem,
+                ResolveWorldItemTargetKind(item.Model),
                 EntityId.Parse(item.Model.StackId),
                 new CellId(item.Model.CellX, item.Model.CellY, item.Model.CellZ),
                 reachable: true,

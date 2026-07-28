@@ -67,6 +67,24 @@ public sealed partial class ContextInputRouter
             return MoveFallback(state, target);
         }
 
+        if (target.Kind == ContextWorldTargetKind.FoodItem)
+        {
+            if (state.HasUsableResidentSelection
+                && target.SupportsAltInteraction
+                && target.EntityId.HasValue)
+            {
+                return Command(
+                    pointer.AltPressed
+                        ? ApplicationInputCommandKind.EatWorldItem
+                        : ApplicationInputCommandKind.PickupWorldItem,
+                    state.SelectedResidentId,
+                    target.EntityId,
+                    target.Cell);
+            }
+
+            return MoveFallback(state, target);
+        }
+
         if (target.Kind == ContextWorldTargetKind.GenericItem)
         {
             if (state.HasUsableResidentSelection
@@ -236,6 +254,7 @@ public sealed partial class ContextInputRouter
     {
         bool movementTarget = target.Kind == ContextWorldTargetKind.Ground
             || target.Kind == ContextWorldTargetKind.GenericItem
+            || target.Kind == ContextWorldTargetKind.FoodItem
             || target.Kind == ContextWorldTargetKind.BuildingBox;
         if (!movementTarget
             || !state.HasUsableResidentSelection

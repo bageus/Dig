@@ -4,10 +4,12 @@ using Dig.Application.Ecology;
 using Dig.Application.WorldObjects;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
+using Dig.Domain.Agents;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
+using Dig.Infrastructure.InMemory;
 
 namespace Dig.Unity
 {
@@ -23,10 +25,16 @@ namespace Dig.Unity
             }
 
             JobSystem jobs = _jobRepository.Get();
-            InventoryState inventory = _inventoryRepository.Get();
+            InventoryState terrainInventory = _inventoryRepository.Get();
             for (int residentIndex = 0; residentIndex < residentIds.Count; residentIndex++)
             {
                 EntityId residentId = EntityId.Parse(residentIds[residentIndex]);
+                Result interrupted = InterruptFoodMealForDirectCommand(residentId, tick);
+                if (interrupted.IsFailure)
+                {
+                    return interrupted;
+                }
+
                 CancelManualQuarterExcavation(residentId.ToString());
                 JobSnapshot[] assigned = CollectAssignedActiveJobs(jobs, residentId);
                 for (int jobIndex = 0; jobIndex < assigned.Length; jobIndex++)
@@ -35,7 +43,7 @@ namespace Dig.Unity
                     Result released = job.Definition switch
                     {
                         WorldItemPickupJobDefinition =>
-                            CancelPickupForDirectCommand(jobs, inventory, job, tick),
+                            CancelPickupForDirectCommand(jobs, job, tick),
                         MushroomChopJobDefinition =>
                             CancelMushroomForDirectCommand(job, tick),
                         BarrelAttackJobDefinition =>
@@ -52,11 +60,33 @@ namespace Dig.Unity
                     }
 
                     _routePlans.Remove(job.Id);
+                    _worldItemPickupRoutes.Remove(job.Id);
                 }
             }
 
-            _inventoryRepository.Save(inventory);
+            _inventoryRepository.Save(terrainInventory);
             _jobRepository.Save(jobs);
+            return Result.Success();
+        }
+
+        private Result InterruptFoodMealForDirectCommand(EntityId residentId, long tick)
+        {
+            AgentState? resident = _productionAgents?.Get(residentId);
+            if (resident == null || !resident.HasActiveFoodMeal)
+            {
+                return Result.Success();
+            }
+
+            Result interrupted = resident.InterruptFoodMeal(
+                "direct_command_replaced",
+                tick);
+            if (interrupted.IsFailure)
+            {
+                return interrupted;
+            }
+
+            _productionAgents!.Save(resident);
+            _journal.Append(resident.DequeueUncommittedEvents());
             return Result.Success();
         }
 
@@ -85,12 +115,24 @@ namespace Dig.Unity
             return assigned.ToArray();
         }
 
-        private static Result CancelPickupForDirectCommand(
+        private Result CancelPickupForDirectCommand(
             JobSystem jobs,
-            InventoryState inventory,
             JobSnapshot job,
             long tick)
         {
+            if (job.Definition is not WorldItemPickupJobDefinition pickup)
+            {
+                return Result.Failure(WorldItemPickupErrors.JobTypeMismatch);
+            }
+
+            InMemoryInventoryRepository? repository = ResolveWorldItemRepository(
+                pickup.StackId);
+            if (repository == null)
+            {
+                _directWorldFoodIntents.Remove(job.Id);
+                return Result.Failure(WorldItemPickupErrors.StackMissing);
+            }
+
             Result cancelled = jobs.Cancel(
                 job.Id,
                 new JobBlockReason(
@@ -102,7 +144,11 @@ namespace Dig.Unity
                 return cancelled;
             }
 
+            InventoryState inventory = repository.Get();
             inventory.ReleaseReservations(job.Id, tick);
+            repository.Save(inventory);
+            _journal.Append(inventory.DequeueUncommittedEvents());
+            _directWorldFoodIntents.Remove(job.Id);
             return Result.Success();
         }
 

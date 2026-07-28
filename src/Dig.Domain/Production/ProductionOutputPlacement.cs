@@ -13,7 +13,7 @@ public static partial class ProductionErrors
 {
     public static readonly DomainError OutputSpaceUnavailable = new DomainError(
         "production.output_space_unavailable",
-        "No free explored output cell is available in front of the workstation.");
+        "No free explored output cell is available around the workstation.");
 }
 
 public static class ProductionOutputPlacement
@@ -78,56 +78,67 @@ public static class ProductionOutputPlacement
             throw new ArgumentOutOfRangeException(nameof(maximumLateralDistance));
         }
 
-        (int forwardX, int forwardY, int lateralX, int lateralY) =
-            ResolveAxes(building.Orientation);
-        int leading = building.Footprint.Max(cell =>
-            cell.X * forwardX + cell.Y * forwardY);
-        List<CellId> values = new List<CellId>();
-        AddCandidate(values, building, leading, 0, forwardX, forwardY, lateralX, lateralY);
-        for (int distance = 1; distance <= maximumLateralDistance; distance++)
+        if (building.Footprint.Count == 0)
         {
-            AddCandidate(
-                values,
-                building,
-                leading,
-                -distance,
-                forwardX,
-                forwardY,
-                lateralX,
-                lateralY);
-            AddCandidate(
-                values,
-                building,
-                leading,
-                distance,
-                forwardX,
-                forwardY,
-                lateralX,
-                lateralY);
+            return Array.Empty<CellId>();
         }
 
-        return values;
-    }
+        (int forwardX, int forwardY, int lateralX, int lateralY) =
+            ResolveAxes(building.Orientation);
+        int minimumX = building.Footprint.Min(cell => cell.X);
+        int maximumX = building.Footprint.Max(cell => cell.X);
+        int minimumY = building.Footprint.Min(cell => cell.Y);
+        int maximumY = building.Footprint.Max(cell => cell.Y);
+        HashSet<CellId> footprint = building.Footprint.ToHashSet();
+        List<PlacementCandidate> candidates = new List<PlacementCandidate>();
 
-    private static void AddCandidate(
-        ICollection<CellId> values,
-        BuildingSnapshot building,
-        int leading,
-        int lateralDistance,
-        int forwardX,
-        int forwardY,
-        int lateralX,
-        int lateralY)
-    {
-        int forwardCoordinate = leading + 1;
-        values.Add(new CellId(
-            forwardX == 0
-                ? building.Origin.X + lateralX * lateralDistance
-                : forwardCoordinate * forwardX + lateralX * lateralDistance,
-            forwardY == 0
-                ? building.Origin.Y + lateralY * lateralDistance
-                : forwardCoordinate * forwardY + lateralY * lateralDistance,
-            building.Origin.Z));
+        for (int ring = 1; ring <= maximumLateralDistance + 1; ring++)
+        {
+            int outerMinimumX = minimumX - ring;
+            int outerMaximumX = maximumX + ring;
+            int outerMinimumY = minimumY - ring;
+            int outerMaximumY = maximumY + ring;
+            for (int y = outerMinimumY; y <= outerMaximumY; y++)
+            {
+                for (int x = outerMinimumX; x <= outerMaximumX; x++)
+                {
+                    bool boundary = x == outerMinimumX
+                        || x == outerMaximumX
+                        || y == outerMinimumY
+                        || y == outerMaximumY;
+                    if (!boundary)
+                    {
+                        continue;
+                    }
+
+                    CellId cell = new CellId(x, y, building.Origin.Z);
+                    if (footprint.Contains(cell))
+                    {
+                        continue;
+                    }
+
+                    int relativeX = x - building.Origin.X;
+                    int relativeY = y - building.Origin.Y;
+                    int forward = relativeX * forwardX + relativeY * forwardY;
+                    int lateral = relativeX * lateralX + relativeY * lateralY;
+                    candidates.Add(new PlacementCandidate(
+                        cell,
+                        ring,
+                        forward,
+                        lateral));
+                }
+            }
+        }
+
+        return candidates
+            .OrderBy(value => value.Ring)
+            .ThenByDescending(value => value.Forward)
+            .ThenBy(value => Math.Abs(value.Lateral))
+            .ThenBy(value => value.Lateral)
+            .ThenBy(value => value.Cell.Y)
+            .ThenBy(value => value.Cell.X)
+            .Select(value => value.Cell)
+            .ToArray();
     }
 
     private static (int ForwardX, int ForwardY, int LateralX, int LateralY)
@@ -141,6 +152,22 @@ public static class ProductionOutputPlacement
             BuildingOrientation.West => (-1, 0, 0, 1),
             _ => throw new ArgumentOutOfRangeException(nameof(orientation)),
         };
+    }
+
+    private readonly struct PlacementCandidate
+    {
+        internal PlacementCandidate(CellId cell, int ring, int forward, int lateral)
+        {
+            Cell = cell;
+            Ring = ring;
+            Forward = forward;
+            Lateral = lateral;
+        }
+
+        internal CellId Cell { get; }
+        internal int Ring { get; }
+        internal int Forward { get; }
+        internal int Lateral { get; }
     }
 }
 

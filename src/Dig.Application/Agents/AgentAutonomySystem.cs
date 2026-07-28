@@ -66,6 +66,18 @@ public sealed class AgentAutonomySystem : ISimulationSystem
                 continue;
             }
 
+            if (agent.HasActiveFoodMeal)
+            {
+                Result<bool> bite = agent.AdvanceFoodMealBite(context.Tick);
+                if (bite.IsFailure)
+                {
+                    throw new InvalidOperationException(bite.Error!.ToString());
+                }
+
+                SaveAndPublish(agent);
+                continue;
+            }
+
             AgentSnapshot snapshot = agent.CreateSnapshot(context.Tick);
             AgentDecisionContext decisionContext = _contextProvider.GetContext(
                 snapshot,
