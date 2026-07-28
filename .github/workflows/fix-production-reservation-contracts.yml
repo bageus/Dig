@@ -29,54 +29,62 @@ jobs:
 
           pickup = Path('src/Dig.Application/Inventory/WorldItemPickupHandlers.cs')
           text = pickup.read_text()
-          old = '''        if (completed.IsFailure)
-          {
-              return completed;
-          }
-
-          _inventoryRepository.Save(inventory);'''
-          new = '''        if (completed.IsFailure)
-          {
-              return completed;
-          }
-
-          inventory.ReleaseReservations(job.Id, command.Tick);
-          _inventoryRepository.Save(inventory);'''
+          old = (
+              '        Result completed = jobs.Complete(job.Id, command.Tick);\n'
+              '        if (completed.IsFailure)\n'
+              '        {\n'
+              '            return completed;\n'
+              '        }\n\n'
+              '        _inventoryRepository.Save(inventory);')
+          new = (
+              '        Result completed = jobs.Complete(job.Id, command.Tick);\n'
+              '        if (completed.IsFailure)\n'
+              '        {\n'
+              '            return completed;\n'
+              '        }\n\n'
+              '        inventory.ReleaseReservations(job.Id, command.Tick);\n'
+              '        _inventoryRepository.Save(inventory);')
           if text.count(old) != 1:
               raise SystemExit('Expected pickup completion block was not found exactly once.')
           pickup.write_text(text.replace(old, new))
 
           supply = Path('src/Dig.Domain/Jobs/BuildingSupplyJobDefinition.cs')
           text = supply.read_text()
-          old_calls = '''        _transitStackIds = NormalizeIds(transitStackIds, nameof(transitStackIds));
-          _depositStackIds = NormalizeIds(depositStackIds, nameof(depositStackIds));'''
-          new_calls = '''        _transitStackIds = NormalizeIds(
-              transitStackIds,
-              nameof(transitStackIds),
-              allowEmpty: true);
-          _depositStackIds = NormalizeIds(
-              depositStackIds,
-              nameof(depositStackIds),
-              allowEmpty: false);'''
+          old_calls = (
+              '        _transitStackIds = NormalizeIds(transitStackIds, nameof(transitStackIds));\n'
+              '        _depositStackIds = NormalizeIds(depositStackIds, nameof(depositStackIds));')
+          new_calls = (
+              '        _transitStackIds = NormalizeIds(\n'
+              '            transitStackIds,\n'
+              '            nameof(transitStackIds),\n'
+              '            allowEmpty: true);\n'
+              '        _depositStackIds = NormalizeIds(\n'
+              '            depositStackIds,\n'
+              '            nameof(depositStackIds),\n'
+              '            allowEmpty: false);')
           if text.count(old_calls) != 1:
               raise SystemExit('Expected stack-id normalization calls were not found.')
           text = text.replace(old_calls, new_calls)
-          old_signature = '''    private static EntityId[] NormalizeIds(
-          IEnumerable<EntityId> ids,
-          string parameterName)'''
-          new_signature = '''    private static EntityId[] NormalizeIds(
-          IEnumerable<EntityId> ids,
-          string parameterName,
-          bool allowEmpty)'''
+          old_signature = (
+              '    private static EntityId[] NormalizeIds(\n'
+              '        IEnumerable<EntityId> ids,\n'
+              '        string parameterName)')
+          new_signature = (
+              '    private static EntityId[] NormalizeIds(\n'
+              '        IEnumerable<EntityId> ids,\n'
+              '        string parameterName,\n'
+              '        bool allowEmpty)')
           if text.count(old_signature) != 1:
               raise SystemExit('Expected NormalizeIds signature was not found.')
           text = text.replace(old_signature, new_signature)
-          old_condition = '''        if (values.Length == 0
-              || values.Any(value => value.IsEmpty)
-              || values.Distinct().Count() != values.Length)'''
-          new_condition = '''        if ((!allowEmpty && values.Length == 0)
-              || values.Any(value => value.IsEmpty)
-              || values.Distinct().Count() != values.Length)'''
+          old_condition = (
+              '        if (values.Length == 0\n'
+              '            || values.Any(value => value.IsEmpty)\n'
+              '            || values.Distinct().Count() != values.Length)')
+          new_condition = (
+              '        if ((!allowEmpty && values.Length == 0)\n'
+              '            || values.Any(value => value.IsEmpty)\n'
+              '            || values.Distinct().Count() != values.Length)')
           if text.count(old_condition) != 1:
               raise SystemExit('Expected NormalizeIds condition was not found.')
           supply.write_text(text.replace(old_condition, new_condition))
