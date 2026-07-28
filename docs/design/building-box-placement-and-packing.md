@@ -184,7 +184,9 @@ Worker не обязан входить в target cell коробки. Runtime �
 
 После delivery автоматически выполняется unpack/assembly. Коробка расходуется только при успешном completion здания.
 
-В текущем demo/test-профиле после достижения worker-ом assembly work position runtime дренирует все немедленно выполнимые переходы `DepositItem -> PerformWork -> Finalize` в том же simulation tick. Три логические unpack-итерации, три per-iteration Logistics grant, authoritative work progress, exact-once consumption коробки и terminal cleanup сохраняются; ускорение не разрешает обходить pickup, carry, site commit или проверки work position. Production-duration balancing остаётся отдельным правилом content/balance profile.
+Когда worker достигает assembly work position, коробка перемещается из resident inventory в authoritative site inventory, синяя carried-подсветка и planned building ghost исчезают, а renderer показывает начальный уровень распаковки.
+
+Текущий demo/test-профиль имеет пять наблюдаемых состояний сборки: начальный уровень `0/3`, прогресс `1/3`, прогресс `2/3`, готовность к завершению `3/3` и completed building. Runtime выполняет не более одной authoritative work-итерации за simulation tick, чтобы каждый уровень был видим, но без дополнительной задержки дренирует служебные переходы `DepositItem -> PerformWork` перед первой итерацией и `PerformWork -> Finalize -> CompleteAssembly` после последней. После третьей итерации следующий быстрый tick обязан завершить building/job, расходовать source box ровно один раз и освободить reservations/routes. Production-duration balancing остаётся отдельным правилом content/balance profile.
 
 ## 10. Cancel, failure и retry
 
@@ -284,6 +286,7 @@ Diagnostics/Inspector показывают:
 - RMB cancel и invalid LMB не меняют authoritative state;
 - cancel/retry/save-load на каждой authoritative стадии;
 - relocation сохраняет entity id и quantity;
-- после site delivery demo/test unpack дренирует три work iterations и finalize в том же tick, завершает building/job, расходует source box ровно один раз и освобождает reservations/routes;
+- после site delivery box исчезает из resident inventory, planned ghost исчезает, начальный assembly visual появляется, затем runtime показывает пять быстрых состояний `0/3 -> 1/3 -> 2/3 -> 3/3 -> Completed` без пропуска Finalize;
+- после последнего work-step следующий tick завершает building/job, расходует source box ровно один раз и освобождает reservations/routes;
 - assembly расходует box ровно один раз;
 - repeated placement/packing и deterministic replay.

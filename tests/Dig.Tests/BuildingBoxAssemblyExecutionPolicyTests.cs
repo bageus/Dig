@@ -72,28 +72,54 @@ public sealed class BuildingBoxAssemblyExecutionPolicyTests
             Evaluate(harness, Building(harness), null, Building(harness).WorkPosition));
     }
 
+    [Theory]
+    [InlineData(
+        BuildingBoxAssemblyExecutionStepKind.StartJob,
+        BuildingBoxAssemblyTickDisposition.ContinueCurrentTick)]
+    [InlineData(
+        BuildingBoxAssemblyExecutionStepKind.AdvanceStage,
+        BuildingBoxAssemblyTickDisposition.ContinueCurrentTick)]
+    [InlineData(
+        BuildingBoxAssemblyExecutionStepKind.CommitBoxToSite,
+        BuildingBoxAssemblyTickDisposition.StopCurrentTick)]
+    [InlineData(
+        BuildingBoxAssemblyExecutionStepKind.AddWork,
+        BuildingBoxAssemblyTickDisposition.StopCurrentTick)]
+    [InlineData(
+        BuildingBoxAssemblyExecutionStepKind.CompleteAssembly,
+        BuildingBoxAssemblyTickDisposition.Completed)]
+    public void Tick_boundary_policy_preserves_observable_assembly_states(
+        BuildingBoxAssemblyExecutionStepKind step,
+        BuildingBoxAssemblyTickDisposition expected)
+    {
+        Assert.Equal(expected, BuildingBoxAssemblyTickBoundaryPolicy.AfterSuccessfulStep(step));
+    }
+
     [Fact]
-    public void Carried_box_at_site_can_drain_complete_demo_unpack_in_one_tick()
+    public void Carried_box_at_site_exposes_five_fast_states_and_finalizes_on_next_tick()
     {
         BuildingBoxHarness harness = CreateAssigned(carriedByResident: true);
-        const long tick = 700;
+        CellId workPosition = Building(harness).WorkPosition;
+        long tick = 700;
 
-        for (int step = 0;
-            step < 16 && !harness.Jobs.Get(harness.JobId)!.IsTerminal;
-            step++)
-        {
-            JobSnapshot job = harness.Jobs.Get(harness.JobId)!;
-            BuildingSnapshot building = Building(harness);
-            ItemStackSnapshot? box = harness.Inventory.GetStack(harness.SourceStackId);
-            BuildingBoxAssemblyExecutionStepKind action = Evaluate(
-                harness,
-                building,
-                box,
-                building.WorkPosition);
-            Assert.NotEqual(BuildingBoxAssemblyExecutionStepKind.None, action);
-            Execute(harness, action, building.WorkPosition, tick);
-        }
+        ExecuteDemoTick(harness, workPosition, tick++);
+        AssertAssemblyState(harness, BuildingStatus.ReadyToBuild, completedWork: 0);
+        ItemStackSnapshot siteBox = Box(harness);
+        Assert.Equal(ItemLocation.InBuilding(harness.BuildingId), siteBox.Location);
+        Assert.Equal(JobStageKind.DepositItem, harness.Jobs.Get(harness.JobId)!.Stage);
 
+        ExecuteDemoTick(harness, workPosition, tick++);
+        AssertAssemblyState(harness, BuildingStatus.UnderConstruction, completedWork: 1);
+
+        ExecuteDemoTick(harness, workPosition, tick++);
+        AssertAssemblyState(harness, BuildingStatus.UnderConstruction, completedWork: 2);
+
+        ExecuteDemoTick(harness, workPosition, tick++);
+        AssertAssemblyState(harness, BuildingStatus.ReadyToComplete, completedWork: 3);
+        Assert.Equal(JobStageKind.PerformWork, harness.Jobs.Get(harness.JobId)!.Stage);
+        Assert.NotNull(harness.Inventory.GetStack(harness.SourceStackId));
+
+        ExecuteDemoTick(harness, workPosition, tick);
         BuildingSnapshot completed = Building(harness);
         Assert.Equal(BuildingStatus.Completed, completed.Status);
         Assert.Equal(completed.Definition.RequiredWork, completed.CompletedWork);
@@ -101,6 +127,52 @@ public sealed class BuildingBoxAssemblyExecutionPolicyTests
         Assert.Null(harness.Inventory.GetStack(harness.SourceStackId));
         Assert.Equal(JobStatus.Completed, harness.Jobs.Get(harness.JobId)!.Status);
         Assert.Empty(harness.Jobs.GetReservations());
+    }
+
+    private static void ExecuteDemoTick(
+        BuildingBoxHarness harness,
+        CellId workerCell,
+        long tick)
+    {
+        for (int stepIndex = 0; stepIndex < 16; stepIndex++)
+        {
+            JobSnapshot? job = harness.Jobs.Get(harness.JobId);
+            if (job == null || job.IsTerminal)
+            {
+                return;
+            }
+
+            BuildingSnapshot building = Building(harness);
+            ItemStackSnapshot? box = harness.Inventory.GetStack(harness.SourceStackId);
+            BuildingBoxAssemblyExecutionStepKind step = Evaluate(
+                harness,
+                building,
+                box,
+                workerCell);
+            Assert.NotEqual(BuildingBoxAssemblyExecutionStepKind.None, step);
+            Execute(harness, step, workerCell, tick);
+
+            BuildingBoxAssemblyTickDisposition disposition =
+                BuildingBoxAssemblyTickBoundaryPolicy.AfterSuccessfulStep(step);
+            if (disposition != BuildingBoxAssemblyTickDisposition.ContinueCurrentTick)
+            {
+                return;
+            }
+        }
+
+        Assert.Fail("BuildingBox assembly exceeded the immediate transition limit.");
+    }
+
+    private static void AssertAssemblyState(
+        BuildingBoxHarness harness,
+        BuildingStatus expectedStatus,
+        int completedWork)
+    {
+        BuildingSnapshot building = Building(harness);
+        Assert.Equal(expectedStatus, building.Status);
+        Assert.Equal(completedWork, building.CompletedWork);
+        Assert.Equal(BuildingBoxCommitState.AtSite, building.BoxPlan!.CommitState);
+        Assert.Equal(JobStatus.InProgress, harness.Jobs.Get(harness.JobId)!.Status);
     }
 
     private static BuildingBoxHarness CreateAssigned(bool carriedByResident = false)
