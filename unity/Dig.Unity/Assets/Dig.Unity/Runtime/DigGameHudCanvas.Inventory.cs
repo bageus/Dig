@@ -180,7 +180,7 @@ public sealed partial class DigGameHudCanvas
         bool leftClick = eventData.button == PointerEventData.InputButton.Left;
         bool altPressed = Input.GetKey(KeyCode.LeftAlt)
             || Input.GetKey(KeyCode.RightAlt);
-        bool dropPressed = Input.GetKey(KeyCode.D);
+        bool dropPressed = Input.GetKey(KeyCode.C);
         if (leftClick && altPressed)
         {
             if (slot.CanUse)
@@ -241,8 +241,7 @@ public sealed partial class DigGameHudCanvas
             return new Color(0.06f, 0.07f, 0.09f, 0.72f);
         }
 
-        if (slot.VisualKind == ResidentInventorySlotVisualKind.BuildingBox
-            && slot.ReservedQuantity > 0)
+        if (slot.ReservedQuantity > 0)
         {
             return new Color(0.10f, 0.34f, 0.72f, 0.96f);
         }
@@ -250,11 +249,6 @@ public sealed partial class DigGameHudCanvas
         if (slot.IsHeld)
         {
             return new Color(0.12f, 0.34f, 0.48f, 0.96f);
-        }
-
-        if (slot.ReservedQuantity > 0)
-        {
-            return new Color(0.42f, 0.18f, 0.18f, 0.92f);
         }
 
         return slot.IsActiveExpansion
@@ -265,8 +259,7 @@ public sealed partial class DigGameHudCanvas
     private static Color ResolveSlotTextColor(
         ResidentInventoryLayoutSlotViewModel slot)
     {
-        if (slot.VisualKind == ResidentInventorySlotVisualKind.BuildingBox
-            && slot.ReservedQuantity > 0)
+        if (slot.ReservedQuantity > 0)
         {
             return new Color(0.72f, 0.88f, 1f, 1f);
         }
