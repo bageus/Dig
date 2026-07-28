@@ -20,7 +20,8 @@ def check_resident_inventory_runtime_contracts(
     attachment_path = runtime_root / "DigResidentInventoryAttachmentVisual.cs"
     hud_feedback_path = runtime_root / "DigGameHudCanvas.InventoryFeedback.cs"
     agent_session_path = runtime_root / "DigAgentSession.cs"
-    movement_filter_path = runtime_root / "DigAgentSession.MovementFilter.cs"
+    movement_modes_path = runtime_root / "DigAgentSession.MovementModes.cs"
+    terrain_modes_path = runtime_root / "DigTerrainWorkSession.MovementModes.cs"
     driver_path = runtime_root / "DigAgentSimulationDriverBase.cs"
     cadence_path = runtime_root / "DigTerrainWorkSession.MovementCadence.cs"
     errors = require_fragments(
@@ -108,37 +109,32 @@ def check_resident_inventory_runtime_contracts(
         ),
     ))
     errors.extend(require_fragments(
-        movement_filter_path,
-        texts.get(movement_filter_path, ""),
-        "resident movement target filtering",
+        movement_modes_path,
+        texts.get(movement_modes_path, ""),
+        "session-level movement mode cadence",
         (
-            "SetMovementTargetFilter(",
-            "_movementTargetFilter",
-            "ApplyMovementTargetFilter(",
+            "IsMovementStepDue(",
+            "ResidentInventoryMovementCadence.IsDue(",
+            "resolution.AuthoritativeCadenceMultiplier",
         ),
     ))
     errors.extend(require_fragments(
-        agent_session_path,
-        texts.get(agent_session_path, ""),
-        "session-level cargo cadence",
-        ("movementTargets = ApplyMovementTargetFilter(movementTargets, _tick);",),
+        terrain_modes_path,
+        texts.get(terrain_modes_path, ""),
+        "inventory-aware movement mode resolution",
+        (
+            "ResolveResidentMovementMode(",
+            "GetResidentMoveSpeedMultiplier(request.ResidentId)",
+            "BuildingBoxCategoryId",
+        ),
     ))
     errors.extend(require_fragments(
         driver_path,
         texts.get(driver_path, ""),
-        "cargo cadence composition",
+        "movement mode composition",
         (
-            "AgentSession.SetMovementTargetFilter(",
-            "TerrainSession.ApplyResidentMovementCadence",
-        ),
-    ))
-    errors.extend(require_fragments(
-        cadence_path,
-        texts.get(cadence_path, ""),
-        "authoritative cargo cadence policy",
-        (
-            "ApplyResidentMovementCadence(",
-            "IsResidentMovementDue(residentId, tick)",
+            "AgentSession.SetMovementModeResolver(",
+            "TerrainSession.ResolveResidentMovementMode",
         ),
     ))
     return errors

@@ -86,8 +86,8 @@ namespace Dig.Unity
             WorldOverlayRenderer = worldOverlayRenderer;
             EffectRuntime = GetComponent<DigPresentationEffectRuntime>();
             Hud = hud;
-            AgentSession.SetMovementTargetFilter(
-                TerrainSession.ApplyResidentMovementCadence);
+            AgentSession.SetMovementModeResolver(
+                TerrainSession.ResolveResidentMovementMode);
             TerrainSession.BindManualMovementSource(
                 AgentSession.HasManualTunnelMovement);
             try
@@ -129,7 +129,10 @@ namespace Dig.Unity
             }
 
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
-            AgentRenderer.Render(agents, movementDuration: 0.25f);
+            AgentRenderer.RenderWithMovementModes(
+                agents,
+                movementDuration: 0.25f,
+                AgentSession.LoadMovementModes());
             RefreshEquipmentVisuals();
             Hud.SetAgents(agents, AgentSession.Tick);
             Hud.SetAgentSelection(

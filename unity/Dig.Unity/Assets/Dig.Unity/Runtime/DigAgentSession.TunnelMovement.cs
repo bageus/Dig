@@ -129,14 +129,24 @@ namespace Dig.Unity
                 && _manualTunnelMovements.ContainsKey(EntityId.Parse(residentId));
         }
 
-        internal bool CancelManualTunnelMovement(string residentId)
+        internal bool CancelManualTunnelMovement(
+            string residentId,
+            ResidentMovementInterruptionReason reason =
+                ResidentMovementInterruptionReason.HigherPriorityAction)
         {
             if (string.IsNullOrWhiteSpace(residentId))
             {
                 throw new ArgumentException("Resident id is required.", nameof(residentId));
             }
 
-            return _manualTunnelMovements.Remove(EntityId.Parse(residentId));
+            EntityId id = EntityId.Parse(residentId);
+            bool removed = _manualTunnelMovements.Remove(id);
+            if (removed)
+            {
+                RecordMovementInterruption(id, reason, reason.ToString());
+            }
+
+            return removed;
         }
 
         internal DomainError? ConsumeManualTunnelMovementWarning()
@@ -160,7 +170,10 @@ namespace Dig.Unity
 
             if (!agent.IsAlive)
             {
-                CancelManualMovementWithWarning(agent.Id, AgentErrors.AgentDead);
+                CancelManualMovementWithWarning(
+                    agent.Id,
+                    AgentErrors.AgentDead,
+                    ResidentMovementInterruptionReason.AgentDead);
                 result = Result.Success();
                 return true;
             }
@@ -168,6 +181,10 @@ namespace Dig.Unity
             if (order.IsComplete)
             {
                 _manualTunnelMovements.Remove(agent.Id);
+                RecordMovementInterruption(
+                    agent.Id,
+                    ResidentMovementInterruptionReason.Completed,
+                    "Manual movement completed.");
                 result = Result.Success();
                 return true;
             }
@@ -186,6 +203,10 @@ namespace Dig.Unity
                 if (order.IsComplete)
                 {
                     _manualTunnelMovements.Remove(agent.Id);
+                    RecordMovementInterruption(
+                        agent.Id,
+                        ResidentMovementInterruptionReason.Completed,
+                        "Manual movement completed after replan.");
                     result = Result.Success();
                     return true;
                 }
@@ -193,6 +214,17 @@ namespace Dig.Unity
 
             CellId current = agent.Position;
             CellId next = order.NextCell;
+            if (!IsMovementStepDue(
+                agent,
+                next,
+                ResidentMovementCommandSource.Manual,
+                order.IsRepeatedCommand,
+                order.RemainingPathSteps))
+            {
+                result = Result.Success();
+                return true;
+            }
+
             if (!_tunnelTraffic.CanMove(agent.Id, current, next, _tick))
             {
                 result = Result.Success();
@@ -202,7 +234,10 @@ namespace Dig.Unity
             Result moved = agent.MoveTo(next, _tick);
             if (moved.IsFailure)
             {
-                CancelManualMovementWithWarning(agent.Id, moved.Error!);
+                CancelManualMovementWithWarning(
+                    agent.Id,
+                    moved.Error!,
+                    ResidentMovementInterruptionReason.MovementRejected);
                 result = Result.Success();
                 return true;
             }
@@ -214,6 +249,10 @@ namespace Dig.Unity
             if (order.IsComplete)
             {
                 _manualTunnelMovements.Remove(agent.Id);
+                RecordMovementInterruption(
+                    agent.Id,
+                    ResidentMovementInterruptionReason.Completed,
+                    "Manual movement completed.");
             }
 
             result = Result.Success();
@@ -233,65 +272,22 @@ namespace Dig.Unity
                 DomainError error = new DomainError(
                     $"agents.tunnel.{path.FailureReason.ToString().ToLowerInvariant()}",
                     path.Detail);
-                CancelManualMovementWithWarning(agent.Id, error);
+                CancelManualMovementWithWarning(
+                    agent.Id,
+                    error,
+                    ResidentMovementInterruptionReason.RouteUnavailable);
                 order = null!;
                 return false;
             }
 
-            order = new ManualTunnelMovementOrder(path.Path);
+            bool repeated = _manualTunnelMovements.TryGetValue(
+                agent.Id,
+                out ManualTunnelMovementOrder? previous)
+                && previous.IsRepeatedCommand;
+            order = new ManualTunnelMovementOrder(path.Path, repeated);
             _manualTunnelMovements[agent.Id] = order;
             return true;
         }
 
-        private void RegisterManualMovement(EntityId agentId, TunnelPath path)
-        {
-            ManualTunnelMovementOrder order = new ManualTunnelMovementOrder(path);
-            if (order.IsComplete)
-            {
-                _manualTunnelMovements.Remove(agentId);
-                return;
-            }
-
-            _manualTunnelMovements[agentId] = order;
-        }
-
-        private void CancelManualMovementWithWarning(EntityId agentId, DomainError error)
-        {
-            _manualTunnelMovements.Remove(agentId);
-            _manualTunnelMovementWarning = error;
-        }
-
-        private sealed class ManualTunnelMovementOrder
-        {
-            private int _nextCellIndex;
-
-            internal ManualTunnelMovementOrder(TunnelPath path)
-            {
-                Path = path ?? throw new ArgumentNullException(nameof(path));
-                _nextCellIndex = Math.Min(1, Path.Cells.Count);
-            }
-
-            internal TunnelPath Path { get; }
-
-            internal CellId Destination => Path.Cells[Path.Cells.Count - 1];
-
-            internal bool IsComplete => _nextCellIndex >= Path.Cells.Count;
-
-            internal CellId ExpectedCurrent =>
-                Path.Cells[Math.Max(0, _nextCellIndex - 1)];
-
-            internal CellId NextCell => Path.Cells[_nextCellIndex];
-
-            internal void ConfirmStep(CellId arrived)
-            {
-                if (IsComplete || arrived != NextCell)
-                {
-                    throw new InvalidOperationException(
-                        "Manual tunnel movement can confirm only its next authoritative cell.");
-                }
-
-                _nextCellIndex++;
-            }
-        }
     }
 }

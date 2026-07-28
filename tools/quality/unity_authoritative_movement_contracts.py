@@ -211,7 +211,7 @@ def check_authoritative_movement_contracts(
             "TryAdvanceManualTunnelMovement(agent",
             "TryAdvanceSpatialWorkMovement(agent",
             "CancelManualMovementWithWarning(agent.Id, spatialMovement.Error!)",
-            "CancelManualMovementWithWarning(agent.Id, result.Error!)",
+            "TryAdvanceAutomaticMovement(agent, destination);",
             "return Result.Success();",
         ),
     ))

@@ -61,7 +61,7 @@ def check_runtime_regression_contracts(
             "IReadOnlyList<string> selectedAgentIds", "primarySelectedAgentId",
             "AgentSession.ActiveManualTunnelResidentIds",
             "InterruptForManualMovement(",
-            "AgentRenderer.Render(agents, movementDuration)", "RestoreSelection(")),
+            "RenderWithMovementModes(", "AgentSession.LoadMovementModes()", "RestoreSelection(")),
         (movement, "interrupt-before-plan manual movement", (
             "SynchronizeTunnelInteractionTargets(tunnelRenderer)",
             "TerrainSession.InterruptForManualMovement",

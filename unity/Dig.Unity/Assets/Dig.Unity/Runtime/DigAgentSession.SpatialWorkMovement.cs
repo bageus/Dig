@@ -57,6 +57,17 @@ internal sealed partial class DigAgentSession
         CellId next = path.Path.Cells.Count > 1
             ? path.Path.Cells[1]
             : destination;
+        if (!IsMovementStepDue(
+            agent,
+            next,
+            ResidentMovementCommandSource.SpatialWork,
+            repeatedManualCommand: false,
+            remainingPathSteps: Math.Max(0, path.Path.Cells.Count - 1)))
+        {
+            result = Result.Success();
+            return true;
+        }
+
         if (!_tunnelTraffic.CanMove(agent.Id, current, next, _tick))
         {
             result = Result.Success();
