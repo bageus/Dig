@@ -34,7 +34,7 @@ internal sealed class CampfireFoodProductionPlayModeHarness
         Content = ProductionContentCatalog.ValidateAndCreate(
             Items,
             buildings,
-            CampfireProductionContent.CreateRecipes(materialStepTicks: 1),
+            CampfireProductionContent.CreateRecipes(baseDurationTicks: 1),
             Array.Empty<TechnologyDefinition>(),
             new[] { CampfireProductionContent.CreateWorkstation() }).Catalog!;
         Inventory = new InventoryState(Items);
