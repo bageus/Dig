@@ -14,6 +14,7 @@ public static class CampfireProductionContent
     public const long TestProductionMaterialTicks = 1;
     public const string AnimationProfileId = "production.animation.campfire";
 
+    public static readonly ItemCategoryId FoodCategoryId = new ItemCategoryId("food");
     public static readonly BuildingDefinitionId TentBuildingId =
         new BuildingDefinitionId("building.tent");
     public static readonly BuildingDefinitionId StoneMasonBuildingId =
@@ -59,8 +60,18 @@ public static class CampfireProductionContent
             new ItemDefinition(MushroomLegItemId, "Mushroom leg", 100, false),
             new ItemDefinition(StoneItemId, "Stone", 100, false),
             new ItemDefinition(HamsterItemId, "Hamster", 100, false),
-            new ItemDefinition(GrilledMushroomItemId, "Grilled mushroom", 100, false),
-            new ItemDefinition(RoastedHamsterItemId, "Grilled hamster", 100, false),
+            new ItemDefinition(
+                GrilledMushroomItemId,
+                "Grilled mushroom",
+                100,
+                false,
+                new[] { FoodCategoryId }),
+            new ItemDefinition(
+                RoastedHamsterItemId,
+                "Grilled hamster",
+                100,
+                false,
+                new[] { FoodCategoryId }),
             CreateBox(TentBoxItemId, "Packed tent", box),
             CreateBox(StoneMasonBoxItemId, "Packed stone mason workshop", box),
             CreateBox(WoodWorkshopBoxItemId, "Packed wooden workshop", box),
@@ -267,5 +278,4 @@ public static class CampfireProductionContent
             boxPolicy: new BuildingBoxPolicy(boxItemId, packingWork));
     }
 }
-
 }
