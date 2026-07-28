@@ -139,7 +139,7 @@ public sealed class DeepGameplayInteractionRegressionTests
         string runtime = RuntimeRoot();
         string ghost = Read(runtime, "DigBuildingBoxGhostRenderer.WorldSpace.cs");
         string hover = Read(runtime, "DigWorldInteraction.WorldObjectHover.cs");
-        string cadence = Read(runtime, "DigTerrainWorkSession.MovementCadence.cs");
+        string cadence = Read(runtime, "DigAgentSession.MovementModes.cs");
         string execution = Read(runtime, "DigPackableBuildingExecution.cs");
         string loop = Read(runtime, "DigAgentSimulationDriverBase.Loop.cs");
         string agentAdvance = Read(runtime, "DigAgentSimulationDriverBase.AgentAdvance.cs");
@@ -150,7 +150,8 @@ public sealed class DeepGameplayInteractionRegressionTests
         Assert.Contains("_root.rotation=Quaternion.identity", ghost);
         Assert.Contains("item.Model.IsBuildingBox", hover);
         Assert.Contains("TryGetBuilding", hover);
-        Assert.Contains("_isManualMovementActive?.Invoke(movement.Key)", cadence);
+        Assert.Contains("ResidentInventoryMovementCadence.IsDue", cadence);
+        Assert.Contains("resolution.AuthoritativeCadenceMultiplier", cadence);
         Assert.Contains("durationSeconds:1", execution);
         Assert.DoesNotContain("Hud!.SetCommandResult(result);return;", loop);
         Assert.Contains("ReconcileChangedTerrain(tick,agents)", agentAdvance);

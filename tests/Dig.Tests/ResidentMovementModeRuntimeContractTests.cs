@@ -12,20 +12,21 @@ public sealed class ResidentMovementModeRuntimeContractTests
     {
         string runtime = RuntimeRoot();
         string session = File.ReadAllText(Path.Combine(runtime, "DigAgentSession.cs"));
+        string modes = File.ReadAllText(Path.Combine(
+            runtime,
+            "DigAgentSession.MovementModes.cs"));
         string manual = File.ReadAllText(Path.Combine(
             runtime,
             "DigAgentSession.TunnelMovement.cs"));
         string spatial = File.ReadAllText(Path.Combine(
             runtime,
             "DigAgentSession.SpatialWorkMovement.cs"));
-        string modes = File.ReadAllText(Path.Combine(
-            runtime,
-            "DigAgentSession.MovementModes.cs"));
         string driver = File.ReadAllText(Path.Combine(
             runtime,
             "DigAgentSimulationDriverBase.cs"));
 
-        Assert.Contains("ResidentMovementCommandSource.Automatic", session);
+        Assert.Contains("TryAdvanceAutomaticMovement(agent, destination)", session);
+        Assert.Contains("ResidentMovementCommandSource.Automatic", modes);
         Assert.Contains("ResidentMovementCommandSource.Manual", manual);
         Assert.Contains("ResidentMovementCommandSource.SpatialWork", spatial);
         Assert.Contains("IsMovementStepDue(", session);
