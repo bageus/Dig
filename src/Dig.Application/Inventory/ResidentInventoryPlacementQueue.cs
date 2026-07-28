@@ -42,6 +42,11 @@ public sealed class ResidentInventoryPlacementQueue
             .ThenBy(value => value.Id.ToString(), StringComparer.Ordinal))
         {
             var definition = (ResidentInventoryPlacementJobDefinition)snapshot.Definition;
+            if (inventory.GetStack(definition.StackId) == null)
+            {
+                continue;
+            }
+
             if (snapshot.Status == JobStatus.Cancelled || snapshot.Status == JobStatus.Failed)
             {
                 changed = inventory.ReleaseReservations(snapshot.Id, tick) > 0 || changed;
