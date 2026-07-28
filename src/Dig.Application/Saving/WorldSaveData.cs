@@ -36,5 +36,8 @@ public sealed class WorldCellSaveData
     [DataMember(Order = 6)] public bool IsExplored { get; set; }
     [DataMember(Order = 7)] public ushort Damage { get; set; }
     [DataMember(Order = 8)] public short Temperature { get; set; }
+    [DataMember(Order = 9)] public int CompletedExcavationQuarters { get; set; }
+    [DataMember(Order = 10)] public int ExcavationCutPattern { get; set; }
+    [DataMember(Order = 11)] public string ExcavationSourceMaterialId { get; set; } = string.Empty;
 }
 }

@@ -234,6 +234,12 @@ internal sealed partial class DigWorldSession
         return SetDesignation(new CellId(cell.X, cell.Y, cell.Z), !cell.IsDesignated);
     }
 
+    internal bool IsExcavationOpen(CellId cell)
+    {
+        Result<CellSnapshot> snapshot = _repository.Get().GetCell(cell);
+        return snapshot.IsSuccess && snapshot.Value.State.IsExcavationOpen;
+    }
+
     internal Result SetDesignation(CellId cell, bool active)
     {
         if (active && IsProtected(cell))

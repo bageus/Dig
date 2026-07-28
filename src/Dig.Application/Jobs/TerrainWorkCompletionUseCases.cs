@@ -92,13 +92,14 @@ public sealed class CompleteTerrainWorkCommandHandler
         }
 
         CellSnapshot target = targetResult.Value;
-        if (!target.IsSolid)
+        if (!target.IsSolid && !target.State.IsExcavationOpen)
         {
             return Result<TerrainWorkCompletionResult>.Failure(
                 TerrainWorkCompletionErrors.TargetNotSolid);
         }
 
-        if (target.State.Designation != CellDesignation.Dig)
+        if (target.State.Designation != CellDesignation.Dig
+            && !target.State.IsExcavationOpen)
         {
             return Result<TerrainWorkCompletionResult>.Failure(
                 TerrainWorkCompletionErrors.TargetNotDesignated);

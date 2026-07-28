@@ -51,10 +51,9 @@ namespace Dig.Unity
                 _designationTint = null;
             }
 
-            if (!model.IsSolid)
-            {
-                _completedExcavationQuarters = ExcavationQuarter.None;
-            }
+            _completedExcavationQuarters = model.IsSolid
+                ? model.CompletedExcavationQuarters
+                : ExcavationQuarter.None;
 
             _rejected = false;
             AlignWithChunkBuilderSpace(model);

@@ -96,9 +96,9 @@ BuildingBox inventory action остаётся отдельным unpacking workf
 
 Случайный/deterministic выбор текущего quarter и количества swings не может быть скрытым Presentation-only состоянием.
 
-- quarter completion сохраняется в едином excavation progress owner;
-- сторона первого доступного quarter определяется фактическим положением resident относительно target, а не порядком enum или случайной проекцией: при копке клетки ниже resident (`target.Y > resident.Y`) сначала выбираются `UpperLeft`/`UpperRight`, то есть визуально ближайшая к resident верхняя часть; при копке клетки выше resident сначала выбираются `LowerLeft`/`LowerRight`; horizontal approach аналогично выбирает ближайшую левую/правую сторону;
-- пока в ближайшей к resident горизонтальной строке/вертикальной колонке остаётся хотя бы один unfinished quarter, один swing не может одновременно перейти на дальнюю строку/колонку даже при высоком mining skill; поэтому копка сверху вниз визуально удаляет сначала всю верхнюю половину клетки, а не вертикальную половину;
+- completed-quarter mask, target-owned cut pattern и source-material provenance сохраняются в authoritative World `CellState`; Jobs/worker coordinator хранит только незавершённый swing cadence и reservations;
+- cut pattern определяется plan kind target, а не текущей work position: vertical front-slice target всегда использует `HorizontalRows`, horizontal target использует ближайшую к resident `VerticalColumns`, depth target использует `DepthFace`;
+- пока в target-owned ближайшей строке/колонке остаётся хотя бы один unfinished quarter, один swing не может одновременно перейти на дальнюю строку/колонку даже при высоком mining skill; смена side/depth/climbing work position не меняет pattern vertical target;
 - Job не переходит в `Finalize`, пока не завершены все четыре quarters;
 - completed quarter немедленно отображается и на designation overlay, и на самой породе;
 - завершённая четверть удаляет/скрывает соответствующую геометрию породы и открывает пространство за ней;
@@ -111,6 +111,15 @@ BuildingBox inventory action остаётся отдельным unpacking workf
 - completion одной клетки не удаляет remaining designations/jobs connected zone;
 - Z0 tunnel, vertical/depth excavation и cave-room child cells используют тот же observable progress contract;
 - ошибка одной клетки не прекращает simulation loop и не блокирует остальных residents.
+
+### World-owned excavation progress and typed traversal
+
+- `CompletedQuarterMask` и `ExcavationCutPattern` являются частью authoritative `CellState`; Unity-local coordinator может хранить только swing/reservation cadence и обязан гидратироваться из World.
+- vertical front-slice tunnel использует `HorizontalRows` независимо от resident/work-cell approach; horizontal tunnel использует `VerticalColumns`, depth — `DepthFace`.
+- каждый completed quarter сначала коммитится в World. Четвёртый quarter в том же mutation делает cell empty и снимает designation; последующий job/output cleanup idempotent.
+- cursor, terrain renderer, standing support, work-position replan и save/load читают World mask.
+- любой partial cut клетки под ногами отменяет full actor support и вызывает side/depth replan либо stationary climbing stance.
+- horizontal movement через open shaft floor gap является `ShaftGapTraverse`; route без gap, включая обход по depth, имеет лексикографический приоритет над более коротким gap route.
 
 ## 7. Cave-room preview и execution
 

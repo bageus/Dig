@@ -127,6 +127,7 @@ namespace Dig.Unity
         {
             if (!cells.TryGetValue(target, out CellSnapshot cell)
                 || !cell.IsSolid
+                || cell.State.IsExcavationOpen
                 || cell.State.Designation != CellDesignation.Dig)
             {
                 return false;
@@ -149,7 +150,7 @@ namespace Dig.Unity
             {
                 if (neighbors[index] != target
                     && cells.TryGetValue(neighbors[index], out CellSnapshot neighbor)
-                    && !neighbor.IsSolid)
+                    && (!neighbor.IsSolid || neighbor.State.IsExcavationOpen))
                 {
                     return true;
                 }

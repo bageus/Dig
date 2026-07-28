@@ -38,10 +38,11 @@ public sealed partial class TunnelNavigationVolume
             plannedVerticalCells.Where(world.Size.Contains));
         HashSet<CellId> open = new HashSet<CellId>();
         HashSet<CellId> vertical = new HashSet<CellId>();
+        HashSet<CellId> supported = new HashSet<CellId>();
 
         foreach (CellSnapshot snapshot in cells.Values)
         {
-            if (snapshot.IsSolid)
+            if (snapshot.IsSolid && !snapshot.State.IsExcavationOpen)
             {
                 continue;
             }
@@ -65,6 +66,11 @@ public sealed partial class TunnelNavigationVolume
             {
                 vertical.Add(cell);
             }
+
+            if (IsSupported(cells, world.Size, cell))
+            {
+                supported.Add(cell);
+            }
         }
 
         return new TunnelNavigationVolume(
@@ -73,6 +79,7 @@ public sealed partial class TunnelNavigationVolume
             world.Size.Depth,
             open,
             vertical,
+            supported,
             demoLayout);
     }
 
@@ -95,7 +102,8 @@ public sealed partial class TunnelNavigationVolume
         CellId below = new CellId(cell.X, cell.Y + 1, cell.Z);
         return size.Contains(below)
             && cells.TryGetValue(below, out CellSnapshot support)
-            && support.IsSolid;
+            && support.IsSolid
+            && support.State.CompletedExcavationQuarters == ExcavationQuarter.None;
     }
 }
 

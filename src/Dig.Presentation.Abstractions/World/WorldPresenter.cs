@@ -51,7 +51,9 @@ public sealed class WorldPresenter
                 cell.Hardness,
                 cell.State.Damage,
                 cell.State.Temperature,
-                cell.WorldVersion));
+                cell.WorldVersion,
+                cell.State.CompletedExcavationQuarters,
+                cell.State.ExcavationCutPattern));
         }
 
         return new WorldChunkViewModel(

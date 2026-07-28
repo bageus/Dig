@@ -179,6 +179,7 @@ public sealed class BuildingBoxPackingSaveTests
             new SaveVersionFourAuthoritativeCoordinatesMigration(),
             new SaveVersionFiveMushroomsMigration(),
             new SaveVersionSixBuildingProductionMigration(),
+            new SaveVersionSevenWorldExcavationProgressMigration(),
         });
     }
 

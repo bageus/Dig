@@ -19,9 +19,9 @@ Tracking issue: [#386](https://github.com/bageus/Dig/issues/386).
 ## 2. Владение состоянием
 
 - Agents владеет authoritative logical cell resident.
-- Navigation владеет route/traversal result.
+- Navigation владеет route и типизированными traversal edges: `SupportedWalk`, `VerticalClimb`, `ShaftGapTraverse`, `DepthTraverse`.
 - Movement/Application валидирует cell transitions.
-- Presentation владеет interpolation, directional lane, permissive overlap fallback, local avoidance и climbing animation.
+- Presentation проецирует authoritative traversal/work posture в interpolation, directional lane, permissive overlap fallback и climbing animation.
 
 Visual lane, overlap offset и interpolation не являются отдельными навигационными клетками и не сохраняются.
 
@@ -72,7 +72,9 @@ Visual lane, overlap offset и interpolation не являются отдель�
 - падение возможно только после внешнего knockback/push/impact, описанного в [`entity-fall-knockback-and-vertical-shafts.md`](entity-fall-knockback-and-vertical-shafts.md);
 - после arrival visual возвращается к normal locomotion;
 - interruption/replan не оставляет resident в climbing pose;
-- resident, выполняющий mining из vertical-tunnel cell без solid floor support, остаётся в stationary climbing stance спиной к камере на всё время `PerformWork`; это presentation валидного удержания за shaft wall, а не actor fall или стояние в воздухе.
+- resident, выполняющий mining из vertical-tunnel cell без full actor support, остаётся в stationary climbing stance спиной к камере на всё время `PerformWork`; любой completed quarter supporting cell уже отменяет full actor support.
+- горизонтальный переход через клетку, где vertical shaft уходит вниз и нет full floor support, является `ShaftGapTraverse`, а не обычной ходьбой; visual использует climbing stance даже при неизменном Y.
+- path selection сначала минимизирует количество `ShaftGapTraverse`, затем длину маршрута и deterministic tie-break. Поэтому доступный depth-обход выбирается раньше прямого перехода через шахту, даже если он длиннее.
 
 После полного excavation commit новая открытая horizontal или vertical cell обязана войти в authoritative movement/topology projection до следующей route/movement попытки. Resident не может видеть выкопанную клетку, но получать stale `closed/not traversable` из отдельного tunnel volume или movement surface.
 
@@ -106,6 +108,8 @@ Visual lane, overlap offset и interpolation не являются отдель�
 - horizontal-to-shaft entry и shaft-to-horizontal exit не требуют ошибочно помечать horizontal floor cell как vertical tunnel;
 - actor не падает из vertical tunnel без подтверждённого external impact result;
 - shared-cell policy не создаёт teleport или route skip;
+- горизонтальный shaft gap не маскируется `SupportedWalk`;
+- route без shaft-gap имеет приоритет над более коротким route через gap;
 - full excavation commit синхронизирует World, Navigation map, resident tunnel volume и movement surfaces до следующего authoritative transition;
 - derived refresh failure не оставляет визуально открытую клетку логически закрытой;
 - save/load не сохраняет lateral offsets, overlap offsets или interpolation.
@@ -126,6 +130,9 @@ Visual lane, overlap offset и interpolation не являются отдель�
 - **Q-MOVE-012:** vertical climbing использует валидный traversal link; сценарий самопроизвольной потери опоры во время обычного перехода отсутствует.
 - **Q-MOVE-013:** entry/exit между поддерживаемой horizontal cell и shaft cell является vertical transition, если shaft endpoint имеет vertical provenance; обе клетки не обязаны ошибочно классифицироваться как vertical.
 - **Q-MOVE-014:** mining из shaft cell без пола использует stationary climbing stance спиной к камере; authoritative resident cell остаётся shaft work cell.
+- **Q-MOVE-015:** horizontal crossing над открытым vertical shaft является `ShaftGapTraverse` и использует climbing visual.
+- **Q-MOVE-016:** route planner предпочитает любой достижимый route без `ShaftGapTraverse`, включая depth-обход, и только затем сравнивает длину.
+- **Q-MOVE-017:** partial excavation supporting cell отменяет full actor support после первого completed quarter.
 
 ## 9. Открытые вопросы
 
@@ -158,7 +165,9 @@ Visual lane, overlap offset и interpolation не являются отдель�
 - normal vertical climbing не запускает fall без external impact;
 - после horizontal excavation resident входит в новую cell и продолжает frontier job без redraw;
 - после vertical/depth excavation новая cell сразу доступна valid climbing transition, включая entry из horizontal floor cell в первую shaft cell;
-- resident, mining sideways/depth from unsupported shaft cell, остаётся спиной к камере в climbing pose до завершения/interrupt;
+- resident, mining sideways/depth from unsupported или partially cut support, остаётся спиной к камере в climbing pose до завершения/interrupt;
+- horizontal crossing через shaft gap использует climbing pose, даже если logical Y не меняется;
+- при наличии depth-обхода route не использует shaft-gap crossing;
 - knockback/push в open shaft передаёт управление fall system;
 - interruption и save/load mid-route сохраняют authoritative cell/action, но не presentation offsets;
 - Play Mode подтверждает directional offsets, разрешённый horizontal overlap fallback и vertical overlap.

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Dig.Domain.World;
+using Dig.Presentation.World;
 
 namespace Dig.Unity
 {
@@ -9,6 +10,27 @@ namespace Dig.Unity
         private readonly Dictionary<CellId, ExcavationQuarter>
             _excavationQuarterProgress =
                 new Dictionary<CellId, ExcavationQuarter>();
+
+
+        private void SynchronizeWorldExcavationProgress(WorldViewModel world)
+        {
+            _excavationQuarterProgress.Clear();
+            for (int chunkIndex = 0; chunkIndex < world.Chunks.Count; chunkIndex++)
+            {
+                WorldChunkViewModel chunk = world.Chunks[chunkIndex];
+                for (int cellIndex = 0; cellIndex < chunk.Cells.Count; cellIndex++)
+                {
+                    WorldCellViewModel cell = chunk.Cells[cellIndex];
+                    if (cell.CompletedExcavationQuarters == ExcavationQuarter.None)
+                    {
+                        continue;
+                    }
+
+                    _excavationQuarterProgress[new CellId(cell.X, cell.Y, cell.Z)] =
+                        cell.CompletedExcavationQuarters;
+                }
+            }
+        }
 
         internal void SynchronizeExcavationQuarterProgress(
             IReadOnlyList<ExcavationQuarterProgressSnapshot> progress)

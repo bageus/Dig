@@ -30,6 +30,7 @@ namespace Dig.Unity
                 WorldSession.LoadSnapshot(),
                 WorldSession.PlannedTunnelCells,
                 WorldSession.PlannedVerticalTunnelCells);
+            AgentRenderer?.SetTunnelNavigationVolume(AgentSession.TunnelVolume);
         }
     }
 }
