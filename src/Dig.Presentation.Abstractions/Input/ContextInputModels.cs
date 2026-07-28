@@ -28,7 +28,7 @@ public enum ContextWorldTargetKind
     CompletedBuilding = 5,
     GenericItem = 6,
     Mushroom = 7,
-    FoodItem = 8,
+    FoodItem = 9,
     Barrel = 8,
 }
 
@@ -76,7 +76,7 @@ public enum ApplicationInputCommandKind
     ApplyExcavation = 7,
     PickupWorldItem = 8,
     ChopMushroom = 9,
-    EatWorldItem = 10,
+    EatWorldItem = 11,
     AttackBarrel = 10,
 }
 
