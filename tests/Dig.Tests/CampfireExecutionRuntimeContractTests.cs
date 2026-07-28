@@ -44,9 +44,11 @@ public sealed class CampfireExecutionRuntimeContractTests
         Assert.Contains("MaximumImmediateBuildingBoxAssemblyStepsPerTick", drain);
         Assert.Contains("BuildingBoxAssemblyExecutionPolicy.Evaluate", drain);
         Assert.Contains("ExecuteBuildingBoxAssemblyStep", drain);
-        Assert.Contains("afterWork?.CompletedWork==completedWorkBefore", drain);
-        Assert.Contains("BuildingBoxAssemblyExecutionStepKind.CompleteAssembly", drain);
+        Assert.Contains("BuildingBoxAssemblyTickBoundaryPolicy.AfterSuccessfulStep(step)", drain);
+        Assert.Contains("BuildingBoxAssemblyTickDisposition.StopCurrentTick", drain);
+        Assert.Contains("BuildingBoxAssemblyTickDisposition.Completed", drain);
         Assert.Contains("_buildingBoxAssemblyRoutes.Remove(jobId)", drain);
+        Assert.DoesNotContain("afterWork?.CompletedWork==completedWorkBefore", drain);
 
         Assert.Contains("PackableBuildingOperationKind.Pack", packing);
         Assert.Contains("StartOrResume(jobId,workerId)", packing);
