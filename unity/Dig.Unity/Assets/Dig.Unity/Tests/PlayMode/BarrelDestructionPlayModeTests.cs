@@ -22,6 +22,7 @@ public sealed class BarrelDestructionPlayModeTests
     public IEnumerator Four_supported_barrels_render_below_resident_inside_their_depth_slabs()
     {
         GameObject root = new GameObject("Barrel Play Mode fixture");
+        root.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
         root.AddComponent<DigRenderMaterialLibrary>();
         DigBarrelRenderer renderer = root.AddComponent<DigBarrelRenderer>();
         BarrelDefinitionId definitionId = new BarrelDefinitionId("world.barrel.wooden");
@@ -46,8 +47,10 @@ public sealed class BarrelDestructionPlayModeTests
         {
             BoxCollider collider = visual.GetComponent<BoxCollider>();
             Assert.That(collider.enabled, Is.True);
-            Assert.That(collider.size.y, Is.EqualTo(0.70f).Within(0.0001f));
+            Assert.That(collider.size.y, Is.EqualTo(0.49f).Within(0.0001f));
             Assert.That(collider.size.y, Is.LessThan(residentWorldHeight));
+            Assert.That(Vector3.Dot(visual.transform.up, Vector3.up),
+                Is.EqualTo(1f).Within(0.0001f));
             BarrelSnapshot model = (BarrelSnapshot)GetProperty(visual, "Model");
             float expectedDepth = depthOrigin + (model.Cell.Z * depthSpacing);
             Assert.That(visual.transform.position.z, Is.EqualTo(expectedDepth).Within(0.0001f));
