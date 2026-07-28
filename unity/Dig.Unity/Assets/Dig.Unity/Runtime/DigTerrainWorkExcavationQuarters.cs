@@ -136,6 +136,14 @@ namespace Dig.Unity
                 return true;
             }
 
+            if (before.State.Designation != CellDesignation.Dig)
+            {
+                // Job/designation reconciliation owns terminal cleanup. A stale job
+                // must not generate hidden quarter progress or throw from World commit.
+                _excavationQuarterWork.Remove(target);
+                return false;
+            }
+
             int skill = ResolveExcavationMiningSkill(workerId);
             EnsureExcavationQuarterAssignment(
                 workerId,
