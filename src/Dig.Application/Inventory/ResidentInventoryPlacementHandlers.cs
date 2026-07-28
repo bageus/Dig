@@ -144,7 +144,7 @@ public sealed class CreateResidentInventoryPlacementHandler
             : Result.Success();
     }
 
-    internal static Result ValidateTarget(
+    public static Result ValidateTarget(
         WorldSnapshot world,
         CellId destination,
         IReadOnlyCollection<CellId> reachableCells)
