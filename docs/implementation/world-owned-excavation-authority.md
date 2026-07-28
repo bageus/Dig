@@ -88,3 +88,11 @@ Unity Safe Mode reported `CS1503` in `WorldOwnedExcavationPlayModeTests.cs`: the
 The fixture now evaluates the typed `IReadOnlyList<TunnelTraversalKind>` through LINQ `Contains` and asserts the resulting boolean with `Is.True` / `Is.False`. This keeps the navigation behavior unchanged while avoiding NUnit overload inference differences between the repository test runner and Unity's embedded test framework.
 
 `check_unity_excavation_playmode_contracts.py` requires both typed `TraversalKinds.Contains(...)` checks and rejects the obsolete enum-valued `Does.Contain` / `Does.Not.Contain` forms.
+
+## Spatial designation lifecycle regression (2026-07-28)
+
+Unity runtime exception `world.excavation.quarter_requires_designation` exposed a depth-excavation creation gap: `DesignateSpatialExcavation` published `SpatialDigJobDefinition` and Presentation tint without first committing `CellDesignation.Dig` to authoritative World state. Quarter cadence therefore reached the strict World commit with a solid but undesignated target.
+
+The runtime now commits the exact target designation before job publication, journals that World mutation and marks derived projections dirty. `SyncDigDesignationJobsHandler` treats a nonterminal `SpatialDigJobDefinition` as the job owner for its designated target, suppressing and cleaning legacy duplicate ordinary `DigJobDefinition` instances. A final pre-swing guard removes stale coordinator cadence without generating hidden progress if any job reaches a solid undesignated target.
+
+Regression coverage includes Application tests for spatial designation ownership/duplicate cleanup, a Unity-facing source contract, and `SpatialExcavationDesignationPlayModeTests`, which creates a real demo depth plan, verifies the World designation, verifies a single target job, and advances the same quarter commit path that previously threw.
