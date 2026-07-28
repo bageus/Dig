@@ -184,6 +184,8 @@ Worker не обязан входить в target cell коробки. Runtime �
 
 После delivery автоматически выполняется unpack/assembly. Коробка расходуется только при успешном completion здания.
 
+В текущем demo/test-профиле после достижения worker-ом assembly work position runtime дренирует все немедленно выполнимые переходы `DepositItem -> PerformWork -> Finalize` в том же simulation tick. Три логические unpack-итерации, три per-iteration Logistics grant, authoritative work progress, exact-once consumption коробки и terminal cleanup сохраняются; ускорение не разрешает обходить pickup, carry, site commit или проверки work position. Production-duration balancing остаётся отдельным правилом content/balance profile.
+
 ## 10. Cancel, failure и retry
 
 - RMB отменяет unconfirmed preview, восстанавливает cursor и не меняет quantity/location.
@@ -282,5 +284,6 @@ Diagnostics/Inspector показывают:
 - RMB cancel и invalid LMB не меняют authoritative state;
 - cancel/retry/save-load на каждой authoritative стадии;
 - relocation сохраняет entity id и quantity;
+- после site delivery demo/test unpack дренирует три work iterations и finalize в том же tick, завершает building/job, расходует source box ровно один раз и освобождает reservations/routes;
 - assembly расходует box ровно один раз;
 - repeated placement/packing и deterministic replay.
