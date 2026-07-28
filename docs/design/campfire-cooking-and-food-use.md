@@ -1,6 +1,6 @@
 # Campfire cooking and direct food use
 
-Status: `APPROVED`
+Status: `IMPLEMENTED`
 
 Tracking issue: [#459](https://github.com/bageus/Dig/issues/459)
 
@@ -91,9 +91,9 @@ While a meal is active, autonomous replanning cannot replace it. A later explici
 
 ## 8. Save/load and migration
 
-Existing production, supply, mushroom and pickup job codecs retain their authority. The post-pickup eat marker and active meal bite progress must be persisted with stable identifiers. Loading must restore the exact source/holder, completed bite count and remaining nutrition without replaying pickup, consumption, progression or output completion.
+Existing production, supply, mushroom and pickup job codecs retain their authority. The post-pickup action is stored in `WorldItemPickupJobDefinition` and its codec. Save format v9 stores resident needs, active food item, original meal start tick, completed bite count and remaining bite plan.
 
-Older saves without meal state load as no active meal.
+Loading restores the exact holder and completed bite progress without replaying pickup, consuming another portion, applying completed Nutrition again, repeating progression or output completion. Older saves migrate to an empty agent-runtime section and therefore load with no active meal. Older pickup-job payloads without `completion_action` decode as `None`.
 
 ## 9. Presentation and diagnostics
 
@@ -119,3 +119,10 @@ and:
 `queued order -> cook -> Alt+LMB -> approach -> pickup -> three bites -> Nutrition +15`.
 
 Unity Play Mode must verify cursor priority/animation colour, resident movement, pickup commit, eating animation/status, repeated orders, full output ring, cancellation and the next repeated interaction.
+
+## 11. Implementation evidence
+
+- Core production, input and meal workflow: [#464](https://github.com/bageus/Dig/pull/464).
+- Persisted pickup completion action, save v9 active-meal restoration and full workflow regressions: [#485](https://github.com/bageus/Dig/pull/485).
+- GitHub Quality covers architecture boundaries, build, domain/application/integration tests, headless smoke and deterministic soak.
+- `CampfireFoodWorkflowPlayModeTests` contains executable dependency-chain and pickup-to-three-bites scenarios. The hosted Unity workflow currently records them as skipped when Unity activation is unavailable, so the system is `IMPLEMENTED`, not `VERIFIED`.
