@@ -1,6 +1,7 @@
 using System;
 using Dig.Application.Agents;
 using Dig.Application.Messaging;
+using Dig.Application.World;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
 using Dig.Domain.Jobs;
