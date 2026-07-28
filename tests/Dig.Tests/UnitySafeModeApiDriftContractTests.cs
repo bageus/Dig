@@ -34,8 +34,26 @@ public sealed class UnitySafeModeApiDriftContractTests
         Assert.Contains("MushroomErrors.NotFound", source);
         Assert.Contains("Result<bool>swing", source);
         Assert.Contains("if(!swing.Value)", source);
+        Assert.Contains("job=_jobRepository.Get().Get(job.Id)", source);
+        Assert.Contains("if(job.Stage!=JobStageKind.Finalize)", source);
         Assert.Contains("Result<MushroomChopCompletionResult>completed", source);
+        int finalSwing = source.IndexOf("if(!swing.Value)", StringComparison.Ordinal);
+        int reload = source.IndexOf("job=_jobRepository.Get().Get(job.Id)", StringComparison.Ordinal);
+        Assert.True(finalSwing >= 0 && reload > finalSwing);
         Assert.Contains("newCompleteMushroomChopCommand(job.Id,DemoId('7',sequence),tick)", source);
+        string playMode = Normalize(File.ReadAllText(Path.Combine(
+            FindRepositoryRoot(),
+            "unity",
+            "Dig.Unity",
+            "Assets",
+            "Dig.Unity",
+            "Tests",
+            "PlayMode",
+            "MushroomFinalSwingPlayModeTests.cs")));
+        Assert.Contains(
+            "Final_runtime_swing_commits_absent_site_completed_job_and_exact_drops",
+            playMode);
+        Assert.Contains("AdvanceMushroomJob", playMode);
         Assert.DoesNotContain("MushroomErrors.SiteNotFound", source);
         Assert.DoesNotContain("MushroomSwingCompletedResult", source);
         Assert.DoesNotContain("MushroomChopCompletedResult", source);
