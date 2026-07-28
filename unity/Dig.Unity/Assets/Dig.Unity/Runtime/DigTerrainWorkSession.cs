@@ -114,7 +114,8 @@ internal sealed partial class DigTerrainWorkSession
                 continue;
             }
 
-            if (job.Definition is MushroomChopJobDefinition)
+            if (job.Definition is MushroomChopJobDefinition
+                || job.Definition is BarrelAttackJobDefinition)
             {
                 continue;
             }

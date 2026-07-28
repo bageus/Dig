@@ -12,6 +12,7 @@ using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.Production;
 using Dig.Domain.World;
+using Dig.Domain.WorldObjects;
 namespace Dig.Application.Saving
 {
 public sealed partial class SaveGameLoader
@@ -38,7 +39,8 @@ public sealed partial class SaveGameLoader
             buildingCatalog: null,
             terrainDepositCatalog: null,
             mushroomCatalog: null,
-            productionContent: null);
+            productionContent: null,
+            barrelCatalog: null);
     }
     public Result<LoadedGameState> Load(
         SaveGameDocument document,
@@ -53,7 +55,8 @@ public sealed partial class SaveGameLoader
             buildingCatalog,
             terrainDepositCatalog: null,
             mushroomCatalog: null,
-            productionContent: null);
+            productionContent: null,
+            barrelCatalog: null);
     }
     public Result<LoadedGameState> Load(
         SaveGameDocument document,
@@ -69,7 +72,8 @@ public sealed partial class SaveGameLoader
             buildingCatalog,
             terrainDepositCatalog,
             mushroomCatalog: null,
-            productionContent: null);
+            productionContent: null,
+            barrelCatalog: null);
     }
     public Result<LoadedGameState> Load(
         SaveGameDocument document,
@@ -78,7 +82,8 @@ public sealed partial class SaveGameLoader
         BuildingCatalog? buildingCatalog,
         TerrainDepositCatalog? terrainDepositCatalog,
         MushroomCatalog? mushroomCatalog,
-        ProductionContentCatalog? productionContent = null)
+        ProductionContentCatalog? productionContent = null,
+        BarrelCatalog? barrelCatalog = null)
     {
         if (document is null)
         {
@@ -137,6 +142,14 @@ public sealed partial class SaveGameLoader
             if (mushrooms.IsFailure)
             {
                 return Result<LoadedGameState>.Failure(mushrooms.Error!);
+            }
+
+            Result<BarrelState> barrels = BuildBarrelState(
+                document.Barrels,
+                barrelCatalog);
+            if (barrels.IsFailure)
+            {
+                return Result<LoadedGameState>.Failure(barrels.Error!);
             }
 
             RestoredBuildingProductionState buildingProduction;
@@ -232,7 +245,8 @@ public sealed partial class SaveGameLoader
                 miningOutput.Value,
                 mushrooms.Value,
                 buildingProduction.Production,
-                buildingProduction.Supply));
+                buildingProduction.Supply,
+                barrels.Value));
         }
         catch (UnknownTerrainDepositDefinitionException)
         {

@@ -41,6 +41,29 @@ public sealed partial class DigWorldInteraction
             return true;
         }
 
+        if (TryResolveBarrelHit(hits, out DigBarrelVisual barrel))
+        {
+            CancelResidentMarquee();
+            EntityId barrelId = barrel.Model.BarrelId;
+            CellId cell = barrel.Model.Cell;
+            Dig.Presentation.Agents.AgentViewModel? selected =
+                _agentRenderer!.SelectedModel;
+            bool reachable = selected != null
+                && _terrainSession!.CanDirectAttackBarrel(
+                    barrelId,
+                    new CellId(selected.CellX, selected.CellY, selected.CellZ),
+                    out _);
+            ContextPointerTarget barrelTarget = new ContextPointerTarget(
+                ContextWorldTargetKind.Barrel,
+                barrelId,
+                cell,
+                reachable: reachable);
+            ApplyDecision(_inputRouter.Route(
+                Pointer(PointerButtonKind.Left),
+                BuildState(PointerButtonKind.Left),
+                barrelTarget));
+            return true;
+        }
 
         if (TryResolveCompletedBuildingHit(hits, out DigBuildingVisual completedBuilding))
         {

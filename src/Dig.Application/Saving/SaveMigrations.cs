@@ -31,6 +31,10 @@ public static class SaveErrors
     public static readonly DomainError UnknownMushroomDefinition = new DomainError(
         "save.mushroom_definition.unknown",
         "The save references a mushroom definition missing from the current catalog.");
+
+    public static readonly DomainError UnknownBarrelDefinition = new DomainError(
+        "save.barrel_definition.unknown",
+        "The save references a barrel definition missing from the current catalog.");
 }
 
 public sealed class SaveMigrationPipeline
@@ -315,6 +319,7 @@ public sealed class SaveVersionSixBuildingProductionMigration : ISaveMigration
         }
 
         document.BuildingProduction ??= new BuildingProductionSaveData();
+        document.Barrels ??= new BarrelSaveData();
         document.FormatVersion = ToVersion;
     }
 }

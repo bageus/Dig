@@ -74,6 +74,11 @@ namespace Dig.Unity
                     continue;
                 }
 
+                if (TryPlanBarrelMovement(job, agent, navigation, movement))
+                {
+                    continue;
+                }
+
                 if (TryPlanMushroomMovement(job, agent, navigation, movement))
                 {
                     continue;

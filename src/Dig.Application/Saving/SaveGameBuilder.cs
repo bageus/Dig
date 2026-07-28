@@ -59,6 +59,7 @@ public sealed partial class SaveGameBuilder
                 context.Production,
                 context.BuildingSupply,
                 context.Inventory),
+            Barrels = BuildBarrels(context.Barrels),
         };
     }
 
