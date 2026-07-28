@@ -40,6 +40,7 @@ namespace Dig.Unity
             _inventoryItemPlacementResidentId = _agentRenderer.SelectedModel.Id;
             _inventoryItemPlacementStackId = slot.StackId;
             _inventoryItemPlacementItemId = slot.ItemId;
+            Cursor.visible = false;
             EnsureInventoryItemGhostRenderer();
             if (TryResolveBuildingPlacementOrigin(GetPointerHits(), out CellId target))
             {
@@ -126,12 +127,17 @@ namespace Dig.Unity
 
         private void CancelInventoryItemPlacement()
         {
+            bool wasActive = InventoryItemPlacementActive;
             _inventoryItemPlacementResidentId = null;
             _inventoryItemPlacementStackId = null;
             _inventoryItemPlacementItemId = null;
             _inventoryItemPlacementCell = null;
             _inventoryItemPlacementValid = false;
             _inventoryItemGhostRenderer?.Clear();
+            if (wasActive)
+            {
+                Cursor.visible = true;
+            }
         }
 
         private void EnsureInventoryItemGhostRenderer()
