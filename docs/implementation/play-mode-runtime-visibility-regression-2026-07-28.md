@@ -34,3 +34,9 @@ The fixtures compile in `Dig.Unity.PlayModeTests`, which is a separate assembly 
 - reflection lookup of the mushroom model.
 
 The existing Play Mode scenarios continue to verify barrel depth/height/destruction/landing and mushroom Z0–Z3 projection. Their runtime execution still must be performed by Unity Test Runner before either system is promoted to `VERIFIED`.
+
+## Unity `Object` ambiguity follow-up
+
+Adding `using System;` restored the reflection exception types but also made unqualified `Object.Destroy(...)` ambiguous between `System.Object` and `UnityEngine.Object` in the Play Mode assembly. All three fixture cleanup calls now use the explicit `UnityEngine.Object.Destroy(...)` owner.
+
+`PlayModeRuntimeVisibilityContractTests` rejects unqualified `Object.Destroy(...)` calls and requires the three explicit Unity cleanup calls, preventing this Safe Mode compiler regression without changing runtime or barrel behavior.

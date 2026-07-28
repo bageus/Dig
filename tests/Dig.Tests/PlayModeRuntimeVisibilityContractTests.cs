@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace Dig.Tests
@@ -31,6 +32,12 @@ public sealed class PlayModeRuntimeVisibilityContractTests
         Assert.DoesNotContain("value.Model", mushroom);
         Assert.DoesNotContain("visual.Model", mushroom);
         Assert.Contains("GetProperty(visual, \"Model\")", mushroom);
+        Assert.Empty(Regex.Matches(
+            barrel,
+            @"(?<!UnityEngine\.)\bObject\.Destroy\("));
+        Assert.Equal(3, Regex.Matches(
+            barrel,
+            @"UnityEngine\.Object\.Destroy\(").Count);
     }
 
     private static string FindRepositoryRoot()
