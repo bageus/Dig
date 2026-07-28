@@ -131,6 +131,41 @@ public sealed class MushroomChopApplicationTests
     }
 
     [Fact]
+    public void Unavailable_worker_is_rejected_without_throwing_or_mutating_site()
+    {
+        Harness harness = CreateHarness(
+            MushroomStage.Large,
+            firstRequiredSwings: 2);
+        EntityId existingJobId = Id("b2000000000000000000000000000099");
+        Assert.True(harness.Jobs.Add(new DigJobDefinition(
+            existingJobId,
+            new DigJobTarget(new CellId(1, 1, 0)),
+            priority: 500,
+            createdTick: 0,
+            retryPolicy: JobRetryPolicy.Default)).IsSuccess);
+        Assert.True(harness.Jobs.MakeAvailable(existingJobId, tick: 0).IsSuccess);
+        Assert.True(harness.Jobs.Claim(existingJobId, FirstWorkerId, tick: 0).IsSuccess);
+        Assert.True(harness.Jobs.Start(existingJobId, tick: 0).IsSuccess);
+
+        Result<MushroomChopStartedResult> started = harness.Start.Handle(
+            new StartDirectMushroomChopCommand(
+                FirstJobId,
+                SiteId,
+                FirstWorkerId,
+                Work,
+                priority: 900,
+                tick: 1));
+
+        Assert.True(started.IsFailure);
+        Assert.Equal(JobErrors.AgentUnavailable, started.Error);
+        Assert.Null(harness.Jobs.Get(FirstJobId));
+        Assert.Equal(JobStatus.InProgress, harness.Jobs.Get(existingJobId)!.Status);
+        MushroomSiteSnapshot site = harness.Mushrooms.Get(SiteId)!;
+        Assert.False(site.IsChopActive);
+        Assert.Null(site.ActiveChopJobId);
+    }
+
+    [Fact]
     public void Cancel_releases_target_and_resumes_remaining_growth_duration()
     {
         Harness harness = CreateHarness(MushroomStage.Tiny, firstRequiredSwings: 6);
