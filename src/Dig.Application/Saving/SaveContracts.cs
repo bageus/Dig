@@ -20,7 +20,7 @@ namespace Dig.Application.Saving
 
 public static class SaveFormat
 {
-    public const int CurrentVersion = 8;
+    public const int CurrentVersion = 9;
 }
 
 public static class SaveSlotNames
@@ -125,6 +125,9 @@ public sealed class SaveGameDocument
 
     [DataMember(Order = 14)]
     public BarrelSaveData Barrels { get; set; } = new BarrelSaveData();
+
+    [DataMember(Order = 15)]
+    public AgentRuntimeSaveData AgentRuntime { get; set; } = new AgentRuntimeSaveData();
 }
 
 public sealed class LoadedGameState
@@ -145,7 +148,8 @@ public sealed class LoadedGameState
         MushroomState? mushrooms = null,
         ProductionState? production = null,
         BuildingSupplyState? buildingSupply = null,
-        BarrelState? barrels = null)
+        BarrelState? barrels = null,
+        IReadOnlyDictionary<EntityId, AgentRuntimeSnapshot>? agentRuntime = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -166,6 +170,10 @@ public sealed class LoadedGameState
             ? new Dictionary<EntityId, CellId>()
             : agentPositions.ToDictionary(value => value.Key, value => value.Value);
         AgentPositions = new ReadOnlyDictionary<EntityId, CellId>(positionCopy);
+        Dictionary<EntityId, AgentRuntimeSnapshot> runtimeCopy = agentRuntime is null
+            ? new Dictionary<EntityId, AgentRuntimeSnapshot>()
+            : agentRuntime.ToDictionary(value => value.Key, value => value.Value);
+        AgentRuntime = new ReadOnlyDictionary<EntityId, AgentRuntimeSnapshot>(runtimeCopy);
         TerrainDeposits = new ReadOnlyCollection<TerrainDepositInstance>(
             (terrainDeposits ?? Array.Empty<TerrainDepositInstance>())
                 .OrderBy(value => value.Cell)
@@ -201,6 +209,7 @@ public sealed class LoadedGameState
     public IReadOnlyDictionary<EntityId, AgentSkillProgressionSnapshot> AgentSkills { get; }
     public IReadOnlyDictionary<EntityId, bool> AgentAutomaticPlanning { get; }
     public IReadOnlyDictionary<EntityId, CellId> AgentPositions { get; }
+    public IReadOnlyDictionary<EntityId, AgentRuntimeSnapshot> AgentRuntime { get; }
     public IReadOnlyList<TerrainDepositInstance> TerrainDeposits { get; }
     public PackableBuildingExecutionRegistry PackableBuildingExecutions { get; }
     public RestoredMiningOutputState MiningOutput { get; }
