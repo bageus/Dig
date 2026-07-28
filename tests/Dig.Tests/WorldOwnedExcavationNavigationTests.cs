@@ -168,20 +168,21 @@ public sealed class WorldOwnedExcavationNavigationTests
         CellId left = new CellId(0, 0, 0);
         CellId start = new CellId(1, 0, 0);
         CellId right = new CellId(2, 0, 0);
-        Assert.True(world.Excavate(left, Air, tick: 1).IsSuccess);
-        Assert.True(world.Excavate(start, Air, tick: 2).IsSuccess);
-        Assert.True(world.Excavate(right, Air, tick: 3).IsSuccess);
+        long tick = 1;
+        Assert.True(world.Excavate(left, Air, tick++).IsSuccess);
+        OpenVerticalCell(world, start, ref tick);
+        Assert.True(world.Excavate(right, Air, tick++).IsSuccess);
         CellId partialSupport = new CellId(1, 1, 0);
         Assert.True(world.SetDigDesignation(
             partialSupport,
             designated: true,
-            tick: 4).IsSuccess);
+            tick: tick++).IsSuccess);
         Assert.True(world.CommitExcavationQuarter(
             partialSupport,
             ExcavationQuarter.UpperLeft,
             ExcavationCutPattern.HorizontalRows,
             Air,
-            tick: 5).IsSuccess);
+            tick: tick++).IsSuccess);
         NavigationMap map = new NavigationMap(
             TraversalProfile.CreateGroundedDwarf());
         Assert.True(map.Rebuild(
