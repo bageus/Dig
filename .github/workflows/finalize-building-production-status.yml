@@ -1,0 +1,64 @@
+name: Finalize building production status
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/finalize-building-production-status.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.head_ref == 'feature/complete-building-production-workflow'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+
+      - name: Update authoritative status and transaction wording
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          index = Path('docs/systems/README.md')
+          text = index.read_text()
+          old = '| Производство в зданиях и внутреннее снабжение | костёр, recipe icon, очередь, internal stock, refill, палатка, мастерская, гриль | `APPROVED` |'
+          new = '| Производство в зданиях и внутреннее снабжение | костёр, recipe icon, очередь, internal stock, refill, палатка, мастерская, гриль | `IMPLEMENTED` |'
+          if text.count(old) != 1:
+              raise SystemExit('Production system index row was not found exactly once.')
+          index.write_text(text.replace(old, new))
+
+          design = Path('docs/design/building-production-and-internal-supply.md')
+          text = design.read_text()
+          if text.count('Статус: `APPROVED`.') != 1:
+              raise SystemExit('Design status marker was not found exactly once.')
+          text = text.replace('Статус: `APPROVED`.', 'Статус: `IMPLEMENTED`.')
+          old_sentence = ('After assignment, the resident first travels to the workstation work position and refreshes the missing-stock snapshot there. '
+                          'The planner then uses revealed, reachable, unreserved world stacks.')
+          new_sentence = ('The command handler plans and reserves a deterministic batch from revealed, reachable, unreserved world stacks. '
+                          'After assignment, the resident first travels to the workstation work position and confirms the active reserved supply route before visiting its sources.')
+          if text.count(old_sentence) != 1:
+              raise SystemExit('Design supply transaction sentence was not found exactly once.')
+          design.write_text(text.replace(old_sentence, new_sentence))
+          PY
+          git rm .github/workflows/finalize-building-production-status.yml
+          git diff --check
+          python3 tools/quality/check_quality.py
+
+      - name: Commit clean status update
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/systems/README.md
+          git add docs/design/building-production-and-internal-supply.md
+          git commit -m 'docs: mark building production implemented'
+          git push origin HEAD:${{ github.head_ref }}
