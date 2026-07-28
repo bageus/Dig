@@ -1,6 +1,6 @@
 # Производство в зданиях и внутреннее снабжение
 
-Статус: `IMPLEMENTED`.
+Статус: `APPROVED` — revised production-icon input is being implemented in the linked tracking issue.
 
 Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
 
@@ -95,12 +95,15 @@ Selecting a completed workstation opens its building functions panel.
 
 - Production area contains only product/building icons.
 - Hover uses the same recipe snapshot as queue/validation and shows ingredient quantities.
-- LMB on an icon enqueues exactly one order.
-- Queue count beside the icon equals non-terminal orders for that recipe/building.
+- LMB on a product icon enqueues exactly one order and increases that icon's queue counter by one.
+- RMB on the same product icon cancels exactly one order and decreases the counter by one. It cancels the newest queued order for that recipe; if no queued order exists, it cancels the active order.
+- RMB at queue count `0` is a consumed no-op: no command is sent, no order is created or cancelled, and the counter cannot become negative.
+- Queue count on the icon equals non-terminal orders for that recipe/building.
+- A separate decrement/minus icon beside the product icon is forbidden; both increment and decrement are owned by the product icon itself.
 - Missing current stock colors the icon orange but never prevents enqueue.
 - Internal-stock area contains one icon per `InternalStockRule`; LMB toggles automatic delivery.
 - Stock icon shows current/capacity and incoming quantity.
-- Every recipe with a non-terminal queue count exposes a visible decrement control. One activation cancels the newest queued order for that recipe; if no queued order exists, it cancels the active order. Cancel releases unconsumed reservations; already consumed material steps remain consumed.
+- Cancelling an order releases unconsumed reservations; already consumed material steps remain consumed.
 
 ## 6. Supply lifecycle
 
@@ -227,17 +230,19 @@ Integration/deterministic:
 - cancel/retry at every supply and production stage;
 - supply route starts with a workstation check before the first world source;
 - direct quantity-one pickup from available internal stock creates replacement demand;
-- queue decrement cancels exactly one newest queued order, then the active order only when no queued order remains;
+- product-icon LMB adds exactly one order; RMB removes exactly one newest queued order, then the active order only when no queued order remains;
+- product-icon RMB at zero is a no-op and the queue counter never becomes negative;
 - two campfires operate independently;
 - save/load mid-supply and after each material step without duplicates.
 
 Unity Play Mode:
 
 - select unpacked campfire and see six production icons/four stock icons;
-- hover ingredient tooltip, orange shortage, click count;
+- hover ingredient tooltip, orange shortage and queue count;
+- LMB/RMB on the same production icon increments/decrements one order without a separate minus icon;
+- repeated RMB stops at zero without sending a cancellation command;
 - resident supply trip starts at the workstation, visits mixed sources, returns, and shows separated internal stacks;
 - selected resident can LMB an available internal-stock unit and the next synchronization creates replacement demand;
-- visible decrement removes one queued order;
 - complete building box and food output appear in front;
 - resident supply trip with visibly separated internal stacks;
 - complete BuildingBox and food output appear in deterministic surrounding cells;
@@ -259,3 +264,4 @@ Unity Play Mode:
 | 2026-07-28 | Supply workers check the workstation before collection; available internal stock supports quantity-one direct pickup; every recipe exposes explicit one-order decrement. | User |
 | 2026-07-27 | Generic workstation definitions, campfire recipes, internal capacities/toggles, mixed partial supply, protected stock, progressive consumption, deferred replenishment and per-material skill timing. | User |
 | 2026-07-28 | Grilled-mushroom dependency may create a Large-mushroom chop only when no eligible cap exists; the assigned cook finalizes one quantity-two output stack into deterministic front-first surrounding cells. | User |
+| 2026-07-29 | LMB and RMB on the same production icon increment/decrement one order; RMB stops at zero; the separate minus icon is removed. | User |
