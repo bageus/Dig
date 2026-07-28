@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Dig.Application.Agents;
 using Dig.Application.Saving;
 using Dig.Domain.Agents;
@@ -86,7 +85,7 @@ public sealed class CampfireFoodSaveTests
             destinationStackId: default,
             priority: 700,
             createdTick: 5,
-            JobRetryPolicy.Default,
+            retryPolicy: JobRetryPolicy.Default,
             completionAction: WorldItemPickupCompletionAction.UseConsumable);
 
         JobDefinitionSaveData encoded = codec.Encode(definition);
