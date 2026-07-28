@@ -11,14 +11,17 @@ namespace Dig.Unity
 [DisallowMultipleComponent]
 public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
 {
-    private const float FrontDepthOffset = -0.18f;
+    private const float VisibleDepthOffset = 0.12f;
     private readonly Dictionary<string, GameObject> _units =
         new Dictionary<string, GameObject>(StringComparer.Ordinal);
     private readonly Dictionary<string, Material> _materials =
         new Dictionary<string, Material>(StringComparer.Ordinal);
+    private readonly Dictionary<string, DigBuildingInternalStockBayVisual> _bays =
+        new Dictionary<string, DigBuildingInternalStockBayVisual>(StringComparer.Ordinal);
     private Transform? _root;
 
     internal int ActiveUnitCount => _units.Values.Count(value => value.activeSelf);
+    internal int ActiveBayCount => _bays.Values.Count(value => value.gameObject.activeSelf);
 
     internal void Render(
         IReadOnlyList<BuildingProductionViewModel> production,
@@ -33,6 +36,7 @@ public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
         Dictionary<string, BuildingWorldViewModel> buildingById = buildings
             .ToDictionary(value => value.Id, StringComparer.Ordinal);
         HashSet<string> visible = new HashSet<string>(StringComparer.Ordinal);
+        HashSet<string> visibleBays = new HashSet<string>(StringComparer.Ordinal);
         for (int productionIndex = 0;
             productionIndex < production.Count;
             productionIndex++)
@@ -45,6 +49,7 @@ public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
                 continue;
             }
 
+            RenderBay(building, visibleBays);
             for (int stockIndex = 0; stockIndex < model.Stocks.Count; stockIndex++)
             {
                 BuildingStockIconViewModel stock = model.Stocks[stockIndex];
@@ -52,7 +57,7 @@ public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
             }
         }
 
-        RemoveMissing(visible);
+        RemoveMissing(visible, visibleBays);
     }
 
     private void RenderStock(
@@ -111,15 +116,15 @@ public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
     {
         int column = unitIndex % 2;
         int layer = unitIndex / 2;
-        float pileX = -0.39f + (stockIndex * 0.26f);
+        float pileX = -0.27f + (stockIndex * 0.18f);
         Vector3 basePosition = DigTunnelProjection.ResidentWorldPosition(
-            building.OriginX,
-            building.OriginY,
-            building.OriginZ);
+            building.WorkPositionX,
+            building.WorkPositionY,
+            building.WorkPositionZ) + (Vector3.up * DigTunnelProjection.ResidentFootSink);
         unit.transform.position = basePosition + new Vector3(
-            pileX + (column * 0.09f),
-            0.08f + (layer * 0.12f),
-            FrontDepthOffset - (stockIndex * 0.012f));
+            pileX + (column * 0.075f),
+            0.12f + (layer * 0.16f),
+            VisibleDepthOffset + (stockIndex * 0.008f));
         unit.transform.localScale = ResolveScale(unit.name);
     }
 
@@ -138,8 +143,8 @@ public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
         material = new Material(shader)
         {
             name = "Dig Internal Stock " + family,
-            color = ResolveColor(family),
         };
+        DigMaterialColorUtility.SetColor(material, ResolveColor(family));
         _materials.Add(family, material);
         return material;
     }
@@ -164,20 +169,20 @@ public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
     {
         if (objectName.IndexOf("mushroom_leg", StringComparison.Ordinal) >= 0)
         {
-            return new Vector3(0.075f, 0.10f, 0.075f);
+            return new Vector3(0.11f, 0.15f, 0.11f);
         }
 
         if (objectName.IndexOf("mushroom_cap", StringComparison.Ordinal) >= 0)
         {
-            return new Vector3(0.13f, 0.07f, 0.11f);
+            return new Vector3(0.18f, 0.10f, 0.15f);
         }
 
         if (objectName.IndexOf("hamster", StringComparison.Ordinal) >= 0)
         {
-            return new Vector3(0.13f, 0.09f, 0.10f);
+            return new Vector3(0.18f, 0.13f, 0.14f);
         }
 
-        return new Vector3(0.12f, 0.09f, 0.11f);
+        return new Vector3(0.16f, 0.12f, 0.15f);
     }
 
     private static string ResolveFamily(string itemId)
@@ -236,7 +241,35 @@ public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
         _root = root.transform;
     }
 
-    private void RemoveMissing(ISet<string> visible)
+    private void RenderBay(
+        BuildingWorldViewModel building,
+        ISet<string> visible)
+    {
+        visible.Add(building.Id);
+        if (!_bays.TryGetValue(building.Id, out DigBuildingInternalStockBayVisual? bay))
+        {
+            GameObject root = new GameObject("Internal Stock Bay " + building.Id);
+            root.transform.SetParent(_root, worldPositionStays: true);
+            bay = root.AddComponent<DigBuildingInternalStockBayVisual>();
+            bay.Initialize(ResolveMaterial("internal.stock.bay"));
+            _bays.Add(building.Id, bay);
+        }
+
+        bay.gameObject.SetActive(true);
+        bay.SetPosition(
+            DigTunnelProjection.ResidentWorldPosition(
+                building.WorkPositionX,
+                building.WorkPositionY,
+                building.WorkPositionZ)
+            + new Vector3(
+                0f,
+                DigTunnelProjection.ResidentFootSink,
+                VisibleDepthOffset));
+    }
+
+    private void RemoveMissing(
+        ISet<string> visible,
+        ISet<string> visibleBays)
     {
         string[] removed = _units.Keys
             .Where(value => !visible.Contains(value))
@@ -246,6 +279,16 @@ public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
             string key = removed[index];
             Destroy(_units[key]);
             _units.Remove(key);
+        }
+
+        string[] removedBays = _bays.Keys
+            .Where(value => !visibleBays.Contains(value))
+            .ToArray();
+        for (int index = 0; index < removedBays.Length; index++)
+        {
+            string key = removedBays[index];
+            Destroy(_bays[key].gameObject);
+            _bays.Remove(key);
         }
     }
 
