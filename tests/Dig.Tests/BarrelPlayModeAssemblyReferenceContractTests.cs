@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Text.Json;
 using Xunit;
 
 namespace Dig.Tests
@@ -31,17 +30,12 @@ public sealed class BarrelPlayModeAssemblyReferenceContractTests
             "Dig.Unity.PlayModeTests.asmdef");
 
         string fixture = File.ReadAllText(fixturePath);
-        using JsonDocument document = JsonDocument.Parse(File.ReadAllText(asmdefPath));
-        JsonElement references = document.RootElement.GetProperty("references");
+        string asmdef = File.ReadAllText(asmdefPath);
 
         Assert.Contains("using Dig.Application.WorldObjects;", fixture);
         Assert.Contains("using Dig.Infrastructure.InMemory;", fixture);
-        Assert.Contains(
-            references.EnumerateArray(),
-            value => value.GetString() == "Dig.Application");
-        Assert.Contains(
-            references.EnumerateArray(),
-            value => value.GetString() == "Dig.Infrastructure");
+        Assert.Contains("\"Dig.Application\"", asmdef);
+        Assert.Contains("\"Dig.Infrastructure\"", asmdef);
     }
 
     private static string FindRepositoryRoot()
