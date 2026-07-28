@@ -10,7 +10,7 @@ namespace Dig.Unity
             int[] openings = { 2, 5, 8, 5 };
             for (int index = 0; index < frames.Length; index++)
             {
-                Color32[] pixels = NewCursorPixels();
+                Color32[] pixels = new Color32[CommandCursorSize * CommandCursorSize];
                 DrawEatingMouth(pixels, openings[index], index);
                 frames[index] = CreateCursorTexture(
                     $"Direct food mouth cursor {index}",
