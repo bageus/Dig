@@ -1,6 +1,6 @@
 # World-owned excavation authority
 
-Статус: архитектурная реализация слита в PR #463. Ветка `agent/finish-world-excavation-verification-v2` добавляет фактические Unity Play Mode regression scenarios и отдельный blocking CI workflow; статус `VERIFIED` допускается только после успешного Unity Test Runner run.
+Статус: архитектурная реализация слита в PR #463. Draft PR #472 добавляет фактические Unity Play Mode regression scenarios и отдельный blocking CI workflow; статус `VERIFIED` допускается только после успешного Unity Test Runner run.
 
 Authoritative specifications:
 
@@ -52,7 +52,7 @@ Save format v8 сохраняет completed-quarter mask, cut pattern и source 
 
 Domain/Application tests покрывают atomic fourth-quarter commit, idempotent retry, source material provenance, vertical horizontal-row ordering, support-loss posture, adjacent-depth work position, typed shaft-gap transition, depth detour и save v8 migration/round-trip.
 
-Unity Play Mode coverage включает:
+Unity Play Mode coverage в PR #472 включает:
 
 - реальную 1/4–3/4 quarter geometry и удаление quarter colliders;
 - `4/4` World projection без designation и без Dig interaction collider;
@@ -64,6 +64,19 @@ Unity Play Mode coverage включает:
 - direct excavation без второго manual owner;
 - combat-priority interruption, освобождающий ordinary excavation job без cancellation/completion.
 
-`.github/workflows/unity-playmode.yml` запускает `game-ci/unity-test-runner@v4` на Unity `6000.0.71f1`, `testMode: PlayMode` и сохраняет test artifacts. `tools/quality/check_unity_excavation_playmode_contracts.py` является отдельным source-contract gate, но не заменяет успешный Unity run.
+`.github/workflows/unity-playmode.yml` запускает `game-ci/unity-test-runner@v4` на Unity `6000.0.71f1`, `testMode: PlayMode` и сохраняет test artifacts. Перед запуском workflow валидирует activation secrets и выдаёт конкретную ошибку вместо неразличимого runner failure. Для Personal требуются `UNITY_LICENSE`, `UNITY_EMAIL`, `UNITY_PASSWORD`; для Pro — `UNITY_SERIAL`, `UNITY_EMAIL`, `UNITY_PASSWORD`.
+
+`tools/quality/check_unity_excavation_playmode_contracts.py` является отдельным source-contract gate, но не заменяет успешный Unity run.
+
+## Фактическое evidence PR #472
+
+Head `6a6ccac6446e5ead119cef3039077434bb1718eb`:
+
+- Quality run #6052 (`30347650859`) — success: architecture/source contracts, excavation Play Mode source gate, Release build, .NET tests, headless smoke и оба deterministic soak profiles;
+- Export Stage 2 v2 #524 (`30347650856`) — success;
+- Export Stage 2 v3 #529 (`30347650830`) — success;
+- Unity Play Mode #3 (`30347650866`) остановлен на `Validate Unity activation`: repository Actions secrets для Unity не настроены; Unity Editor и тесты не запускались.
+
+Поэтому код и исполняемые Play Mode scenarios подготовлены, но система остаётся не `VERIFIED` до настройки license secrets и успешного повторного run с XML/log artifacts.
 
 Item support-loss trigger остаётся общим workflow системы #387. Excavation гарантирует, что полный World commit и refresh precede новые pickup/hauling reservations; выбор atomic или multi-tick item falling state не расширяется здесь, пока Q-ITEM-006 остаётся открытым.
