@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -10,48 +11,68 @@ namespace Dig.Application.Saving
 
 public sealed partial class SaveGameLoader
 {
-    private Result<BarrelState?> BuildBarrels(BarrelSectionSaveData? section)
+    private static Result<BarrelState> BuildBarrelState(
+        BarrelSaveData data,
+        BarrelCatalog? catalog)
     {
-        if (section is null)
+        if (data is null || data.Barrels is null)
         {
-            return Result<BarrelState?>.Success(null);
+            throw new InvalidOperationException("Barrel save data is missing.");
         }
 
-        if (_barrelCatalog is null)
+        if (data.Barrels.Count > 0 && catalog is null)
         {
-            return section.Barrels.Length == 0
-                ? Result<BarrelState?>.Success(null)
-                : Result<BarrelState?>.Failure(SaveErrors.UnknownBarrelDefinition);
+            return Result<BarrelState>.Failure(SaveErrors.UnknownBarrelDefinition);
         }
 
-        BarrelSnapshot[] snapshots;
-        try
+        BarrelCatalog resolvedCatalog = catalog ?? new BarrelCatalog(
+            Array.Empty<BarrelDefinition>());
+        List<BarrelSnapshot> snapshots = new List<BarrelSnapshot>();
+        foreach (BarrelEntitySaveData barrel in data.Barrels
+            .OrderBy(value => value.BarrelId, StringComparer.Ordinal))
         {
-            snapshots = section.Barrels.Select(value => new BarrelSnapshot(
-                EntityId.Parse(value.BarrelId),
-                new BarrelDefinitionId(value.DefinitionId),
-                new CellId(value.CellX, value.CellY, value.CellZ),
-                (BarrelLifecycle)value.Lifecycle,
-                new ItemId(value.ContentsItemId),
-                value.ContentsGeneration,
-                value.ContentsMaterialized,
-                value.HasFallSource
-                    ? new CellId(value.FallSourceX, value.FallSourceY, value.FallSourceZ)
-                    : null,
-                value.HasFallLanding
-                    ? new CellId(value.FallLandingX, value.FallLandingY, value.FallLandingZ)
-                    : null,
-                value.Version)).ToArray();
-        }
-        catch (Exception)
-        {
-            return Result<BarrelState?>.Failure(SaveErrors.InvalidPayload);
+            BarrelDefinitionId definitionId = new BarrelDefinitionId(barrel.DefinitionId);
+            if (!Enum.IsDefined(typeof(BarrelLifecycle), barrel.Lifecycle)
+                || !resolvedCatalog.Contains(definitionId))
+            {
+                return Result<BarrelState>.Failure(SaveErrors.UnknownBarrelDefinition);
+            }
+
+            snapshots.Add(new BarrelSnapshot(
+                EntityId.Parse(barrel.BarrelId),
+                definitionId,
+                new CellId(barrel.X, barrel.Y, barrel.Z),
+                (BarrelLifecycle)barrel.Lifecycle,
+                new ItemId(barrel.ContentsItemId),
+                barrel.ContentsGeneration,
+                barrel.ContentsMaterialized,
+                ParseOptionalCell(
+                    barrel.FallSourceX,
+                    barrel.FallSourceY,
+                    barrel.FallSourceZ),
+                ParseOptionalCell(
+                    barrel.FallLandingX,
+                    barrel.FallLandingY,
+                    barrel.FallLandingZ),
+                barrel.Version));
         }
 
-        Result<BarrelState> restored = BarrelState.Restore(_barrelCatalog, snapshots);
-        return restored.IsSuccess
-            ? Result<BarrelState?>.Success(restored.Value)
-            : Result<BarrelState?>.Failure(restored.Error!);
+        return BarrelState.Restore(resolvedCatalog, snapshots);
+    }
+
+    private static CellId? ParseOptionalCell(int? x, int? y, int? z)
+    {
+        if (!x.HasValue && !y.HasValue && !z.HasValue)
+        {
+            return null;
+        }
+
+        if (!x.HasValue || !y.HasValue || !z.HasValue)
+        {
+            throw new InvalidOperationException("Saved barrel fall cell is incomplete.");
+        }
+
+        return new CellId(x.Value, y.Value, z.Value);
     }
 }
 
