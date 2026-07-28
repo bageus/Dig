@@ -17,7 +17,7 @@ Selected-resident HUD читает authoritative resident inventory layout и м
 - double click и RMB больше не выполняют quick drop;
 - hover с `D` показывает анимированную стрелку вниз; hover consumable с `Alt` показывает анимированный рот.
 
-`D` одновременно остаётся правой клавишей WASD camera pan. Side-view camera therefore keeps full arrow-key duplicates: `Left/Right` duplicate `A/D`, and `Down/Up` duplicate `S/W`. PR #504 adds a regression contract for both axis pairs so inventory quick-drop input never leaves camera movement without a keyboard alternative.
+`D` одновременно остаётся правой клавишей WASD camera pan. Authoritative runtime input specification therefore requires full arrow-key duplicates: `Left/Right` duplicate `A/D`, and `Down/Up` duplicate `S/W`. PR #504 adds a regression contract for both axis pairs so inventory quick-drop input never leaves camera movement without a keyboard alternative.
 
 ## Input wiring regression — 2026-07-29
 
