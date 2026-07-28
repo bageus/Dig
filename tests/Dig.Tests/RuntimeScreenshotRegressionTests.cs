@@ -16,7 +16,12 @@ public sealed class RuntimeScreenshotRegressionTests
         string designations = Read(runtime, "DigTerrainWorkDesignations.cs");
         string erase = Read(SourceRoot(), "Dig.Application/World/EraseExcavationBatch.cs");
 
-        Assert.Contains("WorldSession!.SetDesignation", driver);
+        Assert.Contains(
+            "Result worldDesignation = WorldSession.SetDesignation",
+            driver);
+        Assert.Contains(
+            "Result rollback = WorldSession.SetDesignation",
+            driver);
         Assert.Contains("plan.Target", driver);
         Assert.Contains("active: true", driver);
         Assert.Contains("active: false", driver);
