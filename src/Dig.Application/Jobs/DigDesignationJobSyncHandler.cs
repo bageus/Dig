@@ -44,6 +44,12 @@ public sealed class SyncDigDesignationJobsHandler
         HashSet<CellId> designated = CollectDesignatedSolidCells(world);
         Dictionary<CellId, JobSnapshot> activeByCell =
             new Dictionary<CellId, JobSnapshot>();
+        HashSet<CellId> activeSpatialTargets = new HashSet<CellId>(
+            jobs.GetAll()
+                .Where(value => value.Definition is SpatialDigJobDefinition
+                    && !value.IsTerminal)
+                .Select(value => ((SpatialDigJobDefinition)value.Definition)
+                    .Target.TargetCell));
         List<EntityId> cancelled = new List<EntityId>();
 
         foreach (JobSnapshot job in jobs.GetAll()
@@ -55,6 +61,17 @@ public sealed class SyncDigDesignationJobsHandler
             if (!designated.Contains(cellId))
             {
                 Cancel(jobs, job.Id, "designation_removed", command.Tick, cancelled);
+                continue;
+            }
+
+            if (activeSpatialTargets.Contains(cellId))
+            {
+                Cancel(
+                    jobs,
+                    job.Id,
+                    "duplicate_spatial_designation_job",
+                    command.Tick,
+                    cancelled);
                 continue;
             }
 
@@ -70,7 +87,8 @@ public sealed class SyncDigDesignationJobsHandler
         List<CreatedDigDesignationJob> created = new List<CreatedDigDesignationJob>();
         foreach (CellId cellId in designated.OrderBy(value => value))
         {
-            if (activeByCell.ContainsKey(cellId))
+            if (activeByCell.ContainsKey(cellId)
+                || activeSpatialTargets.Contains(cellId))
             {
                 continue;
             }
