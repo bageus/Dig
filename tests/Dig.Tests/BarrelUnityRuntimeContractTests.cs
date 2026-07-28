@@ -14,6 +14,7 @@ public sealed class BarrelUnityRuntimeContractTests
         string navigation = Read("unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkSession.BarrelNavigation.cs");
         string cursor = Read("unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.DirectCommandCursor.cs");
         string visual = Read("unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBarrelVisual.cs");
+        string renderer = Read("unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBarrelRenderer.cs");
         string interaction = Read("unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.Barrels.cs");
 
         Assert.Contains("FindBarrelDemoCells(surface: true, count: 2", session, StringComparison.Ordinal);
@@ -21,14 +22,53 @@ public sealed class BarrelUnityRuntimeContractTests
         Assert.Contains("count: 2", session, StringComparison.Ordinal);
         Assert.Contains("BarrelStoneItemId", session, StringComparison.Ordinal);
         Assert.Contains("BarrelOreItemId", session, StringComparison.Ordinal);
+        Assert.Contains("MiningOutputWorldSeed", session, StringComparison.Ordinal);
+        Assert.Contains("RandomStreamCatalog", session, StringComparison.Ordinal);
+        Assert.Contains("barrel.contents.", session, StringComparison.Ordinal);
         Assert.Contains("CompleteBarrelHitCommand", session, StringComparison.Ordinal);
         Assert.Contains("GenerationConflict", session, StringComparison.Ordinal);
         Assert.Contains("SettleUnsupportedBarrels", session, StringComparison.Ordinal);
         Assert.Contains("TryResolveBarrelLanding", navigation, StringComparison.Ordinal);
         Assert.Contains("DirectCommandCursorKind.Sword", cursor, StringComparison.Ordinal);
+        Assert.Contains("Sword = 5", cursor, StringComparison.Ordinal);
+        Assert.Contains("Eat = 6", cursor, StringComparison.Ordinal);
         Assert.Contains("SetHighlighted", cursor, StringComparison.Ordinal);
-        Assert.Contains("VisualHeight => 1.05f", visual, StringComparison.Ordinal);
+        Assert.Contains("VisualHeight => 0.70f", visual, StringComparison.Ordinal);
+        Assert.DoesNotContain("FrontOffset", renderer, StringComparison.Ordinal);
+        Assert.Contains("DigTunnelProjection.ResidentFootSink", renderer, StringComparison.Ordinal);
+        Assert.Contains("TryResolveBarrelHit", interaction, StringComparison.Ordinal);
         Assert.Contains("Атакует бочку", interaction, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Barrel_hover_click_and_job_presentation_use_one_complete_contract()
+    {
+        string worldInteraction = Read(
+            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.cs");
+        string decisions = Read(
+            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.Decisions.cs");
+        string priority = Read(
+            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.ResidentCommandPriority.cs");
+        string overlay = Read(
+            "src/Dig.Presentation.Abstractions/Jobs/JobOverlayPresenter.cs");
+        string activity = Read(
+            "src/Dig.Presentation.Abstractions/Agents/ResidentActivityPresenter.cs");
+        string facing = Read(
+            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentRenderer.WorkFacing.cs");
+        string visualFacing = Read(
+            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentVisual.WorkFacing.cs");
+
+        Assert.Contains("DigBarrelRenderer barrelRenderer", worldInteraction, StringComparison.Ordinal);
+        Assert.Contains("_barrelRenderer = barrelRenderer", worldInteraction, StringComparison.Ordinal);
+        Assert.Contains("&& _barrelRenderer != null", worldInteraction, StringComparison.Ordinal);
+        Assert.Contains("case ApplicationInputCommandKind.AttackBarrel", decisions, StringComparison.Ordinal);
+        Assert.Contains("ApplyBarrelAttack(decision)", decisions, StringComparison.Ordinal);
+        Assert.Contains("TryResolveBarrelHit", priority, StringComparison.Ordinal);
+        Assert.Contains("isBarrelAttack: job.Definition is BarrelAttackJobDefinition", overlay, StringComparison.Ordinal);
+        Assert.Contains("BarrelAttackJobDefinition barrel => barrel.TargetCell", activity, StringComparison.Ordinal);
+        Assert.Contains("Атакует бочку", activity, StringComparison.Ordinal);
+        Assert.Contains("job.IsBarrelAttack", facing, StringComparison.Ordinal);
+        Assert.Contains("ResidentActionVisualState.Hit", visualFacing, StringComparison.Ordinal);
     }
 
     [Fact]
