@@ -6,9 +6,9 @@ Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
 
 ## 1. Назначение
 
-Система позволяет completed building производить предметы и `BuildingBox` других зданий через data-driven definitions. Runtime не содержит веток вида `if campfire` или `if stone_mason`: новое производящее здание, recipe, внутренний stock и будущая animation добавляются content definitions.
+Система позволяет completed building производить предметы и `BuildingBox` других зданий через data-driven definitions. Runtime не содержит веток вида `if campfire` или `if stone_mason`: новое производящее здание, recipe, внутренний stock и future animation добавляются content definitions.
 
-Первый вертикальный slice подключает производство к распакованному костру.
+Первый вертикальный slice подключает производство к распакованному костру. Сквозной workflow приготовления и прямого использования пищи уточняется в [`campfire-cooking-and-food-use.md`](campfire-cooking-and-food-use.md) и tracking issue [#459](https://github.com/bageus/Dig/issues/459).
 
 ## 2. Владение состоянием
 
@@ -17,7 +17,7 @@ Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
 - `InventoryState` владеет физическими input/output stacks, quantity reservations, building-internal location и resident cargo.
 - `BuildingSupplyState` владеет delivery toggles, incoming quantities и active supply request для каждого completed building instance.
 - `JobSystem` владеет production/supply jobs, worker claims и position reservations.
-- `BuildingsState` владеет существованием, orientation и work/output positions building instance.
+- `BuildingsState` владеет существованием, orientation, work position и footprint building instance.
 - `Presentation` показывает icons, tooltip, queue count, orange shortage, stock toggles/stacks и future animation, но не изменяет authoritative state напрямую.
 
 ## 3. Data model
@@ -28,7 +28,7 @@ ProductionWorkstationDefinition
 - AnimationProfileId             # сохраняется сейчас, используется Presentation позже
 - RecipeIds[]
 - InternalStockRules[]
-- OutputPlacement = FrontFreeCell
+- OutputPlacement = FrontFirstSurroundingCells
 
 InternalStockRule
 - ItemId
@@ -113,7 +113,9 @@ A supply demand exists when all are true:
 
 The demand target is capacity, not only current recipe quantity.
 
-Planner reads revealed, reachable, unreserved world stacks. Internal workstation inventory is a protected automatic source and is excluded from ordinary stockpile/building demands. A direct player pickup remains valid.
+Planner reads revealed, reachable, unreserved world stacks. Internal workstation inventory is a protected automatic source and is excluded from ordinary stockpile/building demands. Resident inventory is not a world source. A direct player pickup remains valid.
+
+For a queued `recipe.campfire.food.grilled_mushroom`, the composing campfire-food workflow adds one dependency rule without changing BuildingSupply ownership: when internal stock has no cap, no eligible world cap exists, and a visible/reachable `Large` mushroom exists, one ordinary mushroom-chop job may be created. Its world drop is subsequently reserved and delivered by this normal supply lifecycle. See [`campfire-cooking-and-food-use.md`](campfire-cooking-and-food-use.md).
 
 ### 6.1 Batch selection
 
@@ -142,7 +144,7 @@ Failure/cancel/retry releases source quantity, incoming capacity and worker/posi
 6. Work advances only the current material step.
 7. Completing a step consumes one reserved unit of that step's ItemId immediately.
 8. The next step begins until all input units are processed.
-9. Completion creates outputs, grants skills exactly once, completes the job/order, then refreshes supply demand.
+9. The same assigned worker remains owner through `Finalize`, places the output, grants skills exactly once, completes the job/order, then refreshes supply demand.
 
 While an order is active, no replenishment demand is created. This prevents materials consumed mid-cycle from triggering delivery before the product finishes.
 
@@ -150,7 +152,7 @@ One worker job produces one recipe order. Output quantity may be greater than on
 
 ## 8. Timing and skill
 
-Base processing duration for each input unit is 15 game minutes. The test/demo profile uses one second without changing the state machine.
+Base processing duration for each input unit is 15 game minutes. The test profile may use one tick only inside tests; the Unity runtime uses the real 15-minute content value.
 
 For step skill value `S` points:
 
@@ -166,7 +168,7 @@ The skill is read when the production job begins and the resolved step durations
 
 Building recipes create ordinary quantity-one `BuildingBox` item entities. Food recipes create ordinary stackable item entities according to output quantity.
 
-Output location is the first deterministic free supported explored cell in front of the building. Search follows orientation-facing row, then increasing lateral distance, then stable XYZ order. A cell occupied by a building/plan or world item is not free. If no output cell is available, order remains `ReadyToComplete` with typed `production.output_space_unavailable`; inputs and exactly-once grants are not duplicated on retry.
+Output location is the first deterministic free supported explored cell around the building. Search starts on the facing/front side, prefers the front centre and increasing lateral distance, then sides and rear, and expands through perimeter rings in stable XYZ order. A cell occupied by a building/plan or world item is not free. If no output cell is available, order remains `ReadyToComplete` with typed `production.output_space_unavailable`; inputs and exactly-once grants are not duplicated on retry.
 
 ## 10. Multiple buildings and conflicts
 
@@ -214,12 +216,13 @@ Domain:
 - exact material-step durations at skills 0/25/100;
 - progressive consumption and deferred replenishment;
 - per-order skill grants with two-output cooking recipes;
-- deterministic front output cell and BuildingBox identity.
+- deterministic front-first surrounding output cell and BuildingBox identity.
 
 Integration/deterministic:
 
 - world source -> resident mixed cargo -> campfire stock;
 - queued blocked order starts after supply;
+- grilled-mushroom order may compose Large mushroom chop -> world cap -> supply -> production;
 - cancel/retry at every supply and production stage;
 - direct pickup from internal stock creates replacement demand;
 - two campfires operate independently;
@@ -230,13 +233,13 @@ Unity Play Mode:
 - select unpacked campfire and see six production icons/four stock icons;
 - hover ingredient tooltip, orange shortage, click count;
 - resident supply trip with visibly separated internal stacks;
-- complete building box and food output appear in front;
+- complete BuildingBox and food output appear in deterministic surrounding cells;
 - repeated queue item starts the next order;
-- future animation profile is projected but no animation asset is required for this slice.
+- future animation profile is projected but no production clip is required for this slice.
 
 ## 14. Out of scope
 
-- final art/animation clips;
+- final production art/animation clips;
 - technology unlock balancing beyond existing contracts;
 - quality tiers or probabilistic extra outputs;
 - production priorities shared across different buildings.
@@ -245,4 +248,5 @@ Unity Play Mode:
 
 | Date | Decision | Confirmed by |
 |---|---|---|
-| 2026-07-27 | Generic workstation definitions, campfire recipes, internal capacities/toggles, mixed partial supply, protected stock, progressive consumption, deferred replenishment, per-material skill timing and front-cell outputs. | User |
+| 2026-07-27 | Generic workstation definitions, campfire recipes, internal capacities/toggles, mixed partial supply, protected stock, progressive consumption, deferred replenishment and per-material skill timing. | User |
+| 2026-07-28 | Grilled-mushroom dependency may create a Large-mushroom chop only when no eligible cap exists; the assigned cook finalizes one quantity-two output stack into deterministic front-first surrounding cells. | User |
