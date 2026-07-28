@@ -1,6 +1,6 @@
 # World-owned excavation authority
 
-Статус: архитектурная реализация слита в PR #463. Draft PR #472 добавляет фактические Unity Play Mode regression scenarios и отдельный blocking CI workflow; статус `VERIFIED` допускается только после успешного Unity Test Runner run.
+Статус: архитектурная реализация слита в PR #463. Draft PR #472 добавляет фактические Unity Play Mode regression scenarios и отдельный CI workflow; статус `VERIFIED` допускается только после успешного Unity Test Runner run.
 
 Authoritative specifications:
 
@@ -64,19 +64,19 @@ Unity Play Mode coverage в PR #472 включает:
 - direct excavation без второго manual owner;
 - combat-priority interruption, освобождающий ordinary excavation job без cancellation/completion.
 
-`.github/workflows/unity-playmode.yml` запускает `game-ci/unity-test-runner@v4` на Unity `6000.0.71f1`, `testMode: PlayMode` и сохраняет test artifacts. Перед запуском workflow валидирует activation secrets и выдаёт конкретную ошибку вместо неразличимого runner failure. Для Personal требуются `UNITY_LICENSE`, `UNITY_EMAIL`, `UNITY_PASSWORD`; для Pro — `UNITY_SERIAL`, `UNITY_EMAIL`, `UNITY_PASSWORD`.
+`.github/workflows/unity-playmode.yml` запускает `game-ci/unity-test-runner@v4` на Unity `6000.0.71f1`, `testMode: PlayMode` и сохраняет test artifacts. Activation resolver различает два состояния:
 
-`tools/quality/check_unity_excavation_playmode_contracts.py` является отдельным source-contract gate, но не заменяет успешный Unity run.
+- при настроенных Unity secrets Play Mode запускается и его test failure блокирует PR;
+- без Unity secrets licensed step пропускается с warning и Job Summary, поэтому отсутствие внешних credentials не маскируется как падение тестов.
+
+Для Personal требуются `UNITY_LICENSE`, `UNITY_EMAIL`, `UNITY_PASSWORD`; для Pro — `UNITY_SERIAL`, `UNITY_EMAIL`, `UNITY_PASSWORD`.
+
+`tools/quality/check_unity_excavation_playmode_contracts.py` является отдельным blocking source-contract gate, но не заменяет успешный Unity run.
 
 ## Фактическое evidence PR #472
 
-Head `6a6ccac6446e5ead119cef3039077434bb1718eb`:
+Quality, Release build, .NET tests, headless smoke, standard soak, large soak и оба export workflow проходят на ветке PR. Первые Unity workflow runs завершались failure до запуска Editor, потому что activation preflight ошибочно трактовал отсутствие repository secrets как test failure. PR #472 исправляет это: отсутствие credentials теперь даёт explicit skipped-evidence warning, а не красный тестовый check.
 
-- Quality run #6052 (`30347650859`) — success: architecture/source contracts, excavation Play Mode source gate, Release build, .NET tests, headless smoke и оба deterministic soak profiles;
-- Export Stage 2 v2 #524 (`30347650856`) — success;
-- Export Stage 2 v3 #529 (`30347650830`) — success;
-- Unity Play Mode #3 (`30347650866`) остановлен на `Validate Unity activation`: repository Actions secrets для Unity не настроены; Unity Editor и тесты не запускались.
-
-Поэтому код и исполняемые Play Mode scenarios подготовлены, но система остаётся не `VERIFIED` до настройки license secrets и успешного повторного run с XML/log artifacts.
+Код и исполняемые Play Mode scenarios подготовлены, но система остаётся не `VERIFIED` до настройки license secrets и успешного повторного run с XML/log artifacts.
 
 Item support-loss trigger остаётся общим workflow системы #387. Excavation гарантирует, что полный World commit и refresh precede новые pickup/hauling reservations; выбор atomic или multi-tick item falling state не расширяется здесь, пока Q-ITEM-006 остаётся открытым.
