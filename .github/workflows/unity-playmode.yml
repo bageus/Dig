@@ -1,0 +1,66 @@
+name: Unity Play Mode
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/unity-playmode.yml"
+      - "src/**"
+      - "unity/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/unity-playmode.yml"
+      - "src/**"
+      - "unity/**"
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  playmode:
+    name: Unity 6000.0.71f1 Play Mode
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          show-progress: false
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: unity/Dig.Unity/Library
+          key: unity-library-${{ runner.os }}-6000.0.71f1-${{ hashFiles('unity/Dig.Unity/Packages/**', 'unity/Dig.Unity/ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            unity-library-${{ runner.os }}-6000.0.71f1-
+
+      - name: Run Play Mode tests
+        id: playmode
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+        with:
+          projectPath: unity/Dig.Unity
+          unityVersion: 6000.0.71f1
+          testMode: PlayMode
+          artifactsPath: artifacts/playmode
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          checkName: Dig Unity Play Mode
+
+      - name: Upload Play Mode results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-playmode-results
+          path: ${{ steps.playmode.outputs.artifactsPath }}
+          if-no-files-found: warn
+          retention-days: 14
