@@ -91,6 +91,8 @@ Presentation/Unity:
 - `SaveMigrationAndCorruptionTests`, `MushroomSaveRoundTripTests` and `BarrelSaveRoundTripTests` verify the complete v9 migration chain.
 - `CampfireFoodUnityRuntimeContractTests` guards runtime composition, cursor branches, persisted pickup action and shared meal wiring.
 - `CampfireFoodWorkflowPlayModeTests` implements the missing-cap dependency and pickup-to-three-bites runtime scenarios.
+- `CampfireFoodCompletionPlayModeTests` implements repeated production, fully blocked output-ring retry without duplication and cancellation of pickup-then-use without losing food or reservations.
+- `CampfireFoodProductionPlayModeHarness` composes completed campfire, production, inventory, jobs and resident owners for deterministic runtime tests without duplicating gameplay logic.
 
 ## Verification status
 
