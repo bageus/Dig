@@ -1,6 +1,6 @@
 # Производство в зданиях и внутреннее снабжение
 
-Статус: `APPROVED`.
+Статус: `IMPLEMENTED`.
 
 Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
 
@@ -113,7 +113,7 @@ A supply demand exists when all are true:
 
 The demand target is capacity, not only current recipe quantity.
 
-After assignment, the resident first travels to the workstation work position and refreshes the missing-stock snapshot there. The planner then uses revealed, reachable, unreserved world stacks. Internal workstation inventory is a protected automatic source and is excluded from ordinary stockpile/building demands. A direct player pickup remains valid: with one resident selected, ordinary LMB on a visible internal-stock unit creates a quantity-one pickup at the workstation work position. The unit must be currently available rather than reserved by active production. After successful pickup, enabled delivery makes the missing unit eligible for the next supply job.
+The command handler plans and reserves a deterministic batch from revealed, reachable, unreserved world stacks. After assignment, the resident first travels to the workstation work position and confirms the active reserved supply route before visiting its sources. Internal workstation inventory is a protected automatic source and is excluded from ordinary stockpile/building demands. A direct player pickup remains valid: with one resident selected, ordinary LMB on a visible internal-stock unit creates a quantity-one pickup at the workstation work position. The unit must be currently available rather than reserved by active production. After successful pickup, enabled delivery makes the missing unit eligible for the next supply job.
 
 ### 6.1 Batch selection
 
