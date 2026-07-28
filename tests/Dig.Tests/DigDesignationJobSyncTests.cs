@@ -63,6 +63,63 @@ public sealed class DigDesignationJobSyncTests
         Assert.Empty(jobs.Get().GetReservations());
     }
 
+    [Fact]
+    public void Active_spatial_job_owns_designation_without_generic_duplicate()
+    {
+        WorldState world = CreateWorld();
+        Assert.True(world.SetDigDesignation(First, true, 1).IsSuccess);
+        InMemoryJobRepository jobs = new InMemoryJobRepository();
+        EntityId spatialId = Id("40000000000000000000000000000004");
+        Assert.True(jobs.Get().Add(new SpatialDigJobDefinition(
+            spatialId,
+            new SpatialDigJobTarget(First, new CellId(First.X, First.Y - 1)),
+            priority: 700,
+            createdTick: 2,
+            JobRetryPolicy.Default)).IsSuccess);
+        Assert.True(jobs.Get().MakeAvailable(spatialId, tick: 2).IsSuccess);
+        SyncDigDesignationJobsHandler handler = CreateHandler(world, jobs);
+
+        DigDesignationJobSyncReport report = handler.Handle(
+            new SyncDigDesignationJobsCommand(700, 3));
+
+        Assert.Empty(report.Created);
+        JobSnapshot only = Assert.Single(jobs.Get().GetAll());
+        Assert.Equal(spatialId, only.Id);
+        Assert.IsType<SpatialDigJobDefinition>(only.Definition);
+    }
+
+    [Fact]
+    public void Sync_cancels_legacy_generic_duplicate_owned_by_spatial_job()
+    {
+        WorldState world = CreateWorld();
+        Assert.True(world.SetDigDesignation(First, true, 1).IsSuccess);
+        InMemoryJobRepository jobs = new InMemoryJobRepository();
+        EntityId genericId = Id("40000000000000000000000000000005");
+        EntityId spatialId = Id("40000000000000000000000000000006");
+        Assert.True(jobs.Get().Add(new DigJobDefinition(
+            genericId,
+            new DigJobTarget(First),
+            priority: 700,
+            createdTick: 2,
+            JobRetryPolicy.Default)).IsSuccess);
+        Assert.True(jobs.Get().MakeAvailable(genericId, tick: 2).IsSuccess);
+        Assert.True(jobs.Get().Add(new SpatialDigJobDefinition(
+            spatialId,
+            new SpatialDigJobTarget(First, new CellId(First.X, First.Y - 1)),
+            priority: 700,
+            createdTick: 2,
+            JobRetryPolicy.Default)).IsSuccess);
+        Assert.True(jobs.Get().MakeAvailable(spatialId, tick: 2).IsSuccess);
+        SyncDigDesignationJobsHandler handler = CreateHandler(world, jobs);
+
+        DigDesignationJobSyncReport report = handler.Handle(
+            new SyncDigDesignationJobsCommand(700, 3));
+
+        Assert.Equal(genericId, Assert.Single(report.Cancelled));
+        Assert.Equal(JobStatus.Cancelled, jobs.Get().Get(genericId)!.Status);
+        Assert.Equal(JobStatus.Available, jobs.Get().Get(spatialId)!.Status);
+    }
+
     private static SyncDigDesignationJobsHandler CreateHandler(
         WorldState world,
         InMemoryJobRepository jobs,
