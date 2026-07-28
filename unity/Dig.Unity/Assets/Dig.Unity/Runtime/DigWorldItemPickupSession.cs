@@ -47,17 +47,11 @@ namespace Dig.Unity
             }
 
             ItemStackSnapshot snapshot = repository.Get().GetStack(stack)!;
-            long sequence = checked(_nextWorldItemPickupSequence + 1);
-            _nextWorldItemPickupSequence = sequence;
             bool internalStock = snapshot.Location.Kind
                 == ItemLocationKind.BuildingInventory;
             int quantity = internalStock ? 1 : snapshot.Quantity;
-            EntityId destinationStackId = quantity < snapshot.Quantity
-                ? DemoId('8', sequence)
-                : default;
-            ItemStackSnapshot? source = repository.Get().GetStack(stack);
             if (eatAfterPickup
-                && source?.ItemId != CampfireProductionContent.GrilledMushroomItemId)
+                && snapshot.ItemId != CampfireProductionContent.GrilledMushroomItemId)
             {
                 return Result.Failure(new DomainError(
                     "world_food.unsupported_item",
@@ -74,6 +68,9 @@ namespace Dig.Unity
 
             long sequence = checked(_nextWorldItemPickupSequence + 1);
             _nextWorldItemPickupSequence = sequence;
+            EntityId destinationStackId = quantity < snapshot.Quantity
+                ? DemoId('8', sequence)
+                : default;
             EntityId jobId = DemoId('9', sequence);
             CreateWorldItemPickupHandler handler = ReferenceEquals(
                 repository,
@@ -120,7 +117,7 @@ namespace Dig.Unity
                 .Where(value => value.ItemId == item
                     && value.Location == ItemLocation.InBuilding(building)
                     && value.AvailableQuantity > 0)
-                .OrderBy(value => value.Id.ToString(), StringComparer.Ordinal)
+                .OrderBy(value => value.StackId.ToString(), StringComparer.Ordinal)
                 .FirstOrDefault();
             Dig.Domain.Buildings.BuildingSnapshot? buildingSnapshot =
                 _buildingsRepository.Get().Get(building);
@@ -129,7 +126,7 @@ namespace Dig.Unity
                 return false;
             }
 
-            stackId = stack.Id.ToString();
+            stackId = stack.StackId.ToString();
             workPosition = buildingSnapshot.WorkPosition;
             return true;
         }
