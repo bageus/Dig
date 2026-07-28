@@ -28,7 +28,9 @@ internal sealed partial class DigTerrainWorkSession
         PathResult path = new NavigationPathfinder().FindPath(
             navigation,
             new PathRequest(start, definition.WorkPosition, navigation.NavigationVersion));
-        if (!path.Succeeded || path.Path == null)
+        if (!path.Succeeded
+            || path.Path == null
+            || !IsSupportedBarrelAttackPath(navigation, path.Path))
         {
             return true;
         }
@@ -86,6 +88,7 @@ internal sealed partial class DigTerrainWorkSession
         CellId selectedCell = default;
         foreach (CellId candidate in candidates
             .Where(navigation.IsWalkable)
+            .Where(HasFullStandingSupport)
             .Where(value => !reserved.Contains(value))
             .Distinct()
             .OrderBy(value => value))
@@ -93,7 +96,9 @@ internal sealed partial class DigTerrainWorkSession
             PathResult path = new NavigationPathfinder().FindPath(
                 navigation,
                 new PathRequest(workerCell, candidate, navigation.NavigationVersion));
-            if (!path.Succeeded || path.Path == null)
+            if (!path.Succeeded
+                || path.Path == null
+                || !IsSupportedBarrelAttackPath(navigation, path.Path))
             {
                 continue;
             }
@@ -113,6 +118,43 @@ internal sealed partial class DigTerrainWorkSession
 
         workPosition = selectedCell;
         return true;
+    }
+
+
+    private bool IsSupportedBarrelAttackPath(
+        NavigationSnapshot navigation,
+        NavigationPath path)
+    {
+        if (path.Cells.Any(cell => !HasFullStandingSupport(cell)))
+        {
+            return false;
+        }
+
+        for (int index = 0; index + 1 < path.Cells.Count; index++)
+        {
+            CellId from = path.Cells[index];
+            CellId to = path.Cells[index + 1];
+            bool supportedWalk = navigation.GetTransitions(from).Any(
+                transition => transition.Target == to
+                    && transition.TraversalKind == TunnelTraversalKind.SupportedWalk);
+            if (!supportedWalk)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private bool HasFullStandingSupport(CellId cell)
+    {
+        CellId support = new CellId(cell.X, cell.Y + 1, cell.Z);
+        return _worldSession.LoadView().Chunks
+            .SelectMany(chunk => chunk.Cells)
+            .Any(value => value.X == support.X
+                && value.Y == support.Y
+                && value.Z == support.Z
+                && value.HasFullActorSupport);
     }
 
     private CellId[] FindBarrelDemoCells(
@@ -170,9 +212,7 @@ internal sealed partial class DigTerrainWorkSession
         return selected;
     }
 
-    private bool HasSolidSupport(CellId cell) =>
-        TryGetWorldCell(new CellId(cell.X, cell.Y + 1, cell.Z), out bool solid)
-        && solid;
+    private bool HasSolidSupport(CellId cell) => HasFullStandingSupport(cell);
 
     private bool TryResolveBarrelLanding(CellId source, out CellId landing)
     {
