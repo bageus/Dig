@@ -39,16 +39,24 @@ namespace Dig.Unity
 
         private void ApplyWorkFacingIfIdle()
         {
-            if (!_workTargetCell.HasValue || _duration > 0f)
+            if (!_workTargetCell.HasValue)
             {
                 return;
             }
 
+            // Losing support is observable immediately after the authoritative quarter
+            // commit. Apply the climbing pose even while a final movement interpolation
+            // is winding down; ordinary planar facing can still wait until idle.
             if (_climbingWorkPose)
             {
                 FaceAwayFromMainCamera();
                 bool ascending = _workTargetCell.Value.Y < Model.CellY;
                 _rig?.ApplyClimbPose(0.25f, ascending);
+                return;
+            }
+
+            if (_duration > 0f)
+            {
                 return;
             }
 
