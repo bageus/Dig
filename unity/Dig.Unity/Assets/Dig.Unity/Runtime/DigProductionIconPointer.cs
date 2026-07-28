@@ -7,9 +7,12 @@ namespace Dig.Unity
 
 internal sealed class DigProductionIconPointer : MonoBehaviour,
     IPointerEnterHandler,
-    IPointerExitHandler
+    IPointerExitHandler,
+    IPointerClickHandler
 {
     internal Action<bool>? HoverChanged { get; set; }
+
+    internal Action? RightClicked { get; set; }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
@@ -19,6 +22,19 @@ internal sealed class DigProductionIconPointer : MonoBehaviour,
     public void OnPointerExit(PointerEventData eventData)
     {
         HoverChanged?.Invoke(false);
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (eventData == null)
+        {
+            throw new ArgumentNullException(nameof(eventData));
+        }
+
+        if (eventData.button == PointerEventData.InputButton.Right)
+        {
+            RightClicked?.Invoke();
+        }
     }
 }
 

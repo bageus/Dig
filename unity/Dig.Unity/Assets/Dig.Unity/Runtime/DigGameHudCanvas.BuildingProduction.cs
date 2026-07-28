@@ -115,19 +115,12 @@ public sealed partial class DigGameHudCanvas
             TextAnchor.LowerRight);
         string hover = product.DisplayName + " ×" + product.OutputQuantity
             + "\n" + product.Tooltip;
-        BindIconTooltip(button, tooltip, hover);
-        if (product.QueuedCount > 0)
-        {
-            Button cancel = CreateButton(
-                "Cancel " + product.RecipeId,
-                parent,
-                "−",
-                () => CancelBuildingProduction(
-                    building.Id,
-                    product.RecipeId.ToString()),
-                preferredHeight: 34f);
-            cancel.GetComponentInChildren<Text>().fontSize = 24;
-        }
+        DigProductionIconPointer pointer = BindIconTooltip(button, tooltip, hover);
+        pointer.RightClicked = product.QueuedCount > 0
+            ? () => CancelBuildingProduction(
+                building.Id,
+                product.RecipeId.ToString())
+            : null;
     }
 
     private void CreateStockIconButton(
@@ -176,13 +169,17 @@ public sealed partial class DigGameHudCanvas
         count.raycastTarget = false;
     }
 
-    private static void BindIconTooltip(Button button, Text tooltip, string value)
+    private static DigProductionIconPointer BindIconTooltip(
+        Button button,
+        Text tooltip,
+        string value)
     {
         DigProductionIconPointer pointer =
             button.gameObject.AddComponent<DigProductionIconPointer>();
         pointer.HoverChanged = active => tooltip.text = active
             ? value
             : "Hover an icon to view required materials.";
+        return pointer;
     }
 
     private void QueueBuildingProduction(string buildingId, string recipeId)
@@ -196,11 +193,23 @@ public sealed partial class DigGameHudCanvas
         InvalidateAll();
     }
 
-
     private void CancelBuildingProduction(string buildingId, string recipeId)
     {
+        BuildingProductionViewModel? current =
+            _terrainSession!.LoadBuildingProduction(buildingId);
+        bool hasNonTerminalOrder = current?.Products.Any(value =>
+            value.QueuedCount > 0
+            && string.Equals(
+                value.RecipeId.ToString(),
+                recipeId,
+                StringComparison.Ordinal)) == true;
+        if (!hasNonTerminalOrder)
+        {
+            return;
+        }
+
         long tick = _simulation?.CurrentTick ?? 0;
-        Result result = _terrainSession!.CancelOneBuildingProduction(
+        Result result = _terrainSession.CancelOneBuildingProduction(
             buildingId,
             recipeId,
             tick);
