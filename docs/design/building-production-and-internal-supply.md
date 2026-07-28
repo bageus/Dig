@@ -1,6 +1,6 @@
 # Производство в зданиях и внутреннее снабжение
 
-Статус: `APPROVED` — revised production-icon input is being implemented in the linked tracking issue.
+Статус: `IMPLEMENTED` в PR #501; `VERIFIED` требует фактического Unity Play Mode evidence.
 
 Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
 
