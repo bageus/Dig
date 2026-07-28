@@ -52,6 +52,18 @@ public sealed class ResidentVisualProjectionTests
     }
 
     [Fact]
+    public void Carrying_resident_keeps_carry_animation_while_moving()
+    {
+        ResidentActionVisualViewModel visual = _presenter.PresentAction(
+            Agent("Deliver item"),
+            isMoving: true,
+            isCarrying: true);
+
+        Assert.Equal(ResidentActionVisualState.Carry, visual.State);
+        Assert.True(visual.IsLooping);
+    }
+
+    [Fact]
     public void Death_is_terminal_even_during_movement_or_impact()
     {
         ResidentActionVisualViewModel visual = _presenter.PresentAction(

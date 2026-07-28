@@ -69,12 +69,14 @@ public sealed class GameplayRegressionContractTests
         string runtime = RuntimeRoot();
         string cadence = Normalize(File.ReadAllText(Path.Combine(
             runtime,
-            "DigTerrainWorkSession.MovementCadence.cs")));
+            "DigAgentSession.MovementModes.cs")));
         string state = Normalize(File.ReadAllText(Path.Combine(
             runtime,
             "DigTerrainWorkManualExcavation.State.cs")));
 
-        Assert.Contains("IsResidentMovementDue(residentId,tick)", cadence);
+        Assert.Contains("IsMovementStepDue(", cadence);
+        Assert.Contains("ResidentInventoryMovementCadence.IsDue", cadence);
+        Assert.Contains("resolution.AuthoritativeCadenceMultiplier", cadence);
         Assert.DoesNotContain("IsManualExcavationAgent", cadence);
         Assert.DoesNotContain("_manualGroups", state);
     }

@@ -66,7 +66,9 @@ public sealed class ResidentVisualPresenter
     {
         if (!model.IsAlive) return ResidentActionVisualState.Death;
         if (showImpact) return ResidentActionVisualState.Hit;
-        if (isMoving) return ResidentActionVisualState.Walk;
+        if (isMoving) return isCarrying
+            ? ResidentActionVisualState.Carry
+            : ResidentActionVisualState.Walk;
         string intent = (model.ActiveIntent ?? string.Empty).Trim().ToLowerInvariant();
         if (ContainsAny(intent, "dig", "excavat", "mine"))
             return ResidentActionVisualState.Dig;

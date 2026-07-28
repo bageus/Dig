@@ -70,7 +70,9 @@ public sealed class ExcavationContinuationRuntimeContractTests
             runtime, "DigAgentVisual.cs")));
 
         Assert.Contains("BeginTunnelTrafficTick(_tick)", session);
-        Assert.Contains("MoveThroughTunnelTraffic(agent,destination)", session);
+        Assert.Contains("TryAdvanceAutomaticMovement(agent,destination)", session);
+        Assert.Contains("MoveThroughTunnelTraffic(agent,destination)", Normalize(File.ReadAllText(Path.Combine(
+            runtime, "DigAgentSession.MovementModes.cs"))));
         Assert.Contains("_tunnelTraffic.BeginTick(tick)", manual);
         Assert.Contains("_tunnelTraffic.CanMove", manual);
         Assert.Contains("_tunnelTraffic.RecordMove", manual);

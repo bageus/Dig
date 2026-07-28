@@ -194,7 +194,7 @@ namespace Dig.Unity
 
             _tick = checked(_tick + 1);
             BeginTunnelTrafficTick(_tick);
-            movementTargets = ApplyMovementTargetFilter(movementTargets, _tick);
+            BeginMovementModeTick();
             _autonomy.Execute(new SimulationContext(_tick, _simulationState));
             IReadOnlyList<AgentState> agents = _repository.GetAll();
             for (int index = 0; index < agents.Count; index++)
@@ -202,7 +202,9 @@ namespace Dig.Unity
                 AgentState agent = agents[index];
                 if (!agent.IsAlive)
                 {
-                    CancelManualTunnelMovement(agent.Id.ToString());
+                    CancelManualTunnelMovement(
+                        agent.Id.ToString(),
+                        ResidentMovementInterruptionReason.AgentDead);
                     continue;
                 }
 
@@ -239,11 +241,7 @@ namespace Dig.Unity
                     destination = new CellId(cell.X, cell.Y, cell.Z);
                 }
 
-                Result result = MoveThroughTunnelTraffic(agent, destination);
-                if (result.IsFailure)
-                {
-                    CancelManualMovementWithWarning(agent.Id, result.Error!);
-                }
+                TryAdvanceAutomaticMovement(agent, destination);
             }
 
             return Result.Success();

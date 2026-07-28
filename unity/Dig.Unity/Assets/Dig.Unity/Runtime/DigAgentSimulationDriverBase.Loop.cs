@@ -214,7 +214,10 @@ namespace Dig.Unity
                 movementDuration /= Playback.SpeedMultiplier;
             }
 
-            AgentRenderer.Render(agents, movementDuration);
+            AgentRenderer.RenderWithMovementModes(
+                agents,
+                movementDuration,
+                AgentSession.LoadMovementModes());
             RefreshEquipmentVisuals();
             MushroomRenderer!.Render(TerrainSession!.LoadMushrooms());
             BarrelRenderer!.Render(TerrainSession.LoadBarrels());
