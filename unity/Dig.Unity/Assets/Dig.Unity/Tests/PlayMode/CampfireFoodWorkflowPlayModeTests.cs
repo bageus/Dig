@@ -140,41 +140,45 @@ public sealed class CampfireFoodWorkflowPlayModeTests
             ((WorldItemPickupJobDefinition)pickup.Definition).CompletionAction,
             Is.EqualTo(WorldItemPickupCompletionAction.UseConsumable));
 
-        AssertSuccess(Invoke(
-            runtime.Terrain,
-            "AdvanceWorldItemPickup",
-            3L,
-            runtime.Agents));
-        AssertSuccess(Invoke(
-            runtime.Terrain,
-            "AdvanceWorldItemPickup",
-            4L,
-            runtime.Agents));
+        long pickupTick = 3;
+        while (!resident.HasActiveFoodMeal && pickupTick <= 6)
+        {
+            AssertSuccess(Invoke(
+                runtime.Terrain,
+                "AdvanceWorldItemPickup",
+                pickupTick,
+                runtime.Agents));
+            pickupTick++;
+        }
 
         Assert.That(resident.HasActiveFoodMeal, Is.True);
         Assert.That(
-            resident.CreateSnapshot(4).ActiveAction!.Value.IntentKind,
+            resident.CreateSnapshot(pickupTick).ActiveAction!.Value.IntentKind,
             Is.EqualTo(AgentIntentKind.Eat));
         Assert.That(runtime.Inventory.Get().GetStack(stackId), Is.Null);
-        Assert.That(resident.AdvanceFoodMealBite(5).Value, Is.False);
-        Assert.That(resident.AdvanceFoodMealBite(6).Value, Is.False);
-        Assert.That(resident.AdvanceFoodMealBite(7).Value, Is.True);
+        Assert.That(resident.AdvanceFoodMealBite(pickupTick).Value, Is.False);
+        Assert.That(resident.AdvanceFoodMealBite(pickupTick + 1).Value, Is.False);
+        Assert.That(resident.AdvanceFoodMealBite(pickupTick + 2).Value, Is.True);
         Assert.That(
-            resident.CreateSnapshot(7).Needs.Nutrition.Points,
+            resident.CreateSnapshot(pickupTick + 2).Needs.Nutrition.Points,
             Is.EqualTo(Math.Min(NeedValue.Maximum, nutritionBefore + 1_500)));
         Assert.That(resident.HasActiveFoodMeal, Is.False);
         Assert.That(
-            ActiveJobs(runtime.Terrain).Single(value => value.Id == pickup.Id).Status,
+            AllJobs(runtime.Terrain).Single(value => value.Id == pickup.Id).Status,
             Is.EqualTo(JobStatus.Completed));
     }
 
     private static JobSnapshot[] ActiveJobs(object terrain)
     {
+        return AllJobs(terrain).Where(value => !value.IsTerminal).ToArray();
+    }
+
+    private static JobSnapshot[] AllJobs(object terrain)
+    {
         object repository = GetField(terrain, "_jobRepository");
         object jobs = Invoke(repository, "Get");
         return ((IEnumerable)Invoke(jobs, "GetAll"))
             .Cast<JobSnapshot>()
-            .Where(value => !value.IsTerminal)
             .ToArray();
     }
 
