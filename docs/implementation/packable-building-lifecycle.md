@@ -86,13 +86,19 @@ Execution сохраняет прежние гарантии:
 - box расходуется только при успешном final assembly completion;
 - cancel/retry сохраняют quantity и не создают duplicate entity.
 
-### Fast demo/test unpack
+### Five-stage demo/test unpack
 
-Первоначальный Unity adapter оценивал и выполнял ровно один `BuildingBoxAssemblyExecutionStepKind` за simulation tick. После доставки это растягивало `DepositItem`, три `AddWork`, переход в `Finalize` и `CompleteAssembly` на отдельные ticks и в runtime выглядело как зависание.
+PR #462 ошибочно дренировал все `AddWork` и `Finalize` в одном simulation tick. Это убирало утверждённые наблюдаемые стадии и совмещало последнюю per-iteration progression mutation с terminal completion в одном runtime tick.
 
-`DigBuildingBoxAssemblyTickDrain` теперь выполняет bounded loop максимум из 16 переходов. Перед каждым переходом он заново читает authoritative Job, Building и Inventory snapshots, вызывает существующий `BuildingBoxAssemblyExecutionPolicy`, затем отправляет ровно одну существующую Application command. Когда текущий demo iteration длительностью одну simulation step реально увеличивает `CompletedWork`, loop продолжает следующие iteration/finalize в том же tick. Если будущий production profile ещё ждёт clock, отсутствие progress завершает drain без spin и job продолжится на следующем tick.
+`DigBuildingBoxAssemblyTickDrain` по-прежнему использует bounded loop максимум из 16 переходов и перед каждым переходом заново читает authoritative Job, Building и Inventory snapshots. Но tick boundaries теперь принадлежат `BuildingBoxAssemblyTickBoundaryPolicy`:
 
-Ускорение не меняет three-iteration content metadata, per-iteration Logistics grants, pickup/carry/site commit, exact-once box consumption или terminal reservation cleanup.
+- после `CommitBoxToSite` текущий tick завершается, чтобы renderer показал initial `0/3` state;
+- `AdvanceStage` до `PerformWork` дренируется без отдельной задержки;
+- за один tick выполняется не более одного `AddWork`, поэтому видны `1/3`, `2/3` и `3/3`;
+- на следующем tick после `3/3` служебные переходы `AdvanceStage -> Finalize -> CompleteAssembly` дренируются до terminal state;
+- `CompleteAssembly` удаляет route projection только после успешного authoritative completion.
+
+Такой cadence сохраняет три logical unpack iterations, три per-iteration Logistics grants, exact-once box consumption и five-state presentation `0/3 -> 1/3 -> 2/3 -> 3/3 -> Completed`, одновременно исключая зависание в `ReadyToComplete`.
 
 ## Placement blockers
 
@@ -131,8 +137,9 @@ Interactive cursor/preview не сохраняются. Confirmed job projection
 - inventory relocation claims holder resident;
 - world pickup/carry/deposit сохраняет StackId и quantity;
 - relocation save codec round-trip;
-- application regression drains a carried at-site BuildingBox through all authoritative stages with one tick value;
-- runtime source contract requires fresh-state bounded assembly drain, fast iteration profile, final completion and route cleanup;
+- application regression executes the holder-owned assembly through five separate observable tick states and verifies terminal finalize on the following tick;
+- tick-boundary policy regression fixes `CommitBoxToSite` and every `AddWork` as visible-state boundaries while allowing final transitions to drain;
+- runtime source contract requires fresh-state bounded execution, one work iteration per tick, final completion and route cleanup;
 - source contracts: hidden/restored cursor, pointer projection fallback, layer-specific visual, relocation dispatch, blue inventory state;
 - Unity Play Mode source: ghost moves between cells/layers and every child remains IgnoreRaycast/collider-disabled.
 
@@ -144,6 +151,7 @@ GitHub Actions не выполняет Unity Test Runner. До статуса `V
 2. moving green/red cursor across Z0 and Z1–Z3;
 3. Z0 relocation from world and holder inventory;
 4. Z1–Z3 assembly from world and holder inventory;
-5. after site delivery the current demo unpack completes immediately without a resident stall;
-6. resident/loose item under pointer does not freeze or invalidate ghost;
-7. cancel, route retry and save/load at each confirmed stage.
+5. after site delivery the box leaves resident inventory, planned ghost disappears and visible states progress `0/3 -> 1/3 -> 2/3 -> 3/3 -> Completed`;
+6. completed building becomes functional, worker/job/reservations/routes are released and no `ReadyToComplete` stall remains;
+7. resident/loose item under pointer does not freeze or invalidate ghost;
+8. cancel, route retry and save/load at each confirmed stage.
