@@ -60,7 +60,6 @@ namespace Dig.Unity
                     return Result.Success();
                 }
 
-                int completedWorkBefore = building?.CompletedWork ?? 0;
                 Result executed = ExecuteBuildingBoxAssemblyStep(
                     step,
                     assembly,
@@ -73,22 +72,20 @@ namespace Dig.Unity
                     return executed;
                 }
 
-                if (step == BuildingBoxAssemblyExecutionStepKind.CompleteAssembly)
+                BuildingBoxAssemblyTickDisposition disposition =
+                    BuildingBoxAssemblyTickBoundaryPolicy.AfterSuccessfulStep(step);
+                if (disposition == BuildingBoxAssemblyTickDisposition.Completed)
                 {
                     _buildingBoxAssemblyRoutes.Remove(jobId);
                     return Result.Success();
                 }
 
-                if (step == BuildingBoxAssemblyExecutionStepKind.AddWork)
+                if (disposition == BuildingBoxAssemblyTickDisposition.StopCurrentTick)
                 {
-                    BuildingSnapshot? afterWork = _buildingsRepository.Get().Get(
-                        assembly.BuildingId);
-                    if (afterWork?.CompletedWork == completedWorkBefore)
-                    {
-                        // A non-demo duration may still be counting down. Leave the job
-                        // active and continue on a later simulation tick without spinning.
-                        return Result.Success();
-                    }
+                    // Site commit must render the initial 0/3 assembly state. Each work
+                    // iteration then owns one later tick so 1/3, 2/3 and 3/3 remain
+                    // observable before the following tick drains Finalize and completion.
+                    return Result.Success();
                 }
             }
 
