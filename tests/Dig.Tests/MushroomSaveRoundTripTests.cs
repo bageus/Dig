@@ -118,6 +118,7 @@ public sealed class MushroomSaveRoundTripTests
             new SaveVersionFiveMushroomsMigration(),
             new SaveVersionSixBuildingProductionMigration(),
             new SaveVersionSevenWorldExcavationProgressMigration(),
+            new SaveVersionEightAgentRuntimeMigration(),
         });
 
         Result<SaveMigrationReport> migrated = pipeline.Apply(document);
@@ -180,7 +181,11 @@ public sealed class MushroomSaveRoundTripTests
     {
         return new MushroomCatalog(new[]
         {
-            new MushroomDefinition(DefinitionId, stageDurationTicks: 10, capItemId: Cap, legItemId: Leg),
+            new MushroomDefinition(
+                DefinitionId,
+                stageDurationTicks: 10,
+                capItemId: Cap,
+                legItemId: Leg),
         });
     }
 
