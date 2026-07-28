@@ -127,3 +127,19 @@ The foreground-targeting follow-up closed the resident candidate comparison `if`
 `PointerHitUnitySyntaxContractTests` now verifies balanced braces in the partial file and requires the exact `if -> for -> agent assignment -> next method` boundary. On code head `d540b6bdfbece8509437032cfd9202605e78a0d5`, Quality #5755 (`30315315950`), Stage 2 v2 #455 (`30315315946`) and Stage 2 v3 #460 (`30315315930`) passed, including Release build, full `Dig.Tests`, headless smoke and both deterministic soaks.
 
 The fix addresses the reported Unity parser failure at its source. Status remains `IMPLEMENTED` until Unity Editor/Test Runner executes the complete interaction workflow.
+
+
+## Z0-Z3 depth-slab correction (2026-07-28)
+
+A third runtime screenshot showed the upright mushroom behind the `Z=3` back plane. The site cell was valid; the Unity adapter added `FrontOffset = -0.66f` after `ResidentWorldPosition`, while one logical depth step is only `-0.55f`. Presentation therefore moved every mushroom by more than one complete Z layer and could place a `Z=3` site outside the four-layer world.
+
+The correction removes the independent mushroom depth offset. `DigMushroomRenderer` now uses the exact `DepthOrigin + CellId.Z * DepthSpacing` projection already returned by `ResidentWorldPosition`; only the walk-surface Y correction remains. Domain, jobs, navigation, save data and demo site cells are unchanged.
+
+Regression coverage now:
+
+- rejects any `FrontOffset` in the mushroom renderer source contract;
+- requires the renderer position to add `0f` on world Z;
+- renders Large fixtures at `Z=0`, `Z=1`, `Z=2` and `Z=3` under the rotated bootstrap parent;
+- verifies visual/collider center against each authoritative depth projection and keeps collider bounds inside the corresponding half-spacing slab.
+
+The system remains `IMPLEMENTED` until Unity Test Runner executes the checked-in Play Mode scenario.
