@@ -27,10 +27,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          base64 --decode .agent/building-box-patch.b64 > /tmp/building-box-patch.tgz
-          tar -xzf /tmp/building-box-patch.tgz
-          rm -f .agent/building-box-patch.b64
-          rmdir .agent 2>/dev/null || true
+          cat .agent/patch.part* > /tmp/building-box-patch.b64
+          base64 --decode /tmp/building-box-patch.b64 > /tmp/building-box-patch.tar.xz
+          xz --decompress --stdout /tmp/building-box-patch.tar.xz > /tmp/building-box-patch.tar
+          tar -xf /tmp/building-box-patch.tar
+          rm -rf .agent
           rm -f .github/workflows/apply-building-box-patch.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
