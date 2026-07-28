@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Domain.World;
 
 namespace Dig.Domain.Navigation
 {
