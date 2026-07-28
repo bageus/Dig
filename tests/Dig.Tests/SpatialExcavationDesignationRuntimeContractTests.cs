@@ -33,14 +33,15 @@ public sealed class SpatialExcavationDesignationRuntimeContractTests
             < spatial.IndexOf("TryGetActiveSpatialJob", StringComparison.Ordinal));
         Assert.Contains("world.SetDigDesignation(target,designated:true,tick)", designation);
         Assert.Contains("activeSpatialTargets.Contains(cellId)", sync);
-        Assert.Contains(
-            "before.State.Designation!=CellDesignation.Dig",
-            quarters);
-        Assert.True(
-            quarters.IndexOf(
-                "before.State.Designation!=CellDesignation.Dig",
-                StringComparison.Ordinal)
-            < quarters.IndexOf("ApplySwing(workerId,seed)", StringComparison.Ordinal));
+        const string designationGuard =
+            "before.State.Designation!=CellDesignation.Dig";
+        int guardIndex = quarters.IndexOf(designationGuard, StringComparison.Ordinal);
+        int guardedSwingIndex = quarters.IndexOf(
+            "ApplySwing(workerId,seed)",
+            guardIndex,
+            StringComparison.Ordinal);
+        Assert.True(guardIndex >= 0);
+        Assert.True(guardedSwingIndex > guardIndex);
         Assert.Contains(
             "Spatial_designation_precedes_first_world_quarter_commit",
             playMode);
