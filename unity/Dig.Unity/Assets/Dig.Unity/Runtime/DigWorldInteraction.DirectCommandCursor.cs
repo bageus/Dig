@@ -33,7 +33,7 @@ namespace Dig.Unity
             Pickup = 2,
             Movement = 3,
             Axe = 4,
-            Eat = 5,
+            Eat = 6,
             Sword = 5,
         }
 
@@ -136,6 +136,8 @@ namespace Dig.Unity
             return TryResolveWorldItemHit(hits, out item)
                 && item.Model.CanPickup
                 && IsDirectFoodItem(item.Model);
+        }
+
         private bool TryResolveBarrelHoverTarget(RaycastHit[] hits)
         {
             if (!TryResolveBarrelHit(hits, out DigBarrelVisual barrel))

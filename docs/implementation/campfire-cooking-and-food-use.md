@@ -79,3 +79,9 @@ Presentation/Unity:
 - GitHub Quality must pass for the final branch head.
 - Unity Play Mode must execute the two full scenarios from the authoritative acceptance section, including repeated use, full output ring and cancellation.
 - Active meal and post-pickup intent save/load restoration is not yet implemented because the global agent/runtime save owner remains `DRAFT`; #459 stays open and the PR remains draft until that acceptance point is either implemented or explicitly split under #13.
+
+## Unity merge/parser regression (2026-07-28)
+
+A post-merge Unity Editor compile exposed conflict damage that repository source-contract gates did not cover: missing method/loop braces in the direct cursor and pointer-hit partials, aliased food/barrel enum values, and a duplicated `DigWorldInteraction.Initialize` argument sequence that omitted the authoritative barrel renderer dependency from the receiver.
+
+The correction restores compile-safe partial boundaries, preserves the legacy barrel/sword numeric identifiers while assigning distinct food/eat identifiers, wires `DigBarrelRenderer` exactly once through bootstrap and interaction initialization, and reinstates regression checks for balanced braces, exact method boundaries, unique input identities and one composition argument list. No approved gameplay rule changes. Unity Editor/Test Runner execution remains required before `VERIFIED`.

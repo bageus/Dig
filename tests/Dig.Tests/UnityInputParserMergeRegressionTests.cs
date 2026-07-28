@@ -1,0 +1,129 @@
+using System;
+using System.IO;
+using Dig.Presentation.Input;
+using Xunit;
+
+namespace Dig.Tests
+{
+public sealed class UnityInputParserMergeRegressionTests
+{
+    [Fact]
+    public void Cursor_and_pointer_partials_keep_compile_safe_method_boundaries()
+    {
+        string runtime = RuntimeRoot();
+        string cursor = Read(runtime, "DigWorldInteraction.DirectCommandCursor.cs");
+        string pointerHits = Read(runtime, "DigWorldInteraction.PointerHits.cs");
+        string normalizedCursor = Normalize(cursor);
+        string normalizedPointerHits = Normalize(pointerHits);
+
+        Assert.Equal(Count(cursor, '{'), Count(cursor, '}'));
+        Assert.Equal(Count(pointerHits, '{'), Count(pointerHits, '}'));
+        Assert.Contains(
+            "&&IsDirectFoodItem(item.Model);}privateboolTryResolveBarrelHoverTarget",
+            normalizedCursor);
+        Assert.Contains(
+            "best=candidate;}}agent=best!;returnbest!=null;}privateboolTryProjectResidentBounds",
+            normalizedPointerHits);
+        Assert.Contains("Eat=6", normalizedCursor);
+        Assert.Contains("Sword=5", normalizedCursor);
+    }
+
+    [Fact]
+    public void Food_and_barrel_input_identities_are_distinct()
+    {
+        Assert.NotEqual(
+            (int)ContextWorldTargetKind.FoodItem,
+            (int)ContextWorldTargetKind.Barrel);
+        Assert.NotEqual(
+            (int)ApplicationInputCommandKind.EatWorldItem,
+            (int)ApplicationInputCommandKind.AttackBarrel);
+        Assert.Equal(8, (int)ContextWorldTargetKind.Barrel);
+        Assert.Equal(10, (int)ApplicationInputCommandKind.AttackBarrel);
+    }
+
+    [Fact]
+    public void Bootstrap_binds_each_world_interaction_dependency_once()
+    {
+        string runtime = RuntimeRoot();
+        string bootstrap = Normalize(Read(runtime, "DigUnityBootstrap.cs"));
+        string interaction = Normalize(Read(runtime, "DigWorldInteraction.cs"));
+        const string expectedCall =
+            "interaction.Initialize(targetCamera,cameraController,worldSession,worldRenderer,"
+            + "agentRenderer,creatureRenderer,mushroomRenderer,barrelRenderer,jobRenderer,"
+            + "buildingRenderer,buildingInternalStockRenderer,itemRenderer,ghostRenderer,"
+            + "terrainSession,stockpileRenderer,agentSession,simulation,hud);";
+
+        Assert.Equal(1, Count(bootstrap, "interaction.Initialize("));
+        Assert.Contains(expectedCall, bootstrap);
+        Assert.Contains("DigBarrelRendererbarrelRenderer", interaction);
+        Assert.Contains("_barrelRenderer=barrelRenderer;", interaction);
+        Assert.Contains("&&_barrelRenderer!=null", interaction);
+    }
+
+    private static int Count(string source, char value)
+    {
+        int count = 0;
+        for (int index = 0; index < source.Length; index++)
+        {
+            if (source[index] == value)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private static int Count(string source, string value)
+    {
+        int count = 0;
+        int start = 0;
+        while ((start = source.IndexOf(value, start, StringComparison.Ordinal)) >= 0)
+        {
+            count++;
+            start += value.Length;
+        }
+
+        return count;
+    }
+
+    private static string Normalize(string source) => source
+        .Replace(" ", string.Empty, StringComparison.Ordinal)
+        .Replace("\t", string.Empty, StringComparison.Ordinal)
+        .Replace("\r", string.Empty, StringComparison.Ordinal)
+        .Replace("\n", string.Empty, StringComparison.Ordinal);
+
+    private static string Read(string root, string file)
+    {
+        return File.ReadAllText(Path.Combine(root, file));
+    }
+
+    private static string RuntimeRoot()
+    {
+        return Path.Combine(
+            FindRepositoryRoot(),
+            "unity",
+            "Dig.Unity",
+            "Assets",
+            "Dig.Unity",
+            "Runtime");
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        DirectoryInfo? current = new DirectoryInfo(AppContext.BaseDirectory);
+        while (current != null)
+        {
+            if (Directory.Exists(Path.Combine(current.FullName, "src"))
+                && Directory.Exists(Path.Combine(current.FullName, "unity")))
+            {
+                return current.FullName;
+            }
+
+            current = current.Parent;
+        }
+
+        throw new DirectoryNotFoundException("Repository root was not found.");
+    }
+}
+}

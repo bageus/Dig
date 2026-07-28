@@ -100,6 +100,7 @@ public sealed class BarrelSaveRoundTripTests
         SaveMigrationPipeline pipeline = new SaveMigrationPipeline(new ISaveMigration[]
         {
             new SaveVersionSixBuildingProductionMigration(),
+            new SaveVersionSevenWorldExcavationProgressMigration(),
         });
 
         Result<SaveMigrationReport> migrated = pipeline.Apply(document);
