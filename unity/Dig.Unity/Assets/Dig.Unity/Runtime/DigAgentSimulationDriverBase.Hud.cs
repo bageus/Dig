@@ -1,3 +1,4 @@
+using System;
 using Dig.Domain.Core;
 using Dig.Domain.Society;
 using Dig.Presentation.Agents;
@@ -7,17 +8,34 @@ namespace Dig.Unity
 
 public abstract partial class DigAgentSimulationDriverBase
 {
-    internal long CurrentSocietyTick => AgentSession!.SocietyTick;
+    internal bool IsHudReady => AgentSession != null && TerrainSession != null;
+
+    internal long CurrentSocietyTick => AgentSession?.SocietyTick ?? 0;
 
     internal SocietySnapshot LoadSocietySnapshot()
     {
-        return AgentSession!.LoadSocietySnapshot();
+        if (AgentSession == null)
+        {
+            return new SocietySnapshot(
+                0,
+                Array.Empty<ResidentSocietySnapshot>(),
+                Array.Empty<SocialBondSnapshot>());
+        }
+
+        return AgentSession.LoadSocietySnapshot();
     }
 
     internal ResidentRosterViewModel LoadResidentRoster(string? selectedResidentId)
     {
-        return AgentSession!.LoadResidentRoster(
-            TerrainSession!.LoadJobSnapshots(),
+        if (AgentSession == null || TerrainSession == null)
+        {
+            return new ResidentRosterViewModel(
+                Array.Empty<ResidentRosterRowViewModel>(),
+                selectedResidentId: null);
+        }
+
+        return AgentSession.LoadResidentRoster(
+            TerrainSession.LoadJobSnapshots(),
             selectedResidentId);
     }
 
@@ -27,7 +45,15 @@ public abstract partial class DigAgentSimulationDriverBase
         out int startTickInclusive,
         out int endTickExclusive)
     {
-        return AgentSession!.TryGetWorkWindow(
+        if (AgentSession == null)
+        {
+            ticksPerDay = 24;
+            startTickInclusive = 0;
+            endTickExclusive = 12;
+            return false;
+        }
+
+        return AgentSession.TryGetWorkWindow(
             residentId,
             out ticksPerDay,
             out startTickInclusive,
@@ -39,7 +65,12 @@ public abstract partial class DigAgentSimulationDriverBase
         int startTickInclusive,
         int endTickExclusive)
     {
-        return AgentSession!.SetWorkRestWindow(
+        if (AgentSession == null)
+        {
+            return Result.Failure(NotInitialized);
+        }
+
+        return AgentSession.SetWorkRestWindow(
             residentId,
             startTickInclusive,
             endTickExclusive);
@@ -49,14 +80,25 @@ public abstract partial class DigAgentSimulationDriverBase
         string residentId,
         out bool enabled)
     {
-        return AgentSession!.TryGetAutomaticPlanning(residentId, out enabled);
+        if (AgentSession == null)
+        {
+            enabled = true;
+            return false;
+        }
+
+        return AgentSession.TryGetAutomaticPlanning(residentId, out enabled);
     }
 
     internal Result SetResidentAutomaticPlanning(
         string residentId,
         bool enabled)
     {
-        return AgentSession!.SetAutomaticPlanning(residentId, enabled);
+        if (AgentSession == null)
+        {
+            return Result.Failure(NotInitialized);
+        }
+
+        return AgentSession.SetAutomaticPlanning(residentId, enabled);
     }
 }
 
