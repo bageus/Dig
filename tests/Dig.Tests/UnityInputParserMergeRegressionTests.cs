@@ -68,6 +68,20 @@ public sealed class UnityInputParserMergeRegressionTests
         Assert.Contains("&&_barrelRenderer!=null", interaction);
     }
 
+    [Fact]
+    public void World_consumable_commands_use_the_overlay_HUD_contract()
+    {
+        string runtime = RuntimeRoot();
+        string interaction = Normalize(Read(runtime, "DigWorldInteraction.cs"));
+        string worldFood = Normalize(Read(runtime, "DigWorldInteraction.WorldFood.cs"));
+
+        Assert.Contains("privateDigHudOverlay?_hud;", interaction);
+        Assert.Contains("DigHudOverlayhud=_hud!;", worldFood);
+        Assert.DoesNotContain("DigGameHudCanvashud=_hud!;", worldFood);
+        Assert.Contains("hud.SetCommandResult(effectOwner);", worldFood);
+        Assert.Contains("hud.SetJobs(jobs);", worldFood);
+    }
+
     private static int Count(string source, char value)
     {
         int count = 0;
