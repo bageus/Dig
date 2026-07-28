@@ -44,6 +44,19 @@ public sealed class BarrelUnityRuntimeContractTests
         Assert.Contains("BuildingPlacementBlockedCells", placement, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Barrel_save_builder_keeps_the_instance_partial_contract()
+    {
+        string builder = Read("src/Dig.Application/Saving/SaveGameBuilder.cs");
+        string barrelBuilder = Read("src/Dig.Application/Saving/SaveGameBuilder.Barrels.cs");
+        string barrelData = Read("src/Dig.Application/Saving/BarrelSaveData.cs");
+
+        Assert.Contains("public sealed partial class SaveGameBuilder", builder, StringComparison.Ordinal);
+        Assert.Contains("public sealed partial class SaveGameBuilder", barrelBuilder, StringComparison.Ordinal);
+        Assert.DoesNotContain("public static partial class SaveGameBuilder", barrelBuilder, StringComparison.Ordinal);
+        Assert.Contains("List<BarrelEntitySaveData> Barrels", barrelData, StringComparison.Ordinal);
+    }
+
     private static string Read(string relativePath)
     {
         DirectoryInfo? directory = new DirectoryInfo(AppContext.BaseDirectory);
