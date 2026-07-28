@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dig.Application.Buildings;
 using Dig.Application.Jobs;
 using Dig.Application.Messaging;
 using Dig.Application.World;
@@ -159,7 +158,7 @@ public sealed class CreateResidentInventoryPlacementHandler
             || !target.HasValue
             || target.Value.IsSolid
             || !target.Value.State.IsExplored
-            || !BuildingPlacementSurfaceFactProjector.HasSupportingPlane(destination, world))
+            || !HasWalkableSupport(world, destination))
         {
             return Result.Failure(ResidentInventoryPlacementErrors.TargetUnavailable);
         }
@@ -175,6 +174,29 @@ public sealed class CreateResidentInventoryPlacementHandler
     {
         Result available = jobs.MakeAvailable(jobId, tick);
         return available.IsFailure ? available : jobs.Claim(jobId, residentId, tick);
+    }
+
+    private static bool HasWalkableSupport(
+        WorldSnapshot world,
+        CellId destination)
+    {
+        CellId support = new CellId(
+            destination.X,
+            destination.Y + 1,
+            destination.Z);
+        if (!world.Size.Contains(support))
+        {
+            return false;
+        }
+
+        CellSnapshot? supportCell = world.Chunks
+            .SelectMany(chunk => chunk.Cells)
+            .Where(cell => cell.Id == support)
+            .Select(cell => (CellSnapshot?)cell)
+            .FirstOrDefault();
+        return supportCell.HasValue
+            && supportCell.Value.IsSolid
+            && supportCell.Value.State.IsExplored;
     }
 
     private void SaveAndPublish(InventoryState inventory, JobSystem jobs)
