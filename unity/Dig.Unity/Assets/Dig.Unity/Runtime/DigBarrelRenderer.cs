@@ -10,7 +10,6 @@ namespace Dig.Unity
 [DisallowMultipleComponent]
 public sealed class DigBarrelRenderer : MonoBehaviour
 {
-    private const float FrontOffset = -0.70f;
     private readonly Dictionary<string, DigBarrelVisual> _visuals =
         new Dictionary<string, DigBarrelVisual>(StringComparer.Ordinal);
     private Transform? _root;
@@ -54,7 +53,7 @@ public sealed class DigBarrelRenderer : MonoBehaviour
                 barrel.Cell.Z) + new Vector3(
                     0f,
                     DigTunnelProjection.ResidentFootSink,
-                    FrontOffset);
+                    0f);
         }
 
         RemoveMissing(visible);

@@ -20,7 +20,7 @@ public sealed class DigBarrelVisual : MonoBehaviour
     private bool _highlighted;
 
     internal BarrelSnapshot Model { get; private set; } = null!;
-    internal float VisualHeight => 1.05f;
+    internal float VisualHeight => 0.70f;
     internal bool IsHighlighted => _highlighted;
 
     internal void Configure(BarrelSnapshot model)
@@ -53,7 +53,7 @@ public sealed class DigBarrelVisual : MonoBehaviour
         _collider = GetComponent<BoxCollider>();
         _collider.isTrigger = true;
         _collider.center = new Vector3(0f, VisualHeight * 0.5f, 0f);
-        _collider.size = new Vector3(0.82f, VisualHeight, 0.66f);
+        _collider.size = new Vector3(0.62f, VisualHeight, 0.54f);
         DigRenderMaterialLibrary library = GetComponentInParent<DigRenderMaterialLibrary>()
             ?? throw new InvalidOperationException("Barrel visual requires material library.");
         Material wood = library.Resolve(
@@ -67,20 +67,20 @@ public sealed class DigBarrelVisual : MonoBehaviour
         CreatePart(
             PrimitiveType.Cylinder,
             "Wood body",
-            new Vector3(0f, 0.52f, 0f),
-            new Vector3(0.72f, 0.52f, 0.72f),
+            new Vector3(0f, 0.35f, 0f),
+            new Vector3(0.54f, 0.35f, 0.54f),
             wood);
         CreatePart(
             PrimitiveType.Cylinder,
             "Upper hoop",
-            new Vector3(0f, 0.82f, 0f),
-            new Vector3(0.77f, 0.055f, 0.77f),
+            new Vector3(0f, 0.55f, 0f),
+            new Vector3(0.58f, 0.04f, 0.58f),
             metal);
         CreatePart(
             PrimitiveType.Cylinder,
             "Lower hoop",
-            new Vector3(0f, 0.23f, 0f),
-            new Vector3(0.77f, 0.055f, 0.77f),
+            new Vector3(0f, 0.15f, 0f),
+            new Vector3(0.58f, 0.04f, 0.58f),
             metal);
     }
 

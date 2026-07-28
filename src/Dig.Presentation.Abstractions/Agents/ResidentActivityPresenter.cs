@@ -83,10 +83,14 @@ internal static class ResidentActivityPresenter
             kind = ResidentActivityKind.Blocked;
         }
 
+        string localizationKey = job.Definition is BarrelAttackJobDefinition
+            && kind != ResidentActivityKind.Blocked
+                ? "Атакует бочку"
+                : LocalizationKey(kind);
         return new ResidentActivityDescriptor(
             kind,
             actorId.ToString(),
-            LocalizationKey(kind),
+            localizationKey,
             subjectId,
             destination,
             job.Id.ToString(),
@@ -101,6 +105,11 @@ internal static class ResidentActivityPresenter
         JobDefinition definition,
         JobStageKind stage)
     {
+        if (definition is BarrelAttackJobDefinition)
+        {
+            return ResidentActivityKind.Attack;
+        }
+
         if (definition is MushroomChopJobDefinition)
         {
             return ResidentActivityKind.GatherMushroom;
@@ -153,6 +162,7 @@ internal static class ResidentActivityPresenter
             StrategicExecutionJobDefinition strategic when strategic.TargetFactionId.HasValue =>
                 strategic.TargetFactionId.Value.ToString(),
             MushroomChopJobDefinition mushroom => mushroom.SiteId.ToString(),
+            BarrelAttackJobDefinition barrel => barrel.BarrelId.ToString(),
             _ => null,
         };
     }
@@ -168,6 +178,7 @@ internal static class ResidentActivityPresenter
             HealingJobDefinition healing => healing.WorkPosition,
             StrategicExecutionJobDefinition strategic => strategic.TargetCell,
             MushroomChopJobDefinition mushroom => mushroom.TargetCell,
+            BarrelAttackJobDefinition barrel => barrel.TargetCell,
             _ => null,
         };
     }

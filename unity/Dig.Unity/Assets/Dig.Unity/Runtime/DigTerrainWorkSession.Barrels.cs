@@ -5,6 +5,7 @@ using Dig.Application.WorldObjects;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
+using Dig.Domain.Runtime;
 using Dig.Domain.World;
 using Dig.Domain.WorldObjects;
 using Dig.Infrastructure.InMemory;
@@ -257,16 +258,13 @@ internal sealed partial class DigTerrainWorkSession
         return Result.Failure(completion.Error!);
     }
 
-    private static ItemId SelectBarrelContents(EntityId barrelId)
+    private ItemId SelectBarrelContents(EntityId barrelId)
     {
-        string text = barrelId.ToString();
-        int selector = 0;
-        for (int index = 0; index < text.Length; index++)
-        {
-            selector = unchecked((selector * 31) + text[index]);
-        }
-
-        return (selector & 1) == 0 ? BarrelStoneItemId : BarrelOreItemId;
+        RandomStreamCatalog streams = new RandomStreamCatalog(
+            unchecked((ulong)(uint)_worldSession.MiningOutputWorldSeed));
+        DeterministicRandomStream stream = streams.GetOrCreate(
+            $"barrel.contents.{barrelId}");
+        return stream.NextInt(2) == 0 ? BarrelStoneItemId : BarrelOreItemId;
     }
 
     private void EnsureBarrelsInitialized()

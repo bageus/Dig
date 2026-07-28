@@ -27,7 +27,8 @@ public sealed class JobOverlayViewModel
         IReadOnlyList<JobActionViewModel>? actions = null,
         JobExecutionReadinessViewModel? executionReadiness = null,
         int? targetZ = null,
-        bool isMushroomChop = false)
+        bool isMushroomChop = false,
+        bool isBarrelAttack = false)
     {
         if (string.IsNullOrWhiteSpace(id)
             || string.IsNullOrWhiteSpace(description)
@@ -99,6 +100,7 @@ public sealed class JobOverlayViewModel
             JobExecutionReadinessKind.Ready,
             "Ready");
         IsMushroomChop = isMushroomChop;
+        IsBarrelAttack = isBarrelAttack;
     }
 
     public string Id { get; }
@@ -119,6 +121,7 @@ public sealed class JobOverlayViewModel
     public IReadOnlyList<JobActionViewModel> Actions { get; }
     public JobExecutionReadinessViewModel ExecutionReadiness { get; }
     public bool IsMushroomChop { get; }
+    public bool IsBarrelAttack { get; }
     public bool HasTarget => TargetX.HasValue && TargetY.HasValue && TargetZ.HasValue;
 }
 }

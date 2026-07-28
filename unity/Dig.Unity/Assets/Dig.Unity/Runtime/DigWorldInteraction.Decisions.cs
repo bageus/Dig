@@ -45,6 +45,9 @@ public sealed partial class DigWorldInteraction
             case ApplicationInputCommandKind.AttackTarget:
                 ApplyAttack(decision);
                 break;
+            case ApplicationInputCommandKind.AttackBarrel:
+                ApplyBarrelAttack(decision);
+                break;
             case ApplicationInputCommandKind.ChopMushroom:
                 ApplyMushroomChop(decision);
                 break;
@@ -159,4 +162,5 @@ public sealed partial class DigWorldInteraction
         }
     }
 }
+
 }

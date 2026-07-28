@@ -106,6 +106,12 @@ public sealed class JobOverlayPresenter
             targetY = mushroom.TargetCell.Y;
             targetZ = mushroom.TargetCell.Z;
         }
+        else if (job.Definition is BarrelAttackJobDefinition barrel)
+        {
+            targetX = barrel.TargetCell.X;
+            targetY = barrel.TargetCell.Y;
+            targetZ = barrel.TargetCell.Z;
+        }
 
         return new JobOverlayViewModel(
             job.Id.ToString(),
@@ -125,7 +131,8 @@ public sealed class JobOverlayPresenter
             actions,
             executionReadiness,
             targetZ,
-            isMushroomChop: job.Definition is MushroomChopJobDefinition);
+            isMushroomChop: job.Definition is MushroomChopJobDefinition,
+            isBarrelAttack: job.Definition is BarrelAttackJobDefinition);
     }
 
     private static IReadOnlyList<JobActionViewModel> MapActions(

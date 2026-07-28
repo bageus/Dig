@@ -1,9 +1,13 @@
 using System.Collections;
+using System.Linq;
 using System.Reflection;
+using Dig.Application.WorldObjects;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
+using Dig.Domain.Jobs;
 using Dig.Domain.World;
 using Dig.Domain.WorldObjects;
+using Dig.Infrastructure.InMemory;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -14,7 +18,7 @@ namespace Dig.Unity.PlayModeTests
 public sealed class BarrelDestructionPlayModeTests
 {
     [UnityTest]
-    public IEnumerator Four_supported_barrels_render_shorter_than_resident_and_destroyed_one_disappears()
+    public IEnumerator Four_supported_barrels_render_below_resident_inside_their_depth_slabs()
     {
         GameObject root = new GameObject("Barrel Play Mode fixture");
         root.AddComponent<DigRenderMaterialLibrary>();
@@ -29,21 +33,145 @@ public sealed class BarrelDestructionPlayModeTests
             Snapshot("f1000000000000000000000000000004", definitionId, stone, new CellId(5, 8, 2)),
         };
 
-        InvokeRender(renderer, barrels);
+        Invoke(renderer, "Render", (object)barrels);
         yield return null;
 
-        DigBarrelVisual[] visuals = Object.FindObjectsOfType<DigBarrelVisual>();
+        DigBarrelVisual[] visuals = root.GetComponentsInChildren<DigBarrelVisual>();
         Assert.That(visuals, Has.Length.EqualTo(4));
+        const float residentWorldHeight = 1.52f * 0.5f;
         foreach (DigBarrelVisual visual in visuals)
         {
             BoxCollider collider = visual.GetComponent<BoxCollider>();
             Assert.That(collider.enabled, Is.True);
-            Assert.That(collider.size.y, Is.LessThan(1.2f));
+            Assert.That(collider.size.y, Is.EqualTo(0.70f).Within(0.0001f));
+            Assert.That(collider.size.y, Is.LessThan(residentWorldHeight));
+            BarrelSnapshot model = (BarrelSnapshot)GetProperty(visual, "Model");
+            float expectedDepth = DigTunnelProjection.DepthOrigin
+                + (model.Cell.Z * DigTunnelProjection.DepthSpacing);
+            Assert.That(visual.transform.position.z, Is.EqualTo(expectedDepth).Within(0.0001f));
         }
 
-        InvokeRender(renderer, new[] { barrels[1], barrels[2], barrels[3] });
+        EntityId highlightedId = barrels[0].BarrelId;
+        Invoke(renderer, "SetHighlighted", highlightedId);
+        DigBarrelVisual highlighted = visuals.Single(value =>
+            ((BarrelSnapshot)GetProperty(value, "Model")).BarrelId == highlightedId);
+        Assert.That((bool)GetProperty(highlighted, "IsHighlighted"), Is.True);
+
+        Invoke(renderer, "Render", (object)new[] { barrels[1], barrels[2], barrels[3] });
         yield return null;
-        Assert.That(Object.FindObjectsOfType<DigBarrelVisual>(), Has.Length.EqualTo(3));
+        Assert.That(root.GetComponentsInChildren<DigBarrelVisual>(), Has.Length.EqualTo(3));
+
+        Object.Destroy(root);
+        yield return null;
+    }
+
+    [UnityTest]
+    public IEnumerator Direct_attack_destroys_visual_and_materializes_one_world_item()
+    {
+        GameObject root = new GameObject("Barrel attack workflow fixture");
+        root.AddComponent<DigRenderMaterialLibrary>();
+        DigBarrelRenderer renderer = root.AddComponent<DigBarrelRenderer>();
+        BarrelDefinitionId definitionId = new BarrelDefinitionId("world.barrel.wooden");
+        ItemId stone = new ItemId("material.stone");
+        EntityId barrelId = EntityId.Parse("f2000000000000000000000000000001");
+        EntityId jobId = EntityId.Parse("f2000000000000000000000000000002");
+        EntityId workerId = EntityId.Parse("f2000000000000000000000000000003");
+        EntityId outputId = EntityId.Parse("f2000000000000000000000000000004");
+        CellId target = new CellId(4, 4, 1);
+        CellId work = new CellId(3, 4, 1);
+        BarrelState barrels = new BarrelState(new BarrelCatalog(new[]
+        {
+            new BarrelDefinition(definitionId, new[] { stone }),
+        }));
+        Assert.That(barrels.Add(barrelId, definitionId, target, stone, 0).IsSuccess, Is.True);
+        JobSystem jobs = new JobSystem();
+        InventoryState inventory = new InventoryState(new ItemCatalog(new[]
+        {
+            new ItemDefinition(stone, "Stone", 100, isTool: false),
+        }));
+        InMemoryBarrelRepository barrelRepository = new InMemoryBarrelRepository(barrels);
+        InMemoryJobRepository jobRepository = new InMemoryJobRepository(jobs);
+        InMemoryInventoryRepository inventoryRepository = new InMemoryInventoryRepository(inventory);
+        InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
+        StartDirectBarrelAttackCommandHandler start = new StartDirectBarrelAttackCommandHandler(
+            barrelRepository,
+            jobRepository,
+            journal);
+        ArriveAtBarrelCommandHandler arrive = new ArriveAtBarrelCommandHandler(
+            jobRepository,
+            journal);
+        CompleteBarrelHitCommandHandler hit = new CompleteBarrelHitCommandHandler(
+            jobRepository,
+            journal);
+        CompleteBarrelDestructionCommandHandler complete =
+            new CompleteBarrelDestructionCommandHandler(
+                barrelRepository,
+                jobRepository,
+                inventoryRepository,
+                journal);
+
+        Invoke(renderer, "Render", (object)barrels.GetAll());
+        yield return null;
+        Assert.That(root.GetComponentsInChildren<DigBarrelVisual>(), Has.Length.EqualTo(1));
+        Assert.That(start.Handle(new StartDirectBarrelAttackCommand(
+            jobId,
+            barrelId,
+            workerId,
+            work,
+            priority: 900,
+            tick: 1)).IsSuccess, Is.True);
+        Assert.That(arrive.Handle(new ArriveAtBarrelCommand(jobId, 2)).IsSuccess, Is.True);
+        Assert.That(hit.Handle(new CompleteBarrelHitCommand(jobId, 3)).IsSuccess, Is.True);
+        Assert.That(complete.Handle(new CompleteBarrelDestructionCommand(
+            jobId,
+            outputId,
+            tick: 4)).IsSuccess, Is.True);
+
+        Invoke(renderer, "Render", (object)barrels.GetAll());
+        yield return null;
+        Assert.That(root.GetComponentsInChildren<DigBarrelVisual>(), Is.Empty);
+        ItemStackSnapshot output = inventory.GetStack(outputId)!;
+        Assert.That(output.ItemId, Is.EqualTo(stone));
+        Assert.That(output.Quantity, Is.EqualTo(1));
+        Assert.That(output.Location, Is.EqualTo(ItemLocation.InWorld(target)));
+        Assert.That(inventory.CreateSnapshot().Stacks, Has.Count.EqualTo(1));
+
+        Object.Destroy(root);
+        yield return null;
+    }
+
+    [UnityTest]
+    public IEnumerator Unsupported_barrel_lands_without_breaking_or_releasing_contents()
+    {
+        GameObject root = new GameObject("Barrel landing workflow fixture");
+        root.AddComponent<DigRenderMaterialLibrary>();
+        DigBarrelRenderer renderer = root.AddComponent<DigBarrelRenderer>();
+        BarrelDefinitionId definitionId = new BarrelDefinitionId("world.barrel.wooden");
+        ItemId ore = new ItemId("ore.iron");
+        EntityId barrelId = EntityId.Parse("f3000000000000000000000000000001");
+        CellId source = new CellId(6, 2, 2);
+        CellId landing = new CellId(6, 7, 2);
+        BarrelState barrels = new BarrelState(new BarrelCatalog(new[]
+        {
+            new BarrelDefinition(definitionId, new[] { ore }),
+        }));
+        Assert.That(barrels.Add(barrelId, definitionId, source, ore, 0).IsSuccess, Is.True);
+        Invoke(renderer, "Render", (object)barrels.GetAll());
+        yield return null;
+        float sourceY = root.GetComponentInChildren<DigBarrelVisual>().transform.position.y;
+
+        Assert.That(barrels.BeginFall(barrelId, landing, 1).IsSuccess, Is.True);
+        Assert.That(barrels.Land(barrelId, 1).IsSuccess, Is.True);
+        Invoke(renderer, "Render", (object)barrels.GetAll());
+        yield return null;
+
+        DigBarrelVisual visual = root.GetComponentInChildren<DigBarrelVisual>();
+        BarrelSnapshot landed = barrels.Get(barrelId)!;
+        Assert.That(landed.Lifecycle, Is.EqualTo(BarrelLifecycle.Supported));
+        Assert.That(landed.Cell, Is.EqualTo(landing));
+        Assert.That(landed.ContentsItemId, Is.EqualTo(ore));
+        Assert.That(landed.ContentsMaterialized, Is.False);
+        Assert.That(visual.transform.position.y, Is.LessThan(sourceY));
 
         Object.Destroy(root);
         yield return null;
@@ -68,13 +196,22 @@ public sealed class BarrelDestructionPlayModeTests
             version: 0);
     }
 
-    private static void InvokeRender(DigBarrelRenderer renderer, BarrelSnapshot[] barrels)
+    private static object Invoke(object target, string name, params object[] arguments)
     {
-        MethodInfo method = typeof(DigBarrelRenderer).GetMethod(
-            "Render",
+        MethodInfo method = target.GetType().GetMethod(
+            name,
             BindingFlags.Instance | BindingFlags.NonPublic)
-            ?? throw new MissingMethodException(typeof(DigBarrelRenderer).FullName, "Render");
-        method.Invoke(renderer, new object[] { barrels });
+            ?? throw new MissingMethodException(target.GetType().FullName, name);
+        return method.Invoke(target, arguments)!;
+    }
+
+    private static object GetProperty(object target, string name)
+    {
+        PropertyInfo property = target.GetType().GetProperty(
+            name,
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new MissingMemberException(target.GetType().FullName, name);
+        return property.GetValue(target)!;
     }
 }
 

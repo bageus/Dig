@@ -2,12 +2,36 @@ using System;
 using Dig.Domain.Core;
 using Dig.Domain.World;
 using Dig.Presentation.Input;
+using UnityEngine;
 
 namespace Dig.Unity
 {
 
 public sealed partial class DigWorldInteraction
 {
+    private bool TryResolveBarrelHit(
+        RaycastHit[] hits,
+        out DigBarrelVisual barrel)
+    {
+        if (hits == null)
+        {
+            throw new ArgumentNullException(nameof(hits));
+        }
+
+        for (int index = 0; index < hits.Length; index++)
+        {
+            if (_barrelRenderer != null
+                && _barrelRenderer.TryGetBarrel(hits[index], out DigBarrelVisual candidate))
+            {
+                barrel = candidate;
+                return true;
+            }
+        }
+
+        barrel = null!;
+        return false;
+    }
+
     private void ApplyBarrelAttack(ContextInputDecision decision)
     {
         if (!decision.ActorId.HasValue || !decision.TargetEntityId.HasValue)
