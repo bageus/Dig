@@ -215,19 +215,19 @@ internal sealed partial class DigTerrainWorkSession
             MushroomSiteSnapshot? site = _mushroomRepository!.Get().Get(definition.SiteId);
             if (site == null)
             {
-                return Result.Failure(MushroomErrors.SiteNotFound);
+                return Result.Failure(MushroomErrors.NotFound);
             }
 
             if (site.CompletedSwings < site.RequiredSwings)
             {
-                Result<MushroomSwingCompletedResult> swing = _completeMushroomSwing!.Handle(
+                Result<bool> swing = _completeMushroomSwing!.Handle(
                     new CompleteMushroomSwingCommand(job.Id, tick));
                 if (swing.IsFailure)
                 {
                     return Result.Failure(swing.Error!);
                 }
 
-                if (!swing.Value!.ReadyToFinalize)
+                if (!swing.Value)
                 {
                     return Result.Success();
                 }
@@ -243,11 +243,10 @@ internal sealed partial class DigTerrainWorkSession
 
         long sequence = checked(_nextMushroomOutputSequence + 1);
         _nextMushroomOutputSequence = sequence;
-        Result<MushroomChopCompletedResult> completed = _completeMushroomChop!.Handle(
+        Result<MushroomChopCompletionResult> completed = _completeMushroomChop!.Handle(
             new CompleteMushroomChopCommand(
                 job.Id,
                 DemoId('7', sequence),
-                DemoId('6', sequence),
                 tick));
         return completed.IsSuccess
             ? Result.Success()
