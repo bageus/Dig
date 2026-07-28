@@ -5,42 +5,41 @@ using Dig.Domain.WorldObjects;
 namespace Dig.Application.Saving
 {
 
-public static partial class SaveGameBuilder
+public sealed partial class SaveGameBuilder
 {
-    private static BarrelSectionSaveData? BuildBarrels(BarrelState? barrels)
+    private static BarrelSaveData BuildBarrels(BarrelState barrels)
     {
         if (barrels is null)
         {
-            return null;
+            throw new ArgumentNullException(nameof(barrels));
         }
 
-        return new BarrelSectionSaveData
+        BarrelSaveData data = new BarrelSaveData();
+        foreach (BarrelSnapshot barrel in barrels.GetAll()
+            .OrderBy(value => value.BarrelId.ToString(), StringComparer.Ordinal))
         {
-            Barrels = barrels.GetAll()
-                .OrderBy(value => value.BarrelId.ToString(), StringComparer.Ordinal)
-                .Select(value => new BarrelSaveData
-                {
-                    BarrelId = value.BarrelId.ToString(),
-                    DefinitionId = value.DefinitionId.ToString(),
-                    CellX = value.Cell.X,
-                    CellY = value.Cell.Y,
-                    CellZ = value.Cell.Z,
-                    Lifecycle = (int)value.Lifecycle,
-                    ContentsItemId = value.ContentsItemId.ToString(),
-                    ContentsGeneration = value.ContentsGeneration,
-                    ContentsMaterialized = value.ContentsMaterialized,
-                    HasFallSource = value.FallSourceCell.HasValue,
-                    FallSourceX = value.FallSourceCell?.X ?? 0,
-                    FallSourceY = value.FallSourceCell?.Y ?? 0,
-                    FallSourceZ = value.FallSourceCell?.Z ?? 0,
-                    HasFallLanding = value.FallLandingCell.HasValue,
-                    FallLandingX = value.FallLandingCell?.X ?? 0,
-                    FallLandingY = value.FallLandingCell?.Y ?? 0,
-                    FallLandingZ = value.FallLandingCell?.Z ?? 0,
-                    Version = value.Version,
-                })
-                .ToArray(),
-        };
+            data.Barrels.Add(new BarrelEntitySaveData
+            {
+                BarrelId = barrel.BarrelId.ToString(),
+                DefinitionId = barrel.DefinitionId.ToString(),
+                X = barrel.Cell.X,
+                Y = barrel.Cell.Y,
+                Z = barrel.Cell.Z,
+                Lifecycle = (int)barrel.Lifecycle,
+                ContentsItemId = barrel.ContentsItemId.ToString(),
+                ContentsGeneration = barrel.ContentsGeneration,
+                ContentsMaterialized = barrel.ContentsMaterialized,
+                FallSourceX = barrel.FallSourceCell?.X,
+                FallSourceY = barrel.FallSourceCell?.Y,
+                FallSourceZ = barrel.FallSourceCell?.Z,
+                FallLandingX = barrel.FallLandingCell?.X,
+                FallLandingY = barrel.FallLandingCell?.Y,
+                FallLandingZ = barrel.FallLandingCell?.Z,
+                Version = barrel.Version,
+            });
+        }
+
+        return data;
     }
 }
 
