@@ -153,6 +153,7 @@ public sealed class PackableBuildingExecutionLoadRecoveryTests
             new SaveVersionFourAuthoritativeCoordinatesMigration(),
             new SaveVersionFiveMushroomsMigration(),
             new SaveVersionSixBuildingProductionMigration(),
+            new SaveVersionSevenWorldExcavationProgressMigration(),
         });
     }
 

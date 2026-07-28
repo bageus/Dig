@@ -14,18 +14,22 @@ public sealed partial class NavigationSnapshot
     {
         AddIfWalkable(
             transitions,
+            from,
             new CellId(from.X - 1, from.Y, from.Z),
             Profile.OrthogonalCost);
         AddIfWalkable(
             transitions,
+            from,
             new CellId(from.X + 1, from.Y, from.Z),
             Profile.OrthogonalCost);
         AddIfWalkable(
             transitions,
+            from,
             new CellId(from.X, from.Y, from.Z - 1),
             Profile.OrthogonalCost);
         AddIfWalkable(
             transitions,
+            from,
             new CellId(from.X, from.Y, from.Z + 1),
             Profile.OrthogonalCost);
 
@@ -33,10 +37,12 @@ public sealed partial class NavigationSnapshot
         {
             AddIfWalkable(
                 transitions,
+                from,
                 new CellId(from.X, from.Y - 1, from.Z),
                 Profile.OrthogonalCost);
             AddIfWalkable(
                 transitions,
+                from,
                 new CellId(from.X, from.Y + 1, from.Z),
                 Profile.OrthogonalCost);
             return;
@@ -48,6 +54,7 @@ public sealed partial class NavigationSnapshot
             {
                 AddIfWalkable(
                     transitions,
+                    from,
                     new CellId(from.X + direction, from.Y + step, from.Z),
                     checked(Profile.StepCost * step));
             }
@@ -56,6 +63,7 @@ public sealed partial class NavigationSnapshot
             {
                 AddIfWalkable(
                     transitions,
+                    from,
                     new CellId(from.X + direction, from.Y - step, from.Z),
                     checked(Profile.StepCost * step));
             }
@@ -64,6 +72,7 @@ public sealed partial class NavigationSnapshot
 
     private void AddIfWalkable(
         Dictionary<CellId, NavigationTransition> transitions,
+        CellId from,
         CellId target,
         int cost)
     {
@@ -71,8 +80,37 @@ public sealed partial class NavigationSnapshot
         {
             AddLowestCost(
                 transitions,
-                new NavigationTransition(target, cost));
+                new NavigationTransition(
+                    target,
+                    cost,
+                    traversalKind: ClassifyNormalTraversal(from, target)));
         }
+    }
+
+    private TunnelTraversalKind ClassifyNormalTraversal(
+        CellId from,
+        CellId to)
+    {
+        int deltaX = System.Math.Abs(to.X - from.X);
+        int deltaY = System.Math.Abs(to.Y - from.Y);
+        int deltaZ = System.Math.Abs(to.Z - from.Z);
+        if (deltaZ != 0 && deltaX == 0 && deltaY == 0)
+        {
+            return TunnelTraversalKind.DepthTraverse;
+        }
+
+        bool shaftGap = IsShaftGapCell(from) || IsShaftGapCell(to);
+        if (deltaY != 0 && deltaX == 0 && deltaZ == 0 && shaftGap)
+        {
+            return TunnelTraversalKind.VerticalClimb;
+        }
+
+        if (deltaX != 0 && deltaY == 0 && deltaZ == 0 && shaftGap)
+        {
+            return TunnelTraversalKind.ShaftGapTraverse;
+        }
+
+        return TunnelTraversalKind.SupportedWalk;
     }
 
     private static void AddLowestCost(

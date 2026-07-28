@@ -24,12 +24,14 @@ internal sealed partial class DigWorldSession
             throw new InvalidOperationException(current.Error!.ToString());
         }
 
-        MaterialDefinition? material = _repository.Get().Materials.Get(
-            current.Value.State.MaterialId);
+        MaterialId sourceMaterialId = current.Value.State.ExcavationSourceMaterialId.IsEmpty
+            ? current.Value.State.MaterialId
+            : current.Value.State.ExcavationSourceMaterialId;
+        MaterialDefinition? material = _repository.Get().Materials.Get(sourceMaterialId);
         if (material == null)
         {
             throw new InvalidOperationException(
-                $"Terrain material '{current.Value.State.MaterialId}' is missing from the world catalog.");
+                $"Terrain material '{sourceMaterialId}' is missing from the world catalog.");
         }
 
         if (!material.IsMineable || material.OutputProfile != null)

@@ -107,7 +107,10 @@ namespace Dig.Unity
             {
                 foreach (WorldCellViewModel cell in chunk.Cells)
                 {
-                    if (!cell.IsDesignated || !cell.IsSolid || cell.Z != 0)
+                    if (!cell.IsDesignated
+                        || !cell.IsSolid
+                        || cell.IsExcavationOpen
+                        || cell.Z != 0)
                     {
                         continue;
                     }

@@ -105,13 +105,21 @@ Approach resolution перенесён в Domain. Shaft entry/exit сохран�
 
 Повторная runtime-проверка после merge #439 обнаружила, что projection всё ещё получала только `plannedVerticalCells`: завершённые обычные planned tunnel cells без floor support выпадали из `TunnelNavigationVolume`, поэтому маршрут продолжался только через первый endpoint. Rebuild теперь принимает полный authoritative `PlannedTunnelCells`; vertical subset определяет только Y transitions. Quarter planner stage-ит ближайшую строку/колонку и не разливает high-skill swing на дальнюю половину. Spatial depth policy выбирает достижимую side-horizontal cell, затем adjacent open depth cell, затем shaft fallback. Unsupported shaft fallback рендерится как stationary climbing-work pose спиной к камере.
 
+### World-owned excavation state и atomic 4/4 commit
+
+После повторных runtime-рассинхронизаций completed-quarter mask перенесён из Unity session в `CellState`. Каждый authoritative swing завершает конкретный quarter через `WorldState.CommitExcavationQuarter`; renderer, cursor, support, job reconciliation и save/load читают один World snapshot. Target-owned `ExcavationCutPattern` отделяет форму разрезания от текущей work position: front-slice vertical tunnel всегда использует `HorizontalRows`, horizontal tunnel — `VerticalColumns`, depth — `DepthFace`.
+
+Четвёртый quarter в том же World mutation переводит материал в empty, снимает `Dig` designation и оставляет idempotent provenance исходного материала для mining output/finalize cleanup. Поэтому ошибка после 4/4 не может оставить визуально пустую клетку solid, повторно показывать shovel cursor или создавать новый Dig job. Save format v8 добавляет mask/pattern/source material поверх существующей v7 building-production migration.
+
+Work-position planning получает World snapshot и типизированный posture. Частичная потеря полной опоры запрещает `Standing`: planner сначала ищет supported side/depth position, затем разрешает stationary `Climbing`. Tunnel routes содержат `SupportedWalk`, `VerticalClimb`, `ShaftGapTraverse` и `DepthTraverse`; path cost сначала минимизирует shaft-gap transitions, затем длину, поэтому доступный depth detour предпочтительнее прямого пересечения шахты. Неизбежное горизонтальное пересечение shaft gap проецируется climbing pose спиной к камере.
+
 ## Изменённые owners
 
 - `InventoryState` остаётся единственным владельцем item location/quantity/reservations.
 - `BuildingsState` и building commands остаются владельцами placement/assembly/packing commits.
 - `World` владеет support terrain facts; presentation не может считать projected layer достаточной опорой.
 - `JobSystem` владеет excavation и BuildingBox relocation/assembly lifecycle/stage/worker.
-- `ExcavationWorkCoordinator` владеет per-target completed-quarter mask и active quarter assignments.
+- `World` владеет per-cell completed-quarter mask, cut pattern и source material; `ExcavationWorkCoordinator` хранит только swing cadence и краткоживущие worker reservations.
 - Unity Presentation владеет только selected ids, renderer tint, transparent ghosts, hover/cursor и partial-progress geometry.
 
 ## Regression coverage

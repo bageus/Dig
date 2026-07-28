@@ -1,3 +1,5 @@
+using Dig.Domain.Navigation;
+using Dig.Domain.World;
 using Dig.Presentation.Agents;
 using UnityEngine;
 
@@ -8,6 +10,28 @@ public sealed partial class DigAgentVisual
     private const float ClimbWallDepthOffset = 0.16f;
     private bool _isClimbing;
     private bool _climbingAscending;
+    private TunnelNavigationVolume? _tunnelVolume;
+    private TunnelTraversalKind _activeTraversalKind;
+
+    internal void SetTunnelNavigationVolume(TunnelNavigationVolume? volume)
+    {
+        _tunnelVolume = volume;
+    }
+
+    private void PrepareTraversalKind()
+    {
+        CellId from = new CellId(_previousX, _previousY, _previousZ);
+        CellId to = new CellId(_currentX, _currentY, _currentZ);
+        _activeTraversalKind = _tunnelVolume?.ClassifyTraversal(from, to)
+            ?? TunnelTraversalKind.Invalid;
+        if (_activeTraversalKind == TunnelTraversalKind.Invalid
+            && _previousX == _currentX
+            && _previousZ == _currentZ
+            && _previousY != _currentY)
+        {
+            _activeTraversalKind = TunnelTraversalKind.VerticalClimb;
+        }
+    }
 
     private void Update()
     {
@@ -35,6 +59,7 @@ public sealed partial class DigAgentVisual
         {
             _duration = 0f;
             _isClimbing = false;
+            _activeTraversalKind = TunnelTraversalKind.Invalid;
             transform.position = ToWorld(_currentVisualX, _currentY, _currentZ);
             ApplyAction(isMoving: false);
             ApplyWorkFacingIfIdle();
@@ -43,9 +68,8 @@ public sealed partial class DigAgentVisual
 
     private void Face(Vector3 direction)
     {
-        _isClimbing = _previousX == _currentX
-            && _previousZ == _currentZ
-            && _previousY != _currentY;
+        _isClimbing = _activeTraversalKind == TunnelTraversalKind.VerticalClimb
+            || _activeTraversalKind == TunnelTraversalKind.ShaftGapTraverse;
         if (_isClimbing)
         {
             _climbingAscending = _currentY < _previousY;

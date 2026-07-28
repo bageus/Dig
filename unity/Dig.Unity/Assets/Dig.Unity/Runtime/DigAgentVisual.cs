@@ -122,6 +122,7 @@ public sealed partial class DigAgentVisual : MonoBehaviour
         _currentVisualX = ResolveVisualX(model.CellX, model.CellY, model.CellZ);
         _elapsed = 0f;
         _duration = Mathf.Max(0.01f, duration);
+        PrepareTraversalKind();
         Face(ToWorld(_currentVisualX, _currentY, _currentZ) - transform.position);
     }
 

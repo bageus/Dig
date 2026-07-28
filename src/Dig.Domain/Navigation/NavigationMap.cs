@@ -7,7 +7,7 @@ using Dig.Domain.World;
 namespace Dig.Domain.Navigation
 {
 
-public sealed class NavigationMap
+public sealed partial class NavigationMap
 {
     private readonly Dictionary<ChunkId, NavigationChunkSnapshot> _chunks;
     private TraversalLink[] _links;
@@ -223,18 +223,23 @@ public sealed class NavigationMap
         NavigationWorldIndex index,
         HashSet<CellId> linkEndpoints)
     {
-        if (cell.IsSolid)
+        if (cell.IsSolid && !cell.State.IsExcavationOpen)
         {
             return false;
         }
 
-        if (Profile.Mode == TraversalMode.Free || linkEndpoints.Contains(cell.Id))
+        if (Profile.Mode == TraversalMode.Free
+            || linkEndpoints.Contains(cell.Id)
+            || cell.State.IsExcavationOpen
+            || cell.State.ExcavationCutPattern != ExcavationCutPattern.None)
         {
             return true;
         }
 
         CellId belowId = new CellId(cell.Id.X, cell.Id.Y + 1, cell.Id.Z);
-        return index.TryGetCell(belowId, out CellSnapshot below) && below.IsSolid;
+        return index.TryGetCell(belowId, out CellSnapshot below)
+            && below.IsSolid
+            && below.State.CompletedExcavationQuarters == ExcavationQuarter.None;
     }
 
     private NavigationSnapshot CreateSnapshot(
@@ -252,6 +257,7 @@ public sealed class NavigationMap
             _chunks.Values.ToArray(),
             regionsByCell,
             regions,
+            CollectShaftGapCells(world),
             _links);
     }
 

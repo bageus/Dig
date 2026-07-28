@@ -117,7 +117,8 @@ namespace Dig.Unity
                 Result<TerrainWorkRoutePlan> planned = _routePlanner.Plan(
                     job,
                     new CellId(agent.CellX, agent.CellY, agent.CellZ),
-                    navigation);
+                    navigation,
+                    _worldSession.LoadSnapshot());
                 if (planned.IsFailure)
                 {
                     ReleaseUnroutableExcavationAssignment(job, tick);

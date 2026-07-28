@@ -17,24 +17,75 @@ public enum TunnelPathFailureReason
     Unreachable = 5,
 }
 
+public enum TunnelTraversalKind
+{
+    Invalid = 0,
+    SupportedWalk = 1,
+    VerticalClimb = 2,
+    ShaftGapTraverse = 3,
+    DepthTraverse = 4,
+}
+
 public sealed class TunnelPath
 {
     public TunnelPath(IReadOnlyCollection<CellId> cells)
+        : this(
+            cells,
+            Enumerable.Repeat(
+                TunnelTraversalKind.SupportedWalk,
+                Math.Max(0, (cells ?? throw new ArgumentNullException(nameof(cells))).Count - 1))
+                .ToArray())
+    {
+    }
+
+    public TunnelPath(
+        IReadOnlyCollection<CellId> cells,
+        IReadOnlyCollection<TunnelTraversalKind> traversalKinds)
     {
         if (cells is null)
         {
             throw new ArgumentNullException(nameof(cells));
         }
 
+        if (traversalKinds is null)
+        {
+            throw new ArgumentNullException(nameof(traversalKinds));
+        }
+
         if (cells.Count == 0)
         {
-            throw new ArgumentException("A tunnel path requires at least one cell.", nameof(cells));
+            throw new ArgumentException(
+                "A tunnel path requires at least one cell.",
+                nameof(cells));
+        }
+
+        if (traversalKinds.Count != cells.Count - 1
+            || traversalKinds.Any(value => value == TunnelTraversalKind.Invalid
+                || !Enum.IsDefined(typeof(TunnelTraversalKind), value)))
+        {
+            throw new ArgumentException(
+                "Tunnel traversal kinds must describe every path edge.",
+                nameof(traversalKinds));
         }
 
         Cells = new ReadOnlyCollection<CellId>(cells.ToArray());
+        TraversalKinds = new ReadOnlyCollection<TunnelTraversalKind>(
+            traversalKinds.ToArray());
     }
 
     public IReadOnlyList<CellId> Cells { get; }
+
+    public IReadOnlyList<TunnelTraversalKind> TraversalKinds { get; }
+
+    public TunnelTraversalKind GetTraversalKind(int fromCellIndex)
+    {
+        if (fromCellIndex < 0 || fromCellIndex >= TraversalKinds.Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(fromCellIndex));
+        }
+
+        return TraversalKinds[fromCellIndex];
+    }
 }
 
 public sealed class TunnelPathResult
@@ -82,6 +133,8 @@ public sealed partial class TunnelNavigationVolume
 {
     private readonly HashSet<CellId> _openCells;
     private readonly HashSet<CellId> _verticalCells;
+    private readonly HashSet<CellId> _supportedCells;
+    private readonly HashSet<CellId> _shaftGapCells;
 
     public TunnelNavigationVolume(
         int width,
@@ -89,6 +142,25 @@ public sealed partial class TunnelNavigationVolume
         int depth,
         IReadOnlyCollection<CellId> openCells,
         IReadOnlyCollection<CellId> verticalCells,
+        TunnelDemoLayout? demoLayout = null)
+        : this(
+            width,
+            height,
+            depth,
+            openCells,
+            verticalCells,
+            openCells,
+            demoLayout)
+    {
+    }
+
+    public TunnelNavigationVolume(
+        int width,
+        int height,
+        int depth,
+        IReadOnlyCollection<CellId> openCells,
+        IReadOnlyCollection<CellId> verticalCells,
+        IReadOnlyCollection<CellId> supportedCells,
         TunnelDemoLayout? demoLayout = null)
     {
         if (width <= 0)
@@ -116,14 +188,21 @@ public sealed partial class TunnelNavigationVolume
             throw new ArgumentNullException(nameof(verticalCells));
         }
 
+        if (supportedCells is null)
+        {
+            throw new ArgumentNullException(nameof(supportedCells));
+        }
+
         Width = width;
         Height = height;
         Depth = depth;
         DemoLayout = demoLayout;
         _openCells = new HashSet<CellId>(openCells);
         _verticalCells = new HashSet<CellId>(verticalCells);
+        _supportedCells = new HashSet<CellId>(supportedCells);
         ValidateCells(_openCells, nameof(openCells));
         ValidateCells(_verticalCells, nameof(verticalCells));
+        ValidateCells(_supportedCells, nameof(supportedCells));
         if (!_verticalCells.IsSubsetOf(_openCells))
         {
             throw new ArgumentException(
@@ -131,10 +210,23 @@ public sealed partial class TunnelNavigationVolume
                 nameof(verticalCells));
         }
 
+        if (!_supportedCells.IsSubsetOf(_openCells))
+        {
+            throw new ArgumentException(
+                "Supported tunnel cells must also be open.",
+                nameof(supportedCells));
+        }
+
+        _shaftGapCells = new HashSet<CellId>(
+            _openCells.Where(cell => !_supportedCells.Contains(cell)
+                && IsVerticalTopologyCell(cell)));
+
         Cells = new ReadOnlyCollection<CellId>(
             _openCells.OrderBy(cell => cell).ToArray());
         VerticalCells = new ReadOnlyCollection<CellId>(
             _verticalCells.OrderBy(cell => cell).ToArray());
+        SupportedCells = new ReadOnlyCollection<CellId>(
+            _supportedCells.OrderBy(cell => cell).ToArray());
     }
 
     public int Width { get; }
@@ -148,6 +240,8 @@ public sealed partial class TunnelNavigationVolume
     public IReadOnlyList<CellId> Cells { get; }
 
     public IReadOnlyList<CellId> VerticalCells { get; }
+
+    public IReadOnlyList<CellId> SupportedCells { get; }
 
     public bool Contains(CellId cell)
     {
@@ -169,11 +263,21 @@ public sealed partial class TunnelNavigationVolume
         return _verticalCells.Contains(cell);
     }
 
-    public bool CanTraverseStep(CellId from, CellId to)
+    public bool HasFullActorSupport(CellId cell)
+    {
+        return _supportedCells.Contains(cell);
+    }
+
+    public bool IsShaftGapCell(CellId cell)
+    {
+        return _shaftGapCells.Contains(cell);
+    }
+
+    public TunnelTraversalKind ClassifyTraversal(CellId from, CellId to)
     {
         if (!IsOpen(from) || !IsOpen(to))
         {
-            return false;
+            return TunnelTraversalKind.Invalid;
         }
 
         int deltaX = Math.Abs(to.X - from.X);
@@ -181,120 +285,45 @@ public sealed partial class TunnelNavigationVolume
         int deltaZ = Math.Abs(to.Z - from.Z);
         if (deltaX + deltaY + deltaZ != 1)
         {
-            return false;
+            return TunnelTraversalKind.Invalid;
         }
 
-        if (deltaY == 0)
+        if (deltaY != 0)
+        {
+            return deltaX == 0
+                && deltaZ == 0
+                && (IsVerticalTunnel(from) || IsVerticalTunnel(to))
+                    ? TunnelTraversalKind.VerticalClimb
+                    : TunnelTraversalKind.Invalid;
+        }
+
+        if (deltaZ != 0)
+        {
+            return TunnelTraversalKind.DepthTraverse;
+        }
+
+        bool crossesShaftGap = IsShaftGapCell(from) || IsShaftGapCell(to);
+        return crossesShaftGap
+            ? TunnelTraversalKind.ShaftGapTraverse
+            : TunnelTraversalKind.SupportedWalk;
+    }
+
+    private bool IsVerticalTopologyCell(CellId cell)
+    {
+        if (_verticalCells.Contains(cell))
         {
             return true;
         }
 
-        return deltaX == 0
-            && deltaZ == 0
-            && (IsVerticalTunnel(from) || IsVerticalTunnel(to));
+        CellId above = new CellId(cell.X, cell.Y - 1, cell.Z);
+        CellId below = new CellId(cell.X, cell.Y + 1, cell.Z);
+        return (Contains(above) && _verticalCells.Contains(above))
+            || (Contains(below) && _verticalCells.Contains(below));
     }
 
-    public TunnelPathResult FindPath(CellId start, CellId goal)
+    public bool CanTraverseStep(CellId from, CellId to)
     {
-        if (!Contains(start))
-        {
-            return TunnelPathResult.Failure(
-                TunnelPathFailureReason.InvalidStart,
-                "The resident start cell is outside the tunnel volume.");
-        }
-
-        if (!Contains(goal))
-        {
-            return TunnelPathResult.Failure(
-                TunnelPathFailureReason.InvalidGoal,
-                "The requested destination is outside the tunnel volume.");
-        }
-
-        if (!IsOpen(start))
-        {
-            return TunnelPathResult.Failure(
-                TunnelPathFailureReason.BlockedStart,
-                "The resident is not standing in an open tunnel cell.");
-        }
-
-        if (!IsOpen(goal))
-        {
-            return TunnelPathResult.Failure(
-                TunnelPathFailureReason.BlockedGoal,
-                "The requested destination is not an open tunnel cell.");
-        }
-
-        if (start == goal)
-        {
-            return TunnelPathResult.Success(new TunnelPath(new[] { start }));
-        }
-
-        Queue<CellId> frontier = new Queue<CellId>();
-        Dictionary<CellId, CellId> previous =
-            new Dictionary<CellId, CellId>();
-        HashSet<CellId> visited = new HashSet<CellId> { start };
-        frontier.Enqueue(start);
-        while (frontier.Count > 0)
-        {
-            CellId current = frontier.Dequeue();
-            foreach (CellId neighbor in GetNeighbors(current))
-            {
-                if (!visited.Add(neighbor))
-                {
-                    continue;
-                }
-
-                previous.Add(neighbor, current);
-                if (neighbor == goal)
-                {
-                    return TunnelPathResult.Success(
-                        new TunnelPath(Reconstruct(previous, start, goal)));
-                }
-
-                frontier.Enqueue(neighbor);
-            }
-        }
-
-        return TunnelPathResult.Failure(
-            TunnelPathFailureReason.Unreachable,
-            "No route connects the resident to the requested tunnel cell.");
-    }
-
-    private IEnumerable<CellId> GetNeighbors(CellId cell)
-    {
-        CellId[] candidates =
-        {
-            new CellId(cell.X - 1, cell.Y, cell.Z),
-            new CellId(cell.X + 1, cell.Y, cell.Z),
-            new CellId(cell.X, cell.Y, cell.Z - 1),
-            new CellId(cell.X, cell.Y, cell.Z + 1),
-            new CellId(cell.X, cell.Y - 1, cell.Z),
-            new CellId(cell.X, cell.Y + 1, cell.Z),
-        };
-        for (int index = 0; index < candidates.Length; index++)
-        {
-            if (CanTraverseStep(cell, candidates[index]))
-            {
-                yield return candidates[index];
-            }
-        }
-    }
-
-    private static IReadOnlyList<CellId> Reconstruct(
-        IReadOnlyDictionary<CellId, CellId> previous,
-        CellId start,
-        CellId goal)
-    {
-        List<CellId> reverse = new List<CellId> { goal };
-        CellId current = goal;
-        while (current != start)
-        {
-            current = previous[current];
-            reverse.Add(current);
-        }
-
-        reverse.Reverse();
-        return new ReadOnlyCollection<CellId>(reverse);
+        return ClassifyTraversal(from, to) != TunnelTraversalKind.Invalid;
     }
 
     private void ValidateCells(IEnumerable<CellId> cells, string parameterName)
@@ -307,6 +336,8 @@ public sealed partial class TunnelNavigationVolume
             }
         }
     }
+
+
 }
 
 }

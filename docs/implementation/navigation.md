@@ -125,3 +125,7 @@ This stage intentionally does not include:
 - construction-owned ladder and elevator registries.
 
 The snapshot and version contracts are designed so these systems can be added without making navigation a second source of terrain truth.
+
+## Excavation shaft traversal follow-up (2026-07-27)
+
+`TunnelNavigationVolume` projects typed edges instead of treating every same-Y open neighbor as ordinary floor walking: `SupportedWalk`, `VerticalClimb`, `ShaftGapTraverse`, and `DepthTraverse`. Route selection uses a deterministic lexicographic cost that minimizes `ShaftGapTraverse` count before total steps and `CellId`; an available depth-layer detour therefore wins over walking directly across an unsupported vertical shaft. When no detour exists, the horizontal shaft-gap edge remains traversable but Presentation receives its climbing kind and renders the resident facing away from the camera. World partial-excavation support participates in the same projection, so a worker cannot retain standing posture after the supporting cell loses a quarter.
