@@ -65,6 +65,7 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         string runtime = RuntimeRoot();
         string renderer = Read(runtime, "DigBuildingInternalStockRenderer.cs");
         string visual = Read(runtime, "DigBuildingInternalStockVisual.cs");
+        string bay = Read(runtime, "DigBuildingInternalStockBayVisual.cs");
         string interaction = Read(runtime, "DigWorldInteraction.BuildingInternalStock.cs");
         string loop = Read(runtime, "DigAgentSimulationDriverBase.Loop.cs");
 
@@ -72,6 +73,15 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         Assert.Contains("stockIndex", renderer);
         Assert.Contains("unitIndex", renderer);
         Assert.Contains("TryGetStock", renderer);
+        Assert.Contains("RenderBay", renderer);
+        Assert.Contains("building.WorkPositionX", renderer);
+        Assert.Contains("VisibleDepthOffset = 0.12f", renderer);
+        Assert.Contains("DigBuildingInternalStockBayVisual", renderer);
+        Assert.DoesNotContain("FrontDepthOffset", renderer);
+        Assert.DoesNotContain("building.OriginX", renderer);
+        Assert.Contains("Storage tray", bay);
+        Assert.Contains("Storage back rail", bay);
+        Assert.Contains("collider.enabled = false", bay);
         Assert.Contains("collider.isTrigger = true", visual);
         Assert.Contains("TryResolveBuildingInternalStockPickup", interaction);
         Assert.Contains("ContextWorldTargetKind.GenericItem", interaction);
