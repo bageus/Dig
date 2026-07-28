@@ -60,7 +60,7 @@
 
 | TemplateId | Название | Доступность | Нижнее основание | Верхнее основание | Высота | Глубина |
 |---|---|---|---:|---:|---:|---:|
-| `excavation.room.small` | Малая пещера | с начала | 5 | 3 | 3 | 2 |
+| `excavation.room.small` | Малая пещера | с начала | 5 | 3 | 3 | 3 |
 | `excavation.room.medium` | Средняя пещера | `skill.stonework >= 20` | 8 | 6 | 3 | 3 |
 | `excavation.room.large` | Большая пещера | `skill.stonework >= 40` | 12 | 8 | 5 | 4 |
 | `excavation.room.tall` | Высокая пещера | `skill.stonework >= 60` | 10 | 6 | 7 | 4 |
@@ -87,7 +87,11 @@
 - помещение не сужается к задней плоскости;
 - depth 2/3/4 означает ровно такое количество занятых логических Z-клеток;
 - authoritative mask содержит все клетки объёма, а не только фронтальный силуэт;
-- Navigation и Building placement видят фактический excavated volume.
+- Navigation и Building placement видят фактический excavated volume;
+- все строки имеют один геометрический центр, вычисленный от нижнего основания;
+- если чётность ширины строки отличается от чётности основания, крайние клетки копаются наполовину: у левой граничной клетки удаляется правая половина, у правой — левая половина;
+- half-cell boundary использует существующие `ExcavationQuarter` (`UpperLeft/LowerLeft/UpperRight/LowerRight`), поэтому увеличение клетки до восьми частей не требуется;
+- partial boundary cell остаётся solid shell-клеткой, не становится navigation cell, не выдаёт terrain output и считается завершённой для template plan после authoritative quarter-mask commit.
 
 ### 6.4 Ориентация и проходность
 
@@ -124,8 +128,8 @@
    - каждая остальная target cell является solid, mineable и не protected;
    - открытая, protected или unmineable клетка выше основания делает plan invalid.
 3. Invalid preview сохраняет полный силуэт, но красным отмечает конкретные клетки нарушения; при отсутствии тоннеля красной является соответствующая часть нижней строки. Invalid ЛКМ не меняет World/Jobs и оставляет diagnostics видимыми.
-4. Создаются plan и обычные cell designations только для `ExcavationCells`; уже открытые `BaseTunnelCells` остаются частью provenance/volume, но не входят в commit designation batch.
-5. Reconciliation создаёт child digging jobs.
+4. Создаются plan и обычные cell designations только для `ExcavationCells`; уже открытые `BaseTunnelCells` остаются частью provenance/volume, но не входят в commit designation batch. Для parity-mismatch строк plan дополнительно хранит required quarter mask крайних half-cell targets.
+5. Reconciliation создаёт child digging jobs. Full-cell target завершается при `4/4`; half-cell target завершается при своём required `2/4`, снимает designation/job, но оставляет противоположную половину rock authoritative.
 6. Несколько гномов работают по независимым targets.
 7. Последующее падение Stonework не меняет существующий plan.
 8. Progress считается по фактически выкопанным клеткам.
@@ -141,6 +145,8 @@
 - визуально чистый проход;
 - отсутствие случайных выступов внутри target mask;
 - одинаковый профиль на каждом глубинном слое;
+- один и тот же centered row profile используется preview, designation overlay, terrain quarter cuts, completed trim и back wall;
+- completed trim строится в world space и не наследует повторно side-view root rotation; над основной сценой не создаётся дублирующая или смещённая проекция;
 - rebuild после save/load без хранения mesh как authoritative state.
 
 Свободно выкопанная пещера не получает своды автоматически, даже если форма совпала.
