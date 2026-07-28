@@ -1,6 +1,6 @@
 # Resident inventory actions
 
-Статус реализации: `IMPLEMENTED`, Unity Play Mode verification pending.
+Статус реализации: `IMPLEMENTED` on the current branch; final CI and actual Unity Play Mode verification pending.
 
 Authoritative design: [`../design/runtime-selection-excavation-item-placement-decisions.md`](../design/runtime-selection-excavation-item-placement-decisions.md), [`../design/resident-inventory-expansion.md`](../design/resident-inventory-expansion.md).
 
@@ -16,6 +16,24 @@ Selected-resident HUD читает authoritative resident inventory layout и м
 - `D + ЛКМ` по non-BuildingBox stack отправляет immediate `DropInventoryStack` в current logical resident cell;
 - double click и RMB больше не выполняют quick drop;
 - hover с `D` показывает анимированную стрелку вниз; hover consumable с `Alt` показывает анимированный рот.
+
+## Input wiring regression — 2026-07-29
+
+Application job, validation and ghost code from PR #479 existed, but the active HUD click path did not enter it:
+
+- `DigGameHudCanvas` called `SelectResidentInventoryLayoutSlot` for ordinary LMB;
+- that method only stored a selected stack and instructed the player to click the ground;
+- the later world click emitted immediate `DropInventoryStack`, bypassing `BeginInventoryItemPlacement`, green/red ghost validation and `ResidentInventoryPlacementJob` creation.
+
+The correction keeps one owner path:
+
+- `SelectResidentInventoryLayoutSlot` now delegates to `ActivateResidentInventoryLayoutSlot`;
+- `ActivateResidentInventorySlot` invokes `BeginInventoryItemPlacement` for an available non-BuildingBox stack;
+- the stack remains authoritative in its resident slot while the ghost is active;
+- LMB on a valid world target calls `CreateResidentInventoryPlacement` and creates the resident-bound job;
+- immediate movement remains exclusive to `D + ЛКМ`.
+
+A source-contract regression locks this delegate and rejects the old “LMB on open ground drops it there” selection path. An executable Play Mode test boots the real demo runtime, inserts a generic material into a resident slot, invokes the actual HUD LMB handler and verifies that item placement mode/ghost become active while the authoritative stack remains in resident inventory.
 
 ## Resident-bound targeted placement
 
@@ -60,6 +78,7 @@ Unity runtime использует публичный ownership contract `DropRe
 - deposit без потери/дублирования quantity;
 - placement job save codec;
 - публичной Unity-доступности resident ownership policy и её location semantics;
-- соответствия world consumable command path фактическому `DigHudOverlay` field contract.
+- соответствия world consumable command path фактическому `DigHudOverlay` field contract;
+- фактического HUD delegate в local ghost/job placement pipeline.
 
-Unity Play Mode остаётся обязательным для animated cursor, exact hover tint, ghost visibility/colour, multi-order resident execution, input shielding и повторного world pickup/drop workflow.
+Unity Play Mode остаётся обязательным для animated cursor, exact hover tint, ghost visibility/colour, multi-order resident execution, input shielding и повторного world pickup/drop workflow. Новый executable test покрывает реальный первый шаг `inventory LMB -> active item ghost` и отсутствие premature drop; полный multi-order execution всё ещё должен быть выполнен licensed Unity Test Runner.
