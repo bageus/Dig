@@ -49,32 +49,65 @@ namespace Dig.Unity
 
             if (!ReferenceEquals(next, _hoveredResident))
             {
-                _hoveredResident?.SetHovered(false);
+                if (_hoveredResident != null)
+                {
+                    _hoveredResident.SetHovered(false);
+                }
+
                 _hoveredResident = next;
-                _hoveredResident?.SetHovered(true);
+                if (_hoveredResident != null)
+                {
+                    _hoveredResident.SetHovered(true);
+                }
             }
 
             if (!ReferenceEquals(nextItem, _hoveredWorldItem))
             {
-                _hoveredWorldItem?.SetHovered(false);
+                if (_hoveredWorldItem != null)
+                {
+                    _hoveredWorldItem.SetHovered(false);
+                }
+
                 _hoveredWorldItem = nextItem;
-                _hoveredWorldItem?.SetHovered(true);
+                if (_hoveredWorldItem != null)
+                {
+                    _hoveredWorldItem.SetHovered(true);
+                }
             }
 
             if (!ReferenceEquals(nextMushroom, _hoveredMushroom))
             {
-                _hoveredMushroom?.SetHovered(false);
+                if (_hoveredMushroom != null)
+                {
+                    _hoveredMushroom.SetHovered(false);
+                }
+
                 _hoveredMushroom = nextMushroom;
-                _hoveredMushroom?.SetHovered(true);
+                if (_hoveredMushroom != null)
+                {
+                    _hoveredMushroom.SetHovered(true);
+                }
             }
         }
 
 
         private void ClearPointerHover()
         {
-            _hoveredResident?.SetHovered(false);
-            _hoveredWorldItem?.SetHovered(false);
-            _hoveredMushroom?.SetHovered(false);
+            if (_hoveredResident != null)
+            {
+                _hoveredResident.SetHovered(false);
+            }
+
+            if (_hoveredWorldItem != null)
+            {
+                _hoveredWorldItem.SetHovered(false);
+            }
+
+            if (_hoveredMushroom != null)
+            {
+                _hoveredMushroom.SetHovered(false);
+            }
+
             _hoveredResident = null;
             _hoveredWorldItem = null;
             _hoveredMushroom = null;
