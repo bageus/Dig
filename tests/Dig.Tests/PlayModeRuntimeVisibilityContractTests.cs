@@ -24,6 +24,9 @@ public sealed class PlayModeRuntimeVisibilityContractTests
         string mushroom = File.ReadAllText(Path.Combine(
             playMode,
             "MushroomDepthProjectionPlayModeTests.cs"));
+        string caveRoom = File.ReadAllText(Path.Combine(
+            playMode,
+            "CaveRoomRuntimeRecoveryPlayModeTests.cs"));
 
         Assert.Contains("using System;", barrel);
         Assert.DoesNotContain("DigTunnelProjection.", barrel);
@@ -38,6 +41,20 @@ public sealed class PlayModeRuntimeVisibilityContractTests
         Assert.Equal(3, Regex.Matches(
             barrel,
             @"UnityEngine\.Object\.Destroy\(").Count);
+
+        Assert.DoesNotContain(
+            "DigCaveTemplateTrimRenderer renderer",
+            caveRoom);
+        Assert.DoesNotContain(
+            "AddComponent<DigCaveTemplateTrimRenderer>()",
+            caveRoom);
+        Assert.Contains(
+            "\"Dig.Unity.DigCaveTemplateTrimRenderer\"",
+            caveRoom);
+        Assert.Contains("root.AddComponent(rendererType)", caveRoom);
+        Assert.Contains(
+            "GetProperty<int>(renderer, \"InstanceCount\")",
+            caveRoom);
     }
 
     private static string FindRepositoryRoot()
