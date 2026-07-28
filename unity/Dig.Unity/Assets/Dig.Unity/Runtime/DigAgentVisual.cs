@@ -246,7 +246,9 @@ public sealed partial class DigAgentVisual : MonoBehaviour
             {
                 color = properties.GetColor(ColorId);
                 if (color == default && renderer.sharedMaterial != null)
-                    color = renderer.sharedMaterial.color;
+                    color = DigMaterialColorUtility.GetColor(
+                        renderer.sharedMaterial,
+                        Color.white);
             }
             _hoverBaseColors[index] = color;
             Color highlighted = Color.Lerp(color, Color.white, HoverBlend);
