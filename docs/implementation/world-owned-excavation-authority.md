@@ -80,3 +80,11 @@ Quality, Release build, .NET tests, headless smoke, standard soak, large soak и
 Код и исполняемые Play Mode scenarios подготовлены, но система остаётся не `VERIFIED` до настройки license secrets и успешного повторного run с XML/log artifacts.
 
 Item support-loss trigger остаётся общим workflow системы #387. Excavation гарантирует, что полный World commit и refresh precede новые pickup/hauling reservations; выбор atomic или multi-tick item falling state не расширяется здесь, пока Q-ITEM-006 остаётся открытым.
+
+## Unity enum-assertion compile regression (2026-07-28)
+
+Unity Safe Mode reported `CS1503` in `WorldOwnedExcavationPlayModeTests.cs`: the bundled NUnit API resolved `Does.Contain(...)` through its string-oriented overload, so `TunnelTraversalKind.DepthTraverse` could not be converted to `string`. The following `Does.Not.Contain(...)` assertion had the same API-drift risk.
+
+The fixture now evaluates the typed `IReadOnlyList<TunnelTraversalKind>` through LINQ `Contains` and asserts the resulting boolean with `Is.True` / `Is.False`. This keeps the navigation behavior unchanged while avoiding NUnit overload inference differences between the repository test runner and Unity's embedded test framework.
+
+`check_unity_excavation_playmode_contracts.py` requires both typed `TraversalKinds.Contains(...)` checks and rejects the obsolete enum-valued `Does.Contain` / `Does.Not.Contain` forms.
