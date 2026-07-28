@@ -44,6 +44,7 @@ public sealed class DigBarrelRenderer : MonoBehaviour
                 _visuals.Add(id, visual);
             }
 
+            visual.transform.rotation = Quaternion.identity;
             visual.Configure(barrel);
             visual.SetHighlighted(
                 string.Equals(_highlightedId, id, StringComparison.Ordinal));
@@ -111,7 +112,9 @@ public sealed class DigBarrelRenderer : MonoBehaviour
         }
 
         GameObject root = new GameObject("Barrels");
-        root.transform.SetParent(transform, worldPositionStays: false);
+        // Runtime renderers receive already projected world positions. Preserve a
+        // world-identity root so bootstrap/terrain rotation cannot lay barrels down.
+        root.transform.SetParent(transform, worldPositionStays: true);
         _root = root.transform;
     }
 
