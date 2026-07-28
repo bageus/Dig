@@ -60,7 +60,10 @@ public sealed class CaveTemplateTrimPresenter
         for (int level = 0; level < preset.Height; level++)
         {
             int width = CaveRoomPlanner.InterpolateWidth(preset, level);
-            int minX = plan.Entrance.X - ((width - 1) / 2);
+            int minX = CaveRoomPlanner.ResolveRowMinX(
+                preset,
+                plan.Entrance.X,
+                level);
             rows[level] = new CaveTemplateTrimRowViewModel(
                 level,
                 minX,

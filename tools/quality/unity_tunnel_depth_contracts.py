@@ -107,16 +107,26 @@ def check_tunnel_depth_contracts(
             "WorldSession.PlannedVerticalTunnelCells",
         ),
     ))
+    work_facing_text = texts.get(work_facing, "")
     errors.extend(require_fragments(
         work_facing,
-        texts.get(work_facing, ""),
-        "unsupported shaft mining work stance",
+        work_facing_text,
+        "authoritative unsupported mining work stance",
         (
-            "tunnelVolume.IsVerticalTunnel(current)",
             "current.Y + 1",
-            "climbingWork",
+            "RequiresClimbingWorkPose(",
+            "return hasToolWork && !isNonClimbingWork && !hasFullSupport;",
         ),
     ))
+    for forbidden in (
+        "tunnelVolume.IsVerticalTunnel(current)",
+        "targetRemovedSupport",
+    ):
+        if forbidden in work_facing_text:
+            errors.append(
+                f"{work_facing}: unsupported mining posture still depends on "
+                f"provenance/special-case fragment {forbidden!r}"
+            )
     errors.extend(require_fragments(
         work_visual,
         texts.get(work_visual, ""),

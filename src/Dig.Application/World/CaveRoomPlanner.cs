@@ -87,7 +87,7 @@ public sealed class CaveRoomPlanner
         {
             int y = entrance.Y - level;
             int rowWidth = InterpolateWidth(preset, level);
-            int minX = entrance.X - ((rowWidth - 1) / 2);
+            int minX = ResolveRowMinX(preset, entrance.X, level);
             for (int offset = 0; offset < rowWidth; offset++)
             {
                 int x = minX + offset;
@@ -169,6 +169,18 @@ public sealed class CaveRoomPlanner
         return (int)Math.Round(width, MidpointRounding.AwayFromZero);
     }
 
+    public static int ResolveRowMinX(
+        CaveRoomPreset preset,
+        int anchorX,
+        int level)
+    {
+        int rowWidth = InterpolateWidth(preset, level);
+        // A cell grid cannot center an even row on an integer anchor exactly. The
+        // approved deterministic tie-break keeps the extra half-cell on the right:
+        // a Small 5->4 transition becomes X-1..X+2, not X-2..X+1.
+        return anchorX - ((rowWidth - 1) / 2);
+    }
+
     private static void ValidateVolumeCell(
         WorldSnapshot world,
         MaterialCatalog? materials,
@@ -241,7 +253,7 @@ public sealed class CaveRoomPlanner
     {
         List<CellId> roof = new List<CellId>(preset.TopWidth);
         int roofY = entrance.Y - preset.Height;
-        int roofMinX = entrance.X - ((preset.TopWidth - 1) / 2);
+        int roofMinX = ResolveRowMinX(preset, entrance.X, preset.Height - 1);
         for (int offset = 0; offset < preset.TopWidth; offset++)
         {
             CellId roofCell = new CellId(

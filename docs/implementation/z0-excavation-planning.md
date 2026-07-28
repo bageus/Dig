@@ -77,36 +77,37 @@ The room catalog is explicit and deterministic.
 
 | Preset | Base width | Top width | Depth | Height |
 | --- | ---: | ---: | ---: | ---: |
-| Small | 5 | 3 | 3 | 3 |
-| Medium | 7 | 3 | 4 | 3 |
-| Large | 9 | 5 | 4 | 5 |
-| Tall | 8 | 4 | 4 | 6 |
+| Small | 5 | 3 | 2 | 3 |
+| Medium | 8 | 6 | 3 | 3 |
+| Large | 12 | 8 | 4 | 5 |
+| Tall | 10 | 6 | 4 | 7 |
 
-The selected horizontal-tunnel cell is included in the bottom, widest row and acts as the entrance and exit. The room rises upward from that row and narrows toward the top. Intermediate row widths are linearly interpolated and rounded deterministically. Even widths use a stable one-cell bias around the selected entrance.
+The selected horizontal-tunnel cell is the deterministic anchor for the complete bottom row. The entire `BaseWidth` row on `Z=0` must already be an open through tunnel; its left and right extremes are the room entrances. The room rises upward and narrows toward the top. Intermediate row widths are linearly interpolated and rounded deterministically.
+
+`CaveRoomPlanner.ResolveRowMinX` owns horizontal row placement for planning, roof validation, preview, completed trim and room floors. When a row width is even and cannot be centered exactly on the integer anchor, the extra half-cell is kept on the right. Thus Small widths `5,4,3` at anchor X use `X-2..X+2`, then `X-1..X+2`, then `X-1..X+1`.
 
 The cross-section is extruded through the preset depth. `CaveRoomPlan.VolumeCells` owns the complete `XYZ` volume, while `FrontExcavationCells` contains only solid `Z=0` cells that create Dig Jobs.
 
 Placement rules:
 
 - No resident may be selected.
-- The cursor must point at an excavated `Z=0` horizontal tunnel cell.
-- The room may not overlap protected rock or leave world bounds.
+- The pointer may be on the open base tunnel or on rock inside the intended front silhouette; runtime resolves the matching base row below it.
+- The complete base row must be an open horizontal through tunnel.
+- The room may not overlap protected or unmineable rock or leave world bounds.
 - One complete solid row matching the top width must remain above the target room.
-- Open cells above the entrance row normally block placement.
-- Open cells belonging to a completed room at the same entrance are allowed as an upgrade footprint.
-- A larger preset over a completed smaller room creates Dig Jobs only for additional solid cells.
-- An unrelated natural cavity or arbitrary open shape cannot impersonate a completed room upgrade.
+- Open cells above the base row block placement.
+- A completed room at the same anchor is immutable and cannot be silently resized.
 
-`DigCaveRoomPreviewRenderer` displays a 12-edge trapezoidal prism. LMB on a valid preview applies all new front designations as one transaction and synchronizes the existing Dig Job flow once.
+`DigCaveRoomPreviewRenderer` displays the full trapezoidal prism even for an invalid placement, while invalid cells receive diagnostics. LMB on a valid preview applies all new front designations as one transaction and synchronizes the existing Dig Job flow once. Medium uses the same preview and completed-trim pipeline as every other preset.
 
-## Back walls
+## Back walls and completed trim
 
-User-excavated rooms always receive a non-interactive back wall behind their deepest playable layer.
+Completed template provenance creates non-interactive trim, including entrance outline, internal depth arches, side walls and a back-wall surface behind the deepest playable layer.
 
-- The wall is presentation shell geometry, not a fifth navigation cell.
+- Trim is Presentation geometry, not an additional navigation cell.
 - The documented room depth remains fully walkable.
-- Upgrading a room replaces the previous wall at that entrance so an old Small wall does not remain inside a Large room.
-- The generated natural cave owns an explicit `CaveHasBackWall` option and may be rendered with or without a back wall.
+- Trim rows use the same authoritative row bounds as the excavation mask.
+- The generated natural cave remains separate from user-planned template provenance.
 
 ## Cave-room completion
 
@@ -114,12 +115,18 @@ A room remains closed in depth while any new front excavation cell is still soli
 
 When every front Dig Job has removed its target cell:
 
-1. deeper cells from `CaveRoomPlan.VolumeCells` are excluded from combined rock meshes;
+1. deeper cells from `CaveRoomPlan.VolumeCells` are represented as open authoritative World cells;
 2. the full bottom row across the preset depth is added to tunnel navigation;
 3. clickable `XZ` floor cells are created at `Z=1..depth-1`;
-4. the room back wall is created or replaced;
+4. template trim is rebuilt from the completed plan;
 5. direct movement can route through every room depth cell;
 6. repeated refreshes remain idempotent.
+
+## Quarter excavation and unsupported work
+
+The authoritative cell progress remains four quarters. Vertical front-slice targets use horizontal rows: `UpperLeft|UpperRight`, then `LowerLeft|LowerRight`.
+
+The side-view root rotates logical vertical onto Unity local Z. Quarter visuals therefore split local X/Z and keep local Y as full depth. After any quarter is committed in the cell directly below a resident, that cell is no longer full standing support. Any active mining direction without full support uses stationary climbing stance immediately, including side excavation from a vertical shaft.
 
 ## Jobs and automatic assignment
 
@@ -131,6 +138,6 @@ Each designated solid cell creates one Dig Job with an exact XYZ target and work
 
 ## Scope boundary
 
-Room geometry, completed room expansion, optional generated-cave walls, mandatory planned-room walls, bounded one-cell depth opening, deep floor rendering, and deep direct movement are implemented.
+Room geometry, completed room projection, bounded one-cell depth opening, deep floor rendering, deep direct movement, horizontal quarter presentation and unsupported climbing work are implemented.
 
-Depth excavation now uses an exact XYZ Dig Job, worker/position/designation reservations, terrain completion and World-derived navigation. Support simulation, collapse, material-specific balancing and formation-aware resident occupancy remain later work.
+Depth excavation uses an exact XYZ Dig Job, worker/position/designation reservations, terrain completion and World-derived navigation. Collapse, material-specific balancing and formation-aware resident occupancy remain later work.

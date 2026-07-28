@@ -19,10 +19,10 @@ namespace Dig.Unity
         };
         private static readonly Vector2[] ExcavationQuarterOffsets =
         {
-            new Vector2(-0.252f, 0.252f),
             new Vector2(-0.252f, -0.252f),
-            new Vector2(0.252f, 0.252f),
+            new Vector2(-0.252f, 0.252f),
             new Vector2(0.252f, -0.252f),
+            new Vector2(0.252f, 0.252f),
         };
 
         private readonly Renderer[] _quarterRenderers = new Renderer[4];
@@ -151,12 +151,15 @@ namespace Dig.Unity
                 GameObject quarter = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 quarter.name = $"Rock {ExcavationQuarters[index]}";
                 quarter.transform.SetParent(transform, worldPositionStays: false);
+                // The side-view world root rotates logical Y onto Unity Z. Quarter
+                // geometry must therefore split local X/Z and preserve local Y as
+                // depth; using local Y here makes upper/lower pieces overlap on screen.
                 quarter.transform.localPosition = new Vector3(
                     ExcavationQuarterOffsets[index].x,
-                    ExcavationQuarterOffsets[index].y,
-                    0f);
+                    0f,
+                    ExcavationQuarterOffsets[index].y);
                 quarter.transform.localRotation = Quaternion.identity;
-                quarter.transform.localScale = new Vector3(0.486f, 0.486f, 1f);
+                quarter.transform.localScale = new Vector3(0.486f, 1f, 0.486f);
                 Collider collider = quarter.GetComponent<Collider>();
                 if (collider != null)
                 {

@@ -140,7 +140,10 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(plan));
             }
 
-            int minX = plan.Entrance.X - ((plan.Preset.BaseWidth - 1) / 2);
+            int minX = CaveRoomPlanner.ResolveRowMinX(
+                plan.Preset,
+                plan.Entrance.X,
+                level: 0);
             CellId[] cells = new CellId[
                 plan.Preset.BaseWidth * plan.Preset.Depth];
             int index = 0;

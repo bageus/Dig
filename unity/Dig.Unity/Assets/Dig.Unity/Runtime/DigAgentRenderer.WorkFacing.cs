@@ -76,15 +76,10 @@ namespace Dig.Unity
                         out CellSnapshot support)
                     && support.IsSolid
                     && support.State.CompletedExcavationQuarters == ExcavationQuarter.None;
-                bool targetRemovedSupport = hasToolWork
-                    && target == below
-                    && worldCells.TryGetValue(target, out CellSnapshot targetCell)
-                    && targetCell.State.CompletedExcavationQuarters != ExcavationQuarter.None;
-                bool climbingWork = hasToolWork
-                    && !nonClimbingWorkers.Contains(pair.Key)
-                    && !hasFullSupport
-                    && (tunnelVolume.IsVerticalTunnel(current)
-                        || targetRemovedSupport);
+                bool climbingWork = RequiresClimbingWorkPose(
+                    hasToolWork,
+                    nonClimbingWorkers.Contains(pair.Key),
+                    hasFullSupport);
                 bool barrelAttack = hasToolWork && barrelWorkers.Contains(pair.Key);
                 pair.Value.SetWorkTarget(
                     hasToolWork ? target : (CellId?)null,
@@ -92,6 +87,18 @@ namespace Dig.Unity
                     animateToolWork: hasToolWork && !barrelAttack,
                     animateAttackWork: barrelAttack);
             }
+        }
+
+        internal static bool RequiresClimbingWorkPose(
+            bool hasToolWork,
+            bool isNonClimbingWork,
+            bool hasFullSupport)
+        {
+            // Support is authoritative. Once any quarter below is committed, or a
+            // shaft worker has no floor at all, every mining direction uses the
+            // stationary climbing pose. Do not depend on template/shaft provenance:
+            // side excavation from an unsupported cell must behave identically.
+            return hasToolWork && !isNonClimbingWork && !hasFullSupport;
         }
 
         private static bool IsActiveToolWork(JobOverlayViewModel job)
