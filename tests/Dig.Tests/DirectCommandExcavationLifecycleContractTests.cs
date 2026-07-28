@@ -26,6 +26,9 @@ namespace Dig.Tests
             Assert.Contains("WorldItemPickupJobDefinition", direct);
             Assert.Contains("inventory.ReleaseReservations(job.Id, tick)", direct);
             Assert.Contains("ReleaseJobAssignmentCommand", direct);
+            Assert.Contains("&& job.AssignedAgentId == residentId", direct);
+            Assert.DoesNotContain("job.Definition is DigJobDefinition", direct);
+            Assert.Contains("RemoveAllRoutePlans(job.Id)", direct);
             Assert.DoesNotContain("ClearManualGroupForAgent", direct);
             Assert.Contains("PrepareResidentsForDirectCommand", movement);
             Assert.Contains("RefreshDirectCommandPresentation", movement);

@@ -13,6 +13,7 @@ namespace Dig.Tests
             string execution = Read(runtime, "DigBuildingProductionExecution.cs");
             string synchronization = Read(runtime, "DigBuildingProductionSynchronization.cs");
             string dependencies = Read(runtime, "DigBuildingProductionFoodDependencies.cs");
+            string movement = Read(runtime, "DigTerrainWorkDirectMovement.cs");
             string mushrooms = Read(runtime, "DigTerrainWorkSession.Mushrooms.cs");
             string productionRuntime = Read(runtime, "DigBuildingProductionRuntime.cs");
 
@@ -22,6 +23,9 @@ namespace Dig.Tests
             Assert.Contains("MushroomStage.Large", dependencies);
             Assert.Contains("eligibleWorldCap", dependencies);
             Assert.Contains("CampfireProductionContent.MushroomCapItemId", dependencies);
+            Assert.Contains(".Where(IsAvailableForAutomaticWork)", dependencies);
+            Assert.Contains("ReservationKey.ForAgent(agentId)", movement);
+            Assert.Contains("!hasActiveReservation", movement);
             Assert.Contains("_buildingInventoryRepository", mushrooms);
             Assert.Contains("CompleteProductionOrderCommand", productionRuntime);
         }

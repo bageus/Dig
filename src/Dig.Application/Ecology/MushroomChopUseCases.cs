@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
@@ -60,13 +61,24 @@ public sealed class StartDirectMushroomChopCommandHandler
             return Result<MushroomChopStartedResult>.Failure(skill.Error!);
         }
 
+        JobSystem jobs = _jobs.Get();
+        ReservationSnapshot? workerReservation = jobs.GetReservations()
+            .FirstOrDefault(reservation =>
+                reservation.Key == ReservationKey.ForAgent(command.WorkerId));
+        if (workerReservation != null
+            && (!site.ActiveChopJobId.HasValue
+                || workerReservation.JobId != site.ActiveChopJobId.Value))
+        {
+            return Result<MushroomChopStartedResult>.Failure(
+                JobErrors.AgentUnavailable);
+        }
+
         (int minimum, int maximum) = MushroomDefinition.GetRequiredSwingBand(skill.Value);
         int requiredSwings = _random.SelectRequiredSwings(
             command.SiteId,
             command.WorkerId,
             minimum,
             maximum);
-        JobSystem jobs = _jobs.Get();
         EntityId? replacedJobId = site.ActiveChopJobId;
         if (replacedJobId.HasValue)
         {
@@ -97,15 +109,70 @@ public sealed class StartDirectMushroomChopCommandHandler
             return Result<MushroomChopStartedResult>.Failure(added.Error!);
         }
 
-        EnsureCommitStep(jobs.MakeAvailable(command.JobId, command.Tick));
-        EnsureCommitStep(jobs.Claim(command.JobId, command.WorkerId, command.Tick));
-        EnsureCommitStep(jobs.Start(command.JobId, command.Tick));
-        EnsureCommitStep(mushrooms.BeginChop(
+        Result available = jobs.MakeAvailable(command.JobId, command.Tick);
+        if (available.IsFailure)
+        {
+            return RejectNewAttempt(
+                mushrooms,
+                jobs,
+                command.JobId,
+                available.Error!,
+                command.Tick);
+        }
+
+        Result canClaim = jobs.CanClaim(
+            command.JobId,
+            command.WorkerId,
+            toolStackId: null,
+            command.Tick);
+        if (canClaim.IsFailure)
+        {
+            return RejectNewAttempt(
+                mushrooms,
+                jobs,
+                command.JobId,
+                canClaim.Error!,
+                command.Tick);
+        }
+
+        Result claimed = jobs.Claim(command.JobId, command.WorkerId, command.Tick);
+        if (claimed.IsFailure)
+        {
+            return RejectNewAttempt(
+                mushrooms,
+                jobs,
+                command.JobId,
+                claimed.Error!,
+                command.Tick);
+        }
+
+        Result started = jobs.Start(command.JobId, command.Tick);
+        if (started.IsFailure)
+        {
+            return RejectNewAttempt(
+                mushrooms,
+                jobs,
+                command.JobId,
+                started.Error!,
+                command.Tick);
+        }
+
+        Result begun = mushrooms.BeginChop(
             command.SiteId,
             command.JobId,
             command.WorkerId,
             requiredSwings,
-            command.Tick));
+            command.Tick);
+        if (begun.IsFailure)
+        {
+            return RejectNewAttempt(
+                mushrooms,
+                jobs,
+                command.JobId,
+                begun.Error!,
+                command.Tick);
+        }
+
         SaveAndPublish(mushrooms, jobs);
         return Result<MushroomChopStartedResult>.Success(new MushroomChopStartedResult(
             command.JobId,
@@ -142,7 +209,6 @@ public sealed class StartDirectMushroomChopCommandHandler
 
         return mushrooms.ReleaseChop(site.SiteId, oldJobId, oldWorkerId, tick);
     }
-
     private void SaveAndPublish(MushroomState mushrooms, JobSystem jobs)
     {
         _mushrooms.Save(mushrooms);
@@ -151,12 +217,30 @@ public sealed class StartDirectMushroomChopCommandHandler
         _events.Append(jobs.DequeueUncommittedEvents());
     }
 
-    private static void EnsureCommitStep(Result result)
+    private Result<MushroomChopStartedResult> RejectNewAttempt(
+        MushroomState mushrooms,
+        JobSystem jobs,
+        EntityId jobId,
+        DomainError error,
+        long tick)
     {
-        if (result.IsFailure)
+        JobSnapshot? job = jobs.Get(jobId);
+        if (job != null && !job.IsTerminal)
         {
-            throw new InvalidOperationException($"Validated mushroom start failed: {result.Error}");
+            Result cancelled = jobs.Cancel(
+                jobId,
+                new JobBlockReason(
+                    "mushroom_start_rejected",
+                    error.Message),
+                tick);
+            if (cancelled.IsFailure)
+            {
+                error = cancelled.Error!;
+            }
         }
+
+        SaveAndPublish(mushrooms, jobs);
+        return Result<MushroomChopStartedResult>.Failure(error);
     }
 }
 

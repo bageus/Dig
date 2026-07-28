@@ -45,7 +45,12 @@ namespace Dig.Unity
 
         private bool IsAvailableForAutomaticWork(AgentViewModel agent)
         {
+            EntityId agentId = EntityId.Parse(agent.Id);
+            bool hasActiveReservation = _jobRepository.Get().GetReservations()
+                .Any(reservation =>
+                    reservation.Key == ReservationKey.ForAgent(agentId));
             return agent.IsAvailableForAutomaticPlanning
+                && !hasActiveReservation
                 && !(_isManualMovementActive?.Invoke(agent.Id) ?? false);
         }
 

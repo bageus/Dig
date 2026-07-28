@@ -101,7 +101,6 @@ Regression coverage now includes:
 
 The system remains `IMPLEMENTED` until this expanded fixture is actually executed by Unity Test Runner. Source-contract success alone is not runtime verification.
 
-
 ## World orientation and material-targeting follow-up (2026-07-28)
 
 The second runtime screenshot exposed two gaps in the previous source and Play Mode contracts:
@@ -128,7 +127,6 @@ The foreground-targeting follow-up closed the resident candidate comparison `if`
 
 The fix addresses the reported Unity parser failure at its source. Status remains `IMPLEMENTED` until Unity Editor/Test Runner executes the complete interaction workflow.
 
-
 ## Z0-Z3 depth-slab correction (2026-07-28)
 
 A third runtime screenshot showed the upright mushroom behind the `Z=3` back plane. The site cell was valid; the Unity adapter added `FrontOffset = -0.66f` after `ResidentWorldPosition`, while one logical depth step is only `-0.55f`. Presentation therefore moved every mushroom by more than one complete Z layer and could place a `Z=3` site outside the four-layer world.
@@ -151,3 +149,20 @@ A Unity Safe Mode compile reported `CS0111` in `DigTerrainWorkSession.Mushrooms.
 The duplicate came from overlapping mushroom and campfire integration changes. `DigTerrainWorkSession.Mushrooms.cs` contained a simplified planner while `DigTerrainWorkSession.MushroomNavigation.cs` already owned the complete route-planning implementation, including `_routePlans` diagnostics. The correction removes the duplicate from `Mushrooms.cs` and keeps `MushroomNavigation.cs` as the single owner. Domain/Application mushroom behavior, work-position selection and navigation policy are unchanged.
 
 `MushroomMovementPlannerSourceContractTests` now scans every `DigTerrainWorkSession*.cs` partial and requires exactly one `bool TryPlanMushroomMovement(...)` declaration, owned by `DigTerrainWorkSession.MushroomNavigation.cs`, with route-plan projection preserved.
+
+## Agent-reservation runtime regression (2026-07-28)
+
+A Unity runtime screenshot exposed `InvalidOperationException: Validated mushroom start failed: jobs.agent_unavailable` from `StartDirectMushroomChopCommandHandler`. Two stale ownership paths converged on the same failure:
+
+- building-production synchronization reused an `AgentViewModel` availability snapshot after production/supply assignment in the same tick, so the automatic grilled-mushroom dependency could select a resident whose `ReservationKey.ForAgent` was already owned;
+- `PrepareResidentsForDirectCommand` collected only a whitelist of excavation/item/barrel jobs, so a selected resident could retain another nonterminal production, supply or logistics assignment before the direct mushroom claim.
+
+The correction keeps existing gameplay rules and ownership boundaries:
+
+- automatic-work availability now also reads the current `JobSystem` agent reservation ledger;
+- direct-command preparation releases every nonterminal job assigned to the selected resident, while preserving specialized cancellation for pickup, mushroom, barrel and BuildingBox lifecycles;
+- all route caches for the replaced job are cleared through the shared `RemoveAllRoutePlans` owner;
+- mushroom start preflights the worker reservation before consuming a deterministic swing draw and returns typed `jobs.agent_unavailable` instead of throwing;
+- any later start-stage rejection cancels the newly created job, releases reservations and leaves the mushroom site unchanged.
+
+Regression coverage includes an Application test for an already-reserved worker and Unity source contracts for current reservation-ledger availability, complete direct-assignment collection and full route cleanup. The system remains `IMPLEMENTED` until the checked-in runtime scenarios execute in Unity Test Runner.

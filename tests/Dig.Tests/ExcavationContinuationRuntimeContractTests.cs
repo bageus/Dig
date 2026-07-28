@@ -34,7 +34,7 @@ public sealed class ExcavationContinuationRuntimeContractTests
         Assert.Contains("ReleaseAssignmentsForAgents", multi);
         Assert.DoesNotContain("ManualExcavationGroup", multi);
         Assert.DoesNotContain("NoCandidates", multi);
-        Assert.DoesNotContain("radius: 4", multi);
+        Assert.DoesNotContain("radius:4", multi);
         Assert.DoesNotContain("AssignManualQuarterExcavation(", multi);
 
         Assert.Contains("_clusterPlanner!.Select", spatialAssignment);
@@ -46,7 +46,10 @@ public sealed class ExcavationContinuationRuntimeContractTests
         Assert.DoesNotContain("NoCandidates", spatialAssignment);
 
         Assert.Contains("CancelManualQuarterExcavation", direct);
-        Assert.Contains("SpatialDigJobDefinition", direct);
+        Assert.Contains("!job.IsTerminal&&job.AssignedAgentId==residentId", direct);
+        Assert.Contains("ReleaseJobAssignmentCommand", direct);
+        Assert.Contains("RemoveAllRoutePlans(job.Id)", direct);
+        Assert.DoesNotContain("job.DefinitionisSpatialDigJobDefinition", direct);
     }
 
     [Fact]

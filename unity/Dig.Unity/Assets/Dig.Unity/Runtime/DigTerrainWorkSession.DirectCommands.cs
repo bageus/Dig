@@ -59,8 +59,7 @@ namespace Dig.Unity
                         return released;
                     }
 
-                    _routePlans.Remove(job.Id);
-                    _worldItemPickupRoutes.Remove(job.Id);
+                    RemoveAllRoutePlans(job.Id);
                 }
             }
 
@@ -98,15 +97,7 @@ namespace Dig.Unity
             foreach (JobSnapshot job in jobs.GetAll())
             {
                 if (!job.IsTerminal
-                    && job.AssignedAgentId == residentId
-                    && (job.Definition is WorldItemPickupJobDefinition
-                        || job.Definition is DigJobDefinition
-                        || job.Definition is SpatialDigJobDefinition
-                        || job.Definition is MushroomChopJobDefinition
-                        || job.Definition is BarrelAttackJobDefinition
-                        || job.Definition is BuildingBoxAssemblyJobDefinition
-                        || (job.Definition is BuildingBoxPickupJobDefinition relocation
-                            && relocation.IsRelocation)))
+                    && job.AssignedAgentId == residentId)
                 {
                     assigned.Add(job);
                 }
