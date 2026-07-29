@@ -65,7 +65,6 @@ internal sealed class BuildingBoxHarness
     public InMemoryInventoryRepository InventoryRepository { get; }
     public InMemoryBuildingsRepository BuildingsRepository { get; }
     public InMemoryJobRepository JobRepository { get; }
-    public InMemoryWorldRepository WorldRepository { get; }
     public InMemoryExecutionJournal Journal { get; }
     public BuildingCatalog Catalog { get; }
 
@@ -85,7 +84,7 @@ internal sealed class BuildingBoxHarness
                 new BuildingDefinitionId("workshop.box"),
                 origin,
                 BuildingOrientation.North,
-                reachableCells: new[] { new CellId(origin.X, origin.Y - 1) },
+                reachableCells: new[] { new CellId(origin.X - 1, origin.Y, origin.Z) },
                 priority: 600,
                 tick: _tick++));
     }
@@ -219,8 +218,10 @@ internal sealed class BuildingBoxHarness
             new CellId(1, 1),
             new CellId(3, 3),
             new CellId(3, 2),
+            new CellId(2, 3),
             new CellId(5, 5),
             new CellId(5, 4),
+            new CellId(4, 5),
         });
     }
 
