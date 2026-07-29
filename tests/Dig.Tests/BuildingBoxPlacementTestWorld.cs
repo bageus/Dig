@@ -18,8 +18,10 @@ internal static class BuildingBoxPlacementTestWorld
         BuildingOrientation orientation,
         IEnumerable<CellId> reachable)
     {
-        HashSet<CellId> open = new HashSet<CellId>(
-            definition.ResolveFootprint(origin, orientation));
+        CellId[] footprint = definition.ResolveFootprint(origin, orientation).ToArray();
+        HashSet<CellId> open = new HashSet<CellId>(footprint);
+        open.Add(new CellId(footprint.Min(cell => cell.X) - 1, origin.Y, origin.Z));
+        open.Add(new CellId(footprint.Max(cell => cell.X) + 1, origin.Y, origin.Z));
         foreach (CellId cell in reachable)
         {
             open.Add(cell);
