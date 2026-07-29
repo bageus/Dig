@@ -16,8 +16,41 @@ public sealed partial class DigWorldInteraction
             return;
         }
 
+        if (!decision.TargetCell.HasValue)
+        {
+            _hud!.SetStatus("input.target.stale_or_dead");
+            return;
+        }
+
+        if (!_agentSession!.CanIssuePlayerAttackOrder(
+            decision.ActorId.Value,
+            decision.TargetEntityId.Value,
+            decision.TargetCell.Value))
+        {
+            _hud!.SetStatus("combat.input.target_invalid");
+            return;
+        }
+
+        Result registered = _agentSession.RegisterHostileCombatant(
+            decision.TargetEntityId.Value,
+            decision.TargetCell.Value);
+        if (registered.IsFailure)
+        {
+            _hud!.SetStatus(registered.Error!.Code);
+            return;
+        }
+
+        Result interrupted = _terrainSession!.InterruptForCombat(
+            new[] { decision.ActorId.Value.ToString() },
+            _simulation!.CurrentTick);
+        if (interrupted.IsFailure)
+        {
+            _hud!.SetStatus(interrupted.Error!.Code);
+            return;
+        }
+
         Result<Dig.Domain.Combat.CombatIntentSnapshot> result =
-            _agentSession!.IssuePlayerAttackOrder(
+            _agentSession.IssuePlayerAttackOrder(
                 decision.ActorId.Value,
                 decision.TargetEntityId.Value);
         _hud!.SetStatus(result.IsSuccess
@@ -46,6 +79,32 @@ public sealed partial class DigWorldInteraction
 
         creature = null!;
         return false;
+    }
+
+    private bool TryResolveHostileCombatHoverTarget(RaycastHit[] hits)
+    {
+        if (!TryResolveHostileCreatureHit(hits, out DigCreatureVisual creature)
+            || !EntityId.TryParse(creature.Model.CreatureId, out EntityId targetId))
+        {
+            return false;
+        }
+
+        Dig.Presentation.Agents.AgentViewModel? selected =
+            _agentRenderer!.SelectedModel;
+        if (selected == null)
+        {
+            return false;
+        }
+
+        EntityId actorId = EntityId.Parse(selected.Id);
+        CellId targetCell = new CellId(
+            creature.Model.CellX,
+            creature.Model.CellY,
+            creature.Model.CellZ);
+        return _agentSession!.CanIssuePlayerAttackOrder(
+            actorId,
+            targetId,
+            targetCell);
     }
 
     private static ContextPointerTarget BuildHostileTarget(DigCreatureVisual creature)

@@ -77,6 +77,13 @@ namespace Dig.Unity
 
                 if (_excavationMode == DigExcavationDrawingMode.None
                     && !_caveRoomPreset.HasValue
+                    && TryResolveHostileCombatHoverTarget(hits))
+                {
+                    return DirectCommandCursorKind.Sword;
+                }
+
+                if (_excavationMode == DigExcavationDrawingMode.None
+                    && !_caveRoomPreset.HasValue
                     && TryResolveBarrelHoverTarget(hits))
                 {
                     return DirectCommandCursorKind.Sword;

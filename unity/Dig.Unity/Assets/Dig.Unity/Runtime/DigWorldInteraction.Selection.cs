@@ -114,6 +114,11 @@ namespace Dig.Unity
 
         private void CancelCurrentInteraction()
         {
+            foreach (string residentId in _agentRenderer!.SelectedAgentIds)
+            {
+                _agentSession!.CancelPlayerAttackOrder(EntityId.Parse(residentId));
+            }
+
             CancelInventoryItemPlacement();
             if (_buildingPlacementMode.HasValue)
             {
