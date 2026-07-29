@@ -1,11 +1,6 @@
 name: Apply roadmap 16 implementation
 
 on:
-  push:
-    branches:
-      - agent/complete-roadmap-16-runtime-gates
-    paths:
-      - ".github/workflows/apply-roadmap16.yml"
   pull_request:
     types:
       - opened
@@ -16,7 +11,7 @@ permissions:
 
 jobs:
   apply:
-    if: github.event_name == 'push' || github.head_ref == 'agent/complete-roadmap-16-runtime-gates'
+    if: github.head_ref == 'agent/complete-roadmap-16-runtime-gates'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
@@ -42,19 +37,14 @@ jobs:
             | sha256sum --check --strict
           git apply --check /tmp/roadmap16.patch
           git apply /tmp/roadmap16.patch
+          git checkout HEAD -- \
+            .github/workflows/quality.yml \
+            .github/workflows/unity-playmode.yml
 
-      - name: Remove transport files and publish implementation
+      - name: Publish code, tests and documentation
         shell: bash
         run: |
           set -euo pipefail
-          rm -f \
-            .github/workflows/apply-roadmap16.yml \
-            tools/roadmap16.patch.part-00 \
-            tools/roadmap16.apply.000 \
-            tools/roadmap16.b64.000 \
-            tools/roadmap16.b64.001 \
-            tools/roadmap16.b64.002 \
-            tools/roadmap16.b64.003
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
