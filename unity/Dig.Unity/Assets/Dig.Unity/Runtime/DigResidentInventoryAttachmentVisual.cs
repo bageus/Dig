@@ -72,11 +72,18 @@ internal sealed class DigResidentInventoryAttachmentVisual : MonoBehaviour
             Destroy(_instance);
         }
 
-        _instance = DigBasketVisualPolicy.CreateInstance(
-            model.ItemId,
-            resolution,
-            transform,
-            model.VisualAttachmentId);
+        _instance = DigBasketVisualPolicy.IsBasket(model.ItemId)
+            && resolution.Asset.Prefab == null
+            ? DigBasketVisualPolicy.CreateInstance(
+                model.ItemId,
+                resolution,
+                transform,
+                model.VisualAttachmentId)
+            : DigVisualPrefabFactory.Create(
+                resolution.Asset,
+                transform,
+                model.VisualAttachmentId,
+                PrimitiveType.Cube);
         _assetKey = resolution.Asset.StableId;
         SetLayerRecursively(_instance, layer: 2);
         DisableColliders(_instance);
