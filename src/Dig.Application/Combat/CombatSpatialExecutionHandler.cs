@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Dig.Application.Agents;
 using Dig.Application.Messaging;
 using Dig.Domain.Agents;
@@ -49,6 +50,26 @@ public sealed partial class CombatSpatialExecutionHandler
     {
         if (command is null) throw new ArgumentNullException(nameof(command));
         CombatState combat = _combat.Get();
+        CombatExecutionSnapshot? executionBeforeExpiry =
+            combat.GetActiveExecution(command.ActorId);
+        bool actorIntentExpired = combat.ExpireIntents(command.Tick)
+            .Any(value => value.ActorId == command.ActorId);
+        if (actorIntentExpired)
+        {
+            SaveCombat(combat);
+            if (executionBeforeExpiry is not null)
+            {
+                return Report(
+                    combat.GetExecution(executionBeforeExpiry.ExecutionId)!,
+                    false,
+                    null,
+                    "intent_expired");
+            }
+
+            return Result<CombatSpatialExecutionReport>.Failure(
+                CombatSpatialApplicationErrors.IntentMissing);
+        }
+
         CombatIntentSnapshot? intent = combat.GetActiveIntent(command.ActorId);
         if (intent is null)
         {
