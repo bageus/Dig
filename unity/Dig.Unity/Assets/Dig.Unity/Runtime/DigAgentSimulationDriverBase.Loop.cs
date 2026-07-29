@@ -184,9 +184,6 @@ namespace Dig.Unity
             if (result.IsFailure)
             {
                 tickWarning = result.Error;
-                // Keep the global presentation/control loop alive. A single stale or
-                // retried job must not hide authoritative movement and make every dwarf
-                // appear frozen until a later successful tick.
                 Hud!.SetCommandResult(result);
             }
 
@@ -218,6 +215,8 @@ namespace Dig.Unity
                 agents,
                 movementDuration,
                 AgentSession.LoadMovementModes());
+            AgentRenderer.SynchronizeProductionWaitOffsets(
+                TerrainSession.LoadProductionWaitOffsets());
             RefreshEquipmentVisuals();
             MushroomRenderer!.Render(TerrainSession!.LoadMushrooms());
             BarrelRenderer!.Render(TerrainSession.LoadBarrels());
