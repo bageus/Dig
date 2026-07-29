@@ -108,18 +108,6 @@ public sealed class ResolveCombatAttackHandler
         }
 
         CombatAttackResolution resolution = resolved.Value;
-        if (!resolution.WasAlreadyProcessed && command.SourceIntentId.HasValue)
-        {
-            Result completedIntent = combat.CompleteIntent(
-                command.SourceIntentId.Value,
-                command.Tick);
-            if (completedIntent.IsFailure)
-            {
-                throw new InvalidOperationException(
-                    $"Validated combat intent could not complete: {completedIntent.Error}");
-            }
-        }
-
         IReadOnlyList<SkillGrantBundle> skillBundles = BuildSkillBundles(
             command,
             resolution,
