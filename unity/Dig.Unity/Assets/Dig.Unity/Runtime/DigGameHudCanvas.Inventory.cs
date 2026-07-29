@@ -233,7 +233,7 @@ public sealed partial class DigGameHudCanvas
         InvalidateAll();
     }
 
-    private static Color ResolveSlotBackground(
+    private Color ResolveSlotBackground(
         ResidentInventoryLayoutSlotViewModel slot)
     {
         if (slot.IsEmpty)
@@ -241,7 +241,7 @@ public sealed partial class DigGameHudCanvas
             return new Color(0.06f, 0.07f, 0.09f, 0.72f);
         }
 
-        if (slot.ReservedQuantity > 0)
+        if (IsBlueReservedSlot(slot))
         {
             return new Color(0.10f, 0.34f, 0.72f, 0.96f);
         }
@@ -251,15 +251,20 @@ public sealed partial class DigGameHudCanvas
             return new Color(0.12f, 0.34f, 0.48f, 0.96f);
         }
 
+        if (slot.ReservedQuantity > 0)
+        {
+            return new Color(0.42f, 0.18f, 0.18f, 0.92f);
+        }
+
         return slot.IsActiveExpansion
             ? new Color(0.35f, 0.28f, 0.10f, 0.96f)
             : new Color(0.16f, 0.20f, 0.25f, 0.96f);
     }
 
-    private static Color ResolveSlotTextColor(
+    private Color ResolveSlotTextColor(
         ResidentInventoryLayoutSlotViewModel slot)
     {
-        if (slot.ReservedQuantity > 0)
+        if (IsBlueReservedSlot(slot))
         {
             return new Color(0.72f, 0.88f, 1f, 1f);
         }
@@ -278,6 +283,15 @@ public sealed partial class DigGameHudCanvas
                 new Color(0.65f, 0.92f, 0.55f, 1f),
             _ => new Color(0.55f, 0.58f, 0.62f, 1f),
         };
+    }
+
+    private bool IsBlueReservedSlot(ResidentInventoryLayoutSlotViewModel slot)
+    {
+        return slot.ReservedQuantity > 0
+            && (slot.VisualKind == ResidentInventorySlotVisualKind.BuildingBox
+                || (slot.StackId != null
+                    && _terrainSession?.HasActiveResidentInventoryPlacement(
+                        slot.StackId) == true));
     }
 
     private static string ResolveSlotMarker(
