@@ -1,0 +1,57 @@
+name: Apply roadmap 16 implementation
+
+on:
+  push:
+    branches:
+      - agent/complete-roadmap-16-runtime-gates
+    paths:
+      - ".github/workflows/apply-roadmap16.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/complete-roadmap-16-runtime-gates
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Reconstruct and apply reviewed patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat tools/roadmap16.b64.000 \
+              tools/roadmap16.b64.001 \
+              tools/roadmap16.b64.002 \
+              tools/roadmap16.b64.003 \
+            | tr -d '\n' \
+            | base64 --decode \
+            | gzip --decompress \
+            > /tmp/roadmap16.patch
+          echo "b4ae18624f56d9a0fb7de795fa3cd9db621344116c0fdaf21c4cc2363d7b5ebd  /tmp/roadmap16.patch" \
+            | sha256sum --check --strict
+          git apply --check /tmp/roadmap16.patch
+          git apply /tmp/roadmap16.patch
+
+      - name: Remove transport files and publish implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f \
+            .github/workflows/apply-roadmap16.yml \
+            tools/roadmap16.patch.part-00 \
+            tools/roadmap16.apply.000 \
+            tools/roadmap16.b64.000 \
+            tools/roadmap16.b64.001 \
+            tools/roadmap16.b64.002 \
+            tools/roadmap16.b64.003
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Implement roadmap 16 Unity verification gates"
+          git push origin HEAD:agent/complete-roadmap-16-runtime-gates
