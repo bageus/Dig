@@ -82,8 +82,43 @@ public sealed class UnityRuntimeEvidenceGateTests
         Assert.Contains("LogAssert.NoUnexpectedReceived", playMode);
         Assert.Contains("status=passed", playMode);
         Assert.Contains("consoleErrors=0", playMode);
+        Assert.Contains("DigAgentSimulationDriver? simulation = null", playMode);
+        Assert.Contains("DigWorldInteraction? interaction = null", playMode);
+        Assert.Contains("simulation!.enabled", playMode);
+        Assert.Contains("interaction!.enabled", playMode);
+        Assert.Contains("UnityEngine.Application.dataPath", playMode);
         Assert.Contains("path: Assets/Scenes/Main.unity", buildSettings);
         Assert.Contains("enabled: 1", buildSettings);
+    }
+
+    [Fact]
+    public void Checked_in_playmode_regressions_follow_compilable_api_contracts()
+    {
+        string root = FindRepositoryRoot();
+        string caveRoom = File.ReadAllText(Path.Combine(
+            root,
+            "unity",
+            "Dig.Unity",
+            "Assets",
+            "Dig.Unity",
+            "Tests",
+            "PlayMode",
+            "CaveRoomReapplyAndMediumPreviewPlayModeTests.cs"));
+        string combat = File.ReadAllText(Path.Combine(
+            root,
+            "unity",
+            "Dig.Unity",
+            "Assets",
+            "Dig.Unity",
+            "Tests",
+            "PlayMode",
+            "CombatSpatialExecutionPlayModeTests.cs"));
+
+        Assert.Contains("Has.No.Member(completed.Cell)", caveRoom);
+        Assert.DoesNotContain("Does.Not.Contain(completed.Cell)", caveRoom);
+        Assert.Contains("skills: null", combat);
+        Assert.Contains("traits: null", combat);
+        Assert.Contains("initialPosition: cell", combat);
     }
 
     private static string FindRepositoryRoot()
