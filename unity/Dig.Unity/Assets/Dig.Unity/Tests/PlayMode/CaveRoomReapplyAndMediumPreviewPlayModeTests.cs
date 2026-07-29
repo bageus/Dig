@@ -66,8 +66,9 @@ public sealed class CaveRoomReapplyAndMediumPreviewPlayModeTests
             original.Entrance);
 
         Assert.That(resumed.Succeeded, Is.True, resumed.Detail);
-        Assert.That(resumed.Plan!.ExcavationCells, Does.Not.Contain(completed.Cell));
-        Assert.That(world.ApplyCaveRoomPlan(resumed.Plan).IsSuccess, Is.True);
+        CaveRoomPlan resumedPlan = resumed.Plan!;
+        Assert.That(resumedPlan.ExcavationCells, Has.No.Member(completed.Cell));
+        Assert.That(world.ApplyCaveRoomPlan(resumedPlan).IsSuccess, Is.True);
         Result<CellSnapshot> remaining = world.Repository.Get().GetCell(eraseTarget);
         Assert.That(remaining.IsSuccess, Is.True);
         Assert.That(remaining.Value.State.Designation, Is.EqualTo(CellDesignation.Dig));

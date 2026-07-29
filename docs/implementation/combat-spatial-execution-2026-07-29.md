@@ -1,6 +1,6 @@
 # Combat spatial execution — 2026-07-29
 
-Status: `APPROVED / IMPLEMENTATION IN PR #513`.
+Status: `IMPLEMENTED` after merge of [PR #513](https://github.com/bageus/Dig/pull/513); licensed Unity Play Mode evidence remains required for `VERIFIED`.
 
 Authoritative specification: [`../design/combat-spatial-execution.md`](../design/combat-spatial-execution.md).
 Tracking: [#508](https://github.com/bageus/Dig/issues/508), [PR #513](https://github.com/bageus/Dig/pull/513).
@@ -72,6 +72,8 @@ Save format `v10` stores combat intents, execution identity/stage, selected targ
 - `CombatSpatialSaveRoundTripTests` — active execution and resolved-action replay across v10 round-trip;
 - `CombatSpatialUnityRuntimeContractTests` — sword cursor, common classifier, interruption, RMB cancel and no Unity damage authority;
 - `CombatSpatialExecutionPlayModeTests` — executable approach, wind-up, one damage commit and recovery fixture.
+
+The first local Unity compile of the checked-in fixture exposed `CS7036`: the positional `AgentState` overload requires explicit `skills` and `traits` arguments before `initialPosition`. The PlayMode factory now passes `skills: null`, `traits: null`, then the intended cell. `UnityRuntimeEvidenceGateTests` locks this constructor contract so normal Quality CI detects the same source regression even while licensed Unity execution is unavailable.
 
 ## Verification boundary
 

@@ -113,6 +113,8 @@ public sealed class CombatSpatialExecutionPlayModeTests
             new NeedValue(8_000),
             new NeedValue(10_000)),
         DailySchedule.CreateBalanced(24),
+        skills: null,
+        traits: null,
         initialPosition: cell);
 
     private sealed class FixedEquipment : ICombatEquipmentProvider
