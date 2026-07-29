@@ -7,6 +7,7 @@ using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
+using Dig.Domain.Navigation;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Dig.Presentation.Buildings;
@@ -76,7 +77,7 @@ internal sealed partial class DigTerrainWorkSession
             workshopWorkPosition,
             journal);
 
-        DemoBuildingPlacement campfirePlacement = FindLowerCavePlacement(
+        DemoBuildingPlacement campfirePlacement = FindSurfaceCampfirePlacement(
             campfireDefinition,
             workshop.Footprint);
         BuildingSnapshot campfire = CreateCompletedDemoBuilding(
@@ -207,73 +208,67 @@ internal sealed partial class DigTerrainWorkSession
         journal.Append(jobs.DequeueUncommittedEvents());
     }
 
-    private DemoBuildingPlacement FindLowerCavePlacement(
+    private DemoBuildingPlacement FindSurfaceCampfirePlacement(
         BuildingDefinition definition,
         IReadOnlyCollection<CellId> excludedCells)
     {
+        TunnelDemoLayout layout = _worldSession.CreateTunnelNavigationVolume().DemoLayout
+            ?? throw new InvalidOperationException("The demo tunnel layout is required.");
         Dictionary<CellId, WorldCellViewModel> cells = _worldSession.LoadView().Chunks
             .SelectMany(chunk => chunk.Cells)
-            .ToDictionary(
-                value => new CellId(value.X, value.Y, value.Z));
+            .ToDictionary(value => new CellId(value.X, value.Y, value.Z));
         HashSet<CellId> occupied = new HashSet<CellId>(excludedCells);
-        foreach (ItemStackSnapshot stack
-            in _inventoryRepository.Get().CreateSnapshot().Stacks)
+        foreach (ItemStackSnapshot stack in _inventoryRepository.Get().CreateSnapshot().Stacks)
         {
-            if (stack.Location.Kind == ItemLocationKind.World
-                && stack.Location.HasCell)
+            if (stack.Location.Kind == ItemLocationKind.World && stack.Location.HasCell)
             {
                 occupied.Add(stack.Location.CellId);
             }
         }
 
-        foreach (CellId origin in cells.Values
-            .Where(value => !value.IsSolid && value.Y > 0)
-            .Select(value => new CellId(value.X, value.Y, value.Z))
-            .Where(value => !occupied.Contains(value))
-            .OrderByDescending(value => value.Y)
-            .ThenByDescending(value => value.Z)
-            .ThenBy(value => value.X))
+        CellId origin = new CellId(
+            layout.ShaftX - 2,
+            layout.SurfaceY,
+            layout.ShaftZ);
+        CellId[] footprint = definition.ResolveFootprint(
+                origin,
+                BuildingOrientation.North)
+            .ToArray();
+        bool validFootprint = footprint.All(value =>
         {
-            CellId below = new CellId(origin.X, origin.Y + 1, origin.Z);
-            if (!cells.TryGetValue(below, out WorldCellViewModel belowCell)
-                || !belowCell.IsSolid)
-            {
-                continue;
-            }
-
-            CellId[] footprint = definition.ResolveFootprint(
-                    origin,
-                    BuildingOrientation.North)
-                .ToArray();
-            if (footprint.Any(value => occupied.Contains(value)
-                || !cells.TryGetValue(
-                    value,
-                    out WorldCellViewModel footprintCell)
-                || footprintCell.IsSolid))
-            {
-                continue;
-            }
-
-            CellId? workPosition = definition.ResolveWorkPositions(
-                    origin,
-                    BuildingOrientation.North)
-                .Where(value => !occupied.Contains(value)
-                    && cells.TryGetValue(value, out WorldCellViewModel workCell)
-                    && !workCell.IsSolid)
-                .OrderBy(value => value.Y == origin.Y ? 0 : 1)
-                .ThenBy(value => Math.Abs(value.X - origin.X)
-                    + Math.Abs(value.Y - origin.Y))
-                .ThenBy(value => value)
-                .Select(value => (CellId?)value)
-                .FirstOrDefault();
-            if (workPosition.HasValue)
-            {
-                return new DemoBuildingPlacement(origin, workPosition.Value);
-            }
+            CellId support = new CellId(value.X, value.Y + 1, value.Z);
+            return !occupied.Contains(value)
+                && cells.TryGetValue(value, out WorldCellViewModel footprintCell)
+                && !footprintCell.IsSolid
+                && cells.TryGetValue(support, out WorldCellViewModel supportCell)
+                && supportCell.IsSolid;
+        });
+        if (!validFootprint)
+        {
+            throw new InvalidOperationException(
+                "The surface campfire anchor two cells left of the shaft is invalid.");
         }
 
-        throw new InvalidOperationException(
-            "The demo world has no lower cave floor for the completed campfire.");
+        CellId? workPosition = definition.ResolveWorkPositions(
+                origin,
+                BuildingOrientation.North)
+            .Where(value => !occupied.Contains(value)
+                && !footprint.Contains(value)
+                && cells.TryGetValue(value, out WorldCellViewModel workCell)
+                && !workCell.IsSolid)
+            .OrderBy(value => Math.Abs(value.X - origin.X)
+                + Math.Abs(value.Y - origin.Y)
+                + Math.Abs(value.Z - origin.Z))
+            .ThenBy(value => value)
+            .Select(value => (CellId?)value)
+            .FirstOrDefault();
+        if (!workPosition.HasValue)
+        {
+            throw new InvalidOperationException(
+                "The surface campfire has no valid work position.");
+        }
+
+        return new DemoBuildingPlacement(origin, workPosition.Value);
     }
 
     private readonly struct DemoBuildingPlacement
