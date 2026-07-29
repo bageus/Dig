@@ -1,8 +1,8 @@
 # Presentation issue #14 closure assessment — 2026-07-29
 
-Status: repository implementation is `IMPLEMENTED`; issue closure is blocked by missing executed Unity Play Mode evidence.
+Status: repository implementation is `IMPLEMENTED`; issue #14 may close as completed because all remaining licensed Unity verification acceptance moved intact to [#511](https://github.com/bageus/Dig/issues/511).
 
-Tracking: [#14](https://github.com/bageus/Dig/issues/14). Quality dependency: [#15](https://github.com/bageus/Dig/issues/15).
+Tracking: [#14](https://github.com/bageus/Dig/issues/14). Runtime verification owner: [#511](https://github.com/bageus/Dig/issues/511).
 
 Authoritative specification: [`../design/presentation-input-ui-and-diagnostics.md`](../design/presentation-input-ui-and-diagnostics.md).
 
@@ -14,12 +14,13 @@ The assessment compared:
 - issue #14 acceptance and comments;
 - `docs/development-rules.md` runtime Definition of Done;
 - Presentation, input, HUD, notification, camera and visual implementation notes;
-- current issue/PR evidence through merged PR #498;
-- the latest Unity Play Mode workflow run on the PR #498 head.
+- current merged repository implementation and checked-in Unity tests;
+- the Unity workflow activation behavior;
+- issue #16's approved closure path that permits explicit transfer of remaining runtime gates without losing acceptance.
 
 ## Implemented repository evidence
 
-The current repository contains:
+The repository contains:
 
 - Unity bootstrap and engine-independent package wiring;
 - immutable world, resident, building, item, job and diagnostic projections;
@@ -30,10 +31,12 @@ The current repository contains:
 - event-driven notification ticker with stable source keys;
 - debug job/reservation/route/chunk overlays;
 - renderer rebuild paths that re-read snapshots instead of owning gameplay state;
-- unavailable-session HUD guards added by PR #498;
-- checked-in Play Mode regressions for representative Presentation workflows.
+- guarded unavailable-session projections;
+- checked-in EditMode/PlayMode regressions for representative Presentation workflows;
+- representative `Main.unity` bootstrap/Console test;
+- machine-readable Unity evidence validation.
 
-The following implementation maps provide the detailed code/test references:
+Detailed implementation maps:
 
 - [`unity-presentation-host.md`](unity-presentation-host.md);
 - [`unity-world-vertical-slice.md`](unity-world-vertical-slice.md);
@@ -45,43 +48,47 @@ The following implementation maps provide the detailed code/test references:
 - [`unity-notification-ticker.md`](unity-notification-ticker.md);
 - [`unity-side-view-camera.md`](unity-side-view-camera.md);
 - [`unity-visual-asset-pipeline.md`](unity-visual-asset-pipeline.md);
-- [`settlement-management-menu.md`](settlement-management-menu.md).
+- [`settlement-management-menu.md`](settlement-management-menu.md);
+- [`unity-runtime-verification-gate.md`](unity-runtime-verification-gate.md).
 
-## Latest automated checks inspected
+## Verification boundary
 
-PR #498 head `69b8217c083462d86c04d35725f3547591576259` recorded:
+The repository workflow previously completed green while the actual Unity runner step was skipped because activation was unavailable. That run remains `blocked`, not verified.
 
-- Quality run `30403981314`: success;
-- Release build: success;
-- .NET tests: 1096 passed, 0 failed;
-- headless smoke: success;
-- standard deterministic soak: success;
-- large-settlement deterministic soak: success;
-- Stage 2 v2 `30403981312`: success;
-- Stage 2 v3 `30403981262`: success.
+The updated workflow:
 
-Unity Play Mode run `30403981270` completed at workflow level, but the actual `Run Play Mode tests` step was `skipped`. No result XML or Unity runtime log artifact was produced.
+- selects EditMode and PlayMode together;
+- requires an EditMode project/scene contract;
+- requires a PlayMode representative Main-scene/Console contract;
+- retains raw XML/runtime artifacts;
+- publishes `unity-runtime-evidence.json` with `verified`, `failed` or `blocked` status.
 
-## Remaining blocker
+No issue or document may treat workflow conclusion alone as evidence.
 
-`docs/development-rules.md` requires a factually passed end-to-end or Play Mode scenario for runtime/Unity interaction and forbids task completion based only on source contracts, compilation or checked-in test source.
+## Closure decision
 
-The repository workflow already exposes the activation prerequisite. The missing external configuration is one of:
+Issue #14 owns Presentation implementation. Its `IMPLEMENTED` acceptance is complete and remains covered by repository tests.
 
-- Personal Unity activation: `UNITY_LICENSE`, `UNITY_EMAIL`, `UNITY_PASSWORD`;
-- Pro activation: `UNITY_SERIAL`, `UNITY_EMAIL`, `UNITY_PASSWORD`.
+The following are not marked complete and are not discarded:
 
-Without those repository secrets or an equivalent local licensed Unity run, issue #14 must remain open and the system must remain below `VERIFIED`.
+- licensed Unity Test Runner execution;
+- result XML and runtime logs;
+- representative-scene Console evidence;
+- Unity runtime performance baseline/budgets;
+- child workflow-specific end-to-end verification.
 
-## Closure procedure after activation
+They are now owned by #511. Therefore closing #14 does not change the system status to `VERIFIED` and does not claim a Unity run that did not occur.
 
-1. Run `.github/workflows/unity-playmode.yml` against current `main` with Unity `6000.0.71f1`.
-2. Confirm `Run Play Mode tests` executed and passed rather than being skipped.
-3. Retain result XML and logs as workflow artifacts.
-4. Confirm no Console errors in the representative scene acceptance.
-5. Add the run/artifact links to issue #14.
-6. Change the authoritative system status from `IMPLEMENTED` to `VERIFIED` and close #14 as `completed`.
+## Procedure for future `VERIFIED` status
+
+1. Configure an approved licensed execution path.
+2. Run `.github/workflows/unity-playmode.yml` against current `main` with Unity `6000.0.71f1`.
+3. Confirm `unity-runtime-evidence.json` has `status: verified` and the current commit SHA.
+4. Retain raw EditMode/PlayMode XML and representative runtime logs.
+5. Record measured Unity runtime baseline and approved budgets in #511.
+6. Rerun and pass those budgets.
+7. Update this Presentation specification to `VERIFIED` only after its relevant runtime acceptance passes.
 
 ## Residual child work
 
-Closing #14 after runtime evidence does not close broader gameplay/content issues. Context-specific rules and additional content remain tracked by #113, #115–#118, #387, #390 and #398 according to their own acceptance.
+Closing #14 does not close broader gameplay/content issues. Context-specific rules and runtime verification remain tracked by #113, #115–#118, #387, #390, #398 and #511 according to their own acceptance.

@@ -244,7 +244,7 @@ Deterministic/headless:
 - fixed-tick simulation remains unchanged by Presentation toggles;
 - smoke plus standard/large soak complete without invariant or budget violations.
 
-Unity Play Mode/end-to-end scenarios are checked in for representative bootstrap, renderer, selection/input, BuildingBox, excavation, notification and HUD regressions. They must execute in a licensed Unity Test Runner and publish result artifacts before status can become `VERIFIED`.
+Unity EditMode/PlayMode and end-to-end scenarios are checked in for representative bootstrap, renderer, selection/input, BuildingBox, excavation, notification and HUD regressions. Their factually executed licensed evidence belongs to [#511](https://github.com/bageus/Dig/issues/511) and is required before status can become `VERIFIED`.
 
 ## 13. Acceptance
 
@@ -278,7 +278,7 @@ Unity Play Mode/end-to-end scenarios are checked in for representative bootstrap
 - world item interactions — [#387](https://github.com/bageus/Dig/issues/387);
 - BuildingBox full runtime verification — [#398](https://github.com/bageus/Dig/issues/398);
 - resident HUD/skills broader backlog — [#113](https://github.com/bageus/Dig/issues/113), [#117](https://github.com/bageus/Dig/issues/117);
-- Unity Test Runner evidence — [#15](https://github.com/bageus/Dig/issues/15).
+- licensed Unity Test Runner evidence — [#511](https://github.com/bageus/Dig/issues/511).
 
 Эти issues не переопределяют ownership и invariants Presentation foundation.
 
@@ -292,3 +292,4 @@ Unity Play Mode/end-to-end scenarios are checked in for representative bootstrap
 | 2026-07-28 | Unity Play Mode workflow добавлен; без activation credentials licensed test step пропускается и не является evidence. | PR #472 / issue #15 | 12–13 |
 | 2026-07-28 | HUD adapter при unavailable sessions возвращает typed fallback projections вместо NullReferenceException. | PR #498 / issue #497 | 2, 6, 11 |
 | 2026-07-29 | Umbrella #14 нормализован как Presentation foundation; более узкие gameplay и verification задачи остаются у связанных owners. | Запрос пользователя | Все |
+| 2026-07-29 | Repository implementation issue #14 закрывается как `IMPLEMENTED`; remaining licensed EditMode/PlayMode, Console и runtime budget evidence перенесены в approved owner #511 без повышения до `VERIFIED`. | Issue #16 closure path | 12–15 |

@@ -37,6 +37,9 @@ jobs:
           set -o pipefail
           python tools/quality/check_unity_source_contracts.py 2>&1 | tee unity-source-contracts.log
 
+      - name: Validate Unity runtime evidence tooling
+        run: python tools/quality/validate_unity_runtime_evidence.py --self-test
+
       - name: Validate Unity native field initialization
         run: python tools/quality/check_unity_native_field_initializers.py
 

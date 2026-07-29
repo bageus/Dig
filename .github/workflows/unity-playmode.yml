@@ -7,6 +7,7 @@ on:
       - ".github/workflows/unity-playmode.yml"
       - "src/**"
       - "unity/**"
+      - "tools/quality/validate_unity_runtime_evidence.py"
   push:
     branches:
       - main
@@ -14,16 +15,19 @@ on:
       - ".github/workflows/unity-playmode.yml"
       - "src/**"
       - "unity/**"
+      - "tools/quality/validate_unity_runtime_evidence.py"
 
 permissions:
   contents: read
   checks: write
 
 jobs:
-  playmode:
-    name: Unity 6000.0.71f1 Play Mode
+  unity-tests:
+    name: Unity 6000.0.71f1 EditMode + PlayMode
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      UNITY_VERSION: 6000.0.71f1
 
     steps:
       - name: Checkout
@@ -31,6 +35,11 @@ jobs:
         with:
           lfs: true
           show-progress: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
       - name: Resolve Unity activation
         id: activation
@@ -56,7 +65,7 @@ jobs:
           if [[ "${configured}" == "true" ]]; then
             echo "Unity activation inputs are configured."
           else
-            echo "::warning title=Unity Play Mode skipped::${reason}. Add repository Actions secrets to produce licensed runtime evidence."
+            echo "::warning title=Unity runtime tests blocked::${reason}. Add repository Actions secrets to produce licensed runtime evidence."
           fi
 
       - name: Cache Unity Library
@@ -68,9 +77,9 @@ jobs:
           restore-keys: |
             unity-library-${{ runner.os }}-6000.0.71f1-
 
-      - name: Run Play Mode tests
+      - name: Run Unity EditMode and PlayMode tests
         if: steps.activation.outputs.configured == 'true'
-        id: playmode
+        id: unity_tests
         uses: game-ci/unity-test-runner@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -80,27 +89,53 @@ jobs:
         with:
           projectPath: unity/Dig.Unity
           unityVersion: 6000.0.71f1
-          testMode: PlayMode
-          artifactsPath: artifacts/playmode
+          testMode: All
+          artifactsPath: artifacts/unity-tests
           githubToken: ${{ secrets.GITHUB_TOKEN }}
-          checkName: Dig Unity Play Mode
+          checkName: Dig Unity EditMode + PlayMode
 
-      - name: Record skipped runtime evidence
+      - name: Validate executed Unity runtime evidence
+        if: always() && steps.activation.outputs.configured == 'true'
+        shell: bash
+        run: |
+          python tools/quality/validate_unity_runtime_evidence.py \
+            --artifacts-dir artifacts/unity-tests \
+            --manifest artifacts/unity-runtime-evidence.json \
+            --required-test "EditMode=Dig.Unity.EditModeTests.UnityProjectEditModeTests.Main_scene_is_registered_with_runtime_bootstrap" \
+            --required-test "PlayMode=Dig.Unity.PlayModeTests.RepresentativeSceneConsolePlayModeTests.Main_scene_bootstraps_without_console_errors" \
+            --required-log "runtime/representative-scene.log"
+
+      - name: Record blocked runtime evidence
         if: steps.activation.outputs.configured != 'true'
         shell: bash
         run: |
+          python tools/quality/validate_unity_runtime_evidence.py \
+            --artifacts-dir artifacts/unity-tests \
+            --manifest artifacts/unity-runtime-evidence.json \
+            --required-test "EditMode=Dig.Unity.EditModeTests.UnityProjectEditModeTests.Main_scene_is_registered_with_runtime_bootstrap" \
+            --required-test "PlayMode=Dig.Unity.PlayModeTests.RepresentativeSceneConsolePlayModeTests.Main_scene_bootstraps_without_console_errors" \
+            --blocked-reason "${{ steps.activation.outputs.reason }}"
           {
-            echo "## Unity Play Mode not executed"
+            echo "## Unity runtime evidence blocked"
             echo
             echo "${{ steps.activation.outputs.reason }}."
-            echo "The PR check is not a test failure; licensed Play Mode evidence remains pending."
+            echo "The workflow conclusion alone is not verification. Inspect the unity-runtime-evidence artifact."
           } >> "${GITHUB_STEP_SUMMARY}"
 
-      - name: Upload Play Mode results
+      - name: Upload Unity test results
         if: always() && steps.activation.outputs.configured == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: unity-playmode-results
-          path: artifacts/playmode
-          if-no-files-found: warn
+          name: unity-editmode-playmode-results
+          path: artifacts/unity-tests
+          if-no-files-found: error
           retention-days: 14
+
+      - name: Upload Unity runtime evidence manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-runtime-evidence
+          path: artifacts/unity-runtime-evidence.json
+          if-no-files-found: error
+          retention-days: 30
