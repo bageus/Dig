@@ -16,6 +16,7 @@ public sealed class HaulingSlotClaimSaveRoundTripTests
     private static readonly MaterialId RockId = new MaterialId("terrain.rock");
     private static readonly ItemId OreId = new ItemId("ore.iron");
     private static readonly ItemId BasketId = new ItemId("inventory.basket");
+    private static readonly ItemId FillerId = new ItemId("material.filler");
     private static readonly EntityId ResidentId = Id(1);
     private static readonly EntityId SourceStackId = Id(2);
     private static readonly EntityId BasketStackId = Id(3);
@@ -95,6 +96,19 @@ public sealed class HaulingSlotClaimSaveRoundTripTests
                 ResidentInventoryCompartment.Main,
                 0),
             tick: 0).IsSuccess);
+        for (int slot = 1; slot < 6; slot++)
+        {
+            Assert.True(inventory.AddStack(
+                Id(20 + slot),
+                FillerId,
+                1,
+                ItemLocation.InResidentSlot(
+                    ResidentId,
+                    ResidentInventoryCompartment.Main,
+                    slot),
+                tick: 0).IsSuccess);
+        }
+
         Assert.True(inventory.AddStack(
             SourceStackId,
             OreId,
@@ -162,6 +176,7 @@ public sealed class HaulingSlotClaimSaveRoundTripTests
         return new ItemCatalog(new[]
         {
             new ItemDefinition(OreId, "Ore", 100, false, new[] { raw }),
+            new ItemDefinition(FillerId, "Filler", 1, false, new[] { raw }),
             new ItemDefinition(
                 BasketId,
                 "Basket",

@@ -20,6 +20,7 @@ public sealed class HaulingResidentTransitTests
     private static readonly EntityId StorageId = Id(4);
     private static readonly ItemId OreId = new ItemId("ore.iron");
     private static readonly ItemId BasketId = new ItemId("inventory.basket");
+    private static readonly ItemId FillerId = new ItemId("material.filler");
 
     [Fact]
     public void Acquisition_occupies_cargo_and_deposit_restores_full_speed()
@@ -52,9 +53,12 @@ public sealed class HaulingResidentTransitTests
     }
 
     [Fact]
-    public void Partial_existing_stack_capacity_is_used_before_new_cargo_slot()
+    public void Free_main_capacity_is_used_before_partial_existing_cargo_stack()
     {
-        Harness harness = new Harness(existingCargoQuantity: 95, haulQuantity: 8);
+        Harness harness = new Harness(
+            existingCargoQuantity: 95,
+            haulQuantity: 8,
+            fillMain: false);
         harness.AssignAndStart();
 
         Result acquired = harness.Acquire(Id(20), tick: 3);
@@ -68,11 +72,19 @@ public sealed class HaulingResidentTransitTests
                 == ResidentInventoryCompartment.Cargo)
             .OrderBy(stack => stack.Location.ResidentSlotIndex)
             .ToArray();
-        Assert.Equal(2, cargo.Length);
-        Assert.Equal(100, cargo[0].Quantity);
-        Assert.Equal(5, cargo[0].ReservedQuantity);
-        Assert.Equal(3, cargo[1].Quantity);
-        Assert.Equal(3, cargo[1].ReservedQuantity);
+        ItemStackSnapshot onlyCargo = Assert.Single(cargo);
+        Assert.Equal(95, onlyCargo.Quantity);
+        Assert.Equal(0, onlyCargo.ReservedQuantity);
+        ItemStackSnapshot mainTransit = Assert.Single(
+            harness.Inventory.CreateSnapshot().Stacks,
+            stack => stack.ItemId == OreId
+                && stack.Location.Kind == ItemLocationKind.AgentInventory
+                && stack.Location.HasOwner
+                && stack.Location.OwnerId == ResidentId
+                && stack.Location.ResidentCompartment
+                    == ResidentInventoryCompartment.Main);
+        Assert.Equal(8, mainTransit.Quantity);
+        Assert.Equal(8, mainTransit.ReservedQuantity);
         Assert.Equal(2, harness.Inventory.GetStack(SourceStackId)!.Quantity);
 
         Assert.True(harness.Jobs.AdvanceStage(JobId, tick: 4).IsSuccess);
@@ -91,13 +103,17 @@ public sealed class HaulingResidentTransitTests
 
     private sealed class Harness
     {
-        public Harness(int existingCargoQuantity, int haulQuantity)
+        public Harness(
+            int existingCargoQuantity,
+            int haulQuantity,
+            bool fillMain = true)
         {
             HaulQuantity = haulQuantity;
             ItemCategoryId raw = new ItemCategoryId("raw");
             Inventory = new InventoryState(new ItemCatalog(new[]
             {
                 new ItemDefinition(OreId, "Ore", 100, false, new[] { raw }),
+                new ItemDefinition(FillerId, "Filler", 1, false, new[] { raw }),
                 new ItemDefinition(
                     BasketId,
                     "Basket",
@@ -121,6 +137,22 @@ public sealed class HaulingResidentTransitTests
                     ResidentInventoryCompartment.Main,
                     0),
                 tick: 0).IsSuccess);
+            if (fillMain)
+            {
+                for (int slot = 1; slot < 6; slot++)
+                {
+                    Assert.True(Inventory.AddStack(
+                        Id(30 + slot),
+                        FillerId,
+                        1,
+                        ItemLocation.InResidentSlot(
+                            ResidentId,
+                            ResidentInventoryCompartment.Main,
+                            slot),
+                        tick: 0).IsSuccess);
+                }
+            }
+
             if (existingCargoQuantity > 0)
             {
                 Assert.True(Inventory.AddStack(

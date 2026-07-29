@@ -26,9 +26,12 @@ namespace Dig.Unity
             DigItemVisualResolution resolution = catalog != null
                 ? catalog.ResolveItem(itemId)
                 : CreateFallbackResolution(itemId);
-            return IsCampfireBox(itemId)
-                ? CreateCampfireBoxResolution(itemId, resolution)
-                : resolution;
+            if (IsCampfireBox(itemId))
+            {
+                return CreateCampfireBoxResolution(itemId, resolution);
+            }
+
+            return DigBasketVisualPolicy.Resolve(itemId, resolution);
         }
 
         internal static Vector3 ResolveWorldPosition(

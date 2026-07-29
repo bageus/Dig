@@ -94,32 +94,18 @@ internal sealed partial class DigTerrainWorkSession
         EntityId residentId = DemoId('a', 1);
         AddResidentUnit(
             inventory,
-            DemoId('3', 1),
-            DemoLargeBasketItemId,
-            residentId,
-            ResidentInventoryCompartment.Main,
-            0);
-        AddResidentUnit(
-            inventory,
-            DemoId('4', 1),
+            DemoId('5', 1),
             DemoHarnessItemId,
             residentId,
             ResidentInventoryCompartment.Main,
-            1);
-        AddResidentUnit(
-            inventory,
-            DemoId('5', 1),
-            DemoBasketItemId,
-            residentId,
-            ResidentInventoryCompartment.Main,
-            2);
+            0);
         AddResidentUnit(
             inventory,
             DemoId('6', 1),
             DemoScabbardItemId,
             residentId,
             ResidentInventoryCompartment.Main,
-            3);
+            1);
         AddResidentUnit(
             inventory,
             DemoId('1', 1),
@@ -134,6 +120,24 @@ internal sealed partial class DigTerrainWorkSession
             residentId,
             ResidentInventoryCompartment.Weapon,
             1);
+        CellId basketCell = new CellId(
+            residentStartCell.X + 1,
+            residentStartCell.Y,
+            residentStartCell.Z);
+        Require(inventory.AddUnit(
+            DemoId('3', 1),
+            DemoBasketItemId,
+            ItemLocation.InWorld(basketCell),
+            tick: 0));
+        CellId largeBasketCell = new CellId(
+            residentStartCell.X + 2,
+            residentStartCell.Y,
+            residentStartCell.Z);
+        Require(inventory.AddUnit(
+            DemoId('4', 1),
+            DemoLargeBasketItemId,
+            ItemLocation.InWorld(largeBasketCell),
+            tick: 0));
         CellId campfireBoxCell = new CellId(
             residentStartCell.X - 1,
             residentStartCell.Y,

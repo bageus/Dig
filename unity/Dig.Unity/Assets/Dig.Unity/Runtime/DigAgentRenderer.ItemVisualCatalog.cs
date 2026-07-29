@@ -32,21 +32,19 @@ public sealed partial class DigAgentRenderer
                 ItemCatalogResourcePath);
         }
 
-        if (itemVisualCatalog != null)
-        {
-            return itemVisualCatalog.ResolveItem(itemId);
-        }
-
-        return new DigItemVisualResolution(
-            DigVisualAsset.CreateRuntimeFallback(itemId, Color.magenta),
-            icon: null,
-            DigItemCarrySocketPolicy.None,
-            new Vector3(0.34f, 0.34f, 0.34f),
-            new Vector3(0.28f, 0.28f, 0.28f),
-            DigItemRotationPolicy.Fixed,
-            DigItemColliderPolicy.None,
-            maxVisibleInstances: 1,
-            hasProfile: false);
+        DigItemVisualResolution resolution = itemVisualCatalog != null
+            ? itemVisualCatalog.ResolveItem(itemId)
+            : new DigItemVisualResolution(
+                DigVisualAsset.CreateRuntimeFallback(itemId, Color.magenta),
+                icon: null,
+                DigItemCarrySocketPolicy.None,
+                new Vector3(0.34f, 0.34f, 0.34f),
+                new Vector3(0.28f, 0.28f, 0.28f),
+                DigItemRotationPolicy.Fixed,
+                DigItemColliderPolicy.None,
+                maxVisibleInstances: 1,
+                hasProfile: false);
+        return DigBasketVisualPolicy.Resolve(itemId, resolution);
     }
 }
 }

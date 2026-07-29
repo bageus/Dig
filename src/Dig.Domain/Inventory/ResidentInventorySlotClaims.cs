@@ -226,7 +226,10 @@ public sealed partial class InventoryState
                 int available = definition.MaximumStackSize - stack.Quantity - claimed;
                 if (available > 0)
                 {
-                    capacities.Add(new SlotCapacity(slot, available, mergeRank: 0));
+                    capacities.Add(new SlotCapacity(
+                        slot,
+                        available,
+                        SlotCapacityRank(definition, slot, layout, isMerge: true)));
                 }
 
                 continue;
@@ -244,7 +247,7 @@ public sealed partial class InventoryState
                 capacities.Add(new SlotCapacity(
                     slot,
                     emptyCapacity,
-                    EmptySlotRank(slot.Compartment)));
+                    SlotCapacityRank(definition, slot, layout, isMerge: false)));
             }
         }
 
@@ -279,14 +282,36 @@ public sealed partial class InventoryState
         return active.HasValue && active.Value.Definition.Accepts(definition);
     }
 
-    private static int EmptySlotRank(ResidentInventoryCompartment compartment)
+    private static int SlotCapacityRank(
+        ItemDefinition definition,
+        ResidentInventorySlot slot,
+        ResidentInventoryLayoutSnapshot layout,
+        bool isMerge)
     {
-        return compartment switch
+        if (definition.IsInventoryExpansion)
         {
-            ResidentInventoryCompartment.Cargo => 1,
-            ResidentInventoryCompartment.Weapon => 1,
-            ResidentInventoryCompartment.Main => 2,
-            _ => 3,
+            return isMerge ? 0 : 1;
+        }
+
+        bool prefersWeapon = layout.ActiveWeaponExpansion.HasValue
+            && layout.ActiveWeaponExpansion.Value.Definition.Accepts(definition);
+        if (prefersWeapon)
+        {
+            return slot.Compartment switch
+            {
+                ResidentInventoryCompartment.Weapon => isMerge ? 0 : 1,
+                ResidentInventoryCompartment.Main => isMerge ? 2 : 3,
+                ResidentInventoryCompartment.Cargo => isMerge ? 4 : 5,
+                _ => 6,
+            };
+        }
+
+        return slot.Compartment switch
+        {
+            ResidentInventoryCompartment.Main => isMerge ? 0 : 1,
+            ResidentInventoryCompartment.Cargo => isMerge ? 2 : 3,
+            ResidentInventoryCompartment.Weapon => isMerge ? 4 : 5,
+            _ => 6,
         };
     }
 

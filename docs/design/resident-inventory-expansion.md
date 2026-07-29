@@ -1,6 +1,6 @@
 # Личный инвентарь гномов и его расширения
 
-Статус: проектная спецификация. Реализация отслеживается в #64–#71. Контекстная панель и BuildingBox integration: #113/#115/#118.
+Статус: `APPROVED`. Реализация отслеживается в #64–#71. Контекстная панель и BuildingBox integration: #113/#115/#118.
 
 ## 1. Владение состоянием
 
@@ -35,7 +35,7 @@ ResidentInventoryLocation(
 - добавляет 4 Cargo slots;
 - при непустом Cargo скорость = 75%;
 - пустой Cargo не штрафует скорость;
-- model attachment скрыт, пока Cargo пуст.
+- basket-backpack attachment на заднем Cargo socket скрыт, пока Cargo пуст.
 
 ### Большая корзина
 
@@ -44,7 +44,7 @@ ResidentInventoryLocation(
 - при непустом Cargo скорость = 65%;
 - имеет приоритет над корзиной.
 
-Обе корзины могут занимать Main slots, но capacity/speed не суммируются.
+Обе корзины могут занимать Main slots, но capacity/speed не суммируются. В demo одна корзина и одна большая корзина находятся отдельными world items на поверхности рядом со стартовым resident; стартовый resident не получает Cargo expansion до pickup.
 
 ## 4. Weapon expansions
 
@@ -79,6 +79,7 @@ Cargo и Weapon groups работают одновременно.
 - Main по центру;
 - Cargo справа;
 - группы разделены рамкой, spacing и icon/title;
+- Cargo group показывает ровно 4 slots для корзины или 6 slots для большой корзины, пока active expansion находится в Main;
 - при отсутствии resident эта область показывает ExcavationPalette;
 - building selection и BuildingPlacement заменяют Inventory panel, а не накладываются поверх неё.
 
@@ -103,13 +104,27 @@ Multiplier влияет на simulation movement, ETA, Utility AI и job cost, �
 - при уменьшении capacity лишними считаются highest-index slots;
 - лишние items проливаются в cell удаления expansion;
 - ручное удаление active expansion проливает весь связанный compartment;
+- после успешного drop/spill Cargo/Weapon slots исчезают из следующего layout snapshot, attachment скрывается и movement multiplier пересчитывается в том же refresh cycle;
 - lower-tier expansion активируется только после spill;
 - автоматический перенос contents в lower tier не выполняется;
 - операция полностью rollback при ошибке.
 
 Quantity не теряется и не дублируется.
 
-## 8. Предмет в руках
+## 8. Destination priority для pickup и hauling
+
+Для ordinary item/material используется единый deterministic порядок destination capacity:
+
+1. compatible existing stack в `Main`;
+2. свободный `Main` slot;
+3. compatible existing stack в `Cargo`;
+4. свободный `Cargo` slot.
+
+`Cargo` используется только после полного исчерпания совместимой Main capacity. Partial Cargo stack не перехватывает новый pickup, пока существует свободный Main slot. Уже находящиеся в Cargo предметы не переносятся обратно автоматически при последующем освобождении Main. Для оружия и щитов active `Weapon` compartment сохраняет отдельный специализированный приоритет.
+
+Один и тот же порядок используется world pickup, hauling, building supply, retry и save/load recovery.
+
+## 9. Предмет в руках
 
 Предмет остаётся в исходном slot. Действие использует ссылку:
 
@@ -124,11 +139,11 @@ HeldItemReference(ResidentId, StackId, Quantity = 1, Purpose)
 - ссылка очищается при completion, cancel, destruction или consumption;
 - временный Equipped location для предмета в руках не используется.
 
-## 9. Контекстный input предметов
+## 10. Контекстный input предметов
 
 После UI shielding применяется типизированный приоритет.
 
-### 9.1 BuildingBox в Inventory
+### 10.1 BuildingBox в Inventory
 
 ЛКМ по BuildingBox **не** выбирает stack для drop. Он включает `BuildingPlacement` для соответствующего BuildingDefinition.
 
@@ -139,7 +154,7 @@ HeldItemReference(ResidentId, StackId, Quantity = 1, Purpose)
 
 Полная модель: `building-box-placement-and-packing.md`.
 
-### 9.2 Обычный предмет
+### 10.2 Обычный предмет
 
 ЛКМ по обычному stack выбирает его для targeted drop.
 
@@ -147,13 +162,11 @@ HeldItemReference(ResidentId, StackId, Quantity = 1, Purpose)
 2. ЛКМ по valid cell отправляет drop command.
 3. Domain меняется только после успешной команды.
 
-### 9.3 Quick drop
+### 10.3 Quick drop
 
-Double LMB по обычному stack выбрасывает его в current logical resident cell. Для expansion выполняется spill.
+Пока удерживается `C`, hover доступного non-BuildingBox stack показывает quick-drop indicator. `C + ЛКМ` выбрасывает stack в current logical resident cell. Для expansion используется explicit spill-aware drop; double LMB, RMB и `D + ЛКМ` quick drop не выполняют.
 
-BuildingBox double click не должен обходить placement priority; quick drop доступен только через явно выбранное drop action/context menu либо после отдельного stack-selection режима.
-
-### 9.4 Use
+### 10.4 Use
 
 `Alt + ЛКМ` по usable inventory item отправляет UseInventoryItem.
 
@@ -162,7 +175,7 @@ BuildingBox double click не должен обходить placement priority; 
 - unavailable/reserved/unusable item возвращает reason;
 - box placement использует обычный LMB, не Alt use.
 
-## 10. World interaction fallback
+## 11. World interaction fallback
 
 Для world items правила принадлежат context router #115.
 
@@ -172,7 +185,7 @@ BuildingBox double click не должен обходить placement priority; 
 - unsupported/невозможный Alt interaction трактуется как ground click: выбранный resident идёт к позиции;
 - full Inventory не уничтожает item и не создаёт скрытый pickup.
 
-## 11. BuildingBox category
+## 12. BuildingBox category
 
 BuildingBox:
 
@@ -183,7 +196,7 @@ BuildingBox:
 - одна коробка резервируется не более чем одним building plan;
 - сама коробка остаётся authoritative Inventory item до site/final commit.
 
-## 12. Hauling integration
+## 13. Hauling integration
 
 - planner учитывает merge и free slots;
 - ordinary resources/boxes не используют Weapon;
@@ -193,7 +206,7 @@ BuildingBox:
 - layout change не оставляет job со stale slot;
 - BuildingBox plan reservation и resident slot reservation согласуются одной Application orchestration.
 
-## 13. Content definitions
+## 14. Content definitions
 
 ```text
 InventoryExpansionDefinition
@@ -215,9 +228,9 @@ BuildingBoxDefinition
 - MaxStackSize = 1
 ```
 
-Content validation проверяет IDs, categories, slots, speed, recipes и building references.
+Content validation проверяет IDs, categories, slots, speed, recipes и building references. Basket ItemIds обязаны иметь distinct basket-shaped world/carry presentation policy; generic magenta cube fallback для них запрещён.
 
-## 14. Save/Load
+## 15. Save/Load
 
 Сохраняются:
 
@@ -230,7 +243,7 @@ Content validation проверяет IDs, categories, slots, speed, recipes и 
 
 Миграция старого resident inventory сортирует stacks по stable StackId, заполняет Main, активирует expansions, затем Cargo/Weapon; остаток выбрасывается в resident cell с report.
 
-## 15. Инварианты
+## 16. Инварианты
 
 - stack имеет одно authoritative location;
 - slot index валиден;
@@ -245,7 +258,7 @@ Content validation проверяет IDs, categories, slots, speed, recipes и 
 - BuildingBox LMB не создаёт одновременно drop и placement;
 - reserved quantity нельзя использовать/выбросить сверх available.
 
-## 16. Критерии приёмки
+## 17. Критерии приёмки
 
 - base 6 slots;
 - cargo 4/6 и weapon 2/4 работают с tier priority;
@@ -254,6 +267,16 @@ Content validation проверяет IDs, categories, slots, speed, recipes и 
 - held item остаётся в slot;
 - Weapon→Main→Cargo layout;
 - ordinary drop/use и BuildingBox placement имеют правильный priority;
+- pickup/hauling сначала использует Main и только после его заполнения Cargo;
+- surface demo содержит pickable basket и large basket, а resident начинает без Cargo expansion;
+- непустой Cargo показывает basket-backpack сзади, пустой Cargo и drop/spill скрывают его;
 - hauling учитывает real slots;
 - save/load восстанавливает layout, boxes и reservations;
 - unit, integration, migration, soak и Play Mode tests покрывают все правила.
+
+
+## 18. Журнал решений
+
+| Дата | Решение | Кто подтвердил | Issues |
+|---|---|---|---|
+| 2026-07-29 | Ordinary pickup/hauling использует Main до Cargo; basket и large basket появляются на поверхности; attachment виден только при непустом Cargo. | пользователь | #68, #69 |
