@@ -63,7 +63,8 @@ public sealed class SaveGameService
             context.Mushrooms,
             context.Production,
             context.BuildingSupply,
-            context.Barrels));
+            context.Barrels,
+            context.Combat));
     }
 
     public Result<LoadedGameState> Load(
@@ -243,7 +244,8 @@ public sealed class SaveGameService
                 context.TerrainDeposits,
                 context.Mushrooms,
                 context.Production,
-                context.Barrels),
+                context.Barrels,
+                context.CombatWeapons),
             context.Agents);
     }
 
