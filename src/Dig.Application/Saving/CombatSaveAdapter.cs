@@ -66,7 +66,7 @@ public static class CombatSaveAdapter
             });
         }
 
-        foreach (CombatAttackResolution resolution in state.Resolutions)
+        foreach (CombatAttackResolution resolution in combat.CreateResolutionSnapshot())
         {
             data.Resolutions.Add(new CombatResolutionSaveData
             {
@@ -84,7 +84,7 @@ public static class CombatSaveAdapter
             });
         }
 
-        foreach (CombatCooldownSnapshot cooldown in state.Cooldowns)
+        foreach (CombatCooldownSnapshot cooldown in combat.CreateCooldownSnapshot())
         {
             data.Cooldowns.Add(new CombatCooldownSaveData
             {
