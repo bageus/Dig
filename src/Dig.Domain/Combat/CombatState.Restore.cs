@@ -25,6 +25,19 @@ public readonly struct CombatCooldownSnapshot
 
 public sealed partial class CombatState
 {
+    public IReadOnlyList<CombatAttackResolution> CreateResolutionSnapshot()
+    {
+        return _resolutions.Values.OrderBy(value => value.ActionId).ToArray();
+    }
+
+    public IReadOnlyList<CombatCooldownSnapshot> CreateCooldownSnapshot()
+    {
+        return _lastAttackTicks
+            .OrderBy(value => value.Key.ToString(), StringComparer.Ordinal)
+            .Select(value => new CombatCooldownSnapshot(value.Key, value.Value))
+            .ToArray();
+    }
+
     public Result RestoreRuntime(
         long version,
         IReadOnlyCollection<CombatIntentSnapshot> intents,
