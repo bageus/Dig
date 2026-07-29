@@ -125,7 +125,7 @@ namespace Dig.Domain.World
                 approach,
                 miningSkill);
             _assignments.Add(workerId, assignment);
-            EnsureReservation(assignment, deterministicSeed: 0);
+            EnsureReservation(assignment);
             return assignment;
         }
 
@@ -191,9 +191,8 @@ namespace Dig.Domain.World
             return state;
         }
 
-        public IReadOnlyList<ExcavationQuarterCompletion> ApplySwing(
-            EntityId workerId,
-            ulong deterministicSeed)
+        public IReadOnlyList<ExcavationQuarterCompletion> ApplyWork(
+            EntityId workerId)
         {
             if (!_assignments.TryGetValue(
                     workerId,
@@ -209,58 +208,42 @@ namespace Dig.Domain.World
                 return Array.Empty<ExcavationQuarterCompletion>();
             }
 
-            EnsureReservation(assignment, deterministicSeed);
+            EnsureReservation(assignment);
             ExcavationQuarter reserved = assignment.ReservedQuarters;
             if (reserved == ExcavationQuarter.None)
             {
                 return Array.Empty<ExcavationQuarterCompletion>();
             }
 
-            ExcavationSwingPlan plan = _planner.Plan(
-                state,
-                assignment.Approach,
-                assignment.MiningSkill,
-                deterministicSeed,
-                reserved: ReservedByOthers(assignment));
-            // Low-skill work finishes its reserved quarter before choosing another one.
-            // Replanning a different random quarter on every tick scattered hidden
-            // swing progress across the cell and made excavation appear to stop. Skilled
-            // workers may still complete the additional quarters selected by the policy.
-            ExcavationQuarter selected = assignment.MiningSkill <= 40
-                ? reserved
-                : reserved | plan.Quarters;
-            assignment.ReservedQuarters = selected;
-
-            List<ExcavationQuarterCompletion> completed =
-                new List<ExcavationQuarterCompletion>();
-            foreach (ExcavationQuarter quarter in Enumerate(selected))
-            {
-                if (state.ApplySwing(quarter, plan.RequiredSwingsPerQuarter))
-                {
-                    completed.Add(new ExcavationQuarterCompletion(
-                        assignment.Target,
-                        quarter,
-                        workerId,
-                        state.IsComplete));
-                }
-            }
-
+            state.Complete(reserved);
+            ExcavationQuarterCompletion completion = new ExcavationQuarterCompletion(
+                assignment.Target,
+                reserved,
+                workerId,
+                state.IsComplete);
             assignment.ReservedQuarters &= ~state.Completed;
             if (state.IsComplete)
             {
                 CancelAssignmentsFor(assignment.Target);
             }
-            else if (assignment.ReservedQuarters == ExcavationQuarter.None)
+            else
             {
-                EnsureReservation(assignment, deterministicSeed + 1UL);
+                EnsureReservation(assignment);
             }
 
-            return completed;
+            return new[] { completion };
+        }
+
+        public IReadOnlyList<ExcavationQuarterCompletion> ApplySwing(
+            EntityId workerId,
+            ulong deterministicSeed)
+        {
+            _ = deterministicSeed;
+            return ApplyWork(workerId);
         }
 
         private void EnsureReservation(
-            ExcavationWorkerAssignment assignment,
-            ulong deterministicSeed)
+            ExcavationWorkerAssignment assignment)
         {
             ExcavationQuarterState state = GetState(assignment.Target);
             assignment.ReservedQuarters &= ~state.Completed;
@@ -272,8 +255,6 @@ namespace Dig.Domain.World
             ExcavationSwingPlan plan = _planner.Plan(
                 state,
                 assignment.Approach,
-                assignment.MiningSkill,
-                deterministicSeed,
                 ReservedByOthers(assignment));
             assignment.ReservedQuarters = FirstQuarter(plan.Quarters);
         }
