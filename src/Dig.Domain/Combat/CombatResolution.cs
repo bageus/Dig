@@ -219,6 +219,23 @@ internal sealed class CombatStatusState
         RemainingTicks = definition.DurationTicks;
     }
 
+    public static CombatStatusState Restore(CombatStatusSnapshot snapshot)
+    {
+        CombatStatusDefinition definition = new CombatStatusDefinition(
+            snapshot.StatusId,
+            applicationChance: 0,
+            durationTicks: Math.Max(1, snapshot.RemainingTicks),
+            damagePerTick: snapshot.DamagePerTick);
+        CombatStatusState state = new CombatStatusState(
+            snapshot.TargetId,
+            definition,
+            snapshot.SourceActionId,
+            appliedTick: Math.Max(0, snapshot.NextTick - 1));
+        state.NextTick = snapshot.NextTick;
+        state.RemainingTicks = snapshot.RemainingTicks;
+        return state;
+    }
+
     public EntityId TargetId { get; }
     public CombatStatusDefinition Definition { get; private set; }
     public CombatActionId SourceActionId { get; private set; }
