@@ -9,7 +9,7 @@ namespace Dig.Tests
     public sealed class RuntimeInteractionRootCauseContractTests
     {
         [Fact]
-        public void Low_skill_excavation_finishes_one_reserved_quarter_before_replanning()
+        public void Excavation_cadence_is_external_to_quarter_reservation()
         {
             ExcavationWorkCoordinator coordinator = new ExcavationWorkCoordinator();
             ExcavationWorkTarget target = new ExcavationWorkTarget(
@@ -24,23 +24,14 @@ namespace Dig.Tests
                 miningSkill: 0);
             ExcavationQuarter reserved = assignment.ReservedQuarters;
 
-            coordinator.ApplySwing(worker, deterministicSeed: 1);
+            ExcavationQuarterCompletion completion = Assert.Single(
+                coordinator.ApplyWork(worker));
 
-            ExcavationWorkerAssignment current = coordinator.GetAssignment(worker)!;
-            Assert.Equal(reserved, current.ReservedQuarters);
-            Assert.Equal(ExcavationQuarter.None, coordinator.GetState(target).Completed);
-
-            for (ulong seed = 2; seed < 20
-                && coordinator.GetState(target).Completed == ExcavationQuarter.None;
-                seed++)
-            {
-                coordinator.ApplySwing(worker, seed);
-            }
-
-            Assert.Equal(reserved, coordinator.GetState(target).Completed & reserved);
+            Assert.Equal(reserved, completion.Quarter);
+            Assert.Equal(reserved, coordinator.GetState(target).Completed);
             Assert.Contains(coordinator.GetProgress(), value =>
                 value.Target.Equals(target)
-                && value.Completed != ExcavationQuarter.None);
+                && value.Completed == reserved);
         }
 
         [Fact]
@@ -166,12 +157,13 @@ namespace Dig.Tests
         {
             string runtime = RuntimeRoot();
             string quarters = Read(runtime, "DigTerrainWorkExcavationQuarters.cs");
+            string cadence = Read(runtime, "DigTerrainWorkExcavationCadence.cs");
             string inventory = Read(runtime, "DigWorldInteraction.ResidentInventory.cs");
 
-            Assert.Contains(
-                "unchecked((ulong)(uint)_worldSession.MiningOutputWorldSeed)",
-                quarters);
             Assert.Contains("_excavationMiningSkill?.Invoke(workerId)??0", quarters);
+            Assert.Contains("_excavationCadenceResolver.Resolve", cadence);
+            Assert.Contains("ResolveMiningWorkInterval", cadence);
+            Assert.DoesNotContain("MiningOutputWorldSeed", cadence);
             Assert.DoesNotContain("_manualExcavationMiningSkill", quarters);
             Assert.Equal(
                 2,
