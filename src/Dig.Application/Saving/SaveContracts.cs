@@ -8,6 +8,7 @@ using Dig.Application.World;
 using Dig.Domain.Agents;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
+using Dig.Domain.Combat;
 using Dig.Domain.Ecology;
 using Dig.Domain.Inventory;
 using Dig.Domain.Production;
@@ -19,7 +20,7 @@ namespace Dig.Application.Saving
 
 public static class SaveFormat
 {
-    public const int CurrentVersion = 9;
+    public const int CurrentVersion = 10;
 }
 
 public static class SaveSlotNames
@@ -95,6 +96,7 @@ public sealed class SaveGameDocument
     [DataMember(Order = 13)] public BuildingProductionSaveData BuildingProduction { get; set; } = new BuildingProductionSaveData();
     [DataMember(Order = 14)] public BarrelSaveData Barrels { get; set; } = new BarrelSaveData();
     [DataMember(Order = 15)] public AgentRuntimeSaveData AgentRuntime { get; set; } = new AgentRuntimeSaveData();
+    [DataMember(Order = 16)] public CombatSaveData Combat { get; set; } = new CombatSaveData();
 }
 
 public sealed class LoadedGameState
@@ -116,7 +118,8 @@ public sealed class LoadedGameState
         ProductionState? production = null,
         BuildingSupplyState? buildingSupply = null,
         BarrelState? barrels = null,
-        IReadOnlyDictionary<EntityId, AgentRuntimeSnapshot>? agentRuntime = null)
+        IReadOnlyDictionary<EntityId, AgentRuntimeSnapshot>? agentRuntime = null,
+        CombatState? combat = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -150,6 +153,7 @@ public sealed class LoadedGameState
         BuildingSupply = buildingSupply ?? new BuildingSupplyState();
         Barrels = barrels ?? new BarrelState(
             new BarrelCatalog(Array.Empty<BarrelDefinition>()));
+        Combat = combat;
     }
 
     public SaveMetadataData Metadata { get; }
@@ -169,6 +173,7 @@ public sealed class LoadedGameState
     public ProductionState Production { get; }
     public BuildingSupplyState BuildingSupply { get; }
     public BarrelState Barrels { get; }
+    public CombatState? Combat { get; }
 
     private static IReadOnlyDictionary<TKey, TValue> Copy<TKey, TValue>(
         IReadOnlyDictionary<TKey, TValue>? values) where TKey : notnull
