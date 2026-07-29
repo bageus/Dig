@@ -10,13 +10,39 @@ namespace Dig.Unity
     internal sealed partial class DigWorldSession
     {
         private readonly CaveRoomPlanner _caveRoomPlanner = new CaveRoomPlanner();
+        private readonly CaveRoomResumePlanner _caveRoomResumePlanner =
+            new CaveRoomResumePlanner();
         private readonly List<CaveRoomPlan> _caveRoomPlans = new List<CaveRoomPlan>();
+        private readonly HashSet<CaveRoomPlan> _pausedCaveRoomPlans =
+            new HashSet<CaveRoomPlan>();
 
         internal CaveRoomPlanResult PlanCaveRoom(
             CaveRoomPresetKind kind,
             CellId entrance)
         {
             WorldSnapshot snapshot = LoadSnapshot();
+            CaveRoomPlan? paused = _pausedCaveRoomPlans.FirstOrDefault(value =>
+                value.Entrance == entrance && value.Preset.Kind == kind);
+            if (paused != null)
+            {
+                CaveRoomPlanResult resumed = _caveRoomResumePlanner.Plan(
+                    snapshot,
+                    _repository.Get().Materials,
+                    _boundaryPolicy,
+                    paused);
+                if (resumed.Succeeded)
+                {
+                    return resumed;
+                }
+
+                if (resumed.FailureReason != CaveRoomPlanFailureReason.NothingToExcavate)
+                {
+                    return resumed;
+                }
+
+                _pausedCaveRoomPlans.Remove(paused);
+            }
+
             IReadOnlyList<CaveRoomPlan> completed = GetCompletedCaveRoomPlans(snapshot);
             return _caveRoomPlanner.Plan(
                 snapshot,
@@ -34,10 +60,10 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(plan));
             }
 
-            bool alreadyPlaced = _caveRoomPlans.Any(existing =>
+            CaveRoomPlan? existingPlan = _caveRoomPlans.FirstOrDefault(existing =>
                 existing.Entrance == plan.Entrance
                 && existing.Preset.Kind == plan.Preset.Kind);
-            if (alreadyPlaced)
+            if (existingPlan != null && !_pausedCaveRoomPlans.Contains(existingPlan))
             {
                 return Result.Success();
             }
@@ -65,7 +91,15 @@ namespace Dig.Unity
                 return Result.Failure(designated.Error!);
             }
 
-            _caveRoomPlans.Add(plan);
+            if (existingPlan == null)
+            {
+                _caveRoomPlans.Add(plan);
+            }
+            else
+            {
+                _pausedCaveRoomPlans.Remove(existingPlan);
+            }
+
             return Result.Success();
         }
 
@@ -118,9 +152,17 @@ namespace Dig.Unity
             Dictionary<CellId, CellSnapshot> world = LoadSnapshot().Chunks
                 .SelectMany(chunk => chunk.Cells)
                 .ToDictionary(cell => cell.Id);
-            _caveRoomPlans.RemoveAll(plan =>
-                plan.VolumeCells.Any(erased.Contains)
-                && plan.VolumeCells.Any(cell => world[cell].IsSolid));
+            for (int index = 0; index < _caveRoomPlans.Count; index++)
+            {
+                CaveRoomPlan plan = _caveRoomPlans[index];
+                if (plan.VolumeCells.Any(erased.Contains)
+                    && plan.ExcavationTargets.Any(target =>
+                        !IsCaveRoomTargetComplete(target, world)))
+                {
+                    _pausedCaveRoomPlans.Add(plan);
+                }
+            }
+
             RemoveTunnelPlans(cells);
         }
 
