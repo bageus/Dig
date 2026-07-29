@@ -1,6 +1,6 @@
 # Resident inventory actions
 
-Статус реализации: `IMPLEMENTED` in PR #501; Play Mode compile boundary and runtime placement verification are corrected in PR #504. Actual licensed Unity Play Mode verification remains pending.
+Статус реализации: `IMPLEMENTED` in PR #501; Play Mode compile boundary and runtime placement verification are corrected in PR #504. The latest `C` quick-drop and blue placement-reservation correction is implemented on the follow-up branch; actual licensed Unity Play Mode verification remains pending.
 
 Authoritative design: [`../design/runtime-selection-excavation-item-placement-decisions.md`](../design/runtime-selection-excavation-item-placement-decisions.md), [`../design/resident-inventory-expansion.md`](../design/resident-inventory-expansion.md).
 
@@ -11,13 +11,14 @@ Tracking: [#64](https://github.com/bageus/Dig/issues/64), [#67](https://github.c
 Selected-resident HUD читает authoritative resident inventory layout и маршрутизирует действия через `ContextInputRouter` на поверхности `ResidentInventory`.
 
 - обычный ЛКМ по BuildingBox сохраняет отдельный unpack/building-placement workflow;
-- обычный ЛКМ по доступному generic/material/food stack включает world-space item ghost;
+- обычный ЛКМ по доступному generic/material/food stack включает полноценный world-space item placement mode;
 - `Alt + ЛКМ` имеет приоритет и отправляет typed use action;
-- `D + ЛКМ` по non-BuildingBox stack отправляет immediate `DropInventoryStack` в current logical resident cell;
+- `C + ЛКМ` по non-BuildingBox stack отправляет immediate `DropInventoryStack` в current logical resident cell;
+- `D` больше не участвует в quick drop и остаётся правым направлением camera pan;
 - double click и RMB больше не выполняют quick drop;
-- hover с `D` показывает анимированную стрелку вниз; hover consumable с `Alt` показывает анимированный рот.
+- hover с `C` показывает анимированную стрелку вниз; hover consumable с `Alt` показывает анимированный рот.
 
-`D` одновременно остаётся правой клавишей WASD camera pan. Authoritative runtime input specification therefore requires full arrow-key duplicates: `Left/Right` duplicate `A/D`, and `Down/Up` duplicate `S/W`. PR #504 adds a regression contract for both axis pairs so inventory quick-drop input never leaves camera movement without a keyboard alternative.
+Camera pan сохраняет обе схемы: `A/D/S/W` и точные directional duplicates `Left/Right/Down/Up`.
 
 ## Input wiring regression — 2026-07-29
 
@@ -29,13 +30,13 @@ Application job, validation and ghost code from PR #479 existed, but the active 
 
 The correction keeps one owner path:
 
-- `SelectResidentInventoryLayoutSlot` now delegates to `ActivateResidentInventoryLayoutSlot`;
+- `SelectResidentInventoryLayoutSlot` delegates to `ActivateResidentInventoryLayoutSlot`;
 - `ActivateResidentInventorySlot` invokes `BeginInventoryItemPlacement` for an available non-BuildingBox stack;
-- the stack remains authoritative in its resident slot while the ghost is active;
+- the item mode now follows the BuildingBox presentation lifecycle: system cursor hidden while the transparent ghost is active, continuous world-space hover, green/red validity and RMB cancellation with cursor restoration;
 - LMB on a valid world target calls `CreateResidentInventoryPlacement` and creates the resident-bound job;
-- immediate movement remains exclusive to `D + ЛКМ`.
+- immediate movement remains exclusive to `C + ЛКМ`.
 
-A source-contract regression locks this delegate and rejects the old “LMB on open ground drops it there” selection path. An executable Play Mode test boots the real demo runtime, inserts a generic material into a resident slot, invokes the actual HUD LMB handler and verifies that item placement mode/ghost become active while the authoritative stack remains in resident inventory.
+The executable Play Mode scenario boots the real demo runtime, inserts a generic material into a resident slot, invokes the actual HUD LMB handler, verifies the active ghost and hidden system cursor, cancels the preview, creates an authoritative placement reservation on a valid flat-supported cell and verifies the resulting blue inventory projection.
 
 ## Resident-bound targeted placement
 
@@ -44,11 +45,11 @@ A source-contract regression locks this delegate and rejects the old “LMB on o
 - exact stack принадлежит выбранному resident;
 - вся requested quantity доступна, не held и не reserved;
 - item не является spill-aware inventory expansion;
-- destination — explored open cell с walkable support и входит в reachable set.
+- destination — explored reachable open cell с ровной walkable support surface.
 
-Stack остаётся в исходном slot. Job резервирует exact quantity и destination и содержит stages `TravelToDestination -> DepositItem`. Первый job сразу claim-ится только выбранным resident. Следующие незавершённые placement jobs того же resident получают dependency на предыдущий job и активируются `ResidentInventoryPlacementQueue` строго в creation order.
+Stack остаётся в исходном slot. Job резервирует exact quantity и destination и содержит stages `TravelToDestination -> DepositItem`. Пока reservation существует, slot остаётся видимым, использует синюю подкраску и сохраняет числовой `R:<quantity>` marker. Первый job сразу claim-ится только выбранным resident. Следующие незавершённые placement jobs того же resident получают dependency на предыдущий job и активируются `ResidentInventoryPlacementQueue` строго в creation order.
 
-`CompleteResidentInventoryPlacementHandler` повторно проверяет resident binding, destination и exact reservation, затем атомарно переносит reserved quantity в `ItemLocation.InWorld(destination)` и завершает job. Blocked route/target использует typed blocked/retry path. Cancel/failure освобождает quantity reservation; failed predecessor отменяет dependents с явной причиной.
+`CompleteResidentInventoryPlacementHandler` повторно проверяет resident binding, destination и exact reservation, затем атомарно переносит reserved quantity в `ItemLocation.InWorld(destination)` и завершает job. Blocked route/target использует typed blocked/retry path. Cancel/failure освобождает quantity reservation; последующий HUD refresh убирает синюю подкраску. Failed predecessor отменяет dependents с явной причиной.
 
 `ResidentInventoryPlacementJobSaveCodec` сохраняет resident id, stack id, quantity, destination, retry policy и dependency order. После PR #500 generic `SaveGameCompositionRoot.CreateJobDefinitionRegistry` регистрирует этот codec вместе со всеми concrete job definitions и выполняет coverage validation до создания `SaveGameService`.
 
@@ -74,16 +75,20 @@ PR #501 Play Mode scenarios intentionally reference internal `Dig.Unity` adapter
 
 ## Verification
 
-Добавлены .NET regression tests для:
+Добавлены regression tests для:
 
-- `D + ЛКМ`, Alt priority, отсутствия double-click/RMB quick drop и BuildingBox priority;
+- `C + ЛКМ`, отсутствия `D` quick drop, Alt priority, отсутствия double-click/RMB quick drop и BuildingBox priority;
+- hidden/restored system cursor and real item ghost lifecycle;
+- flat walkable-support target validation;
 - exact resident/stack/quantity reservation;
+- blue reserved inventory background/text plus numeric reservation marker;
 - deterministic dependency order;
 - deposit без потери/дублирования quantity;
+- blocked/cancel cleanup without stale reservation tint;
 - placement job save codec и composition-root registration coverage;
 - публичной Unity-доступности resident ownership policy и её location semantics;
 - соответствия world consumable command path фактическому `DigHudOverlay` field contract;
 - фактического HUD delegate в local ghost/job placement pipeline;
 - friend-assembly identity и arrow-key camera duplicates.
 
-PR #501 merge-ref Quality run `30406180795` passed architecture/source contracts, Release build, 1101 .NET tests, headless smoke and both deterministic soaks. PR #504 validation is recorded after its final head completes CI. Unity Play Mode remains mandatory for animated cursor, exact hover tint, ghost visibility/colour, multi-order resident execution, input shielding and repeated world pickup/drop workflow.
+Automated .NET/source-contract CI and the checked-in Unity scenario must pass on the final PR head. Actual animated cursor/ghost, exact hover, input shielding, repeated placement and cleanup remain `VERIFIED` only after execution in a licensed Unity Test Runner.

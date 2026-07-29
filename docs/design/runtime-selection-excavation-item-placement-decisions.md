@@ -82,36 +82,40 @@ Resident, creature и loose world item в target cell не блокируют pl
 
 ## 5. Размещение и использование предмета из resident inventory
 
-Один ЛКМ по доступному generic item в resident inventory включает локальный item placement mode:
+Один ЛКМ по доступному generic item в resident inventory сразу включает полноценный item placement mode по тому же Presentation-контракту, что BuildingBox placement:
 
-- item visual становится полупрозрачным world-space ghost;
-- ghost следует pointer только по explored open cells с ровной walkable support surface;
+- системный 2D cursor скрывается;
+- item visual становится полупрозрачным world-space ghost и непрерывно следует pointer;
+- ghost не участвует в raycast/physics/occupancy;
+- target допустим только в explored reachable open cell с ровной плоской walkable support surface;
 - valid preview зелёный, invalid preview красный и содержит reason code;
 - authoritative stack остаётся в исходном inventory slot до фактического выполнения работы;
 - ЛКМ по valid cell создаёт `ResidentInventoryPlacementJob` для exact resident, stack, available quantity и destination cell, но не переносит stack немедленно;
 - job резервирует exact quantity и destination, привязан к тому же resident и проходит `TravelToDestination -> DepositItem`;
+- зарезервированный для placement stack остаётся видимым в inventory и получает синюю подкраску с числовым reservation marker до deposit/cancel/failure cleanup;
 - несколько placement jobs одного resident образуют deterministic dependency chain по порядку создания и выполняются этим resident последовательно;
 - следующая работа становится available только после terminal-success предыдущей; cancel/failure предыдущей освобождает её reservations и явно разблокирует либо отменяет dependents по общей job policy;
 - destination, ставшая blocked до deposit, переводит job в typed blocked/retry path без потери/дублирования stack;
 - invalid target не меняет Inventory и не создаёт job;
-- RMB отменяет preview;
-- успешное создание job очищает selection/preview, но stack остаётся видимым как reserved до deposit;
+- RMB отменяет preview и восстанавливает системный cursor;
+- успешное создание job очищает selection/preview и восстанавливает системный cursor, но stack остаётся видимым синим как reserved до deposit;
 - save/load восстанавливает definition, exact resident binding, dependency order, reservation, destination и текущий stage.
 
 Quick drop использует отдельный явный modifier:
 
-- пока удерживается `D`, hover доступного non-BuildingBox inventory stack показывает анимированную стрелку вниз;
-- `D + ЛКМ` немедленно выполняет `DropInventoryStack` в authoritative current resident cell без placement job;
+- пока удерживается `C`, hover доступного non-BuildingBox inventory stack показывает анимированную стрелку вниз;
+- `C + ЛКМ` немедленно выполняет `DropInventoryStack` в authoritative current resident cell без placement job;
+- `D` больше не является quick-drop modifier и остаётся правым направлением camera pan;
 - double click и RMB больше не являются quick-drop input;
 - reserved/held/unavailable stack не выбрасывается и возвращает typed reason;
 - после quick drop обычная world-item gravity policy автоматически перемещает unsupported item вниз до первой допустимой опоры в vertical tunnel;
-- поскольку `D` также является правым направлением WASD camera pan, движение камеры обязательно полностью дублируется стрелками: `LeftArrow/RightArrow` дублируют `A/D`, `DownArrow/UpArrow` дублируют `S/W`.
+- движение камеры полностью дублируется стрелками: `LeftArrow/RightArrow` дублируют `A/D`, `DownArrow/UpArrow` дублируют `S/W`.
 
 Использование consumable/tool сохраняет отдельный priority:
 
 - `Alt + ЛКМ` по доступному food, potion, drink, tool или weapon отправляет typed use command;
 - при удержании `Alt` consumable slot показывает анимированный рот, а tool/weapon использует свой action feedback;
-- `Alt` use имеет приоритет над generic placement; `D` quick drop имеет приоритет только без `Alt`;
+- `Alt` use имеет приоритет над generic placement; `C` quick drop имеет приоритет только без `Alt`;
 - BuildingBox inventory action остаётся отдельным unpacking workflow и использует layer-derived box/building ghost, а не generic item ghost/down-arrow quick drop.
 
 ## 6. Excavation quarter progress
@@ -178,11 +182,11 @@ Quick drop использует отдельный явный modifier:
 11. world BuildingBox без Alt не показывает pickup arrow; Alt hover показывает arrow, Alt+LMB создаёт pickup;
 12. selected resident -> Alt hover food/consumable -> animated mouth -> Alt+LMB exact pickup-then-use; plain LMB по тому же stack остаётся pickup;
 13. resident проходит через world item collider;
-14. inventory generic item LMB -> transparent ghost -> green valid flat/walkable target -> resident-bound placement job, stack остаётся reserved в slot;
+14. inventory generic item LMB -> hidden system cursor + transparent moving ghost -> green valid flat/walkable target -> resident-bound placement job, stack остаётся синим и reserved в slot до deposit;
 15. два и более placement jobs одного resident выполняются строго в порядке создания, без параллельного claim, потери или дублирования items;
-16. blocked destination использует retry/cancel cleanup, а save/load сохраняет очередь и stage;
-17. inventory item D hover -> animated down arrow -> D+LMB immediate drop at resident cell -> fall through open vertical tunnel;
-18. camera pan remains available through `Left/Right/Down/Up` as exact directional duplicates of `A/D/S/W`, including while `D` is reserved as the inventory quick-drop modifier;
+16. blocked destination использует retry/cancel cleanup, снимает stale blue tint, а save/load сохраняет очередь и stage;
+17. inventory item C hover -> animated down arrow -> C+LMB immediate drop at resident cell -> fall through open vertical tunnel;
+18. D+LMB не создаёт quick drop; camera pan остаётся доступен через `A/D/S/W` и `Left/Right/Down/Up`;
 19. double click/RMB не создают quick drop; Alt use и BuildingBox placement сохраняют priority;
 20. horizontal и vertical excavation минимум 10 cells без остановки;
 21. 1/4, 2/4, 3/4 progress видим как реально удалённые quarters породы без чёрной заливки; при копке сверху вниз состояние 2/4 является полностью удалённой верхней половиной, а не вертикальной колонкой;

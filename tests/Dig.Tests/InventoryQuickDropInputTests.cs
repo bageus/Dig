@@ -14,7 +14,7 @@ public sealed class InventoryQuickDropInputTests
     private readonly ContextInputRouter _router = new ContextInputRouter();
 
     [Fact]
-    public void D_left_click_drops_available_non_box_stack_at_resident_cell()
+    public void C_left_click_drops_available_non_box_stack_at_resident_cell()
     {
         ContextInputDecision decision = Route(
             PointerButtonKind.Left,
@@ -30,7 +30,7 @@ public sealed class InventoryQuickDropInputTests
     }
 
     [Fact]
-    public void Double_left_click_without_D_does_not_quick_drop()
+    public void Double_left_click_without_C_does_not_quick_drop()
     {
         ContextInputDecision decision = Route(
             PointerButtonKind.Left,
@@ -56,7 +56,7 @@ public sealed class InventoryQuickDropInputTests
     }
 
     [Fact]
-    public void Building_box_keeps_placement_priority_while_D_is_held()
+    public void Building_box_keeps_placement_priority_while_C_is_held()
     {
         ContextInputDecision decision = Route(
             PointerButtonKind.Left,
@@ -70,7 +70,7 @@ public sealed class InventoryQuickDropInputTests
     }
 
     [Fact]
-    public void Alt_use_precedes_D_quick_drop()
+    public void Alt_use_precedes_C_quick_drop()
     {
         ContextInputDecision decision = Route(
             PointerButtonKind.Left,

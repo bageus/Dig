@@ -26,22 +26,66 @@ public sealed class ProductionAndInventoryPointerInputRegressionTests
     }
 
     [Fact]
-    public void Generic_inventory_lmb_enters_local_ghost_and_job_pipeline()
+    public void Generic_inventory_lmb_enters_building_style_ghost_and_job_pipeline()
     {
         string runtime = RuntimeRoot();
         string canvas = Normalize(Read(runtime, "DigWorldInteraction.CanvasHud.cs"));
         string inventory = Normalize(Read(runtime, "DigWorldInteraction.ResidentInventory.cs"));
         string placement = Normalize(Read(runtime, "DigWorldInteraction.InventoryItemPlacement.cs"));
+        string application = Normalize(File.ReadAllText(Path.Combine(
+            FindRepositoryRoot(),
+            "src",
+            "Dig.Application",
+            "Inventory",
+            "ResidentInventoryPlacementHandlers.cs")));
 
         Assert.Contains(
             "SelectResidentInventoryLayoutSlot(ResidentInventoryLayoutSlotViewModelslot){ActivateResidentInventoryLayoutSlot(slot);}",
             canvas);
         Assert.DoesNotContain("LMBonopengrounddropsitthere", canvas);
         Assert.Contains("BeginInventoryItemPlacement(slot)", inventory);
+        Assert.Contains("Cursor.visible=false", placement);
+        Assert.Contains("Cursor.visible=true", placement);
         Assert.Contains("ValidateResidentInventoryPlacement", placement);
         Assert.Contains("CreateResidentInventoryPlacement(", placement);
         Assert.Contains("CancelInventoryItemPlacement()", placement);
         Assert.Contains("Inventoryitemplacementordercreated", placement);
+        Assert.Contains("HasWalkableSupport(world,destination)", application);
+    }
+
+    [Fact]
+    public void Inventory_quick_drop_uses_c_and_not_camera_d()
+    {
+        string runtime = RuntimeRoot();
+        string canvas = Normalize(Read(runtime, "DigGameHudCanvas.Inventory.cs"));
+        string inventory = Normalize(Read(runtime, "DigWorldInteraction.ResidentInventory.cs"));
+        string cursor = Normalize(Read(runtime, "DigWorldInteraction.ItemInteractionCursor.cs"));
+
+        Assert.Contains("Input.GetKey(KeyCode.C)", canvas);
+        Assert.Contains("Input.GetKey(KeyCode.C)", inventory);
+        Assert.Contains("Input.GetKey(KeyCode.C)", cursor);
+        Assert.DoesNotContain("Input.GetKey(KeyCode.D)", canvas);
+        Assert.DoesNotContain("Input.GetKey(KeyCode.D)", inventory);
+        Assert.DoesNotContain("Input.GetKey(KeyCode.D)", cursor);
+    }
+
+    [Fact]
+    public void Active_placement_reservations_use_blue_inventory_projection()
+    {
+        string runtime = RuntimeRoot();
+        string canvas = Normalize(Read(runtime, "DigGameHudCanvas.Inventory.cs"));
+        string query = Normalize(Read(runtime, "DigResidentInventoryPlacementQueries.cs"));
+
+        Assert.Contains("if(IsBlueReservedSlot(slot))", canvas);
+        Assert.Contains(
+            "_terrainSession?.HasActiveResidentInventoryPlacement(slot.StackId)==true",
+            canvas);
+        Assert.Contains("newColor(0.10f,0.34f,0.72f,0.96f)", canvas);
+        Assert.Contains("newColor(0.72f,0.88f,1f,1f)", canvas);
+        Assert.Contains("newColor(0.42f,0.18f,0.18f,0.92f)", canvas);
+        Assert.Contains("ResidentInventoryPlacementJobDefinitionplacement", query);
+        Assert.Contains("placement.StackId==stack", query);
+        Assert.Contains("$\"\\nR:{slot.ReservedQuantity}\"", canvas);
     }
 
     [Fact]
