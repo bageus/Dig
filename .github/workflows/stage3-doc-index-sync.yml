@@ -1,0 +1,85 @@
+name: Stage 3 documentation index sync
+
+on:
+  push:
+    branches:
+      - agent/stage3-doc-index-sync
+
+permissions:
+  contents: write
+
+jobs:
+  synchronize:
+    if: ${{ !contains(github.event.head_commit.message, '[stage3-doc-sync]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/stage3-doc-index-sync
+      - name: Synchronize authoritative documentation
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text(encoding="utf-8")
+              if new in text:
+                  return
+              if old not in text:
+                  raise SystemExit(f"Expected documentation anchor missing: {path}")
+              file.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+          excavation_row = "| Excavation execution | direct dig, connected zone, automatic continuation, quarter progress | `APPROVED` | [`../design/excavation-command-execution.md`](../design/excavation-command-execution.md), [`../design/runtime-selection-excavation-item-placement-decisions.md`](../design/runtime-selection-excavation-item-placement-decisions.md) | [`../implementation/unity-terrain-work-vertical-slice.md`](../implementation/unity-terrain-work-vertical-slice.md), [`../implementation/runtime-selection-excavation-item-placement.md`](../implementation/runtime-selection-excavation-item-placement.md), [#388](https://github.com/bageus/Dig/issues/388) |"
+          cadence_row = "| Excavation cadence profiles | hardness, Stonework, pickaxe, posture, quarter skill grant | `IMPLEMENTED` | [`../design/excavation-cadence-profiles.md`](../design/excavation-cadence-profiles.md) | [`../implementation/excavation-cadence-profiles-2026-07-29.md`](../implementation/excavation-cadence-profiles-2026-07-29.md), [#388](https://github.com/bageus/Dig/issues/388), [PR #506](https://github.com/bageus/Dig/pull/506) |"
+          replace_once(
+              "docs/systems/README.md",
+              excavation_row,
+              excavation_row + "\n" + cadence_row)
+
+          replace_once(
+              "docs/design/excavation-command-execution.md",
+              "- [`excavation-room-templates-and-deposits.md`](excavation-room-templates-and-deposits.md);",
+              "- [`excavation-room-templates-and-deposits.md`](excavation-room-templates-and-deposits.md);\n- [`excavation-cadence-profiles.md`](excavation-cadence-profiles.md);")
+          replace_once(
+              "docs/design/excavation-command-execution.md",
+              "9. Resident идёт к рабочей позиции. Каждый завершённый quarter немедленно коммитится в World как `CompletedQuarterMask`; renderer, cursor, support и topology читают эту же World projection.",
+              "9. Resident идёт к рабочей позиции. Tempo каждого due quarter определяется единым deterministic cadence profile из hardness, Stonework, mining equipment interval и work posture согласно [`excavation-cadence-profiles.md`](excavation-cadence-profiles.md). Каждый завершённый quarter немедленно коммитится в World как `CompletedQuarterMask`; renderer, cursor, support и topology читают эту же World projection.")
+
+          replace_once(
+              "docs/design/skills-and-progression.md",
+              "Точные mixed amounts задаются content definitions.",
+              "Точные mixed amounts задаются content definitions.\n\nДля excavation grant применяется на каждом подтверждённом World quarter commit. Полный `SkillGrantProfile` детерминированно делится между четырьмя quarters; full/partial job finalization не начисляет его повторно. Подробный cadence и idempotency contract: [`excavation-cadence-profiles.md`](excavation-cadence-profiles.md).")
+
+          implementation = Path("docs/implementation/excavation-cadence-profiles-2026-07-29.md")
+          text = implementation.read_text(encoding="utf-8")
+          evidence = """
+
+## Validation evidence
+
+PR [#506](https://github.com/bageus/Dig/pull/506) was merged into `main` as `e0e3784bf4b01fad86a6b44b5b6a7a2fc4b7ee4c`.
+
+- Quality workflow `30411652454`: success;
+- Release build: success;
+- .NET tests: `1132 / 1132` passed;
+- headless smoke: success;
+- standard deterministic soak: success;
+- large-settlement deterministic soak: success;
+- Stage 2 v2/v3 source exports: success;
+- Unity workflow `30411652457`: completed, but licensed `Run Play Mode tests` was skipped by the activation gate.
+
+The checked-in Play Mode fixture is executable evidence, but the system remains `IMPLEMENTED`, not `VERIFIED`, until Unity Test Runner results are actually published.
+"""
+          if "## Validation evidence" not in text:
+              implementation.write_text(text.rstrip() + evidence + "\n", encoding="utf-8")
+          PY
+      - name: Remove one-shot workflow and commit documentation
+        shell: bash
+        run: |
+          rm .github/workflows/stage3-doc-index-sync.yml
+          git config user.name "Dig Documentation Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs .github/workflows/stage3-doc-index-sync.yml
+          git commit -m "[stage3-doc-sync] Index excavation cadence implementation"
+          git push origin HEAD:agent/stage3-doc-index-sync
