@@ -20,6 +20,23 @@ public sealed class BasketSurfaceRuntimeContractTests
         string attachments = Read(runtime, "DigResidentInventoryAttachmentVisual.cs");
         string agentCatalog = Read(runtime, "DigAgentRenderer.ItemVisualCatalog.cs");
         string scenario = Read(playMode, "BasketInventoryLifecyclePlayModeTests.cs");
+        string inventoryHud = Read(runtime, "DigGameHudCanvas.Inventory.cs");
+        string hudLayout = Read(runtime, "DigGameHudCanvas.Layout.cs");
+        string productionHud = Read(runtime, "DigGameHudCanvas.BuildingProduction.cs");
+        string inventoryActions = Read(runtime, "DigResidentInventory.Actions.cs");
+        string placementHandlers = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "Dig.Application",
+            "Inventory",
+            "ResidentInventoryPlacementHandlers.cs"));
+        string spill = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "Dig.Domain",
+            "Inventory",
+            "InventoryState.Spill.cs"));
+        string buildings = Read(runtime, "DigTerrainWorkSession.Buildings.cs");
 
         Assert.Contains("residentStartCell.X + 1", demo);
         Assert.Contains("residentStartCell.X + 2", demo);
@@ -41,6 +58,17 @@ public sealed class BasketSurfaceRuntimeContractTests
         Assert.Contains(
             "Loaded_cargo_uses_back_basket_and_empty_projection_hides_it",
             scenario);
+        Assert.DoesNotContain("CARGO ·", inventoryHud);
+        Assert.Contains("private const int InventoryRows = 2", inventoryHud);
+        Assert.Contains("ResolveInventoryGrid(models.Count)", inventoryHud);
+        Assert.Contains("grid.constraintCount = columns", inventoryHud);
+        Assert.Contains("margin + sideHeight", hudLayout);
+        Assert.Contains("BeginBottomLayout();", productionHud);
+        Assert.DoesNotContain("ExpansionRequiresExplicitDrop", inventoryActions);
+        Assert.Contains("DropReservedResidentStackWithSpill", placementHandlers);
+        Assert.Contains("DropReservedResidentStackWithSpill", spill);
+        Assert.Contains("value.Y == origin.Y", buildings);
+        Assert.Contains("value.Z == origin.Z", buildings);
     }
 
     private static string Read(string root, string file)

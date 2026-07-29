@@ -63,18 +63,16 @@ internal sealed partial class DigTerrainWorkSession
                 .GroupBy(value => value.Id)
                 .Select(group => group.First()));
 
-        CellId workshopOrigin = FindDemoBuildingOrigin();
-        CellId workshopWorkPosition = new CellId(
-            workshopOrigin.X,
-            workshopOrigin.Y - 1,
-            workshopOrigin.Z);
+        DemoBuildingPlacement workshopPlacement = FindDemoBuildingPlacement(
+            workshopDefinition,
+            Array.Empty<CellId>());
         BuildingSnapshot workshop = CreateCompletedDemoBuilding(
             catalog.Get(workshopDefinition.Id),
             DemoId('b', 1),
             DemoId('c', 1),
             DemoId('d', 1),
-            workshopOrigin,
-            workshopWorkPosition,
+            workshopPlacement.Origin,
+            workshopPlacement.WorkPosition,
             journal);
 
         DemoBuildingPlacement campfirePlacement = FindSurfaceCampfirePlacement(
@@ -254,11 +252,15 @@ internal sealed partial class DigTerrainWorkSession
                 BuildingOrientation.North)
             .Where(value => !occupied.Contains(value)
                 && !footprint.Contains(value)
+                && value.Y == origin.Y
+                && value.Z == origin.Z
                 && cells.TryGetValue(value, out WorldCellViewModel workCell)
-                && !workCell.IsSolid)
-            .OrderBy(value => Math.Abs(value.X - origin.X)
-                + Math.Abs(value.Y - origin.Y)
-                + Math.Abs(value.Z - origin.Z))
+                && !workCell.IsSolid
+                && cells.TryGetValue(
+                    new CellId(value.X, value.Y + 1, value.Z),
+                    out WorldCellViewModel supportCell)
+                && supportCell.IsSolid)
+            .OrderBy(value => Math.Abs(value.X - origin.X))
             .ThenBy(value => value)
             .Select(value => (CellId?)value)
             .FirstOrDefault();
@@ -283,30 +285,6 @@ internal sealed partial class DigTerrainWorkSession
         internal CellId WorkPosition { get; }
     }
 
-    private CellId FindDemoBuildingOrigin()
-    {
-        WorldCellViewModel[] openCells = _worldSession.LoadView().Chunks
-            .SelectMany(chunk => chunk.Cells)
-            .Where(value => !value.IsSolid)
-            .ToArray();
-        HashSet<CellId> open = new HashSet<CellId>(openCells.Select(
-            value => new CellId(value.X, value.Y, value.Z)));
-        WorldCellViewModel? cell = openCells
-            .Where(value => value.Y > 0
-                && open.Contains(new CellId(value.X, value.Y - 1, value.Z)))
-            .OrderByDescending(value => value.X)
-            .ThenByDescending(value => value.Y)
-            .Select(value => (WorldCellViewModel?)value)
-            .FirstOrDefault();
-        if (!cell.HasValue)
-        {
-            throw new InvalidOperationException(
-                "The demo world has no open building and work-cell pair.");
-        }
-
-        return new CellId(cell.Value.X, cell.Value.Y, cell.Value.Z);
-    }
-
     private static BuildingDefinition CreateDemoBuildingDefinition()
     {
         return new BuildingDefinition(
@@ -315,9 +293,9 @@ internal sealed partial class DigTerrainWorkSession
             new[] { new CellOffset(0, 0) },
             new[]
             {
+                new CellOffset(0, -1),
                 new CellOffset(-1, 0),
                 new CellOffset(1, 0),
-                new CellOffset(0, -1),
                 new CellOffset(0, 1),
             },
             Array.Empty<BuildingMaterialRequirement>(),

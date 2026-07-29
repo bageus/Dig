@@ -2,6 +2,7 @@ using System;
 using Dig.Domain.Buildings;
 using Dig.Domain.Content;
 using Dig.Domain.Inventory;
+using Dig.Domain.World;
 using Xunit;
 
 namespace Dig.Tests
@@ -56,6 +57,30 @@ public sealed class CampfireBuildingBoxContentTests
         Assert.True(placement.RequiresFlatSurface);
         Assert.False(placement.OutdoorOnly);
         Assert.True(placement.AllowsTunnel);
+    }
+
+    [Fact]
+    public void Campfire_placement_selects_a_side_cell_on_the_building_plane()
+    {
+        BuildingDefinition building = CampfireBuildingBoxContent.Definition.Building;
+        CellId origin = new CellId(4, 5, 0);
+        WorldState world = BuildingPlacementTests.CreateEmptyWorld();
+
+        foreach (BuildingOrientation orientation in Enum.GetValues<BuildingOrientation>())
+        {
+            BuildingPlacementResult placement = new BuildingPlacementValidator().Validate(
+                building,
+                origin,
+                orientation,
+                world.CreateSnapshot(),
+                Array.Empty<CellId>(),
+                building.ResolveWorkPositions(origin, orientation));
+
+            Assert.True(placement.Succeeded, placement.Error?.ToString());
+            Assert.Equal(origin.Y, placement.WorkPosition.Y);
+            Assert.Equal(origin.Z, placement.WorkPosition.Z);
+            Assert.DoesNotContain(placement.WorkPosition, placement.Footprint);
+        }
     }
 
     [Fact]

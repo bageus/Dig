@@ -11,30 +11,32 @@ namespace Dig.Unity
 
 public sealed partial class DigGameHudCanvas
 {
-    private const int InventoryColumns = 3;
-    private const float InventoryCellWidth = 62f;
-    private const float InventoryCellHeight = 52f;
+    private const int InventoryRows = 2;
+    private const float InventoryCellWidth = 52f;
+    private const float InventoryCellHeight = 38f;
     private const float InventoryCellSpacing = 4f;
-    private const float InventorySectionWidth = 202f;
     private const string MainCompartmentTitle = "";
 
     private void BuildInventoryContext(ResidentInventoryLayoutViewModel inventory)
     {
-        bool hasExpansion = inventory.WeaponCapacity > 0 || inventory.CargoCapacity > 0;
-        BeginBottomLayout(hasExpansion ? 184f : 150f);
+        BeginBottomLayout();
         ConfigureInventoryRootLayout();
+        float cellWidth = ResolveInventoryCellWidth(inventory);
         BuildCompartmentIfActive(
             inventory,
             ResidentInventoryCompartment.Weapon,
-            $"WEAPON · {inventory.WeaponCapacity}");
+            "WEAPON",
+            cellWidth);
         BuildCompartment(
             inventory,
             ResidentInventoryCompartment.Main,
-            MainCompartmentTitle);
+            MainCompartmentTitle,
+            cellWidth);
         BuildCompartmentIfActive(
             inventory,
             ResidentInventoryCompartment.Cargo,
-            $"CARGO · {inventory.CargoCapacity}");
+            string.Empty,
+            cellWidth);
 
         if (inventory.MoveSpeedMultiplier < 1d)
         {
@@ -62,18 +64,20 @@ public sealed partial class DigGameHudCanvas
     private void BuildCompartmentIfActive(
         ResidentInventoryLayoutViewModel inventory,
         ResidentInventoryCompartment compartment,
-        string title)
+        string title,
+        float cellWidth)
     {
         if (inventory.GetCompartment(compartment).Count > 0)
         {
-            BuildCompartment(inventory, compartment, title);
+            BuildCompartment(inventory, compartment, title, cellWidth);
         }
     }
 
     private void BuildCompartment(
         ResidentInventoryLayoutViewModel inventory,
         ResidentInventoryCompartment compartment,
-        string title)
+        string title,
+        float cellWidth)
     {
         IReadOnlyList<ResidentInventoryLayoutSlotViewModel> models =
             inventory.GetCompartment(compartment);
@@ -82,21 +86,25 @@ public sealed partial class DigGameHudCanvas
             return;
         }
 
-        int rows = Mathf.CeilToInt(models.Count / (float)InventoryColumns);
-        float gridHeight = (rows * InventoryCellHeight)
-            + ((rows - 1) * InventoryCellSpacing);
+        Vector2Int dimensions = ResolveInventoryGrid(models.Count);
+        int columns = dimensions.x;
+        float gridHeight = (InventoryRows * InventoryCellHeight)
+            + ((InventoryRows - 1) * InventoryCellSpacing);
+        float sectionWidth = (columns * cellWidth)
+            + ((columns - 1) * InventoryCellSpacing)
+            + 4f;
         RectTransform section = CreateSection(
             compartment.ToString(),
             _bottomContent!,
             title,
-            preferredWidth: InventorySectionWidth);
+            preferredWidth: sectionWidth);
         LayoutElement sectionElement = section.GetComponent<LayoutElement>();
-        sectionElement.minWidth = InventorySectionWidth;
-        sectionElement.preferredWidth = InventorySectionWidth;
+        sectionElement.minWidth = 0f;
+        sectionElement.preferredWidth = sectionWidth;
         sectionElement.flexibleWidth = 0f;
         VerticalLayoutGroup sectionLayout = section.GetComponent<VerticalLayoutGroup>();
-        sectionLayout.padding = new RectOffset(4, 4, 4, 4);
-        sectionLayout.spacing = 4f;
+        sectionLayout.padding = new RectOffset(2, 2, 4, 4);
+        sectionLayout.spacing = 2f;
         sectionLayout.childAlignment = TextAnchor.UpperLeft;
 
         RectTransform slots = CreateRect("Slot Grid", section);
@@ -105,13 +113,13 @@ public sealed partial class DigGameHudCanvas
         gridElement.minHeight = gridHeight;
         GridLayoutGroup grid = slots.gameObject.AddComponent<GridLayoutGroup>();
         grid.padding = new RectOffset(0, 0, 0, 0);
-        grid.cellSize = new Vector2(InventoryCellWidth, InventoryCellHeight);
+        grid.cellSize = new Vector2(cellWidth, InventoryCellHeight);
         grid.spacing = new Vector2(InventoryCellSpacing, InventoryCellSpacing);
         grid.startCorner = GridLayoutGroup.Corner.UpperLeft;
         grid.startAxis = GridLayoutGroup.Axis.Horizontal;
         grid.childAlignment = TextAnchor.UpperLeft;
         grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-        grid.constraintCount = InventoryColumns;
+        grid.constraintCount = columns;
         for (int index = 0; index < models.Count; index++)
         {
             CreateInventorySlot(slots, models[index]);
@@ -152,6 +160,9 @@ public sealed partial class DigGameHudCanvas
             name,
             slot.IsEmpty ? 16 : 13,
             TextAnchor.MiddleCenter);
+        label.resizeTextForBestFit = true;
+        label.resizeTextMinSize = 8;
+        label.resizeTextMaxSize = slot.IsEmpty ? 16 : 13;
         label.color = ResolveSlotTextColor(slot);
         Stretch(label.rectTransform, 2f, 2f, -2f, -2f);
         label.raycastTarget = false;

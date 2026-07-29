@@ -20,9 +20,15 @@ public sealed partial class DigGameHudCanvas
         RectTransform canvasRect = (RectTransform)transform;
         int width = Mathf.RoundToInt(Mathf.Max(640f, canvasRect.rect.width));
         int height = Mathf.RoundToInt(Mathf.Max(360f, canvasRect.rect.height));
-        if (!force && width == _lastLayoutWidth && height == _lastLayoutHeight)
+        bool dimensionsChanged = width != _lastLayoutWidth || height != _lastLayoutHeight;
+        if (!force && !dimensionsChanged)
         {
             return;
+        }
+
+        if (dimensionsChanged)
+        {
+            _lastContextSignature = string.Empty;
         }
 
         _lastLayoutWidth = width;
@@ -31,10 +37,8 @@ public sealed partial class DigGameHudCanvas
             width * 0.17f,
             MinimumSidePanelWidth,
             MaximumSidePanelWidth);
-        float sideHeight = Mathf.Clamp(
-            height * 0.24f,
-            MinimumSidePanelHeight,
-            MaximumSidePanelHeight);
+        float sideHeight = ResolveBottomHudHeight(height);
+        _bottomPanelHeight = sideHeight;
         float rosterWidth = Mathf.Clamp(
             width * 0.27f,
             MinimumRosterWidth,
@@ -96,11 +100,21 @@ public sealed partial class DigGameHudCanvas
             margin + sideWidth + gap,
             margin,
             -(margin + sideWidth + gap),
-            margin + _bottomPanelHeight);
+            margin + sideHeight);
+    }
+
+    internal static float ResolveBottomHudHeight(float canvasHeight)
+    {
+        return Mathf.Clamp(
+            canvasHeight * 0.24f,
+            MinimumSidePanelHeight,
+            MaximumSidePanelHeight);
     }
 
     private void SetBottomPanelHeight(float height)
     {
+        // Context builders may request denser inner content, but the outer shell
+        // always follows the responsive minimap/clock height in ApplyResponsiveLayout.
         _bottomPanelHeight = Mathf.Max(76f, height);
         ApplyResponsiveLayout(force: true);
     }

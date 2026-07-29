@@ -169,15 +169,17 @@ public sealed class BuildingPlacementValidator
         }
 
         HashSet<CellId> reachable = new HashSet<CellId>(reachableCells);
+        HashSet<CellId> footprintSet = new HashSet<CellId>(footprint);
         CellId? workPosition = definition
             .ResolveWorkPositions(origin, orientation)
             .Where(world.Size.Contains)
+            .Where(cell => cell.Y == origin.Y && cell.Z == origin.Z)
+            .Where(cell => !footprintSet.Contains(cell))
             .Where(cell => cells.TryGetValue(cell, out CellSnapshot snapshot)
                 && !snapshot.IsSolid
                 && snapshot.State.IsExplored)
             .Where(reachable.Contains)
-            .OrderBy(cell => cell.Y == origin.Y ? 0 : 1)
-            .ThenBy(cell => Math.Abs(cell.X - origin.X) + Math.Abs(cell.Y - origin.Y))
+            .OrderBy(cell => Math.Abs(cell.X - origin.X))
             .ThenBy(cell => cell)
             .Cast<CellId?>()
             .FirstOrDefault();

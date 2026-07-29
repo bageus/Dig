@@ -169,8 +169,8 @@ public sealed partial class DigGameHudCanvas
         element.preferredWidth = preferredWidth;
         element.flexibleWidth = 1f;
         VerticalLayoutGroup layout = section.gameObject.AddComponent<VerticalLayoutGroup>();
-        layout.padding = new RectOffset(8, 8, 6, 8);
-        layout.spacing = 6f;
+        layout.padding = new RectOffset(4, 4, 4, 4);
+        layout.spacing = 3f;
         layout.childAlignment = TextAnchor.UpperCenter;
         layout.childControlHeight = true;
         layout.childControlWidth = true;
@@ -181,10 +181,13 @@ public sealed partial class DigGameHudCanvas
                 "Heading",
                 section,
                 title,
-                16,
+                14,
                 TextAnchor.MiddleCenter);
             LayoutElement headingLayout = heading.gameObject.AddComponent<LayoutElement>();
-            headingLayout.preferredHeight = 24f;
+            headingLayout.preferredHeight = 18f;
+            heading.resizeTextForBestFit = true;
+            heading.resizeTextMinSize = 9;
+            heading.resizeTextMaxSize = 14;
         }
 
         return section;
