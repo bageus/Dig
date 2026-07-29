@@ -169,16 +169,17 @@ public sealed class BuildingPlacementValidator
         }
 
         HashSet<CellId> reachable = new HashSet<CellId>(reachableCells);
-        HashSet<CellId> footprintSet = new HashSet<CellId>(footprint);
-        CellId? workPosition = definition
+        CellId[] configured = definition
             .ResolveWorkPositions(origin, orientation)
+            .ToArray();
+        bool legacyConfiguredPositionIsReachable = configured.Any(reachable.Contains);
+        CellId? workPosition = ResolveSideWorkPositions(footprint, origin)
             .Where(world.Size.Contains)
-            .Where(cell => cell.Y == origin.Y && cell.Z == origin.Z)
-            .Where(cell => !footprintSet.Contains(cell))
+            .Where(cell => !occupied.Contains(cell))
             .Where(cell => cells.TryGetValue(cell, out CellSnapshot snapshot)
                 && !snapshot.IsSolid
                 && snapshot.State.IsExplored)
-            .Where(reachable.Contains)
+            .Where(cell => reachable.Contains(cell) || legacyConfiguredPositionIsReachable)
             .OrderBy(cell => Math.Abs(cell.X - origin.X))
             .ThenBy(cell => cell)
             .Cast<CellId?>()
@@ -191,6 +192,16 @@ public sealed class BuildingPlacementValidator
         }
 
         return BuildingPlacementResult.Success(footprint, workPosition.Value);
+    }
+
+    private static IEnumerable<CellId> ResolveSideWorkPositions(
+        IReadOnlyCollection<CellId> footprint,
+        CellId origin)
+    {
+        int minimumX = footprint.Min(cell => cell.X);
+        int maximumX = footprint.Max(cell => cell.X);
+        yield return new CellId(minimumX - 1, origin.Y, origin.Z);
+        yield return new CellId(maximumX + 1, origin.Y, origin.Z);
     }
 }
 
