@@ -6,6 +6,7 @@ using Dig.Application.Buildings;
 using Dig.Application.World;
 using Dig.Domain.Buildings;
 using Dig.Domain.Content;
+using Dig.Domain.Combat;
 using Dig.Domain.Core;
 using Dig.Domain.Ecology;
 using Dig.Domain.Inventory;
@@ -83,7 +84,8 @@ public sealed partial class SaveGameLoader
         TerrainDepositCatalog? terrainDepositCatalog,
         MushroomCatalog? mushroomCatalog,
         ProductionContentCatalog? productionContent = null,
-        BarrelCatalog? barrelCatalog = null)
+        BarrelCatalog? barrelCatalog = null,
+        WeaponCatalog? combatWeapons = null)
     {
         if (document is null)
         {
@@ -224,6 +226,29 @@ public sealed partial class SaveGameLoader
                     document.TerrainDeposits,
                     document.World,
                     terrainDepositCatalog);
+            CombatState? combat = null;
+            bool hasCombat = document.Combat?.Intents?.Count > 0
+                || document.Combat?.Executions?.Count > 0
+                || document.Combat?.Resolutions?.Count > 0
+                || document.Combat?.Cooldowns?.Count > 0
+                || document.Combat?.Statuses?.Count > 0;
+            if (hasCombat)
+            {
+                if (combatWeapons is null)
+                {
+                    return Result<LoadedGameState>.Failure(SaveErrors.InvalidDocument);
+                }
+
+                Result<CombatState> restoredCombat = CombatSaveAdapter.Decode(
+                    document.Combat,
+                    combatWeapons);
+                if (restoredCombat.IsFailure)
+                {
+                    return Result<LoadedGameState>.Failure(restoredCombat.Error!);
+                }
+
+                combat = restoredCombat.Value;
+            }
             Result<RestoredMiningOutputState> miningOutput = RestoreMiningOutput(
                 document,
                 inventory.Value,
@@ -251,7 +276,8 @@ public sealed partial class SaveGameLoader
                 buildingProduction.Production,
                 buildingProduction.Supply,
                 barrels.Value,
-                agentRuntime));
+                agentRuntime,
+                combat));
         }
         catch (UnknownTerrainDepositDefinitionException)
         {
