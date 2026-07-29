@@ -92,7 +92,8 @@ def main() -> int:
     require(
         "tests/Dig.Tests/TerrainDepositSkillIntegrationTests.cs",
         (
-            "Completed_deposit_job_uses_profile_carried_by_definition",
+            "Deposit_profile_is_applied_by_confirmed_quarters_not_job_finalization",
+            "CommitExcavationQuarterCommandHandler",
             "AgentSkillCatalog.Metallurgy",
             "AgentSkillCatalog.Alchemy",
         ),

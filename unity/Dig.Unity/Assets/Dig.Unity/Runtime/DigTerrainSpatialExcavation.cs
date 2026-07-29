@@ -27,7 +27,6 @@ internal readonly struct SpatialExcavationCommit
 
 internal sealed partial class DigTerrainWorkSession
 {
-    private const int SpatialExcavationWorkCadence = 3;
     private readonly Dictionary<CellId, EntityId> _spatialDigJobs =
         new Dictionary<CellId, EntityId>();
 
@@ -187,8 +186,7 @@ internal sealed partial class DigTerrainWorkSession
             {
                 advanced = jobs.AdvanceStage(snapshot.Id, tick);
             }
-            else if (snapshot.Stage == JobStageKind.PerformWork
-                && tick % SpatialExcavationWorkCadence == 0)
+            else if (snapshot.Stage == JobStageKind.PerformWork)
             {
                 SpatialDigJobDefinition definition =
                     (SpatialDigJobDefinition)snapshot.Definition;
@@ -214,12 +212,18 @@ internal sealed partial class DigTerrainWorkSession
                     continue;
                 }
 
+                TerrainWorkPosture posture = _routePlans.TryGetValue(
+                        snapshot.Id,
+                        out TerrainWorkRoutePlan? route)
+                    ? route.Posture
+                    : TerrainWorkPosture.Standing;
                 bool quartersComplete = AdvanceExcavationQuarterWork(
                     snapshot.AssignedAgentId.Value,
                     new ExcavationWorkTarget(
                         definition.Target.TargetCell,
                         definition.Target.TargetCell.Z),
                     new CellId(agent.CellX, agent.CellY, agent.CellZ),
+                    posture,
                     tick);
                 if (!quartersComplete)
                 {

@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dig.Application.Jobs;
 using Dig.Application.World;
+using Dig.Domain.Agents;
 using Dig.Domain.Core;
+using Dig.Domain.Jobs;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
 
@@ -12,6 +15,12 @@ namespace Dig.Unity
     {
         private readonly ExcavationWorkCoordinator _excavationQuarterWork =
             new ExcavationWorkCoordinator();
+        private readonly ExcavationCadenceResolver _excavationCadenceResolver =
+            new ExcavationCadenceResolver(
+                ExcavationCadenceProfile.CreateLegacyDeterministic());
+        private readonly Dictionary<EntityId, ExcavationCadenceDecision>
+            _excavationCadenceDecisions =
+                new Dictionary<EntityId, ExcavationCadenceDecision>();
         private Func<EntityId, int>? _excavationMiningSkill;
 
         internal void BindExcavationSkillSource(Func<EntityId, int> skillSource)
@@ -52,6 +61,21 @@ namespace Dig.Unity
             return _excavationQuarterWork.GetAssignment(EntityId.Parse(residentId));
         }
 
+        internal bool TryLoadExcavationCadence(
+            string residentId,
+            out ExcavationCadenceDecision cadence)
+        {
+            if (string.IsNullOrWhiteSpace(residentId))
+            {
+                cadence = default;
+                return false;
+            }
+
+            return _excavationCadenceDecisions.TryGetValue(
+                EntityId.Parse(residentId),
+                out cadence);
+        }
+
         internal bool CancelManualQuarterExcavation(string residentId)
         {
             if (string.IsNullOrWhiteSpace(residentId))
@@ -59,7 +83,9 @@ namespace Dig.Unity
                 return false;
             }
 
-            return _excavationQuarterWork.Cancel(EntityId.Parse(residentId));
+            EntityId workerId = EntityId.Parse(residentId);
+            _excavationCadenceDecisions.Remove(workerId);
+            return _excavationQuarterWork.Cancel(workerId);
         }
 
         internal IReadOnlyList<ExcavationQuarterCompletion> AdvanceManualQuarterExcavation(
@@ -72,6 +98,7 @@ namespace Dig.Unity
                 throw new ArgumentException("Resident id is required.", nameof(residentId));
             }
 
+            _ = worldSeed;
             EntityId workerId = EntityId.Parse(residentId);
             ExcavationWorkerAssignment? assignment =
                 _excavationQuarterWork.GetAssignment(workerId);
@@ -81,9 +108,20 @@ namespace Dig.Unity
             }
 
             SynchronizeExcavationQuarterState(assignment.Target);
-            ulong seed = BuildExcavationSeed(worldSeed, tick, workerId);
+            CellSnapshot target = RequireExcavationCell(assignment.Target.CellId);
+            ExcavationCadenceDecision cadence = ResolveExcavationCadence(
+                workerId,
+                target,
+                assignment.MiningSkill,
+                TerrainWorkPosture.Standing,
+                tick);
+            if (!ExcavationCadenceResolver.IsDue(tick, cadence))
+            {
+                return Array.Empty<ExcavationQuarterCompletion>();
+            }
+
             IReadOnlyList<ExcavationQuarterCompletion> completions =
-                _excavationQuarterWork.ApplySwing(workerId, seed);
+                _excavationQuarterWork.ApplyWork(workerId);
             CommitExcavationQuarterCompletions(completions, tick);
             return completions;
         }
@@ -128,110 +166,53 @@ namespace Dig.Unity
             EntityId workerId,
             ExcavationWorkTarget target,
             CellId residentCell,
+            TerrainWorkPosture posture,
             long tick)
         {
             SynchronizeExcavationQuarterState(target);
             CellSnapshot before = RequireExcavationCell(target.CellId);
-            if (!before.IsSolid)
+            ExcavationQuarter required = ResolveRequiredExcavationQuarters(
+                target.CellId);
+            if (!before.IsSolid
+                || (before.State.CompletedExcavationQuarters & required) == required)
             {
                 return true;
             }
 
             if (before.State.Designation != CellDesignation.Dig)
             {
-                // Job/designation reconciliation owns terminal cleanup. A stale job
-                // must not generate hidden quarter progress or throw from World commit.
                 _excavationQuarterWork.Remove(target);
+                _excavationCadenceDecisions.Remove(workerId);
                 return false;
             }
 
             int skill = ResolveExcavationMiningSkill(workerId);
+            ExcavationCadenceDecision cadence = ResolveExcavationCadence(
+                workerId,
+                before,
+                skill,
+                posture,
+                tick);
             EnsureExcavationQuarterAssignment(
                 workerId,
                 target,
                 residentCell,
                 skill);
-            ulong seed = BuildExcavationSeed(
-                unchecked((ulong)(uint)_worldSession.MiningOutputWorldSeed),
-                tick,
-                workerId);
+            if (!ExcavationCadenceResolver.IsDue(tick, cadence))
+            {
+                return false;
+            }
+
             IReadOnlyList<ExcavationQuarterCompletion> completions =
-                _excavationQuarterWork.ApplySwing(workerId, seed);
+                _excavationQuarterWork.ApplyWork(workerId);
             CommitExcavationQuarterCompletions(completions, tick);
 
             CellSnapshot current = RequireExcavationCell(target.CellId);
             _excavationQuarterWork.SynchronizeCompleted(
                 target,
                 current.State.CompletedExcavationQuarters);
-            ExcavationQuarter required = ResolveRequiredExcavationQuarters(
-                target.CellId);
             return !current.IsSolid
                 || (current.State.CompletedExcavationQuarters & required) == required;
-        }
-
-        private ExcavationWorkerAssignment EnsureExcavationQuarterAssignment(
-            EntityId workerId,
-            ExcavationWorkTarget target,
-            CellId residentCell,
-            int miningSkill)
-        {
-            _excavationQuarterWork.CancelAssignmentsExcept(target, workerId);
-            ExcavationCutPattern cutPattern = ResolveExcavationCutPattern(target.CellId);
-            ExcavationApproachSide approach = ExcavationApproachResolver.Resolve(
-                residentCell,
-                target.CellId,
-                cutPattern);
-            ExcavationWorkerAssignment? existing =
-                _excavationQuarterWork.GetAssignment(workerId);
-            if (existing != null
-                && existing.Target.Equals(target)
-                && existing.Approach == approach)
-            {
-                return existing;
-            }
-
-            if (existing != null)
-            {
-                _excavationQuarterWork.Cancel(workerId);
-            }
-
-            return _excavationQuarterWork.Assign(
-                workerId,
-                target,
-                approach,
-                Math.Max(0, Math.Min(100, miningSkill)));
-        }
-
-        private void CommitExcavationQuarterCompletions(
-            IReadOnlyList<ExcavationQuarterCompletion> completions,
-            long tick)
-        {
-            if (completions.Count == 0)
-            {
-                return;
-            }
-
-            WorldState world = _worldSession.Repository.Get();
-            for (int index = 0; index < completions.Count; index++)
-            {
-                ExcavationQuarterCompletion completion = completions[index];
-                ExcavationCutPattern pattern = ResolveExcavationCutPattern(
-                    completion.Target.CellId);
-                Result<WorldMutationResult> committed = world.CommitExcavationQuarter(
-                    completion.Target.CellId,
-                    completion.Quarter,
-                    pattern,
-                    _worldSession.EmptyMaterialId,
-                    tick);
-                if (committed.IsFailure)
-                {
-                    throw new InvalidOperationException(committed.Error!.ToString());
-                }
-            }
-
-            _worldSession.Repository.Save(world);
-            _worldSession.Journal.Append(world.DequeueUncommittedEvents());
-            MarkAuthoritativeWorldChanged();
         }
 
         private void SynchronizeExcavationQuarterState(ExcavationWorkTarget target)
@@ -292,25 +273,6 @@ namespace Dig.Unity
         {
             _excavationQuarterWork.Remove(
                 new ExcavationWorkTarget(target, target.Z));
-        }
-
-        private static ulong BuildExcavationSeed(
-            ulong worldSeed,
-            long tick,
-            EntityId workerId)
-        {
-            unchecked
-            {
-                ulong value = worldSeed ^ (ulong)tick;
-                string text = workerId.ToString();
-                for (int index = 0; index < text.Length; index++)
-                {
-                    value ^= text[index];
-                    value *= 1099511628211UL;
-                }
-
-                return value;
-            }
         }
     }
 }

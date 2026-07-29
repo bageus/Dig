@@ -16,6 +16,7 @@ public enum SkillGrantSourceKind
     ServiceCompleted = 4,
     TrainingCompleted = 5,
     Migration = 6,
+    ExcavationQuarterCommitted = 7,
 }
 
 public readonly struct SkillGrant

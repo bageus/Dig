@@ -80,8 +80,8 @@ internal sealed partial class DigTerrainWorkSession
         _supportRecoveryPlanner = supportRecoveryPlanner;
         _profile = profile;
         _outputStackIds = outputStackIds;
-        _skillGrants = skillGrants
-            ?? throw new ArgumentNullException(nameof(skillGrants));
+        _skillGrants = skillGrants ?? throw new ArgumentNullException(nameof(skillGrants));
+        _quarterCommitHandler = new CommitExcavationQuarterCommandHandler(worldSession.Repository, _skillGrants, _journal);
         _miningOutputCommits = miningOutputCommits ?? new MiningOutputCommitState();
     }
 
@@ -140,7 +140,7 @@ internal sealed partial class DigTerrainWorkSession
                 && agent.CellY == route.WorkCell.Value.Y
                 && agent.CellZ == route.WorkCell.Value.Z)
             {
-                result = AdvanceAtWorkCell(job, agent, tick);
+                result = AdvanceAtWorkCell(job, agent, route, tick);
             }
             else
             {
@@ -181,7 +181,11 @@ internal sealed partial class DigTerrainWorkSession
         return changed;
     }
 
-    private Result AdvanceAtWorkCell(JobSnapshot job, AgentViewModel agent, long tick)
+    private Result AdvanceAtWorkCell(
+        JobSnapshot job,
+        AgentViewModel agent,
+        TerrainWorkRoutePlan route,
+        long tick)
     {
         if (job.Status == JobStatus.Claimed
             || job.Stage == JobStageKind.TravelToTarget)
@@ -194,7 +198,7 @@ internal sealed partial class DigTerrainWorkSession
             return CompleteTerrainJobAtWorkCell(job, tick);
         }
 
-        if (tick % 3 != 0 || job.Stage != JobStageKind.PerformWork)
+        if (job.Stage != JobStageKind.PerformWork)
         {
             return Result.Success();
         }
@@ -208,6 +212,7 @@ internal sealed partial class DigTerrainWorkSession
                 definition.Target.CellId,
                 definition.Target.CellId.Z),
             residentCell,
+            route.Posture,
             tick);
         if (!quartersComplete)
         {

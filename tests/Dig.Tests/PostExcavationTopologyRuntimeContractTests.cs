@@ -36,10 +36,12 @@ namespace Dig.Tests
         public void Runtime_uses_domain_approach_and_application_item_settlement_owners()
         {
             string runtime = RuntimeRoot();
+            string cadence = Read(runtime, "DigTerrainWorkExcavationCadence.cs");
             string quarters = Read(runtime, "DigTerrainWorkExcavationQuarters.cs");
             string gravity = Read(runtime, "DigTerrainWorkSession.WorldItemGravity.cs");
 
-            Assert.Contains("ExcavationApproachResolver.Resolve", quarters);
+            Assert.Contains("ExcavationApproachResolver.Resolve", cadence);
+            Assert.DoesNotContain("ResolveExcavationApproach", cadence);
             Assert.DoesNotContain("ResolveExcavationApproach", quarters);
             Assert.Contains("WorldItemGravitySettlement.Settle", gravity);
         }

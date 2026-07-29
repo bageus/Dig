@@ -2,7 +2,6 @@ using System;
 using Dig.Application.Agents;
 using Dig.Application.Messaging;
 using Dig.Application.World;
-using Dig.Domain.Agents;
 using Dig.Domain.Core;
 using Dig.Domain.Jobs;
 using Dig.Domain.World;
@@ -39,7 +38,6 @@ public sealed class CompletePartialTerrainWorkCommandHandler
     private readonly IJobRepository _jobs;
     private readonly IWorldRepository _world;
     private readonly IEventSink _events;
-    private readonly IAgentSkillGrantService _skills;
 
     public CompletePartialTerrainWorkCommandHandler(
         IJobRepository jobs,
@@ -50,7 +48,7 @@ public sealed class CompletePartialTerrainWorkCommandHandler
         _jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
         _world = world ?? throw new ArgumentNullException(nameof(world));
         _events = events ?? throw new ArgumentNullException(nameof(events));
-        _skills = skills ?? throw new ArgumentNullException(nameof(skills));
+        _ = skills ?? throw new ArgumentNullException(nameof(skills));
     }
 
     public Result Handle(CompletePartialTerrainWorkCommand command)
@@ -83,20 +81,9 @@ public sealed class CompletePartialTerrainWorkCommandHandler
             return Result.Failure(TerrainWorkCompletionErrors.JobNotReady);
         }
 
-        EntityId worker = snapshot.AssignedAgentId
+        _ = snapshot.AssignedAgentId
             ?? throw new InvalidOperationException(
                 "An in-progress terrain job must retain its worker.");
-        SkillGrantBundle skill = new SkillGrantBundle(
-            worker,
-            SkillGrantSourceKind.JobCompleted,
-            definition.Id.ToString(),
-            command.Tick,
-            definition.SkillGrantProfile.Multiply(1));
-        Result skillValidation = _skills.Validate(skill);
-        if (skillValidation.IsFailure)
-        {
-            return skillValidation;
-        }
 
         WorldState world = _world.Get();
         Result<CellSnapshot> targetResult = world.GetCell(definition.Target.CellId);
@@ -129,8 +116,6 @@ public sealed class CompletePartialTerrainWorkCommandHandler
         EnsureCommit(undesignated.IsSuccess, undesignated.Error);
         Result completed = jobs.Complete(command.JobId, command.Tick);
         EnsureCommit(completed.IsSuccess, completed.Error);
-        Result<SkillRedistributionReport> applied = _skills.ApplyConfirmed(skill);
-        EnsureCommit(applied.IsSuccess, applied.Error);
 
         _world.Save(world);
         _jobs.Save(jobs);
