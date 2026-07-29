@@ -88,7 +88,7 @@ public sealed partial class CombatSpatialExecutionHandler
                 command.Tick,
                 selection.Value.AttackerModifiers,
                 selection.Value.TargetModifiers,
-                execution.IntentId));
+                sourceIntentId: null));
         if (resolved.IsFailure)
         {
             if (CombatErrors.AttackOnCooldown.Equals(resolved.Error))
