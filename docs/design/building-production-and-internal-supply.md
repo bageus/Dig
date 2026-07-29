@@ -1,6 +1,6 @@
 # Производство в зданиях и внутреннее снабжение
 
-Статус: `APPROVED` для revised spatial workflow от 2026-07-29; предыдущая реализация `IMPLEMENTED`, runtime verification остаётся обязательной.
+Статус: `IMPLEMENTED` в PR #515; `VERIFIED` требует фактического licensed Unity Play Mode evidence.
 
 Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
 
