@@ -6,12 +6,17 @@ on:
       - agent/complete-roadmap-16-runtime-gates
     paths:
       - ".github/workflows/apply-roadmap16.yml"
+  pull_request:
+    types:
+      - opened
+      - synchronize
 
 permissions:
   contents: write
 
 jobs:
   apply:
+    if: github.event_name == 'push' || github.head_ref == 'agent/complete-roadmap-16-runtime-gates'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
