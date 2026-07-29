@@ -205,7 +205,7 @@ internal sealed class BuildingBoxHarness
             new BuildingDefinitionId("workshop.box"),
             "Box Workshop",
             new[] { new CellOffset(0, 0) },
-            new[] { new CellOffset(0, -1) },
+            new[] { new CellOffset(-1, 0), new CellOffset(1, 0) },
             Array.Empty<BuildingMaterialRequirement>(),
             requiredWork: 3,
             maximumDurability: 100,
