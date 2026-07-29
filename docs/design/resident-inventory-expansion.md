@@ -78,8 +78,11 @@ Cargo и Weapon groups работают одновременно.
 - Weapon слева;
 - Main по центру;
 - Cargo справа;
-- группы разделены рамкой, spacing и icon/title;
-- Cargo group показывает ровно 4 slots для корзины или 6 slots для большой корзины, пока active expansion находится в Main;
+- группы разделены рамкой и spacing; текстовый заголовок `Cargo 4/6` не отображается;
+- каждый compartment строится строго в два горизонтальных ряда: если существует верхняя ячейка колонки, существует и нижняя;
+- Main всегда имеет сетку `3×2`;
+- Cargo показывает `2×2` для корзины или `3×2` для большой корзины, пока active expansion находится в Main;
+- Weapon показывает `1×2` для ножен или `2×2` для разгрузки;
 - при отсутствии resident эта область показывает ExcavationPalette;
 - building selection и BuildingPlacement заменяют Inventory panel, а не накладываются поверх неё.
 
@@ -154,13 +157,15 @@ HeldItemReference(ResidentId, StackId, Quantity = 1, Purpose)
 
 Полная модель: `building-box-placement-and-packing.md`.
 
-### 10.2 Обычный предмет
+### 10.2 Обычный предмет и inventory expansion
 
-ЛКМ по обычному stack выбирает его для targeted drop.
+ЛКМ по обычному stack, корзине или большой корзине включает item placement mode.
 
-1. UI подсвечивает valid open ground cells.
-2. ЛКМ по valid cell отправляет drop command.
-3. Domain меняется только после успешной команды.
+1. UI показывает полупрозрачный ghost на любой explored/reachable open cell непосредственно над твёрдой ровной опорой.
+2. ЛКМ по valid cell создаёт resident-bound placement job; stack остаётся зарезервированным в исходной ячейке до deposit.
+3. Обычный stack переносится через reserved move transaction.
+4. Active basket/large basket переносится через reserved spill-aware transaction: корзина и всё содержимое Cargo оказываются в target cell, Cargo capacity исчезает, attachment скрывается, скорость пересчитывается.
+5. Invalid/cancel/failure освобождает reservation и не меняет layout/quantity.
 
 ### 10.3 Quick drop
 
@@ -267,9 +272,11 @@ Content validation проверяет IDs, categories, slots, speed, recipes и 
 - held item остаётся в slot;
 - Weapon→Main→Cargo layout;
 - ordinary drop/use и BuildingBox placement имеют правильный priority;
+- basket/large-basket placement работает на любой допустимой твёрдой ровной поверхности через тот же planning mode и сохраняет quantity при Cargo spill;
 - pickup/hauling сначала использует Main и только после его заполнения Cargo;
 - surface demo содержит pickable basket и large basket, а resident начинает без Cargo expansion;
 - непустой Cargo показывает basket-backpack сзади, пустой Cargo и drop/spill скрывают его;
+- HUD не показывает `Cargo 4/6`; inventory compartments используют только парные двухрядные сетки `3×2`, `2×2`/`3×2`, `1×2`/`2×2`;
 - hauling учитывает real slots;
 - save/load восстанавливает layout, boxes и reservations;
 - unit, integration, migration, soak и Play Mode tests покрывают все правила.
@@ -280,3 +287,4 @@ Content validation проверяет IDs, categories, slots, speed, recipes и 
 | Дата | Решение | Кто подтвердил | Issues |
 |---|---|---|---|
 | 2026-07-29 | Ordinary pickup/hauling использует Main до Cargo; basket и large basket появляются на поверхности; attachment виден только при непустом Cargo. | пользователь | #68, #69 |
+| 2026-07-29 | Cargo title скрыт; все compartments имеют ровно два ряда; basket/large basket размещаются через planning mode на supported surface с reserved quantity-safe spill. | пользователь | #67, #69, #70, #387 |

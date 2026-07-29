@@ -114,6 +114,13 @@ Every completed workstation exposes two distinct presentation zones in screen/wo
 
 Both zones are visible even when empty. They are derived from the building footprint and are not separate saved entities.
 
+### 6.3 Work position
+
+- configured production/construction work position находится вне footprint слева или справа от здания;
+- work position имеет те же `Y` и `Z`, что плоскость footprint, является explored/open и имеет твёрдую опору непосредственно снизу;
+- позиция над зданием, внутри footprint либо на иной вертикальной плоскости недопустима;
+- worker renderer использует authoritative work position без presentation-only вертикального offset.
+
 ### 6.1 Internal-storage zone
 
 - Physical stock remains authoritative `ItemLocation.InBuilding(buildingId)`.
@@ -161,7 +168,7 @@ For grilled mushroom, when internal stock and eligible world stock contain no ca
 3. Inputs are reserved for that order.
 4. One eligible resident claims one `ProductionWorkJob`.
 5. On begin, material-step durations are resolved from that worker's skills and stored authoritatively.
-6. Work advances only at the workstation work position.
+6. Work advances only at the supported side work position on the same plane as the workstation.
 7. Completing a material step consumes one reserved input unit exactly once.
 8. The same assigned resident remains owner through `Finalize`.
 9. During `Finalize`, the output cell is resolved in the right finished-output zone and becomes the resident's movement target.
@@ -242,6 +249,7 @@ Unity Play Mode:
 - selected resident can take one available left-zone unit;
 - LMB/RMB product icon count behavior remains correct;
 - worker performs production at the building, walks to the chosen right-zone cell and places the output there;
+- worker performs building work beside the footprint on the same supported plane and never above/on top of the building;
 - building queue counter decreases after completion;
 - output can be selected/picked up through ordinary world-item workflow;
 - worker then stands slightly away from the building facing the camera;
@@ -265,3 +273,4 @@ Unity Play Mode:
 | 2026-07-28 | Assigned cook finalizes one quantity-two food output stack. | User |
 | 2026-07-29 | LMB/RMB on the same product icon add/cancel one order; separate minus icon removed. | User |
 | 2026-07-29 | Buildings expose a visible left internal-storage zone and right finished-output zone; internal stock is not an automatic delivery source; the assigned worker carries finalize to the right zone; completed output is pickup-capable; the queue count decreases on completion; worker waits slightly away facing the camera. | User |
+| 2026-07-29 | Construction/production work positions are supported side cells on the same Y/Z plane as the building; above-footprint work is forbidden. | User |

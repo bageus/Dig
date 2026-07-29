@@ -160,6 +160,9 @@ Animation и interpolation могут завершиться только пос
 - Camera focus и highlight являются локальными effects.
 - Panel modes взаимоисключающие и вычисляются из typed selection/mode state.
 - Цвет всегда дополняется числом, icon, label, pattern или text reason.
+- нижняя центральная context panel всегда имеет ту же внешнюю высоту и нижнюю/верхнюю границу, что minimap и clock;
+- содержимое context panel не может увеличивать внешний HUD: при большем количестве controls уменьшаются внутренние padding, cell/button size и best-fit font size внутри фиксированной границы;
+- inventory compartments используют ровно два ряда, а Cargo не выводит отдельный capacity title.
 
 Детальная priority matrix и BuildingBox/world-item behavior принадлежат связанным input/item specifications.
 
@@ -263,6 +266,7 @@ Unity EditMode/PlayMode and end-to-end scenarios are checked in for representati
 - [x] HUD uses non-color accessibility signals;
 - [x] bounded roster pool covers 64+ residents;
 - [x] source-contract, Release build, .NET tests, headless smoke and deterministic soaks have passing evidence.
+- [x] bottom context outer bounds align with minimap/clock and adaptive inner controls do not resize the HUD shell.
 
 `VERIFIED` acceptance:
 
