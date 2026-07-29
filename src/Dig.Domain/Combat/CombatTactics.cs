@@ -110,7 +110,7 @@ public static class CombatThreatDetector
 
     private static int Distance(CellId first, CellId second)
     {
-        return checked(Math.Abs(first.X - second.X) + Math.Abs(first.Y - second.Y));
+        return CombatSpatialMath.Distance3D(first, second);
     }
 }
 
