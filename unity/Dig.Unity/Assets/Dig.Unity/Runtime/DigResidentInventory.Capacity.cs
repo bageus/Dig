@@ -35,50 +35,56 @@ namespace Dig.Unity
             ResidentInventoryLayoutSnapshot layout =
                 inventory.GetResidentInventoryLayout(resident);
             ItemDefinition definition = inventory.Catalog.Get(stack.ItemId);
-
-            if (definition.IsInventoryExpansion)
+            int requiredQuantity = stack.AvailableQuantity;
+            int capacity = 0;
+            for (int index = 0; index < layout.Slots.Count; index++)
             {
-                return HasEmptySlot(layout, ResidentInventoryCompartment.Main)
-                    ? Result.Success()
-                    : Result.Failure(InventoryErrors.ResidentInventoryCapacityExceeded);
-            }
+                ResidentInventorySlotSnapshot slot = layout.Slots[index];
+                if (!CanAcceptPickup(definition, slot.Slot.Compartment, layout))
+                {
+                    continue;
+                }
 
-            if (layout.ActiveWeaponExpansion.HasValue
-                && layout.ActiveWeaponExpansion.Value.Definition.Accepts(definition)
-                && HasEmptySlot(layout, ResidentInventoryCompartment.Weapon))
-            {
-                return Result.Success();
-            }
+                if (slot.IsEmpty)
+                {
+                    capacity = checked(capacity + definition.MaximumStackSize);
+                }
+                else if (slot.ItemId == definition.Id)
+                {
+                    capacity = checked(
+                        capacity + definition.MaximumStackSize - slot.Quantity);
+                }
 
-            if (HasEmptySlot(layout, ResidentInventoryCompartment.Main))
-            {
-                return Result.Success();
-            }
-
-            if (layout.ActiveCargoExpansion.HasValue
-                && layout.ActiveCargoExpansion.Value.Definition.Accepts(definition)
-                && HasEmptySlot(layout, ResidentInventoryCompartment.Cargo))
-            {
-                return Result.Success();
+                if (capacity >= requiredQuantity)
+                {
+                    return Result.Success();
+                }
             }
 
             return Result.Failure(InventoryErrors.ResidentInventoryCapacityExceeded);
         }
 
-        private static bool HasEmptySlot(
-            ResidentInventoryLayoutSnapshot layout,
-            ResidentInventoryCompartment compartment)
+        private static bool CanAcceptPickup(
+            ItemDefinition definition,
+            ResidentInventoryCompartment compartment,
+            ResidentInventoryLayoutSnapshot layout)
         {
-            for (int index = 0; index < layout.Slots.Count; index++)
+            if (definition.IsInventoryExpansion)
             {
-                ResidentInventorySlotSnapshot slot = layout.Slots[index];
-                if (slot.Slot.Compartment == compartment && slot.IsEmpty)
-                {
-                    return true;
-                }
+                return compartment == ResidentInventoryCompartment.Main;
             }
 
-            return false;
+            return compartment switch
+            {
+                ResidentInventoryCompartment.Main => true,
+                ResidentInventoryCompartment.Cargo =>
+                    layout.ActiveCargoExpansion.HasValue
+                    && layout.ActiveCargoExpansion.Value.Definition.Accepts(definition),
+                ResidentInventoryCompartment.Weapon =>
+                    layout.ActiveWeaponExpansion.HasValue
+                    && layout.ActiveWeaponExpansion.Value.Definition.Accepts(definition),
+                _ => false,
+            };
         }
     }
 }
