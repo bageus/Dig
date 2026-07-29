@@ -96,7 +96,7 @@ public sealed class HaulingSlotClaimSaveRoundTripTests
                 ResidentInventoryCompartment.Main,
                 0),
             tick: 0).IsSuccess);
-        for (int slot = 1; slot < ResidentInventoryLayout.MainSlotCount; slot++)
+        for (int slot = 1; slot < 6; slot++)
         {
             Assert.True(inventory.AddStack(
                 Id(20 + slot),

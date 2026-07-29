@@ -139,7 +139,7 @@ public sealed class HaulingResidentTransitTests
                 tick: 0).IsSuccess);
             if (fillMain)
             {
-                for (int slot = 1; slot < ResidentInventoryLayout.MainSlotCount; slot++)
+                for (int slot = 1; slot < 6; slot++)
                 {
                     Assert.True(Inventory.AddStack(
                         Id(30 + slot),

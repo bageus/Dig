@@ -61,7 +61,7 @@ public sealed class ResidentInventoryDiagnosticsTests
                 1),
             tick: 0).IsSuccess);
         Assert.True(inventory.EquipTool(ToolStackId, ResidentId, tick: 1).IsSuccess);
-        for (int slot = 2; slot < ResidentInventoryLayout.MainSlotCount; slot++)
+        for (int slot = 2; slot < 6; slot++)
         {
             Assert.True(inventory.AddStack(
                 Id(20 + slot),
