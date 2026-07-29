@@ -37,7 +37,7 @@ public sealed class SpatialExcavationDesignationRuntimeContractTests
             "before.State.Designation!=CellDesignation.Dig";
         int guardIndex = quarters.IndexOf(designationGuard, StringComparison.Ordinal);
         int guardedSwingIndex = quarters.IndexOf(
-            "ApplySwing(workerId,seed)",
+            "ApplyWork(workerId)",
             guardIndex,
             StringComparison.Ordinal);
         Assert.True(guardIndex >= 0);
