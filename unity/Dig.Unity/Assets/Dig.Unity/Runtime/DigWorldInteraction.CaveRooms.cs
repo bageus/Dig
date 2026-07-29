@@ -143,14 +143,12 @@ namespace Dig.Unity
             CaveRoomPlanResult? best = null;
             CellId bestEntrance = default;
             int bestScore = int.MaxValue;
-            for (int verticalOffset = 0;
-                verticalOffset < preset.Height;
-                verticalOffset++)
+            IReadOnlyList<CellId> candidates = CaveRoomPlacementCandidateResolver.Resolve(
+                preset,
+                pointerCell.Value);
+            for (int candidateIndex = 0; candidateIndex < candidates.Count; candidateIndex++)
             {
-                CellId candidate = new CellId(
-                    pointerCell.Value.X,
-                    pointerCell.Value.Y + verticalOffset,
-                    CellId.MinimumDepth);
+                CellId candidate = candidates[candidateIndex];
                 CaveRoomPlanResult planned = _session!.PlanCaveRoom(kind, candidate);
                 if (planned.Succeeded)
                 {
@@ -164,7 +162,7 @@ namespace Dig.Unity
                 int score = checked(
                     (baseInvalid * 1_000)
                     + (planned.InvalidCells.Count * 10)
-                    + verticalOffset);
+                    + candidateIndex);
                 if (score < bestScore)
                 {
                     best = planned;
