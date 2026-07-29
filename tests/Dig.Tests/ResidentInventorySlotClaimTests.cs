@@ -18,7 +18,7 @@ public sealed class ResidentInventorySlotClaimTests
     private static readonly ItemId BasketId = new ItemId("inventory.basket");
 
     [Fact]
-    public void Partial_stack_capacity_is_reserved_before_empty_slots()
+    public void Partial_cargo_stack_does_not_preempt_free_main_slot()
     {
         InventoryState inventory = CreateInventory(withBasket: true);
         Assert.True(inventory.AddStack(
@@ -40,13 +40,57 @@ public sealed class ResidentInventorySlotClaimTests
                 tick: 1);
 
         Assert.True(result.IsSuccess, result.Error?.ToString());
+        ResidentInventorySlotClaimSnapshot claim = Assert.Single(result.Value);
+        Assert.Equal(
+            new ResidentInventorySlot(ResidentInventoryCompartment.Main, 1),
+            claim.Slot);
+        Assert.Equal(8, claim.Quantity);
+    }
+
+    [Fact]
+    public void Filled_main_uses_existing_cargo_stack_before_empty_cargo_slot()
+    {
+        InventoryState inventory = CreateInventory(withBasket: true);
+        for (int index = 1; index < ResidentInventoryLayoutSnapshot.MainSlotCount; index++)
+        {
+            Assert.True(inventory.AddStack(
+                Id(20 + index),
+                OreId,
+                100,
+                ItemLocation.InResidentSlot(
+                    ResidentId,
+                    ResidentInventoryCompartment.Main,
+                    index),
+                tick: 0).IsSuccess);
+        }
+
+        Assert.True(inventory.AddStack(
+            OreStackId,
+            OreId,
+            95,
+            ItemLocation.InResidentSlot(
+                ResidentId,
+                ResidentInventoryCompartment.Cargo,
+                0),
+            tick: 0).IsSuccess);
+
+        var result = inventory.ReserveResidentSlotCapacity(
+            FirstJobId,
+            ResidentId,
+            OreId,
+            quantity: 8,
+            tick: 1);
+
+        Assert.True(result.IsSuccess, result.Error?.ToString());
         Assert.Equal(2, result.Value.Count);
         Assert.Equal(
             new ResidentInventorySlot(ResidentInventoryCompartment.Cargo, 0),
             result.Value[0].Slot);
         Assert.Equal(5, result.Value[0].Quantity);
+        Assert.Equal(
+            new ResidentInventorySlot(ResidentInventoryCompartment.Cargo, 1),
+            result.Value[1].Slot);
         Assert.Equal(3, result.Value[1].Quantity);
-        Assert.Equal(ResidentInventoryCompartment.Cargo, result.Value[1].Slot.Compartment);
     }
 
     [Fact]

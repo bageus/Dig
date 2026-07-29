@@ -90,11 +90,11 @@ namespace Dig.Unity
             {
                 GameObject instance = rawMaterial
                     ? CreateRawMaterialLump(resolution, index)
-                    : DigVisualPrefabFactory.Create(
-                        resolution.Asset,
+                    : DigBasketVisualPolicy.CreateInstance(
+                        Model.ItemId,
+                        resolution,
                         transform,
-                        $"Item instance {index}",
-                        PrimitiveType.Cube);
+                        $"Item instance {index}");
                 SetLayerRecursively(instance, layer: 2);
                 DisableColliders(instance);
                 _instances.Add(instance);
