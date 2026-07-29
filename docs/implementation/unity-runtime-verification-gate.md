@@ -30,6 +30,16 @@ Artifacts:
 
 When activation is absent, the workflow writes `status: blocked`. Its green conclusion only means the guard and manifest path executed; it is not runtime verification.
 
+## PlayMode test compilation recovery — 2026-07-29
+
+A local Unity import exposed compilation failures inside the checked-in PlayMode test assembly that the activation-blocked hosted workflow could not compile:
+
+- `RepresentativeSceneConsolePlayModeTests` used non-nullable Unity object locals initialized with `null`, dereferenced them after NUnit assertions that do not change nullable flow state, and resolved unqualified `Application.dataPath` as the `Dig.Application` namespace. The fixture now uses nullable locals, explicit post-assert null-forgiving dereferences and `UnityEngine.Application.dataPath`;
+- `CaveRoomReapplyAndMediumPreviewPlayModeTests` used the string-oriented `Does.Not.Contain` NUnit constraint with a `CellId`. It now captures the non-null resumed plan and uses the collection constraint `Has.No.Member`;
+- `CombatSpatialExecutionPlayModeTests` selected the positional `AgentState` overload without supplying its required `skills` and `traits` arguments. The fixture now passes both explicitly before `initialPosition`.
+
+`UnityRuntimeEvidenceGateTests` locks these source-level compilation contracts so the same failures are visible in normal Quality CI even while licensed Unity execution remains externally blocked. This source guard does not replace the actual EditMode/PlayMode execution required by #511.
+
 ## Tracking transfer
 
 Repository implementation acceptance for #14 and #15 is complete. Their remaining licensed execution requirements move to #511, which also owns runtime baseline/budget calibration. This allows umbrella roadmap #16 to close without claiming `VERIFIED` for any Unity system.
