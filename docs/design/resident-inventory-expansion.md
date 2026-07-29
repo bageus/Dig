@@ -20,9 +20,9 @@ ResidentInventoryLocation(
 
 Правила:
 
-- один slot содержит не более одного stack;
-- stack quantity ограничен MaxStackSize;
-- compatible stacks объединяются;
+- один slot содержит ровно одну физическую unit stack либо пуст;
+- ordinary item/material в resident inventory всегда имеет quantity `1`;
+- compatible stacks в resident inventory не объединяются;
 - expansions разрешены только в Main;
 - nested containers запрещены;
 - BuildingBox является обычным неstackable item, а не вложенным зданием/контейнером.
@@ -60,7 +60,7 @@ ResidentInventoryLocation(
 
 - занимает 1 Main slot;
 - добавляет 4 Weapon slots;
-- принимает оружие и щиты;
+- принимают оружие и щиты;
 - имеет приоритет над ножнами;
 - не меняет скорость;
 - рецепт: 3 железа, 2 хомяка, 1 золото, 2 ножки в арсенале.
@@ -113,14 +113,13 @@ Quantity не теряется и не дублируется.
 
 ## 8. Destination priority для pickup и hauling
 
-Для ordinary item/material используется единый deterministic порядок destination capacity:
+Для ordinary item/material используется единый deterministic порядок свободных destination slots:
 
-1. compatible existing stack в `Main`;
-2. свободный `Main` slot;
-3. compatible existing stack в `Cargo`;
-4. свободный `Cargo` slot.
+1. свободный `Main` slot;
+2. свободный `Cargo` slot;
+3. для оружия/щитов — свободный slot активного `Weapon` compartment согласно specialized priority.
 
-`Cargo` используется только после полного исчерпания совместимой Main capacity. Partial Cargo stack не перехватывает новый pickup, пока существует свободный Main slot. Уже находящиеся в Cargo предметы не переносятся обратно автоматически при последующем освобождении Main. Для оружия и щитов active `Weapon` compartment сохраняет отдельный специализированный приоритет.
+Каждая переносимая физическая единица требует отдельный свободный совместимый slot. Occupied slot того же `ItemId` не предоставляет дополнительную capacity и не принимает merge. `Cargo` используется только после исчерпания свободных Main slots. Уже находящиеся в Cargo предметы не переносятся обратно автоматически при последующем освобождении Main.
 
 Один и тот же порядок используется world pickup, hauling, building supply, retry и save/load recovery.
 
@@ -198,7 +197,8 @@ BuildingBox:
 
 ## 13. Hauling integration
 
-- planner учитывает merge и free slots;
+- planner учитывает только свободные совместимые slots;
+- каждая переносимая unit получает отдельный destination slot/slot claim;
 - ordinary resources/boxes не используют Weapon;
 - destination slot или slot claim резервируется;
 - два jobs не резервируют одну capacity;
@@ -241,11 +241,12 @@ Content validation проверяет IDs, categories, slots, speed, recipes и 
 - BuildingBox definition/version и plan reservation;
 - external job/storage/building links.
 
-Миграция старого resident inventory сортирует stacks по stable StackId, заполняет Main, активирует expansions, затем Cargo/Weapon; остаток выбрасывается в resident cell с report.
+Миграция старого resident inventory сортирует unit stacks по stable StackId, заполняет Main, активирует expansions, затем Cargo/Weapon; остаток выбрасывается в resident cell с report. Legacy resident stacks с quantity больше `1` должны быть разделены migration owner на отдельные unit identities до layout placement.
 
 ## 16. Инварианты
 
 - stack имеет одно authoritative location;
+- ordinary resident stack имеет quantity `1`;
 - slot index валиден;
 - expansion находится только в Main;
 - containers не вложены;
@@ -267,10 +268,11 @@ Content validation проверяет IDs, categories, slots, speed, recipes и 
 - held item остаётся в slot;
 - Weapon→Main→Cargo layout;
 - ordinary drop/use и BuildingBox placement имеют правильный priority;
-- pickup/hauling сначала использует Main и только после его заполнения Cargo;
+- каждая одинаковая или различная ordinary unit в resident inventory занимает отдельный slot;
+- pickup/hauling использует свободные Main slots и только после их заполнения свободные Cargo slots;
 - surface demo содержит pickable basket и large basket, а resident начинает без Cargo expansion;
 - непустой Cargo показывает basket-backpack сзади, пустой Cargo и drop/spill скрывают его;
-- hauling учитывает real slots;
+- hauling учитывает real free slots и не использует merge capacity;
 - save/load восстанавливает layout, boxes и reservations;
 - unit, integration, migration, soak и Play Mode tests покрывают все правила.
 
@@ -280,3 +282,4 @@ Content validation проверяет IDs, categories, slots, speed, recipes и 
 | Дата | Решение | Кто подтвердил | Issues |
 |---|---|---|---|
 | 2026-07-29 | Ordinary pickup/hauling использует Main до Cargo; basket и large basket появляются на поверхности; attachment виден только при непустом Cargo. | пользователь | #68, #69 |
+| 2026-07-29 | Каждая ordinary item/material unit в resident inventory является отдельным quantity-one stack и занимает отдельный slot; merge capacity запрещена. | пользователь | #67, #68, #69 |
