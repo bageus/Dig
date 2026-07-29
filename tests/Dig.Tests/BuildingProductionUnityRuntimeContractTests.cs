@@ -68,6 +68,7 @@ public sealed class BuildingProductionUnityRuntimeContractTests
     {
         string runtime = RuntimeRoot();
         string renderer = Read(runtime, "DigBuildingInternalStockRenderer.cs");
+        string zones = Read(runtime, "DigBuildingInternalStockRenderer.Zones.cs");
         string visual = Read(runtime, "DigBuildingInternalStockVisual.cs");
         string bay = Read(runtime, "DigBuildingInternalStockBayVisual.cs");
         string interaction = Read(runtime, "DigWorldInteraction.BuildingInternalStock.cs");
@@ -78,14 +79,14 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         Assert.Contains("stockIndex", renderer);
         Assert.Contains("unitIndex", renderer);
         Assert.Contains("TryGetStock", renderer);
-        Assert.Contains("Internal Storage Zone", renderer);
-        Assert.Contains("Finished Output Zone", renderer);
-        Assert.Contains("ResolveInternalZoneCell", renderer);
-        Assert.Contains("ResolveOutputZoneCell", renderer);
-        Assert.Contains("leftEdge - 1", renderer);
-        Assert.Contains("rightEdge + 1", renderer);
+        Assert.Contains("Internal Storage Zone", zones);
+        Assert.Contains("Finished Output Zone", zones);
+        Assert.Contains("ResolveInternalZoneCell", zones);
+        Assert.Contains("ResolveOutputZoneCell", zones);
+        Assert.Contains("leftEdge - 1", zones);
+        Assert.Contains("rightEdge + 1", zones);
         Assert.Contains("VisibleDepthOffset = 0.12f", renderer);
-        Assert.Contains("DigBuildingInternalStockBayVisual", renderer);
+        Assert.Contains("DigBuildingInternalStockBayVisual", renderer + zones);
         Assert.Contains("Storage tray", bay);
         Assert.Contains("Storage back rail", bay);
         Assert.Contains("collider.enabled = false", bay);
