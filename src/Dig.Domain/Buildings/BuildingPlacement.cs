@@ -180,7 +180,8 @@ public sealed class BuildingPlacementValidator
                 && !snapshot.IsSolid
                 && snapshot.State.IsExplored)
             .Where(cell => reachable.Contains(cell) || legacyConfiguredPositionIsReachable)
-            .OrderBy(cell => Math.Abs(cell.X - origin.X))
+            .OrderBy(cell => reachable.Contains(cell) ? 0 : 1)
+            .ThenBy(cell => Math.Abs(cell.X - origin.X))
             .ThenBy(cell => cell)
             .Cast<CellId?>()
             .FirstOrDefault();
