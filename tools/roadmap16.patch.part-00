@@ -1,0 +1,365 @@
+diff -ruN '--exclude=__pycache__' dig-current-test/.github/workflows/quality.yml dig-latest/.github/workflows/quality.yml
+--- a/.github/workflows/quality.yml	2026-07-29 00:36:40.000000000 +0000
++++ b/.github/workflows/quality.yml	2026-07-29 07:37:54.625519556 +0000
+@@ -37,6 +37,9 @@
+           set -o pipefail
+           python tools/quality/check_unity_source_contracts.py 2>&1 | tee unity-source-contracts.log
+ 
++      - name: Validate Unity runtime evidence tooling
++        run: python tools/quality/validate_unity_runtime_evidence.py --self-test
++
+       - name: Validate Unity native field initialization
+         run: python tools/quality/check_unity_native_field_initializers.py
+ 
+diff -ruN '--exclude=__pycache__' dig-current-test/.github/workflows/unity-playmode.yml dig-latest/.github/workflows/unity-playmode.yml
+--- a/.github/workflows/unity-playmode.yml	2026-07-29 00:36:40.000000000 +0000
++++ b/.github/workflows/unity-playmode.yml	2026-07-29 07:37:54.177519548 +0000
+@@ -7,6 +7,7 @@
+       - ".github/workflows/unity-playmode.yml"
+       - "src/**"
+       - "unity/**"
++      - "tools/quality/validate_unity_runtime_evidence.py"
+   push:
+     branches:
+       - main
+@@ -14,16 +15,19 @@
+       - ".github/workflows/unity-playmode.yml"
+       - "src/**"
+       - "unity/**"
++      - "tools/quality/validate_unity_runtime_evidence.py"
+ 
+ permissions:
+   contents: read
+   checks: write
+ 
+ jobs:
+-  playmode:
+-    name: Unity 6000.0.71f1 Play Mode
++  unity-tests:
++    name: Unity 6000.0.71f1 EditMode + PlayMode
+     runs-on: ubuntu-latest
+     timeout-minutes: 60
++    env:
++      UNITY_VERSION: 6000.0.71f1
+ 
+     steps:
+       - name: Checkout
+@@ -32,6 +36,11 @@
+           lfs: true
+           show-progress: false
+ 
++      - name: Set up Python
++        uses: actions/setup-python@v5
++        with:
++          python-version: "3.12"
++
+       - name: Resolve Unity activation
+         id: activation
+         env:
+@@ -56,7 +65,7 @@
+           if [[ "${configured}" == "true" ]]; then
+             echo "Unity activation inputs are configured."
+           else
+-            echo "::warning title=Unity Play Mode skipped::${reason}. Add repository Actions secrets to produce licensed runtime evidence."
++            echo "::warning title=Unity runtime tests blocked::${reason}. Add repository Actions secrets to produce licensed runtime evidence."
+           fi
+ 
+       - name: Cache Unity Library
+@@ -68,9 +77,9 @@
+           restore-keys: |
+             unity-library-${{ runner.os }}-6000.0.71f1-
+ 
+-      - name: Run Play Mode tests
++      - name: Run Unity EditMode and PlayMode tests
+         if: steps.activation.outputs.configured == 'true'
+-        id: playmode
++        id: unity_tests
+         uses: game-ci/unity-test-runner@v4
+         env:
+           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+@@ -80,27 +89,53 @@
+         with:
+           projectPath: unity/Dig.Unity
+           unityVersion: 6000.0.71f1
+-          testMode: PlayMode
+-          artifactsPath: artifacts/playmode
++          testMode: All
++          artifactsPath: artifacts/unity-tests
+           githubToken: ${{ secrets.GITHUB_TOKEN }}
+-          checkName: Dig Unity Play Mode
++          checkName: Dig Unity EditMode + PlayMode
+ 
+-      - name: Record skipped runtime evidence
++      - name: Validate executed Unity runtime evidence
++        if: always() && steps.activation.outputs.configured == 'true'
++        shell: bash
++        run: |
++          python tools/quality/validate_unity_runtime_evidence.py \
++            --artifacts-dir artifacts/unity-tests \
++            --manifest artifacts/unity-runtime-evidence.json \
++            --required-test "EditMode=Dig.Unity.EditModeTests.UnityProjectEditModeTests.Main_scene_is_registered_with_runtime_bootstrap" \
++            --required-test "PlayMode=Dig.Unity.PlayModeTests.RepresentativeSceneConsolePlayModeTests.Main_scene_bootstraps_without_console_errors" \
++            --required-log "runtime/representative-scene.log"
++
++      - name: Record blocked runtime evidence
+         if: steps.activation.outputs.configured != 'true'
+         shell: bash
+         run: |
++          python tools/quality/validate_unity_runtime_evidence.py \
++            --artifacts-dir artifacts/unity-tests \
++            --manifest artifacts/unity-runtime-evidence.json \
++            --required-test "EditMode=Dig.Unity.EditModeTests.UnityProjectEditModeTests.Main_scene_is_registered_with_runtime_bootstrap" \
++            --required-test "PlayMode=Dig.Unity.PlayModeTests.RepresentativeSceneConsolePlayModeTests.Main_scene_bootstraps_without_console_errors" \
++            --blocked-reason "${{ steps.activation.outputs.reason }}"
+           {
+-            echo "## Unity Play Mode not executed"
++            echo "## Unity runtime evidence blocked"
+             echo
+             echo "${{ steps.activation.outputs.reason }}."
+-            echo "The PR check is not a test failure; licensed Play Mode evidence remains pending."
++            echo "The workflow conclusion alone is not verification. Inspect the unity-runtime-evidence artifact."
+           } >> "${GITHUB_STEP_SUMMARY}"
+ 
+-      - name: Upload Play Mode results
++      - name: Upload Unity test results
+         if: always() && steps.activation.outputs.configured == 'true'
+         uses: actions/upload-artifact@v4
+         with:
+-          name: unity-playmode-results
+-          path: artifacts/playmode
+-          if-no-files-found: warn
++          name: unity-editmode-playmode-results
++          path: artifacts/unity-tests
++          if-no-files-found: error
+           retention-days: 14
++
++      - name: Upload Unity runtime evidence manifest
++        if: always()
++        uses: actions/upload-artifact@v4
++        with:
++          name: unity-runtime-evidence
++          path: artifacts/unity-runtime-evidence.json
++          if-no-files-found: error
++          retention-days: 30
+diff -ruN '--exclude=__pycache__' dig-current-test/docs/ROADMAP.md dig-latest/docs/ROADMAP.md
+--- a/docs/ROADMAP.md	2026-07-29 00:36:40.000000000 +0000
++++ b/docs/ROADMAP.md	2026-07-29 07:42:11.669524569 +0000
+@@ -1,5 +1,7 @@
+ # Roadmap проекта Dig
+ 
++Статус базовой roadmap: `IMPLEMENTED` после закрытия [#16](https://github.com/bageus/Dig/issues/16). Фактическая licensed Unity verification продолжается у отдельного approved owner [#511](https://github.com/bageus/Dig/issues/511) и не считается выполненной до `verified` evidence manifest.
++
+ ## 1. Назначение
+ 
+ Roadmap задаёт порядок реализации систем. GitHub Issues являются рабочими задачами, а этот документ — стабильной картой этапов и критериев перехода между ними.
+@@ -33,7 +35,8 @@
+ | [#13](https://github.com/bageus/Dig/issues/13) | Сохранения, версии и миграции |
+ | [#14](https://github.com/bageus/Dig/issues/14) | Presentation, ввод, UI и диагностика |
+ | [#15](https://github.com/bageus/Dig/issues/15) | Тесты, performance budgets и CI |
+-| [#16](https://github.com/bageus/Dig/issues/16) | Верхнеуровневое отслеживание roadmap |
++| [#16](https://github.com/bageus/Dig/issues/16) | Завершённая базовая roadmap |
++| [#511](https://github.com/bageus/Dig/issues/511) | Licensed Unity runtime verification и release evidence |
+ 
+ ## 4. Этап 0 — Архитектурный фундамент
+ 
+@@ -43,7 +46,7 @@
+ 
+ - [#1](https://github.com/bageus/Dig/issues/1);
+ - [#2](https://github.com/bageus/Dig/issues/2);
+-- [#15](https://github.com/bageus/Dig/issues/15).
++- [#15](https://github.com/bageus/Dig/issues/15) — repository quality/CI implementation; licensed Unity execution перенесён в [#511](https://github.com/bageus/Dig/issues/511).
+ 
+ Результаты:
+ 
+@@ -69,7 +72,7 @@
+ - [#6](https://github.com/bageus/Dig/issues/6);
+ - [#7](https://github.com/bageus/Dig/issues/7);
+ - [#13](https://github.com/bageus/Dig/issues/13);
+-- [#14](https://github.com/bageus/Dig/issues/14).
++- [#14](https://github.com/bageus/Dig/issues/14) — Presentation implementation; повышение до `VERIFIED` принадлежит [#511](https://github.com/bageus/Dig/issues/511).
+ 
+ Результаты:
+ 
+@@ -241,3 +244,18 @@
+ - завершённая задача удовлетворяет Definition of Done;
+ - roadmap обновляется при изменении scope или порядка зависимостей;
+ - подробные подзадачи создаются внутри соответствующего системного Issue.
++
++## 15. Продолжение после базовой roadmap
++
++Закрытие #16 означает завершение repository implementation базовой архитектуры и вертикальных foundation stages. Оно не означает, что Unity systems получили статус `VERIFIED`.
++
++Единый continuation owner [#511](https://github.com/bageus/Dig/issues/511) сохраняет без потери acceptance:
++
++- licensed Unity `6000.0.71f1` execution;
++- EditMode и PlayMode results;
++- raw XML и runtime logs;
++- representative `Main.unity` без Console errors;
++- machine-readable `unity-runtime-evidence.json`;
++- измеренный Unity runtime baseline и blocking budgets.
++
++Child systems повышаются в `VERIFIED` только по собственному acceptance после фактического #511 evidence. Зелёный activation-skip workflow, source contracts, Release build и checked-in test source для этого недостаточны.
+diff -ruN '--exclude=__pycache__' dig-current-test/docs/design/presentation-input-ui-and-diagnostics.md dig-latest/docs/design/presentation-input-ui-and-diagnostics.md
+--- a/docs/design/presentation-input-ui-and-diagnostics.md	2026-07-29 00:36:40.000000000 +0000
++++ b/docs/design/presentation-input-ui-and-diagnostics.md	2026-07-29 07:42:49.465525307 +0000
+@@ -244,7 +244,7 @@
+ - fixed-tick simulation remains unchanged by Presentation toggles;
+ - smoke plus standard/large soak complete without invariant or budget violations.
+ 
+-Unity Play Mode/end-to-end scenarios are checked in for representative bootstrap, renderer, selection/input, BuildingBox, excavation, notification and HUD regressions. They must execute in a licensed Unity Test Runner and publish result artifacts before status can become `VERIFIED`.
++Unity EditMode/PlayMode and end-to-end scenarios are checked in for representative bootstrap, renderer, selection/input, BuildingBox, excavation, notification and HUD regressions. Their factually executed licensed evidence belongs to [#511](https://github.com/bageus/Dig/issues/511) and is required before status can become `VERIFIED`.
+ 
+ ## 13. Acceptance
+ 
+@@ -278,7 +278,7 @@
+ - world item interactions — [#387](https://github.com/bageus/Dig/issues/387);
+ - BuildingBox full runtime verification — [#398](https://github.com/bageus/Dig/issues/398);
+ - resident HUD/skills broader backlog — [#113](https://github.com/bageus/Dig/issues/113), [#117](https://github.com/bageus/Dig/issues/117);
+-- Unity Test Runner evidence — [#15](https://github.com/bageus/Dig/issues/15).
++- licensed Unity Test Runner evidence — [#511](https://github.com/bageus/Dig/issues/511).
+ 
+ Эти issues не переопределяют ownership и invariants Presentation foundation.
+ 
+@@ -292,3 +292,4 @@
+ | 2026-07-28 | Unity Play Mode workflow добавлен; без activation credentials licensed test step пропускается и не является evidence. | PR #472 / issue #15 | 12–13 |
+ | 2026-07-28 | HUD adapter при unavailable sessions возвращает typed fallback projections вместо NullReferenceException. | PR #498 / issue #497 | 2, 6, 11 |
+ | 2026-07-29 | Umbrella #14 нормализован как Presentation foundation; более узкие gameplay и verification задачи остаются у связанных owners. | Запрос пользователя | Все |
++| 2026-07-29 | Repository implementation issue #14 закрывается как `IMPLEMENTED`; remaining licensed EditMode/PlayMode, Console и runtime budget evidence перенесены в approved owner #511 без повышения до `VERIFIED`. | Issue #16 closure path | 12–15 |
+diff -ruN '--exclude=__pycache__' dig-current-test/docs/design/unity-runtime-verification-and-release-gates.md dig-latest/docs/design/unity-runtime-verification-and-release-gates.md
+--- a/docs/design/unity-runtime-verification-and-release-gates.md	1970-01-01 00:00:00.000000000 +0000
++++ b/docs/design/unity-runtime-verification-and-release-gates.md	2026-07-29 07:41:15.533523475 +0000
+@@ -0,0 +1,215 @@
++# Unity runtime verification and release gates
++
++Статус: `APPROVED`.
++
++Tracking issue: [#511](https://github.com/bageus/Dig/issues/511).
++
++Связанные системы: [`presentation-input-ui-and-diagnostics.md`](presentation-input-ui-and-diagnostics.md), [`../implementation/quality-soak-performance.md`](../implementation/quality-soak-performance.md), [`../development-rules.md`](../development-rules.md), [`../ROADMAP.md`](../ROADMAP.md).
++
++## 1. Назначение и границы
++
++Эта система является единственным владельцем фактического Unity runtime evidence. Она не владеет gameplay state и не заменяет acceptance отдельных игровых систем.
++
++В scope входят:
++
++- licensed Unity Editor execution для текущего commit;
++- Unity EditMode и PlayMode Test Runner;
++- representative `Main.unity` bootstrap без неожиданных Console errors;
++- raw XML, runtime logs и machine-readable evidence manifest;
++- связь evidence с commit SHA, Unity version и workflow run;
++- Unity runtime performance baseline и последующие blocking budgets;
++- повышение конкретных систем из `IMPLEMENTED` в `VERIFIED` только после фактического evidence.
++
++Вне scope:
++
++- Domain/Application unit и integration tests;
++- headless deterministic soak budgets;
++- исправление gameplay bugs, найденных Test Runner;
++- владение Unity license credentials;
++- автоматическое закрытие child issues без проверки их собственного acceptance.
++
++## 2. Запуск workflow
++
++Поддерживаемые execution paths:
++
++1. GitHub-hosted GameCI с Personal activation (`UNITY_LICENSE`, `UNITY_EMAIL`, `UNITY_PASSWORD`).
++2. GitHub-hosted GameCI с Pro activation (`UNITY_SERIAL`, `UNITY_EMAIL`, `UNITY_PASSWORD`).
++3. Approved self-hosted или floating-license runner, который публикует тот же evidence contract.
++
++Без licensed execution workflow создаёт `blocked` manifest. Зелёное завершение activation guard не является verification.
++
++## 3. Основной success path
++
++1. Checkout фиксирует exact commit SHA.
++2. Unity `6000.0.71f1` открывает `unity/Dig.Unity`.
++3. Test Runner выполняет `EditMode` и `PlayMode`, а не пропускает их.
++4. EditMode acceptance подтверждает, что `Assets/Scenes/Main.unity` включена в build settings и содержит ровно один `DigUnityBootstrap`.
++5. PlayMode acceptance загружает `Main.unity`, ждёт активные simulation/input adapters и проверяет representative rendered residents/world/HUD.
++6. Unexpected Console error/exception делает test failure.
++7. Все test cases имеют результат `Passed`.
++8. Validator читает XML и structured representative-scene log.
++9. Validator создаёт `unity-runtime-evidence.json` со статусом `verified`.
++10. Raw results, runtime logs и manifest сохраняются как artifacts.
++11. Tracking issue получает run/artifact links и exact commit identity.
++
++## 4. Повторное выполнение
++
++- evidence относится только к указанному commit SHA;
++- новый runtime-affecting commit требует нового run;
++- повторный run не переиспользует старый manifest как результат;
++- cache Unity Library является производным ускорением и не входит в evidence;
++- два runs одного commit допустимы, но `VERIFIED` использует последний полный passing run.
++
++## 5. Blocked, failure и retry
++
++`blocked`:
++
++- activation credentials или licensed runner отсутствуют;
++- Test Runner не запускался;
++- manifest содержит причину и `not-executed` для required modes;
++- system/feature statuses не повышаются.
++
++`failed`:
++
++- Unity compilation failed;
++- XML отсутствует или не читается;
++- suite имеет failed/skipped/inconclusive test;
++- required EditMode/PlayMode acceptance test отсутствует;
++- representative runtime log отсутствует или не подтверждает clean Console;
++- manifest validator возвращает non-zero exit code.
++
++Retry выполняется новым workflow run после исправления prerequisite или root cause. Старый failed/blocked artifact сохраняется как диагностика и не заменяется задним числом.
++
++## 6. Authoritative evidence owner
++
++Authoritative record одного run — immutable artifact set:
++
++- raw Unity Test Runner XML;
++- Unity-generated test artifacts;
++- `runtime/representative-scene.log`;
++- `unity-runtime-evidence.json`;
++- GitHub run ID и commit SHA.
++
++Issue comments и docs являются индексом evidence, но не заменяют artifacts. Workflow conclusion без manifest не является источником истины.
++
++## 7. Evidence manifest
++
++Минимальные поля schema version 1:
++
++- `status`: `verified`, `blocked` или `failed`;
++- `reason`;
++- `unityVersion`;
++- `commitSha`;
++- `runId`;
++- test totals;
++- required mode/test results;
++- result XML paths;
++- runtime log paths.
++
++`verified` допустим только когда:
++
++- найден хотя бы один parsed test case;
++- каждый parsed test case имеет `Passed`;
++- required EditMode и PlayMode tests выполнены и passed;
++- structured runtime log содержит `status=passed`, `scene=Assets/Scenes/Main.unity`, `consoleErrors=0`.
++
++## 8. Input, Presentation и representative scene
++
++Verification не меняет input priority или gameplay behavior. Representative scene использует production `DigUnityBootstrap` и подтверждает только observable composition:
++
++- simulation driver создан и enabled;
++- world interaction создан и enabled;
++- Main camera и HUD созданы;
++- representative residents и world renderer присутствуют;
++- неожиданные error/exception logs отсутствуют.
++
++Более узкие cursor, BuildingBox, excavation, food, mushroom, barrel и HUD workflows остаются в своих checked-in tests и tracking issues.
++
++## 9. Performance baseline и budgets
++
++Headless budgets принадлежат `quality-soak-performance.md`. Unity runtime budgets принадлежат этой системе.
++
++Порядок:
++
++1. Первый licensed passing run фиксирует platform, runner, scene, frame/sample window, elapsed time, allocations и memory metrics.
