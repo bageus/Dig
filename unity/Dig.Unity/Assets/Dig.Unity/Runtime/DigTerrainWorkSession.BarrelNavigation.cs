@@ -81,8 +81,12 @@ internal sealed partial class DigTerrainWorkSession
         {
             new CellId(target.X - 1, target.Y, target.Z),
             new CellId(target.X + 1, target.Y, target.Z),
-            new CellId(target.X, target.Y - 1, target.Z),
-            new CellId(target.X, target.Y + 1, target.Z),
+            target.Z > CellId.MinimumDepth
+                ? new CellId(target.X, target.Y, target.Z - 1)
+                : target,
+            target.Z < CellId.MaximumDepth
+                ? new CellId(target.X, target.Y, target.Z + 1)
+                : target,
         };
         PathResult? selectedPath = null;
         CellId selectedCell = default;
@@ -134,10 +138,11 @@ internal sealed partial class DigTerrainWorkSession
         {
             CellId from = path.Cells[index];
             CellId to = path.Cells[index + 1];
-            bool supportedWalk = navigation.GetTransitions(from).Any(
+            bool supportedSurfaceTransition = navigation.GetTransitions(from).Any(
                 transition => transition.Target == to
-                    && transition.TraversalKind == TunnelTraversalKind.SupportedWalk);
-            if (!supportedWalk)
+                    && (transition.TraversalKind == TunnelTraversalKind.SupportedWalk
+                        || transition.TraversalKind == TunnelTraversalKind.DepthTraverse));
+            if (!supportedSurfaceTransition)
             {
                 return false;
             }
