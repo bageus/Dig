@@ -25,8 +25,8 @@ public sealed class ResidentInventoryStackingTests
 
         Assert.True(normalized.IsSuccess, normalized.Error?.ToString());
         ResidentInventorySlotSnapshot occupied = Assert.Single(
-            inventory.GetResidentInventoryLayout(ResidentId)
-                .Slots.Where(value => !value.IsEmpty));
+            inventory.GetResidentInventoryLayout(ResidentId).Slots,
+            value => !value.IsEmpty);
         Assert.Equal(3, occupied.Quantity);
         Assert.Equal(first, occupied.StackId);
         Assert.Null(inventory.GetStack(second));
