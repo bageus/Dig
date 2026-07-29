@@ -31,6 +31,8 @@ Tracking issue: [#508](https://github.com/bageus/Dig/issues/508).
 6. Health и authoritative actor position принадлежат Agents; route/transition принадлежат Navigation/Movement.
 7. Presentation проигрывает typed stages/events, но не создаёт damage или attack success.
 8. Combat interruption освобождает excavation assignment и не откатывает committed terrain work.
+9. `Flee/Retreat` является emergency intent с приоритетом выше `PlayerOrder`; direct attack не подавляет подтверждённое tactical retreat.
+10. Save/Load хранит authoritative intent/execution identity и stage, но не сохраняет route, engagement candidates, LoS projection, interpolation или animation state.
 
 Не подтверждены engagement geometry, pursuit, assistance, line-of-sight, target-loss continuation и retreat destination.
 
@@ -113,14 +115,13 @@ terminal/cancel/replacement -> no second attack result
 
 ## 8. Зависимости и конфликты
 
-- emergency/survival имеет приоритет над обычной работой;
+- emergency/survival имеет приоритет над обычной работой и `PlayerOrder`;
 - Combat может прерывать excavation через существующий cleanup path;
 - shared logical cells разрешены Movement design и сами по себе не блокируют actor;
 - direct horizontal swap одним tick запрещён;
 - vertical/depth traversal использует существующие typed edges;
-- падение actor требует отдельного confirmed impact result из #396.
-
-Приоритет explicit player attack против tactical retreat остаётся открытым.
+- падение actor требует отдельного confirmed impact result из #396;
+- exact Health/threat thresholds tactical retreat остаются Q-014 data, но при срабатывании Retreat имеет приоритет над direct attack.
 
 ## 9. Инварианты
 
@@ -134,7 +135,7 @@ terminal/cancel/replacement -> no second attack result
 
 ## 10. Save/Load и migration
 
-Подтверждённо сохраняются Combat intents, resolutions, cooldowns/statuses, Agents position/Health и equipment. Открыто, сохраняется ли mid-execution stage/pursuit/engagement claim или после load выполняется deterministic reevaluation из intent snapshot.
+Сохраняются authoritative active combat intent, execution identity, execution stage, selected entity/cell target, selected equipment identity и уже resolved action IDs. Navigation route, engagement candidate set, LoS projection, interpolation и animation state не сериализуются. После load они пересчитываются из восстановленных World, Agents, Equipment и Combat snapshots. Loader валидирует target/equipment references и либо детерминированно продолжает сохранённый stage, либо переводит execution в typed reevaluation/blocked/cancelled result без повторения уже resolved attack.
 
 ## 11. Диагностика
 
@@ -158,7 +159,7 @@ terminal/cancel/replacement -> no second attack result
 - Domain: deterministic candidate ordering, target/range decisions, no duplicate resolution;
 - Application: movement-to-attack pipeline, cancellation, target death/loss, assistance и retreat;
 - deterministic simulation: несколько attackers/targets и stable tie-break;
-- save/load: active intent/execution recovery;
+- save/load: active intent/execution recovery with rebuilt derived route/candidates;
 - integration: excavation interruption and return/reassignment;
 - Unity Play Mode: approach, facing, wind-up, one damage commit, recover, retarget/retreat, cursor/HUD/status.
 
@@ -166,7 +167,12 @@ terminal/cancel/replacement -> no second attack result
 
 Acceptance будет закрыт после questionnaire. Минимально полный сценарий обязан проверить: direct и autonomous start, melee/ranged approach, несколько actors, target loss, blocked route/retry, retreat, cancel/replacement, save/load, diagnostics и Play Mode evidence.
 
-## 14. Открытые вопросы
+## 14. Решённые вопросы
+
+- **Q-COMBAT-SPATIAL-008:** `Flee/Retreat` выше `PlayerOrder`; direct attack не подавляет подтверждённое retreat. Exact thresholds остаются Q-014.
+- **Q-COMBAT-SPATIAL-011:** сохраняются authoritative execution identity/stage/targets и resolved action IDs; route, candidates, LoS и Presentation пересчитываются после load.
+
+## 15. Открытые вопросы
 
 1. **Q-COMBAT-SPATIAL-001 — melee engagement:** target cell, соседняя cell или data-driven ring?
 2. **Q-COMBAT-SPATIAL-002 — несколько attackers:** общая cell, soft tactical claims или hard reservation?
@@ -175,14 +181,13 @@ Acceptance будет закрыт после questionnaire. Минимальн�
 5. **Q-COMBAT-SPATIAL-005 — target loss/death:** nearest threat, previous action или завершение intent?
 6. **Q-COMBAT-SPATIAL-006 — помощь:** автоматический assist radius/priority и создаётся ли autonomous intent?
 7. **Q-COMBAT-SPATIAL-007 — retreat cell:** nearest safe supported, home/territory anchor или maximum threat distance?
-8. **Q-COMBAT-SPATIAL-008 — player order vs retreat:** может ли direct attack подавлять retreat и до какого critical Health?
-9. **Q-COMBAT-SPATIAL-009 — vertical/depth:** разрешены ли атаки через depth/vertical/shaft-gap topology и какая 3D distance policy?
-10. **Q-COMBAT-SPATIAL-010 — ranged collisions:** friendly fire/body blocking отсутствуют или входят в scope?
-11. **Q-COMBAT-SPATIAL-011 — save/load:** сохранять exact mid-stage или deterministic reevaluate active intent?
-12. **Q-COMBAT-SPATIAL-012 — direct-order UI:** какой pointer/cursor/cancel workflow считается authoritative observable behavior?
+8. **Q-COMBAT-SPATIAL-009 — vertical/depth:** разрешены ли атаки через depth/vertical/shaft-gap topology и какая 3D distance policy?
+9. **Q-COMBAT-SPATIAL-010 — ranged collisions:** friendly fire/body blocking отсутствуют или входят в scope?
+10. **Q-COMBAT-SPATIAL-012 — direct-order UI:** какой pointer/cursor/cancel workflow считается authoritative observable behavior?
 
-## 15. Журнал решений
+## 16. Журнал решений
 
 | Дата | Решение | Кто подтвердил | Изменённые разделы/issues |
 |---|---|---|---|
 | 2026-07-29 | Создан questionnaire; inherited foundation contracts отделены от неутверждённого spatial behavior | системный аудит | #508 |
+| 2026-07-29 | Retreat priority и save/load boundary унаследованы из Utility AI и Save/Load specifications | repository reconciliation | sections 2, 8, 10, 14; #508 |
