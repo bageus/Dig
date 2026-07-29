@@ -1,0 +1,38 @@
+name: Fix basket test capacity
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/fix-basket-test-capacity.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.head_ref == 'agent/align-surface-baskets-and-cargo-fallback'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/align-surface-baskets-and-cargo-fallback
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Use authoritative fixed Main capacity in tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          sed -i 's/ResidentInventoryLayout.MainSlotCount/6/g' \
+            tests/Dig.Tests/ResidentInventoryDiagnosticsTests.cs \
+            tests/Dig.Tests/ResidentExpansionSlotClaimGuardTests.cs \
+            tests/Dig.Tests/HaulingSlotClaimSaveRoundTripTests.cs \
+            tests/Dig.Tests/HaulingResidentTransitTests.cs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests
+          git commit -m "Use fixed Main capacity in basket regressions"
+          git push origin HEAD:agent/align-surface-baskets-and-cargo-fallback
