@@ -10,7 +10,7 @@ public sealed class CombatSpatialUnityRuntimeContractTests
     [Fact]
     public void Unity_runtime_uses_spatial_execution_and_one_hover_click_classifier()
     {
-        string root = RepositoryRootLocator.Find();
+        string root = FindRepositoryRoot();
         string session = File.ReadAllText(Path.Combine(root,
             "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSession.Combat.cs"));
         string interaction = File.ReadAllText(Path.Combine(root,
@@ -28,6 +28,22 @@ public sealed class CombatSpatialUnityRuntimeContractTests
         Assert.Contains("InterruptForCombat", interaction, StringComparison.Ordinal);
         Assert.Contains("CancelPlayerAttackOrder", selection, StringComparison.Ordinal);
         Assert.DoesNotContain("ResolveCombatAttackCommand", interaction, StringComparison.Ordinal);
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        DirectoryInfo? current = new DirectoryInfo(AppContext.BaseDirectory);
+        while (current != null)
+        {
+            if (File.Exists(Path.Combine(current.FullName, "Dig.sln")))
+            {
+                return current.FullName;
+            }
+
+            current = current.Parent;
+        }
+
+        throw new DirectoryNotFoundException("Repository root was not found.");
     }
 }
 }
