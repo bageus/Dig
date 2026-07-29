@@ -74,27 +74,6 @@ internal sealed partial class DigTerrainWorkSession
         return Result.Success();
     }
 
-    internal bool TryPlanBuildingProductionMovement(
-        JobSnapshot job,
-        AgentViewModel agent,
-        NavigationSnapshot navigation,
-        IDictionary<string, CellId> movement)
-    {
-        if (job.Definition is not ProductionWorkJobDefinition production)
-        {
-            return false;
-        }
-
-        EnsureBuildingProductionInitialized();
-        return PlanBuildingProductionRoute(
-            _buildingProductionRoutes,
-            job,
-            agent,
-            production.WorkPosition,
-            navigation,
-            movement);
-    }
-
     internal bool TryPlanBuildingSupplyMovement(
         JobSnapshot job,
         AgentViewModel agent,
@@ -245,12 +224,14 @@ internal sealed partial class DigTerrainWorkSession
         InventorySnapshot inventory = _buildingInventoryRepository!.Get().CreateSnapshot();
         foreach (BuildingSupplySnapshot snapshot in supply.GetAll(inventory))
         {
-            BuildingSnapshot? building = _buildingsRepository!.Get().Get(snapshot.BuildingId);
+            BuildingSnapshot? building = _buildingsRepository!.Get().Get(
+                snapshot.BuildingId);
             if (building == null
                 || building.Status != BuildingStatus.Completed
                 || snapshot.HasActiveSupply
                 || _productionRepository!.Get().HasActiveOrder(snapshot.BuildingId)
-                || snapshot.Stocks.All(value => !value.DeliveryEnabled || value.Missing == 0))
+                || snapshot.Stocks.All(value =>
+                    !value.DeliveryEnabled || value.Missing == 0))
             {
                 continue;
             }
@@ -293,7 +274,6 @@ internal sealed partial class DigTerrainWorkSession
             }
         }
     }
-
 }
 
 }

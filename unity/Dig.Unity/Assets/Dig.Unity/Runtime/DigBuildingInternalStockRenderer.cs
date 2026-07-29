@@ -9,7 +9,7 @@ namespace Dig.Unity
 {
 
 [DisallowMultipleComponent]
-public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
+public sealed partial class DigBuildingInternalStockRenderer : MonoBehaviour
 {
     private const float VisibleDepthOffset = 0.12f;
     private readonly Dictionary<string, GameObject> _units =
@@ -27,9 +27,14 @@ public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
         IReadOnlyList<BuildingProductionViewModel> production,
         IReadOnlyList<BuildingWorldViewModel> buildings)
     {
-        if (production == null || buildings == null)
+        if (production == null)
         {
             throw new ArgumentNullException(nameof(production));
+        }
+
+        if (buildings == null)
+        {
+            throw new ArgumentNullException(nameof(buildings));
         }
 
         EnsureRoot();
@@ -49,7 +54,7 @@ public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
                 continue;
             }
 
-            RenderBay(building, visibleBays);
+            RenderZones(building, visibleBays);
             for (int stockIndex = 0; stockIndex < model.Stocks.Count; stockIndex++)
             {
                 BuildingStockIconViewModel stock = model.Stocks[stockIndex];
@@ -116,13 +121,14 @@ public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
     {
         int column = unitIndex % 2;
         int layer = unitIndex / 2;
-        float pileX = -0.27f + (stockIndex * 0.18f);
+        float pileX = -0.24f + (stockIndex * 0.16f);
+        BuildingFootprintCellViewModel anchor = ResolveInternalZoneCell(building);
         Vector3 basePosition = DigTunnelProjection.ResidentWorldPosition(
-            building.WorkPositionX,
-            building.WorkPositionY,
-            building.WorkPositionZ) + (Vector3.up * DigTunnelProjection.ResidentFootSink);
+            anchor.X,
+            anchor.Y,
+            anchor.Z) + (Vector3.up * DigTunnelProjection.ResidentFootSink);
         unit.transform.position = basePosition + new Vector3(
-            pileX + (column * 0.075f),
+            pileX + (column * 0.07f),
             0.12f + (layer * 0.16f),
             VisibleDepthOffset + (stockIndex * 0.008f));
         unit.transform.localScale = ResolveScale(unit.name);
@@ -139,10 +145,10 @@ public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
         Shader shader = Shader.Find("Universal Render Pipeline/Lit")
             ?? Shader.Find("Standard")
             ?? throw new InvalidOperationException(
-                "No supported internal stock shader was found.");
+                "No supported building-zone shader was found.");
         material = new Material(shader)
         {
-            name = "Dig Internal Stock " + family,
+            name = "Dig Building Zone " + family,
         };
         DigMaterialColorUtility.SetColor(material, ResolveColor(family));
         _materials.Add(family, material);
@@ -187,6 +193,16 @@ public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
 
     private static string ResolveFamily(string itemId)
     {
+        if (string.Equals(itemId, "internal.stock.zone", StringComparison.Ordinal))
+        {
+            return "internal-zone";
+        }
+
+        if (string.Equals(itemId, "finished.output.zone", StringComparison.Ordinal))
+        {
+            return "output-zone";
+        }
+
         if (itemId.IndexOf("mushroom_cap", StringComparison.Ordinal) >= 0)
         {
             return "cap";
@@ -209,6 +225,16 @@ public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
 
     private static Color ResolveColor(string family)
     {
+        if (family == "internal-zone")
+        {
+            return new Color(0.24f, 0.42f, 0.56f, 1f);
+        }
+
+        if (family == "output-zone")
+        {
+            return new Color(0.62f, 0.52f, 0.20f, 1f);
+        }
+
         if (family == "cap")
         {
             return new Color(0.75f, 0.18f, 0.14f, 1f);
@@ -236,35 +262,9 @@ public sealed class DigBuildingInternalStockRenderer : MonoBehaviour
             return;
         }
 
-        GameObject root = new GameObject("Building Internal Stock Visuals");
+        GameObject root = new GameObject("Building Input And Output Zones");
         root.transform.SetParent(transform, worldPositionStays: true);
         _root = root.transform;
-    }
-
-    private void RenderBay(
-        BuildingWorldViewModel building,
-        ISet<string> visible)
-    {
-        visible.Add(building.Id);
-        if (!_bays.TryGetValue(building.Id, out DigBuildingInternalStockBayVisual? bay))
-        {
-            GameObject root = new GameObject("Internal Stock Bay " + building.Id);
-            root.transform.SetParent(_root, worldPositionStays: true);
-            bay = root.AddComponent<DigBuildingInternalStockBayVisual>();
-            bay.Initialize(ResolveMaterial("internal.stock.bay"));
-            _bays.Add(building.Id, bay);
-        }
-
-        bay.gameObject.SetActive(true);
-        bay.SetPosition(
-            DigTunnelProjection.ResidentWorldPosition(
-                building.WorkPositionX,
-                building.WorkPositionY,
-                building.WorkPositionZ)
-            + new Vector3(
-                0f,
-                DigTunnelProjection.ResidentFootSink,
-                VisibleDepthOffset));
     }
 
     private void RemoveMissing(

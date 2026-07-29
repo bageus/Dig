@@ -1,6 +1,6 @@
 # Generic building production and internal supply implementation
 
-Статус: revised production-icon input is `IMPLEMENTED` in PR #501. Основной slice merged через PR #441; supply completion through PR #465. Runtime deposit/Play Mode compile regressions are corrected in PR #504. Actual licensed Unity Play Mode evidence remains pending.
+Статус: revised spatial workflow is `IMPLEMENTED` in PR #515; actual licensed Unity Play Mode evidence remains required before `VERIFIED`.
 
 Authoritative design: [`../design/building-production-and-internal-supply.md`](../design/building-production-and-internal-supply.md).
 Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
@@ -9,105 +9,112 @@ Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
 
 - Production владеет data-driven workstation recipes, очередями, active material step и progressive consumption.
 - BuildingSupplyState владеет internal input capacities, delivery toggles, incoming reservations и protected-source policy.
-- InventoryState владеет физическими item entities, mixed sequential pickup/deposit transactions и BuildingBox outputs.
-- JobSystem владеет supply и production worker lifecycle, reservations, blocked/retry/cancel.
+- InventoryState владеет physical item entities, reservations, resident transit cargo, `ItemLocation.InBuilding` и world outputs.
+- JobSystem владеет supply/production worker lifecycle, worker claims, blocked/retry/cancel.
+- Buildings владеет footprint/work position; zone anchors derived from footprint and are not saved.
 - Skills выдаёт exactly-once grants после завершения одного production order.
-- Presentation строит product icons, ingredient tooltip, shortage tint, queue count и stock toggles из generic view model.
-- Unity runtime исполняет supply/production jobs, начинает supply route у workstation, посещает каждый reserved world source, размещает output перед зданием и отображает раздельные internal-stock piles.
+- Presentation строит product icons, counters, left/right zone trays, stock units и post-work camera-facing pose.
 
-## Production icon input correction — 2026-07-29
+## Building spatial zones — PR #515
 
-Предыдущая Unity-проекция создавала рядом с каждым product icon отдельную кнопку `−`. Это расходилось с последним подтверждённым правилом управления.
+### Left internal-storage zone
 
-Исправленный observable contract:
+`DigBuildingInternalStockRenderer` derives the zone from `min(footprint.X) - 1` and renders it even when empty. Stock units use the same left anchor and remain `DigBuildingInternalStockVisual` trigger targets. The tray has disabled colliders and cannot block navigation.
 
-- LMB на product icon вызывает один `EnqueueBuildingProduction`;
-- RMB на том же icon вызывает один `CancelOneBuildingProduction`, только пока projected `QueuedCount > 0`;
-- перед cancel Unity повторно читает authoritative production view; при нулевом non-terminal count команда не отправляется;
-- отдельная minus/decrement button больше не создаётся;
-- `CancelOneBuildingProduction` сохраняет authoritative policy: newest queued order first, active order only when queued orders отсутствуют;
-- tooltip, orange shortage state и counter остаются на одном icon.
+`DigWorldItemPickupSession.TryResolveBuildingInternalStockPickup` resolves a direct quantity-one pickup to the same left-zone logical cell. The selected stack must be `ItemLocation.InBuilding(buildingId)` and have `AvailableQuantity > 0`; production reservations cannot be stolen.
 
-`DigProductionIconPointer` владеет только pointer presentation events (`hover` и RMB callback), но не меняет Production state напрямую. Command commit остаётся в `DigTerrainWorkSession`/Application handlers.
+Automatic supply behavior is unchanged and remains protected: planner candidates are revealed/reachable/unreserved world stacks only. Internal building stock is not a source for another delivery job, and resident inventory is valid only as reserved transit cargo of its owning supply job.
 
-## Campfire content
+### Right finished-output zone
 
-Unpacked campfire использует одну generic workstation definition с future `AnimationProfileId`, четырьмя input stock definitions и шестью recipes: Tent, Stone mason workshop, Wooden workshop, Campfire, Grilled mushroom и Grilled hamster.
+`ProductionOutputPlacement` now creates candidates only to the right of the footprint:
 
-Runtime не содержит отдельных production branches для этих recipe IDs. Добавление нового workstation или recipe выполняется через content definitions.
+```text
+right edge + 1 -> right edge + 2 -> ...
+```
 
-## Supply workflow
+For multi-row footprints, row order is stable by distance to building origin, then Y/Z. Building orientation does not rotate this screen/world-X contract. Candidate validation requires world bounds, explored open cell, explored solid support, no building footprint and no existing world item. No front/left/rear fallback remains.
 
-- Supply batch атомарно планируется и резервируется command handler до движения worker.
-- После assignment resident сначала приходит к workstation work position и подтверждает active reserved route, затем обходит world sources и возвращается к зданию для deposit.
-- Internal-stock pile имеет trigger collider и generic `DigBuildingInternalStockVisual`.
-- При одном selected resident обычный LMB создаёт quantity-one pickup только из `AvailableQuantity`; production reservation нельзя украсть.
-- Если delivery toggle включён, следующий synchronization снова создаёт replacement demand.
-- Automatic supply planner читает только revealed/reachable/unreserved world stacks. Уже находящийся в произвольном resident inventory material не является автоматическим source; resident inventory используется как зарезервированный transit cargo конкретного supply job.
+`DigBuildingProductionZones` keeps the assigned worker authoritative through Finalize. When the job enters `JobStageKind.Finalize`, movement target changes from workstation work position to the current deterministic right-zone output cell. Completion is allowed only when the same worker reaches that cell. The output is committed as ordinary `ItemLocation.InWorld(outputCell)`, so existing world selection/pickup/save behavior applies.
 
-## Runtime deposit stall correction — 2026-07-29
+If no right-zone cell is available, completion is deferred with the existing typed `production.output_space_unavailable` state; inputs, output IDs and skill grants are not committed.
 
-Observable failure: resident completed the workstation-first/source route, returned to the workstation with reserved mushroom materials in inventory and then remained beside the building without committing internal stock.
+### Counter and post-work pose
 
-Root cause was runtime content composition, not pathfinding:
+Queue projection already counts non-terminal orders. A successful completion terminalizes exactly one order, so the building counter decreases by one on the next presentation refresh.
 
-- authoritative `CampfireProductionContent` defines mushroom cap and leg with `MaximumStackSize = 100`;
-- demo resident inventory redeclared the same IDs with `MaximumStackSize = 1` to attach the raw-material category;
-- `GroupBy(ItemId).First()` retained the demo declaration;
-- supply deposit groups the job-reserved quantity by ItemId and creates one internal stack per group;
-- a quantity of 2–4 caps/legs therefore failed with `InventoryErrors.StackSizeExceeded` after the resident reached `DepositItem`.
+After successful output commit, `LoadProductionWaitOffsets` exposes a small `0.28` presentation-only outward offset. `DigAgentVisual` keeps the worker on the authoritative output cell, shifts the model slightly farther right and faces the active camera while idle. Any active job or manual movement clears this derived pose. The pose is not serialized.
 
-PR #504 keeps the raw-material category but aligns both demo definitions with the authoritative stack capacity `100`. The generic supply algorithm remains identical for all materials; differences continue to come only from stock capacity/priority/toggle, source availability, resident slot compatibility and item stack limits.
+## Demo campfire placement — PR #515
 
-## Unity test assembly boundary
+`DigTerrainWorkSession.Buildings` no longer searches the lower cave for the completed campfire. It reads `TunnelDemoLayout` and requires exact origin:
 
-The Play Mode assembly is named `Dig.Unity.PlayModeTests`. PR #501 added tests that intentionally exercise internal runtime adapters (`DigProductionIconPointer`, `DigTerrainWorkSession`, inventory ghost and HUD projection helpers), but the runtime assembly did not declare a friend-assembly contract, producing the reported `CS0122`/`CS1061` compile errors before Play Mode could start.
+```text
+ShaftX - 2 / SurfaceY / ShaftZ
+```
 
-PR #504 adds `InternalsVisibleTo("Dig.Unity.PlayModeTests")` in the `Dig.Unity` assembly. Runtime types remain internal to production callers while executable Play Mode tests can compile against the intended test surface.
+Bootstrap validates open footprint, solid support, no overlap and a valid work position. It throws a diagnostic initialization failure instead of silently selecting a different cell. The separate packed campfire box remains in the lower cave.
+
+Authoritative demo design: [`../design/demo-starting-scenario.md`](../design/demo-starting-scenario.md), issue [#389](https://github.com/bageus/Dig/issues/389).
+
+## Production icon input correction — PR #501
+
+- LMB on product icon enqueues one order.
+- RMB on the same icon cancels one order while projected count is positive.
+- Newest queued is cancelled before active.
+- A separate minus/decrement button is not created.
+- Tooltip, shortage tint and counter remain on the same icon.
+
+## Supply workflow retained
+
+- Supply batch is planned/reserved before movement.
+- Worker follows `workstation check -> reserved world sources -> workstation deposit`.
+- Deposit creates/merges `ItemLocation.InBuilding(buildingId)` stacks.
+- Direct internal pickup may recreate replacement demand when delivery remains enabled.
+- Mixed partial batches, cancellation cleanup and save/load ownership remain unchanged.
+
+## Runtime deposit correction retained — PR #504
+
+Demo mushroom cap/leg definitions use stack size `100`, matching authoritative content. This prevents `InventoryErrors.StackSizeExceeded` when a resident reaches `DepositItem` with a multi-unit reserved stack. `InternalsVisibleTo("Dig.Unity.PlayModeTests")` preserves the intended executable test boundary.
 
 ## Save/load
 
-Save format v7 сохраняет queue, active order/material step, consumed inputs, delivery toggles, incoming supply batches и production/supply jobs. Loader проверяет building/assembly/production/supply job cross-references и не повторяет уже committed material steps или outputs.
+Save format v7 stores queue, active order/material step, consumed inputs, toggles, incoming supply batches and production/supply jobs. World outputs persist through ordinary item locations. Left/right tray geometry and post-work visual offsets are derived after load and are not serialized. The loader does not replay committed material consumption, outputs or skill grants.
 
-World-item pickup codec сохраняет optional source kind/owner и destination stack ID; старые payload без этих полей восстанавливаются как полный pickup из world cell. PR #500 registers the complete job codec set through `SaveGameCompositionRoot`.
+## Regression coverage in PR #515
 
-## Regression fixes
+Domain/Application:
 
-- Campfire production fixture использует полный `BuildingBoxAssemblyJob` lifecycle и зарегистрированный save codec.
-- Unity package manifest/lock синхронизированы с текущим `main`: `com.unity.test-framework` `1.6.0`, source `builtin`.
-- Sequential source pickup сохраняет authoritative worker identity и посещает каждый reserved source.
-- Campfire placement source-contract проверяет generic `BuildingCatalog.FindByBoxItemId`, а не прямую runtime-ссылку на campfire ID.
-- PR #452 импортировал `Dig.Application.Jobs` для assignment execution/synchronization partials.
-- PR #457 fully qualified три `Dig.Application.Jobs.AdvanceJobCommand` transitions в runtime partial.
-- PR #465 освобождает item reservation и resident slot claims вместе, если создание generalized pickup job завершается ошибкой.
-- Release build на первом completion head выявил nullable-flow warning после typed source validation; final code сохраняет validated snapshot для quantity/item-capacity operations.
-- Completed pickup освобождает перенесённую quantity reservation после successful job completion.
-- Building supply допускает пустой transit-ID list, когда reserved material полностью объединяется с существующим resident stack; deposit IDs остаются обязательными.
-- PR #501 removes the separate minus button and binds decrement to RMB on the same product icon with a zero-count guard.
-- PR #504 restores compatible cap/leg stack sizes and the Unity Play Mode friend-assembly boundary.
+- deterministic right-only output candidates;
+- orientation-independent screen-right placement;
+- occupied/unsupported candidates skip forward;
+- fully occupied right zone returns `OutputSpaceUnavailable` without side fallback;
+- existing direct internal pickup/replacement-demand and protected-source tests remain active;
+- demo layout anchor is open, two cells left of shaft and outside vertical topology.
 
-## Test coverage
+Unity source contracts:
 
-- content/catalog validation и точный campfire recipe matrix;
-- queue without inputs, orange shortage, enqueue и one-order decrement;
-- product icon LMB/RMB source contract, absence of a separate minus icon and zero-count guard;
-- executable Unity Play Mode pointer test verifies that left click does not invoke decrement, one RMB invokes exactly once, and unbound RMB is a no-op;
-- progressive per-material timing/consumption и exactly-once skill grants;
-- mixed/partial protected supply, workstation-first route и последовательный pickup каждого world source;
-- quantity-one direct internal-stock pickup, reserved-quantity protection и replacement demand;
-- deterministic front-cell output и BuildingBox identity;
-- save composition, migration, active supply, pickup codec compatibility и mid-step round-trip;
-- Unity source contracts для HUD/input/runtime composition;
-- checked-in Play Mode fixture для trigger piles, building/item identity и non-blocking stock visuals;
-- PR #504 bootstrapped Play Mode scenario adds four mushroom caps at a resident cell, advances the actual simulation, and requires all four units to leave reserved resident transit inventory and appear in the campfire internal stock.
+- Finalize moves toward output cell and commits `ItemLocation.InWorld` there;
+- renderer contains separate left input/right output zone projection;
+- direct pickup uses `min(footprint.X) - 1`;
+- post-production offset synchronization and camera-facing pose are wired into the simulation loop;
+- bootstrap uses exact surface campfire anchor without lower-cave fallback.
+
+Checked-in Unity Play Mode:
+
+- internal stock units render left of building;
+- both empty-capable zone trays exist;
+- finished-output tray renders right of building;
+- stock colliders are triggers and tray colliders are disabled;
+- product-icon RMB remains exactly-once.
 
 ## CI evidence
 
-PR #501 merge-ref validation:
+PR #515 head `33996baec8ba985da4cfdd2bb8b9813145d67182`:
 
-- Quality run `30406329012`: architecture/file-size/C# compatibility, Unity source/presentation contracts, Release build, 1101 .NET tests, headless smoke, standard deterministic soak and large-settlement soak — success;
-- Export Stage 2 v2 run `30406329013` — success;
-- Export Stage 2 v3 run `30406329052` — success;
-- Unity workflow `30406329010` — workflow success, but `Run Play Mode tests` skipped by activation gate and no runtime result artifact was produced.
+- Quality run `30435630179` — success: architecture/file-size/C# compatibility, Unity source contracts, Release build, 1138 .NET tests, headless smoke, standard deterministic soak and large-settlement deterministic soak;
+- Export Stage 2 v2 Source run `30435630339` — success;
+- Export Stage 2 v3 Source run `30435630355` — success;
+- Unity Play Mode run `30435630253` — workflow success, but Unity activation was unavailable; `Run Unity EditMode and PlayMode tests` and runtime evidence validation were skipped, and a blocked-evidence manifest was recorded.
 
-PR #504 validation is recorded in the PR after its final head completes CI. The system remains `IMPLEMENTED`, not `VERIFIED`, until a licensed Unity Test Runner executes the checked-in runtime scenarios.
+The system remains `IMPLEMENTED`, not `VERIFIED`, until a licensed Unity Test Runner executes the checked-in runtime scenarios.

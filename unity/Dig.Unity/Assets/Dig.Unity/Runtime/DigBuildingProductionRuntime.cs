@@ -1,21 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dig.Application.Agents;
+using Dig.Application.Jobs;
 using Dig.Application.Production;
-using Dig.Domain.Agents;
-using Dig.Domain.Buildings;
-using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.Navigation;
-using Dig.Domain.Production;
-using Dig.Domain.Technology;
 using Dig.Domain.World;
-using Dig.Infrastructure.InMemory;
 using Dig.Presentation.Agents;
-using Dig.Presentation.Production;
 using Dig.Presentation.Navigation;
 
 namespace Dig.Unity
@@ -23,108 +16,6 @@ namespace Dig.Unity
 
 internal sealed partial class DigTerrainWorkSession
 {
-    private Result AdvanceProductionJob(
-        JobSnapshot job,
-        ProductionWorkJobDefinition production,
-        AgentViewModel worker,
-        long tick)
-    {
-        if (!At(worker, production.WorkPosition))
-        {
-            return Result.Success();
-        }
-
-        if (job.Status == JobStatus.Claimed)
-        {
-            Result begun = _beginProduction!.Handle(
-                new BeginProductionWorkCommand(production.OrderId, job.Id, tick));
-            if (begun.IsFailure)
-            {
-                return begun;
-            }
-
-            Result travelled = _advanceHandler.Handle(new Dig.Application.Jobs.AdvanceJobCommand(job.Id, tick));
-            if (travelled.IsFailure)
-            {
-                return travelled;
-            }
-        }
-        else if (job.Stage == JobStageKind.TravelToTarget)
-        {
-            Result travelled = _advanceHandler.Handle(new Dig.Application.Jobs.AdvanceJobCommand(job.Id, tick));
-            if (travelled.IsFailure)
-            {
-                return travelled;
-            }
-        }
-
-        JobSnapshot? current = _jobRepository.Get().Get(job.Id);
-        if (current?.Stage == JobStageKind.PerformWork && tick % 2 == 0)
-        {
-            Result worked = _applyProductionWork!.Handle(
-                new ApplyProductionWorkCommand(
-                    production.OrderId,
-                    job.Id,
-                    baseWork: 1,
-                    conditionEfficiencyBasisPoints: 10_000,
-                    tick));
-            if (worked.IsFailure)
-            {
-                return worked;
-            }
-
-            current = _jobRepository.Get().Get(job.Id);
-        }
-
-        if (current?.Stage != JobStageKind.Finalize)
-        {
-            return Result.Success();
-        }
-
-        BuildingSnapshot? building = _buildingsRepository!.Get().Get(
-            production.BuildingId);
-        if (building == null)
-        {
-            return Result.Failure(ProductionErrors.WorkstationMismatch);
-        }
-
-        Result<CellId> outputCell = ProductionOutputPlacement.Resolve(
-            building,
-            _worldSession.LoadSnapshot(),
-            _buildingsRepository.Get().GetOccupiedCells(),
-            _buildingInventoryRepository!.Get().CreateSnapshot().Stacks);
-        if (outputCell.IsFailure)
-        {
-            return Result.Success();
-        }
-
-        ProductionOrderSnapshot? order = _productionRepository!.Get().Get(
-            production.OrderId);
-        if (order == null)
-        {
-            return Result.Failure(ProductionErrors.OrderNotFound);
-        }
-
-        EntityId[] outputs = order.Recipe.Outputs
-            .Select(_ => NextProductionEntityId(
-                'a',
-                ref _nextProductionOutputSequence))
-            .ToArray();
-        Result completed = _completeProduction!.Handle(
-            new CompleteProductionOrderCommand(
-                production.OrderId,
-                job.Id,
-                outputs,
-                tick,
-                ItemLocation.InWorld(outputCell.Value)));
-        if (completed.IsSuccess)
-        {
-            _buildingProductionRoutes.Remove(job.Id);
-        }
-
-        return completed;
-    }
-
     private Result AdvanceSupplyJob(
         JobSnapshot job,
         BuildingSupplyJobDefinition supply,
@@ -183,7 +74,8 @@ internal sealed partial class DigTerrainWorkSession
 
         if (job.Stage == JobStageKind.TravelToDestination)
         {
-            Result advanced = _advanceHandler.Handle(new Dig.Application.Jobs.AdvanceJobCommand(job.Id, tick));
+            Result advanced = _advanceHandler.Handle(
+                new Dig.Application.Jobs.AdvanceJobCommand(job.Id, tick));
             if (advanced.IsFailure)
             {
                 return advanced;

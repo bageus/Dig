@@ -193,7 +193,7 @@ public sealed class GameplayRegressionContractTests
     }
 
     [Fact]
-    public void Building_box_runtime_uses_actual_box_type_floor_projection_and_lower_campfire()
+    public void Building_box_runtime_uses_actual_box_type_floor_projection_and_surface_campfire()
     {
         string runtime = RuntimeRoot();
         string pickup = Normalize(File.ReadAllText(Path.Combine(
@@ -221,9 +221,12 @@ public sealed class GameplayRegressionContractTests
         Assert.Contains("ActivateBuildingRosterForSelection()", boxSelection);
         Assert.Contains("CampfireBuildingBoxContent.Definition.Building", buildings);
         Assert.Contains("new[]{workshop,campfire}", buildings);
-        Assert.Contains("FindLowerCavePlacement", buildings);
-        Assert.Contains("OrderByDescending(value=>value.Y)", buildings);
-        Assert.Contains("belowCell.IsSolid", buildings);
+        Assert.Contains("FindSurfaceCampfirePlacement", buildings);
+        Assert.Contains("layout.ShaftX-2", buildings);
+        Assert.Contains("layout.SurfaceY", buildings);
+        Assert.Contains("layout.ShaftZ", buildings);
+        Assert.Contains("supportCell.IsSolid", buildings);
+        Assert.DoesNotContain("FindLowerCavePlacement", buildings);
     }
 
     private static string RuntimeRoot()

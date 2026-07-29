@@ -15,6 +15,7 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         string execution = Read(runtime, "DigBuildingProductionExecution.cs");
         string synchronization = Read(runtime, "DigBuildingProductionSynchronization.cs");
         string runtimeExecution = Read(runtime, "DigBuildingProductionRuntime.cs");
+        string zones = Read(runtime, "DigBuildingProductionZones.cs");
         string supplyCheck = Read(runtime, "DigBuildingProductionSupplyCheck.cs");
         string loop = Read(runtime, "DigAgentSimulationDriverBase.Loop.cs");
         string placement = Read(runtime, "DigBuildingBoxPlacement.cs");
@@ -35,6 +36,9 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         Assert.Contains("ThenByDescending(value => value.Sequence)", execution);
         Assert.Contains("PrepareEligibleProductionOrders", synchronization);
         Assert.Contains("AssignProductionJobs", synchronization);
+        Assert.Contains("JobStageKind.Finalize", zones);
+        Assert.Contains("ResolveProductionOutputCell", zones);
+        Assert.Contains("ItemLocation.InWorld(outputCell.Value)", zones);
         Assert.Contains("FindByBoxItemId", placement);
         Assert.DoesNotContain("if(buildingboxitemid==campfire", Normalize(placement));
     }
@@ -60,32 +64,56 @@ public sealed class BuildingProductionUnityRuntimeContractTests
     }
 
     [Fact]
-    public void Internal_stock_renderer_has_separate_trigger_pickup_piles()
+    public void Renderer_projects_left_input_and_right_output_zones()
     {
         string runtime = RuntimeRoot();
         string renderer = Read(runtime, "DigBuildingInternalStockRenderer.cs");
+        string zones = Read(runtime, "DigBuildingInternalStockRenderer.Zones.cs");
         string visual = Read(runtime, "DigBuildingInternalStockVisual.cs");
         string bay = Read(runtime, "DigBuildingInternalStockBayVisual.cs");
         string interaction = Read(runtime, "DigWorldInteraction.BuildingInternalStock.cs");
+        string pickup = Read(runtime, "DigWorldItemPickupSession.cs");
         string loop = Read(runtime, "DigAgentSimulationDriverBase.Loop.cs");
 
         Assert.Contains("model.Stocks", renderer);
         Assert.Contains("stockIndex", renderer);
         Assert.Contains("unitIndex", renderer);
         Assert.Contains("TryGetStock", renderer);
-        Assert.Contains("RenderBay", renderer);
-        Assert.Contains("building.WorkPositionX", renderer);
+        Assert.Contains("Internal Storage Zone", zones);
+        Assert.Contains("Finished Output Zone", zones);
+        Assert.Contains("ResolveInternalZoneCell", zones);
+        Assert.Contains("ResolveOutputZoneCell", zones);
+        Assert.Contains("leftEdge - 1", zones);
+        Assert.Contains("rightEdge + 1", zones);
         Assert.Contains("VisibleDepthOffset = 0.12f", renderer);
-        Assert.Contains("DigBuildingInternalStockBayVisual", renderer);
-        Assert.DoesNotContain("FrontDepthOffset", renderer);
-        Assert.DoesNotContain("building.OriginX", renderer);
+        Assert.Contains("DigBuildingInternalStockBayVisual", renderer + zones);
         Assert.Contains("Storage tray", bay);
         Assert.Contains("Storage back rail", bay);
         Assert.Contains("collider.enabled = false", bay);
         Assert.Contains("collider.isTrigger = true", visual);
         Assert.Contains("TryResolveBuildingInternalStockPickup", interaction);
         Assert.Contains("ContextWorldTargetKind.GenericItem", interaction);
+        Assert.Contains("Footprint.Min(value => value.X) - 1", pickup);
         Assert.Contains("buildinginternalstockrenderer!.render", Normalize(loop));
+    }
+
+    [Fact]
+    public void Completed_production_worker_waits_offset_facing_camera()
+    {
+        string runtime = RuntimeRoot();
+        string zones = Read(runtime, "DigBuildingProductionZones.cs");
+        string renderer = Read(runtime, "DigAgentRenderer.ProductionWait.cs");
+        string visual = Read(runtime, "DigAgentVisual.ProductionWait.cs");
+        string movement = Read(runtime, "DigAgentVisual.Movement.cs");
+        string loop = Read(runtime, "DigAgentSimulationDriverBase.Loop.cs");
+
+        Assert.Contains("ProductionWaitOffset", zones);
+        Assert.Contains("LoadProductionWaitOffsets", zones);
+        Assert.Contains("SynchronizeProductionWaitOffsets", renderer);
+        Assert.Contains("SetProductionWaitPose", visual);
+        Assert.Contains("FaceTowardMainCamera", visual);
+        Assert.Contains("_productionWaitPose", movement);
+        Assert.Contains("SynchronizeProductionWaitOffsets", loop);
     }
 
     private static string Read(string root, string file)
