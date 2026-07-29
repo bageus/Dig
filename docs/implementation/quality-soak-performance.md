@@ -1,4 +1,4 @@
-> **Audit status (2026-07-26): PARTIAL REMEDIATION.** PR #412 restores blocking headless smoke plus the `standard` and `large` deterministic soak profiles in `.github/workflows/quality.yml`, with retained reports and logs. Unity Play Mode is still not executed, so #15 remains open and this system stays `DRAFT` until Unity test evidence is added. See [`implemented-systems-audit-2026-07-26.md`](implemented-systems-audit-2026-07-26.md).
+> **Status (2026-07-29): IMPLEMENTED repository quality system.** Blocking architecture/source contracts, Release build, full .NET tests, headless smoke, `standard`/`large` deterministic soak profiles, retained reports and evidence-tool self-tests are active. Licensed Unity execution is intentionally owned by [#511](https://github.com/bageus/Dig/issues/511); a blocked activation manifest does not promote any system to `VERIFIED`.
 
 # Quality soak, performance budgets and invariants
 
@@ -6,7 +6,7 @@
 
 The quality soak is a deterministic headless scenario for detecting cross-system regressions before UI or content scale hides them. It is not a benchmark of final release hardware. It establishes reproducible CI baselines, identifies expensive systems and fails on structural corruption.
 
-The headless implementation originally completed the deterministic part of issue #15. PR #412 restores the blocking smoke and soak gates and adds a source contract that prevents them from being silently removed. Issue #15 remains open until Unity Play Mode evidence is added.
+The headless implementation completes the deterministic part of issue #15. PR #412 restored the blocking smoke and soak gates and added a source contract that prevents them from being silently removed. The repository quality/CI acceptance is complete; licensed Unity EditMode/PlayMode execution is tracked independently by #511.
 
 ## Profiles and commands
 
@@ -248,4 +248,18 @@ The current `.github/workflows/quality.yml` runs, in blocking order:
 
 The workflow uploads `headless-smoke-log`, `soak-report-standard` and `soak-report-large` artifacts. Each soak artifact retains both the JSON report and console log. `tools/quality/check_quality_workflow_contracts.py` fails when these commands or artifacts are removed or changed to non-blocking execution.
 
-Unity Test Runner is still not invoked. Therefore these runs provide current deterministic headless evidence, but they do not verify Unity scene bootstrap, pointer routing, renderers, colliders or Play Mode workflows. Those remaining requirements stay tracked by #15.
+`.github/workflows/unity-playmode.yml` is a separate licensed gate. It selects EditMode and PlayMode together, retains raw results and always publishes `unity-runtime-evidence.json`. Without activation the manifest is `blocked`; with activation the validator requires passing XML, required mode tests and a clean representative-scene runtime log. Actual licensed execution and Unity runtime budget calibration remain tracked by #511, not by closed repository-quality issue #15.
+
+## Repository implementation closure
+
+Issue #15 can close as `IMPLEMENTED` because its repository-owned quality infrastructure is present and blocking:
+
+- architecture, dependency, file-size and Unity source contracts;
+- Release restore/build and the complete .NET suite;
+- headless smoke;
+- deterministic standard/large soak with retained JSON/log artifacts;
+- stable performance budgets and invariant diagnostics;
+- Unity workflow configuration for EditMode + PlayMode;
+- machine-readable evidence validator with self-test.
+
+The external licensed run is not discarded or reclassified as passed. It moves intact to #511, whose `verified` manifest is required before any Unity system becomes `VERIFIED`.

@@ -3,7 +3,7 @@
 Дата исходного аудита: 2026-07-28  
 Последняя синхронизация: 2026-07-29  
 Репозиторий: `bageus/Dig`  
-Текущий baseline: `main` после PR #501 (`a2983959deeaa3924f88c723a39501fd5f115747`)  
+Текущий baseline: `main` после PR #507 и последующей status synchronization  
 Связанный системный аудит: [#403](https://github.com/bageus/Dig/issues/403)  
 Индекс систем: [`../systems/README.md`](../systems/README.md)
 
@@ -13,7 +13,7 @@ Issue можно закрывать как `completed`, только когда 
 
 `IMPLEMENTED` означает, что требования реализованы и покрыты repository tests. `VERIFIED` дополнительно требует фактически выполненный runtime/Unity Play Mode workflow. Workflow-level success со skipped `Run Play Mode tests` не является runtime evidence.
 
-Domain/Application issue может быть закрыта как implemented, если runtime verification явно централизована в #15 и не входит в её собственный remaining acceptance. Так закрыта #13 после PR #500.
+Issue может быть закрыта как `IMPLEMENTED`, если её repository acceptance выполнен, а оставшиеся внешне-зависимые licensed Unity gates явно перенесены без потери требований в единого approved verification owner #511. Такой перенос не повышает систему до `VERIFIED`.
 
 Issue закрывается как `not planned/superseded`, когда её правила заменены более поздней authoritative specification и сохранение старого acceptance создало бы второй источник истины.
 
@@ -21,7 +21,10 @@ Issue закрывается как `not planned/superseded`, когда её п
 
 ### Completed
 
-- #13 — production save composition, migration v0–v9 и complete current job codec registry реализованы в PR #500; runtime evidence централизована в #15.
+- #13 — production save composition, migration v0–v9 и complete current job codec registry реализованы в PR #500.
+- #14 — Presentation foundation полностью реализован в repository; licensed Unity evidence сохранён без ослабления в #511. Статус системы остаётся `IMPLEMENTED`, не `VERIFIED`.
+- #15 — repository quality/CI scope, Release/.NET gates, smoke, deterministic soaks и Unity evidence tooling реализованы; фактическое licensed execution и runtime budgets принадлежат #511.
+- #16 — базовая roadmap stages 0–6 выполнены; remaining licensed verification вынесена в #511 как approved continuation owner.
 - #207 — building visual authoring pipeline repository scope завершён; дальнейшие authored assets не меняют architecture contract.
 - прочие ранее закрытые foundation issues остаются закрытыми, если их собственный acceptance выполнен.
 
@@ -33,8 +36,7 @@ Issue закрывается как `not planned/superseded`, когда её п
 
 ## 3. Оставить открытыми: explicit Unity/runtime verification
 
-- #14 — Presentation repository status `IMPLEMENTED`; нужны licensed Unity run, XML/log artifacts и clean Console.
-- #15 — владелец Unity EditMode/PlayMode runner, artifacts и performance evidence.
+- #511 — единый owner licensed Unity EditMode/PlayMode execution, XML/log artifacts, representative-scene Console acceptance и measured runtime budgets.
 - #67, #68, #69, #71 — item/hauling/attachments/save round-trip runtime acceptance.
 - #93 — cave preview/layers/arches/deposits/drops Play Mode.
 - #118 и #398 — BuildingBox lifecycle `IMPLEMENTED`, но полный runtime workflow не `VERIFIED`.
@@ -53,7 +55,6 @@ Issue закрывается как `not planned/superseded`, когда её п
 
 ### Roadmap, foundation, input и documentation
 
-- #16 — #15 и #14 остаются открытыми; roadmap не должна быть закрыта как полностью завершённая.
 - #113, #115, #116, #117 — полный HUD/input/notification/skill-report acceptance не завершён.
 - #347 — unit-item migration не завершена.
 - #387, #389, #390, #393, #396, #403 — questionnaire, normalization и runtime workflows остаются.
@@ -97,9 +98,10 @@ Issue закрывается как `not planned/superseded`, когда её п
 
 ## 5. Выполненная status synchronization
 
-На 2026-07-29 возвращены в `open`, потому что были закрыты вопреки собственному незавершённому acceptance:
+На 2026-07-29 часть issues была возвращена в `open` для синхронизации acceptance. После создания approved verification owner #511 repository-complete umbrella issues #14, #15 и #16 могут быть закрыты как `IMPLEMENTED`/completed без утверждения `VERIFIED`.
 
-- #14, #16;
+Открытыми сохраняются:
+
 - #87, #88, #89, #90, #91, #93, #94;
 - #115, #117;
 - #212;
@@ -113,12 +115,13 @@ Issue закрывается как `not planned/superseded`, когда её п
 - #208: acceptance переписана под #347 без parallel aggregate world/resident contract.
 - #403: body обновлена под текущий baseline и status policy.
 - #423/#443: добавлены ссылки на последние runtime corrections.
-- #433: после merge PR #501 возвращена в `IMPLEMENTED`, но остаётся открытой до runtime evidence.
+- #433: после merge PR #501 возвращена в `IMPLEMENTED`, но её explicit runtime evidence остаётся у #511 и собственного acceptance.
+- #511: создан как единственный machine-readable owner фактически выполненного licensed Unity evidence.
 
 ## 6. Текущая итоговая policy
 
-- Закрыты completed: #13 и другие задачи с полностью выполненным собственным repository acceptance.
+- Закрыты completed: #13, #14, #15, #16 и другие задачи с выполненным собственным repository acceptance.
 - Закрыты superseded: #288, #289, #290.
-- `IMPLEMENTED`, но runtime-verification issues остаются открытыми, когда это прямо записано в их acceptance.
+- `IMPLEMENTED` issues могут закрываться, когда их repository scope завершён, а external licensed evidence перенесено в #511 без потери acceptance. Узкие issues с собственным observable runtime acceptance остаются открытыми до выполнения этого acceptance.
 - `APPROVED`, `QUESTIONNAIRE`, `DRAFT`, `PARTIAL/OPEN` задачи не закрываются до завершения observable workflow и обязательных business decisions.
-- Ни одна Unity interaction system не повышается до `VERIFIED`, пока actual Test Runner step пропущен activation gate.
+- Ни одна Unity interaction system не повышается до `VERIFIED`, пока #511 не содержит executed EditMode/PlayMode XML, runtime logs, clean representative-scene Console и commit-bound `unity-runtime-evidence.json`.

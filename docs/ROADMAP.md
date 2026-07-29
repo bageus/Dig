@@ -1,5 +1,7 @@
 # Roadmap проекта Dig
 
+Статус базовой roadmap: `IMPLEMENTED` после закрытия [#16](https://github.com/bageus/Dig/issues/16). Фактическая licensed Unity verification продолжается у отдельного approved owner [#511](https://github.com/bageus/Dig/issues/511) и не считается выполненной до `verified` evidence manifest.
+
 ## 1. Назначение
 
 Roadmap задаёт порядок реализации систем. GitHub Issues являются рабочими задачами, а этот документ — стабильной картой этапов и критериев перехода между ними.
@@ -33,7 +35,8 @@ Roadmap задаёт порядок реализации систем. GitHub Is
 | [#13](https://github.com/bageus/Dig/issues/13) | Сохранения, версии и миграции |
 | [#14](https://github.com/bageus/Dig/issues/14) | Presentation, ввод, UI и диагностика |
 | [#15](https://github.com/bageus/Dig/issues/15) | Тесты, performance budgets и CI |
-| [#16](https://github.com/bageus/Dig/issues/16) | Верхнеуровневое отслеживание roadmap |
+| [#16](https://github.com/bageus/Dig/issues/16) | Завершённая базовая roadmap |
+| [#511](https://github.com/bageus/Dig/issues/511) | Licensed Unity runtime verification и release evidence |
 
 ## 4. Этап 0 — Архитектурный фундамент
 
@@ -43,7 +46,7 @@ Roadmap задаёт порядок реализации систем. GitHub Is
 
 - [#1](https://github.com/bageus/Dig/issues/1);
 - [#2](https://github.com/bageus/Dig/issues/2);
-- [#15](https://github.com/bageus/Dig/issues/15).
+- [#15](https://github.com/bageus/Dig/issues/15) — repository quality/CI implementation; licensed Unity execution перенесён в [#511](https://github.com/bageus/Dig/issues/511).
 
 Результаты:
 
@@ -69,7 +72,7 @@ Roadmap задаёт порядок реализации систем. GitHub Is
 - [#6](https://github.com/bageus/Dig/issues/6);
 - [#7](https://github.com/bageus/Dig/issues/7);
 - [#13](https://github.com/bageus/Dig/issues/13);
-- [#14](https://github.com/bageus/Dig/issues/14).
+- [#14](https://github.com/bageus/Dig/issues/14) — Presentation implementation; повышение до `VERIFIED` принадлежит [#511](https://github.com/bageus/Dig/issues/511).
 
 Результаты:
 
@@ -241,3 +244,18 @@ Roadmap задаёт порядок реализации систем. GitHub Is
 - завершённая задача удовлетворяет Definition of Done;
 - roadmap обновляется при изменении scope или порядка зависимостей;
 - подробные подзадачи создаются внутри соответствующего системного Issue.
+
+## 15. Продолжение после базовой roadmap
+
+Закрытие #16 означает завершение repository implementation базовой архитектуры и вертикальных foundation stages. Оно не означает, что Unity systems получили статус `VERIFIED`.
+
+Единый continuation owner [#511](https://github.com/bageus/Dig/issues/511) сохраняет без потери acceptance:
+
+- licensed Unity `6000.0.71f1` execution;
+- EditMode и PlayMode results;
+- raw XML и runtime logs;
+- representative `Main.unity` без Console errors;
+- machine-readable `unity-runtime-evidence.json`;
+- измеренный Unity runtime baseline и blocking budgets.
+
+Child systems повышаются в `VERIFIED` только по собственному acceptance после фактического #511 evidence. Зелёный activation-skip workflow, source contracts, Release build и checked-in test source для этого недостаточны.
