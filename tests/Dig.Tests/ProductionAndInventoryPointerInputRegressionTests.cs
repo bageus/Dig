@@ -70,17 +70,21 @@ public sealed class ProductionAndInventoryPointerInputRegressionTests
     }
 
     [Fact]
-    public void Reserved_inventory_stacks_use_blue_placement_projection()
+    public void Active_placement_reservations_use_blue_inventory_projection()
     {
-        string canvas = Normalize(Read(RuntimeRoot(), "DigGameHudCanvas.Inventory.cs"));
+        string runtime = RuntimeRoot();
+        string canvas = Normalize(Read(runtime, "DigGameHudCanvas.Inventory.cs"));
+        string query = Normalize(Read(runtime, "DigResidentInventoryPlacementQueries.cs"));
 
+        Assert.Contains("if(IsBlueReservedSlot(slot))", canvas);
         Assert.Contains(
-            "if(slot.ReservedQuantity>0){returnnewColor(0.10f,0.34f,0.72f,0.96f);}",
+            "_terrainSession?.HasActiveResidentInventoryPlacement(slot.StackId)==true",
             canvas);
-        Assert.Contains(
-            "if(slot.ReservedQuantity>0){returnnewColor(0.72f,0.88f,1f,1f);}",
-            canvas);
-        Assert.DoesNotContain("newColor(0.42f,0.18f,0.18f,0.92f)", canvas);
+        Assert.Contains("newColor(0.10f,0.34f,0.72f,0.96f)", canvas);
+        Assert.Contains("newColor(0.72f,0.88f,1f,1f)", canvas);
+        Assert.Contains("newColor(0.42f,0.18f,0.18f,0.92f)", canvas);
+        Assert.Contains("ResidentInventoryPlacementJobDefinitionplacement", query);
+        Assert.Contains("placement.StackId==stack", query);
         Assert.Contains("$\"\\nR:{slot.ReservedQuantity}\"", canvas);
     }
 
