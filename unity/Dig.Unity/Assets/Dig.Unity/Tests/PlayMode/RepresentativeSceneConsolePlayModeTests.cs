@@ -37,8 +37,8 @@ public sealed class RepresentativeSceneConsolePlayModeTests
             yield return null;
         }
 
-        DigAgentSimulationDriver simulation = null;
-        DigWorldInteraction interaction = null;
+        DigAgentSimulationDriver? simulation = null;
+        DigWorldInteraction? interaction = null;
         for (int frame = 0; frame < StartupFrameLimit; frame++)
         {
             simulation = UnityEngine.Object.FindFirstObjectByType<DigAgentSimulationDriver>();
@@ -53,9 +53,9 @@ public sealed class RepresentativeSceneConsolePlayModeTests
         }
 
         Assert.That(simulation, Is.Not.Null, "Simulation driver was not created.");
-        Assert.That(simulation.enabled, Is.True, "Simulation driver did not start.");
+        Assert.That(simulation!.enabled, Is.True, "Simulation driver did not start.");
         Assert.That(interaction, Is.Not.Null, "World interaction was not created.");
-        Assert.That(interaction.enabled, Is.True, "World interaction did not start.");
+        Assert.That(interaction!.enabled, Is.True, "World interaction did not start.");
         Assert.That(Camera.main, Is.Not.Null, "Main camera was not available.");
         Assert.That(
             UnityEngine.Object.FindFirstObjectByType<DigHudOverlay>(),
@@ -81,7 +81,7 @@ public sealed class RepresentativeSceneConsolePlayModeTests
     private static string ResolveEvidencePath()
     {
         string repositoryRoot = Path.GetFullPath(Path.Combine(
-            Application.dataPath,
+            UnityEngine.Application.dataPath,
             "..",
             "..",
             ".."));
