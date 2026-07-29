@@ -57,6 +57,8 @@ public sealed class InventoryBarrelRoomRuntimeRegressionTests
         Assert.Contains("_pausedCaveRoomPlans", session);
         Assert.Contains("_caveRoomResumePlanner.Plan", session);
         Assert.DoesNotContain("_caveRoomPlans.RemoveAll", session);
+        Assert.Contains("using System.Collections.Generic;", input);
+        Assert.Contains("IReadOnlyList<CellId> candidates", input);
         Assert.Contains("CaveRoomPlacementCandidateResolver.Resolve", input);
         Assert.Contains("for (int anchorX = minimumAnchor", resolver);
         Assert.Contains("row.RequiredQuartersByX.ContainsKey(pointerCell.X)", resolver);
