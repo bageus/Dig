@@ -89,6 +89,7 @@ public static class SaveGameCompositionRoot
             new SaveVersionSixBuildingProductionMigration(),
             new SaveVersionSevenWorldExcavationProgressMigration(),
             new SaveVersionEightAgentRuntimeMigration(),
+            new SaveVersionNineCombatSpatialMigration(),
         });
     }
 
