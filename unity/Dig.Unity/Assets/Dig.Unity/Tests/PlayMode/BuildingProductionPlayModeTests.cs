@@ -61,7 +61,7 @@ public sealed class BuildingProductionPlayModeTests
     }
 
     [Test]
-    public void Internal_stock_is_rendered_as_four_separate_trigger_pickup_piles()
+    public void Internal_stock_is_left_and_finished_output_zone_is_right()
     {
         _root = new GameObject("Building production renderer test");
         DigBuildingInternalStockRenderer renderer =
@@ -87,9 +87,9 @@ public sealed class BuildingProductionPlayModeTests
         Invoke(renderer, "Render", (object)new[] { production }, (object)new[] { building });
 
         Assert.That((int)GetProperty(renderer, "ActiveUnitCount"), Is.EqualTo(14));
-        Assert.That((int)GetProperty(renderer, "ActiveBayCount"), Is.EqualTo(1));
+        Assert.That((int)GetProperty(renderer, "ActiveBayCount"), Is.EqualTo(2));
         Renderer[] renderers = _root.GetComponentsInChildren<Renderer>();
-        Assert.That(renderers.Length, Is.EqualTo(16));
+        Assert.That(renderers.Length, Is.EqualTo(18));
         Component[] visuals = _root.GetComponentsInChildren<Component>()
             .Where(value => value.GetType().Name == "DigBuildingInternalStockVisual")
             .ToArray();
@@ -102,15 +102,27 @@ public sealed class BuildingProductionPlayModeTests
         Assert.That(unitColliders.All(value => value != null && value.isTrigger), Is.True);
         Assert.That(visuals.Select(value => (string)GetProperty(value, "ItemId"))
             .Distinct().Count(), Is.EqualTo(4));
+
+        float buildingX = DigTunnelProjection.ResidentWorldPosition(5, 5, 0).x;
         Renderer[] units = visuals.Select(value => value.GetComponent<Renderer>()).ToArray();
-        Assert.That(units.Select(value => value.gameObject.name.Split(':')[1])
-            .Distinct().Count(), Is.EqualTo(4));
-        Assert.That(units.Select(value => Math.Round(value.transform.position.x, 2))
-            .Distinct().Count(), Is.GreaterThanOrEqualTo(4));
-        Assert.That(units.All(value => value.transform.position.x > 6.5f), Is.True);
+        Assert.That(units.All(value => value.transform.position.x < buildingX), Is.True);
+        Transform inputZone = FindTransform(_root.transform, "Internal Storage Zone ");
+        Transform outputZone = FindTransform(_root.transform, "Finished Output Zone ");
+        Assert.That(inputZone.position.x, Is.LessThan(buildingX));
+        Assert.That(outputZone.position.x, Is.GreaterThan(buildingX));
         Assert.That(_root.GetComponentsInChildren<Collider>()
             .Where(value => !unitColliders.Contains(value))
             .All(value => !value.enabled), Is.True);
+    }
+
+    private static Transform FindTransform(Transform root, string prefix)
+    {
+        Transform? found = root.GetComponentsInChildren<Transform>()
+            .FirstOrDefault(value => value.name.StartsWith(
+                prefix,
+                StringComparison.Ordinal));
+        Assert.That(found, Is.Not.Null, prefix);
+        return found!;
     }
 
     private static BuildingStockIconViewModel Stock(
