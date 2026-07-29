@@ -8,6 +8,31 @@ public sealed partial class CombatState
 {
     private sealed class CombatExecutionRecord
     {
+        private CombatExecutionRecord(CombatExecutionSnapshot snapshot)
+        {
+            ExecutionId = snapshot.ExecutionId;
+            IntentId = snapshot.IntentId;
+            ActorId = snapshot.ActorId;
+            Source = snapshot.Source;
+            Stage = snapshot.Stage;
+            StartedTick = snapshot.StartedTick;
+            NextStageTick = snapshot.NextStageTick;
+            TargetEntityId = snapshot.TargetEntityId;
+            LastKnownTargetCell = snapshot.LastKnownTargetCell;
+            WeaponProfileId = snapshot.WeaponProfileId;
+            EngagementCell = snapshot.EngagementCell;
+            LastResolvedActionId = snapshot.LastResolvedActionId;
+            ResolvedActionCount = snapshot.ResolvedActionCount;
+            RetryCount = snapshot.RetryCount;
+            ReasonCode = snapshot.ReasonCode;
+            Version = snapshot.Version;
+        }
+
+        public static CombatExecutionRecord Restore(CombatExecutionSnapshot snapshot)
+        {
+            return new CombatExecutionRecord(snapshot);
+        }
+
         public CombatExecutionRecord(
             CombatExecutionRequest request,
             EntityId? targetEntityId,
