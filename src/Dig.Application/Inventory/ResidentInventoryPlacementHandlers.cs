@@ -137,10 +137,7 @@ public sealed class CreateResidentInventoryPlacementHandler
             return Result.Failure(ResidentInventoryPlacementErrors.SourceUnavailable);
         }
 
-        ItemDefinition definition = inventory.Catalog.Get(stack.ItemId);
-        return definition.IsInventoryExpansion
-            ? Result.Failure(ResidentInventoryPlacementErrors.ExpansionRequiresExplicitDrop)
-            : Result.Success();
+        return Result.Success();
     }
 
     public static Result ValidateTarget(
@@ -284,13 +281,20 @@ public sealed class CompleteResidentInventoryPlacementHandler
             return Result.Failure(ResidentInventoryPlacementErrors.SourceUnavailable);
         }
 
-        Result moved = inventory.MoveReserved(
-            placement.StackId,
-            job.Id,
-            placement.Quantity,
-            ItemLocation.InWorld(placement.DestinationCell),
-            splitStackId: default,
-            command.Tick);
+        ItemDefinition definition = inventory.Catalog.Get(stack.ItemId);
+        Result moved = definition.IsInventoryExpansion
+            ? inventory.DropReservedResidentStackWithSpill(
+                placement.StackId,
+                job.Id,
+                ItemLocation.InWorld(placement.DestinationCell),
+                command.Tick)
+            : inventory.MoveReserved(
+                placement.StackId,
+                job.Id,
+                placement.Quantity,
+                ItemLocation.InWorld(placement.DestinationCell),
+                splitStackId: default,
+                command.Tick);
         if (moved.IsFailure)
         {
             return moved;
