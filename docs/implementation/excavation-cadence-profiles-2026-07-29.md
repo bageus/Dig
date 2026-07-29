@@ -35,6 +35,19 @@ The implementation now:
 
 Unit tests cover skill bands, hardness/tool/posture composition, fixed due ticks, one-quarter work, concurrent reservations, exact remainder allocation, missing recipient validation, duplicate idempotency and exact four-quarter deposit profiles. Source contracts prevent reintroducing `tick % 3`, a spatial cadence constant or finalization skill grants. `ExcavationCadenceProfilesPlayModeTests` is the executable Unity fixture.
 
+## Validation evidence
+
+PR [#506](https://github.com/bageus/Dig/pull/506) was merged into `main` as `e0e3784bf4b01fad86a6b44b5b6a7a2fc4b7ee4c`.
+
+- Quality workflow `30411652454`: success;
+- Release build: success;
+- .NET tests: `1132 / 1132` passed;
+- headless smoke: success;
+- standard deterministic soak: success;
+- large-settlement deterministic soak: success;
+- Stage 2 v2/v3 source exports: success;
+- Unity workflow `30411652457`: completed, but licensed `Run Play Mode tests` was skipped by the activation gate.
+
 ## Verification boundary
 
-Quality build/tests, smoke and deterministic soaks are required before merge. The status remains `IMPLEMENTED`, not `VERIFIED`, until the licensed Unity Test Runner actually executes the Play Mode fixture and publishes results.
+The checked-in Play Mode fixture is executable evidence, but the system remains `IMPLEMENTED`, not `VERIFIED`, until the licensed Unity Test Runner actually executes it and publishes result artifacts.
