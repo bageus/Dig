@@ -37,6 +37,11 @@ public sealed partial class DigAgentVisual
     {
         if (_duration <= 0f)
         {
+            if (_productionWaitPose)
+            {
+                FaceTowardMainCamera();
+            }
+
             ApplyToolWorkAnimation();
             return;
         }
