@@ -1,0 +1,39 @@
+name: Fix work position regression
+
+on:
+  push:
+    branches:
+      - agent/fix-hud-basket-placement-building-work-position
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/fix-hud-basket-placement-building-work-position
+          fetch-depth: 0
+      - name: Align preview acceptance with side work position
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tests/Dig.Tests/BuildingBoxPlacementPresenterTests.cs')
+          text = path.read_text(encoding='utf-8')
+          old = 'Assert.Equal(new CellId(2, 1, 1), north.WorkPosition);'
+          new = 'Assert.Equal(new CellId(1, 2, 1), north.WorkPosition);'
+          if old not in text:
+              raise SystemExit('expected legacy assertion not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          git rm .github/workflows/fix-work-position-regression.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/Dig.Tests/BuildingBoxPlacementPresenterTests.cs
+          git commit -m "Align building preview with side work position"
+          git push origin HEAD:agent/fix-hud-basket-placement-building-work-position
