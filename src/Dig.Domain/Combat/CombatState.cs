@@ -256,7 +256,7 @@ public sealed partial class CombatState : AggregateRoot
         Dig.Domain.World.CellId first,
         Dig.Domain.World.CellId second)
     {
-        return checked(Math.Abs(first.X - second.X) + Math.Abs(first.Y - second.Y));
+        return CombatSpatialMath.Distance3D(first, second);
     }
 
     private readonly struct CombatStatusKey : IEquatable<CombatStatusKey>, IComparable<CombatStatusKey>

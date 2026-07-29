@@ -10,7 +10,6 @@ using Xunit;
 
 namespace Dig.Tests
 {
-
 public sealed class SaveMigrationAndCorruptionTests
 {
     private static readonly MaterialId Rock = new MaterialId("terrain.rock");
@@ -44,6 +43,7 @@ public sealed class SaveMigrationAndCorruptionTests
             "save.v6_to_v7.building_production",
             "save.v7_to_v8.world_excavation_progress",
             "save.v8_to_v9.agent_runtime",
+            "save.v9_to_v10.combat_spatial",
         }, first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
         Assert.Equal(1, document.Metadata.GeneratorVersion);
@@ -83,6 +83,7 @@ public sealed class SaveMigrationAndCorruptionTests
                 "save.v6_to_v7.building_production",
                 "save.v7_to_v8.world_excavation_progress",
                 "save.v8_to_v9.agent_runtime",
+                "save.v9_to_v10.combat_spatial",
             },
             first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
@@ -96,7 +97,6 @@ public sealed class SaveMigrationAndCorruptionTests
         Assert.True(replay.IsSuccess);
         Assert.Empty(replay.Value.AppliedSteps);
     }
-
     [Fact]
     public void Future_version_is_rejected_without_mutation()
     {
@@ -307,6 +307,7 @@ public sealed class SaveMigrationAndCorruptionTests
             new SaveVersionSixBuildingProductionMigration(),
             new SaveVersionSevenWorldExcavationProgressMigration(),
             new SaveVersionEightAgentRuntimeMigration(),
+            new SaveVersionNineCombatSpatialMigration(),
         });
     }
 

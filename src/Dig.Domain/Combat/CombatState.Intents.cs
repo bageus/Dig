@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Dig.Domain.Core;
+using Dig.Domain.World;
 
 namespace Dig.Domain.Combat
 {
@@ -34,6 +35,10 @@ public sealed partial class CombatState
                 CombatIntentStatus.Cancelled,
                 request.CreatedTick,
                 "replaced_by_new_intent");
+            CancelActiveExecutionForActor(
+                request.ActorId,
+                request.CreatedTick,
+                "intent_replaced");
             previous = active.CreateSnapshot();
             Raise(new CombatIntentFinished(request.CreatedTick, previous));
         }
@@ -90,6 +95,7 @@ public sealed partial class CombatState
             }
 
             intent.Finish(CombatIntentStatus.Expired, tick, "expired");
+            CancelActiveExecutionForActor(intent.ActorId, tick, "intent_expired");
             _activeIntents.Remove(intent.ActorId);
             CombatIntentSnapshot snapshot = intent.CreateSnapshot();
             expired.Add(snapshot);
@@ -109,6 +115,43 @@ public sealed partial class CombatState
         return _activeIntents.TryGetValue(actorId, out CombatIntentId intentId)
             ? _intents[intentId].CreateSnapshot()
             : null;
+    }
+
+    public Result RetargetIntent(
+        CombatIntentId intentId,
+        EntityId targetEntityId,
+        CellId targetCell,
+        long tick,
+        string reasonCode)
+    {
+        ValidateIntentTick(tick);
+        if (targetEntityId.IsEmpty)
+        {
+            throw new ArgumentException("Target id cannot be empty.", nameof(targetEntityId));
+        }
+
+        if (string.IsNullOrWhiteSpace(reasonCode))
+        {
+            throw new ArgumentException("Retarget reason is required.", nameof(reasonCode));
+        }
+
+        if (!_intents.TryGetValue(intentId, out CombatIntentRecord? intent)
+            || !intent.IsActive)
+        {
+            return Result.Failure(new DomainError(
+                "combat.intent.inactive",
+                "Only an active combat intent can be retargeted."));
+        }
+
+        CombatIntentSnapshot previous = intent.CreateSnapshot();
+        intent.Retarget(targetEntityId, targetCell);
+        Version = checked(Version + 1);
+        Raise(new CombatIntentChanged(
+            tick,
+            intent.ActorId,
+            previous,
+            intent.CreateSnapshot()));
+        return Result.Success();
     }
 
     public IReadOnlyList<CombatIntentSnapshot> CreateIntentSnapshot()
@@ -140,6 +183,10 @@ public sealed partial class CombatState
         }
 
         intent.Finish(status, tick, reasonCode);
+        CancelActiveExecutionForActor(
+            intent.ActorId,
+            tick,
+            "intent_finished:" + reasonCode);
         _activeIntents.Remove(intent.ActorId);
         Version = checked(Version + 1);
         Raise(new CombatIntentFinished(tick, intent.CreateSnapshot()));
@@ -174,12 +221,18 @@ public sealed partial class CombatState
         public CombatIntentSource Source { get; }
         public long CreatedTick { get; }
         public long ExpiresTick { get; }
-        public EntityId? TargetEntityId { get; }
-        public Dig.Domain.World.CellId? TargetCell { get; }
+        public EntityId? TargetEntityId { get; private set; }
+        public CellId? TargetCell { get; private set; }
         public CombatIntentStatus Status { get; private set; }
         public long? FinishedTick { get; private set; }
         public string? FinishReason { get; private set; }
         public bool IsActive => Status == CombatIntentStatus.Active;
+
+        public void Retarget(EntityId targetEntityId, CellId targetCell)
+        {
+            TargetEntityId = targetEntityId;
+            TargetCell = targetCell;
+        }
 
         public void Finish(
             CombatIntentStatus status,

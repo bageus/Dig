@@ -6,6 +6,7 @@ using Dig.Application.Buildings;
 using Dig.Application.World;
 using Dig.Domain.Agents;
 using Dig.Domain.Buildings;
+using Dig.Domain.Combat;
 using Dig.Domain.Ecology;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
@@ -57,7 +58,8 @@ public sealed class SaveGameContext
         MushroomState? mushrooms = null,
         ProductionState? production = null,
         BuildingSupplyState? buildingSupply = null,
-        BarrelState? barrels = null)
+        BarrelState? barrels = null,
+        CombatState? combat = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -80,6 +82,7 @@ public sealed class SaveGameContext
         BuildingSupply = buildingSupply ?? new BuildingSupplyState();
         Barrels = barrels ?? new BarrelState(
             new BarrelCatalog(Array.Empty<BarrelDefinition>()));
+        Combat = combat;
     }
 
     public SaveMetadataData Metadata { get; }
@@ -95,6 +98,7 @@ public sealed class SaveGameContext
     public ProductionState Production { get; }
     public BuildingSupplyState BuildingSupply { get; }
     public BarrelState Barrels { get; }
+    public CombatState? Combat { get; }
 }
 
 }

@@ -2,6 +2,7 @@ using System;
 using Dig.Application.Agents;
 using Dig.Domain.Buildings;
 using Dig.Domain.Content;
+using Dig.Domain.Combat;
 using Dig.Domain.Ecology;
 using Dig.Domain.Inventory;
 using Dig.Domain.Production;
@@ -21,7 +22,8 @@ public sealed class SaveGameLoadContext
         MushroomCatalog mushrooms,
         ProductionContentCatalog production,
         BarrelCatalog barrels,
-        IAgentRepository agents)
+        IAgentRepository agents,
+        WeaponCatalog? combatWeapons = null)
     {
         Materials = materials ?? throw new ArgumentNullException(nameof(materials));
         Items = items ?? throw new ArgumentNullException(nameof(items));
@@ -32,6 +34,7 @@ public sealed class SaveGameLoadContext
         Production = production ?? throw new ArgumentNullException(nameof(production));
         Barrels = barrels ?? throw new ArgumentNullException(nameof(barrels));
         Agents = agents ?? throw new ArgumentNullException(nameof(agents));
+        CombatWeapons = combatWeapons;
     }
 
     public MaterialCatalog Materials { get; }
@@ -42,6 +45,7 @@ public sealed class SaveGameLoadContext
     public ProductionContentCatalog Production { get; }
     public BarrelCatalog Barrels { get; }
     public IAgentRepository Agents { get; }
+    public WeaponCatalog? CombatWeapons { get; }
 }
 
 }
