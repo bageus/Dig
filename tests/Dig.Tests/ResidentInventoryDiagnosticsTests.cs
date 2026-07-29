@@ -16,6 +16,7 @@ public sealed class ResidentInventoryDiagnosticsTests
     private static readonly ItemId BasketId = new ItemId("inventory.basket");
     private static readonly ItemId ToolId = new ItemId("tool.pickaxe");
     private static readonly ItemId OreId = new ItemId("ore.iron");
+    private static readonly ItemId FillerId = new ItemId("material.filler");
 
     [Fact]
     public void Diagnostics_expose_layout_held_speed_and_slot_claims()
@@ -25,6 +26,7 @@ public sealed class ResidentInventoryDiagnosticsTests
         InventoryState inventory = new InventoryState(new ItemCatalog(new[]
         {
             new ItemDefinition(OreId, "Ore", 100, false, new[] { raw }),
+            new ItemDefinition(FillerId, "Filler", 1, false, new[] { raw }),
             new ItemDefinition(ToolId, "Pickaxe", 1, true, new[] { weapon }),
             new ItemDefinition(
                 BasketId,
@@ -59,6 +61,19 @@ public sealed class ResidentInventoryDiagnosticsTests
                 1),
             tick: 0).IsSuccess);
         Assert.True(inventory.EquipTool(ToolStackId, ResidentId, tick: 1).IsSuccess);
+        for (int slot = 2; slot < ResidentInventoryLayout.MainSlotCount; slot++)
+        {
+            Assert.True(inventory.AddStack(
+                Id(20 + slot),
+                FillerId,
+                1,
+                ItemLocation.InResidentSlot(
+                    ResidentId,
+                    ResidentInventoryCompartment.Main,
+                    slot),
+                tick: 1).IsSuccess);
+        }
+
         Assert.True(inventory.ReserveResidentSlotCapacity(
             JobId,
             ResidentId,

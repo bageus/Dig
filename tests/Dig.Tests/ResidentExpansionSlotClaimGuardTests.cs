@@ -13,6 +13,7 @@ public sealed class ResidentExpansionSlotClaimGuardTests
     private static readonly EntityId JobId = Id(3);
     private static readonly ItemId OreId = new ItemId("ore.iron");
     private static readonly ItemId BasketId = new ItemId("inventory.basket");
+    private static readonly ItemId FillerId = new ItemId("material.filler");
 
     [Fact]
     public void Active_expansion_cannot_move_while_its_compartment_is_claimed()
@@ -71,6 +72,7 @@ public sealed class ResidentExpansionSlotClaimGuardTests
         InventoryState inventory = new InventoryState(new ItemCatalog(new[]
         {
             new ItemDefinition(OreId, "Ore", 100, false, new[] { raw }),
+            new ItemDefinition(FillerId, "Filler", 1, false, new[] { raw }),
             new ItemDefinition(
                 BasketId,
                 "Basket",
@@ -94,6 +96,19 @@ public sealed class ResidentExpansionSlotClaimGuardTests
                 ResidentInventoryCompartment.Main,
                 0),
             tick: 0).IsSuccess);
+        for (int slot = 1; slot < ResidentInventoryLayout.MainSlotCount; slot++)
+        {
+            Assert.True(inventory.AddStack(
+                Id(10 + slot),
+                FillerId,
+                1,
+                ItemLocation.InResidentSlot(
+                    ResidentId,
+                    ResidentInventoryCompartment.Main,
+                    slot),
+                tick: 0).IsSuccess);
+        }
+
         return inventory;
     }
 
