@@ -72,7 +72,8 @@ public sealed class WeaponProfile
         int armorPenetration,
         long cooldownTicks,
         CombatStatusDefinition? statusOnHit = null,
-        CombatSkillProfile? skillProfile = null)
+        CombatSkillProfile? skillProfile = null,
+        CombatAttackSpatialMode spatialMode = CombatAttackSpatialMode.Melee)
     {
         if (id.IsEmpty)
         {
@@ -96,6 +97,11 @@ public sealed class WeaponProfile
             throw new ArgumentOutOfRangeException(nameof(cooldownTicks));
         }
 
+        if (!Enum.IsDefined(typeof(CombatAttackSpatialMode), spatialMode))
+        {
+            throw new ArgumentOutOfRangeException(nameof(spatialMode));
+        }
+
         Id = id;
         MinimumRange = minimumRange;
         MaximumRange = maximumRange;
@@ -105,6 +111,7 @@ public sealed class WeaponProfile
         CooldownTicks = cooldownTicks;
         StatusOnHit = statusOnHit;
         SkillProfile = skillProfile;
+        SpatialMode = spatialMode;
     }
 
     public WeaponProfileId Id { get; }
@@ -116,6 +123,7 @@ public sealed class WeaponProfile
     public long CooldownTicks { get; }
     public CombatStatusDefinition? StatusOnHit { get; }
     public CombatSkillProfile? SkillProfile { get; }
+    public CombatAttackSpatialMode SpatialMode { get; }
 
     private static void ValidateChance(int chance, string parameterName)
     {
