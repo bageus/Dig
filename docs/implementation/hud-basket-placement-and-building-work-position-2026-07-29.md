@@ -2,6 +2,8 @@
 
 Status: `IMPLEMENTED` after merge of the linked PR; licensed Unity Play Mode evidence remains required for `VERIFIED`.
 
+Implementation PR: [#519](https://github.com/bageus/Dig/pull/519).
+
 Authoritative specifications:
 
 - [`../design/resident-inventory-expansion.md`](../design/resident-inventory-expansion.md);
