@@ -13,7 +13,7 @@ public static partial class ProductionErrors
 {
     public static readonly DomainError OutputSpaceUnavailable = new DomainError(
         "production.output_space_unavailable",
-        "No free explored output cell is available around the workstation.");
+        "No free supported output cell is available in the workstation's right-side zone.");
 }
 
 public static class ProductionOutputPlacement
@@ -25,10 +25,24 @@ public static class ProductionOutputPlacement
         IReadOnlyCollection<ItemStackSnapshot> inventoryStacks,
         int maximumLateralDistance = 6)
     {
-        if (building is null || world is null
-            || occupiedBuildingCells is null || inventoryStacks is null)
+        if (building is null)
         {
             throw new ArgumentNullException(nameof(building));
+        }
+
+        if (world is null)
+        {
+            throw new ArgumentNullException(nameof(world));
+        }
+
+        if (occupiedBuildingCells is null)
+        {
+            throw new ArgumentNullException(nameof(occupiedBuildingCells));
+        }
+
+        if (inventoryStacks is null)
+        {
+            throw new ArgumentNullException(nameof(inventoryStacks));
         }
 
         if (maximumLateralDistance < 0)
@@ -46,12 +60,21 @@ public static class ProductionOutputPlacement
                 && stack.Quantity > 0)
             .Select(stack => stack.Location.CellId)
             .ToHashSet();
+
         foreach (CellId candidate in CreateCandidates(building, maximumLateralDistance))
         {
+            CellId supportCell = new CellId(
+                candidate.X,
+                candidate.Y + 1,
+                candidate.Z);
             if (!world.Size.Contains(candidate)
+                || !world.Size.Contains(supportCell)
                 || !cells.TryGetValue(candidate, out CellSnapshot snapshot)
+                || !cells.TryGetValue(supportCell, out CellSnapshot support)
                 || snapshot.IsSolid
                 || !snapshot.State.IsExplored
+                || !support.IsSolid
+                || !support.State.IsExplored
                 || occupied.Contains(candidate)
                 || itemCells.Contains(candidate))
             {
@@ -83,91 +106,30 @@ public static class ProductionOutputPlacement
             return Array.Empty<CellId>();
         }
 
-        (int forwardX, int forwardY, int lateralX, int lateralY) =
-            ResolveAxes(building.Orientation);
-        int minimumX = building.Footprint.Min(cell => cell.X);
-        int maximumX = building.Footprint.Max(cell => cell.X);
-        int minimumY = building.Footprint.Min(cell => cell.Y);
-        int maximumY = building.Footprint.Max(cell => cell.Y);
-        HashSet<CellId> footprint = building.Footprint.ToHashSet();
-        List<PlacementCandidate> candidates = new List<PlacementCandidate>();
+        int rightEdgeX = building.Footprint.Max(cell => cell.X);
+        (int Y, int Z)[] rows = building.Footprint
+            .Select(cell => (cell.Y, cell.Z))
+            .Distinct()
+            .OrderBy(value => Math.Abs(value.Y - building.Origin.Y))
+            .ThenBy(value => Math.Abs(value.Z - building.Origin.Z))
+            .ThenBy(value => value.Y)
+            .ThenBy(value => value.Z)
+            .ToArray();
+        List<CellId> candidates = new List<CellId>(
+            checked((maximumLateralDistance + 1) * rows.Length));
 
-        for (int ring = 1; ring <= maximumLateralDistance + 1; ring++)
+        for (int distance = 1; distance <= maximumLateralDistance + 1; distance++)
         {
-            int outerMinimumX = minimumX - ring;
-            int outerMaximumX = maximumX + ring;
-            int outerMinimumY = minimumY - ring;
-            int outerMaximumY = maximumY + ring;
-            for (int y = outerMinimumY; y <= outerMaximumY; y++)
+            for (int rowIndex = 0; rowIndex < rows.Length; rowIndex++)
             {
-                for (int x = outerMinimumX; x <= outerMaximumX; x++)
-                {
-                    bool boundary = x == outerMinimumX
-                        || x == outerMaximumX
-                        || y == outerMinimumY
-                        || y == outerMaximumY;
-                    if (!boundary)
-                    {
-                        continue;
-                    }
-
-                    CellId cell = new CellId(x, y, building.Origin.Z);
-                    if (footprint.Contains(cell))
-                    {
-                        continue;
-                    }
-
-                    int relativeX = x - building.Origin.X;
-                    int relativeY = y - building.Origin.Y;
-                    int forward = relativeX * forwardX + relativeY * forwardY;
-                    int lateral = relativeX * lateralX + relativeY * lateralY;
-                    candidates.Add(new PlacementCandidate(
-                        cell,
-                        ring,
-                        forward,
-                        lateral));
-                }
+                candidates.Add(new CellId(
+                    rightEdgeX + distance,
+                    rows[rowIndex].Y,
+                    rows[rowIndex].Z));
             }
         }
 
-        return candidates
-            .OrderBy(value => value.Ring)
-            .ThenByDescending(value => value.Forward)
-            .ThenBy(value => Math.Abs(value.Lateral))
-            .ThenBy(value => value.Lateral)
-            .ThenBy(value => value.Cell.Y)
-            .ThenBy(value => value.Cell.X)
-            .Select(value => value.Cell)
-            .ToArray();
-    }
-
-    private static (int ForwardX, int ForwardY, int LateralX, int LateralY)
-        ResolveAxes(BuildingOrientation orientation)
-    {
-        return orientation switch
-        {
-            BuildingOrientation.North => (0, -1, 1, 0),
-            BuildingOrientation.East => (1, 0, 0, 1),
-            BuildingOrientation.South => (0, 1, 1, 0),
-            BuildingOrientation.West => (-1, 0, 0, 1),
-            _ => throw new ArgumentOutOfRangeException(nameof(orientation)),
-        };
-    }
-
-    private readonly struct PlacementCandidate
-    {
-        internal PlacementCandidate(CellId cell, int ring, int forward, int lateral)
-        {
-            Cell = cell;
-            Ring = ring;
-            Forward = forward;
-            Lateral = lateral;
-        }
-
-        internal CellId Cell { get; }
-        internal int Ring { get; }
-        internal int Forward { get; }
-        internal int Lateral { get; }
+        return candidates;
     }
 }
 
