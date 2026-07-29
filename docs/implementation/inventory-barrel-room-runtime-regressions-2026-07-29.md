@@ -28,6 +28,10 @@ Eraser no longer discards the identity/provenance of an unfinished room. It canc
 
 The old pointer resolver varied only the vertical offset and fixed the room anchor X to the pointer X. That assumption fails for even-width presets such as medium `8 -> 7 -> 6`, which have no single central cell. `CaveRoomPlacementCandidateResolver` now enumerates every vertical level and horizontal anchor whose centered row profile contains the pointer cell. The first valid deterministic candidate is rendered; invalid diagnostics still use the best candidate.
 
+## Unity compile regression after PR #514
+
+The medium-room resolver introduced an explicit `IReadOnlyList<CellId>` local in `DigWorldInteraction.CaveRooms.cs`, but that Unity compilation unit did not import `System.Collections.Generic`. Unity therefore reported `CS0246` for `IReadOnlyList<>`; the following `candidates.Count` expression degraded into the secondary `CS0019` method-group diagnostic, and the missing runtime assembly caused the later Mono.Cecil EditMode assembly-resolution error. The runtime file now imports the required namespace. The source-contract regression requires both the namespace import and the typed candidate collection so this exact compile break cannot return while hosted Unity execution remains activation-blocked.
+
 ## Regression coverage
 
 - Domain tests for same-item consolidation, different-item isolation and reservation safety;
@@ -35,4 +39,4 @@ The old pointer resolver varied only the vertical offset and fixed the room anch
 - barrel route contract for supported depth and rejection of air/climb paths;
 - medium-room candidate enumeration from every front-silhouette cell;
 - paused-room resume planner preserving full provenance and excluding completed targets;
-- Unity source contracts for paused-plan lifecycle and the shared hover/click barrel resolver.
+- Unity source contracts for paused-plan lifecycle, required collection namespace and the shared hover/click barrel resolver.
