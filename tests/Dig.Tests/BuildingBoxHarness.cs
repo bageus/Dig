@@ -65,6 +65,7 @@ internal sealed class BuildingBoxHarness
     public InMemoryInventoryRepository InventoryRepository { get; }
     public InMemoryBuildingsRepository BuildingsRepository { get; }
     public InMemoryJobRepository JobRepository { get; }
+    public InMemoryWorldRepository WorldRepository { get; }
     public InMemoryExecutionJournal Journal { get; }
     public BuildingCatalog Catalog { get; }
 
