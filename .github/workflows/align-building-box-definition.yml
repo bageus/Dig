@@ -1,0 +1,39 @@
+name: Align building box definition
+
+on:
+  push:
+    branches:
+      - agent/fix-hud-basket-placement-building-work-position
+
+permissions:
+  contents: write
+
+jobs:
+  align:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/fix-hud-basket-placement-building-work-position
+          fetch-depth: 0
+      - name: Use side work offsets in save fixture
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tests/Dig.Tests/BuildingBoxHarness.cs')
+          text = path.read_text(encoding='utf-8')
+          old = '            new[] { new CellOffset(0, -1) },'
+          new = '            new[] { new CellOffset(-1, 0), new CellOffset(1, 0) },'
+          if old not in text:
+              raise SystemExit('legacy box work offset not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          git rm .github/workflows/align-building-box-definition.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/Dig.Tests/BuildingBoxHarness.cs
+          git commit -m "Use side work offsets in building box save fixture"
+          git push origin HEAD:agent/fix-hud-basket-placement-building-work-position
