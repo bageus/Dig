@@ -129,14 +129,14 @@ namespace Dig.Unity
                 residentSexes,
                 society,
                 new AgentSkillGrantService(repository, journal));
-            session.InitializeCombat(journal);
             session.InitializeTunnelMovement(tunnelVolume, journal);
+            session.InitializeCombat(journal, tunnelVolume);
             return session;
         }
 
         public IReadOnlyList<AgentViewModel> LoadView()
         {
-            return _presenter.Load(_tick);
+            return LoadResidentView();
         }
 
         internal int GetSkillLevel(EntityId agentId, AgentSkillId skillId)
@@ -208,6 +208,13 @@ namespace Dig.Unity
                     continue;
                 }
 
+                if (TryAdvanceCombat(agent, out Result combatMovement))
+                {
+                    if (combatMovement.IsFailure)
+                        CancelManualMovementWithWarning(agent.Id, combatMovement.Error!);
+                    continue;
+                }
+                if (SkipNormalMovement(agent)) continue;
                 if (TryAdvanceManualTunnelMovement(agent, out Result manualMovement))
                 {
                     if (manualMovement.IsFailure)
