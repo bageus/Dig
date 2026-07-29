@@ -12,6 +12,7 @@ public sealed partial class InventoryState
     {
         ValidateTick(tick);
         ValidateResidentId(residentId);
+        ConsolidateResidentStacks(residentId, tick);
         ItemStackState[] stacks = GetResidentStacks(residentId);
         Dictionary<ResidentInventorySlot, ItemStackState> occupied =
             new Dictionary<ResidentInventorySlot, ItemStackState>();
