@@ -89,6 +89,7 @@ public sealed class CommitExcavationQuarterTests
             kind == "metallurgy"
                 ? DefaultSkillGrantProfileIds.Metallurgy
                 : DefaultSkillGrantProfileIds.Alchemy);
+        int logisticsBefore = harness.Skill(AgentSkillCatalog.Logistics);
         ExcavationQuarter[] quarters =
         {
             ExcavationQuarter.UpperLeft,
@@ -111,7 +112,7 @@ public sealed class CommitExcavationQuarterTests
             : AgentSkillCatalog.Alchemy;
         Assert.Equal(AgentSkillCatalog.UnitsPerPoint, harness.Skill(primary));
         Assert.Equal(
-            AgentSkillCatalog.UnitsPerPoint / 4,
+            logisticsBefore + (AgentSkillCatalog.UnitsPerPoint / 4),
             harness.Skill(AgentSkillCatalog.Logistics));
         CellSnapshot cell = harness.World.GetCell(Target).Value;
         Assert.False(cell.IsSolid);

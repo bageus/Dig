@@ -32,6 +32,8 @@ public sealed class TerrainDepositSkillIntegrationTests
         InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
         InMemoryAgentRepository agents = new InMemoryAgentRepository();
         Assert.True(agents.Add(AgentTestFactory.CreateAgent(id: WorkerId)).IsSuccess);
+        AgentSnapshot before = agents.Get(WorkerId)!.CreateSnapshot(tick: 1);
+        int logisticsBefore = before.GetSkillLevel(AgentSkillCatalog.Logistics);
         CommitExcavationQuarterCommandHandler handler =
             new CommitExcavationQuarterCommandHandler(
                 new InMemoryWorldRepository(world),
@@ -67,7 +69,7 @@ public sealed class TerrainDepositSkillIntegrationTests
             AgentSkillCatalog.UnitsPerPoint,
             worker.GetSkillLevel(skillId));
         Assert.Equal(
-            AgentSkillCatalog.UnitsPerPoint / 4,
+            logisticsBefore + (AgentSkillCatalog.UnitsPerPoint / 4),
             worker.GetSkillLevel(AgentSkillCatalog.Logistics));
     }
 
