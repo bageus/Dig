@@ -20,6 +20,7 @@ Tracking: #67, #69, #70, #113, #387, #433, #511.
 - `ResidentInventoryPlacementHandlers` allow inventory expansions and commit active basket placement through an Inventory-owned reserved spill transaction.
 - `InventoryState.Spill` preserves quantity/reservation invariants while moving the active expansion and its compartment contents atomically.
 - campfire/workstation content exposes side-only work positions; placement/demo resolution requires same-plane open supported cells.
+- save/load fixtures and building definitions preserve the same side work-position candidates, so restored construction and production jobs never reintroduce an above-building worker cell.
 
 ## Regression boundary
 
