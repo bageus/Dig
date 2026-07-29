@@ -48,7 +48,10 @@ public sealed class ProductionOutputPlacementTests
         WorldState world = CreateWorld();
         BuildingSnapshot building = CreateBuilding(BuildingOrientation.North);
         CellId first = ProductionOutputPlacement.CreateCandidates(building, 1)[0];
-        SetTerrain(world, new CellId(first.X, first.Y + 1, first.Z), Air, tick: 3);
+        Assert.True(world.Excavate(
+            new CellId(first.X, first.Y + 1, first.Z),
+            Air,
+            tick: 3).IsSuccess);
 
         Result<CellId> result = ProductionOutputPlacement.Resolve(
             building,
@@ -136,40 +139,23 @@ public sealed class ProductionOutputPlacementTests
             new WorldSize(10, 10),
             5,
             materials,
-            Air,
+            Rock,
             explored: true).Value;
-        TerrainChange[] floor = Enumerable.Range(0, 10)
-            .Select(x => new TerrainChange(
-                new CellId(x, 5, 0),
-                new CellState(
-                    Rock,
-                    CellDesignation.None,
-                    isExplored: true,
-                    damage: 0,
-                    temperature: 20)))
-            .ToArray();
-        Assert.True(world.ApplyTerrainChanges(floor, tick: 2).IsSuccess);
+        long tick = 1;
+        for (int y = 0; y < 5; y++)
+        {
+            for (int x = 0; x < 10; x++)
+            {
+                Result<WorldMutationResult> excavated = world.Excavate(
+                    new CellId(x, y, 0),
+                    Air,
+                    tick++);
+                Assert.True(excavated.IsSuccess, excavated.Error?.ToString());
+            }
+        }
+
         world.DequeueUncommittedEvents();
         return world;
-    }
-
-    private static void SetTerrain(
-        WorldState world,
-        CellId cell,
-        MaterialId material,
-        long tick)
-    {
-        Result<CellSnapshot> current = world.GetCell(cell);
-        Assert.True(current.IsSuccess, current.Error?.ToString());
-        Result<WorldMutationResult> changed = world.ApplyTerrainChanges(
-            new[]
-            {
-                new TerrainChange(
-                    cell,
-                    current.Value.State.WithTerrain(material)),
-            },
-            tick);
-        Assert.True(changed.IsSuccess, changed.Error?.ToString());
     }
 }
 
