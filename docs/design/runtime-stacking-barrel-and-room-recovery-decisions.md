@@ -6,14 +6,14 @@ Tracking issues: [#67](https://github.com/bageus/Dig/issues/67), [#87](https://g
 
 Этот документ фиксирует последние подтверждённые решения пользователя от 2026-07-29 и имеет приоритет над более ранними формулировками в связанных inventory, barrel и cave-room specifications при расхождении по перечисленным ниже пунктам.
 
-## 1. Стакирование материалов в resident inventory
+## 1. Единичные предметы в resident inventory
 
-- одна ячейка resident inventory содержит один stack, а не одну единицу материала;
-- compatible stacks одного `ItemId` обязаны объединяться до `ItemDefinition.MaximumStackSize` при pickup, hauling ingress и deterministic resident-layout normalization;
-- новая ячейка используется только когда все совместимые stacks заполнены или action-owned stack нельзя безопасно изменить;
-- разные `ItemId` никогда не смешиваются, даже если относятся к одной категории материалов;
-- reserved или held stack не объединяется скрыто до освобождения authoritative job/action ownership;
-- hover/capacity validation учитывает свободное место внутри совместимых stacks и не требует пустую ячейку, если существующий stack может принять quantity.
+- каждая физическая единица ordinary item/material в личном инвентаре resident является отдельным quantity-one stack и занимает отдельную ячейку;
+- одинаковые `ItemId` в resident inventory не объединяются ни при pickup, ни при hauling/building-supply ingress, ни при deterministic layout normalization;
+- occupied slot никогда не считается дополнительной capacity для такого же `ItemId`; каждая входящая единица требует отдельный свободный совместимый slot;
+- Main/Cargo/Weapon destination priority сохраняется, но применяется только к свободным slots;
+- reservations и held references относятся к конкретной unit stack и не меняют правило one unit per slot;
+- агрегированные quantity stacks могут существовать во world/building storage projections, но при входе в resident inventory каждая переносимая единица получает отдельную unit stack/slot identity.
 
 ## 2. Прямая атака бочки
 
@@ -42,8 +42,9 @@ Tracking issues: [#67](https://github.com/bageus/Dig/issues/67), [#87](https://g
 
 ## 5. Acceptance
 
-- несколько одинаковых units занимают минимальное число ячеек до `MaximumStackSize`;
-- разные материалы остаются разными stacks;
+- несколько одинаковых units в resident inventory занимают столько же отдельных ячеек, сколько существует физических единиц;
+- одинаковые и разные материалы остаются отдельными quantity-one stacks;
+- pickup/hauling/building-supply отклоняются до commit, если свободных совместимых slots меньше количества переносимых units;
 - sword cursor и разрушение бочки работают через supported same-height route, включая supported depth transition;
 - air/gap/climb route не создаёт cursor/job;
 - partial room -> Eraser -> повторный marker того же preset/entrance -> designations только на остаток -> completion без повторной добычи;
