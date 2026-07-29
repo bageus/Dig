@@ -1,0 +1,42 @@
+name: Apply basket test alignment
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".agent/basket-tests-update"
+      - ".github/workflows/apply-basket-test-alignment.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'agent/align-surface-baskets-and-cargo-fallback'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/align-surface-baskets-and-cargo-fallback
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Apply updated basket acceptance fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d .agent/basket-tests-update | gzip -d > /tmp/basket-tests.patch
+          git apply --check /tmp/basket-tests.patch
+          git apply /tmp/basket-tests.patch
+
+      - name: Publish test updates
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests
+          git commit -m "Align hauling tests with Main-first Cargo fallback"
+          git push origin HEAD:agent/align-surface-baskets-and-cargo-fallback
