@@ -1,6 +1,6 @@
 # Generic building production and internal supply implementation
 
-Статус: revised spatial workflow is `IMPLEMENTED` in draft PR #515; actual licensed Unity Play Mode evidence remains required before `VERIFIED`.
+Статус: revised spatial workflow is `IMPLEMENTED` in PR #515; actual licensed Unity Play Mode evidence remains required before `VERIFIED`.
 
 Authoritative design: [`../design/building-production-and-internal-supply.md`](../design/building-production-and-internal-supply.md).
 Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
@@ -110,11 +110,11 @@ Checked-in Unity Play Mode:
 
 ## CI evidence
 
-PR #515 head validation is recorded after GitHub Actions completes. Workflows requested on the initial draft head:
+PR #515 head `33996baec8ba985da4cfdd2bb8b9813145d67182`:
 
-- Quality;
-- Export Stage 2 v2 Source;
-- Export Stage 2 v3 Source;
-- Unity Play Mode.
+- Quality run `30435630179` — success: architecture/file-size/C# compatibility, Unity source contracts, Release build, 1138 .NET tests, headless smoke, standard deterministic soak and large-settlement deterministic soak;
+- Export Stage 2 v2 Source run `30435630339` — success;
+- Export Stage 2 v3 Source run `30435630355` — success;
+- Unity Play Mode run `30435630253` — workflow success, but Unity activation was unavailable; `Run Unity EditMode and PlayMode tests` and runtime evidence validation were skipped, and a blocked-evidence manifest was recorded.
 
-Only checks that actually complete successfully will be reported as passed. The system remains `IMPLEMENTED`, not `VERIFIED`, until the runtime Play Mode scenario executes with licensed Unity evidence.
+The system remains `IMPLEMENTED`, not `VERIFIED`, until a licensed Unity Test Runner executes the checked-in runtime scenarios.
