@@ -3,7 +3,7 @@ name: Stage 3 documentation index sync
 on:
   push:
     branches:
-      - agent/stage3-doc-index-sync
+      - main
 
 permissions:
   contents: write
@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: agent/stage3-doc-index-sync
+          ref: main
       - name: Synchronize authoritative documentation
         shell: bash
         run: |
@@ -82,4 +82,4 @@ The checked-in Play Mode fixture is executable evidence, but the system remains 
           git config user.email "actions@users.noreply.github.com"
           git add docs .github/workflows/stage3-doc-index-sync.yml
           git commit -m "[stage3-doc-sync] Index excavation cadence implementation"
-          git push origin HEAD:agent/stage3-doc-index-sync
+          git push origin HEAD:main
