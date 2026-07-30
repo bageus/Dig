@@ -1,0 +1,370 @@
+-            throw new ArgumentException("Mining output stack id is required.", nameof(stackId));
+-        }
+-
+-        if (inventory.GetStack(stackId) != null)
+-        {
+-            throw new InvalidOperationException(
+-                $"Mining output stack '{stackId}' already exists.");
+-        }
+-
+-        if (!inventory.Catalog.Contains(plan.ItemId))
+-        {
+-            throw new InvalidOperationException(
+-                $"Mining output item '{plan.ItemId}' is missing from the inventory catalog.");
+-        }
+-
+-        ItemDefinition definition = inventory.Catalog.Get(plan.ItemId);
+-        if (plan.Quantity > definition.MaximumStackSize)
+-        {
+-            throw new InvalidOperationException(
+-                $"Mining output quantity {plan.Quantity} exceeds stack size "
+-                + $"{definition.MaximumStackSize} for '{plan.ItemId}'.");
+-        }
+-    }
+-}
+-
+ }
+diff --git a/src/Dig.Application/World/TerrainOutputCatalogValidation.cs b/src/Dig.Application/World/TerrainOutputCatalogValidation.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..25be9c66c4db8be3c378ce3cbfdff697430ec27b
+--- /dev/null
++++ b/src/Dig.Application/World/TerrainOutputCatalogValidation.cs
+@@ -0,0 +1,155 @@
++using System;
++using System.Collections.Generic;
++using System.Collections.ObjectModel;
++using System.Linq;
++using Dig.Domain.Inventory;
++using Dig.Domain.World;
++
++namespace Dig.Application.World
++{
++
++public static class TerrainOutputCatalogValidationCodes
++{
++    public const string UnknownItem = "terrain_output.catalog.unknown_item";
++    public const string ForbiddenLegacyMetal = "terrain_output.catalog.legacy_metal";
++    public const string StackSizeExceeded = "terrain_output.catalog.stack_size_exceeded";
++    public const string UnmineableOutput = "terrain_output.catalog.unmineable_output";
++}
++
++public sealed class TerrainOutputCatalogValidationIssue
++{
++    public TerrainOutputCatalogValidationIssue(
++        MaterialId materialId,
++        string profileId,
++        ItemId itemId,
++        string code,
++        string message)
++    {
++        MaterialId = materialId;
++        ProfileId = profileId ?? string.Empty;
++        ItemId = itemId;
++        Code = code ?? throw new ArgumentNullException(nameof(code));
++        Message = message ?? throw new ArgumentNullException(nameof(message));
++    }
++
++    public MaterialId MaterialId { get; }
++    public string ProfileId { get; }
++    public ItemId ItemId { get; }
++    public string Code { get; }
++    public string Message { get; }
++}
++
++public sealed class TerrainOutputCatalogValidationReport
++{
++    internal TerrainOutputCatalogValidationReport(
++        IEnumerable<TerrainOutputCatalogValidationIssue> issues)
++    {
++        TerrainOutputCatalogValidationIssue[] ordered = (issues
++            ?? throw new ArgumentNullException(nameof(issues)))
++            .OrderBy(value => value.MaterialId)
++            .ThenBy(value => value.ProfileId, StringComparer.Ordinal)
++            .ThenBy(value => value.ItemId)
++            .ThenBy(value => value.Code, StringComparer.Ordinal)
++            .ToArray();
++        Issues = new ReadOnlyCollection<TerrainOutputCatalogValidationIssue>(ordered);
++    }
++
++    public IReadOnlyList<TerrainOutputCatalogValidationIssue> Issues { get; }
++    public bool IsValid => Issues.Count == 0;
++}
++
++public sealed class TerrainOutputCatalogValidator
++{
++    private static readonly ItemId LegacyMetal = new ItemId("material.metal");
++
++    public TerrainOutputCatalogValidationReport Validate(
++        MaterialCatalog materials,
++        ItemCatalog items)
++    {
++        if (materials == null)
++        {
++            throw new ArgumentNullException(nameof(materials));
++        }
++
++        if (items == null)
++        {
++            throw new ArgumentNullException(nameof(items));
++        }
++
++        List<TerrainOutputCatalogValidationIssue> issues =
++            new List<TerrainOutputCatalogValidationIssue>();
++        foreach (MaterialDefinition material in materials.Definitions)
++        {
++            TerrainOutputProfile? profile = material.OutputProfile;
++            if (!material.IsMineable && profile != null)
++            {
++                issues.Add(Issue(
++                    material,
++                    profile,
++                    default,
++                    TerrainOutputCatalogValidationCodes.UnmineableOutput,
++                    "Unmineable terrain cannot have an output profile."));
++                continue;
++            }
++
++            if (profile == null)
++            {
++                continue;
++            }
++
++            foreach (TerrainOutputEntry entry in profile.Entries)
++            {
++                if (entry.ItemId == LegacyMetal)
++                {
++                    issues.Add(Issue(
++                        material,
++                        profile,
++                        entry.ItemId,
++                        TerrainOutputCatalogValidationCodes.ForbiddenLegacyMetal,
++                        "Terrain output cannot create material.metal; use material.iron."));
++                    continue;
++                }
++
++                if (!items.Contains(entry.ItemId))
++                {
++                    issues.Add(Issue(
++                        material,
++                        profile,
++                        entry.ItemId,
++                        TerrainOutputCatalogValidationCodes.UnknownItem,
++                        "Terrain output references an unknown ItemId."));
++                    continue;
++                }
++
++                if (entry.MaximumQuantity > items.Get(entry.ItemId).MaximumStackSize)
++                {
++                    issues.Add(Issue(
++                        material,
++                        profile,
++                        entry.ItemId,
++                        TerrainOutputCatalogValidationCodes.StackSizeExceeded,
++                        "Terrain output range exceeds the item maximum stack size."));
++                }
++            }
++        }
++
++        return new TerrainOutputCatalogValidationReport(issues);
++    }
++
++    private static TerrainOutputCatalogValidationIssue Issue(
++        MaterialDefinition material,
++        TerrainOutputProfile profile,
++        ItemId itemId,
++        string code,
++        string message)
++    {
++        return new TerrainOutputCatalogValidationIssue(
++            material.Id,
++            profile.Id,
++            itemId,
++            code,
++            message);
++    }
++}
++
++}
+diff --git a/src/Dig.Application/World/TerrainOutputCatalogValidation.cs.meta b/src/Dig.Application/World/TerrainOutputCatalogValidation.cs.meta
+new file mode 100644
+index 0000000000000000000000000000000000000000..1705a7766c70a89acc05b7ec436a178e91764bcb
+--- /dev/null
++++ b/src/Dig.Application/World/TerrainOutputCatalogValidation.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: 7cacd2b4438d422485795b467b5054bb
+diff --git a/src/Dig.Domain/Inventory/InventoryState.HaulingTransit.cs b/src/Dig.Domain/Inventory/InventoryState.HaulingTransit.cs
+index 7052a466ac675f230886e201ddac128accb5812c..db22c390c855eadb93118c0aa535a408766cc1cd 100644
+--- a/src/Dig.Domain/Inventory/InventoryState.HaulingTransit.cs
++++ b/src/Dig.Domain/Inventory/InventoryState.HaulingTransit.cs
+@@ -92,6 +92,36 @@ public sealed partial class InventoryState
+             return Result.Failure(InventoryErrors.ReservationNotFound);
+         }
+ 
++        bool unitIdentityTransfer = sources.All(source =>
++            source.Quantity == 1
++            && source.GetReservedQuantity(jobId) == 1);
++        if (unitIdentityTransfer)
++        {
++            for (int index = 0; index < sources.Length; index++)
++            {
++                ItemStackState source = sources[index];
++                ItemLocation sourceLocation = source.Location;
++                source.ConsumeReservation(jobId, quantity: 1);
++                source.MoveFull(destination);
++                Raise(new ItemQuantityReservationChanged(
++                    tick,
++                    source.Id,
++                    jobId,
++                    source.GetReservedQuantity(jobId)));
++                Raise(new ItemStackMoved(
++                    tick,
++                    source.Id,
++                    source.Id,
++                    itemId,
++                    quantity: 1,
++                    sourceLocation,
++                    destination));
++            }
++
++            IncrementVersion();
++            return Result.Success();
++        }
++
+         if (quantity > Catalog.Get(itemId).MaximumStackSize)
+         {
+             return Result.Failure(InventoryErrors.StackSizeExceeded);
+diff --git a/src/Dig.Domain/World/DefaultTerrainMaterials.cs b/src/Dig.Domain/World/DefaultTerrainMaterials.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..254f63e67bc623eac89767d5c7cd9c83a9b99d6d
+--- /dev/null
++++ b/src/Dig.Domain/World/DefaultTerrainMaterials.cs
+@@ -0,0 +1,97 @@
++using Dig.Domain.Inventory;
++
++namespace Dig.Domain.World
++{
++
++public static class DefaultTerrainMaterials
++{
++    public static readonly MaterialId Sand = new MaterialId("terrain.sand");
++    public static readonly MaterialId StoneRock = new MaterialId("terrain.stone_rock");
++    public static readonly MaterialId MetalBearingRock =
++        new MaterialId("terrain.metal_bearing_rock");
++    public static readonly MaterialId CrystallineRock =
++        new MaterialId("terrain.crystalline_rock");
++    public static readonly MaterialId LavaRock = new MaterialId("terrain.lava_rock");
++    public static readonly MaterialId Unmineable = new MaterialId("terrain.unmineable");
++
++    public static MaterialCatalog CreateCatalog()
++    {
++        ItemId stone = new ItemId("material.stone");
++        ItemId ironOre = new ItemId("ore.iron");
++        ItemId goldOre = new ItemId("ore.gold");
++        ItemId crystalOre = new ItemId("ore.crystal");
++        ItemId coal = new ItemId("material.coal");
++
++        return new MaterialCatalog(new[]
++        {
++            Material(Sand, "Песчаный грунт", 25, Profile("terrain-output.sand", 1)),
++            Material(StoneRock, "Каменная порода", 100,
++                Profile("terrain-output.stone-rock", 1,
++                    Entry(stone, 1_000, 1, 3))),
++            Material(MetalBearingRock, "Рудная порода", 140,
++                Profile("terrain-output.metal-bearing-rock", 1,
++                    Entry(stone, 550, 1, 3),
++                    Entry(ironOre, 220, 1, 2),
++                    Entry(goldOre, 20, 1, 1),
++                    Entry(coal, 110, 1, 2))),
++            Material(CrystallineRock, "Кристаллическая порода", 170,
++                Profile("terrain-output.crystalline-rock", 1,
++                    Entry(stone, 180, 1, 2),
++                    Entry(ironOre, 260, 1, 2),
++                    Entry(crystalOre, 360, 1, 2),
++                    Entry(goldOre, 40, 1, 1))),
++            Material(LavaRock, "Лавовая порода", 220,
++                Profile("terrain-output.lava-rock", 1,
++                    Entry(goldOre, 120, 1, 2),
++                    Entry(stone, 130, 1, 2),
++                    Entry(crystalOre, 170, 1, 2),
++                    Entry(ironOre, 230, 1, 2),
++                    Entry(coal, 210, 1, 3))),
++            new MaterialDefinition(
++                Unmineable,
++                "Недобываемая порода",
++                isSolid: true,
++                hardness: int.MaxValue,
++                isMineable: false,
++                outputProfile: null),
++        });
++    }
++
++    private static MaterialDefinition Material(
++        MaterialId id,
++        string displayName,
++        int hardness,
++        TerrainOutputProfile profile)
++    {
++        return new MaterialDefinition(
++            id,
++            displayName,
++            isSolid: true,
++            hardness: hardness,
++            isMineable: true,
++            outputProfile: profile);
++    }
++
++    private static TerrainOutputProfile Profile(
++        string id,
++        int version,
++        params TerrainOutputEntry[] entries)
++    {
++        return new TerrainOutputProfile(id, version, entries);
++    }
++
++    private static TerrainOutputEntry Entry(
++        ItemId itemId,
++        int probabilityPermille,
++        int minimumQuantity,
++        int maximumQuantity)
++    {
++        return new TerrainOutputEntry(
++            itemId,
++            probabilityPermille,
++            minimumQuantity,
++            maximumQuantity);
++    }
++}
++
++}
+diff --git a/src/Dig.Domain/World/DefaultTerrainMaterials.cs.meta b/src/Dig.Domain/World/DefaultTerrainMaterials.cs.meta
+new file mode 100644
+index 0000000000000000000000000000000000000000..74d15b21a64efb3c542ad223591627b46c1b8e9f
+--- /dev/null
++++ b/src/Dig.Domain/World/DefaultTerrainMaterials.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: dc77802c96574d82b1471339e0c13a25
+diff --git a/src/Dig.Domain/World/TerrainOutputProfiles.cs b/src/Dig.Domain/World/TerrainOutputProfiles.cs
+index 0db85681e739f58ab74dcaf34a68ee74ac07e4d4..3a740b78969465152e8dafcfa0b0fd7a02c66761 100644
+--- a/src/Dig.Domain/World/TerrainOutputProfiles.cs
++++ b/src/Dig.Domain/World/TerrainOutputProfiles.cs
+@@ -76,14 +76,6 @@ public sealed class TerrainOutputProfile
+                 nameof(entries));
+         }
+ 
+-        int totalProbability = values.Sum(entry => entry.ProbabilityPermille);
+-        if (totalProbability > 1_000)
+-        {
+-            throw new ArgumentException(
+-                "Output probabilities cannot exceed 1000 permille.",
+-                nameof(entries));
+-        }
+-
+         Id = id.Trim();
+         Version = version;
+         _entries = new ReadOnlyCollection<TerrainOutputEntry>(values);
+@@ -92,197 +84,82 @@ public sealed class TerrainOutputProfile
+     public string Id { get; }
+     public int Version { get; }
+     public IReadOnlyList<TerrainOutputEntry> Entries => _entries;
