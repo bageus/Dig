@@ -1,4 +1,4 @@
-name: Diagnose PR 520 failures
+name: Repair PR 520 regressions
 
 on:
   pull_request:
@@ -6,34 +6,163 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  diagnose:
+  repair:
     if: github.event.pull_request.number == 520
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 1
-      - name: Locate relevant contracts
+          ref: agent/fix-unit-inventory-room-markers-box-unpack
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Apply regression fixes
         shell: bash
         run: |
           set -euo pipefail
-          echo '=== CreateBuildingSupplyJobHandler ==='
-          file=$(grep -R -l 'class CreateBuildingSupplyJobHandler' src | head -n 1)
-          echo "$file"
-          sed -n '1,320p' "$file"
-          echo '=== AcquireBuildingSupply handlers ==='
-          grep -R -l 'class AcquireBuildingSupply' src | while read -r path; do
-            echo "--- $path"
-            sed -n '1,360p' "$path"
-          done
-          echo '=== Resident slot claim contracts ==='
-          grep -R -l 'ReserveResidentSlotCapacity' src | while read -r path; do
-            echo "--- $path"
-            grep -n -C 12 'ReserveResidentSlotCapacity' "$path" || true
-          done
-          echo '=== Resident compartment enum ==='
-          grep -R -n -A 12 -B 2 'enum ResidentInventoryCompartment' src || true
+          python3 <<'PY'
+          from pathlib import Path
+
+          def replace(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text(encoding="utf-8")
+              if old not in text:
+                  raise SystemExit(f"Expected block missing in {path}:\n{old}")
+              file.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+          replace(
+              "src/Dig.Domain/Production/BuildingSupplyPlanner.cs",
+              "    public int SlotCount => Allocations.Count;\n"
+              "    public int TotalQuantity => Allocations.Sum(value => value.Quantity);",
+              "    public int SlotCount => TotalQuantity;\n"
+              "    public int TotalQuantity => Allocations.Sum(value => value.Quantity);")
+
+          replace(
+              "src/Dig.Domain/Production/BuildingSupplyPlanner.cs",
+              "        List<BuildingSupplyAllocation> allocations = new List<BuildingSupplyAllocation>();\n"
+              "        HashSet<EntityId> used = new HashSet<EntityId>();",
+              "        List<BuildingSupplyAllocation> allocations = new List<BuildingSupplyAllocation>();\n"
+              "        HashSet<EntityId> used = new HashSet<EntityId>();\n"
+              "        int availableUnitSlots = freeSlotCount;")
+
+          replace(
+              "src/Dig.Domain/Production/BuildingSupplyPlanner.cs",
+              "                if (allocations.Count == freeSlotCount || remaining == 0)\n"
+              "                {\n"
+              "                    break;\n"
+              "                }\n\n"
+              "                int quantity = Math.Min(remaining, stack.AvailableQuantity);",
+              "                if (availableUnitSlots == 0 || remaining == 0)\n"
+              "                {\n"
+              "                    break;\n"
+              "                }\n\n"
+              "                int quantity = Math.Min(\n"
+              "                    availableUnitSlots,\n"
+              "                    Math.Min(remaining, stack.AvailableQuantity));")
+
+          replace(
+              "src/Dig.Domain/Production/BuildingSupplyPlanner.cs",
+              "                used.Add(stack.StackId);\n"
+              "                remaining -= quantity;\n"
+              "            }\n\n"
+              "            if (allocations.Count == freeSlotCount)",
+              "                used.Add(stack.StackId);\n"
+              "                remaining -= quantity;\n"
+              "                availableUnitSlots -= quantity;\n"
+              "            }\n\n"
+              "            if (availableUnitSlots == 0)")
+
+          replace(
+              "tests/Dig.Tests/BasketInventoryWorkflowTests.cs",
+              "        ItemStackSnapshot cargo = inventory.GetStack(OreStackId)!;\n"
+              "        Assert.Equal(ResidentInventoryCompartment.Cargo,\n"
+              "            cargo.Location.ResidentCompartment);\n"
+              "        Assert.Equal(0, cargo.Location.ResidentSlotIndex);",
+              "        ResidentInventorySlotSnapshot[] cargo = inventory\n"
+              "            .GetResidentInventoryLayout(ResidentId)\n"
+              "            .Slots\n"
+              "            .Where(value => !value.IsEmpty\n"
+              "                && value.Slot.Compartment == ResidentInventoryCompartment.Cargo)\n"
+              "            .OrderBy(value => value.Slot.Index)\n"
+              "            .ToArray();\n"
+              "        Assert.Equal(3, cargo.Length);\n"
+              "        Assert.All(cargo, value => Assert.Equal(1, value.Quantity));\n"
+              "        Assert.Equal(new[] { 0, 1, 2 }, cargo.Select(value => value.Slot.Index));")
+
+          replace(
+              "tests/Dig.Tests/HaulingSlotClaimSaveRoundTripTests.cs",
+              "        document.Inventory.ResidentSlotClaims[0].ResidentId = Id(99).ToString();",
+              "        foreach (var claim in document.Inventory.ResidentSlotClaims)\n"
+              "        {\n"
+              "            claim.ResidentId = Id(99).ToString();\n"
+              "        }")
+
+          replace(
+              "tests/Dig.Tests/BuildingSupplyApplicationTests.cs",
+              "        Assert.Equal(4, harness.Inventory.GetAvailableQuantityAt(\n"
+              "            Dig.Domain.Content.CampfireProductionContent.MushroomLegItemId,\n"
+              "            ItemLocation.InBuilding(CampfireProductionTestHarness.BuildingId)));",
+              "        Assert.Equal(2, harness.Inventory.GetAvailableQuantityAt(\n"
+              "            Dig.Domain.Content.CampfireProductionContent.MushroomLegItemId,\n"
+              "            ItemLocation.InBuilding(CampfireProductionTestHarness.BuildingId)));\n"
+              "        Assert.Equal(2, harness.Inventory.GetStack(\n"
+              "            CampfireProductionTestHarness.Id(201))!.AvailableQuantity);")
+
+          replace(
+              "tests/Dig.Tests/BuildingSupplyApplicationTests.cs",
+              "        Assert.Null(harness.Inventory.GetStack(legSource));",
+              "        Assert.Equal(2, harness.Inventory.GetStack(legSource)!.AvailableQuantity);")
+
+          replace(
+              "tests/Dig.Tests/BuildingSupplyApplicationTests.cs",
+              "            new[] { CampfireProductionTestHarness.Id(232) },\n"
+              "            new[] { CampfireProductionTestHarness.Id(233) },",
+              "            Enumerable.Range(232, 4)\n"
+              "                .Select(CampfireProductionTestHarness.Id)\n"
+              "                .ToArray(),\n"
+              "            new[] { CampfireProductionTestHarness.Id(236) },")
+
+          replace(
+              "tests/Dig.Tests/DeepGameplayInteractionRegressionTests.cs",
+              "        Assert.Equal(ItemLocation.InAgent(harness.WorkerId),\n"
+              "            harness.Inventory.GetStack(harness.SourceStackId)!.Location);",
+              "        Assert.Equal(ItemLocation.InResidentSlot(\n"
+              "                harness.WorkerId,\n"
+              "                ResidentInventoryCompartment.Main,\n"
+              "                0),\n"
+              "            harness.Inventory.GetStack(harness.SourceStackId)!.Location);")
+          PY
+
+          rm .github/workflows/diagnose-pr-520.yml
+          git diff --check
+
+      - name: Run targeted regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet test tests/Dig.Tests/Dig.Tests.csproj --no-restore --filter "FullyQualifiedName~BasketInventoryWorkflowTests|FullyQualifiedName~HaulingSlotClaimSaveRoundTripTests|FullyQualifiedName~BuildingSupplyApplicationTests|FullyQualifiedName~DeepGameplayInteractionRegressionTests"
+
+      - name: Run full checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/quality/check_quality.py
+          python3 tools/quality/check_unity_source_contracts.py
+          python3 tools/quality/check_unity_excavation_playmode_contracts.py
+          dotnet test Dig.sln --no-restore
+
+      - name: Commit repaired PR
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix PR 520 unit-slot regressions"
+          git push origin HEAD:agent/fix-unit-inventory-room-markers-box-unpack
