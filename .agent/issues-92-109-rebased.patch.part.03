@@ -1,0 +1,386 @@
++        foreach (TerrainWorkOutputSpec output in command.Outputs)
++        {
++            EntityId[] ids = outputUnitIds
++                .Skip(offset)
++                .Take(output.Quantity)
++                .ToArray();
++            Result added = inventory.AddUnits(
++                ids,
++                output.ItemId,
++                location,
++                tick);
++            if (added.IsFailure)
++            {
++                throw new InvalidOperationException(
++                    $"A validated terrain output batch failed: {added.Error}");
++            }
++
++            produced.Add(new TerrainWorkProducedOutput(
++                output.ItemId,
++                output.Quantity,
++                ids));
++            offset += output.Quantity;
++        }
++
++        return produced;
+     }
+ 
+     private static string CreateDerivedEntityId(string seed, int index)
+diff --git a/src/Dig.Application/Saving/MiningOutputSaveData.cs b/src/Dig.Application/Saving/MiningOutputSaveData.cs
+index e2a3ea6..7c7d39d 100644
+--- a/src/Dig.Application/Saving/MiningOutputSaveData.cs
++++ b/src/Dig.Application/Saving/MiningOutputSaveData.cs
+@@ -8,6 +8,19 @@ using Dig.Domain.World;
+ namespace Dig.Application.Saving
+ {
+ 
++[DataContract]
++public sealed class MiningOutputCommitOutputSaveData
++{
++    [DataMember(Order = 1)]
++    public string ItemId { get; set; } = string.Empty;
++
++    [DataMember(Order = 2)]
++    public int Quantity { get; set; }
++
++    [DataMember(Order = 3)]
++    public List<string> StackIds { get; set; } = new List<string>();
++}
++
+ [DataContract]
+ public sealed class MiningOutputCommitSaveData
+ {
+@@ -23,6 +36,7 @@ public sealed class MiningOutputCommitSaveData
+     [DataMember(Order = 4)]
+     public int SourceKind { get; set; }
+ 
++    // v1 compatibility fields.
+     [DataMember(Order = 5)]
+     public string ItemId { get; set; } = string.Empty;
+ 
+@@ -34,6 +48,17 @@ public sealed class MiningOutputCommitSaveData
+ 
+     [DataMember(Order = 8)]
+     public bool HasStack { get; set; }
++
++    // v2 source diagnostics and multi-output payload.
++    [DataMember(Order = 9)]
++    public string SourceId { get; set; } = string.Empty;
++
++    [DataMember(Order = 10)]
++    public int SourceVersion { get; set; }
++
++    [DataMember(Order = 11)]
++    public List<MiningOutputCommitOutputSaveData> Outputs { get; set; } =
++        new List<MiningOutputCommitOutputSaveData>();
+ }
+ 
+ [DataContract]
+@@ -64,17 +89,37 @@ public static class MiningOutputSaveDataAdapter
+         foreach (MiningOutputCommitSaveEntry entry in snapshot.Commits
+             .OrderBy(value => value.Cell))
+         {
+-            data.Commits.Add(new MiningOutputCommitSaveData
++            MiningOutputCommitSaveData saved = new MiningOutputCommitSaveData
+             {
+                 X = entry.Cell.X,
+                 Y = entry.Cell.Y,
+                 Z = entry.Cell.Z,
+                 SourceKind = (int)entry.SourceKind,
+-                ItemId = entry.ItemId,
+-                Quantity = entry.Quantity,
+-                StackId = entry.StackId,
+-                HasStack = entry.HasStack,
+-            });
++                SourceId = entry.SourceId,
++                SourceVersion = entry.SourceVersion,
++            };
++            foreach (MiningOutputCommitLineSaveEntry output in entry.Outputs)
++            {
++                saved.Outputs.Add(new MiningOutputCommitOutputSaveData
++                {
++                    ItemId = output.ItemId,
++                    Quantity = output.Quantity,
++                    StackIds = output.StackIds.ToList(),
++                });
++            }
++
++            if (entry.Outputs.Count == 1)
++            {
++                MiningOutputCommitLineSaveEntry output = entry.Outputs[0];
++                saved.ItemId = output.ItemId;
++                saved.Quantity = output.Quantity;
++                saved.StackId = output.StackIds.Count == 1
++                    ? output.StackIds[0]
++                    : null;
++                saved.HasStack = true;
++            }
++
++            data.Commits.Add(saved);
+         }
+ 
+         return data;
+@@ -105,13 +150,35 @@ public static class MiningOutputSaveDataAdapter
+                 throw new InvalidOperationException("Mining output save entry is invalid.");
+             }
+ 
++            if (data.FormatVersion == 1)
++            {
++                commits.Add(new MiningOutputCommitSaveEntry(
++                    new CellId(saved.X, saved.Y, saved.Z),
++                    (MiningOutputSourceKind)saved.SourceKind,
++                    saved.ItemId,
++                    saved.Quantity,
++                    saved.StackId,
++                    saved.HasStack));
++                continue;
++            }
++
++            if (saved.Outputs == null
++                || string.IsNullOrWhiteSpace(saved.SourceId)
++                || saved.SourceVersion <= 0)
++            {
++                throw new InvalidOperationException(
++                    "Mining output v2 save entry is incomplete.");
++            }
++
+             commits.Add(new MiningOutputCommitSaveEntry(
+                 new CellId(saved.X, saved.Y, saved.Z),
+                 (MiningOutputSourceKind)saved.SourceKind,
+-                saved.ItemId,
+-                saved.Quantity,
+-                saved.StackId,
+-                saved.HasStack));
++                saved.SourceId,
++                saved.SourceVersion,
++                saved.Outputs.Select(output => new MiningOutputCommitLineSaveEntry(
++                    output.ItemId,
++                    output.Quantity,
++                    output.StackIds ?? new List<string>()))));
+         }
+ 
+         return new MiningOutputCommitSaveSnapshot(data.FormatVersion, commits);
+diff --git a/src/Dig.Application/Saving/SaveContracts.cs b/src/Dig.Application/Saving/SaveContracts.cs
+index db4d1e4..b81eed5 100644
+--- a/src/Dig.Application/Saving/SaveContracts.cs
++++ b/src/Dig.Application/Saving/SaveContracts.cs
+@@ -20,7 +20,7 @@ namespace Dig.Application.Saving
+ 
+ public static class SaveFormat
+ {
+-    public const int CurrentVersion = 12;
++    public const int CurrentVersion = 13;
+ }
+ 
+ public static class SaveSlotNames
+diff --git a/src/Dig.Application/Saving/SaveMigrations.TerrainOutput.cs b/src/Dig.Application/Saving/SaveMigrations.TerrainOutput.cs
+new file mode 100644
+index 0000000..a5d747f
+--- /dev/null
++++ b/src/Dig.Application/Saving/SaveMigrations.TerrainOutput.cs
+@@ -0,0 +1,224 @@
++using System;
++using System.Collections.Generic;
++using Dig.Application.World;
++
++namespace Dig.Application.Saving
++{
++
++public sealed class SaveVersionTwelveTerrainOutputContractMigration : ISaveMigration
++{
++    private const string LegacyMetal = "material.metal";
++    private const string Iron = "material.iron";
++
++    public string Id => "save.v12_to_v13.terrain_output_contract";
++    public int FromVersion => 12;
++    public int ToVersion => 13;
++
++    public void Apply(SaveGameDocument document)
++    {
++        if (document == null)
++        {
++            throw new ArgumentNullException(nameof(document));
++        }
++
++        if (document.FormatVersion != FromVersion)
++        {
++            throw new InvalidOperationException(
++                "Migration received the wrong source version.");
++        }
++
++        MigrateInventory(document);
++        MigrateJobs(document);
++        MigrateProduction(document);
++        MigrateRuntimeAndBarrels(document);
++        MigrateMiningOutput(document);
++        document.FormatVersion = ToVersion;
++    }
++
++    private static void MigrateInventory(SaveGameDocument document)
++    {
++        document.Inventory ??= new InventorySaveData();
++        document.Inventory.Stacks ??= new List<ItemStackSaveData>();
++        foreach (ItemStackSaveData stack in document.Inventory.Stacks)
++        {
++            if (stack != null)
++            {
++                stack.ItemId = Map(stack.ItemId);
++            }
++        }
++
++        document.Inventory.ResidentSlotClaims ??= new List<ResidentSlotClaimSaveData>();
++        foreach (ResidentSlotClaimSaveData claim in document.Inventory.ResidentSlotClaims)
++        {
++            if (claim != null)
++            {
++                claim.ItemId = Map(claim.ItemId);
++            }
++        }
++    }
++
++    private static void MigrateJobs(SaveGameDocument document)
++    {
++        document.Jobs ??= new JobsSaveData();
++        document.Jobs.Jobs ??= new List<JobSaveData>();
++        foreach (JobSaveData job in document.Jobs.Jobs)
++        {
++            if (job?.Definition?.Properties == null)
++            {
++                continue;
++            }
++
++            foreach (SavePropertyData property in job.Definition.Properties)
++            {
++                if (property != null)
++                {
++                    property.Value = Map(property.Value);
++                }
++            }
++        }
++    }
++
++    private static void MigrateProduction(SaveGameDocument document)
++    {
++        document.BuildingProduction ??= new BuildingProductionSaveData();
++        document.BuildingProduction.Orders ??= new List<ProductionOrderSaveData>();
++        foreach (ProductionOrderSaveData order in document.BuildingProduction.Orders)
++        {
++            if (order == null)
++            {
++                continue;
++            }
++
++            order.InputAllocations ??= new List<ProductionInputAllocationSaveData>();
++            foreach (ProductionInputAllocationSaveData allocation in order.InputAllocations)
++            {
++                if (allocation != null)
++                {
++                    allocation.ItemId = Map(allocation.ItemId);
++                }
++            }
++
++            order.MaterialSteps ??= new List<ProductionMaterialStepSaveData>();
++            foreach (ProductionMaterialStepSaveData step in order.MaterialSteps)
++            {
++                if (step != null)
++                {
++                    step.ItemId = Map(step.ItemId);
++                }
++            }
++        }
++
++        document.BuildingProduction.Supplies ??= new List<BuildingSupplySaveData>();
++        foreach (BuildingSupplySaveData supply in document.BuildingProduction.Supplies)
++        {
++            if (supply?.Stocks == null)
++            {
++                continue;
++            }
++
++            foreach (BuildingStockRuleSaveData stock in supply.Stocks)
++            {
++                if (stock != null)
++                {
++                    stock.ItemId = Map(stock.ItemId);
++                }
++            }
++        }
++    }
++
++    private static void MigrateRuntimeAndBarrels(SaveGameDocument document)
++    {
++        document.AgentRuntime ??= new AgentRuntimeSaveData();
++        document.AgentRuntime.Agents ??= new List<AgentRuntimeStateSaveData>();
++        foreach (AgentRuntimeStateSaveData agent in document.AgentRuntime.Agents)
++        {
++            if (agent?.ActiveMeal != null)
++            {
++                agent.ActiveMeal.ItemId = Map(agent.ActiveMeal.ItemId);
++            }
++        }
++
++        document.Barrels ??= new BarrelSaveData();
++        document.Barrels.Barrels ??= new List<BarrelEntitySaveData>();
++        foreach (BarrelEntitySaveData barrel in document.Barrels.Barrels)
++        {
++            if (barrel != null)
++            {
++                barrel.ContentsItemId = Map(barrel.ContentsItemId);
++            }
++        }
++    }
++
++    private static void MigrateMiningOutput(SaveGameDocument document)
++    {
++        document.MiningOutput ??= new MiningOutputCommitsSaveData();
++        document.MiningOutput.Commits ??= new List<MiningOutputCommitSaveData>();
++        int sourceFormat = document.MiningOutput.FormatVersion <= 0
++            ? 1
++            : document.MiningOutput.FormatVersion;
++        if (sourceFormat > MiningOutputCommitSaveSnapshot.CurrentFormatVersion)
++        {
++            throw new InvalidOperationException(
++                "Mining output save data uses a future format version.");
++        }
++
++        foreach (MiningOutputCommitSaveData commit in document.MiningOutput.Commits)
++        {
++            if (commit == null)
++            {
++                continue;
++            }
++
++            commit.ItemId = Map(commit.ItemId);
++            commit.Outputs ??= new List<MiningOutputCommitOutputSaveData>();
++            if (commit.Outputs.Count == 0 && commit.HasStack)
++            {
++                if (string.IsNullOrWhiteSpace(commit.StackId))
++                {
++                    throw new InvalidOperationException(
++                        "Legacy mining output stack id is missing.");
++                }
++
++                commit.Outputs.Add(new MiningOutputCommitOutputSaveData
++                {
++                    ItemId = Map(commit.ItemId),
++                    Quantity = commit.Quantity,
++                    StackIds = new List<string> { commit.StackId },
++                });
++            }
++
++            foreach (MiningOutputCommitOutputSaveData output in commit.Outputs)
++            {
++                if (output != null)
++                {
++                    output.ItemId = Map(output.ItemId);
++                    output.StackIds ??= new List<string>();
++                }
++            }
++
++            if (string.IsNullOrWhiteSpace(commit.SourceId))
++            {
++                commit.SourceId = commit.SourceKind == (int)MiningOutputSourceKind.Deposit
++                    ? "legacy.deposit-output"
++                    : "legacy.terrain-output";
++            }
++
