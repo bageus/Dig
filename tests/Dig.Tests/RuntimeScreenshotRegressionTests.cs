@@ -55,7 +55,7 @@ public sealed class RuntimeScreenshotRegressionTests
         Assert.DoesNotContain("FrontDepthOffset", stock + zones);
         Assert.DoesNotContain("building.WorkPositionX", stock + zones);
         Assert.Contains("Storage tray", bay);
-        Assert.Contains("Storage back rail", bay);
+        Assert.DoesNotContain("Storage back rail", bay);
     }
 
     private static string Read(string root, string file)
