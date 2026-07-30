@@ -161,7 +161,7 @@ internal static class SaveVersionFourCoordinateMigrationNormalizer
             || !int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int x)
             || !int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int y))
         {
-            return value;
+            return value ?? string.Empty;
         }
 
         return x.ToString(CultureInfo.InvariantCulture)
