@@ -55,7 +55,7 @@ public sealed class MiningOutputIntegrityDiagnosticsTests
                 version: 1,
                 entries: System.Array.Empty<TerrainOutputEntry>())),
             new TerrainDepositState());
-        commits.Record(plan, default);
+        commits.Record(plan, System.Array.Empty<EntityId>());
 
         MiningOutputIntegrityReport report =
             new MiningOutputIntegrityDiagnostics().Inspect(commits, inventory);
@@ -93,7 +93,6 @@ public sealed class MiningOutputIntegrityDiagnosticsTests
         Assert.Equal(inventoryVersion, inventory.Version);
         Assert.Single(commits.Snapshot());
     }
-
 
     [Fact]
     public void Quantity_one_output_identity_remains_valid_after_storage_movement()
