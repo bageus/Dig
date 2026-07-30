@@ -41,7 +41,9 @@ public static class BuildingBoxRelocationExecutionPolicy
         }
 
         EntityId workerId = job.AssignedAgentId.Value;
-        bool carriedByWorker = box.Location == ItemLocation.InAgent(workerId);
+        bool carriedByWorker = DropResidentInventoryStackHandler.IsOwnedByResident(
+            box.Location,
+            workerId);
         bool atWorldSource = box.Location.Kind == ItemLocationKind.World
             && box.Location.HasCell
             && box.Location.CellId == workerCell

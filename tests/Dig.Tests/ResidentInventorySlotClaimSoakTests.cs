@@ -20,7 +20,7 @@ public sealed class ResidentInventorySlotClaimSoakTests
         {
             EntityId residentId = Id(100 + (tick % 8));
             EntityId jobId = Id(1000 + tick);
-            int quantity = 1 + (tick % 73);
+            int quantity = 1 + (tick % 9);
             var reserved = inventory.ReserveResidentSlotCapacity(
                 jobId,
                 residentId,
@@ -45,21 +45,20 @@ public sealed class ResidentInventorySlotClaimSoakTests
         InventoryState first = CreateInventory(residentCount: 1);
         InventoryState second = CreateInventory(residentCount: 1);
         EntityId residentId = Id(100);
-        for (int index = 0; index < 12; index++)
+        for (int index = 0; index < 3; index++)
         {
             EntityId jobId = Id(2000 + index);
-            int quantity = 17 + index;
             Assert.True(first.ReserveResidentSlotCapacity(
                 jobId,
                 residentId,
                 OreId,
-                quantity,
+                quantity: 3,
                 tick: index + 1).IsSuccess);
             Assert.True(second.ReserveResidentSlotCapacity(
                 jobId,
                 residentId,
                 OreId,
-                quantity,
+                quantity: 3,
                 tick: index + 1).IsSuccess);
         }
 
@@ -70,6 +69,7 @@ public sealed class ResidentInventorySlotClaimSoakTests
             .Select(Format)
             .ToArray();
         Assert.Equal(left, right);
+        Assert.Equal(9, left.Length);
     }
 
     private static InventoryState CreateInventory(int residentCount)

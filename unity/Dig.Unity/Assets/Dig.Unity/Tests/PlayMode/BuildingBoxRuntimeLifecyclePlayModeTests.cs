@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Linq;
+using Dig.Application.Inventory;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -52,6 +53,16 @@ public sealed class BuildingBoxRuntimeLifecyclePlayModeTests
         Assert.That(atSite.BuildingBoxCommitState, Is.EqualTo(BuildingBoxCommitState.AtSite));
         Assert.That(atSite.CompletedWork, Is.EqualTo(0));
         Assert.That(atSite.Status, Is.EqualTo(BuildingStatus.ReadyToBuild));
+        Assert.That(atSite.VisualState, Is.EqualTo(BuildingVisualState.Assembly));
+        ItemStackSnapshot siteBox = runtime.Inventory.GetStack(box.StackId)!;
+        Assert.That(
+            siteBox.Location,
+            Is.EqualTo(ItemLocation.InBuilding(EntityId.Parse(atSite.Id))));
+        Assert.That(
+            DropResidentInventoryStackHandler.IsOwnedByResident(
+                siteBox.Location,
+                EntityId.Parse(worker.Id)),
+            Is.False);
 
         for (int completed = 1; completed <= 3; completed++)
         {
@@ -155,7 +166,12 @@ public sealed class BuildingBoxRuntimeLifecyclePlayModeTests
             Is.False);
         ItemStackSnapshot preserved = runtime.Inventory.GetStack(box.StackId)!;
         Assert.That(preserved.StackId, Is.EqualTo(box.StackId));
-        Assert.That(preserved.Location, Is.EqualTo(ItemLocation.InAgent(EntityId.Parse(worker.Id))));
+        Assert.That(
+            DropResidentInventoryStackHandler.IsOwnedByResident(
+                preserved.Location,
+                EntityId.Parse(worker.Id)),
+            Is.True);
+        Assert.That(preserved.Location.HasResidentSlot, Is.True);
         Assert.That(preserved.Quantity, Is.EqualTo(1));
         Assert.That(preserved.ReservedQuantity, Is.EqualTo(0));
     }

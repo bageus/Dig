@@ -31,6 +31,11 @@ public sealed partial class InventoryState
                 : InventoryErrors.InsufficientAvailableQuantity);
         }
 
+        if (quantity != 1)
+        {
+            return Result.Failure(InventoryErrors.StackSizeExceeded);
+        }
+
         ItemLocation destination = ItemLocation.InResidentSlot(
             residentId,
             slot.Compartment,
@@ -44,7 +49,7 @@ public sealed partial class InventoryState
         Result destinationValidation = ValidateResidentDestination(
             source,
             destination,
-            allowCompatibleOccupant: true);
+            allowCompatibleOccupant: false);
         if (destinationValidation.IsFailure)
         {
             return destinationValidation;
@@ -126,20 +131,12 @@ public sealed partial class InventoryState
         }
 
         ResidentInventorySlot destinationSlot = destination.ResidentSlot;
-        if (occupied.TryGetValue(destinationSlot, out ItemStackState? existing))
+        if (occupied.ContainsKey(destinationSlot))
         {
-            bool compatible = allowCompatibleOccupant
-                && existing.ItemId == stack.ItemId
-                && !Catalog.Get(stack.ItemId).IsInventoryExpansion;
-            if (!compatible)
-            {
-                return Result.Failure(InventoryErrors.ResidentSlotOccupied);
-            }
+            return Result.Failure(InventoryErrors.ResidentSlotOccupied);
         }
-        else
-        {
-            occupied.Add(destinationSlot, stack);
-        }
+
+        occupied.Add(destinationSlot, stack);
 
         ActiveInventoryExpansionSnapshot? activeCargo = ResolveActiveExpansion(
             occupied,

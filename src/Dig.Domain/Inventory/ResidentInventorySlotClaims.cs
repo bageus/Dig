@@ -205,9 +205,9 @@ public sealed partial class InventoryState
         List<SlotCapacity> capacities = new List<SlotCapacity>();
         for (int index = 0; index < layout.Slots.Count; index++)
         {
-            ResidentInventorySlotSnapshot snapshot = layout.Slots[index];
-            ResidentInventorySlot slot = snapshot.Slot;
-            if (!CanClaimSlot(definition, slot, layout))
+            ResidentInventorySlot slot = layout.Slots[index].Slot;
+            if (!CanClaimSlot(definition, slot, layout)
+                || occupied.ContainsKey(slot))
             {
                 continue;
             }
@@ -215,39 +215,18 @@ public sealed partial class InventoryState
             ResidentInventorySlotClaimSnapshot[] claims = _residentSlotClaims
                 .Where(claim => claim.ResidentId == residentId && claim.Slot == slot)
                 .ToArray();
-            if (occupied.TryGetValue(slot, out ItemStackState? stack))
-            {
-                if (stack.ItemId != definition.Id)
-                {
-                    continue;
-                }
-
-                int claimed = claims.Sum(claim => claim.Quantity);
-                int available = definition.MaximumStackSize - stack.Quantity - claimed;
-                if (available > 0)
-                {
-                    capacities.Add(new SlotCapacity(
-                        slot,
-                        available,
-                        SlotCapacityRank(definition, slot, layout, isMerge: true)));
-                }
-
-                continue;
-            }
-
             if (claims.Any(claim => claim.ItemId != definition.Id))
             {
                 continue;
             }
 
-            int reserved = claims.Sum(claim => claim.Quantity);
-            int emptyCapacity = definition.MaximumStackSize - reserved;
-            if (emptyCapacity > 0)
+            int available = 1 - claims.Sum(claim => claim.Quantity);
+            if (available == 1)
             {
                 capacities.Add(new SlotCapacity(
                     slot,
-                    emptyCapacity,
-                    SlotCapacityRank(definition, slot, layout, isMerge: false)));
+                    availableQuantity: 1,
+                    SlotCapacityRank(definition, slot, layout)));
             }
         }
 
@@ -285,12 +264,11 @@ public sealed partial class InventoryState
     private static int SlotCapacityRank(
         ItemDefinition definition,
         ResidentInventorySlot slot,
-        ResidentInventoryLayoutSnapshot layout,
-        bool isMerge)
+        ResidentInventoryLayoutSnapshot layout)
     {
         if (definition.IsInventoryExpansion)
         {
-            return isMerge ? 0 : 1;
+            return slot.Compartment == ResidentInventoryCompartment.Main ? 0 : 3;
         }
 
         bool prefersWeapon = layout.ActiveWeaponExpansion.HasValue
@@ -299,19 +277,19 @@ public sealed partial class InventoryState
         {
             return slot.Compartment switch
             {
-                ResidentInventoryCompartment.Weapon => isMerge ? 0 : 1,
-                ResidentInventoryCompartment.Main => isMerge ? 2 : 3,
-                ResidentInventoryCompartment.Cargo => isMerge ? 4 : 5,
-                _ => 6,
+                ResidentInventoryCompartment.Weapon => 0,
+                ResidentInventoryCompartment.Main => 1,
+                ResidentInventoryCompartment.Cargo => 2,
+                _ => 3,
             };
         }
 
         return slot.Compartment switch
         {
-            ResidentInventoryCompartment.Main => isMerge ? 0 : 1,
-            ResidentInventoryCompartment.Cargo => isMerge ? 2 : 3,
-            ResidentInventoryCompartment.Weapon => isMerge ? 4 : 5,
-            _ => 6,
+            ResidentInventoryCompartment.Main => 0,
+            ResidentInventoryCompartment.Cargo => 1,
+            ResidentInventoryCompartment.Weapon => 2,
+            _ => 3,
         };
     }
 

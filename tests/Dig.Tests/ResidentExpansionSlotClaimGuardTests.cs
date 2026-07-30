@@ -23,7 +23,7 @@ public sealed class ResidentExpansionSlotClaimGuardTests
             JobId,
             ResidentId,
             OreId,
-            quantity: 8,
+            quantity: 4,
             tick: 1).IsSuccess);
 
         Result moved = inventory.MoveAvailable(
@@ -50,7 +50,7 @@ public sealed class ResidentExpansionSlotClaimGuardTests
             JobId,
             ResidentId,
             OreId,
-            quantity: 8,
+            quantity: 4,
             tick: 1).IsSuccess);
 
         Result blocked = inventory.DropResidentStackWithSpill(
@@ -59,7 +59,7 @@ public sealed class ResidentExpansionSlotClaimGuardTests
             tick: 2);
         Assert.Equal(InventoryErrors.ResidentSlotClaimConflict, blocked.Error);
 
-        Assert.Equal(8, inventory.ReleaseResidentSlotClaims(JobId, tick: 3));
+        Assert.Equal(4, inventory.ReleaseResidentSlotClaims(JobId, tick: 3));
         Assert.True(inventory.DropResidentStackWithSpill(
             BasketStackId,
             ItemLocation.InWorld(new CellId(4, 4)),

@@ -37,7 +37,11 @@ public sealed class CaveRoomReapplyAndMediumPreviewPlayModeTests
     public void Erased_incomplete_room_can_be_reapplied_without_redesignating_open_target()
     {
         DigWorldSession world = DigWorldSession.CreateDemo(20, 14, 5);
-        CaveRoomPlanResult planned = FindPlan(world, CaveRoomPresetKind.Small);
+        CaveRoomPlanResult planned = FindPlan(
+            world,
+            CaveRoomPresetKind.Small,
+            width: 20,
+            height: 14);
         Assert.That(planned.Succeeded, Is.True, planned.Detail);
         CaveRoomPlan original = planned.Plan!;
         Assert.That(world.ApplyCaveRoomPlan(original).IsSuccess, Is.True);
@@ -74,13 +78,41 @@ public sealed class CaveRoomReapplyAndMediumPreviewPlayModeTests
         Assert.That(remaining.Value.State.Designation, Is.EqualTo(CellDesignation.Dig));
     }
 
-    private static CaveRoomPlanResult FindPlan(
-        DigWorldSession world,
+
+    [TestCase(CaveRoomPresetKind.Small)]
+    [TestCase(CaveRoomPresetKind.Medium)]
+    [TestCase(CaveRoomPresetKind.Large)]
+    [TestCase(CaveRoomPresetKind.Tall)]
+    public void Confirmed_room_plan_leaves_authoritative_dig_designations(
         CaveRoomPresetKind kind)
     {
-        for (int y = 2; y < 13; y++)
+        const int width = 48;
+        const int height = 28;
+        DigWorldSession world = DigWorldSession.CreateDemo(width, height, 5);
+        CaveRoomPlanResult planned = FindPlan(world, kind, width, height);
+
+        Assert.That(planned.Succeeded, Is.True, planned.Detail);
+        Assert.That(world.ApplyCaveRoomPlan(planned.Plan!).IsSuccess, Is.True);
+        Assert.That(
+            planned.Plan!.ExcavationCells.Any(cell =>
+            {
+                Result<CellSnapshot> snapshot = world.Repository.Get().GetCell(cell);
+                return snapshot.IsSuccess
+                    && snapshot.Value.State.Designation == CellDesignation.Dig;
+            }),
+            Is.True,
+            $"{kind} did not leave any Dig designation after confirmation.");
+    }
+
+    private static CaveRoomPlanResult FindPlan(
+        DigWorldSession world,
+        CaveRoomPresetKind kind,
+        int width,
+        int height)
+    {
+        for (int y = 1; y < height - 1; y++)
         {
-            for (int x = 2; x < 18; x++)
+            for (int x = 1; x < width - 1; x++)
             {
                 CaveRoomPlanResult result = world.PlanCaveRoom(
                     kind,
@@ -92,7 +124,9 @@ public sealed class CaveRoomReapplyAndMediumPreviewPlayModeTests
             }
         }
 
-        return world.PlanCaveRoom(kind, new CellId(10, 9, CellId.MinimumDepth));
+        return world.PlanCaveRoom(
+            kind,
+            new CellId(width / 2, height / 2, CellId.MinimumDepth));
     }
 }
 

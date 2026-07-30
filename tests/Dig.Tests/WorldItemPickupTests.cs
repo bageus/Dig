@@ -1,3 +1,4 @@
+using System.Linq;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Saving;
@@ -14,27 +15,32 @@ namespace Dig.Tests
 public sealed class WorldItemPickupTests
 {
     [Fact]
-    public void Pickup_reserves_and_places_full_world_stack_in_first_resident_slot()
+    public void Pickup_splits_full_world_stack_into_one_unit_per_resident_slot()
     {
-        Harness harness = new Harness(quantity: 12);
+        Harness harness = new Harness(quantity: 6);
         Assert.True(harness.Create().IsSuccess);
         ItemStackSnapshot reserved = harness.Inventory.GetStack(harness.StackId)!;
-        Assert.Equal(12, reserved.ReservedQuantity);
+        Assert.Equal(6, reserved.ReservedQuantity);
         Assert.Equal(harness.ResidentId, harness.Jobs.Get(harness.JobId)!.AssignedAgentId);
         harness.AdvanceToAcquireItem();
 
         Result completed = harness.Complete();
 
         Assert.True(completed.IsSuccess, completed.Error?.ToString());
-        ItemStackSnapshot carried = harness.Inventory.GetStack(harness.StackId)!;
-        Assert.Equal(
-            ItemLocation.InResidentSlot(
-                harness.ResidentId,
-                ResidentInventoryCompartment.Main,
-                slotIndex: 0),
-            carried.Location);
-        Assert.Equal(12, carried.Quantity);
-        Assert.Equal(0, carried.ReservedQuantity);
+        ItemStackSnapshot[] carried = harness.Inventory.CreateSnapshot().Stacks
+            .Where(stack => stack.ItemId == harness.ItemId)
+            .Where(stack => stack.Location.Kind == ItemLocationKind.AgentInventory)
+            .Where(stack => stack.Location.OwnerId == harness.ResidentId)
+            .OrderBy(stack => stack.Location.ResidentSlotIndex)
+            .ToArray();
+        Assert.Equal(6, carried.Length);
+        Assert.All(carried, stack =>
+        {
+            Assert.Equal(1, stack.Quantity);
+            Assert.Equal(0, stack.ReservedQuantity);
+        });
+        Assert.Contains(carried, stack => stack.StackId == harness.StackId);
+        Assert.Equal(6, carried.Select(stack => stack.Location.ResidentSlotIndex).Distinct().Count());
         Assert.Equal(JobStatus.Completed, harness.Jobs.Get(harness.JobId)!.Status);
         Assert.Empty(harness.Jobs.GetReservations());
     }
@@ -55,7 +61,7 @@ public sealed class WorldItemPickupTests
     [Fact]
     public void Cancel_releases_inventory_and_common_reservations()
     {
-        Harness harness = new Harness(quantity: 7);
+        Harness harness = new Harness(quantity: 6);
         Assert.True(harness.Create().IsSuccess);
 
         Result cancelled = harness.Cancel();

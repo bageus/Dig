@@ -65,12 +65,22 @@ internal static class BuildingBoxRuntimeLifecyclePlayModeHarness
         InventoryState inventory = runtime.Inventory;
         ItemStackSnapshot box = inventory.CreateSnapshot().Stacks.Single(
             value => value.ItemId == CampfireBuildingBoxContent.CampfireBoxItemId);
-        Result moved = inventory.MoveAvailable(
+        EntityId residentId = EntityId.Parse(resident.Id);
+        Assert.That(
+            inventory.NormalizeResidentInventory(residentId, tick: 1).IsSuccess,
+            Is.True);
+        ResidentInventorySlot slot = inventory.GetResidentInventoryLayout(residentId)
+            .Slots
+            .First(value => value.Slot.Compartment == ResidentInventoryCompartment.Main
+                && value.IsEmpty)
+            .Slot;
+        Result moved = inventory.MoveAvailableToResidentSlot(
             box.StackId,
             quantity: 1,
-            ItemLocation.InAgent(EntityId.Parse(resident.Id)),
+            residentId,
+            slot,
             splitStackId: default,
-            tick: 1);
+            tick: 2);
         Assert.That(moved.IsSuccess, Is.True, moved.Error?.ToString());
         runtime.InventoryRepository.Save(inventory);
         return inventory.GetStack(box.StackId)!;

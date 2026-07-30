@@ -132,7 +132,8 @@ public sealed class BuildingBoxPlanTests
             new CellId(3, 3)).IsSuccess);
         harness.AssignAndAdvanceToDeposit();
         ItemStackSnapshot reserved = harness.Inventory.GetStack(harness.SourceStackId)!;
-        Assert.Equal(ItemLocation.InAgent(harness.WorkerId), reserved.Location);
+        Assert.True(Dig.Application.Inventory.DropResidentInventoryStackHandler
+            .IsOwnedByResident(reserved.Location, harness.WorkerId));
         Assert.Equal(1, reserved.ReservedQuantity);
 
         Result cancelled = harness.Cancel("building_box_direct_movement_replaced");
@@ -140,7 +141,8 @@ public sealed class BuildingBoxPlanTests
         Assert.True(cancelled.IsSuccess, cancelled.Error?.ToString());
         ItemStackSnapshot box = harness.Inventory.GetStack(harness.SourceStackId)!;
         Assert.Equal(harness.SourceStackId, box.StackId);
-        Assert.Equal(ItemLocation.InAgent(harness.WorkerId), box.Location);
+        Assert.True(Dig.Application.Inventory.DropResidentInventoryStackHandler
+            .IsOwnedByResident(box.Location, harness.WorkerId));
         Assert.Equal(1, box.Quantity);
         Assert.Equal(0, box.ReservedQuantity);
         Assert.Equal(JobStatus.Cancelled, harness.Jobs.Get(harness.JobId)!.Status);

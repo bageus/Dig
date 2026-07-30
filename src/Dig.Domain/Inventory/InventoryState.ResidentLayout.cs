@@ -12,41 +12,71 @@ public sealed partial class InventoryState
     {
         ValidateTick(tick);
         ValidateResidentId(residentId);
-        ConsolidateResidentStacks(residentId, tick);
         ItemStackState[] stacks = GetResidentStacks(residentId);
         Dictionary<ResidentInventorySlot, ItemStackState> occupied =
             new Dictionary<ResidentInventorySlot, ItemStackState>();
         List<ItemStackState> unslottedExpansions = new List<ItemStackState>();
-        List<ItemStackState> unslottedItems = new List<ItemStackState>();
+        List<ResidentUnitCandidate> pendingUnits = new List<ResidentUnitCandidate>();
 
         for (int index = 0; index < stacks.Length; index++)
         {
             ItemStackState stack = stacks[index];
             ItemDefinition definition = Catalog.Get(stack.ItemId);
-            if (!stack.Location.HasResidentSlot)
-            {
-                (definition.IsInventoryExpansion
-                    ? unslottedExpansions
-                    : unslottedItems).Add(stack);
-                continue;
-            }
-
-            ResidentInventorySlot slot = stack.Location.ResidentSlot;
-            if (occupied.ContainsKey(slot))
+            if (definition.IsInventoryExpansion && stack.Quantity != 1)
             {
                 return Result.Failure(InventoryErrors.ResidentInventoryLayoutInvalid);
             }
 
-            if (definition.IsInventoryExpansion
-                && slot.Compartment != ResidentInventoryCompartment.Main)
+            if (!definition.IsInventoryExpansion
+                && stack.Quantity > 1
+                && (stack.ReservedQuantity != 0 || stack.HeldQuantity != 0))
             {
-                return Result.Failure(InventoryErrors.InventoryExpansionMainOnly);
+                return Result.Failure(InventoryErrors.ResidentInventoryLayoutInvalid);
             }
 
-            occupied.Add(slot, stack);
+            if (stack.Location.HasResidentSlot)
+            {
+                ResidentInventorySlot slot = stack.Location.ResidentSlot;
+                if (occupied.ContainsKey(slot))
+                {
+                    return Result.Failure(InventoryErrors.ResidentInventoryLayoutInvalid);
+                }
+
+                if (definition.IsInventoryExpansion
+                    && slot.Compartment != ResidentInventoryCompartment.Main)
+                {
+                    return Result.Failure(InventoryErrors.InventoryExpansionMainOnly);
+                }
+
+                occupied.Add(slot, stack);
+            }
+            else if (definition.IsInventoryExpansion)
+            {
+                unslottedExpansions.Add(stack);
+            }
+            else
+            {
+                pendingUnits.Add(ResidentUnitCandidate.Original(stack));
+            }
+
+            if (definition.IsInventoryExpansion)
+            {
+                continue;
+            }
+
+            for (int ordinal = 1; ordinal < stack.Quantity; ordinal++)
+            {
+                Result<EntityId> unitId = CreateResidentUnitId(stack.Id, ordinal);
+                if (unitId.IsFailure)
+                {
+                    return Result.Failure(unitId.Error!);
+                }
+
+                pendingUnits.Add(ResidentUnitCandidate.Split(stack, unitId.Value, ordinal));
+            }
         }
 
-        Dictionary<EntityId, ResidentInventorySlot> assignments =
+        Dictionary<EntityId, ResidentInventorySlot> expansionAssignments =
             new Dictionary<EntityId, ResidentInventorySlot>();
         foreach (ItemStackState expansion in unslottedExpansions
             .OrderBy(value => Catalog.Get(value.ItemId).InventoryExpansion!.Group)
@@ -63,7 +93,7 @@ public sealed partial class InventoryState
             }
 
             occupied.Add(slot, expansion);
-            assignments.Add(expansion.Id, slot);
+            expansionAssignments.Add(expansion.Id, slot);
         }
 
         ActiveInventoryExpansionSnapshot? activeCargo = ResolveActiveExpansion(
@@ -90,11 +120,12 @@ public sealed partial class InventoryState
             }
         }
 
-        foreach (ItemStackState item in unslottedItems
-            .OrderBy(value => value.Id.ToString(), StringComparer.Ordinal))
+        foreach (ResidentUnitCandidate candidate in pendingUnits
+            .OrderBy(value => value.Source.Id.ToString(), StringComparer.Ordinal)
+            .ThenBy(value => value.Ordinal))
         {
             if (!TryFindCompatibleFreeSlot(
-                    item,
+                    candidate.Source,
                     cargoCapacity,
                     weaponCapacity,
                     activeCargo,
@@ -105,16 +136,12 @@ public sealed partial class InventoryState
                 return Result.Failure(InventoryErrors.ResidentInventoryCapacityExceeded);
             }
 
-            occupied.Add(slot, item);
-            assignments.Add(item.Id, slot);
+            candidate.Assign(slot);
+            occupied.Add(slot, candidate.Source);
         }
 
-        if (assignments.Count == 0)
-        {
-            return Result.Success();
-        }
-
-        foreach (KeyValuePair<EntityId, ResidentInventorySlot> assignment in assignments
+        bool changed = false;
+        foreach (KeyValuePair<EntityId, ResidentInventorySlot> assignment in expansionAssignments
             .OrderBy(value => value.Key.ToString(), StringComparer.Ordinal))
         {
             ItemStackState stack = Find(assignment.Key)!;
@@ -132,9 +159,70 @@ public sealed partial class InventoryState
                 stack.Quantity,
                 source,
                 destination));
+            changed = true;
         }
 
-        IncrementVersion();
+        foreach (ResidentUnitCandidate candidate in pendingUnits
+            .Where(value => !value.IsOriginal)
+            .OrderBy(value => value.Source.Id.ToString(), StringComparer.Ordinal)
+            .ThenBy(value => value.Ordinal))
+        {
+            ItemLocation sourceLocation = candidate.Source.Location;
+            ItemStackState unit = candidate.Source.Split(
+                candidate.UnitId,
+                quantity: 1,
+                ItemLocation.InAgent(residentId));
+            _stacks.Add(unit.Id, unit);
+            candidate.Materialize(unit);
+            Raise(new ItemStackMoved(
+                tick,
+                candidate.Source.Id,
+                unit.Id,
+                unit.ItemId,
+                quantity: 1,
+                sourceLocation,
+                unit.Location));
+            changed = true;
+        }
+
+        foreach (ResidentUnitCandidate candidate in pendingUnits
+            .Where(value => value.IsOriginal))
+        {
+            candidate.Materialize(candidate.Source);
+        }
+
+        foreach (ResidentUnitCandidate candidate in pendingUnits
+            .OrderBy(value => value.UnitId.ToString(), StringComparer.Ordinal))
+        {
+            ItemStackState unit = candidate.Materialized!;
+            ResidentInventorySlot slot = candidate.AssignedSlot;
+            ItemLocation destination = ItemLocation.InResidentSlot(
+                residentId,
+                slot.Compartment,
+                slot.Index);
+            if (unit.Location == destination)
+            {
+                continue;
+            }
+
+            ItemLocation source = unit.Location;
+            unit.MoveFull(destination);
+            Raise(new ItemStackMoved(
+                tick,
+                unit.Id,
+                unit.Id,
+                unit.ItemId,
+                quantity: 1,
+                source,
+                destination));
+            changed = true;
+        }
+
+        if (changed)
+        {
+            IncrementVersion();
+        }
+
         return Result.Success();
     }
 

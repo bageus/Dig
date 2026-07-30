@@ -68,7 +68,9 @@ public sealed class CommitBuildingBoxToSiteHandler
         bool ownsReservation = box?.Reservations.Any(
             value => value.JobId == job.Id && value.Quantity == 1) ?? false;
         if (box is null
-            || box.Location != ItemLocation.InAgent(job.AssignedAgentId.Value)
+            || !DropResidentInventoryStackHandler.IsOwnedByResident(
+                box.Location,
+                job.AssignedAgentId.Value)
             || box.ItemId != building.Definition.BoxPolicy!.BoxItemId
             || box.Quantity != 1
             || !ownsReservation)

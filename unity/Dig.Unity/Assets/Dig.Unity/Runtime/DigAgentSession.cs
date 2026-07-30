@@ -290,7 +290,7 @@ namespace Dig.Unity
                         new NeedValue(7_000 - (index * 350)),
                         new NeedValue(10_000)),
                     DailySchedule.CreateBalanced(24),
-                    skills: null,
+                    skills: ResolveDemoSkills(index),
                     traits: identity.Heritage.Traits,
                     initialPosition: new CellId(
                         identity.Position.X,

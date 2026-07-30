@@ -52,40 +52,42 @@ public sealed partial class InventoryState
                 residentId,
                 claim.Slot.Compartment,
                 claim.Slot.Index);
-            ItemStackState? target = FindStackAt(destination, default);
-            int alreadyReserved = target?.GetReservedQuantity(jobId) ?? 0;
-            int availableClaim = claim.Quantity - alreadyReserved;
-            if (availableClaim <= 0)
-            {
-                continue;
-            }
-
-            if (target is null)
-            {
-                if (ids.Count == 0)
-                {
-                    return Result<bool>.Failure(InventoryErrors.SplitIdRequired);
-                }
-
-                EntityId newId = ids.Dequeue();
-                if (newId.IsEmpty || _stacks.ContainsKey(newId))
-                {
-                    return Result<bool>.Failure(InventoryErrors.StackAlreadyExists);
-                }
-
-                target = new ItemStackState(
-                    newId,
-                    allocation.ItemId,
-                    quantity: 0,
-                    destination);
-                _stacks.Add(newId, target);
-            }
-            else if (target.ItemId != allocation.ItemId)
+            if (claim.Quantity != 1)
             {
                 return Result<bool>.Failure(InventoryErrors.ResidentSlotClaimStale);
             }
 
-            int moved = Math.Min(remaining, availableClaim);
+            ItemStackState? target = FindStackAt(destination, default);
+            if (target != null)
+            {
+                if (target.ItemId == allocation.ItemId
+                    && target.GetReservedQuantity(jobId) == 1)
+                {
+                    continue;
+                }
+
+                return Result<bool>.Failure(InventoryErrors.ResidentSlotClaimStale);
+            }
+
+            if (ids.Count == 0)
+            {
+                return Result<bool>.Failure(InventoryErrors.SplitIdRequired);
+            }
+
+            EntityId newId = ids.Dequeue();
+            if (newId.IsEmpty || _stacks.ContainsKey(newId))
+            {
+                return Result<bool>.Failure(InventoryErrors.StackAlreadyExists);
+            }
+
+            target = new ItemStackState(
+                newId,
+                allocation.ItemId,
+                quantity: 0,
+                destination);
+            _stacks.Add(newId, target);
+
+            int moved = Math.Min(remaining, 1);
             source.ConsumeReservedQuantity(jobId, moved);
             target.AddQuantity(moved);
             target.Reserve(jobId, moved);

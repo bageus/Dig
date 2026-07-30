@@ -49,7 +49,7 @@ public sealed class HaulingSlotClaimSaveRoundTripTests
         JobSnapshot restoredJob = loaded.Value.Jobs.Get(JobId)!;
         Assert.Equal(JobStatus.Claimed, restoredJob.Status);
         Assert.Equal(ResidentId, restoredJob.AssignedAgentId);
-        Assert.Equal(8, loaded.Value.Inventory.GetStack(SourceStackId)!.ReservedQuantity);
+        Assert.Equal(4, loaded.Value.Inventory.GetStack(SourceStackId)!.ReservedQuantity);
 
         byte[] secondBytes = codec.Serialize(builder.Build(new SaveGameContext(
             loaded.Value.Metadata,
@@ -118,13 +118,13 @@ public sealed class HaulingSlotClaimSaveRoundTripTests
         Assert.True(inventory.ReserveQuantity(
             SourceStackId,
             JobId,
-            8,
+            4,
             tick: 1).IsSuccess);
         Assert.True(inventory.ReserveResidentSlotCapacity(
             JobId,
             ResidentId,
             OreId,
-            8,
+            4,
             tick: 1).IsSuccess);
 
         JobSystem jobs = new JobSystem();
@@ -132,7 +132,7 @@ public sealed class HaulingSlotClaimSaveRoundTripTests
             JobId,
             SourceStackId,
             OreId,
-            8,
+            4,
             StorageId,
             priority: 500,
             createdTick: 1,

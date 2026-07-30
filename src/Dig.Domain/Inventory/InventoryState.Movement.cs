@@ -61,6 +61,13 @@ public sealed partial class InventoryState
             return Result.Failure(InventoryErrors.InsufficientAvailableQuantity);
         }
 
+        if (destination.Kind == ItemLocationKind.AgentInventory
+            && destination.HasResidentSlot
+            && quantity != 1)
+        {
+            return Result.Failure(InventoryErrors.StackSizeExceeded);
+        }
+
         Result residentValidation = ValidateResidentMove(stack, destination);
         if (residentValidation.IsFailure)
         {
@@ -113,6 +120,13 @@ public sealed partial class InventoryState
         EntityId splitStackId,
         long tick)
     {
+        if (destination.Kind == ItemLocationKind.AgentInventory
+            && destination.HasResidentSlot
+            && quantity != 1)
+        {
+            return Result.Failure(InventoryErrors.StackSizeExceeded);
+        }
+
         Result residentValidation = ValidateResidentMove(stack, destination);
         if (residentValidation.IsFailure)
         {

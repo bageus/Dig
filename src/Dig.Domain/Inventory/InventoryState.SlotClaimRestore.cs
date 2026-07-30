@@ -88,13 +88,13 @@ public sealed partial class InventoryState
             return Result.Failure(InventoryErrors.ResidentSlotClaimStale);
         }
 
-        int existingQuantity = slotSnapshot.Value.IsEmpty
-            ? 0
-            : slotSnapshot.Value.ItemId == definition.Id
-                ? slotSnapshot.Value.Quantity
-                : definition.MaximumStackSize;
+        if (!slotSnapshot.Value.IsEmpty)
+        {
+            return Result.Failure(InventoryErrors.ResidentSlotClaimStale);
+        }
+
         int claimedQuantity = claims.Sum(claim => claim.Quantity);
-        return existingQuantity + claimedQuantity <= definition.MaximumStackSize
+        return claims.All(claim => claim.Quantity == 1) && claimedQuantity == 1
             ? Result.Success()
             : Result.Failure(InventoryErrors.ResidentInventoryCapacityExceeded);
     }

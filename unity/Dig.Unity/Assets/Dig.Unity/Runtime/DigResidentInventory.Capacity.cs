@@ -47,12 +47,7 @@ namespace Dig.Unity
 
                 if (slot.IsEmpty)
                 {
-                    capacity = checked(capacity + definition.MaximumStackSize);
-                }
-                else if (slot.ItemId == definition.Id)
-                {
-                    capacity = checked(
-                        capacity + definition.MaximumStackSize - slot.Quantity);
+                    capacity = checked(capacity + 1);
                 }
 
                 if (capacity >= requiredQuantity)

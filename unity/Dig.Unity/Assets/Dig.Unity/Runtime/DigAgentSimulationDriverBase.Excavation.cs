@@ -77,6 +77,8 @@ namespace Dig.Unity
 
             IReadOnlyList<AgentViewModel> agents = AgentSession!.LoadView();
             TerrainSession!.SynchronizeDesignations(CurrentTick, agents, priority);
+            GetComponent<DigExcavationCursorRenderer>()?
+                .InvalidateDesignationSynchronization();
             RefreshExcavationPresentation(agents);
             return Result.Success();
         }
