@@ -1,0 +1,56 @@
+name: Apply hamster and grub docs index
+
+on:
+  push:
+    branches:
+      - agent/hamsters-grubs-ecology
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/hamsters-grubs-ecology
+      - name: Update authoritative indexes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          ecology = Path('docs/design/ecology-creatures-and-special-drops.md')
+          text = ecology.read_text(encoding='utf-8')
+          old = 'Каждый вид получает stable `CreatureDefinitionId` и data-driven population cap.'
+          new = old + ' Детальный authoritative workflow для хомяков и grub/личинок вынесен в [`hamsters-and-grubs-ecology.md`](hamsters-and-grubs-ecology.md) и tracked в #524.'
+          if old not in text:
+              raise SystemExit('ecology catalog anchor missing')
+          text = text.replace(old, new, 1)
+          old = 'Точные значения по видам остаются `BALANCE_TBD` и задаются в `CreaturePopulationProfile`, а не в общем runtime-коде.'
+          new = 'Точные значения по большинству видов остаются `BALANCE_TBD` и задаются в `CreaturePopulationProfile`, а не в общем runtime-коде. Для свободных hamster и grub пользователь подтвердил отдельный cap `10` на одну плоскость; определение plane component остаётся Q-HG-001 в focused specification #524.'
+          if old not in text:
+              raise SystemExit('ecology cap anchor missing')
+          ecology.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          index = Path('docs/systems/README.md')
+          text = index.read_text(encoding='utf-8')
+          row = '| Creatures и ecology | spawn, drops, behavior | `APPROVED` | [`../design/ecology-creatures-and-special-drops.md`](../design/ecology-creatures-and-special-drops.md) | [`../implementation/unity-creature-visual-pipeline.md`](../implementation/unity-creature-visual-pipeline.md) |'
+          added = '| Хомяки и grub: блуждание, переноска и размножение | hamster, grub, larva, worm, living material, reproduction, campfire tether | `QUESTIONNAIRE` | [`../design/hamsters-and-grubs-ecology.md`](../design/hamsters-and-grubs-ecology.md) | [#524](https://github.com/bageus/Dig/issues/524), parent [#149](https://github.com/bageus/Dig/issues/149) |'
+          if added not in text:
+              if row not in text:
+                  raise SystemExit('systems index anchor missing')
+              text = text.replace(row, row + '\n' + added, 1)
+              index.write_text(text, encoding='utf-8')
+          PY
+          rm .github/workflows/agent-hamsters-grubs-docs.yml
+      - name: Commit docs synchronization
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add docs/design/ecology-creatures-and-special-drops.md docs/systems/README.md .github/workflows/agent-hamsters-grubs-docs.yml
+          git commit -m "Index hamster and grub ecology questionnaire"
+          git push origin HEAD:agent/hamsters-grubs-ecology
