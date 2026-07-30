@@ -77,7 +77,8 @@ public sealed class InventoryBarrelRoomRuntimeRegressionTests
             "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSession.cs"));
         Assert.Contains("StoneworkThresholdUnits(3)", demoSkills);
         Assert.Contains("DisableCaveRoomPlanning();", input);
-        Assert.Contains("InvalidateDesignationSynchronization", excavation);
+        Assert.Contains("InvalidateDesignationSynchronization", input);
+        Assert.DoesNotContain("InvalidateDesignationSynchronization", excavation);
     }
 
     private static string Read(string relativePath)

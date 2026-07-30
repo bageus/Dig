@@ -98,7 +98,10 @@ public sealed class BuildingPlacementTests
                 new CellOffset(-1, 0),
                 new CellOffset(1, 0),
             },
-            Array.Empty<BuildingMaterialRequirement>(),
+            new[]
+            {
+                new BuildingMaterialRequirement(new ItemId("stone"), 1),
+            },
             requiredWork: 3,
             maximumDurability: 100);
 

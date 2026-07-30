@@ -39,7 +39,10 @@ namespace Dig.Tests
             Assert.Contains("MarkerThickness = 0.025f", cursor);
             Assert.Contains("SynchronizeTunnelDesignations", cursor);
             Assert.Contains("!cell.IsSolid", cursor);
-            Assert.Contains("SynchronizeTunnelDesignations(world)", excavation);
+            Assert.Contains(
+                "SynchronizeTunnelDesignations(\n                _session!.LoadView())",
+                rooms);
+            Assert.DoesNotContain("SynchronizeTunnelDesignations(world)", excavation);
             Assert.Contains("ResolveTunnelCursorTarget", cursorDriver);
             Assert.Contains("ResolveDepthCursorTarget", cursorDriver);
             Assert.Contains("ResolveExcavationEraseTarget", cursorDriver);

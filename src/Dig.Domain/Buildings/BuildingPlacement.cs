@@ -173,7 +173,6 @@ public sealed class BuildingPlacementValidator
             .ResolveWorkPositions(origin, orientation)
             .ToArray();
         CellId? workPosition = ResolveSideWorkPositions(footprint, origin)
-            .Where(configured.Contains)
             .Concat(configured)
             .Distinct()
             .Where(world.Size.Contains)
