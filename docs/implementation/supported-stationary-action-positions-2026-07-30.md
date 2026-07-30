@@ -2,7 +2,7 @@
 
 Status: `IMPLEMENTED` pending licensed Unity Play Mode verification.
 
-Tracking: #423, #459, PR #521.
+Tracking: #423, #459, PR #521, regression repair PR #530.
 
 ## Root cause
 
@@ -24,6 +24,8 @@ The mushroom resolver therefore selects a supported depth cell when left/right c
 ## Route regression correction — 2026-07-30
 
 The initial correction accidentally applied the stationary support invariant to every cell and transition in the travel path. That rejected otherwise valid direct and automatic mushroom jobs whenever the resident had to climb or cross an approved shaft/depth route before reaching a fully supported work cell. The resolver and replanner now validate ordinary Navigation reachability plus full support at the final work position only; support is still revalidated before every swing.
+
+PR #530 preserves the existing direct-chop and automatic campfire-dependency Play Mode scenarios and adds a source contract that rejects reintroduction of whole-route stationary-support filtering.
 
 ## Evidence
 
