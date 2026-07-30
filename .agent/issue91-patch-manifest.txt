@@ -1,4 +1,0 @@
-sha256(gzip): f0e7d18e41a0beada19ea5543e560b76bc1659831fb7fb96d5861ebb89d9d0d9
-sha256(base64): d665c24f64b924bb5acad8722cb9e70a177e778562ff1340aafb2cb7a11bd12b
-base64-bytes: 30184
-chunks: 8
