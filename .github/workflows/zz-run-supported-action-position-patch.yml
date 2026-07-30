@@ -1,0 +1,49 @@
+name: Run supported action position patch
+
+on:
+  push:
+    branches:
+      - agent/fix-production-output-and-unit-inventory
+    paths:
+      - .github/workflows/zz-run-supported-action-position-patch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/fix-production-output-and-unit-inventory
+          fetch-depth: 1
+
+      - name: Apply code, tests and documentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/zz_apply_supported_positions_part1.py
+          python tools/zz_apply_supported_positions_part2.py
+          python tools/zz_apply_supported_positions_part3.py
+
+      - name: Verify .NET suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet restore Dig.sln
+          dotnet test Dig.sln -c Release --no-restore
+
+      - name: Commit final correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm tools/zz_apply_supported_positions_part1.py
+          rm tools/zz_apply_supported_positions_part2.py
+          rm tools/zz_apply_supported_positions_part3.py
+          rm .github/workflows/zz-run-supported-action-position-patch.yml
+          git config user.name 'OpenAI Agent'
+          git config user.email 'agent@openai.com'
+          git add -A
+          git commit -m 'Require supported work and meal positions'
+          git push origin HEAD:agent/fix-production-output-and-unit-inventory
