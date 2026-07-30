@@ -108,14 +108,14 @@ public sealed class WorldGenerationTests
         GeneratedWorld changed = generator.Generate(
             new WorldGenerationRequest(505UL, profile, materials)).Value;
         CellId deepCell = new CellId(1, 1, CellId.MaximumDepth);
-        string originalFingerprint = WorldGenerationFingerprint.Compute(
+        ulong originalFingerprint = WorldGenerationFingerprint.Compute(
             generatedBase.World,
             505UL,
             profile.GeneratorVersion,
             profile.Id);
 
         Assert.True(changed.World.SetDigDesignation(deepCell, designated: true, tick: 9).IsSuccess);
-        string changedFingerprint = WorldGenerationFingerprint.Compute(
+        ulong changedFingerprint = WorldGenerationFingerprint.Compute(
             changed.World,
             505UL,
             profile.GeneratorVersion,
