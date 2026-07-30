@@ -1,1 +1,0 @@
-Temporary bootstrap payload for PR automation. This directory is removed after the prepared issue #88 patch is applied.
