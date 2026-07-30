@@ -59,7 +59,6 @@ public sealed class SaveMigrationAndCorruptionTests
         Assert.True(replay.IsSuccess);
         Assert.Empty(replay.Value.AppliedSteps);
     }
-
     [Fact]
     public void Version_three_fixture_adds_empty_agent_skills_once()
     {
@@ -111,7 +110,6 @@ public sealed class SaveMigrationAndCorruptionTests
         Assert.Equal(SaveErrors.UnsupportedVersion, result.Error);
         Assert.Equal(SaveFormat.CurrentVersion + 1, document.FormatVersion);
     }
-
     [Fact]
     public void Unknown_job_type_and_item_id_are_reported_explicitly()
     {
