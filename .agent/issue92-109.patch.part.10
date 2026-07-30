@@ -1,0 +1,320 @@
++        CellId cell = new CellId(3, 4, 2);
++        EntityId unitId = EntityId.Parse("72000000000000000000000000000009");
++        InventoryState inventory = CreateInventory();
++        MiningOutputCommitState commits = new MiningOutputCommitState();
++        MiningOutputPlan plan = ResolveStone(cell, quantity: 1);
++        commits.Record(plan, new[] { unitId });
++        Assert.True(inventory.AddUnit(
++            unitId,
++            Stone,
++            ItemLocation.InWorld(cell),
++            tick: 1).IsSuccess);
++        Assert.True(inventory.MoveAvailable(
++            unitId,
++            quantity: 1,
++            ItemLocation.InStorage(EntityId.Parse(
++                "72000000000000000000000000000010")),
++            splitStackId: default,
++            tick: 2).IsSuccess);
++
++        MiningOutputIntegrityReport report =
++            new MiningOutputIntegrityDiagnostics().Inspect(commits, inventory);
++
++        Assert.True(report.IsValid);
++        Assert.Equal(1, report.CommittedQuantity);
++        Assert.Equal(1, report.TrackedWorldQuantity);
++    }
++
+     private static MiningOutputPlan ResolveStone(CellId cell, int quantity)
+     {
+         return new MiningOutputResolver().Resolve(
+diff --git a/tests/Dig.Tests/MiningOutputSaveDataAdapterTests.cs b/tests/Dig.Tests/MiningOutputSaveDataAdapterTests.cs
+index 39618cec03b2f0c086cf4f611f644e0ea6a40fd1..b9aa97090fc4dae2c8ef68729de7239012c4a969 100644
+--- a/tests/Dig.Tests/MiningOutputSaveDataAdapterTests.cs
++++ b/tests/Dig.Tests/MiningOutputSaveDataAdapterTests.cs
+@@ -1,4 +1,5 @@
+ using System;
++using System.Linq;
+ using Dig.Application.Saving;
+ using Dig.Application.World;
+ using Dig.Domain.World;
+@@ -10,7 +11,7 @@ namespace Dig.Tests
+ public sealed class MiningOutputSaveDataAdapterTests
+ {
+     [Fact]
+-    public void Encode_decode_preserves_ordered_exact_xyz_entries()
++    public void Encode_decode_preserves_ordered_xyz_source_and_multi_outputs()
+     {
+         MiningOutputCommitSaveSnapshot snapshot = new MiningOutputCommitSaveSnapshot(
+             MiningOutputCommitSaveSnapshot.CurrentFormatVersion,
+@@ -19,34 +20,68 @@ public sealed class MiningOutputSaveDataAdapterTests
+                 new MiningOutputCommitSaveEntry(
+                     new CellId(4, 3, 2),
+                     MiningOutputSourceKind.Deposit,
+-                    "ore.iron",
+-                    5,
+-                    "74000000000000000000000000000002",
+-                    hasStack: true),
++                    "deposit.iron_ore",
++                    sourceVersion: 2,
++                    new[]
++                    {
++                        Line("ore.iron", 2,
++                            "74000000000000000000000000000002",
++                            "74000000000000000000000000000003"),
++                    }),
+                 new MiningOutputCommitSaveEntry(
+                     new CellId(1, 2, 0),
+                     MiningOutputSourceKind.Terrain,
+-                    string.Empty,
+-                    0,
+-                    stackId: null,
+-                    hasStack: false),
++                    "terrain-output.multi",
++                    sourceVersion: 4,
++                    new[]
++                    {
++                        Line("material.stone", 1,
++                            "74000000000000000000000000000004"),
++                        Line("ore.gold", 1,
++                            "74000000000000000000000000000005"),
++                    }),
+             });
+ 
+         MiningOutputCommitsSaveData data = MiningOutputSaveDataAdapter.Encode(snapshot);
+         MiningOutputCommitSaveSnapshot restored = MiningOutputSaveDataAdapter.Decode(data);
+ 
+         Assert.Equal(snapshot.FormatVersion, restored.FormatVersion);
+-        Assert.Equal(2, restored.Commits.Count);
+-        Assert.Equal(new CellId(1, 2, 0), restored.Commits[0].Cell);
+-        Assert.Equal(new CellId(4, 3, 2), restored.Commits[1].Cell);
+-        Assert.False(restored.Commits[0].HasStack);
+-        Assert.Equal("74000000000000000000000000000002", restored.Commits[1].StackId);
++        Assert.Equal(new[] { new CellId(1, 2, 0), new CellId(4, 3, 2) },
++            restored.Commits.Select(value => value.Cell));
++        Assert.Equal("terrain-output.multi", restored.Commits[0].SourceId);
++        Assert.Equal(4, restored.Commits[0].SourceVersion);
++        Assert.Equal(2, restored.Commits[0].Outputs.Count);
++        Assert.Equal(2, restored.Commits[1].Outputs[0].StackIds.Count);
++    }
++
++    [Fact]
++    public void Decode_supports_legacy_format_one_until_save_migration_runs()
++    {
++        MiningOutputCommitsSaveData data = new MiningOutputCommitsSaveData
++        {
++            FormatVersion = 1,
++        };
++        data.Commits.Add(CreateLegacyStackEntry(
++            2,
++            2,
++            1,
++            "74000000000000000000000000000006"));
++
++        MiningOutputCommitSaveSnapshot snapshot = MiningOutputSaveDataAdapter.Decode(data);
++
++        MiningOutputCommitSaveEntry commit = Assert.Single(snapshot.Commits);
++        Assert.Equal("legacy.terrain-output", commit.SourceId);
++        Assert.Equal("material.stone", commit.ItemId);
++        Assert.Equal("74000000000000000000000000000006", commit.StackId);
+     }
+ 
+     [Fact]
+     public void Decode_rejects_unknown_source_kind()
+     {
+-        MiningOutputCommitsSaveData data = new MiningOutputCommitsSaveData();
++        MiningOutputCommitsSaveData data = new MiningOutputCommitsSaveData
++        {
++            FormatVersion = 1,
++        };
+         data.Commits.Add(new MiningOutputCommitSaveData
+         {
+             X = 1,
+@@ -55,7 +90,7 @@ public sealed class MiningOutputSaveDataAdapterTests
+             SourceKind = 99,
+             ItemId = "material.stone",
+             Quantity = 1,
+-            StackId = "74000000000000000000000000000003",
++            StackId = "74000000000000000000000000000007",
+             HasStack = true,
+         });
+ 
+@@ -66,15 +101,28 @@ public sealed class MiningOutputSaveDataAdapterTests
+     [Fact]
+     public void Decode_rejects_duplicate_cells_through_snapshot_validation()
+     {
+-        MiningOutputCommitsSaveData data = new MiningOutputCommitsSaveData();
+-        data.Commits.Add(CreateStackEntry(2, 2, 1, "74000000000000000000000000000004"));
+-        data.Commits.Add(CreateStackEntry(2, 2, 1, "74000000000000000000000000000005"));
++        MiningOutputCommitsSaveData data = new MiningOutputCommitsSaveData
++        {
++            FormatVersion = 1,
++        };
++        data.Commits.Add(CreateLegacyStackEntry(
++            2, 2, 1, "74000000000000000000000000000008"));
++        data.Commits.Add(CreateLegacyStackEntry(
++            2, 2, 1, "74000000000000000000000000000009"));
+ 
+         Assert.Throws<ArgumentException>(
+             () => MiningOutputSaveDataAdapter.Decode(data));
+     }
+ 
+-    private static MiningOutputCommitSaveData CreateStackEntry(
++    private static MiningOutputCommitLineSaveEntry Line(
++        string itemId,
++        int quantity,
++        params string[] stackIds)
++    {
++        return new MiningOutputCommitLineSaveEntry(itemId, quantity, stackIds);
++    }
++
++    private static MiningOutputCommitSaveData CreateLegacyStackEntry(
+         int x,
+         int y,
+         int z,
+diff --git a/tests/Dig.Tests/MiningOutputSaveRuntimeContractTests.cs b/tests/Dig.Tests/MiningOutputSaveRuntimeContractTests.cs
+index cc839f97c17bb5f5a6670cbb6c7d65ba6a4dceae..1165c053dec4c4caa627ae2cb072c4bef4b1b062 100644
+--- a/tests/Dig.Tests/MiningOutputSaveRuntimeContractTests.cs
++++ b/tests/Dig.Tests/MiningOutputSaveRuntimeContractTests.cs
+@@ -36,9 +36,25 @@ public sealed class MiningOutputSaveRuntimeContractTests
+             composition,
+             StringComparison.Ordinal);
+         Assert.Contains(
+-            "outputStackIds,\n            miningOutputCommits);",
++            "MiningOutputCommitState commits =",
+             composition,
+             StringComparison.Ordinal);
++        Assert.Contains(
++            "skills,\n                commits)",
++            composition,
++            StringComparison.Ordinal);
++        Assert.Contains(
++            "skills,\n            commits);",
++            composition,
++            StringComparison.Ordinal);
++        Assert.Contains(
++            "CompleteTerrainWorkCommand.FromPlan(",
++            session,
++            StringComparison.Ordinal);
++        Assert.DoesNotContain(
++            "_miningOutputCommits.Record(output",
++            session,
++            StringComparison.Ordinal);
+     }
+ 
+     private static string FindRepositoryRoot()
+diff --git a/tests/Dig.Tests/MiningOutputSaveWorldValidationTests.cs b/tests/Dig.Tests/MiningOutputSaveWorldValidationTests.cs
+index 5292d08d30caa3fa862fef1efb5dc078dfce61e0..37333f80215ce0ff3d05f08d8f29cc6131c42bb0 100644
+--- a/tests/Dig.Tests/MiningOutputSaveWorldValidationTests.cs
++++ b/tests/Dig.Tests/MiningOutputSaveWorldValidationTests.cs
+@@ -59,7 +59,10 @@ public sealed class MiningOutputSaveWorldValidationTests
+     [Fact]
+     public void Data_contract_validation_reuses_existing_decode_invariants()
+     {
+-        MiningOutputCommitsSaveData data = new MiningOutputCommitsSaveData();
++        MiningOutputCommitsSaveData data = new MiningOutputCommitsSaveData
++        {
++            FormatVersion = 1,
++        };
+         data.Commits.Add(new MiningOutputCommitSaveData
+         {
+             X = 5,
+diff --git a/tests/Dig.Tests/MushroomSaveRoundTripTests.cs b/tests/Dig.Tests/MushroomSaveRoundTripTests.cs
+index 2c1025818b825f9ed17e9d14760e082ae8b98918..2b8e6610c3e298795d3955e0d2cbffba767899e9 100644
+--- a/tests/Dig.Tests/MushroomSaveRoundTripTests.cs
++++ b/tests/Dig.Tests/MushroomSaveRoundTripTests.cs
+@@ -121,6 +121,7 @@ public sealed class MushroomSaveRoundTripTests
+             new SaveVersionEightAgentRuntimeMigration(),
+             new SaveVersionNineCombatSpatialMigration(),
+             new SaveVersionTenTerrainDepositContractMigration(),
++            new SaveVersionElevenTerrainOutputContractMigration(),
+         });
+ 
+         Result<SaveMigrationReport> migrated = pipeline.Apply(document);
+diff --git a/tests/Dig.Tests/SaveGameMiningOutputLoaderWiringTests.cs b/tests/Dig.Tests/SaveGameMiningOutputLoaderWiringTests.cs
+index 83c170de3ebc6e1a0ec9ca52b8041a03bde5fd3b..6b09ef8d96bc4603e942fa2530628fee6eda61ae 100644
+--- a/tests/Dig.Tests/SaveGameMiningOutputLoaderWiringTests.cs
++++ b/tests/Dig.Tests/SaveGameMiningOutputLoaderWiringTests.cs
+@@ -72,10 +72,17 @@ public sealed class SaveGameMiningOutputLoaderWiringTests
+             Y = 1,
+             Z = 0,
+             SourceKind = (int)MiningOutputSourceKind.Terrain,
+-            ItemId = Stone.ToString(),
+-            Quantity = 2,
+-            StackId = StackId.ToString(),
+-            HasStack = true,
++            SourceId = "terrain-output.stone",
++            SourceVersion = 1,
++            Outputs =
++            {
++                new MiningOutputCommitOutputSaveData
++                {
++                    ItemId = Stone.ToString(),
++                    Quantity = 2,
++                    StackIds = { StackId.ToString() },
++                },
++            },
+         });
+ 
+         Result<LoadedGameState> loaded = new SaveGameLoader(
+diff --git a/tests/Dig.Tests/SaveMigrationAndCorruptionTests.cs b/tests/Dig.Tests/SaveMigrationAndCorruptionTests.cs
+index 23cbd4e4a238ddedbcc469ac18fc471ecf4aedd1..c278cbc29402f85513f57d421b2b4557174db4df 100644
+--- a/tests/Dig.Tests/SaveMigrationAndCorruptionTests.cs
++++ b/tests/Dig.Tests/SaveMigrationAndCorruptionTests.cs
+@@ -45,6 +45,7 @@ public sealed class SaveMigrationAndCorruptionTests
+             "save.v8_to_v9.agent_runtime",
+             "save.v9_to_v10.combat_spatial",
+             "save.v10_to_v11.terrain_deposit_contract",
++            "save.v11_to_v12.terrain_output_contract",
+         }, first.Value.AppliedSteps);
+         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
+         Assert.Equal(1, document.Metadata.GeneratorVersion);
+@@ -85,6 +86,7 @@ public sealed class SaveMigrationAndCorruptionTests
+                 "save.v8_to_v9.agent_runtime",
+                 "save.v9_to_v10.combat_spatial",
+                 "save.v10_to_v11.terrain_deposit_contract",
++                "save.v11_to_v12.terrain_output_contract",
+             },
+             first.Value.AppliedSteps);
+         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
+@@ -129,7 +131,6 @@ public sealed class SaveMigrationAndCorruptionTests
+         Assert.True(itemResult.IsFailure);
+         Assert.Equal("inventory.restore.unknown_item", itemResult.Error!.Code);
+     }
+-
+     [Fact]
+     public void Dangling_inventory_reservation_is_rejected()
+     {
+@@ -147,7 +148,6 @@ public sealed class SaveMigrationAndCorruptionTests
+         Assert.True(result.IsFailure);
+         Assert.Equal(SaveErrors.InvalidDocument, result.Error);
+     }
+-
+     [Fact]
+     public void Corrupted_slot_is_visible_and_load_fails_with_controlled_reason()
+     {
+@@ -175,7 +175,6 @@ public sealed class SaveMigrationAndCorruptionTests
+             Directory.Delete(directory, recursive: true);
+         }
+     }
+-
+     [Fact]
+     public void Interrupted_atomic_replacement_recovers_previous_slot()
+     {
+@@ -309,6 +308,7 @@ public sealed class SaveMigrationAndCorruptionTests
+             new SaveVersionEightAgentRuntimeMigration(),
+             new SaveVersionNineCombatSpatialMigration(),
+             new SaveVersionTenTerrainDepositContractMigration(),
++            new SaveVersionElevenTerrainOutputContractMigration(),
+         });
+     }
+ 
+diff --git a/tests/Dig.Tests/TerrainOutputCatalogValidationTests.cs b/tests/Dig.Tests/TerrainOutputCatalogValidationTests.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..586c0a07d30eaf1239d0c169977ce28b893e11e7
+--- /dev/null
++++ b/tests/Dig.Tests/TerrainOutputCatalogValidationTests.cs
+@@ -0,0 +1,82 @@
++using System.Linq;
++using Dig.Application.World;
++using Dig.Domain.Inventory;
