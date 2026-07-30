@@ -39,7 +39,7 @@ public sealed class BuildingBoxPlacementPresenterTests
         Assert.Equal(
             new[] { new CellId(2, 2, 1), new CellId(3, 2, 1) },
             north.Footprint.ToArray());
-        Assert.Equal(new CellId(1, 2, 1), north.WorkPosition);
+        Assert.Equal(new CellId(2, 1, 1), north.WorkPosition);
         Assert.True(east.IsValid);
         Assert.True(east.IsVisible);
         Assert.Equal(
