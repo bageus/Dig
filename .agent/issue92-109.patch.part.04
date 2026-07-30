@@ -1,0 +1,386 @@
++                    throw new InvalidOperationException(
++                        "Legacy mining output stack id is missing.");
++                }
++
++                commit.Outputs.Add(new MiningOutputCommitOutputSaveData
++                {
++                    ItemId = Map(commit.ItemId),
++                    Quantity = commit.Quantity,
++                    StackIds = new List<string> { commit.StackId },
++                });
++            }
++
++            foreach (MiningOutputCommitOutputSaveData output in commit.Outputs)
++            {
++                if (output != null)
++                {
++                    output.ItemId = Map(output.ItemId);
++                    output.StackIds ??= new List<string>();
++                }
++            }
++
++            if (string.IsNullOrWhiteSpace(commit.SourceId))
++            {
++                commit.SourceId = commit.SourceKind == (int)MiningOutputSourceKind.Deposit
++                    ? "legacy.deposit-output"
++                    : "legacy.terrain-output";
++            }
++
++            if (commit.SourceVersion <= 0)
++            {
++                commit.SourceVersion = 1;
++            }
++        }
++
++        document.MiningOutput.FormatVersion =
++            MiningOutputCommitSaveSnapshot.CurrentFormatVersion;
++    }
++
++    private static string Map(string value)
++    {
++        return string.Equals(value, LegacyMetal, StringComparison.Ordinal)
++            ? Iron
++            : value ?? string.Empty;
++    }
++}
++
++}
+diff --git a/src/Dig.Application/Saving/SaveMigrations.TerrainOutput.cs.meta b/src/Dig.Application/Saving/SaveMigrations.TerrainOutput.cs.meta
+new file mode 100644
+index 0000000000000000000000000000000000000000..0199299ebc2d6426b5c1cb408e0239996daa69ae
+--- /dev/null
++++ b/src/Dig.Application/Saving/SaveMigrations.TerrainOutput.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: 4d05502bbcf44e748d4e7d65d10fb520
+diff --git a/src/Dig.Application/World/MiningOutputCommitModels.cs b/src/Dig.Application/World/MiningOutputCommitModels.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..c4b22a46ddccb67bdd68596f575396c2765b6600
+--- /dev/null
++++ b/src/Dig.Application/World/MiningOutputCommitModels.cs
+@@ -0,0 +1,107 @@
++using System;
++using System.Collections.Generic;
++using System.Collections.ObjectModel;
++using System.Linq;
++using Dig.Domain.Core;
++using Dig.Domain.Inventory;
++using Dig.Domain.World;
++
++namespace Dig.Application.World
++{
++
++public sealed class MiningOutputCommitLine
++{
++    private readonly IReadOnlyList<EntityId> _stackIds;
++
++    internal MiningOutputCommitLine(
++        ItemId itemId,
++        int quantity,
++        IEnumerable<EntityId> stackIds)
++    {
++        if (itemId.IsEmpty)
++        {
++            throw new ArgumentException("Committed output item id is required.", nameof(itemId));
++        }
++
++        if (quantity <= 0)
++        {
++            throw new ArgumentOutOfRangeException(nameof(quantity));
++        }
++
++        EntityId[] ids = (stackIds ?? throw new ArgumentNullException(nameof(stackIds)))
++            .ToArray();
++        if (ids.Length == 0 || ids.Any(value => value.IsEmpty)
++            || ids.Distinct().Count() != ids.Length)
++        {
++            throw new ArgumentException(
++                "Committed output requires unique non-empty stack ids.",
++                nameof(stackIds));
++        }
++
++        ItemId = itemId;
++        Quantity = quantity;
++        _stackIds = new ReadOnlyCollection<EntityId>(ids);
++    }
++
++    public ItemId ItemId { get; }
++    public int Quantity { get; }
++    public IReadOnlyList<EntityId> StackIds => _stackIds;
++}
++
++public sealed class MiningOutputCommit
++{
++    private readonly IReadOnlyList<MiningOutputCommitLine> _outputs;
++
++    internal MiningOutputCommit(
++        CellId cell,
++        MiningOutputSourceKind sourceKind,
++        string sourceId,
++        int sourceVersion,
++        IEnumerable<MiningOutputCommitLine> outputs)
++    {
++        MiningOutputCommitLine[] values = (outputs
++            ?? throw new ArgumentNullException(nameof(outputs)))
++            .OrderBy(value => value.ItemId)
++            .ToArray();
++        if (values.Select(value => value.ItemId).Distinct().Count() != values.Length)
++        {
++            throw new ArgumentException(
++                "Committed outputs must be unique by item id.",
++                nameof(outputs));
++        }
++
++        if (string.IsNullOrWhiteSpace(sourceId))
++        {
++            throw new ArgumentException("Committed output source id is required.", nameof(sourceId));
++        }
++
++        if (sourceVersion <= 0)
++        {
++            throw new ArgumentOutOfRangeException(nameof(sourceVersion));
++        }
++
++        Cell = cell;
++        SourceKind = sourceKind;
++        SourceId = sourceId.Trim();
++        SourceVersion = sourceVersion;
++        _outputs = new ReadOnlyCollection<MiningOutputCommitLine>(values);
++    }
++
++    public CellId Cell { get; }
++    public MiningOutputSourceKind SourceKind { get; }
++    public string SourceId { get; }
++    public int SourceVersion { get; }
++    public IReadOnlyList<MiningOutputCommitLine> Outputs => _outputs;
++    public int Quantity => _outputs.Sum(value => value.Quantity);
++    public bool HasStack => _outputs.Count > 0;
++    public IReadOnlyList<EntityId> StackIds => new ReadOnlyCollection<EntityId>(
++        _outputs.SelectMany(value => value.StackIds).ToArray());
++
++    // Compatibility for existing single-output diagnostics/tests.
++    public ItemId ItemId => _outputs.Count == 1 ? _outputs[0].ItemId : default;
++    public EntityId StackId => _outputs.Count == 1 && _outputs[0].StackIds.Count == 1
++        ? _outputs[0].StackIds[0]
++        : default;
++}
++
++}
+diff --git a/src/Dig.Application/World/MiningOutputCommitModels.cs.meta b/src/Dig.Application/World/MiningOutputCommitModels.cs.meta
+new file mode 100644
+index 0000000000000000000000000000000000000000..4dca8ca6a1ecf54dc9870973b2bcfb648fff5a8b
+--- /dev/null
++++ b/src/Dig.Application/World/MiningOutputCommitModels.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: e47d2f4c955941b494aaa02abc5312bb
+diff --git a/src/Dig.Application/World/MiningOutputCommitSaveSnapshot.cs b/src/Dig.Application/World/MiningOutputCommitSaveSnapshot.cs
+index c0547eb401f045b3de00be0ef8e2cc76d2dccb41..cadb18d5f6172bc21f6dc110aceb17b41fd93363 100644
+--- a/src/Dig.Application/World/MiningOutputCommitSaveSnapshot.cs
++++ b/src/Dig.Application/World/MiningOutputCommitSaveSnapshot.cs
+@@ -9,60 +9,160 @@ using Dig.Domain.World;
+ namespace Dig.Application.World
+ {
+ 
+-public sealed class MiningOutputCommitSaveEntry
++public sealed class MiningOutputCommitLineSaveEntry
+ {
+-    public MiningOutputCommitSaveEntry(
+-        CellId cell,
+-        MiningOutputSourceKind sourceKind,
++    public MiningOutputCommitLineSaveEntry(
+         string itemId,
+         int quantity,
+-        string? stackId,
+-        bool hasStack)
++        IEnumerable<string> stackIds)
+     {
+-        if (!Enum.IsDefined(typeof(MiningOutputSourceKind), sourceKind))
++        if (string.IsNullOrWhiteSpace(itemId))
+         {
+-            throw new ArgumentOutOfRangeException(nameof(sourceKind));
++            throw new ArgumentException("Committed output item id is required.", nameof(itemId));
+         }
+ 
+-        if (quantity < 0)
++        if (quantity <= 0)
+         {
+             throw new ArgumentOutOfRangeException(nameof(quantity));
+         }
+ 
+-        if (quantity > 0 && string.IsNullOrWhiteSpace(itemId))
++        string[] ids = (stackIds ?? throw new ArgumentNullException(nameof(stackIds)))
++            .Select(value => value?.Trim() ?? string.Empty)
++            .ToArray();
++        if (ids.Length == 0
++            || ids.Any(string.IsNullOrWhiteSpace)
++            || ids.Distinct(StringComparer.Ordinal).Count() != ids.Length)
+         {
+-            throw new ArgumentException("A non-empty output requires an item id.", nameof(itemId));
++            throw new ArgumentException(
++                "Committed output requires unique stack ids.",
++                nameof(stackIds));
+         }
+ 
+-        if (hasStack != (quantity > 0))
++        ItemId = itemId.Trim();
++        Quantity = quantity;
++        StackIds = new ReadOnlyCollection<string>(ids);
++    }
++
++    public string ItemId { get; }
++    public int Quantity { get; }
++    public IReadOnlyList<string> StackIds { get; }
++}
++
++public sealed class MiningOutputCommitSaveEntry
++{
++    private readonly IReadOnlyList<MiningOutputCommitLineSaveEntry> _outputs;
++
++    public MiningOutputCommitSaveEntry(
++        CellId cell,
++        MiningOutputSourceKind sourceKind,
++        string sourceId,
++        int sourceVersion,
++        IEnumerable<MiningOutputCommitLineSaveEntry> outputs)
++    {
++        if (!Enum.IsDefined(typeof(MiningOutputSourceKind), sourceKind))
+         {
+-            throw new ArgumentException("Stack presence must match output quantity.", nameof(hasStack));
++            throw new ArgumentOutOfRangeException(nameof(sourceKind));
+         }
+ 
+-        if (hasStack && string.IsNullOrWhiteSpace(stackId))
++        if (string.IsNullOrWhiteSpace(sourceId))
+         {
+-            throw new ArgumentException("A committed output stack requires a stable id.", nameof(stackId));
++            throw new ArgumentException("Committed output source id is required.", nameof(sourceId));
++        }
++
++        if (sourceVersion <= 0)
++        {
++            throw new ArgumentOutOfRangeException(nameof(sourceVersion));
++        }
++
++        MiningOutputCommitLineSaveEntry[] values = (outputs
++            ?? throw new ArgumentNullException(nameof(outputs)))
++            .OrderBy(value => value.ItemId, StringComparer.Ordinal)
++            .ToArray();
++        if (values.Any(value => value == null)
++            || values.Select(value => value.ItemId)
++                .Distinct(StringComparer.Ordinal).Count() != values.Length)
++        {
++            throw new ArgumentException(
++                "Committed outputs must be non-null and unique by item id.",
++                nameof(outputs));
+         }
+ 
+         Cell = cell;
+         SourceKind = sourceKind;
+-        ItemId = itemId ?? string.Empty;
+-        Quantity = quantity;
+-        StackId = stackId;
+-        HasStack = hasStack;
++        SourceId = sourceId.Trim();
++        SourceVersion = sourceVersion;
++        _outputs = new ReadOnlyCollection<MiningOutputCommitLineSaveEntry>(values);
++    }
++
++    // Legacy format compatibility.
++    public MiningOutputCommitSaveEntry(
++        CellId cell,
++        MiningOutputSourceKind sourceKind,
++        string itemId,
++        int quantity,
++        string? stackId,
++        bool hasStack)
++        : this(
++            cell,
++            sourceKind,
++            sourceKind == MiningOutputSourceKind.Deposit
++                ? "legacy.deposit-output"
++                : "legacy.terrain-output",
++            sourceVersion: 1,
++            CreateLegacyOutputs(itemId, quantity, stackId, hasStack))
++    {
+     }
+ 
+     public CellId Cell { get; }
+     public MiningOutputSourceKind SourceKind { get; }
+-    public string ItemId { get; }
+-    public int Quantity { get; }
+-    public string? StackId { get; }
+-    public bool HasStack { get; }
++    public string SourceId { get; }
++    public int SourceVersion { get; }
++    public IReadOnlyList<MiningOutputCommitLineSaveEntry> Outputs => _outputs;
++
++    // Legacy accessors retained for old tests and v1 adapters.
++    public string ItemId => _outputs.Count == 1 ? _outputs[0].ItemId : string.Empty;
++    public int Quantity => _outputs.Sum(value => value.Quantity);
++    public string? StackId => _outputs.Count == 1 && _outputs[0].StackIds.Count == 1
++        ? _outputs[0].StackIds[0]
++        : null;
++    public bool HasStack => _outputs.Count > 0;
++
++    private static IEnumerable<MiningOutputCommitLineSaveEntry> CreateLegacyOutputs(
++        string itemId,
++        int quantity,
++        string? stackId,
++        bool hasStack)
++    {
++        if (quantity < 0)
++        {
++            throw new ArgumentOutOfRangeException(nameof(quantity));
++        }
++
++        if (hasStack != (quantity > 0))
++        {
++            throw new ArgumentException("Stack presence must match output quantity.", nameof(hasStack));
++        }
++
++        if (!hasStack)
++        {
++            return Array.Empty<MiningOutputCommitLineSaveEntry>();
++        }
++
++        if (string.IsNullOrWhiteSpace(itemId) || string.IsNullOrWhiteSpace(stackId))
++        {
++            throw new ArgumentException("Legacy committed output is incomplete.");
++        }
++
++        return new[]
++        {
++            new MiningOutputCommitLineSaveEntry(itemId, quantity, new[] { stackId }),
++        };
++    }
+ }
+ 
+ public sealed class MiningOutputCommitSaveSnapshot
+ {
+-    public const int CurrentFormatVersion = 1;
++    public const int CurrentFormatVersion = 2;
+ 
+     public MiningOutputCommitSaveSnapshot(
+         int formatVersion,
+@@ -109,10 +209,12 @@ public sealed class MiningOutputCommitSaveSnapshot
+             state.Snapshot().Select(commit => new MiningOutputCommitSaveEntry(
+                 commit.Cell,
+                 commit.SourceKind,
+-                commit.ItemId.ToString(),
+-                commit.Quantity,
+-                commit.HasStack ? commit.StackId.ToString() : null,
+-                commit.HasStack)));
++                commit.SourceId,
++                commit.SourceVersion,
++                commit.Outputs.Select(output => new MiningOutputCommitLineSaveEntry(
++                    output.ItemId.ToString(),
++                    output.Quantity,
++                    output.StackIds.Select(value => value.ToString()))))));
+     }
+ 
+     public MiningOutputCommitState Restore()
+@@ -126,26 +228,15 @@ public sealed class MiningOutputCommitSaveSnapshot
+         MiningOutputCommitState restored = new MiningOutputCommitState();
+         foreach (MiningOutputCommitSaveEntry entry in Commits)
+         {
