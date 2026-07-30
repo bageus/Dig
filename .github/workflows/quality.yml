@@ -21,7 +21,10 @@ jobs:
           set -euo pipefail
           cat .github/patches/hamster-unity-runtime.b64.part* | base64 --decode > /tmp/hamster-unity-runtime.tar.gz
           tar -xzf /tmp/hamster-unity-runtime.tar.gz
+          cat .github/patches/hamster-save-v12.b64.part* | base64 --decode > /tmp/hamster-save-v12.tar.gz
+          tar -xzf /tmp/hamster-save-v12.tar.gz
           rm .github/patches/hamster-unity-runtime.b64.part*
+          rm .github/patches/hamster-save-v12.b64.part*
           rm -f .github/workflows/apply-hamster-unity-runtime.yml
           git show HEAD^:.github/workflows/quality.yml > .github/workflows/quality.yml
       - name: Validate source contracts
