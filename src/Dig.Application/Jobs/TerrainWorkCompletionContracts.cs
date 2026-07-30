@@ -1,3 +1,4 @@
+using System;
 using Dig.Application.Messaging;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -38,7 +39,9 @@ public sealed class CompleteTerrainWorkCommand
         ItemId outputItemId,
         int outputQuantity,
         MaterialId emptyMaterialId,
-        long tick)
+        long tick,
+        string? depositInstanceId = null,
+        int? depositExpectedYield = null)
         : this(
             jobId,
             outputStackId,
@@ -46,7 +49,9 @@ public sealed class CompleteTerrainWorkCommand
             outputQuantity,
             emptyMaterialId,
             tick,
-            producesOutput: true)
+            producesOutput: true,
+            depositInstanceId,
+            depositExpectedYield)
     {
     }
 
@@ -57,8 +62,17 @@ public sealed class CompleteTerrainWorkCommand
         int outputQuantity,
         MaterialId emptyMaterialId,
         long tick,
-        bool producesOutput)
+        bool producesOutput,
+        string? depositInstanceId,
+        int? depositExpectedYield)
     {
+        if ((depositInstanceId is null) != (!depositExpectedYield.HasValue)
+            || depositExpectedYield <= 0)
+        {
+            throw new ArgumentException(
+                "Deposit instance and positive expected yield must be supplied together.");
+        }
+
         JobId = jobId;
         OutputStackId = outputStackId;
         OutputItemId = outputItemId;
@@ -66,6 +80,8 @@ public sealed class CompleteTerrainWorkCommand
         EmptyMaterialId = emptyMaterialId;
         Tick = tick;
         ProducesOutput = producesOutput;
+        DepositInstanceId = depositInstanceId;
+        DepositExpectedYield = depositExpectedYield;
     }
 
     public EntityId JobId { get; }
@@ -75,6 +91,8 @@ public sealed class CompleteTerrainWorkCommand
     public MaterialId EmptyMaterialId { get; }
     public long Tick { get; }
     public bool ProducesOutput { get; }
+    public string? DepositInstanceId { get; }
+    public int? DepositExpectedYield { get; }
 
     public static CompleteTerrainWorkCommand WithoutOutput(
         EntityId jobId,
@@ -88,7 +106,9 @@ public sealed class CompleteTerrainWorkCommand
             outputQuantity: 0,
             emptyMaterialId,
             tick,
-            producesOutput: false);
+            producesOutput: false,
+            depositInstanceId: null,
+            depositExpectedYield: null);
     }
 }
 

@@ -81,7 +81,9 @@ public sealed class SaveGameServiceMiningOutputIntegrationTests
             Array.Empty<AgentState>(),
             loadedManual.Value.TerrainDeposits,
             loadedManual.Value.PackableBuildingExecutions,
-            loadedManual.Value.MiningOutput.Commits));
+            loadedManual.Value.MiningOutput.Commits,
+            terrainDepositGeneratorVersion:
+                loadedManual.Value.TerrainDepositGeneratorVersion));
         DataContractJsonSaveCodec codec = new DataContractJsonSaveCodec();
         Assert.Equal(codec.Serialize(manual), codec.Serialize(rebuilt));
     }

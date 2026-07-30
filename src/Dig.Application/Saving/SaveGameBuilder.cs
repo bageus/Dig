@@ -52,7 +52,7 @@ public sealed partial class SaveGameBuilder
             AgentSkills = BuildAgentSkills(context.Agents),
             AgentPositions = BuildAgentPositions(context.Agents),
             AgentRuntime = BuildAgentRuntime(context.Agents),
-            TerrainDeposits = BuildTerrainDeposits(context.TerrainDeposits),
+            TerrainDeposits = BuildTerrainDeposits(context.World.TerrainDeposits),
             PackableBuildingExecutions = PackableBuildingExecutionSaveDataAdapter.Encode(
                 context.PackableBuildingExecutions),
             Mushrooms = BuildMushrooms(context.Mushrooms),
@@ -289,30 +289,6 @@ public sealed partial class SaveGameBuilder
                 X = agent.Position.X,
                 Y = agent.Position.Y,
                 Z = agent.Position.Z,
-            });
-        }
-
-        return data;
-    }
-
-    private static TerrainDepositsSaveData BuildTerrainDeposits(
-        IEnumerable<TerrainDepositInstance> deposits)
-    {
-        TerrainDepositsSaveData data = new TerrainDepositsSaveData();
-        foreach (TerrainDepositInstance deposit in deposits
-            .OrderBy(value => value.Cell)
-            .ThenBy(value => value.InstanceId, StringComparer.Ordinal))
-        {
-            data.Deposits.Add(new TerrainDepositSaveData
-            {
-                InstanceId = deposit.InstanceId,
-                DefinitionId = deposit.Definition.Id,
-                X = deposit.Cell.X,
-                Y = deposit.Cell.Y,
-                Z = deposit.Cell.Z,
-                IsRevealed = deposit.IsRevealed,
-                RemainingYield = deposit.RemainingYield,
-                Version = deposit.Version,
             });
         }
 

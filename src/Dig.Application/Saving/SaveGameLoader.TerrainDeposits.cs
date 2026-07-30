@@ -13,6 +13,10 @@ public sealed partial class SaveGameLoader
     {
     }
 
+    private sealed class UnsupportedTerrainDepositDefinitionVersionException : Exception
+    {
+    }
+
     private static IReadOnlyCollection<TerrainDepositInstance> BuildTerrainDeposits(
         TerrainDepositsSaveData data,
         WorldSaveData world,
@@ -21,6 +25,13 @@ public sealed partial class SaveGameLoader
         if (data is null || data.Deposits is null)
         {
             throw new InvalidOperationException("Terrain deposits save data is missing.");
+        }
+
+        if (data.FormatVersion != TerrainDepositSaveSnapshot.CurrentFormatVersion
+            || data.GeneratorVersion <= 0)
+        {
+            throw new InvalidOperationException(
+                "Terrain deposit save metadata is invalid or unsupported.");
         }
 
         if (data.Deposits.Count == 0)
@@ -53,6 +64,11 @@ public sealed partial class SaveGameLoader
 
             TerrainDepositDefinition definition = catalog.Get(saved.DefinitionId)
                 ?? throw new UnknownTerrainDepositDefinitionException();
+            if (definition.Version != saved.DefinitionVersion)
+            {
+                throw new UnsupportedTerrainDepositDefinitionVersionException();
+            }
+
             CellId cell = new CellId(saved.X, saved.Y, saved.Z);
             if (!size.Contains(cell)
                 || !instanceIds.Add(saved.InstanceId)

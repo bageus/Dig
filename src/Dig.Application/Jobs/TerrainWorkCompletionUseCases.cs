@@ -118,8 +118,13 @@ public sealed class CompleteTerrainWorkCommandHandler
         Result<WorldMutationResult> terrain = world.Excavate(
             terrainJob.Target.CellId,
             command.EmptyMaterialId,
-            command.Tick);
-        EnsureCommitStep(terrain.IsSuccess, terrain.Error);
+            command.Tick,
+            command.DepositInstanceId,
+            command.DepositExpectedYield);
+        if (terrain.IsFailure)
+        {
+            return Result<TerrainWorkCompletionResult>.Failure(terrain.Error!);
+        }
 
         if (command.ProducesOutput)
         {

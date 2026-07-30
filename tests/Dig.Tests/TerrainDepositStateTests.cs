@@ -93,14 +93,14 @@ public sealed class TerrainDepositStateTests
     [Fact]
     public void Save_snapshot_round_trip_preserves_xyz_reveal_depletion_and_versions()
     {
-        TerrainDepositState source = new TerrainDepositState();
+        TerrainDepositState source = new TerrainDepositState(generatorVersion: 4);
         TerrainDepositInstance revealed = Deposit("deposit-revealed", 1, 2, 3).Reveal(7);
         TerrainDepositInstance depleted = Deposit("deposit-depleted", 4, 5, 0)
             .Reveal(8)
             .Deplete(9);
-        source.ReplaceAll(new[] { depleted, revealed });
+        source.ReplaceAll(new[] { depleted, revealed }, generatorVersion: 4);
 
-        TerrainDepositSaveSnapshot snapshot = source.CaptureSaveSnapshot(generatorVersion: 4);
+        TerrainDepositSaveSnapshot snapshot = source.CaptureSaveSnapshot();
         TerrainDepositState restored = new TerrainDepositState();
         restored.RestoreSaveSnapshot(
             snapshot,
@@ -127,6 +127,7 @@ public sealed class TerrainDepositStateTests
                 new TerrainDepositSaveEntry(
                     "unknown-instance",
                     "deposit.missing",
+                    definitionVersion: 1,
                     new CellId(3, 3, 2),
                     isRevealed: true,
                     remainingYield: 1,
@@ -137,6 +138,35 @@ public sealed class TerrainDepositStateTests
             state.RestoreSaveSnapshot(snapshot, new TerrainDepositCatalog(new[] { Iron })));
 
         Assert.Contains("deposit.missing", error.Message, StringComparison.Ordinal);
+        Assert.Equal(new[] { Describe(existing) }, state.Snapshot().Select(Describe));
+    }
+
+
+    [Fact]
+    public void Restore_rejects_unavailable_definition_version_atomically()
+    {
+        TerrainDepositState state = new TerrainDepositState();
+        TerrainDepositInstance existing = Deposit("existing-version", 1, 1, 1);
+        state.ReplaceAll(new[] { existing });
+        TerrainDepositSaveSnapshot snapshot = new TerrainDepositSaveSnapshot(
+            TerrainDepositSaveSnapshot.CurrentFormatVersion,
+            generatorVersion: 2,
+            new[]
+            {
+                new TerrainDepositSaveEntry(
+                    "versioned",
+                    Iron.Id,
+                    definitionVersion: Iron.Version + 1,
+                    new CellId(2, 2, 2),
+                    isRevealed: false,
+                    remainingYield: 1,
+                    version: 1),
+            });
+
+        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() =>
+            state.RestoreSaveSnapshot(snapshot, new TerrainDepositCatalog(new[] { Iron })));
+
+        Assert.Contains("version", error.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(new[] { Describe(existing) }, state.Snapshot().Select(Describe));
     }
 

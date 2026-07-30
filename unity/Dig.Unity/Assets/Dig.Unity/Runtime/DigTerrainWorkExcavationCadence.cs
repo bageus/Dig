@@ -23,8 +23,13 @@ namespace Dig.Unity
             int equipmentInterval = ResolveMiningWorkInterval(
                 workerId.ToString(),
                 ResidentMiningBaseIntervalTicks);
+            int effortPermille = _worldSession.ResolveDepositWorkEffortPermille(
+                target.Id);
+            int effectiveHardness = checked((int)Math.Max(
+                1L,
+                ((long)target.Hardness * effortPermille + 999L) / 1_000L));
             ExcavationCadenceDecision cadence = _excavationCadenceResolver.Resolve(
-                target.Hardness,
+                effectiveHardness,
                 skill,
                 equipmentInterval,
                 posture,

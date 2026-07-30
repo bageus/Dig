@@ -284,7 +284,11 @@ internal sealed partial class DigTerrainWorkSession
                 output.ItemId,
                 output.Quantity,
                 _worldSession.EmptyMaterialId,
-                tick);
+                tick,
+                output.DepositInstanceId,
+                output.SourceKind == MiningOutputSourceKind.Deposit
+                    ? output.Quantity
+                    : (int?)null);
         Result<TerrainWorkCompletionResult> completion = _completionHandler.Handle(command);
         if (completion.IsFailure)
         {
@@ -295,13 +299,7 @@ internal sealed partial class DigTerrainWorkSession
         // before any derived navigation refresh so Presentation cannot miss the open
         // cell when navigation fails and the tick returns a recoverable warning.
         MarkAuthoritativeWorldChanged();
-        if (output.SourceKind == MiningOutputSourceKind.Deposit)
-        {
-            _worldSession.DepleteTerrainDeposit(targetCell, tick);
-        }
-
         _miningOutputCommits.Record(output, _outputStackIds[job.Id]);
-        _worldSession.RevealTerrainDepositsAdjacentTo(targetCell, tick);
         CompleteExcavationQuarterTarget(targetCell);
         _routePlans.Remove(job.Id);
         MarkTemplateCellExcavated(targetCell);

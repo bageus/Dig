@@ -1,6 +1,6 @@
 # Копание, шаблоны пещер и ресурсные жилы
 
-> **Status synchronization (2026-07-30):** template catalog и template-instance scope #89/#90 подтверждены пользователем после merge PR #520 и имеют статус `IMPLEMENTED`; фактический licensed Unity Test Runner result всё ещё требуется для `VERIFIED`. Остальной deposits/output/hauling/processing scope #87 остаётся открытым.
+> **Status synchronization (2026-07-30):** template catalog и template-instance scope #89/#90 подтверждены пользователем после merge PR #520 и имеют статус `IMPLEMENTED`. Deterministic per-cell deposits scope #91 также реализован в World/Generation/Save contracts; фактический licensed Unity Test Runner result всё ещё требуется для `VERIFIED`. Output/hauling/processing scope #87 остаётся открытым.
 
 ## 1. Назначение
 
@@ -210,6 +210,17 @@ Generation может разместить рядом от одной до че�
 - разработка задней стены по Z углубляет помещение;
 - работа выполняется как mining/excavation command, а не как сбор decoration без изменения World.
 
+### 9.5 Authoritative lifecycle и generation
+
+- `WorldState` является единственным владельцем `TerrainDepositState`; Unity хранит только snapshots/view models;
+- генератор использует seed, algorithm version, stable XYZ cell id и независимые named streams для origin, definition, cluster size, instance id и neighbour order;
+- порядок входных host cells и definitions не влияет на результат;
+- `DepositDefinition.Version`, allowed host `MaterialId` и work-effort multiplier являются data-driven contract;
+- новые deposit cells создаются hidden; successful excavation раскрывает только шесть ортогональных XYZ-соседей;
+- stale instance id/yield отклоняется до terrain mutation;
+- успешная excavation одной deposit cell в той же World mutation делает её depleted, открывает terrain и инвалидирует необходимые chunk/layer snapshots;
+- exact density, yields и effort multiplier остаются `BALANCE_TBD` по Q-014; neutral runtime multiplier не считается утверждённым балансом.
+
 ## 10. Выдача добычи
 
 После успешного commit:
@@ -252,10 +263,10 @@ Terrain и deposit output взаимоисключающие для одной �
 - template id/version, mask, левый/правый входы, progress и provenance;
 - unlock snapshot на момент placement;
 - terrain types и факт output roll;
-- deposit ids/types/depletion;
+- deposit instance id, definition id/version, exact XYZ, reveal/depletion и per-cell version;
 - jobs/reservations;
 - world stacks;
-- generator/output profile versions;
+- deposit generator, terrain generator и output profile versions;
 - demand/hauling state.
 
 Существующий plan после загрузки продолжает выполняться независимо от текущего Stonework. Старые 2D координаты мигрируют в `Z=0`.
@@ -300,3 +311,4 @@ UI/inspector показывает:
 ## 17. Журнал подтверждений
 
 - 2026-07-30 — пользователь подтвердил acceptance #89/#90 после merge PR #520: все четыре presets, thresholds, persistent designations и template instance lifecycle считаются реализованными; runtime status не повышается до `VERIFIED` без executed Unity result artifact.
+- 2026-07-30 — #91 реализует versioned deterministic deposit placement, hidden/revealed/depleted per-cell lifecycle, World-owned depletion/reveal, exact-Z persistence v11 и integrity diagnostics. Q-014 остаётся открытым только для числового balance tuning.
