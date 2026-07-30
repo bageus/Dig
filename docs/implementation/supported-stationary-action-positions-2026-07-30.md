@@ -23,4 +23,4 @@ The mushroom resolver therefore selects a supported depth cell when left/right c
 
 ## Evidence
 
-Fast .NET regressions cover the selector source contract and quantity-safe meal rejection. A checked-in Unity Play Mode scenario boots the real demo world and calls the actual mushroom resolver for a side-void/depth-supported case. Hosted Unity execution may remain blocked when activation is unavailable; do not promote the systems to `VERIFIED` without licensed runtime results.
+The branch patch runner completed Release restore and the full .NET test command before publishing the implementation commit. Fast regressions cover the selector source contract and quantity-safe meal rejection. A checked-in Unity Play Mode scenario boots the real demo world and calls the actual mushroom resolver for a side-void/depth-supported case. Hosted Unity execution may remain blocked when activation is unavailable; do not promote the systems to `VERIFIED` without licensed runtime results.
