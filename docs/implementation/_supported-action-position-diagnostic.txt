@@ -1,8 +1,0 @@
-src/Dig.Application/Agents/ResidentFoodMealUseCases.cs:59:        public StartResidentFoodMealHandler(
-unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldItemPickupSession.cs:21:        private StartResidentFoodMealHandler? _startResidentFoodMeal;
-unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldItemPickupSession.cs:142:                && _startResidentFoodMeal != null
-unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldItemPickupSession.cs:171:            _startResidentFoodMeal = new StartResidentFoodMealHandler(
-unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldItemPickupExecution.cs:136:            return _startResidentFoodMeal!.Handle(
-unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigResidentInventory.Consumables.cs:48:                return new StartResidentFoodMealHandler(
-tests/Dig.Tests/CampfireFoodSaveTests.cs:39:        Assert.True(new StartResidentFoodMealHandler(
-tests/Dig.Tests/ResidentFoodMealTests.cs:140:                Handler = new StartResidentFoodMealHandler(
