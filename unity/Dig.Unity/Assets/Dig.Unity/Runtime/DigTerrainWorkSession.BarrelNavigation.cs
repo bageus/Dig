@@ -151,17 +151,6 @@ internal sealed partial class DigTerrainWorkSession
         return true;
     }
 
-    private bool HasFullStandingSupport(CellId cell)
-    {
-        CellId support = new CellId(cell.X, cell.Y + 1, cell.Z);
-        return _worldSession.LoadView().Chunks
-            .SelectMany(chunk => chunk.Cells)
-            .Any(value => value.X == support.X
-                && value.Y == support.Y
-                && value.Z == support.Z
-                && value.HasFullActorSupport);
-    }
-
     private CellId[] FindBarrelDemoCells(
         bool surface,
         int count,
