@@ -16,7 +16,6 @@ public sealed class WeaponExpansionUnityRuntimeContractTests
         string playMode = Path.Combine(root, "unity", "Dig.Unity", "Assets",
             "Dig.Unity", "Tests", "PlayMode");
         string demo = Read(runtime, "DigTerrainWorkSession.ResidentInventoryDemo.cs");
-        string buildings = Read(runtime, "DigTerrainWorkSession.Buildings.cs");
         string policy = Read(runtime, "DigBasketVisualPolicy.Equipment.cs");
         string world = Read(runtime, "DigWorldItemVisual.cs");
         string attachments = Read(runtime, "DigResidentInventoryAttachmentVisual.cs");
@@ -31,7 +30,7 @@ public sealed class WeaponExpansionUnityRuntimeContractTests
         Assert.Contains("ItemLocation.InWorld(harnessCell)", demo);
         Assert.Contains("ItemLocation.InWorld(clubCell)", demo);
         Assert.DoesNotContain("ResidentInventoryCompartment.Weapon", demo);
-        Assert.Contains("CombatEquipmentContent.ClubItemId", buildings);
+        Assert.Contains("CombatEquipmentContent.ClubItemId", demo);
 
         Assert.Contains("ResidentInventoryExpansionContent.SheathItemId", policy);
         Assert.Contains("ResidentInventoryExpansionContent.WeaponHarnessItemId", policy);
