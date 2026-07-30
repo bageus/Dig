@@ -60,7 +60,8 @@ public sealed class SaveGameContext
         BuildingSupplyState? buildingSupply = null,
         BarrelState? barrels = null,
         CombatState? combat = null,
-        int? terrainDepositGeneratorVersion = null)
+        int? terrainDepositGeneratorVersion = null,
+        LivingMaterialEcologyState? livingMaterials = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -89,6 +90,7 @@ public sealed class SaveGameContext
         Barrels = barrels ?? new BarrelState(
             new BarrelCatalog(Array.Empty<BarrelDefinition>()));
         Combat = combat;
+        LivingMaterials = livingMaterials ?? new LivingMaterialEcologyState(metadata.WorldSeed);
     }
 
     public SaveMetadataData Metadata { get; }
@@ -106,6 +108,7 @@ public sealed class SaveGameContext
     public BuildingSupplyState BuildingSupply { get; }
     public BarrelState Barrels { get; }
     public CombatState? Combat { get; }
+    public LivingMaterialEcologyState LivingMaterials { get; }
 }
 
 }

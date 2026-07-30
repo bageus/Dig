@@ -36,24 +36,46 @@ public sealed partial class DigCreatureRenderer
     private DigCreatureVisualResolution ResolveVisual(
         CreatureAppearanceViewModel appearance)
     {
+        DigCreatureVisualResolution resolved;
         if (_catalog != null)
         {
-            return _catalog.ResolveCreature(
+            resolved = _catalog.ResolveCreature(
                 appearance.SpeciesId,
                 appearance.Family,
                 appearance.RigId);
         }
+        else
+        {
+            DigVisualAsset fallback = DigVisualAsset.CreateRuntimeFallback(
+                appearance.SpeciesId,
+                new Color(0.48f, 0.42f, 0.28f, 1f));
+            resolved = new DigCreatureVisualResolution(
+                fallback,
+                appearance.RigId,
+                appearance.Family,
+                Vector3.one,
+                maximumRenderers: 12,
+                hasProfile: false);
+        }
 
-        DigVisualAsset fallback = DigVisualAsset.CreateRuntimeFallback(
-            appearance.SpeciesId,
-            new Color(0.48f, 0.42f, 0.28f, 1f));
+        float speciesScale = string.Equals(
+                appearance.SpeciesId,
+                "creature.hamster",
+                System.StringComparison.Ordinal)
+            ? 0.25f
+            : string.Equals(
+                appearance.SpeciesId,
+                "creature.grub",
+                System.StringComparison.Ordinal)
+                ? 0.20f
+                : 1f;
         return new DigCreatureVisualResolution(
-            fallback,
-            appearance.RigId,
-            appearance.Family,
-            Vector3.one,
-            maximumRenderers: 12,
-            hasProfile: false);
+            resolved.Asset,
+            resolved.RigStableId,
+            resolved.Family,
+            resolved.Scale * speciesScale,
+            resolved.MaximumRenderers,
+            resolved.HasProfile);
     }
 
     private DigCreatureVisual AcquireRoot(string creatureId)
@@ -80,9 +102,23 @@ public sealed partial class DigCreatureRenderer
 
     private void ConfigureCollider(
         DigCreatureVisual visual,
-        CreatureVisualFamily family)
+        CreatureVisualFamily family,
+        string speciesId)
     {
         SphereCollider collider = visual.GetComponent<SphereCollider>();
+        if (string.Equals(speciesId, "creature.hamster", System.StringComparison.Ordinal))
+        {
+            collider.center = new Vector3(0f, 0.14f, 0f);
+            collider.radius = 0.18f;
+            return;
+        }
+
+        if (string.Equals(speciesId, "creature.grub", System.StringComparison.Ordinal))
+        {
+            collider.center = new Vector3(0f, 0.09f, 0f);
+            collider.radius = 0.14f;
+            return;
+        }
         switch (family)
         {
             case CreatureVisualFamily.LargeDemon:

@@ -45,6 +45,7 @@ public sealed class SaveMigrationAndCorruptionTests
             "save.v8_to_v9.agent_runtime",
             "save.v9_to_v10.combat_spatial",
             "save.v10_to_v11.terrain_deposit_contract",
+            "save.v11_to_v12.living_materials",
         }, first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
         Assert.Equal(1, document.Metadata.GeneratorVersion);
@@ -85,6 +86,7 @@ public sealed class SaveMigrationAndCorruptionTests
                 "save.v8_to_v9.agent_runtime",
                 "save.v9_to_v10.combat_spatial",
                 "save.v10_to_v11.terrain_deposit_contract",
+            "save.v11_to_v12.living_materials",
             },
             first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
@@ -129,7 +131,6 @@ public sealed class SaveMigrationAndCorruptionTests
         Assert.True(itemResult.IsFailure);
         Assert.Equal("inventory.restore.unknown_item", itemResult.Error!.Code);
     }
-
     [Fact]
     public void Dangling_inventory_reservation_is_rejected()
     {
@@ -147,7 +148,6 @@ public sealed class SaveMigrationAndCorruptionTests
         Assert.True(result.IsFailure);
         Assert.Equal(SaveErrors.InvalidDocument, result.Error);
     }
-
     [Fact]
     public void Corrupted_slot_is_visible_and_load_fails_with_controlled_reason()
     {
@@ -175,7 +175,6 @@ public sealed class SaveMigrationAndCorruptionTests
             Directory.Delete(directory, recursive: true);
         }
     }
-
     [Fact]
     public void Interrupted_atomic_replacement_recovers_previous_slot()
     {
@@ -309,6 +308,7 @@ public sealed class SaveMigrationAndCorruptionTests
             new SaveVersionEightAgentRuntimeMigration(),
             new SaveVersionNineCombatSpatialMigration(),
             new SaveVersionTenTerrainDepositContractMigration(),
+            new SaveVersionElevenLivingMaterialsMigration(),
         });
     }
 

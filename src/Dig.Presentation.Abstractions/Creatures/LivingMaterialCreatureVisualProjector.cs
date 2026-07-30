@@ -25,14 +25,23 @@ public sealed class LivingMaterialCreatureVisualProjector
 
     private static CreatureVisualSnapshot ProjectOne(LivingMaterialSnapshot creature)
     {
-        bool moving = creature.Activity == LivingMaterialActivity.Moving
-            || creature.Activity == LivingMaterialActivity.Blocked;
+        bool moving = creature.Activity == LivingMaterialActivity.Moving;
         bool special = creature.Activity == LivingMaterialActivity.HamsterSearching
             || creature.Activity == LivingMaterialActivity.HamsterSleeping
             || creature.Activity == LivingMaterialActivity.ReleaseDormant;
-        double progress = creature.ActivityStepsRemaining <= 0
-            ? 0d
-            : 1d / (creature.ActivityStepsRemaining + 1d);
+        double progress = special
+            ? 1d / (creature.ActivityStepsRemaining + 1d)
+            : (creature.Version % 8L) / 8d;
+        string activityVariant = creature.Activity switch
+        {
+            LivingMaterialActivity.ReleaseDormant => "hamster.release_dormant",
+            LivingMaterialActivity.HamsterSearching => "hamster.searching",
+            LivingMaterialActivity.HamsterSleeping => "hamster.sleeping",
+            LivingMaterialActivity.Blocked => "blocked",
+            _ => creature.Species == LivingMaterialSpecies.Grub
+                ? "grub.crawling"
+                : "hamster.moving",
+        };
         return new CreatureVisualSnapshot(
             creature.CreatureId.ToString(),
             creature.Species == LivingMaterialSpecies.Hamster
@@ -50,7 +59,8 @@ public sealed class LivingMaterialCreatureVisualProjector
             isGrowing: false,
             isSpecialAction: special,
             actionProgress: progress,
-            version: creature.Version);
+            version: creature.Version,
+            activityVariantId: activityVariant);
     }
 }
 

@@ -104,6 +104,30 @@ public sealed class DigCreatureRig : MonoBehaviour
         }
     }
 
+    internal void ApplyActivityVariant(string activityVariantId)
+    {
+        string value = activityVariantId ?? string.Empty;
+        if (string.Equals(value, "hamster.sleeping", StringComparison.Ordinal)
+            || string.Equals(value, "hamster.release_dormant", StringComparison.Ordinal))
+        {
+            transform.localRotation = Quaternion.Euler(0f, 0f, 84f);
+            SetPivots(0f, 0f);
+            return;
+        }
+
+        if (string.Equals(value, "hamster.searching", StringComparison.Ordinal))
+        {
+            transform.localRotation = Quaternion.Euler(16f, 0f, 0f);
+            SetPivots(-42f, 34f);
+            return;
+        }
+
+        if (string.Equals(value, "grub.crawling", StringComparison.Ordinal))
+        {
+            transform.localRotation = Quaternion.Euler(0f, 0f, 4f);
+        }
+    }
+
     internal void ApplyLod(CreatureLodViewModel lod)
     {
         if (lod == null) throw new ArgumentNullException(nameof(lod));

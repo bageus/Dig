@@ -1,5 +1,6 @@
 using Dig.Domain.Core;
 using Dig.Presentation.Input;
+using UnityEngine;
 
 namespace Dig.Unity
 {
@@ -47,7 +48,19 @@ public sealed partial class DigWorldInteraction
         if (result.IsSuccess)
         {
             ClearSelectedInventoryStack();
+            Result synchronized = _terrainSession.SynchronizeLivingMaterials(
+                _simulation!.CurrentTick);
+            if (synchronized.IsFailure)
+            {
+                _hud.SetCommandResult(synchronized);
+                return;
+            }
+
             _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
+            _creatureRenderer!.Render(
+                _terrainSession.LoadLivingMaterialCreatures(),
+                Camera.main,
+                movementDuration: 0.1f);
             _agentRenderer!.RenderEquipment(_terrainSession.LoadResidentEquipment());
             _hud.SetStatus("Inventory stack dropped at the resident position.");
         }

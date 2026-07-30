@@ -37,6 +37,42 @@ public sealed partial class AdvanceLivingMaterialEcologyCommandHandler
         _events = events ?? throw new ArgumentNullException(nameof(events));
     }
 
+    public Result Synchronize(long simulationTick)
+    {
+        if (simulationTick < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(simulationTick));
+        }
+
+        NavigationMap? map = _navigation.Get(_profileId);
+        if (map == null)
+        {
+            return Result.Failure(LivingMaterialApplicationErrors.NavigationUnavailable);
+        }
+
+        Result<NavigationSnapshot> navigation = map.GetSnapshot();
+        if (navigation.IsFailure)
+        {
+            return Result.Failure(LivingMaterialApplicationErrors.NavigationUnavailable);
+        }
+
+        LivingMaterialEcologyState ecology = _ecology.Get();
+        InventoryState inventory = _inventory.Get();
+        Result reconciled = ReconcileInventory(
+            ecology,
+            inventory,
+            new LivingMaterialPlaneResolver(navigation.Value),
+            simulationTick);
+        if (reconciled.IsFailure)
+        {
+            return reconciled;
+        }
+
+        _ecology.Save(ecology);
+        _events.Append(ecology.DequeueUncommittedEvents());
+        return Result.Success();
+    }
+
     public Result Handle(AdvanceLivingMaterialEcologyCommand command)
     {
         if (command == null)

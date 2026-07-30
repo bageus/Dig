@@ -59,7 +59,7 @@ public static class CampfireProductionContent
             new ItemDefinition(MushroomCapItemId, "Mushroom cap", 100, false),
             new ItemDefinition(MushroomLegItemId, "Mushroom leg", 100, false),
             new ItemDefinition(StoneItemId, "Stone", 100, false),
-            new ItemDefinition(HamsterItemId, "Hamster", 100, false),
+            new ItemDefinition(HamsterItemId, "Hamster", 1, false),
             new ItemDefinition(
                 GrilledMushroomItemId,
                 "Grilled mushroom",

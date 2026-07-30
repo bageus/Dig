@@ -89,6 +89,7 @@ internal sealed partial class DigTerrainWorkSession
             .Append(CampfireBuildingBoxContent.Definition.BoxItem)
             .Concat(expansions.Items)
             .Concat(CombatEquipmentContent.CreateItems())
+            .Concat(LivingMaterialContent.CreateItems())
             .Concat(CampfireProductionContent.CreateItems())
             .GroupBy(value => value.Id)
             .Select(group => group.First())

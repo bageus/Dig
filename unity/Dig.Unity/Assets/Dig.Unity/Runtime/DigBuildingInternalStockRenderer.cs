@@ -71,6 +71,11 @@ public sealed partial class DigBuildingInternalStockRenderer : MonoBehaviour
         int stockIndex,
         ISet<string> visible)
     {
+        if (stock.ItemId.ToString().IndexOf("hamster", StringComparison.Ordinal) >= 0)
+        {
+            return;
+        }
+
         for (int unitIndex = 0; unitIndex < stock.Current; unitIndex++)
         {
             string key = building.Id + ":" + stock.ItemId + ":" + unitIndex;

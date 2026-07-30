@@ -185,6 +185,13 @@ namespace Dig.Unity
                 result = TerrainSession.SettleWorldItems(AgentSession.Tick);
             }
 
+            if (result.IsSuccess)
+            {
+                result = TerrainSession.AdvanceLivingMaterials(
+                    AgentSession.Tick,
+                    agents);
+            }
+
             DomainError? tickWarning = null;
             if (result.IsFailure)
             {
@@ -223,12 +230,19 @@ namespace Dig.Unity
             AgentRenderer.SynchronizeProductionWaitOffsets(
                 TerrainSession.LoadProductionWaitOffsets());
             RefreshEquipmentVisuals();
+            CreatureRenderer!.Render(
+                TerrainSession.LoadLivingMaterialCreatures(),
+                Camera.main,
+                movementDuration);
             MushroomRenderer!.Render(TerrainSession!.LoadMushrooms());
             BarrelRenderer!.Render(TerrainSession.LoadBarrels());
             JobRenderer.Render(jobs);
             BuildingRenderer.Render(buildings);
             BuildingInternalStockRenderer!.Render(
                 TerrainSession.LoadAllBuildingProduction(),
+                buildings);
+            BuildingInternalStockRenderer.RenderLivingMaterialTethers(
+                TerrainSession.LoadLivingMaterialCampfireTethers(),
                 buildings);
             ItemRenderer!.Render(items);
             StockpileRenderer!.Render(storage);

@@ -82,6 +82,7 @@ namespace Dig.Unity
                 worldSession.Journal);
             terrainSession.InitializeMushroomDemo(agentSession.Tick);
             terrainSession.InitializeBarrelDemo(agentSession.Tick);
+            terrainSession.InitializeLivingMaterials(agentSession.Tick);
             terrainSession.InitializeToolAwareJobAssignment(worldSession.Journal);
             Result settledItems = terrainSession.SettleWorldItems(agentSession.Tick);
             if (settledItems.IsFailure)
@@ -168,7 +169,7 @@ namespace Dig.Unity
             interaction.SetCaveRoomRenderers(caveRoomPreviewRenderer, caveRoomFloorRenderer);
             simulation.Initialize(
                 worldSession, worldRenderer, agentSession, agentRenderer,
-                terrainSession, mushroomRenderer, barrelRenderer, jobRenderer,
+                terrainSession, creatureRenderer, mushroomRenderer, barrelRenderer, jobRenderer,
                 buildingRenderer, buildingInternalStockRenderer, itemRenderer,
                 stockpileRenderer, routeRenderer, worldOverlayRenderer, hud);
 
@@ -192,9 +193,11 @@ namespace Dig.Unity
                 caveRoomPreviewRenderer.Clear);
             RunPresentationStage("rendering residents", visualWarnings,
                 () => agentRenderer.Render(agents, movementDuration: 0f));
-            RunPresentationStage("rendering creatures", visualWarnings, () =>
+            RunPresentationStage("rendering living materials", visualWarnings, () =>
                 creatureRenderer.Render(
-                    Array.Empty<CreatureVisualSnapshot>(), targetCamera, movementDuration: 0f));
+                    terrainSession.LoadLivingMaterialCreatures(),
+                    targetCamera,
+                    movementDuration: 0f));
             RunPresentationStage("rendering mushrooms", visualWarnings, () =>
                 mushroomRenderer.Render(terrainSession.LoadMushrooms()));
             RunPresentationStage("rendering jobs", visualWarnings,
@@ -202,9 +205,14 @@ namespace Dig.Unity
             RunPresentationStage("rendering buildings", visualWarnings,
                 () => buildingRenderer.Render(buildings));
             RunPresentationStage("rendering internal building stock", visualWarnings, () =>
+            {
                 buildingInternalStockRenderer.Render(
                     terrainSession.LoadAllBuildingProduction(),
-                    buildings));
+                    buildings);
+                buildingInternalStockRenderer.RenderLivingMaterialTethers(
+                    terrainSession.LoadLivingMaterialCampfireTethers(),
+                    buildings);
+            });
             RunPresentationStage("rendering world items", visualWarnings,
                 () => itemRenderer.Render(items));
             RunPresentationStage("clearing building ghost", visualWarnings, ghostRenderer.Clear);

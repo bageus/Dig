@@ -62,6 +62,7 @@ public sealed partial class SaveGameBuilder
                 context.Inventory),
             Barrels = BuildBarrels(context.Barrels),
             Combat = CombatSaveAdapter.Encode(context.Combat),
+            LivingMaterials = LivingMaterialEcologySaveAdapter.Encode(context.LivingMaterials),
         };
     }
 

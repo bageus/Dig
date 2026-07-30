@@ -252,6 +252,15 @@ public sealed partial class SaveGameLoader
 
                 combat = restoredCombat.Value;
             }
+            Result<LivingMaterialEcologyState> livingMaterials =
+                LivingMaterialEcologySaveAdapter.Decode(
+                    document.LivingMaterials,
+                    inventory.Value,
+                    document.Metadata.WorldSeed);
+            if (livingMaterials.IsFailure)
+            {
+                return Result<LoadedGameState>.Failure(livingMaterials.Error!);
+            }
             Result<RestoredMiningOutputState> miningOutput = RestoreMiningOutput(
                 document,
                 inventory.Value,
@@ -282,7 +291,8 @@ public sealed partial class SaveGameLoader
                 agentRuntime,
                 combat,
                 terrainDepositGeneratorVersion:
-                    document.TerrainDeposits.GeneratorVersion));
+                    document.TerrainDeposits.GeneratorVersion,
+                livingMaterials: livingMaterials.Value));
         }
         catch (UnknownTerrainDepositDefinitionException)
         {

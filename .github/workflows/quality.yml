@@ -5,47 +5,9 @@ on:
   pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  apply-hamster-unity-runtime:
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/agent/implement-hamsters-grubs-ecology') || (github.event_name == 'pull_request' && github.head_ref == 'agent/implement-hamsters-grubs-ecology')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: agent/implement-hamsters-grubs-ecology
-      - name: Apply verified runtime payload
-        shell: bash
-        run: |
-          set -euo pipefail
-          cat .github/patches/hamster-unity-runtime.b64.part* | base64 --decode > /tmp/hamster-unity-runtime.tar.gz
-          tar -xzf /tmp/hamster-unity-runtime.tar.gz
-          cat .github/patches/hamster-save-v12.b64.part* | base64 --decode > /tmp/hamster-save-v12.tar.gz
-          tar -xzf /tmp/hamster-save-v12.tar.gz
-          rm .github/patches/hamster-unity-runtime.b64.part*
-          rm .github/patches/hamster-save-v12.b64.part*
-          rm -f .github/workflows/apply-hamster-unity-runtime.yml
-          git fetch origin main --depth=1
-          git show FETCH_HEAD:.github/workflows/quality.yml > .github/workflows/quality.yml
-      - name: Validate source contracts
-        shell: bash
-        run: |
-          set -euo pipefail
-          python tools/quality/check_quality.py
-          python tools/quality/check_unity_source_contracts.py
-          python tools/quality/check_unity_creature_visual_contracts.py
-          python tools/quality/check_unity_native_field_initializers.py
-      - name: Commit runtime integration
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --cached --quiet || git commit -m "Integrate hamster and grub Unity runtime"
-          git push origin HEAD:agent/implement-hamsters-grubs-ecology
-
   build-and-test:
     runs-on: ubuntu-latest
 
