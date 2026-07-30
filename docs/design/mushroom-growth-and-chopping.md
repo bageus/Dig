@@ -46,7 +46,7 @@ Automatic job generation и самостоятельный выбор грибо
 2. Pointer на доступном видимом грибе показывает слегка анимированный топор, а сам гриб получает заметную hover-подсветку.
 3. Hover, cursor и LMB используют одно и то же resolved mushroom target. Если показан топор, тот же LMB обязан создать один direct chopping command и не может вместо этого выбрать перекрывающее гриб строение или выдать другое действие.
 4. LMB создаёт один direct chopping command и один ordinary chopping job, сразу предназначенный выбранному resident.
-5. Resident освобождается от несовместимого небоевого direct action, получает route к допустимой work position и идёт к грибу.
+5. Resident освобождается от несовместимого небоевого direct action, получает route к допустимой work position и идёт к грибу. Work position обязана находиться на той же высоте `Y`, быть соседней по `X` или depth `Z` и иметь полную ровную actor support surface. Вертикальные `Y±1`, shaft-gap и partial-support клетки запрещены. Если боковые `X±1` клетки являются пропастью, resolver обязан рассмотреть поддерживаемые `Z±1` позиции за/перед грибом до blocked result.
 6. На work position resident выполняет authoritative swings.
 7. После требуемого числа swings одна atomic completion transaction:
    - переводит mushroom site в `AbsentRegrowing`;
@@ -70,7 +70,8 @@ Automatic job generation и самостоятельный выбор грибо
 ### Blocked/failure/retry
 
 - `AbsentRegrowing` не имеет target/collider и не принимает direct chop command;
-- unreachable work position возвращает typed reason и не создаёт успешную axe feedback;
+- unreachable или unsupported work position возвращает typed reason и не создаёт успешную axe feedback;
+- потеря полной опоры после создания job отменяет текущую chop attempt до следующего swing; retry заново разрешает same-height `X/Z` work position;
 - смерть, удаление или недоступность worker освобождает claim без удаления site;
 - failure одного mushroom job не останавливает simulation loop и другие mushroom sites;
 - retry не reroll-ит уже сохранённые deterministic inputs и не создаёт повторные drops/skill grant;
@@ -254,6 +255,7 @@ SourceId = mushroom chop completion generation
 - world item placement в site cell разрешён;
 - два demo sites имеют независимые timers, jobs и drops;
 - Presentation не хранит authoritative growth/chop progress.
+- resident никогда не выполняет mushroom swing в воздухе, на вертикальной соседней клетке или над частично выкопанной опорой.
 - visual/collider каждого гриба остаётся внутри depth slab его logical `Z=0..3`; presentation offset не меняет слой и не выводит geometry за заднюю плоскость мира.
 
 ## 11. Save/Load и migration
@@ -374,3 +376,9 @@ Unity Play Mode:
 | 2026-07-27 | По runtime screenshot подтверждены обязательные исправления presentation/input: вертикальная установка на walk surface, URP-compatible material, Large около 110% resident height, hover highlight, единый hover/cursor/LMB target без перехвата overlapping building, статус «Добывает гриб» и chopping pose. | Пользователь | Workflow, Input/UI/Presentation, Play Mode acceptance, #423 |
 | 2026-07-28 | По повторному runtime screenshot уточнено: side-view bootstrap rotation не должна передаваться mushroom root; growing mushroom обязан оставаться world-upright. После рубки cap/leg — только foreground pickable materials без mushroom identity; они блокируют axe target для regrown site за ними. | Пользователь | Workflow, Input/UI/Presentation, invariants, Play Mode acceptance, #423 |
 | 2026-07-28 | По screenshot подтверждено depth-правило: visual/collider гриба обязан оставаться в slab своей authoritative клетки `Z=0..3`; дополнительный offset не может переносить гриб за `Z=3` или в соседний слой. | Пользователь | Input/UI/Presentation, invariants, Play Mode acceptance, #423 |
+
+## 13. Decision log
+
+| Date | Decision | Source |
+|---|---|---|
+| 2026-07-30 | Любая mushroom work position находится на той же высоте, имеет полную опору и выбирается по X/Z; supported depth position используется, когда боковые клетки являются пропастью. | user, #423 |

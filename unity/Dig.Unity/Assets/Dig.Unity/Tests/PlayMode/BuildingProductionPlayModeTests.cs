@@ -89,7 +89,9 @@ public sealed class BuildingProductionPlayModeTests
         Assert.That((int)GetProperty(renderer, "ActiveUnitCount"), Is.EqualTo(14));
         Assert.That((int)GetProperty(renderer, "ActiveBayCount"), Is.EqualTo(2));
         Renderer[] renderers = _root.GetComponentsInChildren<Renderer>();
-        Assert.That(renderers.Length, Is.EqualTo(18));
+        Assert.That(renderers.Length, Is.EqualTo(16));
+        Assert.That(_root.GetComponentsInChildren<Transform>()
+            .Any(value => value.name == "Storage back rail"), Is.False);
         Component[] visuals = _root.GetComponentsInChildren<Component>()
             .Where(value => value.GetType().Name == "DigBuildingInternalStockVisual")
             .ToArray();

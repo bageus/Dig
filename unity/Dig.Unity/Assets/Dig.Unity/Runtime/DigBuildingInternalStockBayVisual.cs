@@ -24,11 +24,6 @@ internal sealed class DigBuildingInternalStockBayVisual : MonoBehaviour
             new Vector3(0f, 0.025f, 0f),
             new Vector3(0.82f, 0.05f, 0.38f),
             material);
-        CreatePart(
-            "Storage back rail",
-            new Vector3(0f, 0.14f, 0.17f),
-            new Vector3(0.82f, 0.24f, 0.04f),
-            material);
     }
 
     internal void SetPosition(Vector3 position)

@@ -188,6 +188,21 @@ internal sealed partial class DigTerrainWorkSession
                 continue;
             }
 
+            if (!HasFullStandingSupport(definition.WorkPosition))
+            {
+                Result cancelled = _cancelMushroomChop!.Handle(
+                    new CancelMushroomChopCommand(
+                        job.Id,
+                        "mushroom_work_position_unsupported",
+                        tick));
+                if (cancelled.IsFailure)
+                {
+                    return cancelled;
+                }
+
+                continue;
+            }
+
             Result result = AdvanceMushroomJob(job, definition, tick);
             if (result.IsFailure)
             {

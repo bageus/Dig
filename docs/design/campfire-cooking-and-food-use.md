@@ -77,6 +77,8 @@ BuildingBox input and ordinary non-food item routing are unchanged.
 
 Direct and autonomous food use share one Agent meal owner.
 
+`Eat` является stationary action: meal может начаться и продолжаться только когда resident стоит в клетке с полной ровной actor support surface. Shaft gap, воздух и partial-support клетка запрещены. Guard выполняется до reservation/consume, поэтому direct inventory use на неподдерживаемой позиции возвращает `resident.food_meal.unsupported_standing_position`, сохраняет порцию и не создаёт active meal. После world pickup тот же guard либо начинает meal на поддерживаемой source cell, либо оставляет порцию в inventory для безопасного retry. Если опора исчезает во время meal, action прерывается до следующего bite по обычному interruption contract.
+
 A grilled mushroom portion provides 15 Nutrition points (`1500` fixed-point units) over exactly three bites. The portion is removed from Inventory at meal start. Each completed bite applies exactly one third (`500`) to Nutrition. The first bite is the start of consumption for history/diagnostics. Interruption preserves already-applied bites and loses the consumed remainder; restart requires another portion.
 
 While a meal is active, autonomous replanning cannot replace it. A later explicit direct command may interrupt it through the normal direct-command preparation path.
@@ -108,7 +110,7 @@ Observable state includes:
 
 ## 10. Acceptance
 
-Domain/application tests must cover recipe quantity, protected source filtering, one dependency chop, deterministic output-ring placement, duration at Cooking 0/25/100, exactly-once completion, direct pickup/eat reservation, three bites, interruption and retry.
+Domain/application tests must cover recipe quantity, protected source filtering, one dependency chop, deterministic output-ring placement, duration at Cooking 0/25/100, exactly-once completion, direct pickup/eat reservation, supported-standing guard before consume, three bites, support-loss interruption and retry.
 
 Integration tests must cover:
 

@@ -171,6 +171,7 @@ namespace Dig.Unity
             _startResidentFoodMeal = new StartResidentFoodMealHandler(
                 _productionAgents,
                 _buildingInventoryRepository,
+                new DigTerrainResidentStandingSupportQuery(this),
                 journal);
             _worldItemPickupPathfinder = new NavigationPathfinder();
         }

@@ -206,8 +206,9 @@ namespace Dig.Unity
 
         private void ApplyInteraction(DigItemVisualResolution resolution)
         {
-            bool interactive = Model.IsInteractive
-                && resolution.ColliderPolicy == DigItemColliderPolicy.InteractiveOnly;
+            // The authoritative world-item read model owns interaction availability.
+            // Visual-profile metadata may shape art, but cannot hide a committed pickup.
+            bool interactive = Model.IsInteractive;
             gameObject.layer = interactive ? 0 : 2;
             _interactionCollider!.enabled = interactive;
         }
