@@ -232,8 +232,9 @@ public sealed class AcquireBuildingBoxForRelocationHandler
             return Result.Failure(BuildingBoxPickupErrors.BoxUnavailable);
         }
 
-        ItemLocation carried = ItemLocation.InAgent(job.AssignedAgentId.Value);
-        if (box.Location == carried)
+        EntityId workerId = job.AssignedAgentId.Value;
+        ItemLocation carried = ItemLocation.InAgent(workerId);
+        if (DropResidentInventoryStackHandler.IsOwnedByResident(box.Location, workerId))
         {
             return Result.Success();
         }
@@ -299,7 +300,9 @@ public sealed class CompleteBuildingBoxRelocationHandler
         InventoryState inventory = _inventoryRepository.Get();
         ItemStackSnapshot? box = inventory.GetStack(relocation.StackId);
         if (box is null
-            || box.Location != ItemLocation.InAgent(job.AssignedAgentId.Value))
+            || !DropResidentInventoryStackHandler.IsOwnedByResident(
+                box.Location,
+                job.AssignedAgentId.Value))
         {
             return Result.Failure(BuildingBoxPickupErrors.BoxUnavailable);
         }

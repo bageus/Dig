@@ -13,7 +13,7 @@ public sealed class ResidentInventoryExpansionPresentationTests
     private static readonly EntityId LargeBasketStackId = Id(2);
     private static readonly EntityId BasketStackId = Id(3);
     private static readonly EntityId HarnessStackId = Id(4);
-    private static readonly EntityId CargoStackId = Id(5);
+    private static readonly EntityId[] CargoStackIds = { Id(5), Id(6), Id(7) };
     private static readonly ItemId OreId = new ItemId("ore.iron");
     private static readonly ItemId BasketId = new ItemId("inventory.basket");
     private static readonly ItemId LargeBasketId =
@@ -40,7 +40,7 @@ public sealed class ResidentInventoryExpansionPresentationTests
         Assert.Equal("visual.resident.large_basket", model.VisualAttachmentId);
         Assert.Contains("raw", model.AcceptedCategories);
         Assert.True(model.IsActive);
-        Assert.Equal(1, model.OccupiedSlotCount);
+        Assert.Equal(3, model.OccupiedSlotCount);
         Assert.True(model.RequiresSpillConfirmation);
     }
 
@@ -160,15 +160,18 @@ public sealed class ResidentInventoryExpansionPresentationTests
             tick: 0).IsSuccess);
         if (withCargo)
         {
-            Assert.True(inventory.AddStack(
-                CargoStackId,
-                OreId,
-                3,
-                ItemLocation.InResidentSlot(
-                    ResidentId,
-                    ResidentInventoryCompartment.Cargo,
-                    0),
-                tick: 0).IsSuccess);
+            for (int slot = 0; slot < CargoStackIds.Length; slot++)
+            {
+                Assert.True(inventory.AddStack(
+                    CargoStackIds[slot],
+                    OreId,
+                    1,
+                    ItemLocation.InResidentSlot(
+                        ResidentId,
+                        ResidentInventoryCompartment.Cargo,
+                        slot),
+                    tick: 0).IsSuccess);
+            }
         }
 
         return inventory;

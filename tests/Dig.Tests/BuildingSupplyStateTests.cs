@@ -55,14 +55,15 @@ public sealed class BuildingSupplyStateTests
             new[] { capCell, legCell, stoneCell },
             new[] { capCell, legCell, stoneCell },
             new CellId(4, 1, 0),
-            freeSlotCount: 2,
+            freeSlotCount: 6,
             productionActive: false);
 
         Assert.Equal(2, plan.Allocations.Count);
+        Assert.Equal(6, plan.SlotCount);
         Assert.Equal(CampfireProductionContent.MushroomCapItemId, plan.Allocations[0].ItemId);
         Assert.Equal(4, plan.Allocations[0].Quantity);
         Assert.Equal(CampfireProductionContent.MushroomLegItemId, plan.Allocations[1].ItemId);
-        Assert.Equal(4, plan.Allocations[1].Quantity);
+        Assert.Equal(2, plan.Allocations[1].Quantity);
     }
 
     [Fact]

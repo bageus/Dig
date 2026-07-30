@@ -8,22 +8,26 @@ namespace Dig.Tests
 public sealed class InventoryBarrelRoomRuntimeRegressionTests
 {
     [Fact]
-    public void Resident_layout_normalization_consolidates_compatible_stacks()
+    public void Resident_layout_uses_one_quantity_one_stack_per_slot()
     {
         string layout = Read(
             "src/Dig.Domain/Inventory/InventoryState.ResidentLayout.cs");
         string stacking = Read(
             "src/Dig.Domain/Inventory/InventoryState.ResidentStacking.cs");
+        string claims = Read(
+            "src/Dig.Domain/Inventory/ResidentInventorySlotClaims.cs");
         string capacity = Read(
             "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigResidentInventory.Capacity.cs");
 
-        Assert.Contains("ConsolidateResidentStacks(residentId, tick)", layout);
-        Assert.Contains("GroupBy(value => value.ItemId)", stacking);
-        Assert.Contains("definition.MaximumStackSize - target.Quantity", stacking);
-        Assert.Contains("source.ConsumeAvailable(quantity)", stacking);
-        Assert.Contains("target.AddQuantity(quantity)", stacking);
-        Assert.Contains("slot.ItemId == definition.Id", capacity);
-        Assert.Contains("definition.MaximumStackSize - slot.Quantity", capacity);
+        Assert.Contains("pendingUnits", layout);
+        Assert.Contains("candidate.Source.Split", layout);
+        Assert.Contains("quantity: 1", layout);
+        Assert.Contains("CreateResidentUnitId", stacking);
+        Assert.DoesNotContain("GroupBy(value => value.ItemId)", stacking);
+        Assert.Contains("occupied.ContainsKey(slot)", claims);
+        Assert.Contains("availableQuantity: 1", claims);
+        Assert.Contains("capacity = checked(capacity + 1)", capacity);
+        Assert.DoesNotContain("definition.MaximumStackSize - slot.Quantity", capacity);
     }
 
     [Fact]
@@ -53,6 +57,11 @@ public sealed class InventoryBarrelRoomRuntimeRegressionTests
             "src/Dig.Application/World/CaveRoomPlacementCandidateResolver.cs");
         string resume = Read(
             "src/Dig.Application/World/CaveRoomResumePlanner.cs");
+        string demoSkills = Read(
+            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSession.DemoSkills.cs");
+        string excavation = Read(
+            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/"
+                + "DigAgentSimulationDriverBase.Excavation.cs");
 
         Assert.Contains("_pausedCaveRoomPlans", session);
         Assert.Contains("_caveRoomResumePlanner.Plan", session);
@@ -64,6 +73,11 @@ public sealed class InventoryBarrelRoomRuntimeRegressionTests
         Assert.Contains("row.RequiredQuartersByX.ContainsKey(pointerCell.X)", resolver);
         Assert.Contains("pausedPlan.ExcavationTargets", resume);
         Assert.Contains("IsComplete(target, cells)", resume);
+        Assert.Contains("ResolveDemoSkills(index)", Read(
+            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSession.cs"));
+        Assert.Contains("StoneworkThresholdUnits(3)", demoSkills);
+        Assert.Contains("DisableCaveRoomPlanning();", input);
+        Assert.Contains("InvalidateDesignationSynchronization", excavation);
     }
 
     private static string Read(string relativePath)

@@ -189,29 +189,34 @@ public sealed partial class InventoryState
 
         foreach (ResidentInventorySlotClaimSnapshot claim in claims)
         {
+            if (claim.Quantity != 1)
+            {
+                return Result.Failure(InventoryErrors.ResidentSlotClaimStale);
+            }
+
             ItemLocation destination = ItemLocation.InResidentSlot(
                 residentId,
                 claim.Slot.Compartment,
                 claim.Slot.Index);
-            ItemStackState? target = FindStackAt(destination, default);
-            if (target is null)
+            if (FindStackAt(destination, default) != null)
             {
-                if (newStackIds.Count == 0)
-                {
-                    return Result.Failure(InventoryErrors.SplitIdRequired);
-                }
-
-                EntityId newId = newStackIds.Dequeue();
-                if (newId.IsEmpty || _stacks.ContainsKey(newId))
-                {
-                    return Result.Failure(InventoryErrors.StackAlreadyExists);
-                }
-
-                target = new ItemStackState(newId, itemId, 0, destination);
-                _stacks.Add(newId, target);
+                return Result.Failure(InventoryErrors.ResidentSlotClaimStale);
             }
 
-            int need = claim.Quantity;
+            if (newStackIds.Count == 0)
+            {
+                return Result.Failure(InventoryErrors.SplitIdRequired);
+            }
+
+            EntityId newId = newStackIds.Dequeue();
+            if (newId.IsEmpty || _stacks.ContainsKey(newId))
+            {
+                return Result.Failure(InventoryErrors.StackAlreadyExists);
+            }
+
+            ItemStackState target = new ItemStackState(newId, itemId, 0, destination);
+            _stacks.Add(newId, target);
+            int need = 1;
             while (need > 0)
             {
                 (ItemStackState source, int remaining) = sources.Dequeue();

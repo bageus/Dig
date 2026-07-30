@@ -1,3 +1,4 @@
+using Dig.Application.Inventory;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.Navigation;
@@ -17,7 +18,10 @@ namespace Dig.Unity
             ItemStackSnapshot? box = _buildingInventoryRepository!.Get().GetStack(
                 relocation.StackId);
             bool carriedByWorker = job.AssignedAgentId.HasValue
-                && box?.Location == ItemLocation.InAgent(job.AssignedAgentId.Value);
+                && box != null
+                && DropResidentInventoryStackHandler.IsOwnedByResident(
+                    box.Location,
+                    job.AssignedAgentId.Value);
             bool delivering = relocation.StartsHeld
                 || carriedByWorker
                 || job.Stage == JobStageKind.TravelToDestination

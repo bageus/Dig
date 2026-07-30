@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Presentation.Inventory;
@@ -34,20 +35,28 @@ public sealed class ResidentInventoryPresenterTests
             ItemLocation.InWorld(new Dig.Domain.World.CellId(3, 3)),
             tick: 5).IsSuccess);
 
+        Assert.True(inventory.NormalizeResidentInventory(resident, tick: 6).IsSuccess);
         ResidentInventoryViewModel model = Presenter(inventory)
             .Present(inventory.CreateSnapshot(), resident);
 
         Assert.Equal(resident.ToString(), model.ResidentId);
-        Assert.Equal(3, model.Slots.Count);
+        Assert.Equal(6, model.Slots.Count);
         Assert.True(model.Slots[0].IsBuildingBox);
         Assert.True(model.Slots[0].CanStartPlacement);
         Assert.True(model.Slots[0].CanDrop);
         Assert.True(model.Slots[1].IsTool);
         Assert.True(model.Slots[1].CanUse);
         Assert.True(model.Slots[1].CanDrop);
-        Assert.Equal(ResidentInventoryItemKind.Generic, model.Slots[2].ItemKind);
-        Assert.False(model.Slots[2].CanUse);
-        Assert.True(model.Slots[2].CanDrop);
+        Assert.Equal(4, model.Slots.Count(
+            slot => slot.ItemKind == ResidentInventoryItemKind.Generic));
+        Assert.All(
+            model.Slots.Where(slot => slot.ItemKind == ResidentInventoryItemKind.Generic),
+            slot =>
+            {
+                Assert.Equal(1, slot.Quantity);
+                Assert.False(slot.CanUse);
+                Assert.True(slot.CanDrop);
+            });
     }
 
     [Fact]

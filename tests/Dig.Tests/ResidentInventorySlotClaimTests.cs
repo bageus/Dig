@@ -24,7 +24,7 @@ public sealed class ResidentInventorySlotClaimTests
         Assert.True(inventory.AddStack(
             OreStackId,
             OreId,
-            95,
+            1,
             ItemLocation.InResidentSlot(
                 ResidentId,
                 ResidentInventoryCompartment.Cargo,
@@ -36,7 +36,7 @@ public sealed class ResidentInventorySlotClaimTests
                 FirstJobId,
                 ResidentId,
                 OreId,
-                quantity: 8,
+                quantity: 1,
                 tick: 1);
 
         Assert.True(result.IsSuccess, result.Error?.ToString());
@@ -44,11 +44,11 @@ public sealed class ResidentInventorySlotClaimTests
         Assert.Equal(
             new ResidentInventorySlot(ResidentInventoryCompartment.Main, 1),
             claim.Slot);
-        Assert.Equal(8, claim.Quantity);
+        Assert.Equal(1, claim.Quantity);
     }
 
     [Fact]
-    public void Filled_main_uses_existing_cargo_stack_before_empty_cargo_slot()
+    public void Filled_main_skips_occupied_same_item_cargo_slot_and_uses_next_empty_slot()
     {
         InventoryState inventory = CreateInventory(withBasket: true);
         for (int index = 1; index < ResidentInventoryLayoutSnapshot.MainSlotCount; index++)
@@ -56,7 +56,7 @@ public sealed class ResidentInventorySlotClaimTests
             Assert.True(inventory.AddStack(
                 Id(20 + index),
                 OreId,
-                100,
+                1,
                 ItemLocation.InResidentSlot(
                     ResidentId,
                     ResidentInventoryCompartment.Main,
@@ -67,7 +67,7 @@ public sealed class ResidentInventorySlotClaimTests
         Assert.True(inventory.AddStack(
             OreStackId,
             OreId,
-            95,
+            1,
             ItemLocation.InResidentSlot(
                 ResidentId,
                 ResidentInventoryCompartment.Cargo,
@@ -78,19 +78,15 @@ public sealed class ResidentInventorySlotClaimTests
             FirstJobId,
             ResidentId,
             OreId,
-            quantity: 8,
+            quantity: 1,
             tick: 1);
 
         Assert.True(result.IsSuccess, result.Error?.ToString());
-        Assert.Equal(2, result.Value.Count);
-        Assert.Equal(
-            new ResidentInventorySlot(ResidentInventoryCompartment.Cargo, 0),
-            result.Value[0].Slot);
-        Assert.Equal(5, result.Value[0].Quantity);
+        ResidentInventorySlotClaimSnapshot claim = Assert.Single(result.Value);
         Assert.Equal(
             new ResidentInventorySlot(ResidentInventoryCompartment.Cargo, 1),
-            result.Value[1].Slot);
-        Assert.Equal(3, result.Value[1].Quantity);
+            claim.Slot);
+        Assert.Equal(1, claim.Quantity);
     }
 
     [Fact]
@@ -102,7 +98,7 @@ public sealed class ResidentInventorySlotClaimTests
             FirstJobId,
             ResidentId,
             OreId,
-            quantity: 100,
+            quantity: 5,
             tick: 1);
         var second = inventory.ReserveResidentSlotCapacity(
             SecondJobId,
@@ -114,7 +110,7 @@ public sealed class ResidentInventorySlotClaimTests
         Assert.True(first.IsSuccess, first.Error?.ToString());
         Assert.True(second.IsSuccess, second.Error?.ToString());
         Assert.NotEqual(first.Value[0].Slot, second.Value[0].Slot);
-        Assert.Equal(101, inventory.GetResidentSlotClaims().Sum(claim => claim.Quantity));
+        Assert.Equal(6, inventory.GetResidentSlotClaims().Sum(claim => claim.Quantity));
     }
 
     [Fact]
@@ -126,14 +122,14 @@ public sealed class ResidentInventorySlotClaimTests
             FirstJobId,
             ResidentId,
             OreId,
-            quantity: 7,
+            quantity: 3,
             tick: 1);
         long version = inventory.Version;
         var repeated = inventory.ReserveResidentSlotCapacity(
             FirstJobId,
             ResidentId,
             OreId,
-            quantity: 7,
+            quantity: 3,
             tick: 2);
 
         Assert.True(first.IsSuccess, first.Error?.ToString());
@@ -150,18 +146,18 @@ public sealed class ResidentInventorySlotClaimTests
             FirstJobId,
             ResidentId,
             OreId,
-            quantity: 150,
+            quantity: 9,
             tick: 1).IsSuccess);
 
         int released = inventory.ReleaseResidentSlotClaims(FirstJobId, tick: 2);
 
-        Assert.Equal(150, released);
+        Assert.Equal(9, released);
         Assert.Empty(inventory.GetResidentSlotClaims(FirstJobId));
         Assert.True(inventory.ReserveResidentSlotCapacity(
             SecondJobId,
             ResidentId,
             OreId,
-            quantity: 150,
+            quantity: 9,
             tick: 3).IsSuccess);
     }
 
@@ -173,7 +169,7 @@ public sealed class ResidentInventorySlotClaimTests
             FirstJobId,
             ResidentId,
             OreId,
-            quantity: 500,
+            quantity: 5,
             tick: 1);
 
         Assert.True(result.IsSuccess, result.Error?.ToString());
@@ -205,7 +201,7 @@ public sealed class ResidentInventorySlotClaimTests
             FirstJobId,
             ResidentId,
             OreId,
-            quantity: 137,
+            quantity: 7,
             tick: 1).IsSuccess);
         InventorySnapshot snapshot = inventory.CreateSnapshot();
 

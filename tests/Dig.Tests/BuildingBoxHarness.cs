@@ -40,7 +40,10 @@ internal sealed class BuildingBoxHarness
             BoxItemId,
             quantity: 1,
             carriedByResident
-                ? ItemLocation.InAgent(WorkerId)
+                ? ItemLocation.InResidentSlot(
+                    WorkerId,
+                    ResidentInventoryCompartment.Main,
+                    slotIndex: 0)
                 : ItemLocation.InWorld(SourceCell),
             tick: 0);
         Buildings = new BuildingsState();
@@ -123,7 +126,10 @@ internal sealed class BuildingBoxHarness
                 _tick++));
         Assert.True(acquired.IsSuccess, acquired.Error?.ToString());
         ItemStackSnapshot carried = Inventory.GetStack(SourceStackId)!;
-        Assert.Equal(ItemLocation.InAgent(WorkerId), carried.Location);
+        Assert.True(
+            Dig.Application.Inventory.DropResidentInventoryStackHandler.IsOwnedByResident(
+                carried.Location,
+                WorkerId));
         Assert.Equal(1, carried.ReservedQuantity);
         Advance();
         Advance();

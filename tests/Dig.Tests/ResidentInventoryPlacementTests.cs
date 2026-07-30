@@ -41,9 +41,9 @@ public sealed class ResidentInventoryPlacementTests
         Assert.Equal(JobStatus.Claimed, job.Status);
         Assert.Equal(ResidentId, job.AssignedAgentId);
         Assert.Equal(FirstStackId, placement.StackId);
-        Assert.Equal(2, placement.Quantity);
+        Assert.Equal(1, placement.Quantity);
         Assert.Equal(FirstTarget, placement.DestinationCell);
-        Assert.Equal(2, harness.Inventory.GetStack(FirstStackId)!.ReservedQuantity);
+        Assert.Equal(1, harness.Inventory.GetStack(FirstStackId)!.ReservedQuantity);
         Assert.Equal(ItemLocation.InResidentSlot(
             ResidentId,
             ResidentInventoryCompartment.Main,
@@ -100,9 +100,9 @@ public sealed class ResidentInventoryPlacementTests
         Assert.Equal(JobStatus.Completed, harness.Jobs.Get(FirstJobId)!.Status);
         ItemStackSnapshot stack = harness.Inventory.GetStack(FirstStackId)!;
         Assert.Equal(ItemLocation.InWorld(FirstTarget), stack.Location);
-        Assert.Equal(2, stack.Quantity);
+        Assert.Equal(1, stack.Quantity);
         Assert.Equal(0, stack.ReservedQuantity);
-        Assert.Equal(4, harness.Inventory.GetTotal(ItemId));
+        Assert.Equal(2, harness.Inventory.GetTotal(ItemId));
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public sealed class ResidentInventoryPlacementTests
                 SecondJobId,
                 ResidentId,
                 SecondStackId,
-                quantity: 2,
+                quantity: 1,
                 SecondTarget,
                 priority: 700,
                 createdTick: 20,
@@ -129,7 +129,7 @@ public sealed class ResidentInventoryPlacementTests
 
         Assert.Equal(ResidentId, decoded.ResidentId);
         Assert.Equal(SecondStackId, decoded.StackId);
-        Assert.Equal(2, decoded.Quantity);
+        Assert.Equal(1, decoded.Quantity);
         Assert.Equal(SecondTarget, decoded.DestinationCell);
         Assert.Equal(new[] { FirstJobId }, decoded.Dependencies);
         Assert.Equal(
@@ -157,7 +157,7 @@ public sealed class ResidentInventoryPlacementTests
             Assert.True(Inventory.AddStack(
                 FirstStackId,
                 ItemId,
-                quantity: 2,
+                quantity: 1,
                 ItemLocation.InResidentSlot(
                     ResidentId,
                     ResidentInventoryCompartment.Main,
@@ -166,7 +166,7 @@ public sealed class ResidentInventoryPlacementTests
             Assert.True(Inventory.AddStack(
                 SecondStackId,
                 ItemId,
-                quantity: 2,
+                quantity: 1,
                 ItemLocation.InResidentSlot(
                     ResidentId,
                     ResidentInventoryCompartment.Main,
@@ -217,7 +217,7 @@ public sealed class ResidentInventoryPlacementTests
                 jobId,
                 ResidentId,
                 stackId,
-                quantity: 2,
+                quantity: 1,
                 destination,
                 new[] { FirstTarget, SecondTarget },
                 priority: 700,

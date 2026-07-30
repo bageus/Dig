@@ -148,8 +148,19 @@ public sealed partial class InventoryState
         IReadOnlyList<ResidentInventorySlotClaimSnapshot> claims,
         EntityId destinationStackId)
     {
+        if (claims.Any(claim => claim.Quantity != 1))
+        {
+            return Result<HaulingAcquirePlan>.Failure(
+                InventoryErrors.ResidentSlotClaimStale);
+        }
+
+        bool singleUnitFullMove = claims.Count == 1
+            && source.Quantity == 1
+            && source.ReservedQuantity == 1;
+        bool preserveSourceIdentity = claims.Count > 1
+            && source.Quantity == claims.Count
+            && source.ReservedQuantity == claims.Count;
         List<HaulingAcquireStep> steps = new List<HaulingAcquireStep>();
-        int emptyCount = 0;
         for (int index = 0; index < claims.Count; index++)
         {
             ResidentInventorySlotClaimSnapshot claim = claims[index];
@@ -157,54 +168,50 @@ public sealed partial class InventoryState
                 claim.ResidentId,
                 claim.Slot.Compartment,
                 claim.Slot.Index);
-            ItemStackState? target = FindStackAt(location, source.Id);
-            if (target != null)
+            if (FindStackAt(location, source.Id) != null)
             {
-                if (target.ItemId != source.ItemId
-                    || target.Quantity + claim.Quantity
-                        > Catalog.Get(source.ItemId).MaximumStackSize)
-                {
-                    return Result<HaulingAcquirePlan>.Failure(
-                        InventoryErrors.ResidentSlotClaimStale);
-                }
+                return Result<HaulingAcquirePlan>.Failure(
+                    InventoryErrors.ResidentSlotClaimStale);
+            }
+
+            bool usesSourceIdentity = singleUnitFullMove
+                || (preserveSourceIdentity && index == claims.Count - 1);
+            EntityId unitId;
+            if (usesSourceIdentity)
+            {
+                unitId = source.Id;
+            }
+            else if (index == 0 && !destinationStackId.IsEmpty)
+            {
+                unitId = destinationStackId;
             }
             else
             {
-                emptyCount++;
+                Result<EntityId> generated = CreateResidentUnitId(
+                    source.Id,
+                    ordinal: 10_000 + index);
+                if (generated.IsFailure)
+                {
+                    return Result<HaulingAcquirePlan>.Failure(generated.Error!);
+                }
+
+                unitId = generated.Value;
             }
 
-            steps.Add(new HaulingAcquireStep(claim, location, target));
-        }
-
-        bool fullMove = steps.Count == 1
-            && steps[0].Target == null
-            && source.Quantity == steps[0].Claim.Quantity
-            && source.ReservedQuantity == source.Quantity;
-        if (emptyCount > (fullMove ? 1 : 0))
-        {
-            if (destinationStackId.IsEmpty)
-            {
-                return Result<HaulingAcquirePlan>.Failure(
-                    InventoryErrors.SplitIdRequired);
-            }
-
-            if (_stacks.ContainsKey(destinationStackId))
+            if (!usesSourceIdentity && _stacks.ContainsKey(unitId))
             {
                 return Result<HaulingAcquirePlan>.Failure(
                     InventoryErrors.StackAlreadyExists);
             }
+
+            steps.Add(new HaulingAcquireStep(
+                claim,
+                location,
+                unitId,
+                usesSourceIdentity));
         }
 
-        if (!fullMove && emptyCount > 1)
-        {
-            return Result<HaulingAcquirePlan>.Failure(
-                InventoryErrors.ResidentInventoryCapacityExceeded);
-        }
-
-        return Result<HaulingAcquirePlan>.Success(new HaulingAcquirePlan(
-            steps,
-            destinationStackId,
-            fullMove));
+        return Result<HaulingAcquirePlan>.Success(new HaulingAcquirePlan(steps));
     }
 
     private void ExecuteHaulingAcquire(
@@ -213,58 +220,43 @@ public sealed partial class InventoryState
         HaulingAcquirePlan plan,
         long tick)
     {
-        if (plan.FullMove)
-        {
-            ItemLocation sourceLocation = source.Location;
-            ItemLocation destination = plan.Steps[0].Destination;
-            source.MoveFull(destination);
-            IncrementVersion();
-            Raise(new ItemStackMoved(
-                tick,
-                source.Id,
-                source.Id,
-                source.ItemId,
-                source.Quantity,
-                sourceLocation,
-                destination));
-            return;
-        }
-
         for (int index = 0; index < plan.Steps.Count; index++)
         {
             HaulingAcquireStep step = plan.Steps[index];
-            int quantity = step.Claim.Quantity;
             ItemLocation sourceLocation = source.Location;
-            source.ConsumeReservedQuantity(jobId, quantity);
-            EntityId destinationId;
-            if (step.Target != null)
+            if (step.UsesSourceIdentity)
             {
-                step.Target.AddQuantity(quantity);
-                step.Target.Reserve(jobId, quantity);
-                destinationId = step.Target.Id;
+                source.ConsumeReservation(jobId, quantity: 1);
+                source.MoveFull(step.Destination);
                 Raise(new ItemQuantityReservationChanged(
                     tick,
-                    step.Target.Id,
+                    source.Id,
                     jobId,
-                    step.Target.GetReservedQuantity(jobId)));
-            }
-            else
-            {
-                ItemStackState moved = new ItemStackState(
-                    plan.DestinationStackId,
+                    source.GetReservedQuantity(jobId)));
+                Raise(new ItemStackMoved(
+                    tick,
+                    source.Id,
+                    source.Id,
                     source.ItemId,
-                    quantity,
-                    step.Destination);
-                moved.Reserve(jobId, quantity);
-                _stacks.Add(moved.Id, moved);
-                destinationId = moved.Id;
-                Raise(new ItemQuantityReservationChanged(
-                    tick,
-                    moved.Id,
-                    jobId,
-                    moved.GetReservedQuantity(jobId)));
+                    quantity: 1,
+                    sourceLocation,
+                    step.Destination));
+                continue;
             }
 
+            source.ConsumeReservedQuantity(jobId, quantity: 1);
+            ItemStackState moved = new ItemStackState(
+                step.DestinationStackId,
+                source.ItemId,
+                quantity: 1,
+                step.Destination);
+            moved.Reserve(jobId, quantity: 1);
+            _stacks.Add(moved.Id, moved);
+            Raise(new ItemQuantityReservationChanged(
+                tick,
+                moved.Id,
+                jobId,
+                moved.GetReservedQuantity(jobId)));
             Raise(new ItemQuantityReservationChanged(
                 tick,
                 source.Id,
@@ -273,9 +265,9 @@ public sealed partial class InventoryState
             Raise(new ItemStackMoved(
                 tick,
                 source.Id,
-                destinationId,
+                moved.Id,
                 source.ItemId,
-                quantity,
+                quantity: 1,
                 sourceLocation,
                 step.Destination));
         }
@@ -290,19 +282,12 @@ public sealed partial class InventoryState
 
     private sealed class HaulingAcquirePlan
     {
-        public HaulingAcquirePlan(
-            IReadOnlyList<HaulingAcquireStep> steps,
-            EntityId destinationStackId,
-            bool fullMove)
+        public HaulingAcquirePlan(IReadOnlyList<HaulingAcquireStep> steps)
         {
             Steps = steps;
-            DestinationStackId = destinationStackId;
-            FullMove = fullMove;
         }
 
         public IReadOnlyList<HaulingAcquireStep> Steps { get; }
-        public EntityId DestinationStackId { get; }
-        public bool FullMove { get; }
     }
 
     private sealed class HaulingAcquireStep
@@ -310,17 +295,21 @@ public sealed partial class InventoryState
         public HaulingAcquireStep(
             ResidentInventorySlotClaimSnapshot claim,
             ItemLocation destination,
-            ItemStackState? target)
+            EntityId destinationStackId,
+            bool usesSourceIdentity)
         {
             Claim = claim;
             Destination = destination;
-            Target = target;
+            DestinationStackId = destinationStackId;
+            UsesSourceIdentity = usesSourceIdentity;
         }
 
         public ResidentInventorySlotClaimSnapshot Claim { get; }
         public ItemLocation Destination { get; }
-        public ItemStackState? Target { get; }
+        public EntityId DestinationStackId { get; }
+        public bool UsesSourceIdentity { get; }
     }
+
 }
 
 }

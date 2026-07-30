@@ -16,6 +16,12 @@ public sealed class BuildingBoxRuntimeLifecycleRegressionContractTests
         string confirmation = Read(
             RepositoryRoot(),
             "src/Dig.Application/Buildings/ConfirmBuildingBoxPlacementHandler.cs");
+        string execution = Read(
+            RepositoryRoot(),
+            "src/Dig.Application/Buildings/BuildingBoxAssemblyExecutionPolicy.cs");
+        string commit = Read(
+            RepositoryRoot(),
+            "src/Dig.Application/Buildings/CommitBuildingBoxToSiteHandler.cs");
 
         Assert.Contains("chunk.WalkableCells", placement);
         Assert.Contains("Where(HasFullStandingSupport)", placement);
@@ -25,6 +31,8 @@ public sealed class BuildingBoxRuntimeLifecycleRegressionContractTests
         Assert.Contains("source.Location.OwnerId", placement);
         Assert.Contains("_agentSession!.LoadView()", interaction);
         Assert.Contains("jobs.Claim(command.JobId,source.Location.OwnerId", confirmation);
+        Assert.Contains("IsOwnedByResident", execution);
+        Assert.Contains("IsOwnedByResident", commit);
     }
 
     [Fact]
@@ -101,6 +109,9 @@ public sealed class BuildingBoxRuntimeLifecycleRegressionContractTests
         Assert.Contains("Held_box_relocation_deposits_from_adjacent_supported_cell", playMode);
         Assert.Contains("Direct_move_cancellation_removes_plan_and_keeps_same_box", playMode);
         Assert.Contains("SourceBuildingBoxStackId", playMode);
+        Assert.Contains("BuildingBoxCommitState.AtSite", playMode);
+        Assert.Contains("ItemLocation.InBuilding", playMode);
+        Assert.Contains("BuildingVisualState.Assembly", playMode);
     }
 
     private static string Read(string root, string relativePath)

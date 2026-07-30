@@ -99,8 +99,9 @@ public sealed class AcquireBuildingBoxForAssemblyHandler
             return Result.Failure(BuildingBoxErrors.SourceStackMissing);
         }
 
-        ItemLocation carried = ItemLocation.InAgent(job.AssignedAgentId.Value);
-        if (box.Location == carried)
+        EntityId workerId = job.AssignedAgentId.Value;
+        ItemLocation carried = ItemLocation.InAgent(workerId);
+        if (DropResidentInventoryStackHandler.IsOwnedByResident(box.Location, workerId))
         {
             return Result.Success();
         }

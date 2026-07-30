@@ -78,7 +78,7 @@ public sealed class ResidentInventoryDiagnosticsTests
             JobId,
             ResidentId,
             OreId,
-            12,
+            4,
             tick: 2).IsSuccess);
 
         ResidentInventoryDiagnosticViewModel model =
@@ -94,11 +94,15 @@ public sealed class ResidentInventoryDiagnosticsTests
             model.Slots,
             slot => slot.StackId == ToolStackId.ToString());
         Assert.Equal(1, held.HeldQuantity);
-        ResidentInventorySlotDiagnosticViewModel claimed = Assert.Single(
-            model.Slots,
-            slot => slot.IncomingClaimQuantity == 12);
-        Assert.Equal(ResidentInventoryCompartment.Cargo, claimed.Compartment);
-        Assert.Equal(JobId.ToString(), Assert.Single(claimed.ClaimJobIds));
+        ResidentInventorySlotDiagnosticViewModel[] claimed = model.Slots
+            .Where(slot => slot.IncomingClaimQuantity == 1)
+            .ToArray();
+        Assert.Equal(4, claimed.Length);
+        Assert.All(claimed, slot =>
+        {
+            Assert.Equal(ResidentInventoryCompartment.Cargo, slot.Compartment);
+            Assert.Equal(JobId.ToString(), Assert.Single(slot.ClaimJobIds));
+        });
     }
 
     [Fact]
@@ -131,15 +135,18 @@ public sealed class ResidentInventoryDiagnosticsTests
                 ResidentInventoryCompartment.Main,
                 0),
             tick: 0).IsSuccess);
-        Assert.True(inventory.AddStack(
-            Id(9),
-            OreId,
-            3,
-            ItemLocation.InResidentSlot(
-                ResidentId,
-                ResidentInventoryCompartment.Cargo,
-                0),
-            tick: 0).IsSuccess);
+        for (int slot = 0; slot < 3; slot++)
+        {
+            Assert.True(inventory.AddStack(
+                Id(9 + slot),
+                OreId,
+                1,
+                ItemLocation.InResidentSlot(
+                    ResidentId,
+                    ResidentInventoryCompartment.Cargo,
+                    slot),
+                tick: 0).IsSuccess);
+        }
 
         ResidentInventoryDiagnosticViewModel model =
             new ResidentInventoryDiagnosticsPresenter().Present(inventory, ResidentId);

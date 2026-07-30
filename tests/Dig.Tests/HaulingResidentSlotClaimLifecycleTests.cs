@@ -32,11 +32,16 @@ public sealed class HaulingResidentSlotClaimLifecycleTests
             harness.Assign(FirstResidentId, tick: 2).Assignments);
 
         Assert.Equal(FirstResidentId, assignment.AgentId);
-        ResidentInventorySlotClaimSnapshot claim = Assert.Single(
-            harness.Inventory.GetResidentSlotClaims(JobId));
-        Assert.Equal(FirstResidentId, claim.ResidentId);
-        Assert.Equal(OreId, claim.ItemId);
-        Assert.Equal(6, claim.Quantity);
+        ResidentInventorySlotClaimSnapshot[] claims = harness.Inventory
+            .GetResidentSlotClaims(JobId)
+            .ToArray();
+        Assert.Equal(6, claims.Length);
+        Assert.All(claims, claim =>
+        {
+            Assert.Equal(FirstResidentId, claim.ResidentId);
+            Assert.Equal(OreId, claim.ItemId);
+            Assert.Equal(1, claim.Quantity);
+        });
         Assert.Equal(JobStatus.Claimed, harness.Jobs.Get(JobId)!.Status);
     }
 

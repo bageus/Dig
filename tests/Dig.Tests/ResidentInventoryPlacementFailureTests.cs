@@ -98,7 +98,7 @@ public sealed class ResidentInventoryPlacementFailureTests
             Assert.True(Inventory.AddStack(
                 FirstStackId,
                 ItemId,
-                quantity: 2,
+                quantity: 1,
                 ItemLocation.InResidentSlot(
                     ResidentId,
                     ResidentInventoryCompartment.Main,
@@ -107,7 +107,7 @@ public sealed class ResidentInventoryPlacementFailureTests
             Assert.True(Inventory.AddStack(
                 SecondStackId,
                 ItemId,
-                quantity: 2,
+                quantity: 1,
                 ItemLocation.InResidentSlot(
                     ResidentId,
                     ResidentInventoryCompartment.Main,
@@ -153,7 +153,7 @@ public sealed class ResidentInventoryPlacementFailureTests
                 jobId,
                 ResidentId,
                 stackId,
-                quantity: 2,
+                quantity: 1,
                 destination,
                 reachableCells ?? new[] { FirstTarget, SecondTarget },
                 priority: 700,

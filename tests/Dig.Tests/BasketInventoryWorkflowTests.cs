@@ -49,10 +49,16 @@ public sealed class BasketInventoryWorkflowTests
             tick: _tick++).IsSuccess);
         PickUp(inventories, jobs, OreStackId, Id(11), new CellId(3, 0));
 
-        ItemStackSnapshot cargo = inventory.GetStack(OreStackId)!;
-        Assert.Equal(ResidentInventoryCompartment.Cargo,
-            cargo.Location.ResidentCompartment);
-        Assert.Equal(0, cargo.Location.ResidentSlotIndex);
+        ResidentInventorySlotSnapshot[] cargo = inventory
+            .GetResidentInventoryLayout(ResidentId)
+            .Slots
+            .Where(value => !value.IsEmpty
+                && value.Slot.Compartment == ResidentInventoryCompartment.Cargo)
+            .OrderBy(value => value.Slot.Index)
+            .ToArray();
+        Assert.Equal(3, cargo.Length);
+        Assert.All(cargo, value => Assert.Equal(1, value.Quantity));
+        Assert.Equal(new[] { 0, 1, 2 }, cargo.Select(value => value.Slot.Index));
         Assert.Equal(0.75d, inventory.GetResidentMoveSpeedMultiplier(ResidentId));
         ResidentInventoryAttachmentViewModel attachment = Assert.Single(
             new ResidentInventoryAttachmentPresenter().Present(inventory));

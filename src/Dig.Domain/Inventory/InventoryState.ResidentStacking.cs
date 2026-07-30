@@ -1,6 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using Dig.Domain.Core;
 
 namespace Dig.Domain.Inventory
@@ -8,100 +8,78 @@ namespace Dig.Domain.Inventory
 
 public sealed partial class InventoryState
 {
-    private bool ConsolidateResidentStacks(EntityId residentId, long tick)
+    private Result<EntityId> CreateResidentUnitId(EntityId sourceStackId, int ordinal)
     {
-        bool changed = false;
-        ItemStackState[] candidates = GetResidentStacks(residentId)
-            .Where(CanConsolidateResidentStack)
-            .OrderBy(value => value.Location.HasResidentSlot ? 0 : 1)
-            .ThenBy(value => value.Location)
-            .ThenBy(value => value.Id.ToString(), StringComparer.Ordinal)
-            .ToArray();
-        foreach (IGrouping<ItemId, ItemStackState> group in candidates
-            .GroupBy(value => value.ItemId)
-            .OrderBy(value => value.Key.ToString(), StringComparer.Ordinal))
+        for (int salt = 0; salt < 1024; salt++)
         {
-            ItemDefinition definition = Catalog.Get(group.Key);
-            if (definition.IsInventoryExpansion || definition.MaximumStackSize <= 1)
+            string key = $"{sourceStackId}:resident-unit:{ordinal}:{salt}";
+            byte[] hash;
+            using (SHA256 sha = SHA256.Create())
+            {
+                hash = sha.ComputeHash(Encoding.UTF8.GetBytes(key));
+            }
+
+            byte[] guidBytes = new byte[16];
+            Array.Copy(hash, guidBytes, guidBytes.Length);
+            Guid guid = new Guid(guidBytes);
+            if (guid == Guid.Empty)
             {
                 continue;
             }
 
-            ItemStackState[] stacks = group.ToArray();
-            for (int targetIndex = 0; targetIndex < stacks.Length; targetIndex++)
+            EntityId candidate = new EntityId(guid);
+            if (!_stacks.ContainsKey(candidate))
             {
-                ItemStackState target = stacks[targetIndex];
-                if (!_stacks.ContainsKey(target.Id))
-                {
-                    continue;
-                }
-
-                int capacity = definition.MaximumStackSize - target.Quantity;
-                for (int sourceIndex = targetIndex + 1;
-                    capacity > 0 && sourceIndex < stacks.Length;
-                    sourceIndex++)
-                {
-                    ItemStackState source = stacks[sourceIndex];
-                    if (!_stacks.ContainsKey(source.Id)
-                        || source.ItemId != target.ItemId
-                        || !CanConsolidateResidentStack(source))
-                    {
-                        continue;
-                    }
-
-                    int quantity = Math.Min(capacity, source.Quantity);
-                    if (quantity <= 0)
-                    {
-                        continue;
-                    }
-
-                    ItemLocation sourceLocation = source.Location;
-                    source.ConsumeAvailable(quantity);
-                    target.AddQuantity(quantity);
-                    if (source.Quantity == 0)
-                    {
-                        _stacks.Remove(source.Id);
-                    }
-
-                    Raise(new ItemStackMoved(
-                        tick,
-                        source.Id,
-                        target.Id,
-                        source.ItemId,
-                        quantity,
-                        sourceLocation,
-                        target.Location));
-                    capacity -= quantity;
-                    changed = true;
-                }
+                return Result<EntityId>.Success(candidate);
             }
         }
 
-        if (changed)
-        {
-            IncrementVersion();
-        }
-
-        return changed;
+        return Result<EntityId>.Failure(InventoryErrors.StackAlreadyExists);
     }
 
-    private bool CanConsolidateResidentStack(ItemStackState stack)
+    private sealed class ResidentUnitCandidate
     {
-        if (stack.ReservedQuantity != 0
-            || stack.HeldQuantity != 0
-            || Catalog.Get(stack.ItemId).IsInventoryExpansion)
+        private ResidentUnitCandidate(
+            ItemStackState source,
+            EntityId unitId,
+            int ordinal,
+            bool isOriginal)
         {
-            return false;
+            Source = source;
+            UnitId = unitId;
+            Ordinal = ordinal;
+            IsOriginal = isOriginal;
         }
 
-        if (!stack.Location.HasResidentSlot)
+        public ItemStackState Source { get; }
+        public EntityId UnitId { get; }
+        public int Ordinal { get; }
+        public bool IsOriginal { get; }
+        public ResidentInventorySlot AssignedSlot { get; private set; }
+        public ItemStackState? Materialized { get; private set; }
+
+        public static ResidentUnitCandidate Original(ItemStackState source)
         {
-            return true;
+            return new ResidentUnitCandidate(source, source.Id, ordinal: 0, isOriginal: true);
         }
 
-        ResidentInventorySlot slot = stack.Location.ResidentSlot;
-        return !_residentSlotClaims.Any(value =>
-            value.ResidentId == stack.Location.OwnerId && value.Slot == slot);
+        public static ResidentUnitCandidate Split(
+            ItemStackState source,
+            EntityId unitId,
+            int ordinal)
+        {
+            return new ResidentUnitCandidate(source, unitId, ordinal, isOriginal: false);
+        }
+
+        public void Assign(ResidentInventorySlot slot)
+        {
+            AssignedSlot = slot;
+        }
+
+        public void Materialize(ItemStackState stack)
+        {
+            Materialized = stack;
+        }
     }
 }
 

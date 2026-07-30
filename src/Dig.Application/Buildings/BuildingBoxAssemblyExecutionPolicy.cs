@@ -1,3 +1,4 @@
+using Dig.Application.Inventory;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -45,7 +46,9 @@ public static class BuildingBoxAssemblyExecutionPolicy
         BuildingBoxAssemblyJobDefinition definition =
             (BuildingBoxAssemblyJobDefinition)job.Definition;
         EntityId workerId = job.AssignedAgentId.Value;
-        bool carriedByWorker = sourceBox.Location == ItemLocation.InAgent(workerId);
+        bool carriedByWorker = DropResidentInventoryStackHandler.IsOwnedByResident(
+            sourceBox.Location,
+            workerId);
         bool atWorldSource = sourceBox.Location.Kind == ItemLocationKind.World
             && sourceBox.Location.HasCell
             && sourceBox.Location.CellId == workerCell;

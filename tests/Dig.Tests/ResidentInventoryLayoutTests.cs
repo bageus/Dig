@@ -79,7 +79,7 @@ public sealed class ResidentInventoryLayoutTests
         Assert.True(inventory.AddStack(
             Stack('3'),
             Ore,
-            5,
+            1,
             ItemLocation.InWorld(new CellId(1, 1)),
             tick: 0).IsSuccess);
         Assert.True(inventory.AddStack(
@@ -91,7 +91,7 @@ public sealed class ResidentInventoryLayoutTests
 
         Assert.True(inventory.MoveAvailableToResidentSlot(
             Stack('3'),
-            5,
+            1,
             ResidentId,
             new ResidentInventorySlot(ResidentInventoryCompartment.Cargo, 0),
             default,
@@ -117,13 +117,13 @@ public sealed class ResidentInventoryLayoutTests
     }
 
     [Fact]
-    public void Compatible_stack_move_merges_into_existing_slot()
+    public void Occupied_same_item_slot_rejects_merge_and_preserves_unit_identity()
     {
         InventoryState inventory = CreateInventory();
         Assert.True(inventory.AddStack(
             Stack('1'),
             Ore,
-            5,
+            1,
             ItemLocation.InResidentSlot(
                 ResidentId,
                 ResidentInventoryCompartment.Main,
@@ -132,21 +132,22 @@ public sealed class ResidentInventoryLayoutTests
         Assert.True(inventory.AddStack(
             Stack('2'),
             Ore,
-            4,
+            1,
             ItemLocation.InWorld(new CellId(1, 1)),
             tick: 0).IsSuccess);
 
-        Assert.True(inventory.MoveAvailableToResidentSlot(
+        Result moved = inventory.MoveAvailableToResidentSlot(
             Stack('2'),
-            4,
+            1,
             ResidentId,
             new ResidentInventorySlot(ResidentInventoryCompartment.Main, 0),
             default,
-            tick: 1).IsSuccess);
+            tick: 1);
 
-        Assert.Equal(9, inventory.GetStack(Stack('1'))!.Quantity);
-        Assert.Null(inventory.GetStack(Stack('2')));
-        Assert.Equal(9, inventory.GetTotal(Ore));
+        Assert.Equal(InventoryErrors.ResidentSlotOccupied, moved.Error);
+        Assert.Equal(1, inventory.GetStack(Stack('1'))!.Quantity);
+        Assert.Equal(1, inventory.GetStack(Stack('2'))!.Quantity);
+        Assert.Equal(2, inventory.GetTotal(Ore));
     }
 
     [Fact]

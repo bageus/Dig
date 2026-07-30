@@ -14,8 +14,14 @@ public sealed class ResidentInventorySpillTests
         EntityId.Parse("92000000000000000000000000000001");
     private static readonly EntityId BasketStackId =
         EntityId.Parse("92000000000000000000000000000002");
-    private static readonly EntityId CargoStackId =
-        EntityId.Parse("92000000000000000000000000000003");
+    private static readonly EntityId[] CargoStackIds =
+    {
+        EntityId.Parse("92000000000000000000000000000003"),
+        EntityId.Parse("92000000000000000000000000000005"),
+        EntityId.Parse("92000000000000000000000000000006"),
+        EntityId.Parse("92000000000000000000000000000007"),
+        EntityId.Parse("92000000000000000000000000000008"),
+    };
     private static readonly EntityId WorldStackId =
         EntityId.Parse("92000000000000000000000000000004");
     private static readonly EntityId ReservationJobId =
@@ -45,7 +51,7 @@ public sealed class ResidentInventorySpillTests
             tick: 1);
 
         Assert.True(result.IsSuccess, result.Error?.ToString());
-        Assert.Null(inventory.GetStack(CargoStackId));
+        Assert.All(CargoStackIds, id => Assert.Null(inventory.GetStack(id)));
         Assert.Equal(100, inventory.GetStack(WorldStackId)!.Quantity);
         Assert.Equal(destination, inventory.GetStack(LargeBasketStackId)!.Location);
         Assert.Equal(oreBefore, inventory.GetTotal(OreId));
@@ -64,9 +70,9 @@ public sealed class ResidentInventorySpillTests
     {
         InventoryState inventory = CreateLoadedInventory();
         Assert.True(inventory.ReserveQuantity(
-            CargoStackId,
+            CargoStackIds[4],
             ReservationJobId,
-            2,
+            1,
             tick: 1).IsSuccess);
         InventorySnapshot before = inventory.CreateSnapshot();
         ItemLocation destination = ItemLocation.InWorld(new CellId(8, 8));
@@ -93,7 +99,7 @@ public sealed class ResidentInventorySpillTests
                 ResidentId,
                 ResidentInventoryCompartment.Cargo,
                 5),
-            inventory.GetStack(CargoStackId)!.Location);
+            inventory.GetStack(CargoStackIds[4])!.Location);
     }
 
     [Fact]
@@ -114,7 +120,7 @@ public sealed class ResidentInventorySpillTests
                 ResidentId,
                 ResidentInventoryCompartment.Cargo,
                 5),
-            inventory.GetStack(CargoStackId)!.Location);
+            inventory.GetStack(CargoStackIds[4])!.Location);
         Assert.Equal(6, inventory.GetResidentInventoryLayout(ResidentId).CargoCapacity);
     }
 
@@ -145,15 +151,18 @@ public sealed class ResidentInventorySpillTests
                 ResidentInventoryCompartment.Main,
                 1),
             tick: 0).IsSuccess);
-        Assert.True(inventory.AddStack(
-            CargoStackId,
-            OreId,
-            5,
-            ItemLocation.InResidentSlot(
-                ResidentId,
-                ResidentInventoryCompartment.Cargo,
-                5),
-            tick: 0).IsSuccess);
+        for (int index = 0; index < CargoStackIds.Length; index++)
+        {
+            Assert.True(inventory.AddStack(
+                CargoStackIds[index],
+                OreId,
+                1,
+                ItemLocation.InResidentSlot(
+                    ResidentId,
+                    ResidentInventoryCompartment.Cargo,
+                    index + 1),
+                tick: 0).IsSuccess);
+        }
         return inventory;
     }
 

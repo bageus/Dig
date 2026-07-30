@@ -283,6 +283,7 @@ namespace Dig.Unity
                     $"{plan.Preset.Kind} cave queued: " +
                     $"{plan.ExcavationTargets.Count} Dig Jobs, " +
                     $"depth {plan.Preset.Depth}.");
+                DisableCaveRoomPlanning();
             }
         }
 
