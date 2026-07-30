@@ -29,6 +29,8 @@ Implementation PR: [#529](https://github.com/bageus/Dig/pull/529).
 
 PR #529 is based on current `main` after deterministic terrain deposits and inventory/mushroom regression repairs. The save-version collision discovered during synchronization was resolved without dropping either owner: terrain deposits retain v11 and living materials advance the document to v12.
 
+The final runtime and save source is checked into the feature branch; temporary payload and carrier workflow files have been removed before the final validation run.
+
 ## Verification boundary
 
 The system remains `IMPLEMENTATION_IN_PROGRESS` until the final Quality workflow completes on the reconciled PR head. `VERIFIED` additionally requires licensed Unity Test Runner evidence; source-contract or skipped activation-gate results are not sufficient.
