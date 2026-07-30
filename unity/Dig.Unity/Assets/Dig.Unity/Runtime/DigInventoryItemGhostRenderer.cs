@@ -73,11 +73,11 @@ namespace Dig.Unity
 
             _itemId = itemId;
             _resolution = DigWorldItemVisualPolicy.Resolve(_catalog, itemId);
-            _instance = DigVisualPrefabFactory.Create(
-                _resolution.Asset,
+            _instance = DigBasketVisualPolicy.CreateInstance(
+                itemId,
+                _resolution,
                 _root!,
-                $"Inventory item ghost {itemId}",
-                PrimitiveType.Cube);
+                $"Inventory item ghost {itemId}");
             _instance.transform.localPosition = Vector3.zero;
             _instance.transform.localRotation = Quaternion.identity;
             _instance.transform.localScale = _resolution.WorldScale;
