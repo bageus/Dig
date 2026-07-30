@@ -88,13 +88,23 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         Assert.Contains("VisibleDepthOffset = 0.12f", renderer);
         Assert.Contains("DigBuildingInternalStockBayVisual", renderer + zones);
         Assert.Contains("Storage tray", bay);
-        Assert.Contains("Storage back rail", bay);
+        Assert.DoesNotContain("Storage back rail", bay);
         Assert.Contains("collider.enabled = false", bay);
         Assert.Contains("collider.isTrigger = true", visual);
         Assert.Contains("TryResolveBuildingInternalStockPickup", interaction);
         Assert.Contains("ContextWorldTargetKind.GenericItem", interaction);
         Assert.Contains("Footprint.Min(value => value.X) - 1", pickup);
         Assert.Contains("buildinginternalstockrenderer!.render", Normalize(loop));
+    }
+
+    [Fact]
+    public void Finished_output_interaction_is_owned_by_the_authoritative_world_item_model()
+    {
+        string visual = Read(RuntimeRoot(), "DigWorldItemVisual.cs");
+
+        Assert.Contains("bool interactive = Model.IsInteractive;", visual);
+        Assert.DoesNotContain("&& resolution.ColliderPolicy", visual);
+        Assert.Contains("_interactionCollider!.enabled = interactive;", visual);
     }
 
     [Fact]
