@@ -1,3 +1,4 @@
+using System;
 using Dig.Application.Messaging;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
