@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dig.Domain.Agents;
@@ -13,61 +14,58 @@ internal sealed partial class DigWorldSession
 {
     private const int DemoDepositAlgorithmVersion = 1;
     private const int DemoDepositDensityPermille = 160;
-    private static readonly TerrainDepositDefinition[] DemoDepositDefinitions =
-    {
-        new TerrainDepositDefinition(
-            "deposit.iron_ore",
-            "Iron ore",
-            new ItemId("ore.iron"),
-            maximumYield: 8,
-            generationWeight: 28,
-            skillGrantProfile: DefaultSkillProgressionContent.Catalog.GetProfile(
-                DefaultSkillGrantProfileIds.Metallurgy)),
-        new TerrainDepositDefinition(
-            "deposit.gold_ore",
-            "Gold ore",
-            new ItemId("ore.gold"),
-            maximumYield: 5,
-            generationWeight: 8,
-            skillGrantProfile: DefaultSkillProgressionContent.Catalog.GetProfile(
-                DefaultSkillGrantProfileIds.Metallurgy)),
-        new TerrainDepositDefinition(
-            "deposit.crystal_ore",
-            "Crystal ore",
-            new ItemId("ore.crystal"),
-            maximumYield: 6,
-            generationWeight: 12,
-            skillGrantProfile: DefaultSkillProgressionContent.Catalog.GetProfile(
-                DefaultSkillGrantProfileIds.Alchemy)),
-        new TerrainDepositDefinition(
-            "deposit.coal",
-            "Coal",
-            new ItemId("material.coal"),
-            maximumYield: 10,
-            generationWeight: 24,
-            skillGrantProfile: DefaultSkillProgressionContent.Catalog.GetProfile(
-                DefaultSkillGrantProfileIds.Alchemy)),
-        new TerrainDepositDefinition(
-            "deposit.stone",
-            "Stone",
-            new ItemId("material.stone"),
-            maximumYield: 12,
-            generationWeight: 28,
-            skillGrantProfile: DefaultSkillProgressionContent.Catalog.GetProfile(
-                DefaultSkillGrantProfileIds.StoneExtraction)),
-    };
+    private const int BalanceTbdDepositWorkEffortPermille = 1_000;
+    private static readonly TerrainDepositCatalog DemoDepositCatalog =
+        new TerrainDepositCatalog(new[]
+        {
+            Definition(
+                "deposit.iron_ore",
+                "Iron ore",
+                "ore.iron",
+                maximumYield: 8,
+                generationWeight: 28,
+                DefaultSkillGrantProfileIds.Metallurgy),
+            Definition(
+                "deposit.gold_ore",
+                "Gold ore",
+                "ore.gold",
+                maximumYield: 5,
+                generationWeight: 8,
+                DefaultSkillGrantProfileIds.Metallurgy),
+            Definition(
+                "deposit.crystal_ore",
+                "Crystal ore",
+                "ore.crystal",
+                maximumYield: 6,
+                generationWeight: 12,
+                DefaultSkillGrantProfileIds.Alchemy),
+            Definition(
+                "deposit.coal",
+                "Coal",
+                "material.coal",
+                maximumYield: 10,
+                generationWeight: 24,
+                DefaultSkillGrantProfileIds.Alchemy),
+            Definition(
+                "deposit.stone",
+                "Stone",
+                "material.stone",
+                maximumYield: 12,
+                generationWeight: 28,
+                DefaultSkillGrantProfileIds.StoneExtraction),
+        });
 
     private readonly TerrainDepositPresenter _terrainDepositPresenter =
         new TerrainDepositPresenter();
-    private readonly TerrainDepositState _terrainDeposits = new TerrainDepositState();
 
     internal IReadOnlyList<TerrainDepositDefinition> TerrainDepositDefinitions =>
-        DemoDepositDefinitions;
+        DemoDepositCatalog.Definitions;
 
     internal TerrainDepositVolumeViewModel LoadTerrainDeposits()
     {
+        WorldState worldState = _repository.Get();
         WorldViewModel world = LoadView();
-        TerrainDepositPresentationInput[] inputs = _terrainDeposits.Snapshot()
+        TerrainDepositPresentationInput[] inputs = worldState.TerrainDeposits.Snapshot()
             .Select(value => new TerrainDepositPresentationInput(
                 value.Cell,
                 value.Definition.Id,
@@ -85,22 +83,30 @@ internal sealed partial class DigWorldSession
 
     internal bool RevealTerrainDeposit(CellId cell, long tick)
     {
-        return _terrainDeposits.Reveal(cell, tick);
+        Result<bool> revealed = _repository.Get().RevealTerrainDeposit(cell, tick);
+        if (revealed.IsFailure)
+        {
+            throw new InvalidOperationException(revealed.Error!.ToString());
+        }
+
+        return revealed.Value;
     }
 
-    internal int RevealTerrainDepositsAdjacentTo(CellId excavatedCell, long tick)
+    internal int ResolveDepositWorkEffortPermille(CellId cell)
     {
-        return _terrainDeposits.RevealAdjacentTo(excavatedCell, tick);
-    }
-
-    internal void DepleteTerrainDeposit(CellId cell, long tick)
-    {
-        _terrainDeposits.Deplete(cell, tick);
+        return _repository.Get().TerrainDeposits.TryGet(
+            cell,
+            out TerrainDepositInstance deposit)
+            && !deposit.IsDepleted
+                ? deposit.Definition.WorkEffortPermille
+                : 1_000;
     }
 
     internal SkillGrantProfile ResolveExcavationSkillGrantProfile(CellId cell)
     {
-        return _terrainDeposits.TryGet(cell, out TerrainDepositInstance deposit)
+        return _repository.Get().TerrainDeposits.TryGet(
+            cell,
+            out TerrainDepositInstance deposit)
             && !deposit.IsDepleted
                 ? deposit.Definition.SkillGrantProfile
                 : DefaultSkillProgressionContent.Catalog.GetProfile(
@@ -110,27 +116,52 @@ internal sealed partial class DigWorldSession
     private void InitializeDemoDeposits(int seed)
     {
         _miningOutputWorldSeed = seed;
-        WorldViewModel world = LoadView();
-        CellId[] candidates = world.Chunks
+        WorldState world = _repository.Get();
+        WorldSnapshot snapshot = world.CreateSnapshot();
+        TerrainDepositHostCell[] candidates = snapshot.Chunks
             .SelectMany(chunk => chunk.Cells)
             .Where(cell => cell.IsSolid)
-            .Select(cell => new CellId(cell.X, cell.Y, cell.Z))
-            .Where(cell => !IsProtected(cell))
-            .OrderBy(cell => cell)
+            .Where(cell => !IsProtected(cell.Id))
+            .Select(cell => new TerrainDepositHostCell(
+                cell.Id,
+                world.Materials.Get(cell.State.MaterialId)
+                    ?? throw new InvalidOperationException(
+                        $"Missing host material '{cell.State.MaterialId}'.")))
+            .OrderBy(cell => cell.Cell)
             .ToArray();
-        TerrainDepositGenerator generator = new TerrainDepositGenerator();
-        IReadOnlyList<TerrainDepositInstance> generated = generator.Generate(
-            world.Width,
-            world.Height,
-            depth: world.Depth,
-            candidates,
-            DemoDepositDefinitions,
-            new TerrainDepositGenerationSettings(
-                seed,
-                DemoDepositAlgorithmVersion,
-                DemoDepositDensityPermille,
-                maximumClusterSize: 4));
-        _terrainDeposits.ReplaceAll(generated);
+        TerrainDepositGenerationResult generated =
+            new TerrainDepositGenerator().Generate(
+                world.Size,
+                candidates,
+                DemoDepositCatalog,
+                new TerrainDepositGenerationSettings(
+                    seed,
+                    DemoDepositAlgorithmVersion,
+                    DemoDepositDensityPermille,
+                    maximumClusterSize: 4));
+        world.ReplaceTerrainDeposits(
+            generated.Deposits,
+            generated.AlgorithmVersion);
+    }
+
+    private static TerrainDepositDefinition Definition(
+        string id,
+        string displayName,
+        string outputItemId,
+        int maximumYield,
+        int generationWeight,
+        string skillGrantProfileId)
+    {
+        return new TerrainDepositDefinition(
+            id,
+            displayName,
+            new ItemId(outputItemId),
+            maximumYield,
+            generationWeight,
+            DefaultSkillProgressionContent.Catalog.GetProfile(skillGrantProfileId),
+            version: 1,
+            workEffortPermille: BalanceTbdDepositWorkEffortPermille,
+            allowedHostMaterialIds: new[] { new MaterialId("demo.rock") });
     }
 }
 

@@ -11,19 +11,32 @@ public sealed class TerrainDepositState
     private readonly Dictionary<CellId, TerrainDepositInstance> _byCell =
         new Dictionary<CellId, TerrainDepositInstance>();
 
+    public TerrainDepositState(int generatorVersion = 1)
+    {
+        if (generatorVersion <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(generatorVersion));
+        }
+
+        GeneratorVersion = generatorVersion;
+    }
+
+    public int GeneratorVersion { get; private set; }
+
     public IReadOnlyList<TerrainDepositInstance> Snapshot()
     {
         return new ReadOnlyCollection<TerrainDepositInstance>(
             _byCell.Values.OrderBy(value => value.Cell).ToArray());
     }
 
-    public TerrainDepositSaveSnapshot CaptureSaveSnapshot(int generatorVersion)
+    public TerrainDepositSaveSnapshot CaptureSaveSnapshot()
     {
         TerrainDepositSaveEntry[] deposits = _byCell.Values
             .OrderBy(value => value.Cell)
             .Select(value => new TerrainDepositSaveEntry(
                 value.InstanceId,
                 value.Definition.Id,
+                value.DefinitionVersion,
                 value.Cell,
                 value.IsRevealed,
                 value.RemainingYield,
@@ -31,8 +44,19 @@ public sealed class TerrainDepositState
             .ToArray();
         return new TerrainDepositSaveSnapshot(
             TerrainDepositSaveSnapshot.CurrentFormatVersion,
-            generatorVersion,
+            GeneratorVersion,
             deposits);
+    }
+
+    public TerrainDepositSaveSnapshot CaptureSaveSnapshot(int generatorVersion)
+    {
+        if (generatorVersion != GeneratorVersion)
+        {
+            throw new InvalidOperationException(
+                "The requested generator version does not match authoritative deposit state.");
+        }
+
+        return CaptureSaveSnapshot();
     }
 
     public void RestoreSaveSnapshot(
@@ -67,6 +91,14 @@ public sealed class TerrainDepositState
                     + $"for instance '{entry.InstanceId}'.");
             }
 
+            if (definition.Version != entry.DefinitionVersion)
+            {
+                throw new InvalidOperationException(
+                    $"Terrain deposit definition '{entry.DefinitionId}' version "
+                    + $"{entry.DefinitionVersion} is unavailable; current version is "
+                    + $"{definition.Version}.");
+            }
+
             restored[index] = new TerrainDepositInstance(
                 entry.InstanceId,
                 entry.Cell,
@@ -76,14 +108,21 @@ public sealed class TerrainDepositState
                 entry.Version);
         }
 
-        ReplaceAll(restored);
+        ReplaceAll(restored, snapshot.GeneratorVersion);
     }
 
-    public void ReplaceAll(IEnumerable<TerrainDepositInstance> deposits)
+    public void ReplaceAll(
+        IEnumerable<TerrainDepositInstance> deposits,
+        int generatorVersion = 1)
     {
         if (deposits == null)
         {
             throw new ArgumentNullException(nameof(deposits));
+        }
+
+        if (generatorVersion <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(generatorVersion));
         }
 
         TerrainDepositInstance[] values = deposits.ToArray();
@@ -115,6 +154,8 @@ public sealed class TerrainDepositState
         {
             _byCell.Add(values[index].Cell, values[index]);
         }
+
+        GeneratorVersion = generatorVersion;
     }
 
     public bool TryGet(CellId cell, out TerrainDepositInstance deposit)
@@ -131,41 +172,127 @@ public sealed class TerrainDepositState
 
     public bool Reveal(CellId cell, long version)
     {
+        return TryReveal(cell, version, out _);
+    }
+
+    public bool TryReveal(
+        CellId cell,
+        long version,
+        out TerrainDepositChange change)
+    {
         if (!_byCell.TryGetValue(cell, out TerrainDepositInstance? current)
-            || current.IsRevealed)
+            || current.IsRevealed
+            || current.IsDepleted)
         {
+            change = null!;
             return false;
         }
 
-        _byCell[cell] = current.Reveal(Math.Max(current.Version + 1, version));
+        TerrainDepositInstance revealed = current.Reveal(
+            Math.Max(current.Version + 1, version));
+        _byCell[cell] = revealed;
+        change = CreateChange(TerrainDepositChangeKind.Revealed, revealed);
         return true;
     }
 
     public int RevealAdjacentTo(CellId excavatedCell, long version)
     {
-        int revealed = 0;
+        return RevealAdjacentToChanges(excavatedCell, version).Count;
+    }
+
+    public IReadOnlyList<TerrainDepositChange> RevealAdjacentToChanges(
+        CellId excavatedCell,
+        long version)
+    {
+        List<TerrainDepositChange> changes = new List<TerrainDepositChange>();
         CellId[] neighbors = CreateNeighbors(excavatedCell);
         for (int index = 0; index < neighbors.Length; index++)
         {
-            if (Reveal(neighbors[index], version))
+            if (TryReveal(neighbors[index], version, out TerrainDepositChange change))
             {
-                revealed++;
+                changes.Add(change);
             }
         }
 
-        return revealed;
+        return new ReadOnlyCollection<TerrainDepositChange>(changes);
+    }
+
+
+    public bool MatchesActiveDeposit(
+        CellId cell,
+        string expectedInstanceId,
+        int expectedYield)
+    {
+        if (string.IsNullOrWhiteSpace(expectedInstanceId))
+        {
+            throw new ArgumentException(
+                "Expected deposit instance id is required.",
+                nameof(expectedInstanceId));
+        }
+
+        if (expectedYield <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(expectedYield));
+        }
+
+        return _byCell.TryGetValue(cell, out TerrainDepositInstance? current)
+            && !current.IsDepleted
+            && string.Equals(
+                current.InstanceId,
+                expectedInstanceId,
+                StringComparison.Ordinal)
+            && current.RemainingYield == expectedYield;
     }
 
     public bool Deplete(CellId cell, long version)
     {
+        return TryDeplete(cell, expectedInstanceId: null, expectedYield: null, version, out _);
+    }
+
+    public bool TryDeplete(
+        CellId cell,
+        string? expectedInstanceId,
+        int? expectedYield,
+        long version,
+        out TerrainDepositChange change)
+    {
         if (!_byCell.TryGetValue(cell, out TerrainDepositInstance? current)
             || current.IsDepleted)
         {
+            change = null!;
             return false;
         }
 
-        _byCell[cell] = current.Deplete(Math.Max(current.Version + 1, version));
+        if (expectedInstanceId != null
+            && !string.Equals(current.InstanceId, expectedInstanceId, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "Deposit depletion target no longer matches the expected instance.");
+        }
+
+        if (expectedYield.HasValue && current.RemainingYield != expectedYield.Value)
+        {
+            throw new InvalidOperationException(
+                "Deposit depletion target no longer matches the expected yield.");
+        }
+
+        TerrainDepositInstance depleted = current.Deplete(
+            Math.Max(current.Version + 1, version));
+        _byCell[cell] = depleted;
+        change = CreateChange(TerrainDepositChangeKind.Depleted, depleted);
         return true;
+    }
+
+    private static TerrainDepositChange CreateChange(
+        TerrainDepositChangeKind kind,
+        TerrainDepositInstance deposit)
+    {
+        return new TerrainDepositChange(
+            kind,
+            deposit.InstanceId,
+            deposit.Definition.Id,
+            deposit.Cell,
+            deposit.Version);
     }
 
     private static CellId[] CreateNeighbors(CellId cell)

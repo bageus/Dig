@@ -14,7 +14,7 @@ internal sealed partial class DigWorldSession
 
     internal int MiningOutputGeneratorVersion => DemoDepositAlgorithmVersion;
 
-    internal TerrainDepositState TerrainDeposits => _terrainDeposits;
+    internal TerrainDepositState TerrainDeposits => _repository.Get().TerrainDeposits;
 
     internal MaterialDefinition ResolveTerrainMaterial(CellId cell)
     {

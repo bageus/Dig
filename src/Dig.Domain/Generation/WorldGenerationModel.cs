@@ -209,11 +209,21 @@ public sealed class WorldGenerationRequest
     public WorldGenerationRequest(
         ulong worldSeed,
         WorldGenerationProfile profile,
-        MaterialCatalog materials)
+        MaterialCatalog materials,
+        TerrainDepositCatalog? terrainDepositCatalog = null,
+        TerrainDepositGenerationSettings? terrainDepositSettings = null)
     {
+        if ((terrainDepositCatalog is null) != (terrainDepositSettings is null))
+        {
+            throw new ArgumentException(
+                "Deposit catalog and generation settings must be supplied together.");
+        }
+
         WorldSeed = worldSeed;
         Profile = profile ?? throw new ArgumentNullException(nameof(profile));
         Materials = materials ?? throw new ArgumentNullException(nameof(materials));
+        TerrainDepositCatalog = terrainDepositCatalog;
+        TerrainDepositSettings = terrainDepositSettings;
     }
 
     public ulong WorldSeed { get; }
@@ -221,6 +231,10 @@ public sealed class WorldGenerationRequest
     public WorldGenerationProfile Profile { get; }
 
     public MaterialCatalog Materials { get; }
+
+    public TerrainDepositCatalog? TerrainDepositCatalog { get; }
+
+    public TerrainDepositGenerationSettings? TerrainDepositSettings { get; }
 }
 
 }

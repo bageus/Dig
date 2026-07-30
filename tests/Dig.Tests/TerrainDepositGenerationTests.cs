@@ -11,108 +11,142 @@ namespace Dig.Tests
 
 public sealed class TerrainDepositGenerationTests
 {
-    private static readonly TerrainDepositDefinition[] Definitions =
-    {
-        new TerrainDepositDefinition(
-            "deposit.iron_ore",
-            "Iron ore",
-            new ItemId("ore.iron"),
-            maximumYield: 8,
-            generationWeight: 40),
-        new TerrainDepositDefinition(
-            "deposit.coal",
-            "Coal",
-            new ItemId("material.coal"),
-            maximumYield: 10,
-            generationWeight: 60),
-    };
+    private static readonly MaterialDefinition Stone = new MaterialDefinition(
+        new MaterialId("terrain.stone_rock"),
+        isSolid: true,
+        hardness: 100);
+    private static readonly MaterialDefinition MetalBearing = new MaterialDefinition(
+        new MaterialId("terrain.metal_bearing_rock"),
+        isSolid: true,
+        hardness: 120);
+    private static readonly TerrainDepositDefinition Iron = new TerrainDepositDefinition(
+        "deposit.iron_ore",
+        "Iron ore",
+        new ItemId("ore.iron"),
+        maximumYield: 8,
+        generationWeight: 40,
+        allowedHostMaterialIds: new[] { MetalBearing.Id });
+    private static readonly TerrainDepositDefinition Coal = new TerrainDepositDefinition(
+        "deposit.coal",
+        "Coal",
+        new ItemId("material.coal"),
+        maximumYield: 10,
+        generationWeight: 60,
+        allowedHostMaterialIds: new[] { Stone.Id, MetalBearing.Id });
 
     [Fact]
-    public void Same_seed_and_version_generate_identical_sparse_cells()
+    public void Same_seed_version_and_hosts_generate_identical_hidden_xyz_cells()
     {
         TerrainDepositGenerator generator = new TerrainDepositGenerator();
-        CellId[] candidates = CreateCandidates(width: 10, height: 10);
-        TerrainDepositGenerationSettings settings =
-            new TerrainDepositGenerationSettings(
-                seed: 42,
-                algorithmVersion: 1,
-                densityPermille: 180,
-                maximumClusterSize: 4);
+        TerrainDepositHostCell[] candidates = CreateCandidates(10, 10, depth: 4);
+        TerrainDepositGenerationSettings settings = new TerrainDepositGenerationSettings(
+            seed: 42,
+            algorithmVersion: 3,
+            densityPermille: 180,
+            maximumClusterSize: 4);
+        TerrainDepositCatalog catalog = new TerrainDepositCatalog(new[] { Iron, Coal });
 
-        var first = generator.Generate(10, 10, 4, candidates, Definitions, settings);
-        var second = generator.Generate(10, 10, 4, candidates, Definitions, settings);
+        TerrainDepositGenerationResult first = generator.Generate(
+            new WorldSize(10, 10, 4),
+            candidates,
+            catalog,
+            settings);
+        TerrainDepositGenerationResult second = generator.Generate(
+            new WorldSize(10, 10, 4),
+            candidates.Reverse().ToArray(),
+            new TerrainDepositCatalog(new[] { Coal, Iron }),
+            settings);
 
-        Assert.NotEmpty(first);
-        Assert.True(first.Count < candidates.Length);
+        Assert.Equal(3, first.AlgorithmVersion);
+        Assert.NotEmpty(first.Deposits);
+        Assert.True(first.Deposits.Count < candidates.Length);
+        Assert.Equal(first.Deposits.Select(Describe), second.Deposits.Select(Describe));
+        Assert.All(first.Deposits, value => Assert.False(value.IsRevealed));
+        Assert.Contains(first.Deposits, value => value.Cell.Z > 0);
         Assert.Equal(
-            first.Select(Describe),
-            second.Select(Describe));
-        Assert.Equal(first.Count, first.Select(value => value.Cell).Distinct().Count());
+            first.Deposits.Count,
+            first.Deposits.Select(value => value.Cell).Distinct().Count());
     }
 
     [Fact]
-    public void Different_seed_changes_the_generated_layout()
+    public void Seed_or_algorithm_version_changes_identity_or_layout()
     {
         TerrainDepositGenerator generator = new TerrainDepositGenerator();
-        CellId[] candidates = CreateCandidates(width: 10, height: 10);
+        TerrainDepositHostCell[] candidates = CreateCandidates(8, 8, depth: 4);
+        TerrainDepositCatalog catalog = new TerrainDepositCatalog(new[] { Iron, Coal });
 
-        var first = generator.Generate(
-            10,
-            10,
-            4,
+        TerrainDepositGenerationResult baseline = generator.Generate(
+            new WorldSize(8, 8, 4),
             candidates,
-            Definitions,
-            new TerrainDepositGenerationSettings(42, 1, 180, 4));
-        var second = generator.Generate(
-            10,
-            10,
-            4,
+            catalog,
+            new TerrainDepositGenerationSettings(42, 1, 240, 4));
+        TerrainDepositGenerationResult changedSeed = generator.Generate(
+            new WorldSize(8, 8, 4),
             candidates,
-            Definitions,
-            new TerrainDepositGenerationSettings(43, 1, 180, 4));
+            catalog,
+            new TerrainDepositGenerationSettings(43, 1, 240, 4));
+        TerrainDepositGenerationResult changedVersion = generator.Generate(
+            new WorldSize(8, 8, 4),
+            candidates,
+            catalog,
+            new TerrainDepositGenerationSettings(42, 2, 240, 4));
 
         Assert.NotEqual(
-            first.Select(Describe).ToArray(),
-            second.Select(Describe).ToArray());
+            baseline.Deposits.Select(Describe).ToArray(),
+            changedSeed.Deposits.Select(Describe).ToArray());
+        Assert.NotEqual(
+            baseline.Deposits.Select(Describe).ToArray(),
+            changedVersion.Deposits.Select(Describe).ToArray());
     }
 
     [Fact]
-    public void Generated_deposits_remain_inside_the_mineable_candidate_set()
+    public void Generation_respects_host_material_constraints_and_bounds()
     {
-        TerrainDepositGenerator generator = new TerrainDepositGenerator();
-        CellId[] candidates =
+        TerrainDepositHostCell[] hosts =
         {
-            new CellId(2, 2, 0),
-            new CellId(3, 2, 0),
-            new CellId(4, 2, 0),
-            new CellId(4, 3, 0),
+            new TerrainDepositHostCell(new CellId(1, 1, 0), Stone),
+            new TerrainDepositHostCell(new CellId(2, 1, 0), MetalBearing),
+            new TerrainDepositHostCell(new CellId(2, 1, 1), MetalBearing),
         };
-        HashSet<CellId> allowed = new HashSet<CellId>(candidates);
-
-        var deposits = generator.Generate(
-            8,
-            8,
-            4,
-            candidates,
-            Definitions,
+        TerrainDepositGenerationResult generated = new TerrainDepositGenerator().Generate(
+            new WorldSize(4, 4, 4),
+            hosts,
+            new TerrainDepositCatalog(new[] { Iron }),
             new TerrainDepositGenerationSettings(7, 1, 1_000, 4));
 
-        Assert.NotEmpty(deposits);
-        Assert.All(deposits, value => Assert.Contains(value.Cell, allowed));
-        Assert.All(deposits, value => Assert.InRange(value.RemainingYield, 1, value.Definition.MaximumYield));
+        Assert.NotEmpty(generated.Deposits);
+        Assert.All(generated.Deposits, value =>
+        {
+            Assert.NotEqual(new CellId(1, 1, 0), value.Cell);
+            Assert.Equal(Iron.Id, value.Definition.Id);
+            Assert.InRange(value.Cell.Z, CellId.MinimumDepth, CellId.MaximumDepth);
+        });
     }
 
     [Fact]
-    public void Deposit_definitions_carry_data_driven_extraction_skill_profiles()
+    public void Cluster_cells_are_independent_and_bounded_to_four()
     {
-        TerrainDepositDefinition iron = new TerrainDepositDefinition(
-            "deposit.iron_ore",
-            "Iron ore",
-            new ItemId("ore.iron"),
-            maximumYield: 8,
-            generationWeight: 1,
-            skillGrantProfile: DefaultSkillProgressionContent.Catalog.GetProfile(
-                DefaultSkillGrantProfileIds.Metallurgy));
+        TerrainDepositHostCell[] hosts = CreateCandidates(3, 3, depth: 2);
+        TerrainDepositGenerationResult generated = new TerrainDepositGenerator().Generate(
+            new WorldSize(3, 3, 4),
+            hosts,
+            new TerrainDepositCatalog(new[] { Coal }),
+            new TerrainDepositGenerationSettings(3, 1, 1_000, 4));
+
+        Assert.NotEmpty(generated.Deposits);
+        Assert.All(generated.Deposits, value =>
+            Assert.Equal(Coal.MaximumYield, value.RemainingYield));
+        Assert.Equal(
+            generated.Deposits.Count,
+            generated.Deposits.Select(value => value.InstanceId).Distinct().Count());
+        Assert.Equal(
+            generated.Deposits.Count,
+            generated.Deposits.Select(value => value.Cell).Distinct().Count());
+    }
+
+    [Fact]
+    public void Deposit_definitions_carry_version_effort_hosts_and_skill_profiles()
+    {
         TerrainDepositDefinition crystal = new TerrainDepositDefinition(
             "deposit.crystal_ore",
             "Crystal ore",
@@ -120,24 +154,40 @@ public sealed class TerrainDepositGenerationTests
             maximumYield: 6,
             generationWeight: 1,
             skillGrantProfile: DefaultSkillProgressionContent.Catalog.GetProfile(
-                DefaultSkillGrantProfileIds.Alchemy));
+                DefaultSkillGrantProfileIds.Alchemy),
+            version: 4,
+            workEffortPermille: 1_250,
+            allowedHostMaterialIds: new[] { MetalBearing.Id });
 
-        Assert.Contains(iron.SkillGrantProfile.PerUnit,
-            grant => grant.SkillId == AgentSkillCatalog.Metallurgy);
-        Assert.Contains(crystal.SkillGrantProfile.PerUnit,
+        Assert.Equal(4, crystal.Version);
+        Assert.Equal(1_250, crystal.WorkEffortPermille);
+        Assert.Equal(new[] { MetalBearing.Id }, crystal.AllowedHostMaterialIds);
+        Assert.True(crystal.CanOccupy(MetalBearing));
+        Assert.False(crystal.CanOccupy(Stone));
+        Assert.Contains(
+            crystal.SkillGrantProfile.PerUnit,
             grant => grant.SkillId == AgentSkillCatalog.Alchemy);
-        Assert.DoesNotContain(iron.SkillGrantProfile.PerUnit,
-            grant => grant.SkillId == AgentSkillCatalog.Stonework);
     }
 
-    private static CellId[] CreateCandidates(int width, int height)
+    private static TerrainDepositHostCell[] CreateCandidates(
+        int width,
+        int height,
+        int depth)
     {
-        List<CellId> cells = new List<CellId>();
-        for (int y = 0; y < height; y++)
+        List<TerrainDepositHostCell> cells = new List<TerrainDepositHostCell>();
+        for (int z = 0; z < depth; z++)
         {
-            for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
             {
-                cells.Add(new CellId(x, y, 0));
+                for (int x = 0; x < width; x++)
+                {
+                    MaterialDefinition material = (x + y + z) % 3 == 0
+                        ? MetalBearing
+                        : Stone;
+                    cells.Add(new TerrainDepositHostCell(
+                        new CellId(x, y, z),
+                        material));
+                }
             }
         }
 
@@ -146,7 +196,8 @@ public sealed class TerrainDepositGenerationTests
 
     private static string Describe(TerrainDepositInstance value)
     {
-        return $"{value.InstanceId}:{value.Cell}:{value.Definition.Id}:{value.RemainingYield}";
+        return $"{value.InstanceId}:{value.Cell}:{value.Definition.Id}:"
+            + $"{value.DefinitionVersion}:{value.RemainingYield}:{value.IsRevealed}";
     }
 }
 

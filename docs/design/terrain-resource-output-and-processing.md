@@ -87,6 +87,17 @@ Generation может разместить рядом несколько deposit
 - depleted cell не выдаёт output повторно;
 - одна клетка не может одновременно иметь обычный terrain output и deposit output.
 
+### 4.3 Deterministic state contract
+
+- generation принимает typed host cells с `MaterialId`, stable catalog и algorithm version;
+- definitions и host cells сортируются до roll, поэтому input order не меняет layout;
+- каждая cell получает stable instance id, definition version, exact XYZ, reveal flag, remaining yield и state version;
+- initial state hidden; reveal использует только шесть XYZ-соседей;
+- depletion и открытие terrain принадлежат одной World mutation;
+- mining plan фиксирует expected instance id/yield и отклоняет stale commit до изменения World;
+- save format v11 сохраняет deposit snapshot format, generator version и definition version;
+- integrity diagnostics проверяют host/depletion/output-ledger consistency.
+
 ## 5. Предметы руды и готовые материалы
 
 | ItemId | Display name | Назначение |
@@ -168,8 +179,8 @@ Capability:
 Сохраняются:
 
 - `MaterialId` клетки и факт выполнения output roll;
-- deposit id/type/depleted state;
-- generator/output profile versions;
+- deposit instance id, definition id/version, exact XYZ, hidden/revealed/depleted state и per-cell version;
+- deposit generator, terrain generator и output profile versions;
 - world stacks и reservations;
 - production orders и input/output state;
 - stable recipe/building IDs.

@@ -12,7 +12,6 @@ using Dig.Domain.World;
 using Dig.Infrastructure.Saving;
 using Dig.Infrastructure.InMemory;
 using Xunit;
-
 namespace Dig.Tests
 {
 public sealed class SaveGameRoundTripTests
@@ -65,6 +64,13 @@ public sealed class SaveGameRoundTripTests
         Assert.True(loadedDeposit.IsRevealed);
         Assert.Equal(7, loadedDeposit.RemainingYield);
         Assert.Equal(9, loadedDeposit.Version);
+        Assert.Equal(3, loadedDeposit.DefinitionVersion);
+        Assert.Equal(7, loaded.TerrainDepositGeneratorVersion);
+        Assert.Equal(
+            TerrainDepositSaveSnapshot.CurrentFormatVersion,
+            document.TerrainDeposits.FormatVersion);
+        Assert.Equal(7, document.TerrainDeposits.GeneratorVersion);
+        Assert.Equal(3, document.TerrainDeposits.Deposits[0].DefinitionVersion);
         SaveGameDocument rebuilt = builder.Build(new SaveGameContext(
             loaded.Metadata,
             loaded.World,
@@ -72,7 +78,9 @@ public sealed class SaveGameRoundTripTests
             loaded.Jobs,
             loaded.Buildings,
             Array.Empty<AgentState>(),
-            loaded.TerrainDeposits));
+            loaded.TerrainDeposits,
+            terrainDepositGeneratorVersion:
+                loaded.TerrainDepositGeneratorVersion));
         byte[] secondBytes = codec.Serialize(rebuilt);
         Assert.Equal(firstBytes, secondBytes);
         CompleteDigging(context.World, context.Inventory, context.Jobs);
@@ -87,7 +95,6 @@ public sealed class SaveGameRoundTripTests
         Assert.Empty(loaded.Jobs.GetReservations());
         Assert.Equal(0, loaded.Inventory.GetStack(StackId)!.ReservedQuantity);
     }
-
     [Fact]
     public void File_store_supports_manual_and_autosave_slots()
     {
@@ -105,11 +112,9 @@ public sealed class SaveGameRoundTripTests
                 store);
             SaveGameContext context = CreateContext(materials, items, "manual-1");
             TerrainDepositCatalog deposits = CreateDepositCatalog();
-
             service.Save(context);
             service.Autosave(context);
             var slots = service.ListSlots();
-
             Assert.Equal(2, slots.Count);
             Assert.Contains(slots, item => item.SlotId == "manual-1" && !item.IsCorrupted);
             Assert.Contains(slots, item => item.SlotId == SaveSlotNames.Autosave && !item.IsCorrupted);
@@ -129,7 +134,6 @@ public sealed class SaveGameRoundTripTests
             Directory.Delete(directory, recursive: true);
         }
     }
-
     private static void CompleteDigging(
         WorldState world,
         InventoryState inventory,
@@ -153,7 +157,6 @@ public sealed class SaveGameRoundTripTests
         Assert.True(jobs.AdvanceStage(JobId, tick: 14).IsSuccess);
         inventory.ReleaseReservations(JobId, tick: 14);
     }
-
     private static SaveGameContext CreateContext(
         MaterialCatalog materials,
         ItemCatalog items,
@@ -190,7 +193,6 @@ public sealed class SaveGameRoundTripTests
         Assert.True(jobs.Add(definition).IsSuccess);
         Assert.True(jobs.MakeAvailable(JobId, tick: 7).IsSuccess);
         Assert.True(jobs.Claim(JobId, WorkerId, tick: 8).IsSuccess);
-
         TerrainDepositDefinition depositDefinition = CreateDepositCatalog()
             .Get(DepositDefinitionId)!;
         TerrainDepositInstance[] deposits =
@@ -218,9 +220,9 @@ public sealed class SaveGameRoundTripTests
             jobs,
             new BuildingsState(),
             Array.Empty<AgentState>(),
-            deposits);
+            deposits,
+            terrainDepositGeneratorVersion: 7);
     }
-
     private static SaveGameBuilder CreateBuilder()
     {
         return new SaveGameBuilder(new JobDefinitionSaveRegistry(new[]
@@ -228,7 +230,6 @@ public sealed class SaveGameRoundTripTests
             new DigJobDefinitionSaveCodec(),
         }));
     }
-
     private static SaveGameLoader CreateLoader()
     {
         return new SaveGameLoader(
@@ -241,7 +242,6 @@ public sealed class SaveGameRoundTripTests
                 new DigJobDefinitionSaveCodec(),
             }));
     }
-
     private static TerrainDepositCatalog CreateDepositCatalog()
     {
         return new TerrainDepositCatalog(new[]
@@ -251,10 +251,10 @@ public sealed class SaveGameRoundTripTests
                 "Deep Test Ore",
                 Ore,
                 maximumYield: 10,
-                generationWeight: 1),
+                generationWeight: 1,
+                version: 3),
         });
     }
-
     private static MaterialCatalog CreateMaterials()
     {
         return new MaterialCatalog(new[]
@@ -263,7 +263,6 @@ public sealed class SaveGameRoundTripTests
             new MaterialDefinition(Air, isSolid: false, hardness: 0),
         });
     }
-
     private static ItemCatalog CreateItems()
     {
         return new ItemCatalog(new[]
@@ -271,7 +270,6 @@ public sealed class SaveGameRoundTripTests
             new ItemDefinition(Ore, "Test Ore", maximumStackSize: 100, isTool: false),
         });
     }
-
     private static void AssertWorldEqual(WorldSnapshot expected, WorldSnapshot actual)
     {
         Assert.Equal(expected.Size.Width, actual.Size.Width);
@@ -289,7 +287,6 @@ public sealed class SaveGameRoundTripTests
                 actual.Chunks[index].Cells.Select(item => item.State).ToArray());
         }
     }
-
     private static void AssertInventoryEqual(
         InventorySnapshot expected,
         InventorySnapshot actual)
@@ -310,7 +307,6 @@ public sealed class SaveGameRoundTripTests
             expected.Stacks[0].ReservedQuantity,
             actual.Stacks[0].ReservedQuantity);
     }
-
     private static void AssertJobsEqual(JobSystem expected, JobSystem actual)
     {
         JobSnapshot expectedJob = expected.Get(JobId)!;
@@ -331,7 +327,6 @@ public sealed class SaveGameRoundTripTests
             expected.GetReservations().Select(item => item.AcquiredTick).ToArray(),
             actual.GetReservations().Select(item => item.AcquiredTick).ToArray());
     }
-
     private static string CreateTempDirectory()
     {
         string path = Path.Combine(
@@ -340,7 +335,6 @@ public sealed class SaveGameRoundTripTests
         Directory.CreateDirectory(path);
         return path;
     }
-
     private static EntityId Id(string value)
     {
         return EntityId.Parse(value);

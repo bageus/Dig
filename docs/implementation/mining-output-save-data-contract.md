@@ -31,3 +31,9 @@ state owner:
 A missing section from an older document restores as an empty ledger. A malformed,
 out-of-bounds or Inventory-mismatched section fails with a typed mining-output save
 diagnostic rather than replaying output.
+
+## Deposit snapshot v11
+
+Issue #91 moves `TerrainDepositState` under `WorldState` and raises the save document to version 11. `TerrainDepositsSaveData` now stores its own snapshot format, generator version and per-entry definition version in addition to exact XYZ, reveal/depletion, yield and state version. Migration `save.v10_to_v11.terrain_deposit_contract` assigns legacy definition version 1 and preserves coordinates and quantities.
+
+The completion path resolves and validates deposit identity/yield before mutation. `WorldState.Excavate` then opens terrain, depletes the same instance and reveals six-axis neighbours before Inventory/Job commit. Unity no longer performs a second post-commit depletion mutation.

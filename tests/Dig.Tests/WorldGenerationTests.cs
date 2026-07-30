@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dig.Domain.Core;
 using Dig.Domain.Generation;
+using Dig.Domain.Inventory;
 using Dig.Domain.World;
 using Xunit;
 
@@ -137,6 +138,83 @@ public sealed class WorldGenerationTests
                 505UL,
                 profile.GeneratorVersion,
                 profile.Id));
+    }
+
+
+    [Fact]
+    public void World_generation_populates_versioned_hidden_deposits_and_fingerprints_them()
+    {
+        WorldGenerationProfile profile = CreateProfile();
+        MaterialCatalog materials = CreateMaterials();
+        TerrainDepositCatalog deposits = new TerrainDepositCatalog(new[]
+        {
+            new TerrainDepositDefinition(
+                "deposit.iron_ore",
+                "Iron ore",
+                new ItemId("ore.iron"),
+                maximumYield: 8,
+                generationWeight: 1,
+                allowedHostMaterialIds: new[] { Rock, IronOre }),
+        });
+        TerrainDepositGenerationSettings settings =
+            new TerrainDepositGenerationSettings(
+                seed: 99,
+                algorithmVersion: 4,
+                densityPermille: 160,
+                maximumClusterSize: 4);
+        WorldGenerator generator = new WorldGenerator();
+
+        GeneratedWorld first = generator.Generate(new WorldGenerationRequest(
+            31337UL,
+            profile,
+            materials,
+            deposits,
+            settings)).Value;
+        GeneratedWorld second = generator.Generate(new WorldGenerationRequest(
+            31337UL,
+            profile,
+            materials,
+            deposits,
+            settings)).Value;
+
+        Assert.NotEmpty(first.World.TerrainDeposits.Snapshot());
+        Assert.Equal(4, first.World.TerrainDeposits.GeneratorVersion);
+        Assert.All(
+            first.World.TerrainDeposits.Snapshot(),
+            value => Assert.False(value.IsRevealed));
+        Assert.Equal(
+            first.World.TerrainDeposits.Snapshot().Select(value => value.InstanceId),
+            second.World.TerrainDeposits.Snapshot().Select(value => value.InstanceId));
+        Assert.Equal(first.Metadata.Fingerprint, second.Metadata.Fingerprint);
+
+        CellId revealed = first.World.TerrainDeposits.Snapshot()[0].Cell;
+        Assert.True(first.World.RevealTerrainDeposit(revealed, tick: 1).Value);
+        Assert.NotEqual(
+            first.Metadata.Fingerprint,
+            WorldGenerationFingerprint.Compute(
+                first.World,
+                31337UL,
+                profile.GeneratorVersion,
+                profile.Id));
+    }
+
+    [Fact]
+    public void Deposit_generation_configuration_is_atomic()
+    {
+        Assert.Throws<ArgumentException>(() => new WorldGenerationRequest(
+            1UL,
+            CreateProfile(),
+            CreateMaterials(),
+            new TerrainDepositCatalog(new[]
+            {
+                new TerrainDepositDefinition(
+                    "deposit.test",
+                    "Test",
+                    new ItemId("ore.test"),
+                    maximumYield: 1,
+                    generationWeight: 1),
+            }),
+            terrainDepositSettings: null));
     }
 
     [Fact]

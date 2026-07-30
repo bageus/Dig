@@ -11,6 +11,7 @@ public sealed class TerrainDepositSaveEntry
     public TerrainDepositSaveEntry(
         string instanceId,
         string definitionId,
+        int definitionVersion,
         CellId cell,
         bool isRevealed,
         int remainingYield,
@@ -26,6 +27,11 @@ public sealed class TerrainDepositSaveEntry
             throw new ArgumentException("A stable deposit definition id is required.", nameof(definitionId));
         }
 
+        if (definitionVersion <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(definitionVersion));
+        }
+
         if (remainingYield < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(remainingYield));
@@ -38,6 +44,7 @@ public sealed class TerrainDepositSaveEntry
 
         InstanceId = instanceId;
         DefinitionId = definitionId;
+        DefinitionVersion = definitionVersion;
         Cell = cell;
         IsRevealed = isRevealed;
         RemainingYield = remainingYield;
@@ -47,6 +54,8 @@ public sealed class TerrainDepositSaveEntry
     public string InstanceId { get; }
 
     public string DefinitionId { get; }
+
+    public int DefinitionVersion { get; }
 
     public CellId Cell { get; }
 
@@ -59,7 +68,7 @@ public sealed class TerrainDepositSaveEntry
 
 public sealed class TerrainDepositSaveSnapshot
 {
-    public const int CurrentFormatVersion = 1;
+    public const int CurrentFormatVersion = 2;
 
     public TerrainDepositSaveSnapshot(
         int formatVersion,

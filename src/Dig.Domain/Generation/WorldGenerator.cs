@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Domain.Core;
 using Dig.Domain.Runtime;
 using Dig.Domain.World;
@@ -80,6 +81,7 @@ public sealed class WorldGenerator
         }
 
         WorldState world = worldResult.Value;
+        PopulateTerrainDeposits(world, request);
         ulong fingerprint = WorldGenerationFingerprint.Compute(
             world,
             request.WorldSeed,
@@ -104,6 +106,37 @@ public sealed class WorldGenerator
         }
 
         return Result<GeneratedWorld>.Success(generated);
+    }
+
+
+    private static void PopulateTerrainDeposits(
+        WorldState world,
+        WorldGenerationRequest request)
+    {
+        if (request.TerrainDepositCatalog is null
+            || request.TerrainDepositSettings is null)
+        {
+            return;
+        }
+
+        TerrainDepositHostCell[] hosts = world.CreateSnapshot().Chunks
+            .SelectMany(chunk => chunk.Cells)
+            .Where(cell => cell.IsSolid)
+            .Select(cell => new TerrainDepositHostCell(
+                cell.Id,
+                request.Materials.Get(cell.State.MaterialId)!))
+            .Where(host => host.Material.IsMineable)
+            .OrderBy(host => host.Cell)
+            .ToArray();
+        TerrainDepositGenerationResult generated =
+            new TerrainDepositGenerator().Generate(
+                world.Size,
+                hosts,
+                request.TerrainDepositCatalog,
+                request.TerrainDepositSettings);
+        world.ReplaceTerrainDeposits(
+            generated.Deposits,
+            generated.AlgorithmVersion);
     }
 
     private static Result ValidateMaterials(

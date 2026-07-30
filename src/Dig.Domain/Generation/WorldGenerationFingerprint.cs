@@ -60,6 +60,24 @@ public static class WorldGenerationFingerprint
             }
         }
 
+        TerrainDepositSaveSnapshot deposits =
+            world.TerrainDeposits.CaptureSaveSnapshot();
+        AddInt32(ref hash, deposits.FormatVersion);
+        AddInt32(ref hash, deposits.GeneratorVersion);
+        AddInt32(ref hash, deposits.Deposits.Count);
+        foreach (TerrainDepositSaveEntry deposit in deposits.Deposits)
+        {
+            AddString(ref hash, deposit.InstanceId);
+            AddString(ref hash, deposit.DefinitionId);
+            AddInt32(ref hash, deposit.DefinitionVersion);
+            AddInt32(ref hash, deposit.Cell.X);
+            AddInt32(ref hash, deposit.Cell.Y);
+            AddInt32(ref hash, deposit.Cell.Z);
+            AddByte(ref hash, deposit.IsRevealed ? (byte)1 : (byte)0);
+            AddInt32(ref hash, deposit.RemainingYield);
+            AddInt64(ref hash, deposit.Version);
+        }
+
         return hash;
     }
 
@@ -81,6 +99,15 @@ public static class WorldGenerationFingerprint
             AddByte(ref hash, (byte)(value >> 8));
             AddByte(ref hash, (byte)(value >> 16));
             AddByte(ref hash, (byte)(value >> 24));
+        }
+    }
+
+
+    private static void AddInt64(ref ulong hash, long value)
+    {
+        unchecked
+        {
+            AddUInt64(ref hash, (ulong)value);
         }
     }
 

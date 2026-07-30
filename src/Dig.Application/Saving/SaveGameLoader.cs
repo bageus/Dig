@@ -226,6 +226,9 @@ public sealed partial class SaveGameLoader
                     document.TerrainDeposits,
                     document.World,
                     terrainDepositCatalog);
+            world.Value.ReplaceTerrainDeposits(
+                terrainDeposits,
+                document.TerrainDeposits.GeneratorVersion);
             CombatState? combat = null;
             bool hasCombat = document.Combat?.Intents?.Count > 0
                 || document.Combat?.Executions?.Count > 0
@@ -277,12 +280,19 @@ public sealed partial class SaveGameLoader
                 buildingProduction.Supply,
                 barrels.Value,
                 agentRuntime,
-                combat));
+                combat,
+                terrainDepositGeneratorVersion:
+                    document.TerrainDeposits.GeneratorVersion));
         }
         catch (UnknownTerrainDepositDefinitionException)
         {
             return Result<LoadedGameState>.Failure(
                 SaveErrors.UnknownTerrainDepositDefinition);
+        }
+        catch (UnsupportedTerrainDepositDefinitionVersionException)
+        {
+            return Result<LoadedGameState>.Failure(
+                SaveErrors.UnsupportedTerrainDepositDefinitionVersion);
         }
         catch (KeyNotFoundException)
         {

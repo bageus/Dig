@@ -308,6 +308,7 @@ public sealed class SaveMigrationAndCorruptionTests
             new SaveVersionSevenWorldExcavationProgressMigration(),
             new SaveVersionEightAgentRuntimeMigration(),
             new SaveVersionNineCombatSpatialMigration(),
+            new SaveVersionTenTerrainDepositContractMigration(),
         });
     }
 
