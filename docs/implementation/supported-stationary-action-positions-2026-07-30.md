@@ -26,3 +26,9 @@ The mushroom resolver therefore selects a supported depth cell when left/right c
 Fast regressions cover the selector source contract and quantity-safe meal rejection. The checked-in Unity Play Mode scenario boots the real demo world and calls the actual mushroom resolver for a side-void/depth-supported case.
 
 PR #521 initially failed the repository file-size gate because `MushroomChoppingPlayModeTests.cs` grew to 445 lines. The supported-depth scenario was moved into the focused `MushroomWorkPositionPlayModeTests.cs` fixture, keeping both Play Mode files below the 350-line limit without reducing coverage. Final Quality run `30564804822` passed architecture/file-size checks, Release build, all 1172 .NET tests, headless smoke and both deterministic soaks. Stage 2 v2/v3 exports `30564804684` and `30564804712` also passed. Hosted Unity workflow `30564804945` completed the evidence path; do not promote the systems to `VERIFIED` without licensed executed runtime results.
+
+## Unity compile regression — 2026-07-30
+
+The Unity partial type briefly contained two identical `HasFullStandingSupport(CellId)` declarations: the authoritative shared implementation in `DigTerrainWorkSession.SupportedActionPositions.cs` and a legacy private copy in `DigTerrainWorkSession.BarrelNavigation.cs`. Unity therefore failed with `CS0111` before Play Mode could start even though the repository .NET solution and source-string gates were green.
+
+The legacy barrel copy was removed. Barrel, mushroom, BuildingBox and meal workflows now call the single shared implementation. `UnityStandingSupportMemberContractTests` scans every `DigTerrainWorkSession*.cs` runtime partial and fails unless exactly one non-public declaration exists in the authoritative supported-action file.
