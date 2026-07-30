@@ -84,7 +84,8 @@ The first complete Quality run exposed five test-contract defects rather than a 
 - returns the expected stale-deposit `Result` before any inventory or job mutation instead of converting that controlled domain rejection into an exception;
 - includes `save.v10_to_v11.terrain_deposit_contract` in legacy migration-order expectations;
 - preserves the explicit deposit generator version in the domain snapshot round trip;
-- passes the loaded terrain-deposit generator version when rebuilding a save context, avoiding metadata/world-version drift.
+- passes the loaded terrain-deposit generator version when rebuilding a save context, avoiding metadata/world-version drift;
+- keeps the expanded migration regression fixture within the repository 350-line source limit without reducing coverage.
 
 ## Verification boundary
 
