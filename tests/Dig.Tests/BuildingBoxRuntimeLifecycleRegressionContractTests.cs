@@ -57,6 +57,7 @@ public sealed class BuildingBoxRuntimeLifecycleRegressionContractTests
             "AdvanceReadyManualQuarterExcavations", StringComparison.Ordinal);
         Assert.True(assembly >= 0 && excavation > assembly);
         Assert.Contains(".Where(reachable.Contains)", placement);
+        Assert.Contains("OrderByDescending(sideWorkPositionSet.Contains)", placement);
         Assert.DoesNotContain("legacyConfiguredPositionIsReachable", placement);
         Assert.Contains("Held_box_natural_route_commits_immediately_on_arrival", playMode);
         Assert.Contains("AdvanceAssemblyTick(runtime", playMode);
