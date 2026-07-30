@@ -30,8 +30,7 @@ internal sealed partial class DigTerrainWorkSession
             new PathRequest(start, definition.WorkPosition, navigation.NavigationVersion));
         if (!path.Succeeded
             || path.Path == null
-            || !HasFullStandingSupport(definition.WorkPosition)
-            || !IsSupportedStationaryActionPath(navigation, path.Path))
+            || !HasFullStandingSupport(definition.WorkPosition))
         {
             return true;
         }
@@ -79,15 +78,13 @@ internal sealed partial class DigTerrainWorkSession
         foreach (CellId candidate in candidates
             .Where(navigation.IsWalkable)
             .Where(HasFullStandingSupport)
-            .Distinct()
-            .OrderBy(value => value))
+            .Distinct())
         {
             PathResult path = new NavigationPathfinder().FindPath(
                 navigation,
                 new PathRequest(workerCell, candidate, navigation.NavigationVersion));
             if (!path.Succeeded
-                || path.Path == null
-                || !IsSupportedStationaryActionPath(navigation, path.Path))
+                || path.Path == null)
             {
                 continue;
             }

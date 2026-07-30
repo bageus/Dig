@@ -2,6 +2,7 @@ using System;
 using Dig.Domain.Inventory;
 using Dig.Presentation.Inventory;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Dig.Unity
 {
@@ -18,6 +19,31 @@ public sealed partial class DigGameHudCanvas
         }
 
         return new Vector2Int(slotCount / InventoryRows, InventoryRows);
+    }
+
+    internal static void ConfigureInventoryGrid(
+        GridLayoutGroup grid,
+        int columns,
+        float cellWidth)
+    {
+        if (grid == null)
+        {
+            throw new ArgumentNullException(nameof(grid));
+        }
+
+        if (columns <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(columns));
+        }
+
+        grid.padding = new RectOffset(0, 0, 0, 0);
+        grid.cellSize = new Vector2(cellWidth, InventoryCellHeight);
+        grid.spacing = new Vector2(InventoryCellSpacing, InventoryCellSpacing);
+        grid.startCorner = GridLayoutGroup.Corner.UpperLeft;
+        grid.startAxis = GridLayoutGroup.Axis.Vertical;
+        grid.childAlignment = TextAnchor.UpperLeft;
+        grid.constraint = GridLayoutGroup.Constraint.FixedRowCount;
+        grid.constraintCount = InventoryRows;
     }
 
     private float ResolveInventoryCellWidth(

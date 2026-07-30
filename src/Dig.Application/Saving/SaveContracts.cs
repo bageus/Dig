@@ -97,7 +97,6 @@ public sealed class SaveGameDocument
     [DataMember(Order = 14)] public BarrelSaveData Barrels { get; set; } = new BarrelSaveData();
     [DataMember(Order = 15)] public AgentRuntimeSaveData AgentRuntime { get; set; } = new AgentRuntimeSaveData();
     [DataMember(Order = 16)] public CombatSaveData Combat { get; set; } = new CombatSaveData();
-    [DataMember(Order = 17)] public LivingMaterialEcologySaveData LivingMaterials { get; set; } = new LivingMaterialEcologySaveData();
 }
 
 public sealed class LoadedGameState
@@ -121,7 +120,7 @@ public sealed class LoadedGameState
         BarrelState? barrels = null,
         IReadOnlyDictionary<EntityId, AgentRuntimeSnapshot>? agentRuntime = null,
         CombatState? combat = null,
-        LivingMaterialEcologyState? livingMaterials = null)
+        int? terrainDepositGeneratorVersion = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -133,11 +132,16 @@ public sealed class LoadedGameState
         AgentAutomaticPlanning = Copy(agentAutomaticPlanning);
         AgentPositions = Copy(agentPositions);
         AgentRuntime = Copy(agentRuntime);
+        if (terrainDeposits != null)
+        {
+            int generatorVersion = terrainDepositGeneratorVersion
+                ?? metadata.GeneratorVersion;
+            World.ReplaceTerrainDeposits(terrainDeposits, generatorVersion);
+        }
+
         TerrainDeposits = new ReadOnlyCollection<TerrainDepositInstance>(
-            (terrainDeposits ?? Array.Empty<TerrainDepositInstance>())
-                .OrderBy(value => value.Cell)
-                .ThenBy(value => value.InstanceId, StringComparer.Ordinal)
-                .ToArray());
+            World.TerrainDeposits.Snapshot().ToArray());
+        TerrainDepositGeneratorVersion = World.TerrainDeposits.GeneratorVersion;
         PackableBuildingExecutions = packableBuildingExecutions
             ?? new PackableBuildingExecutionRegistry();
         if (miningOutput is null)
@@ -156,7 +160,6 @@ public sealed class LoadedGameState
         Barrels = barrels ?? new BarrelState(
             new BarrelCatalog(Array.Empty<BarrelDefinition>()));
         Combat = combat;
-        LivingMaterials = livingMaterials ?? new LivingMaterialEcologyState(metadata.WorldSeed);
     }
 
     public SaveMetadataData Metadata { get; }
@@ -170,6 +173,7 @@ public sealed class LoadedGameState
     public IReadOnlyDictionary<EntityId, CellId> AgentPositions { get; }
     public IReadOnlyDictionary<EntityId, AgentRuntimeSnapshot> AgentRuntime { get; }
     public IReadOnlyList<TerrainDepositInstance> TerrainDeposits { get; }
+    public int TerrainDepositGeneratorVersion { get; }
     public PackableBuildingExecutionRegistry PackableBuildingExecutions { get; }
     public RestoredMiningOutputState MiningOutput { get; }
     public MushroomState Mushrooms { get; }
@@ -177,7 +181,6 @@ public sealed class LoadedGameState
     public BuildingSupplyState BuildingSupply { get; }
     public BarrelState Barrels { get; }
     public CombatState? Combat { get; }
-    public LivingMaterialEcologyState LivingMaterials { get; }
 
     private static IReadOnlyDictionary<TKey, TValue> Copy<TKey, TValue>(
         IReadOnlyDictionary<TKey, TValue>? values) where TKey : notnull

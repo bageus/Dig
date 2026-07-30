@@ -270,6 +270,10 @@ public static class WorldErrors
         "world.excavation.requires_empty_material",
         "Excavation must replace terrain with a non-solid material.");
 
+    public static readonly DomainError TerrainDepositStale = new DomainError(
+        "world.terrain_deposit.stale",
+        "The terrain deposit no longer matches the validated extraction plan.");
+
     public static readonly DomainError InvalidDesignation = new DomainError(
         "world.designation.invalid",
         "The requested cell designation is invalid for the target material.");

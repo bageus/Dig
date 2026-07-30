@@ -28,6 +28,11 @@ public static class SaveErrors
         "save.terrain_deposit_definition.unknown",
         "The save references a terrain deposit definition missing from the current catalog.");
 
+    public static readonly DomainError UnsupportedTerrainDepositDefinitionVersion =
+        new DomainError(
+            "save.terrain_deposit_definition_version.unsupported",
+            "The save references an unavailable terrain deposit definition version.");
+
     public static readonly DomainError UnknownMushroomDefinition = new DomainError(
         "save.mushroom_definition.unknown",
         "The save references a mushroom definition missing from the current catalog.");

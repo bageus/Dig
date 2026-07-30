@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using Dig.Domain.Agents;
 using Dig.Domain.Content;
@@ -10,13 +11,19 @@ namespace Dig.Domain.World
 
 public sealed class TerrainDepositDefinition
 {
+    private readonly IReadOnlyList<MaterialId> _allowedHostMaterialIds;
+    private readonly HashSet<MaterialId> _allowedHostMaterials;
+
     public TerrainDepositDefinition(
         string id,
         string displayName,
         ItemId outputItemId,
         int maximumYield,
         int generationWeight,
-        SkillGrantProfile? skillGrantProfile = null)
+        SkillGrantProfile? skillGrantProfile = null,
+        int version = 1,
+        int workEffortPermille = 1_000,
+        IEnumerable<MaterialId>? allowedHostMaterialIds = null)
     {
         if (string.IsNullOrWhiteSpace(id))
         {
@@ -26,6 +33,11 @@ public sealed class TerrainDepositDefinition
         if (string.IsNullOrWhiteSpace(displayName))
         {
             throw new ArgumentException("A display name is required.", nameof(displayName));
+        }
+
+        if (outputItemId.IsEmpty)
+        {
+            throw new ArgumentException("A deposit output item id is required.", nameof(outputItemId));
         }
 
         if (maximumYield <= 0)
@@ -38,14 +50,41 @@ public sealed class TerrainDepositDefinition
             throw new ArgumentOutOfRangeException(nameof(generationWeight));
         }
 
-        Id = id;
-        DisplayName = displayName;
+        if (version <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(version));
+        }
+
+        if (workEffortPermille < 1_000)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(workEffortPermille),
+                "Deposit extraction cannot be easier than ordinary host terrain.");
+        }
+
+        MaterialId[] hosts = (allowedHostMaterialIds ?? Array.Empty<MaterialId>())
+            .OrderBy(value => value)
+            .ToArray();
+        if (hosts.Any(value => value.IsEmpty)
+            || hosts.Distinct().Count() != hosts.Length)
+        {
+            throw new ArgumentException(
+                "Allowed host material ids must be non-empty and unique.",
+                nameof(allowedHostMaterialIds));
+        }
+
+        Id = id.Trim();
+        DisplayName = displayName.Trim();
         OutputItemId = outputItemId;
         MaximumYield = maximumYield;
         GenerationWeight = generationWeight;
+        Version = version;
+        WorkEffortPermille = workEffortPermille;
         SkillGrantProfile = skillGrantProfile
             ?? DefaultSkillProgressionContent.Catalog.GetProfile(
                 DefaultSkillGrantProfileIds.StoneExtraction);
+        _allowedHostMaterialIds = new ReadOnlyCollection<MaterialId>(hosts);
+        _allowedHostMaterials = new HashSet<MaterialId>(hosts);
     }
 
     public string Id { get; }
@@ -58,13 +97,32 @@ public sealed class TerrainDepositDefinition
 
     public int GenerationWeight { get; }
 
-    public SkillGrantProfile SkillGrantProfile { get; }
-}
+    public int Version { get; }
 
+    public int WorkEffortPermille { get; }
+
+    public SkillGrantProfile SkillGrantProfile { get; }
+
+    public IReadOnlyList<MaterialId> AllowedHostMaterialIds => _allowedHostMaterialIds;
+
+    public bool CanOccupy(MaterialDefinition host)
+    {
+        if (host is null)
+        {
+            throw new ArgumentNullException(nameof(host));
+        }
+
+        return host.IsSolid
+            && host.IsMineable
+            && (_allowedHostMaterials.Count == 0
+                || _allowedHostMaterials.Contains(host.Id));
+    }
+}
 
 public sealed class TerrainDepositCatalog
 {
     private readonly Dictionary<string, TerrainDepositDefinition> _definitions;
+    private readonly IReadOnlyList<TerrainDepositDefinition> _orderedDefinitions;
 
     public TerrainDepositCatalog(IEnumerable<TerrainDepositDefinition> definitions)
     {
@@ -85,10 +143,16 @@ public sealed class TerrainDepositCatalog
                 nameof(definitions));
         }
 
-        _definitions = values.ToDictionary(
+        TerrainDepositDefinition[] ordered = values
+            .OrderBy(value => value.Id, StringComparer.Ordinal)
+            .ToArray();
+        _definitions = ordered.ToDictionary(
             value => value.Id,
             StringComparer.Ordinal);
+        _orderedDefinitions = new ReadOnlyCollection<TerrainDepositDefinition>(ordered);
     }
+
+    public IReadOnlyList<TerrainDepositDefinition> Definitions => _orderedDefinitions;
 
     public TerrainDepositDefinition? Get(string id)
     {
@@ -129,7 +193,7 @@ public sealed class TerrainDepositInstance
             throw new ArgumentOutOfRangeException(nameof(version));
         }
 
-        InstanceId = instanceId;
+        InstanceId = instanceId.Trim();
         Cell = cell;
         IsRevealed = isRevealed;
         RemainingYield = remainingYield;
@@ -141,6 +205,8 @@ public sealed class TerrainDepositInstance
     public CellId Cell { get; }
 
     public TerrainDepositDefinition Definition { get; }
+
+    public int DefinitionVersion => Definition.Version;
 
     public bool IsRevealed { get; }
 

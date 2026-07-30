@@ -44,7 +44,7 @@ public sealed class SaveMigrationAndCorruptionTests
             "save.v7_to_v8.world_excavation_progress",
             "save.v8_to_v9.agent_runtime",
             "save.v9_to_v10.combat_spatial",
-            "save.v10_to_v11.living_materials",
+            "save.v10_to_v11.terrain_deposit_contract",
         }, first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
         Assert.Equal(1, document.Metadata.GeneratorVersion);
@@ -59,7 +59,6 @@ public sealed class SaveMigrationAndCorruptionTests
         Assert.True(replay.IsSuccess);
         Assert.Empty(replay.Value.AppliedSteps);
     }
-
     [Fact]
     public void Version_three_fixture_adds_empty_agent_skills_once()
     {
@@ -85,7 +84,7 @@ public sealed class SaveMigrationAndCorruptionTests
                 "save.v7_to_v8.world_excavation_progress",
                 "save.v8_to_v9.agent_runtime",
                 "save.v9_to_v10.combat_spatial",
-                "save.v10_to_v11.living_materials",
+                "save.v10_to_v11.terrain_deposit_contract",
             },
             first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
@@ -111,7 +110,6 @@ public sealed class SaveMigrationAndCorruptionTests
         Assert.Equal(SaveErrors.UnsupportedVersion, result.Error);
         Assert.Equal(SaveFormat.CurrentVersion + 1, document.FormatVersion);
     }
-
     [Fact]
     public void Unknown_job_type_and_item_id_are_reported_explicitly()
     {
@@ -310,7 +308,7 @@ public sealed class SaveMigrationAndCorruptionTests
             new SaveVersionSevenWorldExcavationProgressMigration(),
             new SaveVersionEightAgentRuntimeMigration(),
             new SaveVersionNineCombatSpatialMigration(),
-            new SaveVersionTenLivingMaterialsMigration(),
+            new SaveVersionTenTerrainDepositContractMigration(),
         });
     }
 

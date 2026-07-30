@@ -6,8 +6,40 @@ using System.Linq;
 namespace Dig.Domain.World
 {
 
+public sealed class TerrainDepositGenerationResult
+{
+    public TerrainDepositGenerationResult(
+        int algorithmVersion,
+        IEnumerable<TerrainDepositInstance> deposits)
+    {
+        if (algorithmVersion <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(algorithmVersion));
+        }
+
+        if (deposits is null)
+        {
+            throw new ArgumentNullException(nameof(deposits));
+        }
+
+        AlgorithmVersion = algorithmVersion;
+        Deposits = new ReadOnlyCollection<TerrainDepositInstance>(
+            deposits.OrderBy(value => value.Cell).ToArray());
+    }
+
+    public int AlgorithmVersion { get; }
+
+    public IReadOnlyList<TerrainDepositInstance> Deposits { get; }
+}
+
 public sealed class TerrainDepositGenerator
 {
+    private const string OriginStream = "deposits.origin";
+    private const string DefinitionStream = "deposits.definition";
+    private const string ClusterSizeStream = "deposits.cluster_size";
+    private const string InstanceStream = "deposits.instance";
+    private const string NeighbourStream = "deposits.neighbour_order";
+
     private static readonly CellId[] NeighbourOffsets =
     {
         new CellId(-1, 0, 0),
@@ -18,119 +50,173 @@ public sealed class TerrainDepositGenerator
         new CellId(0, 0, 1),
     };
 
-    public IReadOnlyList<TerrainDepositInstance> Generate(
-        int width,
-        int height,
-        int depth,
-        IReadOnlyCollection<CellId> mineableCells,
-        IReadOnlyList<TerrainDepositDefinition> definitions,
+    public TerrainDepositGenerationResult Generate(
+        WorldSize size,
+        IReadOnlyCollection<TerrainDepositHostCell> hostCells,
+        TerrainDepositCatalog catalog,
         TerrainDepositGenerationSettings settings)
     {
-        ValidateDimensions(width, height, depth);
-        if (mineableCells == null)
+        if (hostCells is null)
         {
-            throw new ArgumentNullException(nameof(mineableCells));
+            throw new ArgumentNullException(nameof(hostCells));
         }
 
-        if (definitions == null || definitions.Count == 0)
+        if (catalog is null)
         {
-            throw new ArgumentException(
-                "At least one deposit definition is required.",
-                nameof(definitions));
+            throw new ArgumentNullException(nameof(catalog));
         }
 
-        if (settings == null)
+        if (settings is null)
         {
             throw new ArgumentNullException(nameof(settings));
         }
 
-        CellId[] ordered = mineableCells.Distinct().OrderBy(cell => cell).ToArray();
-        HashSet<CellId> candidates = new HashSet<CellId>(ordered);
-        for (int index = 0; index < ordered.Length; index++)
+        Dictionary<CellId, TerrainDepositHostCell> candidates =
+            new Dictionary<CellId, TerrainDepositHostCell>();
+        foreach (TerrainDepositHostCell candidate in hostCells)
         {
-            ValidateCell(ordered[index], width, height, depth);
+            if (candidate is null)
+            {
+                throw new ArgumentException(
+                    "Deposit host cells cannot contain null values.",
+                    nameof(hostCells));
+            }
+
+            if (!size.Contains(candidate.Cell))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(hostCells),
+                    $"Deposit candidate '{candidate.Cell}' is outside the generation volume.");
+            }
+
+            if (!candidate.Material.IsSolid || !candidate.Material.IsMineable)
+            {
+                throw new ArgumentException(
+                    $"Deposit candidate '{candidate.Cell}' is not a mineable solid host.",
+                    nameof(hostCells));
+            }
+
+            if (!candidates.TryAdd(candidate.Cell, candidate))
+            {
+                throw new ArgumentException(
+                    $"Deposit candidate '{candidate.Cell}' is duplicated.",
+                    nameof(hostCells));
+            }
         }
 
-        int totalWeight = definitions.Sum(value => value.GenerationWeight);
+        CellId[] ordered = candidates.Keys.OrderBy(cell => cell).ToArray();
         HashSet<CellId> assigned = new HashSet<CellId>();
+        HashSet<string> instanceIds = new HashSet<string>(StringComparer.Ordinal);
         List<TerrainDepositInstance> result = new List<TerrainDepositInstance>();
         for (int index = 0; index < ordered.Length; index++)
         {
             CellId origin = ordered[index];
             if (assigned.Contains(origin)
-                || Roll(settings, origin, salt: 1) % 1_000UL
+                || Roll(settings, origin, OriginStream) % 1_000UL
                     >= (ulong)settings.DensityPermille)
             {
                 continue;
             }
 
+            TerrainDepositDefinition[] compatible = catalog.Definitions
+                .Where(value => value.CanOccupy(candidates[origin].Material))
+                .ToArray();
+            if (compatible.Length == 0)
+            {
+                continue;
+            }
+
             TerrainDepositDefinition definition = SelectDefinition(
-                definitions,
-                totalWeight,
-                Roll(settings, origin, salt: 2));
-            int desiredSize = 1 + (int)(Roll(settings, origin, salt: 3)
-                % (ulong)settings.MaximumClusterSize);
+                compatible,
+                Roll(settings, origin, DefinitionStream));
+            int desiredSize = 1 + (int)(Roll(
+                settings,
+                origin,
+                ClusterSizeStream) % (ulong)settings.MaximumClusterSize);
             GrowCluster(
                 origin,
                 desiredSize,
                 definition,
                 candidates,
                 assigned,
+                instanceIds,
                 settings,
                 result);
         }
 
-        return new ReadOnlyCollection<TerrainDepositInstance>(result);
+        return new TerrainDepositGenerationResult(settings.AlgorithmVersion, result);
     }
 
     private static void GrowCluster(
         CellId origin,
         int desiredSize,
         TerrainDepositDefinition definition,
-        ISet<CellId> candidates,
+        IReadOnlyDictionary<CellId, TerrainDepositHostCell> candidates,
         ISet<CellId> assigned,
+        ISet<string> instanceIds,
         TerrainDepositGenerationSettings settings,
         ICollection<TerrainDepositInstance> result)
     {
         Queue<CellId> frontier = new Queue<CellId>();
+        HashSet<CellId> queued = new HashSet<CellId>();
         frontier.Enqueue(origin);
+        queued.Add(origin);
         while (frontier.Count > 0 && desiredSize > 0)
         {
             CellId cell = frontier.Dequeue();
-            if (!candidates.Contains(cell) || !assigned.Add(cell))
+            if (!candidates.TryGetValue(cell, out TerrainDepositHostCell? candidate)
+                || candidate == null
+                || assigned.Contains(cell)
+                || !definition.CanOccupy(candidate.Material))
             {
                 continue;
             }
 
-            ulong identity = Roll(settings, cell, salt: 4);
+            assigned.Add(cell);
+            string instanceId = CreateInstanceId(settings, cell);
+            if (!instanceIds.Add(instanceId))
+            {
+                throw new InvalidOperationException(
+                    $"Deterministic deposit identity collision at '{cell}'.");
+            }
+
             result.Add(new TerrainDepositInstance(
-                $"deposit-instance-{identity:x16}",
+                instanceId,
                 cell,
                 definition,
-                isRevealed: true,
+                isRevealed: false,
                 definition.MaximumYield,
                 version: 1));
             desiredSize--;
 
-            int start = (int)(Roll(settings, cell, salt: 5)
+            int start = (int)(Roll(settings, cell, NeighbourStream)
                 % (ulong)NeighbourOffsets.Length);
             for (int offset = 0; offset < NeighbourOffsets.Length; offset++)
             {
                 CellId delta = NeighbourOffsets[(start + offset)
                     % NeighbourOffsets.Length];
-                frontier.Enqueue(new CellId(
+                CellId neighbour = new CellId(
                     cell.X + delta.X,
                     cell.Y + delta.Y,
-                    cell.Z + delta.Z));
+                    cell.Z + delta.Z);
+                if (queued.Add(neighbour))
+                {
+                    frontier.Enqueue(neighbour);
+                }
             }
         }
     }
 
     private static TerrainDepositDefinition SelectDefinition(
         IReadOnlyList<TerrainDepositDefinition> definitions,
-        int totalWeight,
         ulong roll)
     {
+        int totalWeight = 0;
+        for (int index = 0; index < definitions.Count; index++)
+        {
+            totalWeight = checked(totalWeight + definitions[index].GenerationWeight);
+        }
+
         int selected = (int)(roll % (ulong)totalWeight);
         for (int index = 0; index < definitions.Count; index++)
         {
@@ -146,20 +232,32 @@ public sealed class TerrainDepositGenerator
         return definitions[definitions.Count - 1];
     }
 
+    private static string CreateInstanceId(
+        TerrainDepositGenerationSettings settings,
+        CellId cell)
+    {
+        ulong identity = Roll(settings, cell, InstanceStream);
+        return $"deposit-instance-v{settings.AlgorithmVersion}-{identity:x16}";
+    }
+
     private static ulong Roll(
         TerrainDepositGenerationSettings settings,
         CellId cell,
-        int salt)
+        string streamName)
     {
         const ulong offset = 1469598103934665603UL;
         const ulong prime = 1099511628211UL;
         ulong hash = offset;
         Mix(ref hash, unchecked((uint)settings.Seed), prime);
         Mix(ref hash, (uint)settings.AlgorithmVersion, prime);
+        for (int index = 0; index < streamName.Length; index++)
+        {
+            Mix(ref hash, streamName[index], prime);
+        }
+
         Mix(ref hash, unchecked((uint)cell.X), prime);
         Mix(ref hash, unchecked((uint)cell.Y), prime);
         Mix(ref hash, unchecked((uint)cell.Z), prime);
-        Mix(ref hash, (uint)salt, prime);
         return hash;
     }
 
@@ -167,30 +265,6 @@ public sealed class TerrainDepositGenerator
     {
         hash ^= value;
         hash *= prime;
-    }
-
-    private static void ValidateDimensions(int width, int height, int depth)
-    {
-        if (width <= 0 || height <= 0 || depth <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(width));
-        }
-    }
-
-    private static void ValidateCell(
-        CellId cell,
-        int width,
-        int height,
-        int depth)
-    {
-        if (cell.X < 0 || cell.X >= width
-            || cell.Y < 0 || cell.Y >= height
-            || cell.Z < 0 || cell.Z >= depth)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(cell),
-                $"Deposit candidate '{cell}' is outside the generation volume.");
-        }
     }
 }
 

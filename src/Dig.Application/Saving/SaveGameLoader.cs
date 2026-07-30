@@ -226,6 +226,9 @@ public sealed partial class SaveGameLoader
                     document.TerrainDeposits,
                     document.World,
                     terrainDepositCatalog);
+            world.Value.ReplaceTerrainDeposits(
+                terrainDeposits,
+                document.TerrainDeposits.GeneratorVersion);
             CombatState? combat = null;
             bool hasCombat = document.Combat?.Intents?.Count > 0
                 || document.Combat?.Executions?.Count > 0
@@ -248,15 +251,6 @@ public sealed partial class SaveGameLoader
                 }
 
                 combat = restoredCombat.Value;
-            }
-            Result<LivingMaterialEcologyState> livingMaterials =
-                LivingMaterialEcologySaveAdapter.Decode(
-                    document.LivingMaterials,
-                    inventory.Value,
-                    document.Metadata.WorldSeed);
-            if (livingMaterials.IsFailure)
-            {
-                return Result<LoadedGameState>.Failure(livingMaterials.Error!);
             }
             Result<RestoredMiningOutputState> miningOutput = RestoreMiningOutput(
                 document,
@@ -287,12 +281,18 @@ public sealed partial class SaveGameLoader
                 barrels.Value,
                 agentRuntime,
                 combat,
-                livingMaterials.Value));
+                terrainDepositGeneratorVersion:
+                    document.TerrainDeposits.GeneratorVersion));
         }
         catch (UnknownTerrainDepositDefinitionException)
         {
             return Result<LoadedGameState>.Failure(
                 SaveErrors.UnknownTerrainDepositDefinition);
+        }
+        catch (UnsupportedTerrainDepositDefinitionVersionException)
+        {
+            return Result<LoadedGameState>.Failure(
+                SaveErrors.UnsupportedTerrainDepositDefinitionVersion);
         }
         catch (KeyNotFoundException)
         {

@@ -41,7 +41,7 @@ public sealed class SaveGameContext
             jobs,
             buildings,
             Array.Empty<AgentState>(),
-            Array.Empty<TerrainDepositInstance>())
+            terrainDeposits: null)
     {
     }
 
@@ -60,7 +60,7 @@ public sealed class SaveGameContext
         BuildingSupplyState? buildingSupply = null,
         BarrelState? barrels = null,
         CombatState? combat = null,
-        LivingMaterialEcologyState? livingMaterials = null)
+        int? terrainDepositGeneratorVersion = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -69,11 +69,16 @@ public sealed class SaveGameContext
         Buildings = buildings ?? throw new ArgumentNullException(nameof(buildings));
         Agents = new ReadOnlyCollection<AgentState>(
             (agents ?? throw new ArgumentNullException(nameof(agents))).ToList());
+        if (terrainDeposits != null)
+        {
+            int generatorVersion = terrainDepositGeneratorVersion
+                ?? metadata.GeneratorVersion;
+            World.ReplaceTerrainDeposits(terrainDeposits, generatorVersion);
+        }
+
         TerrainDeposits = new ReadOnlyCollection<TerrainDepositInstance>(
-            (terrainDeposits ?? Array.Empty<TerrainDepositInstance>())
-                .OrderBy(value => value.Cell)
-                .ThenBy(value => value.InstanceId, StringComparer.Ordinal)
-                .ToList());
+            World.TerrainDeposits.Snapshot().ToList());
+        TerrainDepositGeneratorVersion = World.TerrainDeposits.GeneratorVersion;
         PackableBuildingExecutions = packableBuildingExecutions
             ?? new PackableBuildingExecutionRegistry();
         MiningOutputCommits = miningOutputCommits ?? new MiningOutputCommitState();
@@ -84,7 +89,6 @@ public sealed class SaveGameContext
         Barrels = barrels ?? new BarrelState(
             new BarrelCatalog(Array.Empty<BarrelDefinition>()));
         Combat = combat;
-        LivingMaterials = livingMaterials ?? new LivingMaterialEcologyState(metadata.WorldSeed);
     }
 
     public SaveMetadataData Metadata { get; }
@@ -94,6 +98,7 @@ public sealed class SaveGameContext
     public BuildingsState Buildings { get; }
     public IReadOnlyList<AgentState> Agents { get; }
     public IReadOnlyList<TerrainDepositInstance> TerrainDeposits { get; }
+    public int TerrainDepositGeneratorVersion { get; }
     public PackableBuildingExecutionRegistry PackableBuildingExecutions { get; }
     public MiningOutputCommitState MiningOutputCommits { get; }
     public MushroomState Mushrooms { get; }
@@ -101,7 +106,6 @@ public sealed class SaveGameContext
     public BuildingSupplyState BuildingSupply { get; }
     public BarrelState Barrels { get; }
     public CombatState? Combat { get; }
-    public LivingMaterialEcologyState LivingMaterials { get; }
 }
 
 }

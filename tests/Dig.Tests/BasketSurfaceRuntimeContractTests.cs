@@ -61,7 +61,7 @@ public sealed class BasketSurfaceRuntimeContractTests
         Assert.DoesNotContain("CARGO ·", inventoryHud);
         Assert.Contains("private const int InventoryRows = 2", inventoryHud);
         Assert.Contains("ResolveInventoryGrid(models.Count)", inventoryHud);
-        Assert.Contains("grid.constraintCount = columns", inventoryHud);
+        Assert.Contains("ConfigureInventoryGrid(grid, columns, cellWidth);", inventoryHud);
         Assert.Contains("margin + sideHeight", hudLayout);
         Assert.Contains("BeginBottomLayout();", productionHud);
         Assert.DoesNotContain("ExpansionRequiresExplicitDrop", inventoryActions);

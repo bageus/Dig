@@ -25,7 +25,7 @@ public sealed partial class DigGameHudCanvas
         BuildCompartmentIfActive(
             inventory,
             ResidentInventoryCompartment.Weapon,
-            "WEAPON",
+            string.Empty,
             cellWidth);
         BuildCompartment(
             inventory,
@@ -112,14 +112,7 @@ public sealed partial class DigGameHudCanvas
         gridElement.preferredHeight = gridHeight;
         gridElement.minHeight = gridHeight;
         GridLayoutGroup grid = slots.gameObject.AddComponent<GridLayoutGroup>();
-        grid.padding = new RectOffset(0, 0, 0, 0);
-        grid.cellSize = new Vector2(cellWidth, InventoryCellHeight);
-        grid.spacing = new Vector2(InventoryCellSpacing, InventoryCellSpacing);
-        grid.startCorner = GridLayoutGroup.Corner.UpperLeft;
-        grid.startAxis = GridLayoutGroup.Axis.Horizontal;
-        grid.childAlignment = TextAnchor.UpperLeft;
-        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-        grid.constraintCount = columns;
+        ConfigureInventoryGrid(grid, columns, cellWidth);
         for (int index = 0; index < models.Count; index++)
         {
             CreateInventorySlot(slots, models[index]);

@@ -39,7 +39,9 @@ public sealed partial class WorldState
     public Result<WorldMutationResult> Excavate(
         CellId cellId,
         MaterialId emptyMaterialId,
-        long tick)
+        long tick,
+        string? expectedDepositInstanceId = null,
+        int? expectedDepositYield = null)
     {
         ValidateTick(tick);
         if (!Size.Contains(cellId))
@@ -59,10 +61,61 @@ public sealed partial class WorldState
                 WorldErrors.ExcavationRequiresEmptyMaterial);
         }
 
+        if (expectedDepositInstanceId != null
+            && (!expectedDepositYield.HasValue
+                || !TerrainDeposits.MatchesActiveDeposit(
+                    cellId,
+                    expectedDepositInstanceId,
+                    expectedDepositYield.Value)))
+        {
+            return Result<WorldMutationResult>.Failure(
+                WorldErrors.TerrainDepositStale);
+        }
+
         CellState current = _cells[GetCellIndex(cellId)];
-        return ApplyTerrainChanges(
+        Result<WorldMutationResult> terrain = ApplyTerrainChanges(
             new[] { new TerrainChange(cellId, current.WithExcavatedTerrain(emptyMaterialId)) },
             tick);
+        if (terrain.IsFailure || terrain.Value.ChangedCellCount == 0)
+        {
+            return terrain;
+        }
+
+        List<TerrainDepositChange> depositChanges = new List<TerrainDepositChange>();
+        if (TerrainDeposits.TryDeplete(
+            cellId,
+            expectedDepositInstanceId,
+            expectedDepositYield,
+            Version,
+            out TerrainDepositChange depleted))
+        {
+            depositChanges.Add(depleted);
+        }
+
+        depositChanges.AddRange(
+            TerrainDeposits.RevealAdjacentToChanges(cellId, Version));
+        PublishTerrainDepositChanges(depositChanges, tick, incrementWorldVersion: false);
+        return terrain;
+    }
+
+    public Result<bool> RevealTerrainDeposit(CellId cellId, long tick)
+    {
+        ValidateTick(tick);
+        if (!Size.Contains(cellId))
+        {
+            return Result<bool>.Failure(WorldErrors.CellOutOfBounds);
+        }
+
+        if (!TerrainDeposits.TryReveal(cellId, checked(Version + 1), out TerrainDepositChange change))
+        {
+            return Result<bool>.Success(false);
+        }
+
+        PublishTerrainDepositChanges(
+            new[] { change },
+            tick,
+            incrementWorldVersion: true);
+        return Result<bool>.Success(true);
     }
 
     public Result<WorldMutationResult> ApplyTerrainChanges(
@@ -147,6 +200,65 @@ public sealed partial class WorldState
             actualChanges.Count,
             new ReadOnlyCollection<ChunkId>(orderedChunks));
         return Result<WorldMutationResult>.Success(result);
+    }
+
+    private void PublishTerrainDepositChanges(
+        IReadOnlyCollection<TerrainDepositChange> changes,
+        long tick,
+        bool incrementWorldVersion)
+    {
+        if (changes.Count == 0)
+        {
+            return;
+        }
+
+        if (incrementWorldVersion)
+        {
+            Version = checked(Version + 1);
+        }
+
+        HashSet<ChunkId> affectedChunks = new HashSet<ChunkId>();
+        foreach (TerrainDepositChange change in changes.OrderBy(value => value.Cell))
+        {
+            if (change.Kind == TerrainDepositChangeKind.Revealed)
+            {
+                Raise(new TerrainDepositRevealed(
+                    tick,
+                    Version,
+                    change.InstanceId,
+                    change.DefinitionId,
+                    change.Cell,
+                    change.Version));
+            }
+            else
+            {
+                Raise(new TerrainDepositDepleted(
+                    tick,
+                    Version,
+                    change.InstanceId,
+                    change.DefinitionId,
+                    change.Cell,
+                    change.Version));
+            }
+
+            foreach (ChunkId chunkId in Layout.GetAffectedChunks(change.Cell))
+            {
+                affectedChunks.Add(chunkId);
+            }
+        }
+
+        foreach (ChunkId chunkId in affectedChunks.OrderBy(value => value))
+        {
+            int chunkIndex = GetChunkIndex(chunkId);
+            if (_chunkVersions[chunkIndex] == Version && _dirtyChunks.Contains(chunkId))
+            {
+                continue;
+            }
+
+            _chunkVersions[chunkIndex] = Version;
+            _dirtyChunks.Add(chunkId);
+            Raise(new ChunkInvalidated(tick, Version, chunkId, Version));
+        }
     }
 
     private Result ValidateTerrainChange(

@@ -4,7 +4,6 @@ using System.Linq;
 using Dig.Application.Agents;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
-using Dig.Domain.Navigation;
 using Dig.Domain.World;
 
 namespace Dig.Unity
@@ -28,33 +27,7 @@ internal sealed partial class DigTerrainWorkSession
             candidates.Add(new CellId(target.X, target.Y, target.Z + 1));
         }
 
-        return candidates.Distinct().OrderBy(value => value).ToArray();
-    }
-
-    private bool IsSupportedStationaryActionPath(
-        NavigationSnapshot navigation,
-        NavigationPath path)
-    {
-        if (path.Cells.Any(cell => !HasFullStandingSupport(cell)))
-        {
-            return false;
-        }
-
-        for (int index = 0; index + 1 < path.Cells.Count; index++)
-        {
-            CellId from = path.Cells[index];
-            CellId to = path.Cells[index + 1];
-            bool supported = navigation.GetTransitions(from).Any(
-                transition => transition.Target == to
-                    && (transition.TraversalKind == TunnelTraversalKind.SupportedWalk
-                        || transition.TraversalKind == TunnelTraversalKind.DepthTraverse));
-            if (!supported)
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return candidates.Distinct().ToArray();
     }
 
     internal bool HasFullStandingSupport(CellId cell)

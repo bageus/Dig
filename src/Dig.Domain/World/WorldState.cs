@@ -17,7 +17,8 @@ public sealed partial class WorldState : AggregateRoot
         WorldSize size,
         ChunkLayout layout,
         MaterialCatalog materials,
-        CellState[] cells)
+        CellState[] cells,
+        TerrainDepositState? terrainDeposits = null)
     {
         Size = size;
         Layout = layout;
@@ -25,6 +26,7 @@ public sealed partial class WorldState : AggregateRoot
         _cells = cells;
         _chunkVersions = new long[layout.ChunkCount];
         _dirtyChunks = new HashSet<ChunkId>();
+        TerrainDeposits = terrainDeposits ?? new TerrainDepositState();
     }
 
     public WorldSize Size { get; }
@@ -32,6 +34,8 @@ public sealed partial class WorldState : AggregateRoot
     public ChunkLayout Layout { get; }
 
     public MaterialCatalog Materials { get; }
+
+    public TerrainDepositState TerrainDeposits { get; }
 
     public long Version { get; private set; }
 
@@ -65,6 +69,46 @@ public sealed partial class WorldState : AggregateRoot
 
         return Result<WorldState>.Success(
             new WorldState(size, layout, materials, cells));
+    }
+
+
+    public void ReplaceTerrainDeposits(
+        IEnumerable<TerrainDepositInstance> deposits,
+        int generatorVersion)
+    {
+        if (deposits is null)
+        {
+            throw new ArgumentNullException(nameof(deposits));
+        }
+
+        TerrainDepositInstance[] values = deposits.ToArray();
+        for (int index = 0; index < values.Length; index++)
+        {
+            TerrainDepositInstance deposit = values[index];
+            if (!Size.Contains(deposit.Cell))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(deposits),
+                    $"Deposit '{deposit.InstanceId}' is outside the world.");
+            }
+
+            CellSnapshot cell = CreateCellSnapshot(deposit.Cell);
+            MaterialDefinition material = Materials.Get(cell.State.MaterialId)!;
+            if (!deposit.IsDepleted && !deposit.Definition.CanOccupy(material))
+            {
+                throw new InvalidOperationException(
+                    $"Deposit '{deposit.InstanceId}' cannot occupy host material "
+                    + $"'{material.Id}' at {deposit.Cell}.");
+            }
+
+            if (deposit.IsDepleted && cell.IsSolid)
+            {
+                throw new InvalidOperationException(
+                    $"Depleted deposit '{deposit.InstanceId}' must occupy an open cell.");
+            }
+        }
+
+        TerrainDeposits.ReplaceAll(values, generatorVersion);
     }
 
     public Result<CellSnapshot> GetCell(CellId cellId)

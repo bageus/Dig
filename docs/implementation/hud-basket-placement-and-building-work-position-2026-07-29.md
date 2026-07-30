@@ -15,7 +15,7 @@ Tracking: #67, #69, #70, #113, #387, #433, #511.
 
 ## Implementation map
 
-- `DigGameHudCanvas.Inventory` resolves compartment columns from capacity while enforcing exactly two rows and hides the Cargo capacity heading.
+- `DigGameHudCanvas.Inventory` resolves compartment columns from capacity, hides Weapon/Cargo text headings and fills exactly two rows column-first (`1/2`, `3/4`, `5/6`).
 - `DigGameHudCanvas.Layout` owns one responsive bottom HUD height shared by minimap, context panel and clock; context builders only choose internal compact metrics.
 - `ResidentInventoryPlacementHandlers` allow inventory expansions and commit active basket placement through an Inventory-owned reserved spill transaction.
 - `InventoryState.Spill` preserves quantity/reservation invariants while moving the active expansion and its compartment contents atomically.
@@ -26,7 +26,7 @@ Tracking: #67, #69, #70, #113, #387, #433, #511.
 
 Automated coverage includes:
 
-- `2×2` basket and `3×2` large-basket Cargo layout without a Cargo title;
+- Main/Cargo/Weapon two-row layouts without Weapon/Cargo text titles and with column-major slot order `1/2`, `3/4`, `5/6`;
 - fixed outer HUD bounds and adaptive inner controls;
 - empty and occupied basket placement jobs, reservation cleanup and quantity-safe spill;
 - supported-surface target validation;

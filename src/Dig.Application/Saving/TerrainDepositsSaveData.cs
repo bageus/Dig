@@ -8,6 +8,12 @@ namespace Dig.Application.Saving
 public sealed class TerrainDepositsSaveData
 {
     [DataMember(Order = 1)]
+    public int FormatVersion { get; set; }
+
+    [DataMember(Order = 2)]
+    public int GeneratorVersion { get; set; }
+
+    [DataMember(Order = 3)]
     public List<TerrainDepositSaveData> Deposits { get; set; } =
         new List<TerrainDepositSaveData>();
 }
@@ -22,21 +28,24 @@ public sealed class TerrainDepositSaveData
     public string DefinitionId { get; set; } = string.Empty;
 
     [DataMember(Order = 3)]
-    public int X { get; set; }
+    public int DefinitionVersion { get; set; }
 
     [DataMember(Order = 4)]
-    public int Y { get; set; }
+    public int X { get; set; }
 
     [DataMember(Order = 5)]
-    public int Z { get; set; }
+    public int Y { get; set; }
 
     [DataMember(Order = 6)]
-    public bool IsRevealed { get; set; }
+    public int Z { get; set; }
 
     [DataMember(Order = 7)]
-    public int RemainingYield { get; set; }
+    public bool IsRevealed { get; set; }
 
     [DataMember(Order = 8)]
+    public int RemainingYield { get; set; }
+
+    [DataMember(Order = 9)]
     public long Version { get; set; }
 }
 
