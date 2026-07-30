@@ -11,6 +11,9 @@ namespace Dig.Unity
 
 internal sealed partial class DigTerrainWorkSession
 {
+    private static readonly ItemId DemoClubItemId =
+        CombatEquipmentContent.ClubItemId;
+
     private static InventoryState CreateDemoResidentInventory(
         IReadOnlyList<TerrainDepositDefinition> depositDefinitions,
         CellId residentStartCell)
@@ -85,6 +88,7 @@ internal sealed partial class DigTerrainWorkSession
             .Concat(baseItems)
             .Append(CampfireBuildingBoxContent.Definition.BoxItem)
             .Concat(expansions.Items)
+            .Concat(CombatEquipmentContent.CreateItems())
             .Concat(CampfireProductionContent.CreateItems())
             .GroupBy(value => value.Id)
             .Select(group => group.First())
@@ -94,31 +98,17 @@ internal sealed partial class DigTerrainWorkSession
         EntityId residentId = DemoId('a', 1);
         AddResidentUnit(
             inventory,
-            DemoId('5', 1),
-            DemoHarnessItemId,
-            residentId,
-            ResidentInventoryCompartment.Main,
-            0);
-        AddResidentUnit(
-            inventory,
-            DemoId('6', 1),
-            DemoScabbardItemId,
-            residentId,
-            ResidentInventoryCompartment.Main,
-            1);
-        AddResidentUnit(
-            inventory,
             DemoId('1', 1),
             DemoResidentToolItemId,
             residentId,
-            ResidentInventoryCompartment.Weapon,
+            ResidentInventoryCompartment.Main,
             0);
         AddResidentUnit(
             inventory,
             DemoId('2', 1),
             DemoResidentHammerItemId,
             residentId,
-            ResidentInventoryCompartment.Weapon,
+            ResidentInventoryCompartment.Main,
             1);
         CellId basketCell = new CellId(
             residentStartCell.X + 1,
@@ -137,6 +127,33 @@ internal sealed partial class DigTerrainWorkSession
             DemoId('4', 1),
             DemoLargeBasketItemId,
             ItemLocation.InWorld(largeBasketCell),
+            tick: 0));
+        CellId sheathCell = new CellId(
+            residentStartCell.X + 3,
+            residentStartCell.Y,
+            residentStartCell.Z);
+        Require(inventory.AddUnit(
+            DemoId('5', 1),
+            DemoScabbardItemId,
+            ItemLocation.InWorld(sheathCell),
+            tick: 0));
+        CellId harnessCell = new CellId(
+            residentStartCell.X + 4,
+            residentStartCell.Y,
+            residentStartCell.Z);
+        Require(inventory.AddUnit(
+            DemoId('6', 1),
+            DemoHarnessItemId,
+            ItemLocation.InWorld(harnessCell),
+            tick: 0));
+        CellId clubCell = new CellId(
+            residentStartCell.X + 5,
+            residentStartCell.Y,
+            residentStartCell.Z);
+        Require(inventory.AddUnit(
+            DemoId('8', 1),
+            DemoClubItemId,
+            ItemLocation.InWorld(clubCell),
             tick: 0));
         CellId campfireBoxCell = new CellId(
             residentStartCell.X - 1,
