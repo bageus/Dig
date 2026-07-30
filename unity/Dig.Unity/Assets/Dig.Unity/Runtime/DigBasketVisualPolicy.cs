@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Dig.Unity
 {
-internal static class DigBasketVisualPolicy
+internal static partial class DigBasketVisualPolicy
 {
     private const string ProceduralPrefix = "procedural.basket:";
     private static readonly Color BasketTint = new Color(0.56f, 0.31f, 0.12f, 1f);
@@ -33,7 +33,7 @@ internal static class DigBasketVisualPolicy
     {
         if (!IsBasket(itemId))
         {
-            return resolution;
+            return ResolveEquipment(itemId, resolution);
         }
 
         bool large = IsLargeBasket(itemId);
@@ -64,6 +64,15 @@ internal static class DigBasketVisualPolicy
         Transform parent,
         string instanceName)
     {
+        if (IsEquipment(itemId))
+        {
+            return CreateEquipmentInstance(
+                itemId,
+                resolution,
+                parent,
+                instanceName);
+        }
+
         if (!IsBasket(itemId) || resolution.Asset.Prefab != null)
         {
             return DigVisualPrefabFactory.Create(

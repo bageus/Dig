@@ -53,6 +53,8 @@ max(Unarmed, OneHanded, TwoHanded, Ranged, Defense) >= threshold
 | `weapon.club` — Дубина | `skill.one_handed_combat` | false |
 | `weapon.light_sword` — Световой меч | `skill.one_handed_combat` | true |
 
+Runtime vertical slice: `weapon.club` зарегистрирован как non-stackable Weapon item, появляется отдельным world item в demo и используется как acceptance probe для Weapon-slot priority ножен/разгрузки. Production recipe/technology остаются authoritative по таблицам ниже и не переопределяются demo spawn.
+
 Название «Палаш» трактуется как ссылка на существующий `weapon.sword` / legacy `Schwert`. Stable ItemId остаётся `weapon.sword`; окончательное display-name переименование можно выполнить отдельно без изменения gameplay contract.
 
 Простой, Металлический и Кристаллический щиты используют `skill.defense` для подтверждённых defense result events. Простой щит не имеет отдельного Combat research threshold.
