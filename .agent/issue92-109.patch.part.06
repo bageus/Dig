@@ -1,0 +1,381 @@
++++ b/src/Dig.Application/World/MiningOutputDiagnostics.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: 2461f970172f4751aa491a6867a8fc2d
+diff --git a/src/Dig.Application/World/MiningOutputIntegrityDiagnostics.cs b/src/Dig.Application/World/MiningOutputIntegrityDiagnostics.cs
+index 616deb529825cede439c088282475d36cf0a8842..97f013205c9b2ef63252e6e72c5f243f55b1523a 100644
+--- a/src/Dig.Application/World/MiningOutputIntegrityDiagnostics.cs
++++ b/src/Dig.Application/World/MiningOutputIntegrityDiagnostics.cs
+@@ -93,56 +93,51 @@ public sealed class MiningOutputIntegrityDiagnostics
+         foreach (MiningOutputCommit commit in commits.Snapshot())
+         {
+             committedQuantity = checked(committedQuantity + commit.Quantity);
+-            if (!commit.HasStack)
++            foreach (MiningOutputCommitLine output in commit.Outputs)
+             {
+-                continue;
+-            }
+-
+-            if (!stackIds.Add(commit.StackId))
+-            {
+-                issues.Add(new MiningOutputIntegrityIssue(
+-                    commit.Cell,
+-                    MiningOutputIntegrityCodes.DuplicateStack,
+-                    $"Mining output stack '{commit.StackId}' is referenced by more than one committed cell."));
+-                continue;
+-            }
+-
+-            ItemStackSnapshot? stack = inventory.GetStack(commit.StackId);
+-            if (stack == null)
+-            {
+-                issues.Add(new MiningOutputIntegrityIssue(
+-                    commit.Cell,
+-                    MiningOutputIntegrityCodes.MissingStack,
+-                    $"Mining output stack '{commit.StackId}' is missing from Inventory."));
+-                continue;
+-            }
+-
+-            trackedWorldQuantity = checked(trackedWorldQuantity + stack.Quantity);
+-            reservedQuantity = checked(
+-                reservedQuantity + stack.Reservations.Sum(value => value.Quantity));
+-
+-            if (stack.ItemId != commit.ItemId)
+-            {
+-                issues.Add(new MiningOutputIntegrityIssue(
+-                    commit.Cell,
+-                    MiningOutputIntegrityCodes.ItemMismatch,
+-                    $"Mining output stack '{commit.StackId}' contains '{stack.ItemId}' instead of '{commit.ItemId}'."));
+-            }
+-
+-            if (stack.Quantity != commit.Quantity)
+-            {
+-                issues.Add(new MiningOutputIntegrityIssue(
+-                    commit.Cell,
+-                    MiningOutputIntegrityCodes.QuantityMismatch,
+-                    $"Mining output stack '{commit.StackId}' has quantity {stack.Quantity} instead of {commit.Quantity}."));
+-            }
+-
+-            if (stack.Location != ItemLocation.InWorld(commit.Cell))
+-            {
+-                issues.Add(new MiningOutputIntegrityIssue(
+-                    commit.Cell,
+-                    MiningOutputIntegrityCodes.LocationMismatch,
+-                    $"Mining output stack '{commit.StackId}' is not at its committed XYZ cell."));
++                bool unitIdentityContract = output.StackIds.Count == output.Quantity;
++                foreach (EntityId stackId in output.StackIds)
++                {
++                    if (!stackIds.Add(stackId))
++                    {
++                        issues.Add(new MiningOutputIntegrityIssue(
++                            commit.Cell,
++                            MiningOutputIntegrityCodes.DuplicateStack,
++                            $"Mining output stack '{stackId}' is referenced more than once."));
++                        continue;
++                    }
++
++                    ItemStackSnapshot? stack = inventory.GetStack(stackId);
++                    if (stack == null)
++                    {
++                        issues.Add(new MiningOutputIntegrityIssue(
++                            commit.Cell,
++                            MiningOutputIntegrityCodes.MissingStack,
++                            $"Mining output stack '{stackId}' is missing from Inventory."));
++                        continue;
++                    }
++
++                    trackedWorldQuantity = checked(
++                        trackedWorldQuantity + stack.Quantity);
++                    reservedQuantity = checked(
++                        reservedQuantity + stack.Reservations.Sum(value => value.Quantity));
++
++                    if (stack.ItemId != output.ItemId)
++                    {
++                        issues.Add(new MiningOutputIntegrityIssue(
++                            commit.Cell,
++                            MiningOutputIntegrityCodes.ItemMismatch,
++                            $"Mining output stack '{stackId}' contains '{stack.ItemId}' instead of '{output.ItemId}'."));
++                    }
++
++                    if (unitIdentityContract && stack.Quantity != 1)
++                    {
++                        issues.Add(new MiningOutputIntegrityIssue(
++                            commit.Cell,
++                            MiningOutputIntegrityCodes.QuantityMismatch,
++                            $"Mining output unit '{stackId}' has quantity {stack.Quantity} instead of 1."));
++                    }
++                }
+             }
+         }
+ 
+diff --git a/src/Dig.Application/World/MiningOutputTransaction.cs b/src/Dig.Application/World/MiningOutputTransaction.cs
+index 7d7d0f7c8a08b33d84b307f2841bbb037f38749a..7fc68f0b665fbac726d344ba905a7fc4303d523b 100644
+--- a/src/Dig.Application/World/MiningOutputTransaction.cs
++++ b/src/Dig.Application/World/MiningOutputTransaction.cs
+@@ -15,25 +15,58 @@ public enum MiningOutputSourceKind
+     Deposit = 1,
+ }
+ 
++public sealed class MiningOutputLine
++{
++    public MiningOutputLine(ItemId itemId, int quantity)
++    {
++        if (itemId.IsEmpty)
++        {
++            throw new ArgumentException("Mining output item id is required.", nameof(itemId));
++        }
++
++        if (quantity <= 0)
++        {
++            throw new ArgumentOutOfRangeException(nameof(quantity));
++        }
++
++        ItemId = itemId;
++        Quantity = quantity;
++    }
++
++    public ItemId ItemId { get; }
++    public int Quantity { get; }
++}
++
+ public sealed class MiningOutputPlan
+ {
++    private readonly IReadOnlyList<MiningOutputLine> _outputs;
++
+     internal MiningOutputPlan(
+         CellId cell,
+         MiningOutputSourceKind sourceKind,
+-        ItemId itemId,
+-        int quantity,
++        IEnumerable<MiningOutputLine> outputs,
+         string sourceId,
+         int sourceVersion,
+         string? depositInstanceId)
+     {
+-        if (quantity < 0 || (quantity == 0 && !itemId.IsEmpty))
++        if (outputs == null)
+         {
+-            throw new ArgumentOutOfRangeException(nameof(quantity));
++            throw new ArgumentNullException(nameof(outputs));
++        }
++
++        MiningOutputLine[] values = outputs
++            .OrderBy(value => value.ItemId)
++            .ToArray();
++        if (values.Any(value => value == null))
++        {
++            throw new ArgumentException("Mining output lines cannot contain null values.", nameof(outputs));
+         }
+ 
+-        if (quantity > 0 && itemId.IsEmpty)
++        if (values.Select(value => value.ItemId).Distinct().Count() != values.Length)
+         {
+-            throw new ArgumentException("A non-empty mining output requires an item id.", nameof(itemId));
++            throw new ArgumentException(
++                "Mining output lines must be unique by item id.",
++                nameof(outputs));
+         }
+ 
+         if (string.IsNullOrWhiteSpace(sourceId))
+@@ -56,8 +89,7 @@ public sealed class MiningOutputPlan
+ 
+         Cell = cell;
+         SourceKind = sourceKind;
+-        ItemId = itemId;
+-        Quantity = quantity;
++        _outputs = new ReadOnlyCollection<MiningOutputLine>(values);
+         SourceId = sourceId.Trim();
+         SourceVersion = sourceVersion;
+         DepositInstanceId = depositInstanceId;
+@@ -65,12 +97,16 @@ public sealed class MiningOutputPlan
+ 
+     public CellId Cell { get; }
+     public MiningOutputSourceKind SourceKind { get; }
+-    public ItemId ItemId { get; }
+-    public int Quantity { get; }
+-    public bool IsEmpty => Quantity == 0;
++    public IReadOnlyList<MiningOutputLine> Outputs => _outputs;
++    public int TotalQuantity => _outputs.Sum(value => value.Quantity);
++    public bool IsEmpty => _outputs.Count == 0;
+     public string SourceId { get; }
+     public int SourceVersion { get; }
+     public string? DepositInstanceId { get; }
++
++    // Compatibility for existing single-output callers. New code should use Outputs.
++    public ItemId ItemId => _outputs.Count == 1 ? _outputs[0].ItemId : default;
++    public int Quantity => _outputs.Count == 1 ? _outputs[0].Quantity : 0;
+ }
+ 
+ public sealed class MiningOutputResolver
+@@ -110,10 +146,14 @@ public sealed class MiningOutputResolver
+             return new MiningOutputPlan(
+                 cell,
+                 MiningOutputSourceKind.Deposit,
+-                deposit.Definition.OutputItemId,
+-                deposit.RemainingYield,
++                new[]
++                {
++                    new MiningOutputLine(
++                        deposit.Definition.OutputItemId,
++                        deposit.RemainingYield),
++                },
+                 deposit.Definition.Id,
+-                checked((int)Math.Max(1L, deposit.Version)),
++                deposit.Definition.Version,
+                 deposit.InstanceId);
+         }
+ 
+@@ -131,177 +171,13 @@ public sealed class MiningOutputResolver
+         return new MiningOutputPlan(
+             cell,
+             MiningOutputSourceKind.Terrain,
+-            roll.ItemId,
+-            roll.Quantity,
++            roll.Outputs.Select(value => new MiningOutputLine(
++                value.ItemId,
++                value.Quantity)),
+             roll.ProfileId,
+             roll.ProfileVersion,
+             depositInstanceId: null);
+     }
+ }
+ 
+-public sealed class MiningOutputCommit
+-{
+-    internal MiningOutputCommit(
+-        CellId cell,
+-        MiningOutputSourceKind sourceKind,
+-        ItemId itemId,
+-        int quantity,
+-        EntityId stackId,
+-        bool hasStack)
+-    {
+-        Cell = cell;
+-        SourceKind = sourceKind;
+-        ItemId = itemId;
+-        Quantity = quantity;
+-        StackId = stackId;
+-        HasStack = hasStack;
+-    }
+-
+-    public CellId Cell { get; }
+-    public MiningOutputSourceKind SourceKind { get; }
+-    public ItemId ItemId { get; }
+-    public int Quantity { get; }
+-    public EntityId StackId { get; }
+-    public bool HasStack { get; }
+-}
+-
+-public sealed class MiningOutputCommitState
+-{
+-    private readonly Dictionary<CellId, MiningOutputCommit> _commits =
+-        new Dictionary<CellId, MiningOutputCommit>();
+-
+-    public IReadOnlyList<MiningOutputCommit> Snapshot()
+-    {
+-        return new ReadOnlyCollection<MiningOutputCommit>(
+-            _commits.Values.OrderBy(value => value.Cell).ToArray());
+-    }
+-
+-    public bool IsCommitted(CellId cell)
+-    {
+-        return _commits.ContainsKey(cell);
+-    }
+-
+-    public void Validate(
+-        MiningOutputPlan plan,
+-        EntityId stackId,
+-        InventoryState inventory,
+-        TerrainDepositState deposits)
+-    {
+-        if (plan == null)
+-        {
+-            throw new ArgumentNullException(nameof(plan));
+-        }
+-
+-        if (inventory == null)
+-        {
+-            throw new ArgumentNullException(nameof(inventory));
+-        }
+-
+-        if (deposits == null)
+-        {
+-            throw new ArgumentNullException(nameof(deposits));
+-        }
+-
+-        if (_commits.ContainsKey(plan.Cell))
+-        {
+-            throw new InvalidOperationException(
+-                $"Mining output for cell {plan.Cell} was already committed.");
+-        }
+-
+-        ValidateDepositPlan(plan, deposits);
+-        ValidateWorldStack(plan, stackId, inventory);
+-    }
+-
+-    public MiningOutputCommit Record(MiningOutputPlan plan, EntityId stackId)
+-    {
+-        if (plan == null)
+-        {
+-            throw new ArgumentNullException(nameof(plan));
+-        }
+-
+-        if (_commits.ContainsKey(plan.Cell))
+-        {
+-            throw new InvalidOperationException(
+-                $"Mining output for cell {plan.Cell} was already committed.");
+-        }
+-
+-        MiningOutputCommit committed = new MiningOutputCommit(
+-            plan.Cell,
+-            plan.SourceKind,
+-            plan.ItemId,
+-            plan.Quantity,
+-            stackId,
+-            hasStack: !plan.IsEmpty);
+-        _commits.Add(plan.Cell, committed);
+-        return committed;
+-    }
+-
+-    private static void ValidateDepositPlan(
+-        MiningOutputPlan plan,
+-        TerrainDepositState deposits)
+-    {
+-        bool hasDeposit = deposits.TryGet(plan.Cell, out TerrainDepositInstance current);
+-        if (plan.SourceKind == MiningOutputSourceKind.Terrain)
+-        {
+-            if (hasDeposit && !current.IsDepleted)
+-            {
+-                throw new InvalidOperationException(
+-                    "Terrain output cannot be committed while a deposit occupies the cell.");
+-            }
+-
+-            return;
+-        }
+-
+-        if (!hasDeposit
+-            || current.IsDepleted
+-            || !string.Equals(
+-                current.InstanceId,
+-                plan.DepositInstanceId,
+-                StringComparison.Ordinal)
+-            || current.Definition.Id != plan.SourceId
+-            || current.Definition.OutputItemId != plan.ItemId
+-            || current.RemainingYield != plan.Quantity)
+-        {
+-            throw new InvalidOperationException(
+-                "Deposit output plan no longer matches authoritative deposit state.");
+-        }
+-    }
+-
+-    private static void ValidateWorldStack(
+-        MiningOutputPlan plan,
+-        EntityId stackId,
+-        InventoryState inventory)
+-    {
+-        if (plan.IsEmpty)
+-        {
+-            return;
+-        }
+-
+-        if (stackId.IsEmpty)
+-        {
