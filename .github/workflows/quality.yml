@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   apply-hamster-unity-runtime:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/agent/implement-hamsters-grubs-ecology'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/agent/implement-hamsters-grubs-ecology') || (github.event_name == 'pull_request' && github.head_ref == 'agent/implement-hamsters-grubs-ecology')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
