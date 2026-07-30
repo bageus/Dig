@@ -5,9 +5,15 @@ using Dig.Domain.Agents;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
+using Dig.Domain.World;
 
 namespace Dig.Application.Agents
 {
+    public interface IResidentStandingSupportQuery
+    {
+        bool HasFullStandingSupport(CellId cell);
+    }
+
     public static class ResidentFoodMealErrors
     {
         public static readonly DomainError ResidentNotFound = new DomainError(
@@ -17,6 +23,10 @@ namespace Dig.Application.Agents
         public static readonly DomainError UnsupportedFood = new DomainError(
             "resident.food_meal.unsupported_food",
             "The carried item is not supported food.");
+
+        public static readonly DomainError UnsupportedStandingPosition = new DomainError(
+            "resident.food_meal.unsupported_standing_position",
+            "The resident must stand on a fully supported flat cell to eat.");
     }
 
     public sealed class StartResidentFoodMealCommand : ICommand<Result>
@@ -54,15 +64,19 @@ namespace Dig.Application.Agents
 
         private readonly IAgentRepository _agents;
         private readonly IInventoryRepository _inventory;
+        private readonly IResidentStandingSupportQuery _standingSupport;
         private readonly IEventSink _events;
 
         public StartResidentFoodMealHandler(
             IAgentRepository agents,
             IInventoryRepository inventory,
+            IResidentStandingSupportQuery standingSupport,
             IEventSink events)
         {
             _agents = agents ?? throw new ArgumentNullException(nameof(agents));
             _inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
+            _standingSupport = standingSupport
+                ?? throw new ArgumentNullException(nameof(standingSupport));
             _events = events ?? throw new ArgumentNullException(nameof(events));
         }
 
@@ -82,6 +96,12 @@ namespace Dig.Application.Agents
             if (!agent.IsAlive)
             {
                 return Result.Failure(AgentErrors.AgentDead);
+            }
+
+            if (!_standingSupport.HasFullStandingSupport(agent.Position))
+            {
+                return Result.Failure(
+                    ResidentFoodMealErrors.UnsupportedStandingPosition);
             }
 
             if (agent.HasActiveFoodMeal)

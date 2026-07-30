@@ -85,6 +85,24 @@ namespace Dig.Tests
         }
 
         [Fact]
+        public void Unsupported_standing_position_does_not_consume_or_start_meal()
+        {
+            Harness harness = new Harness(
+                foodQuantity: 1,
+                nutrition: 1_000,
+                supported: false);
+
+            Result result = harness.Start(10);
+
+            Assert.True(result.IsFailure);
+            Assert.Equal(
+                ResidentFoodMealErrors.UnsupportedStandingPosition,
+                result.Error);
+            Assert.Equal(1, harness.Inventory.GetStack(harness.StackId)!.Quantity);
+            Assert.False(harness.Agent.HasActiveFoodMeal);
+        }
+
+        [Fact]
         public void Unsupported_carried_item_is_not_consumed()
         {
             Harness harness = new Harness(foodQuantity: 1, nutrition: 1_000, useFood: false);
@@ -101,7 +119,11 @@ namespace Dig.Tests
         {
             private static readonly ItemId Rock = new ItemId("material.rock");
 
-            internal Harness(int foodQuantity, int nutrition, bool useFood = true)
+            internal Harness(
+                int foodQuantity,
+                int nutrition,
+                bool useFood = true,
+                bool supported = true)
             {
                 ResidentId = Id(1);
                 StackId = Id(2);
@@ -140,6 +162,7 @@ namespace Dig.Tests
                 Handler = new StartResidentFoodMealHandler(
                     Agents,
                     InventoryRepository,
+                    new FixedResidentStandingSupportQuery(supported),
                     Journal);
             }
 

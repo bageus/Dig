@@ -28,7 +28,10 @@ internal sealed partial class DigTerrainWorkSession
         PathResult path = new NavigationPathfinder().FindPath(
             navigation,
             new PathRequest(start, definition.WorkPosition, navigation.NavigationVersion));
-        if (!path.Succeeded || path.Path == null)
+        if (!path.Succeeded
+            || path.Path == null
+            || !HasFullStandingSupport(definition.WorkPosition)
+            || !IsSupportedStationaryActionPath(navigation, path.Path))
         {
             return true;
         }
@@ -70,24 +73,21 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         NavigationSnapshot navigation = snapshotResult.Value;
-        CellId[] candidates =
-        {
-            new CellId(target.X - 1, target.Y, target.Z),
-            new CellId(target.X + 1, target.Y, target.Z),
-            new CellId(target.X, target.Y - 1, target.Z),
-            new CellId(target.X, target.Y + 1, target.Z),
-        };
+        CellId[] candidates = GetSameHeightActionCandidates(target);
         PathResult? selectedPath = null;
         CellId selectedCell = default;
         foreach (CellId candidate in candidates
             .Where(navigation.IsWalkable)
+            .Where(HasFullStandingSupport)
             .Distinct()
             .OrderBy(value => value))
         {
             PathResult path = new NavigationPathfinder().FindPath(
                 navigation,
                 new PathRequest(workerCell, candidate, navigation.NavigationVersion));
-            if (!path.Succeeded || path.Path == null)
+            if (!path.Succeeded
+                || path.Path == null
+                || !IsSupportedStationaryActionPath(navigation, path.Path))
             {
                 continue;
             }

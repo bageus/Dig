@@ -114,3 +114,7 @@ Inspector показывает:
 - desired/consumed food и match flag;
 - interruption reason;
 - current block reason.
+
+## Supported stationary action position
+
+`Eat`, `Sleep`, `Leisure` и любая stationary work phase не могут выполнять progress без полной actor support surface под resident. Для текущего food slice `Eat` проверяет это условие до consume и перед каждым следующим simulation advance; потеря опоры прерывает действие typed reason без replay уже применённых bite effects. Конкретные target-based jobs используют same-height action positions по горизонтальным осям `X/Z`, а не вертикальный `Y` offset.

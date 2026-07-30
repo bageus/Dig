@@ -164,3 +164,10 @@ Tracking issues: [#385](https://github.com/bageus/Dig/issues/385), [#393](https:
 Общие вопросы: [`../design/open-questions.md`](../design/open-questions.md).
 
 Вновь обнаруженные вопросы сначала записываются в authoritative system file и tracking issue. Общий реестр используется для cross-system или balance-вопросов, но не заменяет локальный questionnaire системы.
+
+## Supported stationary action correction — 2026-07-30
+
+- Mushroom work positions and food meals: `IMPLEMENTED` pending licensed Unity runtime verification.
+- Authoritative rules: [`mushroom-growth-and-chopping.md`](../design/mushroom-growth-and-chopping.md), [`campfire-cooking-and-food-use.md`](../design/campfire-cooking-and-food-use.md), [`needs-continuous-actions.md`](../design/needs-continuous-actions.md), [`resident-movement-occupancy-and-vertical-traversal.md`](../design/resident-movement-occupancy-and-vertical-traversal.md).
+- Tracking: #423, #459, PR #521.
+- Evidence: [`supported-stationary-action-positions-2026-07-30.md`](../implementation/supported-stationary-action-positions-2026-07-30.md).

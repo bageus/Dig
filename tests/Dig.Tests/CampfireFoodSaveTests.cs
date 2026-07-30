@@ -39,6 +39,7 @@ public sealed class CampfireFoodSaveTests
         Assert.True(new StartResidentFoodMealHandler(
             agents,
             new InMemoryInventoryRepository(inventory),
+            new FixedResidentStandingSupportQuery(supported: true),
             new InMemoryExecutionJournal()).Handle(
                 new StartResidentFoodMealCommand(ResidentId, StackId, tick: 10)).IsSuccess);
         Assert.False(resident.AdvanceFoodMealBite(11).Value);

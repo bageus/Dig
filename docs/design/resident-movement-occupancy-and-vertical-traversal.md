@@ -176,3 +176,7 @@ Visual lane, overlap offset и interpolation не являются отдель�
 - knockback/push в open shaft передаёт управление fall system;
 - interruption и save/load mid-route сохраняют authoritative cell/action, но не presentation offsets;
 - Play Mode подтверждает directional offsets, разрешённый horizontal overlap fallback и vertical overlap.
+
+## Supported stationary actions
+
+После traversal resident может начать work/eat только в клетке с полной ровной actor support surface. `SupportedWalk` и поддерживаемый `DepthTraverse` допустимы для подхода; `VerticalClimb`, `ShaftGapTraverse`, воздух и partial support не являются action position. Target-adjacent selectors рассматривают same-height `X/Z` neighbours, поэтому depth-позиция за объектом имеет такой же статус, как позиция слева/справа.

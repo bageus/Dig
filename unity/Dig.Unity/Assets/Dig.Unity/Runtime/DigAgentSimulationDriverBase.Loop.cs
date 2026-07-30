@@ -88,6 +88,11 @@ namespace Dig.Unity
 
             if (result.IsSuccess)
             {
+                result = TerrainSession.InterruptUnsupportedStationaryActions(nextTick);
+            }
+
+            if (result.IsSuccess)
+            {
                 IReadOnlyDictionary<string, CellId> movement =
                     TerrainSession.PlanMovement(before, nextTick);
                 IReadOnlyDictionary<string, CellId> spatialMovement =

@@ -25,6 +25,11 @@ public sealed class MushroomMovementPlannerSourceContractTests
         Assert.DoesNotContain("TryPlanMushroomMovement(", mushrooms);
         Assert.Contains("privateboolTryPlanMushroomMovement(", navigation);
         Assert.Contains("_routePlans[job.Id]=newTerrainWorkRoutePlan", navigation);
+        Assert.Contains("GetSameHeightActionCandidates(target)", navigation);
+        Assert.Contains(".Where(HasFullStandingSupport)", navigation);
+        Assert.Contains("IsSupportedStationaryActionPath(navigation,path.Path)", navigation);
+        Assert.DoesNotContain("target.Y-1", navigation);
+        Assert.DoesNotContain("target.Y+1", navigation);
     }
 
     private static string Read(string root, string file) => Normalize(

@@ -48,6 +48,7 @@ namespace Dig.Unity
                 return new StartResidentFoodMealHandler(
                     _productionAgents,
                     repository,
+                    new DigTerrainResidentStandingSupportQuery(this),
                     _worldSession.Journal).Handle(
                         new StartResidentFoodMealCommand(
                             resident,
