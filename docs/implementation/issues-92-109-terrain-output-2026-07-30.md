@@ -23,3 +23,7 @@ Tracking: #87, #92, #109; dependent planner #110.
 Q-014 numeric probabilities, yields and work effort remain open. Existing numeric content values are preserved as versioned fixtures, not approved balance.
 
 #110 remains responsible for active building demands, current fog eligibility, destination-demand reservations and their cancel/retry/save workflow. Explicit storage filters continue to be valid collection demand.
+
+## Publication integrity
+
+The prepared 181871-byte implementation patch was verified by SHA-256 before application. The resulting PR contains only the 55 documented source, test and design files; temporary transport payloads and workflows are not part of the implementation diff.
