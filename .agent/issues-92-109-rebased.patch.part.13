@@ -1,0 +1,158 @@
++                commits),
+             new CompletePartialTerrainWorkCommandHandler(
+                 jobs, world.Repository, journal, skills),
+             new JobOverlayPresenter(
+@@ -214,7 +232,7 @@ internal sealed partial class DigTerrainWorkSession
+             profile,
+             outputIds,
+             skills,
+-            miningOutputCommits);
++            commits);
+     }
+ }
+ 
+diff --git a/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkSession.cs b/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkSession.cs
+index 3f251ee..50015d0 100644
+--- a/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkSession.cs
++++ b/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkSession.cs
+@@ -260,11 +260,6 @@ internal sealed partial class DigTerrainWorkSession
+                 targetCell,
+                 _worldSession.ResolveTerrainMaterial(targetCell),
+                 _worldSession.TerrainDeposits);
+-            _miningOutputCommits.Validate(
+-                output,
+-                _outputStackIds[job.Id],
+-                _inventoryRepository.Get(),
+-                _worldSession.TerrainDeposits);
+         }
+         catch (Exception error)
+         {
+@@ -273,22 +268,12 @@ internal sealed partial class DigTerrainWorkSession
+                 error.Message));
+         }
+ 
+-        CompleteTerrainWorkCommand command = output.IsEmpty
+-            ? CompleteTerrainWorkCommand.WithoutOutput(
+-                job.Id,
+-                _worldSession.EmptyMaterialId,
+-                tick)
+-            : new CompleteTerrainWorkCommand(
+-                job.Id,
+-                _outputStackIds[job.Id],
+-                output.ItemId,
+-                output.Quantity,
+-                _worldSession.EmptyMaterialId,
+-                tick,
+-                output.DepositInstanceId,
+-                output.SourceKind == MiningOutputSourceKind.Deposit
+-                    ? output.Quantity
+-                    : (int?)null);
++        CompleteTerrainWorkCommand command = CompleteTerrainWorkCommand.FromPlan(
++            job.Id,
++            _outputStackIds[job.Id],
++            output,
++            _worldSession.EmptyMaterialId,
++            tick);
+         Result<TerrainWorkCompletionResult> completion = _completionHandler.Handle(command);
+         if (completion.IsFailure)
+         {
+@@ -299,7 +284,6 @@ internal sealed partial class DigTerrainWorkSession
+         // before any derived navigation refresh so Presentation cannot miss the open
+         // cell when navigation fails and the tick returns a recoverable warning.
+         MarkAuthoritativeWorldChanged();
+-        _miningOutputCommits.Record(output, _outputStackIds[job.Id]);
+         CompleteExcavationQuarterTarget(targetCell);
+         _routePlans.Remove(job.Id);
+         MarkTemplateCellExcavated(targetCell);
+diff --git a/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldSession.cs b/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldSession.cs
+index 64b5a91..ceb416f 100644
+--- a/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldSession.cs
++++ b/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldSession.cs
+@@ -1,5 +1,6 @@
+ using System;
+ using System.Collections.Generic;
++using System.Linq;
+ using Dig.Application.World;
+ using Dig.Domain.Core;
+ using Dig.Domain.Navigation;
+@@ -85,14 +86,15 @@ internal sealed partial class DigWorldSession
+             throw new ArgumentOutOfRangeException(nameof(height));
+         }
+ 
+-        const int rockHardness = 120;
+-        MaterialId rock = new MaterialId("demo.rock");
++        MaterialId rock = DefaultTerrainMaterials.StoneRock;
+         MaterialId air = new MaterialId("demo.air");
+-        MaterialCatalog materials = new MaterialCatalog(new[]
+-        {
+-            new MaterialDefinition(rock, isSolid: true, hardness: rockHardness),
+-            new MaterialDefinition(air, isSolid: false, hardness: 0),
+-        });
++        MaterialCatalog terrainMaterials = DefaultTerrainMaterials.CreateCatalog();
++        MaterialCatalog materials = new MaterialCatalog(
++            terrainMaterials.Definitions.Concat(new[]
++            {
++                new MaterialDefinition(air, isSolid: false, hardness: 0),
++            }));
++        int rockHardness = materials.Get(rock)!.Hardness;
+         WorldState world = WorldState.CreateFilled(
+             new WorldSize(width, height),
+             chunkSize,
+diff --git a/unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/TerrainOutputCatalogPlayModeTests.cs b/unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/TerrainOutputCatalogPlayModeTests.cs
+new file mode 100644
+index 0000000..5db0a48
+--- /dev/null
++++ b/unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/TerrainOutputCatalogPlayModeTests.cs
+@@ -0,0 +1,44 @@
++using System.Linq;
++using Dig.Domain.Inventory;
++using Dig.Domain.World;
++using NUnit.Framework;
++
++namespace Dig.Unity.Tests
++{
++
++public sealed class TerrainOutputCatalogPlayModeTests
++{
++    [Test]
++    public void Demo_uses_six_typed_terrain_profiles_with_raw_ore_outputs()
++    {
++        DigWorldSession session = DigWorldSession.CreateDemo(24, 16, 29);
++        MaterialCatalog materials = session.Repository.Get().Materials;
++
++        Assert.That(materials.Get(DefaultTerrainMaterials.Sand), Is.Not.Null);
++        Assert.That(materials.Get(DefaultTerrainMaterials.StoneRock), Is.Not.Null);
++        Assert.That(materials.Get(DefaultTerrainMaterials.MetalBearingRock), Is.Not.Null);
++        Assert.That(materials.Get(DefaultTerrainMaterials.CrystallineRock), Is.Not.Null);
++        Assert.That(materials.Get(DefaultTerrainMaterials.LavaRock), Is.Not.Null);
++        Assert.That(materials.Get(DefaultTerrainMaterials.Unmineable), Is.Not.Null);
++        Assert.That(
++            materials.Get(DefaultTerrainMaterials.MetalBearingRock)!.DisplayName,
++            Is.EqualTo("Рудная порода"));
++        Assert.That(materials.Get(DefaultTerrainMaterials.Unmineable)!.IsMineable, Is.False);
++
++        ItemId[] outputs = materials.Definitions
++            .Where(value => value.OutputProfile != null)
++            .SelectMany(value => value.OutputProfile!.Entries)
++            .Select(value => value.ItemId)
++            .Distinct()
++            .OrderBy(value => value)
++            .ToArray();
++        Assert.That(outputs, Does.Contain(new ItemId("material.stone")));
++        Assert.That(outputs, Does.Contain(new ItemId("material.coal")));
++        Assert.That(outputs, Does.Contain(new ItemId("ore.iron")));
++        Assert.That(outputs, Does.Contain(new ItemId("ore.gold")));
++        Assert.That(outputs, Does.Contain(new ItemId("ore.crystal")));
++        Assert.That(outputs, Does.Not.Contain(new ItemId("material.metal")));
++    }
++}
++
++}
+diff --git a/unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/TerrainOutputCatalogPlayModeTests.cs.meta b/unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/TerrainOutputCatalogPlayModeTests.cs.meta
+new file mode 100644
+index 0000000..cb596a5
+--- /dev/null
++++ b/unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/TerrainOutputCatalogPlayModeTests.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: c925aa803008470eae0ff615f698efe0
