@@ -26,7 +26,8 @@ jobs:
           rm .github/patches/hamster-unity-runtime.b64.part*
           rm .github/patches/hamster-save-v12.b64.part*
           rm -f .github/workflows/apply-hamster-unity-runtime.yml
-          git show HEAD^:.github/workflows/quality.yml > .github/workflows/quality.yml
+          git fetch origin main --depth=1
+          git show FETCH_HEAD:.github/workflows/quality.yml > .github/workflows/quality.yml
       - name: Validate source contracts
         shell: bash
         run: |
