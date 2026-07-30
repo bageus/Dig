@@ -10,9 +10,6 @@ on:
 permissions:
   contents: write
 
-env:
-  REPORT: /tmp/supported-action-position-report.txt
-
 jobs:
   diagnose:
     runs-on: ubuntu-latest
@@ -22,21 +19,31 @@ jobs:
           ref: agent/fix-production-output-and-unit-inventory
           fetch-depth: 1
 
-      - name: Collect architecture and implementation context
+      - name: Collect focused selectors and contracts
         shell: bash
         run: |
           set -euo pipefail
+          pattern='StartDirectMushroomChopCommand|MushroomChopJobDefinition|StartResidentFoodMeal|ResidentFoodMeal|FoodMealJob|BarrelAttackSurface|HasFullSupport|FullSupport|ShaftGapTraverse|DepthTraverse|VerticalClimb|WorkPosition'
+          mapfile -t files < <(grep -RliE "$pattern" src unity tests | sort | head -n 80)
           {
-            echo '=== SYSTEM INDEX MATCHES ==='
-            grep -RniE 'mushroom|food|eat|consume|work position|supported surface|adjacent|approach|interaction position' docs/systems/README.md docs/design docs/implementation || true
-            echo
-            echo '=== CODE MATCHES ==='
-            grep -RniE 'mushroom|eat|consume|work(position|cell)|interaction(position|cell)|supported(cell|surface)|stand(position|cell)|approach(cell|position)|adjacent(cell|position)|neighbor(cell|position)' src unity tests || true
-            echo
-            echo '=== CANDIDATE FILES ==='
-            grep -RliE 'mushroom|eat|consume|work(position|cell)|interaction(position|cell)|supported(cell|surface)|stand(position|cell)|approach(cell|position)|adjacent(cell|position)' src unity tests docs/design docs/implementation | sort || true
-          } > "$REPORT"
-          head -n 5000 "$REPORT" > docs/implementation/_supported-action-position-diagnostic.txt
+            echo '=== AUTHORITATIVE SPECS ==='
+            for file in \
+              docs/design/mushroom-growth-and-chopping.md \
+              docs/design/campfire-cooking-and-food-use.md \
+              docs/design/needs-continuous-actions.md \
+              docs/design/resident-movement-occupancy-and-vertical-traversal.md \
+              docs/design/runtime-stacking-barrel-and-room-recovery-decisions.md; do
+              echo "===== $file ====="
+              nl -ba "$file"
+            done
+            echo '=== MATCHED FILES ==='
+            printf '%s\n' "${files[@]}"
+            echo '=== FOCUSED SOURCE ==='
+            for file in "${files[@]}"; do
+              echo "===== $file ====="
+              nl -ba "$file" | head -n 450
+            done
+          } | head -n 12000 > docs/implementation/_supported-action-position-diagnostic.txt
           cat docs/implementation/_supported-action-position-diagnostic.txt
 
       - name: Commit diagnostic report
@@ -46,5 +53,5 @@ jobs:
           git config user.name 'OpenAI Agent'
           git config user.email 'agent@openai.com'
           git add docs/implementation/_supported-action-position-diagnostic.txt
-          git commit -m 'Refresh supported action position diagnostic'
+          git commit -m 'Capture focused supported action selectors'
           git push origin HEAD:agent/fix-production-output-and-unit-inventory
