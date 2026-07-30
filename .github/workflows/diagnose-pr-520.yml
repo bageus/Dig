@@ -1,0 +1,39 @@
+name: Diagnose PR 520 failures
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.event.pull_request.number == 520
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - name: Locate relevant contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '=== CreateBuildingSupplyJobHandler ==='
+          file=$(grep -R -l 'class CreateBuildingSupplyJobHandler' src | head -n 1)
+          echo "$file"
+          sed -n '1,320p' "$file"
+          echo '=== AcquireBuildingSupply handlers ==='
+          grep -R -l 'class AcquireBuildingSupply' src | while read -r path; do
+            echo "--- $path"
+            sed -n '1,360p' "$path"
+          done
+          echo '=== Resident slot claim contracts ==='
+          grep -R -l 'ReserveResidentSlotCapacity' src | while read -r path; do
+            echo "--- $path"
+            grep -n -C 12 'ReserveResidentSlotCapacity' "$path" || true
+          done
+          echo '=== Resident compartment enum ==='
+          grep -R -n -A 12 -B 2 'enum ResidentInventoryCompartment' src || true
