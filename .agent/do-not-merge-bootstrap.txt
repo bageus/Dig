@@ -1,1 +1,0 @@
-The workflow will replace this bootstrap payload with the actual issue #88 implementation before review.
