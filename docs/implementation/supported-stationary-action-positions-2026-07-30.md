@@ -15,11 +15,15 @@ Food meal start consumed the carried portion before any world-support policy was
 The shared Unity stationary-action policy now:
 - generates same-height neighbours on `X±1` and bounded depth `Z±1`;
 - requires `HasFullActorSupport` below every stationary action cell;
-- permits only supported walk/depth transitions for mushroom approach;
+- uses ordinary resident Navigation for mushroom travel, including approved climb/shaft/depth transitions, while requiring full support only at the final stationary action cell;
 - revalidates support before mushroom swings;
 - guards meal start before reservation/consume and interrupts an active meal before another bite when support is lost.
 
 The mushroom resolver therefore selects a supported depth cell when left/right cells are void instead of allowing airborne work.
+
+## Route regression correction — 2026-07-30
+
+The initial correction accidentally applied the stationary support invariant to every cell and transition in the travel path. That rejected otherwise valid direct and automatic mushroom jobs whenever the resident had to climb or cross an approved shaft/depth route before reaching a fully supported work cell. The resolver and replanner now validate ordinary Navigation reachability plus full support at the final work position only; support is still revalidated before every swing.
 
 ## Evidence
 
