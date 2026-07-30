@@ -5,6 +5,8 @@ namespace Dig.Unity
 {
 internal sealed partial class DigAgentSession
 {
+    // The first demo resident exposes all approved cave-room presets
+    // without bypassing the Stonework progression rule.
     private static readonly IReadOnlyCollection<AgentSkillValue> MasterExcavatorSkills =
         new[]
         {
