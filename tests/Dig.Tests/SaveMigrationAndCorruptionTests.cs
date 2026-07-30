@@ -44,6 +44,7 @@ public sealed class SaveMigrationAndCorruptionTests
             "save.v7_to_v8.world_excavation_progress",
             "save.v8_to_v9.agent_runtime",
             "save.v9_to_v10.combat_spatial",
+            "save.v10_to_v11.living_materials",
         }, first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
         Assert.Equal(1, document.Metadata.GeneratorVersion);
@@ -84,6 +85,7 @@ public sealed class SaveMigrationAndCorruptionTests
                 "save.v7_to_v8.world_excavation_progress",
                 "save.v8_to_v9.agent_runtime",
                 "save.v9_to_v10.combat_spatial",
+                "save.v10_to_v11.living_materials",
             },
             first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
@@ -308,6 +310,7 @@ public sealed class SaveMigrationAndCorruptionTests
             new SaveVersionSevenWorldExcavationProgressMigration(),
             new SaveVersionEightAgentRuntimeMigration(),
             new SaveVersionNineCombatSpatialMigration(),
+            new SaveVersionTenLivingMaterialsMigration(),
         });
     }
 
