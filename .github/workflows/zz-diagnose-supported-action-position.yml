@@ -8,7 +8,7 @@ on:
       - .github/workflows/zz-diagnose-supported-action-position.yml
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   REPORT: /tmp/supported-action-position-report.txt
@@ -36,11 +36,15 @@ jobs:
             echo '=== CANDIDATE FILES ==='
             rg -l -i 'mushroom|eat|consume|work(position|cell)|interaction(position|cell)|supported(cell|surface)|stand(position|cell)|approach(cell|position)|adjacent(cell|position)' src unity tests docs/design docs/implementation | sort || true
           } > "$REPORT"
-          cat "$REPORT"
+          head -n 5000 "$REPORT" > docs/implementation/_supported-action-position-diagnostic.txt
+          cat docs/implementation/_supported-action-position-diagnostic.txt
 
-      - name: Upload diagnostic report
-        uses: actions/upload-artifact@v4
-        with:
-          name: supported-action-position-diagnostic
-          path: /tmp/supported-action-position-report.txt
-          if-no-files-found: error
+      - name: Commit diagnostic report
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'OpenAI Agent'
+          git config user.email 'agent@openai.com'
+          git add docs/implementation/_supported-action-position-diagnostic.txt
+          git commit -m 'Record supported action position diagnostic'
+          git push origin HEAD:agent/fix-production-output-and-unit-inventory
