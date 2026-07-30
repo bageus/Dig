@@ -172,7 +172,10 @@ public sealed class BuildingPlacementValidator
         CellId[] configured = definition
             .ResolveWorkPositions(origin, orientation)
             .ToArray();
-        CellId? workPosition = ResolveSideWorkPositions(footprint, origin)
+        CellId[] sideWorkPositions = ResolveSideWorkPositions(footprint, origin)
+            .ToArray();
+        HashSet<CellId> sideWorkPositionSet = new HashSet<CellId>(sideWorkPositions);
+        CellId? workPosition = sideWorkPositions
             .Concat(configured)
             .Distinct()
             .Where(world.Size.Contains)
@@ -181,7 +184,7 @@ public sealed class BuildingPlacementValidator
                 && !snapshot.IsSolid
                 && snapshot.State.IsExplored)
             .Where(reachable.Contains)
-            .OrderBy(cell => Math.Abs(cell.X - origin.X))
+            .OrderByDescending(sideWorkPositionSet.Contains)
             .ThenBy(cell => cell)
             .Cast<CellId?>()
             .FirstOrDefault();
