@@ -28,13 +28,13 @@ jobs:
           set -euo pipefail
           {
             echo '=== SYSTEM INDEX MATCHES ==='
-            rg -n -i 'mushroom|food|eat|consume|work position|supported surface|adjacent|approach|interaction position' docs/systems/README.md docs/design docs/implementation || true
+            grep -RniE 'mushroom|food|eat|consume|work position|supported surface|adjacent|approach|interaction position' docs/systems/README.md docs/design docs/implementation || true
             echo
             echo '=== CODE MATCHES ==='
-            rg -n -i 'mushroom|eat|consume|work(position|cell)|interaction(position|cell)|supported(cell|surface)|stand(position|cell)|approach(cell|position)|adjacent(cell|position)|neighbor(cell|position)' src unity tests || true
+            grep -RniE 'mushroom|eat|consume|work(position|cell)|interaction(position|cell)|supported(cell|surface)|stand(position|cell)|approach(cell|position)|adjacent(cell|position)|neighbor(cell|position)' src unity tests || true
             echo
             echo '=== CANDIDATE FILES ==='
-            rg -l -i 'mushroom|eat|consume|work(position|cell)|interaction(position|cell)|supported(cell|surface)|stand(position|cell)|approach(cell|position)|adjacent(cell|position)' src unity tests docs/design docs/implementation | sort || true
+            grep -RliE 'mushroom|eat|consume|work(position|cell)|interaction(position|cell)|supported(cell|surface)|stand(position|cell)|approach(cell|position)|adjacent(cell|position)' src unity tests docs/design docs/implementation | sort || true
           } > "$REPORT"
           head -n 5000 "$REPORT" > docs/implementation/_supported-action-position-diagnostic.txt
           cat docs/implementation/_supported-action-position-diagnostic.txt
@@ -46,5 +46,5 @@ jobs:
           git config user.name 'OpenAI Agent'
           git config user.email 'agent@openai.com'
           git add docs/implementation/_supported-action-position-diagnostic.txt
-          git commit -m 'Record supported action position diagnostic'
+          git commit -m 'Refresh supported action position diagnostic'
           git push origin HEAD:agent/fix-production-output-and-unit-inventory
