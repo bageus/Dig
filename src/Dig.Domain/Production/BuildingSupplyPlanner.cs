@@ -72,6 +72,7 @@ public static class BuildingSupplyPlanner
         HashSet<CellId> reachable = reachableCells.ToHashSet();
         List<BuildingSupplyAllocation> allocations = new List<BuildingSupplyAllocation>();
         HashSet<EntityId> used = new HashSet<EntityId>();
+        // Resident inventory is unit-per-slot, so each allocated unit consumes one slot.
         int availableUnitSlots = freeSlotCount;
         foreach (BuildingStockSnapshot stock in supply.Stocks)
         {
