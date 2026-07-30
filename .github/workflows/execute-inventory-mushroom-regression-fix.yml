@@ -33,43 +33,10 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Extract staged patch scripts
-        shell: bash
-        run: |
-          python3 - <<'EXTRACT'
-          from pathlib import Path
-
-          source = Path('.github/workflows/apply-inventory-mushroom-regression-fix.yml').read_text(encoding='utf-8')
-          marker = "          python3 - <<'PY'\n"
-          blocks = []
-          cursor = 0
-          while True:
-              start = source.find(marker, cursor)
-              if start < 0:
-                  break
-              start += len(marker)
-              end = source.find("\n          PY", start)
-              if end < 0:
-                  raise SystemExit('unterminated staged Python block')
-              raw_lines = source[start:end].splitlines()
-              block_lines = [
-                  line[10:] if line.startswith('          ') else line
-                  for line in raw_lines
-              ]
-              blocks.append('\n'.join(block_lines) + '\n')
-              cursor = end + 1
-
-          if len(blocks) != 2:
-              raise SystemExit(f'expected two staged Python blocks, found {len(blocks)}')
-
-          Path('/tmp/update_docs.py').write_text(blocks[0], encoding='utf-8')
-          Path('/tmp/update_code.py').write_text(blocks[1], encoding='utf-8')
-          EXTRACT
-
       - name: Commit authoritative documentation first
         shell: bash
         run: |
-          python3 /tmp/update_docs.py
+          python3 tools/maintenance/apply_inventory_mushroom_regression.py docs
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/design/resident-inventory-expansion.md \
@@ -79,7 +46,7 @@ jobs:
           git commit -m "docs: clarify inventory order and mushroom travel"
 
       - name: Apply runtime and regression fixes
-        run: python3 /tmp/update_code.py
+        run: python3 tools/maintenance/apply_inventory_mushroom_regression.py code
 
       - name: Run repository quality gates
         run: |
@@ -96,6 +63,7 @@ jobs:
         run: |
           rm .github/workflows/apply-inventory-mushroom-regression-fix.yml
           rm .github/workflows/execute-inventory-mushroom-regression-fix.yml
+          rm tools/maintenance/apply_inventory_mushroom_regression.py
           git add -A
           git commit -m "fix: restore mushroom chopping and inventory slot order"
           git push origin HEAD:${{ github.head_ref }}
