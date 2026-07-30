@@ -98,7 +98,7 @@ public sealed class TerrainDepositStateTests
         TerrainDepositInstance depleted = Deposit("deposit-depleted", 4, 5, 0)
             .Reveal(8)
             .Deplete(9);
-        source.ReplaceAll(new[] { depleted, revealed });
+        source.ReplaceAll(new[] { depleted, revealed }, generatorVersion: 4);
 
         TerrainDepositSaveSnapshot snapshot = source.CaptureSaveSnapshot();
         TerrainDepositState restored = new TerrainDepositState();

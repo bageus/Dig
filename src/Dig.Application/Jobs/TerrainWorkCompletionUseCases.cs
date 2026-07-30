@@ -121,7 +121,10 @@ public sealed class CompleteTerrainWorkCommandHandler
             command.Tick,
             command.DepositInstanceId,
             command.DepositExpectedYield);
-        EnsureCommitStep(terrain.IsSuccess, terrain.Error);
+        if (terrain.IsFailure)
+        {
+            return Result<TerrainWorkCompletionResult>.Failure(terrain.Error!);
+        }
 
         if (command.ProducesOutput)
         {
