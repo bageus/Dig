@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   apply:
-    if: github.head_ref == 'agent/issues-92-109-terrain-output' && github.actor != 'github-actions[bot]'
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,8 +22,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          base64 -d .agent/issue92-109.patch.gz.b64 | gzip -d > /tmp/issue92-109.patch
+          cat .agent/issue92-109.patch.part.* > /tmp/issue92-109.patch
           git apply --index /tmp/issue92-109.patch
+          git rm .agent/issue92-109.patch.part.*
           git rm .agent/issue92-109.patch.gz.b64
           git rm .github/workflows/apply-issues-92-109-patch.yml
           git rm .github/workflows/apply-issues-92-109-patch-pr.yml
