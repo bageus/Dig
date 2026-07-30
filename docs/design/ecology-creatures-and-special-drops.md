@@ -25,11 +25,11 @@
 - Тролль;
 - Гоблин.
 
-Каждый вид получает stable `CreatureDefinitionId` и data-driven population cap.
+Каждый вид получает stable `CreatureDefinitionId` и data-driven population cap. Детальный authoritative workflow для хомяков и grub/личинок вынесен в [`hamsters-and-grubs-ecology.md`](hamsters-and-grubs-ecology.md) и tracked в #524.
 
 ## Population caps
 
-Жёсткие ограничения численности обязательны. Точные значения по видам остаются `BALANCE_TBD` и задаются в `CreaturePopulationProfile`, а не в общем runtime-коде.
+Жёсткие ограничения численности обязательны. Точные значения по большинству видов остаются `BALANCE_TBD` и задаются в `CreaturePopulationProfile`, а не в общем runtime-коде. Для свободных hamster и grub пользователь подтвердил отдельный cap `10` на одну плоскость; определение plane component остаётся Q-HG-001 в focused specification #524.
 
 Spawn/reproduction transaction не создаёт новую особь, если cap соответствующего вида достигнут.
 
