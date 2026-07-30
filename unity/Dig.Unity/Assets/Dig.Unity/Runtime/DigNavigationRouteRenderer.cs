@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Domain.World;
 using Dig.Presentation.Navigation;
 using Dig.Presentation.Overlays;
 using UnityEngine;
@@ -71,7 +72,10 @@ namespace Dig.Unity
             for (int index = 0; index < route.Cells.Count; index++)
             {
                 RouteCellViewModel cell = route.Cells[index];
-                line.SetPosition(index, new Vector3(cell.X, 0.32f, cell.Y));
+                line.SetPosition(
+                    index,
+                    DigTunnelProjection.RouteWorldPosition(
+                        new CellId(cell.X, cell.Y, cell.Z)));
             }
         }
 

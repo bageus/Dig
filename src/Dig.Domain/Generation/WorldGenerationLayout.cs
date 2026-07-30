@@ -45,19 +45,24 @@ internal static partial class WorldGenerationLayout
         WorldGenerationProfile profile,
         IReadOnlyList<GeneratedZonePlan> zones)
     {
-        CellState[] cells = new CellState[checked(profile.Size.Width * profile.Size.Height)];
-        for (int y = 0; y < profile.Size.Height; y++)
+        CellState[] cells = new CellState[profile.Size.CellCount];
+        for (int z = CellId.MinimumDepth; z < profile.Size.Depth; z++)
         {
-            for (int x = 0; x < profile.Size.Width; x++)
+            for (int y = 0; y < profile.Size.Height; y++)
             {
-                CellId cellId = new CellId(x, y, 0);
-                GeneratedZonePlan nearest = FindNearestZone(cellId, zones);
-                cells[(y * profile.Size.Width) + x] = new CellState(
-                    nearest.Biome.SolidMaterialId,
-                    CellDesignation.None,
-                    isExplored: false,
-                    damage: 0,
-                    temperature: checked((short)(20 - (nearest.LayerIndex * 3))));
+                for (int x = 0; x < profile.Size.Width; x++)
+                {
+                    CellId cellId = new CellId(x, y, z);
+                    GeneratedZonePlan nearest = FindNearestZone(cellId, zones);
+                    int index = (((z * profile.Size.Height) + y)
+                        * profile.Size.Width) + x;
+                    cells[index] = new CellState(
+                        nearest.Biome.SolidMaterialId,
+                        CellDesignation.None,
+                        isExplored: false,
+                        damage: 0,
+                        temperature: checked((short)(20 - (nearest.LayerIndex * 3))));
+                }
             }
         }
 

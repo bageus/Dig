@@ -146,6 +146,7 @@ internal sealed partial class DigTerrainWorkSession
                 job.AssignedAgentId.Value.ToString(),
                 pair.Value.Target.X,
                 pair.Value.Target.Y,
+                pair.Value.Target.Z,
                 path.Succeeded,
                 label + ": " + path.Diagnostics.Detail,
                 path.Path?.TotalCost ?? 0,

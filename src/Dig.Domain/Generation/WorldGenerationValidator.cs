@@ -59,6 +59,7 @@ public sealed class WorldGenerationValidator
     {
         if (world.Size.Width != profile.Size.Width
             || world.Size.Height != profile.Size.Height
+            || world.Size.Depth != profile.Size.Depth
             || world.Layout.ChunkSize != profile.ChunkSize)
         {
             failures.Add("Generated world dimensions do not match the profile.");
@@ -111,10 +112,27 @@ public sealed class WorldGenerationValidator
         while (frontier.Count > 0)
         {
             CellId current = frontier.Dequeue();
-            Visit(world, new CellId(current.X - 1, current.Y, 0), visited, frontier);
-            Visit(world, new CellId(current.X + 1, current.Y, 0), visited, frontier);
-            Visit(world, new CellId(current.X, current.Y - 1, 0), visited, frontier);
-            Visit(world, new CellId(current.X, current.Y + 1, 0), visited, frontier);
+            Visit(world, new CellId(current.X - 1, current.Y, current.Z), visited, frontier);
+            Visit(world, new CellId(current.X + 1, current.Y, current.Z), visited, frontier);
+            Visit(world, new CellId(current.X, current.Y - 1, current.Z), visited, frontier);
+            Visit(world, new CellId(current.X, current.Y + 1, current.Z), visited, frontier);
+            if (current.Z > CellId.MinimumDepth)
+            {
+                Visit(
+                    world,
+                    new CellId(current.X, current.Y, current.Z - 1),
+                    visited,
+                    frontier);
+            }
+
+            if (current.Z < CellId.MaximumDepth)
+            {
+                Visit(
+                    world,
+                    new CellId(current.X, current.Y, current.Z + 1),
+                    visited,
+                    frontier);
+            }
         }
 
         return visited;

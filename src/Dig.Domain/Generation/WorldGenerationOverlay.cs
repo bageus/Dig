@@ -43,16 +43,19 @@ public static class WorldGenerationOverlay
         }
 
         List<WorldCellOverride> overrides = new List<WorldCellOverride>();
-        for (int y = 0; y < generatedBase.Size.Height; y++)
+        for (int z = CellId.MinimumDepth; z < generatedBase.Size.Depth; z++)
         {
-            for (int x = 0; x < generatedBase.Size.Width; x++)
+            for (int y = 0; y < generatedBase.Size.Height; y++)
             {
-                CellId cellId = new CellId(x, y, 0);
-                CellState baseState = generatedBase.GetCell(cellId).Value.State;
-                CellState currentState = currentWorld.GetCell(cellId).Value.State;
-                if (baseState != currentState)
+                for (int x = 0; x < generatedBase.Size.Width; x++)
                 {
-                    overrides.Add(new WorldCellOverride(cellId, currentState));
+                    CellId cellId = new CellId(x, y, z);
+                    CellState baseState = generatedBase.GetCell(cellId).Value.State;
+                    CellState currentState = currentWorld.GetCell(cellId).Value.State;
+                    if (baseState != currentState)
+                    {
+                        overrides.Add(new WorldCellOverride(cellId, currentState));
+                    }
                 }
             }
         }
@@ -89,6 +92,7 @@ public static class WorldGenerationOverlay
     {
         if (left.Size.Width != right.Size.Width
             || left.Size.Height != right.Size.Height
+            || left.Size.Depth != right.Size.Depth
             || left.Layout.ChunkSize != right.Layout.ChunkSize
             || left.Materials.Definitions.Count != right.Materials.Definitions.Count)
         {

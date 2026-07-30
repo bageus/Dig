@@ -1,5 +1,7 @@
 # Копание, шаблоны пещер и ресурсные жилы
 
+> **Status synchronization (2026-07-30):** template catalog и template-instance scope #89/#90 подтверждены пользователем после merge PR #520 и имеют статус `IMPLEMENTED`; фактический licensed Unity Test Runner result всё ещё требуется для `VERIFIED`. Остальной deposits/output/hauling/processing scope #87 остаётся открытым.
+
 ## 1. Назначение
 
 Документ описывает целевую систему свободной копки, объёмных шаблонных пещер, грунта, жил, добычи и передачи материалов в Inventory/Hauling.
@@ -293,3 +295,8 @@ UI/inspector показывает:
 - #108 — processing buildings;
 - #109 — terrain outputs;
 - #110 — demand/fog-aware hauling.
+
+
+## 17. Журнал подтверждений
+
+- 2026-07-30 — пользователь подтвердил acceptance #89/#90 после merge PR #520: все четыре presets, thresholds, persistent designations и template instance lifecycle считаются реализованными; runtime status не повышается до `VERIFIED` без executed Unity result artifact.
