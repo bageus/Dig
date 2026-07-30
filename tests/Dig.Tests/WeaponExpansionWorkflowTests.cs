@@ -47,7 +47,7 @@ public sealed class WeaponExpansionWorkflowTests
         Assert.Equal(0, club.Location.ResidentSlotIndex);
         Assert.True(sheathLayout.Slots.Single(value =>
             value.Slot.Compartment == ResidentInventoryCompartment.Main
-            && value.Slot.SlotIndex == 1).IsEmpty);
+            && value.Slot.Index == 1).IsEmpty);
         Assert.Equal(1d, inventory.GetResidentMoveSpeedMultiplier(ResidentId));
     }
 
