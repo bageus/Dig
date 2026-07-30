@@ -142,6 +142,9 @@ jobs:
           rm .github/workflows/diagnose-pr-520.yml
           git diff --check
 
+      - name: Restore
+        run: dotnet restore Dig.sln
+
       - name: Run targeted regressions
         shell: bash
         run: |
