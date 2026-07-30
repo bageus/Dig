@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Dig.Domain.Core;
@@ -43,31 +42,31 @@ public sealed class MushroomWorkPositionPlayModeTests
             journal,
             GetProperty(residents, "SkillGrants"));
 
-        Dictionary<CellId, WorldCellViewModel> cells = worldView.Chunks
+        var cells = worldView.Chunks
             .SelectMany(chunk => chunk.Cells)
-            .ToDictionary(value => new CellId(value.X, value.Y, value.Z));
+            .ToArray();
         MethodInfo resolver = terrain.GetType().GetMethod(
             "TryResolveMushroomWorkPosition",
             BindingFlags.Instance | BindingFlags.NonPublic)!;
         CellId workerCell = new CellId(worker.CellX, worker.CellY, worker.CellZ);
         CellId? chosenTarget = null;
         CellId chosenWork = default;
-        foreach (CellId target in cells.Values
+        foreach (CellId target in cells
             .Where(value => !value.IsSolid)
             .Select(value => new CellId(value.X, value.Y, value.Z))
             .OrderBy(value => value))
         {
             bool sideSupported =
-                HasFullSupport(cells, new CellId(target.X - 1, target.Y, target.Z))
-                || HasFullSupport(cells, new CellId(target.X + 1, target.Y, target.Z));
+                HasFullSupport(terrain, new CellId(target.X - 1, target.Y, target.Z))
+                || HasFullSupport(terrain, new CellId(target.X + 1, target.Y, target.Z));
             bool depthSupported =
                 (target.Z > CellId.MinimumDepth
                     && HasFullSupport(
-                        cells,
+                        terrain,
                         new CellId(target.X, target.Y, target.Z - 1)))
                 || (target.Z < CellId.MaximumDepth
                     && HasFullSupport(
-                        cells,
+                        terrain,
                         new CellId(target.X, target.Y, target.Z + 1)));
             if (sideSupported || !depthSupported)
             {
@@ -84,7 +83,7 @@ public sealed class MushroomWorkPositionPlayModeTests
             if (work.X == target.X
                 && work.Y == target.Y
                 && Math.Abs(work.Z - target.Z) == 1
-                && HasFullSupport(cells, work))
+                && HasFullSupport(terrain, work))
             {
                 chosenTarget = target;
                 chosenWork = work;
@@ -99,19 +98,12 @@ public sealed class MushroomWorkPositionPlayModeTests
         Assert.That(chosenWork.Y, Is.EqualTo(chosenTarget!.Value.Y));
         Assert.That(chosenWork.X, Is.EqualTo(chosenTarget.Value.X));
         Assert.That(Math.Abs(chosenWork.Z - chosenTarget.Value.Z), Is.EqualTo(1));
-        Assert.That(HasFullSupport(cells, chosenWork), Is.True);
+        Assert.That(HasFullSupport(terrain, chosenWork), Is.True);
     }
 
-    private static bool HasFullSupport(
-        IReadOnlyDictionary<CellId, WorldCellViewModel> cells,
-        CellId actionCell)
+    private static bool HasFullSupport(object terrain, CellId actionCell)
     {
-        CellId support = new CellId(
-            actionCell.X,
-            actionCell.Y + 1,
-            actionCell.Z);
-        return cells.TryGetValue(support, out WorldCellViewModel? value)
-            && value.HasFullActorSupport;
+        return (bool)Invoke(terrain, "HasFullStandingSupport", actionCell);
     }
 
     private static Type RequireType(Assembly assembly, string name)
