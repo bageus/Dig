@@ -1,0 +1,45 @@
+name: Extend hamster and grub questionnaire
+
+on:
+  push:
+    branches:
+      - agent/hamsters-grubs-ecology
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/hamsters-grubs-ecology
+      - name: Extend questionnaire
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('docs/design/hamsters-and-grubs-ecology.md')
+          text = path.read_text(encoding='utf-8')
+          old = '''5. **Q-HG-005 — Exact speed.** Какой точный movement interval/multiplier у hamster и grub относительно resident?
+6. **Q-HG-006 — 15 minutes/ticks.** Текущая demo schedule использует 24 ticks/day. Ecology получает finer sub-ticks, 15 минут округляются до одного simulation tick или глобальная day scale меняется?
+'''
+          new = '''5. **Q-HG-005 — Movement tuning.** Какой точный movement interval/multiplier и wander radius у hamster и grub относительно resident/cells?
+6. **Q-HG-006 — 15 minutes/ticks.** Текущая demo schedule использует 24 ticks/day. Ecology получает finer sub-ticks, 15 минут округляются до одного simulation tick или глобальная day scale меняется?
+7. **Q-HG-007 — Hamster activity cadence.** Через сколько movement steps hamster переходит в search/sleep, сколько длится каждое состояние и на каком radius он замечает resident для мягкого steering?
+'''
+          if old not in text:
+              raise SystemExit('questionnaire anchor missing')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          rm .github/workflows/agent-hamsters-grubs-questionnaire.yml
+      - name: Commit questionnaire extension
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add docs/design/hamsters-and-grubs-ecology.md .github/workflows/agent-hamsters-grubs-questionnaire.yml
+          git commit -m "Complete hamster and grub questionnaire"
+          git push origin HEAD:agent/hamsters-grubs-ecology
