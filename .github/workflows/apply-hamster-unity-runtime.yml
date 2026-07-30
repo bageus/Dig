@@ -1,0 +1,44 @@
+name: Apply hamster and grub Unity runtime
+
+on:
+  push:
+    branches:
+      - agent/implement-hamsters-grubs-ecology
+    paths:
+      - .github/workflows/apply-hamster-unity-runtime.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/implement-hamsters-grubs-ecology
+      - name: Apply verified runtime payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/patches/hamster-unity-runtime.b64.part* | base64 --decode > /tmp/hamster-unity-runtime.tar.gz
+          tar -xzf /tmp/hamster-unity-runtime.tar.gz
+          rm .github/patches/hamster-unity-runtime.b64.part*
+          rm .github/workflows/apply-hamster-unity-runtime.yml
+      - name: Validate source contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/quality/check_quality.py
+          python tools/quality/check_unity_source_contracts.py
+          python tools/quality/check_unity_creature_visual_contracts.py
+          python tools/quality/check_unity_native_field_initializers.py
+      - name: Commit runtime integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "Integrate hamster and grub Unity runtime"
+          git push origin HEAD:agent/implement-hamsters-grubs-ecology
