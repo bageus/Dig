@@ -1,0 +1,226 @@
++- `MaterialCatalog` and `TerrainOutputProfile` own typed terrain definitions and allowed raw outputs.
++- `TerrainOutputResolver` owns deterministic per-entry rolls from world seed, generator version, exact XYZ, profile version and stable ItemId.
++- `CompleteTerrainWorkCommandHandler` owns the authoritative excavation/output commit.
++- `InventoryState` owns every produced quantity-one world entity.
++- `MiningOutputCommitState` owns exactly-once output history by cell.
++- World/Deposit/Inventory/Jobs remain the existing state owners; Unity only resolves a plan and sends the command.
+ 
+-The DTO is wired into the normal production orchestration without creating another
+-state owner:
++## Terrain catalog
+ 
+-- `SaveGameContext.MiningOutputCommits` carries the authoritative ledger reference;
+-- `SaveGameBuilder.Build(context)` validates Inventory/world integrity and captures it;
+-- `SaveGameService.Save` and `Autosave` use that normal builder path;
+-- `SaveGameLoader.Load` restores the ledger and exposes it through
+-  `LoadedGameState.MiningOutput`;
+-- `DigTerrainWorkSession` accepts the restored commit state during composition instead
+-  of always creating a fresh empty ledger.
++`DefaultTerrainMaterials` contains six stable definitions:
+ 
+-A missing section from an older document restores as an empty ledger. A malformed,
+-out-of-bounds or Inventory-mismatched section fails with a typed mining-output save
+-diagnostic rather than replaying output.
++- `terrain.sand`;
++- `terrain.stone_rock`;
++- `terrain.metal_bearing_rock` with display name `Рудная порода`;
++- `terrain.crystalline_rock`;
++- `terrain.lava_rock`;
++- `terrain.unmineable`.
+ 
+-## Deposit snapshot v11
++Profiles reference only `material.stone`, `material.coal`, `ore.iron`, `ore.gold` and `ore.crystal`. The numeric probabilities, ranges and hardness values are versioned content fixtures retained from the existing catalog; they do not resolve Q-014 balance.
+ 
+-Issue #91 moves `TerrainDepositState` under `WorldState` and raises the save document to version 11. `TerrainDepositsSaveData` now stores its own snapshot format, generator version and per-entry definition version in addition to exact XYZ, reveal/depletion, yield and state version. Migration `save.v10_to_v11.terrain_deposit_contract` assigns legacy definition version 1 and preserves coordinates and quantities.
++Independent entry streams allow deterministic multi-output while preserving empty results. `terrain.unmineable` has no output profile and cannot be excavated.
+ 
+-The completion path resolves and validates deposit identity/yield before mutation. `WorldState.Excavate` then opens terrain, depletes the same instance and reveals six-axis neighbours before Inventory/Job commit. Unity no longer performs a second post-commit depletion mutation.
++## Atomic completion
++
++The completion command carries the resolved source id/version, optional deposit identity/yield, all output lines and one deterministic base entity id. Preflight derives the complete quantity-one id set and rejects unknown items, duplicate/existing ids, stale deposits and duplicate cell commits before World mutation.
++
++On success the handler:
++
++1. opens the exact XYZ terrain cell and depletes a matching deposit when present;
++2. creates each output unit at `ItemLocation.InWorld(targetCell)`;
++3. completes the Job;
++4. records all output lines and entity ids in the shared ledger;
++5. saves/publishes the existing World, Inventory and Job owners.
++
++Deposit output is exclusive and never executes the terrain table. Empty terrain output still records a cell commit, preventing reroll after retry or load. The miner inventory and held item are not changed. Quantity-one output identities are preserved through hauling ingress and storage deposit, so the ledger remains valid after delivery. Legacy aggregate storage paths remain compatibility-only.
++
++## Save format v12
++
++Mining-output section v2 stores:
++
++- exact XYZ and source kind;
++- stable terrain-profile/deposit source id and version;
++- ordered output lines;
++- item id, quantity and stable entity ids for every line;
++- empty commits without output lines.
++
++`save.v11_to_v12.terrain_output_contract` upgrades legacy single-output ledger records and maps `material.metal` to `material.iron` across saved Inventory, resident slot claims, job properties, production allocations/stocks, active meals, barrels and mining-output entries. Replay is idempotent.
++
++## Diagnostics and coverage
++
++Coverage includes the six terrain definitions, allowed outputs, sand empty output, stone-only output, deterministic multi-output and exact-Z changes, catalog validation, deposit exclusivity, duplicate/id-conflict rollback, quantity-one world placement, ledger capture/restore, v1-to-v2 section compatibility, save v12 migration and Unity composition/source contracts.
++
++The checked-in Play Mode scenario verifies that the demo composes the common six-type catalog. Actual licensed EditMode/PlayMode execution is still the boundary for `VERIFIED`.
++
++## Hauling boundary
++
++A storage zone is a valid demand only through its explicit `StorageFilter`; the demo stockpile uses an ItemId whitelist. General building-demand, current-fog eligibility, retry and demand reservations remain the single authoritative scope of #110. This implementation does not create a second hauling planner.
+diff --git a/docs/systems/README.md b/docs/systems/README.md
+index a1479aac831587981c92d41b5eeb37048f6e4b2a..f8cb78eea17ab5b82a45e94d62f9d7efc3aa8de3 100644
+--- a/docs/systems/README.md
++++ b/docs/systems/README.md
+@@ -68,7 +68,7 @@ Tracking issues: [#385](https://github.com/bageus/Dig/issues/385), [#393](https:
+ | Excavation execution | direct dig, connected zone, automatic continuation, quarter progress | `APPROVED` | [`../design/excavation-command-execution.md`](../design/excavation-command-execution.md), [`../design/runtime-selection-excavation-item-placement-decisions.md`](../design/runtime-selection-excavation-item-placement-decisions.md) | [`../implementation/unity-terrain-work-vertical-slice.md`](../implementation/unity-terrain-work-vertical-slice.md), [`../implementation/runtime-selection-excavation-item-placement.md`](../implementation/runtime-selection-excavation-item-placement.md), [#388](https://github.com/bageus/Dig/issues/388) |
+ | Excavation cadence profiles | hardness, Stonework, pickaxe, posture, quarter skill grant | `IMPLEMENTED` | [`../design/excavation-cadence-profiles.md`](../design/excavation-cadence-profiles.md) | [`../implementation/excavation-cadence-profiles-2026-07-29.md`](../implementation/excavation-cadence-profiles-2026-07-29.md), [#388](https://github.com/bageus/Dig/issues/388), [PR #506](https://github.com/bageus/Dig/pull/506) |
+ | Entity falling и vertical shafts | unsupported item, actor knockback, landing | `QUESTIONNAIRE` | [`../design/entity-fall-knockback-and-vertical-shafts.md`](../design/entity-fall-knockback-and-vertical-shafts.md) | [#396](https://github.com/bageus/Dig/issues/396) |
+-| Terrain resources и processing | ore, terrain output, refinery | `APPROVED` | [`../design/terrain-resource-output-and-processing.md`](../design/terrain-resource-output-and-processing.md) | [`../implementation/mining-output-save-data-contract.md`](../implementation/mining-output-save-data-contract.md), [#109](https://github.com/bageus/Dig/issues/109) |
++| Terrain resources и output commit | ore, terrain profile, mining drop, output ledger | `IMPLEMENTED` | [`../design/terrain-resource-output-and-processing.md`](../design/terrain-resource-output-and-processing.md), [`../design/content/materials.md`](../design/content/materials.md) | [`../implementation/mining-output-save-data-contract.md`](../implementation/mining-output-save-data-contract.md), [`../implementation/issues-92-109-terrain-output-2026-07-30.md`](../implementation/issues-92-109-terrain-output-2026-07-30.md), [#92](https://github.com/bageus/Dig/issues/92), [#109](https://github.com/bageus/Dig/issues/109) |
+ | Deposits и depletion | resource veins, coal, crystal | `IMPLEMENTED` | [`../design/excavation-room-templates-and-deposits.md`](../design/excavation-room-templates-and-deposits.md), [`../design/terrain-resource-output-and-processing.md`](../design/terrain-resource-output-and-processing.md) | [`../implementation/issue-91-deterministic-deposits-2026-07-30.md`](../implementation/issue-91-deterministic-deposits-2026-07-30.md), [#91](https://github.com/bageus/Dig/issues/91) |
+ | Procedural generation | seed, deterministic world | `IMPLEMENTED` | [`../architecture/systems-core.md`](../architecture/systems-core.md#2-мир) | [`../implementation/world-generation.md`](../implementation/world-generation.md), [#3](https://github.com/bageus/Dig/issues/3) |
+ | Fog of war и exploration | reveal, vision source, hidden hauling | `APPROVED` | [`../design/exploration-fog-of-war.md`](../design/exploration-fog-of-war.md) | [#165](https://github.com/bageus/Dig/issues/165) |
+diff --git a/src/Dig.Application/Jobs/TerrainWorkCompletionContracts.cs b/src/Dig.Application/Jobs/TerrainWorkCompletionContracts.cs
+index ea63ef486868f908a073cfefc1f524bec5884e19..ae886ae3f644c7afc5d7ef742f32d7443917ecea 100644
+--- a/src/Dig.Application/Jobs/TerrainWorkCompletionContracts.cs
++++ b/src/Dig.Application/Jobs/TerrainWorkCompletionContracts.cs
+@@ -1,5 +1,9 @@
+ using System;
++using System.Collections.Generic;
++using System.Collections.ObjectModel;
++using System.Linq;
+ using Dig.Application.Messaging;
++using Dig.Application.World;
+ using Dig.Domain.Core;
+ using Dig.Domain.Inventory;
+ using Dig.Domain.World;
+@@ -28,11 +32,43 @@ public static class TerrainWorkCompletionErrors
+     public static readonly DomainError UnknownOutputItem = new DomainError(
+         "terrain_work.output_item_unknown",
+         "The output item is not registered in Inventory.");
++
++    public static readonly DomainError OutputPlanCellMismatch = new DomainError(
++        "terrain_work.output_plan_cell_mismatch",
++        "The resolved mining output plan does not target the terrain job cell.");
++
++    public static readonly DomainError OutputAlreadyCommitted = new DomainError(
++        "terrain_work.output_already_committed",
++        "Mining output for the terrain cell was already committed.");
++}
++
++public sealed class TerrainWorkOutputSpec
++{
++    public TerrainWorkOutputSpec(ItemId itemId, int quantity)
++    {
++        if (itemId.IsEmpty)
++        {
++            throw new ArgumentException("Output item id is required.", nameof(itemId));
++        }
++
++        if (quantity <= 0)
++        {
++            throw new ArgumentOutOfRangeException(nameof(quantity));
++        }
++
++        ItemId = itemId;
++        Quantity = quantity;
++    }
++
++    public ItemId ItemId { get; }
++    public int Quantity { get; }
+ }
+ 
+ public sealed class CompleteTerrainWorkCommand
+     : ICommand<Result<TerrainWorkCompletionResult>>
+ {
++    private readonly IReadOnlyList<TerrainWorkOutputSpec> _outputs;
++
+     public CompleteTerrainWorkCommand(
+         EntityId jobId,
+         EntityId outputStackId,
+@@ -45,27 +81,49 @@ public sealed class CompleteTerrainWorkCommand
+         : this(
+             jobId,
+             outputStackId,
+-            outputItemId,
+-            outputQuantity,
++            new[] { new TerrainWorkOutputSpec(outputItemId, outputQuantity) },
+             emptyMaterialId,
+             tick,
+-            producesOutput: true,
++            depositInstanceId == null
++                ? MiningOutputSourceKind.Terrain
++                : MiningOutputSourceKind.Deposit,
++            depositInstanceId == null ? "legacy.terrain-output" : "legacy.deposit-output",
++            sourceVersion: 1,
+             depositInstanceId,
+-            depositExpectedYield)
++            depositExpectedYield,
++            resolvedPlanCell: null)
+     {
+     }
+ 
+     private CompleteTerrainWorkCommand(
+         EntityId jobId,
+         EntityId outputStackId,
+-        ItemId outputItemId,
+-        int outputQuantity,
++        IEnumerable<TerrainWorkOutputSpec> outputs,
+         MaterialId emptyMaterialId,
+         long tick,
+-        bool producesOutput,
++        MiningOutputSourceKind sourceKind,
++        string sourceId,
++        int sourceVersion,
+         string? depositInstanceId,
+-        int? depositExpectedYield)
++        int? depositExpectedYield,
++        CellId? resolvedPlanCell)
+     {
++        if (outputs == null)
++        {
++            throw new ArgumentNullException(nameof(outputs));
++        }
++
++        TerrainWorkOutputSpec[] values = outputs
++            .OrderBy(value => value.ItemId)
++            .ToArray();
++        if (values.Any(value => value == null)
++            || values.Select(value => value.ItemId).Distinct().Count() != values.Length)
++        {
++            throw new ArgumentException(
++                "Terrain output specs must be non-null and unique by item id.",
++                nameof(outputs));
++        }
++
+         if ((depositInstanceId is null) != (!depositExpectedYield.HasValue)
+             || depositExpectedYield <= 0)
+         {
+@@ -73,26 +131,84 @@ public sealed class CompleteTerrainWorkCommand
+                 "Deposit instance and positive expected yield must be supplied together.");
+         }
+ 
++        if (values.Length > 0 && outputStackId.IsEmpty)
++        {
++            throw new ArgumentException(
++                "Non-empty terrain output requires a base stack id.",
++                nameof(outputStackId));
++        }
++
++        if (string.IsNullOrWhiteSpace(sourceId))
++        {
++            throw new ArgumentException("Output source id is required.", nameof(sourceId));
++        }
++
++        if (sourceVersion <= 0)
++        {
++            throw new ArgumentOutOfRangeException(nameof(sourceVersion));
++        }
++
+         JobId = jobId;
+         OutputStackId = outputStackId;
+-        OutputItemId = outputItemId;
+-        OutputQuantity = outputQuantity;
