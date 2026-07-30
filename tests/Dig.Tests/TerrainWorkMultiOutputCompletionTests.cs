@@ -149,7 +149,7 @@ public sealed class TerrainWorkMultiOutputCompletionTests
         MaterialCatalog materials = new MaterialCatalog(new[]
         {
             new MaterialDefinition(Rock, "Multi rock", true, 100, true, profile),
-            new MaterialDefinition(Air, "Air", false, 0),
+            new MaterialDefinition(Air, "Air", false, 0, false, null),
         });
         WorldState world = WorldState.CreateFilled(
             new WorldSize(6, 4, 4),
