@@ -57,16 +57,16 @@ public sealed class MushroomWorkPositionPlayModeTests
             .OrderBy(value => value))
         {
             bool sideSupported =
-                HasFullSupport(worldView, new CellId(target.X - 1, target.Y, target.Z))
-                || HasFullSupport(worldView, new CellId(target.X + 1, target.Y, target.Z));
+                HasFullSupport(terrain, new CellId(target.X - 1, target.Y, target.Z))
+                || HasFullSupport(terrain, new CellId(target.X + 1, target.Y, target.Z));
             bool depthSupported =
                 (target.Z > CellId.MinimumDepth
                     && HasFullSupport(
-                        worldView,
+                        terrain,
                         new CellId(target.X, target.Y, target.Z - 1)))
                 || (target.Z < CellId.MaximumDepth
                     && HasFullSupport(
-                        worldView,
+                        terrain,
                         new CellId(target.X, target.Y, target.Z + 1)));
             if (sideSupported || !depthSupported)
             {
@@ -83,7 +83,7 @@ public sealed class MushroomWorkPositionPlayModeTests
             if (work.X == target.X
                 && work.Y == target.Y
                 && Math.Abs(work.Z - target.Z) == 1
-                && HasFullSupport(worldView, work))
+                && HasFullSupport(terrain, work))
             {
                 chosenTarget = target;
                 chosenWork = work;
@@ -98,23 +98,12 @@ public sealed class MushroomWorkPositionPlayModeTests
         Assert.That(chosenWork.Y, Is.EqualTo(chosenTarget!.Value.Y));
         Assert.That(chosenWork.X, Is.EqualTo(chosenTarget.Value.X));
         Assert.That(Math.Abs(chosenWork.Z - chosenTarget.Value.Z), Is.EqualTo(1));
-        Assert.That(HasFullSupport(worldView, chosenWork), Is.True);
+        Assert.That(HasFullSupport(terrain, chosenWork), Is.True);
     }
 
-    private static bool HasFullSupport(
-        WorldViewModel worldView,
-        CellId actionCell)
+    private static bool HasFullSupport(object terrain, CellId actionCell)
     {
-        CellId support = new CellId(
-            actionCell.X,
-            actionCell.Y + 1,
-            actionCell.Z);
-        return worldView.Chunks
-            .SelectMany(chunk => chunk.Cells)
-            .Any(value => value.X == support.X
-                && value.Y == support.Y
-                && value.Z == support.Z
-                && value.HasFullActorSupport);
+        return (bool)Invoke(terrain, "HasFullStandingSupport", actionCell);
     }
 
     private static Type RequireType(Assembly assembly, string name)
