@@ -19,7 +19,8 @@ public sealed class CreatureVisualSnapshot
         bool isGrowing,
         bool isSpecialAction,
         double actionProgress,
-        long version)
+        long version,
+        string activityVariantId = "")
     {
         if (string.IsNullOrWhiteSpace(creatureId))
             throw new ArgumentException("Creature id is required.", nameof(creatureId));
@@ -48,6 +49,7 @@ public sealed class CreatureVisualSnapshot
         IsSpecialAction = isSpecialAction;
         ActionProgress = actionProgress;
         Version = version;
+        ActivityVariantId = activityVariantId?.Trim() ?? string.Empty;
     }
 
     public string CreatureId { get; }
@@ -65,5 +67,6 @@ public sealed class CreatureVisualSnapshot
     public bool IsSpecialAction { get; }
     public double ActionProgress { get; }
     public long Version { get; }
+    public string ActivityVariantId { get; }
 }
 }

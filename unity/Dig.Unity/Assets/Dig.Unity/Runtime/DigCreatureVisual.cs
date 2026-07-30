@@ -34,6 +34,7 @@ public sealed class DigCreatureVisual : MonoBehaviour
         transform.SetPositionAndRotation(_targetPosition, Quaternion.identity);
         _rig.ApplyAppearance(appearance);
         _rig.ApplyAction(action);
+        _rig.ApplyActivityVariant(snapshot.ActivityVariantId);
         _rig.ApplyLod(lod);
         _rig.SetSelected(_selected);
     }
@@ -86,6 +87,7 @@ public sealed class DigCreatureVisual : MonoBehaviour
         }
         _rig!.ApplyAppearance(appearance);
         _rig.ApplyAction(action);
+        _rig.ApplyActivityVariant(snapshot.ActivityVariantId);
         _rig.ApplyLod(lod);
     }
 

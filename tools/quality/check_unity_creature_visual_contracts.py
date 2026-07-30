@@ -58,7 +58,7 @@ def main() -> int:
     errors.extend(require(snapshot_path, read(snapshot_path), (
         "CreatureVisualSnapshot", "SpeciesId", "Disposition",
         "IsMoving", "IsAttacking", "ShowImpact", "IsGrowing",
-        "IsSpecialAction", "ActionProgress", "Version",
+        "IsSpecialAction", "ActionProgress", "Version", "ActivityVariantId",
     )))
     errors.extend(require(models_path, read(models_path), (
         "CreatureAppearanceViewModel", "RigId", "VariantId", "IsFallback",
@@ -70,7 +70,7 @@ def main() -> int:
         "enemy.plant.poison", "enemy.plant.fire", "enemy.vuker",
         "enemy.vuker.sulfur", "enemy.spider", "creature.spider.egg",
         "enemy.demon.swallower", "enemy.demon.lava", "enemy.troll",
-        "enemy.goblin", "creature.hamster", "creature.larva",
+        "enemy.goblin", "creature.hamster", "creature.grub", "creature.larva",
         "creature.rig.plant", "creature.rig.vuker", "creature.rig.arachnid",
         "creature.rig.biped", "creature.rig.demon", "creature.rig.small",
         "creature.rig.fallback", "CreatureMarkerShape.Shield",
@@ -104,7 +104,7 @@ def main() -> int:
     errors.extend(require(rig_path, rig, (
         "MaterialPropertyBlock", "DigCreatureAnchorKind", "Equipment", "Drop",
         "InsideCreature", "Vfx", "ApplyAppearance(", "ApplyAction(",
-        "ApplyLod(", "_appearance.MarkerShape", "CreatureDisposition.Tamed",
+        "ApplyActivityVariant(", "ApplyLod(", "_appearance.MarkerShape", "CreatureDisposition.Tamed",
         "CreatureDisposition.Hostile", "CreatureLodTier.Far",
     )))
 
@@ -149,7 +149,7 @@ def main() -> int:
     bootstrap_path = RUNTIME / "DigUnityBootstrap.cs"
     errors.extend(require(bootstrap_path, read(bootstrap_path), (
         "using Dig.Presentation.Creatures;", "DigCreatureRenderer creatureRenderer",
-        "Array.Empty<CreatureVisualSnapshot>()", "creatureRenderer.Render(",
+        "LoadLivingMaterialCreatures()", "creatureRenderer.Render(",
     )))
 
     if errors:

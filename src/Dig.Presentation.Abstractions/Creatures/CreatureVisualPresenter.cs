@@ -94,6 +94,7 @@ public sealed class CreatureVisualPresenter
         return new Dictionary<string, SpeciesDefinition>(StringComparer.Ordinal)
         {
             ["creature.hamster"] = Small("hamster"),
+            ["creature.grub"] = Small("grub"),
             ["creature.larva"] = Small("larva"),
             ["enemy.plant.poison"] = Plant("poison"),
             ["enemy.plant.fire"] = Plant("fire"),
