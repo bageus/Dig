@@ -23,4 +23,6 @@ The mushroom resolver therefore selects a supported depth cell when left/right c
 
 ## Evidence
 
-The branch patch runner completed Release restore and the full .NET test command before publishing the implementation commit. Fast regressions cover the selector source contract and quantity-safe meal rejection. A checked-in Unity Play Mode scenario boots the real demo world and calls the actual mushroom resolver for a side-void/depth-supported case. Hosted Unity execution may remain blocked when activation is unavailable; do not promote the systems to `VERIFIED` without licensed runtime results.
+Fast regressions cover the selector source contract and quantity-safe meal rejection. The checked-in Unity Play Mode scenario boots the real demo world and calls the actual mushroom resolver for a side-void/depth-supported case.
+
+PR #521 initially failed the repository file-size gate because `MushroomChoppingPlayModeTests.cs` grew to 445 lines. The supported-depth scenario was moved into the focused `MushroomWorkPositionPlayModeTests.cs` fixture, keeping both Play Mode files below the 350-line limit without reducing coverage. Quality run `30564627703` then passed architecture/file-size checks, Release build, all 1172 .NET tests, headless smoke and both deterministic soaks. Hosted Unity execution may remain blocked when activation is unavailable; do not promote the systems to `VERIFIED` without licensed runtime results.
