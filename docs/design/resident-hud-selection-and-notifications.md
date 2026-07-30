@@ -110,7 +110,9 @@ Inspector показывает requested/applied gains, free capacity, overflow,
 [ Weapon ] [ Main: 6 slots ] [ Cargo ]
 ```
 
-Weapon отделён слева, Cargo справа.
+Weapon отделён слева, Cargo справа. Текст `Cargo 4/6` не отображается. Все compartments имеют ровно два ряда: Main `3×2`, basket Cargo `2×2`, large-basket Cargo `3×2`, sheath Weapon `1×2`, harness Weapon `2×2`.
+
+Внешняя рамка центральной нижней панели совпадает по высоте и границам с minimap и clock. Контент не расширяет эту рамку: кнопки, ячейки, padding и best-fit text уменьшаются внутри доступной области.
 
 ### Выбрано completed building
 
@@ -193,6 +195,8 @@ Roster virtualized; изменение одной row не пересоздаё�
 - world BuildingBox LMB выбирает box и не включает placement;
 - «Распаковать» включает только 3D ghost/footprint;
 - no click-through/double command;
+- center context HUD aligns with minimap/clock while inner controls compact without changing outer bounds;
+- inventory slot grids remain paired two-row layouts and Cargo capacity title is absent;
 - BuildingBox quantity сохраняется;
 - notifications используют typed events и установленный lifecycle;
 - deterministic read-model/input/Play Mode tests проходят.

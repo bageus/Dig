@@ -153,14 +153,15 @@ def check_gameplay_hud_and_work_contracts(
         texts.get(inventory_path, ""),
         "compact active-only two-row resident inventory",
         (
-            "InventoryColumns = 3",
-            "InventoryCellWidth = 62f",
-            "InventoryCellHeight = 52f",
+            "InventoryRows = 2",
+            "InventoryCellWidth = 52f",
+            "InventoryCellHeight = 38f",
             'MainCompartmentTitle = ""',
-            "BeginBottomLayout(hasExpansion ? 184f : 150f)",
+            "BeginBottomLayout();",
             "layout.childAlignment = TextAnchor.MiddleLeft",
             "GridLayoutGroup",
-            "constraintCount = InventoryColumns",
+            "ResolveInventoryGrid(models.Count)",
+            "constraintCount = columns",
             "BuildCompartmentIfActive",
         ),
     ))
@@ -170,6 +171,7 @@ def check_gameplay_hud_and_work_contracts(
         "inactive placeholders, Main heading and oversized inventory",
         (
             '"MAIN · 6"',
+            '"CARGO ·',
             '"CARGO · NO EXPANSION"',
             'CreateHorizontalRow("Slots"',
             '"Unavailable"',

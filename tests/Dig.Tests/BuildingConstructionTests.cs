@@ -43,7 +43,7 @@ public sealed class BuildingConstructionTests
         Assert.True(createConstruction.Handle(new CreateConstructionJobCommand(
             constructionJobId,
             BuildingId,
-            new[] { new CellId(3, 2) },
+            new[] { new CellId(2, 3) },
             priority: 700,
             tick: 10)).IsSuccess);
         harness.AssignAndAdvanceToPerformWork(constructionJobId, tick: 11);
@@ -222,7 +222,7 @@ public sealed class BuildingConstructionTests
             harness.Journal).Handle(new CreateConstructionJobCommand(
                 constructionJob,
                 BuildingId,
-                new[] { new CellId(3, 2) },
+                new[] { new CellId(2, 3) },
                 priority: 500,
                 tick: 10)).IsSuccess);
         harness.AssignAndAdvanceToPerformWork(constructionJob, tick: 11);

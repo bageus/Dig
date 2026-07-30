@@ -85,7 +85,7 @@ internal sealed class BuildingBoxHarness
                 new BuildingDefinitionId("workshop.box"),
                 origin,
                 BuildingOrientation.North,
-                reachableCells: new[] { new CellId(origin.X, origin.Y - 1) },
+                reachableCells: new[] { new CellId(origin.X - 1, origin.Y, origin.Z) },
                 priority: 600,
                 tick: _tick++));
     }
@@ -205,7 +205,7 @@ internal sealed class BuildingBoxHarness
             new BuildingDefinitionId("workshop.box"),
             "Box Workshop",
             new[] { new CellOffset(0, 0) },
-            new[] { new CellOffset(0, -1) },
+            new[] { new CellOffset(-1, 0), new CellOffset(1, 0) },
             Array.Empty<BuildingMaterialRequirement>(),
             requiredWork: 3,
             maximumDurability: 100,
@@ -219,8 +219,10 @@ internal sealed class BuildingBoxHarness
             new CellId(1, 1),
             new CellId(3, 3),
             new CellId(3, 2),
+            new CellId(2, 3),
             new CellId(5, 5),
             new CellId(5, 4),
+            new CellId(4, 5),
         });
     }
 

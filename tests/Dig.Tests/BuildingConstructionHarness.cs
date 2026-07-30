@@ -76,7 +76,7 @@ internal sealed class BuildingConstructionHarness
                 new BuildingDefinitionId("workshop.basic"),
                 new CellId(3, 3),
                 BuildingOrientation.North,
-                new[] { new CellId(3, 2) },
+                new[] { new CellId(2, 3) },
                 tick: 1));
         Assert.True(result.IsSuccess, result.Error?.ToString());
     }

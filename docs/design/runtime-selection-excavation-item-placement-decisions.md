@@ -82,12 +82,12 @@ Resident, creature и loose world item в target cell не блокируют pl
 
 ## 5. Размещение и использование предмета из resident inventory
 
-Один ЛКМ по доступному generic item в resident inventory сразу включает полноценный item placement mode по тому же Presentation-контракту, что BuildingBox placement:
+Один ЛКМ по доступному generic item, корзине или большой корзине в resident inventory сразу включает полноценный item placement mode по тому же Presentation-контракту, что BuildingBox placement:
 
 - системный 2D cursor скрывается;
 - item visual становится полупрозрачным world-space ghost и непрерывно следует pointer;
 - ghost не участвует в raycast/physics/occupancy;
-- target допустим только в explored reachable open cell с ровной плоской walkable support surface;
+- target допустим в любой explored reachable open cell непосредственно над твёрдой ровной walkable support surface;
 - valid preview зелёный, invalid preview красный и содержит reason code;
 - authoritative stack остаётся в исходном inventory slot до фактического выполнения работы;
 - ЛКМ по valid cell создаёт `ResidentInventoryPlacementJob` для exact resident, stack, available quantity и destination cell, но не переносит stack немедленно;
@@ -96,6 +96,8 @@ Resident, creature и loose world item в target cell не блокируют pl
 - несколько placement jobs одного resident образуют deterministic dependency chain по порядку создания и выполняются этим resident последовательно;
 - следующая работа становится available только после terminal-success предыдущей; cancel/failure предыдущей освобождает её reservations и явно разблокирует либо отменяет dependents по общей job policy;
 - destination, ставшая blocked до deposit, переводит job в typed blocked/retry path без потери/дублирования stack;
+- completion active Cargo expansion использует reserved spill-aware Inventory transaction: expansion и всё содержимое Cargo перемещаются в destination, дополнительные slots исчезают в том же refresh, quantity сохраняется;
+- cancel/failure/retry не проливает Cargo и освобождает reservation, пока deposit не committed;
 - invalid target не меняет Inventory и не создаёт job;
 - RMB отменяет preview и восстанавливает системный cursor;
 - успешное создание job очищает selection/preview и восстанавливает системный cursor, но stack остаётся видимым синим как reserved до deposit;

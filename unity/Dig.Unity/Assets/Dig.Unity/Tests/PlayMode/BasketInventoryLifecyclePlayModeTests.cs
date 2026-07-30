@@ -3,6 +3,7 @@ using System.Collections;
 using System.Linq;
 using Dig.Domain.Content;
 using Dig.Domain.Inventory;
+using Dig.Domain.World;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Inventory;
 using NUnit.Framework;
@@ -61,6 +62,37 @@ public sealed class BasketInventoryLifecyclePlayModeTests
         yield return null;
 
         Assert.That(visual.gameObject.activeSelf, Is.False);
+    }
+
+    [Test]
+    public void Inventory_grid_and_bottom_hud_use_paired_rows_and_shared_height()
+    {
+        Assert.That(
+            DigGameHudCanvas.ResolveInventoryGrid(4),
+            Is.EqualTo(new Vector2Int(2, 2)));
+        Assert.That(
+            DigGameHudCanvas.ResolveInventoryGrid(6),
+            Is.EqualTo(new Vector2Int(3, 2)));
+        Assert.That(
+            DigGameHudCanvas.ResolveBottomHudHeight(720f),
+            Is.EqualTo(172.8f).Within(0.01f));
+    }
+
+    [Test]
+    public void Campfire_has_same_plane_side_candidates_for_every_orientation()
+    {
+        CellId origin = new CellId(8, 4, 1);
+        foreach (Dig.Domain.Buildings.BuildingOrientation orientation in
+            Enum.GetValues(typeof(Dig.Domain.Buildings.BuildingOrientation)))
+        {
+            CellId[] sideCandidates = CampfireBuildingBoxContent.Definition.Building
+                .ResolveWorkPositions(origin, orientation)
+                .Where(value => value.Y == origin.Y && value.Z == origin.Z)
+                .ToArray();
+
+            Assert.That(sideCandidates, Has.Length.EqualTo(2));
+            Assert.That(sideCandidates.All(value => value.X != origin.X), Is.True);
+        }
     }
 
     private static AgentViewModel Resident()

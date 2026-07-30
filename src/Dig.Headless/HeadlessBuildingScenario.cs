@@ -3,6 +3,7 @@ using Dig.Application.Buildings;
 using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
+using Dig.Application.World;
 using Dig.Domain.Agents;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
@@ -33,11 +34,17 @@ internal static class HeadlessBuildingScenario
         long startTick)
     {
         EntityId buildingId = Require(state.Entities.RegisterNew());
+        CellId workPosition = new CellId(origin.X - 1, origin.Y, origin.Z);
+        Require(new ExcavateCellCommandHandler(worldRepository, journal).Handle(
+            new ExcavateCellCommand(
+                workPosition,
+                new MaterialId("air"),
+                startTick)));
         BuildingDefinition definition = new BuildingDefinition(
             new BuildingDefinitionId("headless.workbench"),
             "Headless Workbench",
             new[] { new CellOffset(0, 0) },
-            new[] { new CellOffset(0, 0) },
+            new[] { new CellOffset(-1, 0), new CellOffset(1, 0) },
             new[] { new BuildingMaterialRequirement(materialId, 1) },
             requiredWork: 5,
             maximumDurability: 100);
@@ -55,7 +62,7 @@ internal static class HeadlessBuildingScenario
             definition.Id,
             origin,
             BuildingOrientation.North,
-            new[] { origin },
+            new[] { workPosition },
             startTick)));
 
         EntityId deliveryJobId = Require(state.Entities.RegisterNew());
@@ -106,7 +113,7 @@ internal static class HeadlessBuildingScenario
         Require(createConstruction.Handle(new CreateConstructionJobCommand(
             constructionJobId,
             buildingId,
-            new[] { origin },
+            new[] { workPosition },
             priority: 700,
             tick: startTick + 7)));
         Assign(

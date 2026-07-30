@@ -23,7 +23,7 @@ public sealed class BuildingPlacementTests
         BuildingPlacementValidator validator = new BuildingPlacementValidator();
         BuildingsState buildings = new BuildingsState();
         CellId origin = new CellId(3, 3);
-        CellId workPosition = new CellId(3, 2);
+        CellId workPosition = new CellId(2, 3);
         BuildingPlacementResult valid = validator.Validate(
             definition,
             origin,
@@ -64,7 +64,7 @@ public sealed class BuildingPlacementTests
             BuildingOrientation.North,
             world.CreateSnapshot(),
             Array.Empty<CellId>(),
-            new[] { new CellId(3, 2) },
+            new[] { new CellId(2, 3) },
             ecologyBlockedCells: new[] { origin });
 
         Assert.False(placement.Succeeded);
@@ -142,7 +142,7 @@ public sealed class BuildingPlacementTests
             new BuildingDefinitionId("workshop.basic"),
             "Basic workshop",
             new[] { new CellOffset(0, 0), new CellOffset(1, 0) },
-            new[] { new CellOffset(0, -1), new CellOffset(1, -1) },
+            new[] { new CellOffset(-1, 0), new CellOffset(2, 0) },
             new[]
             {
                 new BuildingMaterialRequirement(new ItemId("resource.rock"), 4),

@@ -95,12 +95,6 @@ namespace Dig.Unity
                 return Result.Failure(ResidentInventoryPlacementErrors.SourceUnavailable);
             }
 
-            if (inventory.Catalog.Get(snapshot.ItemId).IsInventoryExpansion)
-            {
-                return Result.Failure(
-                    ResidentInventoryPlacementErrors.ExpansionRequiresExplicitDrop);
-            }
-
             return CreateResidentInventoryPlacementHandler.ValidateTarget(
                 _worldSession.LoadSnapshot(),
                 destination,

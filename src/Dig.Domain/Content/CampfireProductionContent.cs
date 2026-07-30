@@ -271,7 +271,13 @@ public static class CampfireProductionContent
             id,
             name,
             new[] { new CellOffset(0, 0) },
-            new[] { new CellOffset(0, -1), new CellOffset(1, 0) },
+            new[]
+            {
+                new CellOffset(0, -1),
+                new CellOffset(-1, 0),
+                new CellOffset(1, 0),
+                new CellOffset(0, 1),
+            },
             Array.Empty<BuildingMaterialRequirement>(),
             assemblyWork,
             maximumDurability: 100,

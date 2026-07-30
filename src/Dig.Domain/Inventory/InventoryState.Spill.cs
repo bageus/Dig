@@ -8,6 +8,67 @@ namespace Dig.Domain.Inventory
 
 public sealed partial class InventoryState
 {
+    public Result DropReservedResidentStackWithSpill(
+        EntityId stackId,
+        EntityId reservationOwnerId,
+        ItemLocation destination,
+        long tick)
+    {
+        ValidateTick(tick);
+        ValidateJobId(reservationOwnerId);
+        ItemStackState? stack = Find(stackId);
+        if (stack is null)
+        {
+            return Result.Failure(InventoryErrors.StackNotFound);
+        }
+
+        if (destination.Kind != ItemLocationKind.World || !destination.HasCell)
+        {
+            return Result.Failure(InventoryErrors.ResidentInventoryLayoutInvalid);
+        }
+
+        if (stack.GetReservedQuantity(reservationOwnerId) != stack.Quantity
+            || stack.ReservedQuantity != stack.Quantity)
+        {
+            return Result.Failure(InventoryErrors.ReservationNotFound);
+        }
+
+        ItemDefinition definition = Catalog.Get(stack.ItemId);
+        if (!IsActiveResidentExpansion(
+                stack,
+                definition,
+                out ResidentInventoryCompartment compartment))
+        {
+            return MoveReserved(
+                stackId,
+                reservationOwnerId,
+                stack.Quantity,
+                destination,
+                splitStackId: default,
+                tick);
+        }
+
+        Result validation = ValidateActiveExpansionSpill(
+            stack,
+            compartment,
+            allowExpansionReservationOwner: reservationOwnerId,
+            out ItemStackState[] affected);
+        if (validation.IsFailure)
+        {
+            return validation;
+        }
+
+        IReadOnlyList<SpillStackPlan> plans = BuildSpillPlans(affected, destination);
+        stack.ConsumeReservation(reservationOwnerId, stack.Quantity);
+        Raise(new ItemQuantityReservationChanged(
+            tick,
+            stack.Id,
+            reservationOwnerId,
+            0));
+        ApplySpillPlans(plans, destination, tick);
+        return Result.Success();
+    }
+
     public Result DropResidentStackWithSpill(
         EntityId stackId,
         ItemLocation destination,
@@ -41,8 +102,30 @@ public sealed partial class InventoryState
                 tick);
         }
 
+        Result validation = ValidateActiveExpansionSpill(
+            stack,
+            compartment,
+            allowExpansionReservationOwner: null,
+            out ItemStackState[] affected);
+        if (validation.IsFailure)
+        {
+            return validation;
+        }
+
+        IReadOnlyList<SpillStackPlan> plans = BuildSpillPlans(affected, destination);
+        ApplySpillPlans(plans, destination, tick);
+        return Result.Success();
+    }
+
+    private Result ValidateActiveExpansionSpill(
+        ItemStackState expansion,
+        ResidentInventoryCompartment compartment,
+        EntityId? allowExpansionReservationOwner,
+        out ItemStackState[] affected)
+    {
+        affected = Array.Empty<ItemStackState>();
         bool hasClaims = _residentSlotClaims.Any(claim =>
-            claim.ResidentId == stack.Location.OwnerId
+            claim.ResidentId == expansion.Location.OwnerId
             && claim.Slot.Compartment == compartment);
         if (hasClaims)
         {
@@ -52,33 +135,30 @@ public sealed partial class InventoryState
         ItemStackState[] contents = _stacks.Values
             .Where(value => value.Location.Kind == ItemLocationKind.AgentInventory
                 && value.Location.HasOwner
-                && value.Location.OwnerId == stack.Location.OwnerId
+                && value.Location.OwnerId == expansion.Location.OwnerId
                 && value.Location.HasResidentSlot
                 && value.Location.ResidentCompartment == compartment)
             .OrderBy(value => value.Id.ToString(), StringComparer.Ordinal)
             .ToArray();
-        if (contents.Length == 0)
-        {
-            return MoveAvailable(
-                stackId,
-                stack.Quantity,
-                destination,
-                splitStackId: default,
-                tick);
-        }
-
-        ItemStackState[] affected = contents
-            .Concat(new[] { stack })
+        affected = contents
+            .Concat(new[] { expansion })
             .OrderBy(value => value.Id.ToString(), StringComparer.Ordinal)
             .ToArray();
-        if (affected.Any(value => value.AvailableQuantity != value.Quantity))
+        bool unavailable = affected.Any(value =>
         {
-            return Result.Failure(InventoryErrors.InsufficientAvailableQuantity);
-        }
+            if (value.Id == expansion.Id && allowExpansionReservationOwner.HasValue)
+            {
+                return value.HeldQuantity != 0
+                    || value.GetReservedQuantity(allowExpansionReservationOwner.Value)
+                        != value.Quantity
+                    || value.ReservedQuantity != value.Quantity;
+            }
 
-        IReadOnlyList<SpillStackPlan> plans = BuildSpillPlans(affected, destination);
-        ApplySpillPlans(plans, destination, tick);
-        return Result.Success();
+            return value.AvailableQuantity != value.Quantity;
+        });
+        return unavailable
+            ? Result.Failure(InventoryErrors.InsufficientAvailableQuantity)
+            : Result.Success();
     }
 
     private bool IsActiveResidentExpansion(

@@ -42,7 +42,7 @@ public sealed partial class DigGameHudCanvas
             return;
         }
 
-        BeginBottomLayout(224f);
+        BeginBottomLayout();
         RectTransform section = CreateSection(
             "Building Production",
             _bottomContent!,
@@ -52,18 +52,21 @@ public sealed partial class DigGameHudCanvas
             "Production Tooltip",
             section,
             "Hover an icon to view required materials.",
-            16,
+            12,
             TextAnchor.MiddleCenter);
-        tooltip.gameObject.AddComponent<LayoutElement>().preferredHeight = 32f;
+        tooltip.resizeTextForBestFit = true;
+        tooltip.resizeTextMinSize = 8;
+        tooltip.resizeTextMaxSize = 12;
+        tooltip.gameObject.AddComponent<LayoutElement>().preferredHeight = 14f;
 
-        RectTransform productRow = CreateHorizontalRow("Products", section, 74f);
+        RectTransform productRow = CreateHorizontalRow("Products", section, 34f);
         for (int index = 0; index < production.Products.Count; index++)
         {
             ProductionIconViewModel product = production.Products[index];
             CreateProductionIconButton(building, product, productRow, tooltip);
         }
 
-        RectTransform stockRow = CreateHorizontalRow("Internal Stock", section, 58f);
+        RectTransform stockRow = CreateHorizontalRow("Internal Stock", section, 30f);
         for (int index = 0; index < production.Stocks.Count; index++)
         {
             BuildingStockIconViewModel stock = production.Stocks[index];
@@ -81,7 +84,7 @@ public sealed partial class DigGameHudCanvas
                 stockRow,
                 label,
                 () => ExecutePacking(building.Id),
-                preferredHeight: 52f);
+                preferredHeight: 28f);
             pack.interactable = action.IsEnabled;
             SetButtonActive(pack, operation != null && !operation.IsTerminal);
         }
@@ -98,7 +101,7 @@ public sealed partial class DigGameHudCanvas
             parent,
             DigProductionIconGlyph.Resolve(product.OutputItemId.ToString()),
             () => QueueBuildingProduction(building.Id, product.RecipeId.ToString()),
-            preferredHeight: 68f);
+            preferredHeight: 32f);
         Image image = button.GetComponent<Image>();
         if (image != null)
         {
@@ -108,7 +111,10 @@ public sealed partial class DigGameHudCanvas
         }
 
         Text label = button.GetComponentInChildren<Text>();
-        label.fontSize = 31;
+        label.fontSize = 22;
+        label.resizeTextForBestFit = true;
+        label.resizeTextMinSize = 10;
+        label.resizeTextMaxSize = 22;
         CreateIconCount(
             button.transform,
             product.QueuedCount > 0 ? product.QueuedCount.ToString() : string.Empty,
@@ -134,7 +140,7 @@ public sealed partial class DigGameHudCanvas
             parent,
             DigProductionIconGlyph.Resolve(stock.ItemId.ToString()),
             () => ToggleBuildingStock(building.Id, stock),
-            preferredHeight: 52f);
+            preferredHeight: 28f);
         Image image = button.GetComponent<Image>();
         if (image != null)
         {
@@ -144,7 +150,10 @@ public sealed partial class DigGameHudCanvas
         }
 
         Text label = button.GetComponentInChildren<Text>();
-        label.fontSize = 25;
+        label.fontSize = 18;
+        label.resizeTextForBestFit = true;
+        label.resizeTextMinSize = 9;
+        label.resizeTextMaxSize = 18;
         CreateIconCount(
             button.transform,
             stock.Current + "/" + stock.Capacity,
@@ -161,7 +170,10 @@ public sealed partial class DigGameHudCanvas
         string value,
         TextAnchor alignment)
     {
-        Text count = CreateText("Count", parent, value, 13, alignment);
+        Text count = CreateText("Count", parent, value, 10, alignment);
+        count.resizeTextForBestFit = true;
+        count.resizeTextMinSize = 7;
+        count.resizeTextMaxSize = 10;
         count.rectTransform.anchorMin = Vector2.zero;
         count.rectTransform.anchorMax = Vector2.one;
         count.rectTransform.offsetMin = new Vector2(4f, 2f);
