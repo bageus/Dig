@@ -38,7 +38,6 @@ jobs:
         run: |
           python3 - <<'EXTRACT'
           from pathlib import Path
-          import textwrap
 
           source = Path('.github/workflows/apply-inventory-mushroom-regression-fix.yml').read_text(encoding='utf-8')
           marker = "          python3 - <<'PY'\n"
@@ -52,7 +51,12 @@ jobs:
               end = source.find("\n          PY", start)
               if end < 0:
                   raise SystemExit('unterminated staged Python block')
-              blocks.append(textwrap.dedent(source[start:end]))
+              raw_lines = source[start:end].splitlines()
+              block_lines = [
+                  line[10:] if line.startswith('          ') else line
+                  for line in raw_lines
+              ]
+              blocks.append('\n'.join(block_lines) + '\n')
               cursor = end + 1
 
           if len(blocks) != 2:
