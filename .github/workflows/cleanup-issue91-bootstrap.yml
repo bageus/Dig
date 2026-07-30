@@ -1,0 +1,31 @@
+name: Cleanup issue 91 bootstrap
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.head_ref == 'agent/issue-91-deterministic-deposits'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Remove temporary payload
+        shell: bash
+        run: |
+          rm -f .agent/issue91-bootstrap-marker.txt
+          rm -f .agent/issue91-newfiles-ready.txt
+          rm -f .agent/issue91-new.patch.gz.b64.*
+          rm -f .agent/issue91.patch.gz.b64.*
+          git add -A
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Remove issue 91 bootstrap payload"
+          git push origin HEAD:${{ github.head_ref }}
