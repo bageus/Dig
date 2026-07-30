@@ -89,8 +89,9 @@ Cargo и Weapon groups работают одновременно.
 - Weapon слева;
 - Main по центру;
 - Cargo справа;
-- группы разделены рамкой и spacing; текстовый заголовок `Cargo 4/6` не отображается;
+- группы разделены рамкой и spacing; текстовые заголовки `Weapon` и `Cargo 4/6` не отображаются;
 - каждый compartment строится строго в два горизонтальных ряда: если существует верхняя ячейка колонки, существует и нижняя;
+- slot indices проецируются по колонкам: `1` сверху и `2` снизу, затем `3` сверху и `4` снизу следующей колонки, затем `5`/`6`;
 - Main всегда имеет сетку `3×2`;
 - Cargo показывает `2×2` для корзины или `3×2` для большой корзины, пока active expansion находится в Main;
 - Weapon показывает `1×2` для ножен или `2×2` для разгрузки;
@@ -291,7 +292,7 @@ Content validation проверяет IDs, categories, slots, speed, recipes и 
 - surface demo содержит pickable sheath, weapon harness и `weapon.club`, а resident начинает без Weapon expansion;
 - после pickup ножен/разгрузки `weapon.club` попадает в первый свободный Weapon slot;
 - непустой Cargo показывает basket-backpack сзади, пустой Cargo и drop/spill скрывают его;
-- HUD не показывает `Cargo 4/6`; inventory compartments используют только парные двухрядные сетки `3×2`, `2×2`/`3×2`, `1×2`/`2×2`;
+- HUD не показывает текстовые заголовки `Weapon` и `Cargo 4/6`; inventory compartments используют только парные двухрядные сетки `3×2`, `2×2`/`3×2`, `1×2`/`2×2` и заполняются по колонкам `1/2`, `3/4`, `5/6`;
 - hauling учитывает real free slots и не использует merge capacity;
 - save/load восстанавливает layout, boxes и reservations;
 - unit, integration, migration, soak и Play Mode tests покрывают все правила.
@@ -305,3 +306,4 @@ Content validation проверяет IDs, categories, slots, speed, recipes и 
 | 2026-07-29 | Cargo title скрыт; все compartments имеют ровно два ряда; basket/large basket размещаются через planning mode на supported surface с reserved quantity-safe spill. | пользователь | #67, #69, #70, #387 |
 | 2026-07-29 | Каждая ordinary item/material unit в resident inventory является отдельным quantity-one stack и занимает отдельный slot; merge capacity запрещена. | пользователь | #67, #68, #69 |
 | 2026-07-30 | Ножны, разгрузка и `weapon.club` появляются отдельными world items; club служит runtime-проверкой Weapon-slot priority и tier switching. | пользователь | #68, #69, #70 |
+| 2026-07-30 | Текстовый заголовок Weapon скрыт; двухрядные inventory grids нумеруются по колонкам: `1/2`, `3/4`, `5/6`. | пользователь | #70 |
