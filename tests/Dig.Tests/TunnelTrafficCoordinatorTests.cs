@@ -51,6 +51,18 @@ public sealed class TunnelTrafficCoordinatorTests
     }
 
     [Fact]
+    public void Opposite_depth_traversals_are_not_treated_as_horizontal_swaps()
+    {
+        TunnelTrafficCoordinator traffic = new TunnelTrafficCoordinator();
+        CellId front = new CellId(2, 3, 0);
+        CellId back = new CellId(2, 3, 1);
+
+        traffic.RecordMove(ResidentA, front, back, tick: 25);
+
+        Assert.True(traffic.CanMove(ResidentB, back, front, tick: 25));
+    }
+
+    [Fact]
     public void Opposite_vertical_climbers_may_cross_in_one_tick()
     {
         TunnelTrafficCoordinator traffic = new TunnelTrafficCoordinator();

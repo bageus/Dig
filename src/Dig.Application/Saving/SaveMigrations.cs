@@ -227,50 +227,8 @@ public sealed class SaveVersionFourAuthoritativeCoordinatesMigration : ISaveMigr
                 "Migration received the wrong source version.");
         }
 
-        document.World ??= new WorldSaveData();
-        document.World.Depth = Dig.Domain.World.WorldSize.RequiredDepth;
-        document.World.Chunks ??= new List<WorldChunkSaveData>();
-        foreach (WorldChunkSaveData chunk in document.World.Chunks)
-        {
-            if (chunk is null)
-            {
-                continue;
-            }
+        SaveVersionFourCoordinateMigrationNormalizer.Apply(document);
 
-            chunk.Z = 0;
-            chunk.Cells ??= new List<WorldCellSaveData>();
-            foreach (WorldCellSaveData cell in chunk.Cells)
-            {
-                if (cell is not null)
-                {
-                    cell.Z = 0;
-                }
-            }
-        }
-
-        document.Inventory ??= new InventorySaveData();
-        document.Inventory.Stacks ??= new List<ItemStackSaveData>();
-        foreach (ItemStackSaveData stack in document.Inventory.Stacks)
-        {
-            if (stack?.Location is not null && stack.Location.CellX.HasValue)
-            {
-                stack.Location.CellZ = 0;
-            }
-        }
-
-        document.Buildings ??= new BuildingsSaveData();
-        document.Buildings.Buildings ??= new List<BuildingSaveData>();
-        foreach (BuildingSaveData building in document.Buildings.Buildings)
-        {
-            if (building is not null)
-            {
-                building.OriginZ = 0;
-                building.WorkPositionZ = 0;
-            }
-        }
-
-        document.AgentPositions ??= new AgentPositionsSaveData();
-        document.TerrainDeposits ??= new TerrainDepositsSaveData();
         document.FormatVersion = ToVersion;
     }
 }

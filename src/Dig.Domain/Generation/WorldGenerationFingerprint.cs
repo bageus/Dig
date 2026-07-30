@@ -36,18 +36,27 @@ public static class WorldGenerationFingerprint
         AddString(ref hash, profileId);
         AddInt32(ref hash, world.Size.Width);
         AddInt32(ref hash, world.Size.Height);
+        AddInt32(ref hash, world.Size.Depth);
         AddInt32(ref hash, world.Layout.ChunkSize);
 
-        for (int y = 0; y < world.Size.Height; y++)
+        for (int z = CellId.MinimumDepth; z < world.Size.Depth; z++)
         {
-            for (int x = 0; x < world.Size.Width; x++)
+            for (int y = 0; y < world.Size.Height; y++)
             {
-                CellState state = world.GetCell(new CellId(x, y, 0)).Value.State;
-                AddString(ref hash, state.MaterialId.ToString());
-                AddInt32(ref hash, (int)state.Designation);
-                AddByte(ref hash, state.IsExplored ? (byte)1 : (byte)0);
-                AddInt32(ref hash, state.Damage);
-                AddInt32(ref hash, state.Temperature);
+                for (int x = 0; x < world.Size.Width; x++)
+                {
+                    CellState state = world.GetCell(new CellId(x, y, z)).Value.State;
+                    AddString(ref hash, state.MaterialId.ToString());
+                    AddInt32(ref hash, (int)state.Designation);
+                    AddByte(ref hash, state.IsExplored ? (byte)1 : (byte)0);
+                    AddInt32(ref hash, state.Damage);
+                    AddInt32(ref hash, state.Temperature);
+                    AddInt32(ref hash, (int)state.CompletedExcavationQuarters);
+                    AddInt32(ref hash, (int)state.ExcavationCutPattern);
+                    AddString(
+                        ref hash,
+                        state.ExcavationSourceMaterialId.ToString());
+                }
             }
         }
 

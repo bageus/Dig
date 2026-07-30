@@ -34,8 +34,20 @@ internal sealed class GenerationCellBuffer
 
     public GenerationCellBuffer(WorldSize size, CellState[] cells)
     {
+        if (cells is null)
+        {
+            throw new ArgumentNullException(nameof(cells));
+        }
+
+        if (cells.Length != size.CellCount)
+        {
+            throw new ArgumentException(
+                $"Expected {size.CellCount} generated cells but received {cells.Length}.",
+                nameof(cells));
+        }
+
         Size = size;
-        _cells = cells ?? throw new ArgumentNullException(nameof(cells));
+        _cells = cells;
     }
 
     public WorldSize Size { get; }
@@ -64,7 +76,8 @@ internal sealed class GenerationCellBuffer
             throw new ArgumentOutOfRangeException(nameof(cellId));
         }
 
-        return checked((cellId.Y * Size.Width) + cellId.X);
+        return checked(
+            (((cellId.Z * Size.Height) + cellId.Y) * Size.Width) + cellId.X);
     }
 }
 

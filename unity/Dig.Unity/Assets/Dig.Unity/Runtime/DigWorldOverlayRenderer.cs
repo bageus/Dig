@@ -19,8 +19,8 @@ public sealed partial class DigWorldOverlayRenderer : MonoBehaviour
     private readonly List<GameObject> _fog = new List<GameObject>();
     private readonly List<GameObject> _dirtyChunks = new List<GameObject>();
     private readonly List<GameObject> _navigation = new List<GameObject>();
-    private readonly Dictionary<Vector2Int, long> _chunkVersions =
-        new Dictionary<Vector2Int, long>();
+    private readonly Dictionary<(int X, int Y, int Z), long> _chunkVersions =
+        new Dictionary<(int X, int Y, int Z), long>();
     private DigOverlayManager? _overlays;
     private DigAgentRenderer? _agents;
     private DigBuildingRenderer? _buildings;
@@ -99,10 +99,12 @@ public sealed partial class DigWorldOverlayRenderer : MonoBehaviour
         GameObject marker,
         int x,
         int y,
+        int z,
         float elevation,
         float scale = 0.72f)
     {
-        marker.transform.position = new Vector3(x, elevation, y);
+        marker.transform.position = DigTunnelProjection.CellWorldPosition(
+            new CellId(x, y, z)) + (Vector3.up * elevation);
         marker.transform.rotation = Quaternion.identity;
         marker.transform.localScale = new Vector3(scale, 0.035f, scale);
     }

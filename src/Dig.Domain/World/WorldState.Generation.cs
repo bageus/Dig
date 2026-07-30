@@ -25,7 +25,7 @@ public sealed partial class WorldState
         }
 
         CellState[] generatedCells = cells.ToArray();
-        int expectedCount = checked(size.Width * size.Height);
+        int expectedCount = size.CellCount;
         if (generatedCells.Length != expectedCount)
         {
             throw new ArgumentException(

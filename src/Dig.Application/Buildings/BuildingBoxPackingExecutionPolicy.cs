@@ -43,8 +43,7 @@ public static class BuildingBoxPackingExecutionPolicy
 
         BuildingBoxPackingJobDefinition definition =
             (BuildingBoxPackingJobDefinition)job.Definition;
-        if (workerCell.X != definition.WorkPosition.X
-            || workerCell.Y != definition.WorkPosition.Y)
+        if (workerCell != definition.WorkPosition)
         {
             return Success(BuildingBoxPackingExecutionStepKind.None);
         }

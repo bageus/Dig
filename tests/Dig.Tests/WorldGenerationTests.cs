@@ -79,6 +79,67 @@ public sealed class WorldGenerationTests
     }
 
     [Fact]
+    public void Generated_world_materializes_every_authoritative_depth_cell()
+    {
+        WorldGenerationProfile profile = CreateProfile();
+        GeneratedWorld generated = new WorldGenerator().Generate(
+            new WorldGenerationRequest(404UL, profile, CreateMaterials())).Value;
+        CellSnapshot[] cells = generated.World.CreateSnapshot()
+            .Chunks
+            .SelectMany(chunk => chunk.Cells)
+            .ToArray();
+
+        Assert.Equal(profile.Size.CellCount, cells.Length);
+        Assert.Equal(profile.Size.CellCount, cells.Select(cell => cell.Id).Distinct().Count());
+        Assert.Equal(
+            Enumerable.Range(CellId.MinimumDepth, WorldSize.RequiredDepth),
+            cells.Select(cell => cell.Id.Z).Distinct().OrderBy(value => value));
+        Assert.True(generated.World.GetCell(new CellId(0, 0, CellId.MaximumDepth)).Value.IsSolid);
+    }
+
+    [Fact]
+    public void Fingerprint_and_overlay_include_deep_cell_changes()
+    {
+        WorldGenerationProfile profile = CreateProfile();
+        MaterialCatalog materials = CreateMaterials();
+        WorldGenerator generator = new WorldGenerator();
+        GeneratedWorld generatedBase = generator.Generate(
+            new WorldGenerationRequest(505UL, profile, materials)).Value;
+        GeneratedWorld changed = generator.Generate(
+            new WorldGenerationRequest(505UL, profile, materials)).Value;
+        CellId deepCell = new CellId(1, 1, CellId.MaximumDepth);
+        string originalFingerprint = WorldGenerationFingerprint.Compute(
+            generatedBase.World,
+            505UL,
+            profile.GeneratorVersion,
+            profile.Id);
+
+        Assert.True(changed.World.SetDigDesignation(deepCell, designated: true, tick: 9).IsSuccess);
+        string changedFingerprint = WorldGenerationFingerprint.Compute(
+            changed.World,
+            505UL,
+            profile.GeneratorVersion,
+            profile.Id);
+        Result<IReadOnlyList<WorldCellOverride>> captured = WorldGenerationOverlay.Capture(
+            generatedBase.World,
+            changed.World);
+        GeneratedWorld restored = generator.Generate(
+            new WorldGenerationRequest(505UL, profile, materials)).Value;
+
+        Assert.NotEqual(originalFingerprint, changedFingerprint);
+        WorldCellOverride deepOverride = Assert.Single(captured.Value);
+        Assert.Equal(deepCell, deepOverride.CellId);
+        Assert.True(WorldGenerationOverlay.Apply(restored.World, captured.Value, tick: 9).IsSuccess);
+        Assert.Equal(
+            changedFingerprint,
+            WorldGenerationFingerprint.Compute(
+                restored.World,
+                505UL,
+                profile.GeneratorVersion,
+                profile.Id));
+    }
+
+    [Fact]
     public void Point_of_interest_settings_do_not_perturb_earlier_generation_stages()
     {
         MaterialCatalog materials = CreateMaterials();

@@ -2,7 +2,10 @@
 
 ## Status
 
-This document describes the implementation for GitHub Issue #3. The authoritative development rules remain in `docs/development-rules.md`.
+`IMPLEMENTED` for the authoritative XYZ contract tracked by [#88](https://github.com/bageus/Dig/issues/88). Licensed Unity Play Mode evidence is still required for `VERIFIED`.
+
+Authoritative specification: [`../design/world-3d-depth.md`](../design/world-3d-depth.md).  
+Closure evidence: [`issue-88-authoritative-xyz-closure-2026-07-30.md`](issue-88-authoritative-xyz-closure-2026-07-30.md).
 
 ## State ownership
 
@@ -49,7 +52,7 @@ Cells do not duplicate solidity or hardness. `CellState` stores only mutable per
 
 `CellSnapshot` resolves solidity and hardness from the catalog at snapshot creation time. This keeps material properties as one source of truth.
 
-The initial implementation supports solid and non-solid materials but does not yet simulate liquids, gases, support or temperature propagation.
+The current implementation supports solid and non-solid materials but does not yet simulate liquids, gases or temperature propagation. Support/traversal rules remain derived Navigation/runtime concerns rather than additional World coordinate owners.
 
 ## Atomic mutations
 
@@ -124,7 +127,7 @@ Command handlers delegate validation and mutation to `WorldState`, persist the s
 
 Automated tests cover:
 
-- interior and boundary invalidation;
+- interior, boundary and depth-layer invalidation;
 - four-chunk corner invalidation;
 - atomic rejection of invalid batches;
 - duplicate-cell rejection;
@@ -133,7 +136,12 @@ Automated tests cover:
 - immutable snapshots;
 - dirty-queue draining;
 - complete snapshot reconstruction for partial edge chunks;
+- full generated `Width * Height * 4` cell materialization;
+- deep-cell fingerprint and generation-overlay round trip;
 - invalid dig designation on non-solid cells;
+- exact-Z packing and traffic behavior;
+- v4→v5 world/item/building/agent/deposit/job/reservation migration;
+- Unity source and checked-in Play Mode depth-projection contracts;
 - command publication and side-effect-free queries.
 
 The headless host creates a world, designates one cell, excavates it and verifies that its snapshot becomes non-solid.
@@ -141,4 +149,8 @@ The headless host creates a world, designates one cell, excavates it and verifie
 
 ## Authoritative XYZ integration
 
-World, Agents, Inventory, Buildings, Jobs, reservations and Navigation use the same `CellId(X,Y,Z)`. Navigation and Unity meshes are derived from immutable World snapshots and are not state owners. Save format v5 stores exact Z for world cells, residents, world items, buildings, jobs and terrain deposits. The v4-to-v5 migration deterministically maps every legacy `X,Y` coordinate to `Z=0`.
+World, Generation, Agents, Inventory, Buildings, Jobs, reservations and Navigation use the same `CellId(X,Y,Z)`. Generated buffers, fingerprints and overlays enumerate all four depth layers in stable XYZ order. Navigation and Unity meshes are derived from immutable World snapshots and are not state owners.
+
+Save format v5 stores exact Z for world cells, residents, world items, buildings, jobs and terrain deposits. The v4→v5 migration deterministically maps legacy world/item/building/agent/deposit coordinates, job `*.x/*.y` property groups and Position/Designation reservation values to explicit `Z=0`.
+
+Unity route, overlay, selection, stockpile and diagnostic projection uses the shared `DigTunnelProjection`. Runtime route producers pass target Z explicitly, and chunk-version caches key by `(X,Y,Z)`, so same-X/Y layers cannot overwrite each other.

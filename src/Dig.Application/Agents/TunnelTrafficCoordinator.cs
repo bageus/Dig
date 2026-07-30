@@ -80,7 +80,7 @@ public sealed class TunnelTrafficCoordinator
 
     private static bool IsHorizontalTransition(CellId from, CellId to)
     {
-        return from.Y == to.Y;
+        return from.Y == to.Y && from.Z == to.Z;
     }
 
     private static void ValidateResident(EntityId residentId)

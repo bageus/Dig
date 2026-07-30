@@ -20,9 +20,13 @@ namespace Dig.Unity
         internal void Render(DigStorageStatus status)
         {
             EnsureResources();
+            Vector3 basePosition = DigTunnelProjection.ResidentWorldPosition(
+                status.Cell.X,
+                status.Cell.Y,
+                status.Cell.Z) + (Vector3.up * DigTunnelProjection.ResidentFootSink);
             ApplyTransform(
                 _baseVisual!,
-                new Vector3(status.Cell.X, 0.04f, status.Cell.Y),
+                basePosition + (Vector3.up * 0.04f),
                 new Vector3(0.92f, 0.08f, 0.92f));
 
             int pileCount = Mathf.Min(
@@ -43,10 +47,10 @@ namespace Dig.Unity
                 int layer = index / 6;
                 ApplyTransform(
                     pile,
-                    new Vector3(
-                        status.Cell.X - 0.28f + (column * 0.28f),
+                    basePosition + new Vector3(
+                        -0.28f + (column * 0.28f),
                         0.16f + (layer * 0.18f),
-                        status.Cell.Y - 0.18f + (row * 0.36f)),
+                        -0.18f + (row * 0.36f)),
                     new Vector3(0.22f, 0.16f, 0.26f));
             }
 
@@ -56,7 +60,7 @@ namespace Dig.Unity
             {
                 ApplyTransform(
                     _incomingVisual,
-                    new Vector3(status.Cell.X, 0.28f, status.Cell.Y),
+                    basePosition + (Vector3.up * 0.28f),
                     new Vector3(0.72f, 0.04f, 0.72f));
             }
         }

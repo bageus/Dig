@@ -20,7 +20,7 @@ public sealed partial class DigWorldOverlayRenderer
         for (int chunkIndex = 0; chunkIndex < world.Chunks.Count; chunkIndex++)
         {
             WorldChunkViewModel chunk = world.Chunks[chunkIndex];
-            Vector2Int chunkKey = new Vector2Int(chunk.X, chunk.Y);
+            (int X, int Y, int Z) chunkKey = (chunk.X, chunk.Y, chunk.Z);
             bool changed = _chunkVersions.TryGetValue(chunkKey, out long previous)
                 && previous != chunk.Version;
             _chunkVersions[chunkKey] = chunk.Version;
@@ -34,7 +34,7 @@ public sealed partial class DigWorldOverlayRenderer
                     "Dirty Chunk",
                     OverlayLayerKind.Diagnostics,
                     OverlaySemanticKind.DirtyChunk);
-                PlaceCell(marker, center.X, center.Y, 1.18f, 1.25f);
+                PlaceCell(marker, center.X, center.Y, center.Z, 1.18f, 1.25f);
             }
 
             for (int cellIndex = 0; cellIndex < chunk.Cells.Count; cellIndex++)
@@ -61,7 +61,7 @@ public sealed partial class DigWorldOverlayRenderer
                         "Fog",
                         OverlayLayerKind.Diagnostics,
                         OverlaySemanticKind.Fog);
-                    PlaceCell(marker, cell.X, cell.Y, 1.02f, 0.88f);
+                    PlaceCell(marker, cell.X, cell.Y, cell.Z, 1.02f, 0.88f);
                 }
             }
         }
@@ -83,7 +83,13 @@ public sealed partial class DigWorldOverlayRenderer
                 "Deposit",
                 OverlayLayerKind.Diagnostics,
                 OverlaySemanticKind.Deposit);
-            PlaceCell(marker, deposit.Cell.X, deposit.Cell.Y, 1.08f, 0.42f);
+            PlaceCell(
+                marker,
+                deposit.Cell.X,
+                deposit.Cell.Y,
+                deposit.Cell.Z,
+                1.08f,
+                0.42f);
         }
 
         HideRemainder(_designations, designationCount);
@@ -116,7 +122,7 @@ public sealed partial class DigWorldOverlayRenderer
                     "Building Footprint",
                     OverlayLayerKind.Preview,
                     OverlaySemanticKind.BuildingFootprint);
-                PlaceCell(marker, cell.X, cell.Y, 0.96f, 0.82f);
+                PlaceCell(marker, cell.X, cell.Y, cell.Z, 0.96f, 0.82f);
             }
         }
 
@@ -130,7 +136,13 @@ public sealed partial class DigWorldOverlayRenderer
                 "Storage Demand",
                 OverlayLayerKind.Reservations,
                 OverlaySemanticKind.StorageDemand);
-            PlaceCell(marker, storage.Cell.X, storage.Cell.Y, 1.12f, 0.94f);
+            PlaceCell(
+                marker,
+                storage.Cell.X,
+                storage.Cell.Y,
+                storage.Cell.Z,
+                1.12f,
+                0.94f);
         }
 
         int navigationCount = 0;
@@ -150,7 +162,13 @@ public sealed partial class DigWorldOverlayRenderer
                 "Navigation Failure",
                 OverlayLayerKind.Diagnostics,
                 OverlaySemanticKind.NavigationDiagnostic);
-            PlaceCell(marker, route.WorkX, route.WorkY, 1.16f, 0.62f);
+            PlaceCell(
+                marker,
+                route.WorkX,
+                route.WorkY,
+                route.WorkZ,
+                1.16f,
+                0.62f);
         }
 
         HideRemainder(_buildingFootprints, footprintCount);
@@ -198,7 +216,7 @@ public sealed partial class DigWorldOverlayRenderer
                     "Building Selection",
                     OverlayLayerKind.Selection,
                     OverlaySemanticKind.Selection);
-                PlaceCell(marker, cell.X, cell.Y, 1.04f, 0.86f);
+                PlaceCell(marker, cell.X, cell.Y, cell.Z, 1.04f, 0.86f);
             }
         }
 
@@ -212,7 +230,11 @@ public sealed partial class DigWorldOverlayRenderer
                 "Cell Selection",
                 OverlayLayerKind.Selection,
                 OverlaySemanticKind.Selection);
-            PlaceCell(marker, selectedCell.X, selectedCell.Y, 1.10f, 0.86f);
+            PlaceCell(
+                marker,
+                selectedCell.X, selectedCell.Y, selectedCell.Z,
+                1.10f,
+                0.86f);
         }
 
         HideRemainder(_selection, count);

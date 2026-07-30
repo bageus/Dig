@@ -30,6 +30,23 @@ public sealed class BuildingBoxPackingExecutionPolicyTests
     }
 
     [Fact]
+    public void Same_xy_on_a_different_depth_is_not_the_packing_work_position()
+    {
+        BuildingBoxPackingHarness harness = new BuildingBoxPackingHarness();
+        Assert.True(harness.Start().IsSuccess);
+        Assign(harness);
+        CellId workPosition = harness.Buildings.Get(harness.BuildingId)!.WorkPosition;
+        CellId wrongDepth = new CellId(
+            workPosition.X,
+            workPosition.Y,
+            (workPosition.Z + 1) % WorldSize.RequiredDepth);
+
+        Assert.Equal(
+            BuildingBoxPackingExecutionStepKind.None,
+            Evaluate(harness, wrongDepth));
+    }
+
+    [Fact]
     public void Logical_worker_position_drives_the_complete_execution_sequence()
     {
         BuildingBoxPackingHarness harness = new BuildingBoxPackingHarness();
