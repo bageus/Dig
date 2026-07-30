@@ -77,6 +77,15 @@ Coverage includes:
 - integrity diagnostics for host, depletion and output-ledger consistency;
 - Unity source contracts and checked-in Play Mode reveal/depletion projection.
 
+## CI regression correction
+
+The first complete Quality run exposed five test-contract defects rather than a compile or architecture failure. The corrected head now:
+
+- returns the expected stale-deposit `Result` before any inventory or job mutation instead of converting that controlled domain rejection into an exception;
+- includes `save.v10_to_v11.terrain_deposit_contract` in legacy migration-order expectations;
+- preserves the explicit deposit generator version in the domain snapshot round trip;
+- passes the loaded terrain-deposit generator version when rebuilding a save context, avoiding metadata/world-version drift.
+
 ## Verification boundary
 
 Normal Quality CI must pass Release compilation, the complete .NET suite, source contracts, smoke and both deterministic soaks. The checked-in Unity lifecycle scenario must execute on a licensed Unity runner before status can move from `IMPLEMENTED` to `VERIFIED`.
