@@ -9,6 +9,7 @@ using Dig.Presentation.Inventory;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
+using UnityEngine.UI;
 
 namespace Dig.Unity.Tests
 {
@@ -76,6 +77,38 @@ public sealed class BasketInventoryLifecyclePlayModeTests
         Assert.That(
             DigGameHudCanvas.ResolveBottomHudHeight(720f),
             Is.EqualTo(172.8f).Within(0.01f));
+    }
+
+    [Test]
+    public void Inventory_grid_orders_slots_top_bottom_by_column()
+    {
+        _root = new GameObject("Inventory Grid Order Test", typeof(RectTransform));
+        RectTransform root = (RectTransform)_root.transform;
+        root.sizeDelta = new Vector2(300f, 100f);
+        GridLayoutGroup grid = _root.AddComponent<GridLayoutGroup>();
+        DigGameHudCanvas.ConfigureInventoryGrid(grid, columns: 3, cellWidth: 52f);
+        RectTransform[] slots = Enumerable.Range(0, 6)
+            .Select(index =>
+            {
+                GameObject slot = new GameObject($"Slot {index + 1}", typeof(RectTransform));
+                RectTransform rect = (RectTransform)slot.transform;
+                rect.SetParent(root, worldPositionStays: false);
+                return rect;
+            })
+            .ToArray();
+
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(root);
+
+        Assert.That(grid.startAxis, Is.EqualTo(GridLayoutGroup.Axis.Vertical));
+        Assert.That(grid.constraint, Is.EqualTo(GridLayoutGroup.Constraint.FixedRowCount));
+        Assert.That(grid.constraintCount, Is.EqualTo(2));
+        Assert.That(slots[0].anchoredPosition.x,
+            Is.EqualTo(slots[1].anchoredPosition.x).Within(0.01f));
+        Assert.That(slots[0].anchoredPosition.y, Is.GreaterThan(slots[1].anchoredPosition.y));
+        Assert.That(slots[2].anchoredPosition.x, Is.GreaterThan(slots[0].anchoredPosition.x));
+        Assert.That(slots[2].anchoredPosition.y,
+            Is.EqualTo(slots[0].anchoredPosition.y).Within(0.01f));
     }
 
     [Test]

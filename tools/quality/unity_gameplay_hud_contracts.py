@@ -161,7 +161,7 @@ def check_gameplay_hud_and_work_contracts(
             "layout.childAlignment = TextAnchor.MiddleLeft",
             "GridLayoutGroup",
             "ResolveInventoryGrid(models.Count)",
-            "constraintCount = columns",
+            "ConfigureInventoryGrid(grid, columns, cellWidth);",
             "BuildCompartmentIfActive",
         ),
     ))
@@ -176,7 +176,7 @@ def check_gameplay_hud_and_work_contracts(
             'CreateHorizontalRow("Slots"',
             '"Unavailable"',
             "InventoryCellWidth = 82f",
-            "InventoryCellHeight = 76f",
+            "InventoryCellHeight = 76f", '"WEAPON"', "GridLayoutGroup.Axis.Horizontal", "GridLayoutGroup.Constraint.FixedColumnCount", "constraintCount = columns",
         ),
     ))
     errors.extend(require_fragments(
