@@ -77,6 +77,14 @@ def finalize_generated_tree() -> None:
         raise SystemExit("quality rejection block was not generated exactly once")
     quality.write_text(text.replace(old, new, 1), encoding="utf-8")
 
+    basket_contract = Path("tests/Dig.Tests/BasketSurfaceRuntimeContractTests.cs")
+    text = basket_contract.read_text(encoding="utf-8")
+    old = '        Assert.Contains("grid.constraintCount = columns", inventoryHud);'
+    new = '        Assert.Contains("ConfigureInventoryGrid(grid, columns, cellWidth);", inventoryHud);'
+    if text.count(old) != 1:
+        raise SystemExit("basket HUD grid contract was not found exactly once")
+    basket_contract.write_text(text.replace(old, new, 1), encoding="utf-8")
+
     STAGED_WORKFLOW.write_text("name: staged patch applied\n", encoding="utf-8")
     EXECUTOR_WORKFLOW.write_text("name: executor applied\n", encoding="utf-8")
     Path(__file__).write_text("# temporary patch applied\n", encoding="utf-8")
