@@ -127,7 +127,10 @@ public sealed class DeepGameplayInteractionRegressionTests
 
         Assert.True(added.IsSuccess, added.Error?.ToString());
         Assert.True(confirmed.IsSuccess, confirmed.Error?.ToString());
-        Assert.Equal(ItemLocation.InAgent(harness.WorkerId),
+        Assert.Equal(ItemLocation.InResidentSlot(
+                harness.WorkerId,
+                ResidentInventoryCompartment.Main,
+                0),
             harness.Inventory.GetStack(harness.SourceStackId)!.Location);
         Assert.Equal(ItemLocation.InWorld(origin),
             harness.Inventory.GetStack(looseStack)!.Location);

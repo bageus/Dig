@@ -67,7 +67,10 @@ public sealed class HaulingSlotClaimSaveRoundTripTests
         JobDefinitionSaveRegistry registry = CreateRegistry();
         SaveGameDocument document = new SaveGameBuilder(registry).Build(
             CreateContext(materials, items));
-        document.Inventory.ResidentSlotClaims[0].ResidentId = Id(99).ToString();
+        foreach (var claim in document.Inventory.ResidentSlotClaims)
+        {
+            claim.ResidentId = Id(99).ToString();
+        }
 
         Result<LoadedGameState> loaded = new SaveGameLoader(
             new SaveMigrationPipeline(Array.Empty<ISaveMigration>()),

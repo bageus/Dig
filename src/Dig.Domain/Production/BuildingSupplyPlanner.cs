@@ -37,7 +37,7 @@ public sealed class BuildingSupplyPlan
     }
 
     public IReadOnlyList<BuildingSupplyAllocation> Allocations { get; }
-    public int SlotCount => Allocations.Count;
+    public int SlotCount => TotalQuantity;
     public int TotalQuantity => Allocations.Sum(value => value.Quantity);
 }
 
@@ -72,6 +72,7 @@ public static class BuildingSupplyPlanner
         HashSet<CellId> reachable = reachableCells.ToHashSet();
         List<BuildingSupplyAllocation> allocations = new List<BuildingSupplyAllocation>();
         HashSet<EntityId> used = new HashSet<EntityId>();
+        int availableUnitSlots = freeSlotCount;
         foreach (BuildingStockSnapshot stock in supply.Stocks)
         {
             if (!stock.DeliveryEnabled || stock.Missing == 0)
@@ -93,12 +94,14 @@ public static class BuildingSupplyPlanner
                 .ToArray();
             foreach (ItemStackSnapshot stack in candidates)
             {
-                if (allocations.Count == freeSlotCount || remaining == 0)
+                if (availableUnitSlots == 0 || remaining == 0)
                 {
                     break;
                 }
 
-                int quantity = Math.Min(remaining, stack.AvailableQuantity);
+                int quantity = Math.Min(
+                    availableUnitSlots,
+                    Math.Min(remaining, stack.AvailableQuantity));
                 allocations.Add(new BuildingSupplyAllocation(
                     stack.StackId,
                     stack.ItemId,
@@ -106,9 +109,10 @@ public static class BuildingSupplyPlanner
                     stack.Location.CellId));
                 used.Add(stack.StackId);
                 remaining -= quantity;
+                availableUnitSlots -= quantity;
             }
 
-            if (allocations.Count == freeSlotCount)
+            if (availableUnitSlots == 0)
             {
                 break;
             }
