@@ -26,4 +26,8 @@ Q-014 numeric probabilities, yields and work effort remain open. Existing numeri
 
 ## Publication integrity
 
-The prepared 181871-byte implementation patch was verified by SHA-256 before application. The resulting PR contains only the 55 documented source, test and design files; temporary transport payloads and workflows are not part of the implementation diff.
+The prepared 181871-byte implementation patch was verified by SHA-256 before application. The resulting PR contains only the documented source, test and design files; temporary transport payloads and workflows are not part of the implementation diff.
+
+## CI compile correction
+
+The first Release build exposed three test-only compatibility errors: the non-solid test material required the full constructor, and two empty-output calls needed an explicit empty `EntityId` collection after the new multi-output overload was introduced. All three calls now bind explicitly without changing runtime behavior.
