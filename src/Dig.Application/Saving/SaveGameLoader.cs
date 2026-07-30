@@ -249,6 +249,15 @@ public sealed partial class SaveGameLoader
 
                 combat = restoredCombat.Value;
             }
+            Result<LivingMaterialEcologyState> livingMaterials =
+                LivingMaterialEcologySaveAdapter.Decode(
+                    document.LivingMaterials,
+                    inventory.Value,
+                    document.Metadata.WorldSeed);
+            if (livingMaterials.IsFailure)
+            {
+                return Result<LoadedGameState>.Failure(livingMaterials.Error!);
+            }
             Result<RestoredMiningOutputState> miningOutput = RestoreMiningOutput(
                 document,
                 inventory.Value,
@@ -277,7 +286,8 @@ public sealed partial class SaveGameLoader
                 buildingProduction.Supply,
                 barrels.Value,
                 agentRuntime,
-                combat));
+                combat,
+                livingMaterials.Value));
         }
         catch (UnknownTerrainDepositDefinitionException)
         {

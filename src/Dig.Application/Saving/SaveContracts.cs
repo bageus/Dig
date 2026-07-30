@@ -20,7 +20,7 @@ namespace Dig.Application.Saving
 
 public static class SaveFormat
 {
-    public const int CurrentVersion = 10;
+    public const int CurrentVersion = 11;
 }
 
 public static class SaveSlotNames
@@ -97,6 +97,7 @@ public sealed class SaveGameDocument
     [DataMember(Order = 14)] public BarrelSaveData Barrels { get; set; } = new BarrelSaveData();
     [DataMember(Order = 15)] public AgentRuntimeSaveData AgentRuntime { get; set; } = new AgentRuntimeSaveData();
     [DataMember(Order = 16)] public CombatSaveData Combat { get; set; } = new CombatSaveData();
+    [DataMember(Order = 17)] public LivingMaterialEcologySaveData LivingMaterials { get; set; } = new LivingMaterialEcologySaveData();
 }
 
 public sealed class LoadedGameState
@@ -119,7 +120,8 @@ public sealed class LoadedGameState
         BuildingSupplyState? buildingSupply = null,
         BarrelState? barrels = null,
         IReadOnlyDictionary<EntityId, AgentRuntimeSnapshot>? agentRuntime = null,
-        CombatState? combat = null)
+        CombatState? combat = null,
+        LivingMaterialEcologyState? livingMaterials = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -154,6 +156,7 @@ public sealed class LoadedGameState
         Barrels = barrels ?? new BarrelState(
             new BarrelCatalog(Array.Empty<BarrelDefinition>()));
         Combat = combat;
+        LivingMaterials = livingMaterials ?? new LivingMaterialEcologyState(metadata.WorldSeed);
     }
 
     public SaveMetadataData Metadata { get; }
@@ -174,6 +177,7 @@ public sealed class LoadedGameState
     public BuildingSupplyState BuildingSupply { get; }
     public BarrelState Barrels { get; }
     public CombatState? Combat { get; }
+    public LivingMaterialEcologyState LivingMaterials { get; }
 
     private static IReadOnlyDictionary<TKey, TValue> Copy<TKey, TValue>(
         IReadOnlyDictionary<TKey, TValue>? values) where TKey : notnull
