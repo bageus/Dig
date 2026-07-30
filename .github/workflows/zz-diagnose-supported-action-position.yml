@@ -1,0 +1,46 @@
+name: Diagnose supported action positions
+
+on:
+  push:
+    branches:
+      - agent/fix-production-output-and-unit-inventory
+    paths:
+      - .github/workflows/zz-diagnose-supported-action-position.yml
+
+permissions:
+  contents: read
+
+env:
+  REPORT: /tmp/supported-action-position-report.txt
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/fix-production-output-and-unit-inventory
+          fetch-depth: 1
+
+      - name: Collect architecture and implementation context
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo '=== SYSTEM INDEX MATCHES ==='
+            rg -n -i 'mushroom|food|eat|consume|work position|supported surface|adjacent|approach|interaction position' docs/systems/README.md docs/design docs/implementation || true
+            echo
+            echo '=== CODE MATCHES ==='
+            rg -n -i 'mushroom|eat|consume|work(position|cell)|interaction(position|cell)|supported(cell|surface)|stand(position|cell)|approach(cell|position)|adjacent(cell|position)|neighbor(cell|position)' src unity tests || true
+            echo
+            echo '=== CANDIDATE FILES ==='
+            rg -l -i 'mushroom|eat|consume|work(position|cell)|interaction(position|cell)|supported(cell|surface)|stand(position|cell)|approach(cell|position)|adjacent(cell|position)' src unity tests docs/design docs/implementation | sort || true
+          } > "$REPORT"
+          cat "$REPORT"
+
+      - name: Upload diagnostic report
+        uses: actions/upload-artifact@v4
+        with:
+          name: supported-action-position-diagnostic
+          path: /tmp/supported-action-position-report.txt
+          if-no-files-found: error
