@@ -67,6 +67,17 @@ ResidentInventoryLocation(
 
 Cargo и Weapon groups работают одновременно.
 
+### Runtime demo и проверка Weapon placement
+
+- стартовый resident не получает ножны или разгрузку автоматически;
+- `inventory.sheath`, `inventory.weapon_harness` и `weapon.club` находятся рядом с ним как отдельные selectable/pickable world item entities на поддерживаемой поверхности;
+- ножны/разгрузка подбираются в свободный Main slot через обычный world-item pickup workflow;
+- `weapon.club` является non-stackable Weapon item; при активном Weapon expansion его pickup резервирует и занимает первый свободный Weapon slot раньше Main/Cargo;
+- ножны дают сетку `1×2`, разгрузка — `2×2`; разгрузка имеет tier priority, уже занятые low-index Weapon slots сохраняются;
+- world/carry visuals ножен, разгрузки и дубины должны быть различимыми и не использовать generic magenta cube;
+- отмена/ошибка pickup освобождает quantity и slot claims, не меняя layout;
+- выкладывание active Weapon expansion использует общий quantity-safe spill и только затем активирует lower tier.
+
 ## 5. Визуальный порядок
 
 При выбранном resident нижняя context panel показывает:
@@ -277,6 +288,8 @@ Content validation проверяет IDs, categories, slots, speed, recipes и 
 - каждая одинаковая или различная ordinary unit в resident inventory занимает отдельный slot;
 - pickup/hauling использует свободные Main slots и только после их заполнения свободные Cargo slots;
 - surface demo содержит pickable basket и large basket, а resident начинает без Cargo expansion;
+- surface demo содержит pickable sheath, weapon harness и `weapon.club`, а resident начинает без Weapon expansion;
+- после pickup ножен/разгрузки `weapon.club` попадает в первый свободный Weapon slot;
 - непустой Cargo показывает basket-backpack сзади, пустой Cargo и drop/spill скрывают его;
 - HUD не показывает `Cargo 4/6`; inventory compartments используют только парные двухрядные сетки `3×2`, `2×2`/`3×2`, `1×2`/`2×2`;
 - hauling учитывает real free slots и не использует merge capacity;
@@ -291,3 +304,4 @@ Content validation проверяет IDs, categories, slots, speed, recipes и 
 | 2026-07-29 | Ordinary pickup/hauling использует Main до Cargo; basket и large basket появляются на поверхности; attachment виден только при непустом Cargo. | пользователь | #68, #69 |
 | 2026-07-29 | Cargo title скрыт; все compartments имеют ровно два ряда; basket/large basket размещаются через planning mode на supported surface с reserved quantity-safe spill. | пользователь | #67, #69, #70, #387 |
 | 2026-07-29 | Каждая ordinary item/material unit в resident inventory является отдельным quantity-one stack и занимает отдельный slot; merge capacity запрещена. | пользователь | #67, #68, #69 |
+| 2026-07-30 | Ножны, разгрузка и `weapon.club` появляются отдельными world items; club служит runtime-проверкой Weapon-slot priority и tier switching. | пользователь | #68, #69, #70 |
