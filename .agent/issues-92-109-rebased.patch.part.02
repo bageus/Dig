@@ -1,0 +1,355 @@
++        MiningOutputPlan plan,
++        MaterialId emptyMaterialId,
++        long tick)
++    {
++        if (plan == null)
++        {
++            throw new ArgumentNullException(nameof(plan));
++        }
++
++        return new CompleteTerrainWorkCommand(
++            jobId,
++            plan.IsEmpty ? default : outputStackId,
++            plan.Outputs.Select(value => new TerrainWorkOutputSpec(
++                value.ItemId,
++                value.Quantity)),
++            emptyMaterialId,
++            tick,
++            plan.SourceKind,
++            plan.SourceId,
++            plan.SourceVersion,
++            plan.DepositInstanceId,
++            plan.SourceKind == MiningOutputSourceKind.Deposit
++                ? plan.TotalQuantity
++                : (int?)null,
++            plan.Cell);
++    }
+ 
+     public static CompleteTerrainWorkCommand WithoutOutput(
+         EntityId jobId,
+@@ -102,46 +218,88 @@ public sealed class CompleteTerrainWorkCommand
+         return new CompleteTerrainWorkCommand(
+             jobId,
+             default,
+-            default,
+-            outputQuantity: 0,
++            Array.Empty<TerrainWorkOutputSpec>(),
+             emptyMaterialId,
+             tick,
+-            producesOutput: false,
++            MiningOutputSourceKind.Terrain,
++            "legacy.terrain-output.empty",
++            sourceVersion: 1,
+             depositInstanceId: null,
+-            depositExpectedYield: null);
++            depositExpectedYield: null,
++            resolvedPlanCell: null);
+     }
++
++    internal MiningOutputPlan CreatePlan(CellId targetCell)
++    {
++        return new MiningOutputPlan(
++            targetCell,
++            SourceKind,
++            _outputs.Select(value => new MiningOutputLine(
++                value.ItemId,
++                value.Quantity)),
++            SourceId,
++            SourceVersion,
++            DepositInstanceId);
++    }
++}
++
++public sealed class TerrainWorkProducedOutput
++{
++    private readonly IReadOnlyList<EntityId> _stackIds;
++
++    public TerrainWorkProducedOutput(
++        ItemId itemId,
++        int quantity,
++        IEnumerable<EntityId> stackIds)
++    {
++        ItemId = itemId;
++        Quantity = quantity;
++        _stackIds = new ReadOnlyCollection<EntityId>(
++            (stackIds ?? throw new ArgumentNullException(nameof(stackIds))).ToArray());
++    }
++
++    public ItemId ItemId { get; }
++    public int Quantity { get; }
++    public IReadOnlyList<EntityId> StackIds => _stackIds;
+ }
+ 
+ public sealed class TerrainWorkCompletionResult
+ {
++    private readonly IReadOnlyList<TerrainWorkProducedOutput> _outputs;
++
+     public TerrainWorkCompletionResult(
+         EntityId jobId,
+         CellId targetCell,
+-        EntityId outputStackId,
+-        ItemId outputItemId,
+-        int outputQuantity,
+-        bool producedOutput,
++        IEnumerable<TerrainWorkProducedOutput> outputs,
+         long worldVersion,
+         long inventoryVersion)
+     {
+         JobId = jobId;
+         TargetCell = targetCell;
+-        OutputStackId = outputStackId;
+-        OutputItemId = outputItemId;
+-        OutputQuantity = outputQuantity;
+-        ProducedOutput = producedOutput;
++        _outputs = new ReadOnlyCollection<TerrainWorkProducedOutput>(
++            (outputs ?? throw new ArgumentNullException(nameof(outputs)))
++            .OrderBy(value => value.ItemId)
++            .ToArray());
+         WorldVersion = worldVersion;
+         InventoryVersion = inventoryVersion;
+     }
+ 
+     public EntityId JobId { get; }
+     public CellId TargetCell { get; }
+-    public EntityId OutputStackId { get; }
+-    public ItemId OutputItemId { get; }
+-    public int OutputQuantity { get; }
+-    public bool ProducedOutput { get; }
++    public IReadOnlyList<TerrainWorkProducedOutput> Outputs => _outputs;
++    public bool ProducedOutput => _outputs.Count > 0;
++    public int TotalOutputQuantity => _outputs.Sum(value => value.Quantity);
+     public long WorldVersion { get; }
+     public long InventoryVersion { get; }
++
++    // Compatibility for existing single-output callers.
++    public EntityId OutputStackId => _outputs.Count == 1 && _outputs[0].StackIds.Count > 0
++        ? _outputs[0].StackIds[0]
++        : default;
++    public ItemId OutputItemId => _outputs.Count == 1 ? _outputs[0].ItemId : default;
++    public int OutputQuantity => _outputs.Count == 1
++        ? _outputs[0].Quantity
++        : TotalOutputQuantity;
+ }
+ 
+ }
+diff --git a/src/Dig.Application/Jobs/TerrainWorkCompletionUseCases.cs b/src/Dig.Application/Jobs/TerrainWorkCompletionUseCases.cs
+index 56229a9..f864148 100644
+--- a/src/Dig.Application/Jobs/TerrainWorkCompletionUseCases.cs
++++ b/src/Dig.Application/Jobs/TerrainWorkCompletionUseCases.cs
+@@ -1,4 +1,5 @@
+ using System;
++using System.Collections.Generic;
+ using Dig.Application.Agents;
+ using Dig.Application.Inventory;
+ using Dig.Application.Messaging;
+@@ -18,13 +19,15 @@ public sealed class CompleteTerrainWorkCommandHandler
+     private readonly IWorldRepository _worldRepository;
+     private readonly IInventoryRepository _inventoryRepository;
+     private readonly IEventSink _eventSink;
++    private readonly MiningOutputCommitState _miningOutputCommits;
+ 
+     public CompleteTerrainWorkCommandHandler(
+         IJobRepository jobRepository,
+         IWorldRepository worldRepository,
+         IInventoryRepository inventoryRepository,
+         IEventSink eventSink,
+-        IAgentSkillGrantService skillGrants)
++        IAgentSkillGrantService skillGrants,
++        MiningOutputCommitState? miningOutputCommits = null)
+     {
+         _jobRepository = jobRepository
+             ?? throw new ArgumentNullException(nameof(jobRepository));
+@@ -34,6 +37,7 @@ public sealed class CompleteTerrainWorkCommandHandler
+             ?? throw new ArgumentNullException(nameof(inventoryRepository));
+         _eventSink = eventSink ?? throw new ArgumentNullException(nameof(eventSink));
+         _ = skillGrants ?? throw new ArgumentNullException(nameof(skillGrants));
++        _miningOutputCommits = miningOutputCommits ?? new MiningOutputCommitState();
+     }
+ 
+     public Result<TerrainWorkCompletionResult> Handle(CompleteTerrainWorkCommand command)
+@@ -71,8 +75,16 @@ public sealed class CompleteTerrainWorkCommandHandler
+             ?? throw new InvalidOperationException(
+                 "An in-progress terrain job must retain its worker.");
+ 
++        CellId targetCell = terrainJob.Target.CellId;
++        if (command.ResolvedPlanCell.HasValue
++            && command.ResolvedPlanCell.Value != targetCell)
++        {
++            return Result<TerrainWorkCompletionResult>.Failure(
++                TerrainWorkCompletionErrors.OutputPlanCellMismatch);
++        }
++
+         WorldState world = _worldRepository.Get();
+-        Result<CellSnapshot> targetResult = world.GetCell(terrainJob.Target.CellId);
++        Result<CellSnapshot> targetResult = world.GetCell(targetCell);
+         if (targetResult.IsFailure)
+         {
+             return Result<TerrainWorkCompletionResult>.Failure(targetResult.Error!);
+@@ -115,8 +127,36 @@ public sealed class CompleteTerrainWorkCommandHandler
+             return Result<TerrainWorkCompletionResult>.Failure(validation.Error!);
+         }
+ 
++        MiningOutputPlan outputPlan = command.CreatePlan(targetCell);
++        if (_miningOutputCommits.IsCommitted(targetCell))
++        {
++            return Result<TerrainWorkCompletionResult>.Failure(
++                TerrainWorkCompletionErrors.OutputAlreadyCommitted);
++        }
++
++        if (command.HasResolvedOutputPlan)
++        {
++            try
++            {
++                _miningOutputCommits.Validate(
++                    outputPlan,
++                    outputUnitIds,
++                    inventory,
++                    world.TerrainDeposits);
++            }
++            catch (Exception error) when (
++                error is ArgumentException
++                || error is InvalidOperationException
++                || error is OverflowException)
++            {
++                return Result<TerrainWorkCompletionResult>.Failure(new DomainError(
++                    "terrain_work.mining_output_invalid",
++                    error.Message));
++            }
++        }
++
+         Result<WorldMutationResult> terrain = world.Excavate(
+-            terrainJob.Target.CellId,
++            targetCell,
+             command.EmptyMaterialId,
+             command.Tick,
+             command.DepositInstanceId,
+@@ -126,18 +166,17 @@ public sealed class CompleteTerrainWorkCommandHandler
+             return Result<TerrainWorkCompletionResult>.Failure(terrain.Error!);
+         }
+ 
+-        if (command.ProducesOutput)
+-        {
+-            Result added = inventory.AddUnits(
++        IReadOnlyList<TerrainWorkProducedOutput> produced =
++            TerrainWorkOutputUnits.AddToInventory(
++                inventory,
++                command,
+                 outputUnitIds,
+-                command.OutputItemId,
+-                ItemLocation.InWorld(terrainJob.Target.CellId),
++                ItemLocation.InWorld(targetCell),
+                 command.Tick);
+-            EnsureCommitStep(added.IsSuccess, added.Error);
+-        }
+ 
+         Result completed = jobs.Complete(command.JobId, command.Tick);
+         EnsureCommitStep(completed.IsSuccess, completed.Error);
++        _miningOutputCommits.Record(outputPlan, outputUnitIds);
+ 
+         _worldRepository.Save(world);
+         _inventoryRepository.Save(inventory);
+@@ -149,11 +188,8 @@ public sealed class CompleteTerrainWorkCommandHandler
+         return Result<TerrainWorkCompletionResult>.Success(
+             new TerrainWorkCompletionResult(
+                 command.JobId,
+-                terrainJob.Target.CellId,
+-                command.OutputStackId,
+-                command.OutputItemId,
+-                command.OutputQuantity,
+-                command.ProducesOutput,
++                targetCell,
++                produced,
+                 world.Version,
+                 inventory.Version));
+     }
+diff --git a/src/Dig.Application/Jobs/TerrainWorkOutputUnits.cs b/src/Dig.Application/Jobs/TerrainWorkOutputUnits.cs
+index 738921e..67dabfe 100644
+--- a/src/Dig.Application/Jobs/TerrainWorkOutputUnits.cs
++++ b/src/Dig.Application/Jobs/TerrainWorkOutputUnits.cs
+@@ -1,5 +1,6 @@
+ using System;
+ using System.Collections.Generic;
++using System.Linq;
+ using Dig.Domain.Core;
+ using Dig.Domain.Inventory;
+ 
+@@ -21,12 +22,12 @@ internal static class TerrainWorkOutputUnits
+         }
+ 
+         string seed = command.OutputStackId.ToString();
+-        EntityId[] ids = new EntityId[command.OutputQuantity];
+-        ids[0] = command.OutputStackId;
+-
+-        for (int index = 1; index < ids.Length; index++)
++        EntityId[] ids = new EntityId[command.TotalOutputQuantity];
++        for (int index = 0; index < ids.Length; index++)
+         {
+-            ids[index] = EntityId.Parse(CreateDerivedEntityId(seed, index));
++            ids[index] = index == 0
++                ? command.OutputStackId
++                : EntityId.Parse(CreateDerivedEntityId(seed, index));
+         }
+ 
+         return ids;
+@@ -54,17 +55,30 @@ internal static class TerrainWorkOutputUnits
+ 
+         if (!command.ProducesOutput)
+         {
+-            return Result.Success();
++            return outputUnitIds.Count == 0
++                ? Result.Success()
++                : Result.Failure(InventoryErrors.InvalidQuantity);
+         }
+ 
+-        if (!inventory.Catalog.Contains(command.OutputItemId))
++        if (outputUnitIds.Count != command.TotalOutputQuantity
++            || outputUnitIds.Any(value => value.IsEmpty)
++            || outputUnitIds.Distinct().Count() != outputUnitIds.Count)
+         {
+-            return Result.Failure(TerrainWorkCompletionErrors.UnknownOutputItem);
++            return Result.Failure(InventoryErrors.InvalidQuantity);
+         }
+ 
+-        if (command.OutputQuantity <= 0)
++        foreach (TerrainWorkOutputSpec output in command.Outputs)
+         {
+-            return Result.Failure(InventoryErrors.InvalidQuantity);
++            if (!inventory.Catalog.Contains(output.ItemId))
++            {
++                return Result.Failure(TerrainWorkCompletionErrors.UnknownOutputItem);
++            }
++
++            ItemDefinition definition = inventory.Catalog.Get(output.ItemId);
++            if (output.Quantity > definition.MaximumStackSize)
++            {
++                return Result.Failure(InventoryErrors.StackSizeExceeded);
++            }
+         }
+ 
+         foreach (EntityId outputUnitId in outputUnitIds)
+@@ -75,10 +89,49 @@ internal static class TerrainWorkOutputUnits
+             }
+         }
+ 
+-        ItemDefinition definition = inventory.Catalog.Get(command.OutputItemId);
+-        return command.OutputQuantity > definition.MaximumStackSize
+-            ? Result.Failure(InventoryErrors.StackSizeExceeded)
+-            : Result.Success();
++        return Result.Success();
++    }
++
++    public static IReadOnlyList<TerrainWorkProducedOutput> AddToInventory(
++        InventoryState inventory,
++        CompleteTerrainWorkCommand command,
++        IReadOnlyList<EntityId> outputUnitIds,
++        ItemLocation location,
++        long tick)
++    {
++        if (!command.ProducesOutput)
++        {
++            return Array.Empty<TerrainWorkProducedOutput>();
++        }
++
++        List<TerrainWorkProducedOutput> produced =
++            new List<TerrainWorkProducedOutput>(command.Outputs.Count);
++        int offset = 0;
