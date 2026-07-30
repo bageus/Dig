@@ -19,23 +19,13 @@ jobs:
           ref: agent/fix-production-output-and-unit-inventory
           fetch-depth: 1
 
-      - name: Collect Unity selectors and runtime movement
+      - name: Collect food support call sites
         shell: bash
         run: |
           set -euo pipefail
-          pattern='StartDirectMushroomChopCommand|StartResidentFoodMeal|Mushroom|FoodMeal|WorkPosition|HasFullSupport|FullSupport|ShaftGapTraverse|DepthTraverse|VerticalClimb|UnsupportedResidentRecovery'
-          mapfile -t files < <(grep -RliE "$pattern" unity tests/Dig.Tests | sort)
-          full=/tmp/supported-action-position-full.txt
           {
-            echo '=== MATCHED UNITY AND TEST FILES ==='
-            printf '%s\n' "${files[@]}"
-            echo '=== FOCUSED SOURCE ==='
-            for file in "${files[@]}"; do
-              echo "===== $file ====="
-              nl -ba "$file" | head -n 650 || true
-            done
-          } > "$full"
-          head -n 16000 "$full" > docs/implementation/_supported-action-position-diagnostic.txt
+            grep -RniE '_startResidentFoodMeal|new StartResidentFoodMealHandler|StartResidentFoodMealHandler\(' src unity tests || true
+          } > docs/implementation/_supported-action-position-diagnostic.txt
           cat docs/implementation/_supported-action-position-diagnostic.txt
 
       - name: Commit diagnostic report
@@ -45,5 +35,5 @@ jobs:
           git config user.name 'OpenAI Agent'
           git config user.email 'agent@openai.com'
           git add docs/implementation/_supported-action-position-diagnostic.txt
-          git commit -m 'Capture Unity supported action selectors'
+          git commit -m 'Locate resident food meal support call sites'
           git push origin HEAD:agent/fix-production-output-and-unit-inventory
