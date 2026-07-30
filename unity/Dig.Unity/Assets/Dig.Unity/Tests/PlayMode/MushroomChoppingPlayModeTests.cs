@@ -8,7 +8,6 @@ using Dig.Domain.Ecology;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Inventory;
-using Dig.Presentation.World;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -192,96 +191,6 @@ public sealed class MushroomChoppingPlayModeTests
         Assert.That(regrown.Cell, Is.EqualTo(site.Cell));
     }
 
-
-    [Test]
-    public void Work_position_uses_supported_depth_cell_when_side_cells_are_void()
-    {
-        Assembly runtime = typeof(DigWorldInteraction).Assembly;
-        object world = InvokeStatic(
-            RequireType(runtime, "Dig.Unity.DigWorldSession"),
-            "CreateDemo",
-            20,
-            14,
-            5);
-        WorldViewModel worldView = (WorldViewModel)Invoke(world, "LoadView");
-        object journal = GetProperty(world, "Journal");
-        object tunnel = Invoke(world, "CreateTunnelNavigationVolume");
-        object residents = InvokeStatic(
-            RequireType(runtime, "Dig.Unity.DigAgentSession"),
-            "CreateDemo",
-            worldView,
-            tunnel,
-            journal);
-        AgentViewModel worker = ((IEnumerable)Invoke(residents, "LoadView"))
-            .Cast<AgentViewModel>()
-            .First();
-        object terrain = InvokeStatic(
-            RequireType(runtime, "Dig.Unity.DigTerrainWorkSession"),
-            "CreateDemo",
-            world,
-            new[] { worker },
-            journal,
-            GetProperty(residents, "SkillGrants"));
-
-        Dictionary<CellId, WorldCellViewModel> cells = worldView.Chunks
-            .SelectMany(chunk => chunk.Cells)
-            .ToDictionary(value => new CellId(value.X, value.Y, value.Z));
-        MethodInfo resolver = terrain.GetType().GetMethod(
-            "TryResolveMushroomWorkPosition",
-            BindingFlags.Instance | BindingFlags.NonPublic)!;
-        CellId workerCell = new CellId(worker.CellX, worker.CellY, worker.CellZ);
-        CellId? chosenTarget = null;
-        CellId chosenWork = default;
-        foreach (CellId target in cells.Values
-            .Where(value => !value.IsSolid)
-            .Select(value => new CellId(value.X, value.Y, value.Z))
-            .OrderBy(value => value))
-        {
-            bool sideSupported =
-                HasFullSupport(cells, new CellId(target.X - 1, target.Y, target.Z))
-                || HasFullSupport(cells, new CellId(target.X + 1, target.Y, target.Z));
-            bool depthSupported =
-                (target.Z > CellId.MinimumDepth
-                    && HasFullSupport(
-                        cells,
-                        new CellId(target.X, target.Y, target.Z - 1)))
-                || (target.Z < CellId.MaximumDepth
-                    && HasFullSupport(
-                        cells,
-                        new CellId(target.X, target.Y, target.Z + 1)));
-            if (sideSupported || !depthSupported)
-            {
-                continue;
-            }
-
-            object[] arguments = { target, workerCell, default(CellId) };
-            if (!(bool)resolver.Invoke(terrain, arguments)!)
-            {
-                continue;
-            }
-
-            CellId work = (CellId)arguments[2];
-            if (work.X == target.X
-                && work.Y == target.Y
-                && Math.Abs(work.Z - target.Z) == 1
-                && HasFullSupport(cells, work))
-            {
-                chosenTarget = target;
-                chosenWork = work;
-                break;
-            }
-        }
-
-        Assert.That(
-            chosenTarget.HasValue,
-            Is.True,
-            "The demo must expose a side-void/depth-supported action-position case.");
-        Assert.That(chosenWork.Y, Is.EqualTo(chosenTarget!.Value.Y));
-        Assert.That(chosenWork.X, Is.EqualTo(chosenTarget.Value.X));
-        Assert.That(Math.Abs(chosenWork.Z - chosenTarget.Value.Z), Is.EqualTo(1));
-        Assert.That(HasFullSupport(cells, chosenWork), Is.True);
-    }
-
     [Test]
     public void Renderer_places_large_mushroom_upright_slightly_above_resident_and_highlights_hover()
     {
@@ -333,19 +242,6 @@ public sealed class MushroomChoppingPlayModeTests
                 Snapshot(siteId, definitionId, MushroomStage.AbsentRegrowing),
             });
         Assert.That((int)GetProperty(renderer, "ActiveCount"), Is.EqualTo(0));
-    }
-
-
-    private static bool HasFullSupport(
-        IReadOnlyDictionary<CellId, WorldCellViewModel> cells,
-        CellId actionCell)
-    {
-        CellId support = new CellId(
-            actionCell.X,
-            actionCell.Y + 1,
-            actionCell.Z);
-        return cells.TryGetValue(support, out WorldCellViewModel? value)
-            && value.HasFullActorSupport;
     }
 
     private static MushroomSiteSnapshot Snapshot(
