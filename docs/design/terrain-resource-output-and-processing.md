@@ -37,11 +37,14 @@ Display name не используется как ссылка между эти
 ### 3.1 Правила roll
 
 - результат вычисляется детерминированно из `WorldSeed + GeneratorVersion + CellId + OutputProfileVersion`;
-- Unity random/frame order не влияет на результат;
+- каждая строка profile использует независимый named hash stream по stable `ItemId`, поэтому одна клетка может выдать несколько разрешённых outputs;
+- порядок definitions, Unity random и frame order не влияют на результат;
 - одна клетка выполняет roll только один раз при успешном excavation commit;
 - пустой результат допустим;
-- outputs создаются как world stacks на земле;
+- outputs создаются как отдельные quantity-one Inventory entities в `ItemLocation.InWorld(extractedCell)`;
 - шахтёр не помещает их автоматически в личный inventory;
+- preflight проверяет ItemId и весь deterministic set entity IDs до изменения World;
+- terrain opening, deposit depletion, Inventory entities, Job completion и exactly-once ledger входят в один Application completion flow;
 - failure/cancel до commit не расходует roll и не создаёт предметы;
 - save/replay не может повторно выдать output одной клетки.
 
@@ -176,9 +179,11 @@ Capability:
 
 ## 9. Save/Load и validation
 
-Сохраняются:
+Save format v12 и mining-output section v2 сохраняют:
 
-- `MaterialId` клетки и факт выполнения output roll;
+- `MaterialId` клетки и exactly-once commit для её output roll;
+- source kind, stable terrain profile/deposit id и source version;
+- все output lines, количества и ordered quantity-one entity IDs;
 - deposit instance id, definition id/version, exact XYZ, hidden/revealed/depleted state и per-cell version;
 - deposit generator, terrain generator и output profile versions;
 - world stacks и reservations;
@@ -194,6 +199,10 @@ Validation запрещает:
 - повторный roll/depletion;
 - недетерминированный Unity random как источник game rules;
 - поиск `Песчаника` или `Рудной породы` по display name вместо stable ID.
+
+Migration `save.v11_to_v12.terrain_output_contract` переводит mining-output ledger v1 в multi-line v2 и заменяет legacy `material.metal` на `material.iron` во всех сохраняемых Inventory, jobs, production, runtime, barrel и mining-output ссылках.
+
+Полный building-demand/fog-aware source planner остаётся authoritative scope #110. Storage hauling уже считается разрешённым только через явный `StorageFilter`; output transaction не создаёт второго hauling owner.
 
 ## 10. Связанные issues
 

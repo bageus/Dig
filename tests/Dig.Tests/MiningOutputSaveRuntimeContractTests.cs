@@ -36,8 +36,24 @@ public sealed class MiningOutputSaveRuntimeContractTests
             composition,
             StringComparison.Ordinal);
         Assert.Contains(
-            "outputStackIds,\n            miningOutputCommits);",
+            "MiningOutputCommitState commits =",
             composition,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "skills,\n                commits)",
+            composition,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "skills,\n            commits);",
+            composition,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "CompleteTerrainWorkCommand.FromPlan(",
+            session,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "_miningOutputCommits.Record(output",
+            session,
             StringComparison.Ordinal);
     }
 

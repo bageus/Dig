@@ -15,25 +15,58 @@ public enum MiningOutputSourceKind
     Deposit = 1,
 }
 
-public sealed class MiningOutputPlan
+public sealed class MiningOutputLine
 {
-    internal MiningOutputPlan(
-        CellId cell,
-        MiningOutputSourceKind sourceKind,
-        ItemId itemId,
-        int quantity,
-        string sourceId,
-        int sourceVersion,
-        string? depositInstanceId)
+    public MiningOutputLine(ItemId itemId, int quantity)
     {
-        if (quantity < 0 || (quantity == 0 && !itemId.IsEmpty))
+        if (itemId.IsEmpty)
+        {
+            throw new ArgumentException("Mining output item id is required.", nameof(itemId));
+        }
+
+        if (quantity <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(quantity));
         }
 
-        if (quantity > 0 && itemId.IsEmpty)
+        ItemId = itemId;
+        Quantity = quantity;
+    }
+
+    public ItemId ItemId { get; }
+    public int Quantity { get; }
+}
+
+public sealed class MiningOutputPlan
+{
+    private readonly IReadOnlyList<MiningOutputLine> _outputs;
+
+    internal MiningOutputPlan(
+        CellId cell,
+        MiningOutputSourceKind sourceKind,
+        IEnumerable<MiningOutputLine> outputs,
+        string sourceId,
+        int sourceVersion,
+        string? depositInstanceId)
+    {
+        if (outputs == null)
         {
-            throw new ArgumentException("A non-empty mining output requires an item id.", nameof(itemId));
+            throw new ArgumentNullException(nameof(outputs));
+        }
+
+        MiningOutputLine[] values = outputs
+            .OrderBy(value => value.ItemId)
+            .ToArray();
+        if (values.Any(value => value == null))
+        {
+            throw new ArgumentException("Mining output lines cannot contain null values.", nameof(outputs));
+        }
+
+        if (values.Select(value => value.ItemId).Distinct().Count() != values.Length)
+        {
+            throw new ArgumentException(
+                "Mining output lines must be unique by item id.",
+                nameof(outputs));
         }
 
         if (string.IsNullOrWhiteSpace(sourceId))
@@ -56,8 +89,7 @@ public sealed class MiningOutputPlan
 
         Cell = cell;
         SourceKind = sourceKind;
-        ItemId = itemId;
-        Quantity = quantity;
+        _outputs = new ReadOnlyCollection<MiningOutputLine>(values);
         SourceId = sourceId.Trim();
         SourceVersion = sourceVersion;
         DepositInstanceId = depositInstanceId;
@@ -65,12 +97,16 @@ public sealed class MiningOutputPlan
 
     public CellId Cell { get; }
     public MiningOutputSourceKind SourceKind { get; }
-    public ItemId ItemId { get; }
-    public int Quantity { get; }
-    public bool IsEmpty => Quantity == 0;
+    public IReadOnlyList<MiningOutputLine> Outputs => _outputs;
+    public int TotalQuantity => _outputs.Sum(value => value.Quantity);
+    public bool IsEmpty => _outputs.Count == 0;
     public string SourceId { get; }
     public int SourceVersion { get; }
     public string? DepositInstanceId { get; }
+
+    // Compatibility for existing single-output callers. New code should use Outputs.
+    public ItemId ItemId => _outputs.Count == 1 ? _outputs[0].ItemId : default;
+    public int Quantity => _outputs.Count == 1 ? _outputs[0].Quantity : 0;
 }
 
 public sealed class MiningOutputResolver
@@ -110,10 +146,14 @@ public sealed class MiningOutputResolver
             return new MiningOutputPlan(
                 cell,
                 MiningOutputSourceKind.Deposit,
-                deposit.Definition.OutputItemId,
-                deposit.RemainingYield,
+                new[]
+                {
+                    new MiningOutputLine(
+                        deposit.Definition.OutputItemId,
+                        deposit.RemainingYield),
+                },
                 deposit.Definition.Id,
-                checked((int)Math.Max(1L, deposit.Version)),
+                deposit.Definition.Version,
                 deposit.InstanceId);
         }
 
@@ -131,176 +171,12 @@ public sealed class MiningOutputResolver
         return new MiningOutputPlan(
             cell,
             MiningOutputSourceKind.Terrain,
-            roll.ItemId,
-            roll.Quantity,
+            roll.Outputs.Select(value => new MiningOutputLine(
+                value.ItemId,
+                value.Quantity)),
             roll.ProfileId,
             roll.ProfileVersion,
             depositInstanceId: null);
-    }
-}
-
-public sealed class MiningOutputCommit
-{
-    internal MiningOutputCommit(
-        CellId cell,
-        MiningOutputSourceKind sourceKind,
-        ItemId itemId,
-        int quantity,
-        EntityId stackId,
-        bool hasStack)
-    {
-        Cell = cell;
-        SourceKind = sourceKind;
-        ItemId = itemId;
-        Quantity = quantity;
-        StackId = stackId;
-        HasStack = hasStack;
-    }
-
-    public CellId Cell { get; }
-    public MiningOutputSourceKind SourceKind { get; }
-    public ItemId ItemId { get; }
-    public int Quantity { get; }
-    public EntityId StackId { get; }
-    public bool HasStack { get; }
-}
-
-public sealed class MiningOutputCommitState
-{
-    private readonly Dictionary<CellId, MiningOutputCommit> _commits =
-        new Dictionary<CellId, MiningOutputCommit>();
-
-    public IReadOnlyList<MiningOutputCommit> Snapshot()
-    {
-        return new ReadOnlyCollection<MiningOutputCommit>(
-            _commits.Values.OrderBy(value => value.Cell).ToArray());
-    }
-
-    public bool IsCommitted(CellId cell)
-    {
-        return _commits.ContainsKey(cell);
-    }
-
-    public void Validate(
-        MiningOutputPlan plan,
-        EntityId stackId,
-        InventoryState inventory,
-        TerrainDepositState deposits)
-    {
-        if (plan == null)
-        {
-            throw new ArgumentNullException(nameof(plan));
-        }
-
-        if (inventory == null)
-        {
-            throw new ArgumentNullException(nameof(inventory));
-        }
-
-        if (deposits == null)
-        {
-            throw new ArgumentNullException(nameof(deposits));
-        }
-
-        if (_commits.ContainsKey(plan.Cell))
-        {
-            throw new InvalidOperationException(
-                $"Mining output for cell {plan.Cell} was already committed.");
-        }
-
-        ValidateDepositPlan(plan, deposits);
-        ValidateWorldStack(plan, stackId, inventory);
-    }
-
-    public MiningOutputCommit Record(MiningOutputPlan plan, EntityId stackId)
-    {
-        if (plan == null)
-        {
-            throw new ArgumentNullException(nameof(plan));
-        }
-
-        if (_commits.ContainsKey(plan.Cell))
-        {
-            throw new InvalidOperationException(
-                $"Mining output for cell {plan.Cell} was already committed.");
-        }
-
-        MiningOutputCommit committed = new MiningOutputCommit(
-            plan.Cell,
-            plan.SourceKind,
-            plan.ItemId,
-            plan.Quantity,
-            stackId,
-            hasStack: !plan.IsEmpty);
-        _commits.Add(plan.Cell, committed);
-        return committed;
-    }
-
-    private static void ValidateDepositPlan(
-        MiningOutputPlan plan,
-        TerrainDepositState deposits)
-    {
-        bool hasDeposit = deposits.TryGet(plan.Cell, out TerrainDepositInstance current);
-        if (plan.SourceKind == MiningOutputSourceKind.Terrain)
-        {
-            if (hasDeposit && !current.IsDepleted)
-            {
-                throw new InvalidOperationException(
-                    "Terrain output cannot be committed while a deposit occupies the cell.");
-            }
-
-            return;
-        }
-
-        if (!hasDeposit
-            || current.IsDepleted
-            || !string.Equals(
-                current.InstanceId,
-                plan.DepositInstanceId,
-                StringComparison.Ordinal)
-            || current.Definition.Id != plan.SourceId
-            || current.Definition.OutputItemId != plan.ItemId
-            || current.RemainingYield != plan.Quantity)
-        {
-            throw new InvalidOperationException(
-                "Deposit output plan no longer matches authoritative deposit state.");
-        }
-    }
-
-    private static void ValidateWorldStack(
-        MiningOutputPlan plan,
-        EntityId stackId,
-        InventoryState inventory)
-    {
-        if (plan.IsEmpty)
-        {
-            return;
-        }
-
-        if (stackId.IsEmpty)
-        {
-            throw new ArgumentException("Mining output stack id is required.", nameof(stackId));
-        }
-
-        if (inventory.GetStack(stackId) != null)
-        {
-            throw new InvalidOperationException(
-                $"Mining output stack '{stackId}' already exists.");
-        }
-
-        if (!inventory.Catalog.Contains(plan.ItemId))
-        {
-            throw new InvalidOperationException(
-                $"Mining output item '{plan.ItemId}' is missing from the inventory catalog.");
-        }
-
-        ItemDefinition definition = inventory.Catalog.Get(plan.ItemId);
-        if (plan.Quantity > definition.MaximumStackSize)
-        {
-            throw new InvalidOperationException(
-                $"Mining output quantity {plan.Quantity} exceeds stack size "
-                + $"{definition.MaximumStackSize} for '{plan.ItemId}'.");
-        }
     }
 }
 

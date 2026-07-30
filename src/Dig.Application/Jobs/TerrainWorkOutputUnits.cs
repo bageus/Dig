@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 
@@ -21,12 +22,12 @@ internal static class TerrainWorkOutputUnits
         }
 
         string seed = command.OutputStackId.ToString();
-        EntityId[] ids = new EntityId[command.OutputQuantity];
-        ids[0] = command.OutputStackId;
-
-        for (int index = 1; index < ids.Length; index++)
+        EntityId[] ids = new EntityId[command.TotalOutputQuantity];
+        for (int index = 0; index < ids.Length; index++)
         {
-            ids[index] = EntityId.Parse(CreateDerivedEntityId(seed, index));
+            ids[index] = index == 0
+                ? command.OutputStackId
+                : EntityId.Parse(CreateDerivedEntityId(seed, index));
         }
 
         return ids;
@@ -54,17 +55,30 @@ internal static class TerrainWorkOutputUnits
 
         if (!command.ProducesOutput)
         {
-            return Result.Success();
+            return outputUnitIds.Count == 0
+                ? Result.Success()
+                : Result.Failure(InventoryErrors.InvalidQuantity);
         }
 
-        if (!inventory.Catalog.Contains(command.OutputItemId))
-        {
-            return Result.Failure(TerrainWorkCompletionErrors.UnknownOutputItem);
-        }
-
-        if (command.OutputQuantity <= 0)
+        if (outputUnitIds.Count != command.TotalOutputQuantity
+            || outputUnitIds.Any(value => value.IsEmpty)
+            || outputUnitIds.Distinct().Count() != outputUnitIds.Count)
         {
             return Result.Failure(InventoryErrors.InvalidQuantity);
+        }
+
+        foreach (TerrainWorkOutputSpec output in command.Outputs)
+        {
+            if (!inventory.Catalog.Contains(output.ItemId))
+            {
+                return Result.Failure(TerrainWorkCompletionErrors.UnknownOutputItem);
+            }
+
+            ItemDefinition definition = inventory.Catalog.Get(output.ItemId);
+            if (output.Quantity > definition.MaximumStackSize)
+            {
+                return Result.Failure(InventoryErrors.StackSizeExceeded);
+            }
         }
 
         foreach (EntityId outputUnitId in outputUnitIds)
@@ -75,10 +89,49 @@ internal static class TerrainWorkOutputUnits
             }
         }
 
-        ItemDefinition definition = inventory.Catalog.Get(command.OutputItemId);
-        return command.OutputQuantity > definition.MaximumStackSize
-            ? Result.Failure(InventoryErrors.StackSizeExceeded)
-            : Result.Success();
+        return Result.Success();
+    }
+
+    public static IReadOnlyList<TerrainWorkProducedOutput> AddToInventory(
+        InventoryState inventory,
+        CompleteTerrainWorkCommand command,
+        IReadOnlyList<EntityId> outputUnitIds,
+        ItemLocation location,
+        long tick)
+    {
+        if (!command.ProducesOutput)
+        {
+            return Array.Empty<TerrainWorkProducedOutput>();
+        }
+
+        List<TerrainWorkProducedOutput> produced =
+            new List<TerrainWorkProducedOutput>(command.Outputs.Count);
+        int offset = 0;
+        foreach (TerrainWorkOutputSpec output in command.Outputs)
+        {
+            EntityId[] ids = outputUnitIds
+                .Skip(offset)
+                .Take(output.Quantity)
+                .ToArray();
+            Result added = inventory.AddUnits(
+                ids,
+                output.ItemId,
+                location,
+                tick);
+            if (added.IsFailure)
+            {
+                throw new InvalidOperationException(
+                    $"A validated terrain output batch failed: {added.Error}");
+            }
+
+            produced.Add(new TerrainWorkProducedOutput(
+                output.ItemId,
+                output.Quantity,
+                ids));
+            offset += output.Quantity;
+        }
+
+        return produced;
     }
 
     private static string CreateDerivedEntityId(string seed, int index)

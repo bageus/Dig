@@ -88,12 +88,41 @@ public sealed class MiningOutputIntegrityDiagnosticsTests
             new[]
             {
                 MiningOutputIntegrityCodes.ItemMismatch,
-                MiningOutputIntegrityCodes.LocationMismatch,
-                MiningOutputIntegrityCodes.QuantityMismatch,
             },
             report.Issues.Select(value => value.Code).OrderBy(value => value).ToArray());
         Assert.Equal(inventoryVersion, inventory.Version);
         Assert.Single(commits.Snapshot());
+    }
+
+
+    [Fact]
+    public void Quantity_one_output_identity_remains_valid_after_storage_movement()
+    {
+        CellId cell = new CellId(3, 4, 2);
+        EntityId unitId = EntityId.Parse("72000000000000000000000000000009");
+        InventoryState inventory = CreateInventory();
+        MiningOutputCommitState commits = new MiningOutputCommitState();
+        MiningOutputPlan plan = ResolveStone(cell, quantity: 1);
+        commits.Record(plan, new[] { unitId });
+        Assert.True(inventory.AddUnit(
+            unitId,
+            Stone,
+            ItemLocation.InWorld(cell),
+            tick: 1).IsSuccess);
+        Assert.True(inventory.MoveAvailable(
+            unitId,
+            quantity: 1,
+            ItemLocation.InStorage(EntityId.Parse(
+                "72000000000000000000000000000010")),
+            splitStackId: default,
+            tick: 2).IsSuccess);
+
+        MiningOutputIntegrityReport report =
+            new MiningOutputIntegrityDiagnostics().Inspect(commits, inventory);
+
+        Assert.True(report.IsValid);
+        Assert.Equal(1, report.CommittedQuantity);
+        Assert.Equal(1, report.TrackedWorldQuantity);
     }
 
     private static MiningOutputPlan ResolveStone(CellId cell, int quantity)

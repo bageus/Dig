@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Dig.Application.Agents;
 using Dig.Application.Inventory;
 using Dig.Application.Messaging;
@@ -18,13 +19,15 @@ public sealed class CompleteTerrainWorkCommandHandler
     private readonly IWorldRepository _worldRepository;
     private readonly IInventoryRepository _inventoryRepository;
     private readonly IEventSink _eventSink;
+    private readonly MiningOutputCommitState _miningOutputCommits;
 
     public CompleteTerrainWorkCommandHandler(
         IJobRepository jobRepository,
         IWorldRepository worldRepository,
         IInventoryRepository inventoryRepository,
         IEventSink eventSink,
-        IAgentSkillGrantService skillGrants)
+        IAgentSkillGrantService skillGrants,
+        MiningOutputCommitState? miningOutputCommits = null)
     {
         _jobRepository = jobRepository
             ?? throw new ArgumentNullException(nameof(jobRepository));
@@ -34,6 +37,7 @@ public sealed class CompleteTerrainWorkCommandHandler
             ?? throw new ArgumentNullException(nameof(inventoryRepository));
         _eventSink = eventSink ?? throw new ArgumentNullException(nameof(eventSink));
         _ = skillGrants ?? throw new ArgumentNullException(nameof(skillGrants));
+        _miningOutputCommits = miningOutputCommits ?? new MiningOutputCommitState();
     }
 
     public Result<TerrainWorkCompletionResult> Handle(CompleteTerrainWorkCommand command)
@@ -71,8 +75,16 @@ public sealed class CompleteTerrainWorkCommandHandler
             ?? throw new InvalidOperationException(
                 "An in-progress terrain job must retain its worker.");
 
+        CellId targetCell = terrainJob.Target.CellId;
+        if (command.ResolvedPlanCell.HasValue
+            && command.ResolvedPlanCell.Value != targetCell)
+        {
+            return Result<TerrainWorkCompletionResult>.Failure(
+                TerrainWorkCompletionErrors.OutputPlanCellMismatch);
+        }
+
         WorldState world = _worldRepository.Get();
-        Result<CellSnapshot> targetResult = world.GetCell(terrainJob.Target.CellId);
+        Result<CellSnapshot> targetResult = world.GetCell(targetCell);
         if (targetResult.IsFailure)
         {
             return Result<TerrainWorkCompletionResult>.Failure(targetResult.Error!);
@@ -115,8 +127,36 @@ public sealed class CompleteTerrainWorkCommandHandler
             return Result<TerrainWorkCompletionResult>.Failure(validation.Error!);
         }
 
+        MiningOutputPlan outputPlan = command.CreatePlan(targetCell);
+        if (_miningOutputCommits.IsCommitted(targetCell))
+        {
+            return Result<TerrainWorkCompletionResult>.Failure(
+                TerrainWorkCompletionErrors.OutputAlreadyCommitted);
+        }
+
+        if (command.HasResolvedOutputPlan)
+        {
+            try
+            {
+                _miningOutputCommits.Validate(
+                    outputPlan,
+                    outputUnitIds,
+                    inventory,
+                    world.TerrainDeposits);
+            }
+            catch (Exception error) when (
+                error is ArgumentException
+                || error is InvalidOperationException
+                || error is OverflowException)
+            {
+                return Result<TerrainWorkCompletionResult>.Failure(new DomainError(
+                    "terrain_work.mining_output_invalid",
+                    error.Message));
+            }
+        }
+
         Result<WorldMutationResult> terrain = world.Excavate(
-            terrainJob.Target.CellId,
+            targetCell,
             command.EmptyMaterialId,
             command.Tick,
             command.DepositInstanceId,
@@ -126,18 +166,17 @@ public sealed class CompleteTerrainWorkCommandHandler
             return Result<TerrainWorkCompletionResult>.Failure(terrain.Error!);
         }
 
-        if (command.ProducesOutput)
-        {
-            Result added = inventory.AddUnits(
+        IReadOnlyList<TerrainWorkProducedOutput> produced =
+            TerrainWorkOutputUnits.AddToInventory(
+                inventory,
+                command,
                 outputUnitIds,
-                command.OutputItemId,
-                ItemLocation.InWorld(terrainJob.Target.CellId),
+                ItemLocation.InWorld(targetCell),
                 command.Tick);
-            EnsureCommitStep(added.IsSuccess, added.Error);
-        }
 
         Result completed = jobs.Complete(command.JobId, command.Tick);
         EnsureCommitStep(completed.IsSuccess, completed.Error);
+        _miningOutputCommits.Record(outputPlan, outputUnitIds);
 
         _worldRepository.Save(world);
         _inventoryRepository.Save(inventory);
@@ -149,11 +188,8 @@ public sealed class CompleteTerrainWorkCommandHandler
         return Result<TerrainWorkCompletionResult>.Success(
             new TerrainWorkCompletionResult(
                 command.JobId,
-                terrainJob.Target.CellId,
-                command.OutputStackId,
-                command.OutputItemId,
-                command.OutputQuantity,
-                command.ProducesOutput,
+                targetCell,
+                produced,
                 world.Version,
                 inventory.Version));
     }

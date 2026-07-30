@@ -260,11 +260,6 @@ internal sealed partial class DigTerrainWorkSession
                 targetCell,
                 _worldSession.ResolveTerrainMaterial(targetCell),
                 _worldSession.TerrainDeposits);
-            _miningOutputCommits.Validate(
-                output,
-                _outputStackIds[job.Id],
-                _inventoryRepository.Get(),
-                _worldSession.TerrainDeposits);
         }
         catch (Exception error)
         {
@@ -273,22 +268,12 @@ internal sealed partial class DigTerrainWorkSession
                 error.Message));
         }
 
-        CompleteTerrainWorkCommand command = output.IsEmpty
-            ? CompleteTerrainWorkCommand.WithoutOutput(
-                job.Id,
-                _worldSession.EmptyMaterialId,
-                tick)
-            : new CompleteTerrainWorkCommand(
-                job.Id,
-                _outputStackIds[job.Id],
-                output.ItemId,
-                output.Quantity,
-                _worldSession.EmptyMaterialId,
-                tick,
-                output.DepositInstanceId,
-                output.SourceKind == MiningOutputSourceKind.Deposit
-                    ? output.Quantity
-                    : (int?)null);
+        CompleteTerrainWorkCommand command = CompleteTerrainWorkCommand.FromPlan(
+            job.Id,
+            _outputStackIds[job.Id],
+            output,
+            _worldSession.EmptyMaterialId,
+            tick);
         Result<TerrainWorkCompletionResult> completion = _completionHandler.Handle(command);
         if (completion.IsFailure)
         {
@@ -299,7 +284,6 @@ internal sealed partial class DigTerrainWorkSession
         // before any derived navigation refresh so Presentation cannot miss the open
         // cell when navigation fails and the tick returns a recoverable warning.
         MarkAuthoritativeWorldChanged();
-        _miningOutputCommits.Record(output, _outputStackIds[job.Id]);
         CompleteExcavationQuarterTarget(targetCell);
         _routePlans.Remove(job.Id);
         MarkTemplateCellExcavated(targetCell);

@@ -59,7 +59,10 @@ public sealed class MiningOutputSaveWorldValidationTests
     [Fact]
     public void Data_contract_validation_reuses_existing_decode_invariants()
     {
-        MiningOutputCommitsSaveData data = new MiningOutputCommitsSaveData();
+        MiningOutputCommitsSaveData data = new MiningOutputCommitsSaveData
+        {
+            FormatVersion = 1,
+        };
         data.Commits.Add(new MiningOutputCommitSaveData
         {
             X = 5,
