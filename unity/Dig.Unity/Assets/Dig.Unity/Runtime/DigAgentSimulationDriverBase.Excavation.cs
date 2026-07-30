@@ -77,8 +77,6 @@ namespace Dig.Unity
 
             IReadOnlyList<AgentViewModel> agents = AgentSession!.LoadView();
             TerrainSession!.SynchronizeDesignations(CurrentTick, agents, priority);
-            GetComponent<DigExcavationCursorRenderer>()?
-                .InvalidateDesignationSynchronization();
             RefreshExcavationPresentation(agents);
             return Result.Success();
         }
@@ -186,9 +184,6 @@ namespace Dig.Unity
                 TerrainSession.GetStorageStatus(),
                 TerrainSession.LoadRoutes());
             JobRenderer!.Render(jobs);
-            DigExcavationCursorRenderer? excavationOverlays =
-                GetComponent<DigExcavationCursorRenderer>();
-            excavationOverlays?.SynchronizeTunnelDesignations(world);
             Hud!.SetWorld(world);
             Hud.SetAgents(agents, AgentSession!.Tick);
             Hud.SetJobs(jobs);

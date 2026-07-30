@@ -67,8 +67,7 @@ namespace Dig.Unity
                     : $"reserved {slot.ReservedQuantity}";
                 string location = slot.IsEquipped ? "equipped" : "carried";
                 GUILayout.Label(
-                    $"{slot.ItemId} ×{slot.Quantity} | {location} | "
-                    + $"available {slot.AvailableQuantity} | {reservation}",
+                    $"{slot.ItemId} | {location} | {reservation}",
                     GUILayout.Width(330f));
 
                 bool previousEnabled = GUI.enabled;

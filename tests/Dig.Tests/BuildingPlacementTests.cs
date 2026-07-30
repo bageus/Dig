@@ -83,6 +83,38 @@ public sealed class BuildingPlacementTests
     }
 
     [Fact]
+    public void Placement_never_substitutes_an_unreachable_side_work_position()
+    {
+        WorldState world = CreateEmptyWorld();
+        CellId origin = new CellId(3, 3);
+        CellId reachableConfigured = new CellId(3, 2);
+        BuildingDefinition definition = new BuildingDefinition(
+            new BuildingDefinitionId("campfire.reachable_work"),
+            "Reachable work",
+            new[] { new CellOffset(0, 0) },
+            new[]
+            {
+                new CellOffset(0, -1),
+                new CellOffset(-1, 0),
+                new CellOffset(1, 0),
+            },
+            Array.Empty<BuildingMaterialRequirement>(),
+            requiredWork: 3,
+            maximumDurability: 100);
+
+        BuildingPlacementResult placement = new BuildingPlacementValidator().Validate(
+            definition,
+            origin,
+            BuildingOrientation.North,
+            world.CreateSnapshot(),
+            Array.Empty<CellId>(),
+            new[] { reachableConfigured });
+
+        Assert.True(placement.Succeeded, placement.Error?.ToString());
+        Assert.Equal(reachableConfigured, placement.WorkPosition);
+    }
+
+    [Fact]
     public void Placement_reports_unreachable_work_position()
     {
         WorldState world = CreateEmptyWorld();
