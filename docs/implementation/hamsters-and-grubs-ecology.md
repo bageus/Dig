@@ -1,6 +1,6 @@
 # Hamsters and grubs living-material ecology
 
-Status: `IMPLEMENTATION_IN_PROGRESS`.
+Status: `IMPLEMENTED`.
 
 Authoritative specification: [`../design/hamsters-and-grubs-ecology.md`](../design/hamsters-and-grubs-ecology.md).
 Tracking issue: [#524](https://github.com/bageus/Dig/issues/524).
@@ -29,8 +29,22 @@ Implementation PR: [#529](https://github.com/bageus/Dig/pull/529).
 
 PR #529 is based on current `main` after deterministic terrain deposits and inventory/mushroom regression repairs. The save-version collision discovered during synchronization was resolved without dropping either owner: terrain deposits retain v11 and living materials advance the document to v12.
 
-The final runtime and save source is checked into the feature branch; temporary payload and carrier workflow files have been removed before the final validation run.
+The final runtime and save source is checked into the feature branch; temporary payload and carrier workflow files were removed before validation.
 
-## Verification boundary
+## Evidence
 
-The system remains `IMPLEMENTATION_IN_PROGRESS` until the final Quality workflow completes on the reconciled PR head. `VERIFIED` additionally requires licensed Unity Test Runner evidence; source-contract or skipped activation-gate results are not sufficient.
+Final Quality run on commit `c2b879a83de2e8f2d0e02f12f58c300cad4ebc6e` completed successfully:
+
+- architecture, file-size and C# compatibility checks;
+- Unity source, creature visual, runtime-evidence and native-field contracts;
+- .NET restore/build;
+- `1206/1206` tests;
+- headless smoke;
+- standard deterministic soak;
+- large-settlement deterministic soak.
+
+The Unity workflow completed successfully, but licensed EditMode/PlayMode execution was skipped by the activation gate. The checked-in Play Mode fixture is therefore source evidence only until a licensed runner executes it.
+
+## Status boundary
+
+The system is `IMPLEMENTED`: approved gameplay behavior is represented in authoritative owners and covered by automated Quality tests. It is not `VERIFIED` because actual licensed Unity Test Runner evidence is still absent.
