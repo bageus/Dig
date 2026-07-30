@@ -25,6 +25,7 @@ jobs:
           set -euo pipefail
           pattern='StartDirectMushroomChopCommand|MushroomChopJobDefinition|StartResidentFoodMeal|ResidentFoodMeal|FoodMealJob|BarrelAttackSurface|HasFullSupport|FullSupport|ShaftGapTraverse|DepthTraverse|VerticalClimb|WorkPosition'
           mapfile -t files < <(grep -RliE "$pattern" src unity tests | sort | head -n 80)
+          full=/tmp/supported-action-position-full.txt
           {
             echo '=== AUTHORITATIVE SPECS ==='
             for file in \
@@ -41,9 +42,10 @@ jobs:
             echo '=== FOCUSED SOURCE ==='
             for file in "${files[@]}"; do
               echo "===== $file ====="
-              nl -ba "$file" | head -n 450
+              nl -ba "$file" | head -n 450 || true
             done
-          } | head -n 12000 > docs/implementation/_supported-action-position-diagnostic.txt
+          } > "$full"
+          head -n 12000 "$full" > docs/implementation/_supported-action-position-diagnostic.txt
           cat docs/implementation/_supported-action-position-diagnostic.txt
 
       - name: Commit diagnostic report
