@@ -87,6 +87,17 @@ The first complete Quality run exposed five test-contract defects rather than a 
 - passes the loaded terrain-deposit generator version when rebuilding a save context, avoiding metadata/world-version drift;
 - keeps the expanded migration regression fixture within the repository 350-line source limit without reducing coverage.
 
+## Unity compile regression correction — 2026-07-31
+
+The Unity demo adapter retained the pre-typed `string` parameter for deposit skill grant profile ids after `DefaultSkillGrantProfileIds` and `SkillProgressionCatalog.GetProfile` moved to `SkillGrantProfileId`. This caused `CS1503` in both directions. The same file also used `Result<bool>` without importing `Dig.Domain.Core`, causing `CS0246`.
+
+The correction keeps the existing catalog and gameplay behavior unchanged:
+
+- `Definition` now accepts `SkillGrantProfileId` directly;
+- the typed id is passed unchanged to `SkillProgressionCatalog.GetProfile`;
+- `Dig.Domain.Core` is imported for the existing reveal result;
+- the Unity source contract rejects a return to the string parameter and requires the result namespace import.
+
 ## Verification boundary
 
 Normal Quality CI must pass Release compilation, the complete .NET suite, source contracts, smoke and both deterministic soaks. The checked-in Unity lifecycle scenario must execute on a licensed Unity runner before status can move from `IMPLEMENTED` to `VERIFIED`.
