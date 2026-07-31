@@ -55,8 +55,7 @@ public sealed class BuildingSupplyStateTests
             new[] { capCell, legCell, stoneCell },
             new[] { capCell, legCell, stoneCell },
             new CellId(4, 1, 0),
-            freeSlotCount: 6,
-            productionActive: false);
+            freeSlotCount: 6);
 
         Assert.Equal(2, plan.Allocations.Count);
         Assert.Equal(6, plan.SlotCount);
@@ -67,7 +66,7 @@ public sealed class BuildingSupplyStateTests
     }
 
     [Fact]
-    public void Hidden_disabled_or_active_production_suppresses_supply()
+    public void Hidden_or_disabled_stock_suppresses_supply_without_a_production_gate()
     {
         ItemCatalog items = CampfireProductionContentTests.CreateItems();
         InventoryState inventory = new InventoryState(items);
@@ -93,8 +92,7 @@ public sealed class BuildingSupplyStateTests
             new[] { cell },
             new[] { cell },
             cell,
-            4,
-            false).Allocations);
+            4).Allocations);
 
         state.SetDeliveryEnabled(
             BuildingId,
@@ -108,16 +106,16 @@ public sealed class BuildingSupplyStateTests
             Array.Empty<CellId>(),
             new[] { cell },
             cell,
-            4,
-            false).Allocations);
-        Assert.Empty(BuildingSupplyPlanner.Plan(
+            4).Allocations);
+        BuildingSupplyPlan enabled = BuildingSupplyPlanner.Plan(
             supply,
             inventory.GetAvailableWorldStacks(),
             new[] { cell },
             new[] { cell },
             cell,
-            4,
-            productionActive: true).Allocations);
+            4);
+        Assert.Single(enabled.Allocations);
+        Assert.Equal(4, enabled.TotalQuantity);
     }
 
     [Fact]

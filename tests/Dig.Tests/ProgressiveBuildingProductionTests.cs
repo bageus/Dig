@@ -86,7 +86,7 @@ public sealed class ProgressiveBuildingProductionTests
     }
 
     [Fact]
-    public void Active_order_suppresses_replenishment_until_completion()
+    public void Active_order_keeps_enabled_replenishment_planning_to_capacity()
     {
         CampfireProductionTestHarness harness = new CampfireProductionTestHarness(1);
         EntityId orderId = CampfireProductionTestHarness.Id(130);
@@ -105,14 +105,13 @@ public sealed class ProgressiveBuildingProductionTests
             CampfireProductionTestHarness.BuildingId,
             harness.Inventory.CreateSnapshot())!;
 
-        Assert.Empty(BuildingSupplyPlanner.Plan(
+        Assert.NotEmpty(BuildingSupplyPlanner.Plan(
             supply,
             harness.Inventory.GetAvailableWorldStacks(),
             new[] { sourceCell },
             new[] { sourceCell },
             new CellId(4, 3, 0),
-            4,
-            harness.Production.HasActiveOrder(CampfireProductionTestHarness.BuildingId))
+            4)
             .Allocations);
 
         harness.ClaimBeginAndReachWork(orderId, jobId, 3);
@@ -132,8 +131,7 @@ public sealed class ProgressiveBuildingProductionTests
             new[] { sourceCell },
             new[] { sourceCell },
             new CellId(4, 3, 0),
-            4,
-            harness.Production.HasActiveOrder(CampfireProductionTestHarness.BuildingId))
+            4)
             .Allocations);
     }
 }
