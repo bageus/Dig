@@ -165,7 +165,7 @@ public sealed partial class NavigationSnapshot
         if (!transitions.TryGetValue(from, out List<NavigationTransition>? list))
         {
             list = new List<NavigationTransition>();
-            mutable.Add(from, list);
+            transitions.Add(from, list);
         }
 
         list.Add(new NavigationTransition(to, link.Cost, link.Kind));
