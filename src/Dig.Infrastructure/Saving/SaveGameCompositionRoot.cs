@@ -92,6 +92,7 @@ public static class SaveGameCompositionRoot
             new SaveVersionNineCombatSpatialMigration(),
             new SaveVersionTenTerrainDepositContractMigration(),
             new SaveVersionElevenLivingMaterialsMigration(),
+            new SaveVersionTwelveTerrainOutputContractMigration(),
         });
     }
 

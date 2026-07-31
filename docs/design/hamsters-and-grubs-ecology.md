@@ -215,3 +215,6 @@ Verification boundary:
 | 2026-07-30 | Connected same-Y/Z plane; daily stable-lowest hamster parent; newborn two cycles; speed/radius `0.8×/6`, `0.65×/4`; 96 ecology steps/day; activity bands. | Пользователь | §§2–6, #524 |
 | 2026-07-30 | Terrain deposits retain save v11; living material ecology advances save format to v12. | Реализация после merge reconciliation | §8, #524, PR #529 |
 | 2026-07-30 | Quality passed; licensed Unity Test Runner skipped activation gate, so system is IMPLEMENTED rather than VERIFIED. | CI evidence | §12, #524, PR #529 |
+
+
+Current save chain note: living-material ecology remains the authoritative `v11 -> v12` migration; terrain output adds the subsequent `v12 -> v13 terrain output contract` without redefining ecology state.

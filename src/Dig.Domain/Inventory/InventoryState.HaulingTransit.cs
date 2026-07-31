@@ -92,6 +92,36 @@ public sealed partial class InventoryState
             return Result.Failure(InventoryErrors.ReservationNotFound);
         }
 
+        bool unitIdentityTransfer = sources.All(source =>
+            source.Quantity == 1
+            && source.GetReservedQuantity(jobId) == 1);
+        if (unitIdentityTransfer)
+        {
+            for (int index = 0; index < sources.Length; index++)
+            {
+                ItemStackState source = sources[index];
+                ItemLocation sourceLocation = source.Location;
+                source.ConsumeReservation(jobId, quantity: 1);
+                source.MoveFull(destination);
+                Raise(new ItemQuantityReservationChanged(
+                    tick,
+                    source.Id,
+                    jobId,
+                    source.GetReservedQuantity(jobId)));
+                Raise(new ItemStackMoved(
+                    tick,
+                    source.Id,
+                    source.Id,
+                    itemId,
+                    quantity: 1,
+                    sourceLocation,
+                    destination));
+            }
+
+            IncrementVersion();
+            return Result.Success();
+        }
+
         if (quantity > Catalog.Get(itemId).MaximumStackSize)
         {
             return Result.Failure(InventoryErrors.StackSizeExceeded);
