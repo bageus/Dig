@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   merge:
@@ -49,3 +50,15 @@ jobs:
           git add -A
           git commit -m "Merge current main with staged production package lifecycle"
           git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Publish merge run diagnostics
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 536,
+              body: `Agent merge run ${context.runId} finished with job status: ${{ job.status }}.`
+            });
