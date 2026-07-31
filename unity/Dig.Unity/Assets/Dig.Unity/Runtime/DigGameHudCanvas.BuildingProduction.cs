@@ -119,6 +119,7 @@ public sealed partial class DigGameHudCanvas
             button.transform,
             product.QueuedCount > 0 ? product.QueuedCount.ToString() : string.Empty,
             TextAnchor.LowerRight);
+        CreateProductionProgressSegments(button.transform, product);
         string hover = product.DisplayName + " ×" + product.OutputQuantity
             + "\n" + product.Tooltip;
         DigProductionIconPointer pointer = BindIconTooltip(button, tooltip, hover);
@@ -127,6 +128,38 @@ public sealed partial class DigGameHudCanvas
                 building.Id,
                 product.RecipeId.ToString())
             : null;
+    }
+
+    private static void CreateProductionProgressSegments(
+        Transform parent,
+        ProductionIconViewModel product)
+    {
+        if (!product.HasProgress)
+        {
+            return;
+        }
+
+        const float gap = 0.015f;
+        for (int index = 0; index < product.ProgressTotal; index++)
+        {
+            GameObject segment = new GameObject(
+                "Material progress " + index,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+            segment.transform.SetParent(parent, worldPositionStays: false);
+            RectTransform rect = (RectTransform)segment.transform;
+            float width = 1f / product.ProgressTotal;
+            rect.anchorMin = new Vector2((index * width) + gap, 0.03f);
+            rect.anchorMax = new Vector2(((index + 1) * width) - gap, 0.16f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            Image image = segment.GetComponent<Image>();
+            image.color = index < product.ProgressCurrent
+                ? new Color(0.30f, 0.88f, 0.36f, 1f)
+                : new Color(0.08f, 0.11f, 0.13f, 0.92f);
+            image.raycastTarget = false;
+        }
     }
 
     private void CreateStockIconButton(
@@ -249,7 +282,8 @@ public sealed partial class DigGameHudCanvas
         PackableBuildingExecutionViewModel? operation)
     {
         string products = string.Join(",", production.Products.Select(value =>
-            value.RecipeId + ":" + value.QueuedCount + ":" + value.IsOrange));
+            value.RecipeId + ":" + value.QueuedCount + ":" + value.IsOrange
+                + ":" + value.ProgressCurrent + "/" + value.ProgressTotal));
         string stocks = string.Join(",", production.Stocks.Select(value =>
             value.ItemId + ":" + value.Current + ":" + value.Incoming + ":"
                 + value.DeliveryEnabled));
