@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dig.Domain.Agents;
 using Dig.Domain.Content;
+using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
 using Dig.Presentation.World;
@@ -150,7 +151,7 @@ internal sealed partial class DigWorldSession
         string outputItemId,
         int maximumYield,
         int generationWeight,
-        string skillGrantProfileId)
+        SkillGrantProfileId skillGrantProfileId)
     {
         return new TerrainDepositDefinition(
             id,
