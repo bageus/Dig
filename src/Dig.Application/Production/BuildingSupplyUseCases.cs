@@ -28,6 +28,26 @@ public sealed class CreateBuildingSupplyJobHandler
     public CreateBuildingSupplyJobHandler(
         ProductionContentCatalog content,
         IBuildingSupplyRepository supplyRepository,
+        IProductionRepository productionRepository,
+        IBuildingsRepository buildingsRepository,
+        IInventoryRepository inventoryRepository,
+        IJobRepository jobRepository,
+        IEventSink eventSink)
+        : this(
+            content,
+            supplyRepository,
+            buildingsRepository,
+            inventoryRepository,
+            jobRepository,
+            eventSink)
+    {
+        _ = productionRepository
+            ?? throw new ArgumentNullException(nameof(productionRepository));
+    }
+
+    public CreateBuildingSupplyJobHandler(
+        ProductionContentCatalog content,
+        IBuildingSupplyRepository supplyRepository,
         IBuildingsRepository buildingsRepository,
         IInventoryRepository inventoryRepository,
         IJobRepository jobRepository,
