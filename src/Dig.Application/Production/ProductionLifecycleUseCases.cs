@@ -44,6 +44,22 @@ public sealed class CancelProductionOrderHandler
         ProductionState production = _productionRepository.Get();
         InventoryState inventory = _inventoryRepository.Get();
         JobSystem jobs = _jobRepository.Get();
+        ProductionOrderSnapshot? current = production.Get(command.OrderId);
+        if (current is null)
+        {
+            return Result.Failure(ProductionErrors.OrderNotFound);
+        }
+
+        // Explicit cancellation of the active unit means "finish this unit and stop".
+        // Queued units are still cancelled immediately; an active unit keeps its job,
+        // reservations, package, progress and counter until normal package close.
+        if (current.Status is ProductionOrderStatus.InputsReserved
+            or ProductionOrderStatus.InProgress
+            or ProductionOrderStatus.ReadyToComplete)
+        {
+            return Result.Success();
+        }
+
         Result cancelled = production.Cancel(
             command.OrderId,
             command.Reason,

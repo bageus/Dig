@@ -4,11 +4,13 @@ using Dig.Application.Ecology;
 using Dig.Application.WorldObjects;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
+using Dig.Application.Production;
 using Dig.Domain.Agents;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
+using Dig.Domain.Production;
 using Dig.Infrastructure.InMemory;
 
 namespace Dig.Unity
@@ -48,6 +50,13 @@ namespace Dig.Unity
                             CancelMushroomForDirectCommand(job, tick),
                         BarrelAttackJobDefinition =>
                             CancelBarrelForDirectCommand(job, tick),
+                        ProductionPackageUseJobDefinition =>
+                            CancelProductionPackageUseForDirectCommand(job, tick),
+                        ProductionWorkJobDefinition production =>
+                            InterruptProductionForDirectCommand(
+                                job,
+                                production,
+                                tick),
                         BuildingBoxAssemblyJobDefinition =>
                             CancelBuildingBoxForDirectCommand(job, tick),
                         BuildingBoxPickupJobDefinition relocation when relocation.IsRelocation =>
@@ -159,6 +168,33 @@ namespace Dig.Unity
                     job.Id,
                     "barrel_direct_command_replaced",
                     tick));
+        }
+
+        private Result InterruptProductionForDirectCommand(
+            JobSnapshot job,
+            ProductionWorkJobDefinition production,
+            long tick)
+        {
+            return _interruptProduction == null
+                ? Result.Success()
+                : _interruptProduction.Handle(new InterruptProductionOrderCommand(
+                    production.OrderId,
+                    job.Id,
+                    "production_worker_forced_move",
+                    tick));
+        }
+
+        private Result CancelProductionPackageUseForDirectCommand(
+            JobSnapshot job,
+            long tick)
+        {
+            return _cancelProductionPackageUse == null
+                ? Result.Success()
+                : _cancelProductionPackageUse.Handle(
+                    new CancelProductionPackageUseCommand(
+                        job.Id,
+                        "production_package_use_direct_command_replaced",
+                        tick));
         }
 
         private Result ReleaseDigWorkForDirectCommand(JobSnapshot job, long tick)

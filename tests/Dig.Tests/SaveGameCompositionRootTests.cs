@@ -96,6 +96,15 @@ public sealed class SaveGameCompositionRootTests
                 priority: 800,
                 createdTick: 10,
                 JobRetryPolicy.Default),
+            new ProductionPackageUseJobDefinition(
+                Id(7),
+                Id(8),
+                new CellId(9, 4, 0),
+                new CellId(8, 4, 0),
+                packageVersion: 3,
+                priority: 850,
+                createdTick: 11,
+                JobRetryPolicy.Default),
         };
 
         foreach (JobDefinition job in jobs)

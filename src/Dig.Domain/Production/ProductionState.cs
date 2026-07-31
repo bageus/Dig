@@ -131,6 +131,33 @@ public sealed partial class ProductionState : AggregateRoot
     }
 
 
+    public Result ResetForRetry(EntityId orderId, string reason, long tick)
+    {
+        ValidateTick(tick);
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new ArgumentException("Reset reason is required.", nameof(reason));
+        }
+
+        ProductionOrderState? order = Find(orderId);
+        if (order is null)
+        {
+            return Result.Failure(ProductionErrors.OrderNotFound);
+        }
+
+        if (order.Status is not (ProductionOrderStatus.InputsReserved
+            or ProductionOrderStatus.InProgress
+            or ProductionOrderStatus.ReadyToComplete))
+        {
+            return Result.Failure(ProductionErrors.InvalidStatus);
+        }
+
+        ProductionOrderStatus previous = order.Status;
+        order.ResetForRetry(reason);
+        RaiseStatusChanged(tick, order, previous, reason.Trim());
+        return Result.Success();
+    }
+
     public Result Complete(EntityId orderId, long tick)
     {
         ValidateTick(tick);

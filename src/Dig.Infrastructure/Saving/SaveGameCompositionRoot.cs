@@ -18,6 +18,7 @@ public static class SaveGameCompositionRoot
         typeof(Dig.Domain.Jobs.HaulJobDefinition),
         typeof(Dig.Domain.Jobs.HealingJobDefinition),
         typeof(Dig.Domain.Jobs.MushroomChopJobDefinition),
+        typeof(Dig.Domain.Jobs.ProductionPackageUseJobDefinition),
         typeof(Dig.Domain.Jobs.ProductionWorkJobDefinition),
         typeof(Dig.Domain.Jobs.ResidentInventoryPlacementJobDefinition),
         typeof(Dig.Domain.Jobs.SpatialDigJobDefinition),
@@ -61,6 +62,8 @@ public static class SaveGameCompositionRoot
                     new HealingJobSaveCodec()),
                 Registration<Dig.Domain.Jobs.MushroomChopJobDefinition>(
                     new MushroomChopJobSaveCodec()),
+                Registration<Dig.Domain.Jobs.ProductionPackageUseJobDefinition>(
+                    new ProductionPackageUseJobSaveCodec()),
                 Registration<Dig.Domain.Jobs.ProductionWorkJobDefinition>(
                     new ProductionWorkJobSaveCodec()),
                 Registration<Dig.Domain.Jobs.ResidentInventoryPlacementJobDefinition>(

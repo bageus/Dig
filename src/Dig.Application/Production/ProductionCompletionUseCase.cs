@@ -63,21 +63,7 @@ public sealed class CompleteProductionOrderHandler
         EntityId workerId = job.AssignedAgentId
             ?? throw new InvalidOperationException(
                 "An in-progress production job must retain its worker.");
-
-        EntityId[] outputIds = command.OutputStackIds
-            .OrderBy(value => value.ToString(), StringComparer.Ordinal)
-            .ToArray();
-        if (outputIds.Length != order.Recipe.Outputs.Count
-            || outputIds.Any(value => value.IsEmpty)
-            || outputIds.Distinct().Count() != outputIds.Length)
-        {
-            return Result.Failure(ProductionErrors.OutputIdsMismatch);
-        }
-
-        SkillGrantBundle? skillBundle = CreateSkillBundle(
-            order,
-            workerId,
-            command.Tick);
+        SkillGrantBundle? skillBundle = CreateSkillBundle(order, workerId, command.Tick);
         if (skillBundle is not null)
         {
             Result skillValidation = _skillGrants.Validate(skillBundle);
@@ -87,29 +73,9 @@ public sealed class CompleteProductionOrderHandler
             }
         }
 
-        ItemStackCreation[] outputs = order.Recipe.Outputs
-            .OrderBy(value => value.ItemId)
-            .Zip(
-                outputIds,
-                (definition, stackId) => new ItemStackCreation(
-                    stackId,
-                    definition.ItemId,
-                    definition.Quantity))
-            .ToArray();
-        ItemLocation outputLocation = command.OutputLocation
-            ?? ItemLocation.InBuilding(order.BuildingId);
-        Result committed = order.Recipe.UsesMaterialSteps
-            ? inventory.CreateProductionOutputs(
-                order.Id,
-                outputs,
-                outputLocation,
-                command.Tick)
-            : inventory.CompleteProductionTransaction(
-                order.Id,
-                order.InputAllocations,
-                outputs,
-                outputLocation,
-                command.Tick);
+        Result committed = command.PackageStackId.HasValue
+            ? CommitStagedPackage(production, inventory, order, command)
+            : CommitLegacyOutputs(inventory, order, command);
         if (committed.IsFailure)
         {
             return committed;
@@ -143,6 +109,129 @@ public sealed class CompleteProductionOrderHandler
         return Result.Success();
     }
 
+    private static Result CommitStagedPackage(
+        ProductionState production,
+        InventoryState inventory,
+        ProductionOrderSnapshot order,
+        CompleteProductionOrderCommand command)
+    {
+        EntityId packageStackId = command.PackageStackId!.Value;
+        ProductionOutputPackageSnapshot? package =
+            production.GetOutputPackage(packageStackId);
+        ItemStackSnapshot? packageStack = inventory.GetStack(packageStackId);
+        if (package == null
+            || package.OrderId != order.Id
+            || package.Kind != ProductionOutputPackageKind.Unfinished
+            || packageStack == null
+            || packageStack.ItemId != ProductionPackageContent.UnfinishedPackageItemId)
+        {
+            return Result.Failure(ProductionErrors.OutputPackageNotFound);
+        }
+
+        ProductionOutputPackageKind kind = ResolveOutputKind(inventory, order);
+        if (kind == ProductionOutputPackageKind.Building)
+        {
+            EntityId[] outputIds = ValidateOutputIds(order, command.OutputStackIds);
+            if (outputIds.Length == 0)
+            {
+                return Result.Failure(ProductionErrors.OutputIdsMismatch);
+            }
+
+            ItemStackCreation[] outputs = order.Recipe.Outputs
+                .OrderBy(value => value.ItemId)
+                .Zip(outputIds, (definition, id) => new ItemStackCreation(
+                    id,
+                    definition.ItemId,
+                    definition.Quantity))
+                .ToArray();
+            Result replaced = inventory.ReplaceProductionPackage(
+                packageStackId,
+                ProductionPackageContent.UnfinishedPackageItemId,
+                outputs,
+                command.Tick);
+            if (replaced.IsFailure)
+            {
+                return replaced;
+            }
+
+            Result removed = production.RemoveOutputPackage(packageStackId, command.Tick);
+            return removed;
+        }
+
+        ItemId closedItemId = ProductionPackageContent.GetClosedItemId(kind);
+        Result closedStack = inventory.ReplaceProductionPackage(
+            packageStackId,
+            ProductionPackageContent.UnfinishedPackageItemId,
+            new[] { new ItemStackCreation(packageStackId, closedItemId, 1) },
+            command.Tick);
+        if (closedStack.IsFailure)
+        {
+            return closedStack;
+        }
+
+        return production.CloseOutputPackage(
+            packageStackId,
+            kind,
+            order.Recipe.Outputs,
+            command.Tick);
+    }
+
+    private static Result CommitLegacyOutputs(
+        InventoryState inventory,
+        ProductionOrderSnapshot order,
+        CompleteProductionOrderCommand command)
+    {
+        EntityId[] outputIds = ValidateOutputIds(order, command.OutputStackIds);
+        if (outputIds.Length == 0)
+        {
+            return Result.Failure(ProductionErrors.OutputIdsMismatch);
+        }
+
+        ItemStackCreation[] outputs = order.Recipe.Outputs
+            .OrderBy(value => value.ItemId)
+            .Zip(outputIds, (definition, stackId) => new ItemStackCreation(
+                stackId,
+                definition.ItemId,
+                definition.Quantity))
+            .ToArray();
+        ItemLocation outputLocation = command.OutputLocation
+            ?? ItemLocation.InBuilding(order.BuildingId);
+        return order.Recipe.UsesMaterialSteps
+            ? inventory.CreateProductionOutputs(order.Id, outputs, outputLocation, command.Tick)
+            : inventory.CompleteProductionTransaction(
+                order.Id,
+                order.InputAllocations,
+                outputs,
+                outputLocation,
+                command.Tick);
+    }
+
+    private static EntityId[] ValidateOutputIds(
+        ProductionOrderSnapshot order,
+        System.Collections.Generic.IReadOnlyCollection<EntityId> ids)
+    {
+        EntityId[] values = ids
+            .OrderBy(value => value.ToString(), StringComparer.Ordinal)
+            .ToArray();
+        return values.Length == order.Recipe.Outputs.Count
+            && values.All(value => !value.IsEmpty)
+            && values.Distinct().Count() == values.Length
+                ? values
+                : Array.Empty<EntityId>();
+    }
+
+    private static ProductionOutputPackageKind ResolveOutputKind(
+        InventoryState inventory,
+        ProductionOrderSnapshot order)
+    {
+        ProductionOutputPackageKind[] kinds = order.Recipe.Outputs
+            .Select(value => ProductionPackageContent.ResolveKind(
+                inventory.Catalog.Get(value.ItemId)))
+            .Distinct()
+            .ToArray();
+        return kinds.Length == 1 ? kinds[0] : ProductionOutputPackageKind.Tool;
+    }
+
     private static SkillGrantBundle? CreateSkillBundle(
         ProductionOrderSnapshot order,
         EntityId workerId,
@@ -155,7 +244,7 @@ public sealed class CompleteProductionOrderHandler
         }
 
         int multiplier = order.Recipe.SkillGrantScale
-            == Dig.Domain.Content.ProductionSkillGrantScale.PerOrder
+            == ProductionSkillGrantScale.PerOrder
                 ? 1
                 : order.Recipe.Outputs.Sum(value => value.Quantity);
         return new SkillGrantBundle(

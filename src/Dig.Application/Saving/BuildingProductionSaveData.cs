@@ -14,6 +14,30 @@ public sealed class BuildingProductionSaveData
     [DataMember(Order = 2)]
     public List<BuildingSupplySaveData> Supplies { get; set; } =
         new List<BuildingSupplySaveData>();
+
+    [DataMember(Order = 3)]
+    public List<ProductionOutputPackageSaveData> Packages { get; set; } =
+        new List<ProductionOutputPackageSaveData>();
+}
+
+
+[DataContract]
+public sealed class ProductionOutputPackageSaveData
+{
+    [DataMember(Order = 1)] public string StackId { get; set; } = string.Empty;
+    [DataMember(Order = 2)] public string OrderId { get; set; } = string.Empty;
+    [DataMember(Order = 3)] public int Kind { get; set; }
+    [DataMember(Order = 4)] public long Version { get; set; }
+    [DataMember(Order = 5)]
+    public List<ProductionPackageManifestItemSaveData> Manifest { get; set; } =
+        new List<ProductionPackageManifestItemSaveData>();
+}
+
+[DataContract]
+public sealed class ProductionPackageManifestItemSaveData
+{
+    [DataMember(Order = 1)] public string ItemId { get; set; } = string.Empty;
+    [DataMember(Order = 2)] public int Quantity { get; set; }
 }
 
 [DataContract]

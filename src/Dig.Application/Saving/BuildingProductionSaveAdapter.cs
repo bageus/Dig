@@ -53,6 +53,24 @@ public static class BuildingProductionSaveAdapter
             });
         }
 
+        foreach (ProductionOutputPackageSnapshot package
+            in production.GetOutputPackages())
+        {
+            data.Packages.Add(new ProductionOutputPackageSaveData
+            {
+                StackId = package.StackId.ToString(),
+                OrderId = package.OrderId.ToString(),
+                Kind = (int)package.Kind,
+                Version = package.Version,
+                Manifest = package.Manifest.Select(value =>
+                    new ProductionPackageManifestItemSaveData
+                    {
+                        ItemId = value.ItemId.ToString(),
+                        Quantity = value.Quantity,
+                    }).ToList(),
+            });
+        }
+
         foreach (BuildingSupplySnapshot snapshot in supply.GetAll(
             inventory.CreateSnapshot()))
         {
@@ -86,7 +104,10 @@ public static class BuildingProductionSaveAdapter
         try
         {
             BuildingProductionSaveData source = data ?? new BuildingProductionSaveData();
-            ProductionState production = RestoreProduction(source, content);
+            ProductionState production = RestoreProduction(
+                source,
+                content,
+                inventory);
             BuildingSupplyState supply = RestoreSupply(source, content, inventory);
             return Result<RestoredBuildingProductionState>.Success(
                 new RestoredBuildingProductionState(production, supply));
@@ -100,7 +121,8 @@ public static class BuildingProductionSaveAdapter
 
     private static ProductionState RestoreProduction(
         BuildingProductionSaveData data,
-        ProductionContentCatalog content)
+        ProductionContentCatalog content,
+        InventoryState inventory)
     {
         ProductionState production = new ProductionState();
         long tick = 0;
@@ -160,6 +182,47 @@ public static class BuildingProductionSaveAdapter
                     saved.Reason ?? "restored_failed",
                     tick++));
             }
+        }
+
+        foreach (ProductionOutputPackageSaveData saved in data.Packages
+            .OrderBy(value => value.StackId, StringComparer.Ordinal))
+        {
+            if (!Enum.IsDefined(typeof(ProductionOutputPackageKind), saved.Kind))
+            {
+                throw new InvalidOperationException("Invalid production package kind.");
+            }
+
+            ProductionOutputPackageKind kind =
+                (ProductionOutputPackageKind)saved.Kind;
+            if (kind == ProductionOutputPackageKind.Building)
+            {
+                throw new InvalidOperationException(
+                    "Building packages are restored through BuildingBox state.");
+            }
+
+            EntityId stackId = EntityId.Parse(saved.StackId);
+            ItemStackSnapshot? stack = inventory.GetStack(stackId);
+            ItemId expectedItemId = kind == ProductionOutputPackageKind.Unfinished
+                ? ProductionPackageContent.UnfinishedPackageItemId
+                : ProductionPackageContent.GetClosedItemId(kind);
+            if (stack == null
+                || stack.ItemId != expectedItemId
+                || stack.Quantity != 1)
+            {
+                throw new InvalidOperationException(
+                    "Saved production package inventory identity is invalid.");
+            }
+
+            ContentItemQuantity[] manifest = saved.Manifest.Select(value =>
+                new ContentItemQuantity(
+                    new ItemId(value.ItemId),
+                    value.Quantity)).ToArray();
+            RequireSuccess(production.RestoreOutputPackage(
+                stackId,
+                EntityId.Parse(saved.OrderId),
+                kind,
+                saved.Version,
+                manifest));
         }
 
         production.DequeueUncommittedEvents();

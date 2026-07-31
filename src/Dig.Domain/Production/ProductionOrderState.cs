@@ -200,6 +200,23 @@ internal sealed class ProductionOrderState
         return values;
     }
 
+    public void ResetForRetry(string reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new ArgumentException("Reset reason is required.", nameof(reason));
+        }
+
+        _inputAllocations = Array.Empty<ItemReservationAllocation>();
+        _resolvedStepDurations = Array.Empty<long>();
+        _currentStepWork = 0;
+        _currentStepIndex = 0;
+        CompletedWork = 0;
+        Status = ProductionOrderStatus.Queued;
+        Reason = reason.Trim();
+        IncrementVersion();
+    }
+
     public void Complete()
     {
         Status = ProductionOrderStatus.Completed;

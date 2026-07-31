@@ -41,6 +41,12 @@ internal sealed partial class DigTerrainWorkSession
     private ApplyProductionWorkHandler? _applyProductionWork;
     private CompleteProductionOrderHandler? _completeProduction;
     private CancelProductionOrderHandler? _cancelProduction;
+    private CreateProductionOutputPackageHandler? _createProductionPackage;
+    private InterruptProductionOrderHandler? _interruptProduction;
+    private StartProductionPackageUseHandler? _startProductionPackageUse;
+    private AdvanceProductionPackageUseHandler? _advanceProductionPackageUse;
+    private CompleteProductionPackageUseHandler? _completeProductionPackageUse;
+    private CancelProductionPackageUseHandler? _cancelProductionPackageUse;
     private CreateBuildingSupplyJobHandler? _createBuildingSupply;
     private AcquireBuildingSupplySourceHandler? _acquireBuildingSupplySource;
     private DepositBuildingSupplyHandler? _depositBuildingSupply;
@@ -52,6 +58,9 @@ internal sealed partial class DigTerrainWorkSession
     private long _nextProductionOrderSequence;
     private long _nextProductionJobSequence;
     private long _nextProductionOutputSequence;
+    private long _nextProductionPackageSequence;
+    private long _nextProductionPackageUseJobSequence;
+    private long _nextProductionPackageUseOutputSequence;
     private long _nextSupplyJobSequence;
     private long _nextSupplyTransitSequence;
     private long _nextSupplyDepositSequence;
@@ -128,6 +137,32 @@ internal sealed partial class DigTerrainWorkSession
         _cancelProduction = new CancelProductionOrderHandler(
             _productionRepository,
             _buildingInventoryRepository,
+            _jobRepository,
+            journal);
+        _createProductionPackage = new CreateProductionOutputPackageHandler(
+            _productionRepository,
+            _buildingInventoryRepository,
+            _jobRepository,
+            journal);
+        _interruptProduction = new InterruptProductionOrderHandler(
+            _productionRepository,
+            _buildingInventoryRepository,
+            _jobRepository,
+            journal);
+        _startProductionPackageUse = new StartProductionPackageUseHandler(
+            _productionRepository,
+            _buildingInventoryRepository,
+            _jobRepository,
+            journal);
+        _advanceProductionPackageUse = new AdvanceProductionPackageUseHandler(
+            _jobRepository,
+            journal);
+        _completeProductionPackageUse = new CompleteProductionPackageUseHandler(
+            _productionRepository,
+            _buildingInventoryRepository,
+            _jobRepository,
+            journal);
+        _cancelProductionPackageUse = new CancelProductionPackageUseHandler(
             _jobRepository,
             journal);
         _createBuildingSupply = new CreateBuildingSupplyJobHandler(
@@ -283,7 +318,9 @@ internal sealed partial class DigTerrainWorkSession
             jobId,
             "player_cancelled",
             tick));
-        if (result.IsSuccess && !jobId.IsEmpty)
+        if (result.IsSuccess
+            && !jobId.IsEmpty
+            && (_jobRepository.Get().Get(jobId)?.IsTerminal ?? true))
         {
             _buildingProductionRoutes.Remove(jobId);
         }

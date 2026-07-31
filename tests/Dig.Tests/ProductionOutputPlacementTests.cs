@@ -95,6 +95,38 @@ public sealed class ProductionOutputPlacementTests
     }
 
     [Fact]
+    public void Default_output_search_skips_more_than_six_occupied_cells()
+    {
+        WorldState world = CreateWorld(width: 20);
+        BuildingSnapshot building = CreateBuilding(BuildingOrientation.North);
+        InventoryState inventory = new InventoryState(
+            CampfireProductionContentTests.CreateItems());
+        CellId[] occupied = ProductionOutputPlacement.CreateCandidates(building, 6)
+            .Take(7)
+            .ToArray();
+        for (int index = 0; index < occupied.Length; index++)
+        {
+            Assert.True(inventory.AddStack(
+                EntityId.Parse((index + 100).ToString("x32")),
+                CampfireProductionContent.MushroomCapItemId,
+                1,
+                ItemLocation.InWorld(occupied[index]),
+                tick: 0).IsSuccess);
+        }
+
+        Result<CellId> result = ProductionOutputPlacement.Resolve(
+            building,
+            world.CreateSnapshot(),
+            building.Footprint,
+            inventory.CreateSnapshot().Stacks);
+
+        Assert.True(result.IsSuccess, result.Error?.ToString());
+        Assert.Equal(occupied[^1].X + 1, result.Value.X);
+        Assert.Equal(occupied[^1].Y, result.Value.Y);
+        Assert.Equal(occupied[^1].Z, result.Value.Z);
+    }
+
+    [Fact]
     public void Every_orientation_uses_same_screen_right_zone()
     {
         Assert.Equal(new CellId(5, 4, 0), First(BuildingOrientation.North));
@@ -128,7 +160,7 @@ public sealed class ProductionOutputPlacementTests
             null);
     }
 
-    private static WorldState CreateWorld()
+    private static WorldState CreateWorld(int width = 10)
     {
         MaterialCatalog materials = new MaterialCatalog(new[]
         {
@@ -136,7 +168,7 @@ public sealed class ProductionOutputPlacementTests
             new MaterialDefinition(Rock, isSolid: true, hardness: 100),
         });
         WorldState world = WorldState.CreateFilled(
-            new WorldSize(10, 10),
+            new WorldSize(width, 10),
             5,
             materials,
             Rock,
@@ -144,7 +176,7 @@ public sealed class ProductionOutputPlacementTests
         long tick = 1;
         for (int y = 0; y < 5; y++)
         {
-            for (int x = 0; x < 10; x++)
+            for (int x = 0; x < width; x++)
             {
                 Result<WorldMutationResult> excavated = world.Excavate(
                     new CellId(x, y, 0),

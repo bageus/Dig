@@ -130,7 +130,8 @@ public sealed class CompleteProductionOrderCommand : ICommand<Result>
         EntityId jobId,
         IReadOnlyCollection<EntityId> outputStackIds,
         long tick,
-        ItemLocation? outputLocation = null)
+        ItemLocation? outputLocation = null,
+        EntityId? packageStackId = null)
     {
         OrderId = orderId;
         JobId = jobId;
@@ -138,6 +139,7 @@ public sealed class CompleteProductionOrderCommand : ICommand<Result>
             ?? throw new ArgumentNullException(nameof(outputStackIds));
         Tick = tick;
         OutputLocation = outputLocation;
+        PackageStackId = packageStackId;
     }
 
     public EntityId OrderId { get; }
@@ -149,6 +151,8 @@ public sealed class CompleteProductionOrderCommand : ICommand<Result>
     public long Tick { get; }
 
     public ItemLocation? OutputLocation { get; }
+
+    public EntityId? PackageStackId { get; }
 }
 
 public sealed class CancelProductionOrderCommand : ICommand<Result>

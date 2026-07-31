@@ -23,6 +23,9 @@ public sealed partial class DigWorldInteraction
     private static Texture2D[] CreateSwordCursorFrames() =>
         CreateToolFrames("Sword", DrawSword);
 
+    private static Texture2D[] CreateUseCursorFrames() =>
+        CreateToolFrames("Use", DrawUseHand);
+
     private static Texture2D[] CreateToolFrames(
         string name,
         Action<Color32[], int> draw)
@@ -104,6 +107,26 @@ public sealed partial class DigWorldInteraction
         DrawDiagonal(pixels, 8 + offset, 5, 19, outline, handle);
         FillRect(pixels, 14 + offset, 20, 27 + offset, 27, outline);
         FillRect(pixels, 16 + offset, 21, 25 + offset, 26, metal);
+    }
+
+    private static void DrawUseHand(Color32[] pixels, int phase)
+    {
+        int pulse = phase == 1 ? 1 : phase == 2 ? 2 : 0;
+        Color32 outline = new Color32(37, 30, 24, 255);
+        Color32 skin = new Color32(224, 177, 125, 255);
+        Color32 spark = new Color32(255, 230, 116, 255);
+        FillRect(pixels, 10, 6 + pulse, 21, 16 + pulse, outline);
+        FillRect(pixels, 11, 7 + pulse, 20, 15 + pulse, skin);
+        FillRect(pixels, 8, 13 + pulse, 22, 22 + pulse, outline);
+        FillRect(pixels, 9, 14 + pulse, 21, 21 + pulse, skin);
+        FillRect(pixels, 15, 22 + pulse, 18, 28 + pulse, outline);
+        FillRect(pixels, 16, 22 + pulse, 17, 27 + pulse, skin);
+        int sparkOffset = phase % 2;
+        SetPixel(pixels, 25, 22 + sparkOffset, spark);
+        SetPixel(pixels, 24, 22 + sparkOffset, spark);
+        SetPixel(pixels, 26, 22 + sparkOffset, spark);
+        SetPixel(pixels, 25, 21 + sparkOffset, spark);
+        SetPixel(pixels, 25, 23 + sparkOffset, spark);
     }
 
     private static void DrawSword(Color32[] pixels, int phase)

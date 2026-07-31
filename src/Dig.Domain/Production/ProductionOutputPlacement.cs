@@ -23,7 +23,7 @@ public static class ProductionOutputPlacement
         WorldSnapshot world,
         IReadOnlyCollection<CellId> occupiedBuildingCells,
         IReadOnlyCollection<ItemStackSnapshot> inventoryStacks,
-        int maximumLateralDistance = 6)
+        int maximumLateralDistance = int.MaxValue)
     {
         if (building is null)
         {
@@ -61,7 +61,15 @@ public static class ProductionOutputPlacement
             .Select(stack => stack.Location.CellId)
             .ToHashSet();
 
-        foreach (CellId candidate in CreateCandidates(building, maximumLateralDistance))
+        int rightEdgeX = building.Footprint.Count == 0
+            ? building.Origin.X
+            : building.Footprint.Max(cell => cell.X);
+        int worldMaximumDistance = Math.Max(0, world.Size.Width - rightEdgeX - 1);
+        int effectiveMaximumDistance = Math.Min(
+            maximumLateralDistance,
+            worldMaximumDistance);
+
+        foreach (CellId candidate in CreateCandidates(building, effectiveMaximumDistance))
         {
             CellId supportCell = new CellId(
                 candidate.X,

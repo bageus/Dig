@@ -138,6 +138,13 @@ namespace Dig.Unity
 
             if (result.IsSuccess)
             {
+                result = TerrainSession.AdvanceProductionPackages(
+                    AgentSession.Tick,
+                    agents);
+            }
+
+            if (result.IsSuccess)
+            {
                 result = TerrainSession.AdvanceMushrooms(AgentSession.Tick, agents);
             }
 
