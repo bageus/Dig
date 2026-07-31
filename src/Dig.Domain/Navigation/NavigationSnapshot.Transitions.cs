@@ -99,12 +99,12 @@ public sealed partial class NavigationSnapshot
             return TunnelTraversalKind.DepthTraverse;
         }
 
-        bool shaftGap = IsShaftGapCell(from) || IsShaftGapCell(to);
-        if (deltaY != 0 && deltaX == 0 && deltaZ == 0 && shaftGap)
+        if (deltaY != 0 && deltaX == 0 && deltaZ == 0)
         {
             return TunnelTraversalKind.VerticalClimb;
         }
 
+        bool shaftGap = IsShaftGapCell(from) || IsShaftGapCell(to);
         if (deltaX != 0 && deltaY == 0 && deltaZ == 0 && shaftGap)
         {
             return TunnelTraversalKind.ShaftGapTraverse;
@@ -165,7 +165,7 @@ public sealed partial class NavigationSnapshot
         if (!transitions.TryGetValue(from, out List<NavigationTransition>? list))
         {
             list = new List<NavigationTransition>();
-            transitions.Add(from, list);
+            mutable.Add(from, list);
         }
 
         list.Add(new NavigationTransition(to, link.Cost, link.Kind));
