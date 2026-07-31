@@ -40,39 +40,27 @@ public sealed class InternalStockRouteAndProgressCorrectionTests
             new CellId(2, 1, 0),
             goal,
         };
-        CellId[] walkable = flatRoute.Concat(climbRoute).Distinct().ToArray();
-        ChunkId chunkId = new ChunkId(0, 0, 0);
-        NavigationSnapshot snapshot = new NavigationSnapshot(
-            TraversalProfile.CreateFreeMover(),
-            new WorldSize(3, 3, 4),
-            chunkSize: 4,
-            worldVersion: 1,
-            navigationVersion: 1,
-            linkVersion: 0,
-            chunks: new[]
+        CellId[] open = flatRoute.Concat(climbRoute).Distinct().ToArray();
+        TunnelNavigationVolume volume = new TunnelNavigationVolume(
+            width: 3,
+            height: 2,
+            depth: 3,
+            openCells: open,
+            verticalCells: new[]
             {
-                new NavigationChunkSnapshot(
-                    chunkId,
-                    new CellBounds(0, 0, 0, 3, 3, 4),
-                    sourceChunkVersion: 1,
-                    navigationChunkVersion: 1,
-                    walkable),
+                new CellId(0, 1, 0),
+                new CellId(2, 1, 0),
             },
-            regionsByCell: walkable.ToDictionary(cell => cell, _ => 0),
-            regions: new[]
-            {
-                new NavigationRegionSnapshot(0, walkable.Length, new[] { chunkId }),
-            },
-            shaftGapCells: new[] { start, goal },
-            links: Array.Empty<TraversalLink>());
+            supportedCells: open);
 
-        PathResult result = new NavigationPathfinder().FindPath(
-            snapshot,
-            new PathRequest(start, goal, snapshot.NavigationVersion));
+        TunnelPathResult result = volume.FindPath(start, goal);
 
-        Assert.True(result.Succeeded);
+        Assert.True(result.Succeeded, result.Detail);
         Assert.Contains(new CellId(1, 0, 2), result.Path!.Cells);
         Assert.DoesNotContain(new CellId(1, 1, 0), result.Path.Cells);
+        Assert.DoesNotContain(
+            TunnelTraversalKind.VerticalClimb,
+            result.Path.TraversalKinds);
     }
 
     [Fact]
