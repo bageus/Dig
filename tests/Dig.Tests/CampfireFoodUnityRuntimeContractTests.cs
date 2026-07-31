@@ -13,6 +13,7 @@ namespace Dig.Tests
             string execution = Read(runtime, "DigBuildingProductionExecution.cs");
             string synchronization = Read(runtime, "DigBuildingProductionSynchronization.cs");
             string dependencies = Read(runtime, "DigBuildingProductionFoodDependencies.cs");
+            string deferredSupply = Read(runtime, "DigBuildingProductionDeferredSupply.cs");
             string movement = Read(runtime, "DigTerrainWorkDirectMovement.cs");
             string mushrooms = Read(runtime, "DigTerrainWorkSession.Mushrooms.cs");
             string productionZones = Read(runtime, "DigBuildingProductionZones.cs");
@@ -20,15 +21,21 @@ namespace Dig.Tests
             Assert.Contains("CampfireProductionContent.ProductionMaterialTicks", execution);
             Assert.DoesNotContain("CampfireProductionContent.TestProductionMaterialTicks", execution);
             Assert.Contains("CreateEligibleFoodDependencyJobs(tick, agents)", synchronization);
+            Assert.Contains("ResolveEligibleDeferredSupplyJobs(tick, agents)", synchronization);
             Assert.Contains("MushroomStage.Large", dependencies);
             Assert.Contains("eligibleWorldCap", dependencies);
+            Assert.Contains("CreateDeferredBuildingSupplyJobCommand", dependencies);
+            Assert.Contains("new[] { jobId }", dependencies);
             Assert.Contains("CampfireProductionContent.MushroomCapItemId", dependencies);
             Assert.Contains(".Where(IsAvailableForAutomaticWork)", dependencies);
+            Assert.Contains("ResolveDeferredBuildingSupplyJobCommand", deferredSupply);
             Assert.Contains("ReservationKey.ForAgent(agentId)", movement);
             Assert.Contains("!hasActiveReservation", movement);
             Assert.Contains("_buildingInventoryRepository", mushrooms);
             Assert.Contains("CompleteProductionOrderCommand", productionZones);
-            Assert.Contains("ItemLocation.InWorld(outputCell.Value)", productionZones);
+            Assert.Contains("ResolveProductionOutputCells", productionZones);
+            Assert.Contains("Enumerable.Range(0, outputUnitCount)", productionZones);
+            Assert.Contains("outputLocations: outputCells.Value", productionZones);
         }
 
         [Fact]
