@@ -112,7 +112,7 @@ public sealed class NavigationPathfinder
         Dictionary<CellId, NavigationSearchCost> costs =
             new Dictionary<CellId, NavigationSearchCost>();
         Dictionary<CellId, CellId> previous = new Dictionary<CellId, CellId>();
-        NavigationSearchCost startCost = new NavigationSearchCost(0, 0);
+        NavigationSearchCost startCost = new NavigationSearchCost(0, 0, 0);
         costs.Add(request.Start, startCost);
         open.Push(new NavigationOpenNode(request.Start, startCost, heuristic: 0));
         int expandedNodes = 0;

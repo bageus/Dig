@@ -8,11 +8,19 @@ namespace Dig.Domain.Navigation
 internal readonly struct NavigationSearchCost
     : IComparable<NavigationSearchCost>, IEquatable<NavigationSearchCost>
 {
-    public NavigationSearchCost(int shaftGapCount, int movementCost)
+    public NavigationSearchCost(
+        int shaftGapCount,
+        int verticalClimbCount,
+        int movementCost)
     {
         if (shaftGapCount < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(shaftGapCount));
+        }
+
+        if (verticalClimbCount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(verticalClimbCount));
         }
 
         if (movementCost < 0)
@@ -21,10 +29,13 @@ internal readonly struct NavigationSearchCost
         }
 
         ShaftGapCount = shaftGapCount;
+        VerticalClimbCount = verticalClimbCount;
         MovementCost = movementCost;
     }
 
     public int ShaftGapCount { get; }
+
+    public int VerticalClimbCount { get; }
 
     public int MovementCost { get; }
 
@@ -35,18 +46,29 @@ internal readonly struct NavigationSearchCost
                 + (transition.TraversalKind == TunnelTraversalKind.ShaftGapTraverse
                     ? 1
                     : 0)),
+            checked(VerticalClimbCount
+                + (transition.TraversalKind == TunnelTraversalKind.VerticalClimb
+                    ? 1
+                    : 0)),
             checked(MovementCost + transition.Cost));
     }
 
     public int CompareTo(NavigationSearchCost other)
     {
         int gap = ShaftGapCount.CompareTo(other.ShaftGapCount);
-        return gap != 0 ? gap : MovementCost.CompareTo(other.MovementCost);
+        if (gap != 0)
+        {
+            return gap;
+        }
+
+        int climb = VerticalClimbCount.CompareTo(other.VerticalClimbCount);
+        return climb != 0 ? climb : MovementCost.CompareTo(other.MovementCost);
     }
 
     public bool Equals(NavigationSearchCost other)
     {
         return ShaftGapCount == other.ShaftGapCount
+            && VerticalClimbCount == other.VerticalClimbCount
             && MovementCost == other.MovementCost;
     }
 
@@ -57,7 +79,7 @@ internal readonly struct NavigationSearchCost
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(ShaftGapCount, MovementCost);
+        return HashCode.Combine(ShaftGapCount, VerticalClimbCount, MovementCost);
     }
 }
 
