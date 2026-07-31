@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: write
-  issues: write
 
 jobs:
   merge:
@@ -19,6 +18,17 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
+
+      - name: Record observable run id
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          printf '%s\n' "${GITHUB_RUN_ID}" > .github/agent-production-merge-run.txt
+          git add .github/agent-production-merge-run.txt
+          git commit -m "Record staged production merge run"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
 
       - name: Merge current main and resolve approved production behavior
         shell: bash
@@ -50,15 +60,3 @@ jobs:
           git add -A
           git commit -m "Merge current main with staged production package lifecycle"
           git push origin "HEAD:${GITHUB_REF_NAME}"
-
-      - name: Publish merge run diagnostics
-        if: always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: 536,
-              body: `Agent merge run ${context.runId} finished with job status: ${{ job.status }}.`
-            });
