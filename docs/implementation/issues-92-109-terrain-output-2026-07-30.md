@@ -24,11 +24,12 @@ Q-014 numeric probabilities, yields and work effort remain open. Existing numeri
 
 #110 remains responsible for active building demands, current fog eligibility, destination-demand reservations and their cancel/retry/save workflow. Explicit storage filters continue to be valid collection demand.
 
-
 ## Publication integrity
 
-The prepared implementation patch was verified by SHA-256 before application. The resulting PR contains only documented source, test and design files; temporary transport payloads and workflows are not part of the implementation diff.
+The prepared implementation patch was verified structurally before application. The resulting PR contains only documented source, test and design files; temporary transport payloads and workflows are not part of the implementation diff.
 
-## CI compile correction
+## CI corrections
 
 The first Release build exposed three test-only compatibility errors: the non-solid test material required the full constructor, and two empty-output calls needed an explicit empty `EntityId` collection after the new multi-output overload was introduced. All three calls now bind explicitly without changing runtime behavior.
+
+The combined-main regression run then exposed three lifecycle contracts. Quantity-one items now retain the hauling reservation while moving from world to resident inventory and consume it only at final deposit. Identity preservation is limited to one physical unit, so mixed multi-unit building supply still creates the established aggregate destination stacks. Duplicate mining-output commits now fail through an explicit `InvalidOperationException` guard instead of leaking a dictionary exception.
