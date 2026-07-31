@@ -229,7 +229,6 @@ internal sealed partial class DigTerrainWorkSession
             if (building == null
                 || building.Status != BuildingStatus.Completed
                 || snapshot.HasActiveSupply
-                || _productionRepository!.Get().HasActiveOrder(snapshot.BuildingId)
                 || snapshot.Stocks.All(value =>
                     !value.DeliveryEnabled || value.Missing == 0))
             {
