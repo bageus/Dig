@@ -172,16 +172,19 @@ public sealed class BuildingPlacementValidator
         CellId[] configured = definition
             .ResolveWorkPositions(origin, orientation)
             .ToArray();
-        bool legacyConfiguredPositionIsReachable = configured.Any(reachable.Contains);
-        CellId? workPosition = ResolveSideWorkPositions(footprint, origin)
+        CellId[] sideWorkPositions = ResolveSideWorkPositions(footprint, origin)
+            .ToArray();
+        HashSet<CellId> sideWorkPositionSet = new HashSet<CellId>(sideWorkPositions);
+        CellId? workPosition = sideWorkPositions
+            .Concat(configured)
+            .Distinct()
             .Where(world.Size.Contains)
             .Where(cell => !occupied.Contains(cell))
             .Where(cell => cells.TryGetValue(cell, out CellSnapshot snapshot)
                 && !snapshot.IsSolid
                 && snapshot.State.IsExplored)
-            .Where(cell => reachable.Contains(cell) || legacyConfiguredPositionIsReachable)
-            .OrderBy(cell => reachable.Contains(cell) ? 0 : 1)
-            .ThenBy(cell => Math.Abs(cell.X - origin.X))
+            .Where(reachable.Contains)
+            .OrderByDescending(sideWorkPositionSet.Contains)
             .ThenBy(cell => cell)
             .Cast<CellId?>()
             .FirstOrDefault();

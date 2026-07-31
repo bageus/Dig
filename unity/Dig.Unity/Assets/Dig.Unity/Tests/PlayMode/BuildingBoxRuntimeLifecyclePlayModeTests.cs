@@ -90,6 +90,54 @@ public sealed class BuildingBoxRuntimeLifecyclePlayModeTests
     }
 
     [Test]
+    public void Held_box_natural_route_commits_immediately_on_arrival()
+    {
+        Runtime runtime = CreateRuntime();
+        AgentViewModel worker = runtime.Agents[0];
+        ItemStackSnapshot box = MoveCampfireBoxToResident(runtime, worker);
+        BuildingBoxGhostViewModel preview = FindValidPreview(
+            runtime,
+            box.StackId,
+            BuildingBoxPlacementKind.AssembleBuilding);
+        AssertSuccess(Invoke(
+            runtime.Terrain,
+            "ConfirmBuildingBoxPlacement",
+            preview,
+            40L,
+            runtime.Agents));
+
+        BuildingWorldViewModel planned = PendingTransformation(runtime, box.StackId);
+        int maximumTicks = 128;
+        for (int index = 0; index < maximumTicks; index++)
+        {
+            AdvanceAssemblyTick(runtime, 41L + index);
+            BuildingWorldViewModel current = PendingTransformation(runtime, box.StackId);
+            if (current.BuildingBoxCommitState == BuildingBoxCommitState.AtSite)
+            {
+                Assert.That(current.CompletedWork, Is.EqualTo(0));
+                Assert.That(current.VisualState, Is.EqualTo(BuildingVisualState.Assembly));
+                ItemStackSnapshot siteBox = runtime.Inventory.GetStack(box.StackId)!;
+                Assert.That(
+                    siteBox.Location,
+                    Is.EqualTo(ItemLocation.InBuilding(EntityId.Parse(current.Id))));
+                Dig.Presentation.Inventory.ResidentInventoryLayoutViewModel layout =
+                    (Dig.Presentation.Inventory.ResidentInventoryLayoutViewModel)Invoke(
+                        runtime.Terrain,
+                        "LoadResidentInventoryLayout",
+                        worker.Id);
+                Assert.That(
+                    layout.Slots.Any(slot => slot.StackId == box.StackId.ToString()),
+                    Is.False);
+                return;
+            }
+        }
+
+        Assert.Fail(
+            $"BuildingBox {box.StackId} did not commit after natural navigation to "
+            + $"{planned.WorkPositionX},{planned.WorkPositionY},{planned.WorkPositionZ}.");
+    }
+
+    [Test]
     public void Held_box_relocation_deposits_from_adjacent_supported_cell()
     {
         Runtime runtime = CreateRuntime();

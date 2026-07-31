@@ -279,12 +279,21 @@ namespace Dig.Unity
             _hud!.SetCommandResult(result);
             if (result.IsSuccess)
             {
+                RefreshPersistentCaveRoomDesignations();
                 _hud.SetStatus(
                     $"{plan.Preset.Kind} cave queued: " +
                     $"{plan.ExcavationTargets.Count} Dig Jobs, " +
                     $"depth {plan.Preset.Depth}.");
                 DisableCaveRoomPlanning();
             }
+        }
+
+        private void RefreshPersistentCaveRoomDesignations()
+        {
+            EnsureExcavationCursorRenderer();
+            _excavationCursorRenderer!.InvalidateDesignationSynchronization();
+            _excavationCursorRenderer.SynchronizeTunnelDesignations(
+                _session!.LoadView());
         }
 
         private bool CanUseCavePreset(

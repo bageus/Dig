@@ -36,6 +36,34 @@ public sealed class BuildingBoxRuntimeLifecycleRegressionContractTests
     }
 
     [Fact]
+    public void Natural_arrival_is_committed_before_unrelated_tick_work()
+    {
+        string root = RepositoryRoot();
+        string loop = Read(
+            RuntimeRoot(),
+            "DigAgentSimulationDriverBase.Loop.cs");
+        string placement = Read(
+            root,
+            "src/Dig.Domain/Buildings/BuildingPlacement.cs");
+        string playMode = Read(
+            root,
+            "unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/"
+                + "BuildingBoxRuntimeLifecyclePlayModeTests.cs");
+
+        int assembly = loop.IndexOf(
+            "AdvanceBuildingBoxAssembly(AgentSession.Tick,agents)",
+            StringComparison.Ordinal);
+        int excavation = loop.IndexOf(
+            "AdvanceReadyManualQuarterExcavations", StringComparison.Ordinal);
+        Assert.True(assembly >= 0 && excavation > assembly);
+        Assert.Contains(".Where(reachable.Contains)", placement);
+        Assert.Contains("OrderByDescending(sideWorkPositionSet.Contains)", placement);
+        Assert.DoesNotContain("legacyConfiguredPositionIsReachable", placement);
+        Assert.Contains("Held_box_natural_route_commits_immediately_on_arrival", playMode);
+        Assert.Contains("AdvanceAssemblyTick(runtime", playMode);
+    }
+
+    [Fact]
     public void Direct_move_cancels_box_work_and_refreshes_every_planned_projection()
     {
         string runtime = RuntimeRoot();
@@ -106,6 +134,7 @@ public sealed class BuildingBoxRuntimeLifecycleRegressionContractTests
                 + "BuildingBoxRuntimeLifecyclePlayModeTests.cs");
 
         Assert.Contains("Held_box_arrival_starts_unpack_and_completes_same_lifecycle", playMode);
+        Assert.Contains("Held_box_natural_route_commits_immediately_on_arrival", playMode);
         Assert.Contains("Held_box_relocation_deposits_from_adjacent_supported_cell", playMode);
         Assert.Contains("Direct_move_cancellation_removes_plan_and_keeps_same_box", playMode);
         Assert.Contains("SourceBuildingBoxStackId", playMode);

@@ -106,6 +106,13 @@ namespace Dig.Unity
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
             if (result.IsSuccess)
             {
+                result = TerrainSession.AdvanceBuildingBoxAssembly(
+                    AgentSession.Tick,
+                    agents);
+            }
+
+            if (result.IsSuccess)
+            {
                 TerrainSession.AdvanceReadyManualQuarterExcavations(
                     AgentSession.Tick,
                     agents);
@@ -163,11 +170,6 @@ namespace Dig.Unity
             if (result.IsSuccess)
             {
                 result = TerrainSession.AdvanceWorldItemPickup(AgentSession.Tick, agents);
-            }
-
-            if (result.IsSuccess)
-            {
-                result = TerrainSession.AdvanceBuildingBoxAssembly(AgentSession.Tick, agents);
             }
 
             if (result.IsSuccess)

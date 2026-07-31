@@ -50,6 +50,7 @@ internal static class BuildingBoxRuntimeLifecyclePlayModeHarness
         Invoke(terrain, "InitializeBuildingDemo", journal);
         return new Runtime(
             world,
+            residents,
             terrain,
             agents,
             GetField<InMemoryInventoryRepository>(
@@ -84,6 +85,21 @@ internal static class BuildingBoxRuntimeLifecyclePlayModeHarness
         Assert.That(moved.IsSuccess, Is.True, moved.Error?.ToString());
         runtime.InventoryRepository.Save(inventory);
         return inventory.GetStack(box.StackId)!;
+    }
+
+    internal static AgentViewModel[] AdvanceAssemblyTick(Runtime runtime, long tick)
+    {
+        AgentViewModel[] before = ((IEnumerable)Invoke(runtime.Residents, "LoadView"))
+            .Cast<AgentViewModel>()
+            .ToArray();
+        Invoke(runtime.Terrain, "SynchronizeBuildingBoxAssembly", tick, before);
+        object movement = Invoke(runtime.Terrain, "PlanMovement", before, tick);
+        AssertSuccess(Invoke(runtime.Residents, "Advance", movement));
+        AgentViewModel[] after = ((IEnumerable)Invoke(runtime.Residents, "LoadView"))
+            .Cast<AgentViewModel>()
+            .ToArray();
+        AssertSuccess(Invoke(runtime.Terrain, "AdvanceBuildingBoxAssembly", tick, after));
+        return after;
     }
 
     internal static BuildingBoxGhostViewModel FindValidPreview(
@@ -250,12 +266,14 @@ internal static class BuildingBoxRuntimeLifecyclePlayModeHarness
     {
         internal Runtime(
             object world,
+            object residents,
             object terrain,
             AgentViewModel[] agents,
             InMemoryInventoryRepository inventoryRepository,
             InMemoryJobRepository jobRepository)
         {
             World = world;
+            Residents = residents;
             Terrain = terrain;
             Agents = agents;
             InventoryRepository = inventoryRepository;
@@ -263,6 +281,7 @@ internal static class BuildingBoxRuntimeLifecyclePlayModeHarness
         }
 
         internal object World { get; }
+        internal object Residents { get; }
         internal object Terrain { get; }
         internal AgentViewModel[] Agents { get; }
         internal InMemoryInventoryRepository InventoryRepository { get; }

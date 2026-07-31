@@ -1,6 +1,6 @@
 # Resident unit inventory, cave-room marker and BuildingBox arrival corrections — 2026-07-30
 
-Status: `IMPLEMENTED` after merge of the linked PR; licensed Unity Play Mode evidence remains required for `VERIFIED`.
+Status: `IMPLEMENTED`; the original correction was incomplete and this follow-up repairs the remaining runtime ownership/order gaps. Licensed Unity Play Mode evidence remains required for `VERIFIED`.
 
 Authoritative specifications:
 
@@ -62,6 +62,22 @@ No duplicate building identity or second roster row is introduced.
 - BuildingBox Application policies and Play Mode arrival assertions for `AtSite`, site inventory and initial assembly visual;
 - all cave-room presets leave authoritative Dig designations after confirmation;
 - source contracts protect resident capacity, room refresh and BuildingBox slotted ownership.
+
+## Follow-up root-cause correction — 2026-07-30
+
+Runtime review after the first merged correction found three paths that its tests did not execute:
+
+- the legacy selected-resident HUD loaded `ResidentInventoryViewModel` without running the same unit normalization used by the gameplay slot layout, so an old or compatibility quantity could still appear as one `×N` row;
+- cave confirmation refreshed World and Jobs through the simulation driver, while temporary preview shutdown belonged to `DigWorldInteraction`; the persistent designation overlay was therefore not guaranteed to refresh before the preview disappeared;
+- the BuildingBox Play Mode regression teleported a resident to the work cell. It did not execute placement work-position selection, Navigation, resident movement and the arrival transition in their real tick order. Placement could also substitute an unreachable side position whenever any legacy configured position was reachable.
+
+The follow-up keeps the existing owners and removes those bypasses:
+
+- both resident inventory projections call one shared `LoadNormalizedResidentInventory` path and neither HUD renders an aggregate quantity badge;
+- `DigWorldInteraction` synchronously invalidates and projects World-owned cave designations before clearing the temporary room preview; the simulation driver no longer duplicates cursor ownership;
+- building placement selects only an actually reachable configured/side work position;
+- assembly arrival is advanced immediately after resident movement, before unrelated work systems can defer the transition;
+- the new Play Mode scenario follows the natural route instead of teleporting the resident and asserts `Reserved -> AtSite`, physical `0/3`, site inventory ownership and removal from resident slots.
 
 ## Verification boundary
 

@@ -136,7 +136,6 @@ public sealed partial class DigGameHudCanvas
         pointer.Exited = HideInventorySlotFeedback;
 
         string marker = ResolveSlotMarker(slot);
-        string quantity = slot.Quantity > 1 ? $" ×{slot.Quantity}" : string.Empty;
         string reservation = slot.ReservedQuantity > 0
             ? $"\nR:{slot.ReservedQuantity}"
             : string.Empty;
@@ -146,7 +145,7 @@ public sealed partial class DigGameHudCanvas
         string name = slot.IsEmpty
             ? $"{slot.SlotIndex + 1}\n·"
             : $"{marker}{active}{warning}\n{ShortName(slot.DisplayName)}"
-                + $"{quantity}{reservation}{held}";
+                + $"{reservation}{held}";
         Text label = CreateText(
             "Slot Label",
             rect,

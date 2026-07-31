@@ -9,11 +9,15 @@ namespace Dig.Unity.Tests
 
 public sealed class CaveRoomReapplyAndMediumPreviewPlayModeTests
 {
-    [Test]
-    public void Medium_pointer_on_each_front_row_can_resolve_an_even_width_anchor()
+    [TestCase(CaveRoomPresetKind.Small)]
+    [TestCase(CaveRoomPresetKind.Medium)]
+    [TestCase(CaveRoomPresetKind.Large)]
+    [TestCase(CaveRoomPresetKind.Tall)]
+    public void Pointer_on_each_front_silhouette_cell_resolves_the_same_anchor(
+        CaveRoomPresetKind kind)
     {
-        CaveRoomPreset preset = CaveRoomPresetCatalog.Get(CaveRoomPresetKind.Medium);
-        CellId entrance = new CellId(10, 9, CellId.MinimumDepth);
+        CaveRoomPreset preset = CaveRoomPresetCatalog.Get(kind);
+        CellId entrance = new CellId(18, 12, CellId.MinimumDepth);
         for (int level = 0; level < preset.Height; level++)
         {
             CaveRoomRowProfile row = CaveRoomPlanner.ResolveRowProfile(
