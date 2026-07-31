@@ -133,7 +133,6 @@ internal sealed partial class DigTerrainWorkSession
         _createBuildingSupply = new CreateBuildingSupplyJobHandler(
             _productionContent,
             _buildingSupplyRepository,
-            _productionRepository,
             _buildingsRepository,
             _buildingInventoryRepository,
             _jobRepository,
@@ -202,6 +201,26 @@ internal sealed partial class DigTerrainWorkSession
                 value.BuildingId,
                 _productionRepository!.Get(),
                 value))
+            .ToArray();
+    }
+
+    internal IReadOnlyList<BuildingInternalStockUnitViewModel>
+        LoadAllBuildingInternalStockUnits()
+    {
+        EnsureBuildingProductionInitialized();
+        return _buildingInventoryRepository!.Get().CreateSnapshot().Stacks
+            .Where(stack => stack.Location.Kind == ItemLocationKind.BuildingInventory
+                && stack.Location.HasOwner)
+            .OrderBy(stack => stack.Location.OwnerId.ToString(), StringComparer.Ordinal)
+            .ThenBy(stack => stack.ItemId)
+            .ThenBy(stack => stack.StackId.ToString(), StringComparer.Ordinal)
+            .SelectMany(stack => Enumerable.Range(0, stack.Quantity)
+                .Select(unitIndex => new BuildingInternalStockUnitViewModel(
+                    stack.StackId.ToString(),
+                    stack.Location.OwnerId,
+                    stack.ItemId,
+                    unitIndex,
+                    isAvailable: unitIndex < stack.AvailableQuantity)))
             .ToArray();
     }
 
