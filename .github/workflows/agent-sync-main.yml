@@ -1,0 +1,53 @@
+name: Agent sync current main
+
+on:
+  push:
+    branches:
+      - agent/fix-internal-stock-routing-and-production-workflow
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Merge current main or publish conflict snapshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          if git merge --no-ff --no-commit origin/main; then
+            rm .github/workflows/agent-sync-main.yml
+            git add -A
+            git commit -m "Merge current main into staged production package branch"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+            exit 0
+          fi
+
+          mapfile -t conflicts < <(git diff --name-only --diff-filter=U)
+          mkdir -p /tmp/agent-merge/base /tmp/agent-merge/ours /tmp/agent-merge/theirs
+          printf '%s\n' "${conflicts[@]}" > /tmp/agent-merge/manifest.txt
+          for path in "${conflicts[@]}"; do
+            mkdir -p "/tmp/agent-merge/base/$(dirname "$path")" "/tmp/agent-merge/ours/$(dirname "$path")" "/tmp/agent-merge/theirs/$(dirname "$path")"
+            git show ":1:$path" > "/tmp/agent-merge/base/$path" || true
+            git show ":2:$path" > "/tmp/agent-merge/ours/$path" || true
+            git show ":3:$path" > "/tmp/agent-merge/theirs/$path" || true
+          done
+          git merge --abort
+          rm .github/workflows/agent-sync-main.yml
+          rm -rf .github/agent-merge-conflicts
+          mkdir -p .github/agent-merge-conflicts
+          cp -R /tmp/agent-merge/. .github/agent-merge-conflicts/
+          git add -A
+          git commit -m "Capture current main merge conflicts"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
