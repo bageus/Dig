@@ -92,9 +92,9 @@ public sealed partial class InventoryState
             return Result.Failure(InventoryErrors.ReservationNotFound);
         }
 
-        bool unitIdentityTransfer = sources.All(source =>
-            source.Quantity == 1
-            && source.GetReservedQuantity(jobId) == 1);
+        bool unitIdentityTransfer = sources.Length == 1
+            && sources[0].Quantity == 1
+            && sources[0].GetReservedQuantity(jobId) == 1;
         if (unitIdentityTransfer)
         {
             for (int index = 0; index < sources.Length; index++)
@@ -256,13 +256,7 @@ public sealed partial class InventoryState
             ItemLocation sourceLocation = source.Location;
             if (step.UsesSourceIdentity)
             {
-                source.ConsumeReservation(jobId, quantity: 1);
                 source.MoveFull(step.Destination);
-                Raise(new ItemQuantityReservationChanged(
-                    tick,
-                    source.Id,
-                    jobId,
-                    source.GetReservedQuantity(jobId)));
                 Raise(new ItemStackMoved(
                     tick,
                     source.Id,

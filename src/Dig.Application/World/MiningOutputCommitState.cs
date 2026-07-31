@@ -200,6 +200,12 @@ public sealed class MiningOutputCommitState
         MiningOutputPlan plan,
         IEnumerable<MiningOutputCommitLine> outputs)
     {
+        if (_commits.ContainsKey(plan.Cell))
+        {
+            throw new InvalidOperationException(
+                $"Mining output for cell {plan.Cell} was already committed.");
+        }
+
         MiningOutputCommit committed = new MiningOutputCommit(
             plan.Cell,
             plan.SourceKind,
