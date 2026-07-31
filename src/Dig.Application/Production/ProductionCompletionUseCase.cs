@@ -230,6 +230,20 @@ public sealed class CompleteProductionOrderHandler
                 command.Tick);
     }
 
+    private static EntityId[] ValidateOutputIds(
+        ProductionOrderSnapshot order,
+        System.Collections.Generic.IReadOnlyCollection<EntityId> ids)
+    {
+        EntityId[] values = ids
+            .OrderBy(value => value.ToString(), StringComparer.Ordinal)
+            .ToArray();
+        return values.Length == order.Recipe.Outputs.Count
+            && values.All(value => !value.IsEmpty)
+            && values.Distinct().Count() == values.Length
+                ? values
+                : Array.Empty<EntityId>();
+    }
+
     private static ProductionOutputPackageKind ResolveOutputKind(
         InventoryState inventory,
         ProductionOrderSnapshot order)
