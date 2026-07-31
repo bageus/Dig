@@ -47,6 +47,8 @@ jobs:
             exit 1
           fi
           python3 .github/agent-resolve-production-merge.py
+          git diff --check
+          git add -A
           if [ -n "$(git diff --name-only --diff-filter=U)" ]; then
             git diff --name-only --diff-filter=U
             exit 1
@@ -54,9 +56,7 @@ jobs:
           python3 tools/quality/check_quality.py
           python3 tools/quality/check_unity_source_contracts.py
           python3 tools/quality/check_unity_item_visual_contracts.py
-          git diff --check
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
           git commit -m "Merge current main with staged production package lifecycle"
           git push origin "HEAD:${GITHUB_REF_NAME}"
