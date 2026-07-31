@@ -1,6 +1,6 @@
 # Производство в зданиях и внутреннее снабжение
 
-Статус: `IMPLEMENTED`; `VERIFIED` требует фактического licensed Unity EditMode/PlayMode evidence.
+Статус: `QUESTIONNAIRE`; internal-stock identity, continuous refill и segmented progress подтверждены, staged output package требует решений по cancel/load/pickup.
 
 Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
 
@@ -35,7 +35,8 @@ Campfire использует stable IDs `building.campfire`, `building_box.camp
 - RMB по тому же icon отменяет один order; при нуле это consumed no-op.
 - Отдельная minus-кнопка запрещена.
 - Counter равен числу non-terminal orders и уменьшается после `Completed`/`Cancelled`.
-- Shortage tint не блокирует enqueue.
+- Shortage tint не блокирует enqueue; icon зелёный, когда полный input set уже доступен во внутреннем stock.
+- Для active order поверх product icon показывается segmented progress: одно деление на каждый material step, заполненное после обработки и помещения материала в output package.
 - Internal-stock icon показывает current/incoming/capacity и delivery toggle.
 
 ## 5. Пространственные зоны
@@ -50,50 +51,62 @@ Campfire использует stable IDs `building.campfire`, `building_box.camp
 ### 5.1 Внутренний склад
 
 - Физическое состояние остаётся `ItemLocation.InBuilding(buildingId)`.
-- Presentation показывает доступные единицы слева.
+- Каждый видимый unit проецирует настоящий `StackId` и использует тот же item visual profile, art, reservation tint, hover и pickup cursor, что обычный world item; декоративный proxy без identity запрещён.
+- Различие world/internal определяется только authoritative `ItemLocation` и принадлежностью зоне действия building, а не видом или отдельным interaction contract.
 - Hit colliders являются triggers и не блокируют Navigation.
-- Выбранный resident может забрать одну available/unreserved единицу.
+- Выбранный resident может обычным LMB/pickup cursor забрать одну конкретную available/unreserved единицу; click и hover разрешают один и тот же `StackId`.
 - `ItemLocation.InBuilding` никогда не является источником automatic delivery/building supply.
 - После ручного pickup delivery может создать replacement demand.
 
 ### 5.2 Готовая продукция
 
-- Готовая продукция существует только как authoritative `ItemStackSnapshot` в `ItemLocation.InWorld(outputCell)`.
-- Recipe/queue placeholder в world tray запрещён: если authoritative stack отсутствует, предмет не рисуется.
+- После назначения production worker в finished-output zone создаётся authoritative output package/box для конкретного order; presentation-only placeholder запрещён.
+- Box для food/building/item использует единый нейтральный package visual и не раскрывает категорию продукта внешним видом.
+- Каждый обработанный material step помещается в этот package и заполняет одно деление progress overlay.
+- После последнего step worker закрывает package; только закрытие создаёт готовый output item/BuildingBox и уменьшает counter на один.
 - Output cell должен быть explored, open, supported, вне footprint и без другого world item.
 - Candidate order идёт только вправо: `right edge + 1`, затем `+2` и далее; side/rear fallback запрещён.
-- При занятой зоне order остаётся `ReadyToComplete` и безопасно retry без duplicate output/input/skill grant.
-- Finished output использует обычный world-item selection/pickup/hauling workflow.
+- Policy занятой output-zone для ещё не созданного package остаётся Q-PROD-024; после закрытия готовый output использует обычный world-item selection/pickup/hauling workflow.
 - `WorldItemViewModel.IsInteractive` является authoritative для interaction collider. Art/profile collider metadata не может отключить pickup-capable entity.
 
 ## 6. Supply lifecycle
 
-Demand создаётся только для completed workstation с enabled delivery, недостающей capacity и без active `InProgress`/`ReadyToComplete` order. Planner читает revealed, reachable, unreserved world stacks. Worker проходит `workstation check -> reserved sources -> workstation deposit`. Cancel/failure/retry освобождает source quantity, incoming capacity и claims атомарно.
+Demand создаётся для completed workstation с enabled delivery и недостающей capacity независимо от active production order. Planner читает revealed, reachable, unreserved world stacks; reservations текущего production order исключаются через `AvailableQuantity`, поэтому refill не крадёт используемые inputs. Одновременно на building существует не более одного active supply batch. Worker проходит `workstation check -> reserved sources -> workstation deposit`. Пока toggle включён, система повторяет planning после каждого deposit/consumption/pickup до `current + incoming == capacity` либо отсутствия reachable candidates. Cancel/failure/retry освобождает source quantity, incoming capacity и claims атомарно.
 
 ## 7. Production lifecycle
 
-1. Order может ожидать inputs в queue.
+Подтверждённый success path:
+
+1. Order может ожидать inputs в queue; icon зелёный при наличии полного input set.
 2. Полный input set резервируется во внутреннем stock.
-3. Один eligible resident получает `ProductionWorkJob`.
-4. Work выполняется только на supported side work position.
-5. Material steps consume reserved inputs exactly once.
-6. Тот же resident остаётся owner через `Finalize`.
-7. Finalize разрешает правую output cell и делает её movement target.
-8. После достижения cell один Application transaction создаёт world output, переводит order и job в terminal `Completed`, выдаёт skill grants и освобождает reservations.
-9. Наблюдаемое состояние `visible/committed output + non-terminal production job` запрещено.
-10. Counter уменьшается, resident получает небольшой presentation-only offset и ждёт лицом к камере до следующего authoritative action.
+3. Один eligible resident получает `ProductionWorkJob`; segmented overlay получает по одному делению на material step.
+4. Worker создаёт order-owned package в finished-output zone.
+5. Для каждого material step worker берёт одну конкретную единицу с внутреннего склада в resident inventory, подходит к workstation/campfire и выкладывает материал на derived virtual workbench.
+6. После обработки material превращается в transient processed-step state; отдельный processed item в resident inventory не показывается.
+7. Worker переносит processed step в package; input расходуется exactly once и соответствующее деление заполняется.
+8. После последнего step worker закрывает package. Close atomically создаёт готовый output, terminal-ит order/job, выдаёт skill grants, освобождает reservations и уменьшает counter на один.
+9. Тот же worker остаётся owner всего workflow; следующий order начинается только после terminal close/cancel/failure текущего.
+
+## 7.1 Открытые решения staged package
+
+- **Q-PROD-021:** можно ли поднять незакрытый package принудительно; если да, отменяется ли order или переносится вместе с progress.
+- **Q-PROD-022:** cancel/failure после одного или нескольких processed steps уничтожает package, оставляет частично заполненный package либо возвращает только ещё не обработанные inputs.
+- **Q-PROD-023:** save/load mid-step сохраняет package как отдельную inventory entity или восстанавливает его derived projection из order/material progress.
+- **Q-PROD-024:** blocked/occupied finished-output zone не даёт стартовать worker либо package выбирает следующий right-side candidate.
+
+До решения Q-PROD-021..024 код не должен молча придумывать observable поведение незакрытого package.
 
 ## 8. Повтор, cancel, blocked и concurrency
 
 - Repeat order занимает следующую свободную правую candidate cell.
-- Cancel освобождает неиспользованные reservations; уже consumed steps не восстанавливаются.
-- Blocked output не создаёт presentation-only продукт и не завершает job частично.
+- Cancel освобождает неиспользованные reservations; судьба уже processed steps/package остаётся Q-PROD-022.
+- Blocked output не создаёт presentation-only package; start/retry policy остаётся Q-PROD-024.
 - Каждый building владеет независимой queue/stock/active order.
 - Два buildings не могут commit output в одну cell; occupancy перепроверяется в Finalize.
 
 ## 9. Save/load и diagnostics
 
-Save включает workstation registration, delivery toggles/incoming, queue/status, material progress, consumed ledger, active job references и supply allocations. World outputs сохраняются обычным `ItemLocation`. Derived zone geometry и wait pose не сохраняются. Load не повторяет committed output/skill grants.
+Save включает workstation registration, delivery toggles/incoming, queue/status, material progress, consumed ledger, active job references и supply allocations. Закрытые world outputs сохраняются обычным `ItemLocation`; способ сохранения незакрытого package остаётся Q-PROD-023. Derived zone geometry и wait pose не сохраняются. Load не повторяет committed output/skill grants.
 
 Diagnostics показывают building/recipe/order/job IDs, stock current/incoming/capacity, material progress, assigned worker, output candidates/chosen cell, block reason и terminal completion result.
 
@@ -104,15 +117,17 @@ Domain/Application:
 - protected internal stock не выбирается automatic supply;
 - direct pickup забирает одну available unit;
 - right candidates deterministic и без fallback;
-- world output commit и terminal order/job происходят атомарно;
+- package close, готовый output commit и terminal order/job происходят атомарно;
 - duplicate completion не создаёт второй output;
 - save/load сохраняет exactly-once semantics.
 
 Unity Play Mode:
 
 - слева и справа видны плоские trays без rear rail;
-- internal units видны/clickable и не блокируют navigation;
-- worker производит, идёт вправо и commit-ит настоящий world item;
+- internal units используют тот же art/hover/pickup cursor, несут exact `StackId`, видны/clickable и не блокируют navigation;
+- enabled internal stock продолжает refill одновременно с production до capacity;
+- product icon показывает segmented material progress;
+- staged package workflow проверяется после решения Q-PROD-021..024;
 - output имеет enabled interaction collider и поднимается обычным pickup workflow;
 - после output job/order terminal, counter уменьшается, worker ждёт лицом к камере;
 - repeat/blocked/save-load не создают visual-only или duplicate products.
@@ -124,4 +139,5 @@ Unity Play Mode:
 | 2026-07-27 | Generic production, protected internal stock, progressive consumption и deferred replenishment. | User |
 | 2026-07-29 | Left internal zone, right output zone, same-worker Finalize, pickup-capable output и camera-facing wait. | User |
 | 2026-07-29 | Work position находится сбоку на той же supported Y/Z plane, не над building. | User |
-| 2026-07-30 | Оба tray плоские без спинки; output рисуется только из authoritative world stack; interaction collider следует authoritative read model; output и terminal job/order commit атомарны. | User |
+| 2026-07-30 | Оба tray плоские без спинки; interaction collider следует authoritative read model. | User |
+| 2026-07-31 | Internal stock units идентичны world items по art/hover/pickup и несут exact StackId; enabled refill работает до capacity параллельно production; flat routes предпочтительнее climbing; product icon показывает material segments; production использует staged output package. | User |
