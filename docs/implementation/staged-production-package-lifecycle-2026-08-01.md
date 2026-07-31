@@ -38,6 +38,8 @@ Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
 - unfinished/closed package interaction projection;
 - Unity source wiring for package creation, Finalize identity, forced interruption and animated use cursor.
 
+После merge с текущим `main` устаревшие регрессии синхронизированы с утверждённым lifecycle: active cancel сохраняет reservations до normal completion, split Unity partial-файлы входят в source-contract coverage, а staged package владеет output identity вместо legacy per-unit placement loop.
+
 ## Evidence
 
 Локально перед публикацией прошли:
