@@ -1,9 +1,0 @@
-docs/design/building-production-and-internal-supply.md
-src/Dig.Application/Production/ProductionCompletionUseCase.cs
-src/Dig.Application/Production/ProductionContracts.cs
-src/Dig.Domain/Production/ProductionOutputPlacement.cs
-src/Dig.Presentation.Abstractions/Production/BuildingProductionModels.cs
-src/Dig.Presentation.Abstractions/Production/BuildingProductionPresenter.cs
-unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionSynchronization.cs
-unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionZones.cs
-unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigGameHudCanvas.BuildingProduction.cs

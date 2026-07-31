@@ -80,6 +80,8 @@ Campfire использует stable IDs `building.campfire`, `building_box.camp
 
 Demand создаётся для completed workstation с enabled delivery и недостающей capacity независимо от active production order. Planner читает revealed, reachable, unreserved world stacks; reservations текущего production order исключаются через `AvailableQuantity`, поэтому refill не крадёт используемые inputs. Одновременно на building существует не более одного active supply batch. Worker проходит `workstation check -> reserved sources -> workstation deposit`. Пока toggle включён, система повторяет planning после каждого deposit/consumption/pickup до `current + incoming == capacity` либо отсутствия reachable candidates. Cancel/failure/retry освобождает source quantity, incoming capacity и claims атомарно.
 
+Если нужного revealed world source ещё нет, но он ожидается от уже созданного extraction/harvest job, runtime создаёт dependent `BuildingSupply` job с requested item/quantity и ссылкой на extraction dependency. Такой supply job остаётся `Created`, не получает worker/source/incoming reservations до успешного завершения dependency, затем тем же job id проходит обычный planner. Cancel/failure dependency завершает dependent supply без phantom incoming; повторная synchronization не создаёт duplicate dependency/supply pair. Эта dependency-модель не отменяет continuous refill во время active production.
+
 ## 7. Production lifecycle
 
 1. Order может ожидать inputs в queue; icon зелёный при наличии полного input set.
@@ -150,6 +152,7 @@ Diagnostics показывают building/recipe/order/job IDs, stock current/in
 Domain/Application:
 
 - protected internal stock не выбирается automatic supply;
+- deferred extraction dependency создаёт не более одного supply job и не резервирует phantom incoming;
 - direct pickup забирает одну available unit;
 - right candidates deterministic, без фиксированного limit и без side fallback;
 - occupied nearest cells выбирают следующую правую cell;

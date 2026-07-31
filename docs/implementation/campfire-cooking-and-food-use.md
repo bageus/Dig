@@ -14,7 +14,7 @@ Implementation PRs: [#464](https://github.com/bageus/Dig/pull/464), [#485](https
 - `ProductionStepTiming` remains the only duration calculator. Unity loads the real `15 * 60` base duration instead of the one-tick demo value.
 - `BuildingSupplyState` and `BuildingSupplyPlanner` remain the only automatic material reservation owners.
 - Mushroom chop completion publishes cap/leg drops into the shared production inventory, so ordinary BuildingSupply can reserve those world stacks.
-- `ProductionOutputPlacement` resolves deterministic perimeter rings around the workstation in front-first order.
+- `ProductionOutputPlacement.ResolveMany` resolves distinct deterministic cells in the generic right finished-output zone.
 - `WorldItemPickupJobDefinition.CompletionAction` owns pickup-only versus pickup-then-use behavior and is persisted by `WorldItemPickupJobSaveCodec`.
 - `AgentState` owns the active three-bite meal and exposes it through the existing `AgentIntentKind.Eat` action for status and animation.
 - Save format v9 owns resident needs, last needs tick, active meal identity, original start tick and completed bite count.
@@ -27,11 +27,11 @@ Implementation PRs: [#464](https://github.com/bageus/Dig/pull/464), [#485](https
 2. prepare a production order when internal inputs exist;
 3. assign available production jobs;
 4. create ordinary protected supply jobs for visible/reachable world material;
-5. when a queued grilled-mushroom order still lacks a cap and no eligible cap exists, create one ordinary chop job for a visible/reachable Large mushroom.
+5. when a queued grilled-mushroom order still lacks a cap and no eligible cap exists, create one ordinary chop job and one source-unresolved dependent delivery job in the same synchronization pass.
 
-The chop job produces ordinary world drops. The next synchronization tick re-enters step 4, delivery moves the cap to the campfire internal stock, and the next preparation pass creates the production job. No code reads another building internal stock or another resident inventory as an automatic source.
+The dependent delivery keeps one stable job id and remains `Created` until the chop completes. After cap drops appear as ordinary world items, the existing BuildingSupply planner binds a revealed/reachable/unreserved cap, reserves incoming capacity and resident slots, then executes the ordinary delivery into campfire internal stock. No code reads another building internal stock or another resident inventory as an automatic source.
 
-The assigned production worker remains the actor through `Finalize`. Completion creates one world stack with quantity two in the first valid front-first surrounding cell. A blocked ring expands deterministically; a fully blocked search returns `production.output_space_unavailable` without a second input commit.
+The assigned production worker remains the actor through `Finalize`. The product icon owns a no-text full-cell fill overlay only for actual cooking work; it remains full while output placement is pending and clears together with terminal completion/counter decrement. Completion expands the recipe quantity into two distinct quantity-one world entities and atomically resolves two separate cells in the right finished-output zone. If fewer than two cells are available, `production.output_space_unavailable` leaves the order ready without partial output or a second input commit.
 
 ## Direct use
 
@@ -84,14 +84,14 @@ Presentation/Unity:
 ## Automated evidence
 
 - `CampfireProductionContentTests` verifies recipe quantities, food category and exact 15-minute Cooking percentage timing.
-- `ProductionOutputPlacementTests` verifies orientation, front-first order and perimeter expansion.
+- `ProductionOutputPlacementTests` verifies right-only deterministic ordering, multi-cell resolution and atomic failure when the full output quantity cannot fit.
 - `CampfireFoodInputRouterTests` verifies plain pickup and Alt pickup-then-eat commands.
 - `ResidentFoodMealTests` verifies one consumed portion, three exactly-once bites, interruption and runtime restoration after a completed bite.
 - `CampfireFoodSaveTests` verifies save/load of active meal progress and backward-compatible pickup job decoding.
 - `SaveMigrationAndCorruptionTests`, `MushroomSaveRoundTripTests` and `BarrelSaveRoundTripTests` verify the complete v9 migration chain.
 - `CampfireFoodUnityRuntimeContractTests` guards runtime composition, cursor branches, persisted pickup action, shared meal wiring and the Play Mode harness/Application command signature boundary.
 - `CampfireFoodWorkflowPlayModeTests` implements the missing-cap dependency and pickup-to-three-bites runtime scenarios.
-- `CampfireFoodCompletionPlayModeTests` implements repeated production, fully blocked output-ring retry without duplication and cancellation of pickup-then-use without losing food or reservations.
+- `CampfireFoodCompletionPlayModeTests` implements two-cell quantity-one output, fully blocked right-zone retry without partial commit, repeated production and cancellation of pickup-then-use without losing food or reservations.
 - `CampfireFoodProductionPlayModeHarness` composes completed campfire, production, inventory, jobs and resident owners for deterministic runtime tests without duplicating gameplay logic.
 
 ## Unity harness compile regression (2026-07-28)

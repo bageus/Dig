@@ -67,6 +67,17 @@ internal sealed partial class DigTerrainWorkSession
                 firstResident.CellX,
                 firstResident.CellY,
                 firstResident.CellZ));
+        TerrainOutputCatalogValidationReport terrainOutputs =
+            new TerrainOutputCatalogValidator().Validate(
+                worldSession.Repository.Get().Materials,
+                inventory.Catalog);
+        if (!terrainOutputs.IsValid)
+        {
+            throw new InvalidOperationException(string.Join(
+                "; ",
+                terrainOutputs.Issues.Select(value => value.Code + ":" + value.Message)));
+        }
+
         InMemoryInventoryRepository inventoryRepository =
             new InMemoryInventoryRepository(inventory);
         TraversalProfile profile = TraversalProfile.CreateFreeMover();
@@ -185,10 +196,17 @@ internal sealed partial class DigTerrainWorkSession
         Dictionary<EntityId, EntityId> outputIds,
         MiningOutputCommitState? miningOutputCommits)
     {
+        MiningOutputCommitState commits =
+            miningOutputCommits ?? new MiningOutputCommitState();
         return new DigTerrainWorkSession(
             advance,
             new CompleteTerrainWorkCommandHandler(
-                jobs, world.Repository, inventory, journal, skills),
+                jobs,
+                world.Repository,
+                inventory,
+                journal,
+                skills,
+                commits),
             new CompletePartialTerrainWorkCommandHandler(
                 jobs, world.Repository, journal, skills),
             new JobOverlayPresenter(
@@ -214,7 +232,7 @@ internal sealed partial class DigTerrainWorkSession
             profile,
             outputIds,
             skills,
-            miningOutputCommits);
+            commits);
     }
 }
 

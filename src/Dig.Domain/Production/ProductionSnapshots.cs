@@ -61,6 +61,10 @@ public static partial class ProductionErrors
     public static readonly DomainError OutputIdsMismatch = new DomainError(
         "production.output_ids_mismatch",
         "Output stack ids must match the recipe outputs exactly.");
+
+    public static readonly DomainError OutputLocationsMismatch = new DomainError(
+        "production.output_locations_mismatch",
+        "Every produced unit needs one distinct output location.");
 }
 
 public sealed class ProductionOrderSnapshot

@@ -181,43 +181,53 @@ public sealed class CompleteProductionOrderHandler
         ProductionOrderSnapshot order,
         CompleteProductionOrderCommand command)
     {
-        EntityId[] outputIds = ValidateOutputIds(order, command.OutputStackIds);
-        if (outputIds.Length == 0)
+        ItemId[] outputUnits = order.Recipe.Outputs
+            .OrderBy(value => value.ItemId)
+            .SelectMany(value => Enumerable.Repeat(value.ItemId, value.Quantity))
+            .ToArray();
+        EntityId[] outputIds = command.OutputStackIds
+            .OrderBy(value => value.ToString(), StringComparer.Ordinal)
+            .ToArray();
+        if (outputIds.Length != outputUnits.Length
+            || outputIds.Any(value => value.IsEmpty)
+            || outputIds.Distinct().Count() != outputIds.Length)
         {
             return Result.Failure(ProductionErrors.OutputIdsMismatch);
         }
 
-        ItemStackCreation[] outputs = order.Recipe.Outputs
-            .OrderBy(value => value.ItemId)
-            .Zip(outputIds, (definition, stackId) => new ItemStackCreation(
-                stackId,
-                definition.ItemId,
-                definition.Quantity))
+        ItemLocation[] outputLocations;
+        if (command.OutputLocations.Count > 0)
+        {
+            outputLocations = command.OutputLocations.ToArray();
+            if (outputLocations.Length != outputUnits.Length
+                || outputLocations.Distinct().Count() != outputLocations.Length)
+            {
+                return Result.Failure(ProductionErrors.OutputLocationsMismatch);
+            }
+        }
+        else
+        {
+            ItemLocation fallback = command.OutputLocation
+                ?? ItemLocation.InBuilding(order.BuildingId);
+            outputLocations = Enumerable.Repeat(fallback, outputUnits.Length).ToArray();
+            if (outputUnits.Length > 1 && fallback.Kind == ItemLocationKind.World)
+            {
+                return Result.Failure(ProductionErrors.OutputLocationsMismatch);
+            }
+        }
+
+        ItemStackPlacement[] outputs = Enumerable.Range(0, outputUnits.Length)
+            .Select(index => new ItemStackPlacement(
+                new ItemStackCreation(outputIds[index], outputUnits[index], quantity: 1),
+                outputLocations[index]))
             .ToArray();
-        ItemLocation outputLocation = command.OutputLocation
-            ?? ItemLocation.InBuilding(order.BuildingId);
         return order.Recipe.UsesMaterialSteps
-            ? inventory.CreateProductionOutputs(order.Id, outputs, outputLocation, command.Tick)
+            ? inventory.CreateProductionOutputs(order.Id, outputs, command.Tick)
             : inventory.CompleteProductionTransaction(
                 order.Id,
                 order.InputAllocations,
                 outputs,
-                outputLocation,
                 command.Tick);
-    }
-
-    private static EntityId[] ValidateOutputIds(
-        ProductionOrderSnapshot order,
-        System.Collections.Generic.IReadOnlyCollection<EntityId> ids)
-    {
-        EntityId[] values = ids
-            .OrderBy(value => value.ToString(), StringComparer.Ordinal)
-            .ToArray();
-        return values.Length == order.Recipe.Outputs.Count
-            && values.All(value => !value.IsEmpty)
-            && values.Distinct().Count() == values.Length
-                ? values
-                : Array.Empty<EntityId>();
     }
 
     private static ProductionOutputPackageKind ResolveOutputKind(
@@ -244,7 +254,7 @@ public sealed class CompleteProductionOrderHandler
         }
 
         int multiplier = order.Recipe.SkillGrantScale
-            == ProductionSkillGrantScale.PerOrder
+            == Dig.Domain.Content.ProductionSkillGrantScale.PerOrder
                 ? 1
                 : order.Recipe.Outputs.Sum(value => value.Quantity);
         return new SkillGrantBundle(

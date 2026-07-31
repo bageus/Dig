@@ -29,7 +29,7 @@
 
 `material.metal` не является отдельным предметом. «Металл» — допустимое общее/display название железного слитка `material.iron` и/или категория `Metal`.
 
-Все ранее описанные рецепты, использовавшие `material.metal`, должны использовать `material.iron`. Изменение требует миграции ссылок до стабилизации save schema.
+Все ранее описанные рецепты, использовавшие `material.metal`, должны использовать `material.iron`. Save migration `v12 -> v13` заменяет legacy ссылки в Inventory, jobs, production, runtime, barrels и mining-output ledger.
 
 ## 3. Руды
 
@@ -52,7 +52,7 @@
 | `terrain.lava_rock` | Лавовая порода | да | золотая руда; мало камня; мало кристаллической руды; железная руда; уголь |
 | `terrain.unmineable` | Недобываемая порода | нет | нет |
 
-Точные вероятности и количества — data-driven `BALANCE_TBD`. Официальное display name `terrain.metal_bearing_rock` — «Рудная порода».
+Точные вероятности и количества — data-driven `BALANCE_TBD`. Официальное display name `terrain.metal_bearing_rock` — «Рудная порода». Production catalog использует stable IDs выше; текущие числовые profile entries являются versioned content fixtures и не закрывают Q-014. Каждая profile entry выполняет независимый deterministic roll, поэтому допустим multi-output одной клетки.
 
 ## 5. Жилы
 

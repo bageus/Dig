@@ -262,6 +262,18 @@ internal sealed partial class DigTerrainWorkSession
             _buildingsRepository!.Get().GetOccupiedCells(),
             _buildingInventoryRepository!.Get().CreateSnapshot().Stacks);
     }
+
+    private Result<IReadOnlyList<CellId>> ResolveProductionOutputCells(
+        BuildingSnapshot building,
+        int requiredCount)
+    {
+        return ProductionOutputPlacement.ResolveMany(
+            building,
+            _worldSession.LoadSnapshot(),
+            _buildingsRepository!.Get().GetOccupiedCells(),
+            _buildingInventoryRepository!.Get().CreateSnapshot().Stacks,
+            requiredCount);
+    }
 }
 
 }

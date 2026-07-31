@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Dig.Domain.Buildings;
 using Dig.Domain.Content;
@@ -40,6 +41,56 @@ public sealed class ProductionOutputPlacementTests
 
         Assert.True(result.IsSuccess, result.Error?.ToString());
         Assert.Equal(new CellId(first.X + 1, first.Y, first.Z), result.Value);
+    }
+
+    [Fact]
+    public void Multi_unit_output_resolves_distinct_cells_in_candidate_order()
+    {
+        WorldState world = CreateWorld();
+        BuildingSnapshot building = CreateBuilding(BuildingOrientation.North);
+        CellId[] expected = ProductionOutputPlacement.CreateCandidates(building, 2)
+            .Take(2)
+            .ToArray();
+
+        Result<IReadOnlyList<CellId>> result = ProductionOutputPlacement.ResolveMany(
+            building,
+            world.CreateSnapshot(),
+            building.Footprint,
+            Array.Empty<ItemStackSnapshot>(),
+            requiredCount: 2,
+            maximumLateralDistance: 2);
+
+        Assert.True(result.IsSuccess, result.Error?.ToString());
+        Assert.Equal(expected, result.Value);
+        Assert.Equal(2, result.Value.Distinct().Count());
+    }
+
+    [Fact]
+    public void Multi_unit_output_fails_atomically_when_only_one_cell_is_free()
+    {
+        WorldState world = CreateWorld();
+        BuildingSnapshot building = CreateBuilding(BuildingOrientation.North);
+        CellId[] candidates = ProductionOutputPlacement.CreateCandidates(building, 1)
+            .ToArray();
+        InventoryState inventory = new InventoryState(
+            CampfireProductionContentTests.CreateItems());
+        Assert.True(inventory.AddStack(
+            EntityId.Parse("b3000000000000000000000000000001"),
+            CampfireProductionContent.MushroomCapItemId,
+            1,
+            ItemLocation.InWorld(candidates[1]),
+            0).IsSuccess);
+
+        Result<IReadOnlyList<CellId>> result = ProductionOutputPlacement.ResolveMany(
+            building,
+            world.CreateSnapshot(),
+            building.Footprint,
+            inventory.CreateSnapshot().Stacks,
+            requiredCount: 2,
+            maximumLateralDistance: 1);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ProductionErrors.OutputSpaceUnavailable, result.Error);
     }
 
     [Fact]

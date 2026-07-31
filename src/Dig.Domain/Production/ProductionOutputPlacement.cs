@@ -25,6 +25,26 @@ public static class ProductionOutputPlacement
         IReadOnlyCollection<ItemStackSnapshot> inventoryStacks,
         int maximumLateralDistance = int.MaxValue)
     {
+        Result<IReadOnlyList<CellId>> resolved = ResolveMany(
+            building,
+            world,
+            occupiedBuildingCells,
+            inventoryStacks,
+            requiredCount: 1,
+            maximumLateralDistance: maximumLateralDistance);
+        return resolved.IsSuccess
+            ? Result<CellId>.Success(resolved.Value[0])
+            : Result<CellId>.Failure(resolved.Error!);
+    }
+
+    public static Result<IReadOnlyList<CellId>> ResolveMany(
+        BuildingSnapshot building,
+        WorldSnapshot world,
+        IReadOnlyCollection<CellId> occupiedBuildingCells,
+        IReadOnlyCollection<ItemStackSnapshot> inventoryStacks,
+        int requiredCount,
+        int maximumLateralDistance = int.MaxValue)
+    {
         if (building is null)
         {
             throw new ArgumentNullException(nameof(building));
@@ -50,6 +70,11 @@ public static class ProductionOutputPlacement
             throw new ArgumentOutOfRangeException(nameof(maximumLateralDistance));
         }
 
+        if (requiredCount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(requiredCount));
+        }
+
         Dictionary<CellId, CellSnapshot> cells = world.Chunks
             .SelectMany(chunk => chunk.Cells)
             .ToDictionary(cell => cell.Id);
@@ -67,8 +92,9 @@ public static class ProductionOutputPlacement
         int worldMaximumDistance = Math.Max(0, world.Size.Width - rightEdgeX - 1);
         int effectiveMaximumDistance = Math.Min(
             maximumLateralDistance,
-            worldMaximumDistance);
+            Math.Max(0, worldMaximumDistance - 1));
 
+        List<CellId> resolvedCells = new List<CellId>(requiredCount);
         foreach (CellId candidate in CreateCandidates(building, effectiveMaximumDistance))
         {
             CellId supportCell = new CellId(
@@ -89,10 +115,16 @@ public static class ProductionOutputPlacement
                 continue;
             }
 
-            return Result<CellId>.Success(candidate);
+            resolvedCells.Add(candidate);
+            itemCells.Add(candidate);
+            if (resolvedCells.Count == requiredCount)
+            {
+                return Result<IReadOnlyList<CellId>>.Success(resolvedCells);
+            }
         }
 
-        return Result<CellId>.Failure(ProductionErrors.OutputSpaceUnavailable);
+        return Result<IReadOnlyList<CellId>>.Failure(
+            ProductionErrors.OutputSpaceUnavailable);
     }
 
     public static IReadOnlyList<CellId> CreateCandidates(

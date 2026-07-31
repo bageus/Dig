@@ -105,6 +105,7 @@ public sealed class BarrelSaveRoundTripTests
             new SaveVersionNineCombatSpatialMigration(),
             new SaveVersionTenTerrainDepositContractMigration(),
             new SaveVersionElevenLivingMaterialsMigration(),
+            new SaveVersionTwelveTerrainOutputContractMigration(),
         });
 
         Result<SaveMigrationReport> migrated = pipeline.Apply(document);

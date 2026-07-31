@@ -178,7 +178,7 @@ public sealed class MiningOutputTransactionTests
             new TerrainDepositState());
         MiningOutputCommitState commits = new MiningOutputCommitState();
 
-        MiningOutputCommit commit = commits.Record(plan, default);
+        MiningOutputCommit commit = commits.Record(plan, System.Array.Empty<EntityId>());
 
         Assert.True(plan.IsEmpty);
         Assert.False(commit.HasStack);

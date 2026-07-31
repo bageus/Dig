@@ -72,10 +72,17 @@ public sealed class SaveGameMiningOutputLoaderWiringTests
             Y = 1,
             Z = 0,
             SourceKind = (int)MiningOutputSourceKind.Terrain,
-            ItemId = Stone.ToString(),
-            Quantity = 2,
-            StackId = StackId.ToString(),
-            HasStack = true,
+            SourceId = "terrain-output.stone",
+            SourceVersion = 1,
+            Outputs =
+            {
+                new MiningOutputCommitOutputSaveData
+                {
+                    ItemId = Stone.ToString(),
+                    Quantity = 2,
+                    StackIds = { StackId.ToString() },
+                },
+            },
         });
 
         Result<LoadedGameState> loaded = new SaveGameLoader(

@@ -123,6 +123,95 @@ public static class BuildingSupplyPlanner
         return new BuildingSupplyPlan(allocations);
     }
 
+    public static BuildingSupplyPlan PlanRequests(
+        BuildingSupplySnapshot supply,
+        IReadOnlyCollection<ItemStackSnapshot> worldStacks,
+        IReadOnlyCollection<CellId> revealedCells,
+        IReadOnlyCollection<CellId> reachableCells,
+        CellId destination,
+        int freeSlotCount,
+        IReadOnlyCollection<ItemConsumptionRequest> requests)
+    {
+        if (supply is null || worldStacks is null || revealedCells is null
+            || reachableCells is null || requests is null)
+        {
+            throw new ArgumentNullException(nameof(supply));
+        }
+
+        if (freeSlotCount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(freeSlotCount));
+        }
+
+        if (supply.HasActiveSupply || freeSlotCount == 0)
+        {
+            return new BuildingSupplyPlan(Array.Empty<BuildingSupplyAllocation>());
+        }
+
+        Dictionary<ItemId, int> requested = requests
+            .GroupBy(value => value.ItemId)
+            .ToDictionary(group => group.Key, group => group.Sum(value => value.Quantity));
+        HashSet<CellId> revealed = revealedCells.ToHashSet();
+        HashSet<CellId> reachable = reachableCells.ToHashSet();
+        List<BuildingSupplyAllocation> allocations = new List<BuildingSupplyAllocation>();
+        HashSet<EntityId> used = new HashSet<EntityId>();
+        int availableUnitSlots = freeSlotCount;
+        foreach (BuildingStockSnapshot stock in supply.Stocks)
+        {
+            if (!stock.DeliveryEnabled
+                || !requested.TryGetValue(stock.ItemId, out int requestedQuantity)
+                || requestedQuantity <= 0
+                || stock.Missing == 0)
+            {
+                continue;
+            }
+
+            int remaining = Math.Min(stock.Missing, requestedQuantity);
+            ItemStackSnapshot[] candidates = worldStacks
+                .Where(stack => stack.ItemId == stock.ItemId
+                    && stack.Location.Kind == ItemLocationKind.World
+                    && stack.Location.HasCell
+                    && stack.AvailableQuantity > 0
+                    && revealed.Contains(stack.Location.CellId)
+                    && reachable.Contains(stack.Location.CellId)
+                    && !used.Contains(stack.StackId))
+                .OrderBy(stack => Distance(stack.Location.CellId, destination))
+                .ThenBy(stack => stack.StackId.ToString(), StringComparer.Ordinal)
+                .ToArray();
+            foreach (ItemStackSnapshot stack in candidates)
+            {
+                if (availableUnitSlots == 0 || remaining == 0)
+                {
+                    break;
+                }
+
+                int quantity = Math.Min(
+                    availableUnitSlots,
+                    Math.Min(remaining, stack.AvailableQuantity));
+                allocations.Add(new BuildingSupplyAllocation(
+                    stack.StackId,
+                    stack.ItemId,
+                    quantity,
+                    stack.Location.CellId));
+                used.Add(stack.StackId);
+                remaining -= quantity;
+                availableUnitSlots -= quantity;
+            }
+
+            if (availableUnitSlots == 0)
+            {
+                break;
+            }
+        }
+
+        bool complete = requested.All(pair => allocations
+            .Where(value => value.ItemId == pair.Key)
+            .Sum(value => value.Quantity) >= pair.Value);
+        return complete
+            ? new BuildingSupplyPlan(allocations)
+            : new BuildingSupplyPlan(Array.Empty<BuildingSupplyAllocation>());
+    }
+
     private static int Distance(CellId left, CellId right)
     {
         return Math.Abs(left.X - right.X)

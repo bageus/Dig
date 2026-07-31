@@ -47,12 +47,64 @@ public sealed class ProductionIconViewModel
         IReadOnlyCollection<ProductionIngredientViewModel> ingredients,
         int progressCurrent = 0,
         int progressTotal = 0)
+        : this(
+            recipeId,
+            outputItemId,
+            displayName,
+            outputQuantity,
+            queuedCount,
+            ingredients,
+            progressCurrent,
+            progressTotal,
+            hasProductionOverlay: progressTotal > 0,
+            productionProgress: progressTotal <= 0
+                ? 0d
+                : progressCurrent / (double)progressTotal)
+    {
+    }
+
+    public ProductionIconViewModel(
+        RecipeId recipeId,
+        ItemId outputItemId,
+        string displayName,
+        int outputQuantity,
+        int queuedCount,
+        IReadOnlyCollection<ProductionIngredientViewModel> ingredients,
+        bool hasProductionOverlay,
+        double productionProgress)
+        : this(
+            recipeId,
+            outputItemId,
+            displayName,
+            outputQuantity,
+            queuedCount,
+            ingredients,
+            progressCurrent: 0,
+            progressTotal: 0,
+            hasProductionOverlay,
+            productionProgress)
+    {
+    }
+
+    public ProductionIconViewModel(
+        RecipeId recipeId,
+        ItemId outputItemId,
+        string displayName,
+        int outputQuantity,
+        int queuedCount,
+        IReadOnlyCollection<ProductionIngredientViewModel> ingredients,
+        int progressCurrent,
+        int progressTotal,
+        bool hasProductionOverlay,
+        double productionProgress)
     {
         if (recipeId.IsEmpty || outputItemId.IsEmpty
             || string.IsNullOrWhiteSpace(displayName)
             || outputQuantity <= 0 || queuedCount < 0 || ingredients is null
             || progressCurrent < 0 || progressTotal < 0
-            || progressCurrent > progressTotal)
+            || progressCurrent > progressTotal
+            || productionProgress < 0d || productionProgress > 1d
+            || (!hasProductionOverlay && productionProgress != 0d))
         {
             throw new ArgumentException("Production icon values are invalid.");
         }
@@ -66,6 +118,8 @@ public sealed class ProductionIconViewModel
             ingredients.OrderBy(value => value.ItemId).ToArray());
         ProgressCurrent = progressCurrent;
         ProgressTotal = progressTotal;
+        HasProductionOverlay = hasProductionOverlay;
+        ProductionProgress = productionProgress;
     }
 
     public RecipeId RecipeId { get; }
@@ -77,6 +131,8 @@ public sealed class ProductionIconViewModel
     public int ProgressCurrent { get; }
     public int ProgressTotal { get; }
     public bool HasProgress => ProgressTotal > 0;
+    public bool HasProductionOverlay { get; }
+    public double ProductionProgress { get; }
     public bool HasInputs => Ingredients.All(value => value.Missing == 0);
     public bool IsOrange => !HasInputs;
     public string Tooltip => string.Join(

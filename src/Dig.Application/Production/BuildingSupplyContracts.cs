@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Dig.Application.Messaging;
 using Dig.Domain.Core;
+using Dig.Domain.Inventory;
 using Dig.Domain.Production;
 using Dig.Domain.World;
 
@@ -48,6 +49,86 @@ public sealed class CreateBuildingSupplyJobCommand : ICommand<Result>
     public IReadOnlyCollection<EntityId> TransitStackIds { get; }
     public IReadOnlyCollection<EntityId> DepositStackIds { get; }
     public int Priority { get; }
+    public long Tick { get; }
+}
+
+public sealed class CreateDeferredBuildingSupplyJobCommand : ICommand<Result>
+{
+    public CreateDeferredBuildingSupplyJobCommand(
+        EntityId jobId,
+        EntityId buildingId,
+        IReadOnlyCollection<ItemConsumptionRequest> requestedItems,
+        IReadOnlyCollection<EntityId> dependencyJobIds,
+        IReadOnlyCollection<EntityId> transitStackIds,
+        IReadOnlyCollection<EntityId> depositStackIds,
+        int priority,
+        long tick)
+    {
+        JobId = jobId;
+        BuildingId = buildingId;
+        RequestedItems = requestedItems
+            ?? throw new ArgumentNullException(nameof(requestedItems));
+        DependencyJobIds = dependencyJobIds
+            ?? throw new ArgumentNullException(nameof(dependencyJobIds));
+        TransitStackIds = transitStackIds
+            ?? throw new ArgumentNullException(nameof(transitStackIds));
+        DepositStackIds = depositStackIds
+            ?? throw new ArgumentNullException(nameof(depositStackIds));
+        Priority = priority;
+        Tick = tick;
+    }
+
+    public EntityId JobId { get; }
+    public EntityId BuildingId { get; }
+    public IReadOnlyCollection<ItemConsumptionRequest> RequestedItems { get; }
+    public IReadOnlyCollection<EntityId> DependencyJobIds { get; }
+    public IReadOnlyCollection<EntityId> TransitStackIds { get; }
+    public IReadOnlyCollection<EntityId> DepositStackIds { get; }
+    public int Priority { get; }
+    public long Tick { get; }
+}
+
+public sealed class ResolveDeferredBuildingSupplyJobCommand : ICommand<Result>
+{
+    public ResolveDeferredBuildingSupplyJobCommand(
+        EntityId jobId,
+        EntityId residentId,
+        IReadOnlyCollection<CellId> revealedCells,
+        IReadOnlyCollection<CellId> reachableCells,
+        long tick)
+    {
+        JobId = jobId;
+        ResidentId = residentId;
+        RevealedCells = revealedCells
+            ?? throw new ArgumentNullException(nameof(revealedCells));
+        ReachableCells = reachableCells
+            ?? throw new ArgumentNullException(nameof(reachableCells));
+        Tick = tick;
+    }
+
+    public EntityId JobId { get; }
+    public EntityId ResidentId { get; }
+    public IReadOnlyCollection<CellId> RevealedCells { get; }
+    public IReadOnlyCollection<CellId> ReachableCells { get; }
+    public long Tick { get; }
+}
+
+public sealed class CancelDeferredBuildingSupplyJobCommand : ICommand<Result>
+{
+    public CancelDeferredBuildingSupplyJobCommand(
+        EntityId jobId,
+        string reason,
+        long tick)
+    {
+        JobId = jobId;
+        Reason = string.IsNullOrWhiteSpace(reason)
+            ? throw new ArgumentException("Cancellation reason is required.", nameof(reason))
+            : reason.Trim();
+        Tick = tick;
+    }
+
+    public EntityId JobId { get; }
+    public string Reason { get; }
     public long Tick { get; }
 }
 

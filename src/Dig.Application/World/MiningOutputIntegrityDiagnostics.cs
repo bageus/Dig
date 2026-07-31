@@ -93,56 +93,51 @@ public sealed class MiningOutputIntegrityDiagnostics
         foreach (MiningOutputCommit commit in commits.Snapshot())
         {
             committedQuantity = checked(committedQuantity + commit.Quantity);
-            if (!commit.HasStack)
+            foreach (MiningOutputCommitLine output in commit.Outputs)
             {
-                continue;
-            }
+                bool unitIdentityContract = output.StackIds.Count == output.Quantity;
+                foreach (EntityId stackId in output.StackIds)
+                {
+                    if (!stackIds.Add(stackId))
+                    {
+                        issues.Add(new MiningOutputIntegrityIssue(
+                            commit.Cell,
+                            MiningOutputIntegrityCodes.DuplicateStack,
+                            $"Mining output stack '{stackId}' is referenced more than once."));
+                        continue;
+                    }
 
-            if (!stackIds.Add(commit.StackId))
-            {
-                issues.Add(new MiningOutputIntegrityIssue(
-                    commit.Cell,
-                    MiningOutputIntegrityCodes.DuplicateStack,
-                    $"Mining output stack '{commit.StackId}' is referenced by more than one committed cell."));
-                continue;
-            }
+                    ItemStackSnapshot? stack = inventory.GetStack(stackId);
+                    if (stack == null)
+                    {
+                        issues.Add(new MiningOutputIntegrityIssue(
+                            commit.Cell,
+                            MiningOutputIntegrityCodes.MissingStack,
+                            $"Mining output stack '{stackId}' is missing from Inventory."));
+                        continue;
+                    }
 
-            ItemStackSnapshot? stack = inventory.GetStack(commit.StackId);
-            if (stack == null)
-            {
-                issues.Add(new MiningOutputIntegrityIssue(
-                    commit.Cell,
-                    MiningOutputIntegrityCodes.MissingStack,
-                    $"Mining output stack '{commit.StackId}' is missing from Inventory."));
-                continue;
-            }
+                    trackedWorldQuantity = checked(
+                        trackedWorldQuantity + stack.Quantity);
+                    reservedQuantity = checked(
+                        reservedQuantity + stack.Reservations.Sum(value => value.Quantity));
 
-            trackedWorldQuantity = checked(trackedWorldQuantity + stack.Quantity);
-            reservedQuantity = checked(
-                reservedQuantity + stack.Reservations.Sum(value => value.Quantity));
+                    if (stack.ItemId != output.ItemId)
+                    {
+                        issues.Add(new MiningOutputIntegrityIssue(
+                            commit.Cell,
+                            MiningOutputIntegrityCodes.ItemMismatch,
+                            $"Mining output stack '{stackId}' contains '{stack.ItemId}' instead of '{output.ItemId}'."));
+                    }
 
-            if (stack.ItemId != commit.ItemId)
-            {
-                issues.Add(new MiningOutputIntegrityIssue(
-                    commit.Cell,
-                    MiningOutputIntegrityCodes.ItemMismatch,
-                    $"Mining output stack '{commit.StackId}' contains '{stack.ItemId}' instead of '{commit.ItemId}'."));
-            }
-
-            if (stack.Quantity != commit.Quantity)
-            {
-                issues.Add(new MiningOutputIntegrityIssue(
-                    commit.Cell,
-                    MiningOutputIntegrityCodes.QuantityMismatch,
-                    $"Mining output stack '{commit.StackId}' has quantity {stack.Quantity} instead of {commit.Quantity}."));
-            }
-
-            if (stack.Location != ItemLocation.InWorld(commit.Cell))
-            {
-                issues.Add(new MiningOutputIntegrityIssue(
-                    commit.Cell,
-                    MiningOutputIntegrityCodes.LocationMismatch,
-                    $"Mining output stack '{commit.StackId}' is not at its committed XYZ cell."));
+                    if (unitIdentityContract && stack.Quantity != 1)
+                    {
+                        issues.Add(new MiningOutputIntegrityIssue(
+                            commit.Cell,
+                            MiningOutputIntegrityCodes.QuantityMismatch,
+                            $"Mining output unit '{stackId}' has quantity {stack.Quantity} instead of 1."));
+                    }
+                }
             }
         }
 

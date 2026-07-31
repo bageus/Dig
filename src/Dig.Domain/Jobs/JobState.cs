@@ -26,7 +26,7 @@ public sealed class JobSnapshot
         Reason = reason;
     }
 
-    public JobDefinition Definition { get; }
+    public JobDefinition Definition { get; private set; }
 
     public EntityId Id => Definition.Id;
 
@@ -60,7 +60,7 @@ public sealed partial class JobState
         Stage = JobStageKind.None;
     }
 
-    public JobDefinition Definition { get; }
+    public JobDefinition Definition { get; private set; }
 
     public EntityId Id => Definition.Id;
 
@@ -83,6 +83,25 @@ public sealed partial class JobState
         Status = JobStatus.Available;
         ResetExecution();
         Reason = null;
+        IncrementVersion();
+    }
+
+    internal void ResolveDefinition(JobDefinition definition)
+    {
+        if (definition is null || definition.Id != Id)
+        {
+            throw new ArgumentException(
+                "Resolved job definition must preserve the job id.",
+                nameof(definition));
+        }
+
+        if (Status != JobStatus.Created)
+        {
+            throw new InvalidOperationException(
+                "Only a created job can resolve its deferred definition.");
+        }
+
+        Definition = definition;
         IncrementVersion();
     }
 

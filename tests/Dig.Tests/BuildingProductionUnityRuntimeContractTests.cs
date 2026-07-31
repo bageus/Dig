@@ -14,6 +14,7 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         string bootstrap = Read(runtime, "DigUnityBootstrap.cs");
         string execution = Read(runtime, "DigBuildingProductionExecution.cs");
         string synchronization = Read(runtime, "DigBuildingProductionSynchronization.cs");
+        string deferredSupply = Read(runtime, "DigBuildingProductionDeferredSupply.cs");
         string runtimeExecution = Read(runtime, "DigBuildingProductionRuntime.cs");
         string zones = Read(runtime, "DigBuildingProductionZones.cs");
         string supplyCheck = Read(runtime, "DigBuildingProductionSupplyCheck.cs");
@@ -37,8 +38,11 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         Assert.Contains("PrepareEligibleProductionOrders", synchronization);
         Assert.Contains("AssignProductionJobs", synchronization);
         Assert.Contains("JobStageKind.Finalize", zones);
-        Assert.Contains("ResolveProductionOutputCell", zones);
-        Assert.Contains("ItemLocation.InWorld(outputCell.Value)", zones);
+        Assert.Contains("EnsureProductionOutputPackage", zones);
+        Assert.Contains("ResolveProductionPackageCell", zones);
+        Assert.Contains("package.StackId", zones);
+        Assert.Contains("ResolveEligibleDeferredSupplyJobs", synchronization + deferredSupply);
+        Assert.Contains("HasNonTerminalBuildingSupplyJob", deferredSupply);
         Assert.Contains("FindByBoxItemId", placement);
         Assert.DoesNotContain("if(buildingboxitemid==campfire", Normalize(placement));
     }
@@ -56,6 +60,11 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         Assert.Contains("production.Stocks", production);
         Assert.Contains("product.IsOrange", production);
         Assert.Contains("product.Tooltip", production);
+        Assert.Contains("product.HasProductionOverlay", production);
+        Assert.Contains("CreateProductionProgressOverlay", production);
+        Assert.Contains("Image.FillMethod.Vertical", production);
+        Assert.Contains("Image.OriginVertical.Bottom", production);
+        Assert.Contains("fill.fillAmount", production);
         Assert.Contains("EnqueueBuildingProduction", production);
         Assert.Contains("CancelOneBuildingProduction", production);
         Assert.Contains("SetBuildingStockDelivery", production);

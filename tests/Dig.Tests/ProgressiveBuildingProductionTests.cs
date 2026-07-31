@@ -50,7 +50,8 @@ public sealed class ProgressiveBuildingProductionTests
         CampfireProductionTestHarness harness = new CampfireProductionTestHarness(1);
         EntityId orderId = CampfireProductionTestHarness.Id(120);
         EntityId jobId = CampfireProductionTestHarness.Id(121);
-        EntityId outputId = CampfireProductionTestHarness.Id(122);
+        EntityId firstOutputId = CampfireProductionTestHarness.Id(122);
+        EntityId secondOutputId = CampfireProductionTestHarness.Id(124);
         harness.AddBuildingStock(CampfireProductionContent.MushroomCapItemId, 1, 123);
         Assert.True(harness.Enqueue(
             orderId,
@@ -59,26 +60,30 @@ public sealed class ProgressiveBuildingProductionTests
         Assert.True(harness.Prepare(jobId, 2).IsSuccess);
         harness.ClaimBeginAndReachWork(orderId, jobId, 3);
         Assert.True(harness.Work(orderId, jobId, 1, 6).IsSuccess);
-        CellId outputCell = new CellId(4, 2, 0);
+        CellId firstOutputCell = new CellId(4, 2, 0);
+        CellId secondOutputCell = new CellId(5, 2, 0);
 
         Assert.True(harness.Complete(
             orderId,
             jobId,
-            outputId,
-            outputCell,
+            new[] { firstOutputId, secondOutputId },
+            new[] { firstOutputCell, secondOutputCell },
             7).IsSuccess);
 
-        ItemStackSnapshot output = harness.Inventory.GetStack(outputId)!;
-        Assert.Equal(2, output.Quantity);
-        Assert.Equal(ItemLocation.InWorld(outputCell), output.Location);
+        ItemStackSnapshot firstOutput = harness.Inventory.GetStack(firstOutputId)!;
+        ItemStackSnapshot secondOutput = harness.Inventory.GetStack(secondOutputId)!;
+        Assert.Equal(1, firstOutput.Quantity);
+        Assert.Equal(1, secondOutput.Quantity);
+        Assert.Equal(ItemLocation.InWorld(firstOutputCell), firstOutput.Location);
+        Assert.Equal(ItemLocation.InWorld(secondOutputCell), secondOutput.Location);
         Assert.Equal(120, harness.Agents.Get(CampfireProductionTestHarness.WorkerId)!
             .CreateSnapshot(7)
             .GetSkillLevel(AgentSkillCatalog.Cooking));
         Assert.True(harness.Complete(
             orderId,
             jobId,
-            CampfireProductionTestHarness.Id(124),
-            outputCell,
+            CampfireProductionTestHarness.Id(125),
+            firstOutputCell,
             8).IsFailure);
         Assert.Equal(120, harness.Agents.Get(CampfireProductionTestHarness.WorkerId)!
             .CreateSnapshot(8)
@@ -119,8 +124,16 @@ public sealed class ProgressiveBuildingProductionTests
         harness.Complete(
             orderId,
             jobId,
-            CampfireProductionTestHarness.Id(134),
-            new CellId(4, 2, 0),
+            new[]
+            {
+                CampfireProductionTestHarness.Id(134),
+                CampfireProductionTestHarness.Id(135),
+            },
+            new[]
+            {
+                new CellId(4, 2, 0),
+                new CellId(5, 2, 0),
+            },
             7);
         supply = harness.Supply.Get(
             CampfireProductionTestHarness.BuildingId,

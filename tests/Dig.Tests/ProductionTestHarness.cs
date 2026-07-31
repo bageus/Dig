@@ -179,6 +179,19 @@ internal sealed class ProductionTestHarness
         EntityId outputStackId,
         long tick)
     {
+        return Complete(
+            orderId,
+            jobId,
+            new[] { outputStackId },
+            tick);
+    }
+
+    public Result Complete(
+        EntityId orderId,
+        EntityId jobId,
+        IReadOnlyCollection<EntityId> outputStackIds,
+        long tick)
+    {
         return new CompleteProductionOrderHandler(
             ProductionRepository,
             InventoryRepository,
@@ -187,7 +200,7 @@ internal sealed class ProductionTestHarness
             SkillGrants).Handle(new CompleteProductionOrderCommand(
                 orderId,
                 jobId,
-                new[] { outputStackId },
+                outputStackIds,
                 tick));
     }
 

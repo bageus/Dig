@@ -77,11 +77,17 @@ public sealed class BuildingProductionPresenter
         ProductionOrderSnapshot? active = production.GetAll()
             .Where(value => value.BuildingId == buildingId
                 && value.Recipe.Id == recipe.Id
-                && !value.IsTerminal
-                && value.Status != ProductionOrderStatus.Queued)
+                && value.Status is ProductionOrderStatus.InProgress
+                    or ProductionOrderStatus.ReadyToComplete)
             .OrderBy(value => value.Sequence)
             .FirstOrDefault();
-        int progressTotal = active == null ? 0 : recipe.MaterialSteps.Count;
+        bool hasOverlay = active != null;
+        double progress = active == null
+            ? 0d
+            : ResolveProductionProgress(active);
+        int progressTotal = active == null || !recipe.UsesMaterialSteps
+            ? 0
+            : recipe.MaterialSteps.Count;
         int progressCurrent = active == null
             ? 0
             : active.Status == ProductionOrderStatus.ReadyToComplete
@@ -95,7 +101,30 @@ public sealed class BuildingProductionPresenter
             production.GetQueuedCount(buildingId, recipe.Id),
             ingredients,
             progressCurrent,
-            progressTotal);
+            progressTotal,
+            hasOverlay,
+            progress);
+    }
+
+    private static double ResolveProductionProgress(ProductionOrderSnapshot order)
+    {
+        if (order.Status == ProductionOrderStatus.ReadyToComplete)
+        {
+            return 1d;
+        }
+
+        if (order.Recipe.UsesMaterialSteps)
+        {
+            long required = order.MaterialSteps.Sum(value => value.RequiredTicks);
+            long completed = order.MaterialSteps.Sum(value => value.CompletedTicks);
+            return required <= 0
+                ? 0d
+                : Math.Min(1d, completed / (double)required);
+        }
+
+        return order.Recipe.RequiredWork <= 0
+            ? 0d
+            : Math.Min(1d, order.CompletedWork / (double)order.Recipe.RequiredWork);
     }
 }
 
