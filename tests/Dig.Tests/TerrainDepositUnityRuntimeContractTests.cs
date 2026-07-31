@@ -24,6 +24,10 @@ public sealed class TerrainDepositUnityRuntimeContractTests
 
         Assert.DoesNotContain("_terrainDeposits", session);
         Assert.Contains("worldState.TerrainDeposits.Snapshot()", session);
+        Assert.Contains("using Dig.Domain.Core;", session);
+        Assert.Contains("SkillGrantProfileId skillGrantProfileId", session);
+        Assert.Contains("GetProfile(skillGrantProfileId)", session);
+        Assert.DoesNotContain("string skillGrantProfileId", session);
         Assert.DoesNotContain("DepleteTerrainDeposit", completion);
         Assert.DoesNotContain("RevealTerrainDepositsAdjacentTo", completion);
         Assert.True(File.Exists(playModePath));
