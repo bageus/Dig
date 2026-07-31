@@ -29,3 +29,5 @@ jobs:
           git add -A
           git commit -m "Implement production progress and dependent supply"
           git push origin HEAD:${GITHUB_REF_NAME}
+
+# Triggered through the repository contents API.
