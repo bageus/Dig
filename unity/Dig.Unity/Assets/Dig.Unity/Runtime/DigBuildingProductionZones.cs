@@ -98,12 +98,6 @@ internal sealed partial class DigTerrainWorkSession
             return Result.Failure(ProductionErrors.WorkstationMismatch);
         }
 
-        Result<CellId> outputCell = ResolveProductionOutputCell(building);
-        if (outputCell.IsFailure || !At(worker, outputCell.Value))
-        {
-            return Result.Success();
-        }
-
         ProductionOrderSnapshot? order = _productionRepository!.Get().Get(
             production.OrderId);
         if (order == null)
@@ -111,7 +105,16 @@ internal sealed partial class DigTerrainWorkSession
             return Result.Failure(ProductionErrors.OrderNotFound);
         }
 
-        EntityId[] outputs = order.Recipe.Outputs
+        int outputUnitCount = order.Recipe.Outputs.Sum(value => value.Quantity);
+        Result<IReadOnlyList<CellId>> outputCells = ResolveProductionOutputCells(
+            building,
+            outputUnitCount);
+        if (outputCells.IsFailure || !At(worker, outputCells.Value[0]))
+        {
+            return Result.Success();
+        }
+
+        EntityId[] outputs = Enumerable.Range(0, outputUnitCount)
             .Select(_ => NextProductionEntityId(
                 'a',
                 ref _nextProductionOutputSequence))
@@ -122,7 +125,9 @@ internal sealed partial class DigTerrainWorkSession
                 job.Id,
                 outputs,
                 tick,
-                ItemLocation.InWorld(outputCell.Value)));
+                outputLocations: outputCells.Value
+                    .Select(ItemLocation.InWorld)
+                    .ToArray()));
         if (completed.IsSuccess)
         {
             _buildingProductionRoutes.Remove(job.Id);
@@ -154,13 +159,22 @@ internal sealed partial class DigTerrainWorkSession
                 return true;
             }
 
-            Result<CellId> outputCell = ResolveProductionOutputCell(building);
-            if (outputCell.IsFailure)
+            ProductionOrderSnapshot? order = _productionRepository!.Get().Get(
+                production.OrderId);
+            if (order == null)
             {
                 return true;
             }
 
-            target = outputCell.Value;
+            Result<IReadOnlyList<CellId>> outputCells = ResolveProductionOutputCells(
+                building,
+                order.Recipe.Outputs.Sum(value => value.Quantity));
+            if (outputCells.IsFailure)
+            {
+                return true;
+            }
+
+            target = outputCells.Value[0];
         }
 
         return PlanBuildingProductionRoute(
@@ -201,6 +215,18 @@ internal sealed partial class DigTerrainWorkSession
             _worldSession.LoadSnapshot(),
             _buildingsRepository!.Get().GetOccupiedCells(),
             _buildingInventoryRepository!.Get().CreateSnapshot().Stacks);
+    }
+
+    private Result<IReadOnlyList<CellId>> ResolveProductionOutputCells(
+        BuildingSnapshot building,
+        int requiredCount)
+    {
+        return ProductionOutputPlacement.ResolveMany(
+            building,
+            _worldSession.LoadSnapshot(),
+            _buildingsRepository!.Get().GetOccupiedCells(),
+            _buildingInventoryRepository!.Get().CreateSnapshot().Stacks,
+            requiredCount);
     }
 }
 

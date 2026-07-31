@@ -27,7 +27,7 @@ Stable identifiers:
 
 ## 2. Recipe and timing
 
-One order consumes exactly one mushroom cap from that campfire internal stock and creates one ordinary world stack containing two grilled mushrooms.
+One order consumes exactly one mushroom cap from that campfire internal stock and creates two separate ordinary world entities. Each grilled mushroom output has `quantity = 1`, occupies its own finished-output cell and never stacks with the second produced unit.
 
 The single material step has a base duration of 15 game minutes. The existing production duration contract remains authoritative:
 
@@ -41,25 +41,22 @@ For every queued grilled-mushroom order the runtime evaluates one deterministic 
 
 1. If the campfire internal stock contains one unreserved mushroom cap, prepare the production job immediately.
 2. Otherwise, if a revealed, reachable, unreserved world mushroom cap exists, create the ordinary protected BuildingSupply job.
-3. Otherwise, if a revealed and reachable `Large` mushroom exists without an active chop attempt, create exactly one ordinary mushroom-chop job as the dependency.
-4. Mushroom drops remain world items. On following synchronization ticks the normal BuildingSupply planner reserves a cap, delivers it, and the normal production preparation starts.
+3. Otherwise, if a revealed and reachable `Large` mushroom exists without an active chop attempt, create exactly one ordinary mushroom-chop job and one dependent BuildingSupply job in the same synchronization pass.
+4. The dependent supply job stays source-unresolved and dependency-blocked until the chop completes. When mushroom drops appear as world items, the ordinary BuildingSupply owner binds/reserves a revealed, reachable, unreserved cap on that same delivery job, delivers it, and normal production preparation starts.
 
 A cap in another building internal stock is protected by that building owner and is never a candidate. A cap in another resident inventory is also not an automatic source. Delivery and cooking may be completed by the same resident only when that resident independently wins both normal assignments; no special affinity is required.
 
-At most one active dependency chop may be created per blocked campfire order. Existing world caps always take priority over creating another chop.
+At most one active dependency chop/delivery pair may be created per blocked campfire order. Existing world caps always take priority over creating another pair. Repeated synchronization cannot create duplicate pending delivery jobs.
 
 ## 4. Cooking completion and output placement
 
 The resident assigned to `ProductionWorkJob` remains the authoritative worker through `Finalize`. That worker performs output placement; no anonymous completion adapter or second hauling job creates the food.
 
-The result remains one stack with `quantity = 2`. The placement resolver searches supported, explored, unoccupied cells around the completed campfire in deterministic front-first order:
+The result is two distinct stacks with `quantity = 1`. The generic building-production placement owner requires two supported, explored, unoccupied cells in the right finished-output zone. Candidate order is `right edge + 1`, then `+2` and onward; front, left and rear fallback are forbidden.
 
-1. front centre and front lateral cells;
-2. side cells;
-3. rear cells;
-4. expanding perimeter rings when the nearest ring is full.
+If fewer than two valid right-side output cells exist, the order remains ready to complete with `production.output_space_unavailable`. Retry must not consume another cap, commit only one mushroom, duplicate output, repeat progression, or lose the assigned completion owner.
 
-If no valid surrounding cell exists, the order remains ready to complete with `production.output_space_unavailable`. Retry must not consume another cap, duplicate output, repeat progression, or lose the assigned completion owner.
+The grilled-mushroom product cell shows a no-text fill overlay only while cooking is active. It starts at zero when production work begins, fills with actual resolved cooking progress, remains full while the cook moves to the output zone, and disappears only when both outputs, the terminal order/job transition and the product counter decrement commit together. Cancellation removes it immediately.
 
 ## 5. World interaction
 
@@ -104,23 +101,23 @@ Observable state includes:
 - order status and missing cap reason in the campfire panel;
 - supply, dependency-chop and production jobs in the shared job overlay;
 - resident statuses for harvesting, delivering, cooking, picking up food and eating;
-- front-first output blocked reason;
+- right finished-output-zone blocked reason;
 - animated pickup arrow and green mouth cursor;
 - active meal item, completed bites and remaining bites in diagnostics.
 
 ## 10. Acceptance
 
-Domain/application tests must cover recipe quantity, protected source filtering, one dependency chop, deterministic output-ring placement, duration at Cooking 0/25/100, exactly-once completion, direct pickup/eat reservation, supported-standing guard before consume, three bites, support-loss interruption and retry.
+Domain/application tests must cover recipe quantity, protected source filtering, one dependency chop, deterministic right-zone multi-cell placement, duration at Cooking 0/25/100, exactly-once completion, direct pickup/eat reservation, supported-standing guard before consume, three bites, support-loss interruption and retry.
 
 Integration tests must cover:
 
-`queued order -> no cap -> Large mushroom chop -> cap drop -> supply -> internal stock -> cook -> output quantity 2 -> LMB pickup`;
+`queued order -> no cap -> chop job + dependent supply job -> cap drop -> source binding -> internal stock -> cook overlay -> two quantity-one outputs -> LMB pickup`;
 
 and:
 
 `queued order -> cook -> Alt+LMB -> approach -> pickup -> three bites -> Nutrition +15`.
 
-Unity Play Mode must verify cursor priority/animation colour, resident movement, pickup commit, eating animation/status, repeated orders, full output ring, cancellation and the next repeated interaction.
+Unity Play Mode must verify cursor priority/animation colour, resident movement, per-product overlay start/fill/full/clear lifecycle, two distinct output entities/cells, pickup commit, eating animation/status, repeated orders, full output zone, cancellation and the next repeated interaction.
 
 ## 11. Implementation evidence
 

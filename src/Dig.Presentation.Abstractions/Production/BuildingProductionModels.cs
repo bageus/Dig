@@ -44,11 +44,15 @@ public sealed class ProductionIconViewModel
         string displayName,
         int outputQuantity,
         int queuedCount,
-        IReadOnlyCollection<ProductionIngredientViewModel> ingredients)
+        IReadOnlyCollection<ProductionIngredientViewModel> ingredients,
+        bool hasProductionOverlay = false,
+        double productionProgress = 0d)
     {
         if (recipeId.IsEmpty || outputItemId.IsEmpty
             || string.IsNullOrWhiteSpace(displayName)
-            || outputQuantity <= 0 || queuedCount < 0 || ingredients is null)
+            || outputQuantity <= 0 || queuedCount < 0 || ingredients is null
+            || productionProgress < 0d || productionProgress > 1d
+            || (!hasProductionOverlay && productionProgress != 0d))
         {
             throw new ArgumentException("Production icon values are invalid.");
         }
@@ -60,6 +64,8 @@ public sealed class ProductionIconViewModel
         QueuedCount = queuedCount;
         Ingredients = new ReadOnlyCollection<ProductionIngredientViewModel>(
             ingredients.OrderBy(value => value.ItemId).ToArray());
+        HasProductionOverlay = hasProductionOverlay;
+        ProductionProgress = productionProgress;
     }
 
     public RecipeId RecipeId { get; }
@@ -68,6 +74,8 @@ public sealed class ProductionIconViewModel
     public int OutputQuantity { get; }
     public int QueuedCount { get; }
     public IReadOnlyList<ProductionIngredientViewModel> Ingredients { get; }
+    public bool HasProductionOverlay { get; }
+    public double ProductionProgress { get; }
     public bool HasInputs => Ingredients.All(value => value.Missing == 0);
     public bool IsOrange => !HasInputs;
     public string Tooltip => string.Join(

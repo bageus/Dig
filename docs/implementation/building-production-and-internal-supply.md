@@ -15,6 +15,23 @@ Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
 - Skills выдаёт exactly-once grants после завершения одного production order.
 - Presentation строит product icons, counters, left/right zone trays, stock units и post-work camera-facing pose.
 
+
+## Product-cell progress and dependency delivery — current implementation
+
+- `BuildingProductionPresenter` derives one overlay per recipe icon from the first active `InProgress`/`ReadyToComplete` order of that recipe.
+- Material-step recipes aggregate completed/required ticks; ordinary recipes use completed/required work. The projection emits no overlay for queue, supply or dependency time.
+- `DigGameHudCanvas.BuildingProduction` renders a non-raycasting, no-text, bottom-up filled `Image` across the full product button. `ReadyToComplete` stays at full fill; terminal cancel/complete removes it on the next authoritative refresh. Because the product counter counts non-terminal orders, the same successful output commit both clears the overlay and decrements the counter.
+- `BuildingSupplyJobDefinition` supports a source-unresolved requested-item form with explicit dependencies. The job is created in `Created` during the same synchronization pass as mushroom extraction.
+- After extraction completes, `ResolveDeferredBuildingSupplyJobHandler` keeps the same job id, binds ordinary revealed/reachable/unreserved world sources, reserves resident slots and incoming capacity, replaces the deferred definition with the resolved allocation definition, then makes and claims the job.
+- Failed/cancelled extraction cancels the unresolved delivery without phantom reservations or incoming stock.
+
+## Quantity-one production output
+
+- `CompleteProductionOrderHandler` expands each recipe output quantity into separate unit creations.
+- `ProductionOutputPlacement.ResolveMany` atomically resolves one distinct right-zone cell per output unit.
+- `DigBuildingProductionZones` keeps the assigned worker through Finalize, moves toward the first resolved cell and supplies all resolved locations to the single completion transaction.
+- A two-unit recipe creates two independent `ItemLocation.InWorld` stacks with quantity one. If only one valid cell exists, no output is committed and the order remains `ReadyToComplete`.
+
 ## Building spatial zones — PR #515
 
 ### Left internal-storage zone

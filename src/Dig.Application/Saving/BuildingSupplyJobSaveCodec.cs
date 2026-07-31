@@ -30,6 +30,7 @@ public sealed class BuildingSupplyJobSaveCodec : IJobDefinitionSaveCodec
             Property("work.y", job.WorkPosition.Y),
             Property("work.z", job.WorkPosition.Z),
             Property("allocation.count", job.Allocations.Count),
+            Property("request.count", job.RequestedItems.Count),
             Property("transit.count", job.TransitStackIds.Count),
             Property("deposit.count", job.DepositStackIds.Count),
         };
@@ -39,6 +40,13 @@ public sealed class BuildingSupplyJobSaveCodec : IJobDefinitionSaveCodec
             properties.Add(Property($"allocation.{index}.stack", allocation.StackId));
             properties.Add(Property($"allocation.{index}.item", allocation.ItemId));
             properties.Add(Property($"allocation.{index}.quantity", allocation.Quantity));
+        }
+
+        for (int index = 0; index < job.RequestedItems.Count; index++)
+        {
+            ItemConsumptionRequest request = job.RequestedItems[index];
+            properties.Add(Property($"request.{index}.item", request.ItemId));
+            properties.Add(Property($"request.{index}.quantity", request.Quantity));
         }
 
         AddIds(properties, "transit", job.TransitStackIds);
@@ -69,19 +77,52 @@ public sealed class BuildingSupplyJobSaveCodec : IJobDefinitionSaveCodec
                 new ItemId(Get(values, $"allocation.{index}.item")),
                 ParseInt(values, $"allocation.{index}.quantity")))
             .ToArray();
+        EntityId id = EntityId.Parse(data.JobId);
+        EntityId buildingId = EntityId.Parse(Get(values, "building.id"));
+        CellId workPosition = new CellId(
+            ParseInt(values, "work.x"),
+            ParseInt(values, "work.y"),
+            ParseInt(values, "work.z"));
+        EntityId[] transit = ParseIds(values, "transit");
+        EntityId[] deposit = ParseIds(values, "deposit");
+        JobRetryPolicy retry = new JobRetryPolicy(
+            data.MaximumRetries,
+            data.RetryDelayTicks);
+        EntityId[] dependencies = data.Dependencies
+            .Select(EntityId.Parse)
+            .ToArray();
+        if (allocations.Length > 0)
+        {
+            return new BuildingSupplyJobDefinition(
+                id,
+                buildingId,
+                workPosition,
+                allocations,
+                transit,
+                deposit,
+                data.Priority,
+                data.CreatedTick,
+                retry,
+                dependencies);
+        }
+
+        int requestCount = ParseInt(values, "request.count");
+        ItemConsumptionRequest[] requests = Enumerable.Range(0, requestCount)
+            .Select(index => new ItemConsumptionRequest(
+                new ItemId(Get(values, $"request.{index}.item")),
+                ParseInt(values, $"request.{index}.quantity")))
+            .ToArray();
         return new BuildingSupplyJobDefinition(
-            EntityId.Parse(data.JobId),
-            EntityId.Parse(Get(values, "building.id")),
-            new CellId(
-                ParseInt(values, "work.x"),
-                ParseInt(values, "work.y"),
-                ParseInt(values, "work.z")),
-            allocations,
-            ParseIds(values, "transit"),
-            ParseIds(values, "deposit"),
+            id,
+            buildingId,
+            workPosition,
+            requests,
+            transit,
+            deposit,
             data.Priority,
             data.CreatedTick,
-            new JobRetryPolicy(data.MaximumRetries, data.RetryDelayTicks));
+            retry,
+            dependencies);
     }
 
     private static void AddIds(

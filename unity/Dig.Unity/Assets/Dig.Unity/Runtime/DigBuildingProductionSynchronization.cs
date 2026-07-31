@@ -32,6 +32,7 @@ internal sealed partial class DigTerrainWorkSession
         SynchronizeProductionWorkstationRegistrations(tick);
         PrepareEligibleProductionOrders(tick);
         AssignProductionJobs(tick, agents);
+        ResolveEligibleDeferredSupplyJobs(tick, agents);
         CreateEligibleSupplyJobs(tick, agents);
         CreateEligibleFoodDependencyJobs(tick, agents);
     }
@@ -229,6 +230,7 @@ internal sealed partial class DigTerrainWorkSession
             if (building == null
                 || building.Status != BuildingStatus.Completed
                 || snapshot.HasActiveSupply
+                || HasNonTerminalBuildingSupplyJob(snapshot.BuildingId)
                 || _productionRepository!.Get().HasActiveOrder(snapshot.BuildingId)
                 || snapshot.Stocks.All(value =>
                     !value.DeliveryEnabled || value.Missing == 0))
@@ -274,6 +276,7 @@ internal sealed partial class DigTerrainWorkSession
             }
         }
     }
+
 }
 
 }

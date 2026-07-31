@@ -64,14 +64,39 @@ public sealed class CompleteProductionOrderHandler
             ?? throw new InvalidOperationException(
                 "An in-progress production job must retain its worker.");
 
+        ItemId[] outputUnits = order.Recipe.Outputs
+            .OrderBy(value => value.ItemId)
+            .SelectMany(value => Enumerable.Repeat(value.ItemId, value.Quantity))
+            .ToArray();
         EntityId[] outputIds = command.OutputStackIds
             .OrderBy(value => value.ToString(), StringComparer.Ordinal)
             .ToArray();
-        if (outputIds.Length != order.Recipe.Outputs.Count
+        if (outputIds.Length != outputUnits.Length
             || outputIds.Any(value => value.IsEmpty)
             || outputIds.Distinct().Count() != outputIds.Length)
         {
             return Result.Failure(ProductionErrors.OutputIdsMismatch);
+        }
+
+        ItemLocation[] outputLocations;
+        if (command.OutputLocations.Count > 0)
+        {
+            outputLocations = command.OutputLocations.ToArray();
+            if (outputLocations.Length != outputUnits.Length
+                || outputLocations.Distinct().Count() != outputLocations.Length)
+            {
+                return Result.Failure(ProductionErrors.OutputLocationsMismatch);
+            }
+        }
+        else
+        {
+            ItemLocation fallback = command.OutputLocation
+                ?? ItemLocation.InBuilding(order.BuildingId);
+            outputLocations = Enumerable.Repeat(fallback, outputUnits.Length).ToArray();
+            if (outputUnits.Length > 1 && fallback.Kind == ItemLocationKind.World)
+            {
+                return Result.Failure(ProductionErrors.OutputLocationsMismatch);
+            }
         }
 
         SkillGrantBundle? skillBundle = CreateSkillBundle(
@@ -87,28 +112,20 @@ public sealed class CompleteProductionOrderHandler
             }
         }
 
-        ItemStackCreation[] outputs = order.Recipe.Outputs
-            .OrderBy(value => value.ItemId)
-            .Zip(
-                outputIds,
-                (definition, stackId) => new ItemStackCreation(
-                    stackId,
-                    definition.ItemId,
-                    definition.Quantity))
+        ItemStackPlacement[] outputs = Enumerable.Range(0, outputUnits.Length)
+            .Select(index => new ItemStackPlacement(
+                new ItemStackCreation(outputIds[index], outputUnits[index], quantity: 1),
+                outputLocations[index]))
             .ToArray();
-        ItemLocation outputLocation = command.OutputLocation
-            ?? ItemLocation.InBuilding(order.BuildingId);
         Result committed = order.Recipe.UsesMaterialSteps
             ? inventory.CreateProductionOutputs(
                 order.Id,
                 outputs,
-                outputLocation,
                 command.Tick)
             : inventory.CompleteProductionTransaction(
                 order.Id,
                 order.InputAllocations,
                 outputs,
-                outputLocation,
                 command.Tick);
         if (committed.IsFailure)
         {

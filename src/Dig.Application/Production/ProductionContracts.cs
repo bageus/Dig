@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Messaging;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
@@ -130,7 +131,8 @@ public sealed class CompleteProductionOrderCommand : ICommand<Result>
         EntityId jobId,
         IReadOnlyCollection<EntityId> outputStackIds,
         long tick,
-        ItemLocation? outputLocation = null)
+        ItemLocation? outputLocation = null,
+        IReadOnlyCollection<ItemLocation>? outputLocations = null)
     {
         OrderId = orderId;
         JobId = jobId;
@@ -138,6 +140,8 @@ public sealed class CompleteProductionOrderCommand : ICommand<Result>
             ?? throw new ArgumentNullException(nameof(outputStackIds));
         Tick = tick;
         OutputLocation = outputLocation;
+        OutputLocations = outputLocations?.ToArray()
+            ?? Array.Empty<ItemLocation>();
     }
 
     public EntityId OrderId { get; }
@@ -149,6 +153,8 @@ public sealed class CompleteProductionOrderCommand : ICommand<Result>
     public long Tick { get; }
 
     public ItemLocation? OutputLocation { get; }
+
+    public IReadOnlyCollection<ItemLocation> OutputLocations { get; }
 }
 
 public sealed class CancelProductionOrderCommand : ICommand<Result>

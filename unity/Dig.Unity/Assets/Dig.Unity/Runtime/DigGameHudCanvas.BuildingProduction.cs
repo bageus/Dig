@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using Dig.Domain.Core;
 using Dig.Presentation.Buildings;
@@ -115,6 +116,10 @@ public sealed partial class DigGameHudCanvas
         label.resizeTextForBestFit = true;
         label.resizeTextMinSize = 10;
         label.resizeTextMaxSize = 22;
+        if (product.HasProductionOverlay)
+        {
+            CreateProductionProgressOverlay(button, product.ProductionProgress);
+        }
         CreateIconCount(
             button.transform,
             product.QueuedCount > 0 ? product.QueuedCount.ToString() : string.Empty,
@@ -127,6 +132,32 @@ public sealed partial class DigGameHudCanvas
                 building.Id,
                 product.RecipeId.ToString())
             : null;
+    }
+
+    private static void CreateProductionProgressOverlay(
+        Button button,
+        double normalizedProgress)
+    {
+        GameObject overlayObject = new GameObject(
+            "Production Progress Overlay",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image));
+        RectTransform overlay = (RectTransform)overlayObject.transform;
+        overlay.SetParent(button.transform, worldPositionStays: false);
+        overlay.anchorMin = Vector2.zero;
+        overlay.anchorMax = Vector2.one;
+        overlay.offsetMin = Vector2.zero;
+        overlay.offsetMax = Vector2.zero;
+        overlay.SetAsFirstSibling();
+
+        Image fill = overlayObject.GetComponent<Image>();
+        fill.type = Image.Type.Filled;
+        fill.fillMethod = Image.FillMethod.Vertical;
+        fill.fillOrigin = (int)Image.OriginVertical.Bottom;
+        fill.fillAmount = Mathf.Clamp01((float)normalizedProgress);
+        fill.color = new Color(0.93f, 0.88f, 0.42f, 0.48f);
+        fill.raycastTarget = false;
     }
 
     private void CreateStockIconButton(
@@ -249,7 +280,9 @@ public sealed partial class DigGameHudCanvas
         PackableBuildingExecutionViewModel? operation)
     {
         string products = string.Join(",", production.Products.Select(value =>
-            value.RecipeId + ":" + value.QueuedCount + ":" + value.IsOrange));
+            value.RecipeId + ":" + value.QueuedCount + ":" + value.IsOrange
+                + ":" + value.HasProductionOverlay + ":"
+                + value.ProductionProgress.ToString("F4", CultureInfo.InvariantCulture)));
         string stocks = string.Join(",", production.Stocks.Select(value =>
             value.ItemId + ":" + value.Current + ":" + value.Incoming + ":"
                 + value.DeliveryEnabled));

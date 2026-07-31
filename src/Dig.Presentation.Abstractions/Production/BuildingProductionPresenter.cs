@@ -74,13 +74,47 @@ public sealed class BuildingProductionPresenter
                 input.Quantity,
                 stock.TryGetValue(input.ItemId, out int current) ? current : 0))
             .ToArray();
+        ProductionOrderSnapshot? active = production.GetAll()
+            .Where(value => value.BuildingId == buildingId
+                && value.Recipe.Id == recipe.Id
+                && value.Status is ProductionOrderStatus.InProgress
+                    or ProductionOrderStatus.ReadyToComplete)
+            .OrderBy(value => value.Sequence)
+            .FirstOrDefault();
+        bool hasOverlay = active != null;
+        double progress = active == null
+            ? 0d
+            : ResolveProductionProgress(active);
         return new ProductionIconViewModel(
             recipe.Id,
             output.ItemId,
             recipe.DisplayName,
             output.Quantity,
             production.GetQueuedCount(buildingId, recipe.Id),
-            ingredients);
+            ingredients,
+            hasOverlay,
+            progress);
+    }
+
+    private static double ResolveProductionProgress(ProductionOrderSnapshot order)
+    {
+        if (order.Status == ProductionOrderStatus.ReadyToComplete)
+        {
+            return 1d;
+        }
+
+        if (order.Recipe.UsesMaterialSteps)
+        {
+            long required = order.MaterialSteps.Sum(value => value.RequiredTicks);
+            long completed = order.MaterialSteps.Sum(value => value.CompletedTicks);
+            return required <= 0
+                ? 0d
+                : Math.Min(1d, completed / (double)required);
+        }
+
+        return order.Recipe.RequiredWork <= 0
+            ? 0d
+            : Math.Min(1d, order.CompletedWork / (double)order.Recipe.RequiredWork);
     }
 }
 
