@@ -1,6 +1,6 @@
 # Производство в зданиях и внутреннее снабжение
 
-Статус: `QUESTIONNAIRE`; closed-package categories и interaction подтверждены, но unfinished staged package всё ещё требует решений по cancel/load/pickup и blocked output.
+Статус: `APPROVED`; staged package lifecycle, closed package categories, cancel/interruption, save/load и right-side output policy подтверждены.
 
 Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
 
@@ -8,7 +8,8 @@ Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
 
 - [`campfire-cooking-and-food-use.md`](campfire-cooking-and-food-use.md);
 - [`world-item-gravity-selection-and-pickup.md`](world-item-gravity-selection-and-pickup.md);
-- [`resident-inventory-expansion.md`](resident-inventory-expansion.md).
+- [`resident-inventory-expansion.md`](resident-inventory-expansion.md);
+- [`building-box-placement-and-packing.md`](building-box-placement-and-packing.md).
 
 ## 1. Назначение
 
@@ -17,10 +18,10 @@ Completed workstation производит предметы и BuildingBox че�
 ## 2. Владение состоянием
 
 - `ProductionContentCatalog` владеет immutable recipes и workstation definitions.
-- `ProductionState` владеет очередями, active order, material-step progress, consumed-input ledger и manifest закрытой non-building output box.
-- `InventoryState` владеет физическими item entities, quantity, reservations, `ItemLocation.InBuilding`, закрытыми package stacks и materialized world outputs.
+- `ProductionState` владеет очередями, active order, material-step progress, consumed-input ledger и package manifest/lifecycle.
+- `InventoryState` владеет физическими item entities, quantity, reservations, `ItemLocation.InBuilding`, unfinished/closed package stacks и materialized world outputs.
 - `BuildingSupplyState` владеет delivery toggles, incoming quantities и active supply request.
-- `JobSystem` владеет production/supply lifecycle, worker claims и reservations.
+- `JobSystem` владеет production/supply/package-use lifecycle, worker claims и reservations.
 - `BuildingsState` владеет footprint, orientation и work position.
 - `Agents` владеет authoritative resident position и skills.
 - `Presentation` только проецирует icons, counters, zones, items, hover и post-work pose.
@@ -34,7 +35,9 @@ Campfire использует stable IDs `building.campfire`, `building_box.camp
 - LMB по product icon добавляет один order.
 - RMB по тому же icon отменяет один order; при нуле это consumed no-op.
 - Отдельная minus-кнопка запрещена.
-- Counter равен числу non-terminal orders и уменьшается после `Completed`/`Cancelled`.
+- Queued order отменяется немедленно.
+- Если RMB относится к уже active order, текущая производимая единица не уничтожается: worker завершает её, закрывает коробку и производит output обычным success path. Counter уменьшается только после normal close/completion.
+- Counter равен числу non-terminal orders.
 - Shortage tint не блокирует enqueue; icon зелёный, когда полный input set уже доступен во внутреннем stock.
 - Для active order поверх product icon показывается segmented progress: одно деление на каждый material step, заполненное после обработки и помещения материала в output package.
 - Internal-stock icon показывает current/incoming/capacity и delivery toggle.
@@ -58,22 +61,20 @@ Campfire использует stable IDs `building.campfire`, `building_box.camp
 - `ItemLocation.InBuilding` никогда не является источником automatic delivery/building supply.
 - После ручного pickup delivery может создать replacement demand.
 
-### 5.2 Готовая продукция
+### 5.2 Готовая продукция и output справа
 
-- После назначения production worker в finished-output zone создаётся authoritative output package/box для конкретного order; presentation-only placeholder запрещён.
+- После назначения production worker справа от workstation создаётся authoritative unfinished package entity для конкретного order; presentation-only placeholder запрещён.
+- Output zone не имеет фиксированной длины. Resolver проверяет клетки вправо от footprint последовательно `right edge + 1`, `+2`, `+3` и далее до границы мира. Занятая клетка не блокирует запуск, а пропускается; side/left/rear fallback запрещён.
 - Все unfinished/closed package используют единый нейтральный package visual; категория определяется authoritative package kind, а не отличающейся геометрией.
-- Каждый обработанный material step помещается в этот package и заполняет одно деление progress overlay.
+- Каждый обработанный material step помещается в package и заполняет одно деление progress overlay.
 - После последнего step worker закрывает package, terminal-ит production order/job и уменьшает counter на один.
-- Если recipe производит здание, закрытый результат является обычной `BuildingBox` и полностью следует утверждённому lifecycle из `building-box-placement-and-packing.md`.
+- Если recipe производит здание, закрытый результат является обычной `BuildingBox` и полностью следует `building-box-placement-and-packing.md`.
 - Если recipe производит еду, закрытая коробка имеет package kind/name `food`; если оружие — `weapon`; остальные производимые предметы — `tool`.
-- `food`, `weapon` и `tool` являются quantity-one world package entities с сохранённым manifest произведённых stack IDs, item IDs и quantities. Они не являются готовым содержимым и не подбираются обычным pickup.
+- `food`, `weapon` и `tool` являются quantity-one world package entities с сохранённым manifest произведённых item IDs и quantities. Они не подбираются ordinary pickup.
 - Hover по доступной `food`/`weapon`/`tool` при выбранном resident показывает слегка анимированный cursor использования; LMB создаёт один direct use/break command для той же package identity/version.
-- Resident подходит к допустимой соседней work position, одним committed действием ломает коробку, удаляет её interaction target и exactly once материализует весь manifest в прежней world cell. Повторный/stale commit не создаёт duplicate contents.
-- Выпавшие food/weapon/tool contents становятся обычными world item entities и далее используют свои существующие selection/pickup/use/equipment rules.
-- Output cell должен быть explored, open, supported, вне footprint и без другого world item.
-- Candidate order идёт только вправо: `right edge + 1`, затем `+2` и далее; side/rear fallback запрещён.
-- Policy занятой output-zone для ещё не созданного package остаётся Q-PROD-024.
-- `WorldItemViewModel.IsInteractive` является authoritative для interaction collider. Package collider включён для `Use`, но `CanPickup = false`; BuildingBox сохраняет собственный interaction contract.
+- Resident подходит к допустимой соседней work position, одним committed действием ломает коробку, удаляет её interaction target и exactly once материализует весь manifest в прежней world cell.
+- Выпавшие contents становятся обычными world item entities и далее используют существующие selection/pickup/use/equipment rules.
+- `WorldItemViewModel.IsInteractive` является authoritative для collider. Unfinished package имеет interaction collider disabled; closed non-building package имеет Use collider и `CanPickup = false`; BuildingBox сохраняет собственный contract.
 
 ## 6. Supply lifecycle
 
@@ -81,51 +82,68 @@ Demand создаётся для completed workstation с enabled delivery и н
 
 ## 7. Production lifecycle
 
-Подтверждённый success path:
-
 1. Order может ожидать inputs в queue; icon зелёный при наличии полного input set.
 2. Полный input set резервируется во внутреннем stock.
 3. Один eligible resident получает `ProductionWorkJob`; segmented overlay получает по одному делению на material step.
-4. Worker создаёт order-owned package в finished-output zone.
+4. Worker создаёт order-owned unfinished package в первой доступной right-side output cell.
 5. Для каждого material step worker берёт одну конкретную единицу с внутреннего склада в resident inventory, подходит к workstation/campfire и выкладывает материал на derived virtual workbench.
 6. После обработки material превращается в transient processed-step state; отдельный processed item в resident inventory не показывается.
 7. Worker переносит processed step в package; input расходуется exactly once и соответствующее деление заполняется.
-8. После последнего step worker закрывает package. Close atomically создаёт BuildingBox либо закрытую `food`/`weapon`/`tool` package entity с manifest, terminal-ит order/job, выдаёт skill grants, освобождает reservations и уменьшает counter на один.
+8. После последнего step worker закрывает package. Close atomically создаёт BuildingBox либо closed `food`/`weapon`/`tool` package с manifest, terminal-ит order/job, выдаёт skill grants, освобождает reservations и уменьшает counter на один.
 9. Для non-building output отдельный direct-use worker позже ломает закрытую коробку и materialize-ит manifest exactly once; это не является продолжением production order.
-10. Тот же production worker остаётся owner всего manufacturing workflow; следующий order начинается только после terminal close/cancel/failure текущего.
+10. Тот же production worker остаётся owner всего manufacturing workflow.
 
-## 7.1 Закрытые package categories и direct use
+## 7.1 Cancel и forced movement
 
-- `BuildingBox` не использует generic package-open command: selection, pickup, unpacking, relocation, assembly и packing остаются у существующей BuildingBox system.
-- `food`, `weapon` и `tool` используют один generic output-package owner и различаются только stable package kind/name и содержимым manifest.
-- Direct use требует selected resident, живую closed package entity, совпадающую version и reachable work position рядом с package cell.
+### Explicit cancel через product icon
+
+- queued order отменяется и counter уменьшается;
+- active order не обрывается: текущая единица производится до конца и output появляется;
+- active package, material progress, reservations и worker сохраняются до normal close;
+- после completion order/job terminal и counter уменьшается ровно один раз.
+
+### Принудительное перемещение production worker
+
+Если игрок отправляет занятого production worker в другое место:
+
+1. production job отменяется;
+2. unfinished package entity удаляется;
+3. уже consumed/processed materials теряются без возврата;
+4. ещё не использованные reservations освобождаются;
+5. тот же order возвращается в `Queued` с нулевым material progress;
+6. counter остаётся неизменным, потому что order не terminal;
+7. повторный planning заново требует полный input set и создаёт новую package entity.
+
+Forced movement после normal close не меняет уже созданный output.
+
+## 7.2 Closed package direct use
+
+- `BuildingBox` не использует generic package-open command.
+- `food`, `weapon` и `tool` используют один generic output-package owner и различаются stable package kind/name и manifest.
+- Direct use требует selected resident, живую closed package entity, совпадающую version и reachable work position.
 - Hover highlight, animated use cursor и click обязаны разрешать одну identity/version; один pointer event создаёт не более одной command.
 - До committed break cancel, route failure, worker removal или interruption не меняют package/manifest. После commit package terminal и не восстанавливается.
 - Несколько stale commands не могут materialize-ить manifest повторно; первый successful commit побеждает.
-- Package не блокирует Navigation movement, но остаётся world item occupancy для output/building placement policies согласно ordinary item rules.
 
-## 7.2 Открытые решения unfinished staged package
+## 8. Повтор, blocked и concurrency
 
-- **Q-PROD-021:** можно ли поднять незакрытый package принудительно; если да, отменяется ли order или переносится вместе с progress.
-- **Q-PROD-022:** cancel/failure после одного или нескольких processed steps уничтожает package, оставляет частично заполненный package либо возвращает только ещё не обработанные inputs.
-- **Q-PROD-023:** save/load mid-step сохраняет package как отдельную inventory entity или восстанавливает его derived projection из order/material progress.
-- **Q-PROD-024:** blocked/occupied finished-output zone не даёт стартовать worker либо package выбирает следующий right-side candidate.
-
-Q-PROD-021..024 относятся только к незакрытому package между первым material step и close. Они не блокируют подтверждённый lifecycle уже закрытых `food`/`weapon`/`tool` коробок. До их решения код не должен молча придумывать observable поведение unfinished package.
-
-## 8. Повтор, cancel, blocked и concurrency
-
-- Repeat order занимает следующую свободную правую candidate cell.
-- Cancel освобождает неиспользованные reservations; судьба уже processed steps/package остаётся Q-PROD-022.
-- Blocked output не создаёт presentation-only package; start/retry policy остаётся Q-PROD-024.
+- Repeat order занимает первую доступную клетку дальше вправо без фиксированного lateral limit.
+- Occupied output cell пропускается; production блокируется только если до правой границы мира нет ни одной валидной клетки.
 - Каждый building владеет независимой queue/stock/active order.
-- Два buildings не могут commit output в одну cell; occupancy перепроверяется в Finalize.
+- Два buildings не могут commit package/output в одну cell; occupancy перепроверяется при package creation/close.
+- Unfinished package нельзя поднять, переместить или использовать.
 
 ## 9. Save/load и diagnostics
 
-Save включает workstation registration, delivery toggles/incoming, queue/status, material progress, consumed ledger, active job references и supply allocations. Закрытая `BuildingBox` сохраняется обычным BuildingBox contract. Закрытая `food`/`weapon`/`tool` package сохраняет package stack identity/location/version, kind, полный contents manifest и materialized marker; active direct-use job сохраняет worker/work position/stage. Способ сохранения незакрытого package остаётся Q-PROD-023. Derived zone geometry, hover/cursor phase и wait pose не сохраняются. Load не повторяет committed output, package materialization или skill grants.
+Save включает workstation registration, delivery toggles/incoming, queue/status, material progress, consumed ledger, active job references и supply allocations.
 
-Diagnostics показывают building/recipe/order/job IDs, stock current/incoming/capacity, material progress, assigned worker, output candidates/chosen cell, package stack/kind/version/manifest/materialized state, direct-use worker/stage, block reason и terminal completion result.
+- Unfinished package сохраняется как настоящая Inventory item entity со stable stack ID/location, owner order ID, lifecycle/version и текущим manifest/progress reference.
+- Closed `food`/`weapon`/`tool` package сохраняет stack identity/location/version, kind, полный contents manifest и materialized marker.
+- Active direct-use job сохраняет worker/work position/stage.
+- `BuildingBox` сохраняется своим существующим contract.
+- Load не возвращает consumed inputs, не повторяет package close/materialization и не дублирует skill grants.
+
+Diagnostics показывают building/recipe/order/job IDs, stock current/incoming/capacity, material progress, assigned worker, output candidates/chosen cell, package stack/kind/version/manifest, direct-use worker/stage, interruption reason и terminal completion result.
 
 ## 10. Acceptance
 
@@ -133,26 +151,26 @@ Domain/Application:
 
 - protected internal stock не выбирается automatic supply;
 - direct pickup забирает одну available unit;
-- right candidates deterministic и без fallback;
+- right candidates deterministic, без фиксированного limit и без side fallback;
+- occupied nearest cells выбирают следующую правую cell;
+- unfinished package является inventory entity, не pickup/use target;
+- active explicit cancel сохраняет workflow до normal output;
+- forced move удаляет package, теряет consumed materials, освобождает unused reservations, reset-ит progress и оставляет counter/order non-terminal;
 - package close, BuildingBox либо closed-package commit и terminal order/job происходят атомарно;
-- BuildingBox output использует только существующий BuildingBox lifecycle;
-- food/weapon/tool close создаёт одну неподымаемую package entity с полным manifest;
-- direct use materialize-ит весь manifest exactly once и удаляет package;
-- duplicate production completion или stale break не создаёт второй package/output;
-- save/load сохраняет package manifest, active use job и exactly-once semantics.
+- food/weapon/tool direct use materialize-ит manifest exactly once;
+- save/load сохраняет unfinished/closed package entity и active use job.
 
 Unity Play Mode:
 
-- слева и справа видны плоские trays без rear rail;
-- internal units используют тот же art/hover/pickup cursor, несут exact `StackId`, видны/clickable и не блокируют navigation;
+- internal units используют тот же art/hover/pickup cursor и exact `StackId`;
 - enabled internal stock продолжает refill одновременно с production до capacity;
 - product icon показывает segmented material progress;
-- unfinished staged package workflow проверяется после решения Q-PROD-021..024;
+- unfinished package видна справа, не поднимается и сохраняется после save/load;
+- explicit cancel active unit даёт finished output;
+- forced move удаляет package, оставляет counter и заново ставит order в ожидание inputs;
+- несколько занятых right-side cells сдвигают package дальше вправо;
 - BuildingBox output использует обычный selection/unpack/pickup contract;
-- food/weapon/tool package имеет enabled Use collider, animated use cursor и не показывает pickup affordance;
-- resident ломает package, после чего содержимое видно/raycastable и использует ordinary item rules;
-- после output job/order terminal, counter уменьшается, worker ждёт лицом к камере;
-- repeat/blocked/save-load не создают visual-only или duplicate products.
+- food/weapon/tool package имеет animated use cursor, ломается и выпускает обычные world items exactly once.
 
 ## 11. Журнал решений
 
@@ -160,7 +178,7 @@ Unity Play Mode:
 |---|---|---|
 | 2026-07-27 | Generic production, protected internal stock, progressive consumption и deferred replenishment. | User |
 | 2026-07-29 | Left internal zone, right output zone, same-worker Finalize, pickup-capable output и camera-facing wait. | User |
-| 2026-07-29 | Work position находится сбоку на той же supported Y/Z plane, не над building. | User |
 | 2026-07-30 | Оба tray плоские без спинки; interaction collider следует authoritative read model. | User |
-| 2026-07-31 | Internal stock units идентичны world items по art/hover/pickup и несут exact StackId; enabled refill работает до capacity параллельно production; flat routes предпочтительнее climbing; product icon показывает material segments; production использует staged output package. | User |
-| 2026-08-01 | Closed building output следует BuildingBox rules; closed non-building boxes называются `food`, `weapon`, `tool`, показывают animated use cursor, ломаются resident direct-use action и exactly once выпускают содержимое. | User |
+| 2026-07-31 | Internal stock identity/refill, flat-route priority, segmented progress и staged output package. | User |
+| 2026-08-01 | Closed categories `food`/`weapon`/`tool` ломаются use-action и выпускают contents; BuildingBox сохраняет existing rules. | User |
+| 2026-08-01 | Unfinished package не поднимается; explicit cancel завершает current unit; forced move уничтожает package/used materials, reset-ит order без изменения counter; package сохраняется как item entity; output search вправо не имеет фиксированного лимита. | User |
