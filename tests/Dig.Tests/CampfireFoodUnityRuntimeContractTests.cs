@@ -34,8 +34,11 @@ namespace Dig.Tests
             Assert.Contains("_buildingInventoryRepository", mushrooms);
             Assert.Contains("CompleteProductionOrderCommand", productionZones);
             Assert.Contains("ResolveProductionOutputCells", productionZones);
-            Assert.Contains("Enumerable.Range(0, outputUnitCount)", productionZones);
-            Assert.Contains("outputLocations: outputCells.Value", productionZones);
+            Assert.Contains("GetOutputPackageForOrder", productionZones);
+            Assert.Contains("new[] { package.StackId }", productionZones);
+            Assert.Contains("Array.Empty<EntityId>()", productionZones);
+            Assert.Contains("ItemLocation.InWorld(outputCell.Value)", productionZones);
+            Assert.Contains("package.StackId", productionZones);
         }
 
         [Fact]
