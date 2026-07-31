@@ -91,30 +91,29 @@ namespace Dig.Unity
         }
 
         internal bool TryResolveBuildingInternalStockPickup(
-            string buildingId,
-            string itemId,
-            out string stackId,
+            string stackId,
             out CellId workPosition)
         {
-            stackId = string.Empty;
             workPosition = default;
-            if (_buildingsRepository == null || _buildingInventoryRepository == null)
+            if (_buildingsRepository == null || _buildingInventoryRepository == null
+                || string.IsNullOrWhiteSpace(stackId))
             {
                 return false;
             }
 
-            EntityId building = EntityId.Parse(buildingId);
-            ItemId item = new ItemId(itemId);
             ItemStackSnapshot? stack = _buildingInventoryRepository.Get()
-                .CreateSnapshot().Stacks
-                .Where(value => value.ItemId == item
-                    && value.Location == ItemLocation.InBuilding(building)
-                    && value.AvailableQuantity > 0)
-                .OrderBy(value => value.StackId.ToString(), StringComparer.Ordinal)
-                .FirstOrDefault();
+                .GetStack(EntityId.Parse(stackId));
+            if (stack == null
+                || stack.Location.Kind != ItemLocationKind.BuildingInventory
+                || !stack.Location.HasOwner
+                || stack.AvailableQuantity <= 0)
+            {
+                return false;
+            }
+
             Dig.Domain.Buildings.BuildingSnapshot? buildingSnapshot =
-                _buildingsRepository.Get().Get(building);
-            if (stack == null || buildingSnapshot == null)
+                _buildingsRepository.Get().Get(stack.Location.OwnerId);
+            if (buildingSnapshot == null)
             {
                 return false;
             }
@@ -125,7 +124,6 @@ namespace Dig.Unity
                 .ThenBy(value => value.Y)
                 .ThenBy(value => value.Z)
                 .First();
-            stackId = stack.StackId.ToString();
             workPosition = new CellId(
                 buildingSnapshot.Footprint.Min(value => value.X) - 1,
                 row.Y,
