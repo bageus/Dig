@@ -76,17 +76,29 @@ public sealed partial class InventoryState
         ItemLocation outputLocation,
         long tick)
     {
+        return CreateProductionOutputs(
+            orderId,
+            outputs.Select(value => new ItemStackPlacement(value, outputLocation)).ToArray(),
+            tick);
+    }
+
+    public Result CreateProductionOutputs(
+        EntityId orderId,
+        IReadOnlyCollection<ItemStackPlacement> outputPlacements,
+        long tick)
+    {
         ValidateTick(tick);
         ValidateJobId(orderId);
-        if (outputs is null)
+        if (outputPlacements is null)
         {
-            throw new ArgumentNullException(nameof(outputs));
+            throw new ArgumentNullException(nameof(outputPlacements));
         }
 
-        ItemStackCreation[] values = outputs.ToArray();
+        ItemStackPlacement[] placements = outputPlacements.ToArray();
+        ItemStackCreation[] values = placements.Select(value => value.Stack).ToArray();
         if (values.Length == 0)
         {
-            throw new ArgumentException("Production needs outputs.", nameof(outputs));
+            throw new ArgumentException("Production needs outputs.", nameof(outputPlacements));
         }
 
         EntityId[] ids = values.Select(value => value.StackId).ToArray();
@@ -103,15 +115,16 @@ public sealed partial class InventoryState
             }
         }
 
-        foreach (ItemStackCreation output in values)
+        foreach (ItemStackPlacement placement in placements)
         {
+            ItemStackCreation output = placement.Stack;
             _stacks.Add(
                 output.StackId,
                 new ItemStackState(
                     output.StackId,
                     output.ItemId,
                     output.Quantity,
-                    outputLocation));
+                    placement.Location));
         }
 
         IncrementVersion();
@@ -119,8 +132,7 @@ public sealed partial class InventoryState
             tick,
             orderId,
             Array.Empty<ItemReservationAllocation>(),
-            values,
-            outputLocation));
+            placements));
         return Result.Success();
     }
 }

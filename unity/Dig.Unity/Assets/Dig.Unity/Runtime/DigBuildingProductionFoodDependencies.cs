@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Ecology;
+using Dig.Application.Production;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Ecology;
@@ -22,9 +23,11 @@ namespace Dig.Unity
         {
             if (_mushroomRepository == null
                 || _startMushroomChop == null
+                || _cancelMushroomChop == null
                 || _buildingSupplyRepository == null
                 || _productionRepository == null
-                || _buildingInventoryRepository == null)
+                || _buildingInventoryRepository == null
+                || _createDeferredBuildingSupply == null)
             {
                 return;
             }
@@ -41,6 +44,7 @@ namespace Dig.Unity
                 if (order == null
                     || order.Recipe.Id != CampfireProductionContent.GrilledMushroomRecipeId
                     || supply.HasActiveSupply
+                    || HasNonTerminalBuildingSupplyJob(supply.BuildingId)
                     || _productionRepository.Get().HasActiveOrder(supply.BuildingId))
                 {
                     continue;
@@ -87,9 +91,46 @@ namespace Dig.Unity
                         tick));
                 if (started.IsSuccess)
                 {
-                    // One new biological dependency per synchronization tick is enough;
-                    // its world drops are reconciled by the normal supply chain.
-                    return;
+                    EntityId supplyJobId = NextProductionEntityId(
+                        'd',
+                        ref _nextSupplyJobSequence);
+                    EntityId[] transit = Enumerable.Range(0, 12)
+                        .Select(_ => NextProductionEntityId(
+                            'c',
+                            ref _nextSupplyTransitSequence))
+                        .ToArray();
+                    EntityId[] deposits =
+                    {
+                        NextProductionEntityId(
+                            'b',
+                            ref _nextSupplyDepositSequence),
+                    };
+                    Result deferred = _createDeferredBuildingSupply.Handle(
+                        new CreateDeferredBuildingSupplyJobCommand(
+                            supplyJobId,
+                            supply.BuildingId,
+                            new[]
+                            {
+                                new ItemConsumptionRequest(
+                                    CampfireProductionContent.MushroomCapItemId,
+                                    quantity: 1),
+                            },
+                            new[] { jobId },
+                            transit,
+                            deposits,
+                            ProductionFoodDependencyPriority,
+                            tick));
+                    if (deferred.IsSuccess)
+                    {
+                        // Extraction and its dependency-blocked delivery are visible in
+                        // the job system in the same synchronization pass.
+                        return;
+                    }
+
+                    _cancelMushroomChop.Handle(new CancelMushroomChopCommand(
+                        jobId,
+                        "dependent_supply_creation_failed",
+                        tick));
                 }
             }
         }

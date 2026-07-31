@@ -153,6 +153,21 @@ internal sealed class CampfireProductionTestHarness
         CellId outputCell,
         long tick)
     {
+        return Complete(
+            orderId,
+            jobId,
+            new[] { outputId },
+            new[] { outputCell },
+            tick);
+    }
+
+    public Result Complete(
+        EntityId orderId,
+        EntityId jobId,
+        IReadOnlyCollection<EntityId> outputIds,
+        IReadOnlyCollection<CellId> outputCells,
+        long tick)
+    {
         return new CompleteProductionOrderHandler(
             ProductionRepository,
             InventoryRepository,
@@ -161,9 +176,11 @@ internal sealed class CampfireProductionTestHarness
             SkillGrants).Handle(new CompleteProductionOrderCommand(
                 orderId,
                 jobId,
-                new[] { outputId },
+                outputIds,
                 tick,
-                ItemLocation.InWorld(outputCell)));
+                outputLocations: outputCells
+                    .Select(ItemLocation.InWorld)
+                    .ToArray()));
     }
 
     public static EntityId Id(int value)

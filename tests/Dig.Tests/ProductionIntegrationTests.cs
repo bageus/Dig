@@ -253,8 +253,17 @@ public sealed class ProductionIntegrationTests
         Assert.True(harness.Complete(
             FirstOrderId,
             FirstJobId,
-            OutputStackId,
+            new[]
+            {
+                OutputStackId,
+                EntityId.Parse("86000000000000000000000000000008"),
+            },
             tick: 7).IsSuccess);
+
+        Assert.All(
+            harness.Inventory.CreateSnapshot().Stacks.Where(value =>
+                value.ItemId == ProductionTestHarness.Plate),
+            value => Assert.Equal(1, value.Quantity));
 
         Assert.Equal(80, harness.Agents.Get(ProductionTestHarness.WorkerId)!
             .CreateSnapshot(7)

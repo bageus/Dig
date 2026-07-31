@@ -59,6 +59,19 @@ public readonly struct ItemStackCreation
     public int Quantity { get; }
 }
 
+public readonly struct ItemStackPlacement
+{
+    public ItemStackPlacement(ItemStackCreation stack, ItemLocation location)
+    {
+        Stack = stack;
+        Location = location;
+    }
+
+    public ItemStackCreation Stack { get; }
+
+    public ItemLocation Location { get; }
+}
+
 public sealed class ProductionInventoryCommitted : IDomainEvent
 {
     public ProductionInventoryCommitted(
@@ -67,14 +80,35 @@ public sealed class ProductionInventoryCommitted : IDomainEvent
         IReadOnlyCollection<ItemReservationAllocation> inputs,
         IReadOnlyCollection<ItemStackCreation> outputs,
         ItemLocation outputLocation)
+        : this(
+            tick,
+            orderId,
+            inputs,
+            outputs.Select(value => new ItemStackPlacement(value, outputLocation)).ToArray())
     {
+    }
+
+    public ProductionInventoryCommitted(
+        long tick,
+        EntityId orderId,
+        IReadOnlyCollection<ItemReservationAllocation> inputs,
+        IReadOnlyCollection<ItemStackPlacement> outputPlacements)
+    {
+        if (outputPlacements is null || outputPlacements.Count == 0)
+        {
+            throw new ArgumentException("Production output placements are required.");
+        }
+
         Tick = tick;
         OrderId = orderId;
         Inputs = new ReadOnlyCollection<ItemReservationAllocation>(
             inputs.OrderBy(value => value.StackId.ToString(), StringComparer.Ordinal).ToArray());
+        OutputPlacements = new ReadOnlyCollection<ItemStackPlacement>(
+            outputPlacements.OrderBy(value => value.Stack.StackId.ToString(), StringComparer.Ordinal)
+                .ToArray());
         Outputs = new ReadOnlyCollection<ItemStackCreation>(
-            outputs.OrderBy(value => value.StackId.ToString(), StringComparer.Ordinal).ToArray());
-        OutputLocation = outputLocation;
+            OutputPlacements.Select(value => value.Stack).ToArray());
+        OutputLocation = OutputPlacements[0].Location;
     }
 
     public long Tick { get; }
@@ -84,6 +118,8 @@ public sealed class ProductionInventoryCommitted : IDomainEvent
     public IReadOnlyList<ItemReservationAllocation> Inputs { get; }
 
     public IReadOnlyList<ItemStackCreation> Outputs { get; }
+
+    public IReadOnlyList<ItemStackPlacement> OutputPlacements { get; }
 
     public ItemLocation OutputLocation { get; }
 }
@@ -160,15 +196,31 @@ public sealed partial class InventoryState
         ItemLocation outputLocation,
         long tick)
     {
+        return CompleteProductionTransaction(
+            orderId,
+            inputs,
+            outputs.Select(value => new ItemStackPlacement(value, outputLocation)).ToArray(),
+            tick);
+    }
+
+    public Result CompleteProductionTransaction(
+        EntityId orderId,
+        IReadOnlyCollection<ItemReservationAllocation> inputs,
+        IReadOnlyCollection<ItemStackPlacement> outputPlacements,
+        long tick)
+    {
         ValidateTick(tick);
         ValidateJobId(orderId);
-        if (inputs is null || outputs is null)
+        if (inputs is null || outputPlacements is null)
         {
             throw new ArgumentNullException(nameof(inputs));
         }
 
         ItemReservationAllocation[] inputValues = inputs.ToArray();
-        ItemStackCreation[] outputValues = outputs.ToArray();
+        ItemStackPlacement[] placementValues = outputPlacements.ToArray();
+        ItemStackCreation[] outputValues = placementValues
+            .Select(value => value.Stack)
+            .ToArray();
         if (inputValues.Length == 0 || outputValues.Length == 0)
         {
             throw new ArgumentException("Production needs inputs and outputs.");
@@ -195,15 +247,16 @@ public sealed partial class InventoryState
             }
         }
 
-        foreach (ItemStackCreation output in outputValues)
+        foreach (ItemStackPlacement placement in placementValues)
         {
+            ItemStackCreation output = placement.Stack;
             _stacks.Add(
                 output.StackId,
                 new ItemStackState(
                     output.StackId,
                     output.ItemId,
                     output.Quantity,
-                    outputLocation));
+                    placement.Location));
         }
 
         IncrementVersion();
@@ -211,8 +264,7 @@ public sealed partial class InventoryState
             tick,
             orderId,
             inputValues,
-            outputValues,
-            outputLocation));
+            placementValues));
         return Result.Success();
     }
 

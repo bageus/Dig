@@ -11,6 +11,7 @@ using Dig.Presentation.Production;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace Dig.Unity.Tests
 {
@@ -58,6 +59,36 @@ public sealed class BuildingProductionPlayModeTests
             button = PointerEventData.InputButton.Right,
         });
         Assert.That(decrementCount, Is.EqualTo(1));
+    }
+
+    [Test]
+    public void Product_progress_overlay_fills_the_whole_cell_without_intercepting_input()
+    {
+        _root = new GameObject(
+            "Production progress cell",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image),
+            typeof(Button));
+        Button button = _root.GetComponent<Button>();
+        MethodInfo? method = typeof(DigGameHudCanvas).GetMethod(
+            "CreateProductionProgressOverlay",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.That(method, Is.Not.Null);
+
+        method!.Invoke(null, new object[] { button, 0.42d });
+
+        Transform overlayTransform = _root.transform.Find("Production Progress Overlay");
+        Assert.That(overlayTransform, Is.Not.Null);
+        Image overlay = overlayTransform.GetComponent<Image>();
+        RectTransform rect = (RectTransform)overlay.transform;
+        Assert.That(overlay.type, Is.EqualTo(Image.Type.Filled));
+        Assert.That(overlay.fillMethod, Is.EqualTo(Image.FillMethod.Vertical));
+        Assert.That(overlay.fillOrigin, Is.EqualTo((int)Image.OriginVertical.Bottom));
+        Assert.That(overlay.fillAmount, Is.EqualTo(0.42f).Within(0.001f));
+        Assert.That(overlay.raycastTarget, Is.False);
+        Assert.That(rect.anchorMin, Is.EqualTo(Vector2.zero));
+        Assert.That(rect.anchorMax, Is.EqualTo(Vector2.one));
     }
 
     [Test]

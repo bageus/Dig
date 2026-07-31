@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Agents;
+using Dig.Application.Ecology;
 using Dig.Application.Jobs;
 using Dig.Application.Production;
 using Dig.Domain.Agents;
@@ -42,6 +43,9 @@ internal sealed partial class DigTerrainWorkSession
     private CompleteProductionOrderHandler? _completeProduction;
     private CancelProductionOrderHandler? _cancelProduction;
     private CreateBuildingSupplyJobHandler? _createBuildingSupply;
+    private CreateDeferredBuildingSupplyJobHandler? _createDeferredBuildingSupply;
+    private ResolveDeferredBuildingSupplyJobHandler? _resolveDeferredBuildingSupply;
+    private CancelDeferredBuildingSupplyJobHandler? _cancelDeferredBuildingSupply;
     private AcquireBuildingSupplySourceHandler? _acquireBuildingSupplySource;
     private DepositBuildingSupplyHandler? _depositBuildingSupply;
     private CancelBuildingSupplyHandler? _cancelBuildingSupply;
@@ -136,6 +140,21 @@ internal sealed partial class DigTerrainWorkSession
             _productionRepository,
             _buildingsRepository,
             _buildingInventoryRepository,
+            _jobRepository,
+            journal);
+        _createDeferredBuildingSupply = new CreateDeferredBuildingSupplyJobHandler(
+            _productionContent,
+            _buildingsRepository,
+            _jobRepository,
+            journal);
+        _resolveDeferredBuildingSupply = new ResolveDeferredBuildingSupplyJobHandler(
+            _productionContent,
+            _buildingSupplyRepository,
+            _buildingsRepository,
+            _buildingInventoryRepository,
+            _jobRepository,
+            journal);
+        _cancelDeferredBuildingSupply = new CancelDeferredBuildingSupplyJobHandler(
             _jobRepository,
             journal);
         _acquireBuildingSupplySource = new AcquireBuildingSupplySourceHandler(
@@ -269,7 +288,46 @@ internal sealed partial class DigTerrainWorkSession
             _buildingProductionRoutes.Remove(jobId);
         }
 
+        if (result.IsSuccess)
+        {
+            CancelDeferredSupplyForCancelledOrder(building, tick);
+        }
+
         return result;
+    }
+
+    private void CancelDeferredSupplyForCancelledOrder(
+        EntityId buildingId,
+        long tick)
+    {
+        JobSnapshot[] pending = _jobRepository!.Get().GetAll()
+            .Where(value => !value.IsTerminal
+                && value.Definition is BuildingSupplyJobDefinition supply
+                && supply.BuildingId == buildingId
+                && !supply.IsSourceResolved)
+            .ToArray();
+        foreach (JobSnapshot delivery in pending)
+        {
+            BuildingSupplyJobDefinition supply =
+                (BuildingSupplyJobDefinition)delivery.Definition;
+            _cancelDeferredBuildingSupply!.Handle(
+                new CancelDeferredBuildingSupplyJobCommand(
+                    delivery.Id,
+                    "The owning production order was cancelled.",
+                    tick));
+            foreach (EntityId dependencyId in supply.Dependencies)
+            {
+                JobSnapshot? dependency = _jobRepository.Get().Get(dependencyId);
+                if (dependency?.Definition is MushroomChopJobDefinition
+                    && !dependency.IsTerminal)
+                {
+                    _cancelMushroomChop!.Handle(new CancelMushroomChopCommand(
+                        dependencyId,
+                        "production_order_cancelled",
+                        tick));
+                }
+            }
+        }
     }
 
     internal Result SetBuildingStockDelivery(

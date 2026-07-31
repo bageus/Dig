@@ -20,30 +20,34 @@ public sealed class CampfireFoodCompletionPlayModeTests
             new CampfireFoodProductionPlayModeHarness();
         EntityId orderId = Id(100);
         EntityId jobId = Id(101);
-        EntityId outputId = Id(102);
+        EntityId firstOutputId = Id(102);
+        EntityId secondOutputId = Id(104);
         harness.AddBuildingStock(
             CampfireProductionContent.MushroomCapItemId,
             quantity: 1,
             id: 103);
         harness.ReadyOrder(orderId, jobId, tick: 1);
         MaterialId air = new MaterialId("terrain.air");
+        MaterialId rock = new MaterialId("terrain.rock");
         MaterialCatalog materials = new MaterialCatalog(new[]
         {
             new MaterialDefinition(air, isSolid: false, hardness: 0),
+            new MaterialDefinition(rock, isSolid: true, hardness: 100),
         });
         WorldState world = WorldState.CreateFilled(
             new WorldSize(12, 12),
             chunkSize: 4,
             materials,
-            air,
+            rock,
             explored: true).Value;
         Dig.Domain.Buildings.BuildingSnapshot building = harness.Buildings.Get(
             CampfireFoodProductionPlayModeHarness.BuildingId)!;
         CellId[] candidates = ProductionOutputPlacement
-            .CreateCandidates(building, maximumLateralDistance: 0)
+            .CreateCandidates(building, maximumLateralDistance: 1)
             .ToArray();
         for (int index = 0; index < candidates.Length; index++)
         {
+            Require(world.Excavate(candidates[index], air, tick: 5 + index));
             Require(harness.Inventory.AddStack(
                 Id(200 + index),
                 CampfireProductionContent.StoneItemId,
@@ -52,12 +56,14 @@ public sealed class CampfireFoodCompletionPlayModeTests
                 tick: 6));
         }
 
-        Result<CellId> blocked = ProductionOutputPlacement.Resolve(
-            building,
-            world.CreateSnapshot(),
-            building.Footprint,
-            harness.Inventory.CreateSnapshot().Stacks,
-            maximumLateralDistance: 0);
+        Result<System.Collections.Generic.IReadOnlyList<CellId>> blocked =
+            ProductionOutputPlacement.ResolveMany(
+                building,
+                world.CreateSnapshot(),
+                building.Footprint,
+                harness.Inventory.CreateSnapshot().Stacks,
+                requiredCount: 2,
+                maximumLateralDistance: 1);
 
         Assert.That(blocked.IsFailure, Is.True);
         Assert.That(blocked.Error, Is.EqualTo(ProductionErrors.OutputSpaceUnavailable));
@@ -68,42 +74,49 @@ public sealed class CampfireFoodCompletionPlayModeTests
             harness.Inventory.GetTotal(CampfireProductionContent.GrilledMushroomItemId),
             Is.EqualTo(0));
 
-        EntityId firstBlocker = Id(200);
         EntityId removalOwner = Id(299);
-        Require(harness.Inventory.ReserveQuantity(
-            firstBlocker,
-            removalOwner,
-            1,
-            tick: 7));
-        Require(harness.Inventory.ConsumeReserved(
-            removalOwner,
-            firstBlocker,
-            1,
-            tick: 7));
-        Result<CellId> available = ProductionOutputPlacement.Resolve(
-            building,
-            world.CreateSnapshot(),
-            building.Footprint,
-            harness.Inventory.CreateSnapshot().Stacks,
-            maximumLateralDistance: 0);
+        for (int index = 0; index < 2; index++)
+        {
+            EntityId blockerId = Id(200 + index);
+            Require(harness.Inventory.ReserveQuantity(
+                blockerId,
+                removalOwner,
+                1,
+                tick: 7 + index));
+            Require(harness.Inventory.ConsumeReserved(
+                removalOwner,
+                blockerId,
+                1,
+                tick: 7 + index));
+        }
+
+        Result<System.Collections.Generic.IReadOnlyList<CellId>> available =
+            ProductionOutputPlacement.ResolveMany(
+                building,
+                world.CreateSnapshot(),
+                building.Footprint,
+                harness.Inventory.CreateSnapshot().Stacks,
+                requiredCount: 2,
+                maximumLateralDistance: 1);
         Assert.That(available.IsSuccess, Is.True, available.Error?.ToString());
-        Assert.That(available.Value, Is.EqualTo(candidates[0]));
+        Assert.That(available.Value, Is.EqualTo(new[] { candidates[0], candidates[1] }));
 
         Require(harness.Complete(
             orderId,
             jobId,
-            outputId,
+            new[] { firstOutputId, secondOutputId },
             available.Value,
-            tick: 8));
+            tick: 9));
         Result duplicate = harness.Complete(
             orderId,
             jobId,
-            Id(300),
+            new[] { Id(300), Id(301) },
             available.Value,
-            tick: 9);
+            tick: 10);
 
         Assert.That(duplicate.IsFailure, Is.True);
-        Assert.That(harness.Inventory.GetStack(outputId)!.Quantity, Is.EqualTo(2));
+        Assert.That(harness.Inventory.GetStack(firstOutputId)!.Quantity, Is.EqualTo(1));
+        Assert.That(harness.Inventory.GetStack(secondOutputId)!.Quantity, Is.EqualTo(1));
         Assert.That(
             harness.Inventory.GetTotal(CampfireProductionContent.GrilledMushroomItemId),
             Is.EqualTo(2));
@@ -129,15 +142,15 @@ public sealed class CampfireFoodCompletionPlayModeTests
         Require(harness.Complete(
             firstOrder,
             Id(403),
-            Id(404),
-            new CellId(4, 2, 0),
+            new[] { Id(404), Id(409) },
+            new[] { new CellId(4, 2, 0), new CellId(5, 2, 0) },
             tick: 10));
         harness.ReadyQueuedOrder(secondOrder, Id(405), tick: 11);
         Require(harness.Complete(
             secondOrder,
             Id(405),
-            Id(406),
-            new CellId(3, 3, 0),
+            new[] { Id(406), Id(410) },
+            new[] { new CellId(3, 3, 0), new CellId(4, 3, 0) },
             tick: 18));
 
         Assert.That(
