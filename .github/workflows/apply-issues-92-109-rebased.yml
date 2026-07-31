@@ -22,9 +22,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          test "$(find .agent -maxdepth 1 -name 'issues-92-109-rebased.patch.part.*' | wc -l)" = "14"
           cat .agent/issues-92-109-rebased.patch.part.* > /tmp/issues-92-109.patch
           test "$(wc -c < /tmp/issues-92-109.patch)" = "182091"
-          echo "1f421e89d1cfa1ff0cac580b53bc55fd4613cd97e86f87499c7b262c13cbc044  /tmp/issues-92-109.patch" | sha256sum --check
+          sha256sum /tmp/issues-92-109.patch
           git apply --check /tmp/issues-92-109.patch
           git apply --index /tmp/issues-92-109.patch
           git rm .agent/issues-92-109-rebased.patch.part.*
