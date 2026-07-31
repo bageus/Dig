@@ -9,6 +9,19 @@ namespace Dig.Application.Saving
 {
 
 [DataContract]
+public sealed class MiningOutputCommitOutputSaveData
+{
+    [DataMember(Order = 1)]
+    public string ItemId { get; set; } = string.Empty;
+
+    [DataMember(Order = 2)]
+    public int Quantity { get; set; }
+
+    [DataMember(Order = 3)]
+    public List<string> StackIds { get; set; } = new List<string>();
+}
+
+[DataContract]
 public sealed class MiningOutputCommitSaveData
 {
     [DataMember(Order = 1)]
@@ -23,6 +36,7 @@ public sealed class MiningOutputCommitSaveData
     [DataMember(Order = 4)]
     public int SourceKind { get; set; }
 
+    // v1 compatibility fields.
     [DataMember(Order = 5)]
     public string ItemId { get; set; } = string.Empty;
 
@@ -34,6 +48,17 @@ public sealed class MiningOutputCommitSaveData
 
     [DataMember(Order = 8)]
     public bool HasStack { get; set; }
+
+    // v2 source diagnostics and multi-output payload.
+    [DataMember(Order = 9)]
+    public string SourceId { get; set; } = string.Empty;
+
+    [DataMember(Order = 10)]
+    public int SourceVersion { get; set; }
+
+    [DataMember(Order = 11)]
+    public List<MiningOutputCommitOutputSaveData> Outputs { get; set; } =
+        new List<MiningOutputCommitOutputSaveData>();
 }
 
 [DataContract]
@@ -64,17 +89,37 @@ public static class MiningOutputSaveDataAdapter
         foreach (MiningOutputCommitSaveEntry entry in snapshot.Commits
             .OrderBy(value => value.Cell))
         {
-            data.Commits.Add(new MiningOutputCommitSaveData
+            MiningOutputCommitSaveData saved = new MiningOutputCommitSaveData
             {
                 X = entry.Cell.X,
                 Y = entry.Cell.Y,
                 Z = entry.Cell.Z,
                 SourceKind = (int)entry.SourceKind,
-                ItemId = entry.ItemId,
-                Quantity = entry.Quantity,
-                StackId = entry.StackId,
-                HasStack = entry.HasStack,
-            });
+                SourceId = entry.SourceId,
+                SourceVersion = entry.SourceVersion,
+            };
+            foreach (MiningOutputCommitLineSaveEntry output in entry.Outputs)
+            {
+                saved.Outputs.Add(new MiningOutputCommitOutputSaveData
+                {
+                    ItemId = output.ItemId,
+                    Quantity = output.Quantity,
+                    StackIds = output.StackIds.ToList(),
+                });
+            }
+
+            if (entry.Outputs.Count == 1)
+            {
+                MiningOutputCommitLineSaveEntry output = entry.Outputs[0];
+                saved.ItemId = output.ItemId;
+                saved.Quantity = output.Quantity;
+                saved.StackId = output.StackIds.Count == 1
+                    ? output.StackIds[0]
+                    : null;
+                saved.HasStack = true;
+            }
+
+            data.Commits.Add(saved);
         }
 
         return data;
@@ -105,13 +150,35 @@ public static class MiningOutputSaveDataAdapter
                 throw new InvalidOperationException("Mining output save entry is invalid.");
             }
 
+            if (data.FormatVersion == 1)
+            {
+                commits.Add(new MiningOutputCommitSaveEntry(
+                    new CellId(saved.X, saved.Y, saved.Z),
+                    (MiningOutputSourceKind)saved.SourceKind,
+                    saved.ItemId,
+                    saved.Quantity,
+                    saved.StackId,
+                    saved.HasStack));
+                continue;
+            }
+
+            if (saved.Outputs == null
+                || string.IsNullOrWhiteSpace(saved.SourceId)
+                || saved.SourceVersion <= 0)
+            {
+                throw new InvalidOperationException(
+                    "Mining output v2 save entry is incomplete.");
+            }
+
             commits.Add(new MiningOutputCommitSaveEntry(
                 new CellId(saved.X, saved.Y, saved.Z),
                 (MiningOutputSourceKind)saved.SourceKind,
-                saved.ItemId,
-                saved.Quantity,
-                saved.StackId,
-                saved.HasStack));
+                saved.SourceId,
+                saved.SourceVersion,
+                saved.Outputs.Select(output => new MiningOutputCommitLineSaveEntry(
+                    output.ItemId,
+                    output.Quantity,
+                    output.StackIds ?? new List<string>()))));
         }
 
         return new MiningOutputCommitSaveSnapshot(data.FormatVersion, commits);

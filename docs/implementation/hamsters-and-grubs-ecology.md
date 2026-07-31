@@ -48,3 +48,8 @@ The Unity workflow completed successfully, but licensed EditMode/PlayMode execut
 ## Status boundary
 
 The system is `IMPLEMENTED`: approved gameplay behavior is represented in authoritative owners and covered by automated Quality tests. It is not `VERIFIED` because actual licensed Unity Test Runner evidence is still absent.
+
+
+## Subsequent save chain
+
+The ecology section still enters the document through `save.v11_to_v12.living_materials`. Terrain output persistence subsequently advances the current document through `save.v12_to_v13.terrain_output_contract`; both authoritative sections remain preserved.

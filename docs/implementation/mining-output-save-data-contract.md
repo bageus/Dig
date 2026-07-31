@@ -1,39 +1,65 @@
-# Mining output save data contract
+# Mining output and terrain profile implementation
 
-`MiningOutputCommitState` remains the authoritative exactly-once ledger and
-`InventoryState` remains the authoritative owner of world stacks and reservations.
+Status: `IMPLEMENTED` after merge of the linked PR; licensed Unity execution is still required for `VERIFIED`.
 
-`MiningOutputCommitsSaveData` is a serialization DTO only. It stores the versioned
-ledger snapshot in stable primitive fields suitable for the existing data-contract
-JSON codec:
+Tracking: #87, #92, #94, #109, #110.
 
-- exact `X`, `Y`, `Z` cell coordinates;
-- terrain/deposit source kind;
-- item id and quantity;
-- stable stack id when a stack exists;
-- empty output commits without a stack.
+## Authoritative owners
 
-`MiningOutputSaveDataAdapter` converts only between the DTO and the existing
-`MiningOutputCommitSaveSnapshot`. Snapshot constructors continue to own invariant
-validation, duplicate-cell rejection and deterministic ordering.
+- `MaterialCatalog` and `TerrainOutputProfile` own typed terrain definitions and allowed raw outputs.
+- `TerrainOutputResolver` owns deterministic per-entry rolls from world seed, generator version, exact XYZ, profile version and stable ItemId.
+- `CompleteTerrainWorkCommandHandler` owns the authoritative excavation/output commit.
+- `InventoryState` owns every produced quantity-one world entity.
+- `MiningOutputCommitState` owns exactly-once output history by cell.
+- World/Deposit/Inventory/Jobs remain the existing state owners; Unity only resolves a plan and sends the command.
 
-The DTO is wired into the normal production orchestration without creating another
-state owner:
+## Terrain catalog
 
-- `SaveGameContext.MiningOutputCommits` carries the authoritative ledger reference;
-- `SaveGameBuilder.Build(context)` validates Inventory/world integrity and captures it;
-- `SaveGameService.Save` and `Autosave` use that normal builder path;
-- `SaveGameLoader.Load` restores the ledger and exposes it through
-  `LoadedGameState.MiningOutput`;
-- `DigTerrainWorkSession` accepts the restored commit state during composition instead
-  of always creating a fresh empty ledger.
+`DefaultTerrainMaterials` contains six stable definitions:
 
-A missing section from an older document restores as an empty ledger. A malformed,
-out-of-bounds or Inventory-mismatched section fails with a typed mining-output save
-diagnostic rather than replaying output.
+- `terrain.sand`;
+- `terrain.stone_rock`;
+- `terrain.metal_bearing_rock` with display name `Рудная порода`;
+- `terrain.crystalline_rock`;
+- `terrain.lava_rock`;
+- `terrain.unmineable`.
 
-## Deposit snapshot v11
+Profiles reference only `material.stone`, `material.coal`, `ore.iron`, `ore.gold` and `ore.crystal`. The numeric probabilities, ranges and hardness values are versioned content fixtures retained from the existing catalog; they do not resolve Q-014 balance.
 
-Issue #91 moves `TerrainDepositState` under `WorldState` and raises the save document to version 11. `TerrainDepositsSaveData` now stores its own snapshot format, generator version and per-entry definition version in addition to exact XYZ, reveal/depletion, yield and state version. Migration `save.v10_to_v11.terrain_deposit_contract` assigns legacy definition version 1 and preserves coordinates and quantities.
+Independent entry streams allow deterministic multi-output while preserving empty results. `terrain.unmineable` has no output profile and cannot be excavated.
 
-The completion path resolves and validates deposit identity/yield before mutation. `WorldState.Excavate` then opens terrain, depletes the same instance and reveals six-axis neighbours before Inventory/Job commit. Unity no longer performs a second post-commit depletion mutation.
+## Atomic completion
+
+The completion command carries the resolved source id/version, optional deposit identity/yield, all output lines and one deterministic base entity id. Preflight derives the complete quantity-one id set and rejects unknown items, duplicate/existing ids, stale deposits and duplicate cell commits before World mutation.
+
+On success the handler:
+
+1. opens the exact XYZ terrain cell and depletes a matching deposit when present;
+2. creates each output unit at `ItemLocation.InWorld(targetCell)`;
+3. completes the Job;
+4. records all output lines and entity ids in the shared ledger;
+5. saves/publishes the existing World, Inventory and Job owners.
+
+Deposit output is exclusive and never executes the terrain table. Empty terrain output still records a cell commit, preventing reroll after retry or load. The miner inventory and held item are not changed. Quantity-one output identities are preserved through hauling ingress and storage deposit, so the ledger remains valid after delivery. Legacy aggregate storage paths remain compatibility-only.
+
+## Save format v13
+
+Mining-output section v2 stores:
+
+- exact XYZ and source kind;
+- stable terrain-profile/deposit source id and version;
+- ordered output lines;
+- item id, quantity and stable entity ids for every line;
+- empty commits without output lines.
+
+`save.v12_to_v13.terrain_output_contract` upgrades legacy single-output ledger records and maps `material.metal` to `material.iron` across saved Inventory, resident slot claims, job properties, production allocations/stocks, active meals, barrels and mining-output entries. Replay is idempotent.
+
+## Diagnostics and coverage
+
+Coverage includes the six terrain definitions, allowed outputs, sand empty output, stone-only output, deterministic multi-output and exact-Z changes, catalog validation, deposit exclusivity, duplicate/id-conflict rollback, quantity-one world placement, ledger capture/restore, v1-to-v2 section compatibility, save v12 migration and Unity composition/source contracts.
+
+The checked-in Play Mode scenario verifies that the demo composes the common six-type catalog. Actual licensed EditMode/PlayMode execution is still the boundary for `VERIFIED`.
+
+## Hauling boundary
+
+A storage zone is a valid demand only through its explicit `StorageFilter`; the demo stockpile uses an ItemId whitelist. General building-demand, current-fog eligibility, retry and demand reservations remain the single authoritative scope of #110. This implementation does not create a second hauling planner.

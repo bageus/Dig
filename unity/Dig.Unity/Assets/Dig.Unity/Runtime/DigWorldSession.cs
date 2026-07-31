@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.World;
 using Dig.Domain.Core;
 using Dig.Domain.Navigation;
@@ -85,14 +86,15 @@ internal sealed partial class DigWorldSession
             throw new ArgumentOutOfRangeException(nameof(height));
         }
 
-        const int rockHardness = 120;
-        MaterialId rock = new MaterialId("demo.rock");
+        MaterialId rock = DefaultTerrainMaterials.StoneRock;
         MaterialId air = new MaterialId("demo.air");
-        MaterialCatalog materials = new MaterialCatalog(new[]
-        {
-            new MaterialDefinition(rock, isSolid: true, hardness: rockHardness),
-            new MaterialDefinition(air, isSolid: false, hardness: 0),
-        });
+        MaterialCatalog terrainMaterials = DefaultTerrainMaterials.CreateCatalog();
+        MaterialCatalog materials = new MaterialCatalog(
+            terrainMaterials.Definitions.Concat(new[]
+            {
+                new MaterialDefinition(air, isSolid: false, hardness: 0),
+            }));
+        int rockHardness = materials.Get(rock)!.Hardness;
         WorldState world = WorldState.CreateFilled(
             new WorldSize(width, height),
             chunkSize,

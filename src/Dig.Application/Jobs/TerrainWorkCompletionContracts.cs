@@ -1,5 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using Dig.Application.Messaging;
+using Dig.Application.World;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
@@ -28,11 +32,43 @@ public static class TerrainWorkCompletionErrors
     public static readonly DomainError UnknownOutputItem = new DomainError(
         "terrain_work.output_item_unknown",
         "The output item is not registered in Inventory.");
+
+    public static readonly DomainError OutputPlanCellMismatch = new DomainError(
+        "terrain_work.output_plan_cell_mismatch",
+        "The resolved mining output plan does not target the terrain job cell.");
+
+    public static readonly DomainError OutputAlreadyCommitted = new DomainError(
+        "terrain_work.output_already_committed",
+        "Mining output for the terrain cell was already committed.");
+}
+
+public sealed class TerrainWorkOutputSpec
+{
+    public TerrainWorkOutputSpec(ItemId itemId, int quantity)
+    {
+        if (itemId.IsEmpty)
+        {
+            throw new ArgumentException("Output item id is required.", nameof(itemId));
+        }
+
+        if (quantity <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(quantity));
+        }
+
+        ItemId = itemId;
+        Quantity = quantity;
+    }
+
+    public ItemId ItemId { get; }
+    public int Quantity { get; }
 }
 
 public sealed class CompleteTerrainWorkCommand
     : ICommand<Result<TerrainWorkCompletionResult>>
 {
+    private readonly IReadOnlyList<TerrainWorkOutputSpec> _outputs;
+
     public CompleteTerrainWorkCommand(
         EntityId jobId,
         EntityId outputStackId,
@@ -45,27 +81,49 @@ public sealed class CompleteTerrainWorkCommand
         : this(
             jobId,
             outputStackId,
-            outputItemId,
-            outputQuantity,
+            new[] { new TerrainWorkOutputSpec(outputItemId, outputQuantity) },
             emptyMaterialId,
             tick,
-            producesOutput: true,
+            depositInstanceId == null
+                ? MiningOutputSourceKind.Terrain
+                : MiningOutputSourceKind.Deposit,
+            depositInstanceId == null ? "legacy.terrain-output" : "legacy.deposit-output",
+            sourceVersion: 1,
             depositInstanceId,
-            depositExpectedYield)
+            depositExpectedYield,
+            resolvedPlanCell: null)
     {
     }
 
     private CompleteTerrainWorkCommand(
         EntityId jobId,
         EntityId outputStackId,
-        ItemId outputItemId,
-        int outputQuantity,
+        IEnumerable<TerrainWorkOutputSpec> outputs,
         MaterialId emptyMaterialId,
         long tick,
-        bool producesOutput,
+        MiningOutputSourceKind sourceKind,
+        string sourceId,
+        int sourceVersion,
         string? depositInstanceId,
-        int? depositExpectedYield)
+        int? depositExpectedYield,
+        CellId? resolvedPlanCell)
     {
+        if (outputs == null)
+        {
+            throw new ArgumentNullException(nameof(outputs));
+        }
+
+        TerrainWorkOutputSpec[] values = outputs
+            .OrderBy(value => value.ItemId)
+            .ToArray();
+        if (values.Any(value => value == null)
+            || values.Select(value => value.ItemId).Distinct().Count() != values.Length)
+        {
+            throw new ArgumentException(
+                "Terrain output specs must be non-null and unique by item id.",
+                nameof(outputs));
+        }
+
         if ((depositInstanceId is null) != (!depositExpectedYield.HasValue)
             || depositExpectedYield <= 0)
         {
@@ -73,26 +131,84 @@ public sealed class CompleteTerrainWorkCommand
                 "Deposit instance and positive expected yield must be supplied together.");
         }
 
+        if (values.Length > 0 && outputStackId.IsEmpty)
+        {
+            throw new ArgumentException(
+                "Non-empty terrain output requires a base stack id.",
+                nameof(outputStackId));
+        }
+
+        if (string.IsNullOrWhiteSpace(sourceId))
+        {
+            throw new ArgumentException("Output source id is required.", nameof(sourceId));
+        }
+
+        if (sourceVersion <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(sourceVersion));
+        }
+
         JobId = jobId;
         OutputStackId = outputStackId;
-        OutputItemId = outputItemId;
-        OutputQuantity = outputQuantity;
+        _outputs = new ReadOnlyCollection<TerrainWorkOutputSpec>(values);
         EmptyMaterialId = emptyMaterialId;
         Tick = tick;
-        ProducesOutput = producesOutput;
+        SourceKind = sourceKind;
+        SourceId = sourceId.Trim();
+        SourceVersion = sourceVersion;
         DepositInstanceId = depositInstanceId;
         DepositExpectedYield = depositExpectedYield;
+        ResolvedPlanCell = resolvedPlanCell;
     }
 
     public EntityId JobId { get; }
     public EntityId OutputStackId { get; }
-    public ItemId OutputItemId { get; }
-    public int OutputQuantity { get; }
+    public IReadOnlyList<TerrainWorkOutputSpec> Outputs => _outputs;
+    public int TotalOutputQuantity => _outputs.Sum(value => value.Quantity);
     public MaterialId EmptyMaterialId { get; }
     public long Tick { get; }
-    public bool ProducesOutput { get; }
+    public bool ProducesOutput => _outputs.Count > 0;
+    public MiningOutputSourceKind SourceKind { get; }
+    public string SourceId { get; }
+    public int SourceVersion { get; }
     public string? DepositInstanceId { get; }
     public int? DepositExpectedYield { get; }
+    public CellId? ResolvedPlanCell { get; }
+    public bool HasResolvedOutputPlan => ResolvedPlanCell.HasValue;
+
+    // Compatibility for existing single-output callers.
+    public ItemId OutputItemId => _outputs.Count == 1 ? _outputs[0].ItemId : default;
+    public int OutputQuantity => _outputs.Count == 1 ? _outputs[0].Quantity : TotalOutputQuantity;
+
+    public static CompleteTerrainWorkCommand FromPlan(
+        EntityId jobId,
+        EntityId outputStackId,
+        MiningOutputPlan plan,
+        MaterialId emptyMaterialId,
+        long tick)
+    {
+        if (plan == null)
+        {
+            throw new ArgumentNullException(nameof(plan));
+        }
+
+        return new CompleteTerrainWorkCommand(
+            jobId,
+            plan.IsEmpty ? default : outputStackId,
+            plan.Outputs.Select(value => new TerrainWorkOutputSpec(
+                value.ItemId,
+                value.Quantity)),
+            emptyMaterialId,
+            tick,
+            plan.SourceKind,
+            plan.SourceId,
+            plan.SourceVersion,
+            plan.DepositInstanceId,
+            plan.SourceKind == MiningOutputSourceKind.Deposit
+                ? plan.TotalQuantity
+                : (int?)null,
+            plan.Cell);
+    }
 
     public static CompleteTerrainWorkCommand WithoutOutput(
         EntityId jobId,
@@ -102,46 +218,88 @@ public sealed class CompleteTerrainWorkCommand
         return new CompleteTerrainWorkCommand(
             jobId,
             default,
-            default,
-            outputQuantity: 0,
+            Array.Empty<TerrainWorkOutputSpec>(),
             emptyMaterialId,
             tick,
-            producesOutput: false,
+            MiningOutputSourceKind.Terrain,
+            "legacy.terrain-output.empty",
+            sourceVersion: 1,
             depositInstanceId: null,
-            depositExpectedYield: null);
+            depositExpectedYield: null,
+            resolvedPlanCell: null);
     }
+
+    internal MiningOutputPlan CreatePlan(CellId targetCell)
+    {
+        return new MiningOutputPlan(
+            targetCell,
+            SourceKind,
+            _outputs.Select(value => new MiningOutputLine(
+                value.ItemId,
+                value.Quantity)),
+            SourceId,
+            SourceVersion,
+            DepositInstanceId);
+    }
+}
+
+public sealed class TerrainWorkProducedOutput
+{
+    private readonly IReadOnlyList<EntityId> _stackIds;
+
+    public TerrainWorkProducedOutput(
+        ItemId itemId,
+        int quantity,
+        IEnumerable<EntityId> stackIds)
+    {
+        ItemId = itemId;
+        Quantity = quantity;
+        _stackIds = new ReadOnlyCollection<EntityId>(
+            (stackIds ?? throw new ArgumentNullException(nameof(stackIds))).ToArray());
+    }
+
+    public ItemId ItemId { get; }
+    public int Quantity { get; }
+    public IReadOnlyList<EntityId> StackIds => _stackIds;
 }
 
 public sealed class TerrainWorkCompletionResult
 {
+    private readonly IReadOnlyList<TerrainWorkProducedOutput> _outputs;
+
     public TerrainWorkCompletionResult(
         EntityId jobId,
         CellId targetCell,
-        EntityId outputStackId,
-        ItemId outputItemId,
-        int outputQuantity,
-        bool producedOutput,
+        IEnumerable<TerrainWorkProducedOutput> outputs,
         long worldVersion,
         long inventoryVersion)
     {
         JobId = jobId;
         TargetCell = targetCell;
-        OutputStackId = outputStackId;
-        OutputItemId = outputItemId;
-        OutputQuantity = outputQuantity;
-        ProducedOutput = producedOutput;
+        _outputs = new ReadOnlyCollection<TerrainWorkProducedOutput>(
+            (outputs ?? throw new ArgumentNullException(nameof(outputs)))
+            .OrderBy(value => value.ItemId)
+            .ToArray());
         WorldVersion = worldVersion;
         InventoryVersion = inventoryVersion;
     }
 
     public EntityId JobId { get; }
     public CellId TargetCell { get; }
-    public EntityId OutputStackId { get; }
-    public ItemId OutputItemId { get; }
-    public int OutputQuantity { get; }
-    public bool ProducedOutput { get; }
+    public IReadOnlyList<TerrainWorkProducedOutput> Outputs => _outputs;
+    public bool ProducedOutput => _outputs.Count > 0;
+    public int TotalOutputQuantity => _outputs.Sum(value => value.Quantity);
     public long WorldVersion { get; }
     public long InventoryVersion { get; }
+
+    // Compatibility for existing single-output callers.
+    public EntityId OutputStackId => _outputs.Count == 1 && _outputs[0].StackIds.Count > 0
+        ? _outputs[0].StackIds[0]
+        : default;
+    public ItemId OutputItemId => _outputs.Count == 1 ? _outputs[0].ItemId : default;
+    public int OutputQuantity => _outputs.Count == 1
+        ? _outputs[0].Quantity
+        : TotalOutputQuantity;
 }
 
 }

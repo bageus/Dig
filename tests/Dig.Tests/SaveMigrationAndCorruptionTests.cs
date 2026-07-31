@@ -7,7 +7,6 @@ using Dig.Domain.Jobs;
 using Dig.Domain.World;
 using Dig.Infrastructure.Saving;
 using Xunit;
-
 namespace Dig.Tests
 {
 public sealed class SaveMigrationAndCorruptionTests
@@ -16,7 +15,6 @@ public sealed class SaveMigrationAndCorruptionTests
     private static readonly ItemId Ore = new ItemId("ore.test");
     private static readonly EntityId StackId = Id("fa000000000000000000000000000001");
     private static readonly EntityId JobId = Id("fb000000000000000000000000000002");
-
     [Fact]
     public void Version_zero_fixture_migrates_in_order_and_is_idempotent()
     {
@@ -46,6 +44,7 @@ public sealed class SaveMigrationAndCorruptionTests
             "save.v9_to_v10.combat_spatial",
             "save.v10_to_v11.terrain_deposit_contract",
             "save.v11_to_v12.living_materials",
+            "save.v12_to_v13.terrain_output_contract",
         }, first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
         Assert.Equal(1, document.Metadata.GeneratorVersion);
@@ -86,7 +85,8 @@ public sealed class SaveMigrationAndCorruptionTests
                 "save.v8_to_v9.agent_runtime",
                 "save.v9_to_v10.combat_spatial",
                 "save.v10_to_v11.terrain_deposit_contract",
-            "save.v11_to_v12.living_materials",
+                "save.v11_to_v12.living_materials",
+                "save.v12_to_v13.terrain_output_contract",
             },
             first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
@@ -203,7 +203,6 @@ public sealed class SaveMigrationAndCorruptionTests
             Directory.Delete(directory, recursive: true);
         }
     }
-
     [Fact]
     public void Overwrite_commits_new_document_without_temp_or_backup_files()
     {
@@ -309,6 +308,7 @@ public sealed class SaveMigrationAndCorruptionTests
             new SaveVersionNineCombatSpatialMigration(),
             new SaveVersionTenTerrainDepositContractMigration(),
             new SaveVersionElevenLivingMaterialsMigration(),
+            new SaveVersionTwelveTerrainOutputContractMigration(),
         });
     }
 

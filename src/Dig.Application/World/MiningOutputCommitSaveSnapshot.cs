@@ -9,8 +9,92 @@ using Dig.Domain.World;
 namespace Dig.Application.World
 {
 
+public sealed class MiningOutputCommitLineSaveEntry
+{
+    public MiningOutputCommitLineSaveEntry(
+        string itemId,
+        int quantity,
+        IEnumerable<string> stackIds)
+    {
+        if (string.IsNullOrWhiteSpace(itemId))
+        {
+            throw new ArgumentException("Committed output item id is required.", nameof(itemId));
+        }
+
+        if (quantity <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(quantity));
+        }
+
+        string[] ids = (stackIds ?? throw new ArgumentNullException(nameof(stackIds)))
+            .Select(value => value?.Trim() ?? string.Empty)
+            .ToArray();
+        if (ids.Length == 0
+            || ids.Any(string.IsNullOrWhiteSpace)
+            || ids.Distinct(StringComparer.Ordinal).Count() != ids.Length)
+        {
+            throw new ArgumentException(
+                "Committed output requires unique stack ids.",
+                nameof(stackIds));
+        }
+
+        ItemId = itemId.Trim();
+        Quantity = quantity;
+        StackIds = new ReadOnlyCollection<string>(ids);
+    }
+
+    public string ItemId { get; }
+    public int Quantity { get; }
+    public IReadOnlyList<string> StackIds { get; }
+}
+
 public sealed class MiningOutputCommitSaveEntry
 {
+    private readonly IReadOnlyList<MiningOutputCommitLineSaveEntry> _outputs;
+
+    public MiningOutputCommitSaveEntry(
+        CellId cell,
+        MiningOutputSourceKind sourceKind,
+        string sourceId,
+        int sourceVersion,
+        IEnumerable<MiningOutputCommitLineSaveEntry> outputs)
+    {
+        if (!Enum.IsDefined(typeof(MiningOutputSourceKind), sourceKind))
+        {
+            throw new ArgumentOutOfRangeException(nameof(sourceKind));
+        }
+
+        if (string.IsNullOrWhiteSpace(sourceId))
+        {
+            throw new ArgumentException("Committed output source id is required.", nameof(sourceId));
+        }
+
+        if (sourceVersion <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(sourceVersion));
+        }
+
+        MiningOutputCommitLineSaveEntry[] values = (outputs
+            ?? throw new ArgumentNullException(nameof(outputs)))
+            .OrderBy(value => value.ItemId, StringComparer.Ordinal)
+            .ToArray();
+        if (values.Any(value => value == null)
+            || values.Select(value => value.ItemId)
+                .Distinct(StringComparer.Ordinal).Count() != values.Length)
+        {
+            throw new ArgumentException(
+                "Committed outputs must be non-null and unique by item id.",
+                nameof(outputs));
+        }
+
+        Cell = cell;
+        SourceKind = sourceKind;
+        SourceId = sourceId.Trim();
+        SourceVersion = sourceVersion;
+        _outputs = new ReadOnlyCollection<MiningOutputCommitLineSaveEntry>(values);
+    }
+
+    // Legacy format compatibility.
     public MiningOutputCommitSaveEntry(
         CellId cell,
         MiningOutputSourceKind sourceKind,
@@ -18,20 +102,40 @@ public sealed class MiningOutputCommitSaveEntry
         int quantity,
         string? stackId,
         bool hasStack)
+        : this(
+            cell,
+            sourceKind,
+            sourceKind == MiningOutputSourceKind.Deposit
+                ? "legacy.deposit-output"
+                : "legacy.terrain-output",
+            sourceVersion: 1,
+            CreateLegacyOutputs(itemId, quantity, stackId, hasStack))
     {
-        if (!Enum.IsDefined(typeof(MiningOutputSourceKind), sourceKind))
-        {
-            throw new ArgumentOutOfRangeException(nameof(sourceKind));
-        }
+    }
 
+    public CellId Cell { get; }
+    public MiningOutputSourceKind SourceKind { get; }
+    public string SourceId { get; }
+    public int SourceVersion { get; }
+    public IReadOnlyList<MiningOutputCommitLineSaveEntry> Outputs => _outputs;
+
+    // Legacy accessors retained for old tests and v1 adapters.
+    public string ItemId => _outputs.Count == 1 ? _outputs[0].ItemId : string.Empty;
+    public int Quantity => _outputs.Sum(value => value.Quantity);
+    public string? StackId => _outputs.Count == 1 && _outputs[0].StackIds.Count == 1
+        ? _outputs[0].StackIds[0]
+        : null;
+    public bool HasStack => _outputs.Count > 0;
+
+    private static IEnumerable<MiningOutputCommitLineSaveEntry> CreateLegacyOutputs(
+        string itemId,
+        int quantity,
+        string? stackId,
+        bool hasStack)
+    {
         if (quantity < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(quantity));
-        }
-
-        if (quantity > 0 && string.IsNullOrWhiteSpace(itemId))
-        {
-            throw new ArgumentException("A non-empty output requires an item id.", nameof(itemId));
         }
 
         if (hasStack != (quantity > 0))
@@ -39,30 +143,26 @@ public sealed class MiningOutputCommitSaveEntry
             throw new ArgumentException("Stack presence must match output quantity.", nameof(hasStack));
         }
 
-        if (hasStack && string.IsNullOrWhiteSpace(stackId))
+        if (!hasStack)
         {
-            throw new ArgumentException("A committed output stack requires a stable id.", nameof(stackId));
+            return Array.Empty<MiningOutputCommitLineSaveEntry>();
         }
 
-        Cell = cell;
-        SourceKind = sourceKind;
-        ItemId = itemId ?? string.Empty;
-        Quantity = quantity;
-        StackId = stackId;
-        HasStack = hasStack;
-    }
+        if (string.IsNullOrWhiteSpace(itemId) || string.IsNullOrWhiteSpace(stackId))
+        {
+            throw new ArgumentException("Legacy committed output is incomplete.");
+        }
 
-    public CellId Cell { get; }
-    public MiningOutputSourceKind SourceKind { get; }
-    public string ItemId { get; }
-    public int Quantity { get; }
-    public string? StackId { get; }
-    public bool HasStack { get; }
+        return new[]
+        {
+            new MiningOutputCommitLineSaveEntry(itemId, quantity, new[] { stackId }),
+        };
+    }
 }
 
 public sealed class MiningOutputCommitSaveSnapshot
 {
-    public const int CurrentFormatVersion = 1;
+    public const int CurrentFormatVersion = 2;
 
     public MiningOutputCommitSaveSnapshot(
         int formatVersion,
@@ -109,10 +209,12 @@ public sealed class MiningOutputCommitSaveSnapshot
             state.Snapshot().Select(commit => new MiningOutputCommitSaveEntry(
                 commit.Cell,
                 commit.SourceKind,
-                commit.ItemId.ToString(),
-                commit.Quantity,
-                commit.HasStack ? commit.StackId.ToString() : null,
-                commit.HasStack)));
+                commit.SourceId,
+                commit.SourceVersion,
+                commit.Outputs.Select(output => new MiningOutputCommitLineSaveEntry(
+                    output.ItemId.ToString(),
+                    output.Quantity,
+                    output.StackIds.Select(value => value.ToString()))))));
     }
 
     public MiningOutputCommitState Restore()
@@ -126,26 +228,15 @@ public sealed class MiningOutputCommitSaveSnapshot
         MiningOutputCommitState restored = new MiningOutputCommitState();
         foreach (MiningOutputCommitSaveEntry entry in Commits)
         {
-            ItemId itemId = entry.Quantity == 0
-                ? default
-                : new ItemId(entry.ItemId);
-            EntityId stackId = entry.HasStack
-                ? EntityId.Parse(entry.StackId!)
-                : default;
-            string sourceId = entry.SourceKind == MiningOutputSourceKind.Deposit
-                ? "restored.deposit"
-                : "restored.terrain";
-            MiningOutputPlan plan = new MiningOutputPlan(
+            restored.Restore(
                 entry.Cell,
                 entry.SourceKind,
-                itemId,
-                entry.Quantity,
-                sourceId,
-                sourceVersion: 1,
-                depositInstanceId: entry.SourceKind == MiningOutputSourceKind.Deposit
-                    ? "restored.deposit.instance"
-                    : null);
-            restored.Record(plan, stackId);
+                entry.SourceId,
+                entry.SourceVersion,
+                entry.Outputs.Select(output => new MiningOutputCommitLine(
+                    new ItemId(output.ItemId),
+                    output.Quantity,
+                    output.StackIds.Select(EntityId.Parse))));
         }
 
         return restored;
