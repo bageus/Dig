@@ -134,7 +134,9 @@ public sealed class ProductionIntegrationTests
 
         Assert.Equal(0, harness.Inventory.GetStack(ProductionTestHarness.OreStackId)!.ReservedQuantity);
         Assert.Equal(ProductionOrderStatus.Completed, harness.Production.Get(FirstOrderId)!.Status);
-        Assert.True(harness.Prepare(SecondJobId, tick: 11).IsSuccess);
+        Result secondPrepared = harness.Prepare(
+            EntityId.Parse("85000000000000000000000000000004"), tick: 11);
+        Assert.True(secondPrepared.IsSuccess, secondPrepared.Error?.ToString());
     }
 
 
