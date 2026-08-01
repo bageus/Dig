@@ -14,6 +14,11 @@ public sealed partial class DigGameHudCanvas
 
     internal void RefreshClockInteractionFrame()
     {
+        if (!_initialized)
+        {
+            return;
+        }
+
         RefreshClockHover();
         RefreshClock();
     }

@@ -130,6 +130,8 @@ internal sealed partial class DigWorldSession
                 world.Materials.Get(cell.State.MaterialId)
                     ?? throw new InvalidOperationException(
                         $"Missing host material '{cell.State.MaterialId}'.")))
+            .Where(candidate =>
+                candidate.Material.IsSolid && candidate.Material.IsMineable)
             .OrderBy(cell => cell.Cell)
             .ToArray();
         TerrainDepositGenerationResult generated =

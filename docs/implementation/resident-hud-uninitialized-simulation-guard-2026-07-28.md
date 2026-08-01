@@ -33,10 +33,17 @@ Presentation reads are not authoritative mutations and must represent this state
 - returns the existing typed `unity.agent_simulation.not_initialized` failure for schedule and planning mutations;
 - preserves the existing initialized code path without changing schedule, Utility AI or player-order behavior.
 
+## Follow-up startup-shell correction — PR #546
+
+`InitializeStartup` creates the visual HUD shell and its `DigClockHoverDriver` before the world, residents and simulation driver are bound. If an earlier bootstrap stage fails, the hover driver remains active and used to call `RefreshClockInteractionFrame`, which immediately dereferenced `_simulation` and `_agentRenderer` through `RefreshClock`.
+
+PR #546 makes the interaction-frame callback a no-op while `DigGameHudCanvas._initialized` is false. This preserves the startup status UI and original failure message without producing a secondary clock exception. The fully initialized clock path is unchanged. A checked-in Play Mode regression builds only the startup HUD and invokes the real clock interaction callback; the .NET source contract locks the initialization guard when licensed Unity execution is unavailable.
+
 ## Regression coverage
 
-- `ResidentHudInitializationGuardContractTests` locks the null guards, deterministic defaults, typed mutation rejection and executable Play Mode scenario.
+- `ResidentHudInitializationGuardContractTests` locks the null guards, deterministic defaults, typed mutation rejection, startup clock guard and executable Play Mode scenarios.
 - `ResidentHudInitializationGuardPlayModeTests` creates the real Unity simulation driver without initialization and invokes the actual HUD bridge. It verifies schedule/planning queries, society/roster reads, mutation failures, readiness and tick projection without an exception.
+- `DemoStartupRegressionPlayModeTests.Startup_hud_clock_hover_is_idle_before_runtime_binding` verifies the real startup shell remains exception-free before runtime binding.
 
 ## Validation evidence
 
@@ -53,6 +60,8 @@ PR head before this documentation-only commit: `6036b1fcce782b8b4e1d4573e84b1f8d
 - Stage 2 v3 export `30403859516`: success.
 
 Unity workflow `30403859438` completed successfully, but its licensed `Run Play Mode tests` step was skipped by the activation gate. The executable regression is checked in; no `VERIFIED` claim is made.
+
+Follow-up PR #546 carries its own current validation evidence in the PR body. Until licensed Unity Test Runner evidence exists, the follow-up remains `IMPLEMENTED`, not `VERIFIED`.
 
 ## Verification boundary
 

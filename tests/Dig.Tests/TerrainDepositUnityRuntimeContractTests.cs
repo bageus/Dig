@@ -21,6 +21,10 @@ public sealed class TerrainDepositUnityRuntimeContractTests
             root,
             "unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/"
                 + "TerrainDepositLifecyclePlayModeTests.cs");
+        string startupRegressionPath = Path.Combine(
+            root,
+            "unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/"
+                + "DemoStartupRegressionPlayModeTests.cs");
         string terrainDemoPath = Path.Combine(
             root,
             "unity/Dig.Unity/Assets/Dig.Unity/Runtime/"
@@ -37,9 +41,13 @@ public sealed class TerrainDepositUnityRuntimeContractTests
         Assert.Contains("DefaultTerrainMaterials.MetalBearingRock", session);
         Assert.Contains("DefaultTerrainMaterials.CrystallineRock", session);
         Assert.Contains("DefaultTerrainMaterials.LavaRock", session);
+        Assert.Contains(
+            "candidate.Material.IsSolid && candidate.Material.IsMineable",
+            session);
         Assert.DoesNotContain("DepleteTerrainDeposit", completion);
         Assert.DoesNotContain("RevealTerrainDepositsAdjacentTo", completion);
         Assert.True(File.Exists(playModePath));
+        Assert.True(File.Exists(startupRegressionPath));
         Assert.True(File.Exists(terrainDemoPath));
         string terrainDemo = File.ReadAllText(terrainDemoPath);
         Assert.Contains("DemoTerrainBandMaterials", terrainDemo);
@@ -47,6 +55,9 @@ public sealed class TerrainDepositUnityRuntimeContractTests
         Assert.Contains(
             "Hidden_xyz_deposit_reveals_then_depletes_through_world_owner",
             File.ReadAllText(playModePath));
+        Assert.Contains(
+            "Demo_creation_excludes_unmineable_patch_from_deposit_hosts",
+            File.ReadAllText(startupRegressionPath));
     }
 
     private static string FindRepositoryRoot()
