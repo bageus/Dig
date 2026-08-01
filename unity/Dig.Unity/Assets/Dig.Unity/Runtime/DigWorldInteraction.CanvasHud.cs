@@ -104,14 +104,27 @@ public sealed partial class DigWorldInteraction
     internal void SelectResidentInventoryLayoutSlot(
         ResidentInventoryLayoutSlotViewModel slot)
     {
-        ActivateResidentInventoryLayoutSlot(slot);
+        EnsureLayoutSlot(slot);
+        if (slot.IsBuildingBox)
+        {
+            BeginResidentInventoryBuildingPlacement(slot);
+        }
+        else if (slot.CanDrop)
+        {
+            BeginInventoryItemPlacement(slot);
+        }
+        else
+        {
+            _hud?.SetStatus("input.inventory.item_placement_unavailable");
+        }
+
+        ClearSelectedInventoryStack();
     }
 
     internal void ActivateResidentInventoryLayoutSlot(
         ResidentInventoryLayoutSlotViewModel slot)
     {
-        ActivateResidentInventorySlot(ToLegacySlot(slot));
-        ClearSelectedInventoryStack();
+        SelectResidentInventoryLayoutSlot(slot);
     }
 
     internal void UseResidentInventoryLayoutSlot(
@@ -124,8 +137,21 @@ public sealed partial class DigWorldInteraction
     internal void DropResidentInventoryLayoutSlot(
         ResidentInventoryLayoutSlotViewModel slot)
     {
-        DropResidentInventorySlot(ToLegacySlot(slot));
-        ClearSelectedInventoryStack();
+        EnsureLayoutSlot(slot);
+        var resident = _agentRenderer?.SelectedModel;
+        if (resident == null
+            || !resident.IsAlive
+            || !slot.CanDrop
+            || slot.IsBuildingBox)
+        {
+            _hud?.SetStatus("input.inventory.stack_unavailable");
+            return;
+        }
+
+        ExecuteResidentInventoryDrop(
+            EntityId.Parse(resident.Id),
+            EntityId.Parse(slot.StackId!),
+            new CellId(resident.CellX, resident.CellY, resident.CellZ));
     }
 
     private int RegisterRosterResidentClick(string residentId)
@@ -174,7 +200,9 @@ public sealed partial class DigWorldInteraction
             slot.Quantity,
             slot.ReservedQuantity,
             itemKind,
-            isEquipped: false);
+            isEquipped: slot.IsHeld,
+            heldQuantity: slot.HeldQuantity,
+            isConsumable: slot.IsConsumable);
     }
 
     private static void EnsureLayoutSlot(ResidentInventoryLayoutSlotViewModel slot)
