@@ -130,3 +130,5 @@ public sealed class CampfireProductionContentTests
         return new ItemCatalog(values);
     }
 }
+
+}
