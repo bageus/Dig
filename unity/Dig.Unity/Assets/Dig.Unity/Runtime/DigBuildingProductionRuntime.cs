@@ -208,6 +208,8 @@ internal sealed partial class DigTerrainWorkSession
             || _beginProduction == null
             || _applyProductionWork == null
             || _acquireProductionMaterial == null
+            || _stageProductionMaterial == null
+            || _depositProductionMaterial == null
             || _completeProduction == null
             || _cancelProduction == null
             || _createProductionPackage == null

@@ -18,7 +18,7 @@ namespace Dig.Unity.Tests
 public sealed class CampfireProductionRuntimePlayModeTests
 {
     [Test]
-    public void Acquire_progress_and_package_close_complete_in_one_runtime_cycle()
+    public void Package_workbench_processing_and_deposit_complete_in_spatial_order()
     {
         DigWorldSession world = DigWorldSession.CreateDemo(20, 14, 5);
         DigAgentSession residents = DigAgentSession.CreateDemo(
@@ -35,7 +35,7 @@ public sealed class CampfireProductionRuntimePlayModeTests
         terrain.InitializeBuildingProductionDemo(
             residents.Repository,
             world.Journal,
-            materialDurationTicks: 1);
+            materialDurationTicks: 5);
 
         BuildingIdAndRepositories runtime = PrepareCampfireStock(terrain);
         Result queued = terrain.EnqueueBuildingProduction(
@@ -44,8 +44,12 @@ public sealed class CampfireProductionRuntimePlayModeTests
             tick: 1);
         Assert.That(queued.IsSuccess, Is.True, queued.Error?.ToString());
 
+        bool sawPackageBeforeAcquire = false;
         bool sawAcquire = false;
-        bool sawProgress = false;
+        bool sawStagedWithoutCarry = false;
+        bool sawProcessing = false;
+        bool sawProcessedAwaitingPackage = false;
+        bool sawDeposited = false;
         ProductionOrderSnapshot? order = null;
         for (int index = 0; index < 200; index++)
         {
@@ -62,21 +66,42 @@ public sealed class CampfireProductionRuntimePlayModeTests
             Assert.That(advanced.IsSuccess, Is.True, advanced.Error?.ToString());
 
             InventorySnapshot inventory = runtime.Inventory.Get().CreateSnapshot();
-            sawAcquire |= inventory.Stacks.Any(value =>
+            bool carriesCap = inventory.Stacks.Any(value =>
                 value.ItemId == CampfireProductionContent.MushroomCapItemId
                 && value.Location.Kind == ItemLocationKind.AgentInventory
                 && value.Reservations.Any(reservation => reservation.Quantity > 0));
+            ProductionOutputPackageSnapshot? activePackage = runtime.Production.Get()
+                .GetOutputPackages()
+                .SingleOrDefault();
+            if (activePackage != null && !sawAcquire)
+            {
+                sawPackageBeforeAcquire = true;
+            }
+
+            sawAcquire |= carriesCap;
             order = runtime.Production.Get().GetAll().SingleOrDefault();
-            sawProgress |= order?.MaterialSteps.Any(value =>
-                value.CompletedTicks > 0) == true;
+            ProductionMaterialStepPhase? phase = order?.MaterialSteps.Count > 0
+                ? order.MaterialSteps[0].Phase
+                : null;
+            sawStagedWithoutCarry |= !carriesCap
+                && phase == ProductionMaterialStepPhase.StagedOnWorkbench;
+            sawProcessing |= !carriesCap
+                && phase == ProductionMaterialStepPhase.Processing;
+            sawProcessedAwaitingPackage |= !carriesCap
+                && phase == ProductionMaterialStepPhase.ProcessedAwaitingPackage;
+            sawDeposited |= phase == ProductionMaterialStepPhase.Deposited;
             if (order?.Status == ProductionOrderStatus.Completed)
             {
                 break;
             }
         }
 
+        Assert.That(sawPackageBeforeAcquire, Is.True);
         Assert.That(sawAcquire, Is.True);
-        Assert.That(sawProgress, Is.True);
+        Assert.That(sawStagedWithoutCarry, Is.True);
+        Assert.That(sawProcessing, Is.True);
+        Assert.That(sawProcessedAwaitingPackage, Is.True);
+        Assert.That(sawDeposited, Is.True);
         Assert.That(order, Is.Not.Null);
         Assert.That(order!.Status, Is.EqualTo(ProductionOrderStatus.Completed));
         JobSnapshot productionJob = terrain.LoadJobSnapshots().Single(value =>

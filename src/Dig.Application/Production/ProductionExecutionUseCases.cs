@@ -181,56 +181,16 @@ public sealed class ApplyProductionWorkHandler
         InventoryState? inventory = _inventoryRepository?.Get();
         if (order.Recipe.UsesMaterialSteps)
         {
-            if (inventory is null)
+            ProductionMaterialStepSnapshot? activeStep = order.MaterialSteps
+                .Where(value => !value.Consumed)
+                .Select(value => (ProductionMaterialStepSnapshot?)value)
+                .FirstOrDefault();
+            if (!activeStep.HasValue
+                || activeStep.Value.Phase is not
+                    (ProductionMaterialStepPhase.StagedOnWorkbench
+                        or ProductionMaterialStepPhase.Processing))
             {
                 return Result.Failure(ProductionErrors.InvalidStatus);
-            }
-
-            Result<ProductionMaterialWorkResult> preview = production.PreviewMaterialWork(
-                command.OrderId,
-                command.BaseWork);
-            if (preview.IsFailure)
-            {
-                return Result.Failure(preview.Error!);
-            }
-
-            InventorySnapshot inventorySnapshot = inventory.CreateSnapshot();
-            EntityId workerId = job.AssignedAgentId.Value;
-            if (command.RequireResidentCarriedMaterial)
-            {
-                ProductionMaterialStepSnapshot? activeStep = order.MaterialSteps
-                    .Where(value => !value.Consumed)
-                    .Select(value => (ProductionMaterialStepSnapshot?)value)
-                    .FirstOrDefault();
-                if (!activeStep.HasValue
-                    || CountResidentReservations(
-                        inventorySnapshot,
-                        command.OrderId,
-                        workerId,
-                        activeStep.Value.ItemId) < 1)
-                {
-                    return Result.Failure(InventoryErrors.ReservationNotFound);
-                }
-            }
-
-            foreach (IGrouping<ItemId, ItemId> group in preview.Value.ConsumedItems
-                .GroupBy(value => value))
-            {
-                int reserved = command.RequireResidentCarriedMaterial
-                    ? CountResidentReservations(
-                        inventorySnapshot,
-                        command.OrderId,
-                        workerId,
-                        group.Key)
-                    : inventorySnapshot.Stacks
-                        .Where(stack => stack.ItemId == group.Key)
-                        .SelectMany(stack => stack.Reservations)
-                        .Where(reservation => reservation.JobId == command.OrderId)
-                        .Sum(reservation => reservation.Quantity);
-                if (reserved < group.Count())
-                {
-                    return Result.Failure(InventoryErrors.ReservationNotFound);
-                }
             }
 
             Result<ProductionMaterialWorkResult> material = production.AddMaterialWork(
@@ -240,27 +200,6 @@ public sealed class ApplyProductionWorkHandler
             if (material.IsFailure)
             {
                 return Result.Failure(material.Error!);
-            }
-
-            foreach (ItemId itemId in material.Value.ConsumedItems)
-            {
-                Result consumed = command.RequireResidentCarriedMaterial
-                    ? inventory.ConsumeReservedProductionUnit(
-                        command.OrderId,
-                        workerId,
-                        itemId,
-                        command.Tick)
-                    : inventory.ConsumeNextReserved(
-                        command.OrderId,
-                        itemId,
-                        quantity: 1,
-                        command.Tick);
-                if (consumed.IsFailure)
-                {
-                    throw new InvalidOperationException(
-                        $"Prevalidated material step could not consume '{itemId}': "
-                        + consumed.Error);
-                }
             }
         }
         else
@@ -279,8 +218,9 @@ public sealed class ApplyProductionWorkHandler
             }
         }
 
-        if (production.Get(command.OrderId)!.Status
-            == ProductionOrderStatus.ReadyToComplete)
+        if (!order.Recipe.UsesMaterialSteps
+            && production.Get(command.OrderId)!.Status
+                == ProductionOrderStatus.ReadyToComplete)
         {
             Result advanced = jobs.AdvanceStage(command.JobId, command.Tick);
             if (advanced.IsFailure)

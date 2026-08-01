@@ -75,7 +75,8 @@ public sealed class AcquireProductionMaterialHandler
             .Where(value => !value.Consumed)
             .Select(value => (ProductionMaterialStepSnapshot?)value)
             .FirstOrDefault();
-        if (!step.HasValue)
+        if (!step.HasValue
+            || step.Value.Phase != ProductionMaterialStepPhase.AwaitingMaterial)
         {
             return Result.Failure(ProductionErrors.InvalidStatus);
         }

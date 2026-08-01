@@ -38,12 +38,18 @@ public sealed class InternalStockUnityContractTests
         string capacity = Read(runtime, "DigResidentInventory.Capacity.cs");
         string zones = Read(runtime, "DigBuildingProductionZones.cs");
         string transit = Read(runtime, "DigBuildingProductionMaterialTransit.cs");
+        string lifecycle = Read(
+            runtime,
+            "DigBuildingProductionMaterialLifecycle.cs");
 
         Assert.Contains("ItemPickupQuantityPolicy", capacity);
-        Assert.Contains("AcquireProductionMaterialCommand", zones);
-        Assert.Contains("requireResidentCarriedMaterial", zones);
-        Assert.Contains("ResolveBuildingInternalStockCell", zones + transit);
-        Assert.Contains("HasCarriedProductionMaterial", zones + transit);
+        Assert.Contains("AcquireProductionMaterialCommand", lifecycle);
+        Assert.Contains("StageProductionMaterialCommand", lifecycle);
+        Assert.Contains("DepositProductionMaterialCommand", lifecycle);
+        Assert.Contains("ProcessedAwaitingPackage", lifecycle);
+        Assert.Contains("ResolveBuildingInternalStockCell", lifecycle + transit);
+        Assert.Contains("HasCarriedProductionMaterial", lifecycle + transit);
+        Assert.DoesNotContain("requireResidentCarriedMaterial: true", lifecycle);
     }
 
     [Fact]

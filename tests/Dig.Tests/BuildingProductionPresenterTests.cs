@@ -113,7 +113,8 @@ public sealed class BuildingProductionPresenterTests
             },
             1).IsSuccess);
         Assert.True(production.Start(orderId, 2, new[] { 100L }).IsSuccess);
-        Assert.True(production.AddMaterialWork(orderId, 40, 3).IsSuccess);
+        Assert.True(production.StageMaterial(orderId, 3).IsSuccess);
+        Assert.True(production.AddMaterialWork(orderId, 40, 4).IsSuccess);
 
         ProductionIconViewModel active = PresentGrilled(
             content,
@@ -125,7 +126,7 @@ public sealed class BuildingProductionPresenterTests
         Assert.True(active.HasProductionOverlay);
         Assert.Equal(0.4d, active.ProductionProgress, precision: 6);
 
-        Assert.True(production.AddMaterialWork(orderId, 60, 4).IsSuccess);
+        Assert.True(production.AddMaterialWork(orderId, 60, 5).IsSuccess);
         ProductionIconViewModel finalizing = PresentGrilled(
             content,
             items,
@@ -136,7 +137,7 @@ public sealed class BuildingProductionPresenterTests
         Assert.True(finalizing.HasProductionOverlay);
         Assert.Equal(1d, finalizing.ProductionProgress);
 
-        Assert.True(production.Cancel(orderId, "cancelled", 5).IsSuccess);
+        Assert.True(production.Cancel(orderId, "cancelled", 6).IsSuccess);
         ProductionIconViewModel cancelled = PresentGrilled(
             content,
             items,
@@ -162,7 +163,8 @@ public sealed class BuildingProductionPresenterTests
             },
             7).IsSuccess);
         Assert.True(production.Start(completedOrderId, 8, new[] { 100L }).IsSuccess);
-        Assert.True(production.AddMaterialWork(completedOrderId, 100, 9).IsSuccess);
+        Assert.True(production.StageMaterial(completedOrderId, 9).IsSuccess);
+        Assert.True(production.AddMaterialWork(completedOrderId, 100, 10).IsSuccess);
         ProductionIconViewModel awaitingDeposit = PresentGrilled(
             content,
             items,
@@ -174,7 +176,8 @@ public sealed class BuildingProductionPresenterTests
         Assert.Equal(1d, awaitingDeposit.ProductionProgress);
         Assert.Equal(1, awaitingDeposit.QueuedCount);
 
-        Assert.True(production.Complete(completedOrderId, 10).IsSuccess);
+        Assert.True(production.DepositProcessedMaterial(completedOrderId, 11).IsSuccess);
+        Assert.True(production.Complete(completedOrderId, 12).IsSuccess);
         ProductionIconViewModel committed = PresentGrilled(
             content,
             items,

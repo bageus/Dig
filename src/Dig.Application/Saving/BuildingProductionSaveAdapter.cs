@@ -9,7 +9,7 @@ using Dig.Domain.Production;
 namespace Dig.Application.Saving
 {
 
-public static class BuildingProductionSaveAdapter
+public static partial class BuildingProductionSaveAdapter
 {
     public static BuildingProductionSaveData Encode(
         ProductionState production,
@@ -49,6 +49,7 @@ public static class BuildingProductionSaveAdapter
                         RequiredTicks = value.RequiredTicks,
                         CompletedTicks = value.CompletedTicks,
                         IsConsumed = value.Consumed,
+                        Phase = (int)value.Phase,
                     }).ToList(),
             });
         }
@@ -161,7 +162,13 @@ public static class BuildingProductionSaveAdapter
                     orderId,
                     tick++,
                     recipe.UsesMaterialSteps ? durations : null));
-                RestoreProgress(production, saved, recipe, orderId, tick++);
+                RestoreProgress(
+                    production,
+                    inventory,
+                    saved,
+                    recipe,
+                    orderId,
+                    tick++);
             }
 
             if (status == ProductionOrderStatus.Completed)
@@ -276,27 +283,6 @@ public static class BuildingProductionSaveAdapter
         }
 
         return supply;
-    }
-
-    private static void RestoreProgress(
-        ProductionState production,
-        ProductionOrderSaveData saved,
-        RecipeDefinition recipe,
-        EntityId orderId,
-        long tick)
-    {
-        if (recipe.UsesMaterialSteps)
-        {
-            long elapsed = saved.MaterialSteps.Sum(value => value.CompletedTicks);
-            if (elapsed > 0)
-            {
-                RequireSuccess(production.AddMaterialWork(orderId, elapsed, tick));
-            }
-        }
-        else if (saved.CompletedWork > 0)
-        {
-            RequireSuccess(production.AddWork(orderId, saved.CompletedWork, tick));
-        }
     }
 
     private static bool NeedsReservedState(

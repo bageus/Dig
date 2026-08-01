@@ -66,7 +66,10 @@ public sealed class BuildingProductionSaveRoundTripTests
         Assert.Equal(ProductionOrderStatus.InProgress, restored.Status);
         Assert.True(restored.MaterialSteps[0].Consumed);
         Assert.Equal(20, restored.MaterialSteps[1].CompletedTicks);
-        Assert.Equal(1, loaded.Value.Inventory.GetTotal(
+        Assert.Equal(
+            ProductionMaterialStepPhase.Processing,
+            restored.MaterialSteps[1].Phase);
+        Assert.Equal(0, loaded.Value.Inventory.GetTotal(
             CampfireProductionContent.MushroomLegItemId));
         Assert.False(loaded.Value.BuildingSupply.Get(
             CampfireProductionTestHarness.BuildingId,
@@ -83,17 +86,49 @@ public sealed class BuildingProductionSaveRoundTripTests
         Assert.True(agents.Add(AgentTestFactory.CreateAgent(
             id: CampfireProductionTestHarness.WorkerId)).IsSuccess);
         InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
-        Assert.True(new ApplyProductionWorkHandler(
+        ApplyProductionWorkHandler work = new ApplyProductionWorkHandler(
             production,
             inventory,
             jobs,
             agents,
-            journal).Handle(new ApplyProductionWorkCommand(
+            journal);
+        Assert.True(work.Handle(new ApplyProductionWorkCommand(
+            orderId,
+            jobId,
+            baseWork: 80,
+            conditionEfficiencyBasisPoints: 10_000,
+            tick: 8)).IsSuccess);
+        Assert.Equal(
+            ProductionMaterialStepPhase.ProcessedAwaitingPackage,
+            production.Get().Get(orderId)!.MaterialSteps[1].Phase);
+        Assert.True(production.Get().DepositProcessedMaterial(orderId, tick: 9).IsSuccess);
+
+        EntityId transitId = CampfireProductionTestHarness.Id(513);
+        Assert.True(new AcquireProductionMaterialHandler(
+            production,
+            inventory,
+            jobs,
+            journal).Handle(new AcquireProductionMaterialCommand(
                 orderId,
                 jobId,
-                baseWork: 180,
-                conditionEfficiencyBasisPoints: 10_000,
-                tick: 8)).IsSuccess);
+                transitId,
+                tick: 10)).IsSuccess);
+        Assert.True(new StageProductionMaterialHandler(
+            production,
+            inventory,
+            jobs,
+            journal).Handle(new StageProductionMaterialCommand(
+                orderId,
+                jobId,
+                tick: 11)).IsSuccess);
+        Assert.True(work.Handle(new ApplyProductionWorkCommand(
+            orderId,
+            jobId,
+            baseWork: 100,
+            conditionEfficiencyBasisPoints: 10_000,
+            tick: 12)).IsSuccess);
+        Assert.True(production.Get().DepositProcessedMaterial(orderId, tick: 13).IsSuccess);
+        Assert.True(jobs.Get().AdvanceStage(jobId, tick: 13).IsSuccess);
 
         AgentSkillGrantService skills = new AgentSkillGrantService(agents, journal);
         EntityId outputId = CampfireProductionTestHarness.Id(512);
@@ -106,7 +141,7 @@ public sealed class BuildingProductionSaveRoundTripTests
                 orderId,
                 jobId,
                 new[] { outputId },
-                tick: 9,
+                tick: 14,
                 ItemLocation.InWorld(new CellId(4, 2, 0)))).IsSuccess);
         Assert.Equal(CampfireProductionContent.TentBoxItemId,
             loaded.Value.Inventory.GetStack(outputId)!.ItemId);

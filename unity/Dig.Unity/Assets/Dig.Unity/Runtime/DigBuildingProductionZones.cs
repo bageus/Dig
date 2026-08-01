@@ -27,17 +27,16 @@ internal sealed partial class DigTerrainWorkSession
         AgentViewModel worker,
         long tick)
     {
-        bool atWorkstation = At(worker, production.WorkPosition);
         if (job.Status == JobStatus.Claimed)
         {
-            if (!atWorkstation)
+            Result<CellId> packageTarget = ResolveProductionPackagePlacementTarget(
+                production);
+            if (packageTarget.IsFailure || !At(worker, packageTarget.Value))
             {
                 return Result.Success();
             }
 
-            Result packageReady = EnsureProductionOutputPackage(
-                production,
-                tick);
+            Result packageReady = EnsureProductionOutputPackage(production, tick);
             if (packageReady.IsFailure)
             {
                 return packageReady;
@@ -59,7 +58,9 @@ internal sealed partial class DigTerrainWorkSession
         }
         else if (job.Stage == JobStageKind.TravelToTarget)
         {
-            if (!atWorkstation)
+            Result<CellId> packageTarget = ResolveProductionPackagePlacementTarget(
+                production);
+            if (packageTarget.IsFailure || !At(worker, packageTarget.Value))
             {
                 return Result.Success();
             }
@@ -82,59 +83,46 @@ internal sealed partial class DigTerrainWorkSession
                 return Result.Failure(ProductionErrors.OrderNotFound);
             }
 
-            if (activeOrder.Recipe.UsesMaterialSteps
-                && TryResolvePendingProductionMaterial(
-                    activeOrder,
-                    out ItemId materialItemId)
-                && !HasCarriedProductionMaterial(
-                    production.OrderId,
-                    current.AssignedAgentId!.Value,
-                    materialItemId))
+            if (activeOrder.Recipe.UsesMaterialSteps)
             {
-                BuildingSnapshot? building = _buildingsRepository!.Get().Get(
-                    production.BuildingId);
-                if (building == null)
+                Result materialStep = AdvanceProductionMaterialStep(
+                    current,
+                    production,
+                    activeOrder,
+                    worker,
+                    tick);
+                if (materialStep.IsFailure)
                 {
-                    return Result.Failure(ProductionErrors.WorkstationMismatch);
+                    return materialStep;
                 }
 
-                CellId stockCell = ResolveBuildingInternalStockCell(building);
-                if (!At(worker, stockCell))
+                current = _jobRepository.Get().Get(job.Id);
+                if (current?.Stage != JobStageKind.Finalize)
+                {
+                    return Result.Success();
+                }
+            }
+            else
+            {
+                if (!At(worker, production.WorkPosition))
                 {
                     return Result.Success();
                 }
 
-                EntityId transitStackId = NextProductionEntityId(
-                    'a',
-                    ref _nextProductionMaterialTransitSequence);
-                return _acquireProductionMaterial!.Handle(
-                    new AcquireProductionMaterialCommand(
+                Result worked = _applyProductionWork!.Handle(
+                    new ApplyProductionWorkCommand(
                         production.OrderId,
                         job.Id,
-                        transitStackId,
+                        baseWork: 1,
+                        conditionEfficiencyBasisPoints: 10_000,
                         tick));
-            }
+                if (worked.IsFailure)
+                {
+                    return worked;
+                }
 
-            if (!atWorkstation)
-            {
-                return Result.Success();
+                current = _jobRepository.Get().Get(job.Id);
             }
-
-            Result worked = _applyProductionWork!.Handle(
-                new ApplyProductionWorkCommand(
-                    production.OrderId,
-                    job.Id,
-                    baseWork: 1,
-                    conditionEfficiencyBasisPoints: 10_000,
-                    tick,
-                    requireResidentCarriedMaterial:
-                        activeOrder.Recipe.UsesMaterialSteps));
-            if (worked.IsFailure)
-            {
-                return worked;
-            }
-
-            current = _jobRepository.Get().Get(job.Id);
         }
 
         if (current?.Stage != JobStageKind.Finalize)
@@ -178,59 +166,6 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         return completed;
-    }
-
-    internal bool TryPlanBuildingProductionMovement(
-        JobSnapshot job,
-        AgentViewModel agent,
-        NavigationSnapshot navigation,
-        IDictionary<string, CellId> movement)
-    {
-        if (job.Definition is not ProductionWorkJobDefinition production)
-        {
-            return false;
-        }
-
-        EnsureBuildingProductionInitialized();
-        CellId target = production.WorkPosition;
-        if (job.Stage == JobStageKind.PerformWork)
-        {
-            ProductionOrderSnapshot? order = _productionRepository!.Get().Get(
-                production.OrderId);
-            BuildingSnapshot? building = _buildingsRepository!.Get().Get(
-                production.BuildingId);
-            if (order != null
-                && building != null
-                && order.Recipe.UsesMaterialSteps
-                && TryResolvePendingProductionMaterial(order, out ItemId itemId)
-                && job.AssignedAgentId.HasValue
-                && !HasCarriedProductionMaterial(
-                    production.OrderId,
-                    job.AssignedAgentId.Value,
-                    itemId))
-            {
-                target = ResolveBuildingInternalStockCell(building);
-            }
-        }
-        else if (job.Stage == JobStageKind.Finalize)
-        {
-            Result<CellId> outputCell = ResolveProductionPackageCell(
-                production.OrderId);
-            if (outputCell.IsFailure)
-            {
-                return true;
-            }
-
-            target = outputCell.Value;
-        }
-
-        return PlanBuildingProductionRoute(
-            _buildingProductionRoutes,
-            job,
-            agent,
-            target,
-            navigation,
-            movement);
     }
 
     internal IReadOnlyDictionary<string, float> LoadProductionWaitOffsets()

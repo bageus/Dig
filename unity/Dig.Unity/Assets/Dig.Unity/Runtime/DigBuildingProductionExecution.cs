@@ -41,6 +41,8 @@ internal sealed partial class DigTerrainWorkSession
     private BeginProductionWorkHandler? _beginProduction;
     private ApplyProductionWorkHandler? _applyProductionWork;
     private AcquireProductionMaterialHandler? _acquireProductionMaterial;
+    private StageProductionMaterialHandler? _stageProductionMaterial;
+    private DepositProductionMaterialHandler? _depositProductionMaterial;
     private CompleteProductionOrderHandler? _completeProduction;
     private CancelProductionOrderHandler? _cancelProduction;
     private CreateProductionOutputPackageHandler? _createProductionPackage;
@@ -153,6 +155,15 @@ internal sealed partial class DigTerrainWorkSession
         _acquireProductionMaterial = new AcquireProductionMaterialHandler(
             _productionRepository,
             _buildingInventoryRepository,
+            _jobRepository,
+            journal);
+        _stageProductionMaterial = new StageProductionMaterialHandler(
+            _productionRepository,
+            _buildingInventoryRepository,
+            _jobRepository,
+            journal);
+        _depositProductionMaterial = new DepositProductionMaterialHandler(
+            _productionRepository,
             _jobRepository,
             journal);
         _completeProduction = new CompleteProductionOrderHandler(

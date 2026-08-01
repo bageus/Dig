@@ -11,20 +11,20 @@ namespace Dig.Unity
 
 internal sealed partial class DigTerrainWorkSession
 {
-    private static bool TryResolvePendingProductionMaterial(
+    private static bool TryResolveCurrentProductionMaterialStep(
         ProductionOrderSnapshot order,
-        out ItemId itemId)
+        out ProductionMaterialStepSnapshot step)
     {
         for (int index = 0; index < order.MaterialSteps.Count; index++)
         {
             if (!order.MaterialSteps[index].Consumed)
             {
-                itemId = order.MaterialSteps[index].ItemId;
+                step = order.MaterialSteps[index];
                 return true;
             }
         }
 
-        itemId = default;
+        step = default;
         return false;
     }
 
