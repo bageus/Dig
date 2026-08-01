@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Ecology;
 using Dig.Application.Production;
+using Dig.Domain.Buildings;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Ecology;
@@ -19,7 +20,8 @@ namespace Dig.Unity
 
         private void CreateEligibleFoodDependencyJobs(
             long tick,
-            IReadOnlyList<AgentViewModel> agents)
+            IReadOnlyList<AgentViewModel> agents,
+            Dig.Domain.Navigation.NavigationSnapshot navigation)
         {
             if (_mushroomRepository == null
                 || _startMushroomChop == null
@@ -32,7 +34,6 @@ namespace Dig.Unity
             }
 
             HashSet<CellId> revealed = GetProductionRevealedCells().ToHashSet();
-            HashSet<CellId> reachable = GetProductionReachableCells().ToHashSet();
             InventorySnapshot inventory = _buildingInventoryRepository.Get().CreateSnapshot();
             BuildingSupplyState supplies = _buildingSupplyRepository.Get();
 
@@ -49,6 +50,16 @@ namespace Dig.Unity
                     continue;
                 }
 
+                BuildingSnapshot? building = _buildingsRepository!.Get().Get(
+                    supply.BuildingId);
+                if (building == null || building.Status != BuildingStatus.Completed)
+                {
+                    continue;
+                }
+
+                HashSet<CellId> reachable = GetProductionReachableCells(
+                    navigation,
+                    building.WorkPosition).ToHashSet();
                 ItemConsumptionRequest? request =
                     BuildingSupplyDependencyPlanner.PlanSingleExtractionRequest(
                         supply,
@@ -136,7 +147,11 @@ namespace Dig.Unity
                 .ThenBy(value => value.SiteId.ToString(), StringComparer.Ordinal))
             {
                 foreach (AgentViewModel agent in agents
-                    .Where(IsAvailableForAutomaticWork)
+                    .Where(value => IsAvailableForAutomaticWork(value)
+                        && reachable.Contains(new CellId(
+                            value.CellX,
+                            value.CellY,
+                            value.CellZ)))
                     .OrderBy(value => value.Id, StringComparer.Ordinal))
                 {
                     CellId workerCell = new CellId(agent.CellX, agent.CellY, agent.CellZ);

@@ -232,6 +232,68 @@ public sealed class BuildingSupplyApplicationTests
     }
 
     [Fact]
+    public void Cancelling_blocked_supply_releases_external_reservations_for_replanning()
+    {
+        CampfireProductionTestHarness harness = new CampfireProductionTestHarness();
+        CellId cell = new CellId(1, 1, 0);
+        EntityId source = CampfireProductionTestHarness.Id(270);
+        EntityId jobId = CampfireProductionTestHarness.Id(271);
+        Assert.True(harness.Inventory.AddStack(
+            source,
+            Dig.Domain.Content.CampfireProductionContent.MushroomCapItemId,
+            4,
+            ItemLocation.InWorld(cell),
+            0).IsSuccess);
+        CreateBuildingSupplyJobHandler create = new CreateBuildingSupplyJobHandler(
+            harness.Content,
+            harness.SupplyRepository,
+            harness.ProductionRepository,
+            harness.BuildingsRepository,
+            harness.InventoryRepository,
+            harness.JobsRepository,
+            harness.Journal);
+        Assert.True(create.Handle(new CreateBuildingSupplyJobCommand(
+            jobId,
+            CampfireProductionTestHarness.BuildingId,
+            CampfireProductionTestHarness.WorkerId,
+            new[] { cell },
+            new[]
+            {
+                cell,
+                harness.Buildings.Get(
+                    CampfireProductionTestHarness.BuildingId)!.WorkPosition,
+            },
+            Enumerable.Range(272, 4)
+                .Select(CampfireProductionTestHarness.Id)
+                .ToArray(),
+            new[] { CampfireProductionTestHarness.Id(276) },
+            500,
+            1)).IsSuccess);
+        Assert.True(harness.Jobs.Block(
+            jobId,
+            new JobBlockReason("route_unavailable", "No connected route."),
+            tick: 2).IsSuccess);
+        harness.JobsRepository.Save(harness.Jobs);
+
+        Result cancelled = new CancelBuildingSupplyHandler(
+            harness.SupplyRepository,
+            harness.InventoryRepository,
+            harness.JobsRepository,
+            harness.Journal).Handle(new CancelBuildingSupplyCommand(
+                jobId,
+                "blocked_supply_replanned",
+                3));
+
+        Assert.True(cancelled.IsSuccess, cancelled.Error?.ToString());
+        Assert.Equal(JobStatus.Cancelled, harness.Jobs.Get(jobId)!.Status);
+        Assert.Equal(4, harness.Inventory.GetStack(source)!.AvailableQuantity);
+        Assert.Empty(harness.Inventory.GetResidentSlotClaims(jobId));
+        Assert.False(harness.Supply.Get(
+            CampfireProductionTestHarness.BuildingId,
+            harness.Inventory.CreateSnapshot())!.HasActiveSupply);
+    }
+
+    [Fact]
     public void Cancelling_uncollected_supply_releases_all_reservations_and_incoming()
     {
         CampfireProductionTestHarness harness = new CampfireProductionTestHarness();

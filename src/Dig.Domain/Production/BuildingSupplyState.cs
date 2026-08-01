@@ -118,6 +118,42 @@ public sealed class BuildingSupplyState : AggregateRoot
         return Result.Success();
     }
 
+    public Result EnableProductionInputDelivery(
+        EntityId buildingId,
+        IReadOnlyCollection<ItemConsumptionRequest> inputs,
+        long tick)
+    {
+        ValidateTick(tick);
+        if (inputs is null)
+        {
+            throw new ArgumentNullException(nameof(inputs));
+        }
+
+        WorkstationSupplyEntry? entry = Find(buildingId);
+        if (entry is null)
+        {
+            return Result.Failure(BuildingSupplyErrors.WorkstationNotFound);
+        }
+
+        ItemId[] required = inputs
+            .Where(value => value.Quantity > 0)
+            .Select(value => value.ItemId)
+            .Distinct()
+            .OrderBy(value => value)
+            .ToArray();
+        foreach (ItemId itemId in required)
+        {
+            entry.Definition.GetStockRule(itemId);
+        }
+
+        foreach (ItemId itemId in required)
+        {
+            entry.SetDeliveryEnabled(itemId, enabled: true);
+        }
+
+        return Result.Success();
+    }
+
     public Result ReserveIncoming(
         EntityId buildingId,
         EntityId jobId,

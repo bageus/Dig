@@ -57,6 +57,7 @@ internal sealed partial class DigTerrainWorkSession
     private DepositBuildingSupplyHandler? _depositBuildingSupply;
     private CancelBuildingSupplyHandler? _cancelBuildingSupply;
     private SetBuildingStockDeliveryHandler? _setBuildingStockDelivery;
+    private EnableProductionInputDeliveryHandler? _enableProductionInputDelivery;
     private InMemoryJobCandidateProvider? _productionCandidates;
     private AssignAvailableJobsHandler? _productionAssignment;
     private NavigationPathfinder? _productionPathfinder;
@@ -213,6 +214,8 @@ internal sealed partial class DigTerrainWorkSession
             _jobRepository,
             journal);
         _setBuildingStockDelivery = new SetBuildingStockDeliveryHandler(
+            _buildingSupplyRepository);
+        _enableProductionInputDelivery = new EnableProductionInputDeliveryHandler(
             _buildingSupplyRepository);
         _productionCandidates = new InMemoryJobCandidateProvider();
         _productionAssignment = new AssignAvailableJobsHandler(

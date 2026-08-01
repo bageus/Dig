@@ -221,6 +221,37 @@ public sealed class CreateBuildingSupplyJobHandler
     }
 }
 
+public sealed class EnableProductionInputDeliveryHandler
+    : ICommandHandler<EnableProductionInputDeliveryCommand, Result>
+{
+    private readonly IBuildingSupplyRepository _repository;
+
+    public EnableProductionInputDeliveryHandler(IBuildingSupplyRepository repository)
+    {
+        _repository = repository;
+    }
+
+    public Result Handle(EnableProductionInputDeliveryCommand command)
+    {
+        if (command is null)
+        {
+            throw new ArgumentNullException(nameof(command));
+        }
+
+        BuildingSupplyState supply = _repository.Get();
+        Result result = supply.EnableProductionInputDelivery(
+            command.BuildingId,
+            command.Inputs,
+            command.Tick);
+        if (result.IsSuccess)
+        {
+            _repository.Save(supply);
+        }
+
+        return result;
+    }
+}
+
 public sealed class SetBuildingStockDeliveryHandler
     : ICommandHandler<SetBuildingStockDeliveryCommand, Result>
 {

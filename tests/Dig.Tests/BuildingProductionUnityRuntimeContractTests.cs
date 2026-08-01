@@ -49,6 +49,49 @@ public sealed class BuildingProductionUnityRuntimeContractTests
     }
 
     [Fact]
+    public void Supply_uses_navigation_connectivity_and_recovers_blocking_jobs()
+    {
+        string runtime = RuntimeRoot();
+        string synchronization = Read(
+            runtime,
+            "DigBuildingProductionSynchronization.cs");
+        string recovery = Read(
+            runtime,
+            "DigBuildingProductionSupplyRecovery.cs");
+        string productionRuntime = Read(
+            runtime,
+            "DigBuildingProductionRuntime.cs");
+
+        Assert.Contains("TryLoadBuildingPlacementNavigation", synchronization);
+        Assert.Contains("GetProductionReachableCells", synchronization);
+        Assert.Contains("BuildingSupplyReachability.ResolveConnectedCells",
+            productionRuntime);
+        Assert.DoesNotContain(
+            "value.State.IsExplored && !value.IsSolid",
+            productionRuntime);
+        Assert.Contains("SynchronizeRequiredProductionInputDelivery", recovery);
+        Assert.Contains("EnableProductionInputDeliveryCommand", recovery);
+        Assert.Contains("RecoverBlockedBuildingSupplyJobs", recovery);
+        Assert.Contains("blocked_supply_replanned", recovery);
+        Assert.Contains("route_unavailable", synchronization);
+        string playMode = File.ReadAllText(Path.Combine(
+            FindRepositoryRoot(),
+            "unity",
+            "Dig.Unity",
+            "Assets",
+            "Dig.Unity",
+            "Tests",
+            "PlayMode",
+            "BuildingSupplyRuntimePlayModeTests.cs"));
+        Assert.Contains(
+            "Queued_recipe_force_enables_required_internal_stock_delivery",
+            playMode);
+        Assert.Contains(
+            "Carried_mushroom_supply_is_deposited_into_internal_building_stock",
+            playMode);
+    }
+
+    [Fact]
     public void Hud_projects_generic_product_and_internal_stock_icons()
     {
         string runtime = RuntimeRoot();

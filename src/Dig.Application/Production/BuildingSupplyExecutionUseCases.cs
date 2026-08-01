@@ -291,11 +291,15 @@ public sealed class CancelBuildingSupplyHandler
             command.JobId,
             command.Tick);
         if (released.IsFailure) return released;
-        Result cancelled = jobs.Cancel(
-            command.JobId,
-            new JobBlockReason("production.supply.cancelled", command.Reason),
-            command.Tick);
-        if (cancelled.IsFailure) return cancelled;
+        if (!job.IsTerminal)
+        {
+            Result cancelled = jobs.Cancel(
+                command.JobId,
+                new JobBlockReason("production.supply.cancelled", command.Reason),
+                command.Tick);
+            if (cancelled.IsFailure) return cancelled;
+        }
+
         _supplyRepository.Save(supply);
         _inventoryRepository.Save(inventory);
         _jobRepository.Save(jobs);
