@@ -208,7 +208,8 @@ namespace Dig.Unity
             {
                 buildingInternalStockRenderer.Render(
                     terrainSession.LoadAllBuildingProduction(),
-                    buildings);
+                    buildings,
+                    terrainSession.LoadAllBuildingInternalStockUnits());
                 buildingInternalStockRenderer.RenderLivingMaterialTethers(
                     terrainSession.LoadLivingMaterialCampfireTethers(),
                     buildings);

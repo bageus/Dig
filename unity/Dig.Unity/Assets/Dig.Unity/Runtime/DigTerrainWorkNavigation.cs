@@ -96,6 +96,15 @@ namespace Dig.Unity
                     continue;
                 }
 
+                if (TryPlanProductionPackageMovement(
+                    job,
+                    agent,
+                    navigation,
+                    movement))
+                {
+                    continue;
+                }
+
                 if (TryPlanMushroomMovement(job, agent, navigation, movement))
                 {
                     continue;

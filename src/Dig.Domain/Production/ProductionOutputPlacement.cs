@@ -23,7 +23,7 @@ public static class ProductionOutputPlacement
         WorldSnapshot world,
         IReadOnlyCollection<CellId> occupiedBuildingCells,
         IReadOnlyCollection<ItemStackSnapshot> inventoryStacks,
-        int maximumLateralDistance = 6)
+        int maximumLateralDistance = int.MaxValue)
     {
         Result<IReadOnlyList<CellId>> resolved = ResolveMany(
             building,
@@ -43,7 +43,7 @@ public static class ProductionOutputPlacement
         IReadOnlyCollection<CellId> occupiedBuildingCells,
         IReadOnlyCollection<ItemStackSnapshot> inventoryStacks,
         int requiredCount,
-        int maximumLateralDistance = 6)
+        int maximumLateralDistance = int.MaxValue)
     {
         if (building is null)
         {
@@ -86,8 +86,16 @@ public static class ProductionOutputPlacement
             .Select(stack => stack.Location.CellId)
             .ToHashSet();
 
+        int rightEdgeX = building.Footprint.Count == 0
+            ? building.Origin.X
+            : building.Footprint.Max(cell => cell.X);
+        int worldMaximumDistance = Math.Max(0, world.Size.Width - rightEdgeX - 1);
+        int effectiveMaximumDistance = Math.Min(
+            maximumLateralDistance,
+            Math.Max(0, worldMaximumDistance - 1));
+
         List<CellId> resolvedCells = new List<CellId>(requiredCount);
-        foreach (CellId candidate in CreateCandidates(building, maximumLateralDistance))
+        foreach (CellId candidate in CreateCandidates(building, effectiveMaximumDistance))
         {
             CellId supportCell = new CellId(
                 candidate.X,

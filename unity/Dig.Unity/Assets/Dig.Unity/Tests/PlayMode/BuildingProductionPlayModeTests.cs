@@ -115,7 +115,22 @@ public sealed class BuildingProductionPlayModeTests
                 Stock("creature.hamster", 2, 2),
             });
 
-        Invoke(renderer, "Render", (object)new[] { production }, (object)new[] { building });
+        BuildingInternalStockUnitViewModel[] units = production.Stocks
+            .SelectMany((stock, stockIndex) => Enumerable.Range(0, stock.Current)
+                .Select(unitIndex => new BuildingInternalStockUnitViewModel(
+                    (100 + stockIndex).ToString("x32"),
+                    buildingId,
+                    stock.ItemId,
+                    unitIndex,
+                    isAvailable: !(stockIndex == 0 && unitIndex == 3))))
+            .ToArray();
+
+        Invoke(
+            renderer,
+            "Render",
+            (object)new[] { production },
+            (object)new[] { building },
+            (object)units);
 
         Assert.That((int)GetProperty(renderer, "ActiveUnitCount"), Is.EqualTo(14));
         Assert.That((int)GetProperty(renderer, "ActiveBayCount"), Is.EqualTo(2));
@@ -133,12 +148,16 @@ public sealed class BuildingProductionPlayModeTests
             .Select(value => value.GetComponent<Collider>())
             .ToArray();
         Assert.That(unitColliders.All(value => value != null && value.isTrigger), Is.True);
+        Assert.That(unitColliders.Count(value => value.enabled), Is.EqualTo(13));
         Assert.That(visuals.Select(value => (string)GetProperty(value, "ItemId"))
             .Distinct().Count(), Is.EqualTo(4));
+        Assert.That(visuals.Select(value => (string)GetProperty(value, "StackId"))
+            .Distinct().Count(), Is.EqualTo(4));
+        Assert.That(visuals.All(value =>
+            value.GetComponent<DigWorldItemVisual>() != null), Is.True);
 
         float buildingX = DigTunnelProjection.ResidentWorldPosition(5, 5, 0).x;
-        Renderer[] units = visuals.Select(value => value.GetComponent<Renderer>()).ToArray();
-        Assert.That(units.All(value => value.transform.position.x < buildingX), Is.True);
+        Assert.That(visuals.All(value => value.transform.position.x < buildingX), Is.True);
         Transform inputZone = FindTransform(_root.transform, "Internal Storage Zone ");
         Transform outputZone = FindTransform(_root.transform, "Finished Output Zone ");
         Assert.That(inputZone.position.x, Is.LessThan(buildingX));

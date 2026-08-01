@@ -65,6 +65,11 @@ public sealed partial class DigWorldInteraction
             return true;
         }
 
+        if (TryHandleProductionPackagePointerInput(hits))
+        {
+            return true;
+        }
+
         if (TryHandleBuildingInternalStockPointerInput(hits))
         {
             return true;

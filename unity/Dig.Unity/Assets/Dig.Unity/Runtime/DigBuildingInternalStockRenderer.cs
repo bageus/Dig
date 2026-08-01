@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dig.Presentation.Buildings;
 using Dig.Presentation.Production;
+using Dig.Presentation.Inventory;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -11,87 +12,153 @@ namespace Dig.Unity
 [DisallowMultipleComponent]
 public sealed partial class DigBuildingInternalStockRenderer : MonoBehaviour
 {
+    private const string CatalogResourcePath = "Dig/VisualCatalogs/Items";
     private const float VisibleDepthOffset = 0.12f;
-    private readonly Dictionary<string, GameObject> _units =
-        new Dictionary<string, GameObject>(StringComparer.Ordinal);
+    private readonly Dictionary<string, DigWorldItemVisual> _units =
+        new Dictionary<string, DigWorldItemVisual>(StringComparer.Ordinal);
+    private readonly ItemStackVisualLayoutPresenter _layoutPresenter =
+        new ItemStackVisualLayoutPresenter();
+
+    [SerializeField]
+    private DigItemVisualCatalog? visualCatalog;
     private readonly Dictionary<string, Material> _materials =
         new Dictionary<string, Material>(StringComparer.Ordinal);
     private readonly Dictionary<string, DigBuildingInternalStockBayVisual> _bays =
         new Dictionary<string, DigBuildingInternalStockBayVisual>(StringComparer.Ordinal);
     private Transform? _root;
 
-    internal int ActiveUnitCount => _units.Values.Count(value => value.activeSelf);
+    internal int ActiveUnitCount => _units.Values.Count(value => value.gameObject.activeSelf);
     internal int ActiveBayCount => _bays.Values.Count(value => value.gameObject.activeSelf);
+
+    private void Awake()
+    {
+        if (visualCatalog == null)
+        {
+            visualCatalog = Resources.Load<DigItemVisualCatalog>(CatalogResourcePath);
+        }
+
+        DigVisualCatalogDiagnostics.LogValidation(visualCatalog, this, "Building stock items");
+    }
+
+    public void SetVisualCatalog(DigItemVisualCatalog? catalog)
+    {
+        visualCatalog = catalog;
+        foreach (DigWorldItemVisual visual in _units.Values)
+        {
+            visual.InvalidateAsset();
+        }
+    }
 
     internal void Render(
         IReadOnlyList<BuildingProductionViewModel> production,
-        IReadOnlyList<BuildingWorldViewModel> buildings)
+        IReadOnlyList<BuildingWorldViewModel> buildings,
+        IReadOnlyList<BuildingInternalStockUnitViewModel> stockUnits)
     {
-        if (production == null)
+        if (production == null || buildings == null || stockUnits == null)
         {
             throw new ArgumentNullException(nameof(production));
-        }
-
-        if (buildings == null)
-        {
-            throw new ArgumentNullException(nameof(buildings));
         }
 
         EnsureRoot();
         Dictionary<string, BuildingWorldViewModel> buildingById = buildings
             .ToDictionary(value => value.Id, StringComparer.Ordinal);
+        Dictionary<string, BuildingProductionViewModel> productionByBuilding = production
+            .ToDictionary(value => value.BuildingId.ToString(), StringComparer.Ordinal);
         HashSet<string> visible = new HashSet<string>(StringComparer.Ordinal);
         HashSet<string> visibleBays = new HashSet<string>(StringComparer.Ordinal);
-        for (int productionIndex = 0;
-            productionIndex < production.Count;
-            productionIndex++)
+
+        foreach (BuildingProductionViewModel model in production)
         {
-            BuildingProductionViewModel model = production[productionIndex];
-            if (!buildingById.TryGetValue(
+            if (buildingById.TryGetValue(
                 model.BuildingId.ToString(),
                 out BuildingWorldViewModel? building))
+            {
+                RenderZones(building, visibleBays);
+            }
+        }
+
+        foreach (BuildingInternalStockUnitViewModel unit in stockUnits)
+        {
+            string buildingId = unit.BuildingId.ToString();
+            if (!buildingById.TryGetValue(buildingId, out BuildingWorldViewModel? building)
+                || !productionByBuilding.TryGetValue(
+                    buildingId,
+                    out BuildingProductionViewModel? model))
             {
                 continue;
             }
 
-            RenderZones(building, visibleBays);
-            for (int stockIndex = 0; stockIndex < model.Stocks.Count; stockIndex++)
-            {
-                BuildingStockIconViewModel stock = model.Stocks[stockIndex];
-                RenderStock(building, stock, stockIndex, visible);
-            }
+            int stockIndex = model.Stocks
+                .Select((stock, index) => new { stock, index })
+                .Where(value => value.stock.ItemId == unit.ItemId)
+                .Select(value => value.index)
+                .DefaultIfEmpty(0)
+                .First();
+            RenderUnit(building, unit, stockIndex, visible);
         }
 
         RemoveMissing(visible, visibleBays);
     }
 
-    private void RenderStock(
+    private void RenderUnit(
         BuildingWorldViewModel building,
-        BuildingStockIconViewModel stock,
+        BuildingInternalStockUnitViewModel unit,
         int stockIndex,
         ISet<string> visible)
     {
-        if (stock.ItemId.ToString().IndexOf("hamster", StringComparison.Ordinal) >= 0)
+        string key = unit.VisualKey;
+        visible.Add(key);
+        if (!_units.TryGetValue(key, out DigWorldItemVisual? visual))
         {
-            return;
+            GameObject root = new GameObject("Internal stock item " + key);
+            root.transform.SetParent(_root, worldPositionStays: true);
+            visual = root.AddComponent<DigWorldItemVisual>();
+            _units.Add(key, visual);
         }
 
-        for (int unitIndex = 0; unitIndex < stock.Current; unitIndex++)
-        {
-            string key = building.Id + ":" + stock.ItemId + ":" + unitIndex;
-            visible.Add(key);
-            if (!_units.TryGetValue(key, out GameObject? unit))
-            {
-                unit = CreateUnit(
-                    building.Id,
-                    stock.ItemId.ToString(),
-                    key);
-                _units.Add(key, unit);
-            }
+        WorldItemViewModel item = new WorldItemViewModel(
+            unit.StackId,
+            unit.ItemId.ToString(),
+            quantity: 1,
+            reservedQuantity: unit.IsAvailable ? 0 : 1,
+            cellX: ResolveInternalZoneCell(building).X,
+            cellY: ResolveInternalZoneCell(building).Y,
+            cellZ: ResolveInternalZoneCell(building).Z,
+            interactionKind: unit.IsAvailable
+                ? WorldItemInteractionKind.Pickup
+                : WorldItemInteractionKind.None);
+        DigItemVisualResolution resolution = DigWorldItemVisualPolicy.Resolve(
+            visualCatalog,
+            item.ItemId);
+        visual.gameObject.SetActive(true);
+        visual.Configure(item, _layoutPresenter.Present(item), resolution);
 
-            unit.SetActive(true);
-            ApplyUnitTransform(unit, building, stockIndex, unitIndex);
-        }
+        DigBuildingInternalStockVisual marker =
+            visual.GetComponent<DigBuildingInternalStockVisual>()
+            ?? visual.gameObject.AddComponent<DigBuildingInternalStockVisual>();
+        marker.Initialize(
+            unit.BuildingId.ToString(),
+            unit.ItemId.ToString(),
+            unit.StackId);
+        ApplyUnitTransform(visual, building, stockIndex, unit.UnitIndex, resolution);
+    }
+
+    private static void ApplyUnitTransform(
+        DigWorldItemVisual visual,
+        BuildingWorldViewModel building,
+        int stockIndex,
+        int unitIndex,
+        DigItemVisualResolution resolution)
+    {
+        int column = unitIndex % 2;
+        int layer = unitIndex / 2;
+        float pileX = -0.24f + (stockIndex * 0.16f) + (column * 0.07f);
+        BuildingFootprintCellViewModel anchor = ResolveInternalZoneCell(building);
+        visual.transform.position = DigWorldItemVisualPolicy.ResolveWorldPosition(
+            new Dig.Domain.World.CellId(anchor.X, anchor.Y, anchor.Z),
+            resolution,
+            new Vector2(pileX, stockIndex * 0.008f))
+            + (Vector3.up * (layer * 0.12f));
     }
 
     internal bool TryGetStock(
@@ -102,41 +169,6 @@ public sealed partial class DigBuildingInternalStockRenderer : MonoBehaviour
             ? null!
             : hit.collider.GetComponentInParent<DigBuildingInternalStockVisual>();
         return visual != null;
-    }
-
-    private GameObject CreateUnit(string buildingId, string itemId, string key)
-    {
-        PrimitiveType primitive = ResolvePrimitive(itemId);
-        GameObject unit = GameObject.CreatePrimitive(primitive);
-        unit.name = "Internal Stock " + key;
-        unit.transform.SetParent(_root, worldPositionStays: true);
-        Renderer renderer = unit.GetComponent<Renderer>();
-        renderer.sharedMaterial = ResolveMaterial(itemId);
-        DigBuildingInternalStockVisual visual =
-            unit.AddComponent<DigBuildingInternalStockVisual>();
-        visual.Initialize(buildingId, itemId);
-        return unit;
-    }
-
-    private static void ApplyUnitTransform(
-        GameObject unit,
-        BuildingWorldViewModel building,
-        int stockIndex,
-        int unitIndex)
-    {
-        int column = unitIndex % 2;
-        int layer = unitIndex / 2;
-        float pileX = -0.24f + (stockIndex * 0.16f);
-        BuildingFootprintCellViewModel anchor = ResolveInternalZoneCell(building);
-        Vector3 basePosition = DigTunnelProjection.ResidentWorldPosition(
-            anchor.X,
-            anchor.Y,
-            anchor.Z) + (Vector3.up * DigTunnelProjection.ResidentFootSink);
-        unit.transform.position = basePosition + new Vector3(
-            pileX + (column * 0.07f),
-            0.12f + (layer * 0.16f),
-            VisibleDepthOffset + (stockIndex * 0.008f));
-        unit.transform.localScale = ResolveScale(unit.name);
     }
 
     private Material ResolveMaterial(string itemId)
@@ -158,42 +190,6 @@ public sealed partial class DigBuildingInternalStockRenderer : MonoBehaviour
         DigMaterialColorUtility.SetColor(material, ResolveColor(family));
         _materials.Add(family, material);
         return material;
-    }
-
-    private static PrimitiveType ResolvePrimitive(string itemId)
-    {
-        string family = ResolveFamily(itemId);
-        if (family == "leg")
-        {
-            return PrimitiveType.Cylinder;
-        }
-
-        if (family == "cap" || family == "hamster")
-        {
-            return PrimitiveType.Sphere;
-        }
-
-        return PrimitiveType.Cube;
-    }
-
-    private static Vector3 ResolveScale(string objectName)
-    {
-        if (objectName.IndexOf("mushroom_leg", StringComparison.Ordinal) >= 0)
-        {
-            return new Vector3(0.11f, 0.15f, 0.11f);
-        }
-
-        if (objectName.IndexOf("mushroom_cap", StringComparison.Ordinal) >= 0)
-        {
-            return new Vector3(0.18f, 0.10f, 0.15f);
-        }
-
-        if (objectName.IndexOf("hamster", StringComparison.Ordinal) >= 0)
-        {
-            return new Vector3(0.18f, 0.13f, 0.14f);
-        }
-
-        return new Vector3(0.16f, 0.12f, 0.15f);
     }
 
     private static string ResolveFamily(string itemId)
@@ -282,7 +278,7 @@ public sealed partial class DigBuildingInternalStockRenderer : MonoBehaviour
         for (int index = 0; index < removed.Length; index++)
         {
             string key = removed[index];
-            Destroy(_units[key]);
+            Destroy(_units[key].gameObject);
             _units.Remove(key);
         }
 

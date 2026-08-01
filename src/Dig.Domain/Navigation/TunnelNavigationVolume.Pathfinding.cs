@@ -47,7 +47,7 @@ public sealed partial class TunnelNavigationVolume
         List<CellId> frontier = new List<CellId> { start };
         Dictionary<CellId, PathCost> costs = new Dictionary<CellId, PathCost>
         {
-            [start] = new PathCost(0, 0),
+            [start] = new PathCost(0, 0, 0),
         };
         Dictionary<CellId, CellId> previous =
             new Dictionary<CellId, CellId>();
@@ -149,27 +149,42 @@ public sealed partial class TunnelNavigationVolume
 
     private readonly struct PathCost : IComparable<PathCost>
     {
-        internal PathCost(int shaftGapCount, int stepCount)
+        internal PathCost(
+            int shaftGapCount,
+            int verticalClimbCount,
+            int stepCount)
         {
             ShaftGapCount = shaftGapCount;
+            VerticalClimbCount = verticalClimbCount;
             StepCount = stepCount;
         }
 
         internal int ShaftGapCount { get; }
+
+        internal int VerticalClimbCount { get; }
 
         internal int StepCount { get; }
 
         internal PathCost Advance(TunnelTraversalKind kind)
         {
             return new PathCost(
-                ShaftGapCount + (kind == TunnelTraversalKind.ShaftGapTraverse ? 1 : 0),
+                checked(ShaftGapCount
+                    + (kind == TunnelTraversalKind.ShaftGapTraverse ? 1 : 0)),
+                checked(VerticalClimbCount
+                    + (kind == TunnelTraversalKind.VerticalClimb ? 1 : 0)),
                 checked(StepCount + 1));
         }
 
         public int CompareTo(PathCost other)
         {
             int gap = ShaftGapCount.CompareTo(other.ShaftGapCount);
-            return gap != 0 ? gap : StepCount.CompareTo(other.StepCount);
+            if (gap != 0)
+            {
+                return gap;
+            }
+
+            int climb = VerticalClimbCount.CompareTo(other.VerticalClimbCount);
+            return climb != 0 ? climb : StepCount.CompareTo(other.StepCount);
         }
     }
 }

@@ -13,6 +13,7 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         string runtime = RuntimeRoot();
         string bootstrap = Read(runtime, "DigUnityBootstrap.cs");
         string execution = Read(runtime, "DigBuildingProductionExecution.cs");
+        string commands = Read(runtime, "DigBuildingProductionCommands.cs");
         string synchronization = Read(runtime, "DigBuildingProductionSynchronization.cs");
         string deferredSupply = Read(runtime, "DigBuildingProductionDeferredSupply.cs");
         string runtimeExecution = Read(runtime, "DigBuildingProductionRuntime.cs");
@@ -34,13 +35,13 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         Assert.DoesNotContain("new AdvanceJobCommand(", runtimeExecution);
         Assert.Contains("CreateBuildingSupplyJobHandler", execution);
         Assert.Contains("AcquireBuildingSupplySourceHandler", execution);
-        Assert.Contains("ThenByDescending(value => value.Sequence)", execution);
+        Assert.Contains("ThenByDescending(value => value.Sequence)", commands);
         Assert.Contains("PrepareEligibleProductionOrders", synchronization);
         Assert.Contains("AssignProductionJobs", synchronization);
         Assert.Contains("JobStageKind.Finalize", zones);
-        Assert.Contains("ResolveProductionOutputCells", zones);
-        Assert.Contains("Enumerable.Range(0, outputUnitCount)", zones);
-        Assert.Contains("outputLocations: outputCells.Value", zones);
+        Assert.Contains("EnsureProductionOutputPackage", zones);
+        Assert.Contains("ResolveProductionPackageCell", zones);
+        Assert.Contains("package.StackId", zones);
         Assert.Contains("ResolveEligibleDeferredSupplyJobs", synchronization + deferredSupply);
         Assert.Contains("HasNonTerminalBuildingSupplyJob", deferredSupply);
         Assert.Contains("FindByBoxItemId", placement);

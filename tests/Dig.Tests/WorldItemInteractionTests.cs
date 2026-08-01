@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Inventory;
 using Dig.Domain.Core;
+using Dig.Domain.Content;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
@@ -97,6 +98,54 @@ public sealed class WorldItemInteractionTests
             projected.Where(item => item.ItemId != stone.ToString()),
             item => Assert.True(item.IsBuildingBox));
         Assert.True(projected.Single(item => item.ItemId == stone.ToString()).CanPickup);
+    }
+
+    [Fact]
+    public void Production_packages_use_dedicated_interaction_policy()
+    {
+        ItemId stone = new ItemId("test.package.stone");
+        ItemCatalog catalog = new ItemCatalog(
+            ProductionPackageContent.CreateItems().Concat(new[]
+            {
+                new ItemDefinition(stone, "Stone", 20, false),
+            }));
+        InventoryState inventory = new InventoryState(catalog);
+        Assert.True(inventory.AddStack(
+            Id(21),
+            ProductionPackageContent.UnfinishedPackageItemId,
+            1,
+            ItemLocation.InWorld(new CellId(1, 1)),
+            0).IsSuccess);
+        Assert.True(inventory.AddStack(
+            Id(22),
+            ProductionPackageContent.FoodPackageItemId,
+            1,
+            ItemLocation.InWorld(new CellId(2, 1)),
+            0).IsSuccess);
+        Assert.True(inventory.AddStack(
+            Id(23),
+            stone,
+            1,
+            ItemLocation.InWorld(new CellId(3, 1)),
+            0).IsSuccess);
+
+        WorldItemViewModel[] projected = new InventoryWorldPresenter(
+            new GetInventorySnapshotQueryHandler(
+                new InMemoryInventoryRepository(inventory)),
+            WorldItemInteractionKind.Pickup).Load().ToArray();
+
+        WorldItemViewModel unfinished = projected.Single(value =>
+            value.StackId == Id(21).ToString());
+        WorldItemViewModel food = projected.Single(value =>
+            value.StackId == Id(22).ToString());
+        WorldItemViewModel loose = projected.Single(value =>
+            value.StackId == Id(23).ToString());
+        Assert.Equal(WorldItemInteractionKind.None, unfinished.InteractionKind);
+        Assert.False(unfinished.IsInteractive);
+        Assert.Equal(WorldItemInteractionKind.Use, food.InteractionKind);
+        Assert.True(food.CanUse);
+        Assert.False(food.CanPickup);
+        Assert.True(loose.CanPickup);
     }
 
     private static EntityId Id(int value)

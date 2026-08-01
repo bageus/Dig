@@ -46,6 +46,7 @@ public enum ResidentActionVisualState
     Drop = 6,
     Hit = 7,
     Death = 8,
+    Run = 9,
 }
 
 public sealed class ResidentAppearanceViewModel

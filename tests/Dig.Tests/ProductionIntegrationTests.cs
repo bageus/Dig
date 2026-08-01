@@ -92,7 +92,7 @@ public sealed class ProductionIntegrationTests
     }
 
     [Fact]
-    public void Workstation_queue_serializes_orders_and_cancellation_releases_inputs()
+    public void Workstation_queue_serializes_orders_and_active_cancel_finishes_current_unit()
     {
         ProductionTestHarness harness = CreateHarness();
         Assert.True(harness.Enqueue(FirstOrderId, PlateRecipe, tick: 1).IsSuccess);
@@ -111,12 +111,32 @@ public sealed class ProductionIntegrationTests
         Assert.True(cancel.Handle(new CancelProductionOrderCommand(
             FirstOrderId,
             FirstJobId,
-            "Priority changed.",
+            "player_cancelled",
             tick: 4)).IsSuccess);
+
+        Assert.Equal(
+            ProductionOrderStatus.InputsReserved,
+            harness.Production.Get(FirstOrderId)!.Status);
+        Assert.Equal(2, harness.Inventory.GetStack(ProductionTestHarness.OreStackId)!.ReservedQuantity);
+        Assert.Equal(
+            ProductionErrors.QueueBlocked,
+            harness.Prepare(
+                EntityId.Parse("85000000000000000000000000000003"),
+                tick: 5).Error);
+
+        harness.AssignAndBegin(FirstOrderId, FirstJobId, tick: 6);
+        Assert.True(harness.ApplyWork(FirstOrderId, FirstJobId, tick: 9).IsSuccess);
+        Assert.True(harness.Complete(
+            FirstOrderId,
+            FirstJobId,
+            OutputStackId,
+            tick: 10).IsSuccess);
+
         Assert.Equal(0, harness.Inventory.GetStack(ProductionTestHarness.OreStackId)!.ReservedQuantity);
-        Assert.True(harness.Prepare(
-            EntityId.Parse("85000000000000000000000000000003"),
-            tick: 5).IsSuccess);
+        Assert.Equal(ProductionOrderStatus.Completed, harness.Production.Get(FirstOrderId)!.Status);
+        Result secondPrepared = harness.Prepare(
+            EntityId.Parse("85000000000000000000000000000004"), tick: 11);
+        Assert.True(secondPrepared.IsSuccess, secondPrepared.Error?.ToString());
     }
 
 

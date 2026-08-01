@@ -54,7 +54,7 @@ public static class CampfireProductionContent
     public static IReadOnlyList<ItemDefinition> CreateItems()
     {
         ItemCategoryId box = CampfireBuildingBoxContent.BuildingBoxCategoryId;
-        return new[]
+        return ProductionPackageContent.CreateItems().Concat(new[]
         {
             new ItemDefinition(MushroomCapItemId, "Mushroom cap", 100, false),
             new ItemDefinition(MushroomLegItemId, "Mushroom leg", 100, false),
@@ -75,7 +75,7 @@ public static class CampfireProductionContent
             CreateBox(TentBoxItemId, "Packed tent", box),
             CreateBox(StoneMasonBoxItemId, "Packed stone mason workshop", box),
             CreateBox(WoodWorkshopBoxItemId, "Packed wooden workshop", box),
-        };
+        }).ToArray();
     }
 
     public static IReadOnlyList<BuildingDefinition> CreateBuildings()

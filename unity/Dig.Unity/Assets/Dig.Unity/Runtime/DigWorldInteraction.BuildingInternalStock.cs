@@ -22,9 +22,7 @@ public sealed partial class DigWorldInteraction
         DisableExcavationDrawing();
         DisableCaveRoomPlanning();
         if (!_terrainSession!.TryResolveBuildingInternalStockPickup(
-                stock.BuildingId,
-                stock.ItemId,
-                out string stackId,
+                stock.StackId,
                 out CellId workPosition))
         {
             _hud!.SetStatus("Internal stock is reserved or empty.");
@@ -33,7 +31,7 @@ public sealed partial class DigWorldInteraction
 
         ContextPointerTarget target = new ContextPointerTarget(
             ContextWorldTargetKind.GenericItem,
-            EntityId.Parse(stackId),
+            EntityId.Parse(stock.StackId),
             workPosition,
             reachable: true,
             supportsAltInteraction: true);

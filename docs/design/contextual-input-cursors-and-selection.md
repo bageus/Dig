@@ -29,10 +29,11 @@ Tracking issue: [#390](https://github.com/bageus/Dig/issues/390).
 - доступная копка выбранным гномом — слегка анимированная лопата;
 - доступный `Alt`-подбор — анимированная стрелка вверх;
 - успешный direct move order — временные анимированные ноги;
+- доступная закрытая production package `food`/`weapon`/`tool` — слегка анимированный cursor использования;
 - eraser — серый cursor;
 - недоступное действие — default cursor и reason code.
 
-Pickup cursor без `Alt` запрещён.
+Pickup cursor без `Alt` запрещён. Production package никогда не показывает pickup cursor: её единственное world interaction — direct use/break выбранным resident.
 
 ## 4. BuildingBox selection и unpacking
 
@@ -83,12 +84,13 @@ Pickup cursor без `Alt` запрещён.
 После UI shielding:
 
 1. active placement mode: LMB подтверждает preview, RMB отменяет mode/selection;
-2. `Alt + LMB` по BuildingBox/item создаёт pickup order только при реально зажатом `Alt`;
-3. обычный LMB по BuildingBox выбирает коробку;
-4. object selection обрабатывается раньше excavation stroke;
-5. selected resident + reachable free ground создаёт move order;
-6. active excavation tool обрабатывает terrain target;
-7. один event создаёт не более одной command.
+2. selected resident + reachable closed production package `food`/`weapon`/`tool`: LMB создаёт direct use/break command для resolved package identity/version;
+3. `Alt + LMB` по BuildingBox/item создаёт pickup order только при реально зажатом `Alt`;
+4. обычный LMB по BuildingBox выбирает коробку;
+5. object selection обрабатывается раньше excavation stroke;
+6. selected resident + reachable free ground создаёт move order;
+7. active excavation tool обрабатывает terrain target;
+8. один event создаёт не более одной command.
 
 Полная таблица overlap targets остаётся открытой в Q-INPUT-003.
 
@@ -102,6 +104,7 @@ Pickup cursor без `Alt` запрещён.
 ## 9. Инварианты
 
 - cursor/ghost resolver и command router используют одну classification;
+- production package hover/click используют одну package identity/version и никогда не маршрутизируются в generic pickup;
 - UI shielding выполняется до world command;
 - LMB по BuildingBox не запускает unpacking;
 - placement начинается только через «Распаковать»;
@@ -134,9 +137,10 @@ Pickup cursor без `Alt` запрещён.
 - valid Z0 confirmation создаёт выбранный plan kind, закрывает interactive mode и сохраняет синюю planned-подсветку source box;
 - до pickup source physical box остаётся видимой, target planned ghost сохраняется;
 - box-placement plan не создаёт completed building, assembly plan автоматически продолжает assembly после delivery;
-- Play Mode matrix покрывает cursor modes;
+- Play Mode matrix покрывает cursor modes, включая animated use для food/weapon/tool package;
 - overlap targets создают одну command;
 - `Alt` gating совпадает для hover и click;
+- food/weapon/tool package LMB создаёт ровно один direct-use command, а BuildingBox сохраняет обычный selection/unpack workflow;
 - world/HUD/management selection дают одинаковую вкладку и highlight;
 - ghost существует только в игровой зоне;
 - RMB, stale target и failed command очищают feedback;

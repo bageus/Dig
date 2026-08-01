@@ -79,6 +79,11 @@ public sealed class DigResidentRig : MonoBehaviour
             case ResidentActionVisualState.Walk:
                 SetLimbPose(swing, -swing, -swing, swing);
                 break;
+            case ResidentActionVisualState.Run:
+                transform.localRotation = Quaternion.Euler(8f, 0f, 0f);
+                SetLimbPose(swing * 1.35f, -swing * 1.35f,
+                    -swing * 1.25f, swing * 1.25f);
+                break;
             case ResidentActionVisualState.Dig:
                 SetLimbPose(
                     -58f + swing * 0.72f,

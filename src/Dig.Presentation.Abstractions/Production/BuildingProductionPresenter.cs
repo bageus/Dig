@@ -85,6 +85,14 @@ public sealed class BuildingProductionPresenter
         double progress = active == null
             ? 0d
             : ResolveProductionProgress(active);
+        int progressTotal = active == null || !recipe.UsesMaterialSteps
+            ? 0
+            : recipe.MaterialSteps.Count;
+        int progressCurrent = active == null
+            ? 0
+            : active.Status == ProductionOrderStatus.ReadyToComplete
+                ? progressTotal
+                : active.MaterialSteps.Count(value => value.Consumed);
         return new ProductionIconViewModel(
             recipe.Id,
             output.ItemId,
@@ -92,6 +100,8 @@ public sealed class BuildingProductionPresenter
             output.Quantity,
             production.GetQueuedCount(buildingId, recipe.Id),
             ingredients,
+            progressCurrent,
+            progressTotal,
             hasOverlay,
             progress);
     }

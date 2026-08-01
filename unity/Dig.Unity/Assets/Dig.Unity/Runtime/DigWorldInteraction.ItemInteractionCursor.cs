@@ -70,6 +70,18 @@ namespace Dig.Unity
             RaycastHit[] hits,
             out DigWorldItemVisual item)
         {
+            if (TryResolveBuildingInternalStockHit(
+                    hits,
+                    out DigBuildingInternalStockVisual stock)
+                && _terrainSession!.TryResolveBuildingInternalStockPickup(
+                    stock.StackId,
+                    out _)
+                && CanSelectedResidentPickup(stock.WorldItemVisual))
+            {
+                item = stock.WorldItemVisual;
+                return true;
+            }
+
             return TryResolveWorldItemHit(hits, out item)
                 && item.Model.CanPickup
                 && !item.Model.IsBuildingBox

@@ -34,6 +34,14 @@ internal sealed partial class DigTerrainWorkSession
                 return Result.Success();
             }
 
+            Result packageReady = EnsureProductionOutputPackage(
+                production,
+                tick);
+            if (packageReady.IsFailure)
+            {
+                return packageReady;
+            }
+
             Result begun = _beginProduction!.Handle(
                 new BeginProductionWorkCommand(production.OrderId, job.Id, tick));
             if (begun.IsFailure)
@@ -91,11 +99,10 @@ internal sealed partial class DigTerrainWorkSession
             return Result.Success();
         }
 
-        BuildingSnapshot? building = _buildingsRepository!.Get().Get(
-            production.BuildingId);
-        if (building == null)
+        Result<CellId> outputCell = ResolveProductionPackageCell(production.OrderId);
+        if (outputCell.IsFailure || !At(worker, outputCell.Value))
         {
-            return Result.Failure(ProductionErrors.WorkstationMismatch);
+            return Result.Success();
         }
 
         ProductionOrderSnapshot? order = _productionRepository!.Get().Get(
@@ -105,29 +112,22 @@ internal sealed partial class DigTerrainWorkSession
             return Result.Failure(ProductionErrors.OrderNotFound);
         }
 
-        int outputUnitCount = order.Recipe.Outputs.Sum(value => value.Quantity);
-        Result<IReadOnlyList<CellId>> outputCells = ResolveProductionOutputCells(
-            building,
-            outputUnitCount);
-        if (outputCells.IsFailure || !At(worker, outputCells.Value[0]))
-        {
-            return Result.Success();
-        }
-
-        EntityId[] outputs = Enumerable.Range(0, outputUnitCount)
-            .Select(_ => NextProductionEntityId(
-                'a',
-                ref _nextProductionOutputSequence))
-            .ToArray();
+        ProductionOutputPackageSnapshot package = _productionRepository.Get()
+            .GetOutputPackageForOrder(production.OrderId)
+            ?? throw new InvalidOperationException(
+                "A finalizing production order must retain its output package.");
+        ProductionOutputPackageKind outputKind = ResolveProductionOutputKind(order);
+        EntityId[] outputs = outputKind == ProductionOutputPackageKind.Building
+            ? new[] { package.StackId }
+            : Array.Empty<EntityId>();
         Result completed = _completeProduction!.Handle(
             new CompleteProductionOrderCommand(
                 production.OrderId,
                 job.Id,
                 outputs,
                 tick,
-                outputLocations: outputCells.Value
-                    .Select(ItemLocation.InWorld)
-                    .ToArray()));
+                ItemLocation.InWorld(outputCell.Value),
+                package.StackId));
         if (completed.IsSuccess)
         {
             _buildingProductionRoutes.Remove(job.Id);
@@ -152,29 +152,14 @@ internal sealed partial class DigTerrainWorkSession
         CellId target = production.WorkPosition;
         if (job.Stage == JobStageKind.Finalize)
         {
-            BuildingSnapshot? building = _buildingsRepository!.Get().Get(
-                production.BuildingId);
-            if (building == null)
-            {
-                return true;
-            }
-
-            ProductionOrderSnapshot? order = _productionRepository!.Get().Get(
+            Result<CellId> outputCell = ResolveProductionPackageCell(
                 production.OrderId);
-            if (order == null)
+            if (outputCell.IsFailure)
             {
                 return true;
             }
 
-            Result<IReadOnlyList<CellId>> outputCells = ResolveProductionOutputCells(
-                building,
-                order.Recipe.Outputs.Sum(value => value.Quantity));
-            if (outputCells.IsFailure)
-            {
-                return true;
-            }
-
-            target = outputCells.Value[0];
+            target = outputCell.Value;
         }
 
         return PlanBuildingProductionRoute(
@@ -206,6 +191,67 @@ internal sealed partial class DigTerrainWorkSession
             value => value.Key,
             value => value.Value,
             StringComparer.Ordinal);
+    }
+
+
+    private Result EnsureProductionOutputPackage(
+        ProductionWorkJobDefinition production,
+        long tick)
+    {
+        ProductionOutputPackageSnapshot? existing = _productionRepository!.Get()
+            .GetOutputPackageForOrder(production.OrderId);
+        if (existing != null)
+        {
+            return Result.Success();
+        }
+
+        BuildingSnapshot? building = _buildingsRepository!.Get().Get(
+            production.BuildingId);
+        if (building == null)
+        {
+            return Result.Failure(ProductionErrors.WorkstationMismatch);
+        }
+
+        Result<CellId> outputCell = ResolveProductionOutputCell(building);
+        if (outputCell.IsFailure)
+        {
+            return Result.Failure(outputCell.Error!);
+        }
+
+        EntityId packageId = NextProductionEntityId(
+            '9',
+            ref _nextProductionPackageSequence);
+        return _createProductionPackage!.Handle(
+            new CreateProductionOutputPackageCommand(
+                production.OrderId,
+                production.Id,
+                packageId,
+                ItemLocation.InWorld(outputCell.Value),
+                tick));
+    }
+
+    private Result<CellId> ResolveProductionPackageCell(EntityId orderId)
+    {
+        ProductionOutputPackageSnapshot? package = _productionRepository!.Get()
+            .GetOutputPackageForOrder(orderId);
+        ItemStackSnapshot? stack = package == null
+            ? null
+            : _buildingInventoryRepository!.Get().GetStack(package.StackId);
+        return stack?.Location.Kind == ItemLocationKind.World
+            && stack.Location.HasCell
+                ? Result<CellId>.Success(stack.Location.CellId)
+                : Result<CellId>.Failure(ProductionErrors.OutputPackageNotFound);
+    }
+
+    private ProductionOutputPackageKind ResolveProductionOutputKind(
+        ProductionOrderSnapshot order)
+    {
+        ProductionOutputPackageKind[] kinds = order.Recipe.Outputs
+            .Select(value => ProductionPackageContent.ResolveKind(
+                _buildingInventoryRepository!.Get().Catalog.Get(value.ItemId)))
+            .Distinct()
+            .ToArray();
+        return kinds.Length == 1 ? kinds[0] : ProductionOutputPackageKind.Tool;
     }
 
     private Result<CellId> ResolveProductionOutputCell(BuildingSnapshot building)

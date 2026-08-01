@@ -207,6 +207,7 @@ public sealed class BuildingProductionSaveRoundTripTests
         {
             new BuildingBoxAssemblyJobSaveCodec(),
             new ProductionWorkJobSaveCodec(),
+            new ProductionPackageUseJobSaveCodec(),
             new BuildingSupplyJobSaveCodec(),
         });
     }

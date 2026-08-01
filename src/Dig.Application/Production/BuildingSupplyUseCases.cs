@@ -20,7 +20,6 @@ public sealed class CreateBuildingSupplyJobHandler
 {
     private readonly ProductionContentCatalog _content;
     private readonly IBuildingSupplyRepository _supplyRepository;
-    private readonly IProductionRepository _productionRepository;
     private readonly IBuildingsRepository _buildingsRepository;
     private readonly IInventoryRepository _inventoryRepository;
     private readonly IJobRepository _jobRepository;
@@ -34,10 +33,28 @@ public sealed class CreateBuildingSupplyJobHandler
         IInventoryRepository inventoryRepository,
         IJobRepository jobRepository,
         IEventSink eventSink)
+        : this(
+            content,
+            supplyRepository,
+            buildingsRepository,
+            inventoryRepository,
+            jobRepository,
+            eventSink)
+    {
+        _ = productionRepository
+            ?? throw new ArgumentNullException(nameof(productionRepository));
+    }
+
+    public CreateBuildingSupplyJobHandler(
+        ProductionContentCatalog content,
+        IBuildingSupplyRepository supplyRepository,
+        IBuildingsRepository buildingsRepository,
+        IInventoryRepository inventoryRepository,
+        IJobRepository jobRepository,
+        IEventSink eventSink)
     {
         _content = content;
         _supplyRepository = supplyRepository;
-        _productionRepository = productionRepository;
         _buildingsRepository = buildingsRepository;
         _inventoryRepository = inventoryRepository;
         _jobRepository = jobRepository;
@@ -56,7 +73,6 @@ public sealed class CreateBuildingSupplyJobHandler
         }
 
         BuildingSupplyState supply = _supplyRepository.Get();
-        ProductionState production = _productionRepository.Get();
         InventoryState inventory = _inventoryRepository.Get();
         JobSystem jobs = _jobRepository.Get();
         supply.Register(
@@ -74,8 +90,7 @@ public sealed class CreateBuildingSupplyJobHandler
             command.RevealedCells,
             command.ReachableCells,
             building.WorkPosition,
-            freeSlots,
-            production.HasActiveOrder(building.Id));
+            freeSlots);
         if (plan.Allocations.Count == 0)
         {
             return Result.Failure(InventoryErrors.InsufficientAvailableQuantity);

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Application.Inventory;
 using Dig.Domain.Inventory;
+using Dig.Domain.Content;
 
 namespace Dig.Presentation.Inventory
 {
@@ -107,6 +108,18 @@ public sealed class InventoryWorldPresenter
 
     private WorldItemInteractionKind ResolveInteraction(ItemId itemId)
     {
+        if (itemId == ProductionPackageContent.UnfinishedPackageItemId)
+        {
+            return WorldItemInteractionKind.None;
+        }
+
+        if (itemId == ProductionPackageContent.FoodPackageItemId
+            || itemId == ProductionPackageContent.WeaponPackageItemId
+            || itemId == ProductionPackageContent.ToolPackageItemId)
+        {
+            return WorldItemInteractionKind.Use;
+        }
+
         return _interactionOverrides.TryGetValue(
             itemId,
             out WorldItemInteractionKind interaction)

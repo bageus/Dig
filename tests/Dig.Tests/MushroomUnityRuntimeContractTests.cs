@@ -13,6 +13,7 @@ public sealed class MushroomUnityRuntimeContractTests
         string priority = Read(runtime, "DigWorldInteraction.ResidentCommandPriority.cs");
         string decisions = Read(runtime, "DigWorldInteraction.Decisions.cs");
         string cursor = Read(runtime, "DigWorldInteraction.DirectCommandCursor.cs");
+        string cursorTargets = Read(runtime, "DigWorldInteraction.DirectCommandCursor.Targets.cs");
         string pointerHits = Read(runtime, "DigWorldInteraction.PointerHits.cs");
 
         Assert.True(
@@ -24,7 +25,7 @@ public sealed class MushroomUnityRuntimeContractTests
         Assert.Contains("ContextWorldTargetKind.Mushroom", priority);
         Assert.Contains("ApplicationInputCommandKind.ChopMushroom", decisions);
         Assert.Contains("DirectCommandCursorKind.Axe", cursor);
-        Assert.Contains("TryResolveReachableMushroomHit(hits,out_)", cursor);
+        Assert.Contains("TryResolveReachableMushroomHit(hits,out_)", cursorTargets);
         Assert.Contains("TryResolveReachableMushroomHit(hits,outDigMushroomVisualmushroom)", pointerHits);
         Assert.DoesNotContain("?.SetHovered", pointerHits);
         Assert.Contains("if(_hoveredMushroom!=null)", pointerHits);

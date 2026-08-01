@@ -61,15 +61,17 @@ public sealed class UnitySafeModeApiDriftContractTests
     }
 
     [Fact]
-    public void Pickup_runtime_uses_one_sequence_and_stack_identity_contract()
+    public void Pickup_runtime_uses_one_sequence_and_exact_stack_identity_contract()
     {
         string source = ReadRuntime("DigWorldItemPickupSession.cs");
 
         Assert.NotNull(typeof(ItemStackSnapshot).GetProperty("StackId"));
         Assert.Null(typeof(ItemStackSnapshot).GetProperty("Id"));
         Assert.Equal(1, Count(source, "longsequence=checked(_nextWorldItemPickupSequence+1)"));
-        Assert.Contains("value.StackId.ToString()", source);
-        Assert.Contains("stackId=stack.StackId.ToString()", source);
+        Assert.Contains("GetStack(EntityId.Parse(stackId))", source);
+        Assert.Contains("GetStack(stackId)", source);
+        Assert.Contains("newCreateWorldItemPickupCommand(jobId,stack,resident", source);
+        Assert.DoesNotContain("Where(value=>value.ItemId==", source);
         Assert.DoesNotContain("value.Id.ToString()", source);
         Assert.DoesNotContain("stackId=stack.Id.ToString()", source);
     }

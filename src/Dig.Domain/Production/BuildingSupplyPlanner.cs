@@ -49,8 +49,7 @@ public static class BuildingSupplyPlanner
         IReadOnlyCollection<CellId> revealedCells,
         IReadOnlyCollection<CellId> reachableCells,
         CellId destination,
-        int freeSlotCount,
-        bool productionActive)
+        int freeSlotCount)
     {
         if (supply is null || worldStacks is null
             || revealedCells is null || reachableCells is null)
@@ -63,7 +62,9 @@ public static class BuildingSupplyPlanner
             throw new ArgumentOutOfRangeException(nameof(freeSlotCount));
         }
 
-        if (productionActive || supply.HasActiveSupply || freeSlotCount == 0)
+        // Active production consumes protected internal stock, but it does not pause
+        // replenishment. AvailableQuantity already excludes production reservations.
+        if (supply.HasActiveSupply || freeSlotCount == 0)
         {
             return new BuildingSupplyPlan(Array.Empty<BuildingSupplyAllocation>());
         }

@@ -39,17 +39,19 @@ public sealed class ResidentVisualPresenter
         AgentViewModel model,
         bool isMoving,
         bool isCarrying,
-        bool showImpact = false)
+        bool showImpact = false,
+        bool isRunning = false)
     {
         if (model is null)
         {
             throw new ArgumentNullException(nameof(model));
         }
 
-        ResidentActionVisualState state = ResolveAction(model, isMoving, isCarrying, showImpact);
+        ResidentActionVisualState state = ResolveAction(model, isMoving, isCarrying, showImpact, isRunning);
         double progress = state == ResidentActionVisualState.Death ? 1d : model.ActionProgress;
         bool looping = state == ResidentActionVisualState.Idle
             || state == ResidentActionVisualState.Walk
+            || state == ResidentActionVisualState.Run
             || state == ResidentActionVisualState.Dig
             || state == ResidentActionVisualState.Carry
             || state == ResidentActionVisualState.Build;
@@ -62,13 +64,16 @@ public sealed class ResidentVisualPresenter
         AgentViewModel model,
         bool isMoving,
         bool isCarrying,
-        bool showImpact)
+        bool showImpact,
+        bool isRunning)
     {
         if (!model.IsAlive) return ResidentActionVisualState.Death;
         if (showImpact) return ResidentActionVisualState.Hit;
         if (isMoving) return isCarrying
             ? ResidentActionVisualState.Carry
-            : ResidentActionVisualState.Walk;
+            : isRunning
+                ? ResidentActionVisualState.Run
+                : ResidentActionVisualState.Walk;
         string intent = (model.ActiveIntent ?? string.Empty).Trim().ToLowerInvariant();
         if (ContainsAny(intent, "dig", "excavat", "mine"))
             return ResidentActionVisualState.Dig;

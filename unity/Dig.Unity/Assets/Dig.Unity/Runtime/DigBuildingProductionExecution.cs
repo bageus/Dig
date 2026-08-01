@@ -42,6 +42,12 @@ internal sealed partial class DigTerrainWorkSession
     private ApplyProductionWorkHandler? _applyProductionWork;
     private CompleteProductionOrderHandler? _completeProduction;
     private CancelProductionOrderHandler? _cancelProduction;
+    private CreateProductionOutputPackageHandler? _createProductionPackage;
+    private InterruptProductionOrderHandler? _interruptProduction;
+    private StartProductionPackageUseHandler? _startProductionPackageUse;
+    private AdvanceProductionPackageUseHandler? _advanceProductionPackageUse;
+    private CompleteProductionPackageUseHandler? _completeProductionPackageUse;
+    private CancelProductionPackageUseHandler? _cancelProductionPackageUse;
     private CreateBuildingSupplyJobHandler? _createBuildingSupply;
     private CreateDeferredBuildingSupplyJobHandler? _createDeferredBuildingSupply;
     private ResolveDeferredBuildingSupplyJobHandler? _resolveDeferredBuildingSupply;
@@ -56,6 +62,9 @@ internal sealed partial class DigTerrainWorkSession
     private long _nextProductionOrderSequence;
     private long _nextProductionJobSequence;
     private long _nextProductionOutputSequence;
+    private long _nextProductionPackageSequence;
+    private long _nextProductionPackageUseJobSequence;
+    private long _nextProductionPackageUseOutputSequence;
     private long _nextSupplyJobSequence;
     private long _nextSupplyTransitSequence;
     private long _nextSupplyDepositSequence;
@@ -134,10 +143,35 @@ internal sealed partial class DigTerrainWorkSession
             _buildingInventoryRepository,
             _jobRepository,
             journal);
+        _createProductionPackage = new CreateProductionOutputPackageHandler(
+            _productionRepository,
+            _buildingInventoryRepository,
+            _jobRepository,
+            journal);
+        _interruptProduction = new InterruptProductionOrderHandler(
+            _productionRepository,
+            _buildingInventoryRepository,
+            _jobRepository,
+            journal);
+        _startProductionPackageUse = new StartProductionPackageUseHandler(
+            _productionRepository,
+            _buildingInventoryRepository,
+            _jobRepository,
+            journal);
+        _advanceProductionPackageUse = new AdvanceProductionPackageUseHandler(
+            _jobRepository,
+            journal);
+        _completeProductionPackageUse = new CompleteProductionPackageUseHandler(
+            _productionRepository,
+            _buildingInventoryRepository,
+            _jobRepository,
+            journal);
+        _cancelProductionPackageUse = new CancelProductionPackageUseHandler(
+            _jobRepository,
+            journal);
         _createBuildingSupply = new CreateBuildingSupplyJobHandler(
             _productionContent,
             _buildingSupplyRepository,
-            _productionRepository,
             _buildingsRepository,
             _buildingInventoryRepository,
             _jobRepository,
@@ -180,169 +214,6 @@ internal sealed partial class DigTerrainWorkSession
             journal);
         _productionPathfinder = new NavigationPathfinder();
         SynchronizeProductionWorkstationRegistrations(tick: 0);
-    }
-
-    internal BuildingProductionViewModel? LoadBuildingProduction(string buildingId)
-    {
-        EnsureBuildingProductionInitialized();
-        if (string.IsNullOrWhiteSpace(buildingId))
-        {
-            throw new ArgumentException("Building id is required.", nameof(buildingId));
-        }
-
-        EntityId id = EntityId.Parse(buildingId);
-        BuildingSnapshot? building = _buildingsRepository!.Get().Get(id);
-        if (building == null
-            || building.Status != BuildingStatus.Completed
-            || !_productionContent!.ContainsWorkstation(building.Definition.Id))
-        {
-            return null;
-        }
-
-        BuildingSupplySnapshot? supply = _buildingSupplyRepository!.Get().Get(
-            id,
-            _buildingInventoryRepository!.Get().CreateSnapshot());
-        return supply == null
-            ? null
-            : _buildingProductionPresenter!.Present(
-                id,
-                _productionRepository!.Get(),
-                supply);
-    }
-
-    internal IReadOnlyList<BuildingProductionViewModel> LoadAllBuildingProduction()
-    {
-        EnsureBuildingProductionInitialized();
-        InventorySnapshot inventory = _buildingInventoryRepository!.Get().CreateSnapshot();
-        return _buildingSupplyRepository!.Get().GetAll(inventory)
-            .Where(value => _buildingsRepository!.Get().Get(value.BuildingId)?.Status
-                == BuildingStatus.Completed)
-            .Select(value => _buildingProductionPresenter!.Present(
-                value.BuildingId,
-                _productionRepository!.Get(),
-                value))
-            .ToArray();
-    }
-
-    internal Result EnqueueBuildingProduction(
-        string buildingId,
-        string recipeId,
-        long tick)
-    {
-        EnsureBuildingProductionInitialized();
-        EntityId id = EntityId.Parse(buildingId);
-        RecipeId recipe = new RecipeId(recipeId);
-        BuildingSnapshot? building = _buildingsRepository!.Get().Get(id);
-        if (building == null
-            || building.Status != BuildingStatus.Completed
-            || !_productionContent!.ContainsWorkstation(building.Definition.Id)
-            || !_productionContent.GetWorkstation(building.Definition.Id)
-                .RecipeIds.Contains(recipe))
-        {
-            return Result.Failure(ProductionErrors.WorkstationMismatch);
-        }
-
-        EntityId orderId = NextProductionEntityId(
-            'e',
-            ref _nextProductionOrderSequence);
-        return _enqueueProduction!.Handle(new EnqueueProductionOrderCommand(
-            orderId,
-            recipe,
-            id,
-            tick));
-    }
-
-    internal Result CancelOneBuildingProduction(
-        string buildingId,
-        string recipeId,
-        long tick)
-    {
-        EnsureBuildingProductionInitialized();
-        EntityId building = EntityId.Parse(buildingId);
-        RecipeId recipe = new RecipeId(recipeId);
-        ProductionOrderSnapshot? order = _productionRepository!.Get().GetAll()
-            .Where(value => value.BuildingId == building
-                && value.Recipe.Id == recipe
-                && !value.IsTerminal)
-            .OrderBy(value => value.Status == ProductionOrderStatus.Queued ? 0 : 1)
-            .ThenByDescending(value => value.Sequence)
-            .FirstOrDefault();
-        if (order == null)
-        {
-            return Result.Failure(ProductionErrors.OrderNotFound);
-        }
-
-        EntityId jobId = _jobRepository.Get().GetAll()
-            .Where(value => value.Definition is ProductionWorkJobDefinition work
-                && work.OrderId == order.Id
-                && !value.IsTerminal)
-            .Select(value => value.Id)
-            .FirstOrDefault();
-        Result result = _cancelProduction!.Handle(new CancelProductionOrderCommand(
-            order.Id,
-            jobId,
-            "player_cancelled",
-            tick));
-        if (result.IsSuccess && !jobId.IsEmpty)
-        {
-            _buildingProductionRoutes.Remove(jobId);
-        }
-
-        if (result.IsSuccess)
-        {
-            CancelDeferredSupplyForCancelledOrder(building, tick);
-        }
-
-        return result;
-    }
-
-    private void CancelDeferredSupplyForCancelledOrder(
-        EntityId buildingId,
-        long tick)
-    {
-        JobSnapshot[] pending = _jobRepository!.Get().GetAll()
-            .Where(value => !value.IsTerminal
-                && value.Definition is BuildingSupplyJobDefinition supply
-                && supply.BuildingId == buildingId
-                && !supply.IsSourceResolved)
-            .ToArray();
-        foreach (JobSnapshot delivery in pending)
-        {
-            BuildingSupplyJobDefinition supply =
-                (BuildingSupplyJobDefinition)delivery.Definition;
-            _cancelDeferredBuildingSupply!.Handle(
-                new CancelDeferredBuildingSupplyJobCommand(
-                    delivery.Id,
-                    "The owning production order was cancelled.",
-                    tick));
-            foreach (EntityId dependencyId in supply.Dependencies)
-            {
-                JobSnapshot? dependency = _jobRepository.Get().Get(dependencyId);
-                if (dependency?.Definition is MushroomChopJobDefinition
-                    && !dependency.IsTerminal)
-                {
-                    _cancelMushroomChop!.Handle(new CancelMushroomChopCommand(
-                        dependencyId,
-                        "production_order_cancelled",
-                        tick));
-                }
-            }
-        }
-    }
-
-    internal Result SetBuildingStockDelivery(
-        string buildingId,
-        string itemId,
-        bool enabled,
-        long tick)
-    {
-        EnsureBuildingProductionInitialized();
-        return _setBuildingStockDelivery!.Handle(
-            new SetBuildingStockDeliveryCommand(
-                EntityId.Parse(buildingId),
-                new ItemId(itemId),
-                enabled,
-                tick));
     }
 
 }
