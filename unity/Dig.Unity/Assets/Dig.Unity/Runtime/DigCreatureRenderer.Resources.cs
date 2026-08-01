@@ -106,6 +106,8 @@ public sealed partial class DigCreatureRenderer
         string speciesId)
     {
         SphereCollider collider = visual.GetComponent<SphereCollider>();
+        collider.enabled = true;
+        collider.isTrigger = IsLivingMaterialPhysicsProxy(speciesId);
         if (string.Equals(speciesId, "creature.hamster", System.StringComparison.Ordinal))
         {
             collider.center = new Vector3(0f, 0.14f, 0f);
@@ -113,7 +115,8 @@ public sealed partial class DigCreatureRenderer
             return;
         }
 
-        if (string.Equals(speciesId, "creature.grub", System.StringComparison.Ordinal))
+        if (string.Equals(speciesId, "creature.grub", System.StringComparison.Ordinal)
+            || string.Equals(speciesId, "creature.larva", System.StringComparison.Ordinal))
         {
             collider.center = new Vector3(0f, 0.09f, 0f);
             collider.radius = 0.14f;
@@ -138,6 +141,22 @@ public sealed partial class DigCreatureRenderer
                 collider.radius = 0.46f;
                 break;
         }
+    }
+
+    private static bool IsLivingMaterialPhysicsProxy(string speciesId)
+    {
+        return string.Equals(
+                speciesId,
+                "creature.hamster",
+                System.StringComparison.Ordinal)
+            || string.Equals(
+                speciesId,
+                "creature.grub",
+                System.StringComparison.Ordinal)
+            || string.Equals(
+                speciesId,
+                "creature.larva",
+                System.StringComparison.Ordinal);
     }
 
     private CreatureLodViewModel ResolveLod(
