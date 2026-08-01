@@ -126,17 +126,22 @@ Multiplier влияет на simulation movement, ETA, Utility AI и job cost, �
 
 Quantity не теряется и не дублируется.
 
-## 8. Destination priority для pickup и hauling
+## 8. Destination priority и автоматическое уплотнение
 
-Для ordinary item/material используется единый deterministic порядок свободных destination slots:
+Authoritative resident layout после каждого успешного ingress, removal, load/recovery и явной normalization уплотняется по возрастанию `SlotIndex`; пустая low-index ячейка не может оставаться перед совместимым предметом в том же или более низкоприоритетном compartment.
 
-1. свободный `Main` slot;
-2. свободный `Cargo` slot;
-3. для оружия/щитов — свободный slot активного `Weapon` compartment согласно specialized priority.
+Единый deterministic порядок:
 
-Каждая переносимая физическая единица требует отдельный свободный совместимый slot. Occupied slot того же `ItemId` не предоставляет дополнительную capacity и не принимает merge. `Cargo` используется только после исчерпания свободных Main slots. Уже находящиеся в Cargo предметы не переносятся обратно автоматически при последующем освобождении Main.
+1. оружие и щиты занимают свободные slots активного `Weapon` compartment по индексам `1..N`;
+2. weapon overflow занимает свободные `Main` slots по индексам `1..6`;
+3. остальные ordinary items/materials и inventory expansions занимают `Main` по индексам `1..6`;
+4. только после заполнения доступного `Main` weapon overflow и ordinary items используют совместимые `Cargo` slots по индексам `1..N`.
 
-Один и тот же порядок используется world pickup, hauling, building supply, retry и save/load recovery.
+Inventory expansions всегда остаются в `Main`. Каждая переносимая физическая единица требует отдельный свободный совместимый slot. Occupied slot того же `ItemId` не предоставляет дополнительную capacity и не принимает merge.
+
+Если в `Main` освобождается ячейка, совместимый предмет из `Cargo` автоматически возвращается в первый свободный `Main` slot при следующей authoritative normalization. Weapon items аналогично возвращаются из `Main/Cargo` в первый свободный `Weapon` slot. Перемещение сохраняет тот же `StackId`, quantity, reservations и held reference; layout projection обновляется в том же refresh cycle.
+
+Входящие slot claims учитывают итоговый compacted layout и не могут быть заняты rebalancing-ом. Один и тот же порядок используется world pickup, hauling, building supply, retry и save/load recovery.
 
 ## 9. Предмет в руках
 
@@ -258,7 +263,7 @@ Content validation проверяет IDs, categories, slots, speed, recipes и 
 - BuildingBox definition/version и plan reservation;
 - external job/storage/building links.
 
-Миграция старого resident inventory сортирует unit stacks по stable StackId, заполняет Main, активирует expansions, затем Cargo/Weapon; остаток выбрасывается в resident cell с report. Legacy resident stacks с quantity больше `1` должны быть разделены migration owner на отдельные unit identities до layout placement.
+Миграция старого resident inventory сортирует unit stacks по stable StackId, размещает expansions в `Main`, затем weapon-compatible units в `Weapon`, weapon overflow и ordinary units в `Main`, после заполнения `Main` — в `Cargo`; внутри каждого compartment используются low-index slots. Остаток выбрасывается в resident cell с report. Legacy resident stacks с quantity больше `1` должны быть разделены migration owner на отдельные unit identities до layout placement.
 
 ## 16. Инварианты
 
@@ -287,23 +292,15 @@ Content validation проверяет IDs, categories, slots, speed, recipes и 
 - ordinary drop/use и BuildingBox placement имеют правильный priority;
 - basket/large-basket placement работает на любой допустимой твёрдой ровной поверхности через тот же planning mode и сохраняет quantity при Cargo spill;
 - каждая одинаковая или различная ordinary unit в resident inventory занимает отдельный slot;
-- pickup/hauling использует свободные Main slots и только после их заполнения свободные Cargo slots;
+- pickup/hauling использует Weapon для совместимого оружия, затем Main и только после заполнения Main — Cargo;
+- после освобождения Main предметы автоматически уплотняются из Cargo в low-index Main slots, а оружие — в low-index Weapon slots;
+- UI не показывает пустую low-index ячейку перед совместимым предметом в более низкоприоритетном compartment;
 - surface demo содержит pickable basket и large basket, а resident начинает без Cargo expansion;
 - surface demo содержит pickable sheath, weapon harness и `weapon.club`, а resident начинает без Weapon expansion;
-- после pickup ножен/разгрузки `weapon.club` попадает в первый свободный Weapon slot;
-- непустой Cargo показывает basket-backpack сзади, пустой Cargo и drop/spill скрывают его;
-- HUD не показывает текстовые заголовки `Weapon` и `Cargo 4/6`; inventory compartments используют только парные двухрядные сетки `3×2`, `2×2`/`3×2`, `1×2`/`2×2` и заполняются по колонкам `1/2`, `3/4`, `5/6`;
-- hauling учитывает real free slots и не использует merge capacity;
-- save/load восстанавливает layout, boxes и reservations;
-- unit, integration, migration, soak и Play Mode tests покрывают все правила.
-
-
-## 18. Журнал решений
-
-| Дата | Решение | Кто подтвердил | Issues |
-|---|---|---|---|
-| 2026-07-29 | Ordinary pickup/hauling использует Main до Cargo; basket и large basket появляются на поверхности; attachment виден только при непустом Cargo. | пользователь | #68, #69 |
-| 2026-07-29 | Cargo title скрыт; все compartments имеют ровно два ряда; basket/large basket размещаются через planning mode на supported surface с reserved quantity-safe spill. | пользователь | #67, #69, #70, #387 |
-| 2026-07-29 | Каждая ordinary item/material unit в resident inventory является отдельным quantity-one stack и занимает отдельный slot; merge capacity запрещена. | пользователь | #67, #68, #69 |
-| 2026-07-30 | Ножны, разгрузка и `weapon.club` появляются отдельными world items; club служит runtime-проверкой Weapon-slot priority и tier switching. | пользователь | #68, #69, #70 |
-| 2026-07-30 | Текстовый заголовок Weapon скрыт; двухрядные inventory grids нумеруются по колонкам: `1/2`, `3/4`, `5/6`. | пользователь | #70 |
+- после pickup ножны/разгрузка остаются в Main, а club занимает первый свободный Weapon slot; harness tier priority и spill/lower-tier fallback quantity-safe;
+- item placement mode показывает ghost, валидирует explored/reachable open cell над полной ровной support surface и создаёт resident-bound placement job;
+- `C + ЛКМ` выполняет immediate quick drop в current logical resident cell без preview/job;
+- UI показывает active expansion, reservation, held item и speed;
+- content validation и migration работают;
+- quantity и единственность location подтверждены автоматическими тестами;
+- Play Mode проверяет resident context inventory, BuildingBox LMB placement, generic item placement ghost/job, invalid/cancel/failure cleanup, `C + ЛКМ` quick drop, Alt use, basket surface pickup/layout, loaded attachment/speed, basket placement/spill, sheath/harness/club Weapon priority и absence of duplicate quantity.
