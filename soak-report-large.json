@@ -1,0 +1,66 @@
+{
+  "Profile": "large",
+  "Seed": 4242,
+  "RequestedTicks": 1000,
+  "FinalTick": 1020,
+  "ResidentCount": 64,
+  "HaulingWorkerCount": 16,
+  "InitialFoodQuantity": 64000,
+  "EntityCount": 295,
+  "SpawnedOre": 250,
+  "TotalOre": 250,
+  "StoredOre": 250,
+  "RemainingFood": 55488,
+  "CompletedHaulingJobs": 50,
+  "ActiveHaulingJobs": 0,
+  "JobReservationCount": 0,
+  "StorageReservationCount": 0,
+  "FacilityReservationCount": 43,
+  "RetainedEventCount": 5000,
+  "DroppedEventCount": 106390,
+  "ElapsedMilliseconds": 1743.1255,
+  "MaximumElapsedMilliseconds": 10000,
+  "StateHash": "8CDFAFF348C42E690D665441B66364CBEC53D490233B7AE2A6AC02CFFE885DC2",
+  "Systems": [
+    {
+      "Name": "agents.settlement",
+      "Executions": 1020,
+      "TotalMilliseconds": 1576.396808,
+      "AverageMicroseconds": 1545.4870666666666,
+      "MaximumMilliseconds": 41.1736,
+      "TotalAllocatedBytes": 383353704,
+      "AverageAllocatedBytes": 375836
+    },
+    {
+      "Name": "soak.hauling",
+      "Executions": 1020,
+      "TotalMilliseconds": 120.502552,
+      "AverageMicroseconds": 118.13975686274509,
+      "MaximumMilliseconds": 43.123606,
+      "TotalAllocatedBytes": 8606872,
+      "AverageAllocatedBytes": 8438
+    },
+    {
+      "Name": "soak.invariants",
+      "Executions": 1020,
+      "TotalMilliseconds": 40.636354,
+      "AverageMicroseconds": 39.839562745098036,
+      "MaximumMilliseconds": 4.454942,
+      "TotalAllocatedBytes": 70080,
+      "AverageAllocatedBytes": 68
+    },
+    {
+      "Name": "soak.resource_spawn",
+      "Executions": 51,
+      "TotalMilliseconds": 0.82936,
+      "AverageMicroseconds": 16.261960784313725,
+      "MaximumMilliseconds": 0.45341,
+      "TotalAllocatedBytes": 32928,
+      "AverageAllocatedBytes": 645
+    }
+  ],
+  "BudgetViolations": [],
+  "InvariantViolations": [],
+  "DeterministicReplayMatched": true,
+  "Succeeded": true
+}

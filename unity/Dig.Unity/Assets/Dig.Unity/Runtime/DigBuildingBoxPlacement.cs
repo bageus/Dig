@@ -53,16 +53,9 @@ namespace Dig.Unity
                 _jobRepository,
                 validator,
                 journal ?? throw new ArgumentNullException(nameof(journal)));
-            Dictionary<ItemId, WorldItemInteractionKind> boxInteractions = catalog
-                .GetAll()
-                .Where(value => value.BoxPolicy != null)
-                .ToDictionary(
-                    value => value.BoxPolicy!.BoxItemId,
-                    _ => WorldItemInteractionKind.BuildingBox);
             _buildingInventoryPresenter = new InventoryWorldPresenter(
                 new GetInventorySnapshotQueryHandler(_buildingInventoryRepository),
-                boxInteractions,
-                WorldItemInteractionKind.Pickup);
+                _buildingInventoryRepository.Get().Catalog);
             InitializeResidentInventoryPresentation();
             InitializeBuildingBoxPickupExecution(journal);
             InitializeBuildingBoxAssemblyExecution(journal);

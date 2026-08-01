@@ -134,7 +134,8 @@ namespace Dig.Tests
                         "Grilled mushroom",
                         100,
                         false,
-                        new[] { CampfireProductionContent.FoodCategoryId }),
+                        new[] { CampfireProductionContent.FoodCategoryId },
+                        foodUse: new ItemFoodUseDefinition(1_500, 3)),
                     new ItemDefinition(Rock, "Rock", 100, false),
                 });
                 Inventory = new InventoryState(catalog);

@@ -11,78 +11,20 @@ namespace Dig.Unity
         internal void ActivateResidentInventorySlot(
             ResidentInventorySlotViewModel slot)
         {
-            if (slot == null)
-            {
-                throw new System.ArgumentNullException(nameof(slot));
-            }
-
-            if (Input.GetKey(KeyCode.C) && !slot.IsBuildingBox)
-            {
-                CancelInventoryItemPlacement();
-                DropResidentInventorySlot(slot);
-                return;
-            }
-
-            if (!slot.IsBuildingBox && slot.CanDrop)
-            {
-                BeginInventoryItemPlacement(slot);
-                return;
-            }
-
             RouteResidentInventorySlot(
                 slot,
                 PointerButtonKind.Left,
                 altPressed: false,
-                dropPressed: false);
+                dropPressed: Input.GetKey(KeyCode.C));
         }
 
         internal void BeginResidentInventoryBuildingPlacement(
             ResidentInventoryLayoutSlotViewModel slot)
         {
-            if (slot == null)
-            {
-                throw new System.ArgumentNullException(nameof(slot));
-            }
-
-            var resident = _agentRenderer?.SelectedModel;
-            string? stackIdValue = slot.StackId;
-            if (!slot.CanStartPlacement
-                || resident == null
-                || _hud == null
-                || string.IsNullOrWhiteSpace(stackIdValue))
-            {
-                _hud?.SetStatus("input.inventory.building_placement_unavailable");
-                return;
-            }
-
-            string? residentIdValue = resident.Id;
-            if (string.IsNullOrWhiteSpace(residentIdValue))
-            {
-                _hud.SetStatus("input.inventory.building_placement_unavailable");
-                return;
-            }
-
-            EntityId residentId = EntityId.Parse(residentIdValue ?? string.Empty);
-            EntityId stackId = EntityId.Parse(stackIdValue ?? string.Empty);
-            ContextInputState state = new ContextInputState(
-                selectedResidentId: residentId,
-                selectedResidentAlive: resident.IsAlive,
-                selectedInventoryStackId: stackId,
-                selectedInventoryItemUsable: false,
-                selectedInventoryItemIsBuildingBox: true,
-                canUseSelectedInventoryItem: false,
-                canDropSelectedInventoryItem: slot.CanDrop);
-            ContextPointerTarget target = new ContextPointerTarget(
-                ContextWorldTargetKind.GenericItem,
-                stackId,
-                new CellId(resident.CellX, resident.CellY, resident.CellZ));
-            ApplyDecision(_inputRouter.Route(
-                new ContextPointerEvent(
-                    PointerInputSurface.ResidentInventory,
-                    PointerButtonKind.Left,
-                    altPressed: false),
-                state,
-                target));
+            InteractResidentInventoryLayoutSlot(
+                slot,
+                altPressed: false,
+                dropPressed: false);
         }
 
         internal void UseResidentInventorySlot(
@@ -142,10 +84,13 @@ namespace Dig.Unity
                 selectedResidentId: residentId,
                 selectedResidentAlive: resident.IsAlive,
                 selectedInventoryStackId: stackId,
-                selectedInventoryItemUsable: slot.IsTool || slot.IsConsumable,
+                selectedInventoryItemUsable:
+                    slot.InteractionProfile.SupportsInventoryAction(
+                        ItemInventoryInteractionAction.DirectUse),
                 selectedInventoryItemIsBuildingBox: slot.IsBuildingBox,
                 canUseSelectedInventoryItem: slot.CanUse,
-                canDropSelectedInventoryItem: slot.CanDrop);
+                canDropSelectedInventoryItem: slot.CanDrop,
+                canPlaceSelectedInventoryItem: slot.CanPlace);
             ContextPointerTarget target = new ContextPointerTarget(
                 ContextWorldTargetKind.GenericItem,
                 stackId,
@@ -158,7 +103,7 @@ namespace Dig.Unity
                     dropPressed: dropPressed),
                 state,
                 target);
-            ApplyDecision(decision);
+            ApplyDecision(decision, legacyInventorySlot: slot);
         }
     }
 }

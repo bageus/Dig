@@ -104,21 +104,10 @@ public sealed partial class DigWorldInteraction
     internal void SelectResidentInventoryLayoutSlot(
         ResidentInventoryLayoutSlotViewModel slot)
     {
-        EnsureLayoutSlot(slot);
-        if (slot.IsBuildingBox)
-        {
-            BeginResidentInventoryBuildingPlacement(slot);
-        }
-        else if (slot.CanDrop)
-        {
-            BeginInventoryItemPlacement(slot);
-        }
-        else
-        {
-            _hud?.SetStatus("input.inventory.item_placement_unavailable");
-        }
-
-        ClearSelectedInventoryStack();
+        InteractResidentInventoryLayoutSlot(
+            slot,
+            altPressed: false,
+            dropPressed: false);
     }
 
     internal void ActivateResidentInventoryLayoutSlot(
@@ -130,28 +119,61 @@ public sealed partial class DigWorldInteraction
     internal void UseResidentInventoryLayoutSlot(
         ResidentInventoryLayoutSlotViewModel slot)
     {
-        UseResidentInventorySlot(ToLegacySlot(slot));
-        ClearSelectedInventoryStack();
+        InteractResidentInventoryLayoutSlot(
+            slot,
+            altPressed: true,
+            dropPressed: false);
     }
 
     internal void DropResidentInventoryLayoutSlot(
         ResidentInventoryLayoutSlotViewModel slot)
     {
+        InteractResidentInventoryLayoutSlot(
+            slot,
+            altPressed: false,
+            dropPressed: true);
+    }
+
+    internal void InteractResidentInventoryLayoutSlot(
+        ResidentInventoryLayoutSlotViewModel slot,
+        bool altPressed,
+        bool dropPressed)
+    {
         EnsureLayoutSlot(slot);
         var resident = _agentRenderer?.SelectedModel;
-        if (resident == null
-            || !resident.IsAlive
-            || !slot.CanDrop
-            || slot.IsBuildingBox)
+        if (resident == null || !resident.IsAlive || _hud == null)
         {
-            _hud?.SetStatus("input.inventory.stack_unavailable");
+            _hud?.SetStatus("input.inventory.resident_not_selected");
             return;
         }
 
-        ExecuteResidentInventoryDrop(
-            EntityId.Parse(resident.Id),
-            EntityId.Parse(slot.StackId!),
+        EntityId residentId = EntityId.Parse(resident.Id);
+        EntityId stackId = EntityId.Parse(slot.StackId!);
+        ContextInputState state = new ContextInputState(
+            selectedResidentId: residentId,
+            selectedResidentAlive: resident.IsAlive,
+            selectedInventoryStackId: stackId,
+            selectedInventoryItemUsable:
+                slot.InteractionProfile.SupportsInventoryAction(
+                    ItemInventoryInteractionAction.DirectUse),
+            selectedInventoryItemIsBuildingBox: slot.IsBuildingBox,
+            canUseSelectedInventoryItem: slot.CanUse,
+            canDropSelectedInventoryItem: slot.CanDrop,
+            canPlaceSelectedInventoryItem: slot.CanPlace);
+        ContextPointerTarget target = new ContextPointerTarget(
+            ContextWorldTargetKind.GenericItem,
+            stackId,
             new CellId(resident.CellX, resident.CellY, resident.CellZ));
+        ContextInputDecision decision = _inputRouter.Route(
+            new ContextPointerEvent(
+                PointerInputSurface.ResidentInventory,
+                PointerButtonKind.Left,
+                altPressed: altPressed,
+                dropPressed: dropPressed),
+            state,
+            target);
+        ApplyDecision(decision, inventorySlot: slot);
+        ClearSelectedInventoryStack();
     }
 
     private int RegisterRosterResidentClick(string residentId)
@@ -202,7 +224,7 @@ public sealed partial class DigWorldInteraction
             itemKind,
             isEquipped: slot.IsHeld,
             heldQuantity: slot.HeldQuantity,
-            isConsumable: slot.IsConsumable);
+            interactionProfile: slot.InteractionProfile);
     }
 
     private static void EnsureLayoutSlot(ResidentInventoryLayoutSlotViewModel slot)

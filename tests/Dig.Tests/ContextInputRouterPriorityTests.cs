@@ -1,4 +1,5 @@
 using Dig.Domain.Core;
+using Dig.Domain.Inventory;
 using Dig.Domain.World;
 using Dig.Presentation.Input;
 using Xunit;
@@ -99,14 +100,15 @@ public sealed class ContextInputRouterPriorityTests
                 Target,
                 Cell,
                 reachable: true,
-                supportsAltInteraction: true));
+                itemActionAvailable: true,
+                itemInteractionAction: ItemWorldInteractionAction.Pickup));
 
         AssertCommand(decision, ApplicationInputCommandKind.PickupBuildingBox);
         Assert.Equal(Target, decision.TargetEntityId);
     }
 
     [Fact]
-    public void Unsupported_alt_building_box_falls_back_to_ground_move()
+    public void Unavailable_alt_building_box_is_consumed_without_ground_fallback()
     {
         ContextInputDecision decision = _router.Route(
             new ContextPointerEvent(
@@ -119,12 +121,14 @@ public sealed class ContextInputRouterPriorityTests
                 Target,
                 Cell,
                 reachable: true,
-                supportsAltInteraction: false));
+                itemActionAvailable: false,
+                itemInteractionAction: ItemWorldInteractionAction.Pickup));
 
-        AssertCommand(decision, ApplicationInputCommandKind.MoveResident);
-        Assert.Equal(Resident, decision.ActorId);
-        Assert.Null(decision.TargetEntityId);
+        Assert.False(decision.HasApplicationCommand);
+        Assert.True(decision.ConsumesPointer);
+        Assert.Equal(Target, decision.TargetEntityId);
         Assert.Equal(Cell, decision.TargetCell);
+        Assert.Equal("input.world_item.unavailable", decision.ReasonCode);
     }
 
     [Fact]
@@ -135,7 +139,10 @@ public sealed class ContextInputRouterPriorityTests
             new ContextPointerTarget(
                 ContextWorldTargetKind.BuildingBox,
                 Target,
-                Cell));
+                Cell,
+                reachable: true,
+                itemActionAvailable: true,
+                itemInteractionAction: ItemWorldInteractionAction.SelectBuildingBox));
 
         Assert.False(decision.HasApplicationCommand);
         Assert.Equal(PresentationInputEffect.SelectBuildingBox, decision.Effects);
@@ -152,7 +159,8 @@ public sealed class ContextInputRouterPriorityTests
             new ContextInputState(
                 selectedResidentId: Resident,
                 selectedInventoryStackId: Stack,
-                selectedInventoryItemIsBuildingBox: true),
+                selectedInventoryItemIsBuildingBox: true,
+                canPlaceSelectedInventoryItem: true),
             new ContextPointerTarget(ContextWorldTargetKind.GenericItem, Stack));
 
         Assert.False(decision.HasApplicationCommand);
@@ -233,8 +241,7 @@ public sealed class ContextInputRouterPriorityTests
                 ContextWorldTargetKind.GenericItem,
                 Target,
                 Cell,
-                reachable: true,
-                supportsAltInteraction: false));
+                reachable: true));
 
         AssertCommand(decision, ApplicationInputCommandKind.MoveResident);
         Assert.Null(decision.TargetEntityId);

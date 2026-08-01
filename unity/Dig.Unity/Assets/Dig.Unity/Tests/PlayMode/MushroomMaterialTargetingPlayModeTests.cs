@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using Dig.Domain.Core;
+using Dig.Domain.Inventory;
 using Dig.Domain.Ecology;
 using Dig.Domain.World;
 using Dig.Presentation.Inventory;
@@ -44,7 +45,7 @@ public sealed class MushroomMaterialTargetingPlayModeTests
             cellX: mushroom.Cell.X,
             cellY: mushroom.Cell.Y,
             cellZ: mushroom.Cell.Z,
-            interactionKind: WorldItemInteractionKind.Pickup);
+            interactionProfile: ItemInteractionProfiles.Generic);
         itemRenderer.Render(new[] { cap });
         Physics.SyncTransforms();
 
@@ -77,13 +78,18 @@ public sealed class MushroomMaterialTargetingPlayModeTests
         Assert.That(resolvesMushroom, Is.False);
         Assert.That(mushroomArguments[1], Is.Null);
 
-        object?[] itemArguments = { hits, null };
+        object?[] itemArguments = { hits, false, null };
         bool resolvesItem = InvokeResolver(
             interaction,
-            "TryResolveWorldItemHit",
+            "TryResolveWorldItemPointerTarget",
             itemArguments);
         Assert.That(resolvesItem, Is.True);
-        Assert.That(itemArguments[1], Is.SameAs(itemVisual));
+        object resolved = itemArguments[2]!;
+        PropertyInfo? itemProperty = resolved.GetType().GetProperty(
+            "Item",
+            BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+        Assert.That(itemProperty, Is.Not.Null);
+        Assert.That(itemProperty!.GetValue(resolved), Is.SameAs(itemVisual));
     }
 
     private static MushroomSiteSnapshot Snapshot(EntityId siteId)

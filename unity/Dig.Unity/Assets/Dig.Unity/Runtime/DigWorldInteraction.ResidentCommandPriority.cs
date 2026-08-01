@@ -65,16 +65,33 @@ public sealed partial class DigWorldInteraction
             return true;
         }
 
-        if (TryHandleProductionPackagePointerInput(hits))
+        bool altPressed = IsAltPressed();
+        if (TryResolveWorldItemPointerTarget(
+                hits,
+                altPressed,
+                out ResolvedWorldItemPointerTarget itemTarget))
         {
+            CancelResidentMarquee();
+            DisableExcavationDrawing();
+            DisableCaveRoomPlanning();
+            ContextPointerTarget target = new ContextPointerTarget(
+                itemTarget.Kind,
+                EntityId.Parse(itemTarget.Item.Model.StackId),
+                itemTarget.Cell,
+                reachable: itemTarget.ActionAvailable,
+                itemActionAvailable: itemTarget.ActionAvailable,
+                itemInteractionAction: itemTarget.Action);
+            ApplyDecision(
+                _inputRouter.Route(
+                    new ContextPointerEvent(
+                        PointerInputSurface.World,
+                        PointerButtonKind.Left,
+                        altPressed: altPressed),
+                    BuildState(PointerButtonKind.Left),
+                    target),
+                item: itemTarget.Item);
             return true;
         }
-
-        if (TryHandleBuildingInternalStockPointerInput(hits))
-        {
-            return true;
-        }
-
 
         if (TryResolveCompletedBuildingHit(hits, out DigBuildingVisual completedBuilding))
         {
@@ -97,43 +114,6 @@ public sealed partial class DigWorldInteraction
             return true;
         }
 
-        // BuildingBoxes remain actionable while the excavation palette is active.
-        // Otherwise the default tunnel tool consumes the click before placement or pickup.
-        if (TryResolveBuildingBoxHit(hits, out DigWorldItemVisual buildingBox))
-        {
-            CancelResidentMarquee();
-            DisableExcavationDrawing();
-            DisableCaveRoomPlanning();
-            ContextPointerTarget boxTarget = new ContextPointerTarget(
-                ContextWorldTargetKind.BuildingBox,
-                EntityId.Parse(buildingBox.Model.StackId),
-                new CellId(
-                    buildingBox.Model.CellX,
-                    buildingBox.Model.CellY,
-                    buildingBox.Model.CellZ),
-                reachable: true,
-                supportsAltInteraction: buildingBox.Model.AvailableQuantity == 1);
-            bool altPressed = IsAltPressed();
-            if (altPressed && _agentRenderer!.SelectedCount == 0)
-            {
-                SelectBuildingBox(buildingBox.Model);
-                _hud.SetStatus("Select a dwarf before ordering BuildingBox pickup.");
-                return true;
-            }
-
-            ApplyDecision(
-                _inputRouter.Route(
-                    new ContextPointerEvent(
-                        PointerInputSurface.World,
-                        PointerButtonKind.Left,
-                        altPressed: altPressed),
-                    BuildState(PointerButtonKind.Left),
-                    boxTarget),
-                item: buildingBox);
-            return true;
-        }
-
-
         // Excavation drawing owns ground clicks while a tool is active, but not the
         // BuildingBox or direct mushroom branches above.
         if (_excavationMode != DigExcavationDrawingMode.None)
@@ -152,30 +132,6 @@ public sealed partial class DigWorldInteraction
                 Pointer(PointerButtonKind.Left),
                 BuildState(PointerButtonKind.Left),
                 hostileTarget));
-            return true;
-        }
-
-        if (_agentRenderer.SelectedCount > 0
-            && TryResolveWorldItemHit(hits, out DigWorldItemVisual item))
-        {
-            CancelResidentMarquee();
-            DisableExcavationDrawing();
-            DisableCaveRoomPlanning();
-            ContextPointerTarget itemTarget = new ContextPointerTarget(
-                ResolveWorldItemTargetKind(item.Model),
-                EntityId.Parse(item.Model.StackId),
-                new CellId(item.Model.CellX, item.Model.CellY, item.Model.CellZ),
-                reachable: true,
-                supportsAltInteraction: item.Model.CanPickup);
-            ApplyDecision(
-                _inputRouter.Route(
-                    new ContextPointerEvent(
-                        PointerInputSurface.World,
-                        PointerButtonKind.Left,
-                        altPressed: IsAltPressed()),
-                    BuildState(PointerButtonKind.Left),
-                    itemTarget),
-                item: item);
             return true;
         }
 
@@ -247,39 +203,6 @@ public sealed partial class DigWorldInteraction
         return false;
     }
 
-    private bool TryResolveBuildingBoxHit(
-        RaycastHit[] hits,
-        out DigWorldItemVisual item)
-    {
-        for (int index = 0; index < hits.Length; index++)
-        {
-            if (_mushroomRenderer != null
-                && _mushroomRenderer.TryGetMushroom(hits[index], out _))
-            {
-                item = null!;
-                return false;
-            }
-
-            if (_itemRenderer != null
-                && _itemRenderer.TryGetItem(
-                    hits[index],
-                    out DigWorldItemVisual candidate))
-            {
-                if (candidate.Model.IsBuildingBox)
-                {
-                    item = candidate;
-                    return true;
-                }
-
-                item = null!;
-                return false;
-            }
-        }
-
-        item = null!;
-        return false;
-    }
-
     private bool TryResolveMushroomHit(
         RaycastHit[] hits,
         out DigMushroomVisual mushroom)
@@ -306,7 +229,7 @@ public sealed partial class DigWorldInteraction
         return false;
     }
 
-    private bool TryResolveWorldItemHit(
+    private bool TryResolveAnyWorldItemHit(
         RaycastHit[] hits,
         out DigWorldItemVisual item)
     {
@@ -320,23 +243,15 @@ public sealed partial class DigWorldInteraction
             }
 
             if (_itemRenderer != null
-                && _itemRenderer.TryGetItem(
-                    hits[index],
-                    out DigWorldItemVisual candidate))
+                && _itemRenderer.TryGetItem(hits[index], out item))
             {
-                if (!candidate.Model.IsBuildingBox)
-                {
-                    item = candidate;
-                    return true;
-                }
-
-                item = null!;
-                return false;
+                return true;
             }
         }
 
         item = null!;
         return false;
     }
+
 }
 }

@@ -101,6 +101,9 @@ namespace Dig.Tests
             string inventoryInput = Read(
                 runtime,
                 "DigWorldInteraction.ResidentInventory.cs");
+            string liveInventoryInput = Read(
+                runtime,
+                "DigWorldInteraction.CanvasHud.cs");
 
             Assert.Contains("bottomOccupiedCell.Y+1", support);
             Assert.Contains("HasSupportingPlane(placement.Footprint,world)", presenter);
@@ -132,8 +135,14 @@ namespace Dig.Tests
             Assert.Contains("_buildingRenderer!.Render(_terrainSession.LoadBuildings())", movement);
             Assert.Contains("_hud.SetAgents(agents,_agentSession.Tick)", movement);
             Assert.Contains("BeginResidentInventoryBuildingPlacement", inventoryInput);
-            Assert.Contains("PointerInputSurface.ResidentInventory", inventoryInput);
-            Assert.Contains("selectedInventoryItemIsBuildingBox:true", inventoryInput);
+            Assert.Contains("InteractResidentInventoryLayoutSlot", inventoryInput);
+            Assert.Contains("PointerInputSurface.ResidentInventory", liveInventoryInput);
+            Assert.Contains(
+                "selectedInventoryItemIsBuildingBox:slot.IsBuildingBox",
+                liveInventoryInput);
+            Assert.Contains(
+                "canPlaceSelectedInventoryItem:slot.CanPlace",
+                liveInventoryInput);
         }
 
         [Fact]

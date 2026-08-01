@@ -109,7 +109,7 @@ public sealed class BasketInventoryPlacementTests
         Assert.Equal(ItemLocation.InWorld(Destination), inventory.GetStack(CargoStackId)!.Location);
         Assert.Equal(0, inventory.GetStack(BasketStackId)!.ReservedQuantity);
         Assert.Equal(7, inventory.GetTotal(CargoItemId));
-        Assert.Equal(0, new ResidentInventoryLayoutPresenter(new ItemId("building.box.test"))
+        Assert.Equal(0, new ResidentInventoryLayoutPresenter()
             .Present(inventory, ResidentId).CargoCapacity);
         Assert.Equal(1d, inventory.GetResidentMoveSpeedMultiplier(ResidentId));
     }

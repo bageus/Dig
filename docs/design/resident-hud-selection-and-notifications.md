@@ -136,18 +136,17 @@ Selection BuildingBox сам по себе не показывает актив�
 
 ## Input routing
 
-После UI shielding один click создаёт не более одной command:
+После UI shielding один click создаёт не более одной command. Для Inventory-owned item точное действие определяется [`item-interaction-capabilities.md`](item-interaction-capabilities.md) и выполняется до ground fallback:
 
 1. active placement mode: LMB подтверждает preview, RMB отменяет preview/selection;
-2. `Alt + LMB` world BuildingBox — pickup order выбранному resident;
-3. LMB world BuildingBox — selection + building menu, без placement;
-4. UI button «Распаковать» — вход в placement mode;
-5. selected inventory stack drop согласно отдельному inventory contract;
-6. selected resident + hostile target — соответствующий игровой приказ;
-7. selected resident + reachable ground — move;
-8. active excavation tool — terrain designation/command.
+2. exact world item profile: generic/material/tool/weapon/food ordinary LMB — pickup; food `Alt + LMB` — pickup-then-use; BuildingBox ordinary LMB — selection/menu, `Alt + LMB` — pickup;
+3. UI button «Распаковать» — вход в BuildingBox placement mode;
+4. inventory exact-slot profile: `Alt` use, затем `C` quick drop, иначе primary placement;
+5. selected resident + hostile target — соответствующий игровой приказ;
+6. selected resident + reachable ground — move;
+7. active excavation tool — terrain designation/command.
 
-Unsupported Alt interaction не должен создавать скрытый pickup. Generic world item не подбирается обычным LMB без отдельного interaction contract.
+Hover и click читают один exact stack/profile resolver. Недоступное item action возвращает typed reason и поглощает pointer: оно не может превратиться в скрытый move, excavation или другой object action.
 
 ПКМ снимает selection, отменяет placement либо dismiss notification согласно текущему контексту. Для BuildingBox/placement ПКМ не расходует и не перемещает коробку.
 

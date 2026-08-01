@@ -67,7 +67,7 @@ public sealed class SettlementResidentManagementPresenterTests
         }));
         Assert.True(inventory.NormalizeResidentInventory(residentId, tick: 0).IsSuccess);
         ResidentInventoryLayoutViewModel layout =
-            new ResidentInventoryLayoutPresenter(boxId).Present(inventory, residentId);
+            new ResidentInventoryLayoutPresenter().Present(inventory, residentId);
 
         SettlementResidentManagementViewModel result =
             new SettlementResidentManagementPresenter().Present(

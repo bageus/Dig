@@ -79,7 +79,6 @@ public sealed class ResidentEquipmentTests
 
         ResidentInventorySlotViewModel slot = Assert.Single(
             new ResidentInventoryPresenter(
-                BoxItemId,
                 inventory.Catalog).Present(
                     inventory.CreateSnapshot(),
                     ResidentId).Slots,

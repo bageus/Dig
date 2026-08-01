@@ -126,6 +126,7 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         string visual = Read(runtime, "DigBuildingInternalStockVisual.cs");
         string bay = Read(runtime, "DigBuildingInternalStockBayVisual.cs");
         string interaction = Read(runtime, "DigWorldInteraction.BuildingInternalStock.cs");
+        string itemCursor = Read(runtime, "DigWorldInteraction.ItemInteractionCursor.cs");
         string pickup = Read(runtime, "DigWorldItemPickupSession.cs");
         string transit = Read(runtime, "DigBuildingProductionMaterialTransit.cs");
         string loop = Read(runtime, "DigAgentSimulationDriverBase.Loop.cs");
@@ -146,8 +147,9 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         Assert.DoesNotContain("Storage back rail", bay);
         Assert.Contains("collider.enabled = false", bay);
         Assert.Contains("collider.isTrigger = true", visual);
-        Assert.Contains("TryResolveBuildingInternalStockPickup", interaction);
-        Assert.Contains("ContextWorldTargetKind.GenericItem", interaction);
+        Assert.Contains("TryResolveBuildingInternalStockHit", interaction);
+        Assert.Contains("TryResolveBuildingInternalStockPickup", itemCursor);
+        Assert.Contains("ContextWorldTargetKind.GenericItem", itemCursor);
         Assert.Contains("ResolveBuildingInternalStockCell", pickup);
         Assert.Contains("Footprint.Min(value => value.X) - 1", transit);
         Assert.Contains("buildinginternalstockrenderer!.render", Normalize(loop));

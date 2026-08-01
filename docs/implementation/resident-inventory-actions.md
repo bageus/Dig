@@ -13,7 +13,7 @@ Selected-resident HUD читает authoritative resident inventory layout и м
 - обычный ЛКМ по BuildingBox сохраняет отдельный unpack/building-placement workflow;
 - обычный ЛКМ по доступному generic/material/food stack напрямую включает полноценный world-space item placement mode;
 - `Alt + ЛКМ` имеет приоритет и отправляет typed use action;
-- `C + ЛКМ` по non-BuildingBox stack напрямую отправляет immediate `DropInventoryStack` для exact live stack в current logical resident cell;
+- `C + ЛКМ` по любому quick-drop-enabled stack, включая BuildingBox, напрямую отправляет immediate `DropInventoryStack` для exact live stack в current logical resident cell;
 - `D` больше не участвует в quick drop и остаётся правым направлением camera pan;
 - double click и RMB больше не выполняют quick drop;
 - hover с `C` показывает анимированную стрелку вниз; hover consumable с `Alt` показывает анимированный рот;
@@ -107,3 +107,7 @@ PR #501 Play Mode scenarios intentionally reference internal `Dig.Unity` adapter
 - friend-assembly identity и arrow-key camera duplicates.
 
 Automated .NET/source-contract CI and the checked-in Unity scenarios must pass on the final PR head. Actual animated cursor/ghost, exact hover, input shielding, repeated placement and cleanup remain `VERIFIED` only after execution in a licensed Unity Test Runner.
+
+## Unified interaction profile follow-up — 2026-08-01
+
+PR for [`item-interaction-capabilities.md`](../design/item-interaction-capabilities.md) removes the remaining split classifiers. Live layout slots now publish the authoritative `ItemInteractionProfile`; ordinary LMB, `Alt + LMB` and `C + LMB` resolve from that same profile. BuildingBox ordinary LMB keeps building placement, while `C + LMB` uses the shared exact-stack quick-drop transaction.

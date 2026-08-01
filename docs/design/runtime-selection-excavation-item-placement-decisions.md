@@ -62,6 +62,10 @@ Resident, creature и loose world item в target cell не блокируют pl
 
 После confirmation source box остаётся в authoritative location до pickup, target planned ghost остаётся видимым до commit, а зарезервированная source box отображается синим в world/Buildings/inventory projection. Если source box уже в `AgentInventory`, candidate set содержит только resident-holder. Если box лежит в world, обычный matching выбирает свободного worker, который подбирает её в inventory и несёт к target.
 
+## 3.1 Единый item interaction source of truth
+
+Все переносимые предметы получают `ItemInteractionProfile` из authoritative `ItemDefinition`. Default resolver использует category `building.box`, `ItemFoodUseDefinition`, `IsTool`, затем generic fallback. World/inventory Presentation не классифицирует gameplay behavior по ItemId, строковым prefix или Unity override dictionary. Полный contract: [`item-interaction-capabilities.md`](item-interaction-capabilities.md).
+
 ## 4. World item pickup, direct use и collision
 
 Для любой pickup/use команды обязателен один выбранный живой resident. Без выбранного resident world item не показывает action cursor/highlight и click не создаёт pickup/use job.
@@ -82,7 +86,7 @@ Resident, creature и loose world item в target cell не блокируют pl
 
 ## 5. Размещение и использование предмета из resident inventory
 
-Один ЛКМ по доступному generic item, корзине или большой корзине в resident inventory сразу включает полноценный item placement mode по тому же Presentation-контракту, что BuildingBox placement:
+Один ЛКМ по любому доступному profile с `PlaceItem` (generic/material/food/tool/weapon, корзина или большая корзина) сразу включает полноценный item placement mode. Profile `PlaceBuilding` запускает BuildingBox placement/assembly mode:
 
 - системный 2D cursor скрывается;
 - item visual становится полупрозрачным world-space ghost и непрерывно следует pointer;
@@ -105,7 +109,7 @@ Resident, creature и loose world item в target cell не блокируют pl
 
 Quick drop использует отдельный явный modifier:
 
-- пока удерживается `C`, hover доступного non-BuildingBox inventory stack показывает анимированную стрелку вниз;
+- пока удерживается `C`, hover любого доступного quick-drop-enabled inventory stack, включая BuildingBox, показывает анимированную стрелку вниз;
 - `C + ЛКМ` немедленно выполняет `DropInventoryStack` в authoritative current resident cell без placement job;
 - `D` больше не является quick-drop modifier и остаётся правым направлением camera pan;
 - double click и RMB больше не являются quick-drop input;
@@ -118,7 +122,7 @@ Quick drop использует отдельный явный modifier:
 - `Alt + ЛКМ` по доступному food, potion, drink, tool или weapon отправляет typed use command;
 - при удержании `Alt` consumable slot показывает анимированный рот, а tool/weapon использует свой action feedback;
 - `Alt` use имеет приоритет над generic placement; `C` quick drop имеет приоритет только без `Alt`;
-- BuildingBox inventory action остаётся отдельным unpacking workflow и использует layer-derived box/building ghost, а не generic item ghost/down-arrow quick drop.
+- BuildingBox ordinary LMB остаётся отдельным placement/assembly workflow и использует layer-derived box/building ghost; `C + LMB` использует общий exact-stack quick drop.
 
 ## 6. Excavation quarter progress
 
@@ -189,7 +193,7 @@ Quick drop использует отдельный явный modifier:
 16. blocked destination использует retry/cancel cleanup, снимает stale blue tint, а save/load сохраняет очередь и stage;
 17. inventory item C hover -> animated down arrow -> C+LMB immediate drop at resident cell -> fall through open vertical tunnel;
 18. D+LMB не создаёт quick drop; camera pan остаётся доступен через `A/D/S/W` и `Left/Right/Down/Up`;
-19. double click/RMB не создают quick drop; Alt use и BuildingBox placement сохраняют priority;
+19. double click/RMB не создают quick drop; Alt use, `C` quick drop и BuildingBox ordinary placement сохраняют profile-defined priority;
 20. horizontal и vertical excavation минимум 10 cells без остановки;
 21. 1/4, 2/4, 3/4 progress видим как реально удалённые quarters породы без чёрной заливки; при копке сверху вниз состояние 2/4 является полностью удалённой верхней половиной, а не вертикальной колонкой;
 22. interruption/erase после partial progress оставляет удалённые quarters, а повторное designation продолжает с того же mask;

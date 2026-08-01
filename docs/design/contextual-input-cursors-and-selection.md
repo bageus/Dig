@@ -27,13 +27,14 @@ Tracking issue: [#390](https://github.com/bageus/Dig/issues/390).
 ## 3. Режимы курсора
 
 - доступная копка выбранным гномом — слегка анимированная лопата;
-- доступный `Alt`-подбор — анимированная стрелка вверх;
+- доступный ordinary pickup generic item — анимированная стрелка вверх;
+- доступный `Alt`-pickup BuildingBox — та же анимированная стрелка вверх;
 - успешный direct move order — временные анимированные ноги;
 - доступная закрытая production package `food`/`weapon`/`tool` — слегка анимированный cursor использования;
 - eraser — серый cursor;
 - недоступное действие — default cursor и reason code.
 
-Pickup cursor без `Alt` запрещён. Production package никогда не показывает pickup cursor: её единственное world interaction — direct use/break выбранным resident.
+Generic item pickup cursor показывается без `Alt`. `Alt` обязателен только для pickup BuildingBox и для direct use предмета, чей `ItemInteractionProfile` это определяет. Production package никогда не показывает generic pickup cursor: её world interaction задаётся explicit content-owned profile.
 
 ## 4. BuildingBox selection и unpacking
 
@@ -84,13 +85,14 @@ Pickup cursor без `Alt` запрещён. Production package никогда �
 После UI shielding:
 
 1. active placement mode: LMB подтверждает preview, RMB отменяет mode/selection;
-2. selected resident + reachable closed production package `food`/`weapon`/`tool`: LMB создаёт direct use/break command для resolved package identity/version;
-3. `Alt + LMB` по BuildingBox/item создаёт pickup order только при реально зажатом `Alt`;
-4. обычный LMB по BuildingBox выбирает коробку;
-5. object selection обрабатывается раньше excavation stroke;
-6. selected resident + reachable free ground создаёт move order;
-7. active excavation tool обрабатывает terrain target;
-8. один event создаёт не более одной command.
+2. exact item target разрешается единым `ItemInteractionProfile` resolver-ом до ground/building/movement/excavation fallback;
+3. generic/material/tool/weapon ordinary LMB создаёт pickup; food ordinary LMB создаёт pickup, `Alt + LMB` — pickup-then-use;
+4. BuildingBox ordinary LMB выбирает коробку, `Alt + LMB` создаёт pickup;
+5. closed production package LMB создаёт direct use/break command;
+6. object selection обрабатывается раньше excavation stroke;
+7. selected resident + reachable free ground создаёт move order;
+8. active excavation tool обрабатывает terrain target;
+9. один event создаёт не более одной command.
 
 Полная таблица overlap targets остаётся открытой в Q-INPUT-003.
 
@@ -103,7 +105,8 @@ Pickup cursor без `Alt` запрещён. Production package никогда �
 
 ## 9. Инварианты
 
-- cursor/ghost resolver и command router используют одну classification;
+- world hover, world click, inventory hover и inventory click используют один definition-owned interaction profile;
+- hover/click resolver использует exact `StackId`, modifier и availability одного target snapshot;
 - production package hover/click используют одну package identity/version и никогда не маршрутизируются в generic pickup;
 - UI shielding выполняется до world command;
 - LMB по BuildingBox не запускает unpacking;
@@ -123,6 +126,8 @@ Pickup cursor без `Alt` запрещён. Production package никогда �
 - **Q-INPUT-007:** valid Z0 confirmation создаёт выбранный box-placement или building-assembly plan и закрывает interactive placement mode.
 - **Q-INPUT-008:** после успешного plan source BuildingBox остаётся selected и получает синюю planned-подсветку до pickup/commit/cancel.
 - **Q-INPUT-009:** inventory BuildingBox LMB сразу запускает placement mode.
+- **Q-INPUT-010:** generic item ordinary LMB подбирает; только BuildingBox pickup требует `Alt`; item target поглощает event до movement/excavation.
+- **Q-INPUT-011:** new item behavior определяется `ItemDefinition.ItemInteractionProfile`, без Unity ID/prefix hardcode.
 
 ## 11. Открытые вопросы
 
@@ -139,7 +144,9 @@ Pickup cursor без `Alt` запрещён. Production package никогда �
 - box-placement plan не создаёт completed building, assembly plan автоматически продолжает assembly после delivery;
 - Play Mode matrix покрывает cursor modes, включая animated use для food/weapon/tool package;
 - overlap targets создают одну command;
-- `Alt` gating совпадает для hover и click;
+- ordinary/`Alt` gating совпадает для hover и click;
+- generic item first LMB создаёт pickup либо typed rejection и не уходит в ground action;
+- новый item profile подключается к hover/click без изменения Unity router;
 - food/weapon/tool package LMB создаёт ровно один direct-use command, а BuildingBox сохраняет обычный selection/unpack workflow;
 - world/HUD/management selection дают одинаковую вкладку и highlight;
 - ghost существует только в игровой зоне;

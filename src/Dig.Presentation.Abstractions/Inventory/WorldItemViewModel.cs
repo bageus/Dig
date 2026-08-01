@@ -1,15 +1,8 @@
 using System;
+using Dig.Domain.Inventory;
 
 namespace Dig.Presentation.Inventory
 {
-
-public enum WorldItemInteractionKind
-{
-    None = 0,
-    BuildingBox = 1,
-    Pickup = 2,
-    Use = 3,
-}
 
 public sealed class WorldItemViewModel
 {
@@ -20,7 +13,7 @@ public sealed class WorldItemViewModel
         int reservedQuantity,
         int cellX,
         int cellY,
-        WorldItemInteractionKind interactionKind = WorldItemInteractionKind.None)
+        ItemInteractionProfile interactionProfile)
         : this(
             stackId,
             itemId,
@@ -29,7 +22,7 @@ public sealed class WorldItemViewModel
             cellX,
             cellY,
             cellZ: 0,
-            interactionKind)
+            interactionProfile)
     {
     }
 
@@ -41,11 +34,19 @@ public sealed class WorldItemViewModel
         int cellX,
         int cellY,
         int cellZ,
-        WorldItemInteractionKind interactionKind = WorldItemInteractionKind.None)
+        ItemInteractionProfile interactionProfile)
     {
-        if (!Enum.IsDefined(typeof(WorldItemInteractionKind), interactionKind))
+        if (string.IsNullOrWhiteSpace(stackId)
+            || string.IsNullOrWhiteSpace(itemId))
         {
-            throw new ArgumentOutOfRangeException(nameof(interactionKind));
+            throw new ArgumentException("World item identifiers are required.");
+        }
+
+        if (quantity <= 0
+            || reservedQuantity < 0
+            || reservedQuantity > quantity)
+        {
+            throw new ArgumentOutOfRangeException(nameof(quantity));
         }
 
         if (cellZ < 0 || cellZ > 3)
@@ -53,14 +54,15 @@ public sealed class WorldItemViewModel
             throw new ArgumentOutOfRangeException(nameof(cellZ));
         }
 
-        StackId = stackId;
-        ItemId = itemId;
+        StackId = stackId.Trim();
+        ItemId = itemId.Trim();
         Quantity = quantity;
         ReservedQuantity = reservedQuantity;
         CellX = cellX;
         CellY = cellY;
         CellZ = cellZ;
-        InteractionKind = interactionKind;
+        InteractionProfile = interactionProfile
+            ?? throw new ArgumentNullException(nameof(interactionProfile));
     }
 
     public string StackId { get; }
@@ -71,17 +73,43 @@ public sealed class WorldItemViewModel
     public int CellX { get; }
     public int CellY { get; }
     public int CellZ { get; }
-    public WorldItemInteractionKind InteractionKind { get; }
-    public bool IsBuildingBox => InteractionKind == WorldItemInteractionKind.BuildingBox;
-    public bool CanPickup => InteractionKind == WorldItemInteractionKind.Pickup
-        && Quantity > 0
-        && ReservedQuantity == 0;
-    public bool CanUse => InteractionKind == WorldItemInteractionKind.Use
-        && Quantity > 0
-        && ReservedQuantity == 0;
-    public bool IsInteractive => IsBuildingBox
-        || InteractionKind == WorldItemInteractionKind.Pickup
-        || InteractionKind == WorldItemInteractionKind.Use;
+    public ItemInteractionProfile InteractionProfile { get; }
+
+    public bool IsBuildingBox =>
+        InteractionProfile.WorldPrimaryAction
+            == ItemWorldInteractionAction.SelectBuildingBox;
+
+    public bool CanPickup => AvailableQuantity > 0
+        && InteractionProfile.SupportsWorldAction(ItemWorldInteractionAction.Pickup);
+
+    public bool CanUse => AvailableQuantity > 0
+        && (InteractionProfile.SupportsWorldAction(
+                ItemWorldInteractionAction.DirectUse)
+            || InteractionProfile.SupportsWorldAction(
+                ItemWorldInteractionAction.UseProductionPackage));
+
+    public bool IsInteractive =>
+        InteractionProfile.WorldPrimaryAction != ItemWorldInteractionAction.None
+        || InteractionProfile.WorldAltAction != ItemWorldInteractionAction.None;
+
+    public ItemWorldInteractionAction ResolveWorldAction(bool altPressed)
+    {
+        return InteractionProfile.ResolveWorldAction(altPressed);
+    }
+
+    public bool IsActionAvailable(ItemWorldInteractionAction action)
+    {
+        if (action == ItemWorldInteractionAction.SelectBuildingBox)
+        {
+            return Quantity == 1 && AvailableQuantity == 1;
+        }
+
+        return action != ItemWorldInteractionAction.None
+            && AvailableQuantity > 0
+            && InteractionProfile.SupportsWorldAction(action);
+    }
+
+
 }
 
 }

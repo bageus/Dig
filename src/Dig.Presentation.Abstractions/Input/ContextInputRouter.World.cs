@@ -40,6 +40,12 @@ public sealed partial class ContextInputRouter
                 reasonCode: "input.selected_resident.stale_or_dead");
         }
 
+        if (target.ItemInteractionAction
+            != Dig.Domain.Inventory.ItemWorldInteractionAction.None)
+        {
+            return RouteWorldItemAction(state, target);
+        }
+
         if (state.SelectedInventoryStackId.HasValue
             && target.Kind == ContextWorldTargetKind.Ground
             && target.Cell.HasValue)
@@ -49,66 +55,6 @@ public sealed partial class ContextInputRouter
                 state.SelectedResidentId,
                 state.SelectedInventoryStackId,
                 target.Cell);
-        }
-
-        if (pointer.AltPressed && target.Kind == ContextWorldTargetKind.BuildingBox)
-        {
-            if (state.HasUsableResidentSelection
-                && target.SupportsAltInteraction
-                && target.EntityId.HasValue)
-            {
-                return Command(
-                    ApplicationInputCommandKind.PickupBuildingBox,
-                    state.SelectedResidentId,
-                    target.EntityId,
-                    target.Cell);
-            }
-
-            return MoveFallback(state, target);
-        }
-
-        if (target.Kind == ContextWorldTargetKind.FoodItem)
-        {
-            if (state.HasUsableResidentSelection
-                && target.SupportsAltInteraction
-                && target.EntityId.HasValue)
-            {
-                return Command(
-                    pointer.AltPressed
-                        ? ApplicationInputCommandKind.EatWorldItem
-                        : ApplicationInputCommandKind.PickupWorldItem,
-                    state.SelectedResidentId,
-                    target.EntityId,
-                    target.Cell);
-            }
-
-            return MoveFallback(state, target);
-        }
-
-        if (target.Kind == ContextWorldTargetKind.GenericItem)
-        {
-            if (state.HasUsableResidentSelection
-                && target.SupportsAltInteraction
-                && target.EntityId.HasValue)
-            {
-                return Command(
-                    ApplicationInputCommandKind.PickupWorldItem,
-                    state.SelectedResidentId,
-                    target.EntityId,
-                    target.Cell);
-            }
-
-            return MoveFallback(state, target);
-        }
-
-        if (target.Kind == ContextWorldTargetKind.BuildingBox
-            && target.EntityId.HasValue)
-        {
-            return Local(
-                PresentationInputEffect.SelectBuildingBox,
-                consumesPointer: true,
-                targetEntityId: target.EntityId,
-                targetCell: target.Cell);
         }
 
         if (target.Kind == ContextWorldTargetKind.Barrel)
@@ -243,6 +189,95 @@ public sealed partial class ContextInputRouter
                 consumesPointer: true,
                 targetEntityId: target.EntityId,
                 targetCell: target.Cell);
+        }
+
+        return None();
+    }
+
+    private static ContextInputDecision RouteWorldItemAction(
+        ContextInputState state,
+        ContextPointerTarget target)
+    {
+        switch (target.ItemInteractionAction)
+        {
+            case Dig.Domain.Inventory.ItemWorldInteractionAction.SelectBuildingBox:
+                if (target.EntityId.HasValue)
+                {
+                    return Local(
+                        PresentationInputEffect.SelectBuildingBox,
+                        consumesPointer: true,
+                        targetEntityId: target.EntityId,
+                        targetCell: target.Cell);
+                }
+                break;
+
+            case Dig.Domain.Inventory.ItemWorldInteractionAction.Pickup:
+                if (state.HasUsableResidentSelection
+                    && target.ItemActionAvailable
+                    && target.EntityId.HasValue)
+                {
+                    return Command(
+                        target.Kind == ContextWorldTargetKind.BuildingBox
+                            ? ApplicationInputCommandKind.PickupBuildingBox
+                            : ApplicationInputCommandKind.PickupWorldItem,
+                        state.SelectedResidentId,
+                        target.EntityId,
+                        target.Cell);
+                }
+
+                return Local(
+                    PresentationInputEffect.ShowReason,
+                    consumesPointer: true,
+                    actorId: state.SelectedResidentId,
+                    targetEntityId: target.EntityId,
+                    targetCell: target.Cell,
+                    reasonCode: state.HasUsableResidentSelection
+                        ? "input.world_item.unavailable"
+                        : "input.world_item.resident_required");
+
+            case Dig.Domain.Inventory.ItemWorldInteractionAction.DirectUse:
+                if (state.HasUsableResidentSelection
+                    && target.ItemActionAvailable
+                    && target.EntityId.HasValue)
+                {
+                    return Command(
+                        ApplicationInputCommandKind.EatWorldItem,
+                        state.SelectedResidentId,
+                        target.EntityId,
+                        target.Cell);
+                }
+
+                return Local(
+                    PresentationInputEffect.ShowReason,
+                    consumesPointer: true,
+                    actorId: state.SelectedResidentId,
+                    targetEntityId: target.EntityId,
+                    targetCell: target.Cell,
+                    reasonCode: state.HasUsableResidentSelection
+                        ? "input.world_item.use_unavailable"
+                        : "input.world_item.resident_required");
+
+            case Dig.Domain.Inventory.ItemWorldInteractionAction.UseProductionPackage:
+                if (state.HasUsableResidentSelection
+                    && target.ItemActionAvailable
+                    && target.EntityId.HasValue)
+                {
+                    return Command(
+                        ApplicationInputCommandKind.UseProductionPackage,
+                        state.SelectedResidentId,
+                        target.EntityId,
+                        target.Cell);
+                }
+
+                return Local(
+                    PresentationInputEffect.ShowReason,
+                    consumesPointer: true,
+                    actorId: state.SelectedResidentId,
+                    targetEntityId: target.EntityId,
+                    targetCell: target.Cell,
+                    reasonCode: state.HasUsableResidentSelection
+                        ? "input.production_package.unavailable"
+                        : "input.production_package.resident_required");
         }
 
         return None();

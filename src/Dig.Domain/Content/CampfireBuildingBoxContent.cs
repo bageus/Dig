@@ -14,7 +14,7 @@ public static class CampfireBuildingBoxContent
         new ItemId("building_box.campfire");
 
     public static readonly ItemCategoryId BuildingBoxCategoryId =
-        new ItemCategoryId("building.box");
+        ItemInteractionCategoryIds.BuildingBox;
 
     public static PackableBuildingContentDefinition Definition { get; } = Create();
 

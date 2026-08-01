@@ -19,10 +19,11 @@ public sealed class InternalStockUnityContractTests
 
         Assert.Contains("DigWorldItemVisual", renderer);
         Assert.Contains("unit.StackId", renderer);
-        Assert.Contains("WorldItemInteractionKind.Pickup", renderer);
-        Assert.Contains("stock.StackId", interaction);
+        Assert.Contains("interactionProfile: unit.InteractionProfile", renderer);
+        Assert.Contains("TryResolveBuildingInternalStockHit", interaction);
         Assert.Contains("stock.StackId", cursor);
-        Assert.Contains("CanSelectedResidentPickup(stock.WorldItemVisual)", cursor);
+        Assert.Contains("stock.WorldItemVisual", cursor);
+        Assert.Contains("CanSelectedResidentPickup(item)", cursor);
         Assert.Contains("GetStack(EntityId.Parse(stackId))", pickup);
         Assert.DoesNotContain(
             "snapshot.HasActiveSupply\n                || _productionRepository!.Get().HasActiveOrder",

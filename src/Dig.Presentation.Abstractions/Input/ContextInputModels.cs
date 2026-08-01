@@ -1,5 +1,6 @@
 using System;
 using Dig.Domain.Core;
+using Dig.Domain.Inventory;
 using Dig.Domain.World;
 
 namespace Dig.Presentation.Input
@@ -29,6 +30,7 @@ public enum ContextWorldTargetKind
     GenericItem = 6,
     Mushroom = 7,
     FoodItem = 9,
+    ProductionPackage = 10,
     Barrel = 8,
 }
 
@@ -62,6 +64,7 @@ public enum PresentationInputEffect
     KeepBuildingPreview = 128,
     ShowReason = 256,
     SelectBuildingBox = 512,
+    StartItemPlacement = 1024,
 }
 
 public enum ApplicationInputCommandKind
@@ -77,6 +80,7 @@ public enum ApplicationInputCommandKind
     PickupWorldItem = 8,
     ChopMushroom = 9,
     EatWorldItem = 11,
+    UseProductionPackage = 12,
     AttackBarrel = 10,
 }
 
@@ -132,6 +136,7 @@ public sealed class ContextInputState
         bool selectedInventoryItemIsBuildingBox = false,
         bool canUseSelectedInventoryItem = false,
         bool canDropSelectedInventoryItem = false,
+        bool canPlaceSelectedInventoryItem = false,
         bool buildingPlacementActive = false,
         bool buildingPlacementValid = false,
         string? buildingPlacementReasonCode = null,
@@ -169,6 +174,7 @@ public sealed class ContextInputState
         SelectedInventoryItemIsBuildingBox = selectedInventoryItemIsBuildingBox;
         CanUseSelectedInventoryItem = canUseSelectedInventoryItem;
         CanDropSelectedInventoryItem = canDropSelectedInventoryItem;
+        CanPlaceSelectedInventoryItem = canPlaceSelectedInventoryItem;
         BuildingPlacementActive = buildingPlacementActive;
         BuildingPlacementValid = buildingPlacementValid;
         BuildingPlacementReasonCode = Normalize(buildingPlacementReasonCode);
@@ -183,6 +189,7 @@ public sealed class ContextInputState
     public bool SelectedInventoryItemIsBuildingBox { get; }
     public bool CanUseSelectedInventoryItem { get; }
     public bool CanDropSelectedInventoryItem { get; }
+    public bool CanPlaceSelectedInventoryItem { get; }
     public bool BuildingPlacementActive { get; }
     public bool BuildingPlacementValid { get; }
     public string? BuildingPlacementReasonCode { get; }
@@ -204,8 +211,10 @@ public sealed class ContextPointerTarget
         EntityId? entityId = null,
         CellId? cell = null,
         bool reachable = false,
-        bool supportsAltInteraction = false,
-        bool isAlive = true)
+        bool isAlive = true,
+        bool itemActionAvailable = false,
+        ItemWorldInteractionAction itemInteractionAction =
+            ItemWorldInteractionAction.None)
     {
         if (!Enum.IsDefined(typeof(ContextWorldTargetKind), kind))
         {
@@ -217,20 +226,27 @@ public sealed class ContextPointerTarget
             throw new ArgumentException("Target entity id cannot be empty.", nameof(entityId));
         }
 
+        if (!Enum.IsDefined(typeof(ItemWorldInteractionAction), itemInteractionAction))
+        {
+            throw new ArgumentOutOfRangeException(nameof(itemInteractionAction));
+        }
+
         Kind = kind;
         EntityId = entityId;
         Cell = cell;
         Reachable = reachable;
-        SupportsAltInteraction = supportsAltInteraction;
         IsAlive = isAlive;
+        ItemActionAvailable = itemActionAvailable;
+        ItemInteractionAction = itemInteractionAction;
     }
 
     public ContextWorldTargetKind Kind { get; }
     public EntityId? EntityId { get; }
     public CellId? Cell { get; }
     public bool Reachable { get; }
-    public bool SupportsAltInteraction { get; }
     public bool IsAlive { get; }
+    public bool ItemActionAvailable { get; }
+    public ItemWorldInteractionAction ItemInteractionAction { get; }
 }
 
 public sealed class ContextInputDecision

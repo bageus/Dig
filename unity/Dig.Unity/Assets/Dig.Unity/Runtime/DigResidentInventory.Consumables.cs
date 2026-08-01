@@ -1,7 +1,6 @@
 using System;
 using Dig.Application.Agents;
 using Dig.Application.Inventory;
-using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Infrastructure.InMemory;
@@ -10,13 +9,6 @@ namespace Dig.Unity
 {
     internal sealed partial class DigTerrainWorkSession
     {
-        private static readonly ItemCategoryId PotionCategoryId =
-            new ItemCategoryId("potion");
-        private static readonly ItemCategoryId DrinkCategoryId =
-            new ItemCategoryId("drink");
-        private static readonly ItemCategoryId BeverageCategoryId =
-            new ItemCategoryId("beverage");
-
         internal Result UseResidentInventoryActionWithSlotGuard(
             string residentId,
             string stackId,
@@ -38,7 +30,7 @@ namespace Dig.Unity
             }
 
             ItemDefinition definition = repository.Get().Catalog.Get(snapshot.ItemId);
-            if (definition.HasCategory(CampfireProductionContent.FoodCategoryId))
+            if (definition.FoodUse != null)
             {
                 if (_productionAgents == null)
                 {
@@ -56,7 +48,9 @@ namespace Dig.Unity
                             tick));
             }
 
-            if (IsPotionOrDrink(definition))
+            if (definition.Interactions.SupportsInventoryAction(
+                    ItemInventoryInteractionAction.DirectUse)
+                && !definition.IsTool)
             {
                 return Result.Failure(
                     ResidentInventoryConsumableErrors.EffectOwnerUnavailable);
@@ -84,23 +78,12 @@ namespace Dig.Unity
             }
 
             ItemDefinition definition = repository.Get().Catalog.Get(snapshot.ItemId);
-            if (definition.HasCategory(CampfireProductionContent.FoodCategoryId))
-            {
-                return Result.Success();
-            }
-
-            return IsPotionOrDrink(definition)
-                ? Result.Failure(
-                    ResidentInventoryConsumableErrors.EffectOwnerUnavailable)
+            return definition.FoodUse != null
+                && definition.Interactions.SupportsWorldAction(
+                    ItemWorldInteractionAction.DirectUse)
+                ? Result.Success()
                 : Result.Failure(
                     ResidentInventoryConsumableErrors.EffectOwnerUnavailable);
-        }
-
-        private static bool IsPotionOrDrink(ItemDefinition definition)
-        {
-            return definition.HasCategory(PotionCategoryId)
-                || definition.HasCategory(DrinkCategoryId)
-                || definition.HasCategory(BeverageCategoryId);
         }
     }
 }

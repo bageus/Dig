@@ -98,7 +98,7 @@ public sealed class ResidentInventoryPresenterTests
 
     private static ResidentInventoryPresenter Presenter(InventoryState inventory)
     {
-        return new ResidentInventoryPresenter(BoxItemId, inventory.Catalog);
+        return new ResidentInventoryPresenter(inventory.Catalog);
     }
 
     private static InventoryState CreateInventory()
@@ -109,7 +109,8 @@ public sealed class ResidentInventoryPresenterTests
                 BoxItemId,
                 "Workshop BuildingBox",
                 maximumStackSize: 1,
-                isTool: false),
+                isTool: false,
+                categories: new[] { ItemInteractionCategoryIds.BuildingBox }),
             new ItemDefinition(
                 ToolItemId,
                 "Pickaxe",

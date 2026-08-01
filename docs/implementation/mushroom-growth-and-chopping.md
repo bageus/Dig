@@ -113,7 +113,7 @@ The correction keeps Domain/Application completion unchanged and fixes the Unity
 - `DigMushroomRenderer` now mirrors the world-item renderer and keeps its root in world orientation with `SetParent(..., worldPositionStays: true)`;
 - mushroom, BuildingBox, generic-item and completed-building resolvers stop at the first relevant foreground item/mushroom boundary instead of scanning through it;
 - reachable hover and pickup reuse the same foreground-aware item resolver;
-- cap/leg remain quantity-one `WorldItemInteractionKind.Pickup` entities and never acquire `DigMushroomVisual` identity.
+- cap/leg remain quantity-one Inventory entities whose `ItemDefinition.ItemInteractionProfile` resolves ordinary pickup; they never acquire `DigMushroomVisual` identity.
 
 Regression coverage now rotates the renderer parent exactly like the runtime bootstrap, verifies world-up stem/collider orientation, renders completion drops as pickup-only world visuals, and exercises a physical foreground item ray before a regrown mushroom. The system remains `IMPLEMENTED` until Unity Test Runner executes the checked-in Play Mode scenarios.
 

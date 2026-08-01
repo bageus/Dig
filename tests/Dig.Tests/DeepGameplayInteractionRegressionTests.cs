@@ -33,7 +33,8 @@ public sealed class DeepGameplayInteractionRegressionTests
                 Target,
                 Cell,
                 reachable: true,
-                supportsAltInteraction: true));
+                itemActionAvailable: true,
+                itemInteractionAction: ItemWorldInteractionAction.Pickup));
         ContextInputDecision boxSelection = router.Route(
             new ContextPointerEvent(
                 PointerInputSurface.World,
@@ -44,7 +45,8 @@ public sealed class DeepGameplayInteractionRegressionTests
                 Target,
                 Cell,
                 reachable: true,
-                supportsAltInteraction: true));
+                itemActionAvailable: true,
+                itemInteractionAction: ItemWorldInteractionAction.SelectBuildingBox));
         ContextInputDecision boxPickup = router.Route(
             new ContextPointerEvent(
                 PointerInputSurface.World,
@@ -56,7 +58,8 @@ public sealed class DeepGameplayInteractionRegressionTests
                 Target,
                 Cell,
                 reachable: true,
-                supportsAltInteraction: true));
+                itemActionAvailable: true,
+                itemInteractionAction: ItemWorldInteractionAction.Pickup));
 
         Assert.Equal(ApplicationInputCommandKind.PickupWorldItem, loose.CommandKind);
         Assert.True(boxSelection.Effects.HasFlag(

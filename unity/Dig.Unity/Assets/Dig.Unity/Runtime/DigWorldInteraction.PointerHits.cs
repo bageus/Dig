@@ -37,9 +37,15 @@ namespace Dig.Unity
                     nextMushroom = mushroom;
                 }
                 else if (_agentRenderer.SelectedCount > 0
-                    && TryResolvePickupItemHit(hits, out DigWorldItemVisual pickupItem))
+                    && TryResolveWorldItemPointerTarget(
+                        hits,
+                        IsAltPressed(),
+                        out ResolvedWorldItemPointerTarget itemTarget)
+                    && itemTarget.ActionAvailable
+                    && itemTarget.Action
+                        != Dig.Domain.Inventory.ItemWorldInteractionAction.SelectBuildingBox)
                 {
-                    nextItem = pickupItem;
+                    nextItem = itemTarget.Item;
                 }
                 else if (TryResolveAgentHit(hits, out DigAgentVisual candidate))
                 {
@@ -134,33 +140,6 @@ namespace Dig.Unity
             }
 
             mushroom = null!;
-            return false;
-        }
-
-        private bool TryResolvePickupItemHit(
-            RaycastHit[] hits,
-            out DigWorldItemVisual item)
-        {
-            if (TryResolveBuildingInternalStockHit(
-                    hits,
-                    out DigBuildingInternalStockVisual stock)
-                && _terrainSession!.TryResolveBuildingInternalStockPickup(
-                    stock.StackId,
-                    out _)
-                && CanSelectedResidentPickup(stock.WorldItemVisual))
-            {
-                item = stock.WorldItemVisual;
-                return true;
-            }
-
-            if (TryResolveWorldItemHit(hits, out DigWorldItemVisual candidate)
-                && candidate.Model.CanPickup)
-            {
-                item = candidate;
-                return true;
-            }
-
-            item = null!;
             return false;
         }
 

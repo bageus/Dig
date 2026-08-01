@@ -124,9 +124,7 @@ public sealed partial class DigBuildingInternalStockRenderer : MonoBehaviour
             cellX: ResolveInternalZoneCell(building).X,
             cellY: ResolveInternalZoneCell(building).Y,
             cellZ: ResolveInternalZoneCell(building).Z,
-            interactionKind: unit.IsAvailable
-                ? WorldItemInteractionKind.Pickup
-                : WorldItemInteractionKind.None);
+            interactionProfile: unit.InteractionProfile);
         DigItemVisualResolution resolution = DigWorldItemVisualPolicy.Resolve(
             visualCatalog,
             item.ItemId);

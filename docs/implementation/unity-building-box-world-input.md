@@ -6,7 +6,8 @@ This slice connects a packed BuildingBox world stack to context input without ma
 
 After UI shielding, the existing `ContextInputRouter` remains authoritative for pointer priority:
 
-- normal left click on an available world BuildingBox starts local placement mode;
+- ordinary left click on a world BuildingBox selects its exact stack and opens the BuildingBox menu;
+- the `Unpack` menu action starts local placement mode;
 - `Alt + left click` with a selected living resident creates one pickup command;
 - while placement is active, left click on valid ground confirms the plan;
 - invalid ground keeps the preview and reports the typed reason code;
@@ -16,9 +17,9 @@ One pointer event still produces at most one Application command.
 
 ## World item identity
 
-`WorldItemViewModel` carries a typed `WorldItemInteractionKind`. Only the dedicated BuildingBox inventory projection emits `BuildingBox`; terrain resources retain `None` and stay on Unity's ignore-raycast layer.
+`WorldItemViewModel` carries the definition-owned `ItemInteractionProfile`. Any item definition with category `building.box` automatically projects ordinary selection, Alt pickup, inventory building placement and enabled exact-stack quick drop. Unity does not maintain a BuildingBox item-id override list and does not infer behavior from display name, material, primitive type or item-id prefix.
 
-`DigWorldItemVisual` stores the immutable model used by raycast routing. Unity does not infer a box from its display name, material, primitive type, or item-id prefix.
+`DigWorldItemVisual` stores the immutable model used by the shared hover/click resolver. The same stack identity/profile controls feedback and click routing.
 
 ## Pickup ownership and lifecycle
 
@@ -53,6 +54,6 @@ The ghost is not color-only:
 
 Deleting and rebuilding item or ghost GameObjects does not change Inventory, Jobs, Buildings, or World.
 
-## Remaining work
+## Current verification boundary
 
-The new authoritative placement creates a BuildingBox assembly Job, but this slice does not yet execute the complete pickup/delivery/assembly sequence in the Unity simulation adapter. Resident inventory UI also does not yet expose its carried BuildingBox as a clickable slot, although the shared placement session accepts a source stack in `AgentInventory`.
+Pickup, resident-inventory building placement, delivery/assembly, cancellation and save/load are implemented and covered by repository tests. Actual licensed Unity EditMode/PlayMode execution remains owned by #511; checked-in scenarios and source contracts alone do not promote the system to `VERIFIED`.

@@ -67,16 +67,23 @@ public sealed class ProductionPackageUnityContractTests
                 "Inventory",
                 "InventoryWorldPresenter.cs"));
 
-        Assert.Contains("TryResolveProductionPackageHoverTarget", interaction);
+        string itemResolver = Read(runtime, "DigWorldInteraction.ItemInteractionCursor.cs");
+        string content = Read(
+            RepositoryPath(
+                "src",
+                "Dig.Domain",
+                "Content",
+                "ProductionPackageContent.cs"));
+
+        Assert.Contains("ApplyProductionPackageUse", interaction);
         Assert.Contains("StartDirectProductionPackageUse", interaction);
+        Assert.Contains("ItemWorldInteractionAction.UseProductionPackage", itemResolver);
         Assert.Contains("DirectCommandCursorKind.Use", cursor);
         Assert.Contains("CreateUseCursorFrames", textures);
-        Assert.Contains("UnfinishedPackageItemId", presenter);
-        Assert.Contains("WorldItemInteractionKind.None", presenter);
-        Assert.Contains("FoodPackageItemId", presenter);
-        Assert.Contains("WeaponPackageItemId", presenter);
-        Assert.Contains("ToolPackageItemId", presenter);
-        Assert.Contains("WorldItemInteractionKind.Use", presenter);
+        Assert.Contains("ItemInteractionProfiles.NonInteractive", content);
+        Assert.Contains("ItemInteractionProfiles.ClosedProductionPackage", content);
+        Assert.Contains("_catalog.Get(stack.ItemId).Interactions", presenter);
+        Assert.DoesNotContain("ProductionPackageContent.FoodPackageItemId", presenter);
     }
 
     private static string Read(string root, string file)

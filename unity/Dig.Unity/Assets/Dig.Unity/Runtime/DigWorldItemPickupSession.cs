@@ -18,7 +18,6 @@ namespace Dig.Unity
         private CreateWorldItemPickupHandler? _buildingItemPickupCreate;
         private CompleteWorldItemPickupHandler? _terrainItemPickupComplete;
         private CompleteWorldItemPickupHandler? _buildingItemPickupComplete;
-        private StartResidentFoodMealHandler? _startResidentFoodMeal;
         private NavigationPathfinder? _worldItemPickupPathfinder;
         private long _nextWorldItemPickupSequence;
 
@@ -48,12 +47,15 @@ namespace Dig.Unity
             bool internalStock = snapshot.Location.Kind
                 == ItemLocationKind.BuildingInventory;
             int quantity = internalStock ? 1 : snapshot.Quantity;
+            ItemDefinition definition = repository.Get().Catalog.Get(snapshot.ItemId);
             if (eatAfterPickup
-                && snapshot.ItemId != CampfireProductionContent.GrilledMushroomItemId)
+                && (definition.FoodUse == null
+                    || !definition.Interactions.SupportsWorldAction(
+                        ItemWorldInteractionAction.DirectUse)))
             {
                 return Result.Failure(new DomainError(
                     "world_food.unsupported_item",
-                    "Only grilled mushroom supports direct world eating."));
+                    "The item does not expose a direct world-use food action."));
             }
 
             Result prepared = PrepareResidentsForDirectCommand(
@@ -128,7 +130,6 @@ namespace Dig.Unity
                 && _buildingItemPickupCreate != null
                 && _terrainItemPickupComplete != null
                 && _buildingItemPickupComplete != null
-                && _startResidentFoodMeal != null
                 && _worldItemPickupPathfinder != null)
             {
                 return;
@@ -156,11 +157,6 @@ namespace Dig.Unity
             _buildingItemPickupComplete = new CompleteWorldItemPickupHandler(
                 _buildingInventoryRepository,
                 _jobRepository,
-                journal);
-            _startResidentFoodMeal = new StartResidentFoodMealHandler(
-                _productionAgents,
-                _buildingInventoryRepository,
-                new DigTerrainResidentStandingSupportQuery(this),
                 journal);
             _worldItemPickupPathfinder = new NavigationPathfinder();
         }

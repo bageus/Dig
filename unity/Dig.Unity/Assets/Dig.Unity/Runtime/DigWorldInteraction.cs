@@ -203,27 +203,6 @@ namespace Dig.Unity
                 return;
             }
 
-            if (_itemRenderer!.TryGetItem(hit, out DigWorldItemVisual item))
-            {
-                ContextWorldTargetKind kind = item.Model.IsBuildingBox
-                    ? ContextWorldTargetKind.BuildingBox
-                    : ContextWorldTargetKind.GenericItem;
-                ContextPointerTarget target = new ContextPointerTarget(
-                    kind,
-                    EntityId.Parse(item.Model.StackId),
-                    new CellId(item.Model.CellX, item.Model.CellY, item.Model.CellZ),
-                    reachable: true,
-                    supportsAltInteraction: item.Model.IsBuildingBox
-                        ? item.Model.AvailableQuantity == 1
-                        : item.Model.CanPickup);
-                ApplyDecision(_inputRouter.Route(
-                    Pointer(button),
-                    BuildState(button),
-                    target),
-                    item: item);
-                return;
-            }
-
             if (_buildingRenderer!.TryGetBuilding(hit, out DigBuildingVisual building))
             {
                 ContextWorldTargetKind kind =

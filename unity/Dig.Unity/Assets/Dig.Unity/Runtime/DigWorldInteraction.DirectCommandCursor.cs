@@ -92,45 +92,26 @@ namespace Dig.Unity
                     return DirectCommandCursorKind.Sword;
                 }
 
-                if (_excavationMode == DigExcavationDrawingMode.None
-                    && !_caveRoomPreset.HasValue
-                    && TryResolveProductionPackageHoverTarget(
+                if (TryResolveWorldItemPointerTarget(
                         hits,
-                        out DigWorldItemVisual productionPackage))
+                        IsAltPressed(),
+                        out ResolvedWorldItemPointerTarget itemTarget)
+                    && itemTarget.ActionAvailable)
                 {
-                    SetInteractionHighlightedItem(productionPackage);
-                    return DirectCommandCursorKind.Use;
-                }
-
-                if (_excavationMode == DigExcavationDrawingMode.None
-                    && !_caveRoomPreset.HasValue
-                    && TryResolveFoodItemHoverTarget(hits, out DigWorldItemVisual food))
-                {
-                    SetInteractionHighlightedItem(food);
-                    return IsAltPressed()
-                        ? DirectCommandCursorKind.Eat
-                        : DirectCommandCursorKind.Pickup;
-                }
-
-                if (_excavationMode == DigExcavationDrawingMode.None
-                    && !_caveRoomPreset.HasValue
-                    && IsAltPressed()
-                    && TryResolveBuildingBoxHoverTarget(
-                        hits,
-                        out DigWorldItemVisual buildingBox))
-                {
-                    SetInteractionHighlightedItem(buildingBox);
-                    return DirectCommandCursorKind.Pickup;
-                }
-
-                if (_excavationMode == DigExcavationDrawingMode.None
-                    && !_caveRoomPreset.HasValue
-                    && TryResolvePickableItemHoverTarget(
-                        hits,
-                        out DigWorldItemVisual item))
-                {
-                    SetInteractionHighlightedItem(item);
-                    return DirectCommandCursorKind.Pickup;
+                    SetInteractionHighlightedItem(itemTarget.Item);
+                    return itemTarget.Action switch
+                    {
+                        Dig.Domain.Inventory.ItemWorldInteractionAction.Pickup =>
+                            DirectCommandCursorKind.Pickup,
+                        Dig.Domain.Inventory.ItemWorldInteractionAction.DirectUse =>
+                            itemTarget.Item.Model.InteractionProfile.DirectUseFeedback
+                                == Dig.Domain.Inventory.ItemInteractionFeedbackKind.Eat
+                                    ? DirectCommandCursorKind.Eat
+                                    : DirectCommandCursorKind.Use,
+                        Dig.Domain.Inventory.ItemWorldInteractionAction.UseProductionPackage =>
+                            DirectCommandCursorKind.Use,
+                        _ => DirectCommandCursorKind.Default,
+                    };
                 }
 
                 if (_excavationMode == DigExcavationDrawingMode.None

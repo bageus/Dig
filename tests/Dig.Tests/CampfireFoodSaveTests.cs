@@ -147,7 +147,10 @@ public sealed class CampfireFoodSaveTests
                 "Grilled mushroom",
                 maximumStackSize: 100,
                 isTool: false,
-                new[] { CampfireProductionContent.FoodCategoryId }),
+                new[] { CampfireProductionContent.FoodCategoryId },
+                foodUse: new ItemFoodUseDefinition(
+                    nutritionUnits: 1_500,
+                    biteCount: 3)),
         });
     }
 

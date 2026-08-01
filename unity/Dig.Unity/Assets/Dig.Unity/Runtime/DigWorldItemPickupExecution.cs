@@ -133,11 +133,15 @@ namespace Dig.Unity
             EntityId carriedStackId = pickup.DestinationStackId.IsEmpty
                 ? pickup.StackId
                 : pickup.DestinationStackId;
-            return _startResidentFoodMeal!.Handle(
-                new StartResidentFoodMealCommand(
-                    job.AssignedAgentId!.Value,
-                    carriedStackId,
-                    tick));
+            return new StartResidentFoodMealHandler(
+                _productionAgents!,
+                repository,
+                new DigTerrainResidentStandingSupportQuery(this),
+                _worldSession.Journal).Handle(
+                    new StartResidentFoodMealCommand(
+                        job.AssignedAgentId!.Value,
+                        carriedStackId,
+                        tick));
         }
 
         private sealed class WorldItemPickupRoutePlan

@@ -54,7 +54,7 @@ Automatic job generation и самостоятельный выбор грибо
    - завершает job и освобождает worker/site/work-position reservations;
    - выдаёт resident `0.8` point навыка `skill.woodworking` через idempotent grant source.
 8. Drops становятся обычными world items и могут быть подняты существующим pickup workflow.
-9. После completion шляпки и ножка не являются mushroom targets: у них нет `DigMushroomVisual`, mushroom collider или chop command. Если physical drop находится перед regrown mushroom в pointer hit stack, foreground world item блокирует axe target; `Alt+LMB` использует обычный pickup workflow.
+9. После completion шляпки и ножка не являются mushroom targets: у них нет `DigMushroomVisual`, mushroom collider или chop command. Если physical drop находится перед regrown mushroom в pointer hit stack, foreground world item блокирует axe target; обычный `LMB` использует общий item-profile pickup workflow.
 
 ### Повторный direct order
 
@@ -355,7 +355,7 @@ Unity Play Mode:
 - one site cannot be chopped concurrently by two residents;
 - successful chop atomically removes visible mushroom, creates stage drops и gives `0.8` Woodworking;
 - caps/leg are ordinary pickable unit items, have no mushroom target/collider identity and cannot be chopped;
-- when a drop is in front of a regrown mushroom, pointer hover/cursor/LMB resolve the drop first; `Alt+LMB` starts ordinary pickup instead of another chop;
+- when a drop is in front of a regrown mushroom, pointer hover/cursor/LMB resolve the drop first; ordinary `LMB` starts the shared item-profile pickup instead of another chop;
 - site reappears in the same cell after absent/regrowth duration;
 - building placement is blocked in the permanent site cell, item placement is not;
 - save/load/retry never duplicate mushroom drops or skill progress;

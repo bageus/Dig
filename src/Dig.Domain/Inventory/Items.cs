@@ -108,7 +108,9 @@ public sealed class ItemDefinition
         int maximumStackSize,
         bool isTool,
         IEnumerable<ItemCategoryId>? categories = null,
-        InventoryExpansionDefinition? inventoryExpansion = null)
+        InventoryExpansionDefinition? inventoryExpansion = null,
+        ItemFoodUseDefinition? foodUse = null,
+        ItemInteractionProfile? interactionProfile = null)
     {
         if (id.IsEmpty)
         {
@@ -144,10 +146,13 @@ public sealed class ItemDefinition
         MaximumStackSize = maximumStackSize;
         IsTool = isTool;
         InventoryExpansion = inventoryExpansion;
+        FoodUse = foodUse;
         _categories = (categories ?? Array.Empty<ItemCategoryId>())
             .Distinct()
             .OrderBy(category => category)
             .ToArray();
+        Interactions = interactionProfile
+            ?? ItemInteractionProfiles.ResolveDefault(isTool, _categories, foodUse);
     }
 
     public ItemId Id { get; }
@@ -159,6 +164,10 @@ public sealed class ItemDefinition
     public bool IsTool { get; }
 
     public InventoryExpansionDefinition? InventoryExpansion { get; }
+
+    public ItemFoodUseDefinition? FoodUse { get; }
+
+    public ItemInteractionProfile Interactions { get; }
 
     public bool IsInventoryExpansion => InventoryExpansion != null;
 

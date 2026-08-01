@@ -55,7 +55,7 @@ Inventory BuildingBox LMB продолжает немедленно маршру
 
 ### Item pickup, placement и collision
 
-Generic item pickup больше не зависит от `Alt`; `Alt` остаётся обязательным для BuildingBox. World item collider переведён в trigger: он участвует в raycast, но не является физическим препятствием. Inventory single-click создаёт локальный transparent ghost, confirmation вызывает существующий authoritative drop handler, double-click сохраняет immediate drop в клетке resident. После drop используется существующий Inventory/world gravity resolver.
+Generic item pickup больше не зависит от `Alt`; `Alt` остаётся обязательным для BuildingBox. World item collider переведён в trigger: он участвует в raycast, но не является физическим препятствием. Inventory ordinary LMB создаёт локальный transparent ghost и resident-bound placement job; `C + LMB` выполняет immediate exact-stack drop в клетке resident. Double-click/RMB quick drop запрещены. После drop используется существующий Inventory/world gravity resolver.
 
 ### Excavation quarter ownership и geometry
 
@@ -161,3 +161,8 @@ Work-position planning получает World snapshot и типизирован
 ## Проверка
 
 Repository quality, C# compatibility, module-boundary, Unity source-contract и `.NET` build/tests выполняются в GitHub Actions. Полный интерактивный Unity Play Mode workflow placement/relocation/assembly, unsupported-air cursor transitions, forced direct-move cancellation и vertical tunnel stroke остаётся обязательным для перевода runtime systems в `VERIFIED`.
+
+
+## Definition-owned item interaction follow-up — 2026-08-01
+
+World hover/click and resident inventory actions now consume one `ItemInteractionProfile` from `ItemDefinition`. Generic fallback, food, tool/weapon and BuildingBox behavior no longer depend on Unity ItemId/prefix branches. The exact item resolver runs before movement/excavation and consumes rejected item clicks with a typed reason.

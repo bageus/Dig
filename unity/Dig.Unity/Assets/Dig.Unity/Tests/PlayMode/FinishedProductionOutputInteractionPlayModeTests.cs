@@ -1,3 +1,4 @@
+using Dig.Domain.Inventory;
 using Dig.Presentation.Inventory;
 using NUnit.Framework;
 using UnityEngine;
@@ -31,7 +32,7 @@ public sealed class FinishedProductionOutputInteractionPlayModeTests
             cellX: 7,
             cellY: 5,
             cellZ: 0,
-            interactionKind: WorldItemInteractionKind.Pickup);
+            interactionProfile: ItemInteractionProfiles.Food);
         ItemStackVisualLayoutViewModel layout =
             new ItemStackVisualLayoutPresenter().Present(model);
         DigItemVisualResolution resolution = new DigItemVisualResolution(

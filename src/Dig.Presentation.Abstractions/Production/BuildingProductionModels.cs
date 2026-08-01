@@ -182,7 +182,8 @@ public sealed class BuildingInternalStockUnitViewModel
         EntityId buildingId,
         ItemId itemId,
         int unitIndex,
-        bool isAvailable)
+        bool isAvailable,
+        ItemInteractionProfile interactionProfile)
     {
         if (string.IsNullOrWhiteSpace(stackId) || buildingId.IsEmpty
             || itemId.IsEmpty || unitIndex < 0)
@@ -195,6 +196,8 @@ public sealed class BuildingInternalStockUnitViewModel
         ItemId = itemId;
         UnitIndex = unitIndex;
         IsAvailable = isAvailable;
+        InteractionProfile = interactionProfile
+            ?? throw new ArgumentNullException(nameof(interactionProfile));
     }
 
     public string StackId { get; }
@@ -202,6 +205,7 @@ public sealed class BuildingInternalStockUnitViewModel
     public ItemId ItemId { get; }
     public int UnitIndex { get; }
     public bool IsAvailable { get; }
+    public ItemInteractionProfile InteractionProfile { get; }
     public string VisualKey => StackId + ":" + UnitIndex;
 }
 

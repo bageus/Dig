@@ -25,7 +25,7 @@ public sealed class ResidentInventorySlotViewModel
         ResidentInventoryItemKind itemKind,
         bool isEquipped = false,
         int heldQuantity = 0,
-        bool isConsumable = false)
+        ItemInteractionProfile? interactionProfile = null)
     {
         if (string.IsNullOrWhiteSpace(stackId) || string.IsNullOrWhiteSpace(itemId))
         {
@@ -52,7 +52,7 @@ public sealed class ResidentInventorySlotViewModel
         HeldQuantity = heldQuantity;
         ItemKind = itemKind;
         IsEquipped = isEquipped || heldQuantity > 0;
-        IsConsumable = isConsumable;
+        InteractionProfile = interactionProfile ?? ResolveCompatibilityProfile(itemKind);
     }
 
     public string StackId { get; }
@@ -63,18 +63,38 @@ public sealed class ResidentInventorySlotViewModel
     public int AvailableQuantity => Quantity - ReservedQuantity - HeldQuantity;
     public ResidentInventoryItemKind ItemKind { get; }
     public bool IsEquipped { get; }
-    public bool IsConsumable { get; }
+    public ItemInteractionProfile InteractionProfile { get; }
+    public bool IsConsumable =>
+        InteractionProfile.DirectUseFeedback == ItemInteractionFeedbackKind.Eat;
     public bool IsBuildingBox => ItemKind == ResidentInventoryItemKind.BuildingBox;
     public bool IsTool => ItemKind == ResidentInventoryItemKind.Tool;
-    public bool CanStartPlacement => !IsEquipped
-        && IsBuildingBox
-        && Quantity == 1
-        && AvailableQuantity == 1;
+    public bool CanPlace => !IsEquipped
+        && AvailableQuantity > 0
+        && (InteractionProfile.InventoryPrimaryAction
+                == ItemInventoryInteractionAction.PlaceItem
+            || InteractionProfile.InventoryPrimaryAction
+                == ItemInventoryInteractionAction.PlaceBuilding);
+    public bool CanStartPlacement => CanPlace
+        && InteractionProfile.InventoryPrimaryAction
+            == ItemInventoryInteractionAction.PlaceBuilding;
     public bool CanUse => !IsEquipped
         && AvailableQuantity > 0
-        && (IsConsumable
-            || (IsTool && Quantity == 1 && AvailableQuantity == 1));
-    public bool CanDrop => ReservedQuantity == 0 && HeldQuantity == 0;
+        && InteractionProfile.SupportsInventoryAction(
+            ItemInventoryInteractionAction.DirectUse);
+    public bool CanDrop => InteractionProfile.InventoryQuickDropAllowed
+        && ReservedQuantity == 0
+        && HeldQuantity == 0;
+
+    private static ItemInteractionProfile ResolveCompatibilityProfile(
+        ResidentInventoryItemKind itemKind)
+    {
+        return itemKind switch
+        {
+            ResidentInventoryItemKind.BuildingBox => ItemInteractionProfiles.BuildingBox,
+            ResidentInventoryItemKind.Tool => ItemInteractionProfiles.Tool,
+            _ => ItemInteractionProfiles.Generic,
+        };
+    }
 }
 
 public sealed class ResidentInventoryViewModel
@@ -113,32 +133,11 @@ public sealed class ResidentInventoryViewModel
 
 public sealed class ResidentInventoryPresenter
 {
-    private static readonly ItemCategoryId FoodCategoryId =
-        new ItemCategoryId("food");
-    private static readonly ItemCategoryId PotionCategoryId =
-        new ItemCategoryId("potion");
-    private static readonly ItemCategoryId DrinkCategoryId =
-        new ItemCategoryId("drink");
-    private static readonly ItemCategoryId BeverageCategoryId =
-        new ItemCategoryId("beverage");
+    private readonly ItemCatalog _catalog;
 
-    private readonly ItemId _buildingBoxItemId;
-    private readonly ItemCatalog? _catalog;
-
-    public ResidentInventoryPresenter(ItemId buildingBoxItemId)
-        : this(buildingBoxItemId, catalog: null)
+    public ResidentInventoryPresenter(ItemCatalog catalog)
     {
-    }
-
-    public ResidentInventoryPresenter(ItemId buildingBoxItemId, ItemCatalog? catalog)
-    {
-        if (buildingBoxItemId.IsEmpty)
-        {
-            throw new ArgumentException("BuildingBox item id is required.", nameof(buildingBoxItemId));
-        }
-
-        _buildingBoxItemId = buildingBoxItemId;
-        _catalog = catalog;
+        _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
     }
 
     public ResidentInventoryViewModel Present(
@@ -176,16 +175,17 @@ public sealed class ResidentInventoryPresenter
         int heldQuantity = held.HasValue && held.Value.StackId == stack.StackId
             ? held.Value.Quantity
             : 0;
+        ItemDefinition definition = _catalog.Get(stack.ItemId);
         return new ResidentInventorySlotViewModel(
             stack.StackId.ToString(),
             stack.ItemId.ToString(),
             stack.Quantity,
             stack.ReservedQuantity,
-            ResolveKind(stack.ItemId),
+            ResolveKind(definition),
             isEquipped: heldQuantity > 0
                 || stack.Location.Kind == ItemLocationKind.Equipped,
             heldQuantity,
-            IsConsumable(stack.ItemId));
+            definition.Interactions);
     }
 
     private static bool IsOwnedByResident(ItemLocation location, EntityId residentId)
@@ -196,30 +196,17 @@ public sealed class ResidentInventoryPresenter
                 || location.Kind == ItemLocationKind.Equipped);
     }
 
-    private ResidentInventoryItemKind ResolveKind(ItemId itemId)
+    private static ResidentInventoryItemKind ResolveKind(ItemDefinition definition)
     {
-        if (itemId == _buildingBoxItemId)
+        if (definition.Interactions.InventoryPrimaryAction
+            == ItemInventoryInteractionAction.PlaceBuilding)
         {
             return ResidentInventoryItemKind.BuildingBox;
         }
 
-        return _catalog?.Get(itemId).IsTool == true
+        return definition.IsTool
             ? ResidentInventoryItemKind.Tool
             : ResidentInventoryItemKind.Generic;
-    }
-
-    private bool IsConsumable(ItemId itemId)
-    {
-        if (_catalog == null)
-        {
-            return false;
-        }
-
-        ItemDefinition definition = _catalog.Get(itemId);
-        return definition.HasCategory(FoodCategoryId)
-            || definition.HasCategory(PotionCategoryId)
-            || definition.HasCategory(DrinkCategoryId)
-            || definition.HasCategory(BeverageCategoryId);
     }
 }
 

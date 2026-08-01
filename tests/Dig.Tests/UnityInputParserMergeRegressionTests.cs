@@ -21,9 +21,9 @@ public sealed class UnityInputParserMergeRegressionTests
         Assert.Equal(Count(cursor, '{'), Count(cursor, '}'));
         Assert.Equal(Count(itemCursor, '{'), Count(itemCursor, '}'));
         Assert.Equal(Count(pointerHits, '{'), Count(pointerHits, '}'));
-        Assert.Contains("TryResolveFoodItemHoverTarget", normalizedCursor);
+        Assert.Contains("TryResolveWorldItemPointerTarget", normalizedCursor);
         Assert.Contains(
-            "privateboolTryResolveFoodItemHoverTarget",
+            "privateboolTryResolveWorldItemPointerTarget",
             normalizedItemCursor);
         Assert.Contains(
             "privatevoidSetInteractionHighlightedItem",

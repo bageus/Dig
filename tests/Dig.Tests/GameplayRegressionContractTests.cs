@@ -140,8 +140,8 @@ public sealed class GameplayRegressionContractTests
             runtime,
             "DigWorldInteraction.ResidentInventory.cs")));
 
-        Assert.Contains("slot.CanStartPlacement", hud);
-        Assert.Contains("BeginResidentInventoryBuildingPlacement(slot)", hud);
+        Assert.Contains("slot.CanDrop", hud);
+        Assert.Contains("InteractResidentInventoryLayoutSlot", hud);
         Assert.Contains("internalvoidBeginResidentInventoryBuildingPlacement", interaction);
         Assert.Contains("ResetInventoryClickSequence()", interaction);
         Assert.Contains("PointerInputSurface.ResidentInventory", interaction);
