@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Domain.World;
 using Dig.Presentation.Inventory;
 using UnityEngine;
 
@@ -90,7 +91,9 @@ namespace Dig.Unity
                 Vector2 cellOffset = DigWorldItemVisualPolicy.IsCampfireBox(item.ItemId)
                     ? Vector2.zero
                     : ResolveCellOffset(slot);
-                PlaceOnFloor(visual, item, resolution, cellOffset);
+                visual.PlaceOnFloor(
+                    new CellId(item.CellX, item.CellY, item.CellZ),
+                    cellOffset);
             }
 
             RemoveMissing(visible);
@@ -114,18 +117,6 @@ namespace Dig.Unity
 
             visual = null!;
             return false;
-        }
-
-        private static void PlaceOnFloor(
-            DigWorldItemVisual visual,
-            WorldItemViewModel item,
-            DigItemVisualResolution resolution,
-            Vector2 cellOffset)
-        {
-            visual.transform.position = DigWorldItemVisualPolicy.ResolveWorldPosition(
-                new Dig.Domain.World.CellId(item.CellX, item.CellY, item.CellZ),
-                resolution,
-                cellOffset);
         }
 
         private static Vector2 ResolveCellOffset(int slot)
