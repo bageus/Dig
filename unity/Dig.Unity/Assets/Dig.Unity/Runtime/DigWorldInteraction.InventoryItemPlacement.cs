@@ -20,11 +20,42 @@ namespace Dig.Unity
         private void BeginInventoryItemPlacement(
             ResidentInventorySlotViewModel slot)
         {
+            if (slot == null)
+            {
+                throw new System.ArgumentNullException(nameof(slot));
+            }
+
+            BeginInventoryItemPlacement(
+                slot.StackId,
+                slot.ItemId,
+                slot.CanDrop,
+                slot.IsBuildingBox);
+        }
+
+        private void BeginInventoryItemPlacement(
+            ResidentInventoryLayoutSlotViewModel slot)
+        {
+            EnsureLayoutSlot(slot);
+            BeginInventoryItemPlacement(
+                slot.StackId!,
+                slot.ItemId!,
+                slot.CanDrop,
+                slot.IsBuildingBox);
+        }
+
+        private void BeginInventoryItemPlacement(
+            string stackId,
+            string itemId,
+            bool canDrop,
+            bool isBuildingBox)
+        {
             if (_agentRenderer?.SelectedModel == null
                 || _terrainSession == null
                 || _hud == null
-                || !slot.CanDrop
-                || slot.IsBuildingBox)
+                || !canDrop
+                || isBuildingBox
+                || string.IsNullOrWhiteSpace(stackId)
+                || string.IsNullOrWhiteSpace(itemId))
             {
                 _hud?.SetStatus("input.inventory.item_placement_unavailable");
                 return;
@@ -38,8 +69,8 @@ namespace Dig.Unity
             DisableExcavationDrawing();
             DisableCaveRoomPlanning();
             _inventoryItemPlacementResidentId = _agentRenderer.SelectedModel.Id;
-            _inventoryItemPlacementStackId = slot.StackId;
-            _inventoryItemPlacementItemId = slot.ItemId;
+            _inventoryItemPlacementStackId = stackId;
+            _inventoryItemPlacementItemId = itemId;
             Cursor.visible = false;
             EnsureInventoryItemGhostRenderer();
             if (TryResolveBuildingPlacementOrigin(GetPointerHits(), out CellId target))
