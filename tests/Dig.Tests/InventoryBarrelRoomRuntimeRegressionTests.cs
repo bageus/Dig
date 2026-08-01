@@ -12,6 +12,8 @@ public sealed class InventoryBarrelRoomRuntimeRegressionTests
     {
         string layout = Read(
             "src/Dig.Domain/Inventory/InventoryState.ResidentLayout.Compaction.cs");
+        string apply = Read(
+            "src/Dig.Domain/Inventory/InventoryState.ResidentLayout.Compaction.Apply.cs");
         string stacking = Read(
             "src/Dig.Domain/Inventory/InventoryState.ResidentStacking.cs");
         string claims = Read(
@@ -20,7 +22,7 @@ public sealed class InventoryBarrelRoomRuntimeRegressionTests
             "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigResidentInventory.Capacity.cs");
 
         Assert.Contains("pendingUnits", layout);
-        Assert.Contains("candidate.Source.Split", layout);
+        Assert.Contains("candidate.Source.Split", apply);
         Assert.Contains("quantity: 1", layout);
         Assert.Contains("CreateResidentUnitId", stacking);
         Assert.DoesNotContain("GroupBy(value => value.ItemId)", stacking);
