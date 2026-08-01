@@ -57,7 +57,6 @@ public sealed class AcquireProductionMaterialHandler
         {
             throw new ArgumentNullException(nameof(command));
         }
-        }
 
         ProductionOrderSnapshot? order = _productionRepository.Get().Get(command.OrderId);
         JobSnapshot? job = _jobRepository.Get().Get(command.JobId);
@@ -125,3 +124,4 @@ public sealed class AcquireProductionMaterialHandler
     }
 }
 
+}
