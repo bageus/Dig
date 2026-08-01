@@ -61,7 +61,14 @@ public sealed class BuildingProductionPresenterTests
             value.RecipeId == CampfireProductionContent.TentRecipeId);
         Assert.True(tent.IsOrange);
         Assert.Contains("Mushroom leg", tent.Tooltip, StringComparison.Ordinal);
-        Assert.All(model.Stocks, stock => Assert.True(stock.DeliveryEnabled));
+
+        BuildingStockIconViewModel hamster = model.Stocks.Single(value =>
+            value.ItemId == CampfireProductionContent.HamsterItemId);
+        Assert.False(hamster.DeliveryEnabled);
+        Assert.All(
+            model.Stocks.Where(value =>
+                value.ItemId != CampfireProductionContent.HamsterItemId),
+            stock => Assert.True(stock.DeliveryEnabled));
     }
 
     [Fact]
