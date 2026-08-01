@@ -20,6 +20,12 @@ The demo world moved from legacy `demo.rock` to typed `terrain.*` materials, but
 - deposit output remains guaranteed, exclusive and exactly-once through the existing mining-output transaction;
 - Domain, source-contract and checked-in Play Mode regressions cover low-chance rolls, all demo terrain regions and non-empty demo deposits.
 
+## Follow-up startup regression — PR #546
+
+The first local Unity execution after the mixed-terrain change exposed an ordering bug. `ApplyDemoTerrainTestRegions` correctly created the intentional `terrain.unmineable` test patch, but `InitializeDemoDeposits` then converted every solid non-protected cell into a `TerrainDepositHostCell`. `TerrainDepositGenerator` correctly rejected the first unmineable candidate, `(1,8,0)`, and demo startup stopped during world creation.
+
+PR #546 filters candidates by the resolved material contract before calling the Domain generator: only `MaterialDefinition.IsSolid && MaterialDefinition.IsMineable` cells are supplied. The unmineable patch remains present for excavation rejection testing, but it can never host a deposit. The checked-in Play Mode regression creates the full demo world, requires non-empty deposits and verifies every resulting deposit host is solid, mineable and not `terrain.unmineable`. A .NET source contract locks the pre-generation filter because licensed Unity execution may be unavailable in CI.
+
 ## Balance boundary
 
 The `100‰` cap is the confirmed qualitative implementation boundary for current fixtures, not final tuning. Exact probabilities, quantities, terrain distribution and deposit density remain Q-014 data-driven balance.
