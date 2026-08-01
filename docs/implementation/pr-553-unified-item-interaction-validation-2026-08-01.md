@@ -17,9 +17,13 @@ Related issues: [#67](https://github.com/bageus/Dig/issues/67), [#70](https://gi
 - Rejected item actions consume the pointer and cannot fall through to ground movement or excavation.
 - Legacy item-prefix classifiers and the world interaction override dictionary are removed.
 
-## Executed validation before clean publication
+## Executed validation
 
-Validation run `30719083090` executed the reconstructed feature over the then-current `main` and passed all feature checks before publishing the clean source commit:
+Validation run `30719083090` executed the reconstructed feature over the then-current `main` before publishing the clean source commit.
+
+The final clean PR head was then validated by Quality run `30719248921`; both Stage 2 source exports also passed (`30719248925` v2 and `30719248913` v3).
+
+Executed checks:
 
 - architecture, file-size, C# compatibility and Unity source-contract gates;
 - Release restore and build;
@@ -28,8 +32,8 @@ Validation run `30719083090` executed the reconstructed feature over the then-cu
 - standard deterministic soak;
 - large-settlement deterministic soak.
 
-The clean feature commit was published without `.agent` payload files or temporary publishing workflows. Generated soak reports were subsequently removed from the branch.
+The clean feature branch contains no `.agent` payload files, temporary publishing workflows or generated soak report files.
 
 ## Runtime verification boundary
 
-Checked-in Play Mode coverage includes generic material, weapon, food and BuildingBox interaction workflows. The hosted Unity workflow has no licensed activation, so actual EditMode/PlayMode execution remains required before changing the system status from `IMPLEMENTED` to `VERIFIED`.
+Checked-in Play Mode coverage includes generic material, weapon, food and BuildingBox interaction workflows. Unity workflow `30719248901` completed through the blocked-evidence path: licensed activation was unavailable, so actual EditMode/PlayMode execution was skipped. The system therefore remains `IMPLEMENTED`, not `VERIFIED`.
