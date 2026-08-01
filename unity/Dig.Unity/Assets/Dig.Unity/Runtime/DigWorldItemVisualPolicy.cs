@@ -45,6 +45,14 @@ namespace Dig.Unity
                     cellOffset.y + WorldItemFrontDepthOffset);
         }
 
+        internal static Vector3 ResolveWorldPosition(
+            CellId cell,
+            DigItemVisualResolution resolution,
+            Vector2 cellOffset)
+        {
+            return ResolveFloorAnchor(cell, cellOffset);
+        }
+
         internal static bool IsCampfireBox(string itemId)
         {
             return string.Equals(
