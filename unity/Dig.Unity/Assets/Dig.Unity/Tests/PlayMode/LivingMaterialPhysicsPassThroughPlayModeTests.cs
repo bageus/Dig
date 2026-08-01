@@ -95,7 +95,7 @@ public sealed class LivingMaterialPhysicsPassThroughPlayModeTests
             Assert.That(
                 Quaternion.Angle(body.rotation, initialRotations[index]),
                 Is.LessThan(0.001f));
-            Assert.That(body.velocity.sqrMagnitude, Is.LessThan(0.000001f));
+            Assert.That(body.linearVelocity.sqrMagnitude, Is.LessThan(0.000001f));
             Assert.That(body.angularVelocity.sqrMagnitude, Is.LessThan(0.000001f));
         }
     }
