@@ -118,16 +118,7 @@ namespace Dig.Unity
                 return false;
             }
 
-            CellId row = buildingSnapshot.Footprint
-                .OrderBy(value => Math.Abs(value.Y - buildingSnapshot.Origin.Y))
-                .ThenBy(value => Math.Abs(value.Z - buildingSnapshot.Origin.Z))
-                .ThenBy(value => value.Y)
-                .ThenBy(value => value.Z)
-                .First();
-            workPosition = new CellId(
-                buildingSnapshot.Footprint.Min(value => value.X) - 1,
-                row.Y,
-                row.Z);
+            workPosition = ResolveBuildingInternalStockCell(buildingSnapshot);
             return true;
         }
 

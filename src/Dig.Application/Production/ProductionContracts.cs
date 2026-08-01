@@ -104,13 +104,15 @@ public sealed class ApplyProductionWorkCommand : ICommand<Result>
         EntityId jobId,
         int baseWork,
         int conditionEfficiencyBasisPoints,
-        long tick)
+        long tick,
+        bool requireResidentCarriedMaterial = false)
     {
         OrderId = orderId;
         JobId = jobId;
         BaseWork = baseWork;
         ConditionEfficiencyBasisPoints = conditionEfficiencyBasisPoints;
         Tick = tick;
+        RequireResidentCarriedMaterial = requireResidentCarriedMaterial;
     }
 
     public EntityId OrderId { get; }
@@ -122,6 +124,8 @@ public sealed class ApplyProductionWorkCommand : ICommand<Result>
     public int ConditionEfficiencyBasisPoints { get; }
 
     public long Tick { get; }
+
+    public bool RequireResidentCarriedMaterial { get; }
 }
 
 public sealed class CompleteProductionOrderCommand : ICommand<Result>

@@ -83,6 +83,7 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         string bay = Read(runtime, "DigBuildingInternalStockBayVisual.cs");
         string interaction = Read(runtime, "DigWorldInteraction.BuildingInternalStock.cs");
         string pickup = Read(runtime, "DigWorldItemPickupSession.cs");
+        string transit = Read(runtime, "DigBuildingProductionMaterialTransit.cs");
         string loop = Read(runtime, "DigAgentSimulationDriverBase.Loop.cs");
 
         Assert.Contains("model.Stocks", renderer);
@@ -103,7 +104,8 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         Assert.Contains("collider.isTrigger = true", visual);
         Assert.Contains("TryResolveBuildingInternalStockPickup", interaction);
         Assert.Contains("ContextWorldTargetKind.GenericItem", interaction);
-        Assert.Contains("Footprint.Min(value => value.X) - 1", pickup);
+        Assert.Contains("ResolveBuildingInternalStockCell", pickup);
+        Assert.Contains("Footprint.Min(value => value.X) - 1", transit);
         Assert.Contains("buildinginternalstockrenderer!.render", Normalize(loop));
     }
 

@@ -59,12 +59,29 @@ Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
 
 Observable package lifecycle, output placement, cancel/failure и save/load behavior не изменены.
 
+## Internal-stock material transit regression correction — 2026-08-01
+
+Runtime создавал unfinished package и направлял production worker к внутреннему складу, но не выполнял authoritative pickup зарезервированной единицы. `ApplyProductionWorkHandler` списывал reservation непосредственно из building inventory, поэтому world workflow останавливался у склада и не мог перейти к обработке материала.
+
+Отдельно direct pickup проверял свободные resident slots по всему доступному количеству internal stack, хотя команда забирает только одну единицу. Stack из нескольких единиц поэтому ошибочно блокировался при наличии одного свободного слота.
+
+Исправление:
+
+- добавляет production-owned transfer ровно одной order-reserved единицы из `ItemLocation.InBuilding` в конкретный resident slot;
+- сохраняет reservation на carried unit до committed material step;
+- запрещает material-step work без физически перенесённой единицы у назначенного worker;
+- после work consume-ит именно carried reserved unit, а не скрытое содержимое building inventory;
+- использует один derived internal-stock work cell для automatic production и direct pickup;
+- direct internal-stock pickup рассчитывает capacity для одной available/unreserved единицы, сохраняя запрет на pickup зарезервированного production материала.
+
+Добавлены domain/application regressions на pickup → carry → consume и source contract на Unity routing.
+
 ## Evidence
 
 Для correction branch обязательны:
 
 - architecture/file-size/C# compatibility;
-- Unity source contracts, включая route-owner regression;
+- Unity source contracts, включая route-owner и production material-transit regressions;
 - Release build и полный .NET suite;
 - headless smoke и оба deterministic soak;
 - Stage 2 exports.

@@ -195,14 +195,38 @@ public sealed class ApplyProductionWorkHandler
             }
 
             InventorySnapshot inventorySnapshot = inventory.CreateSnapshot();
+            EntityId workerId = job.AssignedAgentId.Value;
+            if (command.RequireResidentCarriedMaterial)
+            {
+                ProductionMaterialStepSnapshot? activeStep = order.MaterialSteps
+                    .Where(value => !value.Consumed)
+                    .Select(value => (ProductionMaterialStepSnapshot?)value)
+                    .FirstOrDefault();
+                if (!activeStep.HasValue
+                    || CountResidentReservations(
+                        inventorySnapshot,
+                        command.OrderId,
+                        workerId,
+                        activeStep.Value.ItemId) < 1)
+                {
+                    return Result.Failure(InventoryErrors.ReservationNotFound);
+                }
+            }
+
             foreach (IGrouping<ItemId, ItemId> group in preview.Value.ConsumedItems
                 .GroupBy(value => value))
             {
-                int reserved = inventorySnapshot.Stacks
-                    .Where(stack => stack.ItemId == group.Key)
-                    .SelectMany(stack => stack.Reservations)
-                    .Where(reservation => reservation.JobId == command.OrderId)
-                    .Sum(reservation => reservation.Quantity);
+                int reserved = command.RequireResidentCarriedMaterial
+                    ? CountResidentReservations(
+                        inventorySnapshot,
+                        command.OrderId,
+                        workerId,
+                        group.Key)
+                    : inventorySnapshot.Stacks
+                        .Where(stack => stack.ItemId == group.Key)
+                        .SelectMany(stack => stack.Reservations)
+                        .Where(reservation => reservation.JobId == command.OrderId)
+                        .Sum(reservation => reservation.Quantity);
                 if (reserved < group.Count())
                 {
                     return Result.Failure(InventoryErrors.ReservationNotFound);
@@ -220,11 +244,17 @@ public sealed class ApplyProductionWorkHandler
 
             foreach (ItemId itemId in material.Value.ConsumedItems)
             {
-                Result consumed = inventory.ConsumeNextReserved(
-                    command.OrderId,
-                    itemId,
-                    quantity: 1,
-                    command.Tick);
+                Result consumed = command.RequireResidentCarriedMaterial
+                    ? inventory.ConsumeReservedProductionUnit(
+                        command.OrderId,
+                        workerId,
+                        itemId,
+                        command.Tick)
+                    : inventory.ConsumeNextReserved(
+                        command.OrderId,
+                        itemId,
+                        quantity: 1,
+                        command.Tick);
                 if (consumed.IsFailure)
                 {
                     throw new InvalidOperationException(
@@ -270,6 +300,22 @@ public sealed class ApplyProductionWorkHandler
         _eventSink.Append(production.DequeueUncommittedEvents());
         _eventSink.Append(jobs.DequeueUncommittedEvents());
         return Result.Success();
+    }
+
+    private static int CountResidentReservations(
+        InventorySnapshot inventory,
+        EntityId orderId,
+        EntityId residentId,
+        ItemId itemId)
+    {
+        return inventory.Stacks
+            .Where(stack => stack.ItemId == itemId
+                && stack.Location.Kind == ItemLocationKind.AgentInventory
+                && stack.Location.HasOwner
+                && stack.Location.OwnerId == residentId)
+            .SelectMany(stack => stack.Reservations)
+            .Where(reservation => reservation.JobId == orderId)
+            .Sum(reservation => reservation.Quantity);
     }
 }
 

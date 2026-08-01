@@ -75,6 +75,46 @@ internal sealed partial class DigTerrainWorkSession
         JobSnapshot? current = _jobRepository.Get().Get(job.Id);
         if (current?.Stage == JobStageKind.PerformWork)
         {
+            ProductionOrderSnapshot? activeOrder = _productionRepository!.Get().Get(
+                production.OrderId);
+            if (activeOrder == null)
+            {
+                return Result.Failure(ProductionErrors.OrderNotFound);
+            }
+
+            if (activeOrder.Recipe.UsesMaterialSteps
+                && TryResolvePendingProductionMaterial(
+                    activeOrder,
+                    out ItemId materialItemId)
+                && !HasCarriedProductionMaterial(
+                    production.OrderId,
+                    current.AssignedAgentId!.Value,
+                    materialItemId))
+            {
+                BuildingSnapshot? building = _buildingsRepository!.Get().Get(
+                    production.BuildingId);
+                if (building == null)
+                {
+                    return Result.Failure(ProductionErrors.WorkstationMismatch);
+                }
+
+                CellId stockCell = ResolveBuildingInternalStockCell(building);
+                if (!At(worker, stockCell))
+                {
+                    return Result.Success();
+                }
+
+                EntityId transitStackId = NextProductionEntityId(
+                    'a',
+                    ref _nextProductionMaterialTransitSequence);
+                return _acquireProductionMaterial!.Handle(
+                    new AcquireProductionMaterialCommand(
+                        production.OrderId,
+                        job.Id,
+                        transitStackId,
+                        tick));
+            }
+
             if (!atWorkstation || tick % 2 != 0)
             {
                 return Result.Success();
@@ -86,7 +126,9 @@ internal sealed partial class DigTerrainWorkSession
                     job.Id,
                     baseWork: 1,
                     conditionEfficiencyBasisPoints: 10_000,
-                    tick));
+                    tick,
+                    requireResidentCarriedMaterial:
+                        activeOrder.Recipe.UsesMaterialSteps));
             if (worked.IsFailure)
             {
                 return worked;
@@ -151,7 +193,26 @@ internal sealed partial class DigTerrainWorkSession
 
         EnsureBuildingProductionInitialized();
         CellId target = production.WorkPosition;
-        if (job.Stage == JobStageKind.Finalize)
+        if (job.Stage == JobStageKind.PerformWork)
+        {
+            ProductionOrderSnapshot? order = _productionRepository!.Get().Get(
+                production.OrderId);
+            BuildingSnapshot? building = _buildingsRepository!.Get().Get(
+                production.BuildingId);
+            if (order != null
+                && building != null
+                && order.Recipe.UsesMaterialSteps
+                && TryResolvePendingProductionMaterial(order, out ItemId itemId)
+                && job.AssignedAgentId.HasValue
+                && !HasCarriedProductionMaterial(
+                    production.OrderId,
+                    job.AssignedAgentId.Value,
+                    itemId))
+            {
+                target = ResolveBuildingInternalStockCell(building);
+            }
+        }
+        else if (job.Stage == JobStageKind.Finalize)
         {
             Result<CellId> outputCell = ResolveProductionPackageCell(
                 production.OrderId);

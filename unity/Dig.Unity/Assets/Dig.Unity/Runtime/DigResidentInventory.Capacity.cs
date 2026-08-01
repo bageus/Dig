@@ -35,7 +35,13 @@ namespace Dig.Unity
             ResidentInventoryLayoutSnapshot layout =
                 inventory.GetResidentInventoryLayout(resident);
             ItemDefinition definition = inventory.Catalog.Get(stack.ItemId);
-            int requiredQuantity = stack.AvailableQuantity;
+            int requiredQuantity = ItemPickupQuantityPolicy
+                .ResolveRequestedQuantity(stack);
+            if (requiredQuantity <= 0)
+            {
+                return Result.Failure(InventoryErrors.InsufficientAvailableQuantity);
+            }
+
             int capacity = 0;
             for (int index = 0; index < layout.Slots.Count; index++)
             {
