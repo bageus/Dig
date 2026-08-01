@@ -133,6 +133,61 @@ public sealed class BuildingSupplyRuntimePlayModeTests
             Is.False);
     }
 
+    [Test]
+    public void Queued_recipe_force_enables_required_internal_stock_delivery()
+    {
+        Camera? cameraBefore = Camera.main;
+        UnityEngine.EventSystems.EventSystem? eventSystemBefore =
+            UnityEngine.EventSystems.EventSystem.current;
+        _root = new GameObject("Production input delivery runtime test");
+        _root.AddComponent<DigUnityBootstrap>();
+
+        DigWorldInteraction interaction = _root.GetComponent<DigWorldInteraction>();
+        DigAgentRenderer agents = _root.GetComponent<DigAgentRenderer>();
+        Assert.That(interaction, Is.Not.Null);
+        Assert.That(agents, Is.Not.Null);
+
+        Camera? cameraAfter = Camera.main;
+        if (cameraBefore == null && cameraAfter != null)
+        {
+            _createdCamera = cameraAfter.gameObject;
+        }
+
+        DigGameHudCanvas hud = UnityEngine.Object.FindFirstObjectByType<DigGameHudCanvas>();
+        Assert.That(hud, Is.Not.Null);
+        _createdCanvas = hud.gameObject;
+        if (eventSystemBefore == null
+            && UnityEngine.EventSystems.EventSystem.current != null)
+        {
+            _createdEventSystem =
+                UnityEngine.EventSystems.EventSystem.current.gameObject;
+        }
+
+        DigTerrainWorkSession terrain = GetField<DigTerrainWorkSession>(
+            interaction,
+            "_terrainSession");
+        BuildingProductionViewModel campfire = terrain.LoadAllBuildingProduction()
+            .Single();
+        BuildingStockIconViewModel hamsterBefore = campfire.Stocks.Single(value =>
+            value.ItemId == CampfireProductionContent.HamsterItemId);
+        Assert.That(hamsterBefore.DeliveryEnabled, Is.False);
+
+        Result queued = terrain.EnqueueBuildingProduction(
+            campfire.BuildingId.ToString(),
+            CampfireProductionContent.RoastedHamsterRecipeId.ToString(),
+            tick: 1);
+        Assert.That(queued.IsSuccess, Is.True, queued.Error?.ToString());
+        terrain.SynchronizeBuildingProduction(
+            tick: 2,
+            agents.GetHudModels());
+
+        BuildingStockIconViewModel hamsterAfter = terrain.LoadBuildingProduction(
+                campfire.BuildingId.ToString())!
+            .Stocks.Single(value =>
+                value.ItemId == CampfireProductionContent.HamsterItemId);
+        Assert.That(hamsterAfter.DeliveryEnabled, Is.True);
+    }
+
     private static void Invoke(object target, string name, params object[] arguments)
     {
         MethodInfo? method = FindMethod(target.GetType(), name, arguments.Length);

@@ -30,11 +30,18 @@ internal sealed partial class DigTerrainWorkSession
     {
         EnsureBuildingProductionInitialized();
         SynchronizeProductionWorkstationRegistrations(tick);
-        PrepareEligibleProductionOrders(tick);
-        AssignProductionJobs(tick, agents);
-        ResolveEligibleDeferredSupplyJobs(tick, agents);
-        CreateEligibleSupplyJobs(tick, agents);
-        CreateEligibleFoodDependencyJobs(tick, agents);
+        SynchronizeRequiredProductionInputDelivery(tick);
+        RecoverBlockedBuildingSupplyJobs(tick);
+        if (!TryLoadBuildingPlacementNavigation(out NavigationSnapshot navigation))
+        {
+            return;
+        }
+
+        PrepareEligibleProductionOrders(tick, navigation);
+        AssignProductionJobs(tick, agents, navigation);
+        ResolveEligibleDeferredSupplyJobs(tick, agents, navigation);
+        CreateEligibleSupplyJobs(tick, agents, navigation);
+        CreateEligibleFoodDependencyJobs(tick, agents, navigation);
     }
 
     internal Result AdvanceBuildingProduction(
@@ -79,7 +86,8 @@ internal sealed partial class DigTerrainWorkSession
         JobSnapshot job,
         AgentViewModel agent,
         NavigationSnapshot navigation,
-        IDictionary<string, CellId> movement)
+        IDictionary<string, CellId> movement,
+        long tick)
     {
         if (job.Definition is not BuildingSupplyJobDefinition supply)
         {
@@ -105,13 +113,26 @@ internal sealed partial class DigTerrainWorkSession
             }
         }
 
-        return PlanBuildingProductionRoute(
+        PlanBuildingProductionRoute(
             _buildingSupplyRoutes,
             job,
             agent,
             target,
             navigation,
             movement);
+        if (_buildingSupplyRoutes.TryGetValue(
+                job.Id,
+                out BuildingProductionRoutePlan? route)
+            && !route.Path.Succeeded)
+        {
+            _cancelBuildingSupply!.Handle(new CancelBuildingSupplyCommand(
+                job.Id,
+                "route_unavailable",
+                tick));
+            _buildingSupplyRoutes.Remove(job.Id);
+        }
+
+        return true;
     }
 
     internal IReadOnlyList<RouteViewModel> LoadBuildingProductionRoutes()
@@ -147,9 +168,10 @@ internal sealed partial class DigTerrainWorkSession
         _buildingSupplyRepository.Save(supply);
     }
 
-    private void PrepareEligibleProductionOrders(long tick)
+    private void PrepareEligibleProductionOrders(
+        long tick,
+        NavigationSnapshot navigation)
     {
-        IReadOnlyCollection<CellId> reachable = GetProductionReachableCells();
         foreach (BuildingSnapshot building in _buildingsRepository!.Get().GetAll())
         {
             if (building.Status != BuildingStatus.Completed
@@ -160,6 +182,9 @@ internal sealed partial class DigTerrainWorkSession
                 continue;
             }
 
+            IReadOnlyCollection<CellId> reachable = GetProductionReachableCells(
+                navigation,
+                building.WorkPosition);
             EntityId jobId = NextProductionEntityId(
                 'f',
                 ref _nextProductionJobSequence);
@@ -181,7 +206,8 @@ internal sealed partial class DigTerrainWorkSession
 
     private void AssignProductionJobs(
         long tick,
-        IReadOnlyList<AgentViewModel> agents)
+        IReadOnlyList<AgentViewModel> agents,
+        NavigationSnapshot navigation)
     {
         bool available = false;
         foreach (JobSnapshot job in _jobRepository.Get().GetAll())
@@ -203,7 +229,11 @@ internal sealed partial class DigTerrainWorkSession
                         .CreateSnapshot(tick)
                         .GetSkillLevel(skill) ?? 0,
                     Distance(agent, production.WorkPosition),
-                    IsAvailableForAutomaticWork(agent)))
+                    IsAvailableForAutomaticWork(agent)
+                        && BuildingSupplyReachability.IsConnected(
+                            navigation,
+                            new CellId(agent.CellX, agent.CellY, agent.CellZ),
+                            production.WorkPosition)))
                 .ToArray();
             _productionCandidates!.SetCandidates(job.Id, candidates);
             available = true;
@@ -217,10 +247,10 @@ internal sealed partial class DigTerrainWorkSession
 
     private void CreateEligibleSupplyJobs(
         long tick,
-        IReadOnlyList<AgentViewModel> agents)
+        IReadOnlyList<AgentViewModel> agents,
+        NavigationSnapshot navigation)
     {
         CellId[] revealed = GetProductionRevealedCells();
-        CellId[] reachable = GetProductionReachableCells().ToArray();
         BuildingSupplyState supply = _buildingSupplyRepository!.Get();
         InventorySnapshot inventory = _buildingInventoryRepository!.Get().CreateSnapshot();
         foreach (BuildingSupplySnapshot snapshot in supply.GetAll(inventory))
@@ -237,8 +267,15 @@ internal sealed partial class DigTerrainWorkSession
                 continue;
             }
 
+            CellId[] reachable = GetProductionReachableCells(
+                navigation,
+                building.WorkPosition).ToArray();
             AgentViewModel[] candidates = agents
-                .Where(IsAvailableForAutomaticWork)
+                .Where(value => IsAvailableForAutomaticWork(value)
+                    && reachable.Contains(new CellId(
+                        value.CellX,
+                        value.CellY,
+                        value.CellZ)))
                 .OrderBy(value => Distance(value, building.WorkPosition))
                 .ThenBy(value => value.Id, StringComparer.Ordinal)
                 .ToArray();

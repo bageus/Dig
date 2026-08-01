@@ -167,14 +167,13 @@ internal sealed partial class DigTerrainWorkSession
             .ToArray();
     }
 
-    private IReadOnlyCollection<CellId> GetProductionReachableCells()
+    private static IReadOnlyCollection<CellId> GetProductionReachableCells(
+        NavigationSnapshot navigation,
+        CellId destination)
     {
-        return _worldSession.LoadSnapshot().Chunks
-            .SelectMany(value => value.Cells)
-            .Where(value => value.State.IsExplored && !value.IsSolid)
-            .Select(value => value.Id)
-            .OrderBy(value => value)
-            .ToArray();
+        return BuildingSupplyReachability.ResolveConnectedCells(
+            navigation,
+            destination);
     }
 
     private static int Distance(AgentViewModel agent, CellId target)
@@ -223,6 +222,7 @@ internal sealed partial class DigTerrainWorkSession
             || _acquireBuildingSupplySource == null
             || _depositBuildingSupply == null
             || _setBuildingStockDelivery == null
+            || _enableProductionInputDelivery == null
             || _productionCandidates == null
             || _productionAssignment == null
             || _productionPathfinder == null)

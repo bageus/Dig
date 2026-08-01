@@ -17,10 +17,10 @@ internal sealed partial class DigTerrainWorkSession
 {
     private void ResolveEligibleDeferredSupplyJobs(
         long tick,
-        IReadOnlyList<AgentViewModel> agents)
+        IReadOnlyList<AgentViewModel> agents,
+        Dig.Domain.Navigation.NavigationSnapshot navigation)
     {
         CellId[] revealed = GetProductionRevealedCells();
-        CellId[] reachable = GetProductionReachableCells().ToArray();
         JobSystem jobs = _jobRepository.Get();
         foreach (JobSnapshot pending in jobs.GetAll()
             .Where(value => value.Status == JobStatus.Created
@@ -73,8 +73,15 @@ internal sealed partial class DigTerrainWorkSession
                 continue;
             }
 
+            CellId[] reachable = GetProductionReachableCells(
+                navigation,
+                building.WorkPosition).ToArray();
             AgentViewModel[] candidates = agents
-                .Where(IsAvailableForAutomaticWork)
+                .Where(value => IsAvailableForAutomaticWork(value)
+                    && reachable.Contains(new CellId(
+                        value.CellX,
+                        value.CellY,
+                        value.CellZ)))
                 .OrderBy(value => Distance(value, building.WorkPosition))
                 .ThenBy(value => value.Id, StringComparer.Ordinal)
                 .ToArray();

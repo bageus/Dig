@@ -125,7 +125,12 @@ namespace Dig.Unity
                     continue;
                 }
 
-                if (TryPlanBuildingSupplyMovement(job, agent, navigation, movement))
+                if (TryPlanBuildingSupplyMovement(
+                    job,
+                    agent,
+                    navigation,
+                    movement,
+                    tick))
                 {
                     continue;
                 }

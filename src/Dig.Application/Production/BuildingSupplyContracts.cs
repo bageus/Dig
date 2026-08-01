@@ -187,6 +187,23 @@ public sealed class CancelBuildingSupplyCommand : ICommand<Result>
     public long Tick { get; }
 }
 
+public sealed class EnableProductionInputDeliveryCommand : ICommand<Result>
+{
+    public EnableProductionInputDeliveryCommand(
+        EntityId buildingId,
+        IReadOnlyCollection<ItemConsumptionRequest> inputs,
+        long tick)
+    {
+        BuildingId = buildingId;
+        Inputs = inputs ?? throw new ArgumentNullException(nameof(inputs));
+        Tick = tick;
+    }
+
+    public EntityId BuildingId { get; }
+    public IReadOnlyCollection<ItemConsumptionRequest> Inputs { get; }
+    public long Tick { get; }
+}
+
 public sealed class SetBuildingStockDeliveryCommand : ICommand<Result>
 {
     public SetBuildingStockDeliveryCommand(

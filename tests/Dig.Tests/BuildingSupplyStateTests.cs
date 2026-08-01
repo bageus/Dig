@@ -119,6 +119,57 @@ public sealed class BuildingSupplyStateTests
     }
 
     [Fact]
+    public void Production_inputs_force_delivery_on_without_changing_stock_priority()
+    {
+        ItemCatalog items = CampfireProductionContentTests.CreateItems();
+        InventoryState inventory = new InventoryState(items);
+        BuildingSupplyState state = new BuildingSupplyState();
+        Assert.True(state.Register(
+            BuildingId,
+            CampfireProductionContent.CreateWorkstation(),
+            0).IsSuccess);
+        Assert.True(state.SetDeliveryEnabled(
+            BuildingId,
+            CampfireProductionContent.MushroomCapItemId,
+            enabled: false,
+            tick: 1).IsSuccess);
+
+        BuildingSupplySnapshot before = state.Get(
+            BuildingId,
+            inventory.CreateSnapshot())!;
+        int capPriority = before.Stocks.Single(value =>
+            value.ItemId == CampfireProductionContent.MushroomCapItemId).Priority;
+        int hamsterPriority = before.Stocks.Single(value =>
+            value.ItemId == CampfireProductionContent.HamsterItemId).Priority;
+
+        Result enabled = state.EnableProductionInputDelivery(
+            BuildingId,
+            new[]
+            {
+                new ItemConsumptionRequest(
+                    CampfireProductionContent.MushroomCapItemId,
+                    1),
+                new ItemConsumptionRequest(
+                    CampfireProductionContent.HamsterItemId,
+                    1),
+            },
+            tick: 2);
+
+        Assert.True(enabled.IsSuccess, enabled.Error?.ToString());
+        BuildingSupplySnapshot after = state.Get(
+            BuildingId,
+            inventory.CreateSnapshot())!;
+        BuildingStockSnapshot cap = after.Stocks.Single(value =>
+            value.ItemId == CampfireProductionContent.MushroomCapItemId);
+        BuildingStockSnapshot hamster = after.Stocks.Single(value =>
+            value.ItemId == CampfireProductionContent.HamsterItemId);
+        Assert.True(cap.DeliveryEnabled);
+        Assert.True(hamster.DeliveryEnabled);
+        Assert.Equal(capPriority, cap.Priority);
+        Assert.Equal(hamsterPriority, hamster.Priority);
+    }
+
+    [Fact]
     public void Registered_workstation_inventory_is_protected_automatic_source()
     {
         BuildingSupplyState state = new BuildingSupplyState();
