@@ -40,21 +40,31 @@ Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
 
 После merge с текущим `main` устаревшие регрессии синхронизированы с утверждённым lifecycle: active cancel сохраняет reservations до normal completion, split Unity partial-файлы входят в source-contract coverage, а staged package владеет output identity вместо legacy per-unit placement loop.
 
-## Unity compile regression correction — 2026-08-01
+## Unity compile regression corrections — 2026-08-01
 
-Локальный Unity compiler обнаружил два namespace drift после разнесения staged-package runtime по partial-файлам:
+Локальный Unity compiler сначала обнаружил namespace drift после разнесения staged-package runtime по partial-файлам:
 
 - `DigBuildingProductionZones.cs` использовал `ProductionPackageContent`, но не импортировал authoritative owner `Dig.Domain.Content`;
-- `DigTerrainWorkSession.ProductionPackages.cs` создавал `TerrainWorkRoutePlan`, но не импортировал authoritative owner `Dig.Application.Navigation`.
+- `DigTerrainWorkSession.ProductionPackages.cs` вручную создавал excavation-specific `TerrainWorkRoutePlan` для direct package use.
 
-Исправление добавляет только недостающие imports, не меняя package lifecycle, output placement, cancel/failure или save/load behavior. `ProductionPackageUnityContractTests` теперь требует оба namespace imports вместе с соответствующими symbol usages, чтобы обычный Quality pipeline ловил повторный Unity-only API drift до запуска Play Mode.
+Первое исправление добавило корректный content namespace. Повторная локальная компиляция показала, что второе место было не просто отсутствующим `using`, а неправильной архитектурной зависимостью: package use не является excavation route и не должен создавать `TerrainWorkRoutePlan`.
+
+Окончательное исправление:
+
+- удаляет прямую зависимость package-use partial от `TerrainWorkRoutePlan` и `Dig.Application.Navigation`;
+- направляет движение к package через существующий `PlanBuildingProductionRoute` и `_buildingProductionRoutes`;
+- очищает тот же production-route owner после terminal package-use commit;
+- сохраняет ordinary Navigation travel и уже выбранную supported adjacent work position;
+- добавляет source contract, запрещающий возврат `TerrainWorkRoutePlan` в package-use partial.
+
+Observable package lifecycle, output placement, cancel/failure и save/load behavior не изменены.
 
 ## Evidence
 
-До compile correction ранее проходили repository Quality/source gates для staged package implementation. Для correction branch должны пройти:
+Для correction branch обязательны:
 
 - architecture/file-size/C# compatibility;
-- Unity source contracts, включая новый namespace regression;
+- Unity source contracts, включая route-owner regression;
 - Release build и полный .NET suite;
 - headless smoke и оба deterministic soak;
 - Stage 2 exports.

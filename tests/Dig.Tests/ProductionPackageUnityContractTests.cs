@@ -22,7 +22,7 @@ public sealed class ProductionPackageUnityContractTests
     }
 
     [Fact]
-    public void Unity_partials_import_package_content_and_route_plan_owners()
+    public void Unity_partials_use_authoritative_package_content_and_production_route_owner()
     {
         string runtime = RuntimeRoot();
         string zones = Read(runtime, "DigBuildingProductionZones.cs");
@@ -32,8 +32,10 @@ public sealed class ProductionPackageUnityContractTests
 
         Assert.Contains("using Dig.Domain.Content;", zones);
         Assert.Contains("ProductionPackageContent.ResolveKind", zones);
-        Assert.Contains("using Dig.Application.Navigation;", packages);
-        Assert.Contains("new TerrainWorkRoutePlan", packages);
+        Assert.Contains("PlanBuildingProductionRoute", packages);
+        Assert.Contains("_buildingProductionRoutes", packages);
+        Assert.DoesNotContain("TerrainWorkRoutePlan", packages);
+        Assert.DoesNotContain("using Dig.Application.Navigation;", packages);
     }
 
     [Fact]
