@@ -72,9 +72,10 @@ public sealed class HaulingResidentTransitTests
         ItemStackSnapshot[] residentOre = ResidentStacks(harness.Inventory)
             .Where(stack => stack.ItemId == OreId)
             .ToArray();
-        Assert.Empty(residentOre
-            .Where(stack => stack.Location.ResidentCompartment
-                == ResidentInventoryCompartment.Cargo));
+        Assert.DoesNotContain(
+            residentOre,
+            stack => stack.Location.ResidentCompartment
+                == ResidentInventoryCompartment.Cargo);
         ItemStackSnapshot[] main = residentOre
             .Where(stack => stack.Location.ResidentCompartment
                 == ResidentInventoryCompartment.Main)
