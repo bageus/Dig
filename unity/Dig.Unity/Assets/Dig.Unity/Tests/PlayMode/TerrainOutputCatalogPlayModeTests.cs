@@ -39,6 +39,32 @@ public sealed class TerrainOutputCatalogPlayModeTests
         Assert.That(outputs, Has.Member(new ItemId("ore.crystal")));
         Assert.That(outputs, Has.No.Member(new ItemId("material.metal")));
     }
+
+    [Test]
+    public void Demo_contains_all_terrain_regions_and_restored_deposits()
+    {
+        DigWorldSession session = DigWorldSession.CreateDemo(24, 16, 29);
+        WorldState world = session.Repository.Get();
+        MaterialId[] solidMaterials = world.CreateSnapshot().Chunks
+            .SelectMany(chunk => chunk.Cells)
+            .Where(cell => cell.IsSolid)
+            .Select(cell => cell.State.MaterialId)
+            .Distinct()
+            .OrderBy(value => value)
+            .ToArray();
+
+        Assert.That(solidMaterials, Has.Member(DefaultTerrainMaterials.Sand));
+        Assert.That(solidMaterials, Has.Member(DefaultTerrainMaterials.StoneRock));
+        Assert.That(solidMaterials, Has.Member(DefaultTerrainMaterials.MetalBearingRock));
+        Assert.That(solidMaterials, Has.Member(DefaultTerrainMaterials.CrystallineRock));
+        Assert.That(solidMaterials, Has.Member(DefaultTerrainMaterials.LavaRock));
+        Assert.That(solidMaterials, Has.Member(DefaultTerrainMaterials.Unmineable));
+        Assert.That(world.TerrainDeposits.Snapshot(), Is.Not.Empty);
+        Assert.That(
+            world.TerrainDeposits.Snapshot().All(value =>
+                value.Definition.OutputItemId != default),
+            Is.True);
+    }
 }
 
 }

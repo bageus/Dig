@@ -21,7 +21,7 @@ Display name не используется как ссылка между эти
 
 ## 3. Обычный грунт и случайное выпадение
 
-Обычная excavation использует `TerrainOutputProfile`. Таблица определяет только допустимые outputs и относительную редкость. Точные вероятности и количества остаются data-driven `BALANCE_TBD`.
+Обычная excavation использует `TerrainOutputProfile`. Таблица определяет только допустимые outputs и относительную редкость. Каждая строка ordinary terrain profile является негарантированной: текущие production/demo fixtures ограничены максимумом `100‰` (10%) на независимую output entry. Точные итоговые вероятности и количества остаются data-driven `BALANCE_TBD` по Q-014.
 
 | MaterialId | Название | Добываемость | Возможные outputs |
 |---|---|---:|---|
@@ -40,7 +40,8 @@ Display name не используется как ссылка между эти
 - каждая строка profile использует независимый named hash stream по stable `ItemId`, поэтому одна клетка может выдать несколько разрешённых outputs;
 - порядок definitions, Unity random и frame order не влияют на результат;
 - одна клетка выполняет roll только один раз при успешном excavation commit;
-- пустой результат допустим;
+- ни одна ordinary terrain output entry не имеет гарантированную вероятность `1000‰`; текущий fixture cap — `100‰`;
+- пустой результат является нормальным и ожидаемым исходом;
 - outputs создаются как отдельные quantity-one Inventory entities в `ItemLocation.InWorld(extractedCell)`;
 - шахтёр не помещает их автоматически в личный inventory;
 - preflight проверяет ItemId и весь deterministic set entity IDs до изменения World;
@@ -83,7 +84,7 @@ Generation может разместить рядом несколько deposit
 ### 4.2 Разработка и геометрия
 
 - разработка жилы требует больше work effort, чем обычный грунт;
-- после успешного commit жила выдаёт только свой output;
+- после успешного commit жила со 100% вероятностью выдаёт свой `DepositDefinition` output в полном `remaining yield`; случайный terrain roll для неё не выполняется;
 - клетка становится пустой/проходимой;
 - боковая стена исчезает при разработке клетки сбоку;
 - задняя стена углубляется при разработке следующей клетки по `Z`;
@@ -170,9 +171,13 @@ Capability:
 7. Skill experience grant создаётся идемпотентно после подтверждённого вклада.
 8. Cancel/failure освобождает reservations и не создаёт output.
 
-## 8. Открытые параметры
+## 8. Demo-карта и открытые параметры
 
-- точные drop probabilities и количества для каждого terrain profile;
+Demo composition содержит детерминированные contiguous test-регионы всех пяти добываемых `terrain.*` материалов и отдельный небольшой `terrain.unmineable` patch. Регионы заменяют только solid cells и не меняют уже открытые surface/tunnel/cave cells. Demo deposit definitions используют актуальные typed rock hosts и обязаны создавать жилы для поддерживаемого demo size/seed.
+
+Открытыми остаются:
+
+- точная настройка drop probabilities и quantities внутри подтверждённого cap для ordinary terrain profiles;
 - частота появления типов грунта и deposit cells;
 - work effort обычного грунта и жил;
 - будущие изменения строительных параметров через существующие BuildingDefinition/content data.
@@ -212,4 +217,5 @@ Migration `save.v12_to_v13.terrain_output_contract` переводит mining-ou
 - #103/#105 — навыки работ;
 - #108 — горн, литейный цех и Песчаник;
 - #109 — terrain profiles и случайные outputs;
-- #110 — demand/fog-aware hauling.
+- #110 — demand/fog-aware hauling;
+- #541 — восстановление demo-жил, mixed terrain test-регионы и low-chance ordinary drops.

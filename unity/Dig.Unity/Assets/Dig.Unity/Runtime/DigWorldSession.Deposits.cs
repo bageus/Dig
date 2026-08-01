@@ -118,6 +118,8 @@ internal sealed partial class DigWorldSession
     {
         _miningOutputWorldSeed = seed;
         WorldState world = _repository.Get();
+        ApplyDemoTerrainTestRegions(world, _demoTunnelLayout);
+        world.DequeueUncommittedEvents();
         WorldSnapshot snapshot = world.CreateSnapshot();
         TerrainDepositHostCell[] candidates = snapshot.Chunks
             .SelectMany(chunk => chunk.Cells)
@@ -162,7 +164,13 @@ internal sealed partial class DigWorldSession
             DefaultSkillProgressionContent.Catalog.GetProfile(skillGrantProfileId),
             version: 1,
             workEffortPermille: BalanceTbdDepositWorkEffortPermille,
-            allowedHostMaterialIds: new[] { new MaterialId("demo.rock") });
+            allowedHostMaterialIds: new[]
+            {
+                DefaultTerrainMaterials.StoneRock,
+                DefaultTerrainMaterials.MetalBearingRock,
+                DefaultTerrainMaterials.CrystallineRock,
+                DefaultTerrainMaterials.LavaRock,
+            });
     }
 }
 
