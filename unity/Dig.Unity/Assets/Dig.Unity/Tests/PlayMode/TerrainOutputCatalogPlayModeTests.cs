@@ -32,12 +32,12 @@ public sealed class TerrainOutputCatalogPlayModeTests
             .Distinct()
             .OrderBy(value => value)
             .ToArray();
-        Assert.That(outputs, Does.Contain(new ItemId("material.stone")));
-        Assert.That(outputs, Does.Contain(new ItemId("material.coal")));
-        Assert.That(outputs, Does.Contain(new ItemId("ore.iron")));
-        Assert.That(outputs, Does.Contain(new ItemId("ore.gold")));
-        Assert.That(outputs, Does.Contain(new ItemId("ore.crystal")));
-        Assert.That(outputs, Does.Not.Contain(new ItemId("material.metal")));
+        Assert.That(outputs, Has.Member(new ItemId("material.stone")));
+        Assert.That(outputs, Has.Member(new ItemId("material.coal")));
+        Assert.That(outputs, Has.Member(new ItemId("ore.iron")));
+        Assert.That(outputs, Has.Member(new ItemId("ore.gold")));
+        Assert.That(outputs, Has.Member(new ItemId("ore.crystal")));
+        Assert.That(outputs, Has.No.Member(new ItemId("material.metal")));
     }
 }
 
