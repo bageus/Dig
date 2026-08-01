@@ -14,7 +14,8 @@ Parent ecology issue: [#149](https://github.com/bageus/Dig/issues/149).
 - [`building-production-and-internal-supply.md`](building-production-and-internal-supply.md);
 - [`resident-movement-occupancy-and-vertical-traversal.md`](resident-movement-occupancy-and-vertical-traversal.md);
 - [`save-load-and-migrations.md`](save-load-and-migrations.md);
-- [`../implementation/hamsters-and-grubs-ecology.md`](../implementation/hamsters-and-grubs-ecology.md).
+- [`../implementation/hamsters-and-grubs-ecology.md`](../implementation/hamsters-and-grubs-ecology.md);
+- [`../implementation/living-material-diagonal-depth-movement-2026-08-01.md`](../implementation/living-material-diagonal-depth-movement-2026-08-01.md).
 
 ## 1. Назначение и границы
 
@@ -228,7 +229,7 @@ v12 -> v13 terrain output contract
 - Missing/invalid linked unit item: use case fails with typed diagnostic and does not create a second owner.
 - No legal movement: cell is preserved, direction is deterministically reselected, retry occurs on future cadence.
 - No partner/cap reached/no legal offspring cell: reproduction remains due, cycle is not spent, no duplicate appears.
-- Multiple due creatures are processed in stable order; free population is rechecked after each committed offspring.
+- Multiple due creatures are processed в stable order; free population is rechecked after each committed offspring.
 - Stored transition has priority over movement/reproduction in the same tick.
 
 ## 11. Diagnostics
