@@ -27,43 +27,95 @@ public sealed class LivingMaterialMovementPlanner
 
         CellId current = creature.Cell.Value;
         int desired = ResolveDesiredDirection(creature, residentCells, current, worldSeed);
-        CellId? preferred = candidates
-            .Where(value => Math.Sign(value.X - current.X) == desired)
-            .OrderBy(value => value)
-            .Select(value => (CellId?)value)
-            .FirstOrDefault();
-        if (preferred.HasValue)
-        {
-            return new LivingMaterialMovementDecision(
-                true,
-                preferred.Value,
-                desired,
-                string.Empty);
-        }
-
         CellId[] ordered = candidates.OrderBy(value => value).ToArray();
         if (ordered.Length == 0)
         {
             return new LivingMaterialMovementDecision(
                 false,
                 current,
-                desired == 0 ? 1 : -desired,
-                "no-flat-candidate");
+                -desired,
+                "no-navigation-candidate");
         }
 
+        CellId[] forward = ordered
+            .Where(value => Math.Sign(value.X - current.X) == desired)
+            .ToArray();
+        bool obstacle = forward.Length == 0;
+        CellId[] pool;
+        if (!obstacle)
+        {
+            pool = ordered
+                .Where(value => Math.Sign(value.X - current.X) == desired
+                    || value.X == current.X)
+                .ToArray();
+        }
+        else
+        {
+            CellId[] reverse = ordered
+                .Where(value => Math.Sign(value.X - current.X) == -desired)
+                .ToArray();
+            pool = reverse.Length == 0 ? ordered : reverse;
+        }
+
+        pool = PreferHamsterResidentSeparation(creature, pool, residentCells);
         int index = LivingMaterialDeterminism.SelectInclusive(
             worldSeed,
             creature.CreatureId,
             creature.DeterministicSequence,
-            "obstacle-direction",
+            obstacle ? "obstacle-direction" : "movement-candidate",
             0,
-            ordered.Length - 1);
-        CellId target = ordered[index];
+            pool.Length - 1);
+        CellId target = pool[index];
+        int nextDirection = Math.Sign(target.X - current.X);
+        if (nextDirection == 0)
+        {
+            nextDirection = desired;
+        }
+
         return new LivingMaterialMovementDecision(
             true,
             target,
-            Math.Sign(target.X - current.X),
-            "obstacle-reselected");
+            nextDirection,
+            obstacle ? "obstacle-reselected" : string.Empty);
+    }
+
+    private static CellId[] PreferHamsterResidentSeparation(
+        LivingMaterialSnapshot creature,
+        CellId[] candidates,
+        IReadOnlyCollection<CellId> residentCells)
+    {
+        if (creature.Species != LivingMaterialSpecies.Hamster
+            || !creature.Cell.HasValue)
+        {
+            return candidates;
+        }
+
+        CellId current = creature.Cell.Value;
+        CellId? nearest = residentCells
+            .Where(value => value.Y == current.Y)
+            .Where(value => LivingMaterialMovementGeometry.ChebyshevDistanceXZ(
+                    value,
+                    current)
+                <= LivingMaterialEcologyProfiles.HamsterResidentNoticeRadius)
+            .OrderBy(value => LivingMaterialMovementGeometry.ChebyshevDistanceXZ(
+                value,
+                current))
+            .ThenBy(value => value)
+            .Select(value => (CellId?)value)
+            .FirstOrDefault();
+        if (!nearest.HasValue)
+        {
+            return candidates;
+        }
+
+        int maximumDistance = candidates.Max(value =>
+            LivingMaterialMovementGeometry.ChebyshevDistanceXZ(value, nearest.Value));
+        return candidates
+            .Where(value => LivingMaterialMovementGeometry.ChebyshevDistanceXZ(
+                value,
+                nearest.Value) == maximumDistance)
+            .OrderBy(value => value)
+            .ToArray();
     }
 
     private static int ResolveDesiredDirection(
@@ -90,10 +142,14 @@ public sealed class LivingMaterialMovementPlanner
         }
 
         CellId? nearest = residentCells
-            .Where(value => value.Y == current.Y && value.Z == current.Z)
-            .Where(value => Math.Abs(value.X - current.X)
+            .Where(value => value.Y == current.Y)
+            .Where(value => LivingMaterialMovementGeometry.ChebyshevDistanceXZ(
+                    value,
+                    current)
                 <= LivingMaterialEcologyProfiles.HamsterResidentNoticeRadius)
-            .OrderBy(value => Math.Abs(value.X - current.X))
+            .OrderBy(value => LivingMaterialMovementGeometry.ChebyshevDistanceXZ(
+                value,
+                current))
             .ThenBy(value => value)
             .Select(value => (CellId?)value)
             .FirstOrDefault();
