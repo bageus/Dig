@@ -85,7 +85,7 @@ public sealed class LivingMaterialInitialPopulationPlannerTests
             height: 6,
             chunkSize: 4,
             corridorY: 2,
-            blockedX);
+            blockedX: blockedX);
         NavigationMap map = NavigationTestFactory.BuildMap(
             world,
             TraversalProfile.CreateFreeMover());
