@@ -1,0 +1,170 @@
++                TransitStackId,
++                tick: 7));
++        Assert.True(acquired.IsSuccess, acquired.Error?.ToString());
++
++        ItemStackSnapshot carried = harness.Inventory.CreateSnapshot().Stacks.Single(value =>
++            value.Location.Kind == ItemLocationKind.AgentInventory
++            && value.Location.HasOwner
++            && value.Location.OwnerId == ProductionTestHarness.WorkerId
++            && value.ItemId == ProductionTestHarness.Ore);
++        Assert.Equal(1, carried.Quantity);
++        Assert.Contains(carried.Reservations, value =>
++            value.JobId == OrderId && value.Quantity == 1);
++
++        Result worked = new ApplyProductionWorkHandler(
++            harness.ProductionRepository,
++            harness.InventoryRepository,
++            harness.JobRepository,
++            harness.Agents,
++            harness.Journal).Handle(new ApplyProductionWorkCommand(
++                OrderId,
++                JobId,
++                baseWork: 1,
++                conditionEfficiencyBasisPoints: 10_000,
++                tick: 8,
++                requireResidentCarriedMaterial: true));
++        Assert.True(worked.IsSuccess, worked.Error?.ToString());
++        Assert.Equal(9, harness.Inventory.GetTotal(ProductionTestHarness.Ore));
++        Assert.DoesNotContain(harness.Inventory.CreateSnapshot().Stacks, value =>
++            value.Location.Kind == ItemLocationKind.AgentInventory
++            && value.Location.HasOwner
++            && value.Location.OwnerId == ProductionTestHarness.WorkerId
++            && value.ItemId == ProductionTestHarness.Ore);
++        Assert.Equal(
++            ProductionOrderStatus.ReadyToComplete,
++            harness.Production.Get(OrderId)!.Status);
++    }
++}
++
++}
+diff --git a/tests/Dig.Tests/ProductionMaterialTransitTests.cs.meta b/tests/Dig.Tests/ProductionMaterialTransitTests.cs.meta
+new file mode 100644
+index 0000000..9b409b9
+--- /dev/null
++++ b/tests/Dig.Tests/ProductionMaterialTransitTests.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: 3ffa6433a5714028b5d24bd4dc598e8f
+diff --git a/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionExecution.cs b/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionExecution.cs
+index a822ce5..5fc0e81 100644
+--- a/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionExecution.cs
++++ b/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionExecution.cs
+@@ -40,6 +40,7 @@ internal sealed partial class DigTerrainWorkSession
+     private PrepareProductionOrderHandler? _prepareProduction;
+     private BeginProductionWorkHandler? _beginProduction;
+     private ApplyProductionWorkHandler? _applyProductionWork;
++    private AcquireProductionMaterialHandler? _acquireProductionMaterial;
+     private CompleteProductionOrderHandler? _completeProduction;
+     private CancelProductionOrderHandler? _cancelProduction;
+     private CreateProductionOutputPackageHandler? _createProductionPackage;
+@@ -65,6 +66,7 @@ internal sealed partial class DigTerrainWorkSession
+     private long _nextProductionPackageSequence;
+     private long _nextProductionPackageUseJobSequence;
+     private long _nextProductionPackageUseOutputSequence;
++    private long _nextProductionMaterialTransitSequence;
+     private long _nextSupplyJobSequence;
+     private long _nextSupplyTransitSequence;
+     private long _nextSupplyDepositSequence;
+@@ -132,6 +134,11 @@ internal sealed partial class DigTerrainWorkSession
+             _jobRepository,
+             agents,
+             journal);
++        _acquireProductionMaterial = new AcquireProductionMaterialHandler(
++            _productionRepository,
++            _buildingInventoryRepository,
++            _jobRepository,
++            journal);
+         _completeProduction = new CompleteProductionOrderHandler(
+             _productionRepository,
+             _buildingInventoryRepository,
+diff --git a/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionMaterialTransit.cs b/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionMaterialTransit.cs
+new file mode 100644
+index 0000000..53fb1a6
+--- /dev/null
++++ b/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionMaterialTransit.cs
+@@ -0,0 +1,62 @@
++using System;
++using System.Linq;
++using Dig.Domain.Buildings;
++using Dig.Domain.Core;
++using Dig.Domain.Inventory;
++using Dig.Domain.Production;
++using Dig.Domain.World;
++
++namespace Dig.Unity
++{
++
++internal sealed partial class DigTerrainWorkSession
++{
++    private static bool TryResolvePendingProductionMaterial(
++        ProductionOrderSnapshot order,
++        out ItemId itemId)
++    {
++        for (int index = 0; index < order.MaterialSteps.Count; index++)
++        {
++            if (!order.MaterialSteps[index].Consumed)
++            {
++                itemId = order.MaterialSteps[index].ItemId;
++                return true;
++            }
++        }
++
++        itemId = default;
++        return false;
++    }
++
++    private bool HasCarriedProductionMaterial(
++        EntityId orderId,
++        EntityId residentId,
++        ItemId itemId)
++    {
++        return _buildingInventoryRepository!.Get().CreateSnapshot().Stacks.Any(stack =>
++            stack.ItemId == itemId
++            && stack.Location.Kind == ItemLocationKind.AgentInventory
++            && stack.Location.HasOwner
++            && stack.Location.OwnerId == residentId
++            && stack.Reservations.Any(value =>
++                value.JobId == orderId && value.Quantity > 0));
++    }
++
++    private static CellId ResolveBuildingInternalStockCell(BuildingSnapshot building)
++    {
++        CellId row = building.Footprint
++            .OrderBy(value => Math.Abs(value.Y - building.Origin.Y))
++            .ThenBy(value => Math.Abs(value.Z - building.Origin.Z))
++            .ThenBy(value => value.Y)
++            .ThenBy(value => value.Z)
++            .First();
++        return new CellId(
++            building.Footprint.Min(value => value.X) - 1,
++            row.Y,
++            row.Z);
++    }
++
++
++}
++
++}
+diff --git a/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionMaterialTransit.cs.meta b/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionMaterialTransit.cs.meta
+new file mode 100644
+index 0000000..f4bd7a3
+--- /dev/null
++++ b/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionMaterialTransit.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: e11353203f884b8cb5c1f47dfa434da7
+diff --git a/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionRuntime.cs b/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionRuntime.cs
+index e60034d..69b9db0 100644
+--- a/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionRuntime.cs
++++ b/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionRuntime.cs
+@@ -207,6 +207,7 @@ internal sealed partial class DigTerrainWorkSession
+             || _prepareProduction == null
+             || _beginProduction == null
+             || _applyProductionWork == null
++            || _acquireProductionMaterial == null
+             || _completeProduction == null
+             || _cancelProduction == null
+             || _createProductionPackage == null
+diff --git a/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionZones.cs b/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionZones.cs
+index 42569f0..e0635a6 100644
+--- a/unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionZones.cs
