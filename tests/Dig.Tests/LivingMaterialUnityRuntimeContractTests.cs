@@ -16,7 +16,7 @@ public sealed class LivingMaterialUnityRuntimeContractTests
         string session = Read(runtime, "DigTerrainWorkSession.LivingMaterials.cs");
         string drop = Read(runtime, "DigWorldInteraction.ResidentInventoryCommands.cs");
 
-        Assert.Contains("InitializeLivingMaterials(agentSession.Tick)", bootstrap);
+        Assert.Contains("InitializeLivingMaterials(agentSession.Tick, agents)", bootstrap);
         Assert.Contains("LoadLivingMaterialCreatures()", bootstrap);
         Assert.Contains("AdvanceLivingMaterials(", loop);
         Assert.Contains("LoadLivingMaterialCampfireTethers()", loop);
@@ -28,7 +28,7 @@ public sealed class LivingMaterialUnityRuntimeContractTests
     }
 
     [Fact]
-    public void FreshDemoSeedsTwoHamstersAndOneGrubThroughInventory()
+    public void FreshDemoSeedsTwoHamstersAndOneGrubThroughInventoryAwayFromResidents()
     {
         string session = Read(
             RuntimeRoot(),
@@ -38,7 +38,7 @@ public sealed class LivingMaterialUnityRuntimeContractTests
             "Ecology",
             "LivingMaterialInitialPopulationPlanner.cs");
 
-        Assert.Contains("SeedDemoLivingMaterials(tick)", session);
+        Assert.Contains("SeedDemoLivingMaterials(tick, agents)", session);
         Assert.Contains("DemoHamsterOneId", session);
         Assert.Contains("DemoHamsterTwoId", session);
         Assert.Contains("DemoGrubId", session);
@@ -46,6 +46,8 @@ public sealed class LivingMaterialUnityRuntimeContractTests
         Assert.Contains("inventory.AddUnit(", session);
         Assert.Contains("ItemLocation.InWorld(", session);
         Assert.Contains("TryResolve(stack.ItemId", session);
+        Assert.Contains(".Concat(agents", session);
+        Assert.Contains("value => value.IsAlive", session);
         Assert.Contains("value => value.Key != hamsterPlane.Key", planner);
         Assert.Contains("LivingMaterialSpecies.Hamster", planner);
         Assert.Contains("LivingMaterialSpecies.Grub", planner);
