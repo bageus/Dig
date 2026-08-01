@@ -284,3 +284,5 @@ public static class CampfireProductionContent
             boxPolicy: new BuildingBoxPolicy(boxItemId, packingWork));
     }
 }
+
+}
