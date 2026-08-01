@@ -7,6 +7,7 @@ using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Ecology;
 using Dig.Domain.Inventory;
+using Dig.Domain.Jobs;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Buildings;
@@ -45,6 +46,10 @@ public sealed class LivingMaterialEcologyPlayModeTests
             residents,
             world.Journal,
             agentSession.SkillGrants);
+        terrain.InitializeBuildingDemo(world.Journal);
+        terrain.InitializeBuildingProductionDemo(
+            agentSession.Repository,
+            world.Journal);
 
         terrain.InitializeLivingMaterials(agentSession.Tick, residents);
         IReadOnlyList<CreatureVisualSnapshot> first =
@@ -52,6 +57,7 @@ public sealed class LivingMaterialEcologyPlayModeTests
         terrain.InitializeLivingMaterials(agentSession.Tick, residents);
         IReadOnlyList<CreatureVisualSnapshot> repeated =
             terrain.LoadLivingMaterialCreatures();
+        terrain.SynchronizeBuildingProduction(agentSession.Tick + 1, residents);
 
         Assert.That(first, Has.Count.EqualTo(3));
         Assert.That(first.Count(value => value.SpeciesId == "creature.hamster"),
@@ -72,6 +78,29 @@ public sealed class LivingMaterialEcologyPlayModeTests
             value.CellY,
             value.CellZ)),
             Has.None.Matches<CellId>(cell => residentCells.Contains(cell)));
+
+        var hamsterStock = terrain.LoadAllBuildingProduction()
+            .SelectMany(value => value.Stocks)
+            .Single(value =>
+                value.ItemId == CampfireProductionContent.HamsterItemId);
+        Assert.That(hamsterStock.Capacity, Is.EqualTo(2));
+        Assert.That(hamsterStock.DeliveryEnabled, Is.False);
+
+        var worldHamsters = terrain.LoadAllWorldItems()
+            .Where(value => value.ItemId ==
+                CampfireProductionContent.HamsterItemId.ToString())
+            .ToArray();
+        Assert.That(worldHamsters, Has.Length.EqualTo(2));
+        Assert.That(worldHamsters, Has.All.Matches<object>(value =>
+            ((Dig.Presentation.Inventory.WorldItemViewModel)value).ReservedQuantity == 0));
+        Assert.That(terrain.LoadJobSnapshots()
+            .Where(value => !value.IsTerminal
+                && value.Definition is BuildingSupplyJobDefinition)
+            .SelectMany(value =>
+                ((BuildingSupplyJobDefinition)value.Definition).RequestedItems)
+            .Select(value => value.ItemId),
+            Has.None.EqualTo(CampfireProductionContent.HamsterItemId));
+
         foreach (AgentViewModel resident in residents)
         {
             Assert.That(terrain.LoadResidentInventoryLayout(resident.Id).Slots

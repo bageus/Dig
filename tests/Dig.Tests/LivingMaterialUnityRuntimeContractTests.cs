@@ -54,6 +54,33 @@ public sealed class LivingMaterialUnityRuntimeContractTests
     }
 
     [Fact]
+    public void FreshHamstersDoNotEnterAutomaticCampfireSupply()
+    {
+        string content = ReadSource(
+            "Dig.Domain",
+            "Content",
+            "CampfireProductionContent.cs");
+        string playMode = File.ReadAllText(Path.Combine(
+            FindRepositoryRoot(),
+            "unity",
+            "Dig.Unity",
+            "Assets",
+            "Dig.Unity",
+            "Tests",
+            "PlayMode",
+            "LivingMaterialEcologyPlayModeTests.cs"));
+
+        Assert.Contains(
+            "new InternalStockRuleDefinition(HamsterItemId, 2, false, 100)",
+            content);
+        Assert.Contains("SynchronizeBuildingProduction", playMode);
+        Assert.Contains("hamsterStock.DeliveryEnabled", playMode);
+        Assert.Contains("ReservedQuantity == 0", playMode);
+        Assert.Contains("BuildingSupplyJobDefinition", playMode);
+        Assert.Contains("Has.None.EqualTo(CampfireProductionContent.HamsterItemId)", playMode);
+    }
+
+    [Fact]
     public void OrdinaryPickupProxyIsInvisibleButAuthoritativeItemRemainsInteractive()
     {
         string itemVisual = Read(RuntimeRoot(), "DigWorldItemVisual.cs");

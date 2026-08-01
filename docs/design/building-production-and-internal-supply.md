@@ -28,7 +28,7 @@ Completed workstation производит предметы и BuildingBox че�
 
 ## 3. Основной content
 
-Campfire использует stable IDs `building.campfire`, `building_box.campfire`, `food.grilled_mushroom` и `food.roasted_hamster`. Внутренний запас содержит mushroom cap, mushroom leg, stone и hamster по data-driven capacity/toggle rules. Одна food recipe может производить несколько единиц в одном world stack; resident ingress затем применяет отдельное правило unit-per-slot из resident inventory specification.
+Campfire использует stable IDs `building.campfire`, `building_box.campfire`, `food.grilled_mushroom` и `food.roasted_hamster`. Внутренний запас содержит mushroom cap, mushroom leg, stone и hamster по data-driven capacity/toggle rules. Mushroom cap, mushroom leg и stone начинают с включённой доставкой. Hamster имеет capacity `2`, но его delivery toggle по умолчанию выключен: свободные стартовые животные не резервируются и не забираются supply-системой, пока игрок явно не включит hamster stock. Одна food recipe может производить несколько единиц в одном world stack; resident ingress затем применяет отдельное правило unit-per-slot из resident inventory specification.
 
 ## 4. UI и очередь
 
@@ -78,7 +78,7 @@ Campfire использует stable IDs `building.campfire`, `building_box.camp
 
 ## 6. Supply lifecycle
 
-Demand создаётся для completed workstation с enabled delivery и недостающей capacity независимо от active production order. Planner читает revealed, reachable, unreserved world stacks; reservations текущего production order исключаются через `AvailableQuantity`, поэтому refill не крадёт используемые inputs. Одновременно на building существует не более одного active supply batch. Worker проходит `workstation check -> reserved sources -> workstation deposit`. Пока toggle включён, система повторяет planning после каждого deposit/consumption/pickup до `current + incoming == capacity` либо отсутствия reachable candidates. Cancel/failure/retry освобождает source quantity, incoming capacity и claims атомарно.
+Demand создаётся для completed workstation с enabled delivery и недостающей capacity независимо от active production order. Stock rule с выключенным toggle не создаёт demand, source reservation или resident transit; для hamster автоматическая доставка начинается только после явного включения игроком. Planner читает revealed, reachable, unreserved world stacks; reservations текущего production order исключаются через `AvailableQuantity`, поэтому refill не крадёт используемые inputs. Одновременно на building существует не более одного active supply batch. Worker проходит `workstation check -> reserved sources -> workstation deposit`. Пока toggle включён, система повторяет planning после каждого deposit/consumption/pickup до `current + incoming == capacity` либо отсутствия reachable candidates. Cancel/failure/retry освобождает source quantity, incoming capacity и claims атомарно.
 
 Если для enabled missing stock нет revealed/reachable/unreserved world source, но существует поддерживаемый revealed/reachable extraction/harvest target, один planning pass создаёт extraction/harvest job и dependent `BuildingSupply` job с requested item/quantity. Для campfire автоматическая добыча поддерживает mushroom cap и mushroom leg через один `Large` mushroom chop; planner выбирает одну недостающую единицу с наибольшим stock priority, а остальные drops остаются обычными world sources для следующих supply batches. Dependency planning работает независимо от queued recipe и не блокируется active production order.
 
@@ -154,6 +154,7 @@ Diagnostics показывают building/recipe/order/job IDs, stock current/in
 Domain/Application:
 
 - protected internal stock не выбирается automatic supply;
+- hamster stock имеет capacity `2`, но default delivery выключен; до явного toggle-on fresh/world hamster не резервируется, не создаёт supply job и не попадает в resident transit inventory;
 - enabled missing campfire cap/leg без eligible world source создаёт не более одной mushroom-chop/deferred-supply pair независимо от queued recipe и active production;
 - deferred extraction dependency перебирает resident candidates, не резервирует phantom incoming и отменяется, если completed dependency не оставила requested world output;
 - direct pickup забирает одну available unit;
@@ -168,6 +169,7 @@ Domain/Application:
 
 Unity Play Mode:
 
+- fresh demo сохраняет двух hamster free/world-owned после initial production synchronization, без `R:1` и resident inventory transit;
 - internal units используют тот же art/hover/pickup cursor и exact `StackId`;
 - enabled internal stock продолжает refill одновременно с production до capacity;
 - product icon показывает segmented material progress;
@@ -189,3 +191,4 @@ Unity Play Mode:
 | 2026-08-01 | Closed categories `food`/`weapon`/`tool` ломаются use-action и выпускают contents; BuildingBox сохраняет existing rules. | User |
 | 2026-08-01 | Unfinished package не поднимается; explicit cancel завершает current unit; forced move уничтожает package/used materials, reset-ит order без изменения counter; package сохраняется как item entity; output search вправо не имеет фиксированного лимита. | User |
 | 2026-08-01 | Enabled cap/leg refill создаёт harvest/deferred-supply pair без recipe/active-production gate; stale dependency освобождается, resolver перебирает всех residents. | User |
+| 2026-08-01 | Hamster internal-stock delivery является opt-in: capacity/recipe сохраняются, но default toggle выключен, чтобы fresh free hamster не резервировались continuous-refill системой сразу после старта. | Пользовательский runtime bug report |

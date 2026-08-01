@@ -171,7 +171,7 @@ public static class CampfireProductionContent
                 new InternalStockRuleDefinition(MushroomCapItemId, 4, true, 400),
                 new InternalStockRuleDefinition(MushroomLegItemId, 4, true, 300),
                 new InternalStockRuleDefinition(StoneItemId, 4, true, 200),
-                new InternalStockRuleDefinition(HamsterItemId, 2, true, 100),
+                new InternalStockRuleDefinition(HamsterItemId, 2, false, 100),
             });
     }
 
@@ -284,4 +284,5 @@ public static class CampfireProductionContent
             boxPolicy: new BuildingBoxPolicy(boxItemId, packingWork));
     }
 }
+
 }
