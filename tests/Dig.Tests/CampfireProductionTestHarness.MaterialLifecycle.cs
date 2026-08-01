@@ -112,7 +112,8 @@ internal sealed partial class CampfireProductionTestHarness
                 return Result.Failure(ProductionErrors.InvalidStatus);
             }
 
-            if (step.Value.Phase == ProductionMaterialStepPhase.AwaitingMaterial)
+            ProductionMaterialStepSnapshot activeStep = step.Value;
+            if (activeStep.Phase == ProductionMaterialStepPhase.AwaitingMaterial)
             {
                 Result acquired = AcquireMaterial(orderId, jobId, currentTick++);
                 if (acquired.IsFailure)
@@ -126,18 +127,17 @@ internal sealed partial class CampfireProductionTestHarness
                     return staged;
                 }
 
-                step = Production.Get(orderId)!.MaterialSteps
+                activeStep = Production.Get(orderId)!.MaterialSteps
                     .Where(value => !value.Consumed)
-                    .Select(value => (ProductionMaterialStepSnapshot?)value)
                     .First();
             }
 
-            if (step.Value.Phase is ProductionMaterialStepPhase.StagedOnWorkbench
+            if (activeStep.Phase is ProductionMaterialStepPhase.StagedOnWorkbench
                 or ProductionMaterialStepPhase.Processing)
             {
                 int applied = checked((int)Math.Min(
                     remaining,
-                    step.Value.RequiredTicks - step.Value.CompletedTicks));
+                    activeStep.RequiredTicks - activeStep.CompletedTicks));
                 Result worked = ApplyMaterialWork(
                     orderId,
                     jobId,
