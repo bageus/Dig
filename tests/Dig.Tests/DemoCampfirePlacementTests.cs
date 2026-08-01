@@ -10,7 +10,7 @@ namespace Dig.Tests
 public sealed class DemoCampfirePlacementTests
 {
     [Fact]
-    public void Demo_layout_exposes_open_surface_anchor_two_cells_left_of_shaft()
+    public void Demo_layout_exposes_open_surface_anchor_on_first_building_depth()
     {
         TunnelNavigationVolume volume = TunnelNavigationVolume.CreateDemo(
             width: 16,
@@ -19,15 +19,18 @@ public sealed class DemoCampfirePlacementTests
         CellId anchor = new CellId(
             layout.ShaftX - 2,
             layout.SurfaceY,
-            layout.ShaftZ);
+            1);
 
         Assert.True(volume.IsOpen(anchor));
         Assert.False(volume.IsVerticalTunnel(anchor));
+        Assert.True(volume.HasFullActorSupport(anchor));
         Assert.Equal(2, layout.ShaftX - anchor.X);
+        Assert.Equal(1, anchor.Z);
+        Assert.NotEqual(layout.ShaftZ, anchor.Z);
     }
 
     [Fact]
-    public void Unity_bootstrap_uses_exact_surface_anchor_without_cave_fallback()
+    public void Unity_bootstrap_uses_exact_Z1_surface_anchor_without_Z0_or_cave_fallback()
     {
         string source = File.ReadAllText(Path.Combine(
             FindRepositoryRoot(),
@@ -41,8 +44,9 @@ public sealed class DemoCampfirePlacementTests
         Assert.Contains("FindSurfaceCampfirePlacement", source);
         Assert.Contains("layout.ShaftX - 2", source);
         Assert.Contains("layout.SurfaceY", source);
-        Assert.Contains("layout.ShaftZ", source);
-        Assert.Contains("surface campfire anchor two cells left", source);
+        Assert.Contains("DemoCompletedBuildingDepth", source);
+        Assert.Contains("surface campfire Z1 anchor two cells left", source);
+        Assert.DoesNotContain("layout.ShaftZ);", source);
         Assert.DoesNotContain("FindLowerCavePlacement(campfireDefinition", source);
     }
 

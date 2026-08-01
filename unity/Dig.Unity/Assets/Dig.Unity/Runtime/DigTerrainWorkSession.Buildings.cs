@@ -18,6 +18,7 @@ namespace Dig.Unity
 
 internal sealed partial class DigTerrainWorkSession
 {
+    private const int DemoCompletedBuildingDepth = 1;
     private static readonly ItemId DemoBuildingBoxItemId =
         new ItemId("demo.building_box.workshop");
     private static readonly ItemId DemoResidentToolItemId =
@@ -227,7 +228,7 @@ internal sealed partial class DigTerrainWorkSession
         CellId origin = new CellId(
             layout.ShaftX - 2,
             layout.SurfaceY,
-            layout.ShaftZ);
+            DemoCompletedBuildingDepth);
         CellId[] footprint = definition.ResolveFootprint(
                 origin,
                 BuildingOrientation.North)
@@ -244,7 +245,7 @@ internal sealed partial class DigTerrainWorkSession
         if (!validFootprint)
         {
             throw new InvalidOperationException(
-                "The surface campfire anchor two cells left of the shaft is invalid.");
+                "The surface campfire Z1 anchor two cells left of the shaft is invalid.");
         }
 
         CellId? workPosition = definition.ResolveWorkPositions(
@@ -267,7 +268,7 @@ internal sealed partial class DigTerrainWorkSession
         if (!workPosition.HasValue)
         {
             throw new InvalidOperationException(
-                "The surface campfire has no valid work position.");
+                "The surface campfire has no valid Z1 work position.");
         }
 
         return new DemoBuildingPlacement(origin, workPosition.Value);

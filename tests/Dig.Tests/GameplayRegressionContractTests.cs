@@ -224,7 +224,8 @@ public sealed class GameplayRegressionContractTests
         Assert.Contains("FindSurfaceCampfirePlacement", buildings);
         Assert.Contains("layout.ShaftX-2", buildings);
         Assert.Contains("layout.SurfaceY", buildings);
-        Assert.Contains("layout.ShaftZ", buildings);
+        Assert.Contains("DemoCompletedBuildingDepth", buildings);
+        Assert.DoesNotContain("layout.ShaftZ);", buildings);
         Assert.Contains("supportCell.IsSolid", buildings);
         Assert.DoesNotContain("FindLowerCavePlacement", buildings);
     }

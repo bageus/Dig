@@ -1,6 +1,6 @@
 # Стартовый demo-сценарий: готовый костёр и упакованный BuildingBox
 
-Статус: `QUESTIONNAIRE`; расположение completed campfire подтверждено 2026-07-29.
+Статус: `QUESTIONNAIRE`; exact surface position подтверждена 2026-07-29, depth-layer correction подтверждена 2026-08-01.
 
 Tracking issue: [#389](https://github.com/bageus/Dig/issues/389).
 
@@ -15,83 +15,80 @@ Tracking issue: [#389](https://github.com/bageus/Dig/issues/389).
 
 ## 1. Назначение
 
-Demo bootstrap одновременно показывает completed workstation workflow и BuildingBox workflow без ручной подготовки сцены. Текущий demo не обязан демонстрировать процесс падения предметов.
+Demo bootstrap одновременно показывает completed workstation и BuildingBox workflow без ручной подготовки сцены. Demo не обязан показывать падение предметов.
 
 ## 2. Подтверждённый состав и расположение
 
-После новой demo session существуют две разные сущности и две независимые единицы количества:
+Fresh demo содержит две независимые quantity-one entities:
 
 1. ровно один completed campfire на поверхности;
-2. ровно один отдельный campfire BuildingBox в Inventory world location в нижней пещере.
+2. ровно один отдельный campfire BuildingBox в world Inventory location нижней пещеры.
 
-Completed campfire использует deterministic anchor относительно authoritative `TunnelDemoLayout`:
+Completed campfire имеет deterministic origin:
 
 ```text
 origin.X = ShaftX - 2
 origin.Y = SurfaceY
-origin.Z = ShaftZ
+origin.Z = 1
 ```
 
-Это ровно две logical cells левее вертикального тоннеля на той же surface platform/depth. Bootstrap обязан проверить world bounds, открытый anchor, solid support, отсутствие building/item overlap и доступную work position. Он не может молча выбрать другую поверхность или вернуть campfire в нижнюю пещеру. При нарушении fixture invariant initialization завершается typed/diagnostic failure.
+Это две logical cells левее вертикального тоннеля на той же surface platform и на ближайшем разрешённом building layer. `Z0` принадлежит только физическим BuildingBox и их relocation. Unpacked, active и completed buildings разрешены только на `Z1–Z3`, поэтому completed campfire не может использовать demo `ShaftZ = 0`.
 
-Campfire BuildingBox остаётся в нижней пещере на deterministic valid world location. Коробка не создаётся в vertical tunnel и не телепортируется туда при bootstrap.
+Bootstrap валидирует world bounds, open footprint, solid support, building/item overlap и reachable work position на exact `Z1`. Он не выбирает `Z0`, другую поверхность или lower-cave fallback. Invalid fixture завершает initialization typed diagnostic failure.
 
-## 3. Подтверждённое UI-поведение
+Packed campfire BuildingBox остаётся в deterministic valid lower-cave world location и не создаётся в vertical tunnel.
+
+## 3. UI и workflow
 
 - completed campfire отображается и выбирается как building;
-- его выбор открывает building roster/functions и production/internal-stock workflow;
-- BuildingBox отображается в мире и в building roster как box row;
-- ordinary LMB выбирает коробку и показывает кнопку «Распаковать»;
-- placement начинается только после кнопки «Распаковать»;
-- `Alt + ЛКМ` создаёт pickup order выбранному resident;
-- оба visual соответствуют authoritative logical cells.
+- selection открывает building functions и production/internal-stock workflow;
+- packed box отображается в world и Buildings roster как box row;
+- ordinary LMB выбирает box и показывает `Unpack`;
+- `Unpack` запускает placement mode;
+- `Alt + LMB` создаёт pickup order выбранному resident;
+- оба visual используют authoritative exact XYZ.
 
-## 4. Связь с gravity
+## 4. Bootstrap invariants
 
-Demo-коробка не является тестом визуального падения. Общая система падения в будущем применяется ко всем свободным items и отдельно к impacted residents/enemies. Это отслеживается в [#396](https://github.com/bageus/Dig/issues/396).
-
-Изменение demo-позиции объектов не заменяет tests generalized fall resolver.
-
-## 5. Bootstrap invariants
-
-- initialization idempotent внутри одной session;
-- save/load не запускает повторное создание объектов;
+- initialization idempotent в одной session;
+- save/load не запускает повторный spawn;
 - stable IDs не зависят от display names;
-- bootstrap использует Domain/Application APIs или явно обозначенный fixture path;
-- demo content не изменяет production rules основной игры;
 - exactly one completed campfire и one packed campfire box существуют независимо;
-- completed campfire всегда находится в `ShaftX - 2 / SurfaceY / ShaftZ`;
+- completed campfire всегда находится в `ShaftX - 2 / SurfaceY / Z1`;
+- ни один active/completed building не существует на `Z0`;
 - packed box остаётся в нижней пещере;
 - обе locations валидируются до commit.
 
-## 6. Решённые вопросы
+## 5. Решённые вопросы
 
-- **Q-DEMO-001:** completed campfire имеет фиксированный layout-relative anchor: две клетки левее vertical shaft на поверхности. Packed box продолжает использовать deterministic valid-cell selection в нижней пещере.
-- **Q-DEMO-002:** campfire BuildingBox начинается в нижней пещере; current demo не показывает процесс падения.
+- **Q-DEMO-001:** completed campfire находится на поверхности две клетки левее shaft.
+- **Q-DEMO-002:** packed campfire box начинается в нижней пещере; demo не является falling test.
+- **Q-DEMO-007:** completed campfire использует exact `Z1`; `Z0` разрешён только для BuildingBox relocation, buildings используют `Z1–Z3`.
 
-## 7. Открытые вопросы
+## 6. Открытые вопросы
 
 - **Q-DEMO-003:** initial campfire operation/fuel state.
 - **Q-DEMO-004:** fog of war для нижней пещеры.
-- **Q-DEMO-005:** scope — только development demo scene или standard sandbox start.
-- **Q-DEMO-006:** должны ли completed campfire и box быть видимы в одном initial camera framing или достаточно navigation/camera movement.
+- **Q-DEMO-005:** demo-only или standard sandbox scope.
+- **Q-DEMO-006:** обязательны ли campfire и box в одном initial camera framing.
 
-## 8. Acceptance
+## 7. Acceptance
 
 - fresh start содержит exactly one completed campfire и one packed campfire box;
-- completed campfire origin равен `ShaftX - 2 / SurfaceY / ShaftZ`;
-- completed campfire имеет valid support, work position и не пересекает workshop/items;
-- packed box находится в нижней пещере на допустимой world location;
-- повторная initialization не создаёт третью сущность;
-- оба объекта видимы, selectable и присутствуют в правильных UI lists;
-- world box LMB выбирает её, а «Распаковать» включает placement;
-- save/load сохраняет состав и locations;
-- Play Mode fixture проверяет logical IDs, exact campfire cell, box cave cell, visuals и UI selection;
+- completed campfire origin равен `ShaftX - 2 / SurfaceY / Z1`;
+- completed campfire отсутствует на `Z0`;
+- support, work position и overlap валидны на `Z1`;
+- packed box находится в допустимой lower-cave cell;
+- repeated initialization не создаёт duplicates;
+- оба объекта selectable и находятся в правильных UI lists;
+- save/load сохраняет identities и exact XYZ;
+- Play Mode проверяет exact campfire `Z1`, отсутствие completed building на `Z0`, box cave cell, visuals и selection;
 - generalized falling проверяется отдельно в #396.
 
-## 9. Decision log
+## 8. Decision log
 
 | Date | Decision | Confirmed by |
 |---|---|---|
-| 2026-07-25 | Completed campfire and packed campfire box are separate entities; box starts in the lower cave. | User |
-| 2026-07-29 | Completed campfire moves to the surface exactly two cells left of the vertical tunnel; packed box remains in the lower cave. | User |
+| 2026-07-25 | Completed campfire and packed box are separate; box starts in the lower cave. | User |
+| 2026-07-29 | Completed campfire is on the surface two cells left of the shaft. | User |
+| 2026-08-01 | Completed campfire uses exact `Z1`; `Z0` is only for physical BuildingBox relocation. | User |
