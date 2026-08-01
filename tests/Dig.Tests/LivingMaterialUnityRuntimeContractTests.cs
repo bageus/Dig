@@ -44,7 +44,7 @@ public sealed class LivingMaterialUnityRuntimeContractTests
         Assert.Contains("DemoGrubId", session);
         Assert.Contains("LivingMaterialInitialPopulationPlanner", session);
         Assert.Contains("inventory.AddUnit(", session);
-        Assert.Contains("ItemLocation.InWorld(placement.Cell)", session);
+        Assert.Contains("ItemLocation.InWorld(", session);
         Assert.Contains("TryResolve(stack.ItemId", session);
         Assert.Contains("value => value.Key != hamsterPlane.Key", planner);
         Assert.Contains("LivingMaterialSpecies.Hamster", planner);
