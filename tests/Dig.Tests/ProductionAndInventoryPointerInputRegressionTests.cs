@@ -26,11 +26,10 @@ public sealed class ProductionAndInventoryPointerInputRegressionTests
     }
 
     [Fact]
-    public void Generic_inventory_lmb_enters_building_style_ghost_and_job_pipeline()
+    public void Generic_inventory_lmb_uses_live_layout_slot_for_ghost_and_job_pipeline()
     {
         string runtime = RuntimeRoot();
         string canvas = Normalize(Read(runtime, "DigWorldInteraction.CanvasHud.cs"));
-        string inventory = Normalize(Read(runtime, "DigWorldInteraction.ResidentInventory.cs"));
         string placement = Normalize(Read(runtime, "DigWorldInteraction.InventoryItemPlacement.cs"));
         string application = Normalize(File.ReadAllText(Path.Combine(
             FindRepositoryRoot(),
@@ -40,10 +39,15 @@ public sealed class ProductionAndInventoryPointerInputRegressionTests
             "ResidentInventoryPlacementHandlers.cs")));
 
         Assert.Contains(
+            "SelectResidentInventoryLayoutSlot(ResidentInventoryLayoutSlotViewModelslot)",
+            canvas);
+        Assert.Contains("BeginInventoryItemPlacement(slot)", canvas);
+        Assert.DoesNotContain(
             "SelectResidentInventoryLayoutSlot(ResidentInventoryLayoutSlotViewModelslot){ActivateResidentInventoryLayoutSlot(slot);}",
             canvas);
-        Assert.DoesNotContain("LMBonopengrounddropsitthere", canvas);
-        Assert.Contains("BeginInventoryItemPlacement(slot)", inventory);
+        Assert.Contains(
+            "BeginInventoryItemPlacement(ResidentInventoryLayoutSlotViewModelslot)",
+            placement);
         Assert.Contains("Cursor.visible=false", placement);
         Assert.Contains("Cursor.visible=true", placement);
         Assert.Contains("ValidateResidentInventoryPlacement", placement);
@@ -54,19 +58,40 @@ public sealed class ProductionAndInventoryPointerInputRegressionTests
     }
 
     [Fact]
-    public void Inventory_quick_drop_uses_c_and_not_camera_d()
+    public void Inventory_quick_drop_uses_c_live_layout_and_shared_authoritative_commit()
     {
         string runtime = RuntimeRoot();
-        string canvas = Normalize(Read(runtime, "DigGameHudCanvas.Inventory.cs"));
-        string inventory = Normalize(Read(runtime, "DigWorldInteraction.ResidentInventory.cs"));
+        string hud = Normalize(Read(runtime, "DigGameHudCanvas.Inventory.cs"));
+        string canvas = Normalize(Read(runtime, "DigWorldInteraction.CanvasHud.cs"));
+        string commands = Normalize(Read(
+            runtime,
+            "DigWorldInteraction.ResidentInventoryCommands.cs"));
         string cursor = Normalize(Read(runtime, "DigWorldInteraction.ItemInteractionCursor.cs"));
 
-        Assert.Contains("Input.GetKey(KeyCode.C)", canvas);
-        Assert.Contains("Input.GetKey(KeyCode.C)", inventory);
+        Assert.Contains("Input.GetKey(KeyCode.C)", hud);
+        Assert.Contains("DropResidentInventoryLayoutSlot(slot)", hud);
+        Assert.Contains(
+            "DropResidentInventoryLayoutSlot(ResidentInventoryLayoutSlotViewModelslot)",
+            canvas);
+        Assert.Contains("ExecuteResidentInventoryDrop(", canvas);
+        Assert.Contains("ExecuteResidentInventoryDrop(", commands);
+        Assert.Contains("DropResidentInventoryStack(", commands);
+        Assert.Contains("SynchronizeLivingMaterials(", commands);
         Assert.Contains("Input.GetKey(KeyCode.C)", cursor);
-        Assert.DoesNotContain("Input.GetKey(KeyCode.D)", canvas);
-        Assert.DoesNotContain("Input.GetKey(KeyCode.D)", inventory);
+        Assert.DoesNotContain("Input.GetKey(KeyCode.D)", hud);
         Assert.DoesNotContain("Input.GetKey(KeyCode.D)", cursor);
+    }
+
+    [Fact]
+    public void Compatibility_slot_conversion_preserves_held_and_consumable_facts()
+    {
+        string canvas = Normalize(Read(
+            RuntimeRoot(),
+            "DigWorldInteraction.CanvasHud.cs"));
+
+        Assert.Contains("isEquipped:slot.IsHeld", canvas);
+        Assert.Contains("heldQuantity:slot.HeldQuantity", canvas);
+        Assert.Contains("isConsumable:slot.IsConsumable", canvas);
     }
 
     [Fact]
