@@ -24,7 +24,7 @@ namespace Dig.Tests
                 defaults);
             Assert.Contains("SetTunnelDigInteractionActive(active: false)", defaults);
             Assert.Contains("!cell.IsSolid", cursor);
-            Assert.Contains("transform.position = DigTunnelProjection.ResidentWorldPosition(", item);
+            Assert.Contains("DigWorldItemGrounding.PlaceOnFloor(", item);
             Assert.DoesNotContain(
                 "transform.localPosition = DigTunnelProjection.ResidentWorldPosition(",
                 item);

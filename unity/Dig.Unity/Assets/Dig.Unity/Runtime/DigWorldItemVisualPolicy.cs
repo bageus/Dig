@@ -34,19 +34,23 @@ namespace Dig.Unity
             return DigBasketVisualPolicy.Resolve(itemId, resolution);
         }
 
+        internal static Vector3 ResolveFloorAnchor(
+            CellId cell,
+            Vector2 cellOffset)
+        {
+            return DigTunnelProjection.ResidentWorldPosition(cell.X, cell.Y, cell.Z)
+                + new Vector3(
+                    cellOffset.x,
+                    DigTunnelProjection.ResidentFootSink + 0.02f,
+                    cellOffset.y + WorldItemFrontDepthOffset);
+        }
+
         internal static Vector3 ResolveWorldPosition(
             CellId cell,
             DigItemVisualResolution resolution,
             Vector2 cellOffset)
         {
-            float floorOffset = DigTunnelProjection.ResidentFootSink
-                + (resolution.WorldScale.y * 0.5f)
-                + 0.02f;
-            return DigTunnelProjection.ResidentWorldPosition(cell.X, cell.Y, cell.Z)
-                + new Vector3(
-                    cellOffset.x,
-                    floorOffset,
-                    cellOffset.y + WorldItemFrontDepthOffset);
+            return ResolveFloorAnchor(cell, cellOffset);
         }
 
         internal static bool IsCampfireBox(string itemId)

@@ -134,6 +134,7 @@ def check_world_renderer_contracts() -> list[str]:
         "MaximumPooledRoots",
         "PrepareForPool()",
         "Resolve(item.ItemId)",
+        "visual.PlaceOnFloor",
     )))
     errors.extend(reject(renderer_path, renderer, (
         "item.IsBuildingBox",
@@ -150,9 +151,24 @@ def check_world_renderer_contracts() -> list[str]:
         "catalog.ResolveItem(itemId)",
         "CampfireBoxFootprintSide",
         "CampfireBoxHeight",
-        "ResolveWorldPosition",
-        "resolution.WorldScale.y * 0.5f",
+        "ResolveFloorAnchor",
         "WorldItemFrontDepthOffset",
+    )))
+    errors.extend(reject(policy_path, policy, (
+        "resolution.WorldScale.y * 0.5f",
+        "is_grounded",
+    )))
+
+    grounding_path = RUNTIME / "DigWorldItemGrounding.cs"
+    grounding = read(grounding_path)
+    errors.extend(require(grounding_path, grounding, (
+        "GetComponentsInChildren<Renderer>",
+        "floorAnchor.y - bounds.min.y",
+        "ResolveLocalBounds",
+    )))
+    errors.extend(reject(grounding_path, grounding, (
+        "ItemId",
+        "is_grounded",
     )))
 
     visual_path = RUNTIME / "DigWorldItemVisual.cs"
@@ -169,6 +185,8 @@ def check_world_renderer_contracts() -> list[str]:
         "gameObject.layer = interactive ? 0 : 2",
         "_interactionCollider!.enabled = interactive",
         "DisableColliders(instance)",
+        "DigWorldItemGrounding.PlaceOnFloor",
+        "DigWorldItemGrounding.ResolveLocalBounds",
     )))
     errors.extend(reject(visual_path, visual, (
         "Model.IsBuildingBox",

@@ -140,25 +140,23 @@ public sealed partial class DigBuildingInternalStockRenderer : MonoBehaviour
             unit.BuildingId.ToString(),
             unit.ItemId.ToString(),
             unit.StackId);
-        ApplyUnitTransform(visual, building, stockIndex, unit.UnitIndex, resolution);
+        ApplyUnitTransform(visual, building, stockIndex, unit.UnitIndex);
     }
 
     private static void ApplyUnitTransform(
         DigWorldItemVisual visual,
         BuildingWorldViewModel building,
         int stockIndex,
-        int unitIndex,
-        DigItemVisualResolution resolution)
+        int unitIndex)
     {
         int column = unitIndex % 2;
         int layer = unitIndex / 2;
         float pileX = -0.24f + (stockIndex * 0.16f) + (column * 0.07f);
         BuildingFootprintCellViewModel anchor = ResolveInternalZoneCell(building);
-        visual.transform.position = DigWorldItemVisualPolicy.ResolveWorldPosition(
+        visual.PlaceOnFloor(
             new Dig.Domain.World.CellId(anchor.X, anchor.Y, anchor.Z),
-            resolution,
-            new Vector2(pileX, stockIndex * 0.008f))
-            + (Vector3.up * (layer * 0.12f));
+            new Vector2(pileX, stockIndex * 0.008f));
+        visual.transform.position += Vector3.up * (layer * 0.12f);
     }
 
     internal bool TryGetStock(

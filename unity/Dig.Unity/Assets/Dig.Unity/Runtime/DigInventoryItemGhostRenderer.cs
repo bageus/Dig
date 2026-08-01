@@ -35,14 +35,13 @@ namespace Dig.Unity
                 Rebuild(itemId);
             }
 
-            _root!.position = DigWorldItemVisualPolicy.ResolveWorldPosition(
-                cell,
-                _resolution,
-                Vector2.zero);
-            _root.rotation = Quaternion.identity;
+            _root!.rotation = Quaternion.identity;
             _root.localScale = Vector3.one;
-            _tint!.SetTint(valid ? ValidTint : InvalidTint);
             _root.gameObject.SetActive(true);
+            DigWorldItemGrounding.PlaceOnFloor(
+                _root,
+                DigWorldItemVisualPolicy.ResolveFloorAnchor(cell, Vector2.zero));
+            _tint!.SetTint(valid ? ValidTint : InvalidTint);
         }
 
         internal void Clear()

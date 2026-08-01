@@ -41,8 +41,9 @@ namespace Dig.Unity
 
             EnsureCollider();
             EnsurePool(resolution);
-            ApplyRoot(layout, resolution);
+            ApplyRoot(layout);
             ApplyInstances(layout, resolution);
+            ApplyColliderGeometry(resolution);
             ApplyInteraction(resolution);
         }
 
@@ -120,14 +121,17 @@ namespace Dig.Unity
             return instance;
         }
 
-        private void ApplyRoot(
-            ItemStackVisualLayoutViewModel layout,
-            DigItemVisualResolution resolution)
+        internal void PlaceOnFloor(
+            Dig.Domain.World.CellId cell,
+            Vector2 cellOffset)
         {
-            transform.position = DigTunnelProjection.ResidentWorldPosition(
-                Model.CellX,
-                Model.CellY,
-                Model.CellZ) + new Vector3(0f, 0.22f, 0f);
+            DigWorldItemGrounding.PlaceOnFloor(
+                transform,
+                DigWorldItemVisualPolicy.ResolveFloorAnchor(cell, cellOffset));
+        }
+
+        private void ApplyRoot(ItemStackVisualLayoutViewModel layout)
+        {
             transform.rotation = layout.ReservationState switch
             {
                 ItemReservationVisualState.Partial => Quaternion.Euler(0f, 0f, 3f),
@@ -143,16 +147,6 @@ namespace Dig.Unity
             QuantityBadge = layout.QuantityBadge;
             name = $"World item {Model.ItemId} x{layout.QuantityBadge} "
                 + $"reserved {layout.ReservedQuantity}";
-
-            float width = Mathf.Max(resolution.WorldScale.x, resolution.WorldScale.z);
-            _interactionCollider!.center = new Vector3(
-                0f,
-                resolution.WorldScale.y * 0.5f,
-                0f);
-            _interactionCollider.size = new Vector3(
-                Mathf.Max(0.28f, width * 1.9f),
-                Mathf.Max(0.28f, resolution.WorldScale.y * 1.5f),
-                Mathf.Max(0.28f, width * 1.9f));
         }
 
         private void ApplyInstances(
@@ -205,6 +199,18 @@ namespace Dig.Unity
             }
 
             VisibleInstanceCount = visible;
+        }
+
+        private void ApplyColliderGeometry(DigItemVisualResolution resolution)
+        {
+            Bounds local = DigWorldItemGrounding.ResolveLocalBounds(
+                transform,
+                resolution.WorldScale);
+            _interactionCollider!.center = local.center;
+            _interactionCollider.size = new Vector3(
+                Mathf.Max(0.28f, local.size.x + 0.10f),
+                Mathf.Max(0.28f, local.size.y + 0.06f),
+                Mathf.Max(0.28f, local.size.z + 0.10f));
         }
 
         private void ApplyInteraction(DigItemVisualResolution resolution)
