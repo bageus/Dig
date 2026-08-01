@@ -1,6 +1,6 @@
 # Staged production package lifecycle — 2026-08-01
 
-Статус: implementation находится в draft PR #536; automated CI и licensed Unity runtime evidence должны быть записаны до повышения system status.
+Статус: staged package implementation присутствует в текущем `main`; licensed Unity runtime evidence требуется до повышения system status до `VERIFIED`.
 
 Authoritative design: [`../design/building-production-and-internal-supply.md`](../design/building-production-and-internal-supply.md).
 Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
@@ -40,13 +40,23 @@ Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
 
 После merge с текущим `main` устаревшие регрессии синхронизированы с утверждённым lifecycle: active cancel сохраняет reservations до normal completion, split Unity partial-файлы входят в source-contract coverage, а staged package владеет output identity вместо legacy per-unit placement loop.
 
+## Unity compile regression correction — 2026-08-01
+
+Локальный Unity compiler обнаружил два namespace drift после разнесения staged-package runtime по partial-файлам:
+
+- `DigBuildingProductionZones.cs` использовал `ProductionPackageContent`, но не импортировал authoritative owner `Dig.Domain.Content`;
+- `DigTerrainWorkSession.ProductionPackages.cs` создавал `TerrainWorkRoutePlan`, но не импортировал authoritative owner `Dig.Application.Navigation`.
+
+Исправление добавляет только недостающие imports, не меняя package lifecycle, output placement, cancel/failure или save/load behavior. `ProductionPackageUnityContractTests` теперь требует оба namespace imports вместе с соответствующими symbol usages, чтобы обычный Quality pipeline ловил повторный Unity-only API drift до запуска Play Mode.
+
 ## Evidence
 
-Локально перед публикацией прошли:
+До compile correction ранее проходили repository Quality/source gates для staged package implementation. Для correction branch должны пройти:
 
-- `python3 tools/quality/check_quality.py`;
-- `python3 tools/quality/check_unity_source_contracts.py`;
-- `python3 tools/quality/check_unity_item_visual_contracts.py`;
-- `git diff --check` для опубликованного patch.
+- architecture/file-size/C# compatibility;
+- Unity source contracts, включая новый namespace regression;
+- Release build и полный .NET suite;
+- headless smoke и оба deterministic soak;
+- Stage 2 exports.
 
-GitHub Actions build/test/smoke/soak и Unity runtime status будут добавлены после завершения checks текущего PR head. До executed licensed EditMode/PlayMode evidence система не является `VERIFIED`.
+Фактический licensed Unity EditMode/PlayMode run остаётся обязательным для статуса `VERIFIED`.
