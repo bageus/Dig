@@ -54,7 +54,7 @@ public sealed class LivingMaterialPlaneResolver
             CellId current = frontier.Dequeue();
             foreach (NavigationTransition transition in _navigation.GetTransitions(current))
             {
-                if (!IsFlatSupportedEdge(current, transition))
+                if (!IsEcologyCardinalEdge(current, transition))
                 {
                     continue;
                 }
@@ -88,26 +88,78 @@ public sealed class LivingMaterialPlaneResolver
 
         CellId from = creature.Cell.Value;
         LivingMaterialSpeciesProfile profile = LivingMaterialEcologyProfiles.Get(creature.Species);
-        return _navigation.GetTransitions(from)
-            .Where(transition => IsFlatSupportedEdge(from, transition))
-            .Select(transition => transition.Target)
-            .Where(target => Math.Abs(target.X - creature.AnchorCell.X) <= profile.WanderRadius)
+        HashSet<CellId> candidates = new HashSet<CellId>();
+        foreach (NavigationTransition transition in _navigation.GetTransitions(from))
+        {
+            if (IsEcologyCardinalEdge(from, transition))
+            {
+                candidates.Add(transition.Target);
+            }
+        }
+
+        foreach (int deltaX in new[] { -1, 1 })
+        {
+            foreach (int deltaZ in new[] { -1, 1 })
+            {
+                CellId target = new CellId(
+                    from.X + deltaX,
+                    from.Y,
+                    from.Z + deltaZ);
+                if (IsLegalDiagonal(from, target))
+                {
+                    candidates.Add(target);
+                }
+            }
+        }
+
+        return candidates
+            .Where(target => LivingMaterialMovementGeometry.IsWithinWanderRadius(
+                creature.AnchorCell,
+                target,
+                profile.WanderRadius))
             .Where(target => TryResolve(target, out LivingMaterialPlane plane)
                 && plane.Key == creature.PlaneKey)
             .OrderBy(target => target)
             .ToArray();
     }
 
-    private static bool IsFlatSupportedEdge(
+    private bool IsLegalDiagonal(CellId from, CellId target)
+    {
+        if (!_navigation.IsWalkable(target)
+            || target.Y != from.Y
+            || Math.Abs(target.X - from.X) != 1
+            || Math.Abs(target.Z - from.Z) != 1)
+        {
+            return false;
+        }
+
+        CellId sideX = new CellId(target.X, from.Y, from.Z);
+        CellId sideZ = new CellId(from.X, from.Y, target.Z);
+        return HasEcologyCardinalEdge(from, sideX)
+            && HasEcologyCardinalEdge(from, sideZ)
+            && HasEcologyCardinalEdge(sideX, target)
+            && HasEcologyCardinalEdge(sideZ, target);
+    }
+
+    private bool HasEcologyCardinalEdge(CellId from, CellId target)
+    {
+        return _navigation.GetTransitions(from)
+            .Any(transition => transition.Target == target
+                && IsEcologyCardinalEdge(from, transition));
+    }
+
+    private static bool IsEcologyCardinalEdge(
         CellId from,
         NavigationTransition transition)
     {
         CellId target = transition.Target;
-        return transition.TraversalKind == TunnelTraversalKind.SupportedWalk
-            && !transition.LinkKind.HasValue
+        int deltaX = Math.Abs(target.X - from.X);
+        int deltaZ = Math.Abs(target.Z - from.Z);
+        return !transition.LinkKind.HasValue
             && target.Y == from.Y
-            && target.Z == from.Z
-            && Math.Abs(target.X - from.X) == 1;
+            && deltaX + deltaZ == 1
+            && (transition.TraversalKind == TunnelTraversalKind.SupportedWalk
+                || transition.TraversalKind == TunnelTraversalKind.DepthTraverse);
     }
 }
 
