@@ -1,6 +1,6 @@
 # Demo completed campfire Z1 depth correction — 2026-08-01
 
-Status: `IMPLEMENTED` on branch `bugfix/fresh-hamsters-not-auto-supplied`; licensed Unity runtime evidence remains required.
+Status: `IMPLEMENTED` in draft PR [#550](https://github.com/bageus/Dig/pull/550); licensed Unity runtime evidence remains required.
 
 Authoritative specifications:
 
