@@ -101,6 +101,100 @@ public sealed class BuildingSupplyDependencyTests
     }
 
     [Fact]
+    public void Deferred_delivery_can_retry_with_a_later_resident_after_capacity_failure()
+    {
+        CampfireProductionTestHarness harness = new CampfireProductionTestHarness(1);
+        EntityId extractionJobId = CampfireProductionTestHarness.Id(750);
+        EntityId deliveryJobId = CampfireProductionTestHarness.Id(751);
+        EntityId secondResidentId = CampfireProductionTestHarness.Id(752);
+        CellId sourceCell = new CellId(1, 1, 0);
+        Assert.True(harness.Jobs.Add(new DigJobDefinition(
+            extractionJobId,
+            new DigJobTarget(sourceCell),
+            priority: 625,
+            createdTick: 1,
+            retryPolicy: JobRetryPolicy.Default)).IsSuccess);
+        Assert.True(harness.Jobs.MakeAvailable(extractionJobId, 1).IsSuccess);
+        Assert.True(harness.Jobs.Claim(
+            extractionJobId,
+            CampfireProductionTestHarness.WorkerId,
+            1).IsSuccess);
+        Assert.True(harness.Jobs.Complete(extractionJobId, 2).IsSuccess);
+
+        for (int index = 0; index < 6; index++)
+        {
+            Assert.True(harness.Inventory.AddStack(
+                CampfireProductionTestHarness.Id(760 + index),
+                CampfireProductionContent.StoneItemId,
+                1,
+                ItemLocation.InResidentSlot(
+                    CampfireProductionTestHarness.WorkerId,
+                    ResidentInventoryCompartment.Main,
+                    index),
+                2).IsSuccess);
+        }
+
+        EntityId capId = CampfireProductionTestHarness.Id(770);
+        Assert.True(harness.Inventory.AddStack(
+            capId,
+            CampfireProductionContent.MushroomCapItemId,
+            1,
+            ItemLocation.InWorld(sourceCell),
+            2).IsSuccess);
+        CreateDeferredBuildingSupplyJobHandler create =
+            new CreateDeferredBuildingSupplyJobHandler(
+                harness.Content,
+                harness.BuildingsRepository,
+                harness.JobsRepository,
+                harness.Journal);
+        Assert.True(create.Handle(new CreateDeferredBuildingSupplyJobCommand(
+            deliveryJobId,
+            CampfireProductionTestHarness.BuildingId,
+            new[]
+            {
+                new ItemConsumptionRequest(
+                    CampfireProductionContent.MushroomCapItemId,
+                    1),
+            },
+            new[] { extractionJobId },
+            Enumerable.Range(0, 12)
+                .Select(value => CampfireProductionTestHarness.Id(780 + value))
+                .ToArray(),
+            new[] { CampfireProductionTestHarness.Id(795) },
+            priority: 625,
+            tick: 2)).IsSuccess);
+        ResolveDeferredBuildingSupplyJobHandler resolve =
+            new ResolveDeferredBuildingSupplyJobHandler(
+                harness.Content,
+                harness.SupplyRepository,
+                harness.BuildingsRepository,
+                harness.InventoryRepository,
+                harness.JobsRepository,
+                harness.Journal);
+
+        Result first = resolve.Handle(new ResolveDeferredBuildingSupplyJobCommand(
+            deliveryJobId,
+            CampfireProductionTestHarness.WorkerId,
+            new[] { sourceCell },
+            new[] { sourceCell },
+            tick: 3));
+        Assert.True(first.IsFailure);
+        Assert.Equal(JobStatus.Created, harness.Jobs.Get(deliveryJobId)!.Status);
+
+        Result second = resolve.Handle(new ResolveDeferredBuildingSupplyJobCommand(
+            deliveryJobId,
+            secondResidentId,
+            new[] { sourceCell },
+            new[] { sourceCell },
+            tick: 4));
+        Assert.True(second.IsSuccess, second.Error?.ToString());
+        Assert.Equal(
+            secondResidentId,
+            harness.Jobs.Get(deliveryJobId)!.AssignedAgentId!.Value);
+        Assert.Equal(1, harness.Inventory.GetStack(capId)!.ReservedQuantity);
+    }
+
+    [Fact]
     public void Deferred_delivery_definition_round_trips_requested_item_and_dependency()
     {
         EntityId dependencyId = CampfireProductionTestHarness.Id(740);

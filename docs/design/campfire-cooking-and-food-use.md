@@ -37,16 +37,18 @@ Cooking skill changes speed only. Completion grants the existing recipe Cooking 
 
 ## 3. Dependency chain
 
-For every queued grilled-mushroom order the runtime evaluates one deterministic chain:
+Campfire mushroom supply is a continuous internal-stock chain, not a recipe-only shortcut:
 
-1. If the campfire internal stock contains one unreserved mushroom cap, prepare the production job immediately.
-2. Otherwise, if a revealed, reachable, unreserved world mushroom cap exists, create the ordinary protected BuildingSupply job.
-3. Otherwise, if a revealed and reachable `Large` mushroom exists without an active chop attempt, create exactly one ordinary mushroom-chop job and one dependent BuildingSupply job in the same synchronization pass.
-4. The dependent supply job stays source-unresolved and dependency-blocked until the chop completes. When mushroom drops appear as world items, the ordinary BuildingSupply owner binds/reserves a revealed, reachable, unreserved cap on that same delivery job, delivers it, and normal production preparation starts.
+1. Enabled cap/leg stock with missing capacity first uses revealed, reachable, unreserved world items through ordinary protected BuildingSupply.
+2. If the highest-priority missing cap/leg has no eligible world source and a revealed/reachable `Large` mushroom exists without an active chop attempt, runtime creates exactly one mushroom-chop job and one dependent BuildingSupply job in the same synchronization pass.
+3. This planning is independent of a queued grilled-mushroom order and continues while another production order is active.
+4. The dependent supply job stays source-unresolved until chop completion. Resolver then tries every available resident in deterministic distance/id order; one resident without compatible capacity cannot block the others.
+5. If the completed chop no longer has the requested world drop, the stale dependent supply is cancelled so a later pass can create a replacement pair. Other cap/leg drops remain ordinary world sources and are collected by following supply batches until capacity.
+6. A queued grilled-mushroom order prepares immediately once one unreserved internal cap exists.
 
-A cap in another building internal stock is protected by that building owner and is never a candidate. A cap in another resident inventory is also not an automatic source. Delivery and cooking may be completed by the same resident only when that resident independently wins both normal assignments; no special affinity is required.
+A cap or leg in another building internal stock is protected by that building owner and is never a candidate. Material in another resident inventory is also not an automatic source. Delivery and cooking may be completed by the same resident only when that resident independently wins both normal assignments; no special affinity is required.
 
-At most one active dependency chop/delivery pair may be created per blocked campfire order. Existing world caps always take priority over creating another pair. Repeated synchronization cannot create duplicate pending delivery jobs.
+At most one active dependency chop/delivery pair may exist per campfire. Existing eligible world material always takes priority over creating another pair. Repeated synchronization cannot create duplicate pending delivery jobs.
 
 ## 4. Cooking completion and output placement
 
@@ -111,17 +113,20 @@ Domain/application tests must cover recipe quantity, protected source filtering,
 
 Integration tests must cover:
 
-`queued order -> no cap -> chop job + dependent supply job -> cap drop -> source binding -> internal stock -> cook overlay -> two quantity-one outputs -> LMB pickup`;
+`enabled missing cap/leg -> no free world source -> chop job + dependent supply -> drop -> source binding -> internal stock refill`;
+
+`queued order -> no cap -> refill/dependency chain -> internal stock -> cook overlay -> two quantity-one outputs -> LMB pickup`;
 
 and:
 
 `queued order -> cook -> Alt+LMB -> approach -> pickup -> three bites -> Nutrition +15`.
 
-Unity Play Mode must verify cursor priority/animation colour, resident movement, per-product overlay start/fill/full/clear lifecycle, two distinct output entities/cells, pickup commit, eating animation/status, repeated orders, full output zone, cancellation and the next repeated interaction.
+Unity Play Mode must verify cursor priority/animation colour, resident movement, continuous refill during active production, deferred resident fallback, stale dependency recovery, per-product overlay start/fill/full/clear lifecycle, two distinct output entities/cells, pickup commit, eating animation/status, repeated orders, full output zone, cancellation and the next repeated interaction.
 
 ## 11. Implementation evidence
 
 - Core production, input and meal workflow: [#464](https://github.com/bageus/Dig/pull/464).
 - Persisted pickup completion action, save v9 active-meal restoration and full workflow regressions: [#485](https://github.com/bageus/Dig/pull/485).
+- Continuous cap/leg refill and deferred resolver recovery: `docs/implementation/campfire-supply-dependency-recovery-2026-08-01.md`.
 - GitHub Quality covers architecture boundaries, build, domain/application/integration tests, headless smoke and deterministic soak.
 - `CampfireFoodWorkflowPlayModeTests` contains executable dependency-chain and pickup-to-three-bites scenarios. The hosted Unity workflow currently records them as skipped when Unity activation is unavailable, so the system is `IMPLEMENTED`, not `VERIFIED`.

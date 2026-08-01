@@ -25,7 +25,6 @@ namespace Dig.Unity
                 || _startMushroomChop == null
                 || _cancelMushroomChop == null
                 || _buildingSupplyRepository == null
-                || _productionRepository == null
                 || _buildingInventoryRepository == null
                 || _createDeferredBuildingSupply == null)
             {
@@ -37,37 +36,28 @@ namespace Dig.Unity
             InventorySnapshot inventory = _buildingInventoryRepository.Get().CreateSnapshot();
             BuildingSupplyState supplies = _buildingSupplyRepository.Get();
 
+            ItemId[] supportedItems =
+            {
+                CampfireProductionContent.MushroomCapItemId,
+                CampfireProductionContent.MushroomLegItemId,
+            };
             foreach (BuildingSupplySnapshot supply in supplies.GetAll(inventory))
             {
-                ProductionOrderSnapshot? order = _productionRepository.Get()
-                    .GetNextQueued(supply.BuildingId);
-                if (order == null
-                    || order.Recipe.Id != CampfireProductionContent.GrilledMushroomRecipeId
-                    || supply.HasActiveSupply
-                    || HasNonTerminalBuildingSupplyJob(supply.BuildingId)
-                    || _productionRepository.Get().HasActiveOrder(supply.BuildingId))
+                if (supply.HasActiveSupply
+                    || HasNonTerminalBuildingSupplyJob(supply.BuildingId))
                 {
                     continue;
                 }
 
-                BuildingStockSnapshot capStock = supply.Stocks.First(
-                    value => value.ItemId == CampfireProductionContent.MushroomCapItemId);
-                if (capStock.Current > 0 || capStock.Incoming > 0)
+                ItemConsumptionRequest? request =
+                    BuildingSupplyDependencyPlanner.PlanSingleExtractionRequest(
+                        supply,
+                        inventory.Stacks,
+                        revealed,
+                        reachable,
+                        supportedItems);
+                if (!request.HasValue)
                 {
-                    continue;
-                }
-
-                bool eligibleWorldCap = inventory.Stacks.Any(stack =>
-                    stack.ItemId == CampfireProductionContent.MushroomCapItemId
-                    && stack.Location.Kind == ItemLocationKind.World
-                    && stack.Location.HasCell
-                    && stack.AvailableQuantity > 0
-                    && revealed.Contains(stack.Location.CellId)
-                    && reachable.Contains(stack.Location.CellId));
-                if (eligibleWorldCap)
-                {
-                    // The ordinary BuildingSupply pipeline owns an existing cap. Do not
-                    // create extra biological work merely because no worker is free yet.
                     continue;
                 }
 
@@ -109,12 +99,7 @@ namespace Dig.Unity
                         new CreateDeferredBuildingSupplyJobCommand(
                             supplyJobId,
                             supply.BuildingId,
-                            new[]
-                            {
-                                new ItemConsumptionRequest(
-                                    CampfireProductionContent.MushroomCapItemId,
-                                    quantity: 1),
-                            },
+                            new[] { request.Value },
                             new[] { jobId },
                             transit,
                             deposits,
@@ -122,8 +107,8 @@ namespace Dig.Unity
                             tick));
                     if (deferred.IsSuccess)
                     {
-                        // Extraction and its dependency-blocked delivery are visible in
-                        // the job system in the same synchronization pass.
+                        // Continuous refill owns one dependency pair at a time. The
+                        // next synchronization first consumes any new world output.
                         return;
                     }
 

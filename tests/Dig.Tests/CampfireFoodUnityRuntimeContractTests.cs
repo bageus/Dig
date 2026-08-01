@@ -15,6 +15,15 @@ namespace Dig.Tests
             string dependencies = Read(runtime, "DigBuildingProductionFoodDependencies.cs");
             string deferredSupply = Read(runtime, "DigBuildingProductionDeferredSupply.cs");
             string movement = Read(runtime, "DigTerrainWorkDirectMovement.cs");
+            string playMode = File.ReadAllText(Path.Combine(
+                FindRepositoryRoot(),
+                "unity",
+                "Dig.Unity",
+                "Assets",
+                "Dig.Unity",
+                "Tests",
+                "PlayMode",
+                "CampfireSupplyDependencyPlayModeTests.cs"));
             string mushrooms = Read(runtime, "DigTerrainWorkSession.Mushrooms.cs");
             string productionZones = Read(runtime, "DigBuildingProductionZones.cs");
 
@@ -23,12 +32,20 @@ namespace Dig.Tests
             Assert.Contains("CreateEligibleFoodDependencyJobs(tick, agents)", synchronization);
             Assert.Contains("ResolveEligibleDeferredSupplyJobs(tick, agents)", synchronization);
             Assert.Contains("MushroomStage.Large", dependencies);
-            Assert.Contains("eligibleWorldCap", dependencies);
+            Assert.Contains("BuildingSupplyDependencyPlanner.PlanSingleExtractionRequest", dependencies);
             Assert.Contains("CreateDeferredBuildingSupplyJobCommand", dependencies);
             Assert.Contains("new[] { jobId }", dependencies);
             Assert.Contains("CampfireProductionContent.MushroomCapItemId", dependencies);
+            Assert.Contains("CampfireProductionContent.MushroomLegItemId", dependencies);
+            Assert.DoesNotContain("HasActiveOrder(supply.BuildingId)", dependencies);
             Assert.Contains(".Where(IsAvailableForAutomaticWork)", dependencies);
             Assert.Contains("ResolveDeferredBuildingSupplyJobCommand", deferredSupply);
+            Assert.Contains("foreach (AgentViewModel resident in candidates)", deferredSupply);
+            Assert.Contains("HasRequestedWorldQuantity", deferredSupply);
+            Assert.Contains("produced no remaining world source", deferredSupply);
+            Assert.Contains(
+                "Enabled_internal_stock_creates_mushroom_dependency_without_recipe_order",
+                playMode);
             Assert.Contains("ReservationKey.ForAgent(agentId)", movement);
             Assert.Contains("!hasActiveReservation", movement);
             Assert.Contains("_buildingInventoryRepository", mushrooms);
