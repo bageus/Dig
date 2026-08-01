@@ -33,3 +33,9 @@ The prepared implementation patch was verified structurally before application. 
 The first Release build exposed three test-only compatibility errors: the non-solid test material required the full constructor, and two empty-output calls needed an explicit empty `EntityId` collection after the new multi-output overload was introduced. All three calls now bind explicitly without changing runtime behavior.
 
 The combined-main regression run then exposed three lifecycle contracts. Quantity-one items now retain the hauling reservation while moving from world to resident inventory and consume it only at final deposit. Identity preservation is limited to one physical unit, so mixed multi-unit building supply still creates the established aggregate destination stacks. Duplicate mining-output commits now fail through an explicit `InvalidOperationException` guard instead of leaking a dictionary exception.
+
+## Unity PlayMode NUnit constraint correction — 2026-08-01
+
+Local Unity compilation exposed a test-only NUnit overload mismatch in `TerrainOutputCatalogPlayModeTests`: `Does.Not.Contain(ItemId)` bound to the string constraint overload and produced `CS1503` because the typed `ItemId` could not be converted to `string`.
+
+The PlayMode regression now uses collection-specific `Has.Member(ItemId)` and `Has.No.Member(ItemId)` constraints. A .NET source-contract test requires these typed collection constraints and rejects the incompatible `Does.Not.Contain(new ItemId(...))` form. Runtime terrain-output behavior, deterministic data, save/load and hauling semantics are unchanged.
