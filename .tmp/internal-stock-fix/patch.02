@@ -1,0 +1,197 @@
++                && stack.Location.OwnerId == residentId
++                && stack.GetReservedQuantity(reservationOwnerId) > 0)
++            .OrderBy(stack => stack.Location)
++            .ThenBy(stack => stack.Id.ToString(), StringComparer.Ordinal)
++            .FirstOrDefault();
++        if (source is null)
++        {
++            return Result.Failure(InventoryErrors.ReservationNotFound);
++        }
++
++        source.ConsumeReservedQuantity(reservationOwnerId, quantity: 1);
++        Raise(new ItemQuantityReservationChanged(
++            tick,
++            source.Id,
++            reservationOwnerId,
++            source.GetReservedQuantity(reservationOwnerId)));
++        Raise(new ReservedItemConsumed(
++            tick,
++            reservationOwnerId,
++            source.Id,
++            itemId,
++            quantity: 1));
++        if (source.Quantity == 0)
++        {
++            _stacks.Remove(source.Id);
++        }
++
++        IncrementVersion();
++        return Result.Success();
++    }
++}
++
++}
+diff --git a/src/Dig.Domain/Inventory/InventoryState.ProductionMaterialTransit.cs.meta b/src/Dig.Domain/Inventory/InventoryState.ProductionMaterialTransit.cs.meta
+new file mode 100644
+index 0000000..a9001e9
+--- /dev/null
++++ b/src/Dig.Domain/Inventory/InventoryState.ProductionMaterialTransit.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: ebf8a79be7624ca6b7566bdc6a954d86
+diff --git a/src/Dig.Domain/Inventory/ItemPickupQuantityPolicy.cs b/src/Dig.Domain/Inventory/ItemPickupQuantityPolicy.cs
+new file mode 100644
+index 0000000..487cbe2
+--- /dev/null
++++ b/src/Dig.Domain/Inventory/ItemPickupQuantityPolicy.cs
+@@ -0,0 +1,21 @@
++using System;
++
++namespace Dig.Domain.Inventory
++{
++
++public static class ItemPickupQuantityPolicy
++{
++    public static int ResolveRequestedQuantity(ItemStackSnapshot stack)
++    {
++        if (stack is null)
++        {
++            throw new ArgumentNullException(nameof(stack));
++        }
++
++        return stack.Location.Kind == ItemLocationKind.BuildingInventory
++            ? Math.Min(1, stack.AvailableQuantity)
++            : stack.AvailableQuantity;
++    }
++}
++
++}
+diff --git a/src/Dig.Domain/Inventory/ItemPickupQuantityPolicy.cs.meta b/src/Dig.Domain/Inventory/ItemPickupQuantityPolicy.cs.meta
+new file mode 100644
+index 0000000..d203fc4
+--- /dev/null
++++ b/src/Dig.Domain/Inventory/ItemPickupQuantityPolicy.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: 328da6541ce547b29a0e0a0a336fb142
+diff --git a/tests/Dig.Tests/InternalStockUnityContractTests.cs b/tests/Dig.Tests/InternalStockUnityContractTests.cs
+index 6b827c5..4226759 100644
+--- a/tests/Dig.Tests/InternalStockUnityContractTests.cs
++++ b/tests/Dig.Tests/InternalStockUnityContractTests.cs
+@@ -29,6 +29,22 @@ public sealed class InternalStockUnityContractTests
+             synchronization);
+     }
+ 
++
++    [Fact]
++    public void Production_and_direct_pickup_use_one_internal_stock_unit_contract()
++    {
++        string runtime = RuntimeRoot();
++        string capacity = Read(runtime, "DigResidentInventory.Capacity.cs");
++        string zones = Read(runtime, "DigBuildingProductionZones.cs");
++        string transit = Read(runtime, "DigBuildingProductionMaterialTransit.cs");
++
++        Assert.Contains("ItemPickupQuantityPolicy", capacity);
++        Assert.Contains("AcquireProductionMaterialCommand", zones);
++        Assert.Contains("requireResidentCarriedMaterial", zones);
++        Assert.Contains("ResolveBuildingInternalStockCell", zones + transit);
++        Assert.Contains("HasCarriedProductionMaterial", zones + transit);
++    }
++
+     [Fact]
+     public void Product_hud_projects_material_segments()
+     {
+diff --git a/tests/Dig.Tests/ProductionMaterialTransitTests.cs b/tests/Dig.Tests/ProductionMaterialTransitTests.cs
+new file mode 100644
+index 0000000..f2980dc
+--- /dev/null
++++ b/tests/Dig.Tests/ProductionMaterialTransitTests.cs
+@@ -0,0 +1,127 @@
++using System.Linq;
++using Dig.Application.Production;
++using Dig.Domain.Agents;
++using Dig.Domain.Content;
++using Dig.Domain.Core;
++using Dig.Domain.Inventory;
++using Dig.Domain.Production;
++using Xunit;
++
++namespace Dig.Tests
++{
++
++public sealed class ProductionMaterialTransitTests
++{
++    private static readonly RecipeId RecipeId =
++        new RecipeId("recipe.production_transit");
++    private static readonly EntityId OrderId =
++        EntityId.Parse("8a000000000000000000000000000001");
++    private static readonly EntityId JobId =
++        EntityId.Parse("8a000000000000000000000000000002");
++    private static readonly EntityId TransitStackId =
++        EntityId.Parse("8a000000000000000000000000000003");
++
++
++    [Fact]
++    public void Internal_stock_direct_pickup_requests_one_available_unit()
++    {
++        ItemStackSnapshot internalStack = new ItemStackSnapshot(
++            ProductionTestHarness.OreStackId,
++            ProductionTestHarness.Ore,
++            4,
++            ItemLocation.InBuilding(ProductionTestHarness.BuildingId),
++            System.Array.Empty<ItemQuantityReservationSnapshot>());
++        ItemStackSnapshot worldStack = new ItemStackSnapshot(
++            EntityId.Parse("8a000000000000000000000000000004"),
++            ProductionTestHarness.Ore,
++            4,
++            ItemLocation.InWorld(new Dig.Domain.World.CellId(1, 1, 0)),
++            System.Array.Empty<ItemQuantityReservationSnapshot>());
++
++        Assert.Equal(1, ItemPickupQuantityPolicy.ResolveRequestedQuantity(internalStack));
++        Assert.Equal(4, ItemPickupQuantityPolicy.ResolveRequestedQuantity(worldStack));
++    }
++
++    [Fact]
++    public void Production_worker_acquires_reserved_internal_unit_before_work()
++    {
++        RecipeDefinition recipe = new RecipeDefinition(
++            RecipeId,
++            "Production transit",
++            ProductionTestHarness.Workshop,
++            new[] { new ContentItemQuantity(ProductionTestHarness.Ore, 1) },
++            new[] { new ContentItemQuantity(ProductionTestHarness.Plate, 1) },
++            requiredWork: 1,
++            energyPerWorkTick: 0,
++            materialSteps: new[]
++            {
++                new RecipeMaterialStepDefinition(
++                    ProductionTestHarness.Ore,
++                    AgentSkillCatalog.Metallurgy,
++                    baseDurationTicks: 1),
++            });
++        ProductionTestHarness harness = new ProductionTestHarness(new[] { recipe });
++        Assert.True(harness.Enqueue(OrderId, RecipeId, tick: 1).IsSuccess);
++        Assert.True(harness.Prepare(JobId, tick: 2).IsSuccess);
++        harness.AssignAndBegin(OrderId, JobId, tick: 3);
++
++        Result missingCarry = new ApplyProductionWorkHandler(
++            harness.ProductionRepository,
++            harness.InventoryRepository,
++            harness.JobRepository,
++            harness.Agents,
++            harness.Journal).Handle(new ApplyProductionWorkCommand(
++                OrderId,
++                JobId,
++                baseWork: 1,
++                conditionEfficiencyBasisPoints: 10_000,
++                tick: 6,
++                requireResidentCarriedMaterial: true));
++        Assert.Equal(InventoryErrors.ReservationNotFound, missingCarry.Error);
++
++        Result acquired = new AcquireProductionMaterialHandler(
++            harness.ProductionRepository,
++            harness.InventoryRepository,
++            harness.JobRepository,
++            harness.Journal).Handle(new AcquireProductionMaterialCommand(
++                OrderId,
++                JobId,
