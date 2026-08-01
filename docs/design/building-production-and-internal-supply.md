@@ -80,7 +80,9 @@ Campfire использует stable IDs `building.campfire`, `building_box.camp
 
 Demand создаётся для completed workstation с enabled delivery и недостающей capacity независимо от active production order. Planner читает revealed, reachable, unreserved world stacks; reservations текущего production order исключаются через `AvailableQuantity`, поэтому refill не крадёт используемые inputs. Одновременно на building существует не более одного active supply batch. Worker проходит `workstation check -> reserved sources -> workstation deposit`. Пока toggle включён, система повторяет planning после каждого deposit/consumption/pickup до `current + incoming == capacity` либо отсутствия reachable candidates. Cancel/failure/retry освобождает source quantity, incoming capacity и claims атомарно.
 
-Если нужного revealed world source ещё нет, но он ожидается от уже созданного extraction/harvest job, runtime создаёт dependent `BuildingSupply` job с requested item/quantity и ссылкой на extraction dependency. Такой supply job остаётся `Created`, не получает worker/source/incoming reservations до успешного завершения dependency, затем тем же job id проходит обычный planner. Cancel/failure dependency завершает dependent supply без phantom incoming; повторная synchronization не создаёт duplicate dependency/supply pair. Эта dependency-модель не отменяет continuous refill во время active production.
+Если для enabled missing stock нет revealed/reachable/unreserved world source, но существует поддерживаемый revealed/reachable extraction/harvest target, один planning pass создаёт extraction/harvest job и dependent `BuildingSupply` job с requested item/quantity. Для campfire автоматическая добыча поддерживает mushroom cap и mushroom leg через один `Large` mushroom chop; planner выбирает одну недостающую единицу с наибольшим stock priority, а остальные drops остаются обычными world sources для следующих supply batches. Dependency planning работает независимо от queued recipe и не блокируется active production order.
+
+Dependent supply остаётся `Created` и не получает worker/source/incoming reservations до успешного завершения dependency. После completion resolver перебирает всех доступных residents в deterministic distance/id order: отказ ближайшего resident из-за inventory capacity не блокирует следующего кандидата. Если completed dependency больше не имеет требуемого world output, dependent supply отменяется как stale без phantom incoming, после чего следующий synchronization pass может создать новую extraction/supply pair. Cancel/failure dependency также завершает dependent supply; повторная synchronization не создаёт duplicate pair. Эта dependency-модель является частью continuous refill до `current + incoming == capacity`.
 
 ## 7. Production lifecycle
 
@@ -152,7 +154,8 @@ Diagnostics показывают building/recipe/order/job IDs, stock current/in
 Domain/Application:
 
 - protected internal stock не выбирается automatic supply;
-- deferred extraction dependency создаёт не более одного supply job и не резервирует phantom incoming;
+- enabled missing campfire cap/leg без eligible world source создаёт не более одной mushroom-chop/deferred-supply pair независимо от queued recipe и active production;
+- deferred extraction dependency перебирает resident candidates, не резервирует phantom incoming и отменяется, если completed dependency не оставила requested world output;
 - direct pickup забирает одну available unit;
 - right candidates deterministic, без фиксированного limit и без side fallback;
 - occupied nearest cells выбирают следующую правую cell;
@@ -185,3 +188,4 @@ Unity Play Mode:
 | 2026-07-31 | Internal stock identity/refill, flat-route priority, segmented progress и staged output package. | User |
 | 2026-08-01 | Closed categories `food`/`weapon`/`tool` ломаются use-action и выпускают contents; BuildingBox сохраняет existing rules. | User |
 | 2026-08-01 | Unfinished package не поднимается; explicit cancel завершает current unit; forced move уничтожает package/used materials, reset-ит order без изменения counter; package сохраняется как item entity; output search вправо не имеет фиксированного лимита. | User |
+| 2026-08-01 | Enabled cap/leg refill создаёт harvest/deferred-supply pair без recipe/active-production gate; stale dependency освобождается, resolver перебирает всех residents. | User |
