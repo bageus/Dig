@@ -35,7 +35,9 @@ Tracking issue: [#387](https://github.com/bageus/Dig/issues/387).
 6. Collider следует visual и authoritative location.
 7. Item остаётся видимым и доступным для raycast.
 
-Коробки и обычные предметы используют общую item gravity/support policy, если item definition не задаёт утверждённое исключение.
+Коробки и обычные предметы используют общую item gravity/support policy. Любой новый `ItemDefinition`, включая материал, инструмент, оружие, еду и BuildingBox, автоматически наследует grounded world-item behavior без отдельного `lies_on_ground`, `is_grounded`, ItemId allowlist или Unity override. Исключение разрешено только как явно утверждённая специальная spatial policy и не может быть обязательным полем для обычного нового предмета.
+
+Presentation также применяет одну geometry-derived grounding policy: после создания, scale и rotation фактическая нижняя граница активных renderers совмещается с projected floor. Pivot prefab, высота mesh и наличие отдельного visual profile не должны заставлять автора вручную задавать vertical offset. Та же policy используется для обычного world stack, internal stock, inventory placement ghost и BuildingBox relocation preview. Carry sockets, tethered creatures и другие не-world projections используют свои отдельные presentation owners.
 
 Если опора исчезла из-за полного excavation commit, support check использует уже обновлённый authoritative World/topology snapshot и запускается до новых pickup/hauling reservations. Ошибка обновления производной Navigation-проекции не восстанавливает удалённую породу и не отменяет обнаружение потери опоры. Это уточнение не закрывает Q-ITEM-006: текущий runtime может использовать существующую атомарную relocation, а будущая multi-tick animation/state policy остаётся отдельным решением.
 
@@ -69,6 +71,8 @@ BuildingBox остаётся Inventory item. Его строка в building ros
 - visual не может быть скрыт floor geometry при наличии selectable logical item;
 - collider не может оставаться в старой клетке после падения/landing;
 - visual front offset является производным Presentation параметром;
+- нижняя geometry bound каждого обычного world-item visual автоматически совмещается с projected floor после scale/rotation;
+- новое item/material content не требует per-item ground flag, pivot convention или vertical offset;
 - root transform не должен повторно применять terrain rotation к уже спроецированной world position;
 - при rebuild visual полностью восстанавливается из Inventory snapshot;
 - selection raycast и отображаемая позиция обязаны указывать на одну logical cell.
@@ -85,7 +89,9 @@ BuildingBox остаётся Inventory item. Его строка в building ros
 - обычный LMB selection не создаёт pickup order и не запускает placement;
 - support-loss detection не зависит от Unity frame rate;
 - excavation commit не может оставить item на удалённой опоре из-за stale Navigation/presentation state;
-- fall/support reconciliation выполняется раньше новых pickup/hauling reservations.
+- fall/support reconciliation выполняется раньше новых pickup/hauling reservations;
+- grounded presentation является default для всех новых `ItemDefinition`; отсутствие visual profile не отменяет grounding;
+- per-item grounded allowlist и ItemId-based vertical offsets запрещены.
 
 ## 8. Решённые вопросы
 
@@ -93,6 +99,7 @@ BuildingBox остаётся Inventory item. Его строка в building ros
 - **Q-ITEM-002:** выбор BuildingBox является взаимоисключающим selection и переключает HUD на выбранную коробку.
 - **Q-ITEM-006 (trigger):** свободный item автоматически начинает падение после потери опоры без отдельного воздействия; timing/state model остаётся открытым.
 - **Q-ITEM-008:** текущая demo-сцена не обязана показывать процесс падения; generalized visual/actor fall оформлен отдельной системой #396.
+- **Q-ITEM-009:** все новые item/material definitions по умолчанию являются grounded world items. Author не задаёт отдельный ground flag или vertical offset; Presentation совмещает фактическую нижнюю geometry bound с floor автоматически.
 
 ## 9. Открытые вопросы
 
@@ -118,6 +125,9 @@ Acceptance включает:
 - удаление опоры excavation commit-ом запускает тот же fall workflow без erase/redraw или дополнительного interaction;
 - support reconciliation происходит до новых pickup/hauling reservations;
 - несколько item types, включая campfire BuildingBox;
+- незарегистрированный новый material/tool item автоматически использует common gravity и floor grounding;
+- centered-pivot и bottom-pivot prefab касаются одной и той же floor plane без per-item metadata;
+- world stack, internal stock и placement/relocation ghosts используют один grounding owner;
 - visibility + raycast после landing;
 - world box LMB selection без pickup/placement;
 - `Alt` hover/click parity;
