@@ -11,7 +11,7 @@ public sealed class InventoryBarrelRoomRuntimeRegressionTests
     public void Resident_layout_uses_one_quantity_one_stack_per_slot()
     {
         string layout = Read(
-            "src/Dig.Domain/Inventory/InventoryState.ResidentLayout.cs");
+            "src/Dig.Domain/Inventory/InventoryState.ResidentLayout.Compaction.cs");
         string stacking = Read(
             "src/Dig.Domain/Inventory/InventoryState.ResidentStacking.cs");
         string claims = Read(

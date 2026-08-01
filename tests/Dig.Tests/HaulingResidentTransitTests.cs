@@ -72,19 +72,17 @@ public sealed class HaulingResidentTransitTests
         ItemStackSnapshot[] residentOre = ResidentStacks(harness.Inventory)
             .Where(stack => stack.ItemId == OreId)
             .ToArray();
-        ItemStackSnapshot[] cargo = residentOre
+        Assert.Empty(residentOre
             .Where(stack => stack.Location.ResidentCompartment
-                == ResidentInventoryCompartment.Cargo)
-            .ToArray();
-        ItemStackSnapshot existingCargo = Assert.Single(cargo);
-        Assert.Equal(1, existingCargo.Quantity);
-        Assert.Equal(0, existingCargo.ReservedQuantity);
-        ItemStackSnapshot[] mainTransit = residentOre
+                == ResidentInventoryCompartment.Cargo));
+        ItemStackSnapshot[] main = residentOre
             .Where(stack => stack.Location.ResidentCompartment
                 == ResidentInventoryCompartment.Main)
+            .OrderBy(stack => stack.Location.ResidentSlotIndex)
             .ToArray();
-        Assert.Equal(4, mainTransit.Length);
-        Assert.All(mainTransit, stack =>
+        Assert.Equal(5, main.Length);
+        Assert.Equal(0, main[0].ReservedQuantity);
+        Assert.All(main.Skip(1), stack =>
         {
             Assert.Equal(1, stack.Quantity);
             Assert.Equal(1, stack.ReservedQuantity);
@@ -98,8 +96,8 @@ public sealed class HaulingResidentTransitTests
             OreId,
             ItemLocation.InResidentSlot(
                 ResidentId,
-                ResidentInventoryCompartment.Cargo,
-                0)));
+                ResidentInventoryCompartment.Main,
+                1)));
         Assert.Equal(4, harness.Inventory.GetQuantityAt(
             OreId,
             ItemLocation.InStorage(StorageId)));
