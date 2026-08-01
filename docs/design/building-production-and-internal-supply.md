@@ -78,7 +78,7 @@ Campfire использует stable IDs `building.campfire`, `building_box.camp
 
 ## 6. Supply lifecycle
 
-Demand создаётся для completed workstation с enabled delivery и недостающей capacity независимо от active production order. Stock rule с выключенным toggle не создаёт demand, source reservation или resident transit, пока он не требуется non-terminal production order. Каждый queued/active order принудительно включает delivery toggle для всех своих recipe inputs; это не меняет stock priority и не включает unrelated stock rules. Принудительно включённый toggle остаётся обычным видимым состоянием склада и автоматически не выключается после завершения или отмены order. Поэтому hamster delivery по умолчанию остаётся выключенной, но queued roasted-hamster order включает её как required production input. Planner читает revealed, navigation-connected и unreserved world stacks; клетка считается reachable только если она связана с work position строения актуальным navigation snapshot, а не просто является explored/open. Reservations текущего production order исключаются через `AvailableQuantity`, поэтому refill не крадёт используемые inputs. Одновременно на building существует не более одного active supply batch. Worker проходит `workstation check -> reserved sources -> workstation deposit`. Пока toggle включён, система повторяет planning после каждого deposit/consumption/pickup до `current + incoming == capacity` либо отсутствия reachable candidates. Route/acquire failure не может оставить permanent blocker: source quantity, resident slot claims и incoming capacity освобождаются атомарно, failed batch terminal-ится, а следующий synchronization pass может создать новый batch с другим source/resident.
+Demand создаётся для completed workstation с enabled delivery и недостающей capacity независимо от active production order. Stock rule с выключенным toggle не создаёт demand, source reservation или resident transit, пока он не требуется non-terminal production order. Каждый queued/active order принудительно включает delivery toggle для всех своих recipe inputs; это не меняет stock priority и не включает unrelated stock rules. Принудительно включённый toggle остаётся обычным видимым состоянием склада и автоматически не выключается после завершения или отмены order. Поэтому hamster delivery по умолчанию остаётся выключенной, но queued roasted-hamster order включает её как required production input. Planner читает revealed, navigation-connected и unreserved world stacks; клетка считается reachable только если она связана с work position строения актуальным navigation snapshot, а не просто является explored/open. Reservations текущего production order исключаются через `AvailableQuantity`, поэтому refill не крадёт используемые inputs. Одновременно на building существует не более одного active supply batch. Production worker сохраняет эксклюзивную reservation craft/work position, но supply batch не резервирует эту production-позицию: его concurrency ограничивают `BuildingSupplyState.ActiveSupplyJobId`, destination/building ownership и authoritative movement occupancy. Поэтому другой resident может выполнить `workstation check -> reserved sources -> workstation deposit` одновременно с active production. Пока toggle включён, система повторяет planning после каждого deposit/consumption/pickup до `current + incoming == capacity` либо отсутствия reachable candidates. Route/acquire failure не может оставить permanent blocker: source quantity, resident slot claims и incoming capacity освобождаются атомарно, failed batch terminal-ится, а следующий synchronization pass может создать новый batch с другим source/resident.
 
 Если для enabled missing stock нет revealed/reachable/unreserved world source, но существует поддерживаемый revealed/reachable extraction/harvest target, один planning pass создаёт extraction/harvest job и dependent `BuildingSupply` job с requested item/quantity. Для campfire автоматическая добыча поддерживает mushroom cap и mushroom leg через один `Large` mushroom chop; planner выбирает одну недостающую единицу с наибольшим stock priority, а остальные drops остаются обычными world sources для следующих supply batches. Dependency planning работает независимо от queued recipe и не блокируется active production order.
 
@@ -141,13 +141,12 @@ Forced movement после normal close не меняет уже созданн�
 
 Save включает workstation registration, delivery toggles/incoming, queue/status, material progress, consumed ledger, active job references и supply allocations.
 
-- Unfinished package сохраняется как настоящая Inventory item entity со stable stack ID/location, owner order ID, lifecycle/version и текущим manifest/progress reference.
-- Closed `food`/`weapon`/`tool` package сохраняет stack identity/location/version, kind, полный contents manifest и materialized marker.
-- Active direct-use job сохраняет worker/work position/stage.
-- `BuildingBox` сохраняется своим существующим contract.
-- Load не возвращает consumed inputs, не повторяет package close/materialization и не дублирует skill grants.
+- Unfinished package сохраняется как настоящая Inventory item entity со `StackId`, order/package metadata, cell и lifecycle state.
+- Closed package сохраняет category/manifest и consumed marker direct-use transaction.
+- При load active worker/job/package references валидируются; stale references переводятся в approved cancel/interruption recovery без duplicate output.
+- Derived input/output zones пересчитываются из footprint.
 
-Diagnostics показывают building/recipe/order/job IDs, stock current/incoming/capacity, material progress, assigned worker, output candidates/chosen cell, package stack/kind/version/manifest, direct-use worker/stage, interruption reason и terminal completion result.
+Diagnostics показывают building/recipe/order/job IDs, stock current/incoming/capacity/toggle, exact source/resident/package stack IDs, package lifecycle/category/manifest, material index/progress, output search attempts и terminal reason.
 
 ## 10. Acceptance
 
@@ -157,17 +156,21 @@ Domain/Application:
 - hamster stock имеет capacity `2`, default delivery выключен, но queued/active roasted-hamster order принудительно включает его как required input;
 - queued/active production order force-enables delivery only for its required inputs and never changes stock priority;
 - ordinary supply considers actual navigation connectivity to the workstation, and a route/acquire failure releases all external reservations so later synchronization can replan;
+- active `ProductionWorkJob` и один `BuildingSupplyJob` того же building могут быть одновременно claimed разными residents; supply не захватывает exclusive production work-position reservation;
 - enabled missing campfire cap/leg без eligible world source создаёт не более одной mushroom-chop/deferred-supply pair независимо от queued recipe и active production;
 - deferred extraction dependency перебирает resident candidates, не резервирует phantom incoming и отменяется, если completed dependency не оставила requested world output;
 - direct pickup забирает одну available unit;
-- right candidates deterministic, без фиксированного limit и без side fallback;
-- occupied nearest cells выбирают следующую правую cell;
-- unfinished package является inventory entity, не pickup/use target;
-- active explicit cancel сохраняет workflow до normal output;
-- forced move удаляет package, теряет consumed materials, освобождает unused reservations, reset-ит progress и оставляет counter/order non-terminal;
-- package close, BuildingBox либо closed-package commit и terminal order/job происходят атомарно;
-- food/weapon/tool direct use materialize-ит manifest exactly once;
-- save/load сохраняет unfinished/closed package entity и active use job.
+- production material transit использует exact reserved stack identity;
+- output cell resolver вправо пропускает occupied cells и не имеет фиксированного лимита;
+- unfinished package создаётся до material work и неинтерактивна;
+- каждый material step меняет package progress и exactly-once consumption ledger;
+- normal close atomically terminal-ит order/job и создаёт корректный closed output;
+- BuildingBox сохраняет ordinary box lifecycle;
+- food/weapon/tool package direct use materializes manifest exactly once;
+- explicit cancel active order завершает current unit;
+- forced movement удаляет unfinished package, теряет used inputs, reset-ит order без изменения counter;
+- save/load сохраняет active package/material progress/reservations;
+- blocked output не создаёт дубликат и retry остаётся deterministic.
 
 Unity Play Mode:
 
@@ -175,9 +178,11 @@ Unity Play Mode:
 - queued roasted-hamster order включает hamster delivery, но не меняет stock priority;
 - disconnected explored/open source не резервируется, а failed supply route не блокирует следующий refill batch;
 - internal units используют тот же art/hover/pickup cursor и exact `StackId`;
-- enabled internal stock продолжает refill одновременно с production до capacity;
+- enabled internal stock продолжает refill одновременно с production до capacity, причём active production worker и supply worker существуют одновременно и remote source требует полный outbound/return route;
 - product icon показывает segmented material progress;
-- unfinished package видна справа, не поднимается и сохраняется после save/load;
+- active order создаёт одну unfinished package справа;
+- unfinished package не имеет interaction collider;
+- material progression визуально наполняет package;
 - explicit cancel active unit даёт finished output;
 - forced move удаляет package, оставляет counter и заново ставит order в ожидание inputs;
 - несколько занятых right-side cells сдвигают package дальше вправо;
@@ -197,3 +202,4 @@ Unity Play Mode:
 | 2026-08-01 | Enabled cap/leg refill создаёт harvest/deferred-supply pair без recipe/active-production gate; stale dependency освобождается, resolver перебирает всех residents. | User |
 | 2026-08-01 | Hamster internal-stock delivery является opt-in: capacity/recipe сохраняются, но default toggle выключен, чтобы fresh free hamster не резервировались continuous-refill системой сразу после старта. | Пользовательский runtime bug report |
 | 2026-08-01 | Любой non-terminal production order принудительно включает delivery toggle для своих recipe inputs без изменения stock priority; actual supply reachability определяется navigation connectivity, а blocked/failed batch не может навсегда блокировать склад. | Подтверждение пользователя в проектном чате |
+| 2026-08-02 | Active production сохраняет exclusive craft-position reservation, а concurrent supply не резервирует ту же позицию; один supply batch ограничивается building-level ledger и movement occupancy. | Пользовательский runtime bug report |
