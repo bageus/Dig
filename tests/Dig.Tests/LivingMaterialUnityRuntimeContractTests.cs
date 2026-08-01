@@ -28,6 +28,30 @@ public sealed class LivingMaterialUnityRuntimeContractTests
     }
 
     [Fact]
+    public void FreshDemoSeedsTwoHamstersAndOneGrubThroughInventory()
+    {
+        string session = Read(
+            RuntimeRoot(),
+            "DigTerrainWorkSession.LivingMaterials.cs");
+        string planner = ReadSource(
+            "Dig.Application",
+            "Ecology",
+            "LivingMaterialInitialPopulationPlanner.cs");
+
+        Assert.Contains("SeedDemoLivingMaterials(tick)", session);
+        Assert.Contains("DemoHamsterOneId", session);
+        Assert.Contains("DemoHamsterTwoId", session);
+        Assert.Contains("DemoGrubId", session);
+        Assert.Contains("LivingMaterialInitialPopulationPlanner", session);
+        Assert.Contains("inventory.AddUnit(", session);
+        Assert.Contains("ItemLocation.InWorld(placement.Cell)", session);
+        Assert.Contains("TryResolve(stack.ItemId", session);
+        Assert.Contains("value => value.Key != hamsterPlane.Key", planner);
+        Assert.Contains("LivingMaterialSpecies.Hamster", planner);
+        Assert.Contains("LivingMaterialSpecies.Grub", planner);
+    }
+
+    [Fact]
     public void OrdinaryPickupProxyIsInvisibleButAuthoritativeItemRemainsInteractive()
     {
         string itemVisual = Read(RuntimeRoot(), "DigWorldItemVisual.cs");
