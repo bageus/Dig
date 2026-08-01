@@ -11,22 +11,37 @@ namespace Dig.Unity
         private bool _climbingWorkPose;
         private bool _toolWorkActive;
         private bool _attackWorkActive;
+        private bool _buildWorkActive;
 
         internal void SetWorkTarget(
             CellId? target,
             bool climbingWork,
             bool animateToolWork,
-            bool animateAttackWork = false)
+            bool animateAttackWork = false,
+            bool animateBuildWork = false)
         {
-            bool hadWorkPose = _climbingWorkPose || _toolWorkActive || _attackWorkActive;
+            bool hadWorkPose = _climbingWorkPose
+                || _toolWorkActive
+                || _attackWorkActive
+                || _buildWorkActive;
             bool willHaveWorkPose = target.HasValue
-                && (climbingWork || animateToolWork || animateAttackWork);
+                && (climbingWork
+                    || animateToolWork
+                    || animateAttackWork
+                    || animateBuildWork);
             _workTargetCell = target;
             _climbingWorkPose = target.HasValue && climbingWork;
-            _attackWorkActive = target.HasValue && animateAttackWork && !climbingWork;
+            _attackWorkActive = target.HasValue
+                && animateAttackWork
+                && !climbingWork;
+            _buildWorkActive = target.HasValue
+                && animateBuildWork
+                && !animateAttackWork
+                && !climbingWork;
             _toolWorkActive = target.HasValue
                 && animateToolWork
                 && !animateAttackWork
+                && !animateBuildWork
                 && !climbingWork;
             if (hadWorkPose && !willHaveWorkPose && _duration <= 0f)
             {
@@ -76,7 +91,7 @@ namespace Dig.Unity
 
         private void ApplyToolWorkAnimation()
         {
-            if ((!_toolWorkActive && !_attackWorkActive)
+            if ((!_toolWorkActive && !_attackWorkActive && !_buildWorkActive)
                 || _rig == null
                 || _duration > 0f)
             {
@@ -90,7 +105,9 @@ namespace Dig.Unity
                 Model.Id,
                 _attackWorkActive
                     ? ResidentActionVisualState.Hit
-                    : ResidentActionVisualState.Dig,
+                    : _buildWorkActive
+                        ? ResidentActionVisualState.Build
+                        : ResidentActionVisualState.Dig,
                 progress,
                 isLooping: true,
                 version: Model.Version));

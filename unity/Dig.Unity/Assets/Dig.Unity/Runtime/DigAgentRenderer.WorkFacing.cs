@@ -34,6 +34,8 @@ namespace Dig.Unity
                 new Dictionary<string, CellId>(StringComparer.Ordinal);
             HashSet<string> nonClimbingWorkers = new HashSet<string>(StringComparer.Ordinal);
             HashSet<string> barrelWorkers = new HashSet<string>(StringComparer.Ordinal);
+            HashSet<string> productionWorkers =
+                new HashSet<string>(StringComparer.Ordinal);
             for (int index = 0; index < jobs.Count; index++)
             {
                 JobOverlayViewModel job = jobs[index];
@@ -49,7 +51,9 @@ namespace Dig.Unity
                         job.TargetX!.Value,
                         job.TargetY!.Value,
                         job.TargetZ!.Value));
-                if (job.IsMushroomChop || job.IsBarrelAttack)
+                if (job.IsMushroomChop
+                    || job.IsBarrelAttack
+                    || job.IsProductionWork)
                 {
                     nonClimbingWorkers.Add(job.AssignedAgentId!);
                 }
@@ -57,6 +61,11 @@ namespace Dig.Unity
                 if (job.IsBarrelAttack)
                 {
                     barrelWorkers.Add(job.AssignedAgentId!);
+                }
+
+                if (job.IsProductionWork)
+                {
+                    productionWorkers.Add(job.AssignedAgentId!);
                 }
             }
 
@@ -81,14 +90,19 @@ namespace Dig.Unity
                     hasFullSupport,
                     tunnelVolume.Contains(current));
                 bool barrelAttack = hasToolWork && barrelWorkers.Contains(pair.Key);
+                bool productionWork = hasToolWork
+                    && productionWorkers.Contains(pair.Key);
                 CellId? poseTarget = hasToolWork
                     ? target
                     : climbingWork ? current : (CellId?)null;
                 pair.Value.SetWorkTarget(
                     poseTarget,
                     climbingWork,
-                    animateToolWork: hasToolWork && !barrelAttack,
-                    animateAttackWork: barrelAttack);
+                    animateToolWork: hasToolWork
+                        && !barrelAttack
+                        && !productionWork,
+                    animateAttackWork: barrelAttack,
+                    animateBuildWork: productionWork);
             }
         }
 
@@ -107,7 +121,8 @@ namespace Dig.Unity
         {
             bool supportedTool = job.PreferredToolKind == JobToolKind.Mining
                 || job.IsMushroomChop
-                || job.IsBarrelAttack;
+                || job.IsBarrelAttack
+                || job.IsProductionWork;
             return job.AssignedAgentId != null
                 && job.HasTarget
                 && supportedTool

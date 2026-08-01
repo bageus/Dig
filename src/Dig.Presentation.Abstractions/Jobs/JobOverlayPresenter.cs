@@ -112,6 +112,12 @@ public sealed class JobOverlayPresenter
             targetY = barrel.TargetCell.Y;
             targetZ = barrel.TargetCell.Z;
         }
+        else if (job.Definition is ProductionWorkJobDefinition production)
+        {
+            targetX = production.WorkPosition.X;
+            targetY = production.WorkPosition.Y;
+            targetZ = production.WorkPosition.Z;
+        }
 
         return new JobOverlayViewModel(
             job.Id.ToString(),
@@ -132,7 +138,8 @@ public sealed class JobOverlayPresenter
             executionReadiness,
             targetZ,
             isMushroomChop: job.Definition is MushroomChopJobDefinition,
-            isBarrelAttack: job.Definition is BarrelAttackJobDefinition);
+            isBarrelAttack: job.Definition is BarrelAttackJobDefinition,
+            isProductionWork: job.Definition is ProductionWorkJobDefinition);
     }
 
     private static IReadOnlyList<JobActionViewModel> MapActions(

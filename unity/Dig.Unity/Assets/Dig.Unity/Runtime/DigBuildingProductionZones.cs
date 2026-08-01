@@ -115,7 +115,7 @@ internal sealed partial class DigTerrainWorkSession
                         tick));
             }
 
-            if (!atWorkstation || tick % 2 != 0)
+            if (!atWorkstation)
             {
                 return Result.Success();
             }
