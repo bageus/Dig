@@ -38,6 +38,29 @@ public sealed class LivingMaterialContainmentChanged : IDomainEvent
     public CellId? Cell { get; }
 }
 
+public sealed class LivingMaterialMovementRegionChanged : IDomainEvent
+{
+    public LivingMaterialMovementRegionChanged(
+        long tick,
+        EntityId creatureId,
+        LivingMaterialPlaneKey previousRegion,
+        LivingMaterialPlaneKey currentRegion,
+        CellId anchorCell)
+    {
+        Tick = tick;
+        CreatureId = creatureId;
+        PreviousRegion = previousRegion;
+        CurrentRegion = currentRegion;
+        AnchorCell = anchorCell;
+    }
+
+    public long Tick { get; }
+    public EntityId CreatureId { get; }
+    public LivingMaterialPlaneKey PreviousRegion { get; }
+    public LivingMaterialPlaneKey CurrentRegion { get; }
+    public CellId AnchorCell { get; }
+}
+
 public sealed class LivingMaterialMoved : IDomainEvent
 {
     public LivingMaterialMoved(long tick, EntityId creatureId, CellId from, CellId to)
