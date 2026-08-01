@@ -21,7 +21,7 @@ Related issues: [#67](https://github.com/bageus/Dig/issues/67), [#70](https://gi
 
 Validation run `30719083090` executed the reconstructed feature over the then-current `main` before publishing the clean source commit.
 
-The final clean PR head was validated by Quality run `30719598337`; both Stage 2 source exports also passed (`30719598360` v2 and `30719598371` v3).
+The final clean PR head was validated by Quality run `30719658925`; both Stage 2 source exports also passed (`30719658885` v2 and `30719658882` v3).
 
 Executed checks:
 
@@ -36,4 +36,4 @@ The clean feature branch contains no `.agent` payload files, temporary publishin
 
 ## Runtime verification boundary
 
-Checked-in Play Mode coverage includes generic material, weapon, food and BuildingBox interaction workflows. Unity workflow `30719598331` completed through the blocked-evidence path: licensed activation was unavailable, so actual EditMode/PlayMode execution was skipped. The system therefore remains `IMPLEMENTED`, not `VERIFIED`.
+Checked-in Play Mode coverage includes generic material, weapon, food and BuildingBox interaction workflows. Unity workflow `30719658899` completed through the blocked-evidence path: licensed activation was unavailable, so actual EditMode/PlayMode execution was skipped. The system therefore remains `IMPLEMENTED`, not `VERIFIED`.
