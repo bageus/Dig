@@ -1,6 +1,6 @@
 # Living-material physics pass-through correction
 
-Status: `APPROVED`; implementation and licensed Unity runtime evidence are tracked separately.
+Status: `IMPLEMENTED`; licensed Unity runtime evidence remains pending before `VERIFIED`.
 
 Tracking issues: [#524](https://github.com/bageus/Dig/issues/524), [#433](https://github.com/bageus/Dig/issues/433).
 
@@ -46,13 +46,19 @@ The existing world-item contract remains authoritative:
 
 ## Acceptance
 
-- [ ] source contract requires species-specific trigger configuration and explicit reset for non-living species;
-- [ ] checked-in Unity Play Mode renders hamster and grub, verifies their root colliders are enabled triggers and remain raycastable;
-- [ ] checked-in Unity Play Mode overlaps each living-material proxy with a movable Rigidbody item/package and verifies no position, rotation or velocity change after fixed simulation;
-- [ ] ordinary world-item and unfinished-package interaction contracts remain green;
-- [ ] repository Quality/build/.NET tests pass;
+- [x] source contract requires species-specific trigger configuration and explicit reset for non-living species;
+- [x] checked-in Unity Play Mode renders hamster and grub, verifies their root colliders are enabled triggers and remain raycastable;
+- [x] checked-in Unity Play Mode overlaps each living-material proxy with a movable Rigidbody item/package and verifies no position, rotation or velocity change after fixed simulation;
+- [x] ordinary world-item and unfinished-package interaction contracts remain green;
+- [x] repository Quality/build/.NET tests pass;
 - [ ] licensed Unity EditMode/PlayMode executes the new runtime scenario before status may become `VERIFIED`.
+
+## Verification evidence — 2026-08-01
+
+PR [#554](https://github.com/bageus/Dig/pull/554) completed the repository Quality workflow successfully: architecture/source contracts passed, Release build completed with zero warnings and zero errors, all 1289 .NET tests passed, and headless smoke plus standard and large deterministic soak runs completed successfully.
+
+The Unity workflow recorded blocked runtime evidence because licensed Unity activation was unavailable. The checked-in Play Mode test was therefore not executed by Unity Test Runner and this specification remains `IMPLEMENTED`, not `VERIFIED`.
 
 ## Verification boundary
 
-Repository source contracts and checked-in Play Mode scenarios may establish `IMPLEMENTED`. Only retained evidence from a licensed Unity Test Runner may establish `VERIFIED`.
+Repository source contracts and checked-in Play Mode scenarios establish `IMPLEMENTED`. Only retained evidence from a licensed Unity Test Runner may establish `VERIFIED`.
