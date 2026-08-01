@@ -78,7 +78,7 @@ Campfire использует stable IDs `building.campfire`, `building_box.camp
 
 ## 6. Supply lifecycle
 
-Demand создаётся для completed workstation с enabled delivery и недостающей capacity независимо от active production order. Stock rule с выключенным toggle не создаёт demand, source reservation или resident transit; для hamster автоматическая доставка начинается только после явного включения игроком. Planner читает revealed, reachable, unreserved world stacks; reservations текущего production order исключаются через `AvailableQuantity`, поэтому refill не крадёт используемые inputs. Одновременно на building существует не более одного active supply batch. Worker проходит `workstation check -> reserved sources -> workstation deposit`. Пока toggle включён, система повторяет planning после каждого deposit/consumption/pickup до `current + incoming == capacity` либо отсутствия reachable candidates. Cancel/failure/retry освобождает source quantity, incoming capacity и claims атомарно.
+Demand создаётся для completed workstation с enabled delivery и недостающей capacity независимо от active production order. Stock rule с выключенным toggle не создаёт demand, source reservation или resident transit, пока он не требуется non-terminal production order. Каждый queued/active order принудительно включает delivery toggle для всех своих recipe inputs; это не меняет stock priority и не включает unrelated stock rules. Принудительно включённый toggle остаётся обычным видимым состоянием склада и автоматически не выключается после завершения или отмены order. Поэтому hamster delivery по умолчанию остаётся выключенной, но queued roasted-hamster order включает её как required production input. Planner читает revealed, navigation-connected и unreserved world stacks; клетка считается reachable только если она связана с work position строения актуальным navigation snapshot, а не просто является explored/open. Reservations текущего production order исключаются через `AvailableQuantity`, поэтому refill не крадёт используемые inputs. Одновременно на building существует не более одного active supply batch. Worker проходит `workstation check -> reserved sources -> workstation deposit`. Пока toggle включён, система повторяет planning после каждого deposit/consumption/pickup до `current + incoming == capacity` либо отсутствия reachable candidates. Route/acquire failure не может оставить permanent blocker: source quantity, resident slot claims и incoming capacity освобождаются атомарно, failed batch terminal-ится, а следующий synchronization pass может создать новый batch с другим source/resident.
 
 Если для enabled missing stock нет revealed/reachable/unreserved world source, но существует поддерживаемый revealed/reachable extraction/harvest target, один planning pass создаёт extraction/harvest job и dependent `BuildingSupply` job с requested item/quantity. Для campfire автоматическая добыча поддерживает mushroom cap и mushroom leg через один `Large` mushroom chop; planner выбирает одну недостающую единицу с наибольшим stock priority, а остальные drops остаются обычными world sources для следующих supply batches. Dependency planning работает независимо от queued recipe и не блокируется active production order.
 
@@ -86,7 +86,7 @@ Dependent supply остаётся `Created` и не получает worker/sour
 
 ## 7. Production lifecycle
 
-1. Order может ожидать inputs в queue; icon зелёный при наличии полного input set.
+1. Order может ожидать inputs в queue; icon зелёный при наличии полного input set. Пока order non-terminal, delivery toggle каждого recipe input принудительно включён без изменения stock priority.
 2. Полный input set резервируется во внутреннем stock.
 3. Один eligible resident получает `ProductionWorkJob`; segmented overlay получает по одному делению на material step.
 4. Worker создаёт order-owned unfinished package в первой доступной right-side output cell.
@@ -154,7 +154,9 @@ Diagnostics показывают building/recipe/order/job IDs, stock current/in
 Domain/Application:
 
 - protected internal stock не выбирается automatic supply;
-- hamster stock имеет capacity `2`, но default delivery выключен; до явного toggle-on fresh/world hamster не резервируется, не создаёт supply job и не попадает в resident transit inventory;
+- hamster stock имеет capacity `2`, default delivery выключен, но queued/active roasted-hamster order принудительно включает его как required input;
+- queued/active production order force-enables delivery only for its required inputs and never changes stock priority;
+- ordinary supply considers actual navigation connectivity to the workstation, and a route/acquire failure releases all external reservations so later synchronization can replan;
 - enabled missing campfire cap/leg без eligible world source создаёт не более одной mushroom-chop/deferred-supply pair независимо от queued recipe и active production;
 - deferred extraction dependency перебирает resident candidates, не резервирует phantom incoming и отменяется, если completed dependency не оставила requested world output;
 - direct pickup забирает одну available unit;
@@ -170,6 +172,8 @@ Domain/Application:
 Unity Play Mode:
 
 - fresh demo сохраняет двух hamster free/world-owned после initial production synchronization, без `R:1` и resident inventory transit;
+- queued roasted-hamster order включает hamster delivery, но не меняет stock priority;
+- disconnected explored/open source не резервируется, а failed supply route не блокирует следующий refill batch;
 - internal units используют тот же art/hover/pickup cursor и exact `StackId`;
 - enabled internal stock продолжает refill одновременно с production до capacity;
 - product icon показывает segmented material progress;
@@ -192,3 +196,4 @@ Unity Play Mode:
 | 2026-08-01 | Unfinished package не поднимается; explicit cancel завершает current unit; forced move уничтожает package/used materials, reset-ит order без изменения counter; package сохраняется как item entity; output search вправо не имеет фиксированного лимита. | User |
 | 2026-08-01 | Enabled cap/leg refill создаёт harvest/deferred-supply pair без recipe/active-production gate; stale dependency освобождается, resolver перебирает всех residents. | User |
 | 2026-08-01 | Hamster internal-stock delivery является opt-in: capacity/recipe сохраняются, но default toggle выключен, чтобы fresh free hamster не резервировались continuous-refill системой сразу после старта. | Пользовательский runtime bug report |
+| 2026-08-01 | Любой non-terminal production order принудительно включает delivery toggle для своих recipe inputs без изменения stock priority; actual supply reachability определяется navigation connectivity, а blocked/failed batch не может навсегда блокировать склад. | Подтверждение пользователя в проектном чате |
