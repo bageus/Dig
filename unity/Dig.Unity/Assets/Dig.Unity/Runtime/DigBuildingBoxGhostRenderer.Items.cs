@@ -50,14 +50,15 @@ namespace Dig.Unity
                     _plannedBoxes.Add(jobId, visual);
                 }
 
-                visual.Root.localPosition = DigWorldItemVisualPolicy.ResolveWorldPosition(
-                    plan.Destination,
-                    visual.Resolution,
-                    Vector2.zero);
                 visual.Root.localRotation = Quaternion.identity;
                 visual.Root.localScale = Vector3.one;
-                visual.Tint.SetTint(PlannedItemGhostTint);
                 visual.Root.gameObject.SetActive(true);
+                DigWorldItemGrounding.PlaceOnFloor(
+                    visual.Root,
+                    DigWorldItemVisualPolicy.ResolveFloorAnchor(
+                        plan.Destination,
+                        Vector2.zero));
+                visual.Tint.SetTint(PlannedItemGhostTint);
             }
 
             List<string> removed = new List<string>();
@@ -96,16 +97,18 @@ namespace Dig.Unity
                 itemVisualCatalog,
                 itemId);
             EnsureItemPreviewInstance(preview, resolution);
-            _previewContainer!.localPosition = DigWorldItemVisualPolicy.ResolveWorldPosition(
-                preview.Origin,
-                resolution,
-                Vector2.zero);
-            _previewContainer.localRotation = preview.IsValid
+            _previewContainer!.localRotation = preview.IsValid
                 ? Quaternion.identity
                 : Quaternion.Euler(0f, 0f, 7f);
             _previewContainer.localScale = preview.IsValid
                 ? Vector3.one
                 : new Vector3(0.92f, 1.18f, 0.92f);
+            _previewContainer.gameObject.SetActive(true);
+            DigWorldItemGrounding.PlaceOnFloor(
+                _previewContainer,
+                DigWorldItemVisualPolicy.ResolveFloorAnchor(
+                    preview.Origin,
+                    Vector2.zero));
             _previewTint!.SetTint(preview.IsValid
                 ? ValidItemGhostTint
                 : InvalidItemGhostTint);
@@ -174,7 +177,7 @@ namespace Dig.Unity
             transparent.Configure(fixedOpacity: 0.52f);
             DigVisualTintTarget tint = instance.GetComponent<DigVisualTintTarget>()
                 ?? instance.AddComponent<DigVisualTintTarget>();
-            return new PlannedBoxVisual(root, tint, resolution);
+            return new PlannedBoxVisual(root, tint);
         }
 
         private void EnsurePlannedContainer()
@@ -198,17 +201,14 @@ namespace Dig.Unity
         {
             internal PlannedBoxVisual(
                 Transform root,
-                DigVisualTintTarget tint,
-                DigItemVisualResolution resolution)
+                DigVisualTintTarget tint)
             {
                 Root = root;
                 Tint = tint;
-                Resolution = resolution;
             }
 
             internal Transform Root { get; }
             internal DigVisualTintTarget Tint { get; }
-            internal DigItemVisualResolution Resolution { get; }
         }
     }
 }
