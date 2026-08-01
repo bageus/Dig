@@ -75,22 +75,84 @@ public sealed class TerrainOutputProfileTests
     }
 
     [Fact]
+    public void Ordinary_profiles_are_low_chance_and_never_guaranteed()
+    {
+        MaterialCatalog catalog = DefaultTerrainMaterials.CreateCatalog();
+        MaterialId[] ordinary =
+        {
+            DefaultTerrainMaterials.StoneRock,
+            DefaultTerrainMaterials.MetalBearingRock,
+            DefaultTerrainMaterials.CrystallineRock,
+            DefaultTerrainMaterials.LavaRock,
+        };
+
+        foreach (MaterialId materialId in ordinary)
+        {
+            TerrainOutputProfile profile = catalog.Get(materialId)!.OutputProfile!;
+            Assert.NotEmpty(profile.Entries);
+            Assert.All(profile.Entries, entry =>
+            {
+                Assert.InRange(entry.ProbabilityPermille, 1, 100);
+                Assert.NotEqual(1_000, entry.ProbabilityPermille);
+            });
+        }
+    }
+
+    [Fact]
+    public void Every_ordinary_profile_resolves_both_empty_and_material_cells()
+    {
+        MaterialCatalog catalog = DefaultTerrainMaterials.CreateCatalog();
+        TerrainOutputResolver resolver = new TerrainOutputResolver();
+        MaterialId[] ordinary =
+        {
+            DefaultTerrainMaterials.StoneRock,
+            DefaultTerrainMaterials.MetalBearingRock,
+            DefaultTerrainMaterials.CrystallineRock,
+            DefaultTerrainMaterials.LavaRock,
+        };
+
+        foreach (MaterialId materialId in ordinary)
+        {
+            TerrainOutputProfile profile = catalog.Get(materialId)!.OutputProfile!;
+            bool sawEmpty = false;
+            bool sawOutput = false;
+            for (int index = 0; index < 4_096; index++)
+            {
+                TerrainOutputRoll roll = resolver.Resolve(
+                    42,
+                    3,
+                    new CellId(
+                        index % 64,
+                        (index / 64) % 16,
+                        index % WorldSize.RequiredDepth),
+                    profile);
+                sawEmpty |= roll.IsEmpty;
+                sawOutput |= !roll.IsEmpty;
+            }
+
+            Assert.True(sawEmpty, $"{materialId} must allow an empty cell roll.");
+            Assert.True(sawOutput, $"{materialId} must still produce material rolls.");
+        }
+    }
+
+    [Fact]
     public void Stone_rock_never_resolves_to_ore()
     {
         MaterialDefinition stone = DefaultTerrainMaterials.CreateCatalog()
             .Get(DefaultTerrainMaterials.StoneRock)!;
         TerrainOutputResolver resolver = new TerrainOutputResolver();
 
-        for (int x = 0; x < 64; x++)
+        for (int x = 0; x < 512; x++)
         {
             TerrainOutputRoll roll = resolver.Resolve(
                 81,
                 2,
-                new CellId(x, 3, x % WorldSize.RequiredDepth),
+                new CellId(x % 64, 3, x % WorldSize.RequiredDepth),
                 stone.OutputProfile!);
 
-            TerrainOutputResult output = Assert.Single(roll.Outputs);
-            Assert.Equal(new ItemId("material.stone"), output.ItemId);
+            Assert.All(
+                roll.Outputs,
+                output => Assert.Equal(new ItemId("material.stone"), output.ItemId));
         }
     }
 
