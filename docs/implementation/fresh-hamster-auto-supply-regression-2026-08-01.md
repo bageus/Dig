@@ -1,6 +1,6 @@
 # Fresh hamster auto-supply regression — 2026-08-01
 
-Status: `IMPLEMENTED` on branch `bugfix/fresh-hamsters-not-auto-supplied`; repository Quality and licensed Unity runtime evidence are pending.
+Status: `IMPLEMENTED` in draft PR [#549](https://github.com/bageus/Dig/pull/549); repository Quality evidence is recorded on the PR. Licensed Unity runtime evidence remains blocked.
 
 Authoritative specifications:
 
@@ -36,6 +36,7 @@ Mushroom cap, mushroom leg and stone defaults remain enabled. No new runtime bra
 ## Regression coverage
 
 - `CampfireProductionContentTests` requires hamster capacity `2` with `DefaultDeliveryEnabled == false` and requires every non-hamster campfire stock default to remain enabled.
+- `BuildingProductionPresenterTests` requires the HUD projection to show hamster delivery disabled while the other three stock toggles remain enabled.
 - `LivingMaterialUnityRuntimeContractTests` requires the opt-in content declaration and the checked-in Unity scenario.
 - `LivingMaterialEcologyPlayModeTests` initializes the real demo building, production and living-material sessions, runs initial production synchronization, then requires:
   - two world hamster;
@@ -46,4 +47,4 @@ Mushroom cap, mushroom leg and stone defaults remain enabled. No new runtime bra
 
 ## Verification boundary
 
-The .NET/domain/source-contract suite can verify the content owner and checked-in scenario wiring. Runtime status remains `IMPLEMENTED`, not `VERIFIED`, until a licensed Unity runner executes the Play Mode scenario and records machine-readable evidence.
+The .NET/domain/source-contract suite verifies the content owner, HUD projection and checked-in scenario wiring. Runtime status remains `IMPLEMENTED`, not `VERIFIED`, until a licensed Unity runner executes the Play Mode scenario and records machine-readable evidence.
