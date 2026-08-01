@@ -49,3 +49,5 @@ jobs:
           fi
           git commit -m "Implement automatic world item grounding"
           git push origin HEAD:agent/automatic-world-item-grounding
+
+# Triggered after the workflow file exists on the branch.
