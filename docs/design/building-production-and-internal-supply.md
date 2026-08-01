@@ -141,12 +141,13 @@ Forced movement после normal close не меняет уже созданн�
 
 Save включает workstation registration, delivery toggles/incoming, queue/status, material progress, consumed ledger, active job references и supply allocations.
 
-- Unfinished package сохраняется как настоящая Inventory item entity со `StackId`, order/package metadata, cell и lifecycle state.
-- Closed package сохраняет category/manifest и consumed marker direct-use transaction.
-- При load active worker/job/package references валидируются; stale references переводятся в approved cancel/interruption recovery без duplicate output.
-- Derived input/output zones пересчитываются из footprint.
+- Unfinished package сохраняется как настоящая Inventory item entity со stable stack ID/location, owner order ID, lifecycle/version и текущим manifest/progress reference.
+- Closed `food`/`weapon`/`tool` package сохраняет stack identity/location/version, kind, полный contents manifest и materialized marker.
+- Active direct-use job сохраняет worker/work position/stage.
+- `BuildingBox` сохраняется своим существующим contract.
+- Load не возвращает consumed inputs, не повторяет package close/materialization и не дублирует skill grants.
 
-Diagnostics показывают building/recipe/order/job IDs, stock current/incoming/capacity/toggle, exact source/resident/package stack IDs, package lifecycle/category/manifest, material index/progress, output search attempts и terminal reason.
+Diagnostics показывают building/recipe/order/job IDs, stock current/incoming/capacity, material progress, assigned worker, output candidates/chosen cell, package stack/kind/version/manifest, direct-use worker/stage, interruption reason и terminal completion result.
 
 ## 10. Acceptance
 
@@ -156,21 +157,18 @@ Domain/Application:
 - hamster stock имеет capacity `2`, default delivery выключен, но queued/active roasted-hamster order принудительно включает его как required input;
 - queued/active production order force-enables delivery only for its required inputs and never changes stock priority;
 - ordinary supply considers actual navigation connectivity to the workstation, and a route/acquire failure releases all external reservations so later synchronization can replan;
-- active `ProductionWorkJob` и один `BuildingSupplyJob` того же building могут быть одновременно claimed разными residents; supply не захватывает exclusive production work-position reservation;
+- active production and one supply batch for the same building can be claimed by different residents concurrently; supply does not take the production work-position reservation;
 - enabled missing campfire cap/leg без eligible world source создаёт не более одной mushroom-chop/deferred-supply pair независимо от queued recipe и active production;
 - deferred extraction dependency перебирает resident candidates, не резервирует phantom incoming и отменяется, если completed dependency не оставила requested world output;
 - direct pickup забирает одну available unit;
-- production material transit использует exact reserved stack identity;
-- output cell resolver вправо пропускает occupied cells и не имеет фиксированного лимита;
-- unfinished package создаётся до material work и неинтерактивна;
-- каждый material step меняет package progress и exactly-once consumption ledger;
-- normal close atomically terminal-ит order/job и создаёт корректный closed output;
-- BuildingBox сохраняет ordinary box lifecycle;
-- food/weapon/tool package direct use materializes manifest exactly once;
-- explicit cancel active order завершает current unit;
-- forced movement удаляет unfinished package, теряет used inputs, reset-ит order без изменения counter;
-- save/load сохраняет active package/material progress/reservations;
-- blocked output не создаёт дубликат и retry остаётся deterministic.
+- right candidates deterministic, без фиксированного limit и без side fallback;
+- occupied nearest cells выбирают следующую правую cell;
+- unfinished package является inventory entity, не pickup/use target;
+- active explicit cancel сохраняет workflow до normal output;
+- forced move удаляет package, теряет consumed materials, освобождает unused reservations, reset-ит progress и оставляет counter/order non-terminal;
+- package close, BuildingBox либо closed-package commit и terminal order/job происходят атомарно;
+- food/weapon/tool direct use materialize-ит manifest exactly once;
+- save/load сохраняет unfinished/closed package entity и active use job.
 
 Unity Play Mode:
 
@@ -180,9 +178,7 @@ Unity Play Mode:
 - internal units используют тот же art/hover/pickup cursor и exact `StackId`;
 - enabled internal stock продолжает refill одновременно с production до capacity, причём active production worker и supply worker существуют одновременно и remote source требует полный outbound/return route;
 - product icon показывает segmented material progress;
-- active order создаёт одну unfinished package справа;
-- unfinished package не имеет interaction collider;
-- material progression визуально наполняет package;
+- unfinished package видна справа, не поднимается и сохраняется после save/load;
 - explicit cancel active unit даёт finished output;
 - forced move удаляет package, оставляет counter и заново ставит order в ожидание inputs;
 - несколько занятых right-side cells сдвигают package дальше вправо;
