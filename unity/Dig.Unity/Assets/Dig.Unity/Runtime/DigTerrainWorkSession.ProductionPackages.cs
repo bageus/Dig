@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dig.Application.Navigation;
 using Dig.Application.Production;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -171,7 +170,7 @@ internal sealed partial class DigTerrainWorkSession
             .ToArray();
         Result completed = _completeProductionPackageUse!.Handle(
             new CompleteProductionPackageUseCommand(job.Id, outputs, tick));
-        _routePlans.Remove(job.Id);
+        _buildingProductionRoutes.Remove(job.Id);
         if (completed.IsSuccess)
         {
             return Result.Success();
@@ -209,30 +208,13 @@ internal sealed partial class DigTerrainWorkSession
             return false;
         }
 
-        CellId start = new CellId(agent.CellX, agent.CellY, agent.CellZ);
-        PathResult path = new NavigationPathfinder().FindPath(
-            navigation,
-            new PathRequest(
-                start,
-                definition.WorkPosition,
-                navigation.NavigationVersion));
-        if (!path.Succeeded
-            || path.Path == null
-            || !IsSupportedBarrelAttackPath(navigation, path.Path))
-        {
-            return true;
-        }
-
-        _routePlans[job.Id] = new TerrainWorkRoutePlan(
-            job.Id,
-            definition.TargetCell,
+        return PlanBuildingProductionRoute(
+            _buildingProductionRoutes,
+            job,
+            agent,
             definition.WorkPosition,
-            path,
-            candidateCount: 1);
-        movement[agent.Id] = path.Path.Cells.Count > 1
-            ? path.Path.Cells[1]
-            : definition.WorkPosition;
-        return true;
+            navigation,
+            movement);
     }
 }
 
