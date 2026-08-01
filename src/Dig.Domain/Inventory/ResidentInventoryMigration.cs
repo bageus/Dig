@@ -129,19 +129,6 @@ public sealed partial class InventoryState
                     mainIndex++));
         }
 
-        int ordinaryMainCount = Math.Min(
-            ResidentInventoryLayoutSnapshot.MainSlotCount - mainIndex,
-            ordinary.Count);
-        for (int index = 0; index < ordinaryMainCount; index++)
-        {
-            destinations.Add(
-                ordinary[index].Id,
-                ItemLocation.InResidentSlot(
-                    residentId,
-                    ResidentInventoryCompartment.Main,
-                    mainIndex++));
-        }
-
         ActiveMigrationExpansion cargo = ResolveMigrationExpansion(
             expansions,
             destinations,
@@ -150,29 +137,58 @@ public sealed partial class InventoryState
             expansions,
             destinations,
             InventoryExpansionGroup.Weapon);
-        int cargoIndex = 0;
+        List<ItemStackState> weaponItems = ordinary
+            .Where(stack => weapon.Accepts(Catalog.Get(stack.ItemId)))
+            .ToList();
+        List<ItemStackState> ordinaryItems = ordinary
+            .Where(stack => !weapon.Accepts(Catalog.Get(stack.ItemId)))
+            .ToList();
         int weaponIndex = 0;
-        foreach (ItemStackState stack in ordinary.Skip(ordinaryMainCount))
+        foreach (ItemStackState stack in weaponItems.Take(weapon.Capacity))
         {
-            ItemDefinition definition = Catalog.Get(stack.ItemId);
-            if (weapon.Accepts(definition) && weaponIndex < weapon.Capacity)
+            destinations.Add(
+                stack.Id,
+                ItemLocation.InResidentSlot(
+                    residentId,
+                    ResidentInventoryCompartment.Weapon,
+                    weaponIndex++));
+        }
+
+        List<ItemStackState> cargoCandidates = new List<ItemStackState>();
+        foreach (ItemStackState stack in weaponItems
+            .Skip(weaponIndex)
+            .Concat(ordinaryItems))
+        {
+            if (mainIndex < ResidentInventoryLayoutSnapshot.MainSlotCount)
             {
                 destinations.Add(
                     stack.Id,
                     ItemLocation.InResidentSlot(
                         residentId,
-                        ResidentInventoryCompartment.Weapon,
-                        weaponIndex++));
+                        ResidentInventoryCompartment.Main,
+                        mainIndex++));
             }
-            else if (cargo.Accepts(definition) && cargoIndex < cargo.Capacity)
+            else
             {
-                destinations.Add(
-                    stack.Id,
-                    ItemLocation.InResidentSlot(
-                        residentId,
-                        ResidentInventoryCompartment.Cargo,
-                        cargoIndex++));
+                cargoCandidates.Add(stack);
             }
+        }
+
+        int cargoIndex = 0;
+        foreach (ItemStackState stack in cargoCandidates)
+        {
+            if (!cargo.Accepts(Catalog.Get(stack.ItemId))
+                || cargoIndex >= cargo.Capacity)
+            {
+                continue;
+            }
+
+            destinations.Add(
+                stack.Id,
+                ItemLocation.InResidentSlot(
+                    residentId,
+                    ResidentInventoryCompartment.Cargo,
+                    cargoIndex++));
         }
 
         ItemLocation world = ItemLocation.InWorld(residentCell);

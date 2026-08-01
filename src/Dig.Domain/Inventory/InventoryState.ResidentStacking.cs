@@ -55,6 +55,7 @@ public sealed partial class InventoryState
         public EntityId UnitId { get; }
         public int Ordinal { get; }
         public bool IsOriginal { get; }
+        public bool HasAssignedSlot { get; private set; }
         public ResidentInventorySlot AssignedSlot { get; private set; }
         public ItemStackState? Materialized { get; private set; }
 
@@ -74,6 +75,7 @@ public sealed partial class InventoryState
         public void Assign(ResidentInventorySlot slot)
         {
             AssignedSlot = slot;
+            HasAssignedSlot = true;
         }
 
         public void Materialize(ItemStackState stack)
@@ -81,6 +83,50 @@ public sealed partial class InventoryState
             Materialized = stack;
         }
     }
+
+    private sealed class ResidentPlacementCandidate
+    {
+        private ResidentPlacementCandidate(
+            ItemStackState source,
+            ResidentUnitCandidate? unit,
+            bool isExpansion)
+        {
+            Source = source;
+            Unit = unit;
+            IsExpansion = isExpansion;
+        }
+
+        public ItemStackState Source { get; }
+        public ResidentUnitCandidate? Unit { get; }
+        public bool IsExpansion { get; }
+        public EntityId UnitId => Unit?.UnitId ?? Source.Id;
+        public int Ordinal => Unit?.Ordinal ?? 0;
+
+        public static ResidentPlacementCandidate Expansion(ItemStackState source)
+        {
+            return new ResidentPlacementCandidate(
+                source,
+                unit: null,
+                isExpansion: true);
+        }
+
+        public static ResidentPlacementCandidate Ordinary(ResidentUnitCandidate unit)
+        {
+            return new ResidentPlacementCandidate(
+                unit.Source,
+                unit,
+                isExpansion: false);
+        }
+
+        public void Assign(ResidentInventorySlot slot)
+        {
+            if (Unit is not null)
+            {
+                Unit.Assign(slot);
+            }
+        }
+    }
+
 }
 
 }

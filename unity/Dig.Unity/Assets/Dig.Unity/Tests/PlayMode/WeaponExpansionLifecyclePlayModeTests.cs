@@ -71,6 +71,140 @@ public sealed class WeaponExpansionLifecyclePlayModeTests
     }
 
     [Test]
+    public void Sparse_main_and_loaded_cargo_compact_to_weapon_then_main_low_indices()
+    {
+        ResidentInventoryExpansionContent expansions =
+            new ResidentInventoryExpansionContent();
+        ItemId cap = new ItemId("material.test.mushroom_cap");
+        ItemId grub = new ItemId("material.test.grub");
+        ItemId ore = new ItemId("material.test.iron_ore");
+        ItemDefinition[] ordinary =
+        {
+            new ItemDefinition(
+                cap,
+                "Mushroom cap",
+                1,
+                false,
+                new[] { ResidentInventoryExpansionContent.RawMaterialCategoryId }),
+            new ItemDefinition(
+                grub,
+                "Grub",
+                1,
+                false,
+                new[] { ResidentInventoryExpansionContent.RawMaterialCategoryId }),
+            new ItemDefinition(
+                ore,
+                "Iron ore",
+                1,
+                false,
+                new[] { ResidentInventoryExpansionContent.RawMaterialCategoryId }),
+        };
+        InventoryState inventory = new InventoryState(new ItemCatalog(
+            expansions.Items
+                .Concat(CombatEquipmentContent.CreateItems())
+                .Concat(ordinary)));
+        EntityId capStack = Id(30);
+        EntityId basketStack = Id(31);
+        EntityId sheathStack = Id(32);
+        EntityId grubStack = Id(33);
+        EntityId clubStack = Id(34);
+        EntityId oreStack = Id(35);
+        Require(inventory.AddUnit(
+            capStack,
+            cap,
+            ItemLocation.InResidentSlot(
+                ResidentId,
+                ResidentInventoryCompartment.Main,
+                0),
+            tick: 0));
+        Require(inventory.AddUnit(
+            basketStack,
+            ResidentInventoryExpansionContent.LargeBasketItemId,
+            ItemLocation.InResidentSlot(
+                ResidentId,
+                ResidentInventoryCompartment.Main,
+                2),
+            tick: 0));
+        Require(inventory.AddUnit(
+            sheathStack,
+            ResidentInventoryExpansionContent.SheathItemId,
+            ItemLocation.InResidentSlot(
+                ResidentId,
+                ResidentInventoryCompartment.Main,
+                3),
+            tick: 0));
+        Require(inventory.AddUnit(
+            grubStack,
+            grub,
+            ItemLocation.InResidentSlot(
+                ResidentId,
+                ResidentInventoryCompartment.Main,
+                4),
+            tick: 0));
+        Require(inventory.AddUnit(
+            clubStack,
+            CombatEquipmentContent.ClubItemId,
+            ItemLocation.InResidentSlot(
+                ResidentId,
+                ResidentInventoryCompartment.Weapon,
+                0),
+            tick: 0));
+        Require(inventory.AddUnit(
+            oreStack,
+            ore,
+            ItemLocation.InResidentSlot(
+                ResidentId,
+                ResidentInventoryCompartment.Cargo,
+                0),
+            tick: 0));
+
+        Require(inventory.NormalizeResidentInventory(ResidentId, tick: 1));
+
+        ResidentInventoryLayoutSnapshot layout =
+            inventory.GetResidentInventoryLayout(ResidentId);
+        Assert.That(
+            layout.Slots
+                .Where(slot => slot.Slot.Compartment
+                    == ResidentInventoryCompartment.Main && !slot.IsEmpty)
+                .Select(slot => slot.Slot.Index)
+                .ToArray(),
+            Is.EqualTo(new[] { 0, 1, 2, 3, 4 }));
+        Assert.That(
+            layout.Slots
+                .Where(slot => slot.Slot.Compartment
+                    == ResidentInventoryCompartment.Main && !slot.IsEmpty)
+                .OrderBy(slot => slot.Slot.Index)
+                .Select(slot => slot.ItemId!.Value)
+                .ToArray(),
+            Is.EqualTo(new[]
+            {
+                cap,
+                ResidentInventoryExpansionContent.LargeBasketItemId,
+                ResidentInventoryExpansionContent.SheathItemId,
+                grub,
+                ore,
+            }));
+        Assert.That(
+            layout.Slots
+                .Where(slot => slot.Slot.Compartment
+                    == ResidentInventoryCompartment.Cargo)
+                .All(slot => slot.IsEmpty),
+            Is.True);
+        Assert.That(
+            inventory.GetStack(clubStack)!.Location,
+            Is.EqualTo(ItemLocation.InResidentSlot(
+                ResidentId,
+                ResidentInventoryCompartment.Weapon,
+                0)));
+        Assert.That(
+            inventory.GetStack(oreStack)!.Location,
+            Is.EqualTo(ItemLocation.InResidentSlot(
+                ResidentId,
+                ResidentInventoryCompartment.Main,
+                4)));
+    }
+
+    [Test]
     public void Equipment_policy_creates_distinct_sheath_harness_and_club_geometry()
     {
         GameObject root = new GameObject("Equipment Visual Policy Test");

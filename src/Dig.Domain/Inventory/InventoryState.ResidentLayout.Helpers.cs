@@ -67,16 +67,37 @@ public sealed partial class InventoryState
             Catalog.Get(stack.ItemId).InventoryExpansion!);
     }
 
+    private ActiveInventoryExpansionSnapshot? ResolveActiveExpansion(
+        IEnumerable<ItemStackState> expansions,
+        InventoryExpansionGroup group)
+    {
+        ItemStackState? stack = expansions
+            .Where(value => Catalog.Get(value.ItemId).InventoryExpansion?.Group == group)
+            .OrderByDescending(value => Catalog.Get(value.ItemId).InventoryExpansion!.Tier)
+            .ThenBy(value => value.Id.ToString(), StringComparer.Ordinal)
+            .FirstOrDefault();
+        if (stack is null)
+        {
+            return null;
+        }
+
+        return new ActiveInventoryExpansionSnapshot(
+            stack.Id,
+            stack.ItemId,
+            Catalog.Get(stack.ItemId).InventoryExpansion!);
+    }
+
     private static bool TryFindFreeSlot(
         ResidentInventoryCompartment compartment,
         int capacity,
         IReadOnlyDictionary<ResidentInventorySlot, ItemStackState> occupied,
+        ISet<ResidentInventorySlot> unavailable,
         out ResidentInventorySlot slot)
     {
         for (int index = 0; index < capacity; index++)
         {
             ResidentInventorySlot candidate = new ResidentInventorySlot(compartment, index);
-            if (!occupied.ContainsKey(candidate))
+            if (!occupied.ContainsKey(candidate) && !unavailable.Contains(candidate))
             {
                 slot = candidate;
                 return true;
@@ -87,49 +108,77 @@ public sealed partial class InventoryState
         return false;
     }
 
-    private bool TryFindCompatibleFreeSlot(
+    private static int ResidentUnitCompartmentRank(
         ItemStackState stack,
-        int cargoCapacity,
-        int weaponCapacity,
-        ActiveInventoryExpansionSnapshot? activeCargo,
-        ActiveInventoryExpansionSnapshot? activeWeapon,
-        IReadOnlyDictionary<ResidentInventorySlot, ItemStackState> occupied,
-        out ResidentInventorySlot slot)
+        bool prefersWeapon)
     {
-        ItemDefinition definition = Catalog.Get(stack.ItemId);
-        if (activeWeapon.HasValue
-            && activeWeapon.Value.Definition.Accepts(definition)
-            && TryFindFreeSlot(
-                ResidentInventoryCompartment.Weapon,
-                weaponCapacity,
-                occupied,
-                out slot))
+        if (!stack.Location.HasResidentSlot)
         {
-            return true;
+            return 3;
         }
 
-        if (TryFindFreeSlot(
-                ResidentInventoryCompartment.Main,
-                ResidentInventoryLayoutSnapshot.MainSlotCount,
-                occupied,
-                out slot))
+        ResidentInventoryCompartment compartment =
+            stack.Location.ResidentCompartment;
+        if (prefersWeapon)
         {
-            return true;
+            return compartment switch
+            {
+                ResidentInventoryCompartment.Weapon => 0,
+                ResidentInventoryCompartment.Main => 1,
+                ResidentInventoryCompartment.Cargo => 2,
+                _ => 3,
+            };
         }
 
-        if (activeCargo.HasValue
-            && activeCargo.Value.Definition.Accepts(definition)
-            && TryFindFreeSlot(
-                ResidentInventoryCompartment.Cargo,
-                cargoCapacity,
-                occupied,
-                out slot))
+        return compartment switch
         {
-            return true;
+            ResidentInventoryCompartment.Main => 0,
+            ResidentInventoryCompartment.Cargo => 1,
+            ResidentInventoryCompartment.Weapon => 2,
+            _ => 3,
+        };
+    }
+
+    private static int ResidentUnitSlotIndex(ItemStackState stack)
+    {
+        return stack.Location.HasResidentSlot
+            ? stack.Location.ResidentSlotIndex
+            : int.MaxValue;
+    }
+
+    private static int ResidentPlacementCompartmentRank(ItemStackState stack)
+    {
+        if (!stack.Location.HasResidentSlot)
+        {
+            return 3;
         }
 
-        slot = default;
-        return false;
+        return stack.Location.ResidentCompartment switch
+        {
+            ResidentInventoryCompartment.Main => 0,
+            ResidentInventoryCompartment.Cargo => 1,
+            ResidentInventoryCompartment.Weapon => 2,
+            _ => 3,
+        };
+    }
+
+    private static int CountAvailableSlots(
+        ResidentInventoryCompartment compartment,
+        int capacity,
+        IReadOnlyDictionary<ResidentInventorySlot, ItemStackState> occupied,
+        ISet<ResidentInventorySlot> unavailable)
+    {
+        int available = 0;
+        for (int index = 0; index < capacity; index++)
+        {
+            ResidentInventorySlot slot = new ResidentInventorySlot(compartment, index);
+            if (!occupied.ContainsKey(slot) && !unavailable.Contains(slot))
+            {
+                available++;
+            }
+        }
+
+        return available;
     }
 
     private Result ValidatePlacedStack(
