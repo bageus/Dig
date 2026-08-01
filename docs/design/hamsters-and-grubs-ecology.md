@@ -1,6 +1,6 @@
 # Хомяки и grub: блуждание, переноска и размножение
 
-Статус: `APPROVED`; diagonal/depth wandering change is pending implementation and licensed Unity EditMode/PlayMode evidence.
+Статус: `IMPLEMENTED` in PR #555; licensed Unity EditMode/PlayMode evidence remains required.
 
 Tracking issue: [#524](https://github.com/bageus/Dig/issues/524).
 Original implementation PR: [#529](https://github.com/bageus/Dig/pull/529).
@@ -229,7 +229,7 @@ v12 -> v13 terrain output contract
 - Missing/invalid linked unit item: use case fails with typed diagnostic and does not create a second owner.
 - No legal movement: cell is preserved, direction is deterministically reselected, retry occurs on future cadence.
 - No partner/cap reached/no legal offspring cell: reproduction remains due, cycle is not spent, no duplicate appears.
-- Multiple due creatures are processed в stable order; free population is rechecked after each committed offspring.
+- Multiple due creatures are processed in stable order; free population is rechecked after each committed offspring.
 - Stored transition has priority over movement/reproduction in the same tick.
 
 ## 11. Diagnostics
