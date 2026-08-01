@@ -55,7 +55,7 @@ public static class LivingMaterialInitialPopulationErrors
 {
     public static readonly DomainError NoSuitablePlane = new DomainError(
         "ecology.initial_population.no_suitable_plane",
-        "The world has no supported flat plane for two hamster and one grub seeds.");
+        "The world has no legal movement region for two hamster and one grub seeds.");
 }
 
 public sealed class LivingMaterialInitialPopulationPlanner
