@@ -17,7 +17,7 @@ Tracking issue: [#396](https://github.com/bageus/Dig/issues/396).
 
 ## 2. Подтверждённые правила
 
-- все свободные мировые предметы используют общую fall policy;
+- все свободные мировые предметы используют общую fall policy; новый item/material автоматически участвует без отдельной регистрации или ground flag;
 - свободный world item автоматически входит в fall workflow сразу после обнаружения потери допустимой опоры; отдельный удар, приказ или interaction не требуется;
 - та же пространственная модель landing применяется к residents и enemies;
 - для resident/enemy в текущей модели мира не существует обычного `SupportLost` trigger: actor либо стоит в валидной traversable cell, либо карабкается по валидному vertical link;
@@ -26,7 +26,8 @@ Tracking issue: [#396](https://github.com/bageus/Dig/issues/396).
 - residents и enemies не получают fall damage;
 - landing не создаёт stun, knockdown или death только из-за высоты падения;
 - demo-коробка костра пока сразу начинается в нижней пещере и не демонстрирует процесс падения;
-- после landing logical cell, rendered position и collider указывают на одно место.
+- после landing logical cell, rendered position и collider указывают на одно место;
+- Presentation автоматически совмещает нижнюю geometry bound ordinary world item с floor и не требует per-item vertical offset.
 
 «Сразу после потери опоры» определяет автоматический trigger предмета, но не закрывает вопрос о том, является ли само перемещение атомарной транзакцией или занимает несколько simulation ticks.
 
@@ -90,6 +91,7 @@ Held, reserved или site item не считается свободным и и
 - actor-fall transition требует подтверждённого external impact result;
 - landing cell определяется одинаково при replay и save/load;
 - visual не остаётся в воздухе после authoritative landing;
+- prefab pivot/mesh height не могут изменять grounded result или требовать item-specific registration;
 - collider не остаётся в source cell;
 - falling actor не выполняет одновременно обычную ходьбу, копку или работу;
 - residents/enemies не получают damage, stun, knockdown или death от fall distance;
@@ -101,6 +103,7 @@ Held, reserved или site item не считается свободным и и
 - **Q-FALL-001:** свободные предметы падают автоматически после потери опоры; residents/enemies падают только после внешнего воздействия, которое сталкивает их в vertical shaft.
 - **Q-FALL-004:** residents и enemies не получают fall damage, stun, knockdown или death независимо от высоты.
 - **Q-FALL-012:** сценарий «у actor исчезла опора без внешнего воздействия» отсутствует в текущей модели. Resident/enemy либо стоит в валидной cell, либо карабкается по валидному vertical link; отдельный workflow не требуется.
+- **Q-FALL-013:** ordinary items/materials автоматически получают common gravity и geometry-derived floor grounding; отдельный opt-in для каждого нового content definition запрещён.
 
 ## 8. Открытые вопросы
 
@@ -133,6 +136,7 @@ Inspector показывает:
 ## 10. Acceptance после закрытия опросника
 
 - свободный item автоматически начинает fall workflow после потери опоры без дополнительного воздействия;
+- новый material/tool/weapon/food/BuildingBox участвует в item fall и floor grounding без per-item регистрации;
 - обычный movement/climbing actor не создаёт `SupportLost` fall trigger;
 - подтверждённый knockback/push в shaft запускает resident/enemy fall;
 - item, resident и enemy используют согласованный deterministic landing resolver;
