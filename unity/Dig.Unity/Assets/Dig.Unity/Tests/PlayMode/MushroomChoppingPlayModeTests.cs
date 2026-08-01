@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using Dig.Domain.Core;
 using Dig.Domain.Ecology;
+using Dig.Domain.Inventory;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Inventory;
