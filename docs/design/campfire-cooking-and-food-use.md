@@ -52,7 +52,9 @@ At most one active dependency chop/delivery pair may exist per campfire. Existin
 
 ## 4. Cooking completion and output placement
 
-The resident assigned to `ProductionWorkJob` remains the authoritative worker through `Finalize`. That worker performs output placement; no anonymous completion adapter or second hauling job creates the food.
+The resident assigned to `ProductionWorkJob` remains the authoritative worker through `Finalize`. That worker performs the complete spatial cycle; no anonymous completion adapter or second hauling job creates the food.
+
+For grilled mushroom the exact one-step cycle is: create the unfinished food package in the right output zone; approach internal stock; acquire one exact reserved mushroom cap into a resident slot; return to the campfire; commit the cap onto the virtual workbench so it disappears from resident inventory; process the staged cap for the Cooking-resolved duration; approach the same unfinished package; deposit the processed step; close the package and step away into the normal post-work pose. The product segment is committed only by the package deposit, not by raw pickup or timer completion.
 
 The result is two distinct stacks with `quantity = 1`. The generic building-production placement owner requires two supported, explored, unoccupied cells in the right finished-output zone. Candidate order is `right edge + 1`, then `+2` and onward; front, left and rear fallback are forbidden.
 
@@ -121,7 +123,7 @@ and:
 
 `queued order -> cook -> Alt+LMB -> approach -> pickup -> three bites -> Nutrition +15`.
 
-Unity Play Mode must verify cursor priority/animation colour, resident movement, continuous refill during active production, deferred resident fallback, stale dependency recovery, per-product overlay start/fill/full/clear lifecycle, two distinct output entities/cells, pickup commit, eating animation/status, repeated orders, full output zone, cancellation and the next repeated interaction.
+Unity Play Mode must verify cursor priority/animation colour, resident movement, continuous refill during active production, deferred resident fallback, stale dependency recovery, and the full production route `package placement -> internal-stock pickup -> workbench stage/removal from inventory -> processing -> package deposit -> package close -> post-work step-away`. It must also verify per-product overlay start/fill/full/clear lifecycle, two distinct output entities/cells, pickup commit, eating animation/status, repeated orders, full output zone, cancellation and the next repeated interaction.
 
 ## 11. Implementation evidence
 
