@@ -35,7 +35,15 @@ public sealed class CampfireProductionContentTests
         Assert.Equal(new[] { 4, 4, 4, 2 }, workstation.StockRules
             .OrderByDescending(value => value.Priority)
             .Select(value => value.Capacity));
-        Assert.All(workstation.StockRules, value => Assert.True(value.DefaultDeliveryEnabled));
+
+        InternalStockRuleDefinition hamster = workstation.StockRules.Single(value =>
+            value.ItemId == CampfireProductionContent.HamsterItemId);
+        Assert.Equal(2, hamster.Capacity);
+        Assert.False(hamster.DefaultDeliveryEnabled);
+        Assert.All(
+            workstation.StockRules.Where(value =>
+                value.ItemId != CampfireProductionContent.HamsterItemId),
+            value => Assert.True(value.DefaultDeliveryEnabled));
     }
 
     [Theory]
@@ -121,5 +129,4 @@ public sealed class CampfireProductionContentTests
         values.Add(CampfireBuildingBoxContent.Definition.BoxItem);
         return new ItemCatalog(values);
     }
-}
 }
