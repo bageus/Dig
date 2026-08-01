@@ -1,59 +1,66 @@
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace Dig.Tests
 {
 public sealed class UnityItemInteractionNamespaceContractTests
 {
+    private static readonly string[] InventoryTypeNames =
+    {
+        "ItemFoodUseDefinition",
+        "ItemInteractionCategoryIds",
+        "ItemInteractionFeedbackKind",
+        "ItemInteractionProfile",
+        "ItemInteractionProfiles",
+        "ItemInventoryInteractionAction",
+        "ItemWorldInteractionAction",
+    };
+
     [Fact]
-    public void Unity_files_using_domain_item_action_enums_import_inventory_namespace()
+    public void Unity_source_files_using_domain_item_interactions_import_inventory_namespace()
     {
         foreach (string path in Directory.GetFiles(
-            RuntimeRoot(),
+            UnitySourceRoot(),
             "*.cs",
-            SearchOption.TopDirectoryOnly))
+            SearchOption.AllDirectories))
         {
             string source = File.ReadAllText(path);
-            bool usesInventoryAction = source.Contains(
-                "ItemInventoryInteractionAction",
-                StringComparison.Ordinal);
-            bool usesWorldAction = source.Contains(
-                "ItemWorldInteractionAction",
-                StringComparison.Ordinal);
-            if (!usesInventoryAction && !usesWorldAction)
+            if (source.Contains(
+                    "using Dig.Domain.Inventory;",
+                    StringComparison.Ordinal))
             {
                 continue;
             }
 
-            bool importsNamespace = source.Contains(
-                "using Dig.Domain.Inventory;",
-                StringComparison.Ordinal);
-            bool fullyQualifiesInventoryAction = source.Contains(
-                "Dig.Domain.Inventory.ItemInventoryInteractionAction",
-                StringComparison.Ordinal);
-            bool fullyQualifiesWorldAction = source.Contains(
-                "Dig.Domain.Inventory.ItemWorldInteractionAction",
-                StringComparison.Ordinal);
-
-            Assert.True(
-                importsNamespace
-                    || fullyQualifiesInventoryAction
-                    || fullyQualifiesWorldAction,
-                $"{Path.GetFileName(path)} uses an item interaction action without "
-                    + "importing Dig.Domain.Inventory or fully qualifying the type.");
+            foreach (string typeName in InventoryTypeNames)
+            {
+                bool usesUnqualifiedType = Regex.IsMatch(
+                    source,
+                    $@"(?<![\w.]){Regex.Escape(typeName)}\b",
+                    RegexOptions.CultureInvariant);
+                Assert.False(
+                    usesUnqualifiedType,
+                    $"{RelativePath(path)} uses {typeName} without importing "
+                        + "Dig.Domain.Inventory or fully qualifying the type.");
+            }
         }
     }
 
-    private static string RuntimeRoot()
+    private static string UnitySourceRoot()
     {
         return Path.Combine(
             FindRepositoryRoot(),
             "unity",
             "Dig.Unity",
             "Assets",
-            "Dig.Unity",
-            "Runtime");
+            "Dig.Unity");
+    }
+
+    private static string RelativePath(string path)
+    {
+        return Path.GetRelativePath(FindRepositoryRoot(), path);
     }
 
     private static string FindRepositoryRoot()
