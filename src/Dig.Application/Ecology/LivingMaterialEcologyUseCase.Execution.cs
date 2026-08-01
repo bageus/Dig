@@ -151,8 +151,13 @@ public sealed partial class AdvanceLivingMaterialEcologyCommandHandler
         CellId origin = parent.Cell!.Value;
         LivingMaterialSpeciesProfile profile = LivingMaterialEcologyProfiles.Get(parent.Species);
         CellId[] candidates = plane.Cells
-            .Where(value => Math.Abs(value.X - parent.AnchorCell.X) <= profile.WanderRadius)
-            .OrderBy(value => Math.Abs(value.X - origin.X))
+            .Where(value => LivingMaterialMovementGeometry.IsWithinWanderRadius(
+                parent.AnchorCell,
+                value,
+                profile.WanderRadius))
+            .OrderBy(value => LivingMaterialMovementGeometry.ChebyshevDistanceXZ(
+                value,
+                origin))
             .ThenBy(value => value)
             .ToArray();
         return candidates.Length == 0 ? origin : candidates[0];

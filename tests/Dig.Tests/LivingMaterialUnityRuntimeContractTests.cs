@@ -128,6 +128,45 @@ public sealed class LivingMaterialUnityRuntimeContractTests
         Assert.Contains("grub.crawling", projector);
     }
 
+    [Fact]
+    public void EcologyMovementUsesDiagonalDepthRegionsAndCheckedInRuntimeCoverage()
+    {
+        string resolver = ReadSource(
+            "Dig.Application",
+            "Ecology",
+            "LivingMaterialPlaneResolver.cs");
+        string planner = ReadSource(
+            "Dig.Application",
+            "Ecology",
+            "LivingMaterialMovementPlanner.cs");
+        string movement = ReadSource(
+            "Dig.Domain",
+            "Ecology",
+            "LivingMaterialMovementGeometry.cs");
+        string playMode = File.ReadAllText(Path.Combine(
+            FindRepositoryRoot(),
+            "unity",
+            "Dig.Unity",
+            "Assets",
+            "Dig.Unity",
+            "Tests",
+            "PlayMode",
+            "LivingMaterialMovementPlayModeTests.cs"));
+
+        Assert.Contains("TunnelTraversalKind.DepthTraverse", resolver);
+        Assert.Contains("IsLegalDiagonal", resolver);
+        Assert.Contains("HasEcologyCardinalEdge(sideX, target)", resolver);
+        Assert.Contains("HasEcologyCardinalEdge(sideZ, target)", resolver);
+        Assert.Contains("ChebyshevDistanceXZ", movement);
+        Assert.Contains("movement-candidate", planner);
+        Assert.Contains(
+            "DropDormancyAllowsDiagonalAndDepthMovementButRejectsHeightChange",
+            playMode);
+        Assert.Contains(
+            "NavigationResolverAllowsDiagonalAndDepthWithoutCornerCutOrHeightChange",
+            playMode);
+    }
+
     private static string Read(string root, string file) =>
         File.ReadAllText(Path.Combine(root, file));
 

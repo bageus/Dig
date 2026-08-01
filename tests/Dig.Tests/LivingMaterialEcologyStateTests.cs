@@ -126,6 +126,74 @@ public sealed class LivingMaterialEcologyStateTests
     }
 
     [Fact]
+    public void MovementAcceptsDiagonalAndDepthStepsButRejectsHeightAndLongJumps()
+    {
+        LivingMaterialEcologyState state = CreateFreeState(
+            LivingMaterialSpecies.Grub,
+            out EntityId id);
+        LivingMaterialPlaneKey plane = state.Get(id)!.PlaneKey;
+        AdvanceUntilMovementDue(state, id);
+
+        Result diagonal = state.CommitMovement(
+            id,
+            new CellId(6, 2, 1),
+            plane,
+            direction: 1,
+            tick: 1);
+        Assert.True(diagonal.IsSuccess);
+
+        AdvanceUntilMovementDue(state, id);
+        Result depth = state.CommitMovement(
+            id,
+            new CellId(6, 2, 2),
+            plane,
+            direction: 1,
+            tick: 2);
+        Assert.True(depth.IsSuccess);
+
+        AdvanceUntilMovementDue(state, id);
+        Assert.Equal(LivingMaterialErrors.InvalidMovement, state.CommitMovement(
+            id,
+            new CellId(6, 3, 2),
+            plane,
+            direction: 1,
+            tick: 3).Error);
+        Assert.Equal(LivingMaterialErrors.InvalidMovement, state.CommitMovement(
+            id,
+            new CellId(8, 2, 2),
+            plane,
+            direction: 1,
+            tick: 3).Error);
+    }
+
+    [Fact]
+    public void MovementRegionRebindPreservesCreditActivityAndDeterministicSequence()
+    {
+        LivingMaterialEcologyState state = CreateFreeState(
+            LivingMaterialSpecies.Hamster,
+            out EntityId id);
+        AdvanceUntilMovementDue(state, id);
+        LivingMaterialSnapshot before = state.Get(id)!;
+        LivingMaterialPlaneKey merged = new LivingMaterialPlaneKey(new CellId(0, 2, 0));
+
+        Result rebound = state.RebindMovementRegion(
+            id,
+            before.Cell!.Value,
+            before.AnchorCell,
+            merged,
+            tick: 4);
+
+        Assert.True(rebound.IsSuccess);
+        LivingMaterialSnapshot after = state.Get(id)!;
+        Assert.Equal(merged, after.PlaneKey);
+        Assert.Equal(before.AnchorCell, after.AnchorCell);
+        Assert.Equal(before.Activity, after.Activity);
+        Assert.Equal(before.MovementCredit, after.MovementCredit);
+        Assert.Equal(before.Direction, after.Direction);
+        Assert.Equal(before.DeterministicSequence, after.DeterministicSequence);
+    }
+
+    [Fact]
     public void SnapshotRestorePreservesNextDeterministicResult()
     {
         LivingMaterialEcologyState state = CreateFreeState(
@@ -142,6 +210,17 @@ public sealed class LivingMaterialEcologyStateTests
         Assert.Equal(state.Get(id)!.MovementCredit, restored.Value.Get(id)!.MovementCredit);
         Assert.Equal(state.Get(id)!.Direction, restored.Value.Get(id)!.Direction);
         Assert.Equal(state.Get(id)!.DeterministicSequence, restored.Value.Get(id)!.DeterministicSequence);
+    }
+
+    private static void AdvanceUntilMovementDue(
+        LivingMaterialEcologyState state,
+        EntityId id)
+    {
+        long tick = 1;
+        while (!state.Get(id)!.IsMovementDue)
+        {
+            Assert.True(state.AdvanceOneEcologyStep(tick++).IsSuccess);
+        }
     }
 
     private static LivingMaterialEcologyState CreateFreeState(

@@ -1,6 +1,6 @@
 # Хомяки и grub: блуждание, переноска и размножение
 
-Статус: `IMPLEMENTED`; `VERIFIED` требует фактического licensed Unity EditMode/PlayMode evidence.
+Статус: `IMPLEMENTED` in PR #555; licensed Unity EditMode/PlayMode evidence remains required.
 
 Tracking issue: [#524](https://github.com/bageus/Dig/issues/524).
 Original implementation PR: [#529](https://github.com/bageus/Dig/pull/529).
@@ -14,11 +14,12 @@ Parent ecology issue: [#149](https://github.com/bageus/Dig/issues/149).
 - [`building-production-and-internal-supply.md`](building-production-and-internal-supply.md);
 - [`resident-movement-occupancy-and-vertical-traversal.md`](resident-movement-occupancy-and-vertical-traversal.md);
 - [`save-load-and-migrations.md`](save-load-and-migrations.md);
-- [`../implementation/hamsters-and-grubs-ecology.md`](../implementation/hamsters-and-grubs-ecology.md).
+- [`../implementation/hamsters-and-grubs-ecology.md`](../implementation/hamsters-and-grubs-ecology.md);
+- [`../implementation/living-material-diagonal-depth-movement-2026-08-01.md`](../implementation/living-material-diagonal-depth-movement-2026-08-01.md).
 
 ## 1. Назначение и границы
 
-Система задаёт lifecycle двух мирных ресурсных существ — hamster и grub — как individual living-material entities. Она отвечает за fresh-world entry, свободное плоское блуждание, ограниченное размножение, связь с Inventory, dormancy после выкладывания, campfire internal-stock projection, сохранение и детерминированное продолжение.
+Система задаёт lifecycle двух мирных ресурсных существ — hamster и grub — как individual living-material entities. Она отвечает за fresh-world entry, свободное блуждание по связной navigation component на постоянной высоте `Y`, ограниченное размножение, связь с Inventory, dormancy после выкладывания, campfire internal-stock projection, сохранение и детерминированное продолжение.
 
 Canonical IDs: `creature.hamster` и `creature.grub`. `creature.larva` — save/read-model compatibility alias, canonicalized в `creature.grub`.
 
@@ -37,13 +38,14 @@ Canonical IDs: `creature.hamster` и `creature.grub`. `creature.larva` — save/
 
 Распределение детерминированное:
 
-1. Planner читает authoritative `NavigationSnapshot` и строит те же connected flat planes, которые используются wandering/reproduction.
-2. Кандидаты содержат только walkable `SupportedWalk` cells и исключают клетки, уже занятые world-item stack или живым resident в момент bootstrap.
-3. Planes и cells сортируются по stable key/`CellId`; скрытая случайная fallback-логика запрещена.
-4. Два hamster помещаются в разные клетки одной eligible plane, чтобы pair reproduction была возможна сразу после суточного cooldown.
-5. Grub помещается в eligible plane, отличную от hamster plane, если такая существует.
-6. Если существует только одна suitable plane, grub получает третью свободную клетку той же plane.
-7. Если legal placement для полного набора `2 hamster + 1 grub` отсутствует, bootstrap завершается typed failure и не создаёт заведомо частичную популяцию.
+1. Planner читает authoritative `NavigationSnapshot` и строит те же connected movement regions, которые используются wandering/reproduction.
+2. Region содержит walkable клетки одной высоты `Y`, соединённые legal `SupportedWalk` или `DepthTraverse` edges; `VerticalClimb`, `ShaftGapTraverse` и traversal links не входят в ecology region.
+3. Кандидаты исключают клетки, уже занятые world-item stack или живым resident в момент bootstrap.
+4. Regions и cells сортируются по stable key/`CellId`; скрытая случайная fallback-логика запрещена.
+5. Два hamster помещаются в разные клетки одной eligible region, чтобы pair reproduction была возможна сразу после суточного cooldown.
+6. Grub помещается в eligible region, отличную от hamster region, если такая существует.
+7. Если существует только одна suitable region, grub получает третью свободную клетку той же region.
+8. Если legal placement для полного набора `2 hamster + 1 grub` отсутствует, bootstrap завершается typed failure и не создаёт заведомо частичную популяцию.
 
 Seed использует три stable entity IDs. Повторная initialization одной session является no-op. Если Inventory уже содержит хотя бы один canonical/legacy living-material individual, bootstrap не восстанавливает погибших/подобранных существ и не создаёт replacement population. Save/load не запускает fresh seed повторно.
 
@@ -51,27 +53,29 @@ Fresh hamster остаются свободными после initial productio
 
 ### 2.1 Свободный hamster
 
-1. Hamster имеет stable identity, linked quantity-one Inventory entity, anchor/current cell, connected flat plane, radius `6`, direction и activity.
-2. Он движется только по `SupportedWalk` между соседними клетками с одинаковыми `Y/Z`; `DepthTraverse`, `VerticalClimb` и `ShaftGapTraverse` запрещены.
-3. Средняя скорость равна `0.8` resident baseline через fixed-point cadence.
-4. После `4..8` successful movement steps hamster выполняет search/dig `1..2` ecology steps.
-5. После `16..32` successful movement steps hamster спит на боку `4..8` ecology steps.
-6. Obstacle или radius boundary вызывает deterministic direction reselection.
-7. Resident в радиусе `4` не является hard blocker: hamster постепенно меняет future direction от ближайшего resident.
+1. Hamster имеет stable identity, linked quantity-one Inventory entity, anchor/current cell, connected movement region, radius `6`, direction и activity.
+2. Он перемещается на соседние клетки в плоскости `X/Z` при неизменном `Y`: orthogonal `SupportedWalk`, orthogonal `DepthTraverse` и diagonal `X±1/Z±1`.
+3. Diagonal step разрешён только без corner cutting: обе orthogonal стороны и оба пути через них должны быть legal ecology edges. `VerticalClimb`, `ShaftGapTraverse` и traversal links запрещены.
+4. Средняя скорость равна `0.8` resident baseline через fixed-point cadence.
+5. После `4..8` successful movement steps hamster выполняет search/dig `1..2` ecology steps.
+6. После `16..32` successful movement steps hamster спит на боку `4..8` ecology steps.
+7. Obstacle или radius boundary вызывает deterministic direction reselection.
+8. Resident в Chebyshev radius `4` по `X/Z` на той же высоте `Y` не является hard blocker: hamster выбирает дальнейший legal candidate от ближайшего resident.
 
 ### 2.2 Свободный grub
 
 1. Grub непрерывно движется со скоростью `0.65` resident baseline и radius `4`.
-2. Он использует только соседний `SupportedWalk` с одинаковыми `Y/Z`.
-3. Obstacle или radius boundary вызывает deterministic direction reselection.
-4. Resident не является препятствием и не влияет на grub.
-5. Search/sleep states отсутствуют.
+2. Он использует тот же набор orthogonal/diagonal `X/Z` candidates и `DepthTraverse` transitions при неизменном `Y`.
+3. Diagonal step не может срезать заблокированный угол.
+4. Obstacle или radius boundary вызывает deterministic direction reselection.
+5. Resident не является препятствием и не влияет на grub.
+6. Search/sleep states отсутствуют.
 
-### 2.3 Plane definition
+### 2.3 Movement region definition
 
-`LivingMaterialPlaneKey` — connected component открытых fully-supported cells с одинаковыми `Y/Z`, соединённых только горизонтальными `SupportedWalk` edges. Стены и разрывы делят components. Stable identity plane равна минимальному `CellId` компоненты.
+`LivingMaterialPlaneKey` сохраняется как legacy save/API name, но обозначает connected movement region: component walkable cells одной высоты `Y`, соединённых orthogonal `SupportedWalk` и `DepthTraverse` edges. Diagonal candidates не объединяют иначе разорванные regions и разрешаются только при существовании обеих orthogonal проходов без corner cutting. Стены, shaft gaps, vertical climbs и traversal links делят components. Stable key равен минимальному `CellId` компоненты.
 
-Fresh seed, pair detection, cap и wandering используют component, а не весь `Y/Z` layer.
+Fresh seed, pair detection, cap и wandering используют region, а не отдельный `Z` layer. Radius измеряется Chebyshev distance по `X/Z`, поэтому diagonal step имеет ту же единичную стоимость wandering radius, что orthogonal step.
 
 ### 2.4 Pickup, storage и drop
 
@@ -100,8 +104,8 @@ Ecology имеет `96` substeps в игровых сутках; один simula
 ## 3. Владение состоянием
 
 - `InventoryState`: quantity-one item identity, authoritative location, reservations, fresh-seed item commit и transfer.
-- `LivingMaterialEcologyState`: identity link, species, anchor/current cell, plane, direction, activity/timers, fixed-point movement budget, cycles/cooldown и deterministic sequence.
-- World/Navigation: open/supported cells, traversal classification и initial-plane candidates.
+- `LivingMaterialEcologyState`: identity link, species, anchor/current cell, movement-region key, horizontal facing direction, activity/timers, fixed-point movement budget, cycles/cooldown и deterministic sequence.
+- World/Navigation: walkable cells, `SupportedWalk`/`DepthTraverse` classification и initial-region candidates.
 - Buildings/Inventory: campfire internal stock.
 - Presentation: interpolation, poses, scale `0.25/0.20`, pickup proxy и tether geometry.
 
@@ -132,9 +136,9 @@ Fresh seed выполняется до первого reconciliation и не я�
 
 ## 5. Determinism
 
-- initial planes/cells: stable plane key, затем stable `CellId`;
+- initial regions/cells: stable region key, затем stable `CellId`;
 - ecology step = `simulationTick * 4 + substep`;
-- runtime order: plane, species, creature ID;
+- runtime order: movement region, species, creature ID;
 - choices hash world seed + creature ID + sequence + purpose;
 - movement threshold `4000`: hamster adds `800`, grub `650` per substep;
 - activity bands/timers and sequence are saved;
@@ -143,16 +147,17 @@ Fresh seed выполняется до первого reconciliation и не я�
 ## 6. Инварианты
 
 - fresh demo without saved living materials starts with exactly `2 hamster + 1 grub`;
-- initial hamster pair shares one plane and distinct cells;
-- initial grub uses another plane when available, otherwise a third distinct cell;
+- initial hamster pair shares one movement region and distinct cells;
+- initial grub uses another movement region when available, otherwise a third distinct cell;
 - occupied world-item cells and current cells of living residents are never selected for fresh seed;
 - fresh seed remains `ItemLocation.InWorld` and cannot appear in a resident inventory slot without an explicit pickup transaction or player-enabled hamster supply;
 - default campfire hamster delivery is disabled, so initial production synchronization creates no hamster reservation or resident transit;
 - repeated initialization/save-load cannot reseed or duplicate the starting population;
 - one creature ↔ one linked quantity-one Inventory entity;
 - Inventory location determines Free/Stored;
-- movement never changes `Y/Z` and never uses non-`SupportedWalk` edge;
-- current cell remains inside radius/component;
+- movement never changes `Y`; it may change `X`, `Z` or both by one cell;
+- movement uses only legal `SupportedWalk`/`DepthTraverse` topology and never corner-cuts a diagonal;
+- current cell remains inside Chebyshev `X/Z` radius and movement region;
 - successful cycles `0..2`;
 - free population after reproduction `<=10` per species/component;
 - stored creatures never move/reproduce;
@@ -168,7 +173,7 @@ Commands/use cases:
 - register/restore living material individual;
 - reconcile containment from Inventory location;
 - advance four ecology substeps for one simulation tick;
-- commit one flat movement step or blocked direction change;
+- commit one orthogonal/diagonal movement step or blocked direction change;
 - plan and commit one offspring transaction;
 - store/release individual.
 
@@ -177,7 +182,7 @@ Events:
 - Inventory unit added for fresh seed;
 - registered/restored;
 - containment/activity/direction changed;
-- flat movement committed;
+- navigation movement committed;
 - reproduction committed;
 - blocked reason recorded.
 
@@ -185,8 +190,8 @@ Queries/read models:
 
 - deterministic initial placement plan;
 - snapshots ordered by stable identity;
-- free population by species/plane;
-- legal flat candidates and rejection reason;
+- free population by species/movement region;
+- legal orthogonal/diagonal candidates and rejection reason;
 - reproduction due/blocked state;
 - creature activity visual projection;
 - campfire tether slots.
@@ -195,7 +200,7 @@ Queries/read models:
 
 Save format `v12` introduced living-material IDs/link, species, anchor/current cell, plane root, direction, activity/timer, movement budget/counters, cycles, next reproduction step, deterministic sequence и version.
 
-Inventory separately persists authoritative location/reservations. Load validates one-to-one links, canonicalizes `creature.larva -> creature.grub` and rebuilds derived plane candidates, nearby residents, interpolation and tether transforms. A restored population, including a population reduced to one individual, is never supplemented by demo seed.
+Inventory separately persists authoritative location/reservations. Load validates one-to-one links, canonicalizes `creature.larva -> creature.grub` and rebuilds derived movement-region candidates, nearby residents, interpolation and tether transforms. A saved legacy `PlaneKey` is rebound from the authoritative current world cell on first reconciliation; this does not trigger release dormancy or duplicate the entity. A restored population, including a population reduced to one individual, is never supplemented by demo seed.
 
 Migration chain:
 
@@ -237,13 +242,13 @@ Failures use typed Ecology/Application/Unity bootstrap errors; no Presentation-o
 
 Automated coverage:
 
-- Application: deterministic initial plane distribution, hamster pair placement, distinct-plane grub preference, one-plane fallback and occupied-cell exclusion.
-- Domain: profile constants, identity/link, fixed-point cadence, dormancy, activities, flat/radius guards, pair/self reproduction, stable-lowest parent, newborn budget, max cycles and cap `10`.
+- Application: deterministic initial region distribution, hamster pair placement, distinct-region grub preference, one-region fallback and occupied-cell exclusion.
+- Domain: profile constants, identity/link, fixed-point cadence, dormancy, activities, `X/Z` radius/step guards, pair/self reproduction, stable-lowest parent, newborn budget, max cycles and cap `10`.
 - Production content: hamster stock capacity remains `2`, default delivery is disabled, non-living campfire stock defaults remain enabled.
-- Application runtime: Inventory reconciliation, connected-plane resolver, resident steering, stored exclusion, atomic movement/reproduction and retry.
+- Application runtime: Inventory reconciliation, connected-region resolver, diagonal no-corner-cut candidates, depth transitions, resident steering, stored exclusion, atomic movement/reproduction and retry.
 - Save: v12 round trip, deterministic continuation and migration chain through current v13.
 - Unity source/contracts: seed wiring with living-resident exclusion, runtime session/driver, activity renderer, pickup proxy and tether projection.
-- Checked-in Unity Play Mode: fresh demo contains exactly two hamster and one grub, none shares a living-resident cell or resident inventory slot, initial production synchronization creates no hamster supply reservation/transit, repeated initialization preserves the same three IDs, plus drop/dormancy/movement/tether/no-vertical scenarios.
+- Checked-in Unity Play Mode: fresh demo contains exactly two hamster and one grub, none shares a living-resident cell or resident inventory slot, initial production synchronization creates no hamster supply reservation/transit, repeated initialization preserves the same three IDs, plus drop/dormancy/diagonal/depth movement/tether/no-vertical scenarios.
 
 Verification boundary:
 
@@ -261,3 +266,4 @@ Verification boundary:
 | 2026-08-01 | Fresh world seeds two hamster and one grub; hamster remain a pair on one plane, grub is deterministically distributed to another suitable plane when available, otherwise to a third free cell of the same plane. | Пользователь | §§2.0, 3–13, #524 |
 | 2026-08-01 | После runtime regression fresh seed также исключает клетки живых residents и остаётся world-owned; overlap не может выглядеть как немедленный resident pickup. | Пользовательский bug report | §§2.0, 6, 9–13, #524, PR #543 |
 | 2026-08-01 | Hamster delivery в campfire internal stock по умолчанию выключена; игрок должен явно включить toggle, иначе continuous refill не резервирует и не переносит fresh free hamster. | Пользовательский runtime bug report со скриншотом `R:1` | §§2.0, 2.5, 6, 12–13, #433, #524 |
+| 2026-08-01 | Flat same-`Y/Z` wandering заменено на orthogonal/diagonal movement по `X/Z` при неизменном `Y`, включая legal `DepthTraverse` между уровнями `Z`; diagonal corner cutting запрещён. | Пользователь | §§1–13, #524 |

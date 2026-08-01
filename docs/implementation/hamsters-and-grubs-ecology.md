@@ -10,8 +10,8 @@ Fresh-population correction PR: [#543](https://github.com/bageus/Dig/pull/543).
 ## Ownership
 
 - `InventoryState` is the only authoritative owner of quantity-one item identity, location, reservations, fresh-demo seed units and pickup/drop/building transfers.
-- `LivingMaterialEcologyState` owns the linked creature lifecycle, species, flat-plane anchor/current cell, deterministic direction/activity cadence, reproduction counters and cooldowns.
-- Navigation supplies supported same-`Y/Z` cells and traversal edges; Application derives connected flat-plane components for seed, movement and reproduction.
+- `LivingMaterialEcologyState` owns the linked creature lifecycle, species, movement-region anchor/current cell, deterministic horizontal facing/activity cadence, reproduction counters and cooldowns.
+- Navigation supplies legal `SupportedWalk` and `DepthTraverse` edges; Application derives connected same-height movement regions and synthetic no-corner-cut diagonal candidates for seed, movement and reproduction.
 - Presentation consumes immutable Ecology and Inventory projections. Animation, tether transforms and creature meshes do not mutate gameplay state.
 
 ## Original implemented vertical slice
@@ -89,7 +89,40 @@ The follow-up correction passes the initial resident list into `InitializeLiving
   - repeated planning is deterministic.
 - `LivingMaterialUnityRuntimeContractTests` requires resident-aware bootstrap wiring, seed planner, stable IDs and Inventory world commit.
 - `LivingMaterialEcologyPlayModeTests.FreshDemoSeedsTwoHamstersAndOneGrubAwayFromResidentsExactlyOnce` builds the real demo world/agents/terrain session, initializes living materials twice, requires the same three creature IDs, asserts no creature shares a living-resident cell and asserts no resident inventory slot contains hamster/grub.
-- Existing movement, dormancy, vertical rejection, scale/activity and campfire tether scenarios remain in place.
+- Existing dormancy, scale/activity and campfire tether scenarios remain in place.
+- `LivingMaterialPlaneResolverTests` and `LivingMaterialMovementPlannerTests` cover connected cross-`Z` regions, diagonal candidates, blocked-corner rejection, depth-only selection and resident avoidance across depth.
+- `LivingMaterialEcologyStateTests` cover diagonal/depth commits, `Y`/long-jump rejection and legacy region rebind without cadence reset.
+- `LivingMaterialMovementPlayModeTests` checks in diagonal/depth acceptance, height rejection and navigation corner shielding for licensed Unity execution.
+
+## Diagonal and cross-depth movement correction — 2026-08-01
+
+### Reported behavior
+
+Free hamster and grub selected only `X-1/X+1` neighbours inside one fixed `Z` layer. They therefore moved along a straight line even when the authoritative Navigation snapshot exposed adjacent depth cells.
+
+### Root cause
+
+Three separate constraints encoded the former rule:
+
+- `LivingMaterialPlaneResolver` built components only from same-`Y/Z` `SupportedWalk` edges;
+- `LivingMaterialMovementPlanner` selected candidates only by the sign of `delta X`;
+- `LivingMaterialEcologyState.CommitMovement` required unchanged `Z` and exactly one `X` step.
+
+The saved `PlaneKey` also represented the old per-depth component. Simply widening the candidate list would leave restored creatures bound to a stale component and cause reconciliation to call `Release`, resetting movement credit and applying hamster dormancy as if the player had dropped the creature.
+
+### Correction
+
+- A living-material movement region now contains cells at one `Y` connected by cardinal `SupportedWalk` or `DepthTraverse` edges.
+- `VerticalClimb`, `ShaftGapTraverse` and explicit traversal links remain excluded.
+- Candidate generation adds cardinal `X/Z` neighbours and diagonal `X±1/Z±1` neighbours.
+- A diagonal requires both orthogonal side cells and both two-edge routes, preventing corner cutting.
+- Wander radius uses Chebyshev distance in `X/Z`.
+- The movement planner deterministically chooses among forward, depth-only and diagonal candidates; at an `X` boundary it selects a reverse candidate instead of oscillating forever at one depth edge.
+- Hamster resident avoidance measures same-height Chebyshev distance and may steer across depth.
+- Reconciliation rebinds a legacy/stale `PlaneKey` from the authoritative current cell without changing activity, movement credit, direction or deterministic sequence. If the old anchor is outside the rebuilt component, only the anchor is reset to the current cell.
+- Reproduction/cap grouping follows the rebuilt movement region across `Z`.
+
+The save schema remains unchanged: `PlaneRootX/Y/Z` is retained as a compatibility field and becomes derived region identity after reconciliation.
 
 ## Save chain
 
@@ -101,4 +134,4 @@ Fresh seed is bootstrap content, not a save migration. A restored Inventory/Ecol
 
 Original PR #529 Quality evidence passed architecture, file-size/C# compatibility, Unity source contracts, .NET build/tests, headless smoke and deterministic soaks. Licensed Unity EditMode/PlayMode execution was skipped by the activation gate.
 
-The current PR #543 head must pass the same repository Quality pipeline. Until a licensed runner actually executes the checked-in fresh-demo, inventory quick-drop/placement and existing Ecology Play Mode scenarios, the system remains `IMPLEMENTED`, not `VERIFIED`.
+The current diagonal/depth movement PR must pass the same repository Quality pipeline. Until a licensed runner actually executes the checked-in diagonal/depth, fresh-demo, inventory quick-drop/placement and existing Ecology Play Mode scenarios, the system remains `IMPLEMENTED`, not `VERIFIED`.

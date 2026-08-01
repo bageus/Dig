@@ -47,10 +47,12 @@ public sealed partial class LivingMaterialEcologyState
                 LivingMaterialErrors.InvalidState);
         }
 
-        if (offspringCell.Y != parent.Cell.Y
-            || offspringCell.Z != parent.Cell.Z
-            || parent.PlaneKey.Root.Y != offspringCell.Y
-            || parent.PlaneKey.Root.Z != offspringCell.Z)
+        LivingMaterialSpeciesProfile profile =
+            LivingMaterialEcologyProfiles.Get(parent.Species);
+        if (!LivingMaterialMovementGeometry.IsWithinWanderRadius(
+            parent.AnchorCell,
+            offspringCell,
+            profile.WanderRadius))
         {
             return Result<LivingMaterialReproductionPlan>.Failure(
                 LivingMaterialErrors.InvalidMovement);

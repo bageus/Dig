@@ -199,9 +199,7 @@ public sealed partial class AdvanceLivingMaterialEcologyCommandHandler
                 return Result.Failure(LivingMaterialApplicationErrors.InvalidWorldCell);
             }
 
-            if (!creature.IsFree
-                || creature.Cell != stack.Location.CellId
-                || creature.PlaneKey != plane.Key)
+            if (!creature.IsFree || creature.Cell != stack.Location.CellId)
             {
                 Result released = ecology.Release(
                     creature.CreatureId,
@@ -211,6 +209,31 @@ public sealed partial class AdvanceLivingMaterialEcologyCommandHandler
                 if (released.IsFailure)
                 {
                     return released;
+                }
+
+                continue;
+            }
+
+            if (creature.PlaneKey != plane.Key)
+            {
+                CellId anchor = stack.Location.CellId;
+                if (planes.TryResolve(
+                        creature.AnchorCell,
+                        out LivingMaterialPlane anchorPlane)
+                    && anchorPlane.Key == plane.Key)
+                {
+                    anchor = creature.AnchorCell;
+                }
+
+                Result rebound = ecology.RebindMovementRegion(
+                    creature.CreatureId,
+                    stack.Location.CellId,
+                    anchor,
+                    plane.Key,
+                    tick);
+                if (rebound.IsFailure)
+                {
+                    return rebound;
                 }
             }
         }

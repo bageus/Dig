@@ -119,20 +119,63 @@ public sealed class LivingMaterialEcologyApplicationTests
     }
 
     [Fact]
-    public void MovementNeverLeavesFlatPlaneOrApprovedRadius()
+    public void MovementUsesDiagonalAndDepthWithinApprovedRegionAndRadius()
     {
         Harness harness = new Harness();
         harness.AddWorldUnit(1, LivingMaterialEcologyProfiles.GrubItemId, 10);
-        harness.AdvanceTicks(80);
+        CellId previous = new CellId(10, Harness.CorridorY, 0);
+        bool sawDepth = false;
+        bool sawDiagonal = false;
+        for (int tick = 1; tick <= 80; tick++)
+        {
+            harness.AdvanceTicks(1, startingTick: tick);
+            CellId current = harness.State.Get(Id(1))!.Cell!.Value;
+            sawDepth |= current.Z != 0;
+            sawDiagonal |= current.X != previous.X && current.Z != previous.Z;
+            previous = current;
+        }
 
         LivingMaterialSnapshot grub = harness.State.Get(Id(1))!;
+        Assert.True(sawDepth);
+        Assert.True(sawDiagonal);
         Assert.Equal(Harness.CorridorY, grub.Cell!.Value.Y);
-        Assert.Equal(0, grub.Cell.Value.Z);
         Assert.InRange(
-            Math.Abs(grub.Cell.Value.X - grub.AnchorCell.X),
+            LivingMaterialMovementGeometry.ChebyshevDistanceXZ(
+                grub.Cell.Value,
+                grub.AnchorCell),
             0,
             LivingMaterialEcologyProfiles.Grub.WanderRadius);
         Assert.Equal(grub.Cell.Value, harness.Inventory.GetStack(Id(1))!.Location.CellId);
+    }
+
+    [Fact]
+    public void SynchronizeRebindsLegacyPlaneRootWithoutHamsterDormancyOrCreditReset()
+    {
+        Harness harness = new Harness();
+        harness.AddWorldUnit(1, LivingMaterialEcologyProfiles.HamsterItemId, 10);
+        LivingMaterialPlaneKey legacy = new LivingMaterialPlaneKey(
+            new CellId(10, Harness.CorridorY, 0));
+        Assert.True(harness.State.Register(
+            Id(1),
+            Id(1),
+            LivingMaterialSpecies.Hamster,
+            new CellId(10, Harness.CorridorY, 0),
+            legacy,
+            tick: 0).IsSuccess);
+        for (int index = 0; index < 5; index++)
+        {
+            Assert.True(harness.State.AdvanceOneEcologyStep(index + 1).IsSuccess);
+        }
+
+        LivingMaterialSnapshot before = harness.State.Get(Id(1))!;
+        Result synchronized = harness.Synchronize(tick: 6);
+
+        Assert.True(synchronized.IsSuccess);
+        LivingMaterialSnapshot after = harness.State.Get(Id(1))!;
+        Assert.NotEqual(legacy, after.PlaneKey);
+        Assert.Equal(before.Activity, after.Activity);
+        Assert.Equal(before.MovementCredit, after.MovementCredit);
+        Assert.Equal(before.DeterministicSequence, after.DeterministicSequence);
     }
 
     [Fact]
@@ -147,7 +190,9 @@ public sealed class LivingMaterialEcologyApplicationTests
         harness.AdvanceTicks(1, startingTick: 2, residents: new[] { resident });
 
         CellId after = harness.State.Get(Id(1))!.Cell!.Value;
-        Assert.True(after.X >= before.X);
+        Assert.True(
+            LivingMaterialMovementGeometry.ChebyshevDistanceXZ(after, resident)
+            >= LivingMaterialMovementGeometry.ChebyshevDistanceXZ(before, resident));
     }
 
     private sealed class Harness
@@ -158,11 +203,24 @@ public sealed class LivingMaterialEcologyApplicationTests
         public Harness()
         {
             TraversalProfile profile = TraversalProfile.CreateFreeMover();
-            WorldState world = NavigationTestFactory.CreateGroundedCorridor(
+            WorldState world = NavigationTestFactory.CreateStoneWorld(
                 width: 24,
                 height: 8,
-                chunkSize: 4,
-                corridorY: CorridorY);
+                chunkSize: 4);
+            List<TerrainChange> changes = new List<TerrainChange>();
+            for (int z = 0; z <= 1; z++)
+            {
+                for (int x = 0; x < 24; x++)
+                {
+                    changes.Add(new TerrainChange(
+                        new CellId(x, CorridorY, z),
+                        NavigationTestFactory.CreateState(NavigationTestFactory.Air)));
+                }
+            }
+
+            Assert.True(world.ApplyTerrainChanges(changes, tick: 1).IsSuccess);
+            world.DrainDirtyChunks();
+            world.DequeueUncommittedEvents();
             NavigationMap map = NavigationTestFactory.BuildMap(world, profile);
             InMemoryNavigationRepository navigation = new InMemoryNavigationRepository();
             navigation.Save(map);
@@ -203,6 +261,8 @@ public sealed class LivingMaterialEcologyApplicationTests
 
         public int Count(LivingMaterialSpecies species) =>
             State.GetAll().Count(value => value.Species == species);
+
+        public Result Synchronize(long tick) => _handler.Synchronize(tick);
 
         public void AdvanceTicks(
             int count,
