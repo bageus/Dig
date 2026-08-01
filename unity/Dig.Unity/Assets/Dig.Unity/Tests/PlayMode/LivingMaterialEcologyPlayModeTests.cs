@@ -8,6 +8,7 @@ using Dig.Domain.Core;
 using Dig.Domain.Ecology;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
+using Dig.Presentation.Agents;
 using Dig.Presentation.Buildings;
 using Dig.Presentation.Creatures;
 using NUnit.Framework;
@@ -31,23 +32,24 @@ public sealed class LivingMaterialEcologyPlayModeTests
     }
 
     [Test]
-    public void FreshDemoSeedsTwoHamstersAndOneGrubExactlyOnce()
+    public void FreshDemoSeedsTwoHamstersAndOneGrubAwayFromResidentsExactlyOnce()
     {
         DigWorldSession world = DigWorldSession.CreateDemo(20, 14, 5);
-        DigAgentSession agents = DigAgentSession.CreateDemo(
+        DigAgentSession agentSession = DigAgentSession.CreateDemo(
             world.LoadView(),
             world.CreateTunnelNavigationVolume(),
             world.Journal);
+        IReadOnlyList<AgentViewModel> residents = agentSession.LoadView();
         DigTerrainWorkSession terrain = DigTerrainWorkSession.CreateDemo(
             world,
-            agents.LoadView(),
+            residents,
             world.Journal,
-            agents.SkillGrants);
+            agentSession.SkillGrants);
 
-        terrain.InitializeLivingMaterials(agents.Tick);
+        terrain.InitializeLivingMaterials(agentSession.Tick, residents);
         IReadOnlyList<CreatureVisualSnapshot> first =
             terrain.LoadLivingMaterialCreatures();
-        terrain.InitializeLivingMaterials(agents.Tick);
+        terrain.InitializeLivingMaterials(agentSession.Tick, residents);
         IReadOnlyList<CreatureVisualSnapshot> repeated =
             terrain.LoadLivingMaterialCreatures();
 
@@ -60,6 +62,27 @@ public sealed class LivingMaterialEcologyPlayModeTests
             Is.EqualTo(3));
         Assert.That(repeated.Select(value => value.CreatureId),
             Is.EqualTo(first.Select(value => value.CreatureId)));
+
+        CellId[] residentCells = residents
+            .Where(value => value.IsAlive)
+            .Select(value => new CellId(value.CellX, value.CellY, value.CellZ))
+            .ToArray();
+        Assert.That(first.Select(value => new CellId(
+            value.CellX,
+            value.CellY,
+            value.CellZ)),
+            Has.None.Matches<CellId>(cell => residentCells.Contains(cell)));
+        foreach (AgentViewModel resident in residents)
+        {
+            Assert.That(terrain.LoadResidentInventoryLayout(resident.Id).Slots
+                .Where(value => !value.IsEmpty)
+                .Select(value => value.ItemId),
+                Has.None.EqualTo("creature.hamster"));
+            Assert.That(terrain.LoadResidentInventoryLayout(resident.Id).Slots
+                .Where(value => !value.IsEmpty)
+                .Select(value => value.ItemId),
+                Has.None.EqualTo("creature.grub"));
+        }
     }
 
     [UnityTest]
