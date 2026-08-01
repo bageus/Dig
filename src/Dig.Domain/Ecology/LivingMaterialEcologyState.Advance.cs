@@ -69,11 +69,12 @@ public sealed partial class LivingMaterialEcologyState
         }
 
         if (direction < -1 || direction > 1 || direction == 0
-            || target.Y != value.AnchorCell.Y
-            || target.Z != value.AnchorCell.Z
-            || Math.Abs(target.X - value.AnchorCell.X) > profile.WanderRadius
-            || planeKey != value.PlaneKey
-            || Math.Abs(target.X - value.Cell.X) != 1)
+            || !LivingMaterialMovementGeometry.IsSingleStepXZ(value.Cell, target)
+            || !LivingMaterialMovementGeometry.IsWithinWanderRadius(
+                value.AnchorCell,
+                target,
+                profile.WanderRadius)
+            || planeKey != value.PlaneKey)
         {
             return Result.Failure(LivingMaterialErrors.InvalidMovement);
         }
