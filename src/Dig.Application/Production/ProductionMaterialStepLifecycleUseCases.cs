@@ -91,7 +91,7 @@ public sealed class StageProductionMaterialHandler
             return Result.Failure(ProductionErrors.InvalidStatus);
         }
 
-        EntityId workerId = job.AssignedAgentId.Value;
+        EntityId workerId = job!.AssignedAgentId.GetValueOrDefault();
         InventoryState inventory = _inventoryRepository.Get();
         bool hasCarriedReservation = inventory.CreateSnapshot().Stacks.Any(stack =>
             stack.ItemId == step.Value.ItemId
