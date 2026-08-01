@@ -1,9 +1,9 @@
 # Хомяки и grub: блуждание, переноска и размножение
 
-Статус: `IMPLEMENTED`.
+Статус: `IMPLEMENTED`; `VERIFIED` требует фактического licensed Unity EditMode/PlayMode evidence.
 
 Tracking issue: [#524](https://github.com/bageus/Dig/issues/524).
-Implementation PR: [#529](https://github.com/bageus/Dig/pull/529).
+Original implementation PR: [#529](https://github.com/bageus/Dig/pull/529).
 Parent ecology issue: [#149](https://github.com/bageus/Dig/issues/149).
 
 Связанные системы:
@@ -18,13 +18,34 @@ Parent ecology issue: [#149](https://github.com/bageus/Dig/issues/149).
 
 ## 1. Назначение и границы
 
-Система задаёт lifecycle двух мирных ресурсных существ — hamster и grub — как individual living material entities. Она отвечает за свободное плоское блуждание, ограниченное размножение, связь с Inventory, dormancy после выкладывания, campfire internal-stock projection, сохранение и детерминированное воспроизведение.
+Система задаёт lifecycle двух мирных ресурсных существ — hamster и grub — как individual living-material entities. Она отвечает за fresh-world entry, свободное плоское блуждание, ограниченное размножение, связь с Inventory, dormancy после выкладывания, campfire internal-stock projection, сохранение и детерминированное продолжение.
 
 Canonical IDs: `creature.hamster` и `creature.grub`. `creature.larva` — save/read-model compatibility alias, canonicalized в `creature.grub`.
 
 Система не определяет рецепты переработки существ, combat behavior других creatures, падение в шахты или balance остальных видов из #149.
 
 ## 2. Подтверждённый workflow
+
+### 2.0 Fresh-world entry
+
+Текущий fresh demo bootstrap создаёт ровно:
+
+- два free hamster;
+- один free grub.
+
+Начальная популяция создаётся только через authoritative quantity-one Inventory entities. Ecology не имеет отдельного spawn owner и после commit только reconciles эти Inventory stacks.
+
+Распределение детерминированное:
+
+1. Planner читает authoritative `NavigationSnapshot` и строит те же connected flat planes, которые используются wandering/reproduction.
+2. Кандидаты содержат только walkable `SupportedWalk` cells и исключают клетки, уже занятые world-item stack.
+3. Planes и cells сортируются по stable key/`CellId`; скрытая случайная fallback-логика запрещена.
+4. Два hamster помещаются в разные клетки одной eligible plane, чтобы pair reproduction была возможна сразу после суточного cooldown.
+5. Grub помещается в eligible plane, отличную от hamster plane, если такая существует.
+6. Если существует только одна suitable plane, grub получает третью свободную клетку той же plane.
+7. Если legal placement для полного набора `2 hamster + 1 grub` отсутствует, bootstrap завершается typed failure и не создаёт заведомо частичную популяцию.
+
+Seed использует три stable entity IDs. Повторная initialization одной session является no-op. Если Inventory уже содержит хотя бы один canonical/legacy living-material individual, bootstrap не восстанавливает погибших/подобранных существ и не создаёт replacement population. Save/load не запускает fresh seed повторно.
 
 ### 2.1 Свободный hamster
 
@@ -48,7 +69,7 @@ Canonical IDs: `creature.hamster` и `creature.grub`. `creature.larva` — save/
 
 `LivingMaterialPlaneKey` — connected component открытых fully-supported cells с одинаковыми `Y/Z`, соединённых только горизонтальными `SupportedWalk` edges. Стены и разрывы делят components. Stable identity plane равна минимальному `CellId` компоненты.
 
-Pair detection, cap и wandering используют component, а не весь `Y/Z` layer.
+Fresh seed, pair detection, cap и wandering используют component, а не весь `Y/Z` layer.
 
 ### 2.4 Pickup, storage и drop
 
@@ -74,17 +95,18 @@ Ecology имеет `96` substeps в игровых сутках; один simula
 
 ## 3. Владение состоянием
 
-- `LivingMaterialEcologyState`: identity/link, species, anchor/current cell, plane, direction, activity/timers, fixed-point movement budget, cycles/cooldown и deterministic sequence.
-- `InventoryState`: quantity-one item identity, authoritative location, reservations и transfer.
-- World/Navigation: open/supported cells и traversal classification.
+- `InventoryState`: quantity-one item identity, authoritative location, reservations, fresh-seed item commit и transfer.
+- `LivingMaterialEcologyState`: identity link, species, anchor/current cell, plane, direction, activity/timers, fixed-point movement budget, cycles/cooldown и deterministic sequence.
+- World/Navigation: open/supported cells, traversal classification и initial-plane candidates.
 - Buildings/Inventory: campfire internal stock.
 - Presentation: interpolation, poses, scale `0.25/0.20`, pickup proxy и tether geometry.
 
-Ни Presentation, ни animation callbacks не двигают creature, не размножают его и не меняют Inventory.
+Ни Presentation, ни animation callbacks не создают, двигают или размножают creature и не меняют Inventory.
 
 ## 4. State machine и priority
 
 ```text
+Fresh bootstrap           -> Inventory unit seed -> Ecology reconciliation
 Stored + world grub       -> Moving
 Stored + world hamster    -> ReleaseDormant --1 ecology step--> Moving
 Moving hamster            -> Searching --1..2--> Moving
@@ -102,10 +124,13 @@ Priority внутри ecology tick:
 4. movement transaction;
 5. Presentation projection.
 
+Fresh seed выполняется до первого reconciliation и не является recurring ecology step.
+
 ## 5. Determinism
 
+- initial planes/cells: stable plane key, затем stable `CellId`;
 - ecology step = `simulationTick * 4 + substep`;
-- stable order: plane, species, creature ID;
+- runtime order: plane, species, creature ID;
 - choices hash world seed + creature ID + sequence + purpose;
 - movement threshold `4000`: hamster adds `800`, grub `650` per substep;
 - activity bands/timers and sequence are saved;
@@ -113,6 +138,11 @@ Priority внутри ecology tick:
 
 ## 6. Инварианты
 
+- fresh demo without saved living materials starts with exactly `2 hamster + 1 grub`;
+- initial hamster pair shares one plane and distinct cells;
+- initial grub uses another plane when available, otherwise a third distinct cell;
+- occupied world-item cells are never selected for fresh seed;
+- repeated initialization/save-load cannot reseed or duplicate the starting population;
 - one creature ↔ one linked quantity-one Inventory entity;
 - Inventory location determines Free/Stored;
 - movement never changes `Y/Z` and never uses non-`SupportedWalk` edge;
@@ -128,6 +158,7 @@ Priority внутри ecology tick:
 
 Commands/use cases:
 
+- plan/commit fresh demo population through Inventory;
 - register/restore living material individual;
 - reconcile containment from Inventory location;
 - advance four ecology substeps for one simulation tick;
@@ -137,6 +168,7 @@ Commands/use cases:
 
 Events:
 
+- Inventory unit added for fresh seed;
 - registered/restored;
 - containment/activity/direction changed;
 - flat movement committed;
@@ -145,6 +177,7 @@ Events:
 
 Queries/read models:
 
+- deterministic initial placement plan;
 - snapshots ordered by stable identity;
 - free population by species/plane;
 - legal flat candidates and rejection reason;
@@ -154,22 +187,23 @@ Queries/read models:
 
 ## 8. Save/Load и migration
 
-Save format `v12` хранит IDs/link, species, anchor/current cell, plane root, direction, activity/timer, movement budget/counters, cycles, next reproduction step, deterministic sequence и version.
+Save format `v12` introduced living-material IDs/link, species, anchor/current cell, plane root, direction, activity/timer, movement budget/counters, cycles, next reproduction step, deterministic sequence и version.
 
-Inventory отдельно сохраняет authoritative location/reservations. Load validates one-to-one links, canonicalizes `creature.larva -> creature.grub` и rebuilds derived plane candidates, nearby residents, interpolation и tether transforms.
+Inventory separately persists authoritative location/reservations. Load validates one-to-one links, canonicalizes `creature.larva -> creature.grub` and rebuilds derived plane candidates, nearby residents, interpolation and tether transforms. A restored population, including a population reduced to one individual, is never supplemented by demo seed.
 
-Migration order после синхронизации с terrain deposits:
+Migration chain:
 
 ```text
 v10 -> v11 deterministic terrain deposits
 v11 -> v12 living material ecology
+v12 -> v13 terrain output contract
 ```
 
 ## 9. Unity Presentation
 
-- `DigTerrainWorkSession` содержит authoritative Ecology repository/use case alongside existing owners.
+- `DigTerrainWorkSession.InitializeLivingMaterials` seeds fresh Inventory before first Ecology synchronization.
 - `DigAgentSimulationDriver` advances Ecology once per simulation tick with resident cells.
-- `DigCreatureRenderer` consumes immutable living-material visual snapshots.
+- `DigCreatureRenderer` consumes immutable living-material visual snapshots on the initial render and subsequent ticks.
 - Hamster scale = `0.25`, grub scale = `0.20` относительно resident.
 - Hamster activities project move/search/sleep/release-dormant poses.
 - Grub projects continuous crawl and ignores resident overlap.
@@ -178,6 +212,8 @@ v11 -> v12 living material ecology
 
 ## 10. Failure, retry и concurrency
 
+- No legal full initial plan: typed startup failure; no silent placement on unsupported/occupied cells.
+- Stable seed ID collision or missing catalog item: validation fails before the first expected seed commit.
 - Invalid drop cell: Inventory transfer does not commit; Ecology state is not released.
 - Missing/invalid linked unit item: use case fails with typed diagnostic and does not create a second owner.
 - No legal movement: cell is preserved, direction is deterministically reselected, retry occurs on future cadence.
@@ -187,25 +223,25 @@ v11 -> v12 living material ecology
 
 ## 11. Diagnostics
 
-Inspector/read model exposes species, containment, item link, plane, anchor/current cell, radius, direction, activity/timer, movement budget, completed cycles, next reproduction step and blocked reason.
+Diagnostics expose initial-plan failure, seed ID/catalog conflict, species, containment, item link, plane, anchor/current cell, radius, direction, activity/timer, movement budget, completed cycles, next reproduction step and blocked reason.
 
-Failures use typed Ecology/Application errors; no Presentation-only state is accepted as authoritative evidence.
+Failures use typed Ecology/Application/Unity bootstrap errors; no Presentation-only state is accepted as authoritative evidence.
 
 ## 12. Acceptance и verification evidence
 
-Implemented automated coverage:
+Automated coverage:
 
+- Application: deterministic initial plane distribution, hamster pair placement, distinct-plane grub preference, one-plane fallback and occupied-cell exclusion.
 - Domain: profile constants, identity/link, fixed-point cadence, dormancy, activities, flat/radius guards, pair/self reproduction, stable-lowest parent, newborn budget, max cycles and cap `10`.
-- Application: Inventory reconciliation, connected-plane resolver, resident steering, stored exclusion, atomic movement/reproduction and retry.
-- Save: v12 round trip, deterministic continuation and migration chain including terrain v11.
-- Unity source/contracts: runtime session/driver wiring, activity renderer, pickup proxy, tether projection and checked-in Play Mode fixture.
-- Final Quality run for PR #529: architecture/source contracts, build, `1206/1206` .NET tests, headless smoke, standard deterministic soak and large-settlement deterministic soak passed.
+- Application runtime: Inventory reconciliation, connected-plane resolver, resident steering, stored exclusion, atomic movement/reproduction and retry.
+- Save: v12 round trip, deterministic continuation and migration chain through current v13.
+- Unity source/contracts: seed wiring, runtime session/driver, activity renderer, pickup proxy and tether projection.
+- Checked-in Unity Play Mode: fresh demo contains exactly two hamster and one grub, repeated initialization preserves the same three IDs, plus drop/dormancy/movement/tether/no-vertical scenarios.
 
 Verification boundary:
 
-- Unity workflow completed successfully, but licensed EditMode/PlayMode Test Runner steps were skipped by the activation gate.
-- Therefore status is `IMPLEMENTED`, not `VERIFIED`.
-- `VERIFIED` requires a later licensed Unity run with the checked-in scenarios actually executed.
+- Repository Quality/source tests may establish `IMPLEMENTED` after the correction PR passes.
+- `VERIFIED` still requires the checked-in Unity EditMode/PlayMode scenarios to execute on a licensed runner.
 
 ## 13. Журнал решений
 
@@ -214,7 +250,5 @@ Verification boundary:
 | 2026-07-30 | Flat wandering, pickup/drop, hamster dormancy, campfire tether, pair/self reproduction, max two cycles и cap 10. | Пользователь | §§1–12, #524 |
 | 2026-07-30 | Connected same-Y/Z plane; daily stable-lowest hamster parent; newborn two cycles; speed/radius `0.8×/6`, `0.65×/4`; 96 ecology steps/day; activity bands. | Пользователь | §§2–6, #524 |
 | 2026-07-30 | Terrain deposits retain save v11; living material ecology advances save format to v12. | Реализация после merge reconciliation | §8, #524, PR #529 |
-| 2026-07-30 | Quality passed; licensed Unity Test Runner skipped activation gate, so system is IMPLEMENTED rather than VERIFIED. | CI evidence | §12, #524, PR #529 |
-
-
-Current save chain note: living-material ecology remains the authoritative `v11 -> v12` migration; terrain output adds the subsequent `v12 -> v13 terrain output contract` without redefining ecology state.
+| 2026-07-30 | Licensed Unity Test Runner skipped activation gate, so system remained IMPLEMENTED rather than VERIFIED. | CI evidence | §12, #524, PR #529 |
+| 2026-08-01 | Fresh world seeds two hamster and one grub; hamster remain a pair on one plane, grub is deterministically distributed to another suitable plane when available, otherwise to a third free cell of the same plane. | Пользователь | §§2.0, 3–13, #524 |
