@@ -23,7 +23,7 @@ public sealed class InventoryBarrelRoomRuntimeRegressionTests
 
         Assert.Contains("pendingUnits", layout);
         Assert.Contains("candidate.Source.Split", apply);
-        Assert.Contains("quantity: 1", layout);
+        Assert.Contains("quantity: 1", apply);
         Assert.Contains("CreateResidentUnitId", stacking);
         Assert.DoesNotContain("GroupBy(value => value.ItemId)", stacking);
         Assert.Contains("occupied.ContainsKey(slot)", claims);
