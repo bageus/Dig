@@ -40,7 +40,7 @@ public sealed class LivingMaterialPhysicsUnityContractTests
         Assert.Contains("Physics.SyncTransforms()", playMode);
         Assert.Contains("new WaitForFixedUpdate()", playMode);
         Assert.Contains("Vector3.Distance(body.position", playMode);
-        Assert.Contains("body.velocity.sqrMagnitude", playMode);
+        Assert.Contains("body.linearVelocity.sqrMagnitude", playMode);
     }
 
     [Fact]
