@@ -19,6 +19,9 @@ internal sealed partial class DigTerrainWorkSession
     private static readonly DomainError LivingMaterialsNotInitialized = new DomainError(
         "unity.living_materials.not_initialized",
         "The hamster and grub ecology runtime is not initialized.");
+    private static readonly DomainError LivingMaterialSeedConflict = new DomainError(
+        "unity.living_materials.seed_conflict",
+        "The deterministic hamster and grub demo identities are already occupied.");
     private static readonly EntityId DemoHamsterOneId = EntityId.Parse(
         "71000000000000000000000000000001");
     private static readonly EntityId DemoHamsterTwoId = EntityId.Parse(
@@ -153,20 +156,40 @@ internal sealed partial class DigTerrainWorkSession
             DemoHamsterTwoId,
             DemoGrubId,
         };
-        for (int index = 0; index < planned.Value.Placements.Count; index++)
+        if (planned.Value.Placements.Count != stableIds.Length)
         {
-            LivingMaterialInitialPlacement placement =
-                planned.Value.Placements[index];
-            ItemId itemId = LivingMaterialEcologyProfiles.Get(
-                placement.Species).ItemId;
+            return Result.Failure(LivingMaterialSeedConflict);
+        }
+
+        ItemId[] itemIds = planned.Value.Placements
+            .Select(placement => LivingMaterialEcologyProfiles.Get(
+                placement.Species).ItemId)
+            .ToArray();
+        for (int index = 0; index < stableIds.Length; index++)
+        {
+            if (inventory.GetStack(stableIds[index]) != null)
+            {
+                return Result.Failure(LivingMaterialSeedConflict);
+            }
+
+            if (!inventory.Catalog.Contains(itemIds[index]))
+            {
+                return Result.Failure(LivingMaterialApplicationErrors.UnknownItem);
+            }
+        }
+
+        for (int index = 0; index < stableIds.Length; index++)
+        {
             Result added = inventory.AddUnit(
                 stableIds[index],
-                itemId,
-                ItemLocation.InWorld(placement.Cell),
+                itemIds[index],
+                ItemLocation.InWorld(planned.Value.Placements[index].Cell),
                 tick);
             if (added.IsFailure)
             {
-                return added;
+                throw new InvalidOperationException(
+                    "Validated living material demo seed failed during Inventory commit: "
+                    + added.Error);
             }
         }
 
