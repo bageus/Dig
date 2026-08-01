@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using Dig.Domain.Buildings;
 using Dig.Domain.Content;
@@ -27,6 +28,38 @@ public sealed class LivingMaterialEcologyPlayModeTests
         {
             UnityEngine.Object.DestroyImmediate(_root);
         }
+    }
+
+    [Test]
+    public void FreshDemoSeedsTwoHamstersAndOneGrubExactlyOnce()
+    {
+        DigWorldSession world = DigWorldSession.CreateDemo(20, 14, 5);
+        DigAgentSession agents = DigAgentSession.CreateDemo(
+            world.LoadView(),
+            world.CreateTunnelNavigationVolume(),
+            world.Journal);
+        DigTerrainWorkSession terrain = DigTerrainWorkSession.CreateDemo(
+            world,
+            agents.LoadView(),
+            world.Journal,
+            agents.SkillGrants);
+
+        terrain.InitializeLivingMaterials(agents.Tick);
+        IReadOnlyList<CreatureVisualSnapshot> first =
+            terrain.LoadLivingMaterialCreatures();
+        terrain.InitializeLivingMaterials(agents.Tick);
+        IReadOnlyList<CreatureVisualSnapshot> repeated =
+            terrain.LoadLivingMaterialCreatures();
+
+        Assert.That(first, Has.Count.EqualTo(3));
+        Assert.That(first.Count(value => value.SpeciesId == "creature.hamster"),
+            Is.EqualTo(2));
+        Assert.That(first.Count(value => value.SpeciesId == "creature.grub"),
+            Is.EqualTo(1));
+        Assert.That(first.Select(value => value.CreatureId).Distinct().Count(),
+            Is.EqualTo(3));
+        Assert.That(repeated.Select(value => value.CreatureId),
+            Is.EqualTo(first.Select(value => value.CreatureId)));
     }
 
     [UnityTest]
