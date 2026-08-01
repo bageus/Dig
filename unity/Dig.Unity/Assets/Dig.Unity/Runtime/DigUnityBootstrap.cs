@@ -82,7 +82,7 @@ namespace Dig.Unity
                 worldSession.Journal);
             terrainSession.InitializeMushroomDemo(agentSession.Tick);
             terrainSession.InitializeBarrelDemo(agentSession.Tick);
-            terrainSession.InitializeLivingMaterials(agentSession.Tick);
+            terrainSession.InitializeLivingMaterials(agentSession.Tick, agents);
             terrainSession.InitializeToolAwareJobAssignment(worldSession.Journal);
             Result settledItems = terrainSession.SettleWorldItems(agentSession.Tick);
             if (settledItems.IsFailure)

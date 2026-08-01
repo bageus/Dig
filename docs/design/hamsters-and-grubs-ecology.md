@@ -38,7 +38,7 @@ Canonical IDs: `creature.hamster` и `creature.grub`. `creature.larva` — save/
 Распределение детерминированное:
 
 1. Planner читает authoritative `NavigationSnapshot` и строит те же connected flat planes, которые используются wandering/reproduction.
-2. Кандидаты содержат только walkable `SupportedWalk` cells и исключают клетки, уже занятые world-item stack.
+2. Кандидаты содержат только walkable `SupportedWalk` cells и исключают клетки, уже занятые world-item stack или живым resident в момент bootstrap.
 3. Planes и cells сортируются по stable key/`CellId`; скрытая случайная fallback-логика запрещена.
 4. Два hamster помещаются в разные клетки одной eligible plane, чтобы pair reproduction была возможна сразу после суточного cooldown.
 5. Grub помещается в eligible plane, отличную от hamster plane, если такая существует.
@@ -141,7 +141,8 @@ Fresh seed выполняется до первого reconciliation и не я�
 - fresh demo without saved living materials starts with exactly `2 hamster + 1 grub`;
 - initial hamster pair shares one plane and distinct cells;
 - initial grub uses another plane when available, otherwise a third distinct cell;
-- occupied world-item cells are never selected for fresh seed;
+- occupied world-item cells and current cells of living residents are never selected for fresh seed;
+- fresh seed remains `ItemLocation.InWorld` and cannot appear in a resident inventory slot without an explicit pickup transaction;
 - repeated initialization/save-load cannot reseed or duplicate the starting population;
 - one creature ↔ one linked quantity-one Inventory entity;
 - Inventory location determines Free/Stored;
@@ -201,7 +202,7 @@ v12 -> v13 terrain output contract
 
 ## 9. Unity Presentation
 
-- `DigTerrainWorkSession.InitializeLivingMaterials` seeds fresh Inventory before first Ecology synchronization.
+- `DigTerrainWorkSession.InitializeLivingMaterials` receives the initial resident snapshot, excludes living resident cells, then seeds fresh Inventory before first Ecology synchronization.
 - `DigAgentSimulationDriver` advances Ecology once per simulation tick with resident cells.
 - `DigCreatureRenderer` consumes immutable living-material visual snapshots on the initial render and subsequent ticks.
 - Hamster scale = `0.25`, grub scale = `0.20` относительно resident.
@@ -212,7 +213,7 @@ v12 -> v13 terrain output contract
 
 ## 10. Failure, retry и concurrency
 
-- No legal full initial plan: typed startup failure; no silent placement on unsupported/occupied cells.
+- No legal full initial plan after excluding world-item and living-resident cells: typed startup failure; no silent placement on unsupported/occupied cells.
 - Stable seed ID collision or missing catalog item: validation fails before the first expected seed commit.
 - Invalid drop cell: Inventory transfer does not commit; Ecology state is not released.
 - Missing/invalid linked unit item: use case fails with typed diagnostic and does not create a second owner.
@@ -235,8 +236,8 @@ Automated coverage:
 - Domain: profile constants, identity/link, fixed-point cadence, dormancy, activities, flat/radius guards, pair/self reproduction, stable-lowest parent, newborn budget, max cycles and cap `10`.
 - Application runtime: Inventory reconciliation, connected-plane resolver, resident steering, stored exclusion, atomic movement/reproduction and retry.
 - Save: v12 round trip, deterministic continuation and migration chain through current v13.
-- Unity source/contracts: seed wiring, runtime session/driver, activity renderer, pickup proxy and tether projection.
-- Checked-in Unity Play Mode: fresh demo contains exactly two hamster and one grub, repeated initialization preserves the same three IDs, plus drop/dormancy/movement/tether/no-vertical scenarios.
+- Unity source/contracts: seed wiring with living-resident exclusion, runtime session/driver, activity renderer, pickup proxy and tether projection.
+- Checked-in Unity Play Mode: fresh demo contains exactly two hamster and one grub, none shares a living-resident cell or resident inventory slot, repeated initialization preserves the same three IDs, plus drop/dormancy/movement/tether/no-vertical scenarios.
 
 Verification boundary:
 
@@ -252,3 +253,4 @@ Verification boundary:
 | 2026-07-30 | Terrain deposits retain save v11; living material ecology advances save format to v12. | Реализация после merge reconciliation | §8, #524, PR #529 |
 | 2026-07-30 | Licensed Unity Test Runner skipped activation gate, so system remained IMPLEMENTED rather than VERIFIED. | CI evidence | §12, #524, PR #529 |
 | 2026-08-01 | Fresh world seeds two hamster and one grub; hamster remain a pair on one plane, grub is deterministically distributed to another suitable plane when available, otherwise to a third free cell of the same plane. | Пользователь | §§2.0, 3–13, #524 |
+| 2026-08-01 | После runtime regression fresh seed также исключает клетки живых residents и остаётся world-owned; overlap не может выглядеть как немедленный resident pickup. | Пользовательский bug report | §§2.0, 6, 9–13, #524, PR #543 |

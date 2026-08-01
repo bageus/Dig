@@ -1,4 +1,5 @@
 using Dig.Domain.Core;
+using Dig.Domain.World;
 using Dig.Presentation.Input;
 using UnityEngine;
 
@@ -39,31 +40,44 @@ public sealed partial class DigWorldInteraction
             return;
         }
 
+        ExecuteResidentInventoryDrop(
+            decision.ActorId.Value,
+            decision.TargetEntityId.Value,
+            decision.TargetCell.Value);
+    }
+
+    private void ExecuteResidentInventoryDrop(
+        EntityId actorId,
+        EntityId stackId,
+        CellId targetCell)
+    {
         Result result = _terrainSession!.DropResidentInventoryStack(
-            decision.ActorId.Value.ToString(),
-            decision.TargetEntityId.Value.ToString(),
-            decision.TargetCell.Value,
+            actorId.ToString(),
+            stackId.ToString(),
+            targetCell,
             _simulation!.CurrentTick);
         _hud!.SetCommandResult(result);
-        if (result.IsSuccess)
+        if (result.IsFailure)
         {
-            ClearSelectedInventoryStack();
-            Result synchronized = _terrainSession.SynchronizeLivingMaterials(
-                _simulation!.CurrentTick);
-            if (synchronized.IsFailure)
-            {
-                _hud.SetCommandResult(synchronized);
-                return;
-            }
-
-            _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
-            _creatureRenderer!.Render(
-                _terrainSession.LoadLivingMaterialCreatures(),
-                Camera.main,
-                movementDuration: 0.1f);
-            _agentRenderer!.RenderEquipment(_terrainSession.LoadResidentEquipment());
-            _hud.SetStatus("Inventory stack dropped at the resident position.");
+            return;
         }
+
+        ClearSelectedInventoryStack();
+        Result synchronized = _terrainSession.SynchronizeLivingMaterials(
+            _simulation.CurrentTick);
+        if (synchronized.IsFailure)
+        {
+            _hud.SetCommandResult(synchronized);
+            return;
+        }
+
+        _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
+        _creatureRenderer!.Render(
+            _terrainSession.LoadLivingMaterialCreatures(),
+            Camera.main,
+            movementDuration: 0.1f);
+        _agentRenderer!.RenderEquipment(_terrainSession.LoadResidentEquipment());
+        _hud.SetStatus("Inventory stack dropped at the resident position.");
     }
 }
 

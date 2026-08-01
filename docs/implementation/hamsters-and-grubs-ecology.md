@@ -5,6 +5,7 @@ Status: `IMPLEMENTED`; licensed Unity execution remains required for `VERIFIED`.
 Authoritative specification: [`../design/hamsters-and-grubs-ecology.md`](../design/hamsters-and-grubs-ecology.md).
 Tracking issue: [#524](https://github.com/bageus/Dig/issues/524).
 Original implementation PR: [#529](https://github.com/bageus/Dig/pull/529).
+Fresh-population correction PR: [#543](https://github.com/bageus/Dig/pull/543).
 
 ## Ownership
 
@@ -43,11 +44,12 @@ The original tests covered lifecycle/projection in isolation but did not execute
 
 ### Application planner
 
-`LivingMaterialInitialPopulationPlanner` reads `NavigationSnapshot` and the set of occupied world-item cells.
+`LivingMaterialInitialPopulationPlanner` reads `NavigationSnapshot` and a stable set of cells unavailable for initial placement.
 
 - it resolves the same connected `SupportedWalk` planes used by Ecology;
 - plane and cell order is stable;
 - occupied world-item cells are excluded;
+- the Unity bootstrap also contributes all current cells of living residents to the unavailable set;
 - two hamster are assigned distinct cells of one eligible plane;
 - grub prefers another eligible plane;
 - with only one suitable plane, grub uses a third distinct free cell;
@@ -57,17 +59,25 @@ The original tests covered lifecycle/projection in isolation but did not execute
 
 `DigTerrainWorkSession.InitializeLivingMaterials` now:
 
-1. creates the Ecology repository/handler;
-2. checks whether Inventory already contains any canonical or legacy living-material unit;
-3. obtains the current Navigation snapshot;
-4. plans the initial population;
-5. prevalidates all three stable entity IDs and catalog entries;
-6. adds two `creature.hamster` units and one `creature.grub` unit at authoritative world locations;
-7. saves Inventory and publishes its events;
-8. runs normal Ecology reconciliation;
-9. supplies the resulting snapshots to the existing initial `DigCreatureRenderer` call.
+1. receives the current resident snapshot from `DigUnityBootstrap`;
+2. creates the Ecology repository/handler;
+3. checks whether Inventory already contains any canonical or legacy living-material unit;
+4. obtains the current Navigation snapshot;
+5. combines world-item cells with living-resident cells;
+6. plans the initial population outside that occupied set;
+7. prevalidates all three stable entity IDs and catalog entries;
+8. adds two `creature.hamster` units and one `creature.grub` unit at authoritative world locations;
+9. saves Inventory and publishes its events;
+10. runs normal Ecology reconciliation;
+11. supplies the resulting snapshots to the existing initial `DigCreatureRenderer` call.
 
 Repeated initialization is a no-op because the Ecology repository is already present. Reconstructed sessions with any existing living-material Inventory unit skip seeding, so save/load or a population reduced by gameplay does not recreate missing individuals.
+
+## Resident-overlap regression — 2026-08-01
+
+After the first fresh-population correction, a user observed hamster presentation immediately at a dwarf/inventory position. The seed itself still committed `ItemLocation.InWorld`, but its candidate filter knew only about world-item stacks. It could therefore choose the exact current cell of a living resident, making the new creature overlap resident/inventory presentation at startup.
+
+The follow-up correction passes the initial resident list into `InitializeLivingMaterials` and excludes every living resident cell before the first Inventory commit. It does not invent a post-spawn move or transfer: the creature is born in a different world cell, and only an explicit later pickup can change it to `AgentInventory`.
 
 ## Regression coverage
 
@@ -75,10 +85,10 @@ Repeated initialization is a no-op because the Ecology repository is already pre
   - hamster pair remains on one plane;
   - grub uses a different plane when available;
   - one-plane fallback uses a third distinct cell;
-  - occupied cells are excluded;
+  - unavailable cells are excluded;
   - repeated planning is deterministic.
-- `LivingMaterialUnityRuntimeContractTests` requires the seed planner, stable IDs and Inventory world commit wiring.
-- `LivingMaterialEcologyPlayModeTests.FreshDemoSeedsTwoHamstersAndOneGrubExactlyOnce` builds the real demo world/agents/terrain session, initializes living materials twice and requires the same three creature IDs: two hamster and one grub.
+- `LivingMaterialUnityRuntimeContractTests` requires resident-aware bootstrap wiring, seed planner, stable IDs and Inventory world commit.
+- `LivingMaterialEcologyPlayModeTests.FreshDemoSeedsTwoHamstersAndOneGrubAwayFromResidentsExactlyOnce` builds the real demo world/agents/terrain session, initializes living materials twice, requires the same three creature IDs, asserts no creature shares a living-resident cell and asserts no resident inventory slot contains hamster/grub.
 - Existing movement, dormancy, vertical rejection, scale/activity and campfire tether scenarios remain in place.
 
 ## Save chain
@@ -91,4 +101,4 @@ Fresh seed is bootstrap content, not a save migration. A restored Inventory/Ecol
 
 Original PR #529 Quality evidence passed architecture, file-size/C# compatibility, Unity source contracts, .NET build/tests, headless smoke and deterministic soaks. Licensed Unity EditMode/PlayMode execution was skipped by the activation gate.
 
-The fresh-seed correction must pass the same repository Quality pipeline. Until a licensed runner actually executes the checked-in fresh-demo and existing Ecology Play Mode scenarios, the system remains `IMPLEMENTED`, not `VERIFIED`.
+The current PR #543 head must pass the same repository Quality pipeline. Until a licensed runner actually executes the checked-in fresh-demo, inventory quick-drop/placement and existing Ecology Play Mode scenarios, the system remains `IMPLEMENTED`, not `VERIFIED`.
