@@ -29,8 +29,8 @@ namespace Dig.Tests
 
             Assert.Contains("CampfireProductionContent.ProductionMaterialTicks", execution);
             Assert.DoesNotContain("CampfireProductionContent.TestProductionMaterialTicks", execution);
-            Assert.Contains("CreateEligibleFoodDependencyJobs(tick, agents)", synchronization);
-            Assert.Contains("ResolveEligibleDeferredSupplyJobs(tick, agents)", synchronization);
+            Assert.Contains("CreateEligibleFoodDependencyJobs(tick, agents, navigation)", synchronization);
+            Assert.Contains("ResolveEligibleDeferredSupplyJobs(tick, agents, navigation)", synchronization);
             Assert.Contains("MushroomStage.Large", dependencies);
             Assert.Contains("BuildingSupplyDependencyPlanner.PlanSingleExtractionRequest", dependencies);
             Assert.Contains("CreateDeferredBuildingSupplyJobCommand", dependencies);
