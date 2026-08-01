@@ -36,11 +36,18 @@ internal sealed partial class DigTerrainWorkSession
     private readonly LivingMaterialCampfireTetherProjector _livingMaterialTethers =
         new LivingMaterialCampfireTetherProjector();
 
-    internal void InitializeLivingMaterials(long tick)
+    internal void InitializeLivingMaterials(
+        long tick,
+        IReadOnlyList<AgentViewModel> agents)
     {
         if (_livingMaterials != null)
         {
             return;
+        }
+
+        if (agents == null)
+        {
+            throw new ArgumentNullException(nameof(agents));
         }
 
         LivingMaterialEcologyState state = new LivingMaterialEcologyState(
@@ -53,7 +60,7 @@ internal sealed partial class DigTerrainWorkSession
             _profile.Id,
             _journal);
 
-        Result seeded = SeedDemoLivingMaterials(tick);
+        Result seeded = SeedDemoLivingMaterials(tick, agents);
         if (seeded.IsFailure)
         {
             throw new InvalidOperationException(seeded.Error!.ToString());
@@ -113,7 +120,9 @@ internal sealed partial class DigTerrainWorkSession
                 LoadBuildings());
     }
 
-    private Result SeedDemoLivingMaterials(long tick)
+    private Result SeedDemoLivingMaterials(
+        long tick,
+        IReadOnlyList<AgentViewModel> agents)
     {
         InventoryState inventory = _inventoryRepository.Get();
         InventorySnapshot snapshot = inventory.CreateSnapshot();
@@ -135,16 +144,22 @@ internal sealed partial class DigTerrainWorkSession
             return Result.Failure(LivingMaterialApplicationErrors.NavigationUnavailable);
         }
 
-        CellId[] occupiedWorldCells = snapshot.Stacks
+        CellId[] occupiedInitialCells = snapshot.Stacks
             .Where(stack => stack.Location.Kind == ItemLocationKind.World)
             .Select(stack => stack.Location.CellId)
+            .Concat(agents
+                .Where(value => value.IsAlive)
+                .Select(value => new CellId(
+                    value.CellX,
+                    value.CellY,
+                    value.CellZ)))
             .Distinct()
             .OrderBy(value => value)
             .ToArray();
         Result<LivingMaterialInitialPopulationPlan> planned =
             new LivingMaterialInitialPopulationPlanner().Plan(
                 navigation.Value,
-                occupiedWorldCells);
+                occupiedInitialCells);
         if (planned.IsFailure)
         {
             return Result.Failure(planned.Error!);
