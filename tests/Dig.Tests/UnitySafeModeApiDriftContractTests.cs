@@ -104,6 +104,24 @@ public sealed class UnitySafeModeApiDriftContractTests
             owner);
     }
 
+    [Fact]
+    public void Terrain_output_play_mode_uses_collection_constraints_for_typed_item_ids()
+    {
+        string source = Normalize(File.ReadAllText(Path.Combine(
+            FindRepositoryRoot(),
+            "unity",
+            "Dig.Unity",
+            "Assets",
+            "Dig.Unity",
+            "Tests",
+            "PlayMode",
+            "TerrainOutputCatalogPlayModeTests.cs")));
+
+        Assert.Contains("Has.Member(newItemId(\"material.stone\"))", source);
+        Assert.Contains("Has.No.Member(newItemId(\"material.metal\"))", source);
+        Assert.DoesNotContain("Does.Not.Contain(newItemId(", source);
+    }
+
     private static int Count(string source, string value)
     {
         int count = 0;
