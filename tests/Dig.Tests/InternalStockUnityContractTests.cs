@@ -29,6 +29,22 @@ public sealed class InternalStockUnityContractTests
             synchronization);
     }
 
+
+    [Fact]
+    public void Production_and_direct_pickup_use_one_internal_stock_unit_contract()
+    {
+        string runtime = RuntimeRoot();
+        string capacity = Read(runtime, "DigResidentInventory.Capacity.cs");
+        string zones = Read(runtime, "DigBuildingProductionZones.cs");
+        string transit = Read(runtime, "DigBuildingProductionMaterialTransit.cs");
+
+        Assert.Contains("ItemPickupQuantityPolicy", capacity);
+        Assert.Contains("AcquireProductionMaterialCommand", zones);
+        Assert.Contains("requireResidentCarriedMaterial", zones);
+        Assert.Contains("ResolveBuildingInternalStockCell", zones + transit);
+        Assert.Contains("HasCarriedProductionMaterial", zones + transit);
+    }
+
     [Fact]
     public void Product_hud_projects_material_segments()
     {
