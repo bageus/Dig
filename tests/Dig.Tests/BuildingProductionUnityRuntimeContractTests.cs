@@ -64,6 +64,7 @@ public sealed class BuildingProductionUnityRuntimeContractTests
 
         Assert.Contains("TryLoadBuildingPlacementNavigation", synchronization);
         Assert.Contains("GetProductionReachableCells", synchronization);
+        Assert.Contains("using Dig.Domain.Production;", productionRuntime);
         Assert.Contains("BuildingSupplyReachability.ResolveConnectedCells",
             productionRuntime);
         Assert.DoesNotContain(
