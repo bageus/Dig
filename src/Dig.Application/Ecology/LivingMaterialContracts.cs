@@ -59,11 +59,11 @@ public static class LivingMaterialApplicationErrors
 {
     public static readonly DomainError NavigationUnavailable = new DomainError(
         "ecology.living_material.navigation_unavailable",
-        "The living material flat-plane navigation snapshot is unavailable.");
+        "The living material movement-region navigation snapshot is unavailable.");
 
     public static readonly DomainError InvalidWorldCell = new DomainError(
         "ecology.living_material.invalid_world_cell",
-        "The living material item is not on a supported flat navigation cell.");
+        "The living material item is not on a legal movement-region navigation cell.");
 
     public static readonly DomainError MissingLinkedItem = new DomainError(
         "ecology.living_material.missing_linked_item",
