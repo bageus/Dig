@@ -28,7 +28,8 @@ public sealed class JobOverlayViewModel
         JobExecutionReadinessViewModel? executionReadiness = null,
         int? targetZ = null,
         bool isMushroomChop = false,
-        bool isBarrelAttack = false)
+        bool isBarrelAttack = false,
+        bool isProductionWork = false)
     {
         if (string.IsNullOrWhiteSpace(id)
             || string.IsNullOrWhiteSpace(description)
@@ -101,6 +102,7 @@ public sealed class JobOverlayViewModel
             "Ready");
         IsMushroomChop = isMushroomChop;
         IsBarrelAttack = isBarrelAttack;
+        IsProductionWork = isProductionWork;
     }
 
     public string Id { get; }
@@ -122,6 +124,7 @@ public sealed class JobOverlayViewModel
     public JobExecutionReadinessViewModel ExecutionReadiness { get; }
     public bool IsMushroomChop { get; }
     public bool IsBarrelAttack { get; }
+    public bool IsProductionWork { get; }
     public bool HasTarget => TargetX.HasValue && TargetY.HasValue && TargetZ.HasValue;
 }
 }
