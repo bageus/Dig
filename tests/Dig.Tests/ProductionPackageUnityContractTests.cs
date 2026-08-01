@@ -22,6 +22,21 @@ public sealed class ProductionPackageUnityContractTests
     }
 
     [Fact]
+    public void Unity_partials_import_package_content_and_route_plan_owners()
+    {
+        string runtime = RuntimeRoot();
+        string zones = Read(runtime, "DigBuildingProductionZones.cs");
+        string packages = Read(
+            runtime,
+            "DigTerrainWorkSession.ProductionPackages.cs");
+
+        Assert.Contains("using Dig.Domain.Content;", zones);
+        Assert.Contains("ProductionPackageContent.ResolveKind", zones);
+        Assert.Contains("using Dig.Application.Navigation;", packages);
+        Assert.Contains("new TerrainWorkRoutePlan", packages);
+    }
+
+    [Fact]
     public void Forced_move_resets_production_through_interruption_handler()
     {
         string direct = Read(
