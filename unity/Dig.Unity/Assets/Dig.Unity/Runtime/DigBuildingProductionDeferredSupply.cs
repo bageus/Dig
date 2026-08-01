@@ -4,7 +4,9 @@ using System.Linq;
 using Dig.Application.Production;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
+using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
+using Dig.Domain.Production;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
 
@@ -56,26 +58,40 @@ internal sealed partial class DigTerrainWorkSession
                 continue;
             }
 
-            AgentViewModel? resident = agents
-                .Where(IsAvailableForAutomaticWork)
-                .OrderBy(value => Distance(value, building.WorkPosition))
-                .ThenBy(value => value.Id, StringComparer.Ordinal)
-                .FirstOrDefault();
-            if (resident == null)
+            InventorySnapshot inventory = _buildingInventoryRepository!.Get()
+                .CreateSnapshot();
+            if (!BuildingSupplyDependencyPlanner.HasRequestedWorldQuantity(
+                    supply.RequestedItems,
+                    inventory.Stacks))
             {
+                _cancelDeferredBuildingSupply!.Handle(
+                    new CancelDeferredBuildingSupplyJobCommand(
+                        pending.Id,
+                        "The completed extraction dependency produced no remaining world source.",
+                        tick));
+                jobs = _jobRepository.Get();
                 continue;
             }
 
-            Result resolved = _resolveDeferredBuildingSupply!.Handle(
-                new ResolveDeferredBuildingSupplyJobCommand(
-                    pending.Id,
-                    EntityId.Parse(resident.Id),
-                    revealed,
-                    reachable,
-                    tick));
-            if (resolved.IsSuccess)
+            AgentViewModel[] candidates = agents
+                .Where(IsAvailableForAutomaticWork)
+                .OrderBy(value => Distance(value, building.WorkPosition))
+                .ThenBy(value => value.Id, StringComparer.Ordinal)
+                .ToArray();
+            foreach (AgentViewModel resident in candidates)
             {
-                jobs = _jobRepository.Get();
+                Result resolved = _resolveDeferredBuildingSupply!.Handle(
+                    new ResolveDeferredBuildingSupplyJobCommand(
+                        pending.Id,
+                        EntityId.Parse(resident.Id),
+                        revealed,
+                        reachable,
+                        tick));
+                if (resolved.IsSuccess)
+                {
+                    jobs = _jobRepository.Get();
+                    break;
+                }
             }
         }
     }
