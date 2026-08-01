@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dig.Application.Navigation;
 using Dig.Application.Production;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
