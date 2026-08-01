@@ -1,0 +1,50 @@
+name: Apply internal stock material pickup fix
+
+on:
+  push:
+    branches:
+      - bugfix/production-internal-stock-material-pickup
+    paths:
+      - '.github/workflows/apply-internal-stock-material-pickup-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout bugfix branch
+        uses: actions/checkout@v4
+        with:
+          ref: bugfix/production-internal-stock-material-pickup
+          fetch-depth: 0
+
+      - name: Apply verified patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .tmp/internal-stock-fix/patch.* > /tmp/internal-stock-fix.patch
+          git apply --check /tmp/internal-stock-fix.patch
+          git apply /tmp/internal-stock-fix.patch
+          rm -rf .tmp/internal-stock-fix
+          rm -f .github/workflows/apply-internal-stock-material-pickup-fix.yml
+
+      - name: Run source quality gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/quality/check_quality.py
+          python3 tools/quality/check_unity_source_contracts.py
+          python3 tools/quality/check_unity_item_visual_contracts.py
+          git diff --check
+
+      - name: Publish code commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix production material pickup from internal stock"
+          git push origin HEAD:bugfix/production-internal-stock-material-pickup
