@@ -11,7 +11,9 @@ public sealed class InventoryBarrelRoomRuntimeRegressionTests
     public void Resident_layout_uses_one_quantity_one_stack_per_slot()
     {
         string layout = Read(
-            "src/Dig.Domain/Inventory/InventoryState.ResidentLayout.cs");
+            "src/Dig.Domain/Inventory/InventoryState.ResidentLayout.Compaction.cs");
+        string apply = Read(
+            "src/Dig.Domain/Inventory/InventoryState.ResidentLayout.Compaction.Apply.cs");
         string stacking = Read(
             "src/Dig.Domain/Inventory/InventoryState.ResidentStacking.cs");
         string claims = Read(
@@ -20,8 +22,8 @@ public sealed class InventoryBarrelRoomRuntimeRegressionTests
             "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigResidentInventory.Capacity.cs");
 
         Assert.Contains("pendingUnits", layout);
-        Assert.Contains("candidate.Source.Split", layout);
-        Assert.Contains("quantity: 1", layout);
+        Assert.Contains("candidate.Source.Split", apply);
+        Assert.Contains("quantity: 1", apply);
         Assert.Contains("CreateResidentUnitId", stacking);
         Assert.DoesNotContain("GroupBy(value => value.ItemId)", stacking);
         Assert.Contains("occupied.ContainsKey(slot)", claims);

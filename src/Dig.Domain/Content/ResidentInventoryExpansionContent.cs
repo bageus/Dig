@@ -134,7 +134,13 @@ public sealed class ResidentInventoryExpansionContent
         string visualAttachmentId)
     {
         ItemCategoryId[] accepted = group == InventoryExpansionGroup.Cargo
-            ? new[] { GeneralItemCategoryId, RawMaterialCategoryId }
+            ? new[]
+            {
+                GeneralItemCategoryId,
+                RawMaterialCategoryId,
+                WeaponCategoryId,
+                ShieldCategoryId,
+            }
             : new[] { WeaponCategoryId, ShieldCategoryId };
         return new ItemDefinition(
             itemId,

@@ -18,7 +18,7 @@ public sealed class ResidentInventorySlotClaimTests
     private static readonly ItemId BasketId = new ItemId("inventory.basket");
 
     [Fact]
-    public void Partial_cargo_stack_does_not_preempt_free_main_slot()
+    public void Existing_cargo_item_compacts_into_main_before_new_claim()
     {
         InventoryState inventory = CreateInventory(withBasket: true);
         Assert.True(inventory.AddStack(
@@ -42,9 +42,49 @@ public sealed class ResidentInventorySlotClaimTests
         Assert.True(result.IsSuccess, result.Error?.ToString());
         ResidentInventorySlotClaimSnapshot claim = Assert.Single(result.Value);
         Assert.Equal(
-            new ResidentInventorySlot(ResidentInventoryCompartment.Main, 1),
+            new ResidentInventorySlot(ResidentInventoryCompartment.Main, 2),
             claim.Slot);
         Assert.Equal(1, claim.Quantity);
+    }
+
+    [Fact]
+    public void Compaction_skips_slots_reserved_by_incoming_claims()
+    {
+        InventoryState inventory = CreateInventory(withBasket: true);
+        var reserved = inventory.ReserveResidentSlotCapacity(
+            FirstJobId,
+            ResidentId,
+            OreId,
+            quantity: 1,
+            tick: 1);
+        Assert.True(reserved.IsSuccess, reserved.Error?.ToString());
+        Assert.Equal(
+            new ResidentInventorySlot(ResidentInventoryCompartment.Main, 1),
+            Assert.Single(reserved.Value).Slot);
+        Assert.True(inventory.AddStack(
+            OreStackId,
+            OreId,
+            1,
+            ItemLocation.InResidentSlot(
+                ResidentId,
+                ResidentInventoryCompartment.Cargo,
+                0),
+            tick: 2).IsSuccess);
+
+        Result normalized = inventory.NormalizeResidentInventory(
+            ResidentId,
+            tick: 3);
+
+        Assert.True(normalized.IsSuccess, normalized.Error?.ToString());
+        Assert.Equal(
+            ItemLocation.InResidentSlot(
+                ResidentId,
+                ResidentInventoryCompartment.Main,
+                2),
+            inventory.GetStack(OreStackId)!.Location);
+        Assert.Equal(
+            new ResidentInventorySlot(ResidentInventoryCompartment.Main, 1),
+            Assert.Single(inventory.GetResidentSlotClaims(FirstJobId)).Slot);
     }
 
     [Fact]
@@ -230,7 +270,7 @@ public sealed class ResidentInventorySlotClaimTests
                 "Basket",
                 InventoryExpansionGroup.Cargo,
                 4,
-                new[] { raw }),
+                new[] { raw, weapon }),
             Expansion(
                 harnessId,
                 "Harness",

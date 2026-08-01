@@ -48,6 +48,11 @@ public sealed class WeaponExpansionUnityRuntimeContractTests
             scenario);
         Assert.Contains("ResidentInventoryCompartment.Weapon", scenario);
         Assert.Contains("WeaponCapacity", scenario);
+        Assert.Contains(
+            "Sparse_main_and_loaded_cargo_compact_to_weapon_then_main_low_indices",
+            scenario);
+        Assert.Contains("NormalizeResidentInventory(ResidentId, tick: 1)", scenario);
+        Assert.Contains("ResidentInventoryCompartment.Cargo", scenario);
     }
 
     private static string Read(string root, string file)

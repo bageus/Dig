@@ -36,8 +36,8 @@ public sealed class ResidentInventoryMigrationTests
 
         Assert.True(migrated.IsSuccess, migrated.Error?.ToString());
         ResidentInventoryMigrationReport report = migrated.Value;
-        Assert.Equal(10, report.SlottedStackCount);
-        Assert.Equal(2, report.SpilledStackIds.Count);
+        Assert.Equal(11, report.SlottedStackCount);
+        Assert.Single(report.SpilledStackIds);
         Assert.Equal(Id(12), report.RestoredHeldStackId);
         Assert.Equal(totalBefore,
             inventory.CreateSnapshot().Stacks.Sum(stack => stack.Quantity));
@@ -46,8 +46,9 @@ public sealed class ResidentInventoryMigrationTests
                 ItemLocation.InWorld(residentCell),
                 inventory.GetStack(stackId)!.Location));
         Assert.Equal(
-            ResidentInventoryCompartment.Main,
+            ResidentInventoryCompartment.Weapon,
             inventory.GetStack(Id(12))!.Location.ResidentCompartment);
+        Assert.Equal(0, inventory.GetStack(Id(12))!.Location.ResidentSlotIndex);
         Assert.Equal(1, inventory.GetStack(Id(12))!.HeldQuantity);
         Assert.Equal(Id(12), inventory.GetHeldItem(ResidentId)!.Value.StackId);
         Assert.DoesNotContain(
