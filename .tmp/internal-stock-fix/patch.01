@@ -1,0 +1,203 @@
++        }
++
++        ProductionOrderSnapshot? order = _productionRepository.Get().Get(command.OrderId);
++        JobSnapshot? job = _jobRepository.Get().Get(command.JobId);
++        if (order == null
++            || job?.Definition is not ProductionWorkJobDefinition definition
++            || definition.OrderId != command.OrderId
++            || job.Status != JobStatus.InProgress
++            || job.Stage != JobStageKind.PerformWork
++            || !job.AssignedAgentId.HasValue
++            || order.Status != ProductionOrderStatus.InProgress)
++        {
++            return Result.Failure(ProductionErrors.InvalidStatus);
++        }
++
++        ProductionMaterialStepSnapshot? step = order.MaterialSteps
++            .Where(value => !value.Consumed)
++            .Select(value => (ProductionMaterialStepSnapshot?)value)
++            .FirstOrDefault();
++        if (!step.HasValue)
++        {
++            return Result.Failure(ProductionErrors.InvalidStatus);
++        }
++
++        EntityId residentId = job.AssignedAgentId.Value;
++        InventoryState inventory = _inventoryRepository.Get();
++        InventorySnapshot snapshot = inventory.CreateSnapshot();
++        bool alreadyCarried = snapshot.Stacks.Any(stack =>
++            stack.ItemId == step.Value.ItemId
++            && stack.Location.Kind == ItemLocationKind.AgentInventory
++            && stack.Location.HasOwner
++            && stack.Location.OwnerId == residentId
++            && stack.Reservations.Any(value =>
++                value.JobId == command.OrderId && value.Quantity > 0));
++        if (alreadyCarried)
++        {
++            return Result.Success();
++        }
++
++        ItemStackSnapshot? source = snapshot.Stacks
++            .Where(stack => stack.ItemId == step.Value.ItemId
++                && stack.Location == ItemLocation.InBuilding(definition.BuildingId)
++                && stack.Reservations.Any(value =>
++                    value.JobId == command.OrderId && value.Quantity > 0))
++            .OrderBy(stack => stack.StackId.ToString(), StringComparer.Ordinal)
++            .FirstOrDefault();
++        if (source == null)
++        {
++            return Result.Failure(InventoryErrors.ReservationNotFound);
++        }
++
++        Result<EntityId> acquired = inventory.AcquireReservedProductionUnit(
++            source.StackId,
++            command.OrderId,
++            residentId,
++            command.DestinationStackId,
++            command.Tick);
++        if (acquired.IsFailure)
++        {
++            return Result.Failure(acquired.Error!);
++        }
++
++        _inventoryRepository.Save(inventory);
++        _eventSink.Append(inventory.DequeueUncommittedEvents());
++        return Result.Success();
++    }
++}
++
++}
+diff --git a/src/Dig.Application/Production/ProductionMaterialTransitUseCases.cs.meta b/src/Dig.Application/Production/ProductionMaterialTransitUseCases.cs.meta
+new file mode 100644
+index 0000000..778160f
+--- /dev/null
++++ b/src/Dig.Application/Production/ProductionMaterialTransitUseCases.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: 0286e7b03b8b4b3f83ca119d23d62a57
+diff --git a/src/Dig.Domain/Inventory/InventoryState.ProductionMaterialTransit.cs b/src/Dig.Domain/Inventory/InventoryState.ProductionMaterialTransit.cs
+new file mode 100644
+index 0000000..08b08a9
+--- /dev/null
++++ b/src/Dig.Domain/Inventory/InventoryState.ProductionMaterialTransit.cs
+@@ -0,0 +1,153 @@
++using System;
++using System.Linq;
++using Dig.Domain.Core;
++
++namespace Dig.Domain.Inventory
++{
++
++public sealed partial class InventoryState
++{
++    public Result<EntityId> AcquireReservedProductionUnit(
++        EntityId sourceStackId,
++        EntityId reservationOwnerId,
++        EntityId residentId,
++        EntityId destinationStackId,
++        long tick)
++    {
++        ValidateTick(tick);
++        ValidateJobId(reservationOwnerId);
++        ValidateResidentId(residentId);
++        ItemStackState? source = Find(sourceStackId);
++        if (source is null)
++        {
++            return Result<EntityId>.Failure(InventoryErrors.StackNotFound);
++        }
++
++        if (source.GetReservedQuantity(reservationOwnerId) < 1)
++        {
++            return Result<EntityId>.Failure(InventoryErrors.ReservationNotFound);
++        }
++
++        Result<System.Collections.Generic.IReadOnlyList<ResidentInventorySlotClaimSnapshot>>
++            capacity = ReserveResidentSlotCapacity(
++                reservationOwnerId,
++                residentId,
++                source.ItemId,
++                quantity: 1,
++                tick);
++        if (capacity.IsFailure)
++        {
++            return Result<EntityId>.Failure(capacity.Error!);
++        }
++
++        ResidentInventorySlotClaimSnapshot claim = capacity.Value.Single();
++        ItemLocation destination = ItemLocation.InResidentSlot(
++            residentId,
++            claim.Slot.Compartment,
++            claim.Slot.Index);
++        ItemLocation sourceLocation = source.Location;
++        EntityId movedStackId;
++        if (source.Quantity == 1)
++        {
++            source.MoveFull(destination);
++            movedStackId = source.Id;
++        }
++        else
++        {
++            if (destinationStackId.IsEmpty)
++            {
++                ReleaseResidentSlotClaims(reservationOwnerId, tick);
++                return Result<EntityId>.Failure(InventoryErrors.SplitIdRequired);
++            }
++
++            if (_stacks.ContainsKey(destinationStackId))
++            {
++                ReleaseResidentSlotClaims(reservationOwnerId, tick);
++                return Result<EntityId>.Failure(InventoryErrors.StackAlreadyExists);
++            }
++
++            source.ConsumeReservedQuantity(reservationOwnerId, quantity: 1);
++            ItemStackState moved = new ItemStackState(
++                destinationStackId,
++                source.ItemId,
++                quantity: 1,
++                destination);
++            moved.Reserve(reservationOwnerId, quantity: 1);
++            _stacks.Add(moved.Id, moved);
++            movedStackId = moved.Id;
++            Raise(new ItemQuantityReservationChanged(
++                tick,
++                moved.Id,
++                reservationOwnerId,
++                moved.GetReservedQuantity(reservationOwnerId)));
++            Raise(new ItemQuantityReservationChanged(
++                tick,
++                source.Id,
++                reservationOwnerId,
++                source.GetReservedQuantity(reservationOwnerId)));
++        }
++
++        ReleaseResidentSlotClaims(reservationOwnerId, tick);
++        IncrementVersion();
++        Raise(new ItemStackMoved(
++            tick,
++            sourceStackId,
++            movedStackId,
++            source.ItemId,
++            quantity: 1,
++            sourceLocation,
++            destination));
++        return Result<EntityId>.Success(movedStackId);
++    }
++
++    public Result ConsumeReservedProductionUnit(
++        EntityId reservationOwnerId,
++        EntityId residentId,
++        ItemId itemId,
++        long tick)
++    {
++        ValidateTick(tick);
++        ValidateJobId(reservationOwnerId);
++        ValidateResidentId(residentId);
++        if (itemId.IsEmpty)
++        {
++            throw new ArgumentException("Item id is required.", nameof(itemId));
++        }
++
++        ItemStackState? source = _stacks.Values
++            .Where(stack => stack.ItemId == itemId
++                && stack.Location.Kind == ItemLocationKind.AgentInventory
++                && stack.Location.HasOwner
