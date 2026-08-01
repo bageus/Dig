@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Dig.Domain.Core;
+using Dig.Domain.Inventory;
 using Dig.Domain.World;
 using Dig.Presentation.Input;
 using Dig.Presentation.Inventory;
