@@ -60,20 +60,22 @@ namespace Dig.Tests
         }
 
         [Fact]
-        public void Food_input_uses_pickup_arrow_or_green_animated_mouth()
+        public void Food_input_uses_definition_owned_pickup_or_animated_mouth()
         {
             string runtime = RuntimeRoot();
             string cursor = Read(runtime, "DigWorldInteraction.DirectCommandCursor.cs");
+            string itemResolver = Read(runtime, "DigWorldInteraction.ItemInteractionCursor.cs");
             string textures = Read(runtime, "DigWorldInteraction.FoodCursorTextures.cs");
             string priority = Read(runtime, "DigWorldInteraction.ResidentCommandPriority.cs");
             string food = Read(runtime, "DigWorldInteraction.WorldFood.cs");
 
             Assert.Contains("DirectCommandCursorKind.Eat", cursor);
             Assert.Contains("DirectCommandCursorKind.Pickup", cursor);
-            Assert.Contains("TryResolveFoodItemHoverTarget", cursor);
-            Assert.Contains("IsAltPressed()", cursor);
+            Assert.Contains("TryResolveWorldItemPointerTarget", cursor);
+            Assert.Contains("ItemInteractionFeedbackKind.Eat", cursor);
+            Assert.Contains("ResolveWorldAction(altPressed)", itemResolver);
             Assert.Contains("new Color32(55, 205, 87, 255)", textures);
-            Assert.Contains("ResolveWorldItemTargetKind", priority);
+            Assert.Contains("TryResolveWorldItemPointerTarget", priority);
             Assert.Contains("eatAfterPickup: true", food);
         }
 

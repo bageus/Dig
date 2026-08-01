@@ -122,7 +122,8 @@ public sealed class BuildingProductionPlayModeTests
                     buildingId,
                     stock.ItemId,
                     unitIndex,
-                    isAvailable: !(stockIndex == 0 && unitIndex == 3))))
+                    isAvailable: !(stockIndex == 0 && unitIndex == 3),
+                    ItemInteractionProfiles.Generic)))
             .ToArray();
 
         Invoke(

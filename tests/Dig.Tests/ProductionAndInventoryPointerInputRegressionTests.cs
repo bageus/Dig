@@ -41,10 +41,10 @@ public sealed class ProductionAndInventoryPointerInputRegressionTests
         Assert.Contains(
             "SelectResidentInventoryLayoutSlot(ResidentInventoryLayoutSlotViewModelslot)",
             canvas);
-        Assert.Contains("BeginInventoryItemPlacement(slot)", canvas);
-        Assert.DoesNotContain(
-            "SelectResidentInventoryLayoutSlot(ResidentInventoryLayoutSlotViewModelslot){ActivateResidentInventoryLayoutSlot(slot);}",
-            canvas);
+        Assert.Contains("InteractResidentInventoryLayoutSlot(", canvas);
+        Assert.Contains("canPlaceSelectedInventoryItem:slot.CanPlace", canvas);
+        Assert.Contains("ApplyDecision(decision,inventorySlot:slot)", canvas);
+        Assert.DoesNotContain("ActivateResidentInventoryLayoutSlot(slot)", canvas);
         Assert.Contains(
             "BeginInventoryItemPlacement(ResidentInventoryLayoutSlotViewModelslot)",
             placement);
@@ -69,11 +69,14 @@ public sealed class ProductionAndInventoryPointerInputRegressionTests
         string cursor = Normalize(Read(runtime, "DigWorldInteraction.ItemInteractionCursor.cs"));
 
         Assert.Contains("Input.GetKey(KeyCode.C)", hud);
-        Assert.Contains("DropResidentInventoryLayoutSlot(slot)", hud);
+        Assert.Contains(
+            "InteractResidentInventoryLayoutSlot(slot,altPressed,dropPressed)",
+            hud);
         Assert.Contains(
             "DropResidentInventoryLayoutSlot(ResidentInventoryLayoutSlotViewModelslot)",
             canvas);
-        Assert.Contains("ExecuteResidentInventoryDrop(", canvas);
+        Assert.Contains("dropPressed:dropPressed", canvas);
+        Assert.Contains("DropResidentInventoryLayoutSlot(", canvas);
         Assert.Contains("ExecuteResidentInventoryDrop(", commands);
         Assert.Contains("DropResidentInventoryStack(", commands);
         Assert.Contains("SynchronizeLivingMaterials(", commands);
@@ -83,7 +86,7 @@ public sealed class ProductionAndInventoryPointerInputRegressionTests
     }
 
     [Fact]
-    public void Compatibility_slot_conversion_preserves_held_and_consumable_facts()
+    public void Compatibility_slot_conversion_preserves_held_and_interaction_profile()
     {
         string canvas = Normalize(Read(
             RuntimeRoot(),
@@ -91,7 +94,7 @@ public sealed class ProductionAndInventoryPointerInputRegressionTests
 
         Assert.Contains("isEquipped:slot.IsHeld", canvas);
         Assert.Contains("heldQuantity:slot.HeldQuantity", canvas);
-        Assert.Contains("isConsumable:slot.IsConsumable", canvas);
+        Assert.Contains("interactionProfile:slot.InteractionProfile", canvas);
     }
 
     [Fact]

@@ -72,8 +72,8 @@ public sealed class MushroomUnityRuntimeContractTests
             StringComparison.Ordinal);
         Assert.True(itemBlock >= 0 && itemBlock < mushroomResolution);
         Assert.Contains("Aphysicaldropinfrontofaregrownsite", priority);
-        Assert.Contains("TryResolveWorldItemHit(hits,outDigWorldItemVisualcandidate)", pointerHits);
-        Assert.Contains("candidate.Model.CanPickup", pointerHits);
+        Assert.Contains("TryResolveWorldItemPointerTarget", pointerHits);
+        Assert.Contains("itemTarget.ActionAvailable", pointerHits);
         Assert.Contains("_itemRenderer.TryGetItem(hits[index],out_)", priority);
         Assert.Contains("building=null!;returnfalse", priority);
     }
@@ -165,7 +165,7 @@ public sealed class MushroomUnityRuntimeContractTests
         Assert.Contains("drops.All(value=>value.CanPickup)", mushrooms);
         Assert.Contains("GetComponentInParent<DigMushroomVisual>()", mushrooms);
         Assert.Contains("TryResolveMushroomHit", materialTargeting);
-        Assert.Contains("TryResolveWorldItemHit", materialTargeting);
+        Assert.Contains("TryResolveWorldItemPointerTarget", materialTargeting);
         Assert.Contains("GetComponentInParent<DigMushroomVisual>()", materialTargeting);
         Assert.Contains(
             "Renderer_keeps_mushrooms_inside_authoritative_z0_to_z3_depth_slabs",

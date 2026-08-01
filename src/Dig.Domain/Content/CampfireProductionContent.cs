@@ -65,13 +65,19 @@ public static class CampfireProductionContent
                 "Grilled mushroom",
                 100,
                 false,
-                new[] { FoodCategoryId }),
+                new[] { FoodCategoryId },
+                foodUse: new ItemFoodUseDefinition(
+                    nutritionUnits: 1_500,
+                    biteCount: 3)),
             new ItemDefinition(
                 RoastedHamsterItemId,
                 "Grilled hamster",
                 100,
                 false,
-                new[] { FoodCategoryId }),
+                new[] { FoodCategoryId },
+                foodUse: new ItemFoodUseDefinition(
+                    nutritionUnits: 1_800,
+                    biteCount: 3)),
             CreateBox(TentBoxItemId, "Packed tent", box),
             CreateBox(StoneMasonBoxItemId, "Packed stone mason workshop", box),
             CreateBox(WoodWorkshopBoxItemId, "Packed wooden workshop", box),
@@ -284,5 +290,4 @@ public static class CampfireProductionContent
             boxPolicy: new BuildingBoxPolicy(boxItemId, packingWork));
     }
 }
-
 }

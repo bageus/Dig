@@ -150,7 +150,7 @@ public sealed class HeldItemReferenceTests
         Assert.True(inventory.EquipTool(FirstStackId, ResidentId, tick: 1).IsSuccess);
 
         ResidentInventoryLayoutViewModel layout =
-            new ResidentInventoryLayoutPresenter(new ItemId("building.box"))
+            new ResidentInventoryLayoutPresenter()
                 .Present(inventory, ResidentId);
 
         ResidentInventoryLayoutSlotViewModel slot = layout.Slots[0];

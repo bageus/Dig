@@ -31,7 +31,7 @@ public sealed class ResidentInventoryLayoutSlotViewModel
         int heldQuantity,
         ResidentInventorySlotVisualKind visualKind,
         bool isActiveExpansion,
-        bool isConsumable = false)
+        ItemInteractionProfile interactionProfile)
     {
         if (slotIndex < 0)
         {
@@ -68,7 +68,8 @@ public sealed class ResidentInventoryLayoutSlotViewModel
         HeldQuantity = heldQuantity;
         VisualKind = visualKind;
         IsActiveExpansion = isActiveExpansion;
-        IsConsumable = !empty && isConsumable;
+        InteractionProfile = interactionProfile
+            ?? throw new ArgumentNullException(nameof(interactionProfile));
     }
 
     public ResidentInventoryCompartment Compartment { get; }
@@ -93,31 +94,41 @@ public sealed class ResidentInventoryLayoutSlotViewModel
 
     public bool IsActiveExpansion { get; }
 
-    public bool IsConsumable { get; }
+    public ItemInteractionProfile InteractionProfile { get; }
+
+    public bool IsConsumable => !IsEmpty
+        && InteractionProfile.DirectUseFeedback == ItemInteractionFeedbackKind.Eat;
 
     public bool IsEmpty => StackId is null;
 
     public bool IsHeld => HeldQuantity > 0;
 
     public bool CanDrop => !IsEmpty
+        && InteractionProfile.InventoryQuickDropAllowed
         && ReservedQuantity == 0
         && HeldQuantity == 0;
+
+    public bool CanPlace => !IsEmpty
+        && !IsHeld
+        && AvailableQuantity > 0
+        && (InteractionProfile.InventoryPrimaryAction
+                == ItemInventoryInteractionAction.PlaceItem
+            || InteractionProfile.InventoryPrimaryAction
+                == ItemInventoryInteractionAction.PlaceBuilding);
 
     public bool CanUse => !IsEmpty
         && !IsHeld
         && AvailableQuantity > 0
-        && (IsConsumable
-            || (VisualKind == ResidentInventorySlotVisualKind.Tool
-                && Quantity == 1
-                && AvailableQuantity == 1));
+        && InteractionProfile.SupportsInventoryAction(
+            ItemInventoryInteractionAction.DirectUse);
 
-    public bool CanStartPlacement =>
-        VisualKind == ResidentInventorySlotVisualKind.BuildingBox
-        && Quantity == 1
-        && AvailableQuantity == 1;
+    public bool CanStartPlacement => CanPlace
+        && InteractionProfile.InventoryPrimaryAction
+            == ItemInventoryInteractionAction.PlaceBuilding;
 
     public bool IsBuildingBox =>
-        VisualKind == ResidentInventorySlotVisualKind.BuildingBox;
+        InteractionProfile.InventoryPrimaryAction
+            == ItemInventoryInteractionAction.PlaceBuilding;
 }
 
 public sealed class ResidentInventoryLayoutViewModel
@@ -194,28 +205,6 @@ public sealed class ResidentInventoryLayoutViewModel
 
 public sealed class ResidentInventoryLayoutPresenter
 {
-    private static readonly ItemCategoryId BuildingBoxCategoryId =
-        new ItemCategoryId("building.box");
-    private static readonly ItemCategoryId FoodCategoryId =
-        new ItemCategoryId("food");
-    private static readonly ItemCategoryId PotionCategoryId =
-        new ItemCategoryId("potion");
-    private static readonly ItemCategoryId DrinkCategoryId =
-        new ItemCategoryId("drink");
-    private static readonly ItemCategoryId BeverageCategoryId =
-        new ItemCategoryId("beverage");
-
-    private readonly ItemId _buildingBoxItemId;
-
-    public ResidentInventoryLayoutPresenter(ItemId buildingBoxItemId)
-    {
-        if (buildingBoxItemId.IsEmpty)
-        {
-            throw new ArgumentException("BuildingBox item id is required.", nameof(buildingBoxItemId));
-        }
-
-        _buildingBoxItemId = buildingBoxItemId;
-    }
 
     public ResidentInventoryLayoutViewModel Present(
         InventoryState inventory,
@@ -259,7 +248,8 @@ public sealed class ResidentInventoryLayoutPresenter
                 reservedQuantity: 0,
                 heldQuantity: 0,
                 ResidentInventorySlotVisualKind.Empty,
-                isActiveExpansion: false);
+                isActiveExpansion: false,
+                ItemInteractionProfiles.NonInteractive);
         }
 
         EntityId stackId = slot.StackId.GetValueOrDefault();
@@ -285,13 +275,13 @@ public sealed class ResidentInventoryLayoutPresenter
             heldQuantity,
             ResolveVisualKind(definition),
             slot.IsActiveExpansion,
-            IsConsumable(definition));
+            definition.Interactions);
     }
 
     private ResidentInventorySlotVisualKind ResolveVisualKind(ItemDefinition definition)
     {
-        if (definition.Id == _buildingBoxItemId
-            || definition.HasCategory(BuildingBoxCategoryId))
+        if (definition.Interactions.InventoryPrimaryAction
+            == ItemInventoryInteractionAction.PlaceBuilding)
         {
             return ResidentInventorySlotVisualKind.BuildingBox;
         }
@@ -311,13 +301,6 @@ public sealed class ResidentInventoryLayoutPresenter
             : ResidentInventorySlotVisualKind.Generic;
     }
 
-    private static bool IsConsumable(ItemDefinition definition)
-    {
-        return definition.HasCategory(FoodCategoryId)
-            || definition.HasCategory(PotionCategoryId)
-            || definition.HasCategory(DrinkCategoryId)
-            || definition.HasCategory(BeverageCategoryId);
-    }
 }
 
 }

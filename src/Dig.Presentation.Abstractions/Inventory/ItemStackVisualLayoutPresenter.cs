@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dig.Domain.Inventory;
 
 namespace Dig.Presentation.Inventory
 {
@@ -43,7 +44,7 @@ public sealed class ItemStackVisualLayoutPresenter
             layoutVersion,
             model.Quantity,
             model.ReservedQuantity,
-            model.InteractionKind));
+            model.InteractionProfile));
         return new ItemStackVisualLayoutViewModel(
             model.StackId,
             model.ItemId,
@@ -180,12 +181,22 @@ public sealed class ItemStackVisualLayoutPresenter
         long layoutVersion,
         int quantity,
         int reservedQuantity,
-        WorldItemInteractionKind interactionKind)
+        ItemInteractionProfile interactionProfile)
     {
+        if (interactionProfile == null)
+        {
+            throw new ArgumentNullException(nameof(interactionProfile));
+        }
+
         ulong hash = Append(OffsetBasis, layoutVersion);
         hash = Append(hash, quantity);
         hash = Append(hash, reservedQuantity);
-        return Append(hash, (int)interactionKind);
+        hash = Append(hash, (int)interactionProfile.WorldPrimaryAction);
+        hash = Append(hash, (int)interactionProfile.WorldAltAction);
+        hash = Append(hash, (int)interactionProfile.InventoryPrimaryAction);
+        hash = Append(hash, (int)interactionProfile.InventoryAltAction);
+        hash = Append(hash, interactionProfile.InventoryQuickDropAllowed ? 1 : 0);
+        return Append(hash, (int)interactionProfile.DirectUseFeedback);
     }
 
     private static ulong Append(ulong hash, string value)

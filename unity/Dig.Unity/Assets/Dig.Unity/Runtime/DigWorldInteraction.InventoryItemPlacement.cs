@@ -28,7 +28,7 @@ namespace Dig.Unity
             BeginInventoryItemPlacement(
                 slot.StackId,
                 slot.ItemId,
-                slot.CanDrop,
+                slot.CanPlace,
                 slot.IsBuildingBox);
         }
 
@@ -39,20 +39,20 @@ namespace Dig.Unity
             BeginInventoryItemPlacement(
                 slot.StackId!,
                 slot.ItemId!,
-                slot.CanDrop,
+                slot.CanPlace,
                 slot.IsBuildingBox);
         }
 
         private void BeginInventoryItemPlacement(
             string stackId,
             string itemId,
-            bool canDrop,
+            bool canPlace,
             bool isBuildingBox)
         {
             if (_agentRenderer?.SelectedModel == null
                 || _terrainSession == null
                 || _hud == null
-                || !canDrop
+                || !canPlace
                 || isBuildingBox
                 || string.IsNullOrWhiteSpace(stackId)
                 || string.IsNullOrWhiteSpace(itemId))

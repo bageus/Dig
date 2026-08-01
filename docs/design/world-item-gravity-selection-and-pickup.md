@@ -43,14 +43,16 @@ Presentation также применяет одну geometry-derived grounding p
 
 «Сразу после потери опоры» означает отсутствие отдельного trigger-воздействия. Остаётся открытым, выполняется ли authoritative relocation атомарно или существует falling state на несколько simulation ticks. Demo-коробка костра на текущем этапе сразу находится в нижней пещере и не используется как демонстрация падения.
 
-## 4. Подтверждённый pickup contract
+## 4. Подтверждённый pickup/use contract
 
-- BuildingBox pickup требует выбранного resident и `Alt + ЛКМ`;
-- обычный ЛКМ не создаёт pickup order;
-- pickup cursor появляется только при `Alt`, доступном quantity и допустимом target;
-- command использует фактический ItemId выбранной коробки, а не hardcoded тип;
+- generic/material/tool/weapon/ordinary food pickup требует выбранного resident и обычный `ЛКМ`;
+- BuildingBox pickup требует выбранного resident и `Alt + ЛКМ`, а ordinary LMB сохраняет selection/menu workflow;
+- food с `ItemFoodUseDefinition` ordinary LMB подбирается, а `Alt + ЛКМ` создаёт pickup-then-use;
+- cursor/highlight и click используют один resolved exact stack/action snapshot;
+- command использует фактический `StackId`, `ItemDefinition` и profile, а не hardcoded ItemId/prefix;
 - worker должен прийти в точную logical XYZ target cell;
-- quantity/location/reservation меняются только authoritative Inventory transaction.
+- quantity/location/reservation меняются только authoritative Inventory transaction;
+- item target с недоступным action возвращает typed reason и не превращается в ground move/excavation.
 
 ## 5. BuildingBox selection и список строений
 
@@ -84,7 +86,8 @@ BuildingBox остаётся Inventory item. Его строка в building ros
 - падение/landing не меняет quantity;
 - reserved/held/site item не падает без явной policy;
 - hidden-but-clickable и visible-but-stale states запрещены;
-- pickup hover и pickup command используют одинаковую target availability;
+- pickup/use hover и command используют одинаковые target, modifier и availability facts;
+- ordinary generic item LMB не создаёт informational selection: он создаёт pickup order либо typed rejection;
 - BuildingBox не проектируется одновременно как generic item и отдельный duplicate stack visual;
 - обычный LMB selection не создаёт pickup order и не запускает placement;
 - support-loss detection не зависит от Unity frame rate;
@@ -97,13 +100,14 @@ BuildingBox остаётся Inventory item. Его строка в building ros
 
 - **Q-ITEM-001:** обычный LMB по world BuildingBox только выбирает коробку; placement запускается кнопкой «Распаковать» в building menu.
 - **Q-ITEM-002:** выбор BuildingBox является взаимоисключающим selection и переключает HUD на выбранную коробку.
+- **Q-ITEM-003:** обычные generic items ordinary LMB создают pickup order; informational generic selection не используется.
+- **Q-ITEM-009:** item interaction определяется definition-owned profile; Presentation ID/prefix classifiers запрещены.
 - **Q-ITEM-006 (trigger):** свободный item автоматически начинает падение после потери опоры без отдельного воздействия; timing/state model остаётся открытым.
 - **Q-ITEM-008:** текущая demo-сцена не обязана показывать процесс падения; generalized visual/actor fall оформлен отдельной системой #396.
 - **Q-ITEM-009:** все новые item/material definitions по умолчанию являются grounded world items. Author не задаёт отдельный ground flag или vertical offset; Presentation совмещает фактическую нижнюю geometry bound с floor автоматически.
 
 ## 9. Открытые вопросы
 
-- **Q-ITEM-003:** обычные generic items получают информационный selection по LMB или не реагируют без `Alt`?
 - **Q-ITEM-004:** policy нескольких предметов в одной клетке: visual slots, capacity или world pile entity?
 - **Q-ITEM-005:** точное определение допустимой плоской опоры.
 - **Q-ITEM-006 (timing):** item fall выполняется мгновенной Domain-транзакцией с visual animation или существует authoritative falling state на несколько ticks?
@@ -130,6 +134,7 @@ Acceptance включает:
 - world stack, internal stock и placement/relocation ghosts используют один grounding owner;
 - visibility + raycast после landing;
 - world box LMB selection без pickup/placement;
-- `Alt` hover/click parity;
+- ordinary pickup и `Alt` special-action hover/click parity;
+- generic, food, tool/weapon и BuildingBox используют один profile-driven resolver;
 - pickup arrival по XYZ;
 - save/load и repeated render rebuild.

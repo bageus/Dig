@@ -48,7 +48,7 @@ public sealed class CampfireInventoryPlacementTests
             tick: 0).IsSuccess);
 
         ResidentInventoryLayoutViewModel layout =
-            new ResidentInventoryLayoutPresenter(LegacyBoxId)
+            new ResidentInventoryLayoutPresenter()
                 .Present(inventory, ResidentId);
         ResidentInventoryLayoutSlotViewModel slot = layout.Slots.Single(
             value => value.StackId == StackId.ToString());

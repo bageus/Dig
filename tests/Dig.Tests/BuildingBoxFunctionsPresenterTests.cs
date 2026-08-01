@@ -1,4 +1,5 @@
 using System;
+using Dig.Domain.Inventory;
 using Dig.Presentation.Buildings;
 using Dig.Presentation.Inventory;
 using Xunit;
@@ -59,7 +60,7 @@ namespace Dig.Tests
                 reservedQuantity: 0,
                 cellX: 1,
                 cellY: 2,
-                interactionKind: WorldItemInteractionKind.None);
+                interactionProfile: ItemInteractionProfiles.Generic);
 
             Assert.Throws<ArgumentException>(() =>
                 new BuildingBoxFunctionsPresenter().Present(item, null));
@@ -74,7 +75,7 @@ namespace Dig.Tests
                 reservedQuantity,
                 cellX: 4,
                 cellY: 5,
-                interactionKind: WorldItemInteractionKind.BuildingBox);
+                interactionProfile: ItemInteractionProfiles.BuildingBox);
         }
     }
 }

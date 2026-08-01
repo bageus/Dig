@@ -215,13 +215,7 @@ internal sealed partial class DigTerrainWorkSession
             journal,
             new InventoryWorldPresenter(
                 new GetInventorySnapshotQueryHandler(inventory),
-                new Dictionary<ItemId, WorldItemInteractionKind>
-                {
-                    [DemoBuildingBoxItemId] = WorldItemInteractionKind.BuildingBox,
-                    [CampfireBuildingBoxContent.CampfireBoxItemId] =
-                        WorldItemInteractionKind.BuildingBox,
-                },
-                WorldItemInteractionKind.Pickup),
+                inventory.Get().Catalog),
             new NavigationRoutePresenter(),
             jobs,
             inventory,

@@ -88,7 +88,7 @@ namespace Dig.Unity.Tests
                     cellX: 2,
                     cellY: 2,
                     cellZ: 0,
-                    WorldItemInteractionKind.BuildingBox),
+                    ItemInteractionProfiles.BuildingBox),
             });
 
             GameObject ghostHost = new GameObject("BuildingBox ghost host");

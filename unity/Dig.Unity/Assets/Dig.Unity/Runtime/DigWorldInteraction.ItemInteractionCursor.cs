@@ -1,4 +1,7 @@
 using System;
+using Dig.Domain.Inventory;
+using Dig.Domain.World;
+using Dig.Presentation.Input;
 using Dig.Presentation.Inventory;
 using UnityEngine;
 
@@ -7,10 +10,10 @@ namespace Dig.Unity
     public sealed partial class DigWorldInteraction
     {
         private DigWorldItemVisual? _interactionHighlightedItem;
-        private string? _hoveredInventoryItemId;
+        private bool _hoveredInventoryHasItem;
         private bool _hoveredInventoryCanDrop;
         private bool _hoveredInventoryCanUse;
-        private bool _hoveredInventoryIsBuildingBox;
+        private ItemInteractionFeedbackKind _hoveredInventoryUseFeedback;
 
         internal void SetInventorySlotHoverFeedback(
             ResidentInventoryLayoutSlotViewModel slot)
@@ -20,82 +23,160 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(slot));
             }
 
-            _hoveredInventoryItemId = slot.ItemId;
+            _hoveredInventoryHasItem = !slot.IsEmpty;
             _hoveredInventoryCanDrop = slot.CanDrop;
             _hoveredInventoryCanUse = slot.CanUse;
-            _hoveredInventoryIsBuildingBox = slot.IsBuildingBox;
+            _hoveredInventoryUseFeedback =
+                slot.InteractionProfile.DirectUseFeedback;
         }
 
         internal void ClearInventorySlotHoverFeedback()
         {
-            _hoveredInventoryItemId = null;
+            _hoveredInventoryHasItem = false;
             _hoveredInventoryCanDrop = false;
             _hoveredInventoryCanUse = false;
-            _hoveredInventoryIsBuildingBox = false;
+            _hoveredInventoryUseFeedback = ItemInteractionFeedbackKind.None;
         }
 
         private DirectCommandCursorKind ResolveInventoryHoverCursorKind()
         {
             if (_agentRenderer == null
                 || _agentRenderer.SelectedCount == 0
-                || string.IsNullOrWhiteSpace(_hoveredInventoryItemId))
+                || !_hoveredInventoryHasItem)
             {
                 return DirectCommandCursorKind.Default;
             }
 
-            if (IsAltPressed()
-                && _hoveredInventoryCanUse
-                && IsDirectConsumableItemId(_hoveredInventoryItemId!))
+            if (IsAltPressed() && _hoveredInventoryCanUse)
             {
-                return DirectCommandCursorKind.Eat;
+                return _hoveredInventoryUseFeedback
+                    == ItemInteractionFeedbackKind.Eat
+                        ? DirectCommandCursorKind.Eat
+                        : DirectCommandCursorKind.Use;
             }
 
-            return Input.GetKey(KeyCode.C)
-                && _hoveredInventoryCanDrop
-                && !_hoveredInventoryIsBuildingBox
-                    ? DirectCommandCursorKind.Drop
-                    : DirectCommandCursorKind.Default;
+            return Input.GetKey(KeyCode.C) && _hoveredInventoryCanDrop
+                ? DirectCommandCursorKind.Drop
+                : DirectCommandCursorKind.Default;
         }
 
-        private bool TryResolveBuildingBoxHoverTarget(
+        private bool TryResolveWorldItemPointerTarget(
             RaycastHit[] hits,
-            out DigWorldItemVisual item)
-        {
-            return TryResolveBuildingBoxHit(hits, out item)
-                && item.Model.AvailableQuantity == 1
-                && CanSelectedResidentPickup(item);
-        }
-
-        private bool TryResolvePickableItemHoverTarget(
-            RaycastHit[] hits,
-            out DigWorldItemVisual item)
+            bool altPressed,
+            out ResolvedWorldItemPointerTarget target)
         {
             if (TryResolveBuildingInternalStockHit(
                     hits,
-                    out DigBuildingInternalStockVisual stock)
-                && _terrainSession!.TryResolveBuildingInternalStockPickup(
-                    stock.StackId,
-                    out _)
-                && CanSelectedResidentPickup(stock.WorldItemVisual))
+                    out DigBuildingInternalStockVisual stock))
             {
-                item = stock.WorldItemVisual;
-                return true;
+                DigWorldItemVisual item = stock.WorldItemVisual;
+                ItemWorldInteractionAction action =
+                    item.Model.ResolveWorldAction(altPressed);
+                CellId cell = new CellId(
+                    item.Model.CellX,
+                    item.Model.CellY,
+                    item.Model.CellZ);
+                bool available = action == ItemWorldInteractionAction.Pickup
+                    && _terrainSession != null
+                    && _terrainSession.TryResolveBuildingInternalStockPickup(
+                        stock.StackId,
+                        out cell)
+                    && CanSelectedResidentPickup(item);
+                target = new ResolvedWorldItemPointerTarget(
+                    item,
+                    action,
+                    ContextWorldTargetKind.GenericItem,
+                    cell,
+                    available);
+                return action != ItemWorldInteractionAction.None;
             }
 
-            return TryResolveWorldItemHit(hits, out item)
-                && item.Model.CanPickup
-                && !item.Model.IsBuildingBox
-                && CanSelectedResidentPickup(item);
+            if (!TryResolveAnyWorldItemHit(hits, out DigWorldItemVisual worldItem))
+            {
+                target = default;
+                return false;
+            }
+
+            ItemWorldInteractionAction resolved =
+                worldItem.Model.ResolveWorldAction(altPressed);
+            ContextWorldTargetKind kind = ResolveWorldItemTargetKind(
+                worldItem.Model,
+                resolved);
+            CellId sourceCell = new CellId(
+                worldItem.Model.CellX,
+                worldItem.Model.CellY,
+                worldItem.Model.CellZ);
+            bool actionAvailable = ResolveWorldItemActionAvailability(
+                worldItem,
+                resolved,
+                sourceCell);
+            target = new ResolvedWorldItemPointerTarget(
+                worldItem,
+                resolved,
+                kind,
+                sourceCell,
+                actionAvailable);
+            return resolved != ItemWorldInteractionAction.None;
         }
 
-        private bool TryResolveFoodItemHoverTarget(
-            RaycastHit[] hits,
-            out DigWorldItemVisual item)
+        private bool ResolveWorldItemActionAvailability(
+            DigWorldItemVisual item,
+            ItemWorldInteractionAction action,
+            CellId sourceCell)
         {
-            return TryResolveWorldItemHit(hits, out item)
-                && item.Model.CanPickup
-                && IsDirectFoodItem(item.Model)
-                && CanSelectedResidentPickup(item);
+            if (!item.Model.IsActionAvailable(action))
+            {
+                return false;
+            }
+
+            switch (action)
+            {
+                case ItemWorldInteractionAction.SelectBuildingBox:
+                    return true;
+                case ItemWorldInteractionAction.Pickup:
+                    return CanSelectedResidentPickup(item);
+                case ItemWorldInteractionAction.DirectUse:
+                    return _terrainSession != null
+                        && _terrainSession.ValidateWorldConsumableAction(
+                            item.Model.StackId).IsSuccess
+                        && CanSelectedResidentPickup(item);
+                case ItemWorldInteractionAction.UseProductionPackage:
+                    if (_terrainSession == null
+                        || _agentRenderer?.SelectedModel == null)
+                    {
+                        return false;
+                    }
+
+                    var resident = _agentRenderer.SelectedModel;
+                    return _terrainSession.CanDirectUseProductionPackage(
+                        Dig.Domain.Core.EntityId.Parse(item.Model.StackId),
+                        new CellId(
+                            resident.CellX,
+                            resident.CellY,
+                            resident.CellZ),
+                        out _);
+                default:
+                    return false;
+            }
+        }
+
+        private static ContextWorldTargetKind ResolveWorldItemTargetKind(
+            WorldItemViewModel item,
+            ItemWorldInteractionAction action)
+        {
+            if (item.IsBuildingBox)
+            {
+                return ContextWorldTargetKind.BuildingBox;
+            }
+
+            return action switch
+            {
+                ItemWorldInteractionAction.DirectUse =>
+                    ContextWorldTargetKind.FoodItem,
+                ItemWorldInteractionAction.UseProductionPackage =>
+                    ContextWorldTargetKind.ProductionPackage,
+                _ => ContextWorldTargetKind.GenericItem,
+            };
         }
 
         private bool CanSelectedResidentPickup(DigWorldItemVisual item)
@@ -106,6 +187,29 @@ namespace Dig.Unity
                 && _terrainSession.ValidateResidentCanPickupStack(
                     residentId!,
                     item.Model.StackId).IsSuccess;
+        }
+
+        private readonly struct ResolvedWorldItemPointerTarget
+        {
+            internal ResolvedWorldItemPointerTarget(
+                DigWorldItemVisual item,
+                ItemWorldInteractionAction action,
+                ContextWorldTargetKind kind,
+                CellId cell,
+                bool actionAvailable)
+            {
+                Item = item;
+                Action = action;
+                Kind = kind;
+                Cell = cell;
+                ActionAvailable = actionAvailable;
+            }
+
+            internal DigWorldItemVisual Item { get; }
+            internal ItemWorldInteractionAction Action { get; }
+            internal ContextWorldTargetKind Kind { get; }
+            internal CellId Cell { get; }
+            internal bool ActionAvailable { get; }
         }
 
         private void SetInteractionHighlightedItem(DigWorldItemVisual? item)

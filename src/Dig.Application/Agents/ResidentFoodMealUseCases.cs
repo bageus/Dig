@@ -124,7 +124,9 @@ namespace Dig.Application.Agents
                     ResidentInventoryActionErrors.StackNotCarriedByActor);
             }
 
-            if (stack.ItemId != CampfireProductionContent.GrilledMushroomItemId)
+            ItemDefinition definition = inventory.Catalog.Get(stack.ItemId);
+            ItemFoodUseDefinition? food = definition.FoodUse;
+            if (food == null)
             {
                 return Result.Failure(ResidentFoodMealErrors.UnsupportedFood);
             }
@@ -158,8 +160,8 @@ namespace Dig.Application.Agents
             Result started = agent.BeginFoodMeal(
                 command.StackId,
                 stack.ItemId,
-                GrilledMushroomNutritionUnits,
-                MealBiteCount,
+                food.NutritionUnits,
+                food.BiteCount,
                 command.Tick);
             if (started.IsFailure)
             {

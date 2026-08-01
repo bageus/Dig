@@ -22,18 +22,13 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         _residentBuildingInventoryPresenter = new ResidentInventoryPresenter(
-            DemoBuildingBoxItemId,
             _buildingInventoryRepository.Get().Catalog);
         _residentTerrainInventoryPresenter = new ResidentInventoryPresenter(
-            DemoBuildingBoxItemId,
             _inventoryRepository.Get().Catalog);
-        _residentInventoryLayoutPresenter = new ResidentInventoryLayoutPresenter(
-            DemoBuildingBoxItemId);
+        _residentInventoryLayoutPresenter = new ResidentInventoryLayoutPresenter();
         _buildingInventoryPresenter = new InventoryWorldPresenter(
             new GetInventorySnapshotQueryHandler(_buildingInventoryRepository),
-            WorldItemInteractionKind.BuildingBox,
-            DemoBuildingBoxItemId,
-            WorldItemInteractionKind.Pickup);
+            _buildingInventoryRepository.Get().Catalog);
     }
 
     internal ResidentInventoryViewModel LoadResidentInventory(string residentId)

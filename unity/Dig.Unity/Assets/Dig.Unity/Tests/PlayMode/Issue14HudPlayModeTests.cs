@@ -266,7 +266,8 @@ public sealed class Issue14HudPlayModeTests
             reservedQuantity: 0,
             heldQuantity: 0,
             visualKind: ResidentInventorySlotVisualKind.Empty,
-            isActiveExpansion: false);
+            isActiveExpansion: false,
+            interactionProfile: ItemInteractionProfiles.NonInteractive);
     }
 
     private Transform Require(string path)

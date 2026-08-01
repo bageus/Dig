@@ -169,7 +169,7 @@ public sealed class BasketInventoryWorkflowTests
 
     private static ResidentInventoryLayoutViewModel Present(InventoryState inventory)
     {
-        return new ResidentInventoryLayoutPresenter(new ItemId("building.box.test"))
+        return new ResidentInventoryLayoutPresenter()
             .Present(inventory, ResidentId);
     }
 

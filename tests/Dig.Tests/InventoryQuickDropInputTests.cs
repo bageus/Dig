@@ -56,7 +56,7 @@ public sealed class InventoryQuickDropInputTests
     }
 
     [Fact]
-    public void Building_box_keeps_placement_priority_while_C_is_held()
+    public void Building_box_C_left_click_uses_profile_enabled_exact_stack_quick_drop()
     {
         ContextInputDecision decision = Route(
             PointerButtonKind.Left,
@@ -65,8 +65,10 @@ public sealed class InventoryQuickDropInputTests
             dropPressed: true,
             isBuildingBox: true);
 
-        Assert.False(decision.HasApplicationCommand);
-        Assert.Equal(PresentationInputEffect.StartBuildingPlacement, decision.Effects);
+        Assert.Equal(ApplicationInputCommandKind.DropInventoryStack, decision.CommandKind);
+        Assert.Equal(Resident, decision.ActorId);
+        Assert.Equal(Stack, decision.TargetEntityId);
+        Assert.Equal(ResidentCell, decision.TargetCell);
     }
 
     [Fact]

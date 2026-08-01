@@ -75,7 +75,9 @@ internal sealed partial class DigTerrainWorkSession
                     stack.Location.OwnerId,
                     stack.ItemId,
                     unitIndex,
-                    isAvailable: unitIndex < stack.AvailableQuantity)))
+                    isAvailable: unitIndex < stack.AvailableQuantity,
+                    _buildingInventoryRepository.Get().Catalog
+                        .Get(stack.ItemId).Interactions)))
             .ToArray();
     }
 

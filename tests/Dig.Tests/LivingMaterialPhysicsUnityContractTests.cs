@@ -53,11 +53,18 @@ public sealed class LivingMaterialPhysicsUnityContractTests
             "Dig.Presentation.Abstractions",
             "Inventory",
             "InventoryWorldPresenter.cs"));
+        string packageContent = File.ReadAllText(Path.Combine(
+            FindRepositoryRoot(),
+            "src",
+            "Dig.Domain",
+            "Content",
+            "ProductionPackageContent.cs"));
 
         Assert.Contains("_interactionCollider.isTrigger = true", itemVisual);
         Assert.Contains("_interactionCollider!.enabled = interactive", itemVisual);
-        Assert.Contains("UnfinishedPackageItemId", presenter);
-        Assert.Contains("return WorldItemInteractionKind.None", presenter);
+        Assert.Contains("_catalog.Get(stack.ItemId).Interactions", presenter);
+        Assert.Contains("UnfinishedPackageItemId", packageContent);
+        Assert.Contains("ItemInteractionProfiles.NonInteractive", packageContent);
     }
 
     private static string ReadRuntime(string file)

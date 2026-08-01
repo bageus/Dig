@@ -230,7 +230,8 @@ public sealed class TerrainWorkCompletionTests
             tick: 1).IsSuccess);
         InMemoryInventoryRepository repository = new InMemoryInventoryRepository(inventory);
         InventoryWorldPresenter presenter = new InventoryWorldPresenter(
-            new GetInventorySnapshotQueryHandler(repository));
+            new GetInventorySnapshotQueryHandler(repository),
+            inventory.Catalog);
 
         var items = presenter.Load();
 

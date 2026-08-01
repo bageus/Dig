@@ -1,4 +1,5 @@
 using System;
+using Dig.Domain.Inventory;
 using Dig.Presentation.Inventory;
 using Xunit;
 
@@ -40,7 +41,7 @@ public sealed class ItemStackVisualLayoutPresenterTests
             "item.ore.gold",
             quantity: 8,
             reservedQuantity: 3,
-            WorldItemInteractionKind.Pickup);
+            ItemInteractionProfiles.Generic);
 
         ItemStackVisualLayoutViewModel first = _presenter.Present(snapshot);
         ItemStackVisualLayoutViewModel second = _presenter.Present(snapshot);
@@ -116,13 +117,11 @@ public sealed class ItemStackVisualLayoutPresenterTests
     [Fact]
     public void Invalid_world_item_facts_are_rejected_before_layout()
     {
-        WorldItemViewModel invalid = Stack(
+        Assert.Throws<ArgumentOutOfRangeException>(() => Stack(
             "stack.invalid",
             "item.invalid",
             quantity: 0,
-            reservedQuantity: 0);
-
-        Assert.Throws<ArgumentException>(() => _presenter.Present(invalid));
+            reservedQuantity: 0));
     }
 
     private static WorldItemViewModel Stack(
@@ -130,7 +129,7 @@ public sealed class ItemStackVisualLayoutPresenterTests
         string itemId,
         int quantity,
         int reservedQuantity = 0,
-        WorldItemInteractionKind interactionKind = WorldItemInteractionKind.None)
+        ItemInteractionProfile? interactionProfile = null)
     {
         return new WorldItemViewModel(
             stackId,
@@ -139,7 +138,7 @@ public sealed class ItemStackVisualLayoutPresenterTests
             reservedQuantity,
             cellX: 4,
             cellY: 7,
-            interactionKind);
+            interactionProfile ?? ItemInteractionProfiles.NonInteractive);
     }
 }
 }

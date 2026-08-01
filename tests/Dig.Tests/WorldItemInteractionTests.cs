@@ -1,8 +1,7 @@
-using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Inventory;
-using Dig.Domain.Core;
 using Dig.Domain.Content;
+using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
@@ -15,137 +14,154 @@ namespace Dig.Tests
 public sealed class WorldItemInteractionTests
 {
     [Fact]
-    public void Presenter_marks_only_configured_BuildingBox_item_as_interactive()
+    public void Generic_item_definition_automatically_supports_pickup_and_inventory_drop()
     {
-        ItemId boxItemId = new ItemId("test.building_box");
-        ItemId toolItemId = new ItemId("test.tool");
-        EntityId boxStackId = Id(1);
-        EntityId toolStackId = Id(2);
-        InventoryState inventory = new InventoryState(new ItemCatalog(new[]
+        ItemId material = new ItemId("material.test");
+        ItemCatalog catalog = new ItemCatalog(new[]
         {
-            new ItemDefinition(
-                boxItemId,
-                "Test BuildingBox",
-                maximumStackSize: 1,
-                isTool: false),
-            new ItemDefinition(
-                toolItemId,
-                "Test tool",
-                maximumStackSize: 1,
-                isTool: true),
-        }));
-        Assert.True(inventory.AddStack(
-            boxStackId,
-            boxItemId,
-            quantity: 1,
-            location: ItemLocation.InWorld(new CellId(3, 4)),
-            tick: 0).IsSuccess);
-        Assert.True(inventory.AddStack(
-            toolStackId,
-            toolItemId,
-            quantity: 1,
-            location: ItemLocation.InWorld(new CellId(4, 4)),
-            tick: 1).IsSuccess);
-        InMemoryInventoryRepository repository = new InMemoryInventoryRepository(inventory);
-        GetInventorySnapshotQueryHandler query =
-            new GetInventorySnapshotQueryHandler(repository);
+            new ItemDefinition(material, "Test material", 20, false),
+        });
+        WorldItemViewModel item = Project(catalog, material, Id(1));
 
-        WorldItemViewModel[] projected = new InventoryWorldPresenter(
-            query,
-            WorldItemInteractionKind.BuildingBox,
-            boxItemId).Load().ToArray();
-        WorldItemViewModel box = projected.Single(item => item.StackId == boxStackId.ToString());
-        WorldItemViewModel tool = projected.Single(item => item.StackId == toolStackId.ToString());
-
-        Assert.True(box.IsBuildingBox);
-        Assert.Equal(WorldItemInteractionKind.BuildingBox, box.InteractionKind);
-        Assert.False(tool.IsBuildingBox);
-        Assert.Equal(WorldItemInteractionKind.None, tool.InteractionKind);
+        Assert.Equal(
+            ItemWorldInteractionAction.Pickup,
+            item.ResolveWorldAction(altPressed: false));
+        Assert.Equal(
+            ItemInventoryInteractionAction.PlaceItem,
+            item.InteractionProfile.InventoryPrimaryAction);
+        Assert.True(item.InteractionProfile.InventoryQuickDropAllowed);
+        Assert.True(item.CanPickup);
     }
 
     [Fact]
-    public void Presenter_projects_two_box_types_once_and_keeps_other_items_as_pickups()
+    public void Building_box_category_automatically_selects_on_lmb_and_picks_up_on_alt()
     {
-        ItemId workshopBox = new ItemId("test.box.workshop");
-        ItemId campfireBox = new ItemId("test.box.campfire");
-        ItemId stone = new ItemId("test.stone");
-        InventoryState inventory = new InventoryState(new ItemCatalog(new[]
+        ItemId box = new ItemId("building_box.test");
+        ItemCatalog catalog = new ItemCatalog(new[]
         {
-            new ItemDefinition(workshopBox, "Workshop box", 1, false),
-            new ItemDefinition(campfireBox, "Campfire box", 1, false),
-            new ItemDefinition(stone, "Stone", 20, false),
-        }));
-        Assert.True(inventory.AddStack(
-            Id(11), workshopBox, 1, ItemLocation.InWorld(new CellId(1, 1)), 0).IsSuccess);
-        Assert.True(inventory.AddStack(
-            Id(12), campfireBox, 1, ItemLocation.InWorld(new CellId(2, 1)), 0).IsSuccess);
-        Assert.True(inventory.AddStack(
-            Id(13), stone, 3, ItemLocation.InWorld(new CellId(3, 1)), 0).IsSuccess);
-        InMemoryInventoryRepository repository = new InMemoryInventoryRepository(inventory);
+            new ItemDefinition(
+                box,
+                "Test box",
+                1,
+                false,
+                new[] { ItemInteractionCategoryIds.BuildingBox }),
+        });
+        WorldItemViewModel item = Project(catalog, box, Id(2));
 
-        WorldItemViewModel[] projected = new InventoryWorldPresenter(
-            new GetInventorySnapshotQueryHandler(repository),
-            new Dictionary<ItemId, WorldItemInteractionKind>
-            {
-                [workshopBox] = WorldItemInteractionKind.BuildingBox,
-                [campfireBox] = WorldItemInteractionKind.BuildingBox,
-            },
-            WorldItemInteractionKind.Pickup).Load().ToArray();
-
-        Assert.Equal(3, projected.Length);
-        Assert.Equal(3, projected.Select(item => item.StackId).Distinct().Count());
-        Assert.All(
-            projected.Where(item => item.ItemId != stone.ToString()),
-            item => Assert.True(item.IsBuildingBox));
-        Assert.True(projected.Single(item => item.ItemId == stone.ToString()).CanPickup);
+        Assert.True(item.IsBuildingBox);
+        Assert.Equal(
+            ItemWorldInteractionAction.SelectBuildingBox,
+            item.ResolveWorldAction(altPressed: false));
+        Assert.Equal(
+            ItemWorldInteractionAction.Pickup,
+            item.ResolveWorldAction(altPressed: true));
+        Assert.Equal(
+            ItemInventoryInteractionAction.PlaceBuilding,
+            item.InteractionProfile.InventoryPrimaryAction);
+        Assert.True(item.InteractionProfile.InventoryQuickDropAllowed);
     }
 
     [Fact]
-    public void Production_packages_use_dedicated_interaction_policy()
+    public void Food_definition_automatically_supports_pickup_direct_use_and_drop()
     {
-        ItemId stone = new ItemId("test.package.stone");
-        ItemCatalog catalog = new ItemCatalog(
-            ProductionPackageContent.CreateItems().Concat(new[]
-            {
-                new ItemDefinition(stone, "Stone", 20, false),
-            }));
+        ItemId food = new ItemId("meal.no_prefix_required");
+        ItemCatalog catalog = new ItemCatalog(new[]
+        {
+            new ItemDefinition(
+                food,
+                "Test food",
+                10,
+                false,
+                foodUse: new ItemFoodUseDefinition(1_800, 3)),
+        });
+        WorldItemViewModel item = Project(catalog, food, Id(3));
+
+        Assert.Equal(
+            ItemWorldInteractionAction.Pickup,
+            item.ResolveWorldAction(altPressed: false));
+        Assert.Equal(
+            ItemWorldInteractionAction.DirectUse,
+            item.ResolveWorldAction(altPressed: true));
+        Assert.Equal(
+            ItemInventoryInteractionAction.DirectUse,
+            item.InteractionProfile.InventoryAltAction);
+        Assert.Equal(
+            ItemInteractionFeedbackKind.Eat,
+            item.InteractionProfile.DirectUseFeedback);
+        Assert.True(item.InteractionProfile.InventoryQuickDropAllowed);
+    }
+
+    [Fact]
+    public void Club_automatically_uses_tool_interactions_without_unity_id_rules()
+    {
+        ItemDefinition club = Assert.Single(CombatEquipmentContent.CreateItems());
+        ItemCatalog catalog = new ItemCatalog(new[] { club });
+        WorldItemViewModel item = Project(catalog, club.Id, Id(4));
+
+        Assert.Equal(new ItemId("weapon.club"), club.Id);
+        Assert.Equal(
+            ItemWorldInteractionAction.Pickup,
+            item.ResolveWorldAction(altPressed: false));
+        Assert.Equal(
+            ItemInventoryInteractionAction.PlaceItem,
+            club.Interactions.InventoryPrimaryAction);
+        Assert.Equal(
+            ItemInventoryInteractionAction.DirectUse,
+            club.Interactions.InventoryAltAction);
+        Assert.True(club.Interactions.InventoryQuickDropAllowed);
+        Assert.Equal(ItemInteractionFeedbackKind.Use, club.Interactions.DirectUseFeedback);
+    }
+
+    [Fact]
+    public void Production_packages_project_their_definition_owned_policy()
+    {
+        ItemCatalog catalog = new ItemCatalog(ProductionPackageContent.CreateItems());
         InventoryState inventory = new InventoryState(catalog);
         Assert.True(inventory.AddStack(
-            Id(21),
+            Id(11),
             ProductionPackageContent.UnfinishedPackageItemId,
             1,
             ItemLocation.InWorld(new CellId(1, 1)),
             0).IsSuccess);
         Assert.True(inventory.AddStack(
-            Id(22),
+            Id(12),
             ProductionPackageContent.FoodPackageItemId,
             1,
             ItemLocation.InWorld(new CellId(2, 1)),
             0).IsSuccess);
-        Assert.True(inventory.AddStack(
-            Id(23),
-            stone,
-            1,
-            ItemLocation.InWorld(new CellId(3, 1)),
-            0).IsSuccess);
-
-        WorldItemViewModel[] projected = new InventoryWorldPresenter(
+        WorldItemViewModel[] items = new InventoryWorldPresenter(
             new GetInventorySnapshotQueryHandler(
                 new InMemoryInventoryRepository(inventory)),
-            WorldItemInteractionKind.Pickup).Load().ToArray();
+            catalog).Load().ToArray();
 
-        WorldItemViewModel unfinished = projected.Single(value =>
-            value.StackId == Id(21).ToString());
-        WorldItemViewModel food = projected.Single(value =>
-            value.StackId == Id(22).ToString());
-        WorldItemViewModel loose = projected.Single(value =>
-            value.StackId == Id(23).ToString());
-        Assert.Equal(WorldItemInteractionKind.None, unfinished.InteractionKind);
+        WorldItemViewModel unfinished = items.Single(value =>
+            value.ItemId == ProductionPackageContent.UnfinishedPackageItemId.ToString());
+        WorldItemViewModel closed = items.Single(value =>
+            value.ItemId == ProductionPackageContent.FoodPackageItemId.ToString());
         Assert.False(unfinished.IsInteractive);
-        Assert.Equal(WorldItemInteractionKind.Use, food.InteractionKind);
-        Assert.True(food.CanUse);
-        Assert.False(food.CanPickup);
-        Assert.True(loose.CanPickup);
+        Assert.Equal(
+            ItemWorldInteractionAction.UseProductionPackage,
+            closed.ResolveWorldAction(altPressed: false));
+        Assert.True(closed.CanUse);
+        Assert.False(closed.CanPickup);
+    }
+
+    private static WorldItemViewModel Project(
+        ItemCatalog catalog,
+        ItemId itemId,
+        EntityId stackId)
+    {
+        InventoryState inventory = new InventoryState(catalog);
+        Assert.True(inventory.AddStack(
+            stackId,
+            itemId,
+            1,
+            ItemLocation.InWorld(new CellId(3, 4)),
+            0).IsSuccess);
+        return Assert.Single(new InventoryWorldPresenter(
+            new GetInventorySnapshotQueryHandler(
+                new InMemoryInventoryRepository(inventory)),
+            catalog).Load());
     }
 
     private static EntityId Id(int value)
@@ -153,4 +169,5 @@ public sealed class WorldItemInteractionTests
         return EntityId.Parse(value.ToString("x32"));
     }
 }
+
 }

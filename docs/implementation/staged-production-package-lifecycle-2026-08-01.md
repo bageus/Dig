@@ -22,7 +22,7 @@ Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
 - Domain: `ProductionOutputPackageState`, `ProductionState`, `InventoryState.ReplaceProductionPackage`, `ProductionOrderState.ResetForRetry`.
 - Application: create/interrupt/complete package handlers, package-use lifecycle handlers, save adapters/codecs.
 - Unity runtime: building production package creation/finalization, forced-command interruption, package-use navigation/execution, cursor/input routing.
-- Presentation: `WorldItemInteractionKind.Use`, package-specific non-pickup projection.
+- Presentation: definition-owned `ItemInteractionProfiles.ClosedProductionPackage`, package-specific non-pickup `UseProductionPackage` projection.
 
 ## Regression coverage
 

@@ -166,10 +166,10 @@ namespace Dig.Tests
             Assert.DoesNotContain("MiningOutputWorldSeed", cadence);
             Assert.DoesNotContain("_manualExcavationMiningSkill", quarters);
             Assert.Equal(
-                2,
+                1,
                 CountOccurrences(inventory, "string?residentIdValue=resident.Id;"));
             Assert.Equal(
-                2,
+                1,
                 CountOccurrences(
                     inventory,
                     "EntityId.Parse(residentIdValue??string.Empty)"));

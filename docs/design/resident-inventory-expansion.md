@@ -159,7 +159,7 @@ HeldItemReference(ResidentId, StackId, Quantity = 1, Purpose)
 
 ### 10.1 BuildingBox в Inventory
 
-ЛКМ по BuildingBox **не** выбирает stack для drop. Он включает `BuildingPlacement` для соответствующего BuildingDefinition.
+Обычный ЛКМ по BuildingBox включает `BuildingPlacement` для соответствующего BuildingDefinition. `C + ЛКМ` является отдельным explicit quick-drop action и немедленно выкладывает exact box stack в current resident cell.
 
 - box остаётся в исходном slot во время preview;
 - valid placement atomically создаёт plan и reservation;
@@ -180,7 +180,7 @@ HeldItemReference(ResidentId, StackId, Quantity = 1, Purpose)
 
 ### 10.3 Quick drop
 
-Пока удерживается `C`, hover доступного non-BuildingBox stack показывает quick-drop indicator. `C + ЛКМ` выбрасывает stack в current logical resident cell. Для expansion используется explicit spill-aware drop; double LMB, RMB и `D + ЛКМ` quick drop не выполняют.
+Пока удерживается `C`, hover любого доступного quick-drop-enabled stack, включая BuildingBox, показывает quick-drop indicator. `C + ЛКМ` выбрасывает exact stack в current logical resident cell. Для expansion используется explicit spill-aware drop; double LMB, RMB и `D + ЛКМ` quick drop не выполняют.
 
 ### 10.4 Use
 
@@ -195,11 +195,15 @@ HeldItemReference(ResidentId, StackId, Quantity = 1, Purpose)
 
 Для world items правила принадлежат context router #115.
 
-- обычный LMB по world BuildingBox включает placement mode;
+- обычный LMB по world BuildingBox выбирает коробку и открывает `Unpack`; placement запускается из меню;
 - Alt+LMB по world BuildingBox назначает pickup выбранному resident;
-- generic world item без LMB interaction не подбирается автоматически;
-- unsupported/невозможный Alt interaction трактуется как ground click: выбранный resident идёт к позиции;
+- generic/material/food/tool/weapon world item ordinary LMB подбирается автоматически по definition-owned profile;
+- unsupported/невозможный item action возвращает typed reason и не трактуется как ground click;
 - full Inventory не уничтожает item и не создаёт скрытый pickup.
+
+## 11.1 Unified item capabilities
+
+Pickup/use/place/drop behavior определяется [`item-interaction-capabilities.md`](item-interaction-capabilities.md). `ItemDefinition` является единственным source of truth; новые предметы не требуют Unity ID/prefix hardcode. Resident inventory slot публикует тот же `ItemInteractionProfile`, который использует world presenter.
 
 ## 12. BuildingBox category
 
@@ -273,7 +277,7 @@ Content validation проверяет IDs, categories, slots, speed, recipes и 
 - spill сохраняет total quantity;
 - BuildingBox preview не резервирует/расходует item;
 - одна BuildingBox не принадлежит двум plans;
-- BuildingBox LMB не создаёт одновременно drop и placement;
+- BuildingBox ordinary LMB не создаёт одновременно drop и placement; `C + LMB` создаёт только quick drop;
 - reserved quantity нельзя использовать/выбросить сверх available.
 
 ## 17. Критерии приёмки

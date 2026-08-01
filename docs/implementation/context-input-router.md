@@ -19,6 +19,7 @@ A pointer event contains:
 - left/right button;
 - click count;
 - Alt modifier;
+- `C` quick-drop modifier;
 - whether blocking UI shields the world pointer.
 
 `ContextInputState` contains only confirmed selection and mode facts:
@@ -34,8 +35,8 @@ A pointer event contains:
 - typed target kind;
 - optional stable entity id;
 - optional logical cell;
-- reachability;
-- whether an Alt interaction contract exists;
+- reachability/availability;
+- exact `ItemWorldInteractionAction` resolved from the stack's `ItemInteractionProfile`;
 - target liveness.
 
 No target is inferred by parsing GameObject names or localized text.
@@ -44,16 +45,15 @@ No target is inferred by parsing GameObject names or localized text.
 
 The router evaluates exactly one path in this order:
 
-1. confirm or reject active building placement;
-2. targeted drop of the selected inventory stack;
-3. Alt pickup of a supported BuildingBox, otherwise ground-move fallback;
-4. normal BuildingBox placement mode;
-5. attack a living hostile target;
-6. move the selected living resident to reachable ground or unsupported item/box fallback;
-7. apply the active excavation tool only when no resident is selected;
-8. local resident/building/ground selection.
+1. confirm or reject active placement;
+2. resolve the front exact Inventory-owned world stack through its `ItemInteractionProfile`;
+3. create the profile action (`Pickup`, `SelectBuildingBox`, `DirectUse`, `UseProductionPackage`) or consume the click with a typed rejection;
+4. resolve completed building/resident/hostile/special object actions;
+5. move the selected living resident to reachable ground;
+6. apply the active excavation tool;
+7. local ground selection.
 
-A stale selected resident is deselected with a reason before move, attack, drop or inventory-use commands can be produced. A friendly resident target remains a selection target and is never treated as free ground.
+Item resolution is before movement and excavation. An unavailable/stale/full-inventory item target still consumes the pointer and cannot fall through to a ground command. Hover and click call the same exact-stack resolver. A stale selected resident is deselected with a reason before commands can be produced.
 
 ## Right click
 
@@ -69,7 +69,7 @@ This guarantees that one right click cannot both deselect a resident and designa
 
 Roster clicks are intentional UI input and bypass world UI shielding. A single click selects; a double click adds the local camera-focus effect. Dead or stale roster targets return a controlled reason without selection.
 
-Inventory Alt-use requires a live selected resident, a selected usable stack and a confirmed use capability. A selected BuildingBox enters the same placement effect as a world box. Unsupported interactions produce no command and may fall through to a world movement path only when the pointer target supplies a reachable logical cell.
+Inventory hover and click read the same live slot `ItemInteractionProfile` and exact `StackId`. Priority is `Alt` direct use, then `C` quick drop, then profile primary placement. BuildingBox ordinary LMB enters building placement; generic/material/tool/weapon/food ordinary LMB enters item placement. Unsupported, reserved, held or stale actions consume the UI pointer with a typed reason and never fall through to world input.
 
 ## Panel modes
 
@@ -89,12 +89,14 @@ Unity should render panels from this enum rather than independently toggling sev
 - confirm building placement;
 - use an inventory item;
 - drop an inventory stack;
-- pick up a BuildingBox;
+- pick up a world item or BuildingBox;
+- pickup-then-use a consumable;
+- use a closed production package;
 - attack a target;
 - move a resident;
 - apply excavation.
 
-Local effects include selection, focus, placement preview/cancel and reason display. Selection and camera focus never mutate Domain state.
+Local effects include selection, focus, generic item/building placement start, placement cancel and reason display. Selection and camera focus never mutate Domain state.
 
 ## Unity adapter
 
@@ -125,8 +127,10 @@ dead or non-entity hostile visual produces the typed rejection path.
 
 Regression tests cover:
 
-- full placement/use/drop/box/attack/move/excavation priority;
-- unsupported Alt fallback;
+- definition-owned generic/food/tool/BuildingBox/package action matrix;
+- exact item hover/click parity and item-before-ground priority;
+- inventory LMB/Alt/C live-slot routing;
+- unavailable item actions consuming without ground fallback;
 - UI shielding;
 - right-click cancellation and deselection;
 - roster double-click focus;

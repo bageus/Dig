@@ -102,16 +102,22 @@ public sealed class ResidentInventoryRoutingTests
     }
 
     [Fact]
-    public void Generic_left_click_does_not_start_placement()
+    public void Generic_left_click_starts_profile_defined_item_placement()
     {
+        EntityId residentId = Id(1);
+        EntityId stackId = Id(2);
+        CellId cell = new CellId(4, 5);
         ContextInputDecision decision = Route(
             PointerButtonKind.Left,
-            Id(1),
-            Id(2),
-            new CellId(4, 5));
+            residentId,
+            stackId,
+            cell);
 
-        Assert.False(decision.ConsumesPointer);
-        Assert.Equal(PresentationInputEffect.None, decision.Effects);
+        Assert.True(decision.ConsumesPointer);
+        Assert.Equal(PresentationInputEffect.StartItemPlacement, decision.Effects);
+        Assert.Equal(residentId, decision.ActorId);
+        Assert.Equal(stackId, decision.TargetEntityId);
+        Assert.Equal(cell, decision.TargetCell);
     }
 
     private static ContextInputDecision Route(
@@ -139,7 +145,8 @@ public sealed class ResidentInventoryRoutingTests
                 selectedInventoryItemUsable: usable,
                 selectedInventoryItemIsBuildingBox: isBox,
                 canUseSelectedInventoryItem: canUse,
-                canDropSelectedInventoryItem: canDrop),
+                canDropSelectedInventoryItem: canDrop,
+                canPlaceSelectedInventoryItem: true),
             new ContextPointerTarget(
                 ContextWorldTargetKind.GenericItem,
                 stackId,

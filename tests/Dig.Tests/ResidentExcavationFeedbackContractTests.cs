@@ -93,7 +93,7 @@ public sealed class ResidentExcavationFeedbackContractTests
             "Agents",
             "ResidentActivityPresenter.cs"));
 
-        Assert.Contains("TryResolvePickableItemHoverTarget", cursor);
+        Assert.Contains("TryResolveWorldItemPointerTarget", cursor);
         Assert.Contains("DirectCommandCursorKind.Pickup", cursor);
         Assert.Contains("PlayMovementCursorFeedback", cursor);
         Assert.Contains("DirectCommandCursorKind.Movement", cursor);
@@ -151,7 +151,7 @@ public sealed class ResidentExcavationFeedbackContractTests
             "DigBuildingPackingExecution.cs"));
 
         int boxPriority = priority.IndexOf(
-            "TryResolveBuildingBoxHit",
+            "TryResolveWorldItemPointerTarget",
             StringComparison.Ordinal);
         int excavationGuard = priority.IndexOf(
             "_excavationMode != DigExcavationDrawingMode.None",
@@ -161,8 +161,10 @@ public sealed class ResidentExcavationFeedbackContractTests
         Assert.Contains("BeginBuildingPlacement(", priority + File.ReadAllText(Path.Combine(
             runtime,
             "DigWorldInteraction.BuildingBoxes.cs")));
-        Assert.Contains("TryResolveBuildingBoxHoverTarget", cursor);
-        Assert.Contains("&& IsAltPressed()", cursor);
+        Assert.Contains("TryResolveWorldItemPointerTarget", cursor);
+        Assert.Contains("IsAltPressed()", cursor);
+        Assert.Contains("ItemWorldInteractionAction.Pickup", cursor);
+        Assert.Contains("DirectCommandCursorKind.Pickup", cursor);
         Assert.Contains("SelectBuildingBoxFromHud", roster);
         Assert.DoesNotContain("Where(building => building.IsSelectable)", roster);
         Assert.Contains("SelectBuildingBoxFromManagement", management);

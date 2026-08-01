@@ -1,4 +1,5 @@
 using Dig.Domain.Core;
+using Dig.Domain.Inventory;
 using Dig.Domain.World;
 using Dig.Presentation.Input;
 using Xunit;
@@ -37,7 +38,7 @@ namespace Dig.Tests
         }
 
         [Fact]
-        public void Food_without_selected_resident_uses_movement_fallback_contract()
+        public void Food_without_selected_resident_is_consumed_with_reason()
         {
             ContextInputDecision decision = _router.Route(
                 new ContextPointerEvent(
@@ -45,10 +46,11 @@ namespace Dig.Tests
                     PointerButtonKind.Left,
                     altPressed: true),
                 new ContextInputState(),
-                FoodTarget());
+                FoodTarget(altPressed: true));
 
             Assert.False(decision.HasApplicationCommand);
-            Assert.False(decision.ConsumesPointer);
+            Assert.True(decision.ConsumesPointer);
+            Assert.Equal("input.world_item.resident_required", decision.ReasonCode);
         }
 
         private ContextInputDecision Route(bool altPressed)
@@ -59,17 +61,20 @@ namespace Dig.Tests
                     PointerButtonKind.Left,
                     altPressed: altPressed),
                 new ContextInputState(selectedResidentId: Resident),
-                FoodTarget());
+                FoodTarget(altPressed));
         }
 
-        private static ContextPointerTarget FoodTarget()
+        private static ContextPointerTarget FoodTarget(bool altPressed)
         {
             return new ContextPointerTarget(
                 ContextWorldTargetKind.FoodItem,
                 FoodStack,
                 FoodCell,
                 reachable: true,
-                supportsAltInteraction: true);
+                itemActionAvailable: true,
+                itemInteractionAction: altPressed
+                    ? ItemWorldInteractionAction.DirectUse
+                    : ItemWorldInteractionAction.Pickup);
         }
 
         private static EntityId Id(int value)

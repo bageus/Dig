@@ -168,7 +168,8 @@ public sealed class MushroomChoppingPlayModeTests
         Assert.That(drops.All(value => value.Quantity == 1), Is.True);
         Assert.That(drops.All(value => value.CanPickup), Is.True);
         Assert.That(
-            drops.All(value => value.InteractionKind == WorldItemInteractionKind.Pickup),
+            drops.All(value => value.InteractionProfile.SupportsWorldAction(
+                ItemWorldInteractionAction.Pickup)),
             Is.True);
 
         _root = new GameObject("Mushroom drop renderer test");

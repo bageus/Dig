@@ -22,10 +22,22 @@ public static class ProductionPackageContent
     {
         return new[]
         {
-            Package(UnfinishedPackageItemId, "Unfinished package"),
-            Package(FoodPackageItemId, "food"),
-            Package(WeaponPackageItemId, "weapon"),
-            Package(ToolPackageItemId, "tool"),
+            Package(
+                UnfinishedPackageItemId,
+                "Unfinished package",
+                ItemInteractionProfiles.NonInteractive),
+            Package(
+                FoodPackageItemId,
+                "food",
+                ItemInteractionProfiles.ClosedProductionPackage),
+            Package(
+                WeaponPackageItemId,
+                "weapon",
+                ItemInteractionProfiles.ClosedProductionPackage),
+            Package(
+                ToolPackageItemId,
+                "tool",
+                ItemInteractionProfiles.ClosedProductionPackage),
         };
     }
 
@@ -60,14 +72,18 @@ public static class ProductionPackageContent
         };
     }
 
-    private static ItemDefinition Package(ItemId id, string displayName)
+    private static ItemDefinition Package(
+        ItemId id,
+        string displayName,
+        ItemInteractionProfile interactions)
     {
         return new ItemDefinition(
             id,
             displayName,
             maximumStackSize: 1,
             isTool: false,
-            categories: new[] { PackageCategoryId });
+            categories: new[] { PackageCategoryId },
+            interactionProfile: interactions);
     }
 }
 

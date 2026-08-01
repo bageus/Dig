@@ -184,49 +184,20 @@ public sealed partial class DigGameHudCanvas
         bool altPressed = Input.GetKey(KeyCode.LeftAlt)
             || Input.GetKey(KeyCode.RightAlt);
         bool dropPressed = Input.GetKey(KeyCode.C);
-        if (leftClick && altPressed)
+        if (leftClick)
         {
-            if (slot.CanUse)
-            {
-                _interaction!.UseResidentInventoryLayoutSlot(slot);
-            }
-            else
-            {
-                SetStatus(slot.IsHeld
-                    ? "This item is already held."
-                    : "This item cannot be used now.");
-            }
-        }
-        else if (leftClick && dropPressed && !slot.IsBuildingBox)
-        {
-            if (!ConfirmExpansionSpill(slot))
+            if (dropPressed
+                && slot.CanDrop
+                && !ConfirmExpansionSpill(slot))
             {
                 InvalidateAll();
                 return;
             }
 
-            if (slot.CanDrop)
-            {
-                _interaction!.DropResidentInventoryLayoutSlot(slot);
-            }
-            else
-            {
-                SetStatus(slot.IsHeld
-                    ? "The held item remains in its original slot."
-                    : "A reserved item cannot be dropped.");
-            }
-        }
-        else if (leftClick && slot.CanStartPlacement)
-        {
-            _interaction!.BeginResidentInventoryBuildingPlacement(slot);
-        }
-        else if (leftClick && !slot.IsHeld)
-        {
-            _interaction!.SelectResidentInventoryLayoutSlot(slot);
-        }
-        else if (leftClick)
-        {
-            SetStatus("The held item remains in its original slot.");
+            _interaction!.InteractResidentInventoryLayoutSlot(
+                slot,
+                altPressed,
+                dropPressed);
         }
         else
         {

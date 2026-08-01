@@ -1,4 +1,5 @@
 using Dig.Presentation.Input;
+using Dig.Presentation.Inventory;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -11,9 +12,17 @@ public sealed partial class DigWorldInteraction
         DigAgentVisual? agent = null,
         DigCellVisual? cell = null,
         DigBuildingVisual? building = null,
-        DigWorldItemVisual? item = null)
+        DigWorldItemVisual? item = null,
+        ResidentInventoryLayoutSlotViewModel? inventorySlot = null,
+        ResidentInventorySlotViewModel? legacyInventorySlot = null)
     {
-        ApplyEffects(decision, agent, building, item);
+        ApplyEffects(
+            decision,
+            agent,
+            building,
+            item,
+            inventorySlot,
+            legacyInventorySlot);
         if (!decision.HasApplicationCommand)
         {
             return;
@@ -38,6 +47,9 @@ public sealed partial class DigWorldInteraction
                 break;
             case ApplicationInputCommandKind.EatWorldItem:
                 CreateWorldFoodPickup(decision);
+                break;
+            case ApplicationInputCommandKind.UseProductionPackage:
+                ApplyProductionPackageUse(decision);
                 break;
             case ApplicationInputCommandKind.MoveResident:
                 ApplyMove(decision);
@@ -65,7 +77,9 @@ public sealed partial class DigWorldInteraction
         ContextInputDecision decision,
         DigAgentVisual? agent,
         DigBuildingVisual? building,
-        DigWorldItemVisual? item)
+        DigWorldItemVisual? item,
+        ResidentInventoryLayoutSlotViewModel? inventorySlot,
+        ResidentInventorySlotViewModel? legacyInventorySlot)
     {
         if (decision.Effects.HasFlag(PresentationInputEffect.CancelBuildingPlacement))
         {
@@ -75,6 +89,22 @@ public sealed partial class DigWorldInteraction
         if (decision.Effects.HasFlag(PresentationInputEffect.StartBuildingPlacement))
         {
             StartBuildingPlacement(decision, item);
+        }
+
+        if (decision.Effects.HasFlag(PresentationInputEffect.StartItemPlacement))
+        {
+            if (inventorySlot != null)
+            {
+                BeginInventoryItemPlacement(inventorySlot);
+            }
+            else if (legacyInventorySlot != null)
+            {
+                BeginInventoryItemPlacement(legacyInventorySlot);
+            }
+            else
+            {
+                _hud!.SetStatus("input.inventory.item_placement_unavailable");
+            }
         }
 
         if (decision.Effects.HasFlag(PresentationInputEffect.SelectBuildingBox))

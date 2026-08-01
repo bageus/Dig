@@ -158,23 +158,34 @@ public sealed partial class ContextInputRouter
             return None();
         }
 
-        if (pointer.AltPressed
-            && state.HasUsableResidentSelection
-            && state.SelectedInventoryStackId.HasValue
-            && state.SelectedInventoryItemUsable
-            && state.CanUseSelectedInventoryItem)
+        bool hasTarget = state.HasUsableResidentSelection
+            && state.SelectedInventoryStackId.HasValue;
+        if (!hasTarget)
         {
-            return Command(
-                ApplicationInputCommandKind.UseInventoryItem,
-                actorId: state.SelectedResidentId,
-                targetEntityId: state.SelectedInventoryStackId,
-                targetCell: target.Cell);
+            return None();
         }
 
-        if (pointer.DropPressed
-            && state.HasUsableResidentSelection
-            && state.SelectedInventoryStackId.HasValue
-            && !state.SelectedInventoryItemIsBuildingBox)
+        if (pointer.AltPressed)
+        {
+            if (state.SelectedInventoryItemUsable
+                && state.CanUseSelectedInventoryItem)
+            {
+                return Command(
+                    ApplicationInputCommandKind.UseInventoryItem,
+                    actorId: state.SelectedResidentId,
+                    targetEntityId: state.SelectedInventoryStackId,
+                    targetCell: target.Cell);
+            }
+
+            return Local(
+                PresentationInputEffect.ShowReason,
+                consumesPointer: true,
+                actorId: state.SelectedResidentId,
+                targetEntityId: state.SelectedInventoryStackId,
+                reasonCode: "input.inventory.use_unavailable");
+        }
+
+        if (pointer.DropPressed)
         {
             if (state.CanDropSelectedInventoryItem && target.Cell.HasValue)
             {
@@ -193,19 +204,24 @@ public sealed partial class ContextInputRouter
                 reasonCode: "input.inventory.stack_unavailable");
         }
 
-        if (state.HasUsableResidentSelection
-            && state.SelectedInventoryStackId.HasValue
-            && state.SelectedInventoryItemIsBuildingBox)
+        if (state.CanPlaceSelectedInventoryItem)
         {
             return Local(
-                PresentationInputEffect.StartBuildingPlacement,
+                state.SelectedInventoryItemIsBuildingBox
+                    ? PresentationInputEffect.StartBuildingPlacement
+                    : PresentationInputEffect.StartItemPlacement,
                 consumesPointer: true,
                 actorId: state.SelectedResidentId,
                 targetEntityId: state.SelectedInventoryStackId,
                 targetCell: target.Cell);
         }
 
-        return None();
+        return Local(
+            PresentationInputEffect.ShowReason,
+            consumesPointer: true,
+            actorId: state.SelectedResidentId,
+            targetEntityId: state.SelectedInventoryStackId,
+            reasonCode: "input.inventory.item_placement_unavailable");
     }
 
     private static ContextInputDecision Command(

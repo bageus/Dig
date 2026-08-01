@@ -39,7 +39,7 @@ Spawn/reproduction transaction не создаёт новую особь, есл
 - reproduction cooldown — 7 игровых дней;
 - одна пара имеет максимум 3 reproduction cycles;
 - детёныш взрослеет за 3 дня;
-- детёныша можно похитить `Alt + ЛКМ`;
+- свободного Inventory-backed детёныша можно подобрать ordinary `ЛКМ` по общему item-profile contract;
 - похищенный детёныш становится приручённым guard creature поселения;
 - приручённый Вукер не размножается.
 
