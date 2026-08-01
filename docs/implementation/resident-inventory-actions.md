@@ -1,22 +1,23 @@
 # Resident inventory actions
 
-Статус реализации: `IMPLEMENTED` in PR #501; Play Mode compile boundary and runtime placement verification are corrected in PR #504. The latest `C` quick-drop and blue placement-reservation correction is implemented on the follow-up branch; actual licensed Unity Play Mode verification remains pending.
+Статус реализации: `IMPLEMENTED` in PR #501; Play Mode compile boundary and runtime placement verification are corrected in PR #504. The `C` quick-drop and blue placement-reservation correction was implemented in PR #505. A follow-up live-layout routing regression is corrected in PR #543; actual licensed Unity Play Mode verification remains pending.
 
 Authoritative design: [`../design/runtime-selection-excavation-item-placement-decisions.md`](../design/runtime-selection-excavation-item-placement-decisions.md), [`../design/resident-inventory-expansion.md`](../design/resident-inventory-expansion.md).
 
-Tracking: [#64](https://github.com/bageus/Dig/issues/64), [#67](https://github.com/bageus/Dig/issues/67), [#70](https://github.com/bageus/Dig/issues/70), [#387](https://github.com/bageus/Dig/issues/387), [#390](https://github.com/bageus/Dig/issues/390), [#459](https://github.com/bageus/Dig/issues/459), [PR #479](https://github.com/bageus/Dig/pull/479), [PR #480](https://github.com/bageus/Dig/pull/480), [PR #501](https://github.com/bageus/Dig/pull/501), [PR #504](https://github.com/bageus/Dig/pull/504).
+Tracking: [#64](https://github.com/bageus/Dig/issues/64), [#67](https://github.com/bageus/Dig/issues/67), [#70](https://github.com/bageus/Dig/issues/70), [#387](https://github.com/bageus/Dig/issues/387), [#390](https://github.com/bageus/Dig/issues/390), [#459](https://github.com/bageus/Dig/issues/459), [PR #479](https://github.com/bageus/Dig/pull/479), [PR #480](https://github.com/bageus/Dig/pull/480), [PR #501](https://github.com/bageus/Dig/pull/501), [PR #504](https://github.com/bageus/Dig/pull/504), [PR #505](https://github.com/bageus/Dig/pull/505), [PR #543](https://github.com/bageus/Dig/pull/543).
 
 ## Input routing
 
-Selected-resident HUD читает authoritative resident inventory layout и маршрутизирует действия через `ContextInputRouter` на поверхности `ResidentInventory`.
+Selected-resident HUD читает authoritative resident inventory layout и маршрутизирует действия через exact live `ResidentInventoryLayoutSlotViewModel`.
 
 - обычный ЛКМ по BuildingBox сохраняет отдельный unpack/building-placement workflow;
-- обычный ЛКМ по доступному generic/material/food stack включает полноценный world-space item placement mode;
+- обычный ЛКМ по доступному generic/material/food stack напрямую включает полноценный world-space item placement mode;
 - `Alt + ЛКМ` имеет приоритет и отправляет typed use action;
-- `C + ЛКМ` по non-BuildingBox stack отправляет immediate `DropInventoryStack` в current logical resident cell;
+- `C + ЛКМ` по non-BuildingBox stack напрямую отправляет immediate `DropInventoryStack` для exact live stack в current logical resident cell;
 - `D` больше не участвует в quick drop и остаётся правым направлением camera pan;
 - double click и RMB больше не выполняют quick drop;
-- hover с `C` показывает анимированную стрелку вниз; hover consumable с `Alt` показывает анимированный рот.
+- hover с `C` показывает анимированную стрелку вниз; hover consumable с `Alt` показывает анимированный рот;
+- hover feedback и click commit обязаны читать один live slot identity/availability snapshot.
 
 Camera pan сохраняет обе схемы: `A/D/S/W` и точные directional duplicates `Left/Right/Down/Up`.
 
@@ -28,15 +29,27 @@ Application job, validation and ghost code from PR #479 existed, but the active 
 - that method only stored a selected stack and instructed the player to click the ground;
 - the later world click emitted immediate `DropInventoryStack`, bypassing `BeginInventoryItemPlacement`, green/red ghost validation and `ResidentInventoryPlacementJob` creation.
 
-The correction keeps one owner path:
+PR #501 corrected the intended owner path:
 
-- `SelectResidentInventoryLayoutSlot` delegates to `ActivateResidentInventoryLayoutSlot`;
-- `ActivateResidentInventorySlot` invokes `BeginInventoryItemPlacement` for an available non-BuildingBox stack;
-- the item mode now follows the BuildingBox presentation lifecycle: system cursor hidden while the transparent ghost is active, continuous world-space hover, green/red validity and RMB cancellation with cursor restoration;
+- ordinary live-layout slot LMB reaches `BeginInventoryItemPlacement`;
+- the item mode follows the BuildingBox presentation lifecycle: system cursor hidden while the transparent ghost is active, continuous world-space hover, green/red validity and RMB cancellation with cursor restoration;
 - LMB on a valid world target calls `CreateResidentInventoryPlacement` and creates the resident-bound job;
 - immediate movement remains exclusive to `C + ЛКМ`.
 
-The executable Play Mode scenario boots the real demo runtime, inserts a generic material into a resident slot, invokes the actual HUD LMB handler, verifies the active ghost and hidden system cursor, cancels the preview, creates an authoritative placement reservation on a valid flat-supported cell and verifies the resulting blue inventory projection.
+## Live-layout adapter regression — 2026-08-01
+
+Runtime report showed both item-placement confirmation and `C + ЛКМ` no longer committed even though the down-arrow hover appeared. The active HUD had again split presentation and command ownership:
+
+- hover cursor read the live `ResidentInventoryLayoutSlotViewModel`;
+- click converted that model through `ToLegacySlot` and routed through the compatibility adapter;
+- generic placement and quick-drop therefore did not share the exact live slot facts that produced the cursor.
+
+PR #543 removes that split for the active HUD:
+
+- generic LMB calls `BeginInventoryItemPlacement(ResidentInventoryLayoutSlotViewModel)` directly;
+- `C + ЛКМ` calls one shared `ExecuteResidentInventoryDrop` using the selected resident, exact live stack id and current resident cell;
+- both router-driven legacy commands and the live HUD reuse the same authoritative drop transaction, living-material reconciliation and presentation refresh;
+- compatibility conversion remains only for use/legacy callers and now preserves held quantity and consumable facts instead of silently discarding them.
 
 ## Resident-bound targeted placement
 
@@ -78,17 +91,19 @@ PR #501 Play Mode scenarios intentionally reference internal `Dig.Unity` adapter
 Добавлены regression tests для:
 
 - `C + ЛКМ`, отсутствия `D` quick drop, Alt priority, отсутствия double-click/RMB quick drop и BuildingBox priority;
+- direct live-layout routing for generic placement and quick drop without compatibility-model ownership loss;
 - hidden/restored system cursor and real item ghost lifecycle;
 - flat walkable-support target validation;
 - exact resident/stack/quantity reservation;
 - blue reserved inventory background/text plus numeric reservation marker;
 - deterministic dependency order;
+- quick drop exact-stack world commit плюс living-material reconciliation;
 - deposit без потери/дублирования quantity;
 - blocked/cancel cleanup without stale reservation tint;
 - placement job save codec и composition-root registration coverage;
 - публичной Unity-доступности resident ownership policy и её location semantics;
 - соответствия world consumable command path фактическому `DigHudOverlay` field contract;
-- фактического HUD delegate в local ghost/job placement pipeline;
+- сохранения held/consumable facts compatibility adapter-ом;
 - friend-assembly identity и arrow-key camera duplicates.
 
-Automated .NET/source-contract CI and the checked-in Unity scenario must pass on the final PR head. Actual animated cursor/ghost, exact hover, input shielding, repeated placement and cleanup remain `VERIFIED` only after execution in a licensed Unity Test Runner.
+Automated .NET/source-contract CI and the checked-in Unity scenarios must pass on the final PR head. Actual animated cursor/ghost, exact hover, input shielding, repeated placement and cleanup remain `VERIFIED` only after execution in a licensed Unity Test Runner.
