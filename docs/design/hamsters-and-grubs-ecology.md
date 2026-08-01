@@ -47,6 +47,8 @@ Canonical IDs: `creature.hamster` и `creature.grub`. `creature.larva` — save/
 
 Seed использует три stable entity IDs. Повторная initialization одной session является no-op. Если Inventory уже содержит хотя бы один canonical/legacy living-material individual, bootstrap не восстанавливает погибших/подобранных существ и не создаёт replacement population. Save/load не запускает fresh seed повторно.
 
+Fresh hamster остаются свободными после initial production synchronization. Campfire hamster stock имеет capacity `2`, но delivery toggle по умолчанию выключен, поэтому continuous refill не резервирует животных и не переносит их транзитом через resident inventory без явного решения игрока включить hamster delivery.
+
 ### 2.1 Свободный hamster
 
 1. Hamster имеет stable identity, linked quantity-one Inventory entity, anchor/current cell, connected flat plane, radius `6`, direction и activity.
@@ -82,6 +84,8 @@ Fresh seed, pair detection, cap и wandering используют component, а 
 ### 2.5 Campfire internal stock
 
 Hamster/grub во внутреннем складе campfire являются `Stored` и не размножаются. Два hamster там не образуют pair. Presentation показывает до двух hamster у отдельных маленьких столбиков на привязи; tether является projection `ItemLocation.InBuilding(campfireId)`.
+
+Hamster stock является opt-in: default delivery выключен. Игрок может явно включить toggle, после чего обычный building-supply workflow вправе зарезервировать и перенести доступных free hamster до capacity `2`. Выключенный toggle не создаёт demand, reservation или resident transit.
 
 ### 2.6 Reproduction
 
@@ -142,7 +146,8 @@ Fresh seed выполняется до первого reconciliation и не я�
 - initial hamster pair shares one plane and distinct cells;
 - initial grub uses another plane when available, otherwise a third distinct cell;
 - occupied world-item cells and current cells of living residents are never selected for fresh seed;
-- fresh seed remains `ItemLocation.InWorld` and cannot appear in a resident inventory slot without an explicit pickup transaction;
+- fresh seed remains `ItemLocation.InWorld` and cannot appear in a resident inventory slot without an explicit pickup transaction or player-enabled hamster supply;
+- default campfire hamster delivery is disabled, so initial production synchronization creates no hamster reservation or resident transit;
 - repeated initialization/save-load cannot reseed or duplicate the starting population;
 - one creature ↔ one linked quantity-one Inventory entity;
 - Inventory location determines Free/Stored;
@@ -234,10 +239,11 @@ Automated coverage:
 
 - Application: deterministic initial plane distribution, hamster pair placement, distinct-plane grub preference, one-plane fallback and occupied-cell exclusion.
 - Domain: profile constants, identity/link, fixed-point cadence, dormancy, activities, flat/radius guards, pair/self reproduction, stable-lowest parent, newborn budget, max cycles and cap `10`.
+- Production content: hamster stock capacity remains `2`, default delivery is disabled, non-living campfire stock defaults remain enabled.
 - Application runtime: Inventory reconciliation, connected-plane resolver, resident steering, stored exclusion, atomic movement/reproduction and retry.
 - Save: v12 round trip, deterministic continuation and migration chain through current v13.
 - Unity source/contracts: seed wiring with living-resident exclusion, runtime session/driver, activity renderer, pickup proxy and tether projection.
-- Checked-in Unity Play Mode: fresh demo contains exactly two hamster and one grub, none shares a living-resident cell or resident inventory slot, repeated initialization preserves the same three IDs, plus drop/dormancy/movement/tether/no-vertical scenarios.
+- Checked-in Unity Play Mode: fresh demo contains exactly two hamster and one grub, none shares a living-resident cell or resident inventory slot, initial production synchronization creates no hamster supply reservation/transit, repeated initialization preserves the same three IDs, plus drop/dormancy/movement/tether/no-vertical scenarios.
 
 Verification boundary:
 
@@ -254,3 +260,4 @@ Verification boundary:
 | 2026-07-30 | Licensed Unity Test Runner skipped activation gate, so system remained IMPLEMENTED rather than VERIFIED. | CI evidence | §12, #524, PR #529 |
 | 2026-08-01 | Fresh world seeds two hamster and one grub; hamster remain a pair on one plane, grub is deterministically distributed to another suitable plane when available, otherwise to a third free cell of the same plane. | Пользователь | §§2.0, 3–13, #524 |
 | 2026-08-01 | После runtime regression fresh seed также исключает клетки живых residents и остаётся world-owned; overlap не может выглядеть как немедленный resident pickup. | Пользовательский bug report | §§2.0, 6, 9–13, #524, PR #543 |
+| 2026-08-01 | Hamster delivery в campfire internal stock по умолчанию выключена; игрок должен явно включить toggle, иначе continuous refill не резервирует и не переносит fresh free hamster. | Пользовательский runtime bug report со скриншотом `R:1` | §§2.0, 2.5, 6, 12–13, #433, #524 |
