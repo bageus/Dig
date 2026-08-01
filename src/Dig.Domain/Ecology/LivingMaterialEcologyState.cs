@@ -115,6 +115,44 @@ public sealed partial class LivingMaterialEcologyState : AggregateRoot
         return Result.Success();
     }
 
+    public Result RebindMovementRegion(
+        EntityId creatureId,
+        CellId cell,
+        CellId anchorCell,
+        LivingMaterialPlaneKey planeKey,
+        long tick)
+    {
+        ValidateTick(tick);
+        if (!_creatures.TryGetValue(creatureId, out LivingMaterialIndividual? value))
+        {
+            return Result.Failure(LivingMaterialErrors.NotFound);
+        }
+
+        if (value.Containment != LivingMaterialContainment.Free
+            || value.Cell != cell
+            || anchorCell.Y != cell.Y)
+        {
+            return Result.Failure(LivingMaterialErrors.InvalidState);
+        }
+
+        if (value.PlaneKey == planeKey && value.AnchorCell == anchorCell)
+        {
+            return Result.Success();
+        }
+
+        LivingMaterialPlaneKey previous = value.PlaneKey;
+        value.PlaneKey = planeKey;
+        value.AnchorCell = anchorCell;
+        IncrementVersion(value);
+        Raise(new LivingMaterialMovementRegionChanged(
+            tick,
+            creatureId,
+            previous,
+            planeKey,
+            anchorCell));
+        return Result.Success();
+    }
+
     public Result Release(
         EntityId creatureId,
         CellId cell,
