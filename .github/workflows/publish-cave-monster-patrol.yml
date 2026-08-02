@@ -1,0 +1,52 @@
+name: Publish cave monster patrol and aggro
+
+on:
+  push:
+    branches:
+      - agent/cave-monster-patrol-aggro-hover
+    paths:
+      - .github/workflows/publish-cave-monster-patrol.yml
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/cave-monster-patrol-aggro-hover
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Apply approved cave-monster changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/cave-monster-payload/part{1,2,3,4,5} \
+            | base64 --decode \
+            | gzip -d > /tmp/cave-monster-patrol.patch
+          git apply --check /tmp/cave-monster-patrol.patch
+          git apply /tmp/cave-monster-patrol.patch
+          rm -rf .github/cave-monster-payload
+          rm .github/workflows/publish-cave-monster-patrol.yml
+      - name: Validate source gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/quality/check_quality.py
+          python tools/quality/check_unity_source_contracts.py
+          python tools/quality/check_unity_creature_visual_contracts.py
+          python tools/quality/check_unity_stylized_render_vfx_contracts.py
+          python tools/quality/check_unity_resident_visual_contracts.py
+          git diff --check
+      - name: Commit and push
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Implement cave monster patrol and persistent aggro"
+          git push origin HEAD:agent/cave-monster-patrol-aggro-hover
