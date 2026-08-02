@@ -58,6 +58,16 @@ public sealed class AgentAutonomySystem : ISimulationSystem
 
     public AgentTickReport? LastReport { get; private set; }
 
+    public bool IsTaskTransitionPaused(AgentState agent, long tick)
+    {
+        if (agent is null)
+        {
+            throw new ArgumentNullException(nameof(agent));
+        }
+
+        return agent.IsTaskTransitionPaused(_policy, tick);
+    }
+
     public void Execute(SimulationContext context)
     {
         List<AgentTickDecision> decisions = new List<AgentTickDecision>();
