@@ -27,6 +27,7 @@ Tracking issue: [#574](https://github.com/bageus/Dig/issues/574).
 - room-specific bonuses и explicit placement/visual profiles;
 - temporary room stock, hauling и staged construction;
 - автоматические и ручные деревянные опоры горизонтальных тоннелей;
+- двери как structural anchors цепочки укреплений;
 - автоматическую и ручную каменную декоративную отделку;
 - сохранение частичного прогресса room improvement при смене worker;
 - deterministic delayed collapse неукреплённых горизонтальных тоннелей;
@@ -34,7 +35,7 @@ Tracking issue: [#574](https://github.com/bageus/Dig/issues/574).
 
 Произвольно выкопанные области не получают room identity и purpose. Existing template aesthetic trim остаётся бесплатной rebuildable Presentation из `ExcavationTemplateInstance` provenance. Платное улучшение создаёт отдельный authoritative functional state и отдельную визуальную отделку.
 
-Каменная отделка обычного пола тоннеля не является структурной опорой, не заменяет деревянную балку и не защищает тоннель от обрушения.
+Каменная отделка обычного пола тоннеля не является структурной опорой, не заменяет деревянную балку, не становится structural anchor и не защищает тоннель от обрушения.
 
 ## 2. Подтверждённый пользовательский workflow
 
@@ -46,7 +47,7 @@ Tracking issue: [#574](https://github.com/bageus/Dig/issues/574).
    - допустимые значения только `0` и `1`;
    - один click создаёт единственный upgrade order;
    - второй count для той же комнаты добавить нельзя;
-   - после completion кнопка больше не создаёт повторное улучшение.
+   - после completion повторное улучшение невозможно.
 4. Ниже кнопки находятся purpose:
    - `Bedroom` / Спальня;
    - `KitchenDining` / Кухня-столовая;
@@ -160,7 +161,7 @@ Global Building placement не ослабляется. Compact placement дос�
 4. После начала packing work обратное переключение purpose не отменяет job; worker завершает упаковку по обычному BuildingBox lifecycle.
 5. Для нескольких несовместимых зданий selection packing targets выполняется детерминированно по profile validity, затем stable BuildingId.
 
-### 2.7 Автоматические структурные опоры и каменная отделка
+### 2.7 Автоматические структурные anchors и каменная отделка
 
 - automatic range равен `20` cells по 3D Manhattan distance до ближайшей occupied cell любого completed building;
 - правило одинаково для wooden-support и junction-stone-trim jobs;
@@ -170,16 +171,19 @@ Global Building placement не ослабляется. Compact placement дос�
 - vertical-tunnel junction внутри горизонтального тоннеля разделяет левую и правую части на отдельные segments; в каждой стороне создаётся собственная цепочка anchors;
 - система идёт от текущего structural anchor вдоль ordered horizontal cells;
 - следующая automatic wooden-support target находится через `10` horizontal cells после текущего structural anchor;
-- любая completed wooden support, установленная вручную или автоматически, становится новым structural anchor для последующей автоматической расстановки;
-- если игрок установил деревянную опору раньше текущей automatic target, future target пересчитывается на `10` cells от этой установленной опоры;
-- пример: при начальном anchor у выхода из комнаты ручная опора на 5-й клетке делает следующей automatic target 15-ю клетку от выхода, то есть через 10 клеток от ручной опоры;
-- pending future targets, которые были рассчитаны от предыдущего anchor и находятся впереди новой completed support, удаляются и создаются заново от нового anchor;
+- completed wooden support, установленная вручную или автоматически, становится новым structural anchor;
+- completed door в горизонтальном тоннеле также становится полноценным structural anchor;
+- после completion двери следующая automatic wooden-support target пересчитывается на `10` horizontal cells вперёд от клетки двери;
+- если дверь или ручная wooden support установлена раньше текущей automatic target, future target пересчитывается от нового anchor;
+- пример wooden support: ручная опора на 5-й клетке делает следующей automatic target 15-ю клетку от выхода;
+- пример door: дверь на 5-й клетке также делает следующей automatic target 15-ю клетку от выхода;
+- pending future targets, рассчитанные от предыдущего anchor и находящиеся впереди нового completed anchor, удаляются и создаются заново;
 - automatic job создаётся только для target, который находится не дальше 20 Manhattan cells от completed building;
 - расстояние между последовательными structural anchors в нормальной автоматической цепочке равно 10 horizontal cells;
 - automatic horizontal support расходует 1 `material.mushroom_leg`, создаёт vertical wooden beam и выдаёт Woodworking `+0.7` (`70` units);
 - vertical/horizontal junction создаёт low-priority decorative stone-trim job стоимостью 1 `material.stone` и Stonework `+0.7`;
 - junction безопасен от collapse сразу после excavation независимо от доставки stone; stone trim не создаёт structural protection;
-- door защищает свою клетку как structural reinforcement, но правило влияния двери на отсчёт последующей automatic support chain определяется отдельно при реализации content profile двери;
+- completed door защищает свою клетку от collapse и участвует в anchor chain независимо от наличия деревянной опоры в той же клетке;
 - no source оставляет job pending/blocked без phantom reservation;
 - automatic jobs имеют минимальный ordinary-work priority;
 - interruption автоматического job сохраняет target/job и позволяет другому worker продолжить.
@@ -216,7 +220,7 @@ Global Building placement не ослабляется. Compact placement дос�
 ### 2.9 Обрушение
 
 - template room volume, vertical tunnel и junction никогда не обрушаются;
-- horizontal cells, защищённые completed wooden support или door protection, не обрушаются;
+- cells с completed wooden support или completed door protection не обрушаются;
 - decorative stone floor/junction trim не защищает ordinary horizontal cells;
 - после excavation completion eligible unreinforced horizontal segment получает deterministic due delay `1`, `2` или `3` game days;
 - раньше одного полного game day collapse невозможен;
@@ -237,10 +241,10 @@ Global Building placement не ослабляется. Compact placement дос�
 
 - World владеет room/template cells, tunnel topology, terrain solidity, excavation tick, buried-item attachment и collapse mutation.
 - `RoomInfrastructureState` владеет RoomInfrastructureId, TemplateInstanceId, order count, improvement lifecycle, material ledger, requested/active purpose и profile refs.
-- `TunnelInfrastructureState` владеет segment origins, ordered cells, structural anchors, next target, decorative targets, protection и collapse schedule; terrain owner остаётся World.
+- `TunnelInfrastructureState` владеет segment origins, ordered cells, wooden-support anchors, door anchors, next target, decorative targets, protection и collapse schedule; terrain owner остаётся World.
 - Inventory владеет stack identity, quantity, locations/reservations, room stock и buried stack identity.
 - Jobs владеет delivery/improvement/automatic-support/manual-decoration/packing lifecycles и claims.
-- Buildings владеет identity, footprint, functions, stocks и packing.
+- Buildings владеет identity, footprint, functions, stocks, door completion state и packing.
 - Skills владеет grants/capacity/idempotency.
 - Needs/Production предоставляют authoritative rates; room system предоставляет typed multiplier context.
 - Presentation владеет buttons, count, menus, previews, overlays и rebuildable visuals.
@@ -287,6 +291,7 @@ HorizontalTunnelSegment
 - OriginCell
 - OrderedHorizontalCells[]
 - StructuralAnchorCells[]
+- StructuralAnchorKinds[]: Origin | WoodenSupport | Door
 - NextAutomaticTargetCell
 - AutomaticRangeDistances
 - Version
@@ -324,6 +329,7 @@ Commands:
 - commit room material unit;
 - switch improved room purpose;
 - synchronize automatic wooden-support and junction-trim targets;
+- register completed wooden support or completed door as structural anchor;
 - recalculate next wooden-support target after structural anchor completion;
 - request manual infrastructure placement from exact resident stack;
 - cancel interrupted owner-locked manual job;
@@ -338,6 +344,7 @@ Events:
 - requested purpose changed/active purpose changed;
 - packing required/cancelled/started;
 - wooden support required/blocked/completed;
+- door completed/registered as structural anchor;
 - structural anchor changed/next target recalculated;
 - stone trim required/completed;
 - manual placement cancelled by interruption;
@@ -345,7 +352,7 @@ Events:
 - item buried/recovered;
 - typed skill grant result.
 
-Queries expose room count/cost/progress/purpose/bonuses/profile, segment anchors/next target, target structural/decorative kind, source/range и collapse diagnostics.
+Queries expose room count/cost/progress/purpose/bonuses/profile, segment anchors/kinds/next target, target structural/decorative kind, source/range и collapse diagnostics.
 
 ## 6. Состояния и переходы
 
@@ -374,8 +381,9 @@ Improved(B)
 Automatic structural chain:
 SegmentOriginAnchor
 -> TargetAt(anchor + 10)
--> WoodenSupportCompleted
--> NewAnchor(completed support)
+-> WoodenSupportCompleted | DoorCompleted
+-> NewAnchor(completed support or door)
+-> CancelObsoleteFutureTarget
 -> TargetAt(new anchor + 10)
 
 Manual early support:
@@ -384,6 +392,13 @@ PendingTarget(old anchor + 10)
 -> CancelFuturePendingTarget
 -> NewAnchor(manual support)
 -> TargetAt(manual support + 10)
+
+Door inserted before pending target:
+PendingTarget(old anchor + 10)
+-> DoorCompleted(before pending target)
+-> CancelFuturePendingTarget
+-> NewAnchor(door)
+-> TargetAt(door + 10)
 
 Automatic support job:
 Required -> WaitingForMaterial -> Assigned -> Working -> Reinforced
@@ -409,7 +424,8 @@ Collapsed -> ReExcavated -> BuriedItemsRecovered -> ScheduledAfter1To3Days if st
 - placement preview показывает wall variant, rack/output side и profile reason;
 - `U + inventory slot click` имеет приоритет после UI shielding и до world movement/excavation;
 - preview различает structural wooden beam и decorative stone trim;
-- diagnostics/preview показывает, что ручная деревянная опора станет новым anchor и куда переместится next automatic target;
+- diagnostics показывает current anchor kind, включая `Door`, и next automatic target;
+- установка двери обновляет automatic support ghost/job так же, как completion ручной wooden support;
 - collapse публикует notification и refreshes terrain/colliders/routes/overlays.
 
 ## 8. Инварианты
@@ -425,10 +441,11 @@ Collapsed -> ReExcavated -> BuriedItemsRecovered -> ScheduledAfter1To3Days if st
 - logical footprint никогда не занимает solid wall;
 - room modifier применяется exactly once;
 - packing job отменяется сменой purpose только до начала packing work;
-- one structural support commit создаёт максимум one anchor;
+- one completed wooden support или completed door создаёт максимум one structural anchor;
 - next automatic wooden-support target вычисляется на 10 horizontal cells после актуального anchor;
-- completed manual wooden support становится актуальным anchor для future targets;
-- pending future target от старого anchor не должен остаться дубликатом после anchor recalculation;
+- completed manual/automatic wooden support становится актуальным anchor;
+- completed door становится актуальным anchor на тех же условиях;
+- pending future target от старого anchor не остаётся дубликатом после anchor recalculation;
 - stone trim никогда не становится structural anchor и не удовлетворяет wooden structural requirement;
 - manual job не расходует иной stack вместо selected exact stack;
 - interruption manual job не передаёт material другому worker;
@@ -446,7 +463,7 @@ Collapsed -> ReExcavated -> BuriedItemsRecovered -> ScheduledAfter1To3Days if st
 - room order count, cancellation lock, requested/active purpose;
 - material ledger, temporary stock cell, active jobs and stages;
 - invalid-building packing jobs и started flag;
-- segment origins, ordered cells, completed structural anchors и next automatic target;
+- segment origins, ordered cells, completed structural anchors, anchor kind (`WoodenSupport`/`Door`) и next automatic target;
 - pending automatic target identity и source reservation;
 - decorative targets;
 - exact manual source stack and owner resident until commit/cancel;
@@ -454,7 +471,7 @@ Collapsed -> ReExcavated -> BuriedItemsRecovered -> ScheduledAfter1To3Days if st
 - collapse excavation tick, delay 1..3, due tick, candidate/substitution/retry state and sequence;
 - grant idempotency keys.
 
-Load пересчитывает derived future targets только от сохранённого ordered segment и completed anchors и не возвращает отменённую старую target. Legacy saves не получают automatic purpose. Reinforcement/collapse migration policy остаётся явной и versioned.
+Load пересчитывает derived future targets только от сохранённого ordered segment и последнего completed structural anchor, включая door anchor, и не возвращает отменённую старую target. Legacy saves не получают automatic purpose. Reinforcement/collapse migration policy остаётся явной и versioned.
 
 ## 10. Диагностика
 
@@ -466,8 +483,8 @@ Inspector/HUD показывает:
 - temporary stock selection reason and active worker/job/stage/work position;
 - effective multiplier/capacity/profile/visual variant;
 - incompatible buildings и packing lifecycle;
-- segment origin, ordered distance, current structural anchor, next target and distance from anchor;
-- reason старой target cancellation/recalculation after manual support;
+- segment origin, ordered distance, current structural anchor, anchor kind, next target and distance from anchor;
+- reason старой target cancellation/recalculation after manual support or door completion;
 - target structural/decorative kind, protection, range, source stack and worker;
 - collapse earliest/due tick, delay days, candidates, rejected reason, substitution, retry and buried refs;
 - World/Navigation versions after collapse.
@@ -488,9 +505,10 @@ Domain/Application:
 - mirrored rack/output anchors;
 - purpose switch packing/cancel-before-start/no-cancel-after-start;
 - segment origins at room exits and vertical junctions;
-- default chain creates targets every 10 cells from latest completed wooden support;
-- manual support at cell 5 cancels/replaces the old cell-10 future target and creates the next target at cell 15;
-- repeated manual/automatic anchors never create duplicate targets;
+- default chain creates targets every 10 cells from latest completed structural anchor;
+- manual support at cell 5 cancels/replaces old cell-10 target and creates next target at cell 15;
+- completed door at cell 5 performs the same recalculation and creates next target at cell 15;
+- repeated wooden-support/door anchors never create duplicate targets;
 - target recalculation remains deterministic after split, retry and save/load;
 - range 20 Manhattan still filters recalculated targets;
 - stone trim never becomes anchor or structural protection;
@@ -510,6 +528,7 @@ Unity Play Mode:
 - left/right wall variants and shelf/output mirroring;
 - automatic wooden support and decorative stone trim visuals;
 - manual support placed at cell 5 visibly shifts automatic ghost/job to cell 15;
+- completed door placed at cell 5 also shifts automatic ghost/job to cell 15;
 - manual interruption removes ghost/job and leaves item in owner inventory;
 - purpose-invalid automatic packing cancellation boundary;
 - real repeated collapse, sand cell, buried item disappearance and re-excavation recovery.
@@ -528,8 +547,8 @@ Unity Play Mode:
 - purpose switch creates packing jobs and can cancel only not-started jobs by switching back;
 - automatic structural range is 20 Manhattan;
 - initial next support is 10 cells from room-exit/vertical-junction anchor;
-- every completed wooden support becomes the anchor for the following 10-cell interval;
-- manual support at cell 5 shifts the next automatic support to cell 15 and removes the obsolete future target from the old anchor;
+- every completed wooden support or completed door becomes the anchor for the following 10-cell interval;
+- manual support or door at cell 5 shifts the next automatic support to cell 15 and removes obsolete future target from the old anchor;
 - manual wooden support consumes selected resident inventory leg and protects its location;
 - manual/automatic stone trim consumes stone, grants Stonework and remains decorative only;
 - interrupted manual job is cancelled and material stays in owner inventory;
@@ -546,7 +565,6 @@ Unity Play Mode:
 
 ### Tunnel
 
-- **Q-TUNNEL-002A — door anchor.** Дверь защищает свою клетку. Должна ли completed door также становиться новым anchor для следующей automatic wooden support через 10 клеток либо только заменять опору в своей клетке?
 - **Q-TUNNEL-006A — deferred retry.** Через какой deterministic interval повторяется collapse event, если все выбранные и соседние допустимые cells временно заняты actors?
 - **Q-TUNNEL-008 — automatic cancellation.** Может ли игрок отменить pending automatic wooden-support/junction-trim job; если да, когда target снова создаётся synchronization?
 
@@ -559,3 +577,4 @@ Unity Play Mode:
 | 2026-08-02 | Automatic range 20 Manhattan; one support per 10 cells; junction intrinsically safe; exact-inventory manual mode; actor defer/substitute; buried items recover | владелец дизайна | 2.7–2.9, 4–13, #574 |
 | 2026-08-02 | Stone floor/junction trim is decorative only; room cancel allowed only before work; requested type may change during work; nearest-free stock; manual interruption cancels job; collapse after 1..3 days repeats and restores output-free sand | владелец дизайна | 1–14, #574 |
 | 2026-08-03 | Каждая completed wooden support становится новым structural anchor; ручная опора на клетке 5 сдвигает следующую automatic target на клетку 15 | владелец дизайна | 2.7–2.8, 3–14, #574 |
+| 2026-08-03 | Completed door является structural anchor и сдвигает следующую automatic target на 10 клеток от двери | владелец дизайна | 1, 2.7, 3–14, #574 |
