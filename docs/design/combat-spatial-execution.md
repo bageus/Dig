@@ -43,12 +43,19 @@ Tracking issue: [#508](https://github.com/bageus/Dig/issues/508).
 4. Каждый союзник самостоятельно оценивает threat и может создать собственный `Autonomous`/`Alarm` intent; исходный intent не копируется принудительно.
 5. При смерти/исчезновении target autonomous/alarm execution может выбрать ближайшую detected hostile threat по существующему stable threat order.
 
+Для `enemy.vuker` действует approved species exception из cave encounter specification:
+
+- sight/LoS detection создаёт persistent autonomous intent с `ExpiresTick = long.MaxValue`;
+- persistent intent не завершается при временной потере sight и не выбирает `Retreat`;
+- retry exhaustion закрывает только stale execution, после чего тот же intent запускает deterministic replan;
+- resident direct command не отменяет enemy intent.
+
 ### 2.3 Pursuit и target loss
 
 - Intent отслеживает target entity до `ExpiresTick` либо явной cancel/replacement/terminal policy.
 - При временной потере sight execution идёт к последней подтверждённой target cell.
 - Если target не обнаружен в последней известной cell после arrival/recheck, player intent завершается с `target_lost`.
-- Autonomous/Alarm execution после target loss сначала пытается выбрать следующую ближайшую detected hostile threat; при её отсутствии завершается.
+- Autonomous/Alarm execution после target loss сначала пытается выбрать следующую ближайшую detected hostile threat; при её отсутствии завершается, кроме species-owned persistent aggro: временная потеря sight отслеживает current authoritative target cell и не считается terminal loss, пока target жив/существует.
 - Смерть target завершает player intent; autonomous/alarm может retarget согласно тому же правилу.
 
 ### 2.4 Retreat
@@ -204,6 +211,8 @@ Any active stage
 - LMB создаёт не более одной player combat command.
 - UI shielding выполняется до world combat routing.
 - RMB отменяет active player combat intent и очищает combat cursor/feedback.
+- Любой direct resident command через общий preparation boundary может отменить resident `PlayerOrder` или `Alarm` attack intent; enemy persistent intent этим не меняется.
+- Hostile hover использует presentation highlight независимо от наличия выбранного resident; sword cursor по-прежнему требует валидный attack classification.
 - Failed command не запускает success animation.
 - HUD/inspector показывает intent source, target, stage, selected weapon, range, blocked/replan reason и retreat state.
 - Facing/wind-up/recover/VFX читают typed execution/attack events; animation callback не применяет damage.
@@ -226,6 +235,7 @@ Any active stage
 - friendly fire и actor body blocking ranged shot отсутствуют;
 - Presentation не меняет Combat/Agents/Inventory напрямую;
 - cancel/retry/load не повторяет уже resolved attack;
+- persistent enemy intent не истекает, не retreats и не теряется при resident direct disengage;
 - target movement не создаёт teleport или attack вне range/LoS;
 - combat movement использует актуальные World/Navigation versions;
 - alarm создаёт stimulus, а не принудительную копию intent.
@@ -261,7 +271,7 @@ Inspector/read model показывает:
 - Deterministic simulation: multiple attackers/targets, shared cells, stable tie-break, replay.
 - Save/load/migration: active execution round-trip, rebuilt route/candidates/LoS, no repeated resolved attack.
 - Source contracts: no Unity/animation authority, no hard engagement reservation, no second damage path.
-- Unity Play Mode: sword cursor, LMB start, approach, facing, wind-up, one damage commit, recover, retarget/target loss, retreat, RMB cancel, HUD/status.
+- Unity Play Mode: hostile hover highlight, sword cursor, LMB start, sight aggro, persistent enemy pursuit, resident direct disengage, approach, facing, wind-up, one damage commit, recover, retarget/target loss, ordinary retreat, RMB cancel, HUD/status.
 
 ## 15. Acceptance
 

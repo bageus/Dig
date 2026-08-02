@@ -17,6 +17,15 @@ namespace Dig.Unity
 {
     internal sealed partial class DigTerrainWorkSession
     {
+        private Func<EntityId, long, Result>? _disengageResidentCombat;
+
+        internal void BindDirectCommandCombatDisengage(
+            Func<EntityId, long, Result> disengage)
+        {
+            _disengageResidentCombat = disengage
+                ?? throw new ArgumentNullException(nameof(disengage));
+        }
+
         internal Result PrepareResidentsForDirectCommand(
             IReadOnlyList<string> residentIds,
             long tick)
@@ -31,6 +40,14 @@ namespace Dig.Unity
             for (int residentIndex = 0; residentIndex < residentIds.Count; residentIndex++)
             {
                 EntityId residentId = EntityId.Parse(residentIds[residentIndex]);
+                Result disengaged = _disengageResidentCombat == null
+                    ? Result.Success()
+                    : _disengageResidentCombat(residentId, tick);
+                if (disengaged.IsFailure)
+                {
+                    return disengaged;
+                }
+
                 Result interrupted = InterruptFoodMealForDirectCommand(residentId, tick);
                 if (interrupted.IsFailure)
                 {

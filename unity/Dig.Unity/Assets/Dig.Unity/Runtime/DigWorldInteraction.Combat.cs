@@ -85,6 +85,17 @@ public sealed partial class DigWorldInteraction
         return false;
     }
 
+    private bool TryHighlightHostileCreature(RaycastHit[] hits)
+    {
+        if (!TryResolveHostileCreatureHit(hits, out DigCreatureVisual creature))
+        {
+            return false;
+        }
+
+        _creatureRenderer!.SetHighlighted(creature.Model.CreatureId);
+        return true;
+    }
+
     private bool TryResolveHostileCombatHoverTarget(RaycastHit[] hits)
     {
         if (!TryResolveHostileCreatureHit(hits, out DigCreatureVisual creature)

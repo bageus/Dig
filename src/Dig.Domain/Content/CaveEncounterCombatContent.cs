@@ -41,7 +41,11 @@ public sealed class EnemyCombatDefinition
         int maximumGroupSize,
         EnemyTraversalCapability traversal,
         WeaponProfileId attackProfileId,
-        EnemyAttachmentSurface attachmentSurfaces = EnemyAttachmentSurface.None)
+        EnemyAttachmentSurface attachmentSurfaces = EnemyAttachmentSurface.None,
+        int patrolWanderRadius = 0,
+        int patrolIntervalTicks = 0,
+        int sightRange = 0,
+        bool retainsAggroUntilTargetUnavailable = false)
     {
         if (string.IsNullOrWhiteSpace(speciesId)
             || string.IsNullOrWhiteSpace(displayName))
@@ -89,6 +93,26 @@ public sealed class EnemyCombatDefinition
                 nameof(attachmentSurfaces));
         }
 
+        if (patrolWanderRadius < 0 || patrolIntervalTicks < 0 || sightRange < 0
+            || (patrolWanderRadius == 0) != (patrolIntervalTicks == 0))
+        {
+            throw new ArgumentOutOfRangeException(nameof(patrolWanderRadius));
+        }
+
+        if (stationary && patrolWanderRadius != 0)
+        {
+            throw new ArgumentException(
+                "A stationary enemy cannot declare a patrol profile.",
+                nameof(patrolWanderRadius));
+        }
+
+        if (retainsAggroUntilTargetUnavailable && sightRange <= 0)
+        {
+            throw new ArgumentException(
+                "Persistent aggro requires a positive sight range.",
+                nameof(sightRange));
+        }
+
         SpeciesId = speciesId.Trim();
         DisplayName = displayName.Trim();
         MaximumHealth = maximumHealth;
@@ -97,6 +121,10 @@ public sealed class EnemyCombatDefinition
         Traversal = traversal;
         AttackProfileId = attackProfileId;
         AttachmentSurfaces = attachmentSurfaces;
+        PatrolWanderRadius = patrolWanderRadius;
+        PatrolIntervalTicks = patrolIntervalTicks;
+        SightRange = sightRange;
+        RetainsAggroUntilTargetUnavailable = retainsAggroUntilTargetUnavailable;
     }
 
     public string SpeciesId { get; }
@@ -107,6 +135,11 @@ public sealed class EnemyCombatDefinition
     public EnemyTraversalCapability Traversal { get; }
     public WeaponProfileId AttackProfileId { get; }
     public EnemyAttachmentSurface AttachmentSurfaces { get; }
+    public int PatrolWanderRadius { get; }
+    public int PatrolIntervalTicks { get; }
+    public int SightRange { get; }
+    public bool RetainsAggroUntilTargetUnavailable { get; }
+    public bool HasPatrol => PatrolWanderRadius > 0;
 
     private static bool IsValidFlags(EnemyTraversalCapability value)
     {
@@ -198,7 +231,11 @@ public static class CaveEncounterCombatContent
                 EnemyTraversalCapability.SupportedWalk
                     | EnemyTraversalCapability.VerticalClimb
                     | EnemyTraversalCapability.DepthTraverse,
-                CaveMonsterBiteProfileId),
+                CaveMonsterBiteProfileId,
+                patrolWanderRadius: 6,
+                patrolIntervalTicks: 4,
+                sightRange: 6,
+                retainsAggroUntilTargetUnavailable: true),
             new EnemyCombatDefinition(
                 PredatoryVineSpeciesId,
                 "Хищная лиана",

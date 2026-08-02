@@ -17,8 +17,13 @@ namespace Dig.Unity
 
 internal sealed partial class DigAgentSession
 {
-    private const int EnemySightRange = 6;
     private const long AutonomousIntentLifetimeTicks = 240;
+    private readonly EnemyPatrolPlanner _enemyPatrolPlanner =
+        new EnemyPatrolPlanner();
+    private readonly Dictionary<EntityId, CellId> _enemyPatrolAnchors =
+        new Dictionary<EntityId, CellId>();
+    private readonly Dictionary<EntityId, long> _lastEnemyPatrolMoveTicks =
+        new Dictionary<EntityId, long>();
     private static readonly EntityId CaveMonsterOneId =
         EntityId.Parse("e1000000000000000000000000000001");
     private static readonly EntityId CaveMonsterTwoId =
@@ -44,6 +49,10 @@ internal sealed partial class DigAgentSession
             bool moving = execution != null
                 && (execution.Stage == CombatExecutionStage.Approach
                     || execution.Stage == CombatExecutionStage.Retreat);
+            moving |= _lastEnemyPatrolMoveTicks.TryGetValue(
+                actor.Id,
+                out long patrolTick)
+                && patrolTick == _tick;
             bool attacking = execution != null
                 && (execution.Stage == CombatExecutionStage.WindUp
                     || execution.Stage == CombatExecutionStage.ResolveAttack);
@@ -158,6 +167,7 @@ internal sealed partial class DigAgentSession
 
         _combatOnlyActors.Add(id);
         _enemyDefinitions.Add(id, definition);
+        _enemyPatrolAnchors.Add(id, position);
         factions.AssignMember(id, HostileFaction);
     }
 
@@ -244,7 +254,9 @@ internal sealed partial class DigAgentSession
                 CombatIntentKind.Attack,
                 source,
                 _tick,
-                checked(_tick + AutonomousIntentLifetimeTicks),
+                RetainsEnemyAggro(actorId)
+                    ? long.MaxValue
+                    : checked(_tick + AutonomousIntentLifetimeTicks),
                 targetId,
                 target.Position)));
     }
@@ -256,7 +268,7 @@ internal sealed partial class DigAgentSession
                 && !_combatOnlyActors.Contains(candidate.Id))
             .Where(candidate => CombatSpatialMath.Distance3D(
                 enemy.Position,
-                candidate.Position) <= EnemySightRange)
+                candidate.Position) <= ResolveEnemySightRange(enemy.Id))
             .Where(candidate => CombatLineOfSightResolver.HasLineOfSight(
                 enemy.Position,
                 candidate.Position,
@@ -266,6 +278,62 @@ internal sealed partial class DigAgentSession
                 candidate.Position))
             .ThenBy(candidate => candidate.Id.ToString(), StringComparer.Ordinal)
             .FirstOrDefault();
+    }
+
+    private bool TryAdvanceEnemyIdle(AgentState enemy)
+    {
+        if (!_combatOnlyActors.Contains(enemy.Id))
+        {
+            return false;
+        }
+
+        if (TryAdvanceEnemyPatrol(enemy, out Result patrol)
+            && patrol.IsFailure)
+        {
+            CancelManualMovementWithWarning(enemy.Id, patrol.Error!);
+        }
+        return true;
+    }
+
+    private bool TryAdvanceEnemyPatrol(AgentState enemy, out Result result)
+    {
+        result = Result.Success();
+        if (!_enemyDefinitions.TryGetValue(
+                enemy.Id,
+                out EnemyCombatDefinition? definition)
+            || !_enemyPatrolAnchors.TryGetValue(enemy.Id, out CellId anchor))
+        {
+            return false;
+        }
+
+        EnemyPatrolDecision decision = _enemyPatrolPlanner.Plan(
+            definition,
+            enemy.Id,
+            anchor,
+            enemy.Position,
+            TunnelVolume,
+            DemoIdentitySeed,
+            _tick);
+        if (!decision.ShouldMove)
+        {
+            return false;
+        }
+
+        result = MoveThroughTunnelTraffic(enemy, decision.Target);
+        if (result.IsSuccess && enemy.Position == decision.Target)
+        {
+            _lastEnemyPatrolMoveTicks[enemy.Id] = _tick;
+        }
+        return true;
+    }
+
+    private int ResolveEnemySightRange(EntityId enemyId)
+    {
+        return _enemyDefinitions.TryGetValue(
+            enemyId,
+            out EnemyCombatDefinition? definition)
+            ? definition.SightRange
+            : 0;
     }
 
     private static bool IsCombatEngaged(CombatState combat, EntityId entityId)

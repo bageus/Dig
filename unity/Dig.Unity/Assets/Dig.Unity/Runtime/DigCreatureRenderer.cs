@@ -20,10 +20,12 @@ public sealed partial class DigCreatureRenderer : MonoBehaviour
     private DigCreatureVisualCatalog? _catalog;
     private Material? _material;
     private string? _selectedCreatureId;
+    private string? _highlightedCreatureId;
 
     public int ActiveCount => _creatures.Count;
     public int PooledCount => _pool.Count;
     public string? SelectedCreatureId => _selectedCreatureId;
+    public string? HighlightedCreatureId => _highlightedCreatureId;
 
     public void Render(
         IReadOnlyList<CreatureVisualSnapshot> snapshots,
@@ -65,7 +67,10 @@ public sealed partial class DigCreatureRenderer : MonoBehaviour
                 _selectedCreatureId,
                 out DigCreatureVisual? previous))
         {
-            previous.SetSelected(false);
+            previous.SetSelected(string.Equals(
+                _highlightedCreatureId,
+                previous.Model.CreatureId,
+                StringComparison.Ordinal));
         }
 
         _selectedCreatureId = null;
@@ -83,6 +88,32 @@ public sealed partial class DigCreatureRenderer : MonoBehaviour
     public void ClearSelection()
     {
         SelectById(null);
+    }
+
+    public void SetHighlighted(string? creatureId)
+    {
+        if (_highlightedCreatureId != null
+            && _creatures.TryGetValue(
+                _highlightedCreatureId,
+                out DigCreatureVisual? previous))
+        {
+            previous.SetSelected(IsSelected(previous.Model.CreatureId));
+        }
+
+        _highlightedCreatureId = null;
+        if (string.IsNullOrWhiteSpace(creatureId)
+            || !_creatures.TryGetValue(creatureId, out DigCreatureVisual? highlighted))
+        {
+            return;
+        }
+
+        _highlightedCreatureId = creatureId;
+        highlighted.SetSelected(true);
+    }
+
+    public void ClearHighlight()
+    {
+        SetHighlighted(null);
     }
 
     public bool TryResolveAnchor(
@@ -123,10 +154,7 @@ public sealed partial class DigCreatureRenderer : MonoBehaviour
         CreatureLodViewModel lod = ResolveLod(snapshot, camera);
         visual.ApplySnapshot(snapshot, appearance, action, lod, movementDuration);
         visual.SetCombatHealth(camera);
-        visual.SetSelected(string.Equals(
-            _selectedCreatureId,
-            snapshot.CreatureId,
-            StringComparison.Ordinal));
+        visual.SetSelected(IsSelectedOrHighlighted(snapshot.CreatureId));
     }
 
     private void CreateCreature(CreatureVisualSnapshot snapshot, Camera? camera)
@@ -149,10 +177,7 @@ public sealed partial class DigCreatureRenderer : MonoBehaviour
             _presenter.PresentAction(snapshot),
             ResolveLod(snapshot, camera));
         visual.SetCombatHealth(camera);
-        visual.SetSelected(string.Equals(
-            _selectedCreatureId,
-            snapshot.CreatureId,
-            StringComparison.Ordinal));
+        visual.SetSelected(IsSelectedOrHighlighted(snapshot.CreatureId));
         _creatures.Add(snapshot.CreatureId, visual);
     }
 
@@ -162,12 +187,31 @@ public sealed partial class DigCreatureRenderer : MonoBehaviour
         _creatures.Remove(creatureId);
         if (string.Equals(_selectedCreatureId, creatureId, StringComparison.Ordinal))
             _selectedCreatureId = null;
+        if (string.Equals(_highlightedCreatureId, creatureId, StringComparison.Ordinal))
+            _highlightedCreatureId = null;
         visual.SetSelected(false);
         visual.gameObject.SetActive(false);
         if (_pool.Count < MaximumPoolSize)
             _pool.Push(visual);
         else
             Destroy(visual.gameObject);
+    }
+
+    private bool IsSelected(string creatureId)
+    {
+        return string.Equals(
+            _selectedCreatureId,
+            creatureId,
+            StringComparison.Ordinal);
+    }
+
+    private bool IsSelectedOrHighlighted(string creatureId)
+    {
+        return IsSelected(creatureId)
+            || string.Equals(
+                _highlightedCreatureId,
+                creatureId,
+                StringComparison.Ordinal);
     }
 }
 }

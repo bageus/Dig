@@ -32,6 +32,7 @@ Tracking issue: [#390](https://github.com/bageus/Dig/issues/390).
 - успешный direct move order — временные анимированные ноги;
 - доступная закрытая production package `food`/`weapon`/`tool` — слегка анимированный cursor использования;
 - eraser — серый cursor;
+- hostile creature под pointer — creature outline/highlight всегда; sword cursor только при выбранном resident и доступном attack;
 - недоступное действие — default cursor и reason code.
 
 Generic item pickup cursor показывается без `Alt`. `Alt` обязателен только для pickup BuildingBox и для direct use предмета, чей `ItemInteractionProfile` это определяет. Production package никогда не показывает generic pickup cursor: её world interaction задаётся explicit content-owned profile.
@@ -78,6 +79,7 @@ Generic item pickup cursor показывается без `Alt`. `Alt` обяз
 - BuildingBox selection открывает building roster/menu и подсвечивает box row;
 - новый взаимоисключающий selection снимает предыдущий;
 - UI click не проходит в мир;
+- hostile hover highlight не меняет selection и очищается при уходе pointer/UI shielding;
 - selection не изменяет authoritative state объекта.
 
 ## 7. Input priority
@@ -114,6 +116,7 @@ Generic item pickup cursor показывается без `Alt`. `Alt` обяз
 - valid Z0 confirmation создаёт выбранный plan kind и закрывает interactive mode;
 - до pickup source physical box и target planned ghost отображаются одновременно без дублирования authoritative entity;
 - hidden stale target не остаётся кликабельным;
+- hostile hover highlight и combat click читают один exact creature target, но highlight не требует selected resident;
 - selection и highlighted row определяются одним selected entity id;
 - Presentation не создаёт Domain state до command;
 - RMB очищает preview/selection без расходования коробки.
@@ -142,7 +145,7 @@ Generic item pickup cursor показывается без `Alt`. `Alt` обяз
 - valid Z0 confirmation создаёт выбранный plan kind, закрывает interactive mode и сохраняет синюю planned-подсветку source box;
 - до pickup source physical box остаётся видимой, target planned ghost сохраняется;
 - box-placement plan не создаёт completed building, assembly plan автоматически продолжает assembly после delivery;
-- Play Mode matrix покрывает cursor modes, включая animated use для food/weapon/tool package;
+- Play Mode matrix покрывает cursor modes, включая hostile hover highlight без selected resident, sword cursor с valid resident и animated use для food/weapon/tool package;
 - overlap targets создают одну command;
 - ordinary/`Alt` gating совпадает для hover и click;
 - generic item first LMB создаёт pickup либо typed rejection и не уходит в ground action;

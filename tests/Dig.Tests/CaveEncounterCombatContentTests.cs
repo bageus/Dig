@@ -35,6 +35,11 @@ public sealed class CaveEncounterCombatContentTests
             EnemyTraversalCapability.VerticalClimb));
         Assert.True(cave.Traversal.HasFlag(
             EnemyTraversalCapability.DepthTraverse));
+        Assert.True(cave.HasPatrol);
+        Assert.Equal(6, cave.PatrolWanderRadius);
+        Assert.Equal(4, cave.PatrolIntervalTicks);
+        Assert.Equal(6, cave.SightRange);
+        Assert.True(cave.RetainsAggroUntilTargetUnavailable);
 
         EnemyCombatDefinition vine = Find(
             CaveEncounterCombatContent.PredatoryVineSpeciesId);
@@ -52,6 +57,7 @@ public sealed class CaveEncounterCombatContentTests
             vine.AttachmentSurfaces);
         Assert.False(vine.AttachmentSurfaces.HasFlag(
             EnemyAttachmentSurface.CaveCeiling));
+        Assert.False(vine.HasPatrol);
 
         EnemyCombatDefinition swallower = Find(
             CaveEncounterCombatContent.SwallowerSpeciesId);

@@ -28,6 +28,84 @@ public sealed class CaveMonsterCombatPlayModeTests
     }
 
     [UnityTest]
+    public IEnumerator Monsters_patrol_slowly_highlight_on_hover_and_keep_aggro_after_resident_direct_order()
+    {
+        DigWorldSession world = DigWorldSession.CreateDemo(20, 14, 5);
+        DigAgentSession agents = DigAgentSession.CreateDemo(
+            world.LoadView(),
+            world.CreateTunnelNavigationVolume(),
+            world.Journal);
+        var residents = agents.LoadView();
+        DigTerrainWorkSession terrain = DigTerrainWorkSession.CreateDemo(
+            world,
+            residents,
+            world.Journal,
+            agents.SkillGrants);
+        agents.BindCombatInventory(terrain.InventoryRepository);
+
+        CreatureVisualSnapshot[] initial = agents.LoadEnemyCreatures().ToArray();
+        Assert.That(initial, Has.Length.EqualTo(2));
+        for (int tick = 1; tick < CaveEncounterCombatContent.CaveMonster.PatrolIntervalTicks; tick++)
+        {
+            Assert.That(agents.Advance().IsSuccess, Is.True);
+            CreatureVisualSnapshot[] beforeDue = agents.LoadEnemyCreatures().ToArray();
+            Assert.That(
+                beforeDue.Select(value => (value.CellX, value.CellY, value.CellZ)),
+                Is.EqualTo(initial.Select(value => (value.CellX, value.CellY, value.CellZ))));
+        }
+
+        Assert.That(agents.Advance().IsSuccess, Is.True);
+        CreatureVisualSnapshot[] patrolled = agents.LoadEnemyCreatures().ToArray();
+        Assert.That(
+            patrolled.Zip(initial, (current, start) =>
+                current.CellX != start.CellX || current.CellZ != start.CellZ).Any(value => value),
+            Is.True);
+        Assert.That(
+            patrolled.Zip(initial, (current, start) => current.CellY == start.CellY)
+                .All(value => value),
+            Is.True);
+
+        _root = new GameObject("Cave monster patrol presentation");
+        DigCreatureRenderer renderer = _root.AddComponent<DigCreatureRenderer>();
+        renderer.Render(
+            patrolled,
+            camera: null,
+            movementDuration: 0f);
+        string highlightedId = patrolled[0].CreatureId;
+        renderer.SetHighlighted(highlightedId);
+        Assert.That(renderer.HighlightedCreatureId, Is.EqualTo(highlightedId));
+        renderer.ClearHighlight();
+        Assert.That(renderer.HighlightedCreatureId, Is.Null);
+        yield return null;
+
+        EntityId enemyId = EntityId.Parse(patrolled[0].CreatureId);
+        EntityId residentId = EntityId.Parse(residents[0].Id);
+        AgentState resident = agents.Repository.Get(residentId)!;
+        AgentState enemy = agents.Repository.Get(enemyId)!;
+        Assert.That(resident.MoveTo(enemy.Position, agents.Tick).IsSuccess, Is.True);
+        agents.Repository.Save(resident);
+
+        Assert.That(agents.Advance().IsSuccess, Is.True);
+        Dig.Domain.Combat.CombatIntentSnapshot enemyIntent =
+            agents.GetCombatIntent(enemyId)!;
+        Assert.That(enemyIntent, Is.Not.Null);
+        Assert.That(enemyIntent.IsPersistent, Is.True);
+        Assert.That(agents.GetCombatIntent(residentId), Is.Not.Null);
+
+        terrain.BindDirectCommandCombatDisengage(
+            agents.DisengageResidentForDirectOrder);
+        Assert.That(terrain.PrepareResidentsForDirectCommand(
+            new[] { residentId.ToString() },
+            agents.Tick).IsSuccess, Is.True);
+
+        Assert.That(agents.GetCombatIntent(residentId), Is.Null);
+        Assert.That(agents.GetCombatIntent(enemyId), Is.Not.Null);
+        Assert.That(agents.GetCombatIntent(enemyId)!.IsPersistent, Is.True);
+        Assert.That(agents.Advance().IsSuccess, Is.True);
+        Assert.That(agents.GetCombatIntent(enemyId), Is.Not.Null);
+    }
+
+    [UnityTest]
     public IEnumerator Fresh_demo_pair_uses_health_bars_inventory_weapon_and_skill_combat()
     {
         DigWorldSession world = DigWorldSession.CreateDemo(20, 14, 5);

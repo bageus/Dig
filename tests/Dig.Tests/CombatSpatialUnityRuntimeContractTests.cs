@@ -46,6 +46,16 @@ public sealed class CombatSpatialUnityRuntimeContractTests
             "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigUnityBootstrap.cs"));
         string loop = File.ReadAllText(Path.Combine(root,
             "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSimulationDriverBase.Loop.cs"));
+        string driver = File.ReadAllText(Path.Combine(root,
+            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSimulationDriverBase.cs"));
+        string directCommands = File.ReadAllText(Path.Combine(root,
+            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkSession.DirectCommands.cs"));
+        string renderer = File.ReadAllText(Path.Combine(root,
+            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigCreatureRenderer.cs"));
+        string cursor = File.ReadAllText(Path.Combine(root,
+            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.DirectCommandCursor.cs"));
+        string health = File.ReadAllText(Path.Combine(root,
+            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigCombatHealthBar.cs"));
         string autonomy = File.ReadAllText(Path.Combine(root,
             "src/Dig.Application/Agents/AgentAutonomySystem.cs"));
         string playMode = File.ReadAllText(Path.Combine(root,
@@ -57,6 +67,9 @@ public sealed class CombatSpatialUnityRuntimeContractTests
         Assert.Contains("CaveMonsterOneId", enemies, StringComparison.Ordinal);
         Assert.Contains("CaveMonsterTwoId", enemies, StringComparison.Ordinal);
         Assert.Contains("EnsureAutonomousEnemyIntent", enemies, StringComparison.Ordinal);
+        Assert.Contains("TryAdvanceEnemyPatrol", enemies, StringComparison.Ordinal);
+        Assert.Contains("EnemyPatrolPlanner", enemies, StringComparison.Ordinal);
+        Assert.Contains("long.MaxValue", enemies, StringComparison.Ordinal);
         Assert.Contains("LoadResidentCombatHealthBars", enemies, StringComparison.Ordinal);
         Assert.Contains("HeldItemPurpose.WeaponUse", equipment, StringComparison.Ordinal);
         Assert.Contains("ResidentWeaponDefinitions", equipment, StringComparison.Ordinal);
@@ -67,6 +80,18 @@ public sealed class CombatSpatialUnityRuntimeContractTests
         Assert.Contains("RenderCombatHealthBars", bootstrap, StringComparison.Ordinal);
         Assert.Contains("LoadCreatures", loop, StringComparison.Ordinal);
         Assert.Contains("RenderCombatHealthBars", loop, StringComparison.Ordinal);
+        Assert.Contains("BindDirectCommandCombatDisengage", driver, StringComparison.Ordinal);
+        Assert.Contains("DisengageResidentForDirectOrder", session, StringComparison.Ordinal);
+        Assert.Contains("_disengageResidentCombat", directCommands, StringComparison.Ordinal);
+        Assert.Contains("SetHighlighted", renderer, StringComparison.Ordinal);
+        Assert.Contains("TryHighlightHostileCreature", cursor, StringComparison.Ordinal);
+        Assert.Contains("Shader.Find(\"Dig/Stylized Unlit\")", health,
+            StringComparison.Ordinal);
+        Assert.True(
+            health.IndexOf("Shader.Find(\"Dig/Stylized Unlit\")", StringComparison.Ordinal)
+                < health.IndexOf(
+                    "Shader.Find(\"Universal Render Pipeline/Unlit\")",
+                    StringComparison.Ordinal));
         Assert.Contains("_isEligible", autonomy, StringComparison.Ordinal);
         Assert.DoesNotContain("RegisterHostileCombatant", interaction,
             StringComparison.Ordinal);

@@ -37,7 +37,8 @@ public sealed class CombatSpatialPolicy
         long recoveryTicks,
         long retryDelayTicks,
         int maximumRetries,
-        CombatTacticalPolicy tacticalPolicy)
+        CombatTacticalPolicy tacticalPolicy,
+        Func<EntityId, bool>? retainsAggro = null)
     {
         if (sightRange < 0 || alarmRadius < 0 || windUpTicks < 0
             || recoveryTicks < 0 || retryDelayTicks <= 0 || maximumRetries < 0)
@@ -52,6 +53,7 @@ public sealed class CombatSpatialPolicy
         RetryDelayTicks = retryDelayTicks;
         MaximumRetries = maximumRetries;
         TacticalPolicy = tacticalPolicy ?? throw new ArgumentNullException(nameof(tacticalPolicy));
+        RetainsAggro = retainsAggro ?? (_ => false);
     }
 
     public int SightRange { get; }
@@ -61,6 +63,7 @@ public sealed class CombatSpatialPolicy
     public long RetryDelayTicks { get; }
     public int MaximumRetries { get; }
     public CombatTacticalPolicy TacticalPolicy { get; }
+    public Func<EntityId, bool> RetainsAggro { get; }
 }
 
 public readonly struct CombatEquipmentSelection

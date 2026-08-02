@@ -46,6 +46,7 @@ namespace Dig.Unity
         private void UpdateSelectedResidentCommandCursor()
         {
             _barrelRenderer?.SetHighlighted(null);
+            _creatureRenderer?.ClearHighlight();
             SetInteractionHighlightedItem(null);
             DirectCommandCursorKind kind = ResolveCommandCursorKind();
             ApplyCommandCursor(kind);
@@ -53,11 +54,6 @@ namespace Dig.Unity
 
         private DirectCommandCursorKind ResolveCommandCursorKind()
         {
-            if (Time.unscaledTime < _movementCursorExpiresAt)
-            {
-                return DirectCommandCursorKind.Movement;
-            }
-
             if (!IsInitialized() || _hud == null || _buildingPlacementMode.HasValue)
             {
                 return DirectCommandCursorKind.Default;
@@ -69,6 +65,11 @@ namespace Dig.Unity
             }
 
             RaycastHit[] hits = GetPointerHits();
+            TryHighlightHostileCreature(hits);
+            if (Time.unscaledTime < _movementCursorExpiresAt)
+            {
+                return DirectCommandCursorKind.Movement;
+            }
             if (_agentRenderer != null && _agentRenderer.SelectedCount > 0)
             {
                 if (_excavationMode == DigExcavationDrawingMode.None
@@ -224,6 +225,7 @@ namespace Dig.Unity
         private void OnDisable()
         {
             ClearPointerHover();
+            _creatureRenderer?.ClearHighlight();
             SetInteractionHighlightedItem(null);
             ClearInventorySlotHoverFeedback();
             ResetCommandCursor();
@@ -231,6 +233,7 @@ namespace Dig.Unity
 
         private void OnDestroy()
         {
+            _creatureRenderer?.ClearHighlight();
             SetInteractionHighlightedItem(null);
             ClearInventorySlotHoverFeedback();
             ResetCommandCursor();

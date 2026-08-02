@@ -59,7 +59,7 @@ public sealed partial class CombatSpatialExecutionHandler
         }
 
         CombatIntentSnapshot intent = combat.GetActiveIntent(actor.Id)!;
-        if (!IsVisible(actor.Position, target!.Position))
+        if (!IsVisible(actor.Position, target!.Position) && !intent.IsPersistent)
             return PursueLastKnownOrFinish(command, combat, intent, actor, target);
 
         if (!execution.WeaponProfileId.HasValue)

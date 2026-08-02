@@ -97,19 +97,38 @@ internal sealed class DigCombatHealthBar : MonoBehaviour
             return;
         }
 
-        Shader shader = Shader.Find("Universal Render Pipeline/Unlit")
+        Shader shader = Shader.Find("Dig/Stylized Unlit")
             ?? Shader.Find("Unlit/Color")
+            ?? Shader.Find("Universal Render Pipeline/Unlit")
             ?? Shader.Find("Standard");
-        _backgroundMaterial = new Material(shader)
+        _backgroundMaterial = CreateMaterial(
+            shader,
+            "CombatHealthBackground",
+            new Color(0.12f, 0.04f, 0.04f, 0.95f));
+        _fillMaterial = CreateMaterial(
+            shader,
+            "CombatHealthFill",
+            new Color(0.18f, 0.88f, 0.28f, 1f));
+    }
+
+    private static Material CreateMaterial(
+        Shader shader,
+        string name,
+        Color color)
+    {
+        Material material = new Material(shader)
         {
-            name = "CombatHealthBackground",
-            color = new Color(0.12f, 0.04f, 0.04f, 0.95f),
+            name = name,
         };
-        _fillMaterial = new Material(shader)
+        if (material.HasProperty("_BaseColor"))
         {
-            name = "CombatHealthFill",
-            color = new Color(0.18f, 0.88f, 0.28f, 1f),
-        };
+            material.SetColor("_BaseColor", color);
+        }
+        if (material.HasProperty("_Color"))
+        {
+            material.SetColor("_Color", color);
+        }
+        return material;
     }
 }
 

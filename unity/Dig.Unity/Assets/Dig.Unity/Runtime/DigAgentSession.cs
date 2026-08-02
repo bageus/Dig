@@ -29,7 +29,6 @@ namespace Dig.Unity
         private readonly SocietyState _society;
         private readonly IAgentSkillGrantService _skillGrants;
         private long _tick;
-
         private DigAgentSession(
             AgentAutonomySystem autonomy,
             MoveAgentCommandHandler movementHandler,
@@ -214,6 +213,7 @@ namespace Dig.Unity
                         CancelManualMovementWithWarning(agent.Id, combatMovement.Error!);
                     continue;
                 }
+                if (TryAdvanceEnemyIdle(agent)) continue;
                 if (SkipNormalMovement(agent)) continue;
                 if (TryAdvanceManualTunnelMovement(agent, out Result manualMovement))
                 {

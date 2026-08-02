@@ -90,7 +90,8 @@ public sealed partial class CombatSpatialExecutionHandler
                 "target_dead_or_lost");
         }
 
-        if (!IsVisible(actor.Position, target!.Position))
+        bool visible = IsVisible(actor.Position, target!.Position);
+        if (!visible && !intent.IsPersistent)
         {
             return PursueLastKnownOrFinish(
                 command,
@@ -100,7 +101,8 @@ public sealed partial class CombatSpatialExecutionHandler
                 target);
         }
 
-        bool retreat = ShouldRetreat(actor, target, command.Tick);
+        bool retreat = !intent.IsPersistent
+            && ShouldRetreat(actor, target, command.Tick);
         if (retreat)
         {
             combat.AdvanceExecutionStage(
@@ -117,13 +119,13 @@ public sealed partial class CombatSpatialExecutionHandler
                 target.Id,
                 target.Position,
                 command.Tick,
-                "target_reconfirmed");
+                visible ? "target_reconfirmed" : "persistent_aggro_target_tracked");
             combat.AdvanceExecutionStage(
                 execution.ExecutionId,
                 CombatExecutionStage.SelectEngagementCell,
                 command.Tick,
                 command.Tick,
-                "target_reconfirmed");
+                visible ? "target_reconfirmed" : "persistent_aggro_target_tracked");
         }
 
         SaveCombat(combat);
@@ -131,7 +133,11 @@ public sealed partial class CombatSpatialExecutionHandler
             combat.GetActiveExecution(actor.Id)!,
             false,
             null,
-            retreat ? "tactical_retreat" : "target_reconfirmed");
+            retreat
+                ? "tactical_retreat"
+                : visible
+                    ? "target_reconfirmed"
+                    : "persistent_aggro_target_tracked");
     }
 
     private Result<CombatSpatialExecutionReport> PursueLastKnownOrFinish(
