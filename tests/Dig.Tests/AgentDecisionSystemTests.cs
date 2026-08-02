@@ -37,6 +37,28 @@ public sealed class AgentDecisionSystemTests
     }
 
     [Fact]
+    public void Active_direct_eat_continues_during_work_schedule()
+    {
+        AgentState agent = AgentTestFactory.CreateAgent(
+            nutrition: 1_000,
+            alertness: 8_000,
+            mood: 8_000);
+        Assert.True(agent.ApplyDecision(
+            AgentTestFactory.CreateForcedDecision(AgentIntentKind.Eat, tick: 0),
+            _policy,
+            tick: 0).IsSuccess);
+
+        AgentDecision decision = Decide(agent, tick: 1);
+
+        Assert.Equal(AgentIntentKind.Eat, decision.SelectedIntent);
+        UtilityOptionDiagnostic eat = Assert.Single(
+            decision.Options,
+            option => option.IntentKind == AgentIntentKind.Eat);
+        Assert.True(eat.Available);
+        Assert.True(eat.Critical);
+    }
+
+    [Fact]
     public void Free_time_critical_hunger_selects_automatic_eat()
     {
         DailySchedule freeTime = new DailySchedule(
