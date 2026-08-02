@@ -14,6 +14,8 @@ public sealed class CampfireSerializedProductionRuntimeContractTests
             "src/Dig.Domain/Jobs/ProductionWorkJobDefinition.cs");
         string supplyJob = Read(
             "src/Dig.Domain/Jobs/BuildingSupplyJobDefinition.cs");
+        string operationTurn = Read(
+            "src/Dig.Domain/Production/BuildingSupplyState.OperationTurn.cs");
         string synchronization = ReadRuntime(
             "DigBuildingProductionSynchronization.cs");
         string deferred = ReadRuntime(
@@ -37,7 +39,7 @@ public sealed class CampfireSerializedProductionRuntimeContractTests
             synchronization);
         Assert.Contains(
             "BuildingOperationTurn.Production",
-            synchronization);
+            operationTurn);
         Assert.Contains(
             "BuildingOperationTurn.Supply",
             ReadRuntime("DigBuildingProductionZones.cs"));
