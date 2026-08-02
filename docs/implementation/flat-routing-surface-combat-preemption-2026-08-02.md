@@ -18,7 +18,7 @@ Tracking: #386, #508, #559, #577.
 - a resident could receive a hostile combat intent while Work, Eat, Sleep, Leisure or Study/Learn continued to progress;
 - self-defense could be recreated after a direct command cancelled resident combat;
 - enemy autonomous combat could continue following a resident after sight range or World/Tunnel LoS was lost;
-- after successful direct or automatic world-task completion, a resident could immediately start the next ordinary task.
+- after successful direct or automatic assigned work completion, a resident could immediately start the next ordinary task.
 
 ## Root causes
 
@@ -27,7 +27,7 @@ Tracking: #386, #508, #559, #577.
 3. `AgentState` exposed targeted blocking but no general interruption operation for untargeted Work/Leisure/Study actions.
 4. The initial preemption gate treated every incoming enemy intent as a reason to recreate resident self-defense. After `PrepareResidentsForDirectCommand` cancelled resident combat, the next autonomy evaluation could therefore take control back from the player's order.
 5. Enemy acquisition required sight, but continued non-player pursuit explicitly tracked the target's current authoritative cell without sight.
-6. Utility cooldown read only active-action switch time. Successful manual movement, job, targeted action, and meal completion had no shared authoritative transition fact.
+6. Utility cooldown read only active-action switch time. Successful manual movement, direct PlayerOrder, and assigned-job completion had no shared authoritative transition fact.
 
 ## Implementation
 
@@ -43,9 +43,9 @@ Tracking: #386, #508, #559, #577.
 - enemy pursuit and attacks continue only while the enemy has current sight range and valid LoS;
 - losing sight completes non-player execution and intent with `enemy_target_out_of_sight` before another Approach, wind-up, resolve, recovery, or waiting stage advances;
 - `AgentState.LastTaskCompletionTick` and `AgentTaskTransitionPauseStarted` own the post-task transition fact;
-- manual movement, completed assigned jobs, direct PlayerOrder action, targeted actions, and final meal bites report completion exactly once;
-- ordinary Utility AI and automatic assignment wait one complete following tick; direct orders, critical survival/emergency, and combat bypass;
-- generic Work/Rest/Idle decision cycles are cadence rather than completed world tasks and do not create artificial repeated pauses.
+- manual movement, completed assigned jobs, and direct PlayerOrder actions report completion exactly once;
+- Eat/Sleep/Leisure, final meal bites, and generic Work/Rest/Idle cadence do not create command/job transition pauses;
+- ordinary Utility AI and automatic assignment wait one complete following tick after command/job completion; direct orders, critical survival/emergency, and combat bypass.
 
 ## Regression coverage
 
@@ -56,6 +56,7 @@ Tracking: #386, #508, #559, #577.
 - `AgentTaskTransitionPauseTests`: one complete Idle tick, direct-order bypass, critical bypass, same-tick idempotency.
 - `CombatPreemptionUnityRuntimeContractTests`: early threat synchronization, typed cleanup, direct priority, sight-loss and task-pause wiring.
 - `ResidentCombatPreemptionPlayModeTests`: Work/Sleep preemption, direct movement priority, post-command Idle pause, movement out of sight, enemy disengagement, and no self-defense without a visible threat.
+- headless soak protects survival/recovery cadence from accidental pause expansion.
 
 ## Verification boundary
 
