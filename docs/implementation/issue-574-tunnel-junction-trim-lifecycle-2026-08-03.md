@@ -1,6 +1,6 @@
 # Issue 574 — automatic tunnel junction trim lifecycle
 
-Status: `IMPLEMENTED IN BRANCH` in draft PR [#582](https://github.com/bageus/Dig/pull/582).
+Status: `READY FOR REVIEW` in PR [#582](https://github.com/bageus/Dig/pull/582).
 
 Authoritative specification: [`../design/room-purposes-upgrades-and-tunnel-reinforcement.md`](../design/room-purposes-upgrades-and-tunnel-reinforcement.md).  
 Tracking issue: [#574](https://github.com/bageus/Dig/issues/574).
@@ -53,4 +53,14 @@ Stone trim remains decorative. It is not a structural anchor, does not reset the
 
 ## Validation
 
-Pending final PR CI evidence. No Unity runtime-verification claim is made by this implementation note.
+Passed on PR #582 final implementation head:
+
+- architecture, file-size, C# 9 compatibility, compiler baseline, dependency and Domain-boundary checks;
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1412/1412`;
+- headless smoke completed at tick `20`;
+- standard deterministic soak replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
+- large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
+- Stage 2 v2/v3 exports passed.
+
+Unity workflow recorded blocked runtime evidence: activation was unavailable, therefore actual EditMode/PlayMode execution and runtime evidence validation were skipped. No Unity runtime-verification claim is made for this slice.
