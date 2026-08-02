@@ -60,7 +60,7 @@ public sealed class EnemySightLossStageTests
             spatialMode: CombatAttackSpatialMode.Melee);
         CombatState combat = new CombatState(new WeaponCatalog(new[] { weapon }));
         CombatIntentId intentId = new CombatIntentId("intent.enemy.sight.loss.stage");
-        Assert.True(combat.IssueIntent(new CombatIntentRequest(
+        combat.IssueIntent(new CombatIntentRequest(
             intentId,
             EnemyActor,
             CombatIntentKind.Attack,
@@ -68,7 +68,7 @@ public sealed class EnemySightLossStageTests
             createdTick: 0,
             expiresTick: long.MaxValue,
             targetEntityId: ResidentTarget,
-            targetCell: resident.Position)).IsSuccess);
+            targetCell: resident.Position));
         Result<CombatExecutionSnapshot> started = combat.StartExecution(
             new CombatExecutionRequest(
                 new CombatExecutionId("execution.enemy.sight.loss.stage"),
@@ -82,13 +82,13 @@ public sealed class EnemySightLossStageTests
             started.Value.ExecutionId,
             ResidentTarget,
             resident.Position,
-            tick: 1,
-            reason: "target_previously_visible").IsSuccess);
+            1,
+            "target_previously_visible").IsSuccess);
         Assert.True(combat.SetExecutionEngagement(
             started.Value.ExecutionId,
             new CellId(1, 0, 0),
-            tick: 1,
-            reason: "approach_required").IsSuccess);
+            1,
+            "approach_required").IsSuccess);
 
         InMemoryCombatRepository combatRepository = new InMemoryCombatRepository(combat);
         RecordingEvents events = new RecordingEvents();
