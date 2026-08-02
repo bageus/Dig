@@ -96,30 +96,32 @@ public sealed class TunnelInfrastructureAnchorTests
         RequireSuccess(state.RegisterCompletedDoor(FirstSegmentId, anchorCell, tick: 3));
 
         HorizontalTunnelSegmentSnapshot segment = RequireSegment(state, FirstSegmentId);
-        Assert.Equal(new CellId(15, 0, 0), RequireTarget(segment).TargetCell);
+        TunnelAutomaticSupportTargetSnapshot target = RequireTarget(segment);
+        Assert.Equal(new CellId(15, 0, 0), target.TargetCell);
+        Assert.Equal(anchorCell, target.AnchorCell);
         Assert.Equal(2, segment.StructuralAnchors.Count(value => value.Cell == anchorCell));
-        Assert.Single(new[] { RequireTarget(segment) });
     }
 
     [Fact]
-    public void Forward_anchor_cannot_skip_current_target()
+    public void Forward_door_replaces_the_older_derived_target()
     {
         TunnelInfrastructureState state = CreateSegment(
             FirstSegmentId,
             new CellId(0, 0, 0),
-            count: 25);
-        long version = state.Version;
+            count: 30);
+        state.DequeueUncommittedEvents();
 
-        Result result = state.RegisterCompletedWoodenSupport(
+        RequireSuccess(state.RegisterCompletedDoor(
             FirstSegmentId,
             new CellId(12, 0, 0),
-            tick: 2);
+            tick: 2));
 
-        Assert.True(result.IsFailure);
-        Assert.Equal(TunnelInfrastructureErrors.AnchorBeyondNextTarget, result.Error);
-        Assert.Equal(version, state.Version);
-        Assert.Equal(new CellId(10, 0, 0),
-            RequireTarget(RequireSegment(state, FirstSegmentId)).TargetCell);
+        HorizontalTunnelSegmentSnapshot segment = RequireSegment(state, FirstSegmentId);
+        Assert.Equal(new CellId(22, 0, 0), RequireTarget(segment).TargetCell);
+        TunnelAutomaticSupportTargetChanged change = Assert.Single(
+            state.PeekUncommittedEvents().OfType<TunnelAutomaticSupportTargetChanged>());
+        Assert.Equal(new CellId(10, 0, 0), change.PreviousTargetCell);
+        Assert.Equal(new CellId(22, 0, 0), change.NextTargetCell);
     }
 
     [Fact]
