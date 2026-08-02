@@ -50,6 +50,8 @@ namespace Dig.Unity
                 .Any(reservation =>
                     reservation.Key == ReservationKey.ForAgent(agentId));
             return agent.IsAvailableForAutomaticPlanning
+                && !string.Equals(agent.ActiveIntent, "Eat", StringComparison.Ordinal)
+                && !string.Equals(agent.ActiveIntent, "Sleep", StringComparison.Ordinal)
                 && !hasActiveReservation
                 && !(_isManualMovementActive?.Invoke(agent.Id) ?? false);
         }

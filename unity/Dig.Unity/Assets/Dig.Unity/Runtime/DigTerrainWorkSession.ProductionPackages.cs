@@ -51,6 +51,40 @@ internal sealed partial class DigTerrainWorkSession
         CellId workerCell,
         long tick)
     {
+        Result prepared = PrepareResidentsForDirectCommand(
+            new[] { workerId.ToString() },
+            tick);
+        return prepared.IsFailure
+            ? prepared
+            : StartProductionPackageUse(
+                stackId,
+                workerId,
+                workerCell,
+                ProductionPackageUsePriority,
+                tick);
+    }
+
+    internal Result StartAutomaticProductionPackageUse(
+        EntityId stackId,
+        EntityId workerId,
+        CellId workerCell,
+        long tick)
+    {
+        return StartProductionPackageUse(
+            stackId,
+            workerId,
+            workerCell,
+            priority: 675,
+            tick);
+    }
+
+    private Result StartProductionPackageUse(
+        EntityId stackId,
+        EntityId workerId,
+        CellId workerCell,
+        int priority,
+        long tick)
+    {
         EnsureBuildingProductionInitialized();
         if (!CanDirectUseProductionPackage(
             stackId,
@@ -58,14 +92,6 @@ internal sealed partial class DigTerrainWorkSession
             out CellId workPosition))
         {
             return Result.Failure(ProductionErrors.OutputPackageNotUsable);
-        }
-
-        Result prepared = PrepareResidentsForDirectCommand(
-            new[] { workerId.ToString() },
-            tick);
-        if (prepared.IsFailure)
-        {
-            return prepared;
         }
 
         EntityId jobId = NextProductionEntityId(
@@ -77,7 +103,7 @@ internal sealed partial class DigTerrainWorkSession
                 stackId,
                 workerId,
                 workPosition,
-                ProductionPackageUsePriority,
+                priority,
                 tick));
     }
 

@@ -267,6 +267,7 @@ internal sealed partial class DigTerrainWorkSession
                 || snapshot.HasActiveSupply
                 || HasNonTerminalBuildingSupplyJob(snapshot.BuildingId)
                 || HasNonTerminalProductionWorkJob(snapshot.BuildingId)
+                || ShouldYieldSupplyTurnToRunnableProduction(snapshot)
                 || snapshot.Stocks.All(value =>
                     !value.DeliveryEnabled || value.Missing == 0))
             {
@@ -317,6 +318,24 @@ internal sealed partial class DigTerrainWorkSession
                 }
             }
         }
+    }
+
+    private bool ShouldYieldSupplyTurnToRunnableProduction(
+        BuildingSupplySnapshot supply)
+    {
+        ProductionOrderSnapshot? queued = _productionRepository!.Get()
+            .GetNextQueued(supply.BuildingId);
+        if (queued == null
+            || supply.OperationTurn != BuildingOperationTurn.Production)
+        {
+            return false;
+        }
+
+        InventoryState inventory = _buildingInventoryRepository!.Get();
+        ItemLocation location = ItemLocation.InBuilding(supply.BuildingId);
+        return queued.Recipe.Inputs.All(input =>
+            inventory.GetAvailableQuantityAt(input.ItemId, location)
+                >= input.Quantity);
     }
 
 }

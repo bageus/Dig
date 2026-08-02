@@ -8,7 +8,7 @@ namespace Dig.Tests
 public sealed class CampfireSerializedProductionRuntimeContractTests
 {
     [Fact]
-    public void Building_operation_is_serialized_and_refill_is_planned_before_production()
+    public void Building_operation_is_serialized_and_queue_turn_alternates_supply_with_production()
     {
         string productionJob = Read(
             "src/Dig.Domain/Jobs/ProductionWorkJobDefinition.cs");
@@ -23,13 +23,15 @@ public sealed class CampfireSerializedProductionRuntimeContractTests
         Assert.Contains("ReservationKey.ForPosition(WorkPosition)", productionJob);
         Assert.Contains("ReservationKey.ForDestination(BuildingId)", supplyJob);
         Assert.DoesNotContain("ReservationKey.ForPosition(WorkPosition)", supplyJob);
-        Assert.True(
-            synchronization.IndexOf(
-                "CreateEligibleSupplyJobs(tick, agents, navigation)",
-                StringComparison.Ordinal)
-            < synchronization.IndexOf(
-                "PrepareEligibleProductionOrders(tick, navigation)",
-                StringComparison.Ordinal));
+        Assert.Contains(
+            "ShouldYieldSupplyTurnToRunnableProduction",
+            synchronization);
+        Assert.Contains(
+            "BuildingOperationTurn.Production",
+            synchronization);
+        Assert.Contains(
+            "BuildingOperationTurn.Supply",
+            ReadRuntime("DigBuildingProductionZones.cs"));
         Assert.Contains("HasNonTerminalProductionWorkJob", synchronization);
         Assert.Contains("HasNonTerminalProductionWorkJob", deferred);
     }

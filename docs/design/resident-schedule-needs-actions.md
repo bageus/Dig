@@ -1,9 +1,8 @@
 # Resident schedule-gated needs actions
 
-**Status:** IMPLEMENTED  
+**Status:** APPROVED  
 **Decision date:** 2026-08-02  
-**Tracking:** #159, #142, #113  
-**Implementation:** `docs/implementation/resident-free-time-needs-actions-2026-08-02.md`, PR #571
+**Tracking:** #159, #142, #113
 
 ## Scope
 
@@ -40,6 +39,10 @@ Where an older implementation or test allows automatic eating during Work or blo
 - Outside Work, Nutrition can select automatic Eat when food is available.
 - Sleep and Leisure compete through the existing deterministic utility rules and schedule bonuses.
 - Work remains possible off schedule only through the existing lower off-schedule score or a direct order.
+
+## Runtime cadence
+
+Unity normal playback использует только `SimulationState.Clock.TickDuration`; demo default равен `2.0` real seconds per simulation tick. Driver не хранит независимый normal cadence. Passive needs и action intervals изменяются только committed simulation ticks, поэтому pause/single-step/speed сохраняют deterministic order. Полный contract: [`runtime-needs-supply-sleep-food-recovery.md`](runtime-needs-supply-sleep-food-recovery.md).
 
 ## Needs are changed by real actions
 
@@ -101,19 +104,17 @@ An available Bed always wins over Floor for the resident being resolved. With on
 
 ## Acceptance
 
-- [x] Work-schedule critical hunger leaves automatic Eat unavailable and preserves Work/player order.
-- [x] Direct feeding during Work starts and advances the authoritative meal.
-- [x] Free-time hunger reserves and consumes one real food unit.
-- [x] Work-time hunger emits one notification without automatic reservation/consumption.
-- [x] Partial targeted Eat/Sleep/Leisure produces partial need changes.
-- [x] Interruption preserves applied intervals and completion does not duplicate them.
-- [x] Available Bed is preferred; no Bed produces FloorSleep.
-- [x] Floor applies Mood 0 positive gain and Alertness cap 7500.
-- [x] Save/replay cursor remains the active action elapsed interval.
-- [x] Domain, Application and deterministic regressions cover the workflow.
-- [x] Unity Play Mode regression is checked in.
-- [ ] Licensed Unity EditMode/PlayMode actually executes the complete workflow.
+- Work-schedule critical hunger leaves automatic Eat unavailable and preserves Work/player order.
+- Direct feeding during Work starts and advances the authoritative meal.
+- Free-time hunger reserves and consumes one real food unit; when loose food is unavailable but a reachable closed `food` package exists, resident automatically breaks it through the package Use workflow and then picks up/eats one released unit.
+- Work-time hunger emits one notification without automatic reservation/consumption.
+- Partial targeted Eat/Sleep/Leisure produces partial need changes.
+- Interruption preserves applied intervals and completion does not duplicate them.
+- Available Bed is preferred; no Bed produces FloorSleep.
+- Floor applies Mood 0 positive gain and Alertness cap 7500.
+- Save/load resumes at the next interval without replay.
+- Domain, Application, deterministic and Unity Play Mode regressions cover the complete workflow.
 
 ## Verification boundary
 
-PR #571 code head `aa635ac84627f069154fe232e2cdcb2aaf34860d` passed repository Quality, Release build/tests, headless smoke and standard/large deterministic soaks. The system is `IMPLEMENTED`, not `VERIFIED`: the Unity workflow recorded blocked evidence and skipped the actual EditMode/PlayMode test step because no usable licensed activation was available.
+The implementation may be marked `IMPLEMENTED` after repository Quality, Release tests, smoke and deterministic soaks pass. It may be marked `VERIFIED` only after licensed Unity EditMode/PlayMode actually executes the work-hunger notification, direct feed, Bed preference, Floor fallback and HUD refresh scenario.

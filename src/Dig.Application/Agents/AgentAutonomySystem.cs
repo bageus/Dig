@@ -16,6 +16,7 @@ public sealed class AgentAutonomySystem : ISimulationSystem
     private readonly AgentDecisionSystem _decisionSystem;
     private readonly AgentBehaviorPolicy _policy;
     private readonly Func<AgentState, bool> _isEligible;
+    private readonly IAgentIntentExecutionOverride? _executionOverride;
 
     public AgentAutonomySystem(
         IAgentRepository repository,
@@ -25,7 +26,8 @@ public sealed class AgentAutonomySystem : ISimulationSystem
         AgentBehaviorPolicy policy,
         int order = 300,
         int intervalTicks = 1,
-        Func<AgentState, bool>? isEligible = null)
+        Func<AgentState, bool>? isEligible = null,
+        IAgentIntentExecutionOverride? executionOverride = null)
     {
         if (intervalTicks <= 0)
         {
@@ -40,6 +42,7 @@ public sealed class AgentAutonomySystem : ISimulationSystem
             ?? throw new ArgumentNullException(nameof(decisionSystem));
         _policy = policy ?? throw new ArgumentNullException(nameof(policy));
         _isEligible = isEligible ?? (_ => true);
+        _executionOverride = executionOverride;
         Order = order;
         IntervalTicks = intervalTicks;
     }
@@ -90,8 +93,16 @@ public sealed class AgentAutonomySystem : ISimulationSystem
                 decisionContext,
                 _policy,
                 context.Tick);
-            Require(agent.ApplyDecision(decision, _policy, context.Tick));
-            Require(agent.AdvanceAction(_policy, context.Tick));
+            if (_executionOverride?.TryExecute(
+                    agent,
+                    decision,
+                    _policy,
+                    context.Tick) != true)
+            {
+                Require(agent.ApplyDecision(decision, _policy, context.Tick));
+                Require(agent.AdvanceAction(_policy, context.Tick));
+            }
+
             SaveAndPublish(agent);
             decisions.Add(new AgentTickDecision(agent.Id, decision));
         }

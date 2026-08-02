@@ -26,7 +26,8 @@ namespace Dig.Unity
             string residentId,
             CellId sourceCell,
             long tick,
-            bool eatAfterPickup = false)
+            bool eatAfterPickup = false,
+            bool automatic = false)
         {
             EnsureWorldItemPickupInitialized();
             if (string.IsNullOrWhiteSpace(stackId)
@@ -58,12 +59,15 @@ namespace Dig.Unity
                     "The item does not expose a direct world-use food action."));
             }
 
-            Result prepared = PrepareResidentsForDirectCommand(
-                new[] { residentId },
-                tick);
-            if (prepared.IsFailure)
+            if (!automatic)
             {
-                return prepared;
+                Result prepared = PrepareResidentsForDirectCommand(
+                    new[] { residentId },
+                    tick);
+                if (prepared.IsFailure)
+                {
+                    return prepared;
+                }
             }
 
             long sequence = checked(_nextWorldItemPickupSequence + 1);

@@ -17,7 +17,7 @@ namespace Dig.Unity
             "The resident simulation driver is not initialized.");
 
         [SerializeField]
-        private float tickIntervalSeconds = 0.8f;
+        private float tickIntervalSeconds = 2f;
 
         private protected DigWorldSession? WorldSession;
         protected DigWorldRenderer? WorldRenderer;
@@ -75,6 +75,9 @@ namespace Dig.Unity
             WorldSession = worldSession;
             WorldRenderer = worldRenderer;
             AgentSession = agentSession;
+            tickIntervalSeconds = Mathf.Max(
+                0.1f,
+                (float)agentSession.TickDuration.TotalSeconds);
             AgentRenderer = agentRenderer;
             CreatureRenderer = creatureRenderer;
             MushroomRenderer = mushroomRenderer;

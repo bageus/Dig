@@ -90,6 +90,8 @@ public sealed class BuildingSupplySaveData
     [DataMember(Order = 4)]
     public List<BuildingStockRuleSaveData> Stocks { get; set; } =
         new List<BuildingStockRuleSaveData>();
+    [DataMember(Order = 5, EmitDefaultValue = false)]
+    public int? OperationTurn { get; set; }
 }
 
 [DataContract]

@@ -138,6 +138,17 @@ internal sealed partial class DigTerrainWorkSession
             {
                 _buildingProductionRoutes.Remove(job.Id);
                 _productionWaitOffsets[worker.Id] = ProductionWaitOffset;
+                BuildingSupplyState supply = _buildingSupplyRepository!.Get();
+                Result turn = supply.SetOperationTurn(
+                    production.BuildingId,
+                    BuildingOperationTurn.Supply,
+                    tick);
+                if (turn.IsFailure)
+                {
+                    return turn;
+                }
+
+                _buildingSupplyRepository.Save(supply);
             }
 
             return returned;

@@ -19,6 +19,7 @@ namespace Dig.Unity
         private const int DemoResidentCount = 4;
         private const ulong DemoIdentitySeed = 0xD1661EUL;
         private readonly AgentAutonomySystem _autonomy;
+        private readonly DigResidentNeedsRuntime _residentNeedsRuntime;
         private readonly MoveAgentCommandHandler _movementHandler;
         private readonly AgentPresenter _presenter;
         private readonly InMemoryAgentRepository _repository;
@@ -31,6 +32,7 @@ namespace Dig.Unity
         private long _tick;
         private DigAgentSession(
             AgentAutonomySystem autonomy,
+            DigResidentNeedsRuntime residentNeedsRuntime,
             MoveAgentCommandHandler movementHandler,
             AgentPresenter presenter,
             InMemoryAgentRepository repository,
@@ -42,6 +44,8 @@ namespace Dig.Unity
             IAgentSkillGrantService skillGrants)
         {
             _autonomy = autonomy;
+            _residentNeedsRuntime = residentNeedsRuntime
+                ?? throw new ArgumentNullException(nameof(residentNeedsRuntime));
             _movementHandler = movementHandler;
             _presenter = presenter;
             _repository = repository;
@@ -53,13 +57,9 @@ namespace Dig.Unity
             _skillGrants = skillGrants
                 ?? throw new ArgumentNullException(nameof(skillGrants));
         }
-
         public long Tick => _tick;
-
         internal IAgentSkillGrantService SkillGrants => _skillGrants;
-
         internal InMemoryAgentRepository Repository => _repository;
-
         public static DigAgentSession CreateDemo(
             WorldViewModel world,
             TunnelNavigationVolume tunnelVolume,
@@ -69,17 +69,14 @@ namespace Dig.Unity
             {
                 throw new ArgumentNullException(nameof(world));
             }
-
             if (tunnelVolume == null)
             {
                 throw new ArgumentNullException(nameof(tunnelVolume));
             }
-
             if (journal == null)
             {
                 throw new ArgumentNullException(nameof(journal));
             }
-
             WorldCellViewModel[] walkable = world.Chunks
                 .SelectMany(chunk => chunk.Cells)
                 .Where(cell => !cell.IsSolid)
@@ -91,7 +88,6 @@ namespace Dig.Unity
                 throw new InvalidOperationException(
                     "The resident demo requires at least eight walkable cells.");
             }
-
             InMemoryAgentRepository repository = new InMemoryAgentRepository();
             Dictionary<EntityId, int> routeIndices = new Dictionary<EntityId, int>();
             Dictionary<EntityId, ResidentSex> residentSexes =
@@ -105,23 +101,25 @@ namespace Dig.Unity
                 walkable,
                 tunnelVolume);
             AgentBehaviorPolicy policy = AgentBehaviorPolicy.CreateDefault();
-            InMemoryAgentDecisionContextProvider contexts =
-                new InMemoryAgentDecisionContextProvider(
-                    AgentDecisionContext.AllAvailable());
+            DigResidentNeedsRuntime residentNeedsRuntime =
+                new DigResidentNeedsRuntime();
             AgentAutonomySystem autonomy = new AgentAutonomySystem(
                 repository,
-                contexts,
+                residentNeedsRuntime,
                 journal,
-                new AgentDecisionSystem(), policy,
-                isEligible: agent => residentSexes.ContainsKey(agent.Id));
+                new AgentDecisionSystem(),
+                policy,
+                isEligible: agent => residentSexes.ContainsKey(agent.Id),
+                executionOverride: residentNeedsRuntime);
             DigAgentSession session = new DigAgentSession(
                 autonomy,
+                residentNeedsRuntime,
                 new MoveAgentCommandHandler(repository, journal),
                 new AgentPresenter(new GetAgentSnapshotsQueryHandler(repository)),
                 repository,
                 SimulationState.Create(
                     worldSeed: DemoIdentitySeed,
-                    tickDuration: TimeSpan.FromMilliseconds(500)),
+                    tickDuration: TimeSpan.FromSeconds(2)),
                 walkable,
                 routeIndices,
                 residentSexes,
