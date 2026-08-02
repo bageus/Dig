@@ -1,6 +1,6 @@
 # Cave monster combat vertical slice — 2026-08-02
 
-Status: `IMPLEMENTED` in branch `agent/cave-monster-combat`; full enemy hierarchy remains `QUESTIONNAIRE` in [#559](https://github.com/bageus/Dig/issues/559).
+Status: `IMPLEMENTED` in draft [PR #562](https://github.com/bageus/Dig/pull/562); full enemy hierarchy remains `QUESTIONNAIRE` in [#559](https://github.com/bageus/Dig/issues/559).
 
 Authoritative design: [`../design/enemy-combat-and-cave-encounters.md`](../design/enemy-combat-and-cave-encounters.md).
 
@@ -40,4 +40,12 @@ Repository Quality, Release build/tests, smoke and deterministic soaks must pass
 
 ## Remaining hierarchy work
 
-Predatory vine ambush, swallower item ingestion/drop and spider wall/ceiling ambush remain unimplemented. Q-ENEMY-001 is answered: the vine has no movement or cross-Z relocation, while its data definition permits initial attachment in a horizontal tunnel, on a cave floor or on a cave wall.
+Predatory vine ambush, swallower item ingestion/drop and spider wall/ceiling ambush remain unimplemented.
+
+Q-ENEMY-001 is answered:
+
+- the predatory vine is fully stationary after spawn;
+- it has no horizontal movement, vertical climbing or depth/Z traversal;
+- its legal initial attachment surfaces are a horizontal tunnel interior, a cave floor or a cave wall;
+- cave-ceiling attachment is not allowed;
+- it attacks from its current anchor without approach movement.
