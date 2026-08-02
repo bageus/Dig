@@ -5,7 +5,7 @@ on:
   pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-and-test:
@@ -193,33 +193,3 @@ jobs:
             soak-large.log
           if-no-files-found: warn
           retention-days: 14
-
-  correct-needs-index-reference:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/free-time-needs-actions'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout feature branch
-        uses: actions/checkout@v4
-        with:
-          ref: feature/free-time-needs-actions
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Correct PR reference and restore workflow
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          path = Path('docs/systems/README.md')
-          text = path.read_text(encoding='utf-8')
-          old = 'https://github.com/bageus/Dig/pull/569'
-          if old not in text:
-              raise SystemExit('missing stale PR #569 references')
-          path.write_text(text.replace(old, 'https://github.com/bageus/Dig/pull/571'), encoding='utf-8')
-          PY
-          git show origin/main:.github/workflows/quality.yml > .github/workflows/quality.yml
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add docs/systems/README.md .github/workflows/quality.yml
-          git commit -m "Correct resident needs PR reference"
-          git push origin feature/free-time-needs-actions
