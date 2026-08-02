@@ -185,7 +185,10 @@ namespace Dig.Unity
                     agent.Id,
                     ResidentMovementInterruptionReason.Completed,
                     "Manual movement completed.");
-                result = Result.Success();
+                result = RecordResidentTaskCompletion(
+                    agent,
+                    "manual_movement_completed",
+                    _tick);
                 return true;
             }
 
@@ -207,7 +210,10 @@ namespace Dig.Unity
                         agent.Id,
                         ResidentMovementInterruptionReason.Completed,
                         "Manual movement completed after replan.");
-                    result = Result.Success();
+                    result = RecordResidentTaskCompletion(
+                        agent,
+                        "manual_movement_completed",
+                        _tick);
                     return true;
                 }
             }
@@ -243,8 +249,6 @@ namespace Dig.Unity
             }
 
             _tunnelTraffic.RecordMove(agent.Id, current, next, _tick);
-            _repository.Save(agent);
-            _tunnelJournal!.Append(agent.DequeueUncommittedEvents());
             order.ConfirmStep(next);
             if (order.IsComplete)
             {
@@ -253,8 +257,15 @@ namespace Dig.Unity
                     agent.Id,
                     ResidentMovementInterruptionReason.Completed,
                     "Manual movement completed.");
+                result = RecordResidentTaskCompletion(
+                    agent,
+                    "manual_movement_completed",
+                    _tick);
+                return true;
             }
 
+            _repository.Save(agent);
+            _tunnelJournal!.Append(agent.DequeueUncommittedEvents());
             result = Result.Success();
             return true;
         }
