@@ -88,6 +88,7 @@ public sealed class VukerEcologyStateTests
                 0).IsSuccess);
         }
 
+        state.Advance(0);
         VukerPairSnapshot pair = state.Advance(
             VukerEcologyProfile.ReproductionCooldownTicks).First();
         EntityId childId = state.CreateDeterministicChildId(pair.PairId, 0);
@@ -180,7 +181,7 @@ public sealed class VukerEcologyStateTests
         Assert.True(state.CommitBirth(
             pair.PairId,
             childId,
-            Region,
+            pair.Region,
             new CellId(2, 1, 0),
             birthTick).IsSuccess);
 
