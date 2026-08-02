@@ -2,7 +2,7 @@
 
 Статус: `QUESTIONNAIRE`.
 
-Tracking issue: `PENDING`.
+Tracking issue: [#574](https://github.com/bageus/Dig/issues/574).
 
 Связанные системы:
 
@@ -423,4 +423,4 @@ Unity Play Mode/end-to-end:
 
 | Дата | Решение | Кто подтвердил | Изменённые разделы/issues |
 |---|---|---|---|
-| 2026-08-02 | Подтверждены назначения Bedroom/KitchenDining/Workshop/Farm, одноразовое улучшение комнат с costs/visual stages/material-based skills, free purpose switching after improvement, автоматические и ручные reinforcement jobs, delayed horizontal tunnel collapse и future Training/Energy purposes. | Пользователь | Первичная спецификация |
+| 2026-08-02 | Подтверждены назначения Bedroom/KitchenDining/Workshop/Farm, одноразовое улучшение комнат с costs/visual stages/material-based skills, free purpose switching after improvement, автоматические и ручные reinforcement jobs, delayed horizontal tunnel collapse и future Training/Energy purposes. | Пользователь | Первичная спецификация, #574 |
