@@ -12,16 +12,17 @@ public sealed class VukerReproductionUnityRuntimeContractTests
     {
         string session = ReadRuntime("DigAgentSession.VukerEcology.cs");
         string enemies = ReadRuntime("DigAgentSession.Enemies.cs");
-        string movement = ReadRuntime("DigAgentSession.VukerMovement.cs");
 
         Assert.Contains("VukerBirthPlanner", session, StringComparison.Ordinal);
         Assert.Contains("CommitBirth", session, StringComparison.Ordinal);
         Assert.Contains("AdvanceVukerEcology", session, StringComparison.Ordinal);
+        Assert.Contains("TryAdvanceTamedVukerAutoReturn", session,
+            StringComparison.Ordinal);
+        Assert.Contains("IsMovementStepDue", session, StringComparison.Ordinal);
+        Assert.Contains("ResidentMovementCommandSource.Automatic", session,
+            StringComparison.Ordinal);
         Assert.Contains("CanVukerInitiateCombat", enemies, StringComparison.Ordinal);
         Assert.Contains("TryAdvanceTamedVukerAutoReturn", enemies,
-            StringComparison.Ordinal);
-        Assert.Contains("IsMovementStepDue", movement, StringComparison.Ordinal);
-        Assert.Contains("ResidentMovementCommandSource.Automatic", movement,
             StringComparison.Ordinal);
     }
 
