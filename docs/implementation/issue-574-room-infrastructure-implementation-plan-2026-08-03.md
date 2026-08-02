@@ -65,7 +65,7 @@ Validation PR #578:
 
 ### Slice 2A — Application contracts и automatic support job synchronization
 
-Статус: `IN REVIEW` в ветке `agent/issue-574-automatic-support-jobs`.
+Статус: `READY FOR REVIEW` в PR #579, ветка `agent/issue-574-automatic-support-jobs`.
 
 Реализовано:
 
@@ -78,6 +78,8 @@ Validation PR #578:
 - появление mushroom leg разрешает тот же definition и переводит job в `Available`;
 - новый rolling anchor system-cancels obsolete target, освобождает source reservation и создаёт replacement;
 - ordinary interruption возвращает job в `Available`, source reservation остаётся за job, другой worker может продолжить;
+- unresolved и source-resolved automatic-job definitions сохраняются через `job.tunnel_automatic_work.v1`;
+- production save registry проверяет coverage нового concrete `JobDefinition`;
 - player-cancel command/API намеренно отсутствует до ответа `Q-TUNNEL-008`.
 
 Фактические области:
@@ -85,16 +87,31 @@ Validation PR #578:
 - `src/Dig.Domain/Jobs/TunnelAutomaticWorkJobDefinition.cs`;
 - `src/Dig.Domain/World/TunnelAutomaticWorkPlanner.cs`;
 - `src/Dig.Application/Tunnels/`;
+- `src/Dig.Application/Saving/TunnelAutomaticWorkJobSaveCodec.cs`;
 - `src/Dig.Infrastructure/InMemory/InMemoryTunnelInfrastructureRepository.cs`;
+- `src/Dig.Infrastructure/Saving/SaveGameCompositionRoot.cs`;
 - `tests/Dig.Tests/TunnelInfrastructureApplicationTests.cs`;
-- `tests/Dig.Tests/TunnelAutomaticWorkPlannerTests.cs`.
+- `tests/Dig.Tests/TunnelAutomaticWorkPlannerTests.cs`;
+- `tests/Dig.Tests/TunnelAutomaticWorkJobSaveCodecTests.cs`.
+
+Validation PR #579:
+
+- architecture, file-size, C# 9 compatibility, dependency and Domain-boundary checks passed;
+- Release build passed with `0` warnings and `0` errors;
+- full .NET suite passed: `1401/1401`;
+- new range, source, no-phantom-reservation, obsolete-target, interruption/reassignment and save-codec regressions passed;
+- headless smoke passed at tick `20`;
+- standard deterministic soak passed with replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
+- large deterministic soak with 64 residents passed with replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
+- Stage 2 v2/v3 exports passed;
+- Unity workflow recorded blocked runtime evidence: actual EditMode/PlayMode execution was skipped because activation was unavailable, therefore runtime verification is not claimed.
 
 Ещё не входит в Slice 2A:
 
 - excavation/template provenance topology synchronization;
 - junction stone-trim targets/jobs;
 - automatic job execution, material consumption и skill grant commit;
-- save codec/migration;
+- `TunnelInfrastructureState` save document section and version migration;
 - Unity composition/runtime projection.
 
 ### Slice 2B — topology synchronization, execution и junction trim
