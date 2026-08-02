@@ -24,8 +24,8 @@ public sealed class AgentTaskTransitionPauseTests
 
         Assert.Equal(AgentIntentKind.Idle, duringPause.SelectedIntent);
         UtilityOptionDiagnostic work = Assert.Single(
-            duringPause.Options.Where(option =>
-                option.IntentKind == AgentIntentKind.Work));
+            duringPause.Options,
+            option => option.IntentKind == AgentIntentKind.Work);
         Assert.Equal("rejected.cooldown", work.ReasonCode);
         Assert.Equal(AgentIntentKind.Work, afterPause.SelectedIntent);
     }
