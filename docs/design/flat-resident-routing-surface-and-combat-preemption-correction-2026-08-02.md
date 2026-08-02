@@ -1,12 +1,14 @@
 # Flat Resident Routing, Surface Edges, and Combat Preemption Correction
 
-Status: IMPLEMENTED
+Status: APPROVED
 
 Tracking: [#386](https://github.com/bageus/Dig/issues/386), [#508](https://github.com/bageus/Dig/issues/508), [#559](https://github.com/bageus/Dig/issues/559)
 
 ## Authority
 
-This correction refines the approved resident movement, combat spatial execution, enemy combat, and resident schedule/needs specifications. It supersedes any implementation behavior that selects a shorter climb while a supported flat route exists, leaves solid surface-level end caps at the demo world edges, or advances work/needs during an active hostile combat intent.
+This correction refines the approved resident movement, combat spatial execution, enemy combat, and resident schedule/needs specifications. It supersedes any implementation behavior that selects a shorter climb while a supported flat route exists, leaves solid surface-level end caps at the demo world edges, advances work/needs during an active hostile combat intent, or lets autonomous/self-defense combat replace an active direct player command.
+
+The latest confirmed input-priority rule is absolute: a successful direct player command is the highest-priority resident instruction, regardless of the resident's current work, need action, combat stage, self-defense intent, alarm intent, or tactical retreat.
 
 ## Resident route priority
 
@@ -27,9 +29,9 @@ The fresh demo surface platform spans `X=0..width-1` on all four depth layers. B
 
 The cells at `X=0` and `X=width-1` on `SurfaceY` are not solid end caps. Presentation geometry must not create side protrusions or colliders that can be classified as a climb, push a resident off support, or display airborne crawling.
 
-## Combat preemption
+## Combat preemption without a direct command
 
-An active incoming hostile combat intent or resident self-defense intent is exclusive with resident work and schedule/needs actions.
+When no direct player command owns the resident, an active incoming hostile combat intent or resident self-defense intent is exclusive with resident work and schedule/needs actions.
 
 Before food bites, targeted need intervals, generic schedule actions, movement-to-work, or job progress advance for the tick:
 
@@ -41,17 +43,37 @@ Before food bites, targeted need intervals, generic schedule actions, movement-t
 - assigned jobs use their existing typed cancellation/release transactions and all route plans are removed;
 - combat execution advances instead of restarting the interrupted action in the same tick.
 
-Passive need decay continues during combat. Explicit direct player disengage remains separate and is not invoked by combat preemption.
+Passive need decay continues during combat.
+
+## Direct player command priority
+
+A successful direct player command immediately replaces the resident's current behavior and remains authoritative until that command completes, is cancelled, fails terminally, or is replaced by a newer direct player command.
+
+This rule applies to direct movement, excavation, pickup/use, mushroom/barrel actions, building placement/assembly/packing, production commands, and any future resident command routed through the common direct-command preparation boundary.
+
+While a direct player command is active:
+
+- active resident combat intent/execution, including `PlayerOrder`, `Alarm`, self-defense, autonomous combat, and retreat, is cancelled or suppressed for that resident;
+- self-defense is not recreated merely because an enemy still owns a persistent incoming intent;
+- Eat, Sleep, Leisure, Study/Learn, Work, and other autonomous actions do not progress in parallel;
+- the direct command's own movement/job/action pipeline advances first;
+- enemy intent, pursuit, attacks, and already committed damage are not cancelled; the resident may still be attacked while obeying the direct command;
+- after the direct command ends, a still-valid incoming threat may recreate self-defense on the next combat evaluation.
+
+A direct attack order is itself a direct player command and therefore replaces the previous direct command according to the same rule.
 
 ## Save/load and diagnostics
 
-The correction adds no second combat, navigation, job, need, or reservation owner. Existing authoritative state and save formats remain unchanged. Interruption is observable through the existing action/job events with stable `combat_preempted` diagnostics.
+The correction adds no second combat, navigation, job, need, or reservation owner. Direct-command priority is derived from the existing active manual movement/direct job owners plus the common preparation boundary. Existing authoritative state and save formats remain unchanged.
+
+Combat interruption is observable through existing action/job events with stable `combat_preempted` diagnostics. Direct command replacement uses stable direct-command cancellation/replacement diagnostics and must not be reported as an autonomous combat decision.
 
 ## Acceptance
 
 - Domain route regression proves a longer supported detour wins over a shorter climb.
 - Fresh demo regression proves both surface edges are open, supported, connected, and remain on one Y plane.
 - Domain/Application regression proves the autonomy action gate prevents food/action progress while preserving passive needs.
-- Unity source contracts require combat acquisition before food/action execution and typed work cleanup.
-- Checked-in Play Mode coverage must exercise a resident entering combat from Work and a need action, then prove no concurrent action/job progress.
-- Status remains `IMPLEMENTED`, not `VERIFIED`, until the Play Mode scenario executes in a licensed Unity Test Runner.
+- Direct-command regression proves a resident leaves self-defense/retreat, advances the ordered action while persistent enemy aggro remains, and does not recreate self-defense until the command ends.
+- Unity source contracts require combat acquisition before food/action execution, typed work cleanup, and direct-command priority wiring.
+- Checked-in Play Mode coverage must exercise a resident entering combat from Work and a need action, plus a resident receiving a direct command during persistent enemy aggro.
+- Status remains `APPROVED` until the revised implementation and regressions pass; it becomes `IMPLEMENTED`, not `VERIFIED`, after automated checks pass without licensed runtime evidence.
