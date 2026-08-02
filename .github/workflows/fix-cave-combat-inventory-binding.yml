@@ -1,0 +1,46 @@
+name: Fix cave combat inventory binding
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.head_ref == 'agent/cave-monster-combat' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/cave-monster-combat
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Bind combat inventory in Unity composition root
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigUnityBootstrap.cs')
+          text = path.read_text(encoding='utf-8')
+          anchor = '''            DigTerrainWorkSession terrainSession = DigTerrainWorkSession.CreateDemo(
+                worldSession, agents, worldSession.Journal, agentSession.SkillGrants);
+'''
+          replacement = anchor + '            agentSession.BindCombatInventory(terrainSession.InventoryRepository);\n'
+          if 'agentSession.BindCombatInventory(terrainSession.InventoryRepository);' not in text:
+              if anchor not in text:
+                  raise SystemExit('Unity composition anchor was not found')
+              text = text.replace(anchor, replacement, 1)
+          path.write_text(text, encoding='utf-8')
+          Path('.github/workflows/fix-cave-combat-inventory-binding.yml').unlink()
+      - name: Commit composition fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Bind combat equipment to authoritative inventory"
+          git push origin HEAD:agent/cave-monster-combat
