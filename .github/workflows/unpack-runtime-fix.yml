@@ -26,6 +26,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('.github/runtime-fix.payload.006')
+          data = bytearray(path.read_bytes())
+          index = 5787
+          assert len(data) == 10000
+          assert data[index] == ord('o')
+          data[index] = ord('O')
+          path.write_bytes(data)
+          PY
           wc -c .github/runtime-fix.payload.*
           sha256sum .github/runtime-fix.payload.*
           cat .github/runtime-fix.payload.* > /tmp/runtime-fix.payload
