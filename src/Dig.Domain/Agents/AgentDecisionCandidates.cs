@@ -22,6 +22,8 @@ public sealed partial class AgentDecisionSystem
         bool fleeCritical = context.ThreatLevel >= utility.CriticalThreatThreshold;
         bool eatCritical = agent.Needs.Nutrition.IsAtOrBelow(
             policy.Needs.CriticalThreshold);
+        bool automaticEatAllowed = agent.ScheduledActivity != ScheduleActivity.Work
+            || currentIntent == AgentIntentKind.Eat;
         bool sleepCritical = agent.Needs.Alertness.IsAtOrBelow(
             policy.Needs.CriticalThreshold);
         int sleepScore = agent.Needs.Alertness.Deficit;
@@ -62,8 +64,9 @@ public sealed partial class AgentDecisionSystem
         candidates[(int)AgentIntentKind.Eat] = new Candidate(
             AgentIntentKind.Eat,
             agent.Needs.Nutrition.Deficit,
-            context.FoodAvailable || currentIntent == AgentIntentKind.Eat,
-            eatCritical);
+            automaticEatAllowed
+                && (context.FoodAvailable || currentIntent == AgentIntentKind.Eat),
+            eatCritical && automaticEatAllowed);
         candidates[(int)AgentIntentKind.Sleep] = new Candidate(
             AgentIntentKind.Sleep,
             sleepScore,
