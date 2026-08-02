@@ -1,9 +1,14 @@
 using Dig.Application.Ecology;
 using Dig.Application.Inventory;
+using Dig.Application.Jobs;
+using Dig.Application.Production;
+using Dig.Application.WorldObjects;
 using Dig.Domain.Agents;
+using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
+using Dig.Domain.Production;
 using Dig.Infrastructure.InMemory;
 
 namespace Dig.Unity
