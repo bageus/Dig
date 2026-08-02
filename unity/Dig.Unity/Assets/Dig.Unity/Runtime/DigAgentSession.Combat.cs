@@ -4,6 +4,9 @@ using System.Linq;
 using Dig.Domain.Agents;
 using Dig.Application.Combat;
 using Dig.Domain.Combat;
+using Dig.Domain.Content;
+using Dig.Presentation.Combat;
+using Dig.Presentation.Creatures;
 using Dig.Domain.Core;
 using Dig.Domain.Factions;
 using Dig.Domain.Navigation;
@@ -14,11 +17,9 @@ namespace Dig.Unity
 {
 internal sealed partial class DigAgentSession
 {
-    private const long PlayerAttackIntentLifetimeTicks = 24;
+    private const long PlayerAttackIntentLifetimeTicks = 240;
     private static readonly FactionId ResidentFaction = new FactionId("faction.residents");
     private static readonly FactionId HostileFaction = new FactionId("faction.hostiles");
-    private static readonly WeaponProfileId DemoUnarmedProfile =
-        new WeaponProfileId("weapon.demo.unarmed");
     private static readonly DomainError AttackActorUnavailable = new DomainError(
         "combat.input.actor_unavailable",
         "The selected resident is missing or no longer alive.");
@@ -29,7 +30,13 @@ internal sealed partial class DigAgentSession
     private InMemoryFactionRepository? _combatFactions;
     private IssueCombatIntentHandler? _issueCombatIntent;
     private CombatSpatialExecutionHandler? _combatExecution;
+    private DemoCombatEquipmentProvider? _combatEquipmentProvider;
+    private InMemoryExecutionJournal? _combatJournal;
     private readonly HashSet<EntityId> _combatOnlyActors = new HashSet<EntityId>();
+    private readonly Dictionary<EntityId, EnemyCombatDefinition> _enemyDefinitions =
+        new Dictionary<EntityId, EnemyCombatDefinition>();
+    private readonly Dictionary<EntityId, long> _lastCombatImpactTicks =
+        new Dictionary<EntityId, long>();
 
     private void InitializeCombat(
         InMemoryExecutionJournal journal,
@@ -38,19 +45,9 @@ internal sealed partial class DigAgentSession
         if (journal == null) throw new ArgumentNullException(nameof(journal));
         if (tunnelVolume == null) throw new ArgumentNullException(nameof(tunnelVolume));
 
-        WeaponProfile unarmed = new WeaponProfile(
-            DemoUnarmedProfile,
-            minimumRange: 1,
-            maximumRange: 1,
-            accuracy: 7_000,
-            baseDamage: 500,
-            armorPenetration: 0,
-            cooldownTicks: 2,
-            skillProfile: new CombatSkillProfile(
-                AgentSkillCatalog.UnarmedCombat,
-                hitGrantUnits: 25),
-            spatialMode: CombatAttackSpatialMode.Melee);
-        CombatState combat = new CombatState(new WeaponCatalog(new[] { unarmed }));
+        _combatJournal = journal;
+        CombatState combat = new CombatState(new WeaponCatalog(
+            CaveEncounterCombatContent.CreateWeaponProfiles()));
         FactionState factions = new FactionState(
             new FactionCatalog(new[]
             {
@@ -66,16 +63,18 @@ internal sealed partial class DigAgentSession
         {
             factions.AssignMember(resident.Id, ResidentFaction);
         }
+        SeedCaveMonsterPair(tunnelVolume, factions);
 
         _combatRepository = new InMemoryCombatRepository(combat);
         _combatFactions = new InMemoryFactionRepository(factions);
         _issueCombatIntent = new IssueCombatIntentHandler(_combatRepository, journal);
+        _combatEquipmentProvider = new DemoCombatEquipmentProvider(this, combat.Weapons);
         _combatExecution = new CombatSpatialExecutionHandler(
             _repository,
             _combatRepository,
             _combatFactions,
             tunnelVolume,
-            new DemoCombatEquipmentProvider(),
+            _combatEquipmentProvider,
             journal,
             _skillGrants,
             new CombatSpatialPolicy(
@@ -89,59 +88,6 @@ internal sealed partial class DigAgentSession
                     retreatHealthThreshold: 2_000,
                     retreatThreatRatio: 1_500,
                     defendDistance: 0)));
-    }
-
-    internal Result RegisterHostileCombatant(
-        EntityId targetId,
-        CellId cell,
-        int health = NeedValue.Maximum)
-    {
-        if (targetId.IsEmpty || health <= 0 || health > NeedValue.Maximum)
-        {
-            return Result.Failure(AttackTargetInvalid);
-        }
-
-        AgentState? existing = _repository.Get(targetId);
-        if (existing == null)
-        {
-            AgentState target = new AgentState(
-                targetId,
-                "Hostile combatant",
-                new AgentNeedsSnapshot(
-                    new NeedValue(8_000),
-                    new NeedValue(8_000),
-                    new NeedValue(8_000),
-                    new NeedValue(health)),
-                DailySchedule.CreateBalanced(24),
-                skills: null,
-                traits: null,
-                initialPosition: cell);
-            Result added = _repository.Add(target);
-            if (added.IsFailure)
-            {
-                return added;
-            }
-        }
-        else
-        {
-            Result moved = existing.MoveTo(cell, _tick);
-            if (moved.IsFailure)
-            {
-                return moved;
-            }
-            _repository.Save(existing);
-        }
-
-        if (_combatFactions == null)
-        {
-            throw new InvalidOperationException("Combat input is not initialized.");
-        }
-
-        _combatOnlyActors.Add(targetId);
-        FactionState factions = _combatFactions.Get();
-        factions.AssignMember(targetId, HostileFaction);
-        _combatFactions.Save(factions);
-        return Result.Success();
     }
 
     internal bool CanIssuePlayerAttackOrder(
@@ -158,10 +104,10 @@ internal sealed partial class DigAgentSession
         AgentState? target = _repository.Get(targetId);
         return actor != null
             && actor.IsAlive
-            && (target == null || target.IsAlive)
-            && targetCell.X >= 0
-            && targetCell.Y >= 0
-            && targetCell.Z >= 0;
+            && target != null
+            && target.IsAlive
+            && target.Position == targetCell
+            && CanIssuePlayerAttackOrder(actorId, targetId);
     }
 
     internal bool CanIssuePlayerAttackOrder(EntityId actorId, EntityId targetId)
@@ -216,6 +162,7 @@ internal sealed partial class DigAgentSession
             targetCell: _repository.Get(targetId)!.Position);
         CombatIntentSnapshot intent = _issueCombatIntent.Handle(
             new IssueCombatIntentCommand(request));
+        EnsureEnemyRetaliation(targetId, actorId);
         return Result<CombatIntentSnapshot>.Success(intent);
     }
 
@@ -247,6 +194,11 @@ internal sealed partial class DigAgentSession
     private bool TryAdvanceCombat(AgentState actor, out Result result)
     {
         result = Result.Success();
+        if (_combatOnlyActors.Contains(actor.Id))
+        {
+            EnsureAutonomousEnemyIntent(actor);
+        }
+
         if (_combatRepository == null || _combatExecution == null
             || _combatRepository.Get().GetActiveIntent(actor.Id) == null)
         {
@@ -258,6 +210,10 @@ internal sealed partial class DigAgentSession
                 actor.Id,
                 DemoIdentitySeed,
                 _tick));
+        if (advanced.IsSuccess && advanced.Value.Attack != null)
+        {
+            _lastCombatImpactTicks[advanced.Value.Attack.TargetId] = _tick;
+        }
         result = advanced.IsSuccess
             ? Result.Success()
             : Result.Failure(advanced.Error!);
@@ -276,6 +232,35 @@ internal sealed partial class DigAgentSession
         return _combatOnlyActors.Contains(actor.Id);
     }
 
+    private void SynchronizeCombatDeath(EntityId actorId)
+    {
+        if (_combatRepository == null || _combatJournal == null)
+        {
+            return;
+        }
+
+        CombatState combat = _combatRepository.Get();
+        CombatIntentSnapshot? intent = combat.GetActiveIntent(actorId);
+        if (intent != null)
+        {
+            combat.CancelIntent(intent.IntentId, "actor_dead", _tick);
+        }
+        else
+        {
+            CombatExecutionSnapshot? execution = combat.GetActiveExecution(actorId);
+            if (execution != null)
+            {
+                combat.CancelExecution(
+                    execution.ExecutionId,
+                    _tick,
+                    "actor_dead");
+            }
+        }
+
+        _combatRepository.Save(combat);
+        _combatJournal.Append(combat.DequeueUncommittedEvents());
+    }
+
     internal CombatExecutionSnapshot? GetCombatExecution(EntityId actorId)
     {
         return _combatRepository?.Get().GetActiveExecution(actorId);
@@ -286,16 +271,5 @@ internal sealed partial class DigAgentSession
         return "player.attack." + actorId + "." + targetId + "." + _tick;
     }
 
-    private sealed class DemoCombatEquipmentProvider : ICombatEquipmentProvider
-    {
-        public Result<CombatEquipmentSelection> Select(EntityId actorId, EntityId targetId)
-        {
-            return Result<CombatEquipmentSelection>.Success(
-                new CombatEquipmentSelection(
-                    DemoUnarmedProfile,
-                    new CombatantModifiers(0, 0, 0, 0, 0),
-                    new CombatantModifiers(0, 0, 0, 0, 0)));
-        }
-    }
 }
 }

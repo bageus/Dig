@@ -20,7 +20,10 @@ public sealed class CreatureVisualSnapshot
         bool isSpecialAction,
         double actionProgress,
         long version,
-        string activityVariantId = "")
+        string activityVariantId = "",
+        int currentHealth = 0,
+        int maximumHealth = 0,
+        bool showHealthBar = false)
     {
         if (string.IsNullOrWhiteSpace(creatureId))
             throw new ArgumentException("Creature id is required.", nameof(creatureId));
@@ -33,6 +36,10 @@ public sealed class CreatureVisualSnapshot
             throw new ArgumentOutOfRangeException(nameof(cellX));
         if (actionProgress < 0d || actionProgress > 1d || version < 0)
             throw new ArgumentOutOfRangeException(nameof(actionProgress));
+        if (maximumHealth < 0 || currentHealth < 0
+            || (maximumHealth > 0 && currentHealth > maximumHealth)
+            || (showHealthBar && maximumHealth <= 0))
+            throw new ArgumentOutOfRangeException(nameof(currentHealth));
 
         CreatureId = creatureId.Trim();
         SpeciesId = speciesId.Trim();
@@ -50,6 +57,9 @@ public sealed class CreatureVisualSnapshot
         ActionProgress = actionProgress;
         Version = version;
         ActivityVariantId = activityVariantId?.Trim() ?? string.Empty;
+        CurrentHealth = currentHealth;
+        MaximumHealth = maximumHealth;
+        ShowHealthBar = showHealthBar;
     }
 
     public string CreatureId { get; }
@@ -68,5 +78,8 @@ public sealed class CreatureVisualSnapshot
     public double ActionProgress { get; }
     public long Version { get; }
     public string ActivityVariantId { get; }
+    public int CurrentHealth { get; }
+    public int MaximumHealth { get; }
+    public bool ShowHealthBar { get; }
 }
 }

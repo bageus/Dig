@@ -87,6 +87,8 @@ internal sealed partial class DigTerrainWorkSession
 
     internal MiningOutputCommitState MiningOutputCommits => _miningOutputCommits;
 
+    internal InMemoryInventoryRepository InventoryRepository => _inventoryRepository;
+
     internal bool HasWorldChanged => _worldChanged;
 
     internal void MarkAuthoritativeWorldChanged()

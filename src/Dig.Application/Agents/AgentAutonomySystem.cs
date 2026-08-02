@@ -15,6 +15,7 @@ public sealed class AgentAutonomySystem : ISimulationSystem
     private readonly IEventSink _eventSink;
     private readonly AgentDecisionSystem _decisionSystem;
     private readonly AgentBehaviorPolicy _policy;
+    private readonly Func<AgentState, bool> _isEligible;
 
     public AgentAutonomySystem(
         IAgentRepository repository,
@@ -23,7 +24,8 @@ public sealed class AgentAutonomySystem : ISimulationSystem
         AgentDecisionSystem decisionSystem,
         AgentBehaviorPolicy policy,
         int order = 300,
-        int intervalTicks = 1)
+        int intervalTicks = 1,
+        Func<AgentState, bool>? isEligible = null)
     {
         if (intervalTicks <= 0)
         {
@@ -37,6 +39,7 @@ public sealed class AgentAutonomySystem : ISimulationSystem
         _decisionSystem = decisionSystem
             ?? throw new ArgumentNullException(nameof(decisionSystem));
         _policy = policy ?? throw new ArgumentNullException(nameof(policy));
+        _isEligible = isEligible ?? (_ => true);
         Order = order;
         IntervalTicks = intervalTicks;
     }
@@ -54,7 +57,7 @@ public sealed class AgentAutonomySystem : ISimulationSystem
         List<AgentTickDecision> decisions = new List<AgentTickDecision>();
         foreach (AgentState agent in _repository.GetAll())
         {
-            if (!agent.IsAlive)
+            if (!_isEligible(agent) || !agent.IsAlive)
             {
                 continue;
             }

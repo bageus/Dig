@@ -29,7 +29,7 @@
 ## Q-013–Q-014 — контент и баланс
 
 - **Q-013 — ANSWERED:** один ItemId `material.iron`.
-- **Q-014 — BALANCE_TBD:** непредоставленные коэффициенты хранятся в definitions. Для terrain output уже подтверждено: ordinary terrain entries негарантированы и текущие fixtures ограничены максимумом `100‰` на entry; deposit output гарантирован при успешном depletion. Точная настройка terrain probabilities/quantities, а также combat coefficients, numeric personal-mobility multiplier, natural Health regeneration rates, Hospital energy consumption и Service grant остаются balance data.
+- **Q-014 — BALANCE_TBD:** непредоставленные коэффициенты хранятся в definitions. Для terrain output уже подтверждено: ordinary terrain entries негарантированы и текущие fixtures ограничены максимумом `100‰` на entry; deposit output гарантирован при успешном depletion. Для первого cave-combat slice утверждены fists/club/cave bite, offensive skill scaling, Defense reduction и per-hit grants в `enemy-combat-and-cave-encounters.md`; остальные weapon/enemy coefficients, terrain tuning, personal-mobility multiplier, natural Health regeneration, Hospital energy и Service grant остаются balance data.
 
 ## Q-015–Q-018 — еда и Needs
 
@@ -111,4 +111,4 @@ Q-040–Q-046 закрыты и описаны в соответствующих
 | 2026-07-16 | Q-052 | active pair after return |
 | 2026-07-16 | Q-053 | core equipment approved; fantasy deferred; special-mode excluded |
 | 2026-07-16 | Q-054 | hospital admission, capacity, doctor, queue, continuous partial healing, regeneration, energy и eligibility утверждены |
-| 2026-08-01 | Q-014 | ordinary terrain drops подтверждены как low-chance/non-guaranteed (fixture cap `100‰`), deposit output — guaranteed; точный tuning остаётся BALANCE_TBD |
+| 2026-08-01 | Q-014 | ordinary terrain drops подтверждены как low-chance/non-guaranteed; starting cave combat balance утверждён в #559; остальной tuning остаётся BALANCE_TBD |

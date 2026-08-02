@@ -45,6 +45,15 @@ Spawn/reproduction transaction не создаёт новую особь, есл
 
 Вукер и Серный вукер используют отдельные definitions; числовые различия остаются content/balance data.
 
+Runtime naming and movement hierarchy for #559:
+
+- `enemy.vuker` has display name «Пещерный монстр», seeds as a pair in the lower cave and supports horizontal, vertical and Z/depth traversal;
+- `enemy.plant.predatory_vine` is fully stationary, cannot traverse Z, and may anchor in a horizontal tunnel, on a cave floor or on a cave wall;
+- `enemy.demon.swallower` has display name «Живоглот», supports flat/depth traversal but no vertical climb, and keeps the existing one swallowed item contract;
+- `enemy.spider` supports horizontal, vertical and Z/depth traversal plus future wall/ceiling ambush anchors.
+
+Q-ENEMY-001 is answered in `enemy-combat-and-cave-encounters.md`: the vine never moves between cells or Z layers; only its initial legal anchor surface varies.
+
 ## Растения
 
 - распространяют семена на расстояние до 10 клеток;

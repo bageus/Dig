@@ -134,7 +134,9 @@ public sealed partial class CombatState : AggregateRoot
         int statusRoll = random.NextInt(10_000);
         int hitChance = Math.Max(
             0,
-            Math.Min(10_000, weapon.Accuracy + attacker.AccuracyModifier - target.Evasion));
+            Math.Min(
+                weapon.MaximumHitChance,
+                weapon.Accuracy + attacker.AccuracyModifier - target.Evasion));
         CombatAttackOutcome outcome;
         int damage = 0;
         CombatStatusId? appliedStatusId = null;
@@ -144,11 +146,19 @@ public sealed partial class CombatState : AggregateRoot
         }
         else
         {
+            int scaledBaseDamage = checked(
+                weapon.BaseDamage
+                * attacker.DamageMultiplier
+                / CombatSkillScalingPolicy.BasisPoints);
             int effectiveArmor = checked(
                 target.Armor * (10_000 - weapon.ArmorPenetration) / 10_000);
-            int afterArmor = Math.Max(0, weapon.BaseDamage - effectiveArmor);
+            int afterArmor = Math.Max(0, scaledBaseDamage - effectiveArmor);
+            int afterDefense = checked(
+                afterArmor
+                * (CombatSkillScalingPolicy.BasisPoints - target.DamageReduction)
+                / CombatSkillScalingPolicy.BasisPoints);
             bool blocked = blockRoll < target.BlockChance;
-            damage = Math.Max(0, afterArmor - (blocked ? target.BlockValue : 0));
+            damage = Math.Max(0, afterDefense - (blocked ? target.BlockValue : 0));
             outcome = blocked ? CombatAttackOutcome.Blocked : CombatAttackOutcome.Hit;
 
             CombatStatusDefinition? status = weapon.StatusOnHit;

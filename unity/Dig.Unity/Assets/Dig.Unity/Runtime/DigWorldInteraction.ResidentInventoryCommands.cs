@@ -73,7 +73,8 @@ public sealed partial class DigWorldInteraction
 
         _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
         _creatureRenderer!.Render(
-            _terrainSession.LoadLivingMaterialCreatures(),
+            _agentSession!.LoadCreatures(
+                _terrainSession.LoadLivingMaterialCreatures()),
             Camera.main,
             movementDuration: 0.1f);
         _agentRenderer!.RenderEquipment(_terrainSession.LoadResidentEquipment());

@@ -12,7 +12,6 @@ using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Dig.Presentation.Agents;
 using Dig.Presentation.World;
-
 namespace Dig.Unity
 {
     internal sealed partial class DigAgentSession
@@ -114,8 +113,8 @@ namespace Dig.Unity
                 repository,
                 contexts,
                 journal,
-                new AgentDecisionSystem(),
-                policy);
+                new AgentDecisionSystem(), policy,
+                isEligible: agent => residentSexes.ContainsKey(agent.Id));
             DigAgentSession session = new DigAgentSession(
                 autonomy,
                 new MoveAgentCommandHandler(repository, journal),
@@ -202,6 +201,7 @@ namespace Dig.Unity
                 AgentState agent = agents[index];
                 if (!agent.IsAlive)
                 {
+                    SynchronizeCombatDeath(agent.Id);
                     CancelManualTunnelMovement(
                         agent.Id.ToString(),
                         ResidentMovementInterruptionReason.AgentDead);

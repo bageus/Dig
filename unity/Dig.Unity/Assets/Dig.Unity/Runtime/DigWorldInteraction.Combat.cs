@@ -31,15 +31,6 @@ public sealed partial class DigWorldInteraction
             return;
         }
 
-        Result registered = _agentSession.RegisterHostileCombatant(
-            decision.TargetEntityId.Value,
-            decision.TargetCell.Value);
-        if (registered.IsFailure)
-        {
-            _hud!.SetStatus(registered.Error!.Code);
-            return;
-        }
-
         Result interrupted = _terrainSession!.InterruptForCombat(
             new[] { decision.ActorId.Value.ToString() },
             _simulation!.CurrentTick);
@@ -56,6 +47,19 @@ public sealed partial class DigWorldInteraction
         _hud!.SetStatus(result.IsSuccess
             ? "combat.order.attack_issued"
             : result.Error!.Code);
+        if (result.IsFailure)
+        {
+            return;
+        }
+
+        _agentRenderer!.RenderCombatHealthBars(
+            _agentSession.LoadResidentCombatHealthBars(),
+            _camera);
+        _creatureRenderer!.Render(
+            _agentSession.LoadCreatures(
+                _terrainSession.LoadLivingMaterialCreatures()),
+            _camera,
+            movementDuration: 0.1f);
     }
 
     private bool TryResolveHostileCreatureHit(

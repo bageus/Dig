@@ -89,6 +89,7 @@ namespace Dig.Unity
             WorldOverlayRenderer = worldOverlayRenderer;
             EffectRuntime = GetComponent<DigPresentationEffectRuntime>();
             Hud = hud;
+            AgentSession.BindCombatInventory(TerrainSession.InventoryRepository);
             AgentSession.SetMovementModeResolver(
                 TerrainSession.ResolveResidentMovementMode);
             TerrainSession.BindManualMovementSource(
@@ -136,6 +137,9 @@ namespace Dig.Unity
                 agents,
                 movementDuration: 0.25f,
                 AgentSession.LoadMovementModes());
+            AgentRenderer.RenderCombatHealthBars(
+                AgentSession.LoadResidentCombatHealthBars(),
+                Camera.main);
             RefreshEquipmentVisuals();
             Hud.SetAgents(agents, AgentSession.Tick);
             Hud.SetAgentSelection(

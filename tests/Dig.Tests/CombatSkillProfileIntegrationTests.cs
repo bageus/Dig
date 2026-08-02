@@ -198,6 +198,56 @@ public sealed class CombatSkillProfileIntegrationTests
             .GetSkillLevel(AgentSkillCatalog.OneHandedCombat));
     }
 
+    [Fact]
+    public void Landed_hit_grants_offense_and_received_hit_defense_exactly_once()
+    {
+        (string Id, AgentSkillId Skill)[] profiles =
+        {
+            ("weapon.received-hit", AgentSkillCatalog.OneHandedCombat),
+        };
+        InMemoryAgentRepository agents = CreateAgents();
+        CombatState combat = CreateCombat(profiles);
+        RecordingEventSink events = new RecordingEventSink();
+        ResolveCombatAttackHandler handler = new ResolveCombatAttackHandler(
+            agents,
+            new InMemoryCombatRepository(combat),
+            new InMemoryFactionRepository(CreateFactions()),
+            events,
+            new AgentSkillGrantService(agents, events));
+        ResolveCombatAttackCommand command = new ResolveCombatAttackCommand(
+            new CombatActionId("offense-and-defense"),
+            AttackerId,
+            TargetId,
+            new WeaponProfileId("weapon.received-hit"),
+            worldSeed: 17UL,
+            tick: 10,
+            new CombatantModifiers(0, 0, 0, 0, 0),
+            new CombatantModifiers(
+                0,
+                0,
+                0,
+                0,
+                0,
+                receivedHitSkillProfile: new CombatDefenseSkillProfile(
+                    "received-hit",
+                    defenseGrantUnits: 10)));
+
+        Result<CombatAttackResolution> first = handler.Handle(command);
+        Result<CombatAttackResolution> replay = handler.Handle(command);
+
+        Assert.True(first.IsSuccess);
+        Assert.Equal(CombatAttackOutcome.Hit, first.Value.Outcome);
+        Assert.True(replay.IsSuccess);
+        Assert.True(replay.Value.WasAlreadyProcessed);
+        Assert.Equal(25, agents.Get(AttackerId)!.CreateSnapshot(10)
+            .GetSkillLevel(AgentSkillCatalog.OneHandedCombat));
+        Assert.Equal(10, agents.Get(TargetId)!.CreateSnapshot(10)
+            .GetSkillLevel(AgentSkillCatalog.Defense));
+        Assert.Equal(2, events.Events
+            .OfType<SkillProgressionResultConfirmed>()
+            .Count());
+    }
+
     private static CombatState CreateCombat(
         IEnumerable<(string Id, AgentSkillId Skill)> profiles)
     {
