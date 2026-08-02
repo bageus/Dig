@@ -12,6 +12,7 @@ public sealed class VukerReproductionUnityRuntimeContractTests
     {
         string session = ReadRuntime("DigAgentSession.VukerEcology.cs");
         string enemies = ReadRuntime("DigAgentSession.Enemies.cs");
+        string combat = ReadRuntime("DigAgentSession.Combat.cs");
 
         Assert.Contains("VukerBirthPlanner", session, StringComparison.Ordinal);
         Assert.Contains("CommitBirth", session, StringComparison.Ordinal);
@@ -23,6 +24,8 @@ public sealed class VukerReproductionUnityRuntimeContractTests
             StringComparison.Ordinal);
         Assert.Contains("CanVukerInitiateCombat", enemies, StringComparison.Ordinal);
         Assert.Contains("TryAdvanceTamedVukerAutoReturn", enemies,
+            StringComparison.Ordinal);
+        Assert.Contains("!ShouldYieldEnemyIdleToManualMovement(actor.Id)", combat,
             StringComparison.Ordinal);
     }
 
@@ -48,7 +51,7 @@ public sealed class VukerReproductionUnityRuntimeContractTests
     }
 
     [Fact]
-    public void CheckedInPlayModeCoversBirthNoCombatKidnapMovementAndMaturity()
+    public void CheckedInPlayModeCoversBirthNoCombatApproachKidnapMovementAndMaturity()
     {
         string playMode = Read(
             "unity", "Dig.Unity", "Assets", "Dig.Unity", "Tests", "PlayMode",
@@ -58,7 +61,10 @@ public sealed class VukerReproductionUnityRuntimeContractTests
         Assert.Contains("VukerLifecycleStage.Child", playMode, StringComparison.Ordinal);
         Assert.Contains("GetCombatIntent(child.EntityId), Is.Null", playMode,
             StringComparison.Ordinal);
+        Assert.Contains("TunnelVolume.FindPath", playMode, StringComparison.Ordinal);
+        Assert.Contains("KidnapReservedBy", playMode, StringComparison.Ordinal);
         Assert.Contains("RequestVukerKidnap", playMode, StringComparison.Ordinal);
+        Assert.Contains("IsTamedVuker", playMode, StringComparison.Ordinal);
         Assert.Contains("VukerDisposition.Tamed", playMode, StringComparison.Ordinal);
         Assert.Contains("MoveTamedVukerThroughTunnel", playMode,
             StringComparison.Ordinal);
