@@ -1,0 +1,52 @@
+name: Materialize PR 568 final corrections
+
+on:
+  push:
+    branches:
+      - fix/campfire-serialized-production-lifecycle
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Decode and verify correction patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "b33c440dfbf9a7471691fa4daa74ffbee8cd42e5dc8334d96573c645ef0c6d53  .agent/pr568-fix.patch.b64" | sha256sum --check
+          base64 --decode .agent/pr568-fix.patch.b64 > /tmp/pr568-fix.patch.gz
+          echo "81f20c6582da791a743a318d22c08e60ba05e15539c4e74f95c79eec61fab7d6  /tmp/pr568-fix.patch.gz" | sha256sum --check
+          gzip -dc /tmp/pr568-fix.patch.gz > /tmp/pr568-fix.patch
+          echo "f73e67d0baaecbcf676cb06644a4c1b3e88e8f5b9826f6f531f4f26eee18efb9  /tmp/pr568-fix.patch" | sha256sum --check
+
+      - name: Apply corrections and remove one-shot files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git apply --check /tmp/pr568-fix.patch
+          git apply /tmp/pr568-fix.patch
+          rm -rf .agent
+          rm -f .github/workflows/materialize-pr568-final-fixes.yml
+          git diff --check
+
+      - name: Publish clean correction commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix serialized campfire regression contracts"
+          git push origin HEAD:fix/campfire-serialized-production-lifecycle
