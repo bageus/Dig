@@ -110,3 +110,4 @@ public static class SaveGameCompositionRoot
         return new JobDefinitionSaveRegistration(typeof(TDefinition), codec);
     }
 }
+}
