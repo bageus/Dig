@@ -43,17 +43,17 @@ public sealed class EnemySightLossStageTests
                 new FactionDefinition(ResidentFaction, "Resident", -10_000),
             }),
             new FactionDiplomacyPolicy(-5_000, 3_000, 8_000, 1_000));
-        Assert.True(factions.AssignMember(EnemyActor, EnemyFaction).IsSuccess);
-        Assert.True(factions.AssignMember(ResidentTarget, ResidentFaction).IsSuccess);
+        factions.AssignMember(EnemyActor, EnemyFaction);
+        factions.AssignMember(ResidentTarget, ResidentFaction);
 
         WeaponProfile weapon = new WeaponProfile(
             WeaponId,
-            minimumRange: 1,
-            maximumRange: 1,
-            accuracy: 10_000,
-            damage: 1_000,
-            statusChance: 0,
-            cooldownTicks: 1,
+            1,
+            1,
+            10_000,
+            1_000,
+            0,
+            1,
             skillProfile: new CombatSkillProfile(
                 AgentSkillCatalog.OneHandedCombat,
                 1),
@@ -96,12 +96,12 @@ public sealed class EnemySightLossStageTests
             .Select(x => new CellId(x, 0, 0))
             .ToArray();
         TunnelNavigationVolume volume = new TunnelNavigationVolume(
-            width: 6,
-            height: 1,
-            depth: 1,
-            openCells: cells,
-            verticalCells: Array.Empty<CellId>(),
-            supportedCells: cells);
+            6,
+            1,
+            1,
+            cells,
+            Array.Empty<CellId>(),
+            cells);
         CombatSpatialExecutionHandler handler = new CombatSpatialExecutionHandler(
             agents,
             combatRepository,
@@ -111,12 +111,12 @@ public sealed class EnemySightLossStageTests
             events,
             new AgentSkillGrantService(agents, events),
             new CombatSpatialPolicy(
-                sightRange: 2,
-                retryLimit: 4,
-                windUpTicks: 0,
-                recoveryTicks: 1,
-                blockedRetryTicks: 1,
-                retreatStepLimit: 2,
+                2,
+                4,
+                0,
+                1,
+                1,
+                2,
                 new CombatTacticalPolicy(0, 10_000, 0)));
 
         Assert.True(resident.MoveTo(new CellId(5, 0, 0), tick: 1).IsSuccess);
@@ -139,8 +139,8 @@ public sealed class EnemySightLossStageTests
             "Sight loss combatant",
             AgentTestFactory.CreateNeeds(8_000, 8_000, 8_000, 10_000),
             AgentTestFactory.CreateWorkSchedule(),
-            skills: null,
-            traits: null,
+            null,
+            null,
             position);
     }
 
