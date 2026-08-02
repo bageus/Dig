@@ -3,6 +3,7 @@ using System.Linq;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
 using Dig.Domain.Ecology;
+using Dig.Domain.Navigation;
 using Dig.Presentation.Creatures;
 using NUnit.Framework;
 using UnityEngine.TestTools;
@@ -57,11 +58,20 @@ public sealed class VukerReproductionPlayModeTests
             Assert.That(agents.GetCombatIntent(child.EntityId), Is.Null);
         }
 
-        EntityId residentId = EntityId.Parse(residents[0].Id);
-        AgentState resident = agents.Repository.Get(residentId)!;
-        Dig.Domain.World.CellId residentDeployment = resident.Position;
-        Assert.That(resident.MoveTo(child.Position, agents.Tick).IsSuccess, Is.True);
-        agents.Repository.Save(resident);
+        var approach = residents
+            .Select(value => agents.Repository.Get(EntityId.Parse(value.Id))!)
+            .Select(value => new
+            {
+                Resident = value,
+                Path = agents.TunnelVolume.FindPath(value.Position, child.Position),
+            })
+            .Where(value => value.Path.Succeeded
+                && value.Path.Path!.Cells.Count > 1)
+            .OrderBy(value => value.Path.Path!.Cells.Count)
+            .ThenBy(value => value.Resident.Id.ToString())
+            .First();
+        EntityId residentId = approach.Resident.Id;
+        Dig.Domain.World.CellId residentDeployment = approach.Resident.Position;
         terrain.BindDirectCommandCombatDisengage(
             agents.DisengageResidentForDirectOrder);
         Assert.That(terrain.PrepareResidentsForDirectCommand(
@@ -70,6 +80,17 @@ public sealed class VukerReproductionPlayModeTests
 
         Result requested = agents.RequestVukerKidnap(residentId, child.EntityId);
         Assert.That(requested.IsSuccess, Is.True, requested.Error?.ToString());
+        Assert.That(agents.IsTamedVuker(child.EntityId), Is.False);
+        Assert.That(agents.LoadVukerEcology().Individuals
+            .Single(value => value.EntityId == child.EntityId)
+            .KidnapReservedBy, Is.EqualTo(residentId));
+
+        for (int tick = 0; tick < 500 && !agents.IsTamedVuker(child.EntityId); tick++)
+        {
+            Assert.That(agents.Advance().IsSuccess, Is.True);
+            Assert.That(agents.GetCombatIntent(child.EntityId), Is.Null);
+        }
+
         VukerIndividualSnapshot tamed = agents.LoadVukerEcology().Individuals
             .Single(value => value.EntityId == child.EntityId);
         Assert.That(tamed.Disposition, Is.EqualTo(VukerDisposition.Tamed));
