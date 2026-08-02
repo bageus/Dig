@@ -143,7 +143,7 @@ Inventory expansions всегда остаются в `Main`. Каждая пе�
 
 Активный held stack остаётся закреплён в исходной ячейке до completion/cancel действия; остальные предметы уплотняются вокруг этой ячейки. Входящие slot claims также считаются занятыми и не могут быть перехвачены rebalancing-ом.
 
-Один и тот же порядок используется world pickup, hauling, building supply, retry и save/load recovery.
+Один и тот же порядок используется world pickup, hauling, building supply, retry и save/load recovery. Успешный ingress сначала committed перемещает unit в зарезервированный slot, затем освобождает incoming slot claim и в той же authoritative transaction немедленно вызывает normalization. Поэтому newly activated expansion может перераспределить совместимые items, а ingress unit занимает первый допустимый low-index slot; промежуточный claimed index не становится постоянным layout position.
 
 ## 9. Предмет в руках
 
@@ -322,3 +322,4 @@ Content validation проверяет IDs, categories, slots, speed, recipes и 
 | 2026-07-30 | Ножны, разгрузка и `weapon.club` появляются отдельными world items; club служит runtime-проверкой Weapon-slot priority и tier switching. | пользователь | #68, #69, #70 |
 | 2026-07-30 | Текстовый заголовок Weapon скрыт; двухрядные inventory grids нумеруются по колонкам: `1/2`, `3/4`, `5/6`. | пользователь | #70 |
 | 2026-08-01 | Resident inventory автоматически уплотняется по low-index slots; приоритет оружия `Weapon -> Main -> Cargo`, ordinary items `Main -> Cargo`; held stack закреплён, incoming claims защищены. | пользователь | #68, #69 |
+| 2026-08-02 | После successful ingress incoming claim освобождается и layout normalizes в той же transaction; newly activated expansion не оставляет ingress item в временном high-index Main slot. | пользовательский runtime bug report | #68, #69 |

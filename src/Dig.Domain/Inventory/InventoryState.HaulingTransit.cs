@@ -52,7 +52,7 @@ public sealed partial class InventoryState
 
         ExecuteHaulingAcquire(source, jobId, planned.Value, tick);
         ReleaseResidentSlotClaims(jobId, tick);
-        return Result.Success();
+        return NormalizeResidentInventory(residentId, tick);
     }
 
     public Result DepositReservedResidentItems(

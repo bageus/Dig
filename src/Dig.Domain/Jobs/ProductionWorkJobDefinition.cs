@@ -15,6 +15,7 @@ public sealed class ProductionWorkJobDefinition : JobDefinition
         JobStageKind.TravelToTarget,
         JobStageKind.PerformWork,
         JobStageKind.Finalize,
+        JobStageKind.TravelToDestination,
     };
 
     public ProductionWorkJobDefinition(
@@ -54,6 +55,7 @@ public sealed class ProductionWorkJobDefinition : JobDefinition
     {
         return new ReadOnlyCollection<ReservationKey>(new[]
         {
+            ReservationKey.ForDestination(BuildingId),
             ReservationKey.ForPosition(WorkPosition),
         });
     }

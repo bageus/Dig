@@ -192,7 +192,7 @@ internal sealed class ProductionTestHarness
         IReadOnlyCollection<EntityId> outputStackIds,
         long tick)
     {
-        return new CompleteProductionOrderHandler(
+        Result completed = new CompleteProductionOrderHandler(
             ProductionRepository,
             InventoryRepository,
             JobRepository,
@@ -202,6 +202,14 @@ internal sealed class ProductionTestHarness
                 jobId,
                 outputStackIds,
                 tick));
+        if (completed.IsSuccess
+            && Jobs.Get(jobId)?.Stage == JobStageKind.TravelToDestination)
+        {
+            return new AdvanceJobHandler(JobRepository, Journal).Handle(
+                new AdvanceJobCommand(jobId, tick + 1));
+        }
+
+        return completed;
     }
 
     private static BuildingsState CreateCompletedBuilding(BuildingDefinition definition)

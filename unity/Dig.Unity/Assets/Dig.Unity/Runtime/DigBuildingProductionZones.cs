@@ -125,6 +125,24 @@ internal sealed partial class DigTerrainWorkSession
             }
         }
 
+        if (current?.Stage == JobStageKind.TravelToDestination)
+        {
+            if (!At(worker, production.WorkPosition))
+            {
+                return Result.Success();
+            }
+
+            Result returned = _advanceHandler.Handle(
+                new Dig.Application.Jobs.AdvanceJobCommand(job.Id, tick));
+            if (returned.IsSuccess)
+            {
+                _buildingProductionRoutes.Remove(job.Id);
+                _productionWaitOffsets[worker.Id] = ProductionWaitOffset;
+            }
+
+            return returned;
+        }
+
         if (current?.Stage != JobStageKind.Finalize)
         {
             return Result.Success();
@@ -159,12 +177,6 @@ internal sealed partial class DigTerrainWorkSession
                 tick,
                 ItemLocation.InWorld(outputCell.Value),
                 package.StackId));
-        if (completed.IsSuccess)
-        {
-            _buildingProductionRoutes.Remove(job.Id);
-            _productionWaitOffsets[worker.Id] = ProductionWaitOffset;
-        }
-
         return completed;
     }
 

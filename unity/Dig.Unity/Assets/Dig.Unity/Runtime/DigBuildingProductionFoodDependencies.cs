@@ -45,7 +45,8 @@ namespace Dig.Unity
             foreach (BuildingSupplySnapshot supply in supplies.GetAll(inventory))
             {
                 if (supply.HasActiveSupply
-                    || HasNonTerminalBuildingSupplyJob(supply.BuildingId))
+                    || HasNonTerminalBuildingSupplyJob(supply.BuildingId)
+                    || HasNonTerminalProductionWorkJob(supply.BuildingId))
                 {
                     continue;
                 }

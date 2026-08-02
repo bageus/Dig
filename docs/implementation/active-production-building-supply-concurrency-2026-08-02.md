@@ -1,9 +1,13 @@
 # Active production / building supply concurrency — 2026-08-02
 
-Status: `IMPLEMENTED` on branch `fix/active-production-building-supply`; licensed Unity Play Mode evidence remains required.
+Status: `SUPERSEDED` by the confirmed serialized-operation rule in [`../design/campfire-serialized-operation-and-demo-workbench-correction-2026-08-02.md`](../design/campfire-serialized-operation-and-demo-workbench-correction-2026-08-02.md).
 
 Authoritative design: [`../design/building-production-and-internal-supply.md`](../design/building-production-and-internal-supply.md).
 Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
+
+## Superseded decision — 2026-08-02
+
+The user subsequently confirmed that one production building must be operated by at most one resident at a time. Production and internal-stock refill now alternate through one building-level operation reservation. The concurrency behavior implemented here is retained only as historical root-cause evidence and must not be restored.
 
 ## Observed regression
 

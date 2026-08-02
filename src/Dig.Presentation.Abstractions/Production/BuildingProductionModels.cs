@@ -215,7 +215,8 @@ public sealed class BuildingProductionViewModel
         EntityId buildingId,
         string animationProfileId,
         IReadOnlyCollection<ProductionIconViewModel> products,
-        IReadOnlyCollection<BuildingStockIconViewModel> stocks)
+        IReadOnlyCollection<BuildingStockIconViewModel> stocks,
+        bool showWorkbench = false)
     {
         if (buildingId.IsEmpty || string.IsNullOrWhiteSpace(animationProfileId)
             || products is null || stocks is null)
@@ -227,12 +228,14 @@ public sealed class BuildingProductionViewModel
         AnimationProfileId = animationProfileId.Trim();
         Products = new ReadOnlyCollection<ProductionIconViewModel>(products.ToArray());
         Stocks = new ReadOnlyCollection<BuildingStockIconViewModel>(stocks.ToArray());
+        ShowWorkbench = showWorkbench;
     }
 
     public EntityId BuildingId { get; }
     public string AnimationProfileId { get; }
     public IReadOnlyList<ProductionIconViewModel> Products { get; }
     public IReadOnlyList<BuildingStockIconViewModel> Stocks { get; }
+    public bool ShowWorkbench { get; }
 }
 
 }

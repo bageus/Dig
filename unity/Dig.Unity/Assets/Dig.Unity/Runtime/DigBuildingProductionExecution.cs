@@ -81,7 +81,7 @@ internal sealed partial class DigTerrainWorkSession
         InitializeBuildingProductionDemo(
             agents,
             journal,
-            CampfireProductionContent.ProductionMaterialTicks);
+            CampfireProductionContent.TestProductionMaterialTicks);
     }
 
     internal void InitializeBuildingProductionDemo(
