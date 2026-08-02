@@ -26,7 +26,8 @@ public sealed class AgentSnapshot
         CellId? position = null,
         int positionZ = 0,
         AgentSkillProgressionSnapshot? skillProgression = null,
-        bool automaticPlanningEnabled = true)
+        bool automaticPlanningEnabled = true,
+        long lastTaskCompletionTick = -1)
         : this(
             id,
             name,
@@ -45,7 +46,8 @@ public sealed class AgentSnapshot
                 (position ?? new CellId(0, 0, 0)).Y,
                 positionZ),
             skillProgression,
-            automaticPlanningEnabled)
+            automaticPlanningEnabled,
+            lastTaskCompletionTick)
     {
     }
 
@@ -64,7 +66,8 @@ public sealed class AgentSnapshot
         IReadOnlyList<AgentTraitId> traits,
         CellId position,
         AgentSkillProgressionSnapshot? skillProgression,
-        bool automaticPlanningEnabled)
+        bool automaticPlanningEnabled,
+        long lastTaskCompletionTick)
     {
         if (id.IsEmpty)
         {
@@ -86,6 +89,11 @@ public sealed class AgentSnapshot
             throw new ArgumentOutOfRangeException(nameof(lastActionSwitchTick));
         }
 
+        if (lastTaskCompletionTick < -1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(lastTaskCompletionTick));
+        }
+
         if (position.X < 0
             || position.Y < 0
             || position.Z < 0
@@ -105,6 +113,7 @@ public sealed class AgentSnapshot
         ActiveAction = activeAction;
         PlayerOrder = playerOrder;
         LastActionSwitchTick = lastActionSwitchTick;
+        LastTaskCompletionTick = lastTaskCompletionTick;
         LastDecision = lastDecision;
         Position = position;
         SkillProgression = skillProgression;
@@ -120,6 +129,7 @@ public sealed class AgentSnapshot
     public AgentActionSnapshot? ActiveAction { get; }
     public PlayerOrder? PlayerOrder { get; }
     public long LastActionSwitchTick { get; }
+    public long LastTaskCompletionTick { get; }
     public AgentDecision? LastDecision { get; }
     public IReadOnlyList<AgentSkillValue> Skills { get; }
     public IReadOnlyList<AgentTraitId> Traits { get; }
@@ -193,7 +203,8 @@ public sealed class AgentSnapshot
         IReadOnlyList<AgentTraitId> traits,
         CellId position,
         AgentSkillProgressionSnapshot? skillProgression = null,
-        bool automaticPlanningEnabled = true)
+        bool automaticPlanningEnabled = true,
+        long lastTaskCompletionTick = -1)
     {
         return new AgentSnapshot(
             id,
@@ -210,7 +221,8 @@ public sealed class AgentSnapshot
             traits,
             position,
             skillProgression,
-            automaticPlanningEnabled);
+            automaticPlanningEnabled,
+            lastTaskCompletionTick);
     }
 
     private static IReadOnlyList<AgentSkillValue> CopySkills(
