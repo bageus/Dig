@@ -29,6 +29,35 @@ public sealed class CombatPreemptionUnityRuntimeContractTests
             < autonomy.IndexOf("agent.HasActiveFoodMeal", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public void Direct_command_priority_is_checked_before_self_defense_and_autonomy()
+    {
+        string runtime = ReadRuntime("DigResidentNeedsRuntime.cs");
+        string combat = ReadRuntime("DigAgentSession.CombatPreemption.cs");
+        string priority = ReadRuntime("DigAgentSession.DirectCommandPriority.cs");
+        string terrainPriority = ReadRuntime(
+            "DigTerrainWorkSession.DirectCommandPriority.cs");
+        string driver = ReadRuntime("DigAgentSimulationDriverBase.cs");
+
+        Assert.Contains("HasResidentDirectCommandPriority", runtime);
+        Assert.Contains("SuppressResidentCombatForDirectCommand", combat);
+        Assert.Contains("BeginResidentDirectCommand", priority);
+        Assert.Contains("DisengageResidentForDirectOrder", priority);
+        Assert.Contains("CancelExecution", priority);
+        Assert.Contains("resident_direct_command_overrode_combat", priority);
+        Assert.Contains("CollectAssignedActiveJobs", terrainPriority);
+        Assert.Contains("BindDirectCommandPrioritySource", driver);
+        Assert.Contains("HasActiveResidentDirectCommand", driver);
+        Assert.Contains("AgentSession.BeginResidentDirectCommand", driver);
+        Assert.True(
+            runtime.IndexOf(
+                "_hasDirectCommandPriority(agent.Id, tick)",
+                StringComparison.Ordinal)
+            < runtime.IndexOf(
+                "_isCombatActiveOrThreatened(agent.Id, tick)",
+                StringComparison.Ordinal));
+    }
+
     private static string ReadRuntime(string file)
     {
         return ReadSource(Path.Combine(
