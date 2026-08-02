@@ -11,31 +11,22 @@ public sealed class AgentTaskTransitionPauseTests
     private readonly AgentDecisionSystem _decisions = new AgentDecisionSystem();
 
     [Fact]
-    public void Completed_work_waits_one_full_tick_before_next_ordinary_task()
+    public void Completed_task_waits_one_full_tick_before_next_ordinary_work()
     {
         AgentState agent = AgentTestFactory.CreateAgent(
             nutrition: 8_000,
             alertness: 8_000,
             mood: 8_000);
-        Assert.True(agent.ApplyDecision(
-            AgentTestFactory.CreateForcedDecision(AgentIntentKind.Work, tick: 0),
-            _policy,
-            tick: 0).IsSuccess);
-        Assert.True(agent.AdvanceAction(_policy, tick: 0).IsSuccess);
-        Assert.True(agent.AdvanceAction(_policy, tick: 1).IsSuccess);
-        Assert.Equal(1, agent.LastTaskCompletionTick);
+        Assert.True(agent.RecordTaskCompletion("job_completed", tick: 1).IsSuccess);
 
         AgentDecision duringPause = Decide(agent, tick: 2);
         AgentDecision afterPause = Decide(agent, tick: 3);
 
         Assert.Equal(AgentIntentKind.Idle, duringPause.SelectedIntent);
-        Assert.All(
+        UtilityOptionDiagnostic work = Assert.Single(
             duringPause.Options.Where(option =>
-                option.IntentKind != AgentIntentKind.Idle),
-            option => Assert.True(
-                option.Critical
-                || option.IntentKind == AgentIntentKind.PlayerOrder
-                || option.ReasonCode == "rejected.cooldown"));
+                option.IntentKind == AgentIntentKind.Work));
+        Assert.Equal("rejected.cooldown", work.ReasonCode);
         Assert.Equal(AgentIntentKind.Work, afterPause.SelectedIntent);
     }
 
