@@ -159,7 +159,7 @@ public sealed class ResidentSettlementTests
     }
 
     [Fact]
-    public void Work_time_hunger_notifies_without_automatic_food_reservation()
+    public void Work_time_hunger_notifies_without_food_or_automatic_reservation()
     {
         ResidentSettlementHarness harness = new ResidentSettlementHarness();
         harness.AddAgent(
@@ -168,15 +168,15 @@ public sealed class ResidentSettlementTests
             alertness: 9_000,
             mood: 9_000,
             scheduleActivity: ScheduleActivity.Work);
-        harness.AddFood("92000000000000000000000000000004", quantity: 1);
 
         harness.Execute(tick: 0);
 
         AgentSnapshot snapshot = harness.Snapshot(FirstAgent, 0);
         Assert.Equal(AgentIntentKind.Work, snapshot.ActiveAction!.Value.IntentKind);
-        Assert.Equal(1, harness.Inventory.GetTotal(ResidentSettlementHarness.Meal));
+        Assert.Equal(0, harness.Inventory.GetTotal(ResidentSettlementHarness.Meal));
         Assert.Empty(harness.Inventory.CreateSnapshot().Stacks
             .SelectMany(value => value.Reservations));
+        Assert.Null(harness.Agents.Get(FirstAgent)!.LastActionBlockReason);
         AgentNeedThresholdCrossed hunger = Assert.Single(
             harness.Journal.Events.OfType<AgentNeedThresholdCrossed>(),
             value => value.Kind == AgentNeedThresholdKind.Hunger);
