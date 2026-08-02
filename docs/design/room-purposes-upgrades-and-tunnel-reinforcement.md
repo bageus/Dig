@@ -18,7 +18,7 @@ Tracking issue: [#574](https://github.com/bageus/Dig/issues/574).
 
 ## 1. Назначение и границы
 
-Система добавляет persistent infrastructure только для завершённых шаблонных комнат `Small`, `Medium`, `Large` и `Tall`, а также функциональные укрепления горизонтальных тоннелей.
+Система добавляет persistent infrastructure только для завершённых шаблонных комнат `Small`, `Medium`, `Large` и `Tall`, а также структурные и декоративные элементы горизонтальных тоннелей.
 
 Система охватывает:
 
@@ -26,46 +26,66 @@ Tracking issue: [#574](https://github.com/bageus/Dig/issues/574).
 - оперативно переключаемое назначение комнаты;
 - room-specific bonuses и explicit placement/visual profiles;
 - temporary room stock, hauling и staged construction;
-- автоматические и ручные tunnel reinforcement jobs;
-- сохранение частичного прогресса при смене worker;
+- автоматические деревянные опоры горизонтальных тоннелей;
+- автоматическую и ручную каменную декоративную отделку;
+- сохранение частичного прогресса room improvement при смене worker;
 - deterministic delayed collapse неукреплённых горизонтальных тоннелей;
 - декоративное развитие тоннелей как поздний material sink для камня и ножек гриба.
 
 Произвольно выкопанные области не получают room identity и purpose. Existing template aesthetic trim остаётся бесплатной rebuildable Presentation из `ExcavationTemplateInstance` provenance. Платное улучшение создаёт отдельный authoritative functional state и отдельную визуальную отделку.
 
+Каменная отделка обычного пола тоннеля не является структурной опорой, не заменяет деревянную балку и не защищает тоннель от обрушения.
+
 ## 2. Подтверждённый пользовательский workflow
 
-### 2.1 Выбор комнаты и типа
+### 2.1 Выбор комнаты, кнопка улучшения и тип
 
 1. После completion шаблонной комнаты над ней появляется небольшая world-space точка-кнопка.
 2. Click блокирует world click-through, выбирает stable room identity и открывает центральное HUD-меню.
-3. Доступные purpose:
+3. В меню есть отдельная кнопка `Улучшить` с order counter:
+   - допустимые значения только `0` и `1`;
+   - один click создаёт единственный upgrade order;
+   - второй count для той же комнаты добавить нельзя;
+   - после completion кнопка больше не создаёт повторное улучшение.
+4. Ниже кнопки находятся purpose:
    - `Bedroom` / Спальня;
    - `KitchenDining` / Кухня-столовая;
    - `Workshop` / Мастерская;
    - `Farm` / Ферма;
    - `None` / Без типа.
-4. Future purpose:
+5. Future purpose:
    - `TrainingRoom` — повышает скорость обучения;
    - `EnergyRoom` — увеличивает полезную работу fuel-based engines от одного fuel batch.
-5. Улучшенную комнату можно оставить без типа и позднее переключать purpose без новой оплаты.
-6. В режиме типов комнаты с purpose показывают полупрозрачный overlay. Каждый purpose имеет отдельные цвет, icon/pattern и text label.
+6. `RequestedPurpose` можно менять во время доставки материалов и во время improvement work. Смена типа не сбрасывает stock, progress или committed skill grants. При completion активируется последний выбранный purpose.
+7. До completion выбранный purpose не даёт bonus и compact placement.
+8. Улучшенную комнату можно оставить без типа и позднее переключать purpose без новой оплаты.
+9. В режиме типов комнаты с purpose показывают полупрозрачный overlay. Каждый purpose имеет отдельные цвет, icon/pattern и text label.
 
-### 2.2 Первое назначение и улучшение
+### 2.2 Первое улучшение, temporary stock и отмена
 
-Первый переход неулучшенной комнаты к функциональному purpose создаёт persistent room-upgrade operation.
+Первое нажатие `Улучшить` создаёт persistent room-upgrade operation с count `1`.
 
-1. В допустимой центральной позиции комнаты создаётся временный internal stock только для материалов upgrade.
-2. Обычные hauling jobs доставляют revealed, reachable и unreserved материалы.
-3. Improvement work не начинается до полной доставки required set.
-4. Worker выполняет material stages последовательно.
-5. Каждый committed material unit exactly once:
+1. Temporary internal stock создаётся в свободной клетке, ближайшей к геометрическому центру комнаты.
+2. Если центр занят building, item или resident, выбирается следующая reachable free room cell по Manhattan distance; tie-break — stable cell coordinate.
+3. Если свободной допустимой клетки пока нет, operation остаётся blocked и автоматически продолжает поиск после освобождения комнаты.
+4. Обычные hauling jobs доставляют revealed, reachable и unreserved материалы.
+5. Improvement work не начинается до полной доставки required set.
+6. Пока worker ещё не начал первый improvement work interval, игрок может отменить upgrade order:
+   - pending delivery jobs и reservations отменяются;
+   - temporary stock перестаёт быть restricted upgrade stock;
+   - уже доставленные материалы остаются лежать в комнате на текущих клетках;
+   - эти материалы снова доступны обычной автоматической логистике, производству и другим jobs;
+   - consumed materials и skill grants отсутствуют, потому что work ещё не начинался;
+   - room остаётся `Unimproved`, order count возвращается в `0`.
+7. Как только worker начал первый actual improvement work interval, отмена недоступна. Operation должна быть завершена в любом случае.
+8. Worker выполняет material stages последовательно.
+9. Каждый committed material unit exactly once:
    - расходуется из room stock;
    - обновляет persistent progress;
    - добавляет соответствующую часть отделки;
    - выдаёт skill grant материала.
-6. После completion временный stock удаляется, room получает `Improved`, выбранный purpose активируется.
-7. Direct interruption освобождает worker/position claims, но сохраняет stock, consumed ledger, partial visual progress и следующий stage. Другой допустимый worker продолжает с первого незавершённого material unit.
+10. После completion temporary stock удаляется, room получает `Improved`, активируется последний `RequestedPurpose`.
+11. Direct interruption после начала work освобождает worker/position claims, но сохраняет stock, consumed ledger, partial visual progress и следующий stage. Другой допустимый worker продолжает с первого незавершённого material unit.
 
 ### 2.3 Стоимость и progression
 
@@ -126,7 +146,7 @@ Global Building placement не ослабляется. Compact placement дос�
 - service side всегда обращена внутрь комнаты, противоположно стене;
 - если мастерская примыкает к правой стене, internal-stock rack и output floor zone находятся слева;
 - если мастерская примыкает к левой стене, rack и output zone находятся справа;
-- internal stock визуализируется не плоской площадкой, а небольшим стеллажом с уровнями и ячейками;
+- internal stock визуализируется небольшим стеллажом с уровнями и ячейками;
 - ready output остаётся на полу перед стеллажом;
 - preview показывает конечный roof/rack/output variant и проверяет те же authoritative anchors, что confirmation.
 
@@ -140,69 +160,84 @@ Global Building placement не ослабляется. Compact placement дос�
 4. После начала packing work обратное переключение purpose не отменяет job; worker завершает упаковку по обычному BuildingBox lifecycle.
 5. Для нескольких несовместимых зданий selection packing targets выполняется детерминированно по profile validity, затем stable BuildingId.
 
-### 2.7 Автоматическое укрепление
+### 2.7 Автоматические структурные опоры и каменная отделка
 
 - automatic range равен `20` cells по 3D Manhattan distance до ближайшей occupied cell любого completed building;
-- правило одинаково для horizontal support и vertical/horizontal junction target;
+- правило одинаково для wooden-support и junction-stone-trim jobs;
 - vertical tunnel не укрепляется распорками и не обрушается;
-- maximal continuous horizontal run длиной более 10 cells требует одну structural support на каждые 10 cells;
-- exact anchor при split/merge/branch остаётся Q-TUNNEL-002;
-- automatic horizontal support расходует 1 `material.mushroom_leg`, создаёт wooden beam и выдаёт Woodworking `+0.7` (`70` units);
-- vertical/horizontal junction создаёт low-priority stone reinforcement job стоимостью 1 `material.stone` и Stonework `+0.7`;
-- junction безопасен от collapse сразу после excavation независимо от delivery stone; stone trim является улучшением/визуальным благоустройством;
-- doors считаются structural reinforcement для своего tunnel target и coverage calculation;
-- no source оставляет job pending/blocked без phantom reservation;
+- каждое горизонтальное направление разбивается на deterministic segments;
+- начало segment — первая horizontal cell после выхода из template room либо первая horizontal cell после vertical-tunnel junction;
+- vertical-tunnel junction внутри горизонтального тоннеля разделяет левую и правую части на отдельные segments; отсчёт в каждой стороне начинается заново от junction;
+- structural wooden-support target создаётся на 10-й, 20-й, 30-й и последующих клетках каждого segment;
+- automatic job создаётся только для target, который находится не дальше 20 Manhattan cells от completed building;
+- каждый десятиклеточный block считается structurally reinforced только если его required target содержит completed wooden support либо door protection;
+- automatic horizontal support расходует 1 `material.mushroom_leg`, создаёт vertical wooden beam и выдаёт Woodworking `+0.7` (`70` units);
+- vertical/horizontal junction создаёт low-priority decorative stone-trim job стоимостью 1 `material.stone` и Stonework `+0.7`;
+- junction безопасен от collapse сразу после excavation независимо от доставки stone; stone trim не создаёт дополнительной structural protection;
+- doors считаются structural reinforcement для своего required target;
+- no source оставляет automatic job pending/blocked без phantom reservation;
 - automatic jobs имеют минимальный ordinary-work priority;
-- interruption сохраняет target/job и позволяет другому worker продолжить.
+- interruption автоматического job сохраняет target/job и позволяет другому worker продолжить.
 
-### 2.8 Ручное укрепление
+### 2.8 Ручной режим `U`
 
 Ручной режим использует material, уже находящийся в inventory выбранного resident.
 
 1. Игрок удерживает `U`, наводит pointer на inventory slot с `material.mushroom_leg` или `material.stone` и нажимает LMB по предмету.
-2. Выбранный exact stack резервируется; placement job первоначально owner-locked текущему resident.
+2. Выбранный exact stack резервируется; placement job owner-locked текущему resident.
 3. Mushroom leg preview:
-   - зелёный только на legal horizontal tunnel support target;
-   - final visual — вертикальная деревянная балка перед камерой.
+   - зелёный только на legal horizontal wooden-support target;
+   - final visual — вертикальная деревянная балка перед камерой;
+   - completion создаёт structural protection соответствующего десятиклеточного block и Woodworking `+0.7`.
 4. Stone preview:
    - зелёный на vertical/horizontal junction;
    - также зелёный на legal horizontal tunnel floor target;
    - junction visual — каменное обрамление стыка;
-   - ordinary floor visual — каменное укрепление/обрамление пола;
-   - ordinary stone support structurally заменяет wooden support для того же target/coverage и выдаёт Stonework `+0.7`.
+   - ordinary floor visual — каменное обрамление пола;
+   - оба stone variants являются декоративными, не заменяют wooden support, не закрывают required support target и не предотвращают collapse;
+   - completion выдаёт Stonework `+0.7`.
 5. LMB по valid world target создаёт ghost и job текущему resident.
-6. Resident идёт к work position, выкладывает exact material, выполняет один work cycle; commit расходует item, создаёт reinforcement state/visual и grant exactly once.
-7. Invalid target возвращает typed reason и не падает в movement/excavation.
-8. RMB отменяет unconfirmed preview без расхода.
-
-Поведение exact resident-owned source после direct interruption остаётся Q-TUNNEL-004A.
+6. Resident идёт к work position, выкладывает exact material и выполняет один work cycle. Commit расходует item, создаёт visual/infrastructure state и grant exactly once.
+7. Если owner-resident принудительно прерван до commit:
+   - manual job отменяется;
+   - ghost удаляется;
+   - exact-stack reservation освобождается;
+   - material остаётся в inventory того же resident;
+   - другой worker не продолжает это manual job.
+8. Invalid target возвращает typed reason и не падает в movement/excavation.
+9. RMB отменяет unconfirmed preview без расхода.
 
 ### 2.9 Обрушение
 
 - template room volume, vertical tunnel и junction никогда не обрушаются;
-- reinforced targets и door-protected targets не обрушаются;
-- eligible unreinforced horizontal tunnel не может обрушиться раньше одного game day после excavation completion;
+- десятиклеточный horizontal block с completed wooden support или door protection не обрушается;
+- decorative stone floor/junction trim не защищает ordinary horizontal block от collapse;
+- после excavation completion eligible unreinforced horizontal segment получает deterministic due delay `1`, `2` или `3` game days;
+- раньше одного полного game day collapse невозможен;
 - event выбирает 1–2 locations, каждое размером 1–3 consecutive cells;
-- occupied actor cell не обрушается: resolver сначала ищет соседнюю eligible cell того же segment; если замены нет, event откладывается;
+- occupied actor cell не обрушается: resolver сначала ищет соседнюю eligible cell того же segment; если замены нет, event откладывается на отдельный deterministic retry;
 - world items/material stacks в collapsed cell становятся buried, невидимыми и недоступными для hauling/use;
 - re-excavation восстанавливает те же buried stack identities и quantities exactly once;
+- collapse создаёт обычную `terrain.sand` без deposit и без terrain mining outputs;
+- buried items восстанавливаются отдельно от terrain output и не дублируются;
 - ladder находится в vertical tunnel и этим contract не затрагивается;
-- collapse восстанавливает mineable terrain, обновляет Navigation/Jobs/Presentation, после чего cell можно выкопать снова;
-- due time, candidate order, substitution и selected cells детерминированы и сохраняются.
+- collapse обновляет Navigation/Jobs/Presentation, после чего cell можно выкопать снова;
+- после повторной excavation неукреплённый segment снова получает новый deterministic delay `1..3` days и может обрушиться повторно;
+- due time, candidate order, substitution, selected cells и random sequence сохраняются.
 
-Точная cadence повторных collapse events и restored terrain provenance остаются открытыми.
+Точный delay retry после полного actor-blocked defer остаётся открытым в Q-TUNNEL-006A.
 
 ## 3. Владение состоянием
 
 - World владеет room/template cells, tunnel topology, terrain solidity, excavation tick, buried-item attachment и collapse mutation.
-- `RoomInfrastructureState` владеет RoomInfrastructureId, TemplateInstanceId, improvement lifecycle, material ledger, purpose и profile refs.
-- `TunnelReinforcementState` владеет target kind, coverage, status и collapse schedule; terrain owner остаётся World.
+- `RoomInfrastructureState` владеет RoomInfrastructureId, TemplateInstanceId, order count, improvement lifecycle, material ledger, requested/active purpose и profile refs.
+- `TunnelInfrastructureState` владеет segment origins, wooden-support targets, decorative stone targets, structural protection и collapse schedule; terrain owner остаётся World.
 - Inventory владеет stack identity, quantity, locations/reservations, room stock и buried stack identity.
-- Jobs владеет delivery/improvement/reinforcement/packing lifecycles и claims.
+- Jobs владеет delivery/improvement/automatic-support/manual-decoration/packing lifecycles и claims.
 - Buildings владеет identity, footprint, functions, stocks и packing.
 - Skills владеет grants/capacity/idempotency.
 - Needs/Production предоставляют authoritative rates; room system предоставляет typed multiplier context.
-- Presentation владеет buttons, menus, previews, overlays и rebuildable visuals.
+- Presentation владеет buttons, count, menus, previews, overlays и rebuildable visuals.
 
 ## 4. Модель данных
 
@@ -210,8 +245,12 @@ Global Building placement не ослабляется. Compact placement дос�
 RoomInfrastructureState
 - RoomInfrastructureId
 - TemplateInstanceId
+- UpgradeOrderCount: 0 | 1
 - ImprovementStatus
+- CancellationLocked
+- RequestedPurpose
 - ActivePurpose
+- TemporaryStockCell
 - Required/Delivered/Consumed ledger
 - CompletedMaterialUnitIds
 - ActiveJobIds
@@ -236,14 +275,33 @@ RoomPlacementProfile
 - InternalStockAnchors
 - OutputAnchors
 
-TunnelReinforcementTarget
+HorizontalTunnelSegment
+- SegmentId
+- OriginKind: RoomExit | VerticalJunction
+- OriginCell
+- OrderedHorizontalCells[]
+- RequiredSupportTargets[] at distance 10*n
+- AutomaticRangeDistances
+- Version
+
+TunnelInfrastructureTarget
 - TargetId
-- Kind: WoodenSupport | StoneFloorSupport | JunctionStoneTrim | DoorProtection
-- Cell/CoveredCells
-- AutomaticRangeDistance
+- Kind: WoodenStructuralSupport | StoneFloorTrim | JunctionStoneTrim | DoorProtection
+- Cell/CoveredBlock
+- IsStructural
 - Status
 - ExactSourceStackId for manual job
-- CollapseEligibility/ScheduledTick/Sequence
+- Version
+
+TunnelCollapseState
+- SegmentId
+- ExcavatedAtTick
+- DueDelayDays: 1..3
+- ScheduledTick
+- CandidateOrder
+- RetryState
+- Sequence
+- BuriedItemRefs[]
 - Version
 ```
 
@@ -251,77 +309,120 @@ TunnelReinforcementTarget
 
 Commands:
 
-- request first room purpose/improvement;
-- switch improved room purpose;
+- increment room upgrade count from 0 to 1;
+- cancel room upgrade before work start;
+- change requested room purpose;
 - synchronize material demand;
 - commit room material unit;
-- synchronize automatic support targets;
-- request manual reinforcement from exact resident stack;
-- commit reinforcement;
+- switch improved room purpose;
+- synchronize automatic wooden-support and junction-trim targets;
+- request manual infrastructure placement from exact resident stack;
+- cancel interrupted owner-locked manual job;
+- commit wooden support or stone trim;
 - create/cancel purpose-invalid packing jobs;
-- evaluate/commit tunnel collapse;
+- evaluate/commit/defer tunnel collapse;
 - recover buried items after excavation.
 
 Events:
 
-- improvement requested/stock filled/material committed/completed;
-- purpose changed;
+- upgrade ordered/cancelled/work-started/stock-filled/material-committed/completed;
+- requested purpose changed/active purpose changed;
 - packing required/cancelled/started;
-- reinforcement required/blocked/completed;
+- wooden support required/blocked/completed;
+- stone trim required/completed;
+- manual placement cancelled by interruption;
 - collapse scheduled/substituted/deferred/committed;
 - item buried/recovered;
 - typed skill grant result.
 
-Queries expose room costs/progress/purpose/bonuses/profile, reinforcement target/source/coverage и collapse diagnostics.
+Queries expose room count/cost/progress/purpose/bonuses/profile, target structural/decorative kind, source/coverage/range и collapse diagnostics.
 
 ## 6. Состояния и переходы
 
 ```text
 Room:
-Unimproved -> AwaitingMaterials -> ReadyForWork -> Improving -> Improved(Purpose|None)
-Improved(A) -> Improved(B) + create invalid-building packing jobs
-Improved(B) -> Improved(A) + cancel not-started invalid-building packing jobs
+Unimproved(count=0)
+-> UpgradeOrdered(count=1, AwaitingMaterials)
+-> ReadyForWork
+-> Improving(cancel locked)
+-> Improved(RequestedPurpose|None)
 
-Reinforcement:
+AwaitingMaterials | ReadyForWork
+-> CancelledBeforeWork
+-> Unimproved(count=0, delivered items released)
+
+Improving
+-> Improving(worker replaced, progress preserved)
+
+RequestedPurpose may change in AwaitingMaterials, ReadyForWork or Improving.
+
+Improved(A)
+-> Improved(B) + create invalid-building packing jobs
+Improved(B)
+-> Improved(A) + cancel not-started invalid-building packing jobs
+
+Automatic structural support:
 Required -> WaitingForMaterial -> Assigned -> Working -> Reinforced
-ManualPreview -> ConfirmedOwnerLocked -> Working -> Reinforced
+
+Manual owner-locked placement:
+Preview -> ConfirmedOwnerLocked -> Working -> Committed
+ConfirmedOwnerLocked | Working(before commit) -> CancelledOnInterruption
 
 Collapse:
-Ineligible -> EligibleAfterOneDay -> Scheduled
+Ineligible -> ScheduledAfter1To3Days
 Scheduled -> Substituted | Deferred | Collapsed
-Collapsed -> ReExcavated -> BuriedItemsRecovered
+Collapsed -> ReExcavated -> BuriedItemsRecovered -> ScheduledAfter1To3Days if still unreinforced
 ```
 
 ## 7. Input, UI и Presentation
 
 - room marker blocks click-through;
-- central menu показывает purpose, active state, cost, delivered/incoming, stage, worker и typed reason;
+- central menu показывает `Улучшить`, count `0/1`, purpose list, active/requested state, cost, delivered/incoming, stage, worker и typed reason;
+- cancel control виден только до first improvement work interval;
+- после work start UI показывает обязательное завершение и не предлагает cancel;
+- purpose buttons остаются active во время delivery/work и меняют только RequestedPurpose;
 - overlays имеют color + icon/pattern/label;
 - placement preview показывает wall variant, rack/output side и profile reason;
 - `U + inventory slot click` имеет приоритет после UI shielding и до world movement/excavation;
-- support ghost не authoritative;
+- preview различает structural wooden beam и decorative stone trim;
 - collapse публикует notification и refreshes terrain/colliders/routes/overlays.
 
 ## 8. Инварианты
 
 - purpose доступен только completed template room;
 - one TemplateInstanceId имеет максимум one RoomInfrastructureState;
+- UpgradeOrderCount находится только в `0..1`;
+- после первого improvement work interval cancellation навсегда заблокирована до completion;
+- отмена до work не уничтожает и не возвращает телепортом доставленные материалы;
 - improvement cost и skill grants применяются exactly once;
 - purpose switching не повторяет cost/grants;
 - Tent всегда имеет два Bed slots;
 - logical footprint никогда не занимает solid wall;
 - room modifier применяется exactly once;
 - packing job отменяется сменой purpose только до начала packing work;
-- one reinforcement target commits at most once;
+- one structural target commits at most once;
+- stone trim никогда не удовлетворяет wooden structural target;
 - manual job не расходует иной stack вместо selected exact stack;
+- interruption manual job не передаёт material другому worker;
 - no source означает pending, не free support;
-- collapse не происходит раньше одного дня и не выбирает actor-occupied, room, vertical, junction, reinforced или door-protected cell;
+- collapse не происходит раньше одного дня и не выбирает actor-occupied, room, vertical, junction, structurally reinforced или door-protected cell;
+- collapse terrain всегда `terrain.sand` без deposit/output;
 - buried items не дублируются и восстанавливаются exactly once;
+- unreinforced re-excavated segment снова может получить collapse;
 - save/load/retry не дублирует stock, visuals, grants, jobs или collapse events.
 
 ## 9. Save/Load и migration
 
-Сохраняются room state/material ledger/stages/purpose, temporary stock, active jobs, invalid-building packing jobs и started flag, reinforcement targets/coverage/source stack, buried item refs, collapse eligibility/schedule/sequence/substitution state и grant idempotency keys.
+Сохраняются:
+
+- room order count, cancellation lock, requested/active purpose;
+- material ledger, temporary stock cell, active jobs and stages;
+- invalid-building packing jobs и started flag;
+- segment origins/order, required structural targets и decorative targets;
+- exact manual source stack and owner resident until commit/cancel;
+- buried item refs;
+- collapse excavation tick, delay 1..3, due tick, candidate/substitution/retry state and sequence;
+- grant idempotency keys.
 
 Legacy saves не получают automatic purpose. Reinforcement/collapse migration policy остаётся явной и versioned.
 
@@ -329,81 +430,90 @@ Legacy saves не получают automatic purpose. Reinforcement/collapse mig
 
 Inspector/HUD показывает:
 
-- room/template/purpose/improvement state;
-- required/current/incoming/consumed materials;
-- active worker/job/stage/work position;
+- room/template/order count/requested purpose/active purpose/improvement state;
+- cancellation locked reason;
+- required/current/incoming/consumed materials and released-on-cancel items;
+- temporary stock selection reason and active worker/job/stage/work position;
 - effective multiplier/capacity/profile/visual variant;
 - incompatible buildings и packing lifecycle;
-- reinforcement kind/coverage/range/source stack/worker;
-- collapse earliest/due tick, candidates, rejected reason, substitution и buried refs;
-- World/Navigation versions после collapse.
+- segment origin, ordered distance, required support target, structural/decorative kind, coverage, range, source stack and worker;
+- collapse earliest/due tick, delay days, candidates, rejected reason, substitution, retry and buried refs;
+- World/Navigation versions after collapse.
 
 ## 11. Тестовая матрица
 
 Domain/Application:
 
+- order count accepts only 0/1;
+- cancellation during delivery releases materials and disables restricted stock;
+- cancellation rejected after work starts;
+- purpose changes during delivery/work without resetting progress;
+- nearest-free stock cell selection and blocked retry;
 - exact costs и `+0.5` per material;
 - multiplier composition 1.20/1.15 exactly once;
 - Tent counts and two slots per tent;
 - wall visual variant without solid logical footprint;
 - mirrored rack/output anchors;
 - purpose switch packing/cancel-before-start/no-cancel-after-start;
-- one support per 10 cells and range 20 Manhattan;
-- manual exact resident stack;
-- pending source/retry/idempotency;
-- actor substitution/defer and buried item recovery;
-- deterministic collapse/save-load.
+- segment origins at room exits and vertical junctions;
+- one wooden support target per 10 cells and range 20 Manhattan;
+- stone trim never satisfies structural target;
+- manual exact resident stack and cancel-on-interruption;
+- actor substitution/defer, sand restoration and buried item recovery;
+- deterministic 1..3 day collapse, repeat after re-excavation and save/load.
 
 Unity Play Mode:
 
-- room marker/menu/overlay shielding;
+- room marker/menu/count/purpose/overlay shielding;
+- cancel delivery leaves visible usable materials in room;
+- work-start cancellation unavailable and second worker resumes;
 - Small/Medium/Large Tent layouts;
 - Small Workshop dual-building layout;
 - Medium Farm triple-building layout;
-- staged improvement and second worker resume;
 - observed Alertness/Nutrition/production rate changes;
 - left/right wall variants and shelf/output mirroring;
-- automatic/manual supports;
+- automatic wooden support and decorative stone trim visuals;
+- manual interruption removes ghost/job and leaves item in owner inventory;
 - purpose-invalid automatic packing cancellation boundary;
-- real collapse, buried item disappearance and re-excavation recovery.
+- real repeated collapse, sand cell, buried item disappearance and re-excavation recovery.
 
 ## 12. Acceptance
 
-- completed template room exposes one marker and purpose menu;
-- first purpose uses real hauling, exact cost and staged work;
-- worker replacement preserves progress;
+- completed template room exposes one marker, one-use `Улучшить` count and purpose menu;
+- first upgrade uses real hauling, exact cost and staged work;
+- player may cancel only before actual improvement work starts;
+- pre-work cancellation leaves delivered materials in the room and makes them ordinarily usable;
+- once work starts, operation is guaranteed to finish and another worker resumes after interruption;
+- requested purpose can change at any pre-completion stage without resetting upgrade;
 - Bedroom/KitchenDining/Workshop/Farm apply confirmed bonuses;
 - compact profiles never occupy solid wall;
 - Tent capacities are 4/8/12 slots for Small/Medium/Large Bedroom;
 - purpose switch creates packing jobs and can cancel only not-started jobs by switching back;
-- automatic support range is 20 Manhattan and cadence is one per 10 horizontal cells;
-- manual mode consumes selected resident inventory stack;
-- stone can reinforce junction or ordinary horizontal floor;
+- automatic structural range is 20 Manhattan and target cadence is one wooden support per 10 horizontal cells from each room-exit/vertical-junction origin;
+- manual wooden support consumes selected resident inventory leg and protects its block;
+- manual/automatic stone trim consumes stone, grants Stonework and remains decorative only;
+- interrupted manual job is cancelled and material stays in owner inventory;
 - actor cells defer/substitute collapse, items become buried and recover after re-excavation;
+- collapse creates output-free `terrain.sand`, occurs after deterministic 1..3 days and can repeat after re-excavation until structural support exists;
 - save/load preserves every authoritative stage and exactly-once effect.
 
 ## 13. Открытые вопросы
 
 ### Room
 
-- **Q-ROOM-002 — cancel upgrade.** Можно ли явно отменить незавершённое improvement? Что происходит с delivered materials, consumed stages и partial finish?
 - **Q-ROOM-003 — action membership.** Building bonus определяется binding при placement или проверкой anchors внутри room? Sleep/Eat bonus проверяется на старте action либо на каждом interval?
 - **Q-ROOM-007 — remaining layouts.** Tall Bedroom и точный первый каталог Farm/Workshop profiles для Small/Large/Tall.
-- **Q-ROOM-009 — occupied room upgrade.** Где создаются temporary stock/work position, если центр занят building/item/resident? Какие blockers запрещают старт?
-- **Q-ROOM-010 — purpose before completion.** Можно ли менять requested purpose во время AwaitingMaterials/Improving?
 
 ### Tunnel
 
-- **Q-TUNNEL-002 — interval anchoring.** Какая endpoint/ordering определяет каждый десятый target при split, merge и branch horizontal runs?
-- **Q-TUNNEL-004A — interrupted manual exact-stack job.** Если owner-resident принудительно прерван до material commit, job остаётся привязанным к нему или selected stack выгружается/передаётся для продолжения другим гномом?
-- **Q-TUNNEL-006 — collapse cadence.** Как выбирается deterministic срок после первого дня и может ли повторно выкопанный segment снова обрушиться?
-- **Q-TUNNEL-007 — restored terrain.** Collapse всегда создаёт обычную stone rock без output либо восстанавливает исходный terrain provenance без повторного deposit?
-- **Q-TUNNEL-008 — cancellation.** Можно ли отменять pending automatic/manual support jobs и когда automatic target создаётся снова?
+- **Q-TUNNEL-006A — deferred retry.** Через какой deterministic interval повторяется collapse event, если все выбранные и соседние допустимые cells временно заняты actors?
+- **Q-TUNNEL-008 — automatic cancellation.** Может ли игрок отменить pending automatic wooden-support/junction-trim job; если да, когда target снова создаётся synchronization?
 
 ## 14. Журнал решений
 
 | Дата | Решение | Кто подтвердил | Изменённые разделы/issues |
 |---|---|---|---|
-| 2026-08-02 | Создана система room purposes/upgrades и tunnel reinforcement/collapse | владелец дизайна | весь документ, #574 |
+| 2026-08-02 | Создана система room purposes/upgrades и tunnel infrastructure/collapse | владелец дизайна | весь документ, #574 |
 | 2026-08-02 | Purpose только для template rooms; Tent = 2 slots; bonuses 1.20/1.15; visual-only wall inset; mirrored shelf/output; automatic packing on purpose change | владелец дизайна + delegated balance | 1, 2.4–2.6, 8, 11–13, #574 |
-| 2026-08-02 | Automatic range 20 Manhattan; one support per 10 cells; junction intrinsically safe; exact-inventory manual mode; stone floor support; actor defer/substitute; buried items recover | владелец дизайна | 2.7–2.9, 4–13, #574 |
+| 2026-08-02 | Automatic range 20 Manhattan; one support per 10 cells; junction intrinsically safe; exact-inventory manual mode; actor defer/substitute; buried items recover | владелец дизайна | 2.7–2.9, 4–13, #574 |
+| 2026-08-02 | Stone floor/junction trim is decorative only; room cancel allowed only before work; requested type may change during work; nearest-free stock; segment origins at room/vertical junction; manual interruption cancels job; collapse after 1..3 days repeats and restores output-free sand | владелец дизайна | 1–14, #574 |
