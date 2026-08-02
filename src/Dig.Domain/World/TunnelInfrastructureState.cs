@@ -36,10 +36,6 @@ public static class TunnelInfrastructureErrors
         "tunnel.infrastructure.anchor_outside_segment",
         "Structural anchor cell is outside the tunnel segment.");
 
-    public static readonly DomainError AnchorBeyondNextTarget = new DomainError(
-        "tunnel.infrastructure.anchor_beyond_next_target",
-        "A new forward anchor cannot skip the current automatic support target.");
-
     public static readonly DomainError InvalidSnapshot = new DomainError(
         "tunnel.infrastructure.invalid_snapshot",
         "Tunnel infrastructure snapshot does not match its derived anchor chain.");
@@ -94,7 +90,7 @@ public sealed class TunnelInfrastructureState : AggregateRoot
                 tick,
                 segmentId,
                 previousTargetCell: null,
-                initialTarget));
+                nextTargetCell: initialTarget));
         }
 
         return Result.Success();
