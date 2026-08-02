@@ -3,7 +3,8 @@
 **Status:** IN PROGRESS  
 **Date:** 2026-08-02  
 **Authoritative design:** `docs/design/runtime-needs-supply-sleep-food-recovery.md`  
-**Tracking:** #2, #159, #142, #433, #459
+**Tracking:** #2, #159, #142, #433, #459  
+**Implementation PR:** #573
 
 ## Implementation scope
 
