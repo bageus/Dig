@@ -8,7 +8,7 @@ Tracking: [#577](https://github.com/bageus/Dig/issues/577), [#508](https://githu
 
 This correction records the latest confirmed rules for enemy pursuit and resident task transitions. It supersedes every older clause that lets `enemy.vuker` track a living resident after sight or World/Tunnel line of sight is lost, including persistent-current-cell pursuit described in `combat-spatial-execution.md`, `enemy-combat-and-cave-encounters.md`, and the 2026-08-02 combat-preemption correction.
 
-It also extends the existing data-driven `AgentUtilityPolicy.DecisionCooldownTicks` contract from active-intent anti-oscillation to the observable pause after successful task completion. No second combat detector, task scheduler, or presentation timer is introduced.
+It also extends the existing data-driven `AgentUtilityPolicy.DecisionCooldownTicks` contract from active-intent anti-oscillation to the observable pause after successful authoritative task completion. No second combat detector, task scheduler, or presentation timer is introduced.
 
 ## Enemy vision and pursuit
 
@@ -34,19 +34,23 @@ The existing absolute priority remains authoritative:
 
 ## Resident task-transition pause
 
-A resident enters a short task-transition pause after a successfully completed task. The pause applies to:
+A resident enters a short task-transition pause after a successfully completed authoritative task. The pause applies to:
 
 - manual/direct movement reaching its destination;
 - a direct or automatic assigned job reaching `Completed`;
-- generic Work/Rest/Idle-policy actions reaching completion;
+- a direct `PlayerOrder` action reaching completion;
 - targeted Eat/Sleep/Leisure actions reaching completion;
 - a bite-based meal reaching its final bite.
+
+An internal generic Utility AI Work/Rest/Idle action cycle is decision cadence, not a completed world task, and does not create a new pause by itself. Automatic mode receives the pause from the real assigned job or targeted action that completed.
 
 The pause does not start for rejection, interruption, cancellation, blocked retry, death, or a task that never acquired authoritative ownership.
 
 ### Duration
 
-The duration is `AgentUtilityPolicy.DecisionCooldownTicks`. The current default is `2` simulation ticks. With the authoritative demo cadence of `2.0` real seconds per tick, this is approximately `4` real seconds at normal playback. Speed controls change real-time presentation only; simulation duration remains two ticks.
+The boundary uses `AgentUtilityPolicy.DecisionCooldownTicks`. The current default is `2` tick indices. With a completion recorded at tick `T`, ordinary automatic work is blocked at `T+1` and becomes eligible when the delta reaches `2`, at `T+2`.
+
+The observable pause is therefore one complete following simulation tick. With the authoritative demo cadence of `2.0` real seconds per tick, that is approximately `2` real seconds at normal playback. Playback speed changes wall-clock presentation only; the deterministic tick boundary is unchanged.
 
 ### Priority during the pause
 
@@ -54,14 +58,14 @@ The duration is `AgentUtilityPolicy.DecisionCooldownTicks`. The current default 
 - The resident remains in `Idle` and may continue passive needs decay.
 - A new successful direct player command bypasses the pause immediately.
 - Critical survival/emergency and a newly detected combat threat bypass the pause.
-- The pause ends deterministically when the configured cooldown ticks have elapsed.
+- The pause ends deterministically when the configured cooldown boundary is reached.
 
 The pause is a transition between completed tasks, not a minimum duration added to the task itself. It does not delay the terminal commit, item transfer, job completion, reservation release, or event publication.
 
 ## State ownership and events
 
 - `AgentState` owns the last successful task-completion tick.
-- The existing utility policy owns the duration.
+- The existing utility policy owns the duration boundary.
 - Job, movement, food and targeted-action owners report successful completion to `AgentState` exactly once.
 - Automatic planners query the resident transition-pause fact before assigning new work.
 - Presentation may display Idle/pause diagnostics but does not run or mutate the timer.
@@ -80,7 +84,7 @@ Diagnostics expose:
 
 - enemy sight range, LoS result and terminal `enemy_target_out_of_sight` reason;
 - resident last task-completion tick;
-- configured pause duration and remaining ticks;
+- configured pause boundary and remaining ticks;
 - whether an ordinary automatic candidate/job was rejected by task-transition pause;
 - whether direct order or critical/emergency behavior bypassed the pause.
 
@@ -90,9 +94,10 @@ Diagnostics expose:
 - Losing range or LoS immediately completes enemy intent/execution with `enemy_target_out_of_sight`.
 - Enemy does not pursue current or last-known target cells after sight loss and can resume patrol.
 - Direct movement out of sight leaves enemy combat ended and does not recreate resident self-defense without a new visible threat.
-- Generic, targeted and meal completion record one task-completion fact.
+- Targeted action and final meal completion record one task-completion fact.
 - Manual movement and assigned-job completion record one task-completion fact.
-- Ordinary Utility AI candidates and automatic assignment wait `DecisionCooldownTicks`.
+- Internal generic utility cadence does not create artificial repeated pauses.
+- Ordinary Utility AI candidates and automatic assignment wait through the next complete tick.
 - Direct player orders and critical/emergency behavior bypass the pause.
 - Rejected/interrupted/cancelled work does not create a successful-completion pause.
 - Domain, Application, source-contract, deterministic and checked-in Play Mode regressions cover both workflows.
