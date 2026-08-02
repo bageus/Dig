@@ -197,9 +197,6 @@ public sealed partial class AgentState
         if (IsAlive)
         {
             Raise(new AgentActionCompleted(tick, Id, completedIntent));
-            RecordTaskCompletionCore(
-                "targeted_action_completed:" + completedIntent,
-                tick);
         }
 
         return Result.Success();
