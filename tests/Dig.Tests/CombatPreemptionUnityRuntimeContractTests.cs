@@ -33,13 +33,15 @@ public sealed class CombatPreemptionUnityRuntimeContractTests
     public void Direct_command_priority_is_checked_before_self_defense_and_autonomy()
     {
         string runtime = ReadRuntime("DigResidentNeedsRuntime.cs");
+        string sessionNeeds = ReadRuntime("DigAgentSession.ResidentNeeds.cs");
         string combat = ReadRuntime("DigAgentSession.CombatPreemption.cs");
         string priority = ReadRuntime("DigAgentSession.DirectCommandPriority.cs");
         string terrainPriority = ReadRuntime(
             "DigTerrainWorkSession.DirectCommandPriority.cs");
         string driver = ReadRuntime("DigAgentSimulationDriverBase.cs");
 
-        Assert.Contains("HasResidentDirectCommandPriority", runtime);
+        Assert.Contains("_hasDirectCommandPriority(agent.Id, tick)", runtime);
+        Assert.Contains("HasResidentDirectCommandPriority", sessionNeeds);
         Assert.Contains("SuppressResidentCombatForDirectCommand", combat);
         Assert.Contains("BeginResidentDirectCommand", priority);
         Assert.Contains("DisengageResidentForDirectOrder", priority);
