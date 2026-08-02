@@ -23,6 +23,7 @@ public static class SaveGameCompositionRoot
         typeof(Dig.Domain.Jobs.ResidentInventoryPlacementJobDefinition),
         typeof(Dig.Domain.Jobs.SpatialDigJobDefinition),
         typeof(Dig.Domain.Jobs.StrategicExecutionJobDefinition),
+        typeof(Dig.Domain.Jobs.TunnelAutomaticWorkJobDefinition),
         typeof(Dig.Domain.Jobs.WorldItemPickupJobDefinition),
     };
 
@@ -72,6 +73,8 @@ public static class SaveGameCompositionRoot
                     new SpatialDigJobSaveCodec()),
                 Registration<Dig.Domain.Jobs.StrategicExecutionJobDefinition>(
                     new StrategicExecutionJobSaveCodec()),
+                Registration<Dig.Domain.Jobs.TunnelAutomaticWorkJobDefinition>(
+                    new TunnelAutomaticWorkJobSaveCodec()),
                 Registration<Dig.Domain.Jobs.WorldItemPickupJobDefinition>(
                     new WorldItemPickupJobSaveCodec()),
             });
@@ -106,6 +109,4 @@ public static class SaveGameCompositionRoot
     {
         return new JobDefinitionSaveRegistration(typeof(TDefinition), codec);
     }
-}
-
 }
