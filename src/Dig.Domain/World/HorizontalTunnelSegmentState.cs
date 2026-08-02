@@ -99,15 +99,6 @@ internal sealed class HorizontalTunnelSegmentState
             return Result<bool>.Success(false);
         }
 
-        int nextTargetIndex = _currentAnchorIndex
-            + TunnelInfrastructureState.AutomaticSupportInterval;
-        if (cellIndex > _currentAnchorIndex
-            && nextTargetIndex < _orderedCells.Length
-            && cellIndex > nextTargetIndex)
-        {
-            return Result<bool>.Failure(TunnelInfrastructureErrors.AnchorBeyondNextTarget);
-        }
-
         if (kinds is null)
         {
             kinds = new HashSet<TunnelStructuralAnchorKind>();
