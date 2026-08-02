@@ -30,7 +30,10 @@ public sealed class AgentCombatActionGateTests
         AgentSnapshot snapshot = agent.CreateSnapshot(1);
         Assert.Null(snapshot.ActiveAction);
         Assert.Equal("combat_preempted", agent.LastActionBlockReason);
-        Assert.Equal(before, snapshot.Needs);
+        Assert.Equal(before.Nutrition.Points, snapshot.Needs.Nutrition.Points);
+        Assert.Equal(before.Alertness.Points, snapshot.Needs.Alertness.Points);
+        Assert.Equal(before.Mood.Points, snapshot.Needs.Mood.Points);
+        Assert.Equal(before.Health.Points, snapshot.Needs.Health.Points);
         Assert.Contains(
             agent.DequeueUncommittedEvents(),
             domainEvent => domainEvent is AgentActionBlocked blocked
