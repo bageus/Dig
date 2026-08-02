@@ -60,6 +60,33 @@ public sealed class CombatPreemptionUnityRuntimeContractTests
                 StringComparison.Ordinal));
     }
 
+    [Fact]
+    public void Enemy_sight_loss_and_task_transition_pause_use_authoritative_owners()
+    {
+        string targeting = ReadSource(
+            "src/Dig.Application/Combat/CombatSpatialExecutionHandler.Targeting.cs");
+        string agent = ReadSource("src/Dig.Domain/Agents/AgentState.cs");
+        string decisions = ReadSource(
+            "src/Dig.Domain/Agents/AgentDecisionCandidates.cs");
+        string movement = ReadRuntime("DigAgentSession.TunnelMovement.cs");
+        string taskTransitions = ReadRuntime("DigAgentSession.TaskTransitions.cs");
+        string terrain = ReadRuntime("DigTerrainWorkDirectMovement.cs");
+        string driver = ReadRuntime("DigAgentSimulationDriverBase.Loop.cs");
+
+        Assert.Contains("enemy_target_out_of_sight", targeting);
+        Assert.DoesNotContain("persistent_aggro_target_tracked", targeting);
+        Assert.Contains("LastTaskCompletionTick", agent);
+        Assert.Contains("RecordTaskCompletionCore", agent);
+        Assert.Contains("taskPauseActive", decisions);
+        Assert.Contains("AgentIntentKind.Idle", decisions);
+        Assert.Contains("manual_movement_completed", movement);
+        Assert.Contains("RecordCompletedResidentTasks", taskTransitions);
+        Assert.Contains("_isTaskTransitionPaused", terrain);
+        Assert.Contains("CaptureActiveResidentTaskAssignments", driver);
+        Assert.Contains("ResolveCompletedResidentTasks", driver);
+        Assert.Contains("AgentSession.RecordCompletedResidentTasks", driver);
+    }
+
     private static string ReadRuntime(string file)
     {
         return ReadSource(Path.Combine(
