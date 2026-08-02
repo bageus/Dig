@@ -15,6 +15,8 @@ namespace Dig.Headless
 
 internal static class HeadlessResidentSettlementScenario
 {
+    private const int MaximumSettlementTicks = 24;
+
     public static int Run(
         SimulationState state,
         InMemoryExecutionJournal journal,
@@ -90,19 +92,35 @@ internal static class HeadlessResidentSettlementScenario
             new AgentDecisionSystem(),
             AgentBehaviorPolicy.CreateDefault());
 
-        for (long tick = startTick; tick < startTick + 7; tick++)
+        long finalTick = startTick;
+        for (int offset = 0; offset < MaximumSettlementTicks; offset++)
         {
-            settlement.Execute(new SimulationContext(tick, state));
+            finalTick = checked(startTick + offset);
+            settlement.Execute(new SimulationContext(finalTick, state));
+            if (HasCompletedNeedsWorkflow(
+                journal,
+                inventory,
+                facilities,
+                firstAgent,
+                secondAgent,
+                meal))
+            {
+                break;
+            }
         }
 
-        AgentSnapshot first = agents.Get(firstAgent)!.CreateSnapshot(startTick + 6);
-        AgentSnapshot second = agents.Get(secondAgent)!.CreateSnapshot(startTick + 6);
-        int eatingCompleted = journal.Events.OfType<AgentActionCompleted>()
-            .Count(value => (value.AgentId == firstAgent || value.AgentId == secondAgent)
-                && value.IntentKind == AgentIntentKind.Eat);
-        int sleepingCompleted = journal.Events.OfType<AgentActionCompleted>()
-            .Count(value => (value.AgentId == firstAgent || value.AgentId == secondAgent)
-                && value.IntentKind == AgentIntentKind.Sleep);
+        AgentSnapshot first = agents.Get(firstAgent)!.CreateSnapshot(finalTick);
+        AgentSnapshot second = agents.Get(secondAgent)!.CreateSnapshot(finalTick);
+        int eatingCompleted = CountCompleted(
+            journal,
+            firstAgent,
+            secondAgent,
+            AgentIntentKind.Eat);
+        int sleepingCompleted = CountCompleted(
+            journal,
+            firstAgent,
+            secondAgent,
+            AgentIntentKind.Sleep);
         if (inventory.GetTotal(meal) != 0
             || eatingCompleted != 2
             || sleepingCompleted != 2
@@ -113,11 +131,51 @@ internal static class HeadlessResidentSettlementScenario
             || second.Needs.Alertness.Points <= 0)
         {
             throw new InvalidOperationException(
-                "Headless residents did not complete deterministic food and sleep cycles.");
+                "Headless residents did not complete deterministic food and sleep cycles. "
+                + $"tick={finalTick}, food={inventory.GetTotal(meal)}, "
+                + $"eat={eatingCompleted}, sleep={sleepingCompleted}, "
+                + $"facilityReservations={facilities.GetReservations().Count}, "
+                + $"firstNutrition={first.Needs.Nutrition.Points}, "
+                + $"secondNutrition={second.Needs.Nutrition.Points}, "
+                + $"firstAlertness={first.Needs.Alertness.Points}, "
+                + $"secondAlertness={second.Needs.Alertness.Points}.");
         }
 
-        HeadlessCombatScenario.Run(journal, startTick + 7);
+        HeadlessCombatScenario.Run(journal, checked(finalTick + 1));
         return 2;
+    }
+
+    private static bool HasCompletedNeedsWorkflow(
+        InMemoryExecutionJournal journal,
+        InventoryState inventory,
+        BuildingFacilitiesState facilities,
+        EntityId firstAgent,
+        EntityId secondAgent,
+        ItemId meal)
+    {
+        return inventory.GetTotal(meal) == 0
+            && CountCompleted(
+                journal,
+                firstAgent,
+                secondAgent,
+                AgentIntentKind.Eat) == 2
+            && CountCompleted(
+                journal,
+                firstAgent,
+                secondAgent,
+                AgentIntentKind.Sleep) == 2
+            && facilities.GetReservations().Count == 0;
+    }
+
+    private static int CountCompleted(
+        InMemoryExecutionJournal journal,
+        EntityId firstAgent,
+        EntityId secondAgent,
+        AgentIntentKind intent)
+    {
+        return journal.Events.OfType<AgentActionCompleted>()
+            .Count(value => (value.AgentId == firstAgent || value.AgentId == secondAgent)
+                && value.IntentKind == intent);
     }
 
     private static AgentState CreateAgent(EntityId id, string name)

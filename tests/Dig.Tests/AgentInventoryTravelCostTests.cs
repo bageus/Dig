@@ -42,12 +42,16 @@ public sealed class AgentInventoryTravelCostTests
     }
 
     [Fact]
-    public void Critical_survival_remains_eligible_with_high_travel_cost()
+    public void Critical_survival_remains_eligible_with_high_travel_cost_outside_work()
     {
+        DailySchedule freeTime = new DailySchedule(
+            ticksPerDay: 8,
+            new[] { new ScheduleSegment(0, 8, ScheduleActivity.Rest) });
         AgentState agent = AgentTestFactory.CreateAgent(
             nutrition: 1_000,
             alertness: 8_000,
-            mood: 8_000);
+            mood: 8_000,
+            schedule: freeTime);
 
         AgentDecision decision = new AgentDecisionSystem().Decide(
             agent.CreateSnapshot(tick: 0),

@@ -121,8 +121,15 @@ public sealed partial class AgentState
         return Result.Success();
     }
 
-    public Result<bool> AdvanceTargetedAction(long tick)
+    public Result<bool> AdvanceTargetedAction(
+        AgentBehaviorPolicy policy,
+        long tick)
     {
+        if (policy is null)
+        {
+            throw new ArgumentNullException(nameof(policy));
+        }
+
         ValidateTick(tick);
         if (!IsAlive)
         {
@@ -139,8 +146,20 @@ public sealed partial class AgentState
             return Result<bool>.Failure(AgentErrors.TargetedActionAlreadyReady);
         }
 
+        AgentActionEffect effect = policy.Actions.Get(_activeAction.IntentKind);
+        NeedDelta interval = ResolveTargetedInterval(
+            effect.NeedDelta,
+            effect.DurationTicks,
+            _activeAction.ElapsedTicks);
+        if (_activeAction.Target.Value.Kind == AgentActivityTargetKind.FloorSleep)
+        {
+            interval = ApplyFloorSleepLimits(interval);
+        }
+
+        ApplyNeedDelta(interval, tick);
         bool ready = _activeAction.Advance();
         Version = checked(Version + 1);
+        HandleDeath(tick);
         return Result<bool>.Success(ready);
     }
 
@@ -168,18 +187,61 @@ public sealed partial class AgentState
         }
 
         AgentIntentKind completedIntent = _activeAction.IntentKind;
-        AgentActionEffect effect = policy.Actions.Get(completedIntent);
-        ApplyNeedDelta(effect.NeedDelta, tick);
         _activeAction = null;
         LastActionBlockReason = null;
         Version = checked(Version + 1);
-        HandleDeath(tick);
         if (IsAlive)
         {
             Raise(new AgentActionCompleted(tick, Id, completedIntent));
         }
 
         return Result.Success();
+    }
+
+    private NeedDelta ApplyFloorSleepLimits(NeedDelta interval)
+    {
+        int availableAlertness = Math.Max(0, 7_500 - _needs.Alertness.Points);
+        int alertness = interval.Alertness > 0
+            ? Math.Min(interval.Alertness, availableAlertness)
+            : interval.Alertness;
+        int mood = interval.Mood > 0 ? 0 : interval.Mood;
+        return new NeedDelta(
+            interval.Nutrition,
+            alertness,
+            mood,
+            interval.Health);
+    }
+
+    private static NeedDelta ResolveTargetedInterval(
+        NeedDelta total,
+        int intervalCount,
+        int intervalIndex)
+    {
+        return new NeedDelta(
+            ResolveIntervalValue(total.Nutrition, intervalCount, intervalIndex),
+            ResolveIntervalValue(total.Alertness, intervalCount, intervalIndex),
+            ResolveIntervalValue(total.Mood, intervalCount, intervalIndex),
+            ResolveIntervalValue(total.Health, intervalCount, intervalIndex));
+    }
+
+    private static int ResolveIntervalValue(
+        int total,
+        int intervalCount,
+        int intervalIndex)
+    {
+        int quotient = total / intervalCount;
+        int remainder = total % intervalCount;
+        if (remainder > 0 && intervalIndex < remainder)
+        {
+            return quotient + 1;
+        }
+
+        if (remainder < 0 && intervalIndex < -remainder)
+        {
+            return quotient - 1;
+        }
+
+        return quotient;
     }
 
     public Result BlockTargetedAction(string reason, long tick)

@@ -12,7 +12,7 @@ public sealed class AgentDecisionSystemTests
     private readonly AgentDecisionSystem _decisionSystem = new AgentDecisionSystem();
 
     [Fact]
-    public void Critical_hunger_overrides_maximum_player_order()
+    public void Work_schedule_hunger_keeps_manual_order_and_disables_automatic_eat()
     {
         AgentState agent = AgentTestFactory.CreateAgent(
             nutrition: 1_000,
@@ -28,13 +28,53 @@ public sealed class AgentDecisionSystemTests
 
         AgentDecision decision = Decide(agent, tick: 0);
 
+        Assert.Equal(AgentIntentKind.PlayerOrder, decision.SelectedIntent);
+        UtilityOptionDiagnostic eat = Assert.Single(
+            decision.Options,
+            option => option.IntentKind == AgentIntentKind.Eat);
+        Assert.False(eat.Available);
+        Assert.False(eat.Critical);
+    }
+
+    [Fact]
+    public void Active_direct_eat_continues_during_work_schedule()
+    {
+        AgentState agent = AgentTestFactory.CreateAgent(
+            nutrition: 1_000,
+            alertness: 8_000,
+            mood: 8_000);
+        Assert.True(agent.ApplyDecision(
+            AgentTestFactory.CreateForcedDecision(AgentIntentKind.Eat, tick: 0),
+            _policy,
+            tick: 0).IsSuccess);
+
+        AgentDecision decision = Decide(agent, tick: 1);
+
+        Assert.Equal(AgentIntentKind.Eat, decision.SelectedIntent);
+        UtilityOptionDiagnostic eat = Assert.Single(
+            decision.Options,
+            option => option.IntentKind == AgentIntentKind.Eat);
+        Assert.True(eat.Available);
+        Assert.True(eat.Critical);
+    }
+
+    [Fact]
+    public void Free_time_critical_hunger_selects_automatic_eat()
+    {
+        DailySchedule freeTime = new DailySchedule(
+            12,
+            new[] { new ScheduleSegment(0, 12, ScheduleActivity.Rest) });
+        AgentState agent = AgentTestFactory.CreateAgent(
+            nutrition: 1_000,
+            alertness: 8_000,
+            mood: 8_000,
+            schedule: freeTime);
+
+        AgentDecision decision = Decide(agent, tick: 0);
+
         Assert.Equal(AgentIntentKind.Eat, decision.SelectedIntent);
         Assert.True(decision.Critical);
         Assert.Equal("selected.critical_survival", decision.ReasonCode);
-        UtilityOptionDiagnostic playerOption = Assert.Single(
-            decision.Options,
-            option => option.IntentKind == AgentIntentKind.PlayerOrder);
-        Assert.Equal("rejected.lower_utility", playerOption.ReasonCode);
     }
 
     [Fact]

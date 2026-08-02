@@ -16,11 +16,21 @@ public sealed class ResidentSettlementTests
         EntityId.Parse("91000000000000000000000000000002");
 
     [Fact]
-    public void One_food_portion_is_consumed_by_only_one_critical_agent()
+    public void One_food_portion_is_consumed_by_only_one_free_time_critical_agent()
     {
         ResidentSettlementHarness harness = new ResidentSettlementHarness();
-        harness.AddAgent(FirstAgent.ToString(), nutrition: 500, alertness: 8_000, mood: 8_000);
-        harness.AddAgent(SecondAgent.ToString(), nutrition: 500, alertness: 8_000, mood: 8_000);
+        harness.AddAgent(
+            FirstAgent.ToString(),
+            nutrition: 500,
+            alertness: 8_000,
+            mood: 8_000,
+            scheduleActivity: ScheduleActivity.Rest);
+        harness.AddAgent(
+            SecondAgent.ToString(),
+            nutrition: 500,
+            alertness: 8_000,
+            mood: 8_000,
+            scheduleActivity: ScheduleActivity.Rest);
         harness.AddFood("92000000000000000000000000000001", quantity: 1);
 
         harness.Execute(tick: 0);
@@ -28,8 +38,12 @@ public sealed class ResidentSettlementTests
         Assert.Equal(1, harness.Inventory.GetTotal(ResidentSettlementHarness.Meal));
         Assert.Single(harness.Inventory.CreateSnapshot().Stacks
             .SelectMany(value => value.Reservations));
-        Assert.Equal(AgentIntentKind.Eat, harness.Snapshot(FirstAgent, 0).ActiveAction!.Value.IntentKind);
-        Assert.Equal("food_unavailable", harness.Agents.Get(SecondAgent)!.LastActionBlockReason);
+        Assert.Equal(
+            AgentIntentKind.Eat,
+            harness.Snapshot(FirstAgent, 0).ActiveAction!.Value.IntentKind);
+        Assert.Equal(
+            "food_unavailable",
+            harness.Agents.Get(SecondAgent)!.LastActionBlockReason);
 
         harness.Execute(tick: 1);
 
@@ -40,11 +54,19 @@ public sealed class ResidentSettlementTests
     }
 
     [Fact]
-    public void One_bed_is_used_sequentially_without_double_reservation()
+    public void Available_bed_is_preferred_and_second_tired_resident_sleeps_on_floor()
     {
         ResidentSettlementHarness harness = new ResidentSettlementHarness();
-        harness.AddAgent(FirstAgent.ToString(), nutrition: 9_000, alertness: 500, mood: 8_000);
-        harness.AddAgent(SecondAgent.ToString(), nutrition: 9_000, alertness: 500, mood: 8_000);
+        harness.AddAgent(
+            FirstAgent.ToString(),
+            nutrition: 9_000,
+            alertness: 500,
+            mood: 8_000);
+        harness.AddAgent(
+            SecondAgent.ToString(),
+            nutrition: 9_000,
+            alertness: 500,
+            mood: 8_000);
         harness.AddFacility(
             "94000000000000000000000000000001",
             BuildingFacilityKind.Bed,
@@ -52,28 +74,27 @@ public sealed class ResidentSettlementTests
 
         harness.Execute(tick: 0);
 
-        BuildingFacilityReservation firstReservation = Assert.Single(
+        BuildingFacilityReservation reservation = Assert.Single(
             harness.Facilities.GetReservations());
-        Assert.Equal(FirstAgent, firstReservation.AgentId);
-        Assert.Equal("bed_unavailable", harness.Agents.Get(SecondAgent)!.LastActionBlockReason);
+        Assert.Equal(FirstAgent, reservation.AgentId);
+        AgentActivityTarget firstTarget = harness.Snapshot(FirstAgent, 0)
+            .ActiveAction!.Value.Target!.Value;
+        AgentActivityTarget secondTarget = harness.Snapshot(SecondAgent, 0)
+            .ActiveAction!.Value.Target!.Value;
+        Assert.Equal(AgentActivityTargetKind.Bed, firstTarget.Kind);
+        Assert.Equal(AgentActivityTargetKind.FloorSleep, secondTarget.Kind);
+        Assert.Null(harness.Agents.Get(SecondAgent)!.LastActionBlockReason);
 
         harness.Execute(tick: 1);
         harness.Execute(tick: 2);
 
-        BuildingFacilityReservation secondReservation = Assert.Single(
-            harness.Facilities.GetReservations());
-        Assert.Equal(SecondAgent, secondReservation.AgentId);
-        Assert.True(harness.Snapshot(FirstAgent, 2).Needs.Alertness.Points >= 2_000);
-
-        harness.Execute(tick: 3);
-        harness.Execute(tick: 4);
-
         Assert.Empty(harness.Facilities.GetReservations());
-        Assert.True(harness.Snapshot(SecondAgent, 4).Needs.Alertness.Points >= 2_000);
+        Assert.True(harness.Snapshot(FirstAgent, 2).Needs.Alertness.Points > 500);
+        Assert.True(harness.Snapshot(SecondAgent, 2).Needs.Alertness.Points > 500);
     }
 
     [Fact]
-    public void Leisure_effect_is_applied_only_after_reserved_action_completes()
+    public void Leisure_effect_is_applied_progressively_while_reserved_action_runs()
     {
         ResidentSettlementHarness harness = new ResidentSettlementHarness();
         harness.AddAgent(
@@ -91,7 +112,7 @@ public sealed class ResidentSettlementTests
 
         AgentSnapshot inProgress = harness.Snapshot(FirstAgent, 0);
         Assert.Equal(AgentIntentKind.Rest, inProgress.ActiveAction!.Value.IntentKind);
-        Assert.Equal(900, inProgress.Needs.Mood.Points);
+        Assert.True(inProgress.Needs.Mood.Points > 900);
         Assert.False(harness.System.LastReport!.Agents[0].ActionCompleted);
 
         harness.Execute(tick: 1);
@@ -104,10 +125,15 @@ public sealed class ResidentSettlementTests
     }
 
     [Fact]
-    public void Missing_reserved_food_blocks_action_without_applying_need_effect()
+    public void Missing_reserved_food_blocks_action_and_keeps_applied_interval()
     {
         ResidentSettlementHarness harness = new ResidentSettlementHarness();
-        harness.AddAgent(FirstAgent.ToString(), nutrition: 500, alertness: 9_000, mood: 9_000);
+        harness.AddAgent(
+            FirstAgent.ToString(),
+            nutrition: 500,
+            alertness: 9_000,
+            mood: 9_000,
+            scheduleActivity: ScheduleActivity.Rest);
         EntityId stackId = harness.AddFood(
             "92000000000000000000000000000003",
             quantity: 1);
@@ -122,12 +148,60 @@ public sealed class ResidentSettlementTests
 
         AgentSnapshot snapshot = harness.Snapshot(FirstAgent, 1);
         Assert.Null(snapshot.ActiveAction);
-        Assert.Equal("food_unavailable", harness.Agents.Get(FirstAgent)!.LastActionBlockReason);
-        Assert.True(snapshot.Needs.Nutrition.Points < 1_000);
+        Assert.Equal(
+            "food_unavailable",
+            harness.Agents.Get(FirstAgent)!.LastActionBlockReason);
+        Assert.True(snapshot.Needs.Nutrition.Points > 1_000);
         Assert.Contains(
             harness.Journal.Events,
             value => value is AgentActionBlocked blocked
                 && blocked.AgentId == FirstAgent);
+    }
+
+    [Fact]
+    public void Work_time_hunger_notifies_without_food_or_automatic_reservation()
+    {
+        ResidentSettlementHarness harness = new ResidentSettlementHarness();
+        harness.AddAgent(
+            FirstAgent.ToString(),
+            nutrition: 1_600,
+            alertness: 9_000,
+            mood: 9_000,
+            scheduleActivity: ScheduleActivity.Work);
+
+        harness.Execute(tick: 0);
+
+        AgentSnapshot snapshot = harness.Snapshot(FirstAgent, 0);
+        Assert.Equal(AgentIntentKind.Work, snapshot.ActiveAction!.Value.IntentKind);
+        Assert.Equal(0, harness.Inventory.GetTotal(ResidentSettlementHarness.Meal));
+        Assert.Empty(harness.Inventory.CreateSnapshot().Stacks
+            .SelectMany(value => value.Reservations));
+        Assert.Null(harness.Agents.Get(FirstAgent)!.LastActionBlockReason);
+        AgentNeedThresholdCrossed hunger = Assert.Single(
+            harness.Journal.Events.OfType<AgentNeedThresholdCrossed>(),
+            value => value.Kind == AgentNeedThresholdKind.Hunger);
+        Assert.Equal(FirstAgent, hunger.AgentId);
+    }
+
+    [Fact]
+    public void Floor_sleep_has_no_positive_mood_and_caps_alertness_at_seventy_five_percent()
+    {
+        ResidentSettlementHarness harness = new ResidentSettlementHarness();
+        harness.AddAgent(
+            FirstAgent.ToString(),
+            nutrition: 9_000,
+            alertness: 7_400,
+            mood: 4_000,
+            scheduleActivity: ScheduleActivity.Sleep);
+
+        harness.Execute(tick: 0);
+        harness.Execute(tick: 1);
+        harness.Execute(tick: 2);
+
+        AgentSnapshot snapshot = harness.Snapshot(FirstAgent, 2);
+        Assert.True(snapshot.Needs.Alertness.Points <= 7_500);
+        Assert.True(snapshot.Needs.Mood.Points < 4_000);
+        Assert.Empty(harness.Facilities.GetReservations());
     }
 }
 }

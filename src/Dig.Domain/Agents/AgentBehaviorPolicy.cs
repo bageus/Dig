@@ -204,7 +204,7 @@ public sealed class AgentActionPolicy
                     new NeedDelta(-100, 300, 1_800, 25)),
                 [AgentIntentKind.Idle] = new AgentActionEffect(
                     1,
-                    new NeedDelta(-50, 50, 100, 25)),
+                    new NeedDelta(-50, 0, 0, 0)),
             });
     }
 }

@@ -20,6 +20,7 @@ public enum AgentActivityTargetKind
     Food = 0,
     Bed = 1,
     Leisure = 2,
+    FloorSleep = 3,
 }
 
 public readonly struct AgentActivityTarget : IEquatable<AgentActivityTarget>
