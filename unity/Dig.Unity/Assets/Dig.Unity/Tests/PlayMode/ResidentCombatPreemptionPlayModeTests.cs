@@ -73,12 +73,16 @@ public sealed class ResidentCombatPreemptionPlayModeTests
     }
 
     [Test]
-    public void Direct_movement_overrides_self_defense_while_enemy_aggro_remains()
+    public void Direct_movement_completes_then_pauses_and_sight_loss_ends_enemy_aggro()
     {
         ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
             ResidentNeedsRuntimePlayModeHarness.CreateRuntime();
         runtime.Terrain.BindManualMovementSource(
             runtime.Residents.HasManualTunnelMovement);
+        runtime.Terrain.BindTaskTransitionPauseSource(
+            residentId => runtime.Residents.IsResidentTaskTransitionPaused(
+                residentId,
+                checked(runtime.Residents.Tick + 1)));
         runtime.Residents.BindDirectCommandPrioritySource(_ => false);
         runtime.Terrain.BindDirectCommandCombatDisengage(
             runtime.Residents.BeginResidentDirectCommand);
@@ -133,45 +137,68 @@ public sealed class ResidentCombatPreemptionPlayModeTests
             destination);
         Assert.That(route.Result.IsSuccess, Is.True, route.Result.Error?.ToString());
         Assert.That(runtime.Residents.GetCombatIntent(resident.Id), Is.Null);
-        Assert.That(runtime.Residents.GetCombatIntent(enemyId), Is.Not.Null);
 
-        bool moved = false;
-        for (int iteration = 0; iteration < 20; iteration++)
+        bool completed = false;
+        for (int iteration = 0; iteration < 30; iteration++)
         {
             ResidentNeedsRuntimePlayModeHarness.RunTick(runtime);
-            AgentState current = runtime.Residents.Repository.Get(resident.Id)!;
-            moved |= current.Position != start;
-            Assert.That(
-                runtime.Residents.GetCombatIntent(enemyId),
-                Is.Not.Null,
-                "The enemy keeps persistent aggro while the resident obeys the order.");
+            if (!runtime.Residents.HasManualTunnelMovement(resident.Id.ToString()))
+            {
+                completed = true;
+                break;
+            }
+
             Assert.That(
                 runtime.Residents.GetCombatIntent(resident.Id),
                 Is.Null,
-                "Self-defense must not replace an active direct movement order.");
-            if (moved)
-            {
-                break;
-            }
+                "Self-defense must not replace the active direct movement order.");
         }
 
-        Assert.That(moved, Is.True, "The direct movement order never advanced.");
+        Assert.That(completed, Is.True, "The direct movement order never completed.");
+        AgentState completedResident = runtime.Residents.Repository.Get(resident.Id)!;
+        Assert.That(completedResident.Position, Is.EqualTo(destination));
+        Assert.That(
+            runtime.Residents.IsResidentTaskTransitionPaused(
+                resident.Id,
+                checked(runtime.Residents.Tick + 1)),
+            Is.True,
+            "Successful direct movement must start the shared transition pause.");
 
-        bool selfDefenseResumed = false;
-        for (int iteration = 0; iteration < 4; iteration++)
-        {
-            ResidentNeedsRuntimePlayModeHarness.RunTick(runtime);
-            selfDefenseResumed = runtime.Residents.GetCombatIntent(resident.Id) != null;
-            if (selfDefenseResumed)
-            {
-                break;
-            }
-        }
+        ResidentNeedsRuntimePlayModeHarness.RunTick(runtime);
+        AgentSnapshot paused = runtime.Residents.Repository.Get(resident.Id)!
+            .CreateSnapshot(runtime.Residents.Tick);
+        Assert.That(paused.LastDecision, Is.Not.Null);
+        Assert.That(paused.LastDecision!.SelectedIntent, Is.EqualTo(AgentIntentKind.Idle));
+
+        enemy = runtime.Residents.Repository.Get(enemyId)!;
+        CellId hiddenCell = runtime.Residents.TunnelVolume.SupportedCells
+            .OrderByDescending(cell => ManhattanDistance(enemy.Position, cell))
+            .ThenBy(cell => cell)
+            .First();
+        Assert.That(ManhattanDistance(enemy.Position, hiddenCell), Is.GreaterThan(6));
+        AgentState hiddenResident = runtime.Residents.Repository.Get(resident.Id)!;
+        Assert.That(
+            hiddenResident.MoveTo(hiddenCell, runtime.Residents.Tick).IsSuccess,
+            Is.True);
+        runtime.Residents.Repository.Save(hiddenResident);
+
+        ResidentNeedsRuntimePlayModeHarness.RunTick(runtime);
 
         Assert.That(
-            selfDefenseResumed,
-            Is.True,
-            "A still-valid threat should restore self-defense after the order ends.");
+            runtime.Residents.GetCombatIntent(enemyId),
+            Is.Null,
+            "The enemy must stop pursuit immediately after losing sight.");
+        Assert.That(
+            runtime.Residents.GetCombatIntent(resident.Id),
+            Is.Null,
+            "Self-defense must not resume without a currently visible threat.");
+    }
+
+    private static int ManhattanDistance(CellId left, CellId right)
+    {
+        return Math.Abs(left.X - right.X)
+            + Math.Abs(left.Y - right.Y)
+            + Math.Abs(left.Z - right.Z);
     }
 
     private static AgentDecision CreateDecision(AgentIntentKind intent, long tick)
