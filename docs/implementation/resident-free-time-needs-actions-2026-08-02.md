@@ -4,7 +4,7 @@
 **Date:** 2026-08-02  
 **Authoritative design:** `docs/design/resident-schedule-needs-actions.md`  
 **Tracking:** #159, #142, #113  
-**Implementation PR:** #569
+**Implementation PR:** #571
 
 ## Implementation
 
