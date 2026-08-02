@@ -51,6 +51,49 @@ public static class BuildingSupplyPlanner
         CellId destination,
         int freeSlotCount)
     {
+        return PlanAvailable(
+            supply,
+            worldStacks,
+            revealedCells,
+            reachableCells,
+            destination,
+            freeSlotCount,
+            targetItemIds: null);
+    }
+
+    public static BuildingSupplyPlan PlanForItems(
+        BuildingSupplySnapshot supply,
+        IReadOnlyCollection<ItemStackSnapshot> worldStacks,
+        IReadOnlyCollection<CellId> revealedCells,
+        IReadOnlyCollection<CellId> reachableCells,
+        CellId destination,
+        int freeSlotCount,
+        IReadOnlyCollection<ItemId> targetItemIds)
+    {
+        if (targetItemIds is null)
+        {
+            throw new ArgumentNullException(nameof(targetItemIds));
+        }
+
+        return PlanAvailable(
+            supply,
+            worldStacks,
+            revealedCells,
+            reachableCells,
+            destination,
+            freeSlotCount,
+            targetItemIds.ToHashSet());
+    }
+
+    private static BuildingSupplyPlan PlanAvailable(
+        BuildingSupplySnapshot supply,
+        IReadOnlyCollection<ItemStackSnapshot> worldStacks,
+        IReadOnlyCollection<CellId> revealedCells,
+        IReadOnlyCollection<CellId> reachableCells,
+        CellId destination,
+        int freeSlotCount,
+        HashSet<ItemId>? targetItemIds)
+    {
         if (supply is null || worldStacks is null
             || revealedCells is null || reachableCells is null)
         {
@@ -62,8 +105,6 @@ public static class BuildingSupplyPlanner
             throw new ArgumentOutOfRangeException(nameof(freeSlotCount));
         }
 
-        // Active production consumes protected internal stock, but it does not pause
-        // replenishment. AvailableQuantity already excludes production reservations.
         if (supply.HasActiveSupply || freeSlotCount == 0)
         {
             return new BuildingSupplyPlan(Array.Empty<BuildingSupplyAllocation>());
@@ -73,11 +114,12 @@ public static class BuildingSupplyPlanner
         HashSet<CellId> reachable = reachableCells.ToHashSet();
         List<BuildingSupplyAllocation> allocations = new List<BuildingSupplyAllocation>();
         HashSet<EntityId> used = new HashSet<EntityId>();
-        // Resident inventory is unit-per-slot, so each allocated unit consumes one slot.
         int availableUnitSlots = freeSlotCount;
         foreach (BuildingStockSnapshot stock in supply.Stocks)
         {
-            if (!stock.DeliveryEnabled || stock.Missing == 0)
+            if (!stock.DeliveryEnabled
+                || stock.Missing == 0
+                || (targetItemIds != null && !targetItemIds.Contains(stock.ItemId)))
             {
                 continue;
             }

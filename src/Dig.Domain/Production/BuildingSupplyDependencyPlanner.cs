@@ -14,7 +14,8 @@ public static class BuildingSupplyDependencyPlanner
         IReadOnlyCollection<ItemStackSnapshot> worldStacks,
         IReadOnlyCollection<CellId> revealedCells,
         IReadOnlyCollection<CellId> reachableCells,
-        IReadOnlyCollection<ItemId> supportedItems)
+        IReadOnlyCollection<ItemId> supportedItems,
+        IReadOnlyCollection<ItemId>? targetItemIds = null)
     {
         if (supply is null || worldStacks is null
             || revealedCells is null || reachableCells is null
@@ -24,6 +25,10 @@ public static class BuildingSupplyDependencyPlanner
         }
 
         HashSet<ItemId> supported = supportedItems.ToHashSet();
+        if (targetItemIds != null)
+        {
+            supported.IntersectWith(targetItemIds);
+        }
         HashSet<CellId> revealed = revealedCells.ToHashSet();
         HashSet<CellId> reachable = reachableCells.ToHashSet();
         foreach (BuildingStockSnapshot stock in supply.Stocks)

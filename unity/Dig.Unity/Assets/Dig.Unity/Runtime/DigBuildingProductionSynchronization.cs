@@ -176,7 +176,7 @@ internal sealed partial class DigTerrainWorkSession
         {
             if (building.Status != BuildingStatus.Completed
                 || !_productionContent!.ContainsWorkstation(building.Definition.Id)
-                || HasNonTerminalBuildingSupplyJob(building.Id)
+                || ShouldWaitForSupplyBeforeProduction(building.Id)
                 || _buildingSupplyRepository!.Get().Get(
                     building.Id,
                     _buildingInventoryRepository!.Get().CreateSnapshot())?.HasActiveSupply
@@ -260,14 +260,16 @@ internal sealed partial class DigTerrainWorkSession
         InventorySnapshot inventory = _buildingInventoryRepository!.Get().CreateSnapshot();
         foreach (BuildingSupplySnapshot snapshot in supply.GetAll(inventory))
         {
+            ProductionOrderSnapshot? queued = _productionRepository!.Get()
+                .GetNextQueued(snapshot.BuildingId);
             BuildingSnapshot? building = _buildingsRepository!.Get().Get(
                 snapshot.BuildingId);
             if (building == null
                 || building.Status != BuildingStatus.Completed
                 || snapshot.HasActiveSupply
-                || HasNonTerminalBuildingSupplyJob(snapshot.BuildingId)
+                || HasNonTerminalResolvedBuildingSupplyJob(snapshot.BuildingId)
                 || HasNonTerminalProductionWorkJob(snapshot.BuildingId)
-                || ShouldYieldSupplyTurnToRunnableProduction(snapshot)
+                || ShouldYieldSupplyTurnToRunnableProduction(snapshot, queued)
                 || snapshot.Stocks.All(value =>
                     !value.DeliveryEnabled || value.Missing == 0))
             {
@@ -311,31 +313,18 @@ internal sealed partial class DigTerrainWorkSession
                         transit,
                         deposits,
                         priority: 650,
-                        tick));
+                        tick,
+                        targetItemIds: queued?.Recipe.Inputs
+                            .Select(value => value.ItemId)
+                            .Distinct()
+                            .OrderBy(value => value)
+                            .ToArray()));
                 if (created.IsSuccess)
                 {
                     break;
                 }
             }
         }
-    }
-
-    private bool ShouldYieldSupplyTurnToRunnableProduction(
-        BuildingSupplySnapshot supply)
-    {
-        ProductionOrderSnapshot? queued = _productionRepository!.Get()
-            .GetNextQueued(supply.BuildingId);
-        if (queued == null
-            || supply.OperationTurn != BuildingOperationTurn.Production)
-        {
-            return false;
-        }
-
-        InventoryState inventory = _buildingInventoryRepository!.Get();
-        ItemLocation location = ItemLocation.InBuilding(supply.BuildingId);
-        return queued.Recipe.Inputs.All(input =>
-            inventory.GetAvailableQuantityAt(input.ItemId, location)
-                >= input.Quantity);
     }
 
 }

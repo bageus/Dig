@@ -84,13 +84,22 @@ public sealed class CreateBuildingSupplyJobHandler
         ResidentInventoryLayoutSnapshot layout =
             inventory.GetResidentInventoryLayout(command.ResidentId);
         int freeSlots = layout.Slots.Count(value => value.IsEmpty);
-        BuildingSupplyPlan plan = BuildingSupplyPlanner.Plan(
-            snapshot,
-            inventory.GetAvailableWorldStacks(),
-            command.RevealedCells,
-            command.ReachableCells,
-            building.WorkPosition,
-            freeSlots);
+        BuildingSupplyPlan plan = command.HasTargetItemFilter
+            ? BuildingSupplyPlanner.PlanForItems(
+                snapshot,
+                inventory.GetAvailableWorldStacks(),
+                command.RevealedCells,
+                command.ReachableCells,
+                building.WorkPosition,
+                freeSlots,
+                command.TargetItemIds)
+            : BuildingSupplyPlanner.Plan(
+                snapshot,
+                inventory.GetAvailableWorldStacks(),
+                command.RevealedCells,
+                command.ReachableCells,
+                building.WorkPosition,
+                freeSlots);
         if (plan.Allocations.Count == 0)
         {
             return Result.Failure(InventoryErrors.InsufficientAvailableQuantity);

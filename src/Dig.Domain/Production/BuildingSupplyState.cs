@@ -50,6 +50,10 @@ public readonly struct BuildingStockSnapshot
     public bool DeliveryEnabled { get; }
     public int Priority { get; }
     public int Missing => Math.Max(0, Capacity - Current - Incoming);
+    public int RefillThreshold =>
+        BuildingSupplyQueuePolicy.GetRefillThreshold(Capacity);
+    public bool IsBelowRefillThreshold =>
+        Current + Incoming < RefillThreshold;
 }
 
 public sealed class BuildingSupplySnapshot

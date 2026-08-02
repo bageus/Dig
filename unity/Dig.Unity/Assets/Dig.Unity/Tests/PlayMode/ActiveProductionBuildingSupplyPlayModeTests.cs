@@ -33,12 +33,12 @@ public sealed class ActiveProductionBuildingSupplyPlayModeTests
     }
 
     [Test]
-    public void Production_returns_then_remote_refill_runs_without_concurrency()
+    public void Three_cooking_cycles_run_before_half_stock_refill_then_production_resumes()
     {
         Camera? cameraBefore = Camera.main;
         UnityEngine.EventSystems.EventSystem? eventSystemBefore =
             UnityEngine.EventSystems.EventSystem.current;
-        _root = new GameObject("Serialized production and supply test");
+        _root = new GameObject("Threshold production and supply test");
         _root.AddComponent<DigUnityBootstrap>();
 
         DigWorldInteraction interaction = _root.GetComponent<DigWorldInteraction>();
@@ -106,6 +106,9 @@ public sealed class ActiveProductionBuildingSupplyPlayModeTests
             }
         }
 
+        BuildingStockIconViewModel capStock = productionView.Stocks.Single(value =>
+            value.ItemId == CampfireProductionContent.MushroomCapItemId);
+        Assert.That(capStock.Capacity, Is.EqualTo(4));
         EntityId remoteSourceId =
             EntityId.Parse("ac000000000000000000000000000099");
         AssertSuccess(inventory.AddStack(
@@ -116,18 +119,19 @@ public sealed class ActiveProductionBuildingSupplyPlayModeTests
             tick: 1));
         inventoryRepository.Save(inventory);
 
-        AssertSuccess(terrain.EnqueueBuildingProduction(
-            campfire.Id,
-            CampfireProductionContent.GrilledMushroomRecipeId.ToString(),
-            tick: 1));
+        for (int index = 0; index < 4; index++)
+        {
+            AssertSuccess(terrain.EnqueueBuildingProduction(
+                campfire.Id,
+                CampfireProductionContent.GrilledMushroomRecipeId.ToString(),
+                tick: 1));
+        }
 
-        int productionCompletedTick = -1;
-        int supplyStartedTick = -1;
-        string? productionWorkerId = null;
-        bool workbenchVisible = false;
-        bool packageClosed = false;
+        int supplyStartedAfterCompletedUnits = -1;
         bool supplyCompleted = false;
-        for (int index = 0; index < 320; index++)
+        bool productionResumedAfterSupply = false;
+        bool workbenchVisible = false;
+        for (int index = 0; index < 1200; index++)
         {
             Invoke(simulation, "AdvanceOneTick");
             JobSnapshot[] jobs = jobRepository.Get().GetAll().ToArray();
@@ -138,46 +142,32 @@ public sealed class ActiveProductionBuildingSupplyPlayModeTests
             JobSnapshot? activeSupply = jobs.FirstOrDefault(value =>
                 !value.IsTerminal
                 && value.Definition is BuildingSupplyJobDefinition definition
-                && definition.BuildingId == buildingId);
+                && definition.BuildingId == buildingId
+                && definition.IsSourceResolved);
             Assert.That(
                 activeProduction != null && activeSupply != null,
                 Is.False,
                 "One building must never have production and supply active together.");
 
-            if (activeProduction?.AssignedAgentId is EntityId worker)
-            {
-                productionWorkerId ??= worker.ToString();
-                workbenchVisible |= stockRenderer.ActiveWorkbenchCount > 0;
-            }
-
-            JobSnapshot? completedProduction = jobs.FirstOrDefault(value =>
+            int completedUnits = jobs.Count(value =>
                 value.Status == JobStatus.Completed
                 && value.Definition is ProductionWorkJobDefinition definition
                 && definition.BuildingId == buildingId);
-            if (completedProduction != null && productionCompletedTick < 0)
+            workbenchVisible |= activeProduction != null
+                && stockRenderer.ActiveWorkbenchCount > 0;
+            if (activeSupply != null && supplyStartedAfterCompletedUnits < 0)
             {
-                productionCompletedTick = index;
-                productionWorkerId ??= completedProduction.AssignedAgentId?.ToString();
-                AgentViewModel returned = agentRenderer.GetHudModels().Single(value =>
-                    value.Id == productionWorkerId);
-                Assert.That(
-                    new CellId(returned.CellX, returned.CellY, returned.CellZ),
-                    Is.EqualTo(workPosition));
-            }
-
-            packageClosed |= inventoryRepository.Get().CreateSnapshot().Stacks.Any(value =>
-                value.ItemId == ProductionPackageContent.FoodPackageItemId);
-            if (activeSupply != null && supplyStartedTick < 0)
-            {
-                supplyStartedTick = index;
+                supplyStartedAfterCompletedUnits = completedUnits;
             }
 
             supplyCompleted |= jobs.Any(value =>
                 value.Status == JobStatus.Completed
                 && value.Definition is BuildingSupplyJobDefinition definition
                 && definition.BuildingId == buildingId);
-            if (productionCompletedTick >= 0
-                && supplyCompleted
+            productionResumedAfterSupply |= supplyCompleted
+                && activeProduction != null
+                && completedUnits == 3;
+            if (productionResumedAfterSupply
                 && inventoryRepository.Get().GetStack(remoteSourceId)?.Location.Kind
                     != ItemLocationKind.World)
             {
@@ -186,17 +176,16 @@ public sealed class ActiveProductionBuildingSupplyPlayModeTests
         }
 
         Assert.That(workbenchVisible, Is.True);
-        Assert.That(packageClosed, Is.True);
-        Assert.That(productionCompletedTick, Is.GreaterThanOrEqualTo(0));
-        Assert.That(supplyStartedTick, Is.GreaterThan(productionCompletedTick));
+        Assert.That(supplyStartedAfterCompletedUnits, Is.EqualTo(3));
         Assert.That(supplyCompleted, Is.True);
-        Assert.That(stockRenderer.ActiveWorkbenchCount, Is.EqualTo(0));
+        Assert.That(productionResumedAfterSupply, Is.True);
         Assert.That(
-            inventoryRepository.Get().GetAvailableQuantityAt(
-                CampfireProductionContent.MushroomCapItemId,
-                ItemLocation.InBuilding(buildingId)),
-            Is.EqualTo(productionView.Stocks.Single(value =>
-                value.ItemId == CampfireProductionContent.MushroomCapItemId).Capacity));
+            inventoryRepository.Get().GetStack(remoteSourceId)?.Location.Kind,
+            Is.Not.EqualTo(ItemLocationKind.World));
+        Assert.That(
+            inventoryRepository.Get().CreateSnapshot().Stacks.Count(value =>
+                value.ItemId == ProductionPackageContent.FoodPackageItemId),
+            Is.GreaterThanOrEqualTo(3));
     }
 
     private void CaptureBootstrapObjects(

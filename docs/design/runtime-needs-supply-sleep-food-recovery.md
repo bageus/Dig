@@ -40,8 +40,9 @@ When a building has a non-terminal production queue:
 3. the Supply turn is used only when the next unit lacks an input or at least one of its required stocks is below threshold;
 4. one supply job takes every currently eligible free world unit it can carry for the next recipe's required item types; it does not wait for unavailable types and does not reserve protected building/resident inventory;
 5. unavailable required types create the existing supported extraction/harvest dependency when possible; unsupported types remain an explicit shortage;
-6. after a committed supply batch, the operation turn becomes `Production`, so one next unit may start whenever its complete input set exists even if the batch could not restore every required stock to threshold or capacity;
-7. an unresolved extraction dependency does not reserve the workstation and does not block otherwise runnable production; its eventual delivery waits for the building operation to become free.
+6. while the current `Supply` turn has produced no committed delivery, its unresolved supported extraction dependency keeps the next production unit waiting;
+7. after any committed supply batch, the operation turn becomes `Production`, so one next unit may start whenever its complete input set exists even if other extraction dependencies are still unresolved or the batch could not restore every required stock to threshold/capacity;
+8. unresolved dependencies never reserve the workstation; their eventual deliveries wait for the building operation to become free. If no eligible direct source and no supported extraction dependency can be created, an otherwise runnable unit is not permanently blocked.
 
 Example for grilled mushroom with cap capacity `4`: starting at `4`, three consecutive units may consume the stock `4 -> 3 -> 2 -> 1`; only then does the next Supply turn run. If the world currently contains only part of the depleted recipe inputs, that batch delivers only those units, extraction jobs are created for supported unavailable inputs, and production resumes after the batch when the next recipe still has a complete input set.
 
@@ -95,7 +96,9 @@ Diagnostics expose authoritative tick duration, playback multiplier, resident ne
 - Sleep effects do not advance before arrival at the reserved Tent slot;
 - campfire cap stock at `4`, `3` or `2` allows consecutive grilled-mushroom units; cap stock at `1` gives the next operation to Supply;
 - one queued supply batch collects all currently eligible free required materials without waiting for unavailable types;
-- supported unavailable required materials create extraction dependencies without blocking otherwise runnable production;
+- a supported extraction dependency blocks the current pre-production Supply turn until a delivery commits;
+- after a partial delivery commits, unresolved dependencies no longer block one runnable Production turn;
+- if neither direct delivery nor supported extraction can be created, a runnable unit is not permanently blocked;
 - supply completion yields one Production turn whenever the next unit has a complete input set, even when stock remains below threshold;
 - no production queue allows continuous refill to capacity as eligible materials appear;
 - save/load preserves operation turn, active reservations and action progress without duplication;

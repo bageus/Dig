@@ -61,13 +61,20 @@ namespace Dig.Unity
                 HashSet<CellId> reachable = GetProductionReachableCells(
                     navigation,
                     building.WorkPosition).ToHashSet();
+                ItemId[]? targetItems = ResolveDependencyTargetItems(supply);
+                if (targetItems != null && targetItems.Length == 0)
+                {
+                    continue;
+                }
+
                 ItemConsumptionRequest? request =
                     BuildingSupplyDependencyPlanner.PlanSingleExtractionRequest(
                         supply,
                         inventory.Stacks,
                         revealed,
                         reachable,
-                        supportedItems);
+                        supportedItems,
+                        targetItems);
                 if (!request.HasValue)
                 {
                     continue;
@@ -130,6 +137,43 @@ namespace Dig.Unity
                         tick));
                 }
             }
+        }
+
+
+        private ItemId[]? ResolveDependencyTargetItems(
+            BuildingSupplySnapshot supply)
+        {
+            ProductionOrderSnapshot? queued = _productionRepository!.Get()
+                .GetNextQueued(supply.BuildingId);
+            if (queued == null)
+            {
+                return null;
+            }
+
+            InventoryState inventory = _buildingInventoryRepository!.Get();
+            ItemLocation location = ItemLocation.InBuilding(supply.BuildingId);
+            Dictionary<ItemId, BuildingStockSnapshot> stocks = supply.Stocks
+                .ToDictionary(value => value.ItemId);
+            return queued.Recipe.Inputs
+                .GroupBy(value => value.ItemId)
+                .Where(group =>
+                {
+                    if (!stocks.TryGetValue(
+                            group.Key,
+                            out BuildingStockSnapshot stock))
+                    {
+                        return false;
+                    }
+
+                    int required = group.Sum(value => value.Quantity);
+                    int available = inventory.GetAvailableQuantityAt(
+                        group.Key,
+                        location);
+                    return available < required || stock.IsBelowRefillThreshold;
+                })
+                .Select(group => group.Key)
+                .OrderBy(value => value)
+                .ToArray();
         }
 
         private FoodDependencyCandidate? ResolveFoodDependencyCandidate(
