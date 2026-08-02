@@ -1,6 +1,6 @@
 # Issue 574 — план реализации назначения комнат и инфраструктуры тоннелей
 
-Статус: `IN PROGRESS` в ветке `agent/issue-574-room-infrastructure-foundation`.
+Статус: `IN PROGRESS`.
 
 Authoritative specification: [`../design/room-purposes-upgrades-and-tunnel-reinforcement.md`](../design/room-purposes-upgrades-and-tunnel-reinforcement.md).  
 Tracking issue: [#574](https://github.com/bageus/Dig/issues/574).
@@ -35,7 +35,7 @@ Tracking issue: [#574](https://github.com/bageus/Dig/issues/574).
 - Новый `TunnelInfrastructureState` владеет ordered horizontal segments, structural anchors, next automatic target, decorative targets и collapse schedule.
 - `BuildingsState` остаётся владельцем completed building/door lifecycle; tunnel state получает только immutable completion facts через Application synchronization.
 - `InventoryState` остаётся владельцем stack identity, quantities, locations и reservations.
-- `JobsState` остаётся владельцем lifecycle, worker/position claims и retry state.
+- `JobSystem` остаётся владельцем lifecycle, worker/position claims и retry state.
 - Presentation только проецирует authoritative snapshots и отправляет commands.
 
 Новые Domain-типы не зависят от Unity, файловой системы или Infrastructure layer.
@@ -44,40 +44,84 @@ Tracking issue: [#574](https://github.com/bageus/Dig/issues/574).
 
 ### Slice 1 — deterministic tunnel anchor foundation
 
-Статус: выполняется первым.
+Статус: `MERGED` в PR #578.
 
-- добавить engine-independent модели horizontal segment, anchor kind и next target;
-- origin anchor: room exit или vertical junction;
-- completed wooden support и completed door становятся structural anchors;
-- next target находится ровно через 10 ordered horizontal cells после последнего актуального anchor;
-- support/door раньше pending target отменяет derived old target и пересчитывает новый;
-- stone trim никогда не становится anchor;
-- target за пределами segment отсутствует;
-- stable ordering и duplicate/idempotency guards;
-- unit tests для `origin -> 10`, `support 5 -> 15`, `door 5 -> 15`, repeated commits, split segments и segment end.
+Реализовано:
 
-Планируемые файлы:
+- engine-independent horizontal segments и structural anchors;
+- room-exit/vertical-junction origins;
+- completed wooden support и completed door как rolling anchors;
+- next target ровно через 10 ordered horizontal cells;
+- `cell 5 -> target 15`;
+- obsolete derived target не хранится вторым источником истины;
+- stable split chains, snapshots, typed events и regression tests.
 
-- `src/Dig.Domain/World/TunnelInfrastructureModels.cs`;
-- `src/Dig.Domain/World/TunnelInfrastructureState.cs`;
-- `tests/Dig.Tests/TunnelInfrastructureAnchorTests.cs`.
+Validation PR #578:
 
-### Slice 2 — Application synchronization и automatic jobs
+- quality/build passed;
+- 1390/1390 .NET tests passed;
+- headless smoke, standard soak и large soak passed with deterministic replay;
+- Unity Test Runner был blocked отсутствием activation, поэтому runtime verification не заявлена.
 
-- commands/queries для регистрации segments, completion wooden support/door и чтения diagnostics;
-- synchronization из completed excavation/template-room provenance;
-- range filter: 20 cells 3D Manhattan до occupied cell completed building;
-- low-priority automatic support и junction-trim jobs;
-- no-source остаётся pending без phantom reservation;
-- interruption сохраняет automatic target/job;
-- player cancellation не реализуется до ответа `Q-TUNNEL-008`.
+### Slice 2A — Application contracts и automatic support job synchronization
 
-Планируемые области:
+Статус: `READY FOR REVIEW` в PR #579, ветка `agent/issue-574-automatic-support-jobs`.
 
+Реализовано:
+
+- CQRS repository/commands/query для регистрации segment и completed support/door anchors;
+- automatic support range `20` по XYZ Manhattan до completed-building occupied cell;
+- минимальный допустимый ordinary-work priority `0`;
+- source selection только из revealed, reachable, unreserved world stacks;
+- stable source order: distance, cell, stack id;
+- no-source создаёт один job в `Created` без Inventory/Job reservations;
+- появление mushroom leg разрешает тот же definition и переводит job в `Available`;
+- новый rolling anchor system-cancels obsolete target, освобождает source reservation и создаёт replacement;
+- ordinary interruption возвращает job в `Available`, source reservation остаётся за job, другой worker может продолжить;
+- unresolved и source-resolved automatic-job definitions сохраняются через `job.tunnel_automatic_work.v1`;
+- production save registry проверяет coverage нового concrete `JobDefinition`;
+- player-cancel command/API намеренно отсутствует до ответа `Q-TUNNEL-008`.
+
+Фактические области:
+
+- `src/Dig.Domain/Jobs/TunnelAutomaticWorkJobDefinition.cs`;
+- `src/Dig.Domain/World/TunnelAutomaticWorkPlanner.cs`;
 - `src/Dig.Application/Tunnels/`;
-- `src/Dig.Domain/Jobs/`;
-- существующие building/excavation synchronization boundaries;
-- integration tests в `tests/Dig.Tests/`.
+- `src/Dig.Application/Saving/TunnelAutomaticWorkJobSaveCodec.cs`;
+- `src/Dig.Infrastructure/InMemory/InMemoryTunnelInfrastructureRepository.cs`;
+- `src/Dig.Infrastructure/Saving/SaveGameCompositionRoot.cs`;
+- `tests/Dig.Tests/TunnelInfrastructureApplicationTests.cs`;
+- `tests/Dig.Tests/TunnelAutomaticWorkPlannerTests.cs`;
+- `tests/Dig.Tests/TunnelAutomaticWorkJobSaveCodecTests.cs`.
+
+Validation PR #579:
+
+- architecture, file-size, C# 9 compatibility, dependency and Domain-boundary checks passed;
+- Release build passed with `0` warnings and `0` errors;
+- full .NET suite passed: `1401/1401`;
+- new range, source, no-phantom-reservation, obsolete-target, interruption/reassignment and save-codec regressions passed;
+- headless smoke passed at tick `20`;
+- standard deterministic soak passed with replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
+- large deterministic soak with 64 residents passed with replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
+- Stage 2 v2/v3 exports passed;
+- Unity workflow recorded blocked runtime evidence: actual EditMode/PlayMode execution was skipped because activation was unavailable, therefore runtime verification is not claimed.
+
+Ещё не входит в Slice 2A:
+
+- excavation/template provenance topology synchronization;
+- junction stone-trim targets/jobs;
+- automatic job execution, material consumption и skill grant commit;
+- `TunnelInfrastructureState` save document section and version migration;
+- Unity composition/runtime projection.
+
+### Slice 2B — topology synchronization, execution и junction trim
+
+- synchronization из completed excavation/template-room provenance;
+- deterministic creation/removal horizontal segments at room exits and vertical junctions;
+- low-priority junction stone-trim target/job;
+- support/trim work execution, exact material consumption and `+0.7` skill exactly once;
+- no-source/interruption policies reuse Slice 2A;
+- player cancellation не реализуется до ответа `Q-TUNNEL-008`.
 
 ### Slice 3 — persistence и migration для tunnel infrastructure
 
@@ -86,12 +130,6 @@ Tracking issue: [#574](https://github.com/bageus/Dig/issues/574).
 - obsolete target не восстанавливается;
 - versioned migration не добавляет anchors в legacy saves без evidence;
 - deterministic save round trip и idempotency tests.
-
-Планируемые области:
-
-- `src/Dig.Application/Saving/`;
-- `src/Dig.Infrastructure/Saving/SaveGameCompositionRoot.cs`;
-- serialization/migration tests.
 
 ### Slice 4 — room-upgrade core
 
@@ -132,7 +170,7 @@ Tracking issue: [#574](https://github.com/bageus/Dig/issues/574).
 - interruption removes ghost/job and leaves material with owner resident;
 - wooden support commit updates rolling anchor chain;
 - stone floor/junction trim remains decorative;
-- room marker/menu, count `0/1`, requested/active purpose, progress and typed reasons;
+- room marker/menu, count `0|1`, requested/active purpose, progress and typed reasons;
 - input shielding before movement/excavation;
 - Unity source-contract and Play Mode tests.
 
@@ -167,22 +205,7 @@ Tracking issue: [#574](https://github.com/bageus/Dig/issues/574).
 
 Нельзя повышать статус до `IMPLEMENTED` только по source-contract или компиляции. `VERIFIED` требует фактического Unity Play Mode/equivalent runtime evidence.
 
-## 6. Acceptance для первого PR slice
-
-Первый PR может быть принят отдельно, если:
-
-- существует один authoritative `TunnelInfrastructureState` для rolling anchors;
-- room-exit/vertical-junction origin создаёт next target через 10 ordered cells;
-- manual/automatic wooden support на cell 5 пересчитывает next target на cell 15;
-- completed door на cell 5 делает то же;
-- obsolete derived target не остаётся дубликатом;
-- stone trim не влияет на anchor chain;
-- repeated commit idempotent либо возвращает typed conflict без mutation;
-- segment split и save-ready snapshots детерминированы;
-- unit tests проходят;
-- открытые gameplay blockers остаются явно перечислены и не реализованы предположениями.
-
-## 7. Статус и отчётность
+## 6. Статус и отчётность
 
 - design и issue обновляются до каждого изменения подтверждённой истины;
 - после каждого merged slice этот файл получает фактические changed files и validation evidence;
