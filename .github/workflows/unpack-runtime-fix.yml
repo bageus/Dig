@@ -22,12 +22,18 @@ jobs:
           ref: agent/slow-needs-alternating-supply-tent-food
           fetch-depth: 0
 
-      - name: Expand staged source payload
+      - name: Verify and expand staged source payload
         shell: bash
         run: |
           set -euo pipefail
+          wc -c .github/runtime-fix.payload.*
+          sha256sum .github/runtime-fix.payload.*
           cat .github/runtime-fix.payload.* > /tmp/runtime-fix.payload
+          echo "Expected combined SHA: 4f22047d9a7686877c3b7405629c96899cda59160e0c23dc5049177f8d7e8806"
+          sha256sum /tmp/runtime-fix.payload
+          echo "4f22047d9a7686877c3b7405629c96899cda59160e0c23dc5049177f8d7e8806  /tmp/runtime-fix.payload" | sha256sum --check --strict
           base64 --decode /tmp/runtime-fix.payload > /tmp/runtime-fix.tar.gz
+          echo "5a3cf4befbad373fc04839420cc4cf9d753b1d46ce1ccd9f39a1b648f70a67f5  /tmp/runtime-fix.tar.gz" | sha256sum --check --strict
           tar -xzf /tmp/runtime-fix.tar.gz -C .
           rm -f .github/runtime-fix.payload.*
           rm -f .github/workflows/unpack-runtime-fix.yml
