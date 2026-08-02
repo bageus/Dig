@@ -103,6 +103,43 @@ namespace Dig.Tests
         }
 
         [Fact]
+        public void Resident_food_runtime_uses_current_inventory_snapshot_contract()
+        {
+            string root = FindRepositoryRoot();
+            string runtime = File.ReadAllText(Path.Combine(
+                root,
+                "unity",
+                "Dig.Unity",
+                "Assets",
+                "Dig.Unity",
+                "Runtime",
+                "DigTerrainWorkSession.ResidentFood.cs"));
+            string snapshots = File.ReadAllText(Path.Combine(
+                root,
+                "src",
+                "Dig.Domain",
+                "Inventory",
+                "InventorySnapshots.cs"));
+            string locations = File.ReadAllText(Path.Combine(
+                root,
+                "src",
+                "Dig.Domain",
+                "Inventory",
+                "ItemLocations.cs"));
+
+            Assert.Contains("public EntityId StackId", snapshots);
+            Assert.Contains("AgentInventory", locations);
+            Assert.Contains("carried.StackId.ToString()", runtime);
+            Assert.Contains("ItemLocationKind.AgentInventory", runtime);
+            Assert.Contains(".OrderBy(value => value.StackId.ToString()", runtime);
+            Assert.Contains("stack.StackId", runtime);
+            Assert.Contains(".GroupBy(value => value.StackId)", runtime);
+            Assert.DoesNotContain("carried.Id", runtime);
+            Assert.DoesNotContain("ItemLocationKind.ResidentInventory", runtime);
+            Assert.DoesNotContain(".GroupBy(value => value.Id)", runtime);
+        }
+
+        [Fact]
         public void Play_mode_production_harness_uses_current_apply_work_parameter_name()
         {
             string root = FindRepositoryRoot();
