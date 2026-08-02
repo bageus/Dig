@@ -85,12 +85,12 @@ public sealed class CombatSpatialUnityRuntimeContractTests
         Assert.Contains("_disengageResidentCombat", directCommands, StringComparison.Ordinal);
         Assert.Contains("SetHighlighted", renderer, StringComparison.Ordinal);
         Assert.Contains("TryHighlightHostileCreature", cursor, StringComparison.Ordinal);
-        Assert.Contains("Shader.Find("Dig/Stylized Unlit")", health,
+        Assert.Contains("Shader.Find(\"Dig/Stylized Unlit\")", health,
             StringComparison.Ordinal);
         Assert.True(
-            health.IndexOf("Shader.Find("Dig/Stylized Unlit")", StringComparison.Ordinal)
+            health.IndexOf("Shader.Find(\"Dig/Stylized Unlit\")", StringComparison.Ordinal)
                 < health.IndexOf(
-                    "Shader.Find("Universal Render Pipeline/Unlit")",
+                    "Shader.Find(\"Universal Render Pipeline/Unlit\")",
                     StringComparison.Ordinal));
         Assert.Contains("_isEligible", autonomy, StringComparison.Ordinal);
         Assert.DoesNotContain("RegisterHostileCombatant", interaction,
