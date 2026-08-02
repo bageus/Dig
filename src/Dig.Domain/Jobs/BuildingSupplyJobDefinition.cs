@@ -184,10 +184,12 @@ public sealed class BuildingSupplyJobDefinition : JobDefinition
 
     public override IReadOnlyList<ReservationKey> CreateReservationKeys()
     {
+        // Production owns the exclusive craft/work position. Supply must remain
+        // concurrent with production; BuildingSupplyState and the building
+        // destination reservation enforce one supply batch per workstation.
         return new ReadOnlyCollection<ReservationKey>(new[]
         {
             ReservationKey.ForDestination(BuildingId),
-            ReservationKey.ForPosition(WorkPosition),
         });
     }
 }
