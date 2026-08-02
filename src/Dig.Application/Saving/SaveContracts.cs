@@ -20,7 +20,7 @@ namespace Dig.Application.Saving
 
 public static class SaveFormat
 {
-    public const int CurrentVersion = 13;
+    public const int CurrentVersion = 14;
 }
 
 public static class SaveSlotNames
@@ -98,6 +98,7 @@ public sealed class SaveGameDocument
     [DataMember(Order = 15)] public AgentRuntimeSaveData AgentRuntime { get; set; } = new AgentRuntimeSaveData();
     [DataMember(Order = 16)] public CombatSaveData Combat { get; set; } = new CombatSaveData();
     [DataMember(Order = 17)] public LivingMaterialEcologySaveData LivingMaterials { get; set; } = new LivingMaterialEcologySaveData();
+    [DataMember(Order = 18)] public VukerEcologySaveData Vukers { get; set; } = new VukerEcologySaveData();
 }
 
 public sealed class LoadedGameState
@@ -122,7 +123,8 @@ public sealed class LoadedGameState
         IReadOnlyDictionary<EntityId, AgentRuntimeSnapshot>? agentRuntime = null,
         CombatState? combat = null,
         int? terrainDepositGeneratorVersion = null,
-        LivingMaterialEcologyState? livingMaterials = null)
+        LivingMaterialEcologyState? livingMaterials = null,
+        VukerEcologyState? vukers = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -163,6 +165,7 @@ public sealed class LoadedGameState
             new BarrelCatalog(Array.Empty<BarrelDefinition>()));
         Combat = combat;
         LivingMaterials = livingMaterials ?? new LivingMaterialEcologyState(metadata.WorldSeed);
+        Vukers = vukers ?? new VukerEcologyState(metadata.WorldSeed);
     }
 
     public SaveMetadataData Metadata { get; }
@@ -185,6 +188,7 @@ public sealed class LoadedGameState
     public BarrelState Barrels { get; }
     public CombatState? Combat { get; }
     public LivingMaterialEcologyState LivingMaterials { get; }
+    public VukerEcologyState Vukers { get; }
 
     private static IReadOnlyDictionary<TKey, TValue> Copy<TKey, TValue>(
         IReadOnlyDictionary<TKey, TValue>? values) where TKey : notnull

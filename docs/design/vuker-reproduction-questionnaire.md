@@ -1,6 +1,6 @@
 # Размножение Вукеров / пещерных монстров
 
-Статус: `QUESTIONNAIRE`.
+Статус: `APPROVED`.
 
 Tracking issue: [#569](https://github.com/bageus/Dig/issues/569).
 
@@ -14,112 +14,149 @@ Tracking issue: [#569](https://github.com/bageus/Dig/issues/569).
 
 ## 1. Назначение и границы
 
-Система должна реализовать полный deterministic lifecycle размножения вида `enemy.vuker`, который в UI называется «Пещерный монстр»: pair ownership, cooldown, birth, child growth, pickup/taming, adulthood, population cap, combat/ecology integration и save/load.
+Система реализует deterministic lifecycle обычного Вукера `enemy.vuker`, который в UI называется «Пещерный монстр»: образование и разрыв пар, cooldown, рождение, рост детёныша, похищение, приручение, движение guard creature, population cap и save/load.
 
-Хищная лиана относится к растениям и в эту систему не входит. Серный Вукер имеет отдельный species/content profile и не включается автоматически.
+Хищная лиана является растением и не входит в эту систему. Серный Вукер использует отдельный species/content profile и не наследует этот balance автоматически.
 
-## 2. Подтверждённый пользовательский workflow
+## 2. Подтверждённый workflow
 
-Подтверждено parent specification и issue #149:
-
-- fresh demo создаёт пару диких `enemy.vuker`;
-- reproduction cooldown равен 7 игровым дням;
-- одна пара имеет максимум 3 успешных reproduction cycles;
-- детёныш взрослеет за 3 игровых дня;
-- свободный child является Inventory-backed physical entity и может быть подобран через общий item-interaction contract;
-- похищенный child становится приручённым guard creature поселения;
-- приручённый Вукер не размножается;
-- spawn/reproduction transaction не превышает data-driven population cap;
-- lifecycle, cooldown, cycles, tame state и deterministic state сохраняются.
+1. Fresh demo создаёт двух взрослых диких Вукеров в одной connected cave region.
+2. Любые два свободных живых взрослых диких Вукера одной region детерминированно образуют пару. Повзрослевшие дети также могут участвовать в pairing.
+3. Новая pair identity начинает с нуля successful cycles. Первый child становится due через 7 игровых дней.
+4. Один successful cycle создаёт ровно одного child. Следующий cooldown отсчитывается 7 дней от successful birth.
+5. Одна pair identity имеет максимум 3 successful cycles.
+6. Child появляется в ближайшей legal свободной клетке к stable-lowest parent. При отсутствии клетки или достижении cap birth остаётся due, cycle не расходуется и проверка повторяется.
+7. Population cap равен 10 живым обычным Вукерам на connected cave region. Общего world cap нет.
+8. Wild child патрулирует, но до взросления не создаёт combat intent, не атакует и не отвечает атакой. Через 3 игровых дня он становится взрослым.
+9. Похищение запускается выбранным живым гномом через `Alt+ЛКМ` по wild child. Гном получает direct approach route к текущей клетке child.
+10. Пока похищение зарезервировано, child не уходит с клетки. При достижении клетки выполняется exactly-once tame commit без persistent carried-item состояния.
+11. Tamed child/Adult переходит во фракцию residents, не размножается и не создаёт combat intent. До maturity он остаётся non-combat child.
+12. Tamed Vuker принимает прямые команды перемещения и, если прямой команды нет, автоматически возвращается к ближайшему месту дислокации живых гномов.
+13. Смерть или приручение parent разрывает active pair. Surviving wild adult может создать новую pair identity. История старой пары сохраняется; новая пара начинает с 0 cycles.
+14. После третьего successful cycle живая пара остаётся связанной, но больше не рождает. Она освобождается для re-pair только при смерти/приручении/удалении parent или расхождении regions.
 
 ## 3. Владение состоянием
 
-- Ecology владеет individual/pair identity, age/growth, cycles/cooldown и wild/tamed lifecycle.
-- Agents/Combat владеют actor position, Health, hostility, intents и attacks.
-- Inventory владеет physical free-child item location и pickup transaction.
-- Factions владеют hostile/tamed membership.
-- Presentation только проецирует `Child`/`Adult`, `Hostile`/`Tamed`, growth и combat state.
-
-Точная атомарная граница item-to-guard transition остаётся открытой.
+- `VukerEcologyState`: identity, region, lifecycle, disposition, active pair, pair history, cycles, cooldown, growth, kidnap reservation и blocked reason.
+- `AgentState`: authoritative actor position, Health и alive state.
+- `FactionState`: hostile/resident membership.
+- Combat: intents, executions и attacks; Ecology определяет eligibility child/tamed Vuker.
+- Navigation/World: connected cave regions, legal routes и birth cells.
+- Presentation: lifecycle/disposition/growth/selection projection; не изменяет authoritative state.
 
 ## 4. Модель данных
 
-После утверждения workflow потребуются stable individual/pair IDs, lifecycle `Child | Adult`, disposition `Wild | Tamed`, birth/adulthood timing, pair cycle count `0..3`, next reproduction due time, optional linked child Inventory stack, optional tame owner, version и deterministic sequence.
+Individual сохраняет `EntityId`, `Child|Adult`, `Wild|Tamed`, region root, position, alive, birth/maturity tick, optional kidnap resident, optional tame resident, active pair и version.
+
+Pair сохраняет stable `VukerPairId`, ordered parent IDs, region, successful cycles `0..3`, next birth tick, active/terminal state, blocked reason и version.
+
+Временная шкала использует authoritative simulation tick: 24 ticks = 1 игровой день, cooldown = 168 ticks, growth = 72 ticks.
 
 ## 5. Commands, events и queries
 
-- Commands: register/form pair, advance ecology, commit birth, pick up/tame child, mature child.
-- Events: pair formed/broken, reproduction blocked/committed, child born/picked/tamed/matured.
-- Queries: due pairs, population/cap, child lifecycle/location, blocked reason, next due time.
+Commands/use cases:
 
-## 6. Состояния и переходы
+- register/synchronize Vuker actor;
+- advance ecology tick and form pairs;
+- plan/commit or block birth;
+- reserve/cancel/commit kidnapping;
+- issue direct movement to tamed Vuker;
+- restore ecology snapshot.
+
+Events:
+
+- registered, pair formed/broken;
+- child born, birth blocked, child matured;
+- kidnapping reserved/cancelled, child tamed.
+
+Queries:
+
+- individuals/pairs ordered by stable identity;
+- due pairs, region population/cap;
+- lifecycle/disposition/combat eligibility;
+- reservation owner and blocked reason.
+
+## 6. State machine
 
 ```text
-Wild adult + eligible partner
- -> PairCooldown
- -> BirthDue
- -> Child born | Blocked retry
- -> PairCooldown (до 3 successful cycles)
+Wild Adult + eligible Adult -> PairCooldown
+PairCooldown --7 days--> BirthDue
+BirthDue -> Child born + next cooldown | blocked retry
+Pair --3 births--> ExhaustedPair
 
-Wild child -> Growing -> Wild adult
-Wild child + pickup -> OPEN item-to-guard transition -> Tamed guard
-Any tamed Vuker -> reproduction disabled
+Wild Child -> patrol/no-combat --3 days--> Wild Adult
+Wild Child + Alt+LMB -> Reserved -> resident approach -> Tamed Child
+Tamed Child --maturity--> Tamed Adult
+Tamed -> direct movement | automatic return to resident deployment
+
+Parent dead/tamed/region changed -> pair broken -> survivor may re-pair
 ```
 
 ## 7. Input, UI и Presentation
 
-Child/adult используют существующий Vuker rig с разными lifecycle variants; hostile/tamed используют разные markers. Открыты pickup modifier, carried-state UI и место появления guard actor.
+- `Alt+ЛКМ` требует ровно одного selected resident и wild child under pointer.
+- Hover показывает pickup cursor.
+- Ordinary `ЛКМ` по tamed Vuker выбирает его для direct movement.
+- `ЛКМ` по legal tunnel destination создаёт common manual tunnel route.
+- Child использует Vuker visual в `Child` lifecycle и growth progress; tamed использует `Tamed` disposition.
+- Diagnostics показывают pair, due tick, cycles, region population, lifecycle, disposition, reservation и blocked reason.
 
-## 8. Зависимости и конфликты
+## 8. Приоритеты и конфликты
 
-- combat death/taming может сделать parent неeligible;
-- Inventory pickup не должен оставлять одновременно item и actor;
-- spawn использует Navigation/World и deterministic ordering;
-- concurrent due pairs не могут превысить cap или занять одну physical cell.
+- Kidnap reservation принадлежит одному resident; второй resident получает conflict.
+- Reserved child не патрулирует.
+- Direct tamed movement имеет приоритет над automatic return.
+- Wild child и tamed Vuker исключены из autonomous/retaliation combat intent.
+- Due pairs обрабатываются по region и pair ID; каждый committed child сразу входит в cap и occupied cells следующей транзакции.
+- Failed route отменяет reservation. Death resident/child отменяет active kidnapping без tame commit.
 
 ## 9. Инварианты
 
-- один child identity имеет одного authoritative owner/location;
-- birth/retry/save-load не создают duplicate;
-- failed/blocked attempt не расходует successful cycle;
-- pair successful cycles `0..3`;
-- tamed individual не участвует в reproduction;
-- cap проверяется атомарно.
+- одна child identity создаётся один раз;
+- `living population <= 10` на region после каждой транзакции;
+- blocked birth не расходует cycle и не сдвигает due tick;
+- pair cycles не превышают 3;
+- exhausted pair не сбрасывает budget через немедленное re-pair тех же живых parents;
+- child до maturity не создаёт combat intent;
+- tamed Vuker не размножается и не создаёт combat intent;
+- одна kidnap reservation имеет одного resident owner;
+- save/load/retry сохраняет следующий deterministic result.
 
 ## 10. Save/Load и migration
 
-Сохраняются individual/pair identity, lifecycle, birth/adulthood timing, pair cycle count, next due time, disposition/tame owner, linked item/actor identity и deterministic sequence. Route, visual progress, target selection и animation пересчитываются. Нужна новая save migration после утверждения atomic item-to-actor transition.
+Save format v14 добавляет `VukerEcologySaveData`. Сохраняются individuals, pairs, current tick, pair sequence, lifecycle/disposition, region/position, due/maturity, cycles, reservation/tame owner, terminal/blocked reasons и versions.
 
-## 11. Диагностика
+Migration `v13 -> v14` создаёт пустой Vuker section с world seed и текущим simulation tick. Derived routes, presentation selection и interpolation пересчитываются.
 
-Inspector показывает pair/parents, eligibility, cycles, next due time, population/cap, child age/adulthood due, item/actor owner, disposition и blocked reason.
+## 11. Failure и retry
+
+- no legal birth cell/cap: birth остаётся due;
+- child identity collision: typed blocked diagnostic, no second actor;
+- kidnap route unavailable: reservation отменяется;
+- resident/child unavailable before arrival: order отменяется;
+- no reachable resident deployment for tamed auto-return: position сохраняется, retry выполняется позже;
+- invalid save snapshot: load fails typed, без частичного restore.
 
 ## 12. Тестовая матрица
 
-- Domain: pair eligibility, cooldown, three-cycle limit, tamed exclusion, deterministic child ID;
-- Application: atomic cap + birth + ownership, death/pickup/taming races;
-- deterministic simulation: several due pairs, blocked spawn retry;
-- save/load/migration: cooldown, growing child, carried/tamed transition;
-- Unity Play Mode: birth, visible growth, pickup/taming, adulthood, no tamed reproduction.
+- Domain: pairing/re-pairing, cadence, cycle limit, cap, blocked retry, maturity, taming, snapshot determinism;
+- Application: connected regions and stable nearest birth cell;
+- Save: v14 round-trip and v13 migration;
+- source contracts: runtime wiring, Alt input, common route, combat exclusion;
+- Unity Play Mode: 7-day birth, visible non-combat child, kidnapping/taming, direct movement, maturity and no tamed combat.
 
 ## 13. Acceptance
 
-После ответов должен проходить полный observable workflow от due pair до рождения, роста и повторного цикла, включая blocked retry, death/taming interruption, cap, save/load и фактический Play Mode evidence.
+Feature получает `IMPLEMENTED` после merge green Quality/build/.NET/source-contract/smoke/soak evidence. `VERIFIED` требует фактического licensed Unity Play Mode execution полного workflow.
 
 ## 14. Открытые вопросы
 
-1. Пара закрепляется навсегда при fresh spawn или взрослые дикие Вукеры могут детерминированно образовывать новые пары? Могут ли взрослые дети участвовать в pairing?
-2. Один успешный cycle создаёт ровно одного детёныша?
-3. Первый child рождается через 7 дней после fresh spawn, затем cooldown снова отсчитывается от каждого successful birth?
-4. Какой population cap установить для `enemy.vuker`: на connected cave region или на весь мир?
-5. Детёныш появляется у stable-lowest parent, у отдельного reproductive owner или между parents? При отсутствии клетки birth остаётся due и повторяется без расхода cycle?
-6. До взросления child патрулирует, убегает и не сражается либо сразу использует hostile combat profile?
-7. Pickup использует актуальный ordinary LMB или старый `Alt+LMB` из комментария #149? После pickup child сразу становится guard actor либо остаётся carried item до отдельного release/use?
-8. После смерти/приручения одного parent surviving adult может re-pair? Сохраняется ли cycle count старой пары?
-9. Продолжаются ли 3 дня роста внутри personal/building inventory?
+Нет открытых вопросов для ordinary `enemy.vuker` vertical slice. Balance серного Вукера остаётся отдельной системой.
 
 ## 15. Журнал решений
 
 | Дата | Решение | Кто подтвердил | Изменённые разделы/issues |
 |---|---|---|---|
-| 2026-08-02 | Создан focused questionnaire; подтверждённые правила отделены от открытых observable решений | ChatGPT по запросу пользователя | #569, #149 |
+| 2026-08-02 | Dynamic pairs, one child, 7-day cadence, cap 10 per connected region, blocked retry | пользователь | #569, sections 2/6/9 |
+| 2026-08-02 | Child patrols without combat; `Alt+ЛКМ` kidnapping creates tamed directly controllable guard and auto-return | пользователь | #569, sections 2/7/8 |
+| 2026-08-02 | Death/taming breaks pair; survivor re-pairs and old pair history remains | пользователь | #569, sections 2/6/9 |

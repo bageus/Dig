@@ -53,6 +53,11 @@ namespace Dig.Unity
             IReadOnlyList<string> residentIds = _agentRenderer!.SelectedAgentIds;
             if (residentIds.Count == 0)
             {
+                if (TryMoveSelectedTamedVuker(hits))
+                {
+                    return true;
+                }
+
                 _hud!.SetStatus("Select one or more dwarfs, then click a walkable destination.");
                 return false;
             }

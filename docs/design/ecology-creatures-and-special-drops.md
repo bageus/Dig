@@ -35,13 +35,13 @@ Spawn/reproduction transaction не создаёт новую особь, есл
 
 ## Вукеры
 
-Focused implementation questionnaire: [`vuker-reproduction-questionnaire.md`](vuker-reproduction-questionnaire.md), tracking [#569](https://github.com/bageus/Dig/issues/569). До ответов на вопросы pair formation, population cap, child combat/pickup и item-to-guard transition runtime implementation не считается определённой.
+Focused authoritative lifecycle: [`vuker-reproduction-questionnaire.md`](vuker-reproduction-questionnaire.md), tracking [#569](https://github.com/bageus/Dig/issues/569). Dynamic pair formation, cap `10` per connected cave region, non-combat child patrol and `Alt+ЛКМ` taming are approved.
 
 - появляются парами;
 - reproduction cooldown — 7 игровых дней;
 - одна пара имеет максимум 3 reproduction cycles;
 - детёныш взрослеет за 3 дня;
-- свободного Inventory-backed детёныша можно подобрать ordinary `ЛКМ` по общему item-profile contract;
+- выбранный живой гном похищает свободного детёныша через `Alt+ЛКМ`: подходит к нему и атомарно переводит в приручённого guard actor без persistent carried-item состояния;
 - похищенный детёныш становится приручённым guard creature поселения;
 - приручённый Вукер не размножается.
 

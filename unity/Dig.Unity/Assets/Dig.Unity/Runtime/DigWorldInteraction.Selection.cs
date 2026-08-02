@@ -65,6 +65,7 @@ namespace Dig.Unity
             ClearBuildingBoxSelection();
             _selectedCell = cell;
             _agentRenderer!.Select(null);
+            _creatureRenderer!.ClearSelection();
             _jobRenderer!.Select(null);
             _buildingRenderer!.Select(null);
             _renderer!.Select(cell);
@@ -77,6 +78,7 @@ namespace Dig.Unity
             _selectedCell = null;
             _renderer!.Select(null);
             _agentRenderer!.Select(null);
+            _creatureRenderer!.ClearSelection();
             _buildingRenderer!.Select(null);
             _jobRenderer!.Select(job);
             _hud!.SetJobSelection(job.Model);
@@ -97,6 +99,7 @@ namespace Dig.Unity
             }
 
             ClearBuildingBoxSelection();
+            _creatureRenderer!.ClearSelection();
             DisableExcavationDrawing();
             DisableCaveRoomPlanning();
             _selectedCell = null;
@@ -131,6 +134,7 @@ namespace Dig.Unity
             _selectedCell = null;
             _renderer!.Select(null);
             _agentRenderer!.ClearSelection();
+            _creatureRenderer!.ClearSelection();
             _jobRenderer!.Select(null);
             _buildingRenderer!.Select(null);
             _tunnelRenderer?.Select(null);

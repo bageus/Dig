@@ -123,6 +123,7 @@ public sealed class MushroomSaveRoundTripTests
             new SaveVersionTenTerrainDepositContractMigration(),
             new SaveVersionElevenLivingMaterialsMigration(),
             new SaveVersionTwelveTerrainOutputContractMigration(),
+            new SaveVersionThirteenVukerEcologyMigration(),
         });
 
         Result<SaveMigrationReport> migrated = pipeline.Apply(document);

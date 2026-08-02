@@ -190,6 +190,7 @@ namespace Dig.Unity
 
             _tick = checked(_tick + 1);
             BeginTunnelTrafficTick(_tick);
+            AdvanceVukerEcology();
             BeginMovementModeTick();
             _autonomy.Execute(new SimulationContext(_tick, _simulationState));
             IReadOnlyList<AgentState> agents = _repository.GetAll();
@@ -249,6 +250,7 @@ namespace Dig.Unity
                 TryAdvanceAutomaticMovement(agent, destination);
             }
 
+            CompleteVukerKidnapOrders();
             return Result.Success();
         }
 

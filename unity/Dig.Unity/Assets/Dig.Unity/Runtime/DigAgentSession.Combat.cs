@@ -5,6 +5,8 @@ using Dig.Domain.Agents;
 using Dig.Application.Combat;
 using Dig.Domain.Combat;
 using Dig.Domain.Content;
+using Dig.Domain.Ecology;
+using Dig.Application.Ecology;
 using Dig.Presentation.Combat;
 using Dig.Presentation.Creatures;
 using Dig.Domain.Core;
@@ -63,7 +65,9 @@ internal sealed partial class DigAgentSession
         {
             factions.AssignMember(resident.Id, ResidentFaction);
         }
+        InitializeVukerEcology(tunnelVolume);
         SeedCaveMonsterPair(tunnelVolume, factions);
+        FormInitialVukerPair();
 
         _combatRepository = new InMemoryCombatRepository(combat);
         _combatFactions = new InMemoryFactionRepository(factions);
