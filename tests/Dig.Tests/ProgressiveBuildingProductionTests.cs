@@ -32,7 +32,10 @@ public sealed class ProgressiveBuildingProductionTests
         ProductionOrderSnapshot started = harness.Production.Get(orderId)!;
         Assert.All(started.MaterialSteps, step => Assert.Equal(75, step.RequiredTicks));
         Assert.True(harness.Work(orderId, jobId, elapsedTicks: 74, tick: 6).IsSuccess);
-        Assert.Equal(2, harness.Inventory.GetTotal(CampfireProductionContent.MushroomLegItemId));
+        Assert.Equal(1, harness.Inventory.GetTotal(CampfireProductionContent.MushroomLegItemId));
+        Assert.Equal(
+            ProductionMaterialStepPhase.Processing,
+            harness.Production.Get(orderId)!.MaterialSteps[0].Phase);
         Assert.True(harness.Work(orderId, jobId, elapsedTicks: 1, tick: 7).IsSuccess);
         Assert.Equal(1, harness.Inventory.GetTotal(CampfireProductionContent.MushroomLegItemId));
         Assert.Equal(ProductionOrderStatus.InProgress, harness.Production.Get(orderId)!.Status);

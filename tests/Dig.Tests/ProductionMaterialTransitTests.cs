@@ -4,6 +4,7 @@ using Dig.Domain.Agents;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
+using Dig.Domain.Jobs;
 using Dig.Domain.Production;
 using Xunit;
 
@@ -43,7 +44,7 @@ public sealed class ProductionMaterialTransitTests
     }
 
     [Fact]
-    public void Production_worker_acquires_reserved_internal_unit_before_work()
+    public void Production_worker_stages_raw_before_processing_and_deposits_package()
     {
         RecipeDefinition recipe = new RecipeDefinition(
             RecipeId,
@@ -58,26 +59,27 @@ public sealed class ProductionMaterialTransitTests
                 new RecipeMaterialStepDefinition(
                     ProductionTestHarness.Ore,
                     AgentSkillCatalog.Metallurgy,
-                    baseDurationTicks: 1),
+                    baseDurationTicks: 3),
             });
         ProductionTestHarness harness = new ProductionTestHarness(new[] { recipe });
         Assert.True(harness.Enqueue(OrderId, RecipeId, tick: 1).IsSuccess);
         Assert.True(harness.Prepare(JobId, tick: 2).IsSuccess);
         harness.AssignAndBegin(OrderId, JobId, tick: 3);
 
-        Result missingCarry = new ApplyProductionWorkHandler(
+        ApplyProductionWorkHandler work = new ApplyProductionWorkHandler(
             harness.ProductionRepository,
             harness.InventoryRepository,
             harness.JobRepository,
             harness.Agents,
-            harness.Journal).Handle(new ApplyProductionWorkCommand(
+            harness.Journal);
+        Assert.Equal(
+            ProductionErrors.InvalidStatus,
+            work.Handle(new ApplyProductionWorkCommand(
                 OrderId,
                 JobId,
                 baseWork: 1,
                 conditionEfficiencyBasisPoints: 10_000,
-                tick: 6,
-                requireResidentCarriedMaterial: true));
-        Assert.Equal(InventoryErrors.ReservationNotFound, missingCarry.Error);
+                tick: 6)).Error);
 
         Result acquired = new AcquireProductionMaterialHandler(
             harness.ProductionRepository,
@@ -99,28 +101,70 @@ public sealed class ProductionMaterialTransitTests
         Assert.Contains(carried.Reservations, value =>
             value.JobId == OrderId && value.Quantity == 1);
 
-        Result worked = new ApplyProductionWorkHandler(
+        Result staged = new StageProductionMaterialHandler(
             harness.ProductionRepository,
             harness.InventoryRepository,
             harness.JobRepository,
-            harness.Agents,
-            harness.Journal).Handle(new ApplyProductionWorkCommand(
+            harness.Journal).Handle(new StageProductionMaterialCommand(
                 OrderId,
                 JobId,
-                baseWork: 1,
-                conditionEfficiencyBasisPoints: 10_000,
-                tick: 8,
-                requireResidentCarriedMaterial: true));
-        Assert.True(worked.IsSuccess, worked.Error?.ToString());
-        Assert.Equal(9, harness.Inventory.GetTotal(ProductionTestHarness.Ore));
+                tick: 8));
+        Assert.True(staged.IsSuccess, staged.Error?.ToString());
         Assert.DoesNotContain(harness.Inventory.CreateSnapshot().Stacks, value =>
             value.Location.Kind == ItemLocationKind.AgentInventory
             && value.Location.HasOwner
             && value.Location.OwnerId == ProductionTestHarness.WorkerId
             && value.ItemId == ProductionTestHarness.Ore);
+        Assert.Equal(9, harness.Inventory.GetTotal(ProductionTestHarness.Ore));
+        Assert.Equal(
+            ProductionMaterialStepPhase.StagedOnWorkbench,
+            harness.Production.Get(OrderId)!.MaterialSteps[0].Phase);
+
+        Assert.True(work.Handle(new ApplyProductionWorkCommand(
+            OrderId,
+            JobId,
+            baseWork: 1,
+            conditionEfficiencyBasisPoints: 10_000,
+            tick: 9)).IsSuccess);
+        ProductionMaterialStepSnapshot processing =
+            harness.Production.Get(OrderId)!.MaterialSteps[0];
+        Assert.Equal(ProductionMaterialStepPhase.Processing, processing.Phase);
+        Assert.Equal(1, processing.CompletedTicks);
+
+        Assert.True(work.Handle(new ApplyProductionWorkCommand(
+            OrderId,
+            JobId,
+            baseWork: 2,
+            conditionEfficiencyBasisPoints: 10_000,
+            tick: 10)).IsSuccess);
+        ProductionOrderSnapshot processed = harness.Production.Get(OrderId)!;
+        Assert.Equal(ProductionOrderStatus.InProgress, processed.Status);
+        Assert.Equal(
+            ProductionMaterialStepPhase.ProcessedAwaitingPackage,
+            processed.MaterialSteps[0].Phase);
+        Assert.Equal(JobStageKind.PerformWork, harness.Jobs.Get(JobId)!.Stage);
+
+        EntityId packageId = EntityId.Parse("8a000000000000000000000000000005");
+        Assert.True(harness.Production.CreateOutputPackage(
+            OrderId,
+            packageId,
+            tick: 11).IsSuccess);
+        Result deposited = new DepositProductionMaterialHandler(
+            harness.ProductionRepository,
+            harness.JobRepository,
+            harness.Journal).Handle(new DepositProductionMaterialCommand(
+                OrderId,
+                JobId,
+                packageId,
+                tick: 12));
+        Assert.True(deposited.IsSuccess, deposited.Error?.ToString());
         Assert.Equal(
             ProductionOrderStatus.ReadyToComplete,
             harness.Production.Get(OrderId)!.Status);
+        Assert.Equal(
+            ProductionMaterialStepPhase.Deposited,
+            harness.Production.Get(OrderId)!.MaterialSteps[0].Phase);
+        Assert.Equal(JobStageKind.Finalize, harness.Jobs.Get(JobId)!.Stage);
     }
 }
 

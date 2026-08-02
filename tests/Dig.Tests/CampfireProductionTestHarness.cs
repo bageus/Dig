@@ -21,8 +21,10 @@ using Xunit;
 namespace Dig.Tests
 {
 
-internal sealed class CampfireProductionTestHarness
+internal sealed partial class CampfireProductionTestHarness
 {
+    private int _nextTransitId = 10_000;
+
     public static readonly EntityId BuildingId = Id(1);
     public static readonly EntityId WorkerId = Id(2);
 
@@ -129,21 +131,6 @@ internal sealed class CampfireProductionTestHarness
                 jobId,
                 tick + 1)).IsSuccess);
         Assert.True(Jobs.AdvanceStage(jobId, tick + 2).IsSuccess);
-    }
-
-    public Result Work(EntityId orderId, EntityId jobId, int elapsedTicks, long tick)
-    {
-        return new ApplyProductionWorkHandler(
-            ProductionRepository,
-            InventoryRepository,
-            JobsRepository,
-            Agents,
-            Journal).Handle(new ApplyProductionWorkCommand(
-                orderId,
-                jobId,
-                elapsedTicks,
-                conditionEfficiencyBasisPoints: 10_000,
-                tick));
     }
 
     public Result Complete(

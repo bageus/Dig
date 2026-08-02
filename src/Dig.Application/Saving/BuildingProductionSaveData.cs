@@ -76,6 +76,8 @@ public sealed class ProductionMaterialStepSaveData
     [DataMember(Order = 3)] public long RequiredTicks { get; set; }
     [DataMember(Order = 4)] public long CompletedTicks { get; set; }
     [DataMember(Order = 5)] public bool IsConsumed { get; set; }
+    [DataMember(Order = 6, EmitDefaultValue = false)]
+    public int? Phase { get; set; }
 }
 
 [DataContract]

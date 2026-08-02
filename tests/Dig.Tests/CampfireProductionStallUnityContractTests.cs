@@ -10,11 +10,13 @@ public sealed class CampfireProductionStallUnityContractTests
     [Fact]
     public void Production_work_advances_each_simulation_tick_at_the_workstation()
     {
-        string zones = ReadRuntime("DigBuildingProductionZones.cs");
+        string lifecycle = ReadRuntime(
+            "DigBuildingProductionMaterialLifecycle.cs");
 
-        Assert.Contains("if (!atWorkstation)", zones);
-        Assert.DoesNotContain("tick % 2", zones);
-        Assert.Contains("ApplyProductionWorkCommand", zones);
+        Assert.Contains("if (!At(worker, production.WorkPosition))", lifecycle);
+        Assert.DoesNotContain("tick % 2", lifecycle);
+        Assert.Contains("ApplyProductionWorkCommand", lifecycle);
+        Assert.Contains("ProductionMaterialStepPhase.Processing", lifecycle);
     }
 
     [Fact]
@@ -54,8 +56,12 @@ public sealed class CampfireProductionStallUnityContractTests
             "CampfireProductionRuntimePlayModeTests.cs");
 
         Assert.Contains("InitializeBuildingProductionDemo", playMode);
-        Assert.Contains("Acquire", playMode);
-        Assert.Contains("CompletedTicks", playMode);
+        Assert.Contains("sawPackageBeforeAcquire", playMode);
+        Assert.Contains("sawAcquire", playMode);
+        Assert.Contains("sawStagedWithoutCarry", playMode);
+        Assert.Contains("sawProcessing", playMode);
+        Assert.Contains("sawProcessedAwaitingPackage", playMode);
+        Assert.Contains("sawDeposited", playMode);
         Assert.Contains("ProductionOrderStatus.Completed", playMode);
         Assert.Contains("package.IsClosed", playMode);
     }

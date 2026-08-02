@@ -120,10 +120,12 @@ public sealed class InternalStockRouteAndProgressCorrectionTests
             orderId,
             tick: 2,
             resolvedStepDurations: new long[] { 1 }).IsSuccess);
+        Assert.True(production.StageMaterial(orderId, tick: 3).IsSuccess);
         Assert.True(production.AddMaterialWork(
             orderId,
             elapsedTicks: 1,
-            tick: 3).IsSuccess);
+            tick: 4).IsSuccess);
+        Assert.True(production.DepositProcessedMaterial(orderId, tick: 5).IsSuccess);
 
         ProductionIconViewModel grilled = new BuildingProductionPresenter(
             content,

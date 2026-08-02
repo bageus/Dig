@@ -90,12 +90,16 @@ Dependent supply остаётся `Created` и не получает worker/sour
 2. Полный input set резервируется во внутреннем stock.
 3. Один eligible resident получает `ProductionWorkJob`; segmented overlay получает по одному делению на material step.
 4. Worker создаёт order-owned unfinished package в первой доступной right-side output cell.
-5. Для каждого material step worker берёт одну конкретную единицу с внутреннего склада в resident inventory, подходит к workstation/campfire и выкладывает материал на derived virtual workbench.
-6. После обработки material превращается в transient processed-step state; отдельный processed item в resident inventory не показывается.
-7. Worker переносит processed step в package; input расходуется exactly once и соответствующее деление заполняется.
-8. После последнего step worker закрывает package. Close atomically создаёт BuildingBox либо closed `food`/`weapon`/`tool` package с manifest, terminal-ит order/job, выдаёт skill grants, освобождает reservations и уменьшает counter на один.
-9. Для non-building output отдельный direct-use worker позже ломает закрытую коробку и materialize-ит manifest exactly once; это не является продолжением production order.
-10. Тот же production worker остаётся owner всего manufacturing workflow.
+5. Для каждого material step worker берёт одну конкретную order-reserved единицу с внутреннего склада в resident inventory и возвращается к workstation/campfire.
+6. По прибытии worker выкладывает raw material на derived virtual workbench. В этот commit raw unit exactly once удаляется из resident inventory; reservation переносится в authoritative `Staged` phase order-а, поэтому raw icon больше не остаётся в слоте во время обработки.
+7. Worker обрабатывает только staged material у workstation. Завершение таймера переводит step в transient `ProcessedAwaitingPackage` state; отдельный processed item в resident inventory или world не создаётся.
+8. После каждого material step worker обязан подойти к order-owned unfinished package и committed deposit-ом перевести step в `Deposited`. Только этот deposit заполняет соответствующее деление segmented progress. До deposit следующий material step не начинается.
+9. Если остаются material steps, тот же worker возвращается к internal stock и повторяет `pickup -> workbench stage -> processing -> package deposit` для следующей единицы.
+10. После deposit последнего step worker закрывает package в той же output position. Close atomically создаёт BuildingBox либо closed `food`/`weapon`/`tool` package с manifest, terminal-ит order/job, выдаёт skill grants, освобождает reservations и уменьшает counter на один.
+11. Для non-building output отдельный direct-use worker позже ломает закрытую коробку и materialize-ит manifest exactly once; это не является продолжением production order.
+12. Тот же production worker остаётся owner всего manufacturing workflow.
+
+Authoritative material-step phases: `AwaitingMaterial -> CarriedRaw -> StagedOnWorkbench -> Processing -> ProcessedAwaitingPackage -> Deposited`. `CarriedRaw` остаётся физическим Inventory state; остальные transition states принадлежат `ProductionState`. Runtime не может считать step completed только по истечению processing timer: package deposit является обязательным отдельным commit.
 
 ## 7.1 Cancel и forced movement
 
@@ -139,7 +143,7 @@ Forced movement после normal close не меняет уже созданн�
 
 ## 9. Save/load и diagnostics
 
-Save включает workstation registration, delivery toggles/incoming, queue/status, material progress, consumed ledger, active job references и supply allocations.
+Save включает workstation registration, delivery toggles/incoming, queue/status, current material-step phase (`AwaitingMaterial`, `StagedOnWorkbench`, `ProcessedAwaitingPackage`, `Deposited`), processing ticks, consumed ledger, active job references и supply allocations. Load восстанавливает exact phase: staged raw material не возвращается в inventory, processed step не пропускает обязательный package deposit, а deposited step не обрабатывается повторно.
 
 - Unfinished package сохраняется как настоящая Inventory item entity со stable stack ID/location, owner order ID, lifecycle/version и текущим manifest/progress reference.
 - Closed `food`/`weapon`/`tool` package сохраняет stack identity/location/version, kind, полный contents manifest и materialized marker.
