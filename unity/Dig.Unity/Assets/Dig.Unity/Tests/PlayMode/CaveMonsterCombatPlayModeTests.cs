@@ -62,7 +62,7 @@ public sealed class CaveMonsterCombatPlayModeTests
             ItemLocation.InResidentSlot(
                 residentId,
                 ResidentInventoryCompartment.Main,
-                index: 2),
+                slotIndex: 2),
             splitStackId: default,
             tick: 0);
         Assert.That(moved.IsSuccess, Is.True, moved.Error?.ToString());
