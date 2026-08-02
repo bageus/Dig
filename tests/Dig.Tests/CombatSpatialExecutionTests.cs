@@ -199,8 +199,8 @@ public sealed class CombatSpatialExecutionTests
             started.Value.ExecutionId,
             Target,
             new CellId(2, 0, 0),
-            tick: 1,
-            reason: "target_previously_visible").IsSuccess);
+            1,
+            "target_previously_visible").IsSuccess);
         fixture.CombatRepository.Save(fixture.Combat);
         AgentState target = fixture.Agents.Get(Target)!;
         Assert.True(target.MoveTo(new CellId(5, 0, 0), tick: 1).IsSuccess);
