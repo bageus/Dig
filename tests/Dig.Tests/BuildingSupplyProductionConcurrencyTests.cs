@@ -116,7 +116,9 @@ public sealed class BuildingSupplyProductionConcurrencyTests
 
         Assert.True(blocked.IsFailure);
         Assert.Equal(JobErrors.ReservationConflict, blocked.Error);
-        Assert.Null(harness.Jobs.Get(blockedSupplyJobId));
+        Assert.Equal(
+            JobStatus.Cancelled,
+            harness.Jobs.Get(blockedSupplyJobId)!.Status);
         Assert.Empty(harness.Inventory.GetStack(sourceStackId)!.Reservations);
         Assert.False(harness.Supply.Get(
             CampfireProductionTestHarness.BuildingId,

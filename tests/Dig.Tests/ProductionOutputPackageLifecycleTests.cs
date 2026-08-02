@@ -119,6 +119,13 @@ public sealed class ProductionOutputPackageLifecycleTests
         Assert.Equal(ProductionOutputPackageKind.Food, package.Kind);
         Assert.Single(package.Manifest);
         Assert.Equal(2, package.Manifest[0].Quantity);
+        Assert.Equal(
+            JobStageKind.TravelToDestination,
+            harness.Jobs.Get(productionJobId)!.Stage);
+        Assert.True(harness.Jobs.AdvanceStage(
+            productionJobId,
+            tick: 10).IsSuccess);
+        Assert.Equal(JobStatus.Completed, harness.Jobs.Get(productionJobId)!.Status);
 
         EntityId useJobId = CampfireProductionTestHarness.Id(204);
         EntityId outputId = CampfireProductionTestHarness.Id(205);
@@ -132,15 +139,15 @@ public sealed class ProductionOutputPackageLifecycleTests
                 CampfireProductionTestHarness.WorkerId,
                 new CellId(5, 4, 0),
                 priority: 800,
-                tick: 10)).IsSuccess);
+                tick: 11)).IsSuccess);
         AdvanceProductionPackageUseHandler advance =
             new AdvanceProductionPackageUseHandler(
                 harness.JobsRepository,
                 harness.Journal);
         Assert.True(advance.Handle(
-            new AdvanceProductionPackageUseCommand(useJobId, 11)).IsSuccess);
-        Assert.True(advance.Handle(
             new AdvanceProductionPackageUseCommand(useJobId, 12)).IsSuccess);
+        Assert.True(advance.Handle(
+            new AdvanceProductionPackageUseCommand(useJobId, 13)).IsSuccess);
         CompleteProductionPackageUseHandler complete =
             new CompleteProductionPackageUseHandler(
                 harness.ProductionRepository,
@@ -151,7 +158,7 @@ public sealed class ProductionOutputPackageLifecycleTests
         Result opened = complete.Handle(new CompleteProductionPackageUseCommand(
             useJobId,
             new[] { outputId },
-            tick: 13));
+            tick: 14));
 
         Assert.True(opened.IsSuccess, opened.Error?.ToString());
         Assert.Null(harness.Production.GetOutputPackage(packageId));
@@ -163,7 +170,7 @@ public sealed class ProductionOutputPackageLifecycleTests
         Assert.True(complete.Handle(new CompleteProductionPackageUseCommand(
             useJobId,
             new[] { CampfireProductionTestHarness.Id(206) },
-            tick: 14)).IsFailure);
+            tick: 15)).IsFailure);
         Assert.Equal(2, harness.Inventory.GetTotal(
             CampfireProductionContent.GrilledMushroomItemId));
     }

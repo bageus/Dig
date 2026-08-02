@@ -53,7 +53,10 @@ public sealed class RuntimeScreenshotRegressionTests
         Assert.Contains("VisibleDepthOffset = 0.12f", stock);
         Assert.Contains("RenderBay", zones);
         Assert.DoesNotContain("FrontDepthOffset", stock + zones);
-        Assert.DoesNotContain("building.WorkPositionX", stock + zones);
+        Assert.DoesNotContain("building.WorkPositionX", stock);
+        Assert.Contains("RenderProductionWorkbench(building, view.ShowWorkbench)", zones);
+        Assert.Contains("building.WorkPositionX", zones);
+        Assert.Contains("Destroy(collider)", zones);
         Assert.Contains("Storage tray", bay);
         Assert.DoesNotContain("Storage back rail", bay);
     }

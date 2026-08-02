@@ -169,12 +169,30 @@ public sealed class CreateBuildingSupplyJobHandler
             command.Tick,
             JobRetryPolicy.Default);
         Result created = jobs.Add(definition);
+        bool jobAdded = created.IsSuccess;
         if (created.IsSuccess) created = jobs.MakeAvailable(command.JobId, command.Tick);
         if (created.IsSuccess) created = jobs.Claim(command.JobId, command.ResidentId, command.Tick);
         if (created.IsFailure)
         {
             Rollback(inventory, command.JobId, command.Tick);
             supply.ReleaseSupply(building.Id, command.JobId, command.Tick);
+            if (jobAdded && jobs.Get(command.JobId) is JobSnapshot failedJob
+                && !failedJob.IsTerminal)
+            {
+                Result cancelled = jobs.Cancel(
+                    command.JobId,
+                    new JobBlockReason(
+                        "production.supply.creation_rolled_back",
+                        "Building supply creation failed and released its operation."),
+                    command.Tick);
+                if (cancelled.IsFailure)
+                {
+                    throw new InvalidOperationException(
+                        "Failed building supply job could not be terminalized.");
+                }
+            }
+
+            Save(supply, inventory, jobs);
             return created;
         }
 
