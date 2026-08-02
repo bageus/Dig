@@ -25,8 +25,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "b33c440dfbf9a7471691fa4daa74ffbee8cd42e5dc8334d96573c645ef0c6d53  .agent/pr568-fix.patch.b64" | sha256sum --check
-          base64 --decode .agent/pr568-fix.patch.b64 > /tmp/pr568-fix.patch.gz
+          echo "a064f3b6757c10edec32a788b3fae43123afe88e5d2178cd4195093b10520b23  .agent/pr568-fix.patch.b64.part.00" | sha256sum --check
+          echo "3e1806b27384e48b0f310206ce1ddbb8a160d7125d5ef97c3fb110daea180ee0  .agent/pr568-fix.patch.b64.part.01" | sha256sum --check
+          echo "b2dbf86af5cfed7f89b2768b0a2b9a692950a88d6507a759caddbaef39f98f5f  .agent/pr568-fix.patch.b64.part.02" | sha256sum --check
+          echo "e052ce073c27389a321a035bbf13f71270c0450e8c6ef5fe490a130544992ccf  .agent/pr568-fix.patch.b64.part.03" | sha256sum --check
+          cat .agent/pr568-fix.patch.b64.part.* > /tmp/pr568-fix.patch.b64
+          base64 --decode /tmp/pr568-fix.patch.b64 > /tmp/pr568-fix.patch.gz
           echo "81f20c6582da791a743a318d22c08e60ba05e15539c4e74f95c79eec61fab7d6  /tmp/pr568-fix.patch.gz" | sha256sum --check
           gzip -dc /tmp/pr568-fix.patch.gz > /tmp/pr568-fix.patch
           echo "f73e67d0baaecbcf676cb06644a4c1b3e88e8f5b9826f6f531f4f26eee18efb9  /tmp/pr568-fix.patch" | sha256sum --check
