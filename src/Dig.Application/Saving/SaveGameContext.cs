@@ -61,7 +61,8 @@ public sealed class SaveGameContext
         BarrelState? barrels = null,
         CombatState? combat = null,
         int? terrainDepositGeneratorVersion = null,
-        LivingMaterialEcologyState? livingMaterials = null)
+        LivingMaterialEcologyState? livingMaterials = null,
+        VukerEcologyState? vukers = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -91,6 +92,7 @@ public sealed class SaveGameContext
             new BarrelCatalog(Array.Empty<BarrelDefinition>()));
         Combat = combat;
         LivingMaterials = livingMaterials ?? new LivingMaterialEcologyState(metadata.WorldSeed);
+        Vukers = vukers ?? new VukerEcologyState(metadata.WorldSeed);
     }
 
     public SaveMetadataData Metadata { get; }
@@ -109,6 +111,7 @@ public sealed class SaveGameContext
     public BarrelState Barrels { get; }
     public CombatState? Combat { get; }
     public LivingMaterialEcologyState LivingMaterials { get; }
+    public VukerEcologyState Vukers { get; }
 }
 
 }

@@ -5,6 +5,7 @@ using Dig.Application.Combat;
 using Dig.Domain.Agents;
 using Dig.Domain.Combat;
 using Dig.Domain.Content;
+using Dig.Domain.Ecology;
 using Dig.Domain.Core;
 using Dig.Domain.Factions;
 using Dig.Domain.Navigation;
@@ -28,59 +29,6 @@ internal sealed partial class DigAgentSession
         EntityId.Parse("e1000000000000000000000000000001");
     private static readonly EntityId CaveMonsterTwoId =
         EntityId.Parse("e1000000000000000000000000000002");
-
-    internal IReadOnlyList<CreatureVisualSnapshot> LoadEnemyCreatures()
-    {
-        CombatState? combat = _combatRepository?.Get();
-        List<CreatureVisualSnapshot> result = new List<CreatureVisualSnapshot>(
-            _enemyDefinitions.Count);
-        foreach (KeyValuePair<EntityId, EnemyCombatDefinition> pair
-            in _enemyDefinitions.OrderBy(value => value.Key.ToString(), StringComparer.Ordinal))
-        {
-            AgentState? actor = _repository.Get(pair.Key);
-            if (actor == null)
-            {
-                continue;
-            }
-
-            AgentSnapshot snapshot = actor.CreateSnapshot(_tick);
-            CombatExecutionSnapshot? execution = combat?.GetActiveExecution(actor.Id);
-            bool engaged = combat != null && IsCombatEngaged(combat, actor.Id);
-            bool moving = execution != null
-                && (execution.Stage == CombatExecutionStage.Approach
-                    || execution.Stage == CombatExecutionStage.Retreat);
-            moving |= _lastEnemyPatrolMoveTicks.TryGetValue(
-                actor.Id,
-                out long patrolTick)
-                && patrolTick == _tick;
-            bool attacking = execution != null
-                && (execution.Stage == CombatExecutionStage.WindUp
-                    || execution.Stage == CombatExecutionStage.ResolveAttack);
-            bool impact = _lastCombatImpactTicks.TryGetValue(actor.Id, out long impactTick)
-                && _tick - impactTick <= 1;
-            result.Add(new CreatureVisualSnapshot(
-                actor.Id.ToString(),
-                pair.Value.SpeciesId,
-                CreatureLifecycleVisualStage.Adult,
-                CreatureDisposition.Hostile,
-                snapshot.IsAlive,
-                snapshot.Position.X,
-                snapshot.Position.Y,
-                snapshot.Position.Z,
-                moving,
-                attacking,
-                impact,
-                isGrowing: false,
-                isSpecialAction: false,
-                actionProgress: 0d,
-                version: checked(snapshot.Version + (combat?.Version ?? 0)),
-                activityVariantId: string.Empty,
-                currentHealth: snapshot.Needs.Health.Points,
-                maximumHealth: pair.Value.MaximumHealth,
-                showHealthBar: engaged));
-        }
-        return result;
-    }
 
     internal IReadOnlyList<CreatureVisualSnapshot> LoadCreatures(
         IReadOnlyList<CreatureVisualSnapshot> livingMaterials)
@@ -139,6 +87,8 @@ internal sealed partial class DigAgentSession
 
         AddEnemy(CaveMonsterOneId, definition, cells[0], factions);
         AddEnemy(CaveMonsterTwoId, definition, cells[1], factions);
+        RegisterInitialVukerAdult(CaveMonsterOneId, cells[0]);
+        RegisterInitialVukerAdult(CaveMonsterTwoId, cells[1]);
     }
 
     private void AddEnemy(
@@ -175,6 +125,7 @@ internal sealed partial class DigAgentSession
     {
         if (_issueCombatIntent == null || _combatRepository == null
             || !enemy.IsAlive
+            || !CanVukerInitiateCombat(enemy.Id)
             || _combatRepository.Get().GetActiveIntent(enemy.Id) != null)
         {
             return;
@@ -196,7 +147,8 @@ internal sealed partial class DigAgentSession
 
     private void EnsureEnemyRetaliation(EntityId enemyId, EntityId attackerId)
     {
-        if (!_combatOnlyActors.Contains(enemyId))
+        if (!_combatOnlyActors.Contains(enemyId)
+            || !CanVukerInitiateCombat(enemyId))
         {
             return;
         }
@@ -285,6 +237,25 @@ internal sealed partial class DigAgentSession
         if (!_combatOnlyActors.Contains(enemy.Id))
         {
             return false;
+        }
+
+        if (ShouldYieldEnemyIdleToManualMovement(enemy.Id))
+        {
+            return false;
+        }
+
+        if (TryAdvanceTamedVukerAutoReturn(enemy, out Result tamedReturn))
+        {
+            if (tamedReturn.IsFailure)
+            {
+                CancelManualMovementWithWarning(enemy.Id, tamedReturn.Error!);
+            }
+            return true;
+        }
+
+        if (IsVukerKidnapReserved(enemy.Id))
+        {
+            return true;
         }
 
         if (TryAdvanceEnemyPatrol(enemy, out Result patrol)

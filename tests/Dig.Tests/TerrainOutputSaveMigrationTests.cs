@@ -78,14 +78,18 @@ public sealed class TerrainOutputSaveMigrationTests
         SaveMigrationPipeline pipeline = new SaveMigrationPipeline(new ISaveMigration[]
         {
             new SaveVersionTwelveTerrainOutputContractMigration(),
+            new SaveVersionThirteenVukerEcologyMigration(),
         });
 
         var first = pipeline.Apply(document);
         var replay = pipeline.Apply(document);
 
         Assert.True(first.IsSuccess);
-        Assert.Equal(new[] { "save.v12_to_v13.terrain_output_contract" },
-            first.Value.AppliedSteps);
+        Assert.Equal(new[]
+        {
+            "save.v12_to_v13.terrain_output_contract",
+            "save.v13_to_v14.vuker_ecology",
+        }, first.Value.AppliedSteps);
         Assert.True(replay.IsSuccess);
         Assert.Empty(replay.Value.AppliedSteps);
     }

@@ -96,6 +96,7 @@ public static class SaveGameCompositionRoot
             new SaveVersionTenTerrainDepositContractMigration(),
             new SaveVersionElevenLivingMaterialsMigration(),
             new SaveVersionTwelveTerrainOutputContractMigration(),
+            new SaveVersionThirteenVukerEcologyMigration(),
         });
     }
 

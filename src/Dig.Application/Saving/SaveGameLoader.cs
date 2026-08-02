@@ -200,7 +200,6 @@ public sealed partial class SaveGameLoader
             {
                 return Result<LoadedGameState>.Failure(references.Error!);
             }
-
             Result<PackableBuildingExecutionRegistry> packableExecutions =
                 RestorePackableBuildingExecutions(
                     document.PackableBuildingExecutions,
@@ -210,7 +209,6 @@ public sealed partial class SaveGameLoader
             {
                 return Result<LoadedGameState>.Failure(packableExecutions.Error!);
             }
-
             IReadOnlyDictionary<EntityId, Dig.Domain.Agents.AgentSkillProgressionSnapshot>
                 agentSkills = BuildAgentSkills(document.AgentSkills);
             IReadOnlyDictionary<EntityId, bool> agentAutomaticPlanning =
@@ -241,7 +239,6 @@ public sealed partial class SaveGameLoader
                 {
                     return Result<LoadedGameState>.Failure(SaveErrors.InvalidDocument);
                 }
-
                 Result<CombatState> restoredCombat = CombatSaveAdapter.Decode(
                     document.Combat,
                     combatWeapons);
@@ -249,7 +246,6 @@ public sealed partial class SaveGameLoader
                 {
                     return Result<LoadedGameState>.Failure(restoredCombat.Error!);
                 }
-
                 combat = restoredCombat.Value;
             }
             Result<LivingMaterialEcologyState> livingMaterials =
@@ -261,6 +257,13 @@ public sealed partial class SaveGameLoader
             {
                 return Result<LoadedGameState>.Failure(livingMaterials.Error!);
             }
+            Result<VukerEcologyState> vukers = VukerEcologySaveAdapter.Decode(
+                document.Vukers,
+                document.Metadata.WorldSeed);
+            if (vukers.IsFailure)
+            {
+                return Result<LoadedGameState>.Failure(vukers.Error!);
+            }
             Result<RestoredMiningOutputState> miningOutput = RestoreMiningOutput(
                 document,
                 inventory.Value,
@@ -270,7 +273,6 @@ public sealed partial class SaveGameLoader
                 return Result<LoadedGameState>.Failure(
                     miningOutput.Error ?? MiningOutputSaveErrors.InvalidSnapshot);
             }
-
             return Result<LoadedGameState>.Success(new LoadedGameState(
                 CopyMetadata(document.Metadata),
                 world.Value,
@@ -292,7 +294,8 @@ public sealed partial class SaveGameLoader
                 combat,
                 terrainDepositGeneratorVersion:
                     document.TerrainDeposits.GeneratorVersion,
-                livingMaterials: livingMaterials.Value));
+                livingMaterials: livingMaterials.Value,
+                vukers: vukers.Value));
         }
         catch (UnknownTerrainDepositDefinitionException)
         {
@@ -317,7 +320,6 @@ public sealed partial class SaveGameLoader
             return Result<LoadedGameState>.Failure(SaveErrors.InvalidDocument);
         }
     }
-
     private static void ValidateMetadata(SaveMetadataData metadata)
     {
         if (metadata is null
@@ -330,7 +332,6 @@ public sealed partial class SaveGameLoader
             throw new InvalidOperationException("Save metadata is invalid.");
         }
     }
-
     private static SaveMetadataData CopyMetadata(SaveMetadataData metadata)
     {
         return new SaveMetadataData
@@ -344,5 +345,4 @@ public sealed partial class SaveGameLoader
         };
     }
 }
-
 }

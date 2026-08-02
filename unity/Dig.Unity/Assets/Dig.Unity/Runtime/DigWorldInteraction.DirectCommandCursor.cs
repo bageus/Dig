@@ -66,6 +66,10 @@ namespace Dig.Unity
 
             RaycastHit[] hits = GetPointerHits();
             TryHighlightHostileCreature(hits);
+            if (TryResolveVukerKidnapHoverTarget(hits))
+            {
+                return DirectCommandCursorKind.Pickup;
+            }
             if (Time.unscaledTime < _movementCursorExpiresAt)
             {
                 return DirectCommandCursorKind.Movement;

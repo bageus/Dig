@@ -45,6 +45,7 @@ public sealed class SaveMigrationAndCorruptionTests
             "save.v10_to_v11.terrain_deposit_contract",
             "save.v11_to_v12.living_materials",
             "save.v12_to_v13.terrain_output_contract",
+            "save.v13_to_v14.vuker_ecology",
         }, first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
         Assert.Equal(1, document.Metadata.GeneratorVersion);
@@ -87,6 +88,7 @@ public sealed class SaveMigrationAndCorruptionTests
                 "save.v10_to_v11.terrain_deposit_contract",
                 "save.v11_to_v12.living_materials",
                 "save.v12_to_v13.terrain_output_contract",
+            "save.v13_to_v14.vuker_ecology",
             },
             first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
@@ -309,9 +311,9 @@ public sealed class SaveMigrationAndCorruptionTests
             new SaveVersionTenTerrainDepositContractMigration(),
             new SaveVersionElevenLivingMaterialsMigration(),
             new SaveVersionTwelveTerrainOutputContractMigration(),
+            new SaveVersionThirteenVukerEcologyMigration(),
         });
     }
-
     private static JobDefinitionSaveRegistry CreateRegistry()
     {
         return new JobDefinitionSaveRegistry(new[]
@@ -319,7 +321,6 @@ public sealed class SaveMigrationAndCorruptionTests
             new DigJobDefinitionSaveCodec(),
         });
     }
-
     private static MaterialCatalog CreateMaterials()
     {
         return new MaterialCatalog(new[]
@@ -327,7 +328,6 @@ public sealed class SaveMigrationAndCorruptionTests
             new MaterialDefinition(Rock, isSolid: true, hardness: 100),
         });
     }
-
     private static ItemCatalog CreateItems()
     {
         return new ItemCatalog(new[]
@@ -335,7 +335,6 @@ public sealed class SaveMigrationAndCorruptionTests
             new ItemDefinition(Ore, "Test Ore", maximumStackSize: 100, isTool: false),
         });
     }
-
     private static string CreateTempDirectory()
     {
         string path = Path.Combine(
@@ -344,7 +343,6 @@ public sealed class SaveMigrationAndCorruptionTests
         Directory.CreateDirectory(path);
         return path;
     }
-
     private static EntityId Id(string value) => EntityId.Parse(value);
 }
 }

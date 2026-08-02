@@ -154,6 +154,7 @@ namespace Dig.Unity
             RaycastHit hit = hits[0];
             if (TryResolveAgentHit(hits, out DigAgentVisual agent))
             {
+                _creatureRenderer!.ClearSelection();
                 if (left && IsAdditiveResidentSelectionPressed())
                 {
                     ToggleResidentSelection(agent);

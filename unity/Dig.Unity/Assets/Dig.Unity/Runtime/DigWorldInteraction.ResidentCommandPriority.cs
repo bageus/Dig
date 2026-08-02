@@ -17,6 +17,12 @@ public sealed partial class DigWorldInteraction
         }
 
         RaycastHit[] hits = GetPointerHits();
+        bool altPressed = IsAltPressed();
+        if (TryHandleVukerPointerInput(hits, altPressed))
+        {
+            return true;
+        }
+
         if (TryResolveMushroomHit(hits, out DigMushroomVisual mushroom))
         {
             CancelResidentMarquee();
@@ -65,7 +71,6 @@ public sealed partial class DigWorldInteraction
             return true;
         }
 
-        bool altPressed = IsAltPressed();
         if (TryResolveWorldItemPointerTarget(
                 hits,
                 altPressed,
@@ -138,6 +143,7 @@ public sealed partial class DigWorldInteraction
         if (TryResolveAgentHit(hits, out DigAgentVisual agent))
         {
             CancelResidentMarquee();
+            _creatureRenderer!.ClearSelection();
             if (_buildingPlacementMode.HasValue)
             {
                 CancelBuildingPlacement();
