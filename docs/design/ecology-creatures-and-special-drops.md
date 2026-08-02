@@ -35,15 +35,17 @@ Spawn/reproduction transaction не создаёт новую особь, есл
 
 ## Вукеры
 
-Focused implementation questionnaire: [`vuker-reproduction-questionnaire.md`](vuker-reproduction-questionnaire.md), tracking [#569](https://github.com/bageus/Dig/issues/569). До ответов на вопросы pair formation, population cap, child combat/pickup и item-to-guard transition runtime implementation не считается определённой.
+Authoritative focused specification: [`vuker-reproduction-questionnaire.md`](vuker-reproduction-questionnaire.md), tracking [#569](https://github.com/bageus/Dig/issues/569).
 
-- появляются парами;
-- reproduction cooldown — 7 игровых дней;
-- одна пара имеет максимум 3 reproduction cycles;
-- детёныш взрослеет за 3 дня;
-- свободного Inventory-backed детёныша можно подобрать ordinary `ЛКМ` по общему item-profile contract;
-- похищенный детёныш становится приручённым guard creature поселения;
-- приручённый Вукер не размножается.
+- любые два свободных взрослых диких Вукера одной связной cave-region могут детерминированно образовать новую пару; повзрослевшие дети также участвуют в pairing;
+- один successful cycle создаёт одного детёныша; первый и последующие cooldown равны 7 игровым дням;
+- одна pair identity имеет максимум 3 successful cycles; история старой пары сохраняется после разрыва;
+- population cap равен 10 живых обычных Вукеров на одну связную cave-region, world cap отсутствует;
+- детёныш появляется в ближайшей legal свободной клетке к stable-lowest parent; blocked birth повторяется без расхода cycle;
+- детёныш взрослеет за 3 дня, до взросления патрулирует и не сражается;
+- похищение выполняется `Alt+ЛКМ` выбранным гномом; после approach/commit детёныш немедленно становится приручённым actor, а не persistent Inventory item;
+- приручённый Вукер подчиняется прямым приказам перемещения, автоматически возвращается к месту дислокации гномов и не размножается;
+- если parent погиб или приручён, surviving wild adult может образовать новую пару.
 
 Вукер и Серный вукер используют отдельные definitions; числовые различия остаются content/balance data.
 
