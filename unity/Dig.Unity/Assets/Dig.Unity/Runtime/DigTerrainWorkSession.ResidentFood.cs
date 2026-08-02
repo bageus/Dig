@@ -28,7 +28,7 @@ internal sealed partial class DigTerrainWorkSession
         {
             return UseResidentInventoryActionWithSlotGuard(
                 agent.Id.ToString(),
-                carried.Id.ToString(),
+                carried.StackId.ToString(),
                 tick);
         }
 
@@ -79,11 +79,11 @@ internal sealed partial class DigTerrainWorkSession
     private ItemStackSnapshot? FindCarriedFood(EntityId agentId)
     {
         return LoadFoodStacks()
-            .Where(value => value.Location.Kind == ItemLocationKind.ResidentInventory
+            .Where(value => value.Location.Kind == ItemLocationKind.AgentInventory
                 && value.Location.HasOwner
                 && value.Location.OwnerId == agentId
                 && value.AvailableQuantity > 0)
-            .OrderBy(value => value.Id.ToString(), StringComparer.Ordinal)
+            .OrderBy(value => value.StackId.ToString(), StringComparer.Ordinal)
             .FirstOrDefault();
     }
 
@@ -109,7 +109,7 @@ internal sealed partial class DigTerrainWorkSession
             }
 
             AutomaticFoodSource candidate = new AutomaticFoodSource(
-                stack.Id,
+                stack.StackId,
                 stack.Location.CellId,
                 package: false);
             selected = SelectCloserFoodSource(agent.Position, selected, candidate);
@@ -159,7 +159,7 @@ internal sealed partial class DigTerrainWorkSession
             ? Array.Empty<ItemStackSnapshot>()
             : From(_buildingInventoryRepository);
         return building.Concat(From(_inventoryRepository))
-            .GroupBy(value => value.Id)
+            .GroupBy(value => value.StackId)
             .Select(value => value.First());
     }
 
