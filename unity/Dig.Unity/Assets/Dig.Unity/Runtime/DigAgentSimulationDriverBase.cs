@@ -97,6 +97,10 @@ namespace Dig.Unity
                 TerrainSession.ResolveResidentMovementMode);
             TerrainSession.BindManualMovementSource(
                 AgentSession.HasManualTunnelMovement);
+            TerrainSession.BindTaskTransitionPauseSource(
+                residentId => AgentSession.IsResidentTaskTransitionPaused(
+                    residentId,
+                    checked(AgentSession.Tick + 1)));
             AgentSession.BindDirectCommandPrioritySource(
                 TerrainSession.HasActiveResidentDirectCommand);
             TerrainSession.BindDirectCommandCombatDisengage(
