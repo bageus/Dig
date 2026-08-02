@@ -61,14 +61,16 @@ The current `DecisionCooldownTicks = 2` boundary produces one full observable Id
 - `ResidentCombatPreemptionPlayModeTests` contains the full checked-in workflow for direct movement completion, Idle transition, movement out of sight, enemy disengagement, and no resident self-defense without a visible threat;
 - headless soak protects survival/recovery cadence from accidental pause expansion.
 
-## Validation — head `dae7746f0f870cf631275a3dd1337c6ff3a56bd3`
+## Validation
 
-- Quality `30770569804` / run 8388: success;
+Implementation head `dae7746f0f870cf631275a3dd1337c6ff3a56bd3` and the following documentation-only head `227755fbca19f43542c7a4c4573647dd68831d81` both passed:
+
+- Quality `30770700894` / run 8390: success on the documentation-only final head;
 - architecture, source contracts, Release restore/build and full .NET suite: success;
 - headless smoke, standard deterministic soak and large-settlement deterministic soak: success;
-- Export Stage 2 v2 `30770569788`: success;
-- Export Stage 2 v3 `30770569796`: success;
-- Unity workflow `30770569811` / run 672: workflow success, but actual EditMode/PlayMode execution and runtime-evidence validation were skipped because licensed activation was unavailable.
+- Export Stage 2 v2 `30770700902`: success;
+- Export Stage 2 v3 `30770700889`: success;
+- Unity workflow `30770700893` / run 673: workflow success, but actual EditMode/PlayMode execution and runtime-evidence validation were skipped because licensed activation was unavailable.
 
 ## Verification boundary
 
