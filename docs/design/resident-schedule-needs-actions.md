@@ -3,7 +3,7 @@
 **Status:** IMPLEMENTED  
 **Decision date:** 2026-08-02  
 **Tracking:** #159, #142, #113  
-**Implementation:** `docs/implementation/resident-free-time-needs-actions-2026-08-02.md`, PR #569
+**Implementation:** `docs/implementation/resident-free-time-needs-actions-2026-08-02.md`, PR #571
 
 ## Scope
 
@@ -116,4 +116,4 @@ An available Bed always wins over Floor for the resident being resolved. With on
 
 ## Verification boundary
 
-PR #569 head `aa635ac84627f069154fe232e2cdcb2aaf34860d` passed repository Quality, Release build/tests, headless smoke and standard/large deterministic soaks. The system is `IMPLEMENTED`, not `VERIFIED`: the Unity workflow recorded blocked evidence and skipped the actual EditMode/PlayMode test step because no usable licensed activation was available.
+PR #571 code head `aa635ac84627f069154fe232e2cdcb2aaf34860d` passed repository Quality, Release build/tests, headless smoke and standard/large deterministic soaks. The system is `IMPLEMENTED`, not `VERIFIED`: the Unity workflow recorded blocked evidence and skipped the actual EditMode/PlayMode test step because no usable licensed activation was available.
