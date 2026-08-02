@@ -17,10 +17,19 @@ public sealed class AgentAutonomySystemTests
     [Fact]
     public void Resident_eats_sleeps_and_works_without_direct_orders()
     {
+        DailySchedule schedule = new DailySchedule(
+            ticksPerDay: 6,
+            new[]
+            {
+                new ScheduleSegment(0, 2, ScheduleActivity.Work),
+                new ScheduleSegment(2, 4, ScheduleActivity.Rest),
+                new ScheduleSegment(4, 6, ScheduleActivity.Sleep),
+            });
         AgentState agent = AgentTestFactory.CreateAgent(
-            nutrition: 1_000,
-            alertness: 2_500,
-            mood: 6_000);
+            nutrition: 3_000,
+            alertness: 5_000,
+            mood: 6_000,
+            schedule: schedule);
         RuntimeHarness harness = CreateHarness(agent);
         List<AgentIntentKind> sequence = new List<AgentIntentKind>();
 
@@ -37,7 +46,7 @@ public sealed class AgentAutonomySystemTests
     }
 
     [Fact]
-    public void Critical_need_interrupts_active_work()
+    public void Critical_hunger_does_not_interrupt_active_work_during_work_schedule()
     {
         AgentState agent = AgentTestFactory.CreateAgent(
             nutrition: 1_000,
@@ -54,14 +63,17 @@ public sealed class AgentAutonomySystemTests
 
         AgentDecision decision = Assert.Single(
             harness.System.LastReport!.Decisions).Decision;
-        Assert.Equal(AgentIntentKind.Eat, decision.SelectedIntent);
+        Assert.Equal(AgentIntentKind.Work, decision.SelectedIntent);
         Assert.Equal(
-            AgentIntentKind.Eat,
+            AgentIntentKind.Work,
             agent.CreateSnapshot(1).ActiveAction!.Value.IntentKind);
-        Assert.Contains(
+        UtilityOptionDiagnostic eat = Assert.Single(
+            decision.Options,
+            option => option.IntentKind == AgentIntentKind.Eat);
+        Assert.False(eat.Available);
+        Assert.DoesNotContain(
             harness.Journal.Events,
             domainEvent => domainEvent is AgentActionInterrupted interrupted
-                && interrupted.PreviousIntent == AgentIntentKind.Work
                 && interrupted.NextIntent == AgentIntentKind.Eat);
     }
 
