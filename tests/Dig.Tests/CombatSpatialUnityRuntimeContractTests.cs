@@ -48,6 +48,10 @@ public sealed class CombatSpatialUnityRuntimeContractTests
             "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSimulationDriverBase.Loop.cs"));
         string autonomy = File.ReadAllText(Path.Combine(root,
             "src/Dig.Application/Agents/AgentAutonomySystem.cs"));
+        string playMode = File.ReadAllText(Path.Combine(root,
+            "unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/CaveMonsterCombatPlayModeTests.cs"));
+        string itemLocations = File.ReadAllText(Path.Combine(root,
+            "src/Dig.Domain/Inventory/ItemLocations.cs"));
 
         Assert.Contains("SeedCaveMonsterPair", session, StringComparison.Ordinal);
         Assert.Contains("CaveMonsterOneId", enemies, StringComparison.Ordinal);
@@ -66,6 +70,9 @@ public sealed class CombatSpatialUnityRuntimeContractTests
         Assert.Contains("_isEligible", autonomy, StringComparison.Ordinal);
         Assert.DoesNotContain("RegisterHostileCombatant", interaction,
             StringComparison.Ordinal);
+        Assert.Contains("int slotIndex", itemLocations, StringComparison.Ordinal);
+        Assert.Contains("slotIndex: 2", playMode, StringComparison.Ordinal);
+        Assert.DoesNotContain("index: 2", playMode, StringComparison.Ordinal);
     }
 
     private static string FindRepositoryRoot()
