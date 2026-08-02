@@ -155,7 +155,8 @@ internal sealed class SettlementTargetCoordinator
         AgentDecisionContext context,
         AgentBehaviorPolicy policy)
     {
-        if (agent.Needs.Nutrition.IsAtOrBelow(policy.Needs.CriticalThreshold)
+        if (agent.ScheduledActivity != ScheduleActivity.Work
+            && agent.Needs.Nutrition.IsAtOrBelow(policy.Needs.CriticalThreshold)
             && !context.FoodAvailable)
         {
             return "food_unavailable";
