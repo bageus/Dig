@@ -198,6 +198,28 @@ public sealed partial class AgentState
         return Result.Success();
     }
 
+    public Result InterruptActiveAction(string reason, long tick)
+    {
+        ValidateTick(tick);
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new ArgumentException("Action interruption reason is required.", nameof(reason));
+        }
+
+        if (_activeAction is null)
+        {
+            return Result.Success();
+        }
+
+        AgentIntentKind interrupted = _activeAction.IntentKind;
+        _activeAction = null;
+        LastActionBlockReason = reason.Trim();
+        LastActionSwitchTick = tick;
+        Version = checked(Version + 1);
+        Raise(new AgentActionBlocked(tick, Id, interrupted, LastActionBlockReason));
+        return Result.Success();
+    }
+
     private NeedDelta ApplyFloorSleepLimits(NeedDelta interval)
     {
         int availableAlertness = Math.Max(0, 7_500 - _needs.Alertness.Points);
