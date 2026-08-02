@@ -8,8 +8,8 @@ namespace Dig.Unity
 
 internal sealed partial class DigAgentSession
 {
-    private readonly Dictionary<EntityId, long> _directCommandPriorityStartedTicks =
-        new Dictionary<EntityId, long>();
+    private readonly HashSet<EntityId> _residentsWithDirectCommandPriority =
+        new HashSet<EntityId>();
     private Func<EntityId, bool>? _hasActiveTerrainDirectCommand;
 
     internal void BindDirectCommandPrioritySource(
@@ -39,7 +39,7 @@ internal sealed partial class DigAgentSession
             return suppressed;
         }
 
-        _directCommandPriorityStartedTicks[residentId] = tick;
+        _residentsWithDirectCommandPriority.Add(residentId);
         return Result.Success();
     }
 
@@ -50,21 +50,22 @@ internal sealed partial class DigAgentSession
             throw new ArgumentOutOfRangeException(nameof(tick));
         }
 
-        if (!_directCommandPriorityStartedTicks.TryGetValue(
-                residentId,
-                out long startedTick))
+        if (!_residentsWithDirectCommandPriority.Contains(residentId))
         {
             return false;
         }
 
+        // Command creation is synchronous after the common preparation boundary.
+        // At the next simulation tick a successful command must already own either
+        // manual movement or an assigned job. A rejected command owns neither and
+        // must not suppress self-defense for an invented grace interval.
         if (_manualTunnelMovements.ContainsKey(residentId)
-            || (_hasActiveTerrainDirectCommand?.Invoke(residentId) ?? false)
-            || tick <= checked(startedTick + 1))
+            || (_hasActiveTerrainDirectCommand?.Invoke(residentId) ?? false))
         {
             return true;
         }
 
-        _directCommandPriorityStartedTicks.Remove(residentId);
+        _residentsWithDirectCommandPriority.Remove(residentId);
         return false;
     }
 
