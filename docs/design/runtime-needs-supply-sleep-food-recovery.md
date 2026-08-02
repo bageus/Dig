@@ -1,6 +1,6 @@
 # Runtime cadence, needs actions, workstation interleaving and shelter/food recovery
 
-**Status:** IMPLEMENTED  
+**Status:** APPROVED  
 **Decision date:** 2026-08-02  
 **Tracking:** #2, #159, #142, #433, #459  
 **Implementation PR:** #573
@@ -31,15 +31,21 @@ Save data stores simulation tick/time as before; changing the real-time cadence 
 
 A completed production building still has one authoritative building-level operation owner. Production and BuildingSupply never run simultaneously for the same building.
 
-When a building has a non-terminal production queue and enabled missing internal stock:
+For every stock rule used by the next queued recipe, the production refill threshold is `ceil(capacity / 2)`. A stock is below threshold only when `current + incoming < threshold`; equality does not trigger refill. With campfire mushroom-cap capacity `4`, quantities `4`, `3` and `2` may start the next grilled-mushroom unit, while quantity `1` requests supply before another unit.
 
-1. if the next production unit has its complete required input set, `Production` owns the next turn;
-2. after one produced unit closes and the worker releases the building operation, at most one successful `BuildingSupply` batch owns the next turn;
-3. after that supply batch commits or releases, `Production` owns the next turn again;
-4. the cycle repeats `Production -> one Supply batch -> Production` while both kinds of work remain eligible;
-5. supply does not fill the whole internal capacity before returning the turn to production.
+When a building has a non-terminal production queue:
 
-If the next queued unit is not runnable, Supply may continue one batch at a time until the required input set becomes runnable. As soon as it is runnable, Production wins the next turn. If there is no production queue, ordinary enabled refill continues to capacity. If no reachable supply source exists, the turn cannot block an otherwise runnable production unit.
+1. consecutive production units are allowed while the next unit has its complete input set and every required stock is at or above its threshold;
+2. after a produced unit closes and the worker releases the building operation, the operation turn becomes `Supply`;
+3. the Supply turn is used only when the next unit lacks an input or at least one of its required stocks is below threshold;
+4. one supply job takes every currently eligible free world unit it can carry for the next recipe's required item types; it does not wait for unavailable types and does not reserve protected building/resident inventory;
+5. unavailable required types create the existing supported extraction/harvest dependency when possible; unsupported types remain an explicit shortage;
+6. after a committed supply batch, the operation turn becomes `Production`, so one next unit may start whenever its complete input set exists even if the batch could not restore every required stock to threshold or capacity;
+7. an unresolved extraction dependency does not reserve the workstation and does not block otherwise runnable production; its eventual delivery waits for the building operation to become free.
+
+Example for grilled mushroom with cap capacity `4`: starting at `4`, three consecutive units may consume the stock `4 -> 3 -> 2 -> 1`; only then does the next Supply turn run. If the world currently contains only part of the depleted recipe inputs, that batch delivers only those units, extraction jobs are created for supported unavailable inputs, and production resumes after the batch when the next recipe still has a complete input set.
+
+If there is no production queue, enabled refill remains continuous: synchronization creates delivery whenever eligible free materials appear and stops only when `current + incoming == capacity`. Supported extraction dependencies may replenish missing source types, but one failed/unreachable batch cannot leave phantom incoming or permanently block later refill.
 
 The per-building operation turn is authoritative Domain state, included in snapshots/save/load, and advanced only by committed operation lifecycle transitions. Retry, cancellation, route failure and load cannot create simultaneous owners or permanently starve either queue.
 
@@ -87,9 +93,11 @@ Diagnostics expose authoritative tick duration, playback multiplier, resident ne
 - free-time hunger consumes loose food when available and otherwise opens one food package then eats one released unit;
 - two tired residents use two free Tent slots; a third uses Floor; packing the Tent releases slots;
 - Sleep effects do not advance before arrival at the reserved Tent slot;
-- with runnable queued production and missing enabled stock, execution alternates one production unit and at most one refill batch;
-- a missing required input allows refill until runnable, then immediately yields to production;
-- no production queue allows continuous refill to capacity;
+- campfire cap stock at `4`, `3` or `2` allows consecutive grilled-mushroom units; cap stock at `1` gives the next operation to Supply;
+- one queued supply batch collects all currently eligible free required materials without waiting for unavailable types;
+- supported unavailable required materials create extraction dependencies without blocking otherwise runnable production;
+- supply completion yields one Production turn whenever the next unit has a complete input set, even when stock remains below threshold;
+- no production queue allows continuous refill to capacity as eligible materials appear;
 - save/load preserves operation turn, active reservations and action progress without duplication;
 - Domain, Application, deterministic, headless and Unity Play Mode regressions cover the full workflows.
 
