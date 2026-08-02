@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
+using Dig.Domain.Jobs;
+using Dig.Domain.Production;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Inventory;
 
@@ -29,7 +31,72 @@ namespace Dig.Unity
         internal IReadOnlyList<ResidentEquipmentViewModel> LoadResidentEquipment()
         {
             InventorySnapshot[] snapshots = LoadResidentEquipmentSnapshots();
-            return _residentEquipmentPresenter.Present(snapshots);
+            List<ResidentEquipmentViewModel> equipment =
+                _residentEquipmentPresenter.Present(snapshots).ToList();
+            IReadOnlyList<ResidentEquipmentViewModel> productionCarries =
+                LoadProductionMaterialCarries();
+            if (productionCarries.Count == 0)
+            {
+                return equipment;
+            }
+
+            HashSet<string> overridden = productionCarries
+                .Select(value => value.ResidentId)
+                .ToHashSet(StringComparer.Ordinal);
+            equipment.RemoveAll(value => overridden.Contains(value.ResidentId));
+            equipment.AddRange(productionCarries);
+            return equipment
+                .OrderBy(value => value.ResidentId, StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        private IReadOnlyList<ResidentEquipmentViewModel> LoadProductionMaterialCarries()
+        {
+            if (_productionRepository == null || _jobRepository == null)
+            {
+                return Array.Empty<ResidentEquipmentViewModel>();
+            }
+
+            List<ResidentEquipmentViewModel> values =
+                new List<ResidentEquipmentViewModel>();
+            foreach (JobSnapshot job in _jobRepository.Get().GetAll()
+                .Where(value => !value.IsTerminal
+                    && value.AssignedAgentId.HasValue
+                    && value.Definition is ProductionWorkJobDefinition)
+                .OrderBy(value => value.Id.ToString(), StringComparer.Ordinal))
+            {
+                ProductionWorkJobDefinition production =
+                    (ProductionWorkJobDefinition)job.Definition;
+                ProductionOrderSnapshot? order = _productionRepository.Get().Get(
+                    production.OrderId);
+                if (order == null
+                    || !TryResolveCurrentProductionMaterialStep(
+                        order,
+                        out ProductionMaterialStepSnapshot step))
+                {
+                    continue;
+                }
+
+                EntityId residentId = job.AssignedAgentId!.Value;
+                bool carriesRaw = step.Phase == ProductionMaterialStepPhase.AwaitingMaterial
+                    && HasCarriedProductionMaterial(
+                        production.OrderId,
+                        residentId,
+                        step.ItemId);
+                bool carriesProcessed =
+                    step.Phase == ProductionMaterialStepPhase.ProcessedAwaitingPackage;
+                if (!carriesRaw && !carriesProcessed)
+                {
+                    continue;
+                }
+
+                values.Add(new ResidentEquipmentViewModel(
+                    residentId.ToString(),
+                    "production-carry:" + production.OrderId,
+                    step.ItemId.ToString()));
+            }
+
+            return values;
         }
 
         internal IReadOnlyList<ResidentWorkRateViewModel> LoadResidentWorkRates(

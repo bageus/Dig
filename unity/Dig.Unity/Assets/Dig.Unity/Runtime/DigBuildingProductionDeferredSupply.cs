@@ -31,6 +31,11 @@ internal sealed partial class DigTerrainWorkSession
         {
             BuildingSupplyJobDefinition supply =
                 (BuildingSupplyJobDefinition)pending.Definition;
+            if (HasNonTerminalProductionWorkJob(supply.BuildingId))
+            {
+                continue;
+            }
+
             JobSnapshot?[] dependencies = supply.Dependencies
                 .Select(jobs.Get)
                 .ToArray();
@@ -101,6 +106,14 @@ internal sealed partial class DigTerrainWorkSession
                 }
             }
         }
+    }
+
+    private bool HasNonTerminalProductionWorkJob(EntityId buildingId)
+    {
+        return _jobRepository.Get().GetAll().Any(value =>
+            !value.IsTerminal
+            && value.Definition is ProductionWorkJobDefinition production
+            && production.BuildingId == buildingId);
     }
 
     private bool HasNonTerminalBuildingSupplyJob(EntityId buildingId)

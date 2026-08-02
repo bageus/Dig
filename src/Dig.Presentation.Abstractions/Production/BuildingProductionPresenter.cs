@@ -52,11 +52,16 @@ public sealed class BuildingProductionPresenter
                 value.Capacity,
                 value.DeliveryEnabled))
             .ToArray();
+        bool showWorkbench = production.GetAll().Any(value =>
+            value.BuildingId == buildingId
+            && value.Status is ProductionOrderStatus.InProgress
+                or ProductionOrderStatus.ReadyToComplete);
         return new BuildingProductionViewModel(
             buildingId,
             supply.Definition.AnimationProfileId,
             products,
-            stocks);
+            stocks,
+            showWorkbench);
     }
 
     private ProductionIconViewModel PresentRecipe(

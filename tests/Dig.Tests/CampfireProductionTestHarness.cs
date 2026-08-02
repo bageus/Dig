@@ -155,7 +155,7 @@ internal sealed partial class CampfireProductionTestHarness
         IReadOnlyCollection<CellId> outputCells,
         long tick)
     {
-        return new CompleteProductionOrderHandler(
+        Result completed = new CompleteProductionOrderHandler(
             ProductionRepository,
             InventoryRepository,
             JobsRepository,
@@ -168,6 +168,14 @@ internal sealed partial class CampfireProductionTestHarness
                 outputLocations: outputCells
                     .Select(ItemLocation.InWorld)
                     .ToArray()));
+        if (completed.IsSuccess
+            && Jobs.Get(jobId)?.Stage == JobStageKind.TravelToDestination)
+        {
+            return new AdvanceJobHandler(JobsRepository, Journal).Handle(
+                new AdvanceJobCommand(jobId, tick + 1));
+        }
+
+        return completed;
     }
 
     public static EntityId Id(int value)

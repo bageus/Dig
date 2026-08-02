@@ -54,6 +54,16 @@ public sealed class ProductionWorldOutputAtomicityTests
         Assert.Equal(
             ProductionOrderStatus.Completed,
             harness.Production.Get(OrderId)!.Status);
+        Assert.Equal(JobStatus.InProgress, harness.Jobs.Get(JobId)!.Status);
+        Assert.Equal(
+            JobStageKind.TravelToDestination,
+            harness.Jobs.Get(JobId)!.Stage);
+        Assert.Contains(
+            harness.Jobs.GetReservations(),
+            value => value.JobId == JobId
+                && value.Key == ReservationKey.ForDestination(
+                    ProductionTestHarness.BuildingId));
+        Assert.True(harness.Jobs.AdvanceStage(JobId, tick: 8).IsSuccess);
         Assert.Equal(JobStatus.Completed, harness.Jobs.Get(JobId)!.Status);
         Assert.Empty(harness.Jobs.GetReservations());
 
@@ -64,7 +74,7 @@ public sealed class ProductionWorldOutputAtomicityTests
             {
                 EntityId.Parse("96000000000000000000000000000002"),
             },
-            tick: 8,
+            tick: 9,
             ItemLocation.InWorld(outputCell)));
         Assert.True(replay.IsFailure);
         Assert.Equal(1, harness.Inventory.GetTotal(ProductionTestHarness.Plate));

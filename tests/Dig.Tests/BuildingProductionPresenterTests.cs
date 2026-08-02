@@ -53,6 +53,7 @@ public sealed class BuildingProductionPresenterTests
 
         Assert.Equal(6, model.Products.Count);
         Assert.Equal(4, model.Stocks.Count);
+        Assert.False(model.ShowWorkbench);
         ProductionIconViewModel grilled = model.Products.Single(value =>
             value.RecipeId == CampfireProductionContent.GrilledMushroomRecipeId);
         Assert.Equal(1, grilled.QueuedCount);
@@ -116,13 +117,16 @@ public sealed class BuildingProductionPresenterTests
         Assert.True(production.StageMaterial(orderId, 3).IsSuccess);
         Assert.True(production.AddMaterialWork(orderId, 40, 4).IsSuccess);
 
-        ProductionIconViewModel active = PresentGrilled(
+        BuildingProductionViewModel activeModel = Present(
             content,
             items,
             buildingId,
             production,
             supply,
             inventory);
+        ProductionIconViewModel active = activeModel.Products.Single(value =>
+            value.RecipeId == CampfireProductionContent.GrilledMushroomRecipeId);
+        Assert.True(activeModel.ShowWorkbench);
         Assert.True(active.HasProductionOverlay);
         Assert.Equal(0.4d, active.ProductionProgress, precision: 6);
 
@@ -178,16 +182,33 @@ public sealed class BuildingProductionPresenterTests
 
         Assert.True(production.DepositProcessedMaterial(completedOrderId, 11).IsSuccess);
         Assert.True(production.Complete(completedOrderId, 12).IsSuccess);
-        ProductionIconViewModel committed = PresentGrilled(
+        BuildingProductionViewModel committedModel = Present(
             content,
             items,
             buildingId,
             production,
             supply,
             inventory);
+        ProductionIconViewModel committed = committedModel.Products.Single(value =>
+            value.RecipeId == CampfireProductionContent.GrilledMushroomRecipeId);
+        Assert.False(committedModel.ShowWorkbench);
         Assert.False(committed.HasProductionOverlay);
         Assert.Equal(0d, committed.ProductionProgress);
         Assert.Equal(0, committed.QueuedCount);
+    }
+
+    private static BuildingProductionViewModel Present(
+        ProductionContentCatalog content,
+        ItemCatalog items,
+        EntityId buildingId,
+        ProductionState production,
+        BuildingSupplyState supply,
+        InventoryState inventory)
+    {
+        return new BuildingProductionPresenter(content, items).Present(
+            buildingId,
+            production,
+            supply.Get(buildingId, inventory.CreateSnapshot())!);
     }
 
     private static ProductionIconViewModel PresentGrilled(
@@ -198,10 +219,13 @@ public sealed class BuildingProductionPresenterTests
         BuildingSupplyState supply,
         InventoryState inventory)
     {
-        return new BuildingProductionPresenter(content, items).Present(
+        return Present(
+                content,
+                items,
                 buildingId,
                 production,
-                supply.Get(buildingId, inventory.CreateSnapshot())!)
+                supply,
+                inventory)
             .Products.Single(value =>
                 value.RecipeId == CampfireProductionContent.GrilledMushroomRecipeId);
     }

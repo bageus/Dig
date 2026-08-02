@@ -190,6 +190,10 @@ internal sealed partial class DigTerrainWorkSession
 
             target = outputCell.Value;
         }
+        else if (job.Stage == JobStageKind.TravelToDestination)
+        {
+            target = production.WorkPosition;
+        }
 
         return PlanBuildingProductionRoute(
             _buildingProductionRoutes,

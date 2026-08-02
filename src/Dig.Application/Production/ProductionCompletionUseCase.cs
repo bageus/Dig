@@ -88,11 +88,11 @@ public sealed class CompleteProductionOrderHandler
                 "Validated production order could not complete after inventory commit.");
         }
 
-        Result jobCompleted = jobs.AdvanceStage(command.JobId, command.Tick);
-        if (jobCompleted.IsFailure)
+        Result returnStarted = jobs.AdvanceStage(command.JobId, command.Tick);
+        if (returnStarted.IsFailure)
         {
             throw new InvalidOperationException(
-                "Validated production job could not complete its final stage.");
+                "Validated production job could not enter its return stage.");
         }
 
         if (skillBundle is not null)
