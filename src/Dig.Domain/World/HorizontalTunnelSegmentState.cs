@@ -195,6 +195,12 @@ internal sealed class HorizontalTunnelSegmentState
             .OrderBy(value => value.DistanceFromOrigin)
             .ThenBy(value => value.Kind))
         {
+            if (!state.HasValidDistance(anchor))
+            {
+                return Result<HorizontalTunnelSegmentState>.Failure(
+                    TunnelInfrastructureErrors.InvalidSnapshot);
+            }
+
             Result<bool> registered = state.RegisterAnchor(anchor.Cell, anchor.Kind);
             if (registered.IsFailure)
             {
@@ -203,7 +209,10 @@ internal sealed class HorizontalTunnelSegmentState
         }
 
         HorizontalTunnelSegmentSnapshot derived = state.CaptureSnapshot();
-        if (derived.NextAutomaticSupportTarget != snapshot.NextAutomaticSupportTarget)
+        if (!derived.StructuralAnchors.SequenceEqual(snapshot.StructuralAnchors)
+            || !Nullable.Equals(
+                derived.NextAutomaticSupportTarget,
+                snapshot.NextAutomaticSupportTarget))
         {
             return Result<HorizontalTunnelSegmentState>.Failure(
                 TunnelInfrastructureErrors.InvalidSnapshot);
@@ -211,6 +220,12 @@ internal sealed class HorizontalTunnelSegmentState
 
         state.Version = snapshot.Version;
         return Result<HorizontalTunnelSegmentState>.Success(state);
+    }
+
+    private bool HasValidDistance(TunnelStructuralAnchorSnapshot anchor)
+    {
+        return _cellIndices.TryGetValue(anchor.Cell, out int index)
+            && anchor.DistanceFromOrigin == index + 1;
     }
 
     private static bool HasValidOrigin(
