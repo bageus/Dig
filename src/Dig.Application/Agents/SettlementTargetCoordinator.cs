@@ -38,7 +38,7 @@ internal sealed class SettlementTargetCoordinator
         double speed = inventory.GetResidentMoveSpeedMultiplier(agent.Id);
         return new AgentDecisionContext(
             foodAvailable: inventory.HasAvailableCategory(FoodCategory, agent.Id),
-            bedAvailable: facilities.HasAvailable(BuildingFacilityKind.Bed, agent.Id),
+            bedAvailable: true,
             workAvailable: external.WorkAvailable,
             restAvailable: facilities.HasAvailable(BuildingFacilityKind.Leisure, agent.Id),
             escapeRouteAvailable: external.EscapeRouteAvailable,
@@ -76,11 +76,7 @@ internal sealed class SettlementTargetCoordinator
         return intentKind switch
         {
             AgentIntentKind.Eat => AcquireFood(agentId, tick),
-            AgentIntentKind.Sleep => AcquireFacility(
-                agentId,
-                BuildingFacilityKind.Bed,
-                AgentActivityTargetKind.Bed,
-                tick),
+            AgentIntentKind.Sleep => AcquireSleep(agentId, tick),
             AgentIntentKind.Rest => AcquireFacility(
                 agentId,
                 BuildingFacilityKind.Leisure,
@@ -109,6 +105,11 @@ internal sealed class SettlementTargetCoordinator
             return consumed;
         }
 
+        if (target.Kind == AgentActivityTargetKind.FloorSleep)
+        {
+            return Result.Success();
+        }
+
         BuildingFacilitiesState facilities = _facilitiesRepository.Get();
         facilities.ReleaseForAgent(agentId, tick);
         _facilitiesRepository.Save(facilities);
@@ -127,6 +128,11 @@ internal sealed class SettlementTargetCoordinator
 
     public bool IsValidReservation(EntityId agentId, AgentActivityTarget target)
     {
+        if (target.Kind == AgentActivityTargetKind.FloorSleep)
+        {
+            return target.EntityId == agentId;
+        }
+
         if (target.Kind == AgentActivityTargetKind.Food)
         {
             return _inventoryRepository.Get().HasReservation(
@@ -153,12 +159,6 @@ internal sealed class SettlementTargetCoordinator
             && !context.FoodAvailable)
         {
             return "food_unavailable";
-        }
-
-        if (agent.Needs.Alertness.IsAtOrBelow(policy.Needs.CriticalThreshold)
-            && !context.BedAvailable)
-        {
-            return "bed_unavailable";
         }
 
         if (agent.ScheduledActivity == ScheduleActivity.Rest && !context.RestAvailable)
@@ -192,6 +192,28 @@ internal sealed class SettlementTargetCoordinator
         return Result<AgentActivityTarget>.Success(new AgentActivityTarget(
             AgentActivityTargetKind.Food,
             stackId.Value));
+    }
+
+    private Result<AgentActivityTarget> AcquireSleep(EntityId agentId, long tick)
+    {
+        Result<AgentActivityTarget> bed = AcquireFacility(
+            agentId,
+            BuildingFacilityKind.Bed,
+            AgentActivityTargetKind.Bed,
+            tick);
+        if (bed.IsSuccess)
+        {
+            return bed;
+        }
+
+        if (bed.Error?.Code != AgentSettlementErrors.BedUnavailable.Code)
+        {
+            return bed;
+        }
+
+        return Result<AgentActivityTarget>.Success(new AgentActivityTarget(
+            AgentActivityTargetKind.FloorSleep,
+            agentId));
     }
 
     private Result<AgentActivityTarget> AcquireFacility(
