@@ -173,6 +173,7 @@ public sealed class CombatIntentSnapshot
     public CellId? TargetCell { get; }
     public string? FinishReason { get; }
     public bool IsActive => Status == CombatIntentStatus.Active;
+    public bool IsPersistent => ExpiresTick == long.MaxValue;
 }
 
 public sealed class CombatIntentChanged : IDomainEvent

@@ -94,6 +94,8 @@ namespace Dig.Unity
                 TerrainSession.ResolveResidentMovementMode);
             TerrainSession.BindManualMovementSource(
                 AgentSession.HasManualTunnelMovement);
+            TerrainSession.BindDirectCommandCombatDisengage(
+                AgentSession.DisengageResidentForDirectOrder);
             try
             {
                 RefreshEquipmentVisuals();

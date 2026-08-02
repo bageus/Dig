@@ -166,6 +166,60 @@ public sealed class CombatSpatialExecutionTests
         Assert.Null(fixture.Combat.GetActiveIntent(Attacker));
     }
 
+    [Fact]
+    public void Persistent_enemy_aggro_tracks_living_target_out_of_sight_without_retreat_or_expiry()
+    {
+        CellId[] cells = Enumerable.Range(0, 6)
+            .Select(x => new CellId(x, 0, 0)).ToArray();
+        Fixture fixture = CreateFixture(
+            openCells: cells,
+            width: 6,
+            height: 1,
+            sightRange: 2);
+        CombatIntentId intentId = new CombatIntentId("intent.persistent.enemy");
+        fixture.Combat.IssueIntent(new CombatIntentRequest(
+            intentId,
+            Attacker,
+            CombatIntentKind.Attack,
+            CombatIntentSource.Autonomous,
+            createdTick: 0,
+            expiresTick: long.MaxValue,
+            targetEntityId: Target,
+            targetCell: new CellId(2, 0, 0)));
+        Result<CombatExecutionSnapshot> started = fixture.Combat.StartExecution(
+            new CombatExecutionRequest(
+                new CombatExecutionId("execution.persistent.enemy"),
+                intentId,
+                Attacker,
+                CombatIntentSource.Autonomous,
+                CombatExecutionStage.Reevaluate,
+                tick: 1));
+        Assert.True(started.IsSuccess);
+        Assert.True(fixture.Combat.SetExecutionTarget(
+            started.Value.ExecutionId,
+            Target,
+            new CellId(2, 0, 0),
+            tick: 1,
+            reason: "target_previously_visible").IsSuccess);
+        fixture.CombatRepository.Save(fixture.Combat);
+        AgentState target = fixture.Agents.Get(Target)!;
+        Assert.True(target.MoveTo(new CellId(5, 0, 0), tick: 1).IsSuccess);
+        fixture.Agents.Save(target);
+
+        Result<CombatSpatialExecutionReport> advanced = fixture.Handler.Handle(
+            new AdvanceCombatSpatialExecutionCommand(Attacker, 1UL, tick: 2));
+
+        Assert.True(advanced.IsSuccess, advanced.Error?.ToString());
+        Assert.Equal("persistent_aggro_target_tracked", advanced.Value.ReasonCode);
+        Assert.Equal(
+            CombatExecutionStage.SelectEngagementCell,
+            advanced.Value.Execution.Stage);
+        CombatIntentSnapshot active = Assert.IsType<CombatIntentSnapshot>(
+            fixture.Combat.GetActiveIntent(Attacker));
+        Assert.True(active.IsPersistent);
+        Assert.Equal(Target, active.TargetEntityId);
+    }
+
     private static Fixture CreateFixture(
         bool targetAlive = true,
         CombatAttackSpatialMode weaponMode = CombatAttackSpatialMode.Melee,

@@ -212,13 +212,16 @@ public sealed partial class CombatSpatialExecutionHandler
 
             CombatIntentId id = new CombatIntentId(
                 "alarm:" + ally.Id + ":" + attacker.Id + ":" + tick);
+            long expiresTick = _policy.RetainsAggro(ally.Id)
+                ? long.MaxValue
+                : checked(tick + Math.Max(1, _policy.SightRange));
             combat.IssueIntent(new CombatIntentRequest(
                 id,
                 ally.Id,
                 CombatIntentKind.Attack,
                 CombatIntentSource.Alarm,
                 tick,
-                checked(tick + Math.Max(1, _policy.SightRange)),
+                expiresTick,
                 attacker.Id,
                 attacker.Position));
         }
@@ -231,12 +234,13 @@ public sealed partial class CombatSpatialExecutionHandler
     {
         if (execution.RetryCount > _policy.MaximumRetries)
         {
+            CombatIntentSnapshot? intent = combat.GetActiveIntent(command.ActorId);
+            bool persistent = intent?.IsPersistent == true;
             combat.CancelExecution(
                 execution.ExecutionId,
                 command.Tick,
-                "retry_exhausted");
-            CombatIntentSnapshot? intent = combat.GetActiveIntent(command.ActorId);
-            if (intent is not null)
+                persistent ? "persistent_retry_replan" : "retry_exhausted");
+            if (intent is not null && !persistent)
             {
                 combat.CancelIntent(intent.IntentId, "retry_exhausted", command.Tick);
             }
@@ -246,7 +250,7 @@ public sealed partial class CombatSpatialExecutionHandler
                 combat.GetExecution(execution.ExecutionId)!,
                 false,
                 null,
-                "retry_exhausted");
+                persistent ? "persistent_retry_replan" : "retry_exhausted");
         }
 
         return Advance(
@@ -266,12 +270,15 @@ public sealed partial class CombatSpatialExecutionHandler
     {
         if (execution.RetryCount >= _policy.MaximumRetries)
         {
+            CombatIntentSnapshot? intent = combat.GetActiveIntent(command.ActorId);
+            bool persistent = intent?.IsPersistent == true;
             combat.CancelExecution(
                 execution.ExecutionId,
                 command.Tick,
-                error.Code + ":retry_exhausted");
-            CombatIntentSnapshot? intent = combat.GetActiveIntent(command.ActorId);
-            if (intent is not null)
+                persistent
+                    ? error.Code + ":persistent_retry_replan"
+                    : error.Code + ":retry_exhausted");
+            if (intent is not null && !persistent)
             {
                 combat.CancelIntent(intent.IntentId, "retry_exhausted", command.Tick);
             }

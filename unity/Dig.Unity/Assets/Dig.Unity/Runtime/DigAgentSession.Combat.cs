@@ -78,7 +78,7 @@ internal sealed partial class DigAgentSession
             journal,
             _skillGrants,
             new CombatSpatialPolicy(
-                sightRange: 8,
+                sightRange: CaveEncounterCombatContent.CaveMonster.SightRange,
                 alarmRadius: 4,
                 windUpTicks: 1,
                 recoveryTicks: 1,
@@ -87,7 +87,8 @@ internal sealed partial class DigAgentSession
                 new CombatTacticalPolicy(
                     retreatHealthThreshold: 2_000,
                     retreatThreatRatio: 1_500,
-                    defendDistance: 0)));
+                    defendDistance: 0),
+                retainsAggro: RetainsEnemyAggro));
     }
 
     internal bool CanIssuePlayerAttackOrder(
@@ -164,6 +165,57 @@ internal sealed partial class DigAgentSession
             new IssueCombatIntentCommand(request));
         EnsureEnemyRetaliation(targetId, actorId);
         return Result<CombatIntentSnapshot>.Success(intent);
+    }
+
+    internal Result DisengageResidentForDirectOrder(EntityId actorId, long tick)
+    {
+        if (actorId.IsEmpty)
+        {
+            throw new ArgumentException("Actor id is required.", nameof(actorId));
+        }
+
+        if (tick < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(tick));
+        }
+
+        if (_combatOnlyActors.Contains(actorId) || _combatRepository == null)
+        {
+            return Result.Success();
+        }
+
+        CombatState combat = _combatRepository.Get();
+        CombatIntentSnapshot? intent = combat.GetActiveIntent(actorId);
+        if (intent == null || intent.Kind != CombatIntentKind.Attack)
+        {
+            return Result.Success();
+        }
+
+        Result cancelled = combat.CancelIntent(
+            intent.IntentId,
+            "resident_direct_order_disengaged",
+            tick);
+        if (cancelled.IsFailure)
+        {
+            return cancelled;
+        }
+
+        _combatRepository.Save(combat);
+        _combatJournal?.Append(combat.DequeueUncommittedEvents());
+        return Result.Success();
+    }
+
+    internal CombatIntentSnapshot? GetCombatIntent(EntityId actorId)
+    {
+        return _combatRepository?.Get().GetActiveIntent(actorId);
+    }
+
+    private bool RetainsEnemyAggro(EntityId actorId)
+    {
+        return _enemyDefinitions.TryGetValue(
+            actorId,
+            out EnemyCombatDefinition? definition)
+            && definition.RetainsAggroUntilTargetUnavailable;
     }
 
     internal Result CancelPlayerAttackOrder(EntityId actorId)
