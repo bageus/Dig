@@ -1,6 +1,6 @@
 # Runtime needs, production/supply, Tent sleep and food-package recovery
 
-**Status:** IN PROGRESS  
+**Status:** IMPLEMENTED  
 **Date:** 2026-08-02  
 **Authoritative design:** `docs/design/runtime-needs-supply-sleep-food-recovery.md`  
 **Tracking:** #2, #159, #142, #433, #459  
@@ -21,14 +21,19 @@
 - checked-in Unity Play Mode scenarios cover critical Sleep walking to a completed Tent slot before Alertness recovery, free-time hunger breaking a produced food package and the campfire sequence `4 -> 3 -> 2 -> 1 -> Supply -> resumed Production` without concurrent building operation owners.
 - deterministic save/restore coverage includes the persisted building operation turn.
 
-## Published amendment head
+## Final automated evidence
 
-Threshold scheduler, planner, dependency filtering, tests and authoritative documents were published in code head `23a33f0bc05d76ef433214b66a2d297eb6b669a6`. This documentation commit intentionally starts the standard final-head Quality, source-export and Unity-evidence workflows; results are not yet recorded as passing.
+Code head `80a10ca0502e76ae4fe887e8ecca9057bc915434` passed Quality run `30764888539`:
 
-## Pending verification
-
-The threshold amendment supersedes the previous strict alternation evidence. Final-head Release build, full .NET suite, headless smoke, deterministic soaks and source exports must be rerun after the scheduler, planner and Play Mode regression changes are published.
+- architecture, file-size, C# compatibility, compiler, dependency and Domain-boundary checks;
+- Unity source and presentation contract checks;
+- Release build: `0` warnings, `0` errors;
+- .NET tests: `1350/1350` passed, including threshold policy, targeted partial supply, extraction target filtering and operation-owner source contracts;
+- headless smoke passed at tick `20`;
+- standard deterministic soak: 8 residents, 4 workers, 2000 ticks plus drain to 2020, deterministic replay matched, hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
+- large deterministic soak: 64 residents, 16 workers, 1000 ticks plus drain to 1020, deterministic replay matched, hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
+- Stage 2 v2/v3 source exports passed.
 
 ## Verification boundary
 
-The amendment remains `IN PROGRESS` until final-head automated checks pass. It remains not `VERIFIED` until licensed Unity Play Mode executes cadence, Tent walking/sleep, food-package opening/eating and the threshold-driven production/supply sequence in the real composition.
+Unity workflow `30764888460` recorded blocked runtime evidence. `Run Unity EditMode and PlayMode tests` and executed-runtime validation were skipped because no usable licensed Unity activation was available. Therefore the amendment is `IMPLEMENTED`, not `VERIFIED`; the checked-in cadence, Tent walking/sleep, food-package opening/eating and threshold-driven production/supply scenarios still require licensed Unity Play Mode execution.
