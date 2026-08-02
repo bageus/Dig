@@ -104,6 +104,18 @@ public sealed partial class CombatSpatialExecutionHandler
             return Report(started.Value, false, null, "execution_started");
         }
 
+        Result<CombatSpatialExecutionReport>? sightLoss =
+            FinishAutonomousSightLossBeforeStage(
+                command,
+                combat,
+                intent,
+                actor,
+                execution);
+        if (sightLoss != null)
+        {
+            return sightLoss;
+        }
+
         if (command.Tick < execution.NextStageTick)
         {
             return Report(execution, false, null, "stage_waiting");
@@ -130,6 +142,36 @@ public sealed partial class CombatSpatialExecutionHandler
             CombatExecutionStage.Blocked => RetryBlocked(command, combat, execution),
             _ => Report(execution, false, null, "execution_terminal"),
         };
+    }
+
+    private Result<CombatSpatialExecutionReport>?
+        FinishAutonomousSightLossBeforeStage(
+            AdvanceCombatSpatialExecutionCommand command,
+            CombatState combat,
+            CombatIntentSnapshot intent,
+            AgentState actor,
+            CombatExecutionSnapshot execution)
+    {
+        if (intent.Source == CombatIntentSource.PlayerOrder
+            || execution.Stage == CombatExecutionStage.AcquireTarget
+            || !execution.TargetEntityId.HasValue)
+        {
+            return null;
+        }
+
+        AgentState? target = _agents.Get(execution.TargetEntityId.Value);
+        if (target == null
+            || !target.IsAlive
+            || IsVisible(actor.Position, target.Position))
+        {
+            return null;
+        }
+
+        return FinishForTargetLoss(
+            command,
+            combat,
+            intent,
+            "enemy_target_out_of_sight");
     }
 
     private static CombatExecutionId CreateExecutionId(CombatIntentSnapshot intent) =>
