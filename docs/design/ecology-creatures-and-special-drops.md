@@ -35,6 +35,8 @@ Spawn/reproduction transaction не создаёт новую особь, есл
 
 ## Вукеры
 
+Focused implementation questionnaire: [`vuker-reproduction-questionnaire.md`](vuker-reproduction-questionnaire.md), tracking [#569](https://github.com/bageus/Dig/issues/569). До ответов на вопросы pair formation, population cap, child combat/pickup и item-to-guard transition runtime implementation не считается определённой.
+
 - появляются парами;
 - reproduction cooldown — 7 игровых дней;
 - одна пара имеет максимум 3 reproduction cycles;
