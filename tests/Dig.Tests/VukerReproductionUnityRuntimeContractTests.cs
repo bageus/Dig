@@ -56,9 +56,18 @@ public sealed class VukerReproductionUnityRuntimeContractTests
         string playMode = Read(
             "unity", "Dig.Unity", "Assets", "Dig.Unity", "Tests", "PlayMode",
             "VukerReproductionPlayModeTests.cs");
+        string creatureVisual = Read(
+            "src", "Dig.Presentation.Abstractions", "Creatures",
+            "CreatureVisualSnapshot.cs");
 
         Assert.Contains("ReproductionCooldownTicks", playMode, StringComparison.Ordinal);
         Assert.Contains("VukerLifecycleStage.Child", playMode, StringComparison.Ordinal);
+        Assert.Contains("childVisual.LifecycleStage", playMode,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("childVisual.Lifecycle,", playMode,
+            StringComparison.Ordinal);
+        Assert.Contains("LifecycleStage { get; }", creatureVisual,
+            StringComparison.Ordinal);
         Assert.Contains("GetCombatIntent(child.EntityId), Is.Null", playMode,
             StringComparison.Ordinal);
         Assert.Contains("TunnelVolume.FindPath", playMode, StringComparison.Ordinal);
