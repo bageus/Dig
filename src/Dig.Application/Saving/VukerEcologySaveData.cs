@@ -56,7 +56,6 @@ public sealed class VukerPairSaveData
     [DataMember(Order = 12)] public long Version { get; set; }
 }
 
-
 public sealed class SaveVersionThirteenVukerEcologyMigration : ISaveMigration
 {
     public string Id => "save.v13_to_v14.vuker_ecology";
@@ -83,5 +82,6 @@ public sealed class SaveVersionThirteenVukerEcologyMigration : ISaveMigration
         };
         document.FormatVersion = ToVersion;
     }
+}
 
 }
