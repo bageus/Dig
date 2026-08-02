@@ -76,4 +76,4 @@ Combat interruption is observable through existing action/job events with stable
 - Direct-command regression proves a resident leaves self-defense/retreat, advances the ordered action while persistent enemy aggro remains, and does not recreate self-defense until the command ends.
 - Unity source contracts require combat acquisition before food/action execution, typed work cleanup, and direct-command priority wiring.
 - Checked-in Play Mode coverage must exercise a resident entering combat from Work and a need action, plus a resident receiving a direct command during persistent enemy aggro.
-- Status remains `APPROVED` until the revised implementation and regressions pass; it becomes `IMPLEMENTED`, not `VERIFIED`, after automated checks pass without licensed runtime evidence.
+- The authoritative status remains `APPROVED` while PR #575 is open. After merge and green automated checks it becomes `IMPLEMENTED`; it becomes `VERIFIED` only after the checked-in workflow actually executes in a licensed Unity Test Runner.
