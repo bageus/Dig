@@ -61,8 +61,17 @@ The current `DecisionCooldownTicks = 2` boundary produces one full observable Id
 - `ResidentCombatPreemptionPlayModeTests` contains the full checked-in workflow for direct movement completion, Idle transition, movement out of sight, enemy disengagement, and no resident self-defense without a visible threat;
 - headless soak protects survival/recovery cadence from accidental pause expansion.
 
+## Validation — head `dae7746f0f870cf631275a3dd1337c6ff3a56bd3`
+
+- Quality `30770569804` / run 8388: success;
+- architecture, source contracts, Release restore/build and full .NET suite: success;
+- headless smoke, standard deterministic soak and large-settlement deterministic soak: success;
+- Export Stage 2 v2 `30770569788`: success;
+- Export Stage 2 v3 `30770569796`: success;
+- Unity workflow `30770569811` / run 672: workflow success, but actual EditMode/PlayMode execution and runtime-evidence validation were skipped because licensed activation was unavailable.
+
 ## Verification boundary
 
-The implementation remains `APPROVED` while PR #575 is open. It may become `IMPLEMENTED` after merge and successful Quality/build/test/smoke/soak evidence.
+The implementation remains `APPROVED` while PR #575 is open. It may become `IMPLEMENTED` after merge.
 
 The checked-in Unity scenario is not `VERIFIED` until an actual licensed Unity Test Runner executes it. A green workflow with skipped EditMode/PlayMode steps is blocked evidence, not runtime verification.
