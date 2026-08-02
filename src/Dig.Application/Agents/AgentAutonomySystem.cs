@@ -75,9 +75,11 @@ public sealed class AgentAutonomySystem : ISimulationSystem
                 continue;
             }
 
+            bool gateAllowsActions = _executionOverride is not IAgentActionExecutionGate gate
+                || gate.CanExecuteActions(agent, context.Tick);
             // Passive needs continue to advance during combat, but food bites,
             // sleep/rest intervals and schedule actions are exclusive with combat.
-            if (!_canExecuteActions(agent))
+            if (!gateAllowsActions || !_canExecuteActions(agent))
             {
                 SaveAndPublish(agent);
                 continue;
