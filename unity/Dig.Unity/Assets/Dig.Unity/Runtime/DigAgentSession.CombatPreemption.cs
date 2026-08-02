@@ -21,6 +21,19 @@ internal sealed partial class DigAgentSession
             return false;
         }
 
+        if (HasResidentDirectCommandPriority(residentId, tick))
+        {
+            Result suppressed = SuppressResidentCombatForDirectCommand(
+                residentId,
+                tick);
+            if (suppressed.IsFailure)
+            {
+                throw new InvalidOperationException(suppressed.Error!.ToString());
+            }
+
+            return false;
+        }
+
         // Combat acquisition must run before resident autonomy. Previously enemy
         // acquisition happened later in the movement loop, after Eat/Sleep/Study
         // and work systems had already advanced for the same tick.
