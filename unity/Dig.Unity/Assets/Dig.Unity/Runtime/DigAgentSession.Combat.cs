@@ -285,7 +285,8 @@ internal sealed partial class DigAgentSession
 
     private bool SkipNormalMovement(AgentState actor)
     {
-        return _combatOnlyActors.Contains(actor.Id);
+        return _combatOnlyActors.Contains(actor.Id)
+            && !ShouldYieldEnemyIdleToManualMovement(actor.Id);
     }
 
     private void SynchronizeCombatDeath(EntityId actorId)
