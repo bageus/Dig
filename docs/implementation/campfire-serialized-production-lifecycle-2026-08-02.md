@@ -31,11 +31,12 @@ Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
 - output close completes the order and enters `TravelToDestination`; the job terminal-izes only after arrival at `WorkPosition`;
 - active production projects a collider-free small log at the work position;
 - carried raw and `ProcessedAwaitingPackage` phases project a derived material carry without creating an Inventory item;
-- after return, enabled reachable refill is planned before the next production order.
+- after return, enabled reachable refill is planned before the next production order;
+- a supply job that loses the shared building reservation during creation is terminalized as cancelled after source, slot-claim and incoming-ledger rollback, so no non-terminal phantom job remains.
 
 ## Regression coverage
 
-- Domain/Application: building reservation conflict and release, ingress compaction, order-close versus job-return lifecycle;
+- Domain/Application: building reservation conflict and release, failed supply creation rollback, ingress compaction, order-close versus job-return lifecycle;
 - source contracts: scheduler ordering, shared reservation, return stage, one-tick demo timing, workbench and processed carry;
 - Unity Play Mode: no simultaneous production/supply, active workbench, package close, worker return, then remote refill to capacity.
 
