@@ -133,9 +133,11 @@ public sealed partial class AgentDecisionSystem
         AgentIntentKind? currentIntent,
         Span<Candidate> candidates)
     {
-        bool cooldownActive = currentIntent.HasValue
+        bool switchCooldownActive = currentIntent.HasValue
             && agent.LastActionSwitchTick >= 0
             && tick - agent.LastActionSwitchTick < policy.Utility.DecisionCooldownTicks;
+        bool taskPauseActive = agent.LastTaskCompletionTick >= 0
+            && tick - agent.LastTaskCompletionTick < policy.Utility.DecisionCooldownTicks;
 
         for (int index = 0; index < candidates.Length; index++)
         {
@@ -146,10 +148,15 @@ public sealed partial class AgentDecisionSystem
                 candidates[index].ReceivedHysteresis = true;
             }
 
-            bool bypassCooldown = candidates[index].Critical
+            bool bypassSwitchCooldown = candidates[index].Critical
                 || candidates[index].IntentKind == AgentIntentKind.PlayerOrder
                 || candidates[index].IntentKind == currentIntent;
-            candidates[index].BlockedByCooldown = cooldownActive && !bypassCooldown;
+            bool bypassTaskPause = candidates[index].Critical
+                || candidates[index].IntentKind == AgentIntentKind.PlayerOrder
+                || candidates[index].IntentKind == AgentIntentKind.Idle;
+            candidates[index].BlockedByCooldown =
+                (switchCooldownActive && !bypassSwitchCooldown)
+                || (taskPauseActive && !bypassTaskPause);
         }
     }
 
