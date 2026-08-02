@@ -81,6 +81,10 @@ namespace Dig.Unity
             terrainSession.InitializeBuildingProductionDemo(
                 agentSession.Repository,
                 worldSession.Journal);
+            agentSession.BindResidentNeedsRuntime(terrainSession);
+            terrainSession.InitializeResidentNeedsRuntime(
+                agentSession.Tick,
+                agents);
             terrainSession.InitializeMushroomDemo(agentSession.Tick);
             terrainSession.InitializeBarrelDemo(agentSession.Tick);
             terrainSession.InitializeLivingMaterials(agentSession.Tick, agents);

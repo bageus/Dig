@@ -80,6 +80,7 @@ public static partial class BuildingProductionSaveAdapter
                 BuildingId = snapshot.BuildingId.ToString(),
                 WorkstationId = snapshot.Definition.BuildingId.ToString(),
                 ActiveSupplyJobId = snapshot.ActiveSupplyJobId?.ToString(),
+                OperationTurn = (int)snapshot.OperationTurn,
                 Stocks = snapshot.Stocks.Select(value => new BuildingStockRuleSaveData
                 {
                     ItemId = value.ItemId.ToString(),
@@ -251,6 +252,14 @@ public static partial class BuildingProductionSaveAdapter
             ProductionWorkstationDefinition definition = content.GetWorkstation(
                 new Dig.Domain.Buildings.BuildingDefinitionId(saved.WorkstationId));
             RequireSuccess(supply.Register(buildingId, definition, tick++));
+            if (saved.OperationTurn.HasValue)
+            {
+                RequireSuccess(supply.SetOperationTurn(
+                    buildingId,
+                    (BuildingOperationTurn)saved.OperationTurn.Value,
+                    tick++));
+            }
+
             foreach (BuildingStockRuleSaveData stock in saved.Stocks)
             {
                 RequireSuccess(supply.SetDeliveryEnabled(

@@ -50,6 +50,10 @@ public readonly struct BuildingStockSnapshot
     public bool DeliveryEnabled { get; }
     public int Priority { get; }
     public int Missing => Math.Max(0, Capacity - Current - Incoming);
+    public int RefillThreshold =>
+        BuildingSupplyQueuePolicy.GetRefillThreshold(Capacity);
+    public bool IsBelowRefillThreshold =>
+        Current + Incoming < RefillThreshold;
 }
 
 public sealed class BuildingSupplySnapshot
@@ -58,7 +62,8 @@ public sealed class BuildingSupplySnapshot
         EntityId buildingId,
         ProductionWorkstationDefinition definition,
         IReadOnlyCollection<BuildingStockSnapshot> stocks,
-        EntityId? activeSupplyJobId)
+        EntityId? activeSupplyJobId,
+        BuildingOperationTurn operationTurn)
     {
         BuildingId = buildingId;
         Definition = definition ?? throw new ArgumentNullException(nameof(definition));
@@ -67,16 +72,18 @@ public sealed class BuildingSupplySnapshot
             .ThenBy(value => value.ItemId)
             .ToArray());
         ActiveSupplyJobId = activeSupplyJobId;
+        OperationTurn = operationTurn;
     }
 
     public EntityId BuildingId { get; }
     public ProductionWorkstationDefinition Definition { get; }
     public IReadOnlyList<BuildingStockSnapshot> Stocks { get; }
     public EntityId? ActiveSupplyJobId { get; }
+    public BuildingOperationTurn OperationTurn { get; }
     public bool HasActiveSupply => ActiveSupplyJobId.HasValue;
 }
 
-public sealed class BuildingSupplyState : AggregateRoot
+public sealed partial class BuildingSupplyState : AggregateRoot
 {
     private readonly Dictionary<EntityId, WorkstationSupplyEntry> _entries =
         new Dictionary<EntityId, WorkstationSupplyEntry>();
@@ -192,12 +199,12 @@ public sealed class BuildingSupplyState : AggregateRoot
 
     public Result CompleteSupply(EntityId buildingId, EntityId jobId, long tick)
     {
-        return EndSupply(buildingId, jobId, tick);
+        return EndSupply(buildingId, jobId, BuildingOperationTurn.Production, tick);
     }
 
     public Result ReleaseSupply(EntityId buildingId, EntityId jobId, long tick)
     {
-        return EndSupply(buildingId, jobId, tick);
+        return EndSupply(buildingId, jobId, BuildingOperationTurn.Production, tick);
     }
 
     public BuildingSupplySnapshot? Get(
@@ -223,7 +230,11 @@ public sealed class BuildingSupplyState : AggregateRoot
             && _entries.ContainsKey(location.OwnerId);
     }
 
-    private Result EndSupply(EntityId buildingId, EntityId jobId, long tick)
+    private Result EndSupply(
+        EntityId buildingId,
+        EntityId jobId,
+        BuildingOperationTurn nextTurn,
+        long tick)
     {
         ValidateTick(tick);
         WorkstationSupplyEntry? entry = Find(buildingId);
@@ -238,6 +249,7 @@ public sealed class BuildingSupplyState : AggregateRoot
         }
 
         entry.Clear();
+        entry.SetOperationTurn(nextTurn);
         return Result.Success();
     }
 
@@ -276,6 +288,8 @@ public sealed class BuildingSupplyState : AggregateRoot
 
         public ProductionWorkstationDefinition Definition { get; }
         public EntityId? ActiveJobId { get; private set; }
+        public BuildingOperationTurn OperationTurn { get; private set; } =
+            BuildingOperationTurn.Production;
 
         public void SetDeliveryEnabled(ItemId itemId, bool enabled)
         {
@@ -299,6 +313,11 @@ public sealed class BuildingSupplyState : AggregateRoot
             _incoming.Clear();
         }
 
+        public void SetOperationTurn(BuildingOperationTurn operationTurn)
+        {
+            OperationTurn = operationTurn;
+        }
+
         public BuildingSupplySnapshot CreateSnapshot(
             EntityId buildingId,
             InventorySnapshot inventory)
@@ -314,7 +333,8 @@ public sealed class BuildingSupplyState : AggregateRoot
                     _incoming.TryGetValue(rule.ItemId, out int incoming) ? incoming : 0,
                     _delivery[rule.ItemId],
                     rule.Priority)).ToArray(),
-                ActiveJobId);
+                ActiveJobId,
+                OperationTurn);
         }
     }
 }

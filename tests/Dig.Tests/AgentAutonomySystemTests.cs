@@ -143,6 +143,37 @@ public sealed class AgentAutonomySystemTests
                 && changed.PlayerOrderId == order.Id);
     }
 
+
+    [Fact]
+    public void Execution_override_owns_real_action_progress_without_generic_delta()
+    {
+        AgentState agent = AgentTestFactory.CreateAgent(
+            nutrition: 8_000,
+            alertness: 8_000,
+            mood: 8_000);
+        InMemoryAgentRepository repository = new InMemoryAgentRepository();
+        Assert.True(repository.Add(agent).IsSuccess);
+        InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
+        HoldingExecutionOverride execution = new HoldingExecutionOverride();
+        AgentAutonomySystem system = new AgentAutonomySystem(
+            repository,
+            new InMemoryAgentDecisionContextProvider(
+                AgentDecisionContext.AllAvailable()),
+            journal,
+            new AgentDecisionSystem(),
+            AgentBehaviorPolicy.CreateDefault(),
+            executionOverride: execution);
+        SimulationState simulation = SimulationState.Create(
+            worldSeed: 7,
+            tickDuration: TimeSpan.FromSeconds(2));
+
+        system.Execute(new SimulationContext(1, simulation));
+
+        Assert.True(execution.Executed);
+        AgentActionSnapshot action = agent.CreateSnapshot(1).ActiveAction!.Value;
+        Assert.Equal(0, action.ElapsedTicks);
+    }
+
     [Fact]
     public void Missing_agent_order_returns_stable_error()
     {
@@ -187,6 +218,23 @@ public sealed class AgentAutonomySystemTests
             worldSeed: 42,
             tickDuration: TimeSpan.FromMilliseconds(100));
         return new RuntimeHarness(repository, journal, system, simulation);
+    }
+
+
+    private sealed class HoldingExecutionOverride : IAgentIntentExecutionOverride
+    {
+        public bool Executed { get; private set; }
+
+        public bool TryExecute(
+            AgentState agent,
+            AgentDecision decision,
+            AgentBehaviorPolicy policy,
+            long tick)
+        {
+            Executed = true;
+            Assert.True(agent.ApplyDecision(decision, policy, tick).IsSuccess);
+            return true;
+        }
     }
 
     private sealed class RuntimeHarness

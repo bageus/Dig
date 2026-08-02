@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Messaging;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -26,7 +27,8 @@ public sealed class CreateBuildingSupplyJobCommand : ICommand<Result>
         IReadOnlyCollection<EntityId> transitStackIds,
         IReadOnlyCollection<EntityId> depositStackIds,
         int priority,
-        long tick)
+        long tick,
+        IReadOnlyCollection<ItemId>? targetItemIds = null)
     {
         JobId = jobId;
         BuildingId = buildingId;
@@ -39,6 +41,11 @@ public sealed class CreateBuildingSupplyJobCommand : ICommand<Result>
             ?? throw new ArgumentNullException(nameof(depositStackIds));
         Priority = priority;
         Tick = tick;
+        HasTargetItemFilter = targetItemIds != null;
+        TargetItemIds = (targetItemIds ?? Array.Empty<ItemId>())
+            .Distinct()
+            .OrderBy(value => value)
+            .ToArray();
     }
 
     public EntityId JobId { get; }
@@ -48,6 +55,8 @@ public sealed class CreateBuildingSupplyJobCommand : ICommand<Result>
     public IReadOnlyCollection<CellId> ReachableCells { get; }
     public IReadOnlyCollection<EntityId> TransitStackIds { get; }
     public IReadOnlyCollection<EntityId> DepositStackIds { get; }
+    public bool HasTargetItemFilter { get; }
+    public IReadOnlyCollection<ItemId> TargetItemIds { get; }
     public int Priority { get; }
     public long Tick { get; }
 }

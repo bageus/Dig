@@ -145,6 +145,41 @@ public sealed partial class BuildingFacilitiesState : AggregateRoot
         return Result.Success();
     }
 
+
+    public int RemoveByBuilding(EntityId buildingId, long tick)
+    {
+        ValidateTick(tick);
+        if (buildingId.IsEmpty)
+        {
+            throw new ArgumentException("Building id cannot be empty.", nameof(buildingId));
+        }
+
+        EntityId[] facilityIds = _facilities.Values
+            .Where(value => value.BuildingId == buildingId)
+            .Select(value => value.Id)
+            .OrderBy(value => value.ToString(), StringComparer.Ordinal)
+            .ToArray();
+        foreach (EntityId facilityId in facilityIds)
+        {
+            if (_reservations.Remove(facilityId))
+            {
+                Raise(new BuildingFacilityReservationChanged(
+                    tick,
+                    facilityId,
+                    agentId: null));
+            }
+
+            _facilities.Remove(facilityId);
+        }
+
+        if (facilityIds.Length > 0)
+        {
+            Version = checked(Version + 1);
+        }
+
+        return facilityIds.Length;
+    }
+
     public Result Reserve(EntityId facilityId, EntityId agentId, long tick)
     {
         ValidateTick(tick);

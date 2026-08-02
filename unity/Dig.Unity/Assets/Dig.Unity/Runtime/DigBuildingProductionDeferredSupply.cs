@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Production;
 using Dig.Domain.Buildings;
+using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
@@ -31,7 +32,10 @@ internal sealed partial class DigTerrainWorkSession
         {
             BuildingSupplyJobDefinition supply =
                 (BuildingSupplyJobDefinition)pending.Definition;
-            if (HasNonTerminalProductionWorkJob(supply.BuildingId))
+            if (HasNonTerminalProductionWorkJob(supply.BuildingId)
+                || HasNonTerminalResolvedBuildingSupplyJob(
+                    supply.BuildingId,
+                    pending.Id))
             {
                 continue;
             }
@@ -122,6 +126,73 @@ internal sealed partial class DigTerrainWorkSession
             !value.IsTerminal
             && value.Definition is BuildingSupplyJobDefinition supply
             && supply.BuildingId == buildingId);
+    }
+
+    private bool HasNonTerminalResolvedBuildingSupplyJob(
+        EntityId buildingId,
+        EntityId? excludedJobId = null)
+    {
+        return _jobRepository.Get().GetAll().Any(value =>
+            !value.IsTerminal
+            && (!excludedJobId.HasValue || value.Id != excludedJobId.Value)
+            && value.Definition is BuildingSupplyJobDefinition supply
+            && supply.BuildingId == buildingId
+            && supply.IsSourceResolved);
+    }
+
+    private bool ShouldYieldSupplyTurnToRunnableProduction(
+        BuildingSupplySnapshot supply,
+        ProductionOrderSnapshot? queued)
+    {
+        if (queued == null)
+        {
+            return false;
+        }
+
+        InventoryState inventory = _buildingInventoryRepository!.Get();
+        ItemLocation location = ItemLocation.InBuilding(supply.BuildingId);
+        Dictionary<ItemId, int> available = queued.Recipe.Inputs
+            .Select(value => value.ItemId)
+            .Distinct()
+            .ToDictionary(
+                itemId => itemId,
+                itemId => inventory.GetAvailableQuantityAt(itemId, location));
+        return !BuildingSupplyQueuePolicy.ShouldAttemptSupplyBeforeProduction(
+            supply,
+            queued.Recipe,
+            available);
+    }
+
+
+    private bool ShouldWaitForSupplyBeforeProduction(EntityId buildingId)
+    {
+        if (!HasNonTerminalBuildingSupplyJob(buildingId))
+        {
+            return false;
+        }
+
+        InventoryState inventory = _buildingInventoryRepository!.Get();
+        BuildingSupplySnapshot? supply = _buildingSupplyRepository!.Get().Get(
+            buildingId,
+            inventory.CreateSnapshot());
+        ProductionOrderSnapshot? queued = _productionRepository!.Get()
+            .GetNextQueued(buildingId);
+        if (supply == null || queued == null)
+        {
+            return false;
+        }
+
+        ItemLocation location = ItemLocation.InBuilding(buildingId);
+        Dictionary<ItemId, int> available = queued.Recipe.Inputs
+            .Select(value => value.ItemId)
+            .Distinct()
+            .ToDictionary(
+                itemId => itemId,
+                itemId => inventory.GetAvailableQuantityAt(itemId, location));
+        return BuildingSupplyQueuePolicy.ShouldAttemptSupplyBeforeProduction(
+            supply,
+            queued.Recipe,
+            available);
     }
 
 }

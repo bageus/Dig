@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dig.Domain.Core;
 
 namespace Dig.Domain.Buildings
@@ -6,6 +8,16 @@ namespace Dig.Domain.Buildings
 
 public sealed partial class BuildingFacilitiesState
 {
+
+    public IReadOnlyList<BuildingFacilitySnapshot> GetAllFacilities()
+    {
+        return _facilities.Values
+            .OrderBy(value => value.BuildingId.ToString(), StringComparer.Ordinal)
+            .ThenBy(value => value.Id.ToString(), StringComparer.Ordinal)
+            .Select(value => Get(value.Id)!)
+            .ToArray();
+    }
+
     public bool HasAvailable(
         BuildingFacilityKind kind,
         EntityId includeAgentId)

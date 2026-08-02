@@ -64,6 +64,31 @@ public sealed class BuildingSupplyDependencyPlannerTests
             request.Value.ItemId);
     }
 
+
+    [Fact]
+    public void Queued_target_filter_does_not_extract_unrelated_higher_priority_stock()
+    {
+        CampfireProductionTestHarness harness = new CampfireProductionTestHarness(1);
+        BuildingSupplySnapshot supply = harness.Supply.Get(
+            CampfireProductionTestHarness.BuildingId,
+            harness.Inventory.CreateSnapshot())!;
+        CellId reachable = new CellId(1, 1, 0);
+
+        ItemConsumptionRequest? request =
+            BuildingSupplyDependencyPlanner.PlanSingleExtractionRequest(
+                supply,
+                Array.Empty<ItemStackSnapshot>(),
+                new[] { reachable },
+                new[] { reachable },
+                MushroomItems(),
+                new[] { CampfireProductionContent.MushroomLegItemId });
+
+        Assert.True(request.HasValue);
+        Assert.Equal(
+            CampfireProductionContent.MushroomLegItemId,
+            request.Value.ItemId);
+    }
+
     [Fact]
     public void Disabled_delivery_does_not_create_extraction_request()
     {

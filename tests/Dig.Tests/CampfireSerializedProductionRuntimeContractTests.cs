@@ -8,12 +8,14 @@ namespace Dig.Tests
 public sealed class CampfireSerializedProductionRuntimeContractTests
 {
     [Fact]
-    public void Building_operation_is_serialized_and_refill_is_planned_before_production()
+    public void Building_operation_uses_threshold_targeted_supply_without_blocking_on_extraction()
     {
         string productionJob = Read(
             "src/Dig.Domain/Jobs/ProductionWorkJobDefinition.cs");
         string supplyJob = Read(
             "src/Dig.Domain/Jobs/BuildingSupplyJobDefinition.cs");
+        string operationTurn = Read(
+            "src/Dig.Domain/Production/BuildingSupplyState.OperationTurn.cs");
         string synchronization = ReadRuntime(
             "DigBuildingProductionSynchronization.cs");
         string deferred = ReadRuntime(
@@ -23,15 +25,36 @@ public sealed class CampfireSerializedProductionRuntimeContractTests
         Assert.Contains("ReservationKey.ForPosition(WorkPosition)", productionJob);
         Assert.Contains("ReservationKey.ForDestination(BuildingId)", supplyJob);
         Assert.DoesNotContain("ReservationKey.ForPosition(WorkPosition)", supplyJob);
-        Assert.True(
-            synchronization.IndexOf(
-                "CreateEligibleSupplyJobs(tick, agents, navigation)",
-                StringComparison.Ordinal)
-            < synchronization.IndexOf(
-                "PrepareEligibleProductionOrders(tick, navigation)",
-                StringComparison.Ordinal));
+        Assert.Contains(
+            "ShouldYieldSupplyTurnToRunnableProduction",
+            synchronization);
+        Assert.Contains(
+            "BuildingSupplyQueuePolicy.ShouldAttemptSupplyBeforeProduction",
+            deferred);
+        Assert.Contains(
+            "targetItemIds: queued?.Recipe.Inputs",
+            synchronization);
+        Assert.Contains(
+            "HasNonTerminalResolvedBuildingSupplyJob",
+            synchronization);
+        Assert.Contains(
+            "BuildingOperationTurn.Production",
+            operationTurn);
+        Assert.Contains(
+            "BuildingOperationTurn.Supply",
+            ReadRuntime("DigBuildingProductionZones.cs"));
         Assert.Contains("HasNonTerminalProductionWorkJob", synchronization);
         Assert.Contains("HasNonTerminalProductionWorkJob", deferred);
+        Assert.Contains("supply.IsSourceResolved", deferred);
+        Assert.Contains(
+            "BuildingSupplyPlanner.PlanForItems",
+            Read("src/Dig.Application/Production/BuildingSupplyUseCases.cs"));
+        string playMode = Read(
+            "unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/ActiveProductionBuildingSupplyPlayModeTests.cs");
+        Assert.Contains(
+            "Three_cooking_cycles_run_before_half_stock_refill_then_production_resumes",
+            playMode);
+        Assert.Contains("supplyStartedAfterCompletedUnits", playMode);
     }
 
     [Fact]

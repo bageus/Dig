@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Collections.Generic;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -167,6 +168,46 @@ public sealed class BuildingSupplyStateTests
         Assert.True(hamster.DeliveryEnabled);
         Assert.Equal(capPriority, cap.Priority);
         Assert.Equal(hamsterPriority, hamster.Priority);
+    }
+
+
+    [Fact]
+    public void Operation_turn_starts_with_production_and_supply_completion_yields_back()
+    {
+        ItemCatalog items = CampfireProductionContentTests.CreateItems();
+        InventoryState inventory = new InventoryState(items);
+        BuildingSupplyState state = new BuildingSupplyState();
+        Assert.True(state.Register(
+            BuildingId,
+            CampfireProductionContent.CreateWorkstation(),
+            0).IsSuccess);
+        Assert.Equal(
+            BuildingOperationTurn.Production,
+            state.Get(BuildingId, inventory.CreateSnapshot())!.OperationTurn);
+
+        Assert.True(state.SetOperationTurn(
+            BuildingId,
+            BuildingOperationTurn.Supply,
+            1).IsSuccess);
+        EntityId jobId = Id(90);
+        Assert.True(state.ReserveIncoming(
+            BuildingId,
+            jobId,
+            new[]
+            {
+                new ItemConsumptionRequest(
+                    CampfireProductionContent.MushroomCapItemId,
+                    1),
+            },
+            new Dictionary<ItemId, int>(),
+            2).IsSuccess);
+        Assert.True(state.CompleteSupply(BuildingId, jobId, 3).IsSuccess);
+
+        BuildingSupplySnapshot snapshot = state.Get(
+            BuildingId,
+            inventory.CreateSnapshot())!;
+        Assert.Equal(BuildingOperationTurn.Production, snapshot.OperationTurn);
+        Assert.False(snapshot.HasActiveSupply);
     }
 
     [Fact]

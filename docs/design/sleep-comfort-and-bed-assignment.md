@@ -55,6 +55,10 @@ Assignment снимается, если место:
 
 После снятия assignment resident ищет ближайшее свободное место. Если подходящего места нет, разрешён сон на земле с ограничениями Floor tier.
 
+## Tent runtime capability
+
+Completed `building.tent` является реальным sleep facility tier `Tent` и публикует два deterministic `Bed` slot-а внутри поддерживаемого footprint. Resident резервирует ближайший reachable free slot, проходит к его клетке и только после arrival начинает Sleep intervals. Incomplete, packed, destroyed или unreachable Tent не предоставляет slot. Если slot отсутствует, используется FloorSleep. Полный runtime workflow: [`runtime-needs-supply-sleep-food-recovery.md`](runtime-needs-supply-sleep-food-recovery.md).
+
 ## Пары
 
 Каждая кровать предоставляет два связанных sleeping slots. Пара старается использовать два slots одной кровати.
@@ -98,7 +102,7 @@ Utility AI учитывает:
 - любой lower tier ограничивает sleep Mood значением 50;
 - Floor не даёт Mood и не поднимает Alertness выше 75;
 - unreachable, packed, destroyed или слишком далёкое место снимает assignment;
-- поиск выбирает ближайшее свободное место;
-- каждая кровать имеет два связанных slots;
+- поиск выбирает ближайшее свободное место; completed Tent предоставляет два reachable/reservable slot-а и предпочтителен перед Floor;
+- каждая кровать, включая completed Tent capability, имеет два связанных slots;
 - пара резервирует оба slots или ни одного;
 - Save/Load не создаёт duplicate effects/reservations.
