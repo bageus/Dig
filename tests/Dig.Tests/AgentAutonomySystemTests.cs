@@ -27,8 +27,8 @@ public sealed class AgentAutonomySystemTests
             });
         AgentState agent = AgentTestFactory.CreateAgent(
             nutrition: 3_000,
-            alertness: 5_000,
-            mood: 6_000,
+            alertness: 8_000,
+            mood: 8_000,
             schedule: schedule);
         RuntimeHarness harness = CreateHarness(agent);
         List<AgentIntentKind> sequence = new List<AgentIntentKind>();
