@@ -225,7 +225,14 @@ internal static class HeadlessSoakScenario
                     new NeedValue(5_500 - (index * 25)),
                     new NeedValue(4_500),
                     new NeedValue(10_000)),
-                DailySchedule.CreateBalanced(ticksPerDay: 24),
+                new DailySchedule(
+                    ticksPerDay: 24,
+                    new[]
+                    {
+                        new ScheduleSegment(0, 6, ScheduleActivity.Sleep),
+                        new ScheduleSegment(6, 12, ScheduleActivity.Rest),
+                        new ScheduleSegment(12, 24, ScheduleActivity.Work),
+                    }),
                 new[]
                 {
                     new AgentSkillValue(new AgentSkillId("general.work"), 4_000 + index),
