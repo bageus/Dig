@@ -21,6 +21,10 @@
 - checked-in Unity Play Mode scenarios cover critical Sleep walking to a completed Tent slot before Alertness recovery, free-time hunger breaking a produced food package and the campfire sequence `4 -> 3 -> 2 -> 1 -> Supply -> resumed Production` without concurrent building operation owners.
 - deterministic save/restore coverage includes the persisted building operation turn.
 
+## Published amendment head
+
+Threshold scheduler, planner, dependency filtering, tests and authoritative documents were published in code head `23a33f0bc05d76ef433214b66a2d297eb6b669a6`. This documentation commit intentionally starts the standard final-head Quality, source-export and Unity-evidence workflows; results are not yet recorded as passing.
+
 ## Pending verification
 
 The threshold amendment supersedes the previous strict alternation evidence. Final-head Release build, full .NET suite, headless smoke, deterministic soaks and source exports must be rerun after the scheduler, planner and Play Mode regression changes are published.
