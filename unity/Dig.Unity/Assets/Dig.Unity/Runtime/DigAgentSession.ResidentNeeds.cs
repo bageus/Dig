@@ -9,7 +9,10 @@ internal sealed partial class DigAgentSession
 
     internal void BindResidentNeedsRuntime(DigTerrainWorkSession terrain)
     {
-        _residentNeedsRuntime.Bind(terrain, IsResidentCombatActiveOrThreatened);
+        _residentNeedsRuntime.Bind(
+            terrain,
+            IsResidentCombatActiveOrThreatened,
+            HasResidentDirectCommandPriority);
     }
 }
 
