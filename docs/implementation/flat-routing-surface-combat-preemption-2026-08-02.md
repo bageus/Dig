@@ -26,11 +26,12 @@ Tracking: #386, #508, #559
 - `TunnelNavigationVolume.CreateDemo` opens/supports the surface through `X=0..width-1` on every depth layer.
 - Existing lexicographic path cost remains authoritative: shaft-gap count, vertical-climb count, movement cost/step count, deterministic tie-break.
 - `IAgentActionExecutionGate` lets an execution adapter gate food and schedule action progress while passive need decay continues.
-- `DigResidentNeedsRuntime` synchronizes enemy acquisition before autonomous action execution and now checks direct-command priority before both autonomy and combat preemption.
+- `DigResidentNeedsRuntime` synchronizes enemy acquisition before autonomous action execution and checks direct-command priority before both autonomy and combat preemption.
 - `AgentState.InterruptActiveAction` interrupts targeted or untargeted actions with a stable reason and existing `AgentActionBlocked` event.
 - `DigTerrainWorkSession.InterruptResidentForCombat` releases facilities, interrupts meals/actions, invokes existing typed job cleanup transactions, removes routes, and saves authoritative repositories.
 - `DigAgentSession.DirectCommandPriority` records the common direct-command preparation boundary, cancels any resident combat intent/execution including Alarm/self-defense/retreat, and derives continued ownership from active manual movement or assigned direct work.
 - `DigTerrainWorkSession.HasActiveResidentDirectCommand` projects existing assigned nonterminal jobs; it does not create a second job owner.
+- a rejected command receives no invented grace interval: at the next tick direct priority exists only when an authoritative manual movement or assigned job owner exists;
 - while direct-command priority is active, generic needs/schedule actions are gated and incoming persistent enemy intent cannot recreate resident self-defense;
 - enemy persistent intent is not cancelled. Pursuit and attacks continue, and self-defense may resume after the direct command ends.
 
@@ -41,8 +42,24 @@ Tracking: #386, #508, #559
 - `CombatPreemptionUnityRuntimeContractTests`: early threat synchronization, typed cleanup, direct-priority binding, and ordering before self-defense/autonomy.
 - `ResidentCombatPreemptionPlayModeTests`: Work/Sleep combat preemption plus direct movement advancing while persistent enemy aggro remains, followed by self-defense resumption after command completion.
 
+## Automated evidence
+
+PR #575 code head `f52c51f75ae6d6077d2d6c58c76774a8510fda2d`:
+
+- Quality run `30768655653` / run 8281: success;
+- architecture, file-size and C# compatibility checks: success;
+- Unity source contracts: success;
+- Release restore/build: success;
+- full .NET test suite: success;
+- headless smoke: success;
+- standard deterministic soak: success;
+- large-settlement deterministic soak: success;
+- Stage 2 v2 run `30768655658`: success;
+- Stage 2 v3 run `30768655680`: success;
+- Unity workflow run `30768655662` / run 623: workflow success, but `Run Unity EditMode and PlayMode tests` and runtime-evidence validation were skipped because no usable licensed activation was available.
+
 ## Verification boundary
 
-The revised head has passed source-contract gates and contains executable .NET/Play Mode regressions. Final-head Quality is still running. Unity workflow completed with the licensed EditMode/PlayMode step skipped because no usable activation was available.
+The branch implementation and automated non-Unity regressions are green. The authoritative status remains `APPROVED` until PR #575 merges into `main`; after merge it can become `IMPLEMENTED`.
 
-Do not mark this correction `IMPLEMENTED` until final-head Quality succeeds. Do not mark it `VERIFIED` until the checked-in direct-command and combat scenarios actually execute in a licensed Unity Test Runner.
+Do not mark it `VERIFIED` until the checked-in direct-command and combat scenarios actually execute in a licensed Unity Test Runner.
