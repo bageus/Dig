@@ -11,11 +11,19 @@ namespace Dig.Unity
     internal sealed partial class DigTerrainWorkSession
     {
         private Func<string, bool>? _isManualMovementActive;
+        private Func<EntityId, bool>? _isTaskTransitionPaused;
 
         internal void BindManualMovementSource(Func<string, bool> isManualMovementActive)
         {
             _isManualMovementActive = isManualMovementActive
                 ?? throw new ArgumentNullException(nameof(isManualMovementActive));
+        }
+
+        internal void BindTaskTransitionPauseSource(
+            Func<EntityId, bool> isTaskTransitionPaused)
+        {
+            _isTaskTransitionPaused = isTaskTransitionPaused
+                ?? throw new ArgumentNullException(nameof(isTaskTransitionPaused));
         }
 
         internal Result InterruptForManualMovement(
@@ -53,6 +61,7 @@ namespace Dig.Unity
                 && !string.Equals(agent.ActiveIntent, "Eat", StringComparison.Ordinal)
                 && !string.Equals(agent.ActiveIntent, "Sleep", StringComparison.Ordinal)
                 && !hasActiveReservation
+                && !(_isTaskTransitionPaused?.Invoke(agentId) ?? false)
                 && !(_isManualMovementActive?.Invoke(agent.Id) ?? false);
         }
 
