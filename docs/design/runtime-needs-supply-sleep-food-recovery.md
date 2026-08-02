@@ -1,6 +1,6 @@
 # Runtime cadence, needs actions, workstation interleaving and shelter/food recovery
 
-**Status:** APPROVED  
+**Status:** IMPLEMENTED  
 **Decision date:** 2026-08-02  
 **Tracking:** #2, #159, #142, #433, #459  
 **Implementation PR:** #573
