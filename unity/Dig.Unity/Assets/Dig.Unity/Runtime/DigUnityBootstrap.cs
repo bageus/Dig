@@ -68,6 +68,7 @@ namespace Dig.Unity
             _startupStage = "creating work systems";
             DigTerrainWorkSession terrainSession = DigTerrainWorkSession.CreateDemo(
                 worldSession, agents, worldSession.Journal, agentSession.SkillGrants);
+            agentSession.BindCombatInventory(terrainSession.InventoryRepository);
             terrainSession.InitializeDynamicDesignations(worldSession.Journal);
             terrainSession.BindExcavationSkillSource(agentId =>
                 agentSession.GetSkillLevel(
