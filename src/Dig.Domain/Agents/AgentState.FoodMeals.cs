@@ -124,7 +124,6 @@ namespace Dig.Domain.Agents
             LastActionSwitchTick = tick;
             Raise(new AgentActionCompleted(tick, Id, AgentIntentKind.Eat));
             Raise(new AgentFoodMealCompleted(tick, Id, completedItem));
-            RecordTaskCompletionCore("food_meal_completed", tick);
             return Result<bool>.Success(true);
         }
 
