@@ -116,11 +116,9 @@ public sealed partial class AgentState
         {
             _activeAction = null;
             Raise(new AgentActionCompleted(tick, Id, completedIntent));
-            if (CreatesTaskTransitionPause(completedIntent))
+            if (completedIntent == AgentIntentKind.PlayerOrder)
             {
-                RecordTaskCompletionCore(
-                    "action_completed:" + completedIntent,
-                    tick);
+                RecordTaskCompletionCore("player_order_action_completed", tick);
             }
         }
 
@@ -295,12 +293,6 @@ public sealed partial class AgentState
         Version = checked(Version + 1);
         Raise(new AgentActionBlocked(tick, Id, interrupted, LastActionBlockReason));
         return Result.Success();
-    }
-
-    private static bool CreatesTaskTransitionPause(AgentIntentKind intent)
-    {
-        return intent != AgentIntentKind.Idle
-            && intent != AgentIntentKind.Flee;
     }
 }
 }
