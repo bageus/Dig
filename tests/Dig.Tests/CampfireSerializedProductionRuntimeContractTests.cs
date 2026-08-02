@@ -28,7 +28,7 @@ public sealed class CampfireSerializedProductionRuntimeContractTests
             synchronization);
         Assert.Contains(
             "BuildingSupplyQueuePolicy.ShouldAttemptSupplyBeforeProduction",
-            synchronization);
+            deferred);
         Assert.Contains(
             "targetItemIds: queued?.Recipe.Inputs",
             synchronization);
