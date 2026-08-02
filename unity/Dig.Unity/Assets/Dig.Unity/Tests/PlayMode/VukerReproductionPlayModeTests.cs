@@ -47,7 +47,8 @@ public sealed class VukerReproductionPlayModeTests
             value.Lifecycle == VukerLifecycleStage.Child);
         CreatureVisualSnapshot childVisual = agents.LoadEnemyCreatures().Single(value =>
             value.CreatureId == child.EntityId.ToString());
-        Assert.That(childVisual.Lifecycle, Is.EqualTo(CreatureLifecycleVisualStage.Child));
+        Assert.That(childVisual.LifecycleStage,
+            Is.EqualTo(CreatureLifecycleVisualStage.Child));
         Assert.That(childVisual.Disposition, Is.EqualTo(CreatureDisposition.Hostile));
         Assert.That(childVisual.IsGrowing, Is.True);
         Assert.That(agents.GetCombatIntent(child.EntityId), Is.Null);
