@@ -226,12 +226,12 @@ internal static class HeadlessSoakScenario
                     new NeedValue(4_500),
                     new NeedValue(10_000)),
                 new DailySchedule(
-                    ticksPerDay: 24,
+                    ticksPerDay: 6,
                     new[]
                     {
-                        new ScheduleSegment(0, 6, ScheduleActivity.Sleep),
-                        new ScheduleSegment(6, 12, ScheduleActivity.Rest),
-                        new ScheduleSegment(12, 24, ScheduleActivity.Work),
+                        new ScheduleSegment(0, 2, ScheduleActivity.Sleep),
+                        new ScheduleSegment(2, 4, ScheduleActivity.Rest),
+                        new ScheduleSegment(4, 6, ScheduleActivity.Work),
                     }),
                 new[]
                 {
