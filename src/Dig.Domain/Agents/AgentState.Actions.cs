@@ -116,6 +116,12 @@ public sealed partial class AgentState
         {
             _activeAction = null;
             Raise(new AgentActionCompleted(tick, Id, completedIntent));
+            if (CreatesTaskTransitionPause(completedIntent))
+            {
+                RecordTaskCompletionCore(
+                    "action_completed:" + completedIntent,
+                    tick);
+            }
         }
 
         return Result.Success();
@@ -193,6 +199,9 @@ public sealed partial class AgentState
         if (IsAlive)
         {
             Raise(new AgentActionCompleted(tick, Id, completedIntent));
+            RecordTaskCompletionCore(
+                "targeted_action_completed:" + completedIntent,
+                tick);
         }
 
         return Result.Success();
@@ -286,6 +295,12 @@ public sealed partial class AgentState
         Version = checked(Version + 1);
         Raise(new AgentActionBlocked(tick, Id, interrupted, LastActionBlockReason));
         return Result.Success();
+    }
+
+    private static bool CreatesTaskTransitionPause(AgentIntentKind intent)
+    {
+        return intent != AgentIntentKind.Idle
+            && intent != AgentIntentKind.Flee;
     }
 }
 }
