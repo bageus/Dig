@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/slow-needs-alternating-supply-tent-food
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
