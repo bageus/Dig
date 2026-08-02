@@ -51,6 +51,8 @@ Code head `aa635ac84627f069154fe232e2cdcb2aaf34860d` passed Quality run `3074447
 - large deterministic soak: 64 residents, 16 workers, 1000 ticks plus drain to 1020, replay verified, no invariant/budget violations, hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
 - Stage 2 v2/v3 source exports passed.
 
+Later commits on PR #571 only synchronize authoritative documentation, index links and evidence text unless explicitly listed otherwise; the validated gameplay code remains the code head above.
+
 ## Verification boundary
 
 Unity workflow `30744477450` completed with blocked evidence only. `Run Unity EditMode and PlayMode tests` and runtime-evidence validation were skipped because no usable licensed Unity activation was available. Therefore the implementation is `IMPLEMENTED`, not `VERIFIED`; actual Bed preference, Floor fallback, direct feeding, notification and HUD refresh still require licensed Unity Play Mode execution.
