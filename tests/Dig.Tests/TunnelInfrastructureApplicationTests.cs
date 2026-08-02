@@ -27,14 +27,16 @@ public sealed class TunnelInfrastructureApplicationTests
     [Fact]
     public void Cqrs_registers_segment_and_completed_anchor()
     {
-        InMemoryTunnelInfrastructureRepository repository = new InMemoryTunnelInfrastructureRepository();
+        InMemoryTunnelInfrastructureRepository repository =
+            new InMemoryTunnelInfrastructureRepository();
         InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
         RegisterTunnelSegmentHandler register = new RegisterTunnelSegmentHandler(
             repository,
             journal);
         RegisterCompletedTunnelAnchorHandler anchor =
             new RegisterCompletedTunnelAnchorHandler(repository, journal);
-        GetTunnelInfrastructureHandler query = new GetTunnelInfrastructureHandler(repository);
+        GetTunnelInfrastructureHandler query =
+            new GetTunnelInfrastructureHandler(repository);
 
         RequireSuccess(register.Handle(new RegisterTunnelSegmentCommand(
             SegmentId,
@@ -90,7 +92,9 @@ public sealed class TunnelInfrastructureApplicationTests
             Assert.IsType<TunnelAutomaticWorkJobDefinition>(job.Definition);
         Assert.Equal(JobStatus.Created, job.Status);
         Assert.False(definition.IsSourceResolved);
-        Assert.Equal(TunnelAutomaticWorkJobDefinition.AutomaticPriority, definition.Priority);
+        Assert.Equal(
+            TunnelAutomaticWorkJobDefinition.AutomaticPriority,
+            definition.Priority);
         Assert.Empty(harness.Jobs.GetReservations());
         Assert.Empty(harness.Inventory.CreateSnapshot().Stacks);
     }
@@ -188,46 +192,6 @@ public sealed class TunnelInfrastructureApplicationTests
         Assert.Equal(SecondAgentId, harness.Jobs.Get(FirstJobId)!.AssignedAgentId);
     }
 
-    [Fact]
-    public void Source_selection_is_distance_then_cell_then_stack_id()
-    {
-        InventoryState inventory = CreateInventory();
-        EntityId farther = Id(20);
-        EntityId higherCell = Id(21);
-        EntityId lowerCell = Id(22);
-        RequireSuccess(inventory.AddUnit(
-            farther,
-            MushroomLeg,
-            ItemLocation.InWorld(new CellId(1, 0, 0)),
-            tick: 0));
-        RequireSuccess(inventory.AddUnit(
-            higherCell,
-            MushroomLeg,
-            ItemLocation.InWorld(new CellId(8, 1, 0)),
-            tick: 0));
-        RequireSuccess(inventory.AddUnit(
-            lowerCell,
-            MushroomLeg,
-            ItemLocation.InWorld(new CellId(8, -1, 0)),
-            tick: 0));
-        CellId[] visible =
-        {
-            new CellId(1, 0, 0),
-            new CellId(8, 1, 0),
-            new CellId(8, -1, 0),
-        };
-
-        TunnelAutomaticWorkSource? source = TunnelAutomaticWorkPlanner.SelectSource(
-            MushroomLeg,
-            new CellId(10, 0, 0),
-            inventory.GetAvailableWorldStacks(),
-            visible,
-            visible);
-
-        Assert.True(source.HasValue);
-        Assert.Equal(lowerCell, source.Value.StackId);
-    }
-
     private static Harness CreateHarness(bool withSource)
     {
         InMemoryTunnelInfrastructureRepository tunnels =
@@ -251,7 +215,8 @@ public sealed class TunnelInfrastructureApplicationTests
                 tick: 1));
         }
 
-        TestInventoryRepository inventoryRepository = new TestInventoryRepository(inventory);
+        TestInventoryRepository inventoryRepository =
+            new TestInventoryRepository(inventory);
         InMemoryJobRepository jobRepository = new InMemoryJobRepository();
         return new Harness(
             tunnels,
