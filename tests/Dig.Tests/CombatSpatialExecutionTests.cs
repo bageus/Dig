@@ -167,7 +167,7 @@ public sealed class CombatSpatialExecutionTests
     }
 
     [Fact]
-    public void Persistent_enemy_aggro_tracks_living_target_out_of_sight_without_retreat_or_expiry()
+    public void Enemy_aggro_ends_immediately_when_target_leaves_sight()
     {
         CellId[] cells = Enumerable.Range(0, 6)
             .Select(x => new CellId(x, 0, 0)).ToArray();
@@ -176,7 +176,7 @@ public sealed class CombatSpatialExecutionTests
             width: 6,
             height: 1,
             sightRange: 2);
-        CombatIntentId intentId = new CombatIntentId("intent.persistent.enemy");
+        CombatIntentId intentId = new CombatIntentId("intent.sight.bound.enemy");
         fixture.Combat.IssueIntent(new CombatIntentRequest(
             intentId,
             Attacker,
@@ -188,7 +188,7 @@ public sealed class CombatSpatialExecutionTests
             targetCell: new CellId(2, 0, 0)));
         Result<CombatExecutionSnapshot> started = fixture.Combat.StartExecution(
             new CombatExecutionRequest(
-                new CombatExecutionId("execution.persistent.enemy"),
+                new CombatExecutionId("execution.sight.bound.enemy"),
                 intentId,
                 Attacker,
                 CombatIntentSource.Autonomous,
@@ -210,14 +210,10 @@ public sealed class CombatSpatialExecutionTests
             new AdvanceCombatSpatialExecutionCommand(Attacker, 1UL, tick: 2));
 
         Assert.True(advanced.IsSuccess, advanced.Error?.ToString());
-        Assert.Equal("persistent_aggro_target_tracked", advanced.Value.ReasonCode);
-        Assert.Equal(
-            CombatExecutionStage.SelectEngagementCell,
-            advanced.Value.Execution.Stage);
-        CombatIntentSnapshot active = Assert.IsType<CombatIntentSnapshot>(
-            fixture.Combat.GetActiveIntent(Attacker));
-        Assert.True(active.IsPersistent);
-        Assert.Equal(Target, active.TargetEntityId);
+        Assert.Equal("enemy_target_out_of_sight", advanced.Value.ReasonCode);
+        Assert.Equal(CombatExecutionStage.Completed, advanced.Value.Execution.Stage);
+        Assert.Null(fixture.Combat.GetActiveIntent(Attacker));
+        Assert.Equal(new CellId(0, 0, 0), fixture.Agents.Get(Attacker)!.Position);
     }
 
     private static Fixture CreateFixture(
