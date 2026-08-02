@@ -149,7 +149,9 @@ public sealed class ResidentSettlementSystem : ISimulationSystem
                 {
                     target = acquired.Value;
                     Require(agent.ApplyDecision(decision, _policy, target, context.Tick));
-                    Result<bool> progress = agent.AdvanceTargetedAction(context.Tick);
+                    Result<bool> progress = agent.AdvanceTargetedAction(
+                        _policy,
+                        context.Tick);
                     if (progress.IsFailure)
                     {
                         throw new InvalidOperationException(progress.Error!.ToString());
