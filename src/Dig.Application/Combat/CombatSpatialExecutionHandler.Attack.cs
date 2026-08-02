@@ -41,8 +41,56 @@ public sealed partial class CombatSpatialExecutionHandler
                 CombatSpatialApplicationErrors.EquipmentUnavailable);
         }
 
-        WeaponProfile weapon = combat.Weapons.Get(execution.WeaponProfileId.Value);
-        int distance = CombatSpatialMath.Distance3D(actor.Position, target!.Position);
+        Result<CombatEquipmentSelection> selection = _equipment.Select(
+            actor.Id,
+            target!.Id);
+        if (selection.IsFailure)
+        {
+            return Block(command, combat, execution, selection.Error!);
+        }
+
+        if (selection.Value.WeaponProfileId != execution.WeaponProfileId.Value)
+        {
+            Result changed = combat.SetExecutionEquipment(
+                execution.ExecutionId,
+                selection.Value.WeaponProfileId,
+                command.Tick,
+                "equipment_changed");
+            if (changed.IsFailure)
+            {
+                return Result<CombatSpatialExecutionReport>.Failure(changed.Error!);
+            }
+
+            Result cleared = combat.SetExecutionEngagement(
+                execution.ExecutionId,
+                null,
+                command.Tick,
+                "equipment_changed");
+            if (cleared.IsFailure)
+            {
+                return Result<CombatSpatialExecutionReport>.Failure(cleared.Error!);
+            }
+
+            Result advanced = combat.AdvanceExecutionStage(
+                execution.ExecutionId,
+                CombatExecutionStage.SelectEngagementCell,
+                command.Tick,
+                command.Tick,
+                "equipment_changed");
+            if (advanced.IsFailure)
+            {
+                return Result<CombatSpatialExecutionReport>.Failure(advanced.Error!);
+            }
+            SaveCombat(combat);
+            return Report(
+                combat.GetActiveExecution(actor.Id)!,
+                false,
+                null,
+                "equipment_changed");
+        }
+
+        WeaponProfile weapon = combat.Weapons.Get(selection.Value.WeaponProfileId);
+        int distance = CombatSpatialMath.Distance3D(actor.Position, target.Position);
         bool spatiallyValid = distance >= weapon.MinimumRange
             && distance <= weapon.MaximumRange
             && (weapon.SpatialMode == CombatAttackSpatialMode.Melee
@@ -66,14 +114,6 @@ public sealed partial class CombatSpatialExecutionHandler
                 false,
                 null,
                 "target_moved_out_of_engagement");
-        }
-
-        Result<CombatEquipmentSelection> selection = _equipment.Select(
-            actor.Id,
-            target.Id);
-        if (selection.IsFailure)
-        {
-            return Block(command, combat, execution, selection.Error!);
         }
 
         CombatActionId actionId = new CombatActionId(

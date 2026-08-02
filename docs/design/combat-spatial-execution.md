@@ -18,7 +18,7 @@ Tracking issue: [#508](https://github.com/bageus/Dig/issues/508).
 
 Система преобразует combat intentions и tactical decisions в полный spatial workflow: выбор цели и снаряжения, выбор позиции атаки, движение, подготовка, единственный authoritative attack resolve, recovery, повторную оценку угрозы, завершение intent либо retreat.
 
-Система не определяет числовой balance оружия и tactical thresholds — они остаются Q-014. Knockback/fall behavior принадлежит questionnaire #396 и не выводится из spatial execution автоматически.
+Числовой balance общего каталога остаётся data-driven. Первый cave-encounter slice утверждён в [`enemy-combat-and-cave-encounters.md`](enemy-combat-and-cave-encounters.md): fists/club/cave bite, offensive skill scaling и Defense reduction являются approved starting profiles Q-014. Knockback/fall behavior принадлежит questionnaire #396 и не выводится из spatial execution автоматически.
 
 ## 2. Подтверждённый пользовательский workflow
 
@@ -57,7 +57,7 @@ Tracking issue: [#508](https://github.com/bageus/Dig/issues/508).
 - Direct attack не подавляет подтверждённый tactical retreat.
 - Retreat resolver выбирает reachable supported cell, которая увеличивает минимальную distance до обнаруженных угроз.
 - При равенстве предпочитается cell собственной территории, затем меньшая route cost, затем stable `CellId`.
-- Exact Health/threat thresholds остаются Q-014 data.
+- Exact tactical retreat thresholds остаются data-driven; starting damage/accuracy/Defense coefficients определены в enemy cave encounter specification.
 
 ## 3. Владение состоянием
 
@@ -290,7 +290,7 @@ Inspector/read model показывает:
 - **Q-COMBAT-SPATIAL-005:** player intent завершается при death/loss; autonomous/alarm может retarget nearest detected threat.
 - **Q-COMBAT-SPATIAL-006:** ally attack публикует alarm; каждый союзник самостоятельно создаёт autonomous/alarm intent.
 - **Q-COMBAT-SPATIAL-007:** retreat максимизирует minimum threat distance, затем предпочитает own territory, route cost и stable `CellId`.
-- **Q-COMBAT-SPATIAL-008:** `Retreat` выше `PlayerOrder`; exact thresholds остаются Q-014.
+- **Q-COMBAT-SPATIAL-008:** `Retreat` выше `PlayerOrder`; exact tactical thresholds остаются data-driven.
 - **Q-COMBAT-SPATIAL-009:** 3D Manhattan range; ranged разрешён между layers с LoS, melee только через immediate valid edge.
 - **Q-COMBAT-SPATIAL-010:** friendly fire и actor body blocking отсутствуют.
 - **Q-COMBAT-SPATIAL-011:** authoritative execution stage сохраняется; route/candidates/LoS пересчитываются.
@@ -298,7 +298,7 @@ Inspector/read model показывает:
 
 ## 17. Открытые вопросы
 
-Нет открытых business rules для текущего scope. Точные balance coefficients остаются Q-014; knockback/fall остаётся #396.
+Нет открытых business rules для spatial workflow. Starting melee balance и enemy integration определены в #559; future catalog tuning остаётся data-driven; knockback/fall остаётся #396.
 
 ## 18. Журнал решений
 

@@ -24,7 +24,7 @@ Authoritative каталог текущего colony-mode боевого сна�
 | `skill.one_handed_combat` | одноручный профиль |
 | `skill.two_handed_combat` | двуручный профиль |
 | `skill.ranged_combat` | дальнобойное оружие |
-| `skill.defense` | результаты защиты щитом |
+| `skill.defense` | каждый подтверждённый полученный hit; shield block может дать дополнительный profile grant |
 
 Старый `exp_Kampf` не становится тринадцатым навыком.
 
@@ -120,7 +120,7 @@ Authoritative policy:
 - удар, выстрел и блок не уменьшают quantity или condition;
 - legacy `attackpoints_*` и shield `hitpoints` не трактуются как износ.
 
-Точные damage/range/cooldown/block values — data-driven Q-014.
+Starting runtime values для fists, `weapon.club` и cave monster bite утверждены в [`../enemy-combat-and-cave-encounters.md`](../enemy-combat-and-cave-encounters.md). Остальной каталог остаётся data-driven Q-014.
 
 ## Дополнительный legacy content
 
@@ -207,4 +207,4 @@ CombatEquipmentDefinition
 - 32 fantasy/creature класса перенесены в backlog #177;
 - восемь современных классов и `Bombe` окончательно исключены из colony mode;
 - skill mapping, mixed-building threshold, shield compatibility, ammo и durability policy утверждены;
-- непредоставленные числовые combat coefficients остаются Q-014.
+- starting melee coefficients для cave encounter утверждены в #559; остальные combat coefficients остаются data-driven Q-014.

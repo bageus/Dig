@@ -45,6 +45,7 @@ internal sealed partial class DigAgentSession
             ? null
             : EntityId.Parse(selectedResidentId);
         AgentSnapshot[] snapshots = _repository.GetAll()
+            .Where(agent => !_combatOnlyActors.Contains(agent.Id))
             .Select(agent => agent.CreateSnapshot(_tick))
             .ToArray();
         return _rosterPresenter.Present(

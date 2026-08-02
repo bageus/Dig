@@ -122,6 +122,7 @@ public sealed partial class DigCreatureRenderer : MonoBehaviour
         CreatureActionVisualViewModel action = _presenter.PresentAction(snapshot);
         CreatureLodViewModel lod = ResolveLod(snapshot, camera);
         visual.ApplySnapshot(snapshot, appearance, action, lod, movementDuration);
+        visual.SetCombatHealth(camera);
         visual.SetSelected(string.Equals(
             _selectedCreatureId,
             snapshot.CreatureId,
@@ -147,6 +148,7 @@ public sealed partial class DigCreatureRenderer : MonoBehaviour
             appearance,
             _presenter.PresentAction(snapshot),
             ResolveLod(snapshot, camera));
+        visual.SetCombatHealth(camera);
         visual.SetSelected(string.Equals(
             _selectedCreatureId,
             snapshot.CreatureId,

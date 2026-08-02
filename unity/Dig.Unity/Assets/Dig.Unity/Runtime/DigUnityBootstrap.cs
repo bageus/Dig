@@ -68,6 +68,7 @@ namespace Dig.Unity
             _startupStage = "creating work systems";
             DigTerrainWorkSession terrainSession = DigTerrainWorkSession.CreateDemo(
                 worldSession, agents, worldSession.Journal, agentSession.SkillGrants);
+            agentSession.BindCombatInventory(terrainSession.InventoryRepository);
             terrainSession.InitializeDynamicDesignations(worldSession.Journal);
             terrainSession.BindExcavationSkillSource(agentId =>
                 agentSession.GetSkillLevel(
@@ -191,11 +192,17 @@ namespace Dig.Unity
                 () => tunnelRenderer.Initialize(agentSession.TunnelVolume));
             RunPresentationStage("clearing cave preview", visualWarnings,
                 caveRoomPreviewRenderer.Clear);
-            RunPresentationStage("rendering residents", visualWarnings,
-                () => agentRenderer.Render(agents, movementDuration: 0f));
-            RunPresentationStage("rendering living materials", visualWarnings, () =>
+            RunPresentationStage("rendering residents", visualWarnings, () =>
+            {
+                agentRenderer.Render(agents, movementDuration: 0f);
+                agentRenderer.RenderCombatHealthBars(
+                    agentSession.LoadResidentCombatHealthBars(),
+                    targetCamera);
+            });
+            RunPresentationStage("rendering creatures", visualWarnings, () =>
                 creatureRenderer.Render(
-                    terrainSession.LoadLivingMaterialCreatures(),
+                    agentSession.LoadCreatures(
+                        terrainSession.LoadLivingMaterialCreatures()),
                     targetCamera,
                     movementDuration: 0f));
             RunPresentationStage("rendering mushrooms", visualWarnings, () =>

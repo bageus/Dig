@@ -52,14 +52,26 @@ public readonly struct CombatantModifiers
         int armor,
         int blockChance,
         int blockValue,
-        ShieldSkillProfile? shieldSkillProfile = null)
+        ShieldSkillProfile? shieldSkillProfile = null,
+        int damageMultiplier = CombatSkillScalingPolicy.BasisPoints,
+        int damageReduction = 0,
+        CombatDefenseSkillProfile? receivedHitSkillProfile = null)
     {
         AccuracyModifier = accuracyModifier;
         Evasion = evasion;
         Armor = armor;
         BlockChance = blockChance;
+        CombatSkillScalingPolicy.ValidateDamageMultiplier(
+            damageMultiplier,
+            nameof(damageMultiplier));
+        CombatSkillScalingPolicy.ValidateReduction(
+            damageReduction,
+            nameof(damageReduction));
         BlockValue = blockValue;
         ShieldSkillProfile = shieldSkillProfile;
+        DamageMultiplier = damageMultiplier;
+        DamageReduction = damageReduction;
+        ReceivedHitSkillProfile = receivedHitSkillProfile;
     }
 
     public int AccuracyModifier { get; }
@@ -68,6 +80,9 @@ public readonly struct CombatantModifiers
     public int BlockChance { get; }
     public int BlockValue { get; }
     public ShieldSkillProfile? ShieldSkillProfile { get; }
+    public int DamageMultiplier { get; }
+    public int DamageReduction { get; }
+    public CombatDefenseSkillProfile? ReceivedHitSkillProfile { get; }
 }
 
 public sealed class ResolveCombatAttackCommand

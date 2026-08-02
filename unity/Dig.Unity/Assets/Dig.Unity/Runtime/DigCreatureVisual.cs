@@ -14,6 +14,7 @@ public sealed class DigCreatureVisual : MonoBehaviour
     private float _elapsed;
     private float _duration;
     private bool _selected;
+    private DigCombatHealthBar? _combatHealthBar;
 
     public CreatureVisualSnapshot Model { get; private set; } = null!;
 
@@ -89,6 +90,33 @@ public sealed class DigCreatureVisual : MonoBehaviour
         _rig.ApplyAction(action);
         _rig.ApplyActivityVariant(snapshot.ActivityVariantId);
         _rig.ApplyLod(lod);
+    }
+
+
+    internal void SetCombatHealth(Camera? camera)
+    {
+        if (!Model.ShowHealthBar || Model.MaximumHealth <= 0)
+        {
+            if (_combatHealthBar != null)
+            {
+                _combatHealthBar.Configure(0, 1, false, camera, 0.85f);
+            }
+            return;
+        }
+
+        if (_combatHealthBar == null)
+        {
+            GameObject root = new GameObject("CombatHealthBar");
+            root.transform.SetParent(transform, false);
+            _combatHealthBar = root.AddComponent<DigCombatHealthBar>();
+        }
+
+        _combatHealthBar.Configure(
+            Model.CurrentHealth,
+            Model.MaximumHealth,
+            Model.ShowHealthBar && Model.IsAlive,
+            camera,
+            verticalOffset: 0.85f);
     }
 
     internal void SetSelected(bool selected)

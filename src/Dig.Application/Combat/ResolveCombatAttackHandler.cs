@@ -143,7 +143,7 @@ public sealed class ResolveCombatAttackHandler
         AgentState attacker,
         AgentState target)
     {
-        List<SkillGrantBundle> bundles = new List<SkillGrantBundle>(2);
+        List<SkillGrantBundle> bundles = new List<SkillGrantBundle>(3);
         if (resolution.WasAlreadyProcessed
             || resolution.Outcome == CombatAttackOutcome.Miss)
         {
@@ -161,6 +161,23 @@ public sealed class ResolveCombatAttackHandler
                 resolution.ActionId + ":weapon:" + resolution.WeaponProfileId,
                 command.Tick,
                 new[] { new SkillGrant(weapon.SkillId, weapon.HitGrantUnits) }));
+        }
+
+        CombatDefenseSkillProfile? received =
+            command.TargetModifiers.ReceivedHitSkillProfile;
+        if (received is not null)
+        {
+            bundles.Add(new SkillGrantBundle(
+                target.Id,
+                SkillGrantSourceKind.CombatHit,
+                resolution.ActionId + ":received:" + received.ProfileId,
+                command.Tick,
+                new[]
+                {
+                    new SkillGrant(
+                        AgentSkillCatalog.Defense,
+                        received.DefenseGrantUnits),
+                }));
         }
 
         ShieldSkillProfile? shield = command.TargetModifiers.ShieldSkillProfile;
@@ -201,6 +218,27 @@ public sealed class ResolveCombatAttackHandler
                 command.ActionId + ":weapon:" + command.WeaponProfileId,
                 command.Tick,
                 new[] { new SkillGrant(weapon.SkillId, weapon.HitGrantUnits) }));
+            if (validation.IsFailure)
+            {
+                return validation;
+            }
+        }
+
+        CombatDefenseSkillProfile? received =
+            command.TargetModifiers.ReceivedHitSkillProfile;
+        if (received is not null)
+        {
+            Result validation = _skillGrants.Validate(new SkillGrantBundle(
+                target.Id,
+                SkillGrantSourceKind.CombatHit,
+                command.ActionId + ":received:" + received.ProfileId,
+                command.Tick,
+                new[]
+                {
+                    new SkillGrant(
+                        AgentSkillCatalog.Defense,
+                        received.DefenseGrantUnits),
+                }));
             if (validation.IsFailure)
             {
                 return validation;
@@ -275,7 +313,9 @@ public sealed class ResolveCombatAttackHandler
             modifiers.Evasion,
             modifiers.Armor,
             modifiers.BlockChance,
-            modifiers.BlockValue);
+            modifiers.BlockValue,
+            modifiers.DamageMultiplier,
+            modifiers.DamageReduction);
     }
 }
 }

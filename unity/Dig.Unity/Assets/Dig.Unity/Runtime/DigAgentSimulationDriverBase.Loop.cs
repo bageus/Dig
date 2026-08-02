@@ -236,11 +236,15 @@ namespace Dig.Unity
                 agents,
                 movementDuration,
                 AgentSession.LoadMovementModes());
+            AgentRenderer.RenderCombatHealthBars(
+                AgentSession.LoadResidentCombatHealthBars(),
+                Camera.main);
             AgentRenderer.SynchronizeProductionWaitOffsets(
                 TerrainSession.LoadProductionWaitOffsets());
             RefreshEquipmentVisuals();
             CreatureRenderer!.Render(
-                TerrainSession.LoadLivingMaterialCreatures(),
+                AgentSession.LoadCreatures(
+                    TerrainSession.LoadLivingMaterialCreatures()),
                 Camera.main,
                 movementDuration);
             MushroomRenderer!.Render(TerrainSession!.LoadMushrooms());

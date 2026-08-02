@@ -73,7 +73,8 @@ public sealed class WeaponProfile
         long cooldownTicks,
         CombatStatusDefinition? statusOnHit = null,
         CombatSkillProfile? skillProfile = null,
-        CombatAttackSpatialMode spatialMode = CombatAttackSpatialMode.Melee)
+        CombatAttackSpatialMode spatialMode = CombatAttackSpatialMode.Melee,
+        int maximumHitChance = 10_000)
     {
         if (id.IsEmpty)
         {
@@ -102,6 +103,8 @@ public sealed class WeaponProfile
             throw new ArgumentOutOfRangeException(nameof(spatialMode));
         }
 
+        ValidateChance(maximumHitChance, nameof(maximumHitChance));
+
         Id = id;
         MinimumRange = minimumRange;
         MaximumRange = maximumRange;
@@ -112,6 +115,7 @@ public sealed class WeaponProfile
         StatusOnHit = statusOnHit;
         SkillProfile = skillProfile;
         SpatialMode = spatialMode;
+        MaximumHitChance = maximumHitChance;
     }
 
     public WeaponProfileId Id { get; }
@@ -124,6 +128,7 @@ public sealed class WeaponProfile
     public CombatStatusDefinition? StatusOnHit { get; }
     public CombatSkillProfile? SkillProfile { get; }
     public CombatAttackSpatialMode SpatialMode { get; }
+    public int MaximumHitChance { get; }
 
     private static void ValidateChance(int chance, string parameterName)
     {
@@ -132,55 +137,6 @@ public sealed class WeaponProfile
             throw new ArgumentOutOfRangeException(parameterName);
         }
     }
-}
-
-public sealed class CombatSkillProfile
-{
-    public CombatSkillProfile(AgentSkillId skillId, int hitGrantUnits)
-    {
-        if (skillId != AgentSkillCatalog.OneHandedCombat
-            && skillId != AgentSkillCatalog.TwoHandedCombat
-            && skillId != AgentSkillCatalog.RangedCombat
-            && skillId != AgentSkillCatalog.UnarmedCombat)
-        {
-            throw new ArgumentException(
-                "A weapon profile requires an offensive combat skill.",
-                nameof(skillId));
-        }
-
-        if (hitGrantUnits <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(hitGrantUnits));
-        }
-
-        SkillId = skillId;
-        HitGrantUnits = hitGrantUnits;
-    }
-
-    public AgentSkillId SkillId { get; }
-    public int HitGrantUnits { get; }
-}
-
-public sealed class ShieldSkillProfile
-{
-    public ShieldSkillProfile(string profileId, int defenseGrantUnits)
-    {
-        if (string.IsNullOrWhiteSpace(profileId))
-        {
-            throw new ArgumentException("Shield skill profile id is required.", nameof(profileId));
-        }
-
-        if (defenseGrantUnits <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(defenseGrantUnits));
-        }
-
-        ProfileId = profileId.Trim();
-        DefenseGrantUnits = defenseGrantUnits;
-    }
-
-    public string ProfileId { get; }
-    public int DefenseGrantUnits { get; }
 }
 
 public sealed class WeaponCatalog
@@ -231,7 +187,9 @@ public sealed class CombatantSnapshot
         int evasion,
         int armor,
         int blockChance,
-        int blockValue)
+        int blockValue,
+        int damageMultiplier = CombatSkillScalingPolicy.BasisPoints,
+        int damageReduction = 0)
     {
         if (id.IsEmpty)
         {
@@ -256,6 +214,13 @@ public sealed class CombatantSnapshot
             throw new ArgumentOutOfRangeException(nameof(blockValue));
         }
 
+        CombatSkillScalingPolicy.ValidateDamageMultiplier(
+            damageMultiplier,
+            nameof(damageMultiplier));
+        CombatSkillScalingPolicy.ValidateReduction(
+            damageReduction,
+            nameof(damageReduction));
+
         Id = id;
         FactionId = factionId;
         Position = position;
@@ -266,6 +231,8 @@ public sealed class CombatantSnapshot
         Armor = armor;
         BlockChance = blockChance;
         BlockValue = blockValue;
+        DamageMultiplier = damageMultiplier;
+        DamageReduction = damageReduction;
     }
 
     public EntityId Id { get; }
@@ -278,6 +245,8 @@ public sealed class CombatantSnapshot
     public int Armor { get; }
     public int BlockChance { get; }
     public int BlockValue { get; }
+    public int DamageMultiplier { get; }
+    public int DamageReduction { get; }
 
     private static void ValidateChance(int value, string parameterName)
     {
