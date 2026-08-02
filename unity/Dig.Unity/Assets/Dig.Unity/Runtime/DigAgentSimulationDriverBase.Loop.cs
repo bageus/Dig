@@ -63,6 +63,8 @@ namespace Dig.Unity
             string? selectedBuildingId = BuildingRenderer!.SelectedBuildingId;
             IReadOnlyList<AgentViewModel> before = AgentSession!.LoadView();
             long nextTick = checked(AgentSession.Tick + 1);
+            IReadOnlyDictionary<EntityId, EntityId> activeResidentTasks =
+                new Dictionary<EntityId, EntityId>();
             IReadOnlyList<string> manualMovementIds =
                 AgentSession.ActiveManualTunnelResidentIds;
             Result result = TerrainSession!.InterruptForManualMovement(
@@ -88,6 +90,8 @@ namespace Dig.Unity
 
             if (result.IsSuccess)
             {
+                activeResidentTasks =
+                    TerrainSession.CaptureActiveResidentTaskAssignments();
                 result = TerrainSession.InterruptUnsupportedStationaryActions(nextTick);
             }
 
@@ -182,6 +186,16 @@ namespace Dig.Unity
             if (result.IsSuccess)
             {
                 result = TerrainSession.AdvanceBuildingPacking(AgentSession.Tick, agents);
+            }
+
+            if (result.IsSuccess)
+            {
+                IReadOnlyList<EntityId> completedResidents =
+                    TerrainSession.ResolveCompletedResidentTasks(activeResidentTasks);
+                result = AgentSession.RecordCompletedResidentTasks(
+                    completedResidents,
+                    AgentSession.Tick);
+                agents = AgentSession.LoadView();
             }
 
             if (result.IsSuccess)

@@ -116,6 +116,10 @@ public sealed partial class AgentState
         {
             _activeAction = null;
             Raise(new AgentActionCompleted(tick, Id, completedIntent));
+            if (completedIntent == AgentIntentKind.PlayerOrder)
+            {
+                RecordTaskCompletionCore("player_order_action_completed", tick);
+            }
         }
 
         return Result.Success();
@@ -195,6 +199,28 @@ public sealed partial class AgentState
             Raise(new AgentActionCompleted(tick, Id, completedIntent));
         }
 
+        return Result.Success();
+    }
+
+    public Result InterruptActiveAction(string reason, long tick)
+    {
+        ValidateTick(tick);
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new ArgumentException("Action interruption reason is required.", nameof(reason));
+        }
+
+        if (_activeAction is null)
+        {
+            return Result.Success();
+        }
+
+        AgentIntentKind interrupted = _activeAction.IntentKind;
+        _activeAction = null;
+        LastActionBlockReason = reason.Trim();
+        LastActionSwitchTick = tick;
+        Version = checked(Version + 1);
+        Raise(new AgentActionBlocked(tick, Id, interrupted, LastActionBlockReason));
         return Result.Success();
     }
 

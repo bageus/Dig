@@ -16,6 +16,7 @@ public sealed class AgentAutonomySystem : ISimulationSystem
     private readonly AgentDecisionSystem _decisionSystem;
     private readonly AgentBehaviorPolicy _policy;
     private readonly Func<AgentState, bool> _isEligible;
+    private readonly Func<AgentState, bool> _canExecuteActions;
     private readonly IAgentIntentExecutionOverride? _executionOverride;
 
     public AgentAutonomySystem(
@@ -27,7 +28,8 @@ public sealed class AgentAutonomySystem : ISimulationSystem
         int order = 300,
         int intervalTicks = 1,
         Func<AgentState, bool>? isEligible = null,
-        IAgentIntentExecutionOverride? executionOverride = null)
+        IAgentIntentExecutionOverride? executionOverride = null,
+        Func<AgentState, bool>? canExecuteActions = null)
     {
         if (intervalTicks <= 0)
         {
@@ -42,6 +44,7 @@ public sealed class AgentAutonomySystem : ISimulationSystem
             ?? throw new ArgumentNullException(nameof(decisionSystem));
         _policy = policy ?? throw new ArgumentNullException(nameof(policy));
         _isEligible = isEligible ?? (_ => true);
+        _canExecuteActions = canExecuteActions ?? (_ => true);
         _executionOverride = executionOverride;
         Order = order;
         IntervalTicks = intervalTicks;
@@ -55,6 +58,16 @@ public sealed class AgentAutonomySystem : ISimulationSystem
 
     public AgentTickReport? LastReport { get; private set; }
 
+    public bool IsTaskTransitionPaused(AgentState agent, long tick)
+    {
+        if (agent is null)
+        {
+            throw new ArgumentNullException(nameof(agent));
+        }
+
+        return agent.IsTaskTransitionPaused(_policy, tick);
+    }
+
     public void Execute(SimulationContext context)
     {
         List<AgentTickDecision> decisions = new List<AgentTickDecision>();
@@ -67,6 +80,16 @@ public sealed class AgentAutonomySystem : ISimulationSystem
 
             Require(agent.AdvanceNeeds(_policy, context.Tick));
             if (!agent.IsAlive)
+            {
+                SaveAndPublish(agent);
+                continue;
+            }
+
+            bool gateAllowsActions = _executionOverride is not IAgentActionExecutionGate gate
+                || gate.CanExecuteActions(agent, context.Tick);
+            // Passive needs continue to advance during combat, but food bites,
+            // sleep/rest intervals and schedule actions are exclusive with combat.
+            if (!gateAllowsActions || !_canExecuteActions(agent))
             {
                 SaveAndPublish(agent);
                 continue;

@@ -67,6 +67,30 @@ public sealed class AgentActionCompleted : IDomainEvent
     public AgentIntentKind IntentKind { get; }
 }
 
+public sealed class AgentTaskTransitionPauseStarted : IDomainEvent
+{
+    public AgentTaskTransitionPauseStarted(
+        long tick,
+        EntityId agentId,
+        string reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new ArgumentException("Task completion reason is required.", nameof(reason));
+        }
+
+        Tick = tick;
+        AgentId = agentId;
+        Reason = reason.Trim();
+    }
+
+    public long Tick { get; }
+
+    public EntityId AgentId { get; }
+
+    public string Reason { get; }
+}
+
 public sealed class AgentActionBlocked : IDomainEvent
 {
     public AgentActionBlocked(

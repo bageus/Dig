@@ -58,6 +58,8 @@ public sealed partial class AgentState : AggregateRoot
 
     public long LastActionSwitchTick { get; private set; } = -1;
 
+    public long LastTaskCompletionTick { get; private set; } = -1;
+
     public AgentDecision? LastDecision { get; private set; }
 
     public string? LastActionBlockReason { get; private set; }
@@ -97,6 +99,44 @@ public sealed partial class AgentState : AggregateRoot
         _playerOrder = null;
         Version = checked(Version + 1);
         Raise(new AgentPlayerOrderChanged(tick, Id, null));
+        return Result.Success();
+    }
+
+    public bool IsTaskTransitionPaused(AgentBehaviorPolicy policy, long tick)
+    {
+        if (policy is null)
+        {
+            throw new ArgumentNullException(nameof(policy));
+        }
+
+        ValidateTick(tick);
+        return LastTaskCompletionTick >= 0
+            && tick - LastTaskCompletionTick < policy.Utility.DecisionCooldownTicks;
+    }
+
+    public Result RecordTaskCompletion(string reason, long tick)
+    {
+        ValidateTick(tick);
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new ArgumentException("Task completion reason is required.", nameof(reason));
+        }
+
+        if (!IsAlive)
+        {
+            return Result.Failure(AgentErrors.AgentDead);
+        }
+
+        if (tick < LastTaskCompletionTick)
+        {
+            return Result.Failure(AgentErrors.TickNotIncreasing);
+        }
+
+        if (RecordTaskCompletionCore(reason, tick))
+        {
+            Version = checked(Version + 1);
+        }
+
         return Result.Success();
     }
 
@@ -149,7 +189,23 @@ public sealed partial class AgentState : AggregateRoot
             _traits.CreateSnapshot(),
             Position,
             _skills.TryCreateProgressionSnapshot(),
-            AutomaticPlanningEnabled);
+            AutomaticPlanningEnabled,
+            LastTaskCompletionTick);
+    }
+
+    private bool RecordTaskCompletionCore(string reason, long tick)
+    {
+        if (LastTaskCompletionTick == tick)
+        {
+            return false;
+        }
+
+        LastTaskCompletionTick = tick;
+        Raise(new AgentTaskTransitionPauseStarted(
+            tick,
+            Id,
+            reason.Trim()));
+        return true;
     }
 
     private void ExpirePlayerOrder(long tick)

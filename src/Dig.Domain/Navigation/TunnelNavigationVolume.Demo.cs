@@ -94,8 +94,11 @@ public sealed partial class TunnelNavigationVolume
         const int nearestDepthZ = 0;
         int caveFloorY = surfaceY + 4;
         int caveCeilingY = caveFloorY - 3;
-        int surfaceMinX = 1;
-        int surfaceMaxX = width - 2;
+        // The surface is open and supported through both world edges. Leaving
+        // x=0/x=width-1 solid created climbable end caps beside the platform and
+        // allowed movement presentation to resolve an airborne climbing posture.
+        int surfaceMinX = 0;
+        int surfaceMaxX = width - 1;
         int shaftX = width / 2;
         int caveWidth = Math.Max(4, Math.Min(6, width - 4));
         int caveMinX = Math.Max(
