@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dig.Application.Jobs;
 using Dig.Application.Tunnels;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
@@ -23,7 +24,7 @@ internal sealed partial class DigTerrainWorkSession
     private InMemoryTunnelInfrastructureRepository? _tunnelInfrastructure;
     private SynchronizeTunnelTopologyHandler? _tunnelTopologySync;
     private SynchronizeTunnelAutomaticSupportHandler? _tunnelSupportSync;
-    private SynchronizeTunnelAutomaticJunctionTrimHandler? _tunnelTrimSync;
+    private SynchronizeTunnelJunctionTrimPlacementHandler? _tunnelTrimPlacementSync;
     private CompleteTunnelAutomaticWorkHandler? _tunnelWorkCompletion;
     private Action<TunnelInfrastructureVisualVolumeViewModel>? _tunnelVisualSink;
     private ulong _tunnelAutomaticJobSequence = 1UL;
@@ -112,26 +113,12 @@ internal sealed partial class DigTerrainWorkSession
             }
         }
 
-        snapshot = _tunnelInfrastructure.Get().CaptureSnapshot();
-        for (int index = 0;
-            index < snapshot.PendingJunctionStoneTrimTargets.Count;
-            index++)
+        Result<TunnelJunctionTrimPlacementSyncResult> placementOnly =
+            _tunnelTrimPlacementSync!.Handle(
+                new SynchronizeTunnelJunctionTrimPlacementCommand(tick));
+        if (placementOnly.IsFailure)
         {
-            TunnelJunctionStoneTrimTargetSnapshot target =
-                snapshot.PendingJunctionStoneTrimTargets[index];
-            Result<TunnelAutomaticJunctionTrimSyncResult> trim =
-                _tunnelTrimSync!.Handle(
-                    new SynchronizeTunnelAutomaticJunctionTrimCommand(
-                        target.Cell,
-                        ResolveTrimJobId(target),
-                        completedBuildingCells,
-                        revealedCells,
-                        reachable,
-                        tick));
-            if (trim.IsFailure)
-            {
-                return Result.Failure(trim.Error!);
-            }
+            return Result.Failure(placementOnly.Error!);
         }
 
         SynchronizeTunnelAutomaticCandidates(agents);
@@ -156,7 +143,8 @@ internal sealed partial class DigTerrainWorkSession
 
         JobSnapshot[] automaticJobs = _jobRepository.Get().GetAll()
             .Where(job => !job.IsTerminal
-                && job.Definition is TunnelAutomaticWorkJobDefinition)
+                && job.Definition is TunnelAutomaticWorkJobDefinition definition
+                && definition.Kind == TunnelAutomaticWorkKind.WoodenSupport)
             .OrderBy(job => job.Id.ToString(), StringComparer.Ordinal)
             .ToArray();
         for (int index = 0; index < automaticJobs.Length; index++)
@@ -288,17 +276,6 @@ internal sealed partial class DigTerrainWorkSession
         return existing?.Id ?? NextTunnelAutomaticJobId();
     }
 
-    private EntityId ResolveTrimJobId(TunnelJunctionStoneTrimTargetSnapshot target)
-    {
-        JobSnapshot? existing = _jobRepository.Get().GetAll()
-            .FirstOrDefault(job => !job.IsTerminal
-                && job.Definition is TunnelAutomaticWorkJobDefinition definition
-                && definition.Kind == TunnelAutomaticWorkKind.JunctionStoneTrim
-                && definition.SegmentId == target.OwnerSegmentId
-                && definition.TargetCell == target.Cell);
-        return existing?.Id ?? NextTunnelAutomaticJobId();
-    }
-
     private EntityId NextTunnelAutomaticJobId()
     {
         return EntityId.Parse(
@@ -334,7 +311,7 @@ internal sealed partial class DigTerrainWorkSession
             _inventoryRepository,
             _jobRepository,
             _journal);
-        _tunnelTrimSync = new SynchronizeTunnelAutomaticJunctionTrimHandler(
+        _tunnelTrimPlacementSync = new SynchronizeTunnelJunctionTrimPlacementHandler(
             _tunnelInfrastructure,
             _inventoryRepository,
             _jobRepository,

@@ -9,14 +9,18 @@ internal sealed class DigRoomInfrastructurePresentationDriver : MonoBehaviour
 {
     private DigTerrainWorkSession? _session;
     private DigRoomInfrastructureRenderer? _renderer;
+    private Func<bool>? _planningVisibility;
     private long _lastSignature = long.MinValue;
 
     internal void Initialize(
         DigTerrainWorkSession session,
-        DigRoomInfrastructureRenderer renderer)
+        DigRoomInfrastructureRenderer renderer,
+        Func<bool> planningVisibility)
     {
         _session = session ?? throw new ArgumentNullException(nameof(session));
         _renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
+        _planningVisibility = planningVisibility
+            ?? throw new ArgumentNullException(nameof(planningVisibility));
         Refresh(force: true);
     }
 
@@ -27,11 +31,12 @@ internal sealed class DigRoomInfrastructurePresentationDriver : MonoBehaviour
 
     private void Refresh(bool force)
     {
-        if (_session == null || _renderer == null)
+        if (_session == null || _renderer == null || _planningVisibility == null)
         {
             return;
         }
 
+        _renderer.SetPlanningOverlayVisibility(_planningVisibility());
         var rooms = _session.LoadRoomInfrastructurePresentation();
         long signature = 17;
         for (int index = 0; index < rooms.Count; index++)

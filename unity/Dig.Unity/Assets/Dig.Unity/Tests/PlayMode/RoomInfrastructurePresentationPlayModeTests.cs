@@ -23,7 +23,7 @@ public sealed class RoomInfrastructurePresentationPlayModeTests
     }
 
     [Test]
-    public void Marker_is_clickable_progress_is_collider_free_and_removal_is_rebuildable()
+    public void Planning_visibility_hides_marker_but_keeps_physical_progress()
     {
         _root = new GameObject("Room presentation test");
         DigRoomInfrastructureRenderer renderer =
@@ -43,13 +43,32 @@ public sealed class RoomInfrastructurePresentationPlayModeTests
         DigRoomInfrastructureMarkerVisual marker =
             _root.GetComponentInChildren<DigRoomInfrastructureMarkerVisual>();
         Assert.That(marker, Is.Not.Null);
+        Assert.That(marker.gameObject.activeSelf, Is.True);
         Assert.That(marker.GetComponent<Collider>().enabled, Is.True);
         Assert.That(renderer.SelectById(initial.Id), Is.SameAs(marker));
         Assert.That(renderer.SelectedModel?.Id, Is.EqualTo(initial.Id));
         Collider[] enabled = _root.GetComponentsInChildren<Collider>(true)
-            .Where(value => value.enabled)
+            .Where(value => value.enabled && value.gameObject.activeInHierarchy)
             .ToArray();
         Assert.That(enabled.Length, Is.EqualTo(1));
+
+        renderer.SetPlanningOverlayVisibility(visible: false);
+
+        Assert.That(renderer.PlanningOverlaysVisible, Is.False);
+        Assert.That(marker.gameObject.activeSelf, Is.False);
+        Transform[] physicalProgress = _root.GetComponentsInChildren<Transform>(true)
+            .Where(value => value.name.StartsWith(
+                "Room Progress ",
+                StringComparison.Ordinal))
+            .ToArray();
+        Assert.That(physicalProgress.Length, Is.EqualTo(2));
+        Assert.That(physicalProgress.All(value => value.gameObject.activeSelf), Is.True);
+        Assert.That(renderer.SelectedModel?.Id, Is.EqualTo(initial.Id));
+
+        renderer.SetPlanningOverlayVisibility(visible: true);
+
+        Assert.That(renderer.PlanningOverlaysVisible, Is.True);
+        Assert.That(marker.gameObject.activeSelf, Is.True);
 
         renderer.Render(new[] { CreateModel(
             version: 4,
