@@ -8,7 +8,7 @@ namespace Dig.Tests
 public sealed class RoomInfrastructureUnityPresentationContractTests
 {
     [Fact]
-    public void Runtime_wires_marker_hud_commands_visual_progress_and_input_shielding()
+    public void Runtime_wires_planning_only_marker_hud_progress_and_input_shielding()
     {
         string runtime = ResolveRuntimeRoot();
         string bootstrap = Read(runtime, "DigUnityBootstrap.cs");
@@ -26,12 +26,11 @@ public sealed class RoomInfrastructureUnityPresentationContractTests
         string session = Read(runtime, "DigTerrainRoomInfrastructure.Presentation.cs");
 
         Assert.Contains("DigRoomInfrastructurePresentationDriver", bootstrap);
-        Assert.Contains(
-            "roomPresentation.Initialize(terrainSession, roomInfrastructureRenderer)",
-            bootstrap);
+        Assert.Contains("() => interaction.IsRoomPlanningOverlayVisible", bootstrap);
         Assert.Contains("SetRoomInfrastructureRenderer", bootstrap);
         Assert.Contains("SynchronizeRoomInfrastructureRuntime", bootstrap);
         Assert.Contains("LoadRoomInfrastructurePresentation", driver);
+        Assert.Contains("SetPlanningOverlayVisibility(_planningVisibility())", driver);
         Assert.Contains("_renderer.Render(rooms)", driver);
         Assert.True(
             interaction.IndexOf(
@@ -40,6 +39,11 @@ public sealed class RoomInfrastructureUnityPresentationContractTests
             < interaction.IndexOf(
                 "TryResolveAgentHit(hits",
                 StringComparison.Ordinal));
+        Assert.Contains("IsRoomPlanningOverlayVisible", roomInput);
+        Assert.Contains("_agentRenderer.SelectedCount == 0", roomInput);
+        Assert.Contains("_buildingRenderer.SelectedBuildingId == null", roomInput);
+        Assert.Contains("_jobRenderer.SelectedJobId == null", roomInput);
+        Assert.Contains("!IsRoomPlanningOverlayVisible", roomInput);
         Assert.Contains("_roomInfrastructureRenderer.Select(marker)", roomInput);
         Assert.Contains("return true;", roomInput);
         Assert.Contains("ClearRoomInfrastructureSelection();", buildingBox);
@@ -54,6 +58,9 @@ public sealed class RoomInfrastructureUnityPresentationContractTests
         Assert.Contains("CancelRoomUpgrade(", session);
         Assert.Contains("Collider collider = piece.GetComponent<Collider>();", visuals);
         Assert.Contains("collider.enabled = false;", visuals);
+        Assert.Contains("SetPlanningOverlayVisibility", renderer);
+        Assert.Contains("marker.gameObject.SetActive(visible)", renderer);
+        Assert.DoesNotContain("_progress.Values", renderer);
         Assert.Contains("TryGetMarker", renderer);
     }
 
