@@ -28,6 +28,7 @@ public sealed class ResidentExcavationFeedbackContractTests
     [Fact]
     public void Mining_faces_the_target_and_vertical_movement_uses_a_climb_pose()
     {
+        string root = FindRepositoryRoot();
         string runtime = RuntimeRoot();
         string equipment = File.ReadAllText(Path.Combine(
             runtime,
@@ -38,6 +39,15 @@ public sealed class ResidentExcavationFeedbackContractTests
         string visual = File.ReadAllText(Path.Combine(
             runtime,
             "DigAgentVisual.WorkFacing.cs"));
+        string handTools = File.ReadAllText(Path.Combine(
+            runtime,
+            "DigAgentVisual.HandTools.cs"));
+        string presenter = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "Dig.Presentation.Abstractions",
+            "Jobs",
+            "JobOverlayPresenter.cs"));
         string movement = File.ReadAllText(Path.Combine(
             runtime,
             "DigAgentVisual.Movement.cs"));
@@ -51,7 +61,13 @@ public sealed class ResidentExcavationFeedbackContractTests
         Assert.Contains("AgentSession.TunnelVolume", equipment);
         Assert.Contains("WorldSession.LoadSnapshot()", equipment);
         Assert.Contains("JobStageKind.PerformWork", facing);
-        Assert.Contains("JobToolKind.Mining", facing);
+        Assert.Contains(
+            "DigJobDefinition => ResidentWorkToolVisualKind.Pickaxe",
+            presenter);
+        Assert.Contains(
+            "SpatialDigJobDefinition => ResidentWorkToolVisualKind.Pickaxe",
+            presenter);
+        Assert.Contains("ResidentWorkToolVisualKind.Pickaxe", handTools);
         Assert.Contains("SetWorkTarget", facing);
         Assert.Contains("RequiresClimbingWorkPose", facing);
         Assert.Contains("!isNonClimbingWork && !hasFullSupport", facing);

@@ -32,8 +32,10 @@ namespace Dig.Unity
 
             Dictionary<string, CellId> workTargets =
                 new Dictionary<string, CellId>(StringComparer.Ordinal);
+            Dictionary<string, ResidentWorkToolVisualKind> workTools =
+                new Dictionary<string, ResidentWorkToolVisualKind>(StringComparer.Ordinal);
             HashSet<string> nonClimbingWorkers = new HashSet<string>(StringComparer.Ordinal);
-            HashSet<string> barrelWorkers = new HashSet<string>(StringComparer.Ordinal);
+            HashSet<string> attackWorkers = new HashSet<string>(StringComparer.Ordinal);
             HashSet<string> productionWorkers =
                 new HashSet<string>(StringComparer.Ordinal);
             for (int index = 0; index < jobs.Count; index++)
@@ -45,27 +47,30 @@ namespace Dig.Unity
                     continue;
                 }
 
+                string residentId = job.AssignedAgentId!;
                 workTargets.Add(
-                    job.AssignedAgentId!,
+                    residentId,
                     new CellId(
                         job.TargetX!.Value,
                         job.TargetY!.Value,
                         job.TargetZ!.Value));
+                workTools.Add(residentId, job.WorkToolVisualKind);
                 if (job.IsMushroomChop
                     || job.IsBarrelAttack
-                    || job.IsProductionWork)
+                    || job.IsProductionWork
+                    || job.WorkToolVisualKind == ResidentWorkToolVisualKind.Hammer)
                 {
-                    nonClimbingWorkers.Add(job.AssignedAgentId!);
+                    nonClimbingWorkers.Add(residentId);
                 }
 
                 if (job.IsBarrelAttack)
                 {
-                    barrelWorkers.Add(job.AssignedAgentId!);
+                    attackWorkers.Add(residentId);
                 }
 
                 if (job.IsProductionWork)
                 {
-                    productionWorkers.Add(job.AssignedAgentId!);
+                    productionWorkers.Add(residentId);
                 }
             }
 
@@ -75,6 +80,9 @@ namespace Dig.Unity
             foreach (KeyValuePair<string, DigAgentVisual> pair in _agents)
             {
                 bool hasToolWork = workTargets.TryGetValue(pair.Key, out CellId target);
+                ResidentWorkToolVisualKind workTool = hasToolWork
+                    ? workTools[pair.Key]
+                    : ResidentWorkToolVisualKind.None;
                 CellId current = new CellId(
                     pair.Value.Model.CellX,
                     pair.Value.Model.CellY,
@@ -89,7 +97,7 @@ namespace Dig.Unity
                     nonClimbingWorkers.Contains(pair.Key),
                     hasFullSupport,
                     tunnelVolume.Contains(current));
-                bool barrelAttack = hasToolWork && barrelWorkers.Contains(pair.Key);
+                bool attackWork = hasToolWork && attackWorkers.Contains(pair.Key);
                 bool productionWork = hasToolWork
                     && productionWorkers.Contains(pair.Key);
                 CellId? poseTarget = hasToolWork
@@ -98,11 +106,14 @@ namespace Dig.Unity
                 pair.Value.SetWorkTarget(
                     poseTarget,
                     climbingWork,
+                    workTool,
                     animateToolWork: hasToolWork
-                        && !barrelAttack
-                        && !productionWork,
-                    animateAttackWork: barrelAttack,
-                    animateBuildWork: productionWork);
+                        && !attackWork
+                        && !productionWork
+                        && workTool != ResidentWorkToolVisualKind.Hammer,
+                    animateAttackWork: attackWork,
+                    animateBuildWork: productionWork
+                        || workTool == ResidentWorkToolVisualKind.Hammer);
             }
         }
 
@@ -111,16 +122,12 @@ namespace Dig.Unity
             bool hasFullSupport,
             bool isOpenTunnelCell)
         {
-            // World support remains authoritative after a job becomes terminal. An
-            // unsupported resident in an open tunnel keeps the stationary climbing
-            // posture until another route starts or a supported landing is reached.
             return !isNonClimbingWork && !hasFullSupport && isOpenTunnelCell;
         }
 
         private static bool IsActiveToolWork(JobOverlayViewModel job)
         {
-            bool supportedTool = job.PreferredToolKind == JobToolKind.Mining
-                || job.IsMushroomChop
+            bool supportedTool = job.WorkToolVisualKind != ResidentWorkToolVisualKind.None
                 || job.IsBarrelAttack
                 || job.IsProductionWork;
             return job.AssignedAgentId != null

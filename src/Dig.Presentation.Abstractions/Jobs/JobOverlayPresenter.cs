@@ -124,6 +124,24 @@ public sealed class JobOverlayPresenter
             targetY = production.WorkPosition.Y;
             targetZ = production.WorkPosition.Z;
         }
+        else if (job.Definition is BuildingWorkJobDefinition buildingWork)
+        {
+            targetX = buildingWork.WorkPosition.X;
+            targetY = buildingWork.WorkPosition.Y;
+            targetZ = buildingWork.WorkPosition.Z;
+        }
+        else if (job.Definition is BuildingBoxAssemblyJobDefinition assembly)
+        {
+            targetX = assembly.WorkPosition.X;
+            targetY = assembly.WorkPosition.Y;
+            targetZ = assembly.WorkPosition.Z;
+        }
+        else if (job.Definition is BuildingBoxPackingJobDefinition packing)
+        {
+            targetX = packing.WorkPosition.X;
+            targetY = packing.WorkPosition.Y;
+            targetZ = packing.WorkPosition.Z;
+        }
 
         return new JobOverlayViewModel(
             job.Id.ToString(),
@@ -145,7 +163,30 @@ public sealed class JobOverlayPresenter
             targetZ,
             isMushroomChop: job.Definition is MushroomChopJobDefinition,
             isBarrelAttack: job.Definition is BarrelAttackJobDefinition,
-            isProductionWork: job.Definition is ProductionWorkJobDefinition);
+            isProductionWork: job.Definition is ProductionWorkJobDefinition,
+            workToolVisualKind: ResolveWorkTool(job));
+    }
+
+    private static ResidentWorkToolVisualKind ResolveWorkTool(JobSnapshot job)
+    {
+        if (job.Status != JobStatus.InProgress
+            || job.Stage != JobStageKind.PerformWork
+            || !job.AssignedAgentId.HasValue)
+        {
+            return ResidentWorkToolVisualKind.None;
+        }
+
+        return job.Definition switch
+        {
+            DigJobDefinition => ResidentWorkToolVisualKind.Pickaxe,
+            SpatialDigJobDefinition => ResidentWorkToolVisualKind.Pickaxe,
+            MushroomChopJobDefinition => ResidentWorkToolVisualKind.Axe,
+            BuildingWorkJobDefinition { Kind: BuildingWorkKind.Construction }
+                => ResidentWorkToolVisualKind.Hammer,
+            BuildingBoxAssemblyJobDefinition => ResidentWorkToolVisualKind.Hammer,
+            BuildingBoxPackingJobDefinition => ResidentWorkToolVisualKind.Hammer,
+            _ => ResidentWorkToolVisualKind.None,
+        };
     }
 
     private static IReadOnlyList<JobActionViewModel> MapActions(
