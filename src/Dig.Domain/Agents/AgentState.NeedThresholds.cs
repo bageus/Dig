@@ -1,4 +1,5 @@
 using Dig.Domain.Core;
+using Dig.Domain.Runtime;
 
 namespace Dig.Domain.Agents
 {
@@ -23,7 +24,7 @@ public sealed partial class AgentState
         AgentNeedsSnapshot previous = _needs.CreateSnapshot();
         _needs.AdvancePassive(
             policy,
-            Schedule.TicksPerDay,
+            GameTimeCadence.TicksPerDay,
             tick,
             alertnessRecoveryCommitted);
         RaiseNeedThresholdCrossings(previous, _needs.CreateSnapshot(), tick);
