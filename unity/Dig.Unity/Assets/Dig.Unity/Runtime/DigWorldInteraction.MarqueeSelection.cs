@@ -199,6 +199,7 @@ namespace Dig.Unity
                 }
             }
 
+            ClearRoomInfrastructureSelection();
             _selectedCell = null;
             _renderer!.Select(null);
             _jobRenderer!.Select(null);
