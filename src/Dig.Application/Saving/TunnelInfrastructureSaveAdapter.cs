@@ -150,8 +150,9 @@ public static class TunnelInfrastructureSaveAdapter
     public static ulong ResolveLegacyNextSequence(JobsSaveData? jobs)
     {
         ulong next = 1UL;
-        IEnumerable<JobSaveData> savedJobs = jobs?.Jobs
-            ?? Array.Empty<JobSaveData>();
+        IEnumerable<JobSaveData> savedJobs = jobs == null
+            ? Array.Empty<JobSaveData>()
+            : jobs.Jobs;
         foreach (JobSaveData job in savedJobs)
         {
             JobDefinitionSaveData? definition = job?.Definition;
