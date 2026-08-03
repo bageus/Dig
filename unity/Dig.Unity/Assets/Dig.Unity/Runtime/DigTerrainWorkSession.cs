@@ -134,6 +134,10 @@ internal sealed partial class DigTerrainWorkSession
             {
                 result = AdvanceRoomUpgradeAtTarget(job, agent, tick);
             }
+            else if (job.Definition is TunnelManualWorkJobDefinition)
+            {
+                result = AdvanceTunnelManualWork(job, agent, tick);
+            }
             else if (job.Definition is TunnelAutomaticWorkJobDefinition)
             {
                 result = AdvanceTunnelAutomaticWork(job, agent, tick);
