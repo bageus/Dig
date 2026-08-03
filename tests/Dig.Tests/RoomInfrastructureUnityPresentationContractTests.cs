@@ -22,11 +22,17 @@ public sealed class RoomInfrastructureUnityPresentationContractTests
         string hudRoom = Read(runtime, "DigGameHudCanvas.RoomInfrastructure.cs");
         string renderer = Read(runtime, "DigRoomInfrastructureRenderer.cs");
         string visuals = Read(runtime, "DigRoomInfrastructureRenderer.Visuals.cs");
+        string driver = Read(runtime, "DigRoomInfrastructurePresentationDriver.cs");
         string session = Read(runtime, "DigTerrainRoomInfrastructure.Presentation.cs");
 
-        Assert.Contains("BindRoomInfrastructurePresentationSink", bootstrap);
+        Assert.Contains("DigRoomInfrastructurePresentationDriver", bootstrap);
+        Assert.Contains(
+            "roomPresentation.Initialize(terrainSession, roomInfrastructureRenderer)",
+            bootstrap);
         Assert.Contains("SetRoomInfrastructureRenderer", bootstrap);
         Assert.Contains("SynchronizeRoomInfrastructureRuntime", bootstrap);
+        Assert.Contains("LoadRoomInfrastructurePresentation", driver);
+        Assert.Contains("_renderer.Render(rooms)", driver);
         Assert.True(
             interaction.IndexOf(
                 "TryHandleRoomInfrastructureMarker(hits, left)",
