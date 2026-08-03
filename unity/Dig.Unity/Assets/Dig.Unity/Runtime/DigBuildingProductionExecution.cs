@@ -81,7 +81,8 @@ internal sealed partial class DigTerrainWorkSession
         InitializeBuildingProductionDemo(
             agents,
             journal,
-            CampfireProductionContent.ProductionMaterialTicks);
+            CampfireProductionContent.ProductionMaterialTicks,
+            CampfireProductionContent.CookingMaterialTicks);
     }
 
     internal void InitializeBuildingProductionDemo(
@@ -89,12 +90,25 @@ internal sealed partial class DigTerrainWorkSession
         InMemoryExecutionJournal journal,
         long materialDurationTicks)
     {
+        InitializeBuildingProductionDemo(
+            agents,
+            journal,
+            materialDurationTicks,
+            materialDurationTicks);
+    }
+
+    private void InitializeBuildingProductionDemo(
+        InMemoryAgentRepository agents,
+        InMemoryExecutionJournal journal,
+        long materialDurationTicks,
+        long cookingDurationTicks)
+    {
         if (agents == null || journal == null)
         {
             throw new ArgumentNullException(nameof(agents));
         }
 
-        if (materialDurationTicks <= 0)
+        if (materialDurationTicks <= 0 || cookingDurationTicks <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(materialDurationTicks));
         }
@@ -110,7 +124,9 @@ internal sealed partial class DigTerrainWorkSession
         ContentValidationResult validated = ProductionContentCatalog.ValidateAndCreate(
             _buildingInventoryRepository.Get().Catalog,
             _buildingBoxCatalog,
-            CampfireProductionContent.CreateRecipes(materialDurationTicks),
+            CampfireProductionContent.CreateRecipes(
+                materialDurationTicks,
+                cookingDurationTicks),
             Array.Empty<TechnologyDefinition>(),
             new[] { CampfireProductionContent.CreateWorkstation() });
         if (!validated.Succeeded || validated.Catalog == null)
