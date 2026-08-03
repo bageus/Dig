@@ -2,7 +2,7 @@
 
 Статус: `APPROVED`; staged package lifecycle, closed package categories, cancel/interruption, save/load и right-side output policy подтверждены.
 
-Tracking issue: [#433](https://github.com/bageus/Dig/issues/433).
+Tracking issues: [#433](https://github.com/bageus/Dig/issues/433), [#609](https://github.com/bageus/Dig/issues/609).
 
 Связанные документы:
 
@@ -28,7 +28,7 @@ Completed workstation производит предметы и BuildingBox че�
 
 ## 3. Основной content
 
-Campfire использует stable IDs `building.campfire`, `building_box.campfire`, `food.grilled_mushroom` и `food.roasted_hamster`. Внутренний запас содержит mushroom cap, mushroom leg, stone и hamster по data-driven capacity/toggle rules. Mushroom cap, mushroom leg и stone начинают с включённой доставкой. Hamster имеет capacity `2`, но его delivery toggle по умолчанию выключен: свободные стартовые животные не резервируются и не забираются supply-системой, пока игрок явно не включит hamster stock. Одна food recipe может производить несколько единиц в одном world stack; resident ingress затем применяет отдельное правило unit-per-slot из resident inventory specification.
+Campfire использует stable IDs `building.campfire`, `building_box.campfire`, `food.grilled_mushroom` и `food.roasted_hamster`. Внутренний запас содержит mushroom cap, mushroom leg, stone и hamster по data-driven capacity/toggle rules. Mushroom cap, mushroom leg и stone начинают с включённой доставкой. Hamster имеет capacity `2`, но его delivery toggle по умолчанию выключен: свободные стартовые животные не резервируются и не забираются supply-системой, пока игрок явно не включит hamster stock. Одна food recipe может записывать несколько единиц в одном package manifest entry; при разрушении закрытой food-коробки каждая единица материализуется отдельным quantity-one world stack. Resident ingress затем применяет отдельное правило unit-per-slot из resident inventory specification.
 
 ## 4. UI и очередь
 
@@ -73,6 +73,8 @@ Campfire использует stable IDs `building.campfire`, `building_box.camp
 - `food`, `weapon` и `tool` являются quantity-one world package entities с сохранённым manifest произведённых item IDs и quantities. Они не подбираются ordinary pickup.
 - Hover по доступной `food`/`weapon`/`tool` при выбранном resident показывает слегка анимированный cursor использования; LMB создаёт один direct use/break command для той же package identity/version.
 - Resident подходит к допустимой соседней work position, одним committed действием ломает коробку, удаляет её interaction target и exactly once материализует весь manifest в прежней world cell.
+- Для package kind `food` quantity каждого manifest entry раскрывается в отдельные world entities: `food.grilled_mushroom x2` создаёт два distinct stack ID с quantity `1`, а не один stack quantity `2`.
+- `weapon` и `tool` сохраняют прежнее правило: один manifest entry создаёт один world stack с quantity entry.
 - Выпавшие contents становятся обычными world item entities и далее используют существующие selection/pickup/use/equipment rules.
 - `WorldItemViewModel.IsInteractive` является authoritative для collider. Unfinished package имеет interaction collider disabled; closed non-building package имеет Use collider и `CanPickup = false`; BuildingBox сохраняет собственный contract.
 
@@ -138,6 +140,8 @@ Forced movement после normal close не меняет уже созданн�
 - `food`, `weapon` и `tool` используют один generic output-package owner и различаются stable package kind/name и manifest.
 - Direct use требует selected resident, живую closed package entity, совпадающую version и reachable work position.
 - Hover highlight, animated use cursor и click обязаны разрешать одну identity/version; один pointer event создаёт не более одной command.
+- Для `food` required output-ID count равен сумме quantities manifest, и каждый generated output имеет quantity `1`.
+- Для `weapon`/`tool` required output-ID count равен числу manifest entries, и quantity каждого entry сохраняется в соответствующем stack.
 - До committed break cancel, route failure, worker removal или interruption не меняют package/manifest. После commit package terminal и не восстанавливается.
 - Несколько stale commands не могут materialize-ить manifest повторно; первый successful commit побеждает.
 
@@ -183,6 +187,8 @@ Domain/Application:
 - forced move удаляет package, теряет consumed materials, освобождает unused reservations, reset-ит progress и оставляет counter/order non-terminal;
 - package close atomically terminal-ит order/output, а production job terminal-ится только после возврата worker к building work position;
 - food/weapon/tool direct use materialize-ит manifest exactly once;
+- `food.grilled_mushroom x2` materialize-ится как два distinct quantity-one world stacks в бывшей package cell;
+- weapon/tool package materialization сохраняет один stack на manifest entry и прежнюю quantity;
 - save/load сохраняет unfinished/closed package entity и active use job.
 
 Unity Play Mode:
@@ -198,7 +204,8 @@ Unity Play Mode:
 - forced move удаляет package, оставляет counter и заново ставит order в ожидание inputs;
 - несколько занятых right-side cells сдвигают package дальше вправо;
 - BuildingBox output использует обычный selection/unpack/pickup contract;
-- food/weapon/tool package имеет animated use cursor, ломается и выпускает обычные world items exactly once.
+- food package имеет animated use cursor, ломается и выпускает каждую manifest quantity отдельным quantity-one world item exactly once;
+- weapon/tool package use сохраняет прежнюю materialization семантику.
 
 ## 11. Журнал решений
 
@@ -216,3 +223,4 @@ Unity Play Mode:
 | 2026-08-02 | Active production сохраняет exclusive craft-position reservation, а concurrent supply не резервирует ту же позицию; один supply batch ограничивается building-level ledger и movement occupancy. | Пользовательский runtime bug report |
 | 2026-08-02 | Решение о concurrent supply отменено: одно building обслуживает один resident; production и refill чередуются, refill имеет приоритет после close+return, demo processing = 1 tick, transient log/workbench и processed carry являются derived presentation. | Пользовательское уточнение runtime workflow |
 | 2026-08-02 | Strict one-unit/one-batch alternation заменена threshold policy: required stock ниже `ceil(capacity/2)` инициирует supply, equality допускает production; batch берёт только доступные сейчас recipe inputs, extraction dependencies не блокируют runnable production, а без queue refill остаётся continuous-to-capacity. | Пользовательское уточнение runtime workflow |
+| 2026-08-04 | При разрушении `food` package каждая manifest quantity создаёт отдельный quantity-one world stack; `weapon`/`tool` остаются без изменения. | Пользовательский runtime bug report |
