@@ -134,6 +134,8 @@ internal sealed class AgentNeedsState
 
     public void AdvancePassive(
         AgentNeedPolicy policy,
+        int ticksPerDay,
+        long tick,
         bool alertnessRecoveryCommitted)
     {
         if (policy is null)
@@ -141,7 +143,7 @@ internal sealed class AgentNeedsState
             throw new ArgumentNullException(nameof(policy));
         }
 
-        Apply(policy.PassiveDelta);
+        Apply(policy.ResolvePassiveDelta(tick, ticksPerDay));
         bool nutritionCritical = Nutrition.IsAtOrBelow(policy.CriticalThreshold);
         bool alertnessCritical = Alertness.IsAtOrBelow(policy.CriticalThreshold)
             && !alertnessRecoveryCommitted;
