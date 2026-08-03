@@ -152,7 +152,7 @@ public sealed class RoomUpgradeExecutionWorkflowTests
         Assert.Equal(2, first.DeliveriesCreated.Count);
         Assert.Empty(second.WorkJobsCreated);
         Assert.Empty(second.DeliveriesCreated);
-        Assert.Equal(3, harness.Jobs.Get().CaptureSnapshot().Jobs.Count);
+        Assert.Equal(3, harness.Jobs.Get().GetAll().Count);
         Assert.Equal(8, harness.Inventory.Get().CreateSnapshot().Stacks
             .Sum(stack => stack.Reservations.Sum(value => value.Quantity)));
     }
