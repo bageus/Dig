@@ -1,4 +1,4 @@
-# Смерть, могилы, возвращение и омоложение
+# Смерть гнома, колпак, надгробие, возвращение и омоложение
 
 Статус: `APPROVED`.  
 Tracking issue: [#150](https://github.com/bageus/Dig/issues/150).  
@@ -6,18 +6,30 @@ Zombie-mode extension: [`zombie-mode-resident-death-questionnaire.md`](zombie-mo
 
 Эта спецификация определяет обычный режим. Zombie mode использует отдельный death outcome и не может молча наследовать правила колпака/могилы.
 
-## Смерть и оставшиеся предметы
+Связанная задача: [#150](https://github.com/bageus/Dig/issues/150).
+Zombie-mode extension: [`zombie-mode-resident-death-questionnaire.md`](zombie-mode-resident-death-questionnaire.md), [#586](https://github.com/bageus/Dig/issues/586), статус `QUESTIONNAIRE`.
 
-После смерти гнома:
+## Граница текущего решения
 
 - умерший гном немедленно покидает active resident roster и больше не выбирается как живой resident в мире;
 - все stacks личного Inventory переходят в одну world cell — логическую клетку смерти;
-- в этой же клетке может находиться любое количество разных предметов/stacks;
+- в этой клетке может находиться любое количество разных предметов/stacks;
 - временный death container не создаётся;
 - появляется отдельный identity-linked world item `Колпак {ИмяГнома}`, который можно выбрать и поднять обычным item workflow;
 - колпак связан с `ResidentId` и `DeathInstanceId` и не зависит от рабочей шапки;
 - identity, имя, пол, family graph, historical relations, внешность, skills, capacity и lifecycle record сохраняются;
-- jobs/reservations освобождаются без дублирования предметов.
+- Presentation создаёт одно уведомление с локализованным шаблоном `Гном {ИмяГнома} умер`.
+
+Повторная обработка одного и того же death event не должна повторно удалять resident, сбрасывать Inventory, создавать колпак, уведомление или освобождать reservations.
+
+## Именной колпак
+
+- колпак связан с `ResidentId` и `DeathInstanceId`;
+- колпак не является рабочей шапкой и не зависит от текущего role headwear;
+- колпак является обычным физическим world item с поддержкой общего pickup/carry/reserve flow;
+- имя отображается как `Колпак {ИмяГнома}`, но локализованный текст не является identity key;
+- один death instance создаёт не более одного колпака;
+- колпак может находиться ровно в одном состоянии: world, carried, reserved, grave-consumed или future-service-consumed.
 
 ## Глобальный штраф от незахороненного колпака
 
@@ -62,23 +74,22 @@ Zombie-mode extension: [`zombie-mode-resident-death-questionnaire.md`](zombie-mo
 -> возвращение гнома
 ```
 
-- нужен свободный cap, не использованный завершённым `GraveBox`;
-- действие требует работника Храма;
-- храмовая работа использует два навыка: `skill.alchemy` и `skill.service`;
-- eligibility и начисление опыта используют общий mixed-skill contract; точные requirements/grants задаются data-driven;
-- после завершения возвращается тот же identity молодым взрослым;
-- гном появляется в ближайшей свободной допустимой клетке возле Храма;
+- действие требует работника соответствующего строения;
+- работа использует `skill.alchemy` и `skill.service` через общий mixed-skill contract;
+- возвращается тот же identity молодым взрослым;
+- гном появляется в ближайшей свободной допустимой клетке возле строения;
 - если свободной клетки нет, completion ждёт появления клетки и не расходует ингредиенты повторно;
 - сохраняются skills, TotalSkillCapacity, family graph, historical partnership records и внешность;
 - прежний Inventory не восстанавливается повторно;
 - одна death instance применяется один раз;
-- повторные циклы death/return разрешены через новые `DeathInstanceId`.
+- повторные циклы death/return разрешены через новые `DeathInstanceId`;
+- никакая временная Presentation-кнопка не заменяет этот будущий building/service flow.
 
 ### Active partnership после return
 
 Если прежний партнёр уже создал новую active pair, новая пара сохраняется. Старая связь остаётся только historical relation. Return не разрывает новую пару и не восстанавливает старую автоматически. Бывшие партнёры могут снова образовать пару только через обычный matching, если оба позднее свободны.
 
-## Зелье омоложения
+## Зелье омоложения — будущий service slice
 
 ```text
 1 хомяк
@@ -101,27 +112,55 @@ Zombie-mode extension: [`zombie-mode-resident-death-questionnaire.md`](zombie-mo
 - повторное омоложение разрешено после нового взросления;
 - consumable расходуется один раз.
 
+## Zombie mode
+
+Zombie mode использует отдельный death outcome:
+
+- именной колпак не создаётся;
+- погибший гном становится враждебным зомби;
+- ordinary cap/grave outcome и zombie conversion взаимоисключающие.
+
+Game-mode activation, Inventory outcome, conversion timing, identity/entity ownership, combat profile, targeting, second death, UI history и save/migration пока не определены. Эти решения authoritative ведутся в [`zombie-mode-resident-death-questionnaire.md`](zombie-mode-resident-death-questionnaire.md) и #586. До их утверждения zombie conversion не реализуется предположениями.
+
 ## Владение состояния
 
-- Lifecycle/Society: death instance, identity, family/relations, age, pregnancy cancellation, return и rejuvenation;
-- Inventory: dropped stacks и identity cap;
-- Buildings/Production: `GraveBox`, permanent grave и temple action;
+- Lifecycle/Society: death instance, terminal resident state, identity, family/relations, age, pregnancy cancellation, return и rejuvenation;
+- Agents/Application: прекращение active actor/action и атомарная orchestration cleanup;
+- Jobs/Reservations: отмена назначенной работы и освобождение claims;
+- Inventory: dropped stacks, identity cap и cap location state;
+- Buildings/Production: персональное надгробие, permanent grave и future return service;
 - Skills: mixed Alchemy/Service work contract;
 - Needs: global non-stacking Mood modifier;
-- Presentation: имя могилы, visuals и notifications.
+- Game mode/Combat: выбранный death outcome и future hostile zombie state;
+- Presentation: active roster projection, world selection eligibility, имя надгробия, visuals и notification `Гном {ИмяГнома} умер`.
 
 ## Инварианты
 
+- один death event создаёт ровно один death instance и один mode-specific outcome;
+- ordinary death создаёт не более одного именного колпака; zombie-mode death не создаёт колпак;
+- мёртвый resident отсутствует в active roster и resident selection target set;
+- death notification создаётся один раз из typed lifecycle event;
 - все предметы умершего могут находиться в одной world cell без потери количества;
-- cap находится ровно в одном состоянии: world, carried, reserved, grave-consumed или temple-consumed;
-- completed `GraveBox` необратимо consumes cap;
+- cap находится ровно в одном состоянии: world, carried, reserved, grave-consumed или future-service-consumed;
+- completed `GraveBox`/надгробие необратимо consumes cap;
 - grave non-packable;
 - глобальный cap penalty применяется не более одного раза независимо от количества источников;
 - return не дублирует Inventory;
 - return не создаёт вторую active pair;
 - rejuvenation не применяется к Child и не повторяет inheritance;
 - rejuvenation беременной атомарно отменяет pregnancy;
-- Save/Load не повторяет production, lifecycle или consumable commits.
+- Save/Load не повторяет death drops, cap creation, notification, production, lifecycle или consumable commits.
+
+## Acceptance текущего ordinary slice
+
+- death от любой причины удаляет гнома из active roster и resident world selection в том же workflow;
+- появляется одно уведомление `Гном {ИмяГнома} умер`;
+- личные stacks и один именной колпак появляются в логической клетке смерти;
+- колпак можно поднять общим item interaction flow;
+- Мастерская каменщика принимает конкретный колпак и создаёт персональное `Надгробие {ИмяГнома}`;
+- повторная обработка/reload не дублирует drops, cap, notification или cleanup;
+- ordinary и zombie outcomes никогда не выполняются одновременно;
+- Domain, Application, deterministic и Unity Play Mode покрывают death → roster removal → notification → drops/cap → pickup → gravestone production.
 
 Q-048 и Q-052 закрыты. Design #150 полностью определён.
 

@@ -106,6 +106,10 @@ public sealed class DigResidentRig : MonoBehaviour
             case ResidentActionVisualState.Hit:
                 transform.localRotation = Quaternion.Euler(0f, 0f, 12f);
                 break;
+            case ResidentActionVisualState.Sleep:
+                transform.localRotation = Quaternion.Euler(0f, 0f, 68f);
+                SetLimbPose(-18f, -26f, 12f, -8f);
+                break;
             case ResidentActionVisualState.Death:
                 transform.localRotation = Quaternion.Euler(0f, 0f, 82f);
                 break;

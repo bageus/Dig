@@ -15,10 +15,13 @@ public sealed partial class AgentState
         RaiseNeedThresholdCrossings(previous, _needs.CreateSnapshot(), tick);
     }
 
-    private void AdvancePassiveNeeds(AgentNeedPolicy policy, long tick)
+    private void AdvancePassiveNeeds(
+        AgentNeedPolicy policy,
+        long tick,
+        bool alertnessRecoveryCommitted)
     {
         AgentNeedsSnapshot previous = _needs.CreateSnapshot();
-        _needs.AdvancePassive(policy);
+        _needs.AdvancePassive(policy, alertnessRecoveryCommitted);
         RaiseNeedThresholdCrossings(previous, _needs.CreateSnapshot(), tick);
     }
 

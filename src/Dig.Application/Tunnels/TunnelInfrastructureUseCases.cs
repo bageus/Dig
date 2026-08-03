@@ -82,6 +82,46 @@ public sealed class RegisterCompletedTunnelAnchorHandler
                 command.Tick);
         if (result.IsSuccess)
         {
+            Save(state);
+        }
+
+        return result;
+    }
+
+    private void Save(TunnelInfrastructureState state)
+    {
+        _repository.Save(state);
+        _eventSink.Append(state.DequeueUncommittedEvents());
+    }
+}
+
+public sealed class RegisterCompletedJunctionStoneTrimHandler
+    : ICommandHandler<RegisterCompletedJunctionStoneTrimCommand, Result>
+{
+    private readonly ITunnelInfrastructureRepository _repository;
+    private readonly IEventSink _eventSink;
+
+    public RegisterCompletedJunctionStoneTrimHandler(
+        ITunnelInfrastructureRepository repository,
+        IEventSink eventSink)
+    {
+        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        _eventSink = eventSink ?? throw new ArgumentNullException(nameof(eventSink));
+    }
+
+    public Result Handle(RegisterCompletedJunctionStoneTrimCommand command)
+    {
+        if (command is null)
+        {
+            throw new ArgumentNullException(nameof(command));
+        }
+
+        TunnelInfrastructureState state = _repository.Get();
+        Result result = state.RegisterCompletedJunctionStoneTrim(
+            command.Cell,
+            command.Tick);
+        if (result.IsSuccess)
+        {
             _repository.Save(state);
             _eventSink.Append(state.DequeueUncommittedEvents());
         }

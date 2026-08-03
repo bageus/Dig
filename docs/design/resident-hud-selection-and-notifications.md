@@ -89,6 +89,8 @@ Inspector показывает requested/applied gains, free capacity, overflow,
 ## Выбор и камера
 
 - ЛКМ по HUD row или world resident выбирает того же resident;
+- живой resident с active `Sleep` остаётся в roster и world-selection target set; сон меняет status/pose, но не identity и не доступность выбора;
+- `Sleep` использует отдельную лежащую позу, отличную от terminal `Death`; только фактически мёртвый resident исключается из actionable roster/world selection;
 - выбранный resident подсвечивается в HUD и мире;
 - LMB по completed building или BuildingBox открывает building roster и подсвечивает соответствующую строку;
 - новый выбор заменяет прежний;
@@ -186,6 +188,7 @@ Roster virtualized; изменение одной row не пересоздаё�
 ## Acceptance
 
 - HUD/world selection синхронны;
+- living Bed/Floor sleeper remains rostered, selectable and opens resident context; Sleep and Death poses/states are distinct;
 - exact needs/Mood boundaries;
 - top-5 включает боевые skills;
 - UI gain/loss report совпадает с Domain;

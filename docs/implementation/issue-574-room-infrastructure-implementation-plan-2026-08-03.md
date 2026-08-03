@@ -65,7 +65,7 @@ Validation PR #578:
 
 ### Slice 2A — Application contracts и automatic support job synchronization
 
-Статус: `READY FOR REVIEW` в PR #579, ветка `agent/issue-574-automatic-support-jobs`.
+Статус: `MERGED` в PR #579.
 
 Реализовано:
 
@@ -106,21 +106,47 @@ Validation PR #579:
 - Stage 2 v2/v3 exports passed;
 - Unity workflow recorded blocked runtime evidence: actual EditMode/PlayMode execution was skipped because activation was unavailable, therefore runtime verification is not claimed.
 
-Ещё не входит в Slice 2A:
-
-- excavation/template provenance topology synchronization;
-- junction stone-trim targets/jobs;
-- automatic job execution, material consumption и skill grant commit;
-- `TunnelInfrastructureState` save document section and version migration;
-- Unity composition/runtime projection.
-
 ### Slice 2B — topology synchronization, execution и junction trim
+
+#### Slice 2B-1 — authoritative junction target and automatic trim job
+
+Статус: `READY FOR REVIEW` в PR #582. Подробный implementation note: [`issue-574-tunnel-junction-trim-lifecycle-2026-08-03.md`](issue-574-tunnel-junction-trim-lifecycle-2026-08-03.md).
+
+Реализовано:
+
+- `TunnelInfrastructureState` владеет одним pending/completed decorative stone-trim target на vertical-junction cell;
+- left/right chains с одним junction origin не создают duplicate targets;
+- stable owner выбирается по segment id и deterministic rebind выполняется при удалении одного направления;
+- удаление segment system-cancels его automatic jobs и освобождает Inventory reservations;
+- удаление последнего junction direction удаляет pending/completed trim provenance;
+- low-priority `JunctionStoneTrim` job переиспользует range `20` и deterministic source selection из Slice 2A;
+- no-source остаётся `Created` без phantom reservations;
+- появление stone разрешает тот же job и переводит его в `Available`;
+- completion убирает authoritative target, а synchronization отменяет stale job;
+- save codec regression покрывает оба automatic work kinds;
+- player cancellation не реализована до ответа `Q-TUNNEL-008`.
+
+Validation PR #582:
+
+- architecture, file-size, C# 9 compatibility, compiler baseline, dependency и Domain-boundary checks passed;
+- Release build passed: `0` warnings, `0` errors;
+- full .NET suite passed: `1412/1412`;
+- headless smoke passed at tick `20`;
+- standard deterministic soak replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
+- large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
+- Stage 2 v2/v3 exports passed;
+- Unity workflow recorded blocked runtime evidence; actual EditMode/PlayMode execution was skipped because activation was unavailable.
+
+#### Slice 2B-2 — provenance adapter and automatic work commit
+
+Осталось:
 
 - synchronization из completed excavation/template-room provenance;
 - deterministic creation/removal horizontal segments at room exits and vertical junctions;
-- low-priority junction stone-trim target/job;
-- support/trim work execution, exact material consumption and `+0.7` skill exactly once;
-- no-source/interruption policies reuse Slice 2A;
+- support/trim work execution;
+- exact material consumption;
+- material-specific `+0.7` skill exactly once;
+- interruption policies reuse Slice 2A;
 - player cancellation не реализуется до ответа `Q-TUNNEL-008`.
 
 ### Slice 3 — persistence и migration для tunnel infrastructure

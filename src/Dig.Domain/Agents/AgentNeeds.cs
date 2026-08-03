@@ -132,7 +132,9 @@ internal sealed class AgentNeedsState
 
     public NeedValue Health { get; private set; }
 
-    public void AdvancePassive(AgentNeedPolicy policy)
+    public void AdvancePassive(
+        AgentNeedPolicy policy,
+        bool alertnessRecoveryCommitted)
     {
         if (policy is null)
         {
@@ -140,8 +142,10 @@ internal sealed class AgentNeedsState
         }
 
         Apply(policy.PassiveDelta);
-        bool survivalCritical = Nutrition.IsAtOrBelow(policy.CriticalThreshold)
-            || Alertness.IsAtOrBelow(policy.CriticalThreshold);
+        bool nutritionCritical = Nutrition.IsAtOrBelow(policy.CriticalThreshold);
+        bool alertnessCritical = Alertness.IsAtOrBelow(policy.CriticalThreshold)
+            && !alertnessRecoveryCommitted;
+        bool survivalCritical = nutritionCritical || alertnessCritical;
         int healthDelta = survivalCritical
             ? -policy.HealthDamagePerCriticalTick
             : policy.HealthRecoveryPerStableTick;

@@ -29,6 +29,7 @@ public sealed class ResidentVisualProjectionTests
     [InlineData("Construct building", ResidentActionVisualState.Build)]
     [InlineData("Pickup item", ResidentActionVisualState.Pickup)]
     [InlineData("Deliver item", ResidentActionVisualState.Drop)]
+    [InlineData("Sleep", ResidentActionVisualState.Sleep)]
     public void Intent_maps_to_presentation_action(
         string intent,
         ResidentActionVisualState expected)
@@ -38,6 +39,26 @@ public sealed class ResidentVisualProjectionTests
             isMoving: false,
             isCarrying: false);
         Assert.Equal(expected, visual.State);
+    }
+
+
+    [Fact]
+    public void Sleep_is_looping_and_distinct_from_terminal_death()
+    {
+        ResidentActionVisualViewModel sleeping = _presenter.PresentAction(
+            Agent("Sleep", elapsed: 1, required: 3),
+            isMoving: false,
+            isCarrying: false);
+        ResidentActionVisualViewModel dead = _presenter.PresentAction(
+            Agent("Sleep", isAlive: false),
+            isMoving: false,
+            isCarrying: false);
+
+        Assert.Equal(ResidentActionVisualState.Sleep, sleeping.State);
+        Assert.True(sleeping.IsLooping);
+        Assert.Equal(1d / 3d, sleeping.NormalizedProgress, 6);
+        Assert.Equal(ResidentActionVisualState.Death, dead.State);
+        Assert.NotEqual(sleeping.State, dead.State);
     }
 
     [Fact]
