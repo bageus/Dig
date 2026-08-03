@@ -37,6 +37,7 @@ public sealed partial class SaveGameBuilder
                     BiteCount = meal.BiteCount,
                     CompletedBites = meal.CompletedBites,
                     StartedTick = runtime.MealStartedTick!.Value,
+                    NextBiteTick = meal.NextBiteTick,
                 };
             }
 
