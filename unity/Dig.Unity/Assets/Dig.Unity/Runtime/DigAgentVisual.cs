@@ -20,6 +20,8 @@ public sealed partial class DigAgentVisual : MonoBehaviour
     private Material? _selectedMaterial;
     private DigResidentRig? _rig;
     private DigAgentEquipmentVisual? _equipmentVisual;
+    private ResidentEquipmentViewModel? _equipmentModel;
+    private Material? _equipmentMaterial;
     private Renderer[] _hoverRenderers = Array.Empty<Renderer>();
     private Color[] _hoverBaseColors = Array.Empty<Color>();
     private bool _selected;
@@ -173,22 +175,17 @@ public sealed partial class DigAgentVisual : MonoBehaviour
     internal void SetEquipment(ResidentEquipmentViewModel? equipment,
         Material equipmentMaterial)
     {
-        if (equipment == null)
+        if (equipment != null
+            && !string.Equals(equipment.ResidentId, Model.Id, StringComparison.Ordinal))
         {
-            _equipmentVisual?.Clear();
-            return;
-        }
-        if (!string.Equals(equipment.ResidentId, Model.Id, StringComparison.Ordinal))
             throw new ArgumentException("Equipment does not belong to this resident.",
                 nameof(equipment));
-        if (_equipmentVisual == null)
-        {
-            GameObject root = new GameObject("Equipment");
-            root.transform.SetParent(ResolveSocket(DigResidentSocketKind.RightHand), false);
-            _equipmentVisual = root.AddComponent<DigAgentEquipmentVisual>();
         }
-        _equipmentVisual.Configure(equipment.ItemId, EquipmentAppearanceKind.Generic,
-            equipmentMaterial);
+
+        _equipmentModel = equipment;
+        _equipmentMaterial = equipmentMaterial
+            ?? throw new ArgumentNullException(nameof(equipmentMaterial));
+        RefreshHandEquipment();
     }
 
     internal Transform ResolveSocket(DigResidentSocketKind kind)
