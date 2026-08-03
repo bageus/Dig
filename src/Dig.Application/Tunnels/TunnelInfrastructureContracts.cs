@@ -45,6 +45,18 @@ public sealed class RegisterTunnelSegmentCommand : ICommand<Result>
     public long Tick { get; }
 }
 
+public sealed class RemoveTunnelSegmentCommand : ICommand<Result>
+{
+    public RemoveTunnelSegmentCommand(EntityId segmentId, long tick)
+    {
+        SegmentId = segmentId;
+        Tick = tick;
+    }
+
+    public EntityId SegmentId { get; }
+    public long Tick { get; }
+}
+
 public sealed class RegisterCompletedTunnelAnchorCommand : ICommand<Result>
 {
     public RegisterCompletedTunnelAnchorCommand(
@@ -68,6 +80,18 @@ public sealed class RegisterCompletedTunnelAnchorCommand : ICommand<Result>
     public EntityId SegmentId { get; }
     public CellId Cell { get; }
     public TunnelStructuralAnchorKind Kind { get; }
+    public long Tick { get; }
+}
+
+public sealed class RegisterCompletedJunctionStoneTrimCommand : ICommand<Result>
+{
+    public RegisterCompletedJunctionStoneTrimCommand(CellId cell, long tick)
+    {
+        Cell = cell;
+        Tick = tick;
+    }
+
+    public CellId Cell { get; }
     public long Tick { get; }
 }
 
@@ -141,6 +165,72 @@ public sealed class SynchronizeTunnelAutomaticSupportCommand
     }
 }
 
+public enum TunnelAutomaticJunctionTrimSyncStatus
+{
+    NoTarget = 0,
+    OutOfRange = 1,
+    PendingSource = 2,
+    Available = 3,
+    Retained = 4,
+}
+
+public sealed class TunnelAutomaticJunctionTrimSyncResult
+{
+    public TunnelAutomaticJunctionTrimSyncResult(
+        TunnelAutomaticJunctionTrimSyncStatus status,
+        EntityId? jobId,
+        CellId targetCell)
+    {
+        Status = status;
+        JobId = jobId;
+        TargetCell = targetCell;
+    }
+
+    public TunnelAutomaticJunctionTrimSyncStatus Status { get; }
+    public EntityId? JobId { get; }
+    public CellId TargetCell { get; }
+}
+
+public sealed class SynchronizeTunnelAutomaticJunctionTrimCommand
+    : ICommand<Result<TunnelAutomaticJunctionTrimSyncResult>>
+{
+    public SynchronizeTunnelAutomaticJunctionTrimCommand(
+        CellId targetCell,
+        EntityId newJobId,
+        IEnumerable<CellId> completedBuildingCells,
+        IEnumerable<CellId> revealedCells,
+        IEnumerable<CellId> reachableCells,
+        long tick)
+    {
+        if (completedBuildingCells is null
+            || revealedCells is null
+            || reachableCells is null)
+        {
+            throw new ArgumentNullException(nameof(completedBuildingCells));
+        }
+
+        TargetCell = targetCell;
+        NewJobId = newJobId;
+        CompletedBuildingCells = Copy(completedBuildingCells);
+        RevealedCells = Copy(revealedCells);
+        ReachableCells = Copy(reachableCells);
+        Tick = tick;
+    }
+
+    public CellId TargetCell { get; }
+    public EntityId NewJobId { get; }
+    public IReadOnlyList<CellId> CompletedBuildingCells { get; }
+    public IReadOnlyList<CellId> RevealedCells { get; }
+    public IReadOnlyList<CellId> ReachableCells { get; }
+    public long Tick { get; }
+
+    private static IReadOnlyList<CellId> Copy(IEnumerable<CellId> cells)
+    {
+        return new ReadOnlyCollection<CellId>(
+            cells.Distinct().OrderBy(cell => cell).ToArray());
+    }
+}
+
 public static class TunnelInfrastructureApplicationErrors
 {
     public static readonly DomainError SegmentNotFound = new DomainError(
@@ -149,6 +239,6 @@ public static class TunnelInfrastructureApplicationErrors
 
     public static readonly DomainError MultipleActiveAutomaticJobs = new DomainError(
         "tunnel.infrastructure.application.multiple_active_jobs",
-        "A tunnel segment has more than one non-terminal automatic support job.");
+        "A tunnel target has more than one non-terminal automatic work job.");
 }
 }

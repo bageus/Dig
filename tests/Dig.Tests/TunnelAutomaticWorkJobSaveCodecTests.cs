@@ -11,9 +11,13 @@ namespace Dig.Tests
 public sealed class TunnelAutomaticWorkJobSaveCodecTests
 {
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void Codec_round_trip_preserves_pending_and_resolved_source(bool resolved)
+    [InlineData(false, TunnelAutomaticWorkKind.WoodenSupport)]
+    [InlineData(true, TunnelAutomaticWorkKind.WoodenSupport)]
+    [InlineData(false, TunnelAutomaticWorkKind.JunctionStoneTrim)]
+    [InlineData(true, TunnelAutomaticWorkKind.JunctionStoneTrim)]
+    public void Codec_round_trip_preserves_kind_and_source(
+        bool resolved,
+        TunnelAutomaticWorkKind kind)
     {
         EntityId jobId = Id(1);
         EntityId segmentId = Id(2);
@@ -22,7 +26,7 @@ public sealed class TunnelAutomaticWorkJobSaveCodecTests
             new TunnelAutomaticWorkJobDefinition(
                 jobId,
                 segmentId,
-                TunnelAutomaticWorkKind.WoodenSupport,
+                kind,
                 new CellId(15, 4, 2),
                 createdTick: 9,
                 new JobRetryPolicy(maximumRetries: 4, retryDelayTicks: 7),
@@ -39,12 +43,17 @@ public sealed class TunnelAutomaticWorkJobSaveCodecTests
         Assert.Equal(jobId, decoded.Id);
         Assert.Equal(segmentId, decoded.SegmentId);
         Assert.Equal(definition.Kind, decoded.Kind);
+        Assert.Equal(definition.RequiredItemId, decoded.RequiredItemId);
         Assert.Equal(definition.TargetCell, decoded.TargetCell);
         Assert.Equal(definition.SourceStackId, decoded.SourceStackId);
         Assert.Equal(definition.SourceCell, decoded.SourceCell);
         Assert.Equal(definition.CreatedTick, decoded.CreatedTick);
-        Assert.Equal(definition.RetryPolicy.MaximumRetries, decoded.RetryPolicy.MaximumRetries);
-        Assert.Equal(definition.RetryPolicy.RetryDelayTicks, decoded.RetryPolicy.RetryDelayTicks);
+        Assert.Equal(
+            definition.RetryPolicy.MaximumRetries,
+            decoded.RetryPolicy.MaximumRetries);
+        Assert.Equal(
+            definition.RetryPolicy.RetryDelayTicks,
+            decoded.RetryPolicy.RetryDelayTicks);
         Assert.Equal(definition.Dependencies.ToArray(), decoded.Dependencies.ToArray());
     }
 
