@@ -33,11 +33,12 @@ Tracking issue: [#602](https://github.com/bageus/Dig/issues/602).
 | `DigJobDefinition` | кирка |
 | `SpatialDigJobDefinition` | кирка |
 | `MushroomChopJobDefinition` | топор |
+| `BuildingWorkJobDefinition` с kind `Construction` | молоток |
 | `BuildingBoxAssemblyJobDefinition` | молоток |
 | `BuildingBoxPackingJobDefinition` | молоток |
 | все остальные jobs и stages | отсутствует |
 
-`ProductionWorkJobDefinition` не получает молоток автоматически: производство еды или предметов не является сборкой/упаковкой строения.
+`BuildingWorkKind.Repair`, `BuildingWorkKind.Demolition` и `ProductionWorkJobDefinition` не получают молоток автоматически: их отдельные visual rules пользователь не подтверждал, а производство еды или предметов не является сборкой/упаковкой строения.
 
 ## 4. Приоритет правой руки
 
@@ -63,7 +64,7 @@ Tracking issue: [#602](https://github.com/bageus/Dig/issues/602).
 
 - exact job definitions проецируют ожидаемый typed tool kind;
 - non-`PerformWork` stages проецируют `None`;
-- BuildingBox assembly/packing публикуют authoritative `WorkPosition`;
+- construction/BuildingBox assembly/packing публикуют authoritative `WorkPosition`;
 - transient override не изменяет equipment model и восстанавливает его после очистки;
 - club, pickaxe, axe и hammer создают разные geometry markers.
 
