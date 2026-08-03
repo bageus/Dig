@@ -95,7 +95,13 @@ Passed on code head `d430b065baf6ff5ba4fc86958f62cb4faf47bbae`:
 
 Unity activation was unavailable. `Run Unity EditMode and PlayMode tests` and executed-runtime-evidence validation were skipped; the workflow recorded blocked evidence only. Runtime `VERIFIED` is not claimed.
 
-The 2026-08-03 namespace correction has source-contract coverage on branch `agent/fix-tunnel-infrastructure-unity-imports`; repository CI and a local Unity recompile remain required before claiming the screenshot errors are cleared in the Editor.
+The 2026-08-03 namespace correction in PR #596 passed:
+
+- Quality run `30823664707`: architecture/file-size/C# compatibility, Unity source contracts, Release build, .NET tests, headless smoke and both deterministic soak profiles;
+- Stage 2 v2 run `30823666837` and v3 run `30823667187`;
+- Unity workflow `30823665219` completed through blocked evidence, while actual EditMode/PlayMode execution was skipped because licensed activation was unavailable.
+
+A local Unity recompile remains required to directly confirm the three screenshot errors are cleared in the Editor and to surface any later Unity-only compiler errors.
 
 ## Deliberately remaining
 
