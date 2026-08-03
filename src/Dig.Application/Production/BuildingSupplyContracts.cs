@@ -184,16 +184,22 @@ public sealed class DepositBuildingSupplyCommand : ICommand<Result>
 
 public sealed class CancelBuildingSupplyCommand : ICommand<Result>
 {
-    public CancelBuildingSupplyCommand(EntityId jobId, string reason, long tick)
+    public CancelBuildingSupplyCommand(
+        EntityId jobId,
+        string reason,
+        long tick,
+        CellId? recoveryCell = null)
     {
         JobId = jobId;
         Reason = reason;
         Tick = tick;
+        RecoveryCell = recoveryCell;
     }
 
     public EntityId JobId { get; }
     public string Reason { get; }
     public long Tick { get; }
+    public CellId? RecoveryCell { get; }
 }
 
 public sealed class EnableProductionInputDeliveryCommand : ICommand<Result>

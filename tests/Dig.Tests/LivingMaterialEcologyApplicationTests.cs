@@ -195,6 +195,31 @@ public sealed class LivingMaterialEcologyApplicationTests
             >= LivingMaterialMovementGeometry.ChebyshevDistanceXZ(before, resident));
     }
 
+    [Fact]
+    public void Reserved_world_hamster_stays_put_for_building_supply()
+    {
+        Harness harness = new Harness();
+        EntityId hamster = Id(1);
+        EntityId supplyJob = Id(999);
+        harness.AddWorldUnit(1, LivingMaterialEcologyProfiles.HamsterItemId, 10);
+        CellId source = harness.Inventory.GetStack(hamster)!.Location.CellId;
+        Assert.True(harness.Inventory.ReserveQuantity(
+            hamster,
+            supplyJob,
+            quantity: 1,
+            tick: 1).IsSuccess);
+
+        harness.AdvanceTicks(3, startingTick: 2);
+
+        ItemStackSnapshot stack = harness.Inventory.GetStack(hamster)!;
+        Assert.Equal(source, stack.Location.CellId);
+        Assert.Equal(0, stack.AvailableQuantity);
+        Assert.Equal(1, stack.ReservedQuantity);
+        LivingMaterialSnapshot creature = harness.State.Get(hamster)!;
+        Assert.Equal(source, creature.Cell!.Value);
+        Assert.Equal("inventory_reserved", creature.BlockedReason);
+    }
+
     private sealed class Harness
     {
         public const int CorridorY = 3;

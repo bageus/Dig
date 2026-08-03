@@ -6,6 +6,7 @@ using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.Production;
+using Dig.Domain.World;
 
 namespace Dig.Unity
 {
@@ -42,7 +43,9 @@ internal sealed partial class DigTerrainWorkSession
         }
     }
 
-    private void RecoverBlockedBuildingSupplyJobs(long tick)
+    private void RecoverBlockedBuildingSupplyJobs(
+        long tick,
+        IReadOnlyList<Dig.Presentation.Agents.AgentViewModel> agents)
     {
         BuildingSupplyState supply = _buildingSupplyRepository!.Get();
         InventorySnapshot inventory = _buildingInventoryRepository!.Get()
@@ -63,10 +66,20 @@ internal sealed partial class DigTerrainWorkSession
             .ToArray();
         foreach (JobSnapshot job in blocked)
         {
+            CellId? recoveryCell = job.AssignedAgentId.HasValue
+                ? agents
+                    .Where(value => value.Id == job.AssignedAgentId.Value.ToString())
+                    .Select(value => (CellId?)new CellId(
+                        value.CellX,
+                        value.CellY,
+                        value.CellZ))
+                    .FirstOrDefault()
+                : null;
             _cancelBuildingSupply!.Handle(new CancelBuildingSupplyCommand(
                 job.Id,
                 "blocked_supply_replanned",
-                tick));
+                tick,
+                recoveryCell));
         }
     }
 
