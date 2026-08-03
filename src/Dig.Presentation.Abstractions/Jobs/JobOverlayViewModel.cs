@@ -7,6 +7,14 @@ using Dig.Domain.Jobs;
 namespace Dig.Presentation.Jobs
 {
 
+public enum ResidentWorkToolVisualKind
+{
+    None = 0,
+    Pickaxe = 1,
+    Axe = 2,
+    Hammer = 3,
+}
+
 public sealed class JobOverlayViewModel
 {
     public JobOverlayViewModel(
@@ -29,7 +37,8 @@ public sealed class JobOverlayViewModel
         int? targetZ = null,
         bool isMushroomChop = false,
         bool isBarrelAttack = false,
-        bool isProductionWork = false)
+        bool isProductionWork = false,
+        ResidentWorkToolVisualKind workToolVisualKind = ResidentWorkToolVisualKind.None)
     {
         if (string.IsNullOrWhiteSpace(id)
             || string.IsNullOrWhiteSpace(description)
@@ -69,6 +78,11 @@ public sealed class JobOverlayViewModel
             throw new ArgumentOutOfRangeException(nameof(preferredToolKind));
         }
 
+        if (!Enum.IsDefined(typeof(ResidentWorkToolVisualKind), workToolVisualKind))
+        {
+            throw new ArgumentOutOfRangeException(nameof(workToolVisualKind));
+        }
+
         JobActionViewModel[] actionValues = (actions ?? Array.Empty<JobActionViewModel>())
             .ToArray();
         if (actionValues.Any(action => action is null)
@@ -103,6 +117,7 @@ public sealed class JobOverlayViewModel
         IsMushroomChop = isMushroomChop;
         IsBarrelAttack = isBarrelAttack;
         IsProductionWork = isProductionWork;
+        WorkToolVisualKind = workToolVisualKind;
     }
 
     public string Id { get; }
@@ -125,6 +140,7 @@ public sealed class JobOverlayViewModel
     public bool IsMushroomChop { get; }
     public bool IsBarrelAttack { get; }
     public bool IsProductionWork { get; }
+    public ResidentWorkToolVisualKind WorkToolVisualKind { get; }
     public bool HasTarget => TargetX.HasValue && TargetY.HasValue && TargetZ.HasValue;
 }
 }
