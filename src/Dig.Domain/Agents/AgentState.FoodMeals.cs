@@ -245,4 +245,37 @@ namespace Dig.Domain.Agents
             }
         }
     }
+
+public sealed class FoodMealSnapshot
+{
+    public FoodMealSnapshot(
+        EntityId sourceStackId,
+        ItemId itemId,
+        int totalNutrition,
+        int biteCount,
+        int completedBites,
+        long nextBiteTick)
+    {
+        if (nextBiteTick < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(nextBiteTick));
+        }
+
+        SourceStackId = sourceStackId;
+        ItemId = itemId;
+        TotalNutrition = totalNutrition;
+        BiteCount = biteCount;
+        CompletedBites = completedBites;
+        NextBiteTick = nextBiteTick;
+    }
+
+    public EntityId SourceStackId { get; }
+    public ItemId ItemId { get; }
+    public int TotalNutrition { get; }
+    public int BiteCount { get; }
+    public int CompletedBites { get; }
+    public long NextBiteTick { get; }
+    public int RemainingBites => BiteCount - CompletedBites;
+}
+
 }
