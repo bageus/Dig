@@ -28,8 +28,6 @@ Tracking issue: [#602](https://github.com/bageus/Dig/issues/602).
 
 ## Validation
 
-Validated behavior:
-
 - architecture, file-size, C# compatibility, dependency и Domain-boundary gates passed;
 - Unity source contracts и runtime-evidence tooling passed;
 - Release build: `0` warnings, `0` errors;
