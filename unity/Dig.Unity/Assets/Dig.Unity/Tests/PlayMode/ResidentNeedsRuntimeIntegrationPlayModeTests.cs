@@ -131,8 +131,8 @@ public sealed class ResidentNeedsRuntimeIntegrationPlayModeTests
             }
         }
 
-        Assert.That(activeSleep.HasValue, Is.True);
-        AgentSnapshot sleepingSnapshot = activeSleep!.Value;
+        Assert.That(activeSleep, Is.Not.Null);
+        AgentSnapshot sleepingSnapshot = activeSleep!;
         Assert.That(sleepingSnapshot.IsAlive, Is.True);
         Assert.That(sleepingSnapshot.ActiveAction.HasValue, Is.True);
         AgentActionSnapshot sleepingAction = sleepingSnapshot.ActiveAction!.Value;
