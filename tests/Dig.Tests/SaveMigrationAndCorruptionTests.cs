@@ -27,7 +27,6 @@ public sealed class SaveMigrationAndCorruptionTests
         SaveMigrationPipeline pipeline = CreateMigrations();
         Result<SaveMigrationReport> first = pipeline.Apply(document);
         Result<SaveMigrationReport> replay = pipeline.Apply(document);
-
         Assert.True(first.IsSuccess);
         Assert.Equal(new[]
         {
@@ -46,6 +45,7 @@ public sealed class SaveMigrationAndCorruptionTests
             "save.v12_to_v13.terrain_output_contract",
             "save.v13_to_v14.vuker_ecology",
             "save.v14_to_v15.tunnel_infrastructure",
+            "save.v15_to_v16.room_infrastructure",
         }, first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
         Assert.Equal(1, document.Metadata.GeneratorVersion);
@@ -70,10 +70,8 @@ public sealed class SaveMigrationAndCorruptionTests
         SaveGameDocument document = new DataContractJsonSaveCodec().Deserialize(
             File.ReadAllBytes(fixturePath));
         SaveMigrationPipeline pipeline = CreateMigrations();
-
         Result<SaveMigrationReport> first = pipeline.Apply(document);
         Result<SaveMigrationReport> replay = pipeline.Apply(document);
-
         Assert.True(first.IsSuccess);
         Assert.Equal(
             new[]
@@ -90,6 +88,7 @@ public sealed class SaveMigrationAndCorruptionTests
                 "save.v12_to_v13.terrain_output_contract",
                 "save.v13_to_v14.vuker_ecology",
                 "save.v14_to_v15.tunnel_infrastructure",
+                "save.v15_to_v16.room_infrastructure",
             },
             first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
@@ -314,6 +313,7 @@ public sealed class SaveMigrationAndCorruptionTests
             new SaveVersionTwelveTerrainOutputContractMigration(),
             new SaveVersionThirteenVukerEcologyMigration(),
             new SaveVersionFourteenTunnelInfrastructureMigration(),
+            new SaveVersionFifteenRoomInfrastructureMigration(),
         });
     }
     private static JobDefinitionSaveRegistry CreateRegistry()

@@ -127,13 +127,12 @@ public sealed partial class SaveGameLoader
             {
                 return Result<LoadedGameState>.Failure(jobs.Error!);
             }
-            Result<TunnelInfrastructureRuntimeSnapshot> tunnelInfrastructure =
-                TunnelInfrastructureSaveAdapter.Decode(
-                    document.TunnelInfrastructure,
-                    jobs.Value);
-            if (tunnelInfrastructure.IsFailure)
+            Result<RestoredInfrastructureRuntime> infrastructure =
+                RestoreInfrastructure(
+                    document, inventory.Value, jobs.Value, world.Value.Size);
+            if (infrastructure.IsFailure)
             {
-                return Result<LoadedGameState>.Failure(tunnelInfrastructure.Error!);
+                return Result<LoadedGameState>.Failure(infrastructure.Error!);
             }
             Result<BuildingsState> buildings = BuildBuildingsState(
                 document.Buildings,
@@ -297,7 +296,8 @@ public sealed partial class SaveGameLoader
                     document.TerrainDeposits.GeneratorVersion,
                 livingMaterials: livingMaterials.Value,
                 vukers: vukers.Value,
-                tunnelInfrastructure: tunnelInfrastructure.Value));
+                tunnelInfrastructure: infrastructure.Value.Tunnel,
+                roomInfrastructure: infrastructure.Value.Room));
         }
         catch (UnknownTerrainDepositDefinitionException)
         {

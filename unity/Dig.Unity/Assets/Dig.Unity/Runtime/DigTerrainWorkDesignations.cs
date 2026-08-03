@@ -132,6 +132,15 @@ namespace Dig.Unity
                 throw new InvalidOperationException(tunnelInfrastructure.Error!.ToString());
             }
 
+            Result roomInfrastructure = SynchronizeRoomInfrastructureRuntime(
+                tick,
+                agents,
+                _worldSession.CreateTunnelNavigationVolume().Cells);
+            if (roomInfrastructure.IsFailure)
+            {
+                throw new InvalidOperationException(roomInfrastructure.Error!.ToString());
+            }
+
             AssignNearestAutomaticDigJobs(agents, cells, tick);
             _assignmentHandler.Handle(new AssignAvailableJobsCommand(tick));
         }
