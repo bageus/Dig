@@ -130,7 +130,11 @@ internal sealed partial class DigTerrainWorkSession
             }
 
             Result result;
-            if (job.Definition is HaulJobDefinition)
+            if (job.Definition is TunnelAutomaticWorkJobDefinition)
+            {
+                result = AdvanceTunnelAutomaticWork(job, agent, tick);
+            }
+            else if (job.Definition is HaulJobDefinition)
             {
                 result = AdvanceHaulingAtTarget(job, agent, tick);
             }
@@ -170,9 +174,6 @@ internal sealed partial class DigTerrainWorkSession
 
         if (_worldChanged)
         {
-            // Rebuild frontier jobs once after every resident has advanced. Doing this
-            // from per-resident Advance calls used a one-agent candidate set and could
-            // leave the remaining tunnel cells without a worker after the first dig.
             SynchronizeDesignations(tick, agents, DefaultExcavationPriority);
         }
     }
@@ -283,9 +284,6 @@ internal sealed partial class DigTerrainWorkSession
             return Result.Failure(completion.Error!);
         }
 
-        // The terrain commit above is already authoritative. Mark the world dirty
-        // before any derived navigation refresh so Presentation cannot miss the open
-        // cell when navigation fails and the tick returns a recoverable warning.
         MarkAuthoritativeWorldChanged();
         CompleteExcavationQuarterTarget(targetCell);
         _routePlans.Remove(job.Id);
@@ -295,7 +293,6 @@ internal sealed partial class DigTerrainWorkSession
         Result refresh = RefreshNavigation();
         return refresh.IsFailure ? refresh : Result.Success();
     }
-
 
     private static bool IsActive(JobSnapshot job)
     {
