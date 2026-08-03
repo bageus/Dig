@@ -18,7 +18,7 @@ public sealed class TunnelManualWorkExecutionTests
 {
     private static readonly EntityId SegmentId = Id(1);
     private static readonly EntityId ManualJobId = EntityId.Parse(
-        "m000000000000000000000000000001");
+        "b000000000000000000000000000001");
     private static readonly EntityId AutomaticJobId = EntityId.Parse(
         "a000000000000000000000000000001");
     private static readonly EntityId ResidentId = Id(4);
