@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.Serialization;
 using Dig.Application.Buildings;
+using Dig.Application.Rooms;
 using Dig.Application.Tunnels;
 using Dig.Application.World;
 using Dig.Domain.Agents;
@@ -21,7 +22,7 @@ namespace Dig.Application.Saving
 
 public static class SaveFormat
 {
-    public const int CurrentVersion = 15;
+    public const int CurrentVersion = 16;
 }
 
 public static class SaveSlotNames
@@ -101,6 +102,7 @@ public sealed class SaveGameDocument
     [DataMember(Order = 17)] public LivingMaterialEcologySaveData LivingMaterials { get; set; } = new LivingMaterialEcologySaveData();
     [DataMember(Order = 18)] public VukerEcologySaveData Vukers { get; set; } = new VukerEcologySaveData();
     [DataMember(Order = 19)] public TunnelInfrastructureSaveData TunnelInfrastructure { get; set; } = new TunnelInfrastructureSaveData();
+    [DataMember(Order = 20)] public RoomInfrastructureSaveData RoomInfrastructure { get; set; } = new RoomInfrastructureSaveData();
 }
 
 public sealed class LoadedGameState
@@ -127,7 +129,8 @@ public sealed class LoadedGameState
         int? terrainDepositGeneratorVersion = null,
         LivingMaterialEcologyState? livingMaterials = null,
         VukerEcologyState? vukers = null,
-        TunnelInfrastructureRuntimeSnapshot? tunnelInfrastructure = null)
+        TunnelInfrastructureRuntimeSnapshot? tunnelInfrastructure = null,
+        RoomInfrastructureRuntimeSnapshot? roomInfrastructure = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -171,6 +174,8 @@ public sealed class LoadedGameState
         Vukers = vukers ?? new VukerEcologyState(metadata.WorldSeed);
         TunnelInfrastructure = tunnelInfrastructure
             ?? TunnelInfrastructureRuntimeSnapshot.Empty();
+        RoomInfrastructure = roomInfrastructure
+            ?? RoomInfrastructureRuntimeSnapshot.Empty();
     }
 
     public SaveMetadataData Metadata { get; }
@@ -195,6 +200,7 @@ public sealed class LoadedGameState
     public LivingMaterialEcologyState LivingMaterials { get; }
     public VukerEcologyState Vukers { get; }
     public TunnelInfrastructureRuntimeSnapshot TunnelInfrastructure { get; }
+    public RoomInfrastructureRuntimeSnapshot RoomInfrastructure { get; }
 
     private static IReadOnlyDictionary<TKey, TValue> Copy<TKey, TValue>(
         IReadOnlyDictionary<TKey, TValue>? values) where TKey : notnull

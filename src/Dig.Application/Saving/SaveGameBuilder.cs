@@ -67,6 +67,11 @@ public sealed partial class SaveGameBuilder
             TunnelInfrastructure = TunnelInfrastructureSaveAdapter.Encode(
                 context.TunnelInfrastructure,
                 context.Jobs),
+            RoomInfrastructure = RoomInfrastructureSaveAdapter.Encode(
+                context.RoomInfrastructure,
+                context.Inventory,
+                context.Jobs,
+                context.World.Size),
         };
     }
 

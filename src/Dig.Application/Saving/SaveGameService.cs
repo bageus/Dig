@@ -68,7 +68,8 @@ public sealed class SaveGameService
             terrainDepositGeneratorVersion: context.TerrainDepositGeneratorVersion,
             livingMaterials: context.LivingMaterials,
             vukers: context.Vukers,
-            tunnelInfrastructure: context.TunnelInfrastructure));
+            tunnelInfrastructure: context.TunnelInfrastructure,
+            roomInfrastructure: context.RoomInfrastructure));
     }
 
     public Result<LoadedGameState> Load(
