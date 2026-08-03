@@ -9,7 +9,6 @@ using Dig.Domain.Navigation;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Dig.Presentation.Agents;
-using Dig.Presentation.Buildings;
 
 namespace Dig.Unity
 {
@@ -24,32 +23,6 @@ internal sealed partial class DigTerrainWorkSession
     private SynchronizeTunnelAutomaticJunctionTrimHandler? _tunnelTrimSync;
     private CompleteTunnelAutomaticWorkHandler? _tunnelWorkCompletion;
     private ulong _tunnelAutomaticJobSequence = 1UL;
-
-    internal void InitializeTunnelInfrastructureRuntime()
-    {
-        _tunnelInfrastructure = new InMemoryTunnelInfrastructureRepository();
-        _tunnelTopologySync = new SynchronizeTunnelTopologyHandler(
-            _tunnelInfrastructure,
-            _inventoryRepository,
-            _jobRepository,
-            _journal);
-        _tunnelSupportSync = new SynchronizeTunnelAutomaticSupportHandler(
-            _tunnelInfrastructure,
-            _inventoryRepository,
-            _jobRepository,
-            _journal);
-        _tunnelTrimSync = new SynchronizeTunnelAutomaticJunctionTrimHandler(
-            _tunnelInfrastructure,
-            _inventoryRepository,
-            _jobRepository,
-            _journal);
-        _tunnelWorkCompletion = new CompleteTunnelAutomaticWorkHandler(
-            _tunnelInfrastructure,
-            _inventoryRepository,
-            _jobRepository,
-            _journal,
-            _skillGrants);
-    }
 
     internal Result SynchronizeTunnelInfrastructureRuntime(
         long tick,
@@ -66,7 +39,7 @@ internal sealed partial class DigTerrainWorkSession
             throw new ArgumentNullException(nameof(reachableCells));
         }
 
-        RequireTunnelInfrastructureRuntime();
+        EnsureTunnelInfrastructureRuntime();
         WorldSnapshot world = _worldSession.LoadSnapshot();
         IReadOnlyList<TunnelTopologySegmentProvenance> provenance =
             _tunnelTopologyProjector.Project(
@@ -106,12 +79,11 @@ internal sealed partial class DigTerrainWorkSession
         for (int index = 0; index < snapshot.Segments.Count; index++)
         {
             HorizontalTunnelSegmentSnapshot segment = snapshot.Segments[index];
-            EntityId nextJobId = ResolveSupportJobId(segment);
             Result<TunnelAutomaticSupportSyncResult> support =
                 _tunnelSupportSync!.Handle(
                     new SynchronizeTunnelAutomaticSupportCommand(
                         segment.SegmentId,
-                        nextJobId,
+                        ResolveSupportJobId(segment),
                         completedBuildingCells,
                         revealedCells,
                         reachable,
@@ -129,12 +101,11 @@ internal sealed partial class DigTerrainWorkSession
         {
             TunnelJunctionStoneTrimTargetSnapshot target =
                 snapshot.PendingJunctionStoneTrimTargets[index];
-            EntityId nextJobId = ResolveTrimJobId(target);
             Result<TunnelAutomaticJunctionTrimSyncResult> trim =
                 _tunnelTrimSync!.Handle(
                     new SynchronizeTunnelAutomaticJunctionTrimCommand(
                         target.Cell,
-                        nextJobId,
+                        ResolveTrimJobId(target),
                         completedBuildingCells,
                         revealedCells,
                         reachable,
@@ -151,14 +122,14 @@ internal sealed partial class DigTerrainWorkSession
 
     internal TunnelInfrastructureSnapshot LoadTunnelInfrastructureRuntime()
     {
-        RequireTunnelInfrastructureRuntime();
+        EnsureTunnelInfrastructureRuntime();
         return _tunnelInfrastructure!.Get().CaptureSnapshot();
     }
 
     private void SynchronizeTunnelAutomaticCandidates(
         IReadOnlyList<AgentViewModel> agents)
     {
-        if (_candidateProvider == null || _assignmentHandler == null)
+        if (_candidateProvider == null)
         {
             throw new InvalidOperationException(
                 "Dynamic job assignment is not initialized.");
@@ -178,15 +149,14 @@ internal sealed partial class DigTerrainWorkSession
                 job.Id,
                 CreateDynamicCandidates(agents, definition.TargetCell));
         }
-
-        _assignmentHandler.Handle(new AssignAvailableJobsCommand(_worldSession.Tick));
     }
 
     private bool TryPlanTunnelAutomaticWorkMovement(
         JobSnapshot job,
         AgentViewModel agent,
         NavigationSnapshot navigation,
-        IDictionary<string, CellId> movement)
+        IDictionary<string, CellId> movement,
+        long tick)
     {
         if (job.Definition is not TunnelAutomaticWorkJobDefinition definition)
         {
@@ -205,7 +175,7 @@ internal sealed partial class DigTerrainWorkSession
             new PathRequest(start, destination.Value, navigation.NavigationVersion));
         if (!path.Succeeded || path.Path == null)
         {
-            ReleaseTunnelAutomaticAssignment(job, _worldSession.Tick);
+            ReleaseTunnelAutomaticAssignment(job, tick);
             return true;
         }
 
@@ -310,17 +280,35 @@ internal sealed partial class DigTerrainWorkSession
             "a" + (_tunnelAutomaticJobSequence++).ToString("x31"));
     }
 
-    private void RequireTunnelInfrastructureRuntime()
+    private void EnsureTunnelInfrastructureRuntime()
     {
-        if (_tunnelInfrastructure == null
-            || _tunnelTopologySync == null
-            || _tunnelSupportSync == null
-            || _tunnelTrimSync == null
-            || _tunnelWorkCompletion == null)
+        if (_tunnelInfrastructure != null)
         {
-            throw new InvalidOperationException(
-                "Tunnel infrastructure runtime is not initialized.");
+            return;
         }
+
+        _tunnelInfrastructure = new InMemoryTunnelInfrastructureRepository();
+        _tunnelTopologySync = new SynchronizeTunnelTopologyHandler(
+            _tunnelInfrastructure,
+            _inventoryRepository,
+            _jobRepository,
+            _journal);
+        _tunnelSupportSync = new SynchronizeTunnelAutomaticSupportHandler(
+            _tunnelInfrastructure,
+            _inventoryRepository,
+            _jobRepository,
+            _journal);
+        _tunnelTrimSync = new SynchronizeTunnelAutomaticJunctionTrimHandler(
+            _tunnelInfrastructure,
+            _inventoryRepository,
+            _jobRepository,
+            _journal);
+        _tunnelWorkCompletion = new CompleteTunnelAutomaticWorkHandler(
+            _tunnelInfrastructure,
+            _inventoryRepository,
+            _jobRepository,
+            _journal,
+            _skillGrants);
     }
 }
 }
