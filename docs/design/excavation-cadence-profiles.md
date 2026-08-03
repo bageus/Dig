@@ -2,13 +2,14 @@
 
 Статус: `IMPLEMENTED`.
 
-Tracking issue: [#388](https://github.com/bageus/Dig/issues/388).
+Tracking issues: [#388](https://github.com/bageus/Dig/issues/388), [#601](https://github.com/bageus/Dig/issues/601).
 
 Связанные документы:
 
 - [`excavation-command-execution.md`](excavation-command-execution.md);
 - [`skills-and-progression.md`](skills-and-progression.md);
 - [`resident-movement-occupancy-and-vertical-traversal.md`](resident-movement-occupancy-and-vertical-traversal.md);
+- [`unified-game-time-and-action-cadence.md`](unified-game-time-and-action-cadence.md);
 - [`../implementation/excavation-cadence-profiles-2026-07-29.md`](../implementation/excavation-cadence-profiles-2026-07-29.md).
 
 ## 1. Назначение
@@ -61,16 +62,21 @@ Bands восстанавливают уже существовавшие гра�
 | 51–70 | `1/2` |
 | 71–100 | `1/3` |
 
-### Equipment
+### Equipment и базовый cooldown
 
-- без подходящего mining tool используется существующий base interval `3`;
-- текущий demo pickaxe profile использует interval `1`;
+- один mining impact tick коммитит не более одного quarter;
+- после impact действуют два recovery ticks;
+- поэтому текущий demo pickaxe использует базовый equipment interval `3`;
+- runtime не разрешает demo mining interval опуститься ниже `3`, даже если старый equipment profile возвращает меньшее значение;
+- без подходящего mining tool также используется base interval не меньше `3` до применения hardness/skill/posture formula;
 - новые инструменты добавляются через `EquipmentProfile`, а не через проверки display name;
 - tool меняет cadence, но не World progress owner и не количество quarters.
 
+Базовая обычная клетка с четырьмя required quarters получает impact attempts на ticks `T`, `T+3`, `T+6`, `T+9`, если route, support, reservation и target остаются допустимыми. Фактический interval может увеличиться из-за hardness/skill/posture. Animation swing не создаёт дополнительный commit.
+
 ### Posture
 
-`Standing`, `DepthBraced` и `Climbing` имеют отдельные data ratios. Текущие production defaults равны `1/1`, потому что числовой штраф/бонус posture не подтверждён и относится к Q-014 `BALANCE_TBD`. Архитектурный input уже обязателен для всех путей копания.
+`Standing`, `DepthBraced` и `Climbing` имеют отдельные data ratios. Текущие production defaults равны `1/1`, потому что числовой штраф/бонус posture не подтверждён и относится к Q-014 `BALANCE_TBD`. Архитектурный input обязателен для всех путей копания.
 
 ## 5. Опыт за committed quarter
 
@@ -113,7 +119,7 @@ Cadence не изменяет утверждённый приоритет дей
 
 ## 9. Save/Load
 
-Сохраняются World quarter mask, cut pattern, source material, Jobs stages/assignments, Inventory equipment и Skills applied source keys. Отдельный random seed, animation swing counter или sub-quarter progress не сохраняются. После load следующий due tick вычисляется из fixed tick и текущих data profiles.
+Сохраняются World quarter mask, cut pattern, source material, Jobs stages/assignments, Inventory equipment и Skills applied source keys. Отдельный random seed, animation swing counter или sub-quarter progress не сохраняются. После load следующий due tick вычисляется из fixed tick и текущих data profiles. Existing global simulation tick не масштабируется при cadence migration.
 
 ## 10. Presentation и flavor accidents
 
@@ -125,7 +131,7 @@ Cadence не изменяет утверждённый приоритет дей
 
 - target material hardness и reference hardness;
 - Stonework и выбранный skill band;
-- equipment item/profile interval;
+- equipment item/profile interval и применённый base floor `3`;
 - posture и posture ratio;
 - итоговый `IntervalTicks` и due/not-due;
 - committed quarter, profile share и source id;
@@ -137,7 +143,8 @@ Cadence не изменяет утверждённый приоритет дей
 - одинаковые inputs и tick дают одинаковый cadence result;
 - обычная, direct и spatial excavation используют один resolver;
 - material hardness изменяет interval;
-- demo pickaxe использует существующий equipment interval и ускоряет работу;
+- demo pickaxe использует базовый interval `3`: один impact tick и два recovery ticks;
+- runtime не коммитит второй quarter внутри одного due impact;
 - Stonework bands дают ожидаемые deterministic intervals без random swings;
 - posture передаётся во все runtime paths и регулируется data profile;
 - один due step завершает ровно один reserved quarter;
@@ -147,8 +154,8 @@ Cadence не изменяет утверждённый приоритет дей
 - missing skill recipient не допускает World mutation;
 - finalization не выдаёт второй completion grant;
 - cancel/retry/save/load продолжают World-owned remaining mask;
-- Unity Play Mode fixture проверяет cadence и четыре authoritative quarter commits.
+- Unity Play Mode fixture проверяет cadence, recovery ticks и четыре authoritative quarter commits.
 
 ## 13. Открытая balance boundary
 
-Q-014 остаётся владельцем точных posture ratios, дополнительных tool intervals, material tuning и частоты flavor cues. Эти значения не выводятся предположительно из закрытого legacy engine.
+Q-014 остаётся владельцем точных posture ratios, дополнительных tool intervals, material tuning и частоты flavor cues. Подтверждённый demo pickaxe floor `3` больше не относится к открытому вопросу.
