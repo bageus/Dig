@@ -52,6 +52,7 @@ Tracking issues: [#385](https://github.com/bageus/Dig/issues/385), [#393](https:
 | Приготовление и использование пищи в костре | grilled mushroom, гриль-гриб, шляпка гриба, Cooking, pickup arrow, зелёный рот, Alt+LMB, три укуса | `IMPLEMENTED` | [`campfire-cooking-and-food-use.md`](../design/campfire-cooking-and-food-use.md) | [#459](https://github.com/bageus/Dig/issues/459) |
 | Simulation/job fault isolation | один job не останавливает всех гномов | `QUESTIONNAIRE` | [`excavation-command-execution.md`](../design/excavation-command-execution.md), [`../implementation/simulation-runtime.md`](../implementation/simulation-runtime.md) | [#388](https://github.com/bageus/Dig/issues/388) |
 | Presentation host, input, UI и diagnostics | bootstrap, renderer, inspector, read model, notification ticker, debug overlay, 64 residents | `IMPLEMENTED` | [`presentation-input-ui-and-diagnostics.md`](../design/presentation-input-ui-and-diagnostics.md) | [#14](https://github.com/bageus/Dig/issues/14), [#511](https://github.com/bageus/Dig/issues/511) |
+| Временные инструменты в руках resident | дубина, кирка, топор, молоток, right hand, work tool, tool switch | `APPROVED` | [`resident-work-tool-visual-projection.md`](../design/resident-work-tool-visual-projection.md) | [`../implementation/resident-work-tool-visual-projection-2026-08-03.md`](../implementation/resident-work-tool-visual-projection-2026-08-03.md), [#602](https://github.com/bageus/Dig/issues/602) |
 
 ## Runtime foundation
 
