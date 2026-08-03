@@ -137,15 +137,41 @@ Validation PR #582:
 - Stage 2 v2/v3 exports passed;
 - Unity workflow recorded blocked runtime evidence; actual EditMode/PlayMode execution was skipped because activation was unavailable.
 
-#### Slice 2B-2 — provenance adapter and automatic work commit
+#### Slice 2B-2a — automatic work final commit
+
+Статус: `READY FOR REVIEW` в stacked PR #584. Подробный implementation note: [`issue-574-tunnel-automatic-work-execution-2026-08-03.md`](issue-574-tunnel-automatic-work-execution-2026-08-03.md).
+
+Реализовано:
+
+- final commit принимает только `TunnelAutomaticWorkJobDefinition` в `InProgress/Finalize` с authoritative worker;
+- source повторно проверяется по exact stack identity, item id, исходной world cell и reservation владельца-job;
+- current support/trim target повторно сверяется с `TunnelInfrastructureState` непосредственно перед mutation;
+- wooden support расходует ровно один `material.mushroom_leg`, становится structural anchor и переносит rolling target;
+- junction trim расходует ровно один `material.stone`, остаётся decorative и не даёт structural protection;
+- final stage завершает job и освобождает JobSystem claims;
+- worker получает ровно `70` fixed-point units (`+0.7`) Woodworking или Stonework;
+- skill idempotency использует stable automatic job identity;
+- stale target, missing reservation и changed source отклоняются до material, infrastructure и skill mutation;
+- terminal replay не может повторно расходовать материал или начислить skill.
+
+Validation PR #584:
+
+- architecture, file-size, C# 9 compatibility, compiler baseline, dependency и Domain-boundary checks passed;
+- Release build passed: `0` warnings, `0` errors;
+- full .NET suite passed: `1416/1416`;
+- четыре новых execution regression tests passed;
+- headless smoke passed at tick `20`;
+- standard deterministic soak replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
+- large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
+- Unity workflow recorded blocked runtime evidence; actual EditMode/PlayMode execution was skipped because activation was unavailable.
+
+#### Slice 2B-2b — excavation/template provenance topology reconciliation
 
 Осталось:
 
 - synchronization из completed excavation/template-room provenance;
 - deterministic creation/removal horizontal segments at room exits and vertical junctions;
-- support/trim work execution;
-- exact material consumption;
-- material-specific `+0.7` skill exactly once;
+- runtime stage/movement composition and Unity projection;
 - interruption policies reuse Slice 2A;
 - player cancellation не реализуется до ответа `Q-TUNNEL-008`.
 
