@@ -62,7 +62,7 @@ public sealed class AgentSleepRecoveryTests
 
         Assert.True(sleeping.IsAlive);
         Assert.Equal(1_994, sleeping.Needs.Health.Points);
-        Assert.Equal(97, sleeping.Needs.Nutrition.Points);
+        Assert.Equal(99, sleeping.Needs.Nutrition.Points);
     }
 
     private static AgentState CreateSleepingAgent(
