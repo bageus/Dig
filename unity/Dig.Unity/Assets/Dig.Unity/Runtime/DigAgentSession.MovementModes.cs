@@ -21,6 +21,12 @@ internal sealed partial class DigAgentSession
     private readonly Dictionary<string, ResidentMovementInterruptionViewModel>
         _movementInterruptions =
             new Dictionary<string, ResidentMovementInterruptionViewModel>(StringComparer.Ordinal);
+    private readonly Dictionary<string, int> _movementStepBudgets =
+        new Dictionary<string, int>(StringComparer.Ordinal);
+    private readonly Dictionary<string, int> _movementStepsConsumed =
+        new Dictionary<string, int>(StringComparer.Ordinal);
+    private readonly Dictionary<string, ResidentMovementCommandSource> _movementSources =
+        new Dictionary<string, ResidentMovementCommandSource>(StringComparer.Ordinal);
     private Func<ResidentMovementRuntimeRequest, ResidentMovementModeResolution>?
         _movementModeResolver;
 
@@ -52,6 +58,9 @@ internal sealed partial class DigAgentSession
     private void BeginMovementModeTick()
     {
         _movementModes.Clear();
+        _movementStepBudgets.Clear();
+        _movementStepsConsumed.Clear();
+        _movementSources.Clear();
     }
 
     private bool IsMovementStepDue(
@@ -80,11 +89,42 @@ internal sealed partial class DigAgentSession
         ResidentMovementModeResolution resolution = _movementModeResolver == null
             ? ResolveFallback(runtimeRequest)
             : _movementModeResolver(runtimeRequest);
-        _movementModes[agent.Id.ToString()] =
-            new ResidentMovementModeViewModel(resolution);
-        return ResidentInventoryMovementCadence.IsDue(
+        string residentKey = agent.Id.ToString();
+        _movementModes[residentKey] = new ResidentMovementModeViewModel(resolution);
+        if (_movementSources.TryGetValue(
+                residentKey,
+                out ResidentMovementCommandSource existingSource)
+            && existingSource != source)
+        {
+            return false;
+        }
+
+        _movementSources[residentKey] = source;
+        int currentBudget = ResidentInventoryMovementCadence.IsDue(
             _tick,
-            resolution.AuthoritativeCadenceMultiplier);
+            resolution.AuthoritativeCadenceMultiplier)
+            ? ResidentInventoryMovementCadence.ResolveStepCount(
+                _tick,
+                resolution.AuthoritativeCadenceMultiplier)
+            : 0;
+        if (!_movementStepBudgets.TryGetValue(residentKey, out int budget))
+        {
+            budget = currentBudget;
+        }
+        else
+        {
+            budget = Math.Min(budget, currentBudget);
+        }
+
+        _movementStepBudgets[residentKey] = budget;
+        _movementStepsConsumed.TryGetValue(residentKey, out int consumed);
+        if (consumed >= budget)
+        {
+            return false;
+        }
+
+        _movementStepsConsumed[residentKey] = checked(consumed + 1);
+        return true;
     }
 
     private void TryAdvanceAutomaticMovement(

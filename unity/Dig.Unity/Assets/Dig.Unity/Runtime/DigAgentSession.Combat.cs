@@ -85,7 +85,7 @@ internal sealed partial class DigAgentSession
                 sightRange: CaveEncounterCombatContent.CaveMonster.SightRange,
                 alarmRadius: 4,
                 windUpTicks: 1,
-                recoveryTicks: 1,
+                recoveryTicks: 3,
                 retryDelayTicks: 1,
                 maximumRetries: 3,
                 new CombatTacticalPolicy(

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
+using Dig.Domain.Runtime;
 using Xunit;
 
 namespace Dig.Tests
@@ -39,7 +40,7 @@ public sealed class AgentNeedsAndScheduleTests
     }
 
     [Fact]
-    public void Critical_survival_needs_damage_health()
+    public void Critical_survival_needs_damage_health_proportionally()
     {
         AgentState agent = AgentTestFactory.CreateAgent(
             nutrition: 100,
@@ -53,16 +54,17 @@ public sealed class AgentNeedsAndScheduleTests
         AgentSnapshot snapshot = agent.CreateSnapshot(1);
         Assert.Equal(0, snapshot.Needs.Nutrition.Points);
         Assert.Equal(0, snapshot.Needs.Alertness.Points);
-        Assert.Equal(9_500, snapshot.Needs.Health.Points);
-        Assert.Equal(4_700, snapshot.Needs.Mood.Points);
+        Assert.Equal(8_333, snapshot.Needs.Health.Points);
+        Assert.Equal(4_799, snapshot.Needs.Mood.Points);
     }
 
     [Fact]
     public void Default_passive_decay_spans_exact_schedule_days_proportionally()
     {
         AgentNeedPolicy policy = AgentBehaviorPolicy.CreateDefault().Needs;
-        const int ticksPerDay = 24;
-        NeedDelta[] deltas = Enumerable.Range(0, 100)
+        int ticksPerDay = GameTimeCadence.TicksPerDay;
+        int sampleTicks = policy.MoodFullDepletionTicks;
+        NeedDelta[] deltas = Enumerable.Range(0, sampleTicks)
             .Select(tick => policy.ResolvePassiveDelta(tick, ticksPerDay))
             .ToArray();
 

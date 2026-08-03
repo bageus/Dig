@@ -41,7 +41,7 @@ public sealed class ResidentMovementModePolicy
         return new ResidentMovementModePolicy(
             tiredAlertnessThreshold: 2_000,
             automaticMobilityMinimumRemainingSteps: null,
-            ResidentMovementModeCatalog.CreateNeutralDefaults());
+            ResidentMovementModeCatalog.CreateGameplayDefaults());
     }
 }
 
@@ -210,8 +210,7 @@ public sealed class ResidentMovementModeResolution
     public double EffectiveSpeedMultiplier { get; }
     public double TransitionDurationMultiplier { get; }
     public bool RepeatedManualCommand { get; }
-    public double AuthoritativeCadenceMultiplier =>
-        Math.Min(1d, EffectiveSpeedMultiplier);
+    public double AuthoritativeCadenceMultiplier => EffectiveSpeedMultiplier;
 }
 
 public sealed class ResidentMovementModeResolver

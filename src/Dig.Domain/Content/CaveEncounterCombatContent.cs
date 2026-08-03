@@ -197,6 +197,7 @@ public static class CaveEncounterCombatContent
     public const string PredatoryVineSpeciesId = "enemy.plant.predatory_vine";
     public const string SwallowerSpeciesId = "enemy.demon.swallower";
     public const string SpiderSpeciesId = "enemy.spider";
+    public const int BaseMeleeCycleTicks = 4;
 
     public static readonly WeaponProfileId UnarmedProfileId =
         new WeaponProfileId("combat.weapon.unarmed");
@@ -294,7 +295,7 @@ public static class CaveEncounterCombatContent
                 accuracy: 6_000,
                 baseDamage: 500,
                 armorPenetration: 0,
-                cooldownTicks: 2,
+                cooldownTicks: BaseMeleeCycleTicks,
                 skillProfile: new CombatSkillProfile(
                     AgentSkillCatalog.UnarmedCombat,
                     hitGrantUnits: 25),
@@ -307,7 +308,7 @@ public static class CaveEncounterCombatContent
                 accuracy: 6_500,
                 baseDamage: 850,
                 armorPenetration: 0,
-                cooldownTicks: 2,
+                cooldownTicks: BaseMeleeCycleTicks,
                 skillProfile: new CombatSkillProfile(
                     AgentSkillCatalog.OneHandedCombat,
                     hitGrantUnits: 25),
@@ -320,7 +321,7 @@ public static class CaveEncounterCombatContent
                 accuracy: 7_000,
                 baseDamage: 650,
                 armorPenetration: 0,
-                cooldownTicks: 3,
+                cooldownTicks: BaseMeleeCycleTicks,
                 spatialMode: CombatAttackSpatialMode.Melee,
                 maximumHitChance: 9_500),
         };

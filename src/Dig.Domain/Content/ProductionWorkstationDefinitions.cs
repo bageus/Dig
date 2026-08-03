@@ -153,6 +153,8 @@ public sealed class ProductionWorkstationDefinition
 
 public static class ProductionStepTiming
 {
+    public const int MaximumSkillSpeedupPercent = 50;
+
     public static long ResolveDurationTicks(long baseDurationTicks, int skillUnits)
     {
         if (baseDurationTicks <= 0)
@@ -162,7 +164,9 @@ public static class ProductionStepTiming
 
         int points = Math.Max(
             0,
-            Math.Min(100, skillUnits / AgentSkillCatalog.UnitsPerPoint));
+            Math.Min(
+                MaximumSkillSpeedupPercent,
+                skillUnits / AgentSkillCatalog.UnitsPerPoint));
         decimal scaled = baseDurationTicks * (100m - points) / 100m;
         return Math.Max(1L, decimal.ToInt64(decimal.Round(
             scaled,

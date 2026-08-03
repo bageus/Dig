@@ -80,10 +80,12 @@ public sealed class CampfireSerializedProductionRuntimeContractTests
     }
 
     [Fact]
-    public void Demo_uses_one_tick_workbench_and_processed_carry_projection()
+    public void Live_demo_uses_authoritative_material_cadence_and_processed_carry_projection()
     {
         string initialization = ReadRuntime(
             "DigBuildingProductionExecution.cs");
+        string content = Read(
+            "src/Dig.Domain/Content/CampfireProductionContent.cs");
         string presenter = Read(
             "src/Dig.Presentation.Abstractions/Production/BuildingProductionPresenter.cs");
         string renderer = ReadRuntime(
@@ -91,8 +93,10 @@ public sealed class CampfireSerializedProductionRuntimeContractTests
         string equipment = ReadRuntime("DigResidentEquipment.cs");
 
         Assert.Contains(
-            "CampfireProductionContent.TestProductionMaterialTicks",
+            "CampfireProductionContent.ProductionMaterialTicks",
             initialization);
+        Assert.Contains("public const long ProductionMaterialTicks = 25", content);
+        Assert.Contains("public const long CookingMaterialTicks = ProductionMaterialTicks * 2", content);
         Assert.Contains("showWorkbench", presenter);
         Assert.Contains("Production Log Workbench", renderer);
         Assert.Contains("Destroy(collider)", renderer);

@@ -72,7 +72,8 @@ public sealed class CampfireProductionContentTests
     public void Grilled_mushroom_consumes_one_cap_creates_two_food_units()
     {
         RecipeDefinition recipe = CampfireProductionContent.CreateRecipes(
-                CampfireProductionContent.ProductionMaterialTicks)
+                CampfireProductionContent.ProductionMaterialTicks,
+                CampfireProductionContent.CookingMaterialTicks)
             .Single(value => value.Id == CampfireProductionContent.GrilledMushroomRecipeId);
         ContentItemQuantity input = Assert.Single(recipe.Inputs);
         ContentItemQuantity output = Assert.Single(recipe.Outputs);
@@ -82,6 +83,9 @@ public sealed class CampfireProductionContentTests
         Assert.Equal(1, input.Quantity);
         Assert.Equal(CampfireProductionContent.GrilledMushroomItemId, output.ItemId);
         Assert.Equal(2, output.Quantity);
+        Assert.Equal(
+            CampfireProductionContent.CookingMaterialTicks,
+            Assert.Single(recipe.MaterialSteps).BaseDurationTicks);
         Assert.Contains(CampfireProductionContent.FoodCategoryId, item.Categories);
     }
 
@@ -108,18 +112,19 @@ public sealed class CampfireProductionContentTests
     }
 
     [Theory]
-    [InlineData(0, 900)]
-    [InlineData(25, 675)]
-    [InlineData(50, 450)]
-    [InlineData(100, 1)]
-    public void Grilled_mushroom_duration_is_fifteen_minutes_minus_cooking_percent(
+    [InlineData(0, 50)]
+    [InlineData(25, 38)]
+    [InlineData(50, 25)]
+    [InlineData(75, 25)]
+    [InlineData(100, 25)]
+    public void Grilled_mushroom_duration_is_fifty_ticks_with_fifty_percent_floor(
         int skillPoints,
         long expectedTicks)
     {
         Assert.Equal(
             expectedTicks,
             ProductionStepTiming.ResolveDurationTicks(
-                CampfireProductionContent.ProductionMaterialTicks,
+                CampfireProductionContent.CookingMaterialTicks,
                 skillPoints * AgentSkillCatalog.UnitsPerPoint));
     }
 

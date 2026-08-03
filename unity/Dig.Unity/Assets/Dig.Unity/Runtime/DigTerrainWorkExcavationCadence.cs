@@ -20,9 +20,11 @@ namespace Dig.Unity
             TerrainWorkPosture posture,
             long tick)
         {
-            int equipmentInterval = ResolveMiningWorkInterval(
-                workerId.ToString(),
-                ResidentMiningBaseIntervalTicks);
+            int equipmentInterval = Math.Max(
+                ResidentMiningBaseIntervalTicks,
+                ResolveMiningWorkInterval(
+                    workerId.ToString(),
+                    ResidentMiningBaseIntervalTicks));
             int effortPermille = _worldSession.ResolveDepositWorkEffortPermille(
                 target.Id);
             int effectiveHardness = checked((int)Math.Max(

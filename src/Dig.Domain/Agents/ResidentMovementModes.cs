@@ -136,6 +136,30 @@ public sealed class ResidentMovementModeCatalog
                     transitionDurationMultiplier: 1d))
                 .ToArray());
     }
+
+    public static ResidentMovementModeCatalog CreateGameplayDefaults()
+    {
+        return new ResidentMovementModeCatalog(new[]
+        {
+            Definition(ResidentMovementMode.Normal, 1.25d),
+            Definition(ResidentMovementMode.Tired, 1d),
+            Definition(ResidentMovementMode.ForcedFast, 1.25d),
+            Definition(ResidentMovementMode.Fleeing, 1.25d),
+            Definition(ResidentMovementMode.Carrying, 1d),
+            Definition(ResidentMovementMode.Mobility, 1.25d),
+            Definition(ResidentMovementMode.Climbing, 0.5d),
+        });
+    }
+
+    private static ResidentMovementModeDefinition Definition(
+        ResidentMovementMode mode,
+        double speed)
+    {
+        return new ResidentMovementModeDefinition(
+            mode,
+            speed,
+            transitionDurationMultiplier: 1d / speed);
+    }
 }
 
 }

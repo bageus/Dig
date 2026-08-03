@@ -35,7 +35,7 @@ internal static class Program
 
         SimulationState state = SimulationState.Create(
             worldSeed: 42,
-            tickDuration: TimeSpan.FromMilliseconds(100));
+            tickDuration: GameTimeCadence.NormalTickDuration);
         InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
         EntityId residentId = Require(state.Entities.RegisterNew());
         AgentState resident = new AgentState(
@@ -46,7 +46,7 @@ internal static class Program
                 new NeedValue(2_500),
                 new NeedValue(6_000),
                 new NeedValue(10_000)),
-            DailySchedule.CreateBalanced(ticksPerDay: 12),
+            DailySchedule.CreateBalanced(GameTimeCadence.TicksPerDay),
             new[]
             {
                 new AgentSkillValue(new AgentSkillId("general.work"), 4_000),

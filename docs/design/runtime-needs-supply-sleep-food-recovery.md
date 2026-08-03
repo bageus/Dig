@@ -1,9 +1,9 @@
 # Runtime cadence, needs actions, workstation interleaving and shelter/food recovery
 
 **Status:** IMPLEMENTED  
-**Decision date:** 2026-08-02  
-**Tracking:** #2, #159, #142, #433, #459  
-**Implementation PR:** #573
+**Decision dates:** 2026-08-02, cadence correction 2026-08-03  
+**Tracking:** #2, #159, #142, #433, #459, #601  
+**Implementation PRs:** #573, #603
 
 ## Scope
 
@@ -14,25 +14,28 @@ This specification records the confirmed runtime correction for four observable 
 - a completed Tent is a real sleep facility and must be preferred over Floor sleep when a free reachable slot exists;
 - a hungry resident outside Work may open a closed temporary food package and then eat the released food.
 
-It is an authoritative addendum to `systems-core.md`, `resident-schedule-needs-actions.md`, `sleep-comfort-and-bed-assignment.md`, `building-production-and-internal-supply.md` and `campfire-cooking-and-food-use.md`.
+The cross-system timing values are owned by [`unified-game-time-and-action-cadence.md`](unified-game-time-and-action-cadence.md). Where the earlier 2026-08-02 values differ, the 2026-08-03 cadence contract is authoritative.
 
 ## Simulation cadence and readable needs
 
 - `SimulationState.Clock.TickDuration` is the only normal-speed cadence authority.
 - The Unity driver reads that duration from the active session; it does not keep an independent serialized normal tick.
-- The demo normal tick duration is `2.0` real seconds.
-- Pause and single-step remain exact. Fast and very-fast playback remain deterministic multipliers of the same authoritative tick duration.
+- The demo normal tick duration is `1.0` real second.
+- Pause and single-step remain exact. Fast and very-fast playback remain deterministic `x2` and `x4` multipliers of the same authoritative tick duration.
+- `150 ticks = 1 game hour`; `3 600 ticks = 24 game hours = 1 game day`.
 - Passive Nutrition, Alertness and Mood decay is committed once per simulation tick. HUD values refresh from the committed snapshot; Presentation never predicts or applies need changes.
-- `DailySchedule.TicksPerDay` is the authoritative in-game day length for that resident; the demo uses `24` ticks per full day.
-- UI `100` equals Domain `10_000`. From a full value and without recovery, Nutrition reaches `0` after exactly `2 × TicksPerDay` committed ticks, while Alertness reaches `0` after exactly `3 × TicksPerDay` committed ticks.
-- Integer fixed-point decay is distributed proportionally across the whole period: every tick uses the deterministic difference between adjacent cumulative fractions. Therefore neighboring tick deltas differ by at most one Domain unit and the final remainder is not concentrated in a large last-tick jump.
-- Passive Mood keeps its existing full-span duration of `100` committed ticks and uses the same proportional periodic resolver. Explicit positive Mood effects and the existing survival-critical Mood penalty remain separate typed effects; they do not redefine passive decay.
-- Passive time decay is the only ordinary negative Nutrition/Alertness/Mood owner. Generic `Work`, `PlayerOrder`, `Flee` and `Idle` action completion no longer applies a second negative need delta. `Eat`, `Sleep` and `Rest/Leisure` retain only their positive recovery effects; passive decay continues during those actions.
+- `DailySchedule.TicksPerDay` is the authoritative in-game day length for that resident; the demo uses `3 600`.
+- Fresh demo residents start with full Nutrition `10 000`.
+- UI `100` equals Domain `10 000`. From a full value and without recovery, Nutrition reaches `0` after exactly `7 200` committed ticks while Alertness reaches `0` after exactly `10 800`.
+- Passive Mood reaches zero over four game days, `14 400 ticks`.
+- Continuous survival-critical hunger depletes full Health over exactly 12 game hours, `1 800 ticks`; it does not apply the legacy fixed `-500` each tick.
+- Integer fixed-point decay and starvation damage use the deterministic difference between adjacent cumulative fractions. Neighboring tick deltas differ by at most one Domain unit and the final remainder is not concentrated in a large last-tick jump.
+- Passive time decay is the only ordinary negative Nutrition/Alertness/Mood owner. Generic `Work`, `PlayerOrder`, `Flee` and `Idle` completion does not apply a second negative need delta. `Eat`, `Sleep` and `Rest/Leisure` retain only positive recovery effects; passive decay continues during those actions.
 - A frame catch-up may execute several due ticks, but the existing maximum-ticks-per-frame boundary remains in force.
 
-The proportional decay for a period `P` and tick phase `k` is the negative difference `floor((k + 1) × 10_000 / P) - floor(k × 10_000 / P)`. The phase derives from authoritative simulation tick, so save/load and replay require no Presentation accumulator and cannot duplicate or lose a remainder.
+For period `P`, total `V` and tick phase `k`, the negative delta is `floor(k × V / P) - floor((k + 1) × V / P)`. The phase derives from authoritative simulation tick, so save/load and replay need no Presentation accumulator and cannot duplicate or lose a remainder.
 
-Save data stores simulation tick/time as before; changing the real-time cadence does not rewrite saved game ticks.
+Save data retains the existing simulation tick. Migration does not multiply or divide global tick values when the real-time cadence changes.
 
 ## Workstation operation interleaving
 
@@ -44,14 +47,14 @@ When a building has a non-terminal production queue:
 
 1. consecutive production units are allowed while the next unit has its complete input set and every required stock is at or above its threshold;
 2. after a produced unit closes and the worker releases the building operation, the operation turn becomes `Supply`;
-3. the Supply turn is used only when the next unit lacks an input or at least one of its required stocks is below threshold;
+3. the Supply turn is used only when the next unit lacks an input or at least one required stock is below threshold;
 4. one supply job takes every currently eligible free world unit it can carry for the next recipe's required item types; it does not wait for unavailable types and does not reserve protected building/resident inventory;
 5. unavailable required types create the existing supported extraction/harvest dependency when possible; unsupported types remain an explicit shortage;
 6. while the current `Supply` turn has produced no committed delivery, its unresolved supported extraction dependency keeps the next production unit waiting;
 7. after any committed supply batch, the operation turn becomes `Production`, so one next unit may start whenever its complete input set exists even if other extraction dependencies are still unresolved or the batch could not restore every required stock to threshold/capacity;
 8. unresolved dependencies never reserve the workstation; their eventual deliveries wait for the building operation to become free. If no eligible direct source and no supported extraction dependency can be created, an otherwise runnable unit is not permanently blocked.
 
-Example for grilled mushroom with cap capacity `4`: starting at `4`, three consecutive units may consume the stock `4 -> 3 -> 2 -> 1`; only then does the next Supply turn run. If the world currently contains only part of the depleted recipe inputs, that batch delivers only those units, extraction jobs are created for supported unavailable inputs, and production resumes after the batch when the next recipe still has a complete input set.
+For grilled mushroom with cap capacity `4`, starting at `4`, three consecutive orders may consume stock `4 -> 3 -> 2 -> 1`; only then does the next Supply turn run. One cap order uses a `50`-tick cooking material step, keeps all separate spatial/package commits and creates two distinct quantity-one grilled-mushroom entities.
 
 If there is no production queue, enabled refill remains continuous: synchronization creates delivery whenever eligible free materials appear and stops only when `current + incoming == capacity`. Supported extraction dependencies may replenish missing source types, but one failed/unreachable batch cannot leave phantom incoming or permanently block later refill.
 
@@ -75,7 +78,9 @@ Outside `ScheduleActivity.Work`, a hungry resident resolves food in this order:
 2. a reachable, unreserved loose world food unit;
 3. a reachable, unreserved closed output package with package kind `food`.
 
-For case 3 the resident claims the existing production-package Use workflow, walks to the package, breaks it once, and materializes its manifest in the package cell. A later deterministic planning pass claims one released food unit through the existing world-pickup `eatAfterPickup` workflow, then the authoritative three-bite meal applies Nutrition.
+For case 3 the resident claims the existing production-package Use workflow, walks to the package, breaks it once and materializes its manifest in the package cell. A later deterministic planning pass claims one released food unit through the existing world-pickup `eatAfterPickup` workflow.
+
+The authoritative meal commits bites at `T+1`, `T+3` and `T+5` after meal start. Cooldown ticks apply no Nutrition. Save/load retains the exact next bite tick and never replays completed bites.
 
 Automatic package opening:
 
@@ -91,21 +96,24 @@ Direct player package Use remains unchanged and has input priority over automati
 
 ## Diagnostics and UI
 
-Diagnostics expose authoritative tick duration, playback multiplier, resident need action/target, Tent slot/reservation, food plan stage, workstation operation turn and the reason either Production or Supply is currently blocked.
+Diagnostics expose authoritative tick duration, game day/hour projection, playback multiplier, need depletion/starvation periods, resident need action/target, meal next-bite tick, Tent slot/reservation, food plan stage, workstation operation turn and the reason either Production or Supply is blocked.
 
 ## Acceptance
 
-- normal Unity playback advances one simulation tick every `2.0` real seconds from the session clock;
+- normal Unity playback advances one simulation tick every `1.0` real second from the session clock;
 - pause/single-step/speed changes keep deterministic tick order;
-- with the demo `24`-tick day, full Nutrition remains above zero through tick `47` and reaches zero on the 48th passive tick; full Alertness remains above zero through tick `71` and reaches zero on the 72nd passive tick;
+- demo one-hour/day projections equal `150/3 600` ticks;
+- full Nutrition/Alertness reach zero exactly at `7 200/10 800` passive ticks;
+- continuous critical hunger depletes full Health exactly over `1 800` ticks;
 - passive per-tick deltas are monotonic proportional shares whose magnitudes differ by at most one Domain unit;
 - running ordinary Work/PlayerOrder/Flee/Idle produces the same negative need trajectory as passive time alone and cannot double-drain Nutrition, Alertness or Mood;
 - save/load at any phase produces the same next proportional delta as uninterrupted execution;
-- Work-time hunger still creates no automatic food/package job;
+- Work-time hunger creates no automatic food/package job;
 - free-time hunger consumes loose food when available and otherwise opens one food package then eats one released unit;
+- bites commit at `T+1/T+3/T+5` and restore mid-cooldown without replay;
 - two tired residents use two free Tent slots; a third uses Floor; packing the Tent releases slots;
 - Sleep effects do not advance before arrival at the reserved Tent slot;
-- campfire cap stock at `4`, `3` or `2` allows consecutive grilled-mushroom units; cap stock at `1` gives the next operation to Supply;
+- campfire cap stock at `4`, `3` or `2` allows consecutive grilled-mushroom orders; cap stock at `1` gives the next operation to Supply;
 - one queued supply batch collects all currently eligible free required materials without waiting for unavailable types;
 - a supported extraction dependency blocks the current pre-production Supply turn until a delivery commits;
 - after a partial delivery commits, unresolved dependencies no longer block one runnable Production turn;
@@ -117,4 +125,4 @@ Diagnostics expose authoritative tick duration, playback multiplier, resident ne
 
 ## Verification boundary
 
-The implementation can be marked `IMPLEMENTED` after final-head Quality, headless and deterministic tests. It is `VERIFIED` only after licensed Unity Play Mode executes cadence, Tent walking/sleep, food-package opening/eating, and production/supply alternation in the real composition.
+The implementation can be marked `IMPLEMENTED` after final-head Quality, headless and deterministic tests. It is `VERIFIED` only after licensed Unity Play Mode executes calendar cadence, Tent walking/sleep, food-package opening/eating and production/supply alternation in the real composition.

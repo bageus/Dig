@@ -34,6 +34,7 @@ public sealed class ActiveFoodMealSaveData
     [DataMember(Order = 4)] public int BiteCount { get; set; }
     [DataMember(Order = 5)] public int CompletedBites { get; set; }
     [DataMember(Order = 6)] public long StartedTick { get; set; }
+    [DataMember(Order = 7, EmitDefaultValue = false)] public long NextBiteTick { get; set; }
 }
 
 }

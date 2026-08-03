@@ -14,7 +14,8 @@ public sealed class ResidentNeedsUnityRuntimeContractTests
         string sessionNeeds = ReadRuntime("DigAgentSession.ResidentNeeds.cs");
         string driver = ReadRuntime("DigAgentSimulationDriverBase.cs");
 
-        Assert.Contains("TimeSpan.FromSeconds(2)", session);
+        Assert.Contains("GameTimeCadence.NormalTickDuration", session);
+        Assert.Contains("DailySchedule.CreateBalanced(GameTimeCadence.TicksPerDay)", session);
         Assert.Contains("_simulationState.Clock.TickDuration", sessionNeeds);
         Assert.Contains("agentSession.TickDuration.TotalSeconds", driver);
     }

@@ -6,6 +6,7 @@ namespace Dig.Domain.Agents
 {
     public sealed partial class AgentState
     {
+        private const int FoodBiteCooldownTicks = 1;
         private ActiveFoodMeal? _activeFoodMeal;
 
         public bool HasActiveFoodMeal => _activeFoodMeal != null;
@@ -61,7 +62,8 @@ namespace Dig.Domain.Agents
                 sourceStackId,
                 itemId,
                 totalNutrition,
-                biteCount);
+                biteCount,
+                nextBiteTick: checked(tick + 1L));
             LastActionSwitchTick = tick;
             LastActionBlockReason = null;
             Version = checked(Version + 1);
@@ -100,9 +102,14 @@ namespace Dig.Domain.Agents
                     "An active food meal must own the existing Eat action.");
             }
 
+            if (tick < _activeFoodMeal.NextBiteTick)
+            {
+                return Result<bool>.Success(false);
+            }
+
             int nutrition = _activeFoodMeal.ResolveNextBiteNutrition();
             ApplyNeedDelta(new NeedDelta(nutrition, 0, 0, 0), tick);
-            _activeFoodMeal.CompleteBite();
+            _activeFoodMeal.CompleteBite(tick, FoodBiteCooldownTicks);
             _activeAction.Advance();
             Version = checked(Version + 1);
             Raise(new AgentFoodBiteCompleted(
@@ -167,12 +174,19 @@ namespace Dig.Domain.Agents
                 EntityId sourceStackId,
                 ItemId itemId,
                 int totalNutrition,
-                int biteCount)
+                int biteCount,
+                long nextBiteTick)
             {
+                if (nextBiteTick < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(nextBiteTick));
+                }
+
                 SourceStackId = sourceStackId;
                 ItemId = itemId;
                 TotalNutrition = totalNutrition;
                 BiteCount = biteCount;
+                NextBiteTick = nextBiteTick;
             }
 
             internal EntityId SourceStackId { get; }
@@ -180,6 +194,7 @@ namespace Dig.Domain.Agents
             internal int TotalNutrition { get; }
             internal int BiteCount { get; }
             internal int CompletedBites { get; private set; }
+            internal long NextBiteTick { get; private set; }
             internal bool IsComplete => CompletedBites >= BiteCount;
 
             internal int ResolveNextBiteNutrition()
@@ -189,7 +204,26 @@ namespace Dig.Domain.Agents
                 return quotient + (CompletedBites < remainder ? 1 : 0);
             }
 
-            internal void CompleteBite()
+            internal void CompleteBite(long tick, int cooldownTicks)
+            {
+                if (IsComplete)
+                {
+                    throw new InvalidOperationException("The meal is already complete.");
+                }
+
+                if (tick < NextBiteTick || cooldownTicks < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(tick));
+                }
+
+                CompletedBites = checked(CompletedBites + 1);
+                if (!IsComplete)
+                {
+                    NextBiteTick = checked(tick + cooldownTicks + 1L);
+                }
+            }
+
+            internal void RestoreCompletedBite()
             {
                 if (IsComplete)
                 {
@@ -206,135 +240,9 @@ namespace Dig.Domain.Agents
                     ItemId,
                     TotalNutrition,
                     BiteCount,
-                    CompletedBites);
+                    CompletedBites,
+                    NextBiteTick);
             }
         }
-    }
-
-    public static class FoodMealErrors
-    {
-        public static readonly DomainError AlreadyActive = new DomainError(
-            "agent.food_meal.already_active",
-            "The resident is already eating a meal.");
-
-        public static readonly DomainError NotActive = new DomainError(
-            "agent.food_meal.not_active",
-            "The resident has no active meal.");
-    }
-
-    public sealed class FoodMealSnapshot
-    {
-        public FoodMealSnapshot(
-            EntityId sourceStackId,
-            ItemId itemId,
-            int totalNutrition,
-            int biteCount,
-            int completedBites)
-        {
-            SourceStackId = sourceStackId;
-            ItemId = itemId;
-            TotalNutrition = totalNutrition;
-            BiteCount = biteCount;
-            CompletedBites = completedBites;
-        }
-
-        public EntityId SourceStackId { get; }
-        public ItemId ItemId { get; }
-        public int TotalNutrition { get; }
-        public int BiteCount { get; }
-        public int CompletedBites { get; }
-        public int RemainingBites => BiteCount - CompletedBites;
-    }
-
-    public sealed class AgentFoodMealStarted : IDomainEvent
-    {
-        public AgentFoodMealStarted(
-            long tick,
-            EntityId agentId,
-            EntityId sourceStackId,
-            ItemId itemId,
-            int totalNutrition,
-            int biteCount)
-        {
-            Tick = tick;
-            AgentId = agentId;
-            SourceStackId = sourceStackId;
-            ItemId = itemId;
-            TotalNutrition = totalNutrition;
-            BiteCount = biteCount;
-        }
-
-        public long Tick { get; }
-        public EntityId AgentId { get; }
-        public EntityId SourceStackId { get; }
-        public ItemId ItemId { get; }
-        public int TotalNutrition { get; }
-        public int BiteCount { get; }
-    }
-
-    public sealed class AgentFoodBiteCompleted : IDomainEvent
-    {
-        public AgentFoodBiteCompleted(
-            long tick,
-            EntityId agentId,
-            ItemId itemId,
-            int completedBites,
-            int biteCount,
-            int nutritionApplied)
-        {
-            Tick = tick;
-            AgentId = agentId;
-            ItemId = itemId;
-            CompletedBites = completedBites;
-            BiteCount = biteCount;
-            NutritionApplied = nutritionApplied;
-        }
-
-        public long Tick { get; }
-        public EntityId AgentId { get; }
-        public ItemId ItemId { get; }
-        public int CompletedBites { get; }
-        public int BiteCount { get; }
-        public int NutritionApplied { get; }
-    }
-
-    public sealed class AgentFoodMealCompleted : IDomainEvent
-    {
-        public AgentFoodMealCompleted(long tick, EntityId agentId, ItemId itemId)
-        {
-            Tick = tick;
-            AgentId = agentId;
-            ItemId = itemId;
-        }
-
-        public long Tick { get; }
-        public EntityId AgentId { get; }
-        public ItemId ItemId { get; }
-    }
-
-    public sealed class AgentFoodMealInterrupted : IDomainEvent
-    {
-        public AgentFoodMealInterrupted(
-            long tick,
-            EntityId agentId,
-            ItemId itemId,
-            int completedBites,
-            int biteCount,
-            string reason)
-        {
-            Tick = tick;
-            AgentId = agentId;
-            ItemId = itemId;
-            CompletedBites = completedBites;
-            BiteCount = biteCount;
-            Reason = reason;
-        }
-
-        public long Tick { get; }
-        public EntityId AgentId { get; }
-        public ItemId ItemId { get; }
-        public int CompletedBites { get; }
-        public int BiteCount { get; }
-        public string Reason { get; }
     }
 }

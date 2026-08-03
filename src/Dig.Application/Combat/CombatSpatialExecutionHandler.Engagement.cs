@@ -6,6 +6,7 @@ using Dig.Domain.Agents;
 using Dig.Domain.Combat;
 using Dig.Domain.Core;
 using Dig.Domain.Factions;
+using Dig.Domain.Inventory;
 using Dig.Domain.Navigation;
 using Dig.Domain.World;
 
@@ -14,6 +15,9 @@ namespace Dig.Application.Combat
 
 public sealed partial class CombatSpatialExecutionHandler
 {
+    private const double CombatRunCellsPerTick = 1.25d;
+    private const double CombatClimbCellsPerTick = 0.5d;
+
     private Result<CombatSpatialExecutionReport> SelectEquipment(
         AdvanceCombatSpatialExecutionCommand command,
         CombatState combat,
@@ -120,55 +124,106 @@ public sealed partial class CombatSpatialExecutionHandler
             return Block(command, combat, execution,
                 CombatSpatialApplicationErrors.EngagementUnavailable);
 
-        if (IsPursuingLastKnown(execution, actor)
-            && execution.TargetEntityId.HasValue)
+        int budget = int.MaxValue;
+        int consumed = 0;
+        bool movedAny = false;
+        while (true)
         {
-            AgentState? target = _agents.Get(execution.TargetEntityId.Value);
-            if (target is not null && IsVisible(actor.Position, target.Position))
-                return Advance(combat, execution, CombatExecutionStage.Reevaluate,
-                    command.Tick, command.Tick, "target_sight_restored");
+            actor = _agents.Get(actor.Id)!;
+            if (IsPursuingLastKnown(execution, actor)
+                && execution.TargetEntityId.HasValue)
+            {
+                AgentState? target = _agents.Get(execution.TargetEntityId.Value);
+                if (target is not null && IsVisible(actor.Position, target.Position))
+                    return Advance(combat, execution, CombatExecutionStage.Reevaluate,
+                        command.Tick, command.Tick, "target_sight_restored");
+            }
+
+            TunnelPathResult path = _volume.FindPath(
+                actor.Position, execution.EngagementCell.Value);
+            if (!path.Succeeded || path.Path!.Cells.Count < 1)
+                return Block(command, combat, execution,
+                    CombatSpatialApplicationErrors.EngagementUnavailable);
+
+            if (path.Path.Cells.Count == 1)
+                return CompleteApproach(command, combat, execution, actor, movedAny);
+
+            CellId nextCell = path.Path.Cells[1];
+            budget = Math.Min(budget,
+                ResolveCombatMovementBudget(command.Tick, actor.Position, nextCell));
+            if (consumed >= budget)
+                return Report(combat.GetActiveExecution(actor.Id)!, movedAny, null,
+                    movedAny ? "approach_advanced" : "approach_waiting_cadence");
+
+            Result moved = _moveHandler.Handle(new MoveAgentCommand(
+                actor.Id, nextCell, command.Tick));
+            if (moved.IsFailure)
+                return Block(command, combat, execution, moved.Error!);
+            consumed = checked(consumed + 1);
+            movedAny = true;
         }
+    }
 
-        TunnelPathResult path = _volume.FindPath(
-            actor.Position, execution.EngagementCell.Value);
-        if (!path.Succeeded || path.Path!.Cells.Count < 1)
-            return Block(command, combat, execution,
-                CombatSpatialApplicationErrors.EngagementUnavailable);
-
-        if (path.Path.Cells.Count == 1)
-        {
-            CombatExecutionStage arrived = IsPursuingLastKnown(execution, actor)
-                ? CombatExecutionStage.Reevaluate : CombatExecutionStage.FaceTarget;
-            return Advance(combat, execution, arrived,
-                command.Tick, command.Tick,
-                arrived == CombatExecutionStage.Reevaluate
-                    ? "last_known_target_cell_reached" : "engagement_reached");
-        }
-
-        Result moved = _moveHandler.Handle(new MoveAgentCommand(
-            actor.Id, path.Path.Cells[1], command.Tick));
-        if (moved.IsFailure) return Block(command, combat, execution, moved.Error!);
-
-        AgentState movedActor = _agents.Get(actor.Id)!;
-        CombatExecutionStage next = path.Path.Cells.Count == 2
-            ? (IsPursuingLastKnown(execution, movedActor)
-                ? CombatExecutionStage.Reevaluate : CombatExecutionStage.FaceTarget)
-            : CombatExecutionStage.Approach;
-        combat.AdvanceExecutionStage(execution.ExecutionId, next,
+    private Result<CombatSpatialExecutionReport> CompleteApproach(
+        AdvanceCombatSpatialExecutionCommand command,
+        CombatState combat,
+        CombatExecutionSnapshot execution,
+        AgentState actor,
+        bool moved)
+    {
+        CombatExecutionStage arrived = IsPursuingLastKnown(execution, actor)
+            ? CombatExecutionStage.Reevaluate : CombatExecutionStage.FaceTarget;
+        combat.AdvanceExecutionStage(execution.ExecutionId, arrived,
             command.Tick, command.Tick,
-            next == CombatExecutionStage.Reevaluate
-                ? "last_known_target_cell_reached"
-                : next == CombatExecutionStage.FaceTarget
-                    ? "engagement_reached" : "approach_advanced");
+            arrived == CombatExecutionStage.Reevaluate
+                ? "last_known_target_cell_reached" : "engagement_reached");
         SaveCombat(combat);
-        return Report(combat.GetActiveExecution(actor.Id)!, true, null,
-            "approach_advanced");
+        return Report(combat.GetActiveExecution(actor.Id)!, moved, null,
+            arrived == CombatExecutionStage.Reevaluate
+                ? "last_known_target_cell_reached" : "engagement_reached");
     }
 
     private Result<CombatSpatialExecutionReport> Retreat(
         AdvanceCombatSpatialExecutionCommand command,
         CombatState combat,
         AgentState actor)
+    {
+        CombatExecutionSnapshot execution = combat.GetActiveExecution(actor.Id)!;
+        int budget = int.MaxValue;
+        int consumed = 0;
+        bool movedAny = false;
+        while (true)
+        {
+            actor = _agents.Get(actor.Id)!;
+            CombatRetreatCandidate? selected = SelectRetreat(actor);
+            if (!selected.HasValue)
+                return Block(command, combat, execution,
+                    CombatSpatialApplicationErrors.RetreatUnavailable);
+
+            TunnelPathResult route = _volume.FindPath(actor.Position, selected.Value.Cell);
+            if (!route.Succeeded || route.Path == null)
+                return Block(command, combat, execution,
+                    CombatSpatialApplicationErrors.RetreatUnavailable);
+            if (route.Path.Cells.Count == 1)
+                return CompleteRetreat(command, combat, execution, movedAny);
+
+            CellId nextCell = route.Path.Cells[1];
+            budget = Math.Min(budget,
+                ResolveCombatMovementBudget(command.Tick, actor.Position, nextCell));
+            if (consumed >= budget)
+                return Report(execution, movedAny, null,
+                    movedAny ? "retreat_advanced" : "retreat_waiting_cadence");
+
+            Result moved = _moveHandler.Handle(new MoveAgentCommand(
+                actor.Id, nextCell, command.Tick));
+            if (moved.IsFailure)
+                return Block(command, combat, execution, moved.Error!);
+            consumed = checked(consumed + 1);
+            movedAny = true;
+        }
+    }
+
+    private CombatRetreatCandidate? SelectRetreat(AgentState actor)
     {
         IReadOnlyList<AgentState> threats = GetHostileAgents(actor);
         int current = MinimumThreatDistance(actor.Position, threats);
@@ -186,31 +241,32 @@ public sealed partial class CombatSpatialExecutionHandler
                 path.Succeeded, _volume.HasFullActorSupport(cell),
                 actorFaction.HasValue && owner == actorFaction));
         }
+        return CombatRetreatResolver.Select(current, candidates);
+    }
 
-        CombatRetreatCandidate? selected = CombatRetreatResolver.Select(
-            current, candidates);
-        CombatExecutionSnapshot execution = combat.GetActiveExecution(actor.Id)!;
-        if (!selected.HasValue)
-            return Block(command, combat, execution,
-                CombatSpatialApplicationErrors.RetreatUnavailable);
-
-        TunnelPathResult route = _volume.FindPath(actor.Position, selected.Value.Cell);
-        if (route.Path!.Cells.Count > 1)
-        {
-            Result moved = _moveHandler.Handle(new MoveAgentCommand(
-                actor.Id, route.Path.Cells[1], command.Tick));
-            if (moved.IsFailure) return Block(command, combat, execution, moved.Error!);
-            if (route.Path.Cells.Count > 2)
-                return Report(execution, true, null, "retreat_advanced");
-        }
-
+    private Result<CombatSpatialExecutionReport> CompleteRetreat(
+        AdvanceCombatSpatialExecutionCommand command,
+        CombatState combat,
+        CombatExecutionSnapshot execution,
+        bool moved)
+    {
         combat.CompleteExecution(execution.ExecutionId,
             command.Tick, "retreat_reached");
-        CombatIntentSnapshot? intent = combat.GetActiveIntent(actor.Id);
+        CombatIntentSnapshot? intent = combat.GetActiveIntent(execution.ActorId);
         if (intent is not null) combat.CompleteIntent(intent.IntentId, command.Tick);
         SaveCombat(combat);
-        return Report(combat.GetExecution(execution.ExecutionId)!, true, null,
+        return Report(combat.GetExecution(execution.ExecutionId)!, moved, null,
             "retreat_reached");
+    }
+
+    private int ResolveCombatMovementBudget(long tick, CellId from, CellId to)
+    {
+        TunnelTraversalKind traversal = _volume.ClassifyTraversal(from, to);
+        double speed = traversal == TunnelTraversalKind.VerticalClimb
+            || traversal == TunnelTraversalKind.ShaftGapTraverse
+            ? CombatClimbCellsPerTick
+            : CombatRunCellsPerTick;
+        return ResidentInventoryMovementCadence.ResolveStepCount(tick, speed);
     }
 
     private bool IsPursuingLastKnown(

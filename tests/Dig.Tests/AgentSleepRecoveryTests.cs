@@ -1,5 +1,6 @@
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
+using Dig.Domain.Runtime;
 using Xunit;
 
 namespace Dig.Tests
@@ -60,8 +61,8 @@ public sealed class AgentSleepRecoveryTests
         AgentSnapshot sleeping = agent.CreateSnapshot(1);
 
         Assert.True(sleeping.IsAlive);
-        Assert.Equal(1_500, sleeping.Needs.Health.Points);
-        Assert.Equal(0, sleeping.Needs.Nutrition.Points);
+        Assert.Equal(1_994, sleeping.Needs.Health.Points);
+        Assert.Equal(99, sleeping.Needs.Nutrition.Points);
     }
 
     private static AgentState CreateSleepingAgent(
@@ -77,7 +78,7 @@ public sealed class AgentSleepRecoveryTests
                 alertness,
                 mood: 5_000,
                 health: health),
-            AgentTestFactory.CreateSleepSchedule());
+            AgentTestFactory.CreateSleepSchedule(GameTimeCadence.TicksPerDay));
     }
 }
 

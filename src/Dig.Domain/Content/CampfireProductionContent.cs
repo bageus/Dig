@@ -10,7 +10,8 @@ namespace Dig.Domain.Content
 
 public static class CampfireProductionContent
 {
-    public const long ProductionMaterialTicks = 15 * 60;
+    public const long ProductionMaterialTicks = 25;
+    public const long CookingMaterialTicks = ProductionMaterialTicks * 2;
     public const long TestProductionMaterialTicks = 1;
     public const string AnimationProfileId = "production.animation.campfire";
 
@@ -107,6 +108,18 @@ public static class CampfireProductionContent
 
     public static IReadOnlyList<RecipeDefinition> CreateRecipes(long baseDurationTicks)
     {
+        return CreateRecipes(baseDurationTicks, baseDurationTicks);
+    }
+
+    public static IReadOnlyList<RecipeDefinition> CreateRecipes(
+        long materialDurationTicks,
+        long cookingDurationTicks)
+    {
+        if (materialDurationTicks <= 0 || cookingDurationTicks <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(materialDurationTicks));
+        }
+
         return new[]
         {
             BuildingRecipe(
@@ -114,7 +127,8 @@ public static class CampfireProductionContent
                 "Tent",
                 new[] { Input(MushroomLegItemId, 2), Input(MushroomCapItemId, 1) },
                 TentBoxItemId,
-                Steps(baseDurationTicks, (MushroomLegItemId, 2, AgentSkillCatalog.Woodworking),
+                Steps(materialDurationTicks,
+                    (MushroomLegItemId, 2, AgentSkillCatalog.Woodworking),
                     (MushroomCapItemId, 1, AgentSkillCatalog.Woodworking)),
                 Grant(AgentSkillCatalog.Woodworking, 200)),
             BuildingRecipe(
@@ -122,7 +136,8 @@ public static class CampfireProductionContent
                 "Stone mason workshop",
                 new[] { Input(MushroomLegItemId, 2), Input(StoneItemId, 4) },
                 StoneMasonBoxItemId,
-                Steps(baseDurationTicks, (MushroomLegItemId, 2, AgentSkillCatalog.Woodworking),
+                Steps(materialDurationTicks,
+                    (MushroomLegItemId, 2, AgentSkillCatalog.Woodworking),
                     (StoneItemId, 4, AgentSkillCatalog.Stonework)),
                 Grant(AgentSkillCatalog.Woodworking, 100, AgentSkillCatalog.Stonework, 300)),
             BuildingRecipe(
@@ -130,7 +145,8 @@ public static class CampfireProductionContent
                 "Wooden workshop",
                 new[] { Input(MushroomLegItemId, 4), Input(MushroomCapItemId, 1) },
                 WoodWorkshopBoxItemId,
-                Steps(baseDurationTicks, (MushroomLegItemId, 4, AgentSkillCatalog.Woodworking),
+                Steps(materialDurationTicks,
+                    (MushroomLegItemId, 4, AgentSkillCatalog.Woodworking),
                     (MushroomCapItemId, 1, AgentSkillCatalog.Woodworking)),
                 Grant(AgentSkillCatalog.Woodworking, 300)),
             BuildingRecipe(
@@ -138,7 +154,8 @@ public static class CampfireProductionContent
                 "Campfire",
                 new[] { Input(MushroomLegItemId, 2), Input(StoneItemId, 2) },
                 CampfireBuildingBoxContent.CampfireBoxItemId,
-                Steps(baseDurationTicks, (MushroomLegItemId, 2, AgentSkillCatalog.Woodworking),
+                Steps(materialDurationTicks,
+                    (MushroomLegItemId, 2, AgentSkillCatalog.Woodworking),
                     (StoneItemId, 2, AgentSkillCatalog.Stonework)),
                 Grant(AgentSkillCatalog.Woodworking, 100, AgentSkillCatalog.Stonework, 100)),
             FoodRecipe(
@@ -146,14 +163,14 @@ public static class CampfireProductionContent
                 "Grilled mushroom",
                 MushroomCapItemId,
                 GrilledMushroomItemId,
-                baseDurationTicks,
+                cookingDurationTicks,
                 120),
             FoodRecipe(
                 RoastedHamsterRecipeId,
                 "Grilled hamster",
                 HamsterItemId,
                 RoastedHamsterItemId,
-                baseDurationTicks,
+                cookingDurationTicks,
                 180),
         };
     }

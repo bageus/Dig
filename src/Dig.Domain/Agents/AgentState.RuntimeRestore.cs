@@ -96,7 +96,8 @@ public sealed partial class AgentState
                 meal.SourceStackId,
                 meal.ItemId,
                 meal.TotalNutrition,
-                meal.BiteCount);
+                meal.BiteCount,
+                meal.NextBiteTick);
             _activeAction = new ActiveAgentAction(
                 AgentIntentKind.Eat,
                 playerOrderId: null,
@@ -104,7 +105,7 @@ public sealed partial class AgentState
                 meal.BiteCount);
             for (int index = 0; index < meal.CompletedBites; index++)
             {
-                _activeFoodMeal.CompleteBite();
+                _activeFoodMeal.RestoreCompletedBite();
                 _activeAction.Advance();
             }
 
@@ -128,7 +129,8 @@ public sealed partial class AgentState
             || meal.TotalNutrition <= 0
             || meal.BiteCount <= 0
             || meal.CompletedBites < 0
-            || meal.CompletedBites >= meal.BiteCount)
+            || meal.CompletedBites >= meal.BiteCount
+            || meal.NextBiteTick <= snapshot.MealStartedTick)
         {
             return Result.Failure(
                 AgentRuntimeRestoreErrors.InvalidFoodMealSnapshot);

@@ -27,8 +27,10 @@ namespace Dig.Tests
             string mushrooms = Read(runtime, "DigTerrainWorkSession.Mushrooms.cs");
             string productionZones = Read(runtime, "DigBuildingProductionZones.cs");
 
-            Assert.Contains("CampfireProductionContent.TestProductionMaterialTicks", execution);
+            Assert.Contains("CampfireProductionContent.ProductionMaterialTicks", execution);
+            Assert.Contains("CampfireProductionContent.CookingMaterialTicks", execution);
             Assert.Contains("long materialDurationTicks", execution);
+            Assert.Contains("long cookingDurationTicks", execution);
             Assert.Contains("CreateEligibleFoodDependencyJobs(tick, agents, navigation)", synchronization);
             Assert.Contains("ResolveEligibleDeferredSupplyJobs(tick, agents, navigation)", synchronization);
             Assert.Contains("MushroomStage.Large", dependencies);
