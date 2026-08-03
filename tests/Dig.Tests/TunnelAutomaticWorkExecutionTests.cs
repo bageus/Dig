@@ -62,23 +62,25 @@ public sealed class TunnelAutomaticWorkExecutionTests
     }
 
     [Fact]
-    public void Junction_trim_consumes_reserved_stone_and_grants_stonework_once()
+    public void Automatic_junction_trim_is_rejected_before_material_or_skill_mutation()
     {
         Harness harness = CreateHarness(TunnelAutomaticWorkKind.JunctionStoneTrim);
 
         Result result = harness.Complete.Handle(
             new CompleteTunnelAutomaticWorkCommand(JobId, tick: 3));
 
-        Assert.True(result.IsSuccess, result.Error?.ToString());
-        TunnelInfrastructureSnapshot snapshot = harness.Tunnels.Get().CaptureSnapshot();
-        Assert.Contains(Junction, snapshot.CompletedJunctionStoneTrimCells);
-        Assert.Empty(snapshot.PendingJunctionStoneTrimTargets);
-        Assert.Equal(JobStatus.Completed, harness.Jobs.Get(JobId)!.Status);
+        Assert.True(result.IsFailure);
         Assert.Equal(
-            CompleteTunnelAutomaticWorkHandler.SkillGrantUnits,
-            Skill(harness, AgentSkillCatalog.Stonework));
-        Assert.Equal(1, harness.Inventory.CreateSnapshot().GetTotal(
+            TunnelAutomaticWorkExecutionErrors.ManualPlacementRequired,
+            result.Error);
+        TunnelInfrastructureSnapshot snapshot = harness.Tunnels.Get().CaptureSnapshot();
+        Assert.DoesNotContain(Junction, snapshot.CompletedJunctionStoneTrimCells);
+        Assert.Single(snapshot.PendingJunctionStoneTrimTargets);
+        Assert.Equal(JobStatus.InProgress, harness.Jobs.Get(JobId)!.Status);
+        Assert.Equal(0, Skill(harness, AgentSkillCatalog.Stonework));
+        Assert.Equal(2, harness.Inventory.CreateSnapshot().GetTotal(
             new ItemId("material.stone")));
+        Assert.Equal(1, harness.Inventory.GetReservedQuantity(SourceStackId, JobId));
     }
 
     [Fact]
