@@ -110,7 +110,7 @@ public sealed class CaveEncounterCombatContentTests
     }
 
     [Fact]
-    public void Starting_profiles_match_the_approved_balance()
+    public void Starting_profiles_use_the_four_tick_melee_cycle()
     {
         WeaponCatalog catalog = new WeaponCatalog(
             CaveEncounterCombatContent.CreateWeaponProfiles());
@@ -119,20 +119,20 @@ public sealed class CaveEncounterCombatContentTests
             catalog.Get(CaveEncounterCombatContent.UnarmedProfileId),
             accuracy: 6_000,
             damage: 500,
-            cooldown: 2,
+            cooldown: CaveEncounterCombatContent.BaseMeleeCycleTicks,
             AgentSkillCatalog.UnarmedCombat);
         AssertProfile(
             catalog.Get(CaveEncounterCombatContent.ClubProfileId),
             accuracy: 6_500,
             damage: 850,
-            cooldown: 2,
+            cooldown: CaveEncounterCombatContent.BaseMeleeCycleTicks,
             AgentSkillCatalog.OneHandedCombat);
 
         WeaponProfile bite = catalog.Get(
             CaveEncounterCombatContent.CaveMonsterBiteProfileId);
         Assert.Equal(7_000, bite.Accuracy);
         Assert.Equal(650, bite.BaseDamage);
-        Assert.Equal(3, bite.CooldownTicks);
+        Assert.Equal(CaveEncounterCombatContent.BaseMeleeCycleTicks, bite.CooldownTicks);
         Assert.Null(bite.SkillProfile);
     }
 
