@@ -21,6 +21,28 @@ public sealed partial class AdvanceLivingMaterialEcologyCommandHandler
         foreach (LivingMaterialSnapshot creature in ecology.GetAll()
             .Where(value => value.IsMovementDue))
         {
+            ItemStackSnapshot? linkedItem = inventory.GetStack(creature.ItemEntityId);
+            if (linkedItem == null)
+            {
+                return Result.Failure(LivingMaterialApplicationErrors.MissingLinkedItem);
+            }
+
+            if (linkedItem.Location.Kind == ItemLocationKind.World
+                && linkedItem.AvailableQuantity < linkedItem.Quantity)
+            {
+                Result reserved = ecology.CommitBlocked(
+                    creature.CreatureId,
+                    creature.Direction,
+                    "inventory_reserved",
+                    tick);
+                if (reserved.IsFailure)
+                {
+                    return reserved;
+                }
+
+                continue;
+            }
+
             IReadOnlyList<CellId> candidates = planes.GetMovementCandidates(creature);
             LivingMaterialMovementDecision decision = _movement.Plan(
                 creature,

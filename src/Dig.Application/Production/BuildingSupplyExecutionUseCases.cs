@@ -228,6 +228,18 @@ public sealed class DepositBuildingSupplyHandler
             }
         }
 
+        bool hasCarriedReservation = inventory.CreateSnapshot().Stacks.Any(value =>
+            value.Location.Kind == ItemLocationKind.AgentInventory
+            && value.Location.HasOwner
+            && value.Location.OwnerId == job.AssignedAgentId.Value
+            && value.Reservations.Any(reservation =>
+                reservation.JobId == command.JobId
+                && reservation.Quantity > 0));
+        if (hasCarriedReservation)
+        {
+            return Result.Failure(InventoryErrors.ReservationNotFound);
+        }
+
         Result completedSupply = supplyState.CompleteSupply(
             supply.BuildingId,
             command.JobId,
@@ -282,6 +294,20 @@ public sealed class CancelBuildingSupplyHandler
         if (job?.Definition is not BuildingSupplyJobDefinition definition)
         {
             return Result.Failure(JobErrors.NotFound);
+        }
+
+        if (job.AssignedAgentId.HasValue)
+        {
+            Result recovered = ProductionReservedResidentRecovery.DropCarriedItems(
+                inventory,
+                command.JobId,
+                job.AssignedAgentId.Value,
+                command.RecoveryCell,
+                command.Tick);
+            if (recovered.IsFailure)
+            {
+                return recovered;
+            }
         }
 
         inventory.ReleaseReservations(command.JobId, command.Tick);

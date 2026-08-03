@@ -53,7 +53,8 @@ internal sealed partial class DigTerrainWorkSession
                     new CancelBuildingSupplyCommand(
                         job.Id,
                         "source_unavailable",
-                        tick));
+                        tick,
+                        new CellId(worker.CellX, worker.CellY, worker.CellZ)));
             }
 
             if (!At(worker, source.Location.CellId))

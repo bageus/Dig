@@ -31,7 +31,7 @@ internal sealed partial class DigTerrainWorkSession
         EnsureBuildingProductionInitialized();
         SynchronizeProductionWorkstationRegistrations(tick);
         SynchronizeRequiredProductionInputDelivery(tick);
-        RecoverBlockedBuildingSupplyJobs(tick);
+        RecoverBlockedBuildingSupplyJobs(tick, agents);
         if (!TryLoadBuildingPlacementNavigation(out NavigationSnapshot navigation))
         {
             return;
@@ -128,7 +128,8 @@ internal sealed partial class DigTerrainWorkSession
             _cancelBuildingSupply!.Handle(new CancelBuildingSupplyCommand(
                 job.Id,
                 "route_unavailable",
-                tick));
+                tick,
+                new CellId(agent.CellX, agent.CellY, agent.CellZ)));
             _buildingSupplyRoutes.Remove(job.Id);
         }
 

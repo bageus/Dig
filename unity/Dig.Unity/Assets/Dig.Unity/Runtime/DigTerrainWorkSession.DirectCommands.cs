@@ -11,6 +11,7 @@ using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.Production;
+using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 
 namespace Dig.Unity
@@ -73,6 +74,12 @@ namespace Dig.Unity
                             InterruptProductionForDirectCommand(
                                 job,
                                 production,
+                                residentId,
+                                tick),
+                        BuildingSupplyJobDefinition =>
+                            CancelBuildingSupplyForDirectCommand(
+                                job,
+                                residentId,
                                 tick),
                         BuildingBoxAssemblyJobDefinition =>
                             CancelBuildingBoxForDirectCommand(job, tick),
@@ -190,6 +197,7 @@ namespace Dig.Unity
         private Result InterruptProductionForDirectCommand(
             JobSnapshot job,
             ProductionWorkJobDefinition production,
+            EntityId residentId,
             long tick)
         {
             return _interruptProduction == null
@@ -198,7 +206,27 @@ namespace Dig.Unity
                     production.OrderId,
                     job.Id,
                     "production_worker_forced_move",
-                    tick));
+                    tick,
+                    ResolveResidentRecoveryCell(residentId)));
+        }
+
+        private Result CancelBuildingSupplyForDirectCommand(
+            JobSnapshot job,
+            EntityId residentId,
+            long tick)
+        {
+            return _cancelBuildingSupply == null
+                ? Result.Success()
+                : _cancelBuildingSupply.Handle(new CancelBuildingSupplyCommand(
+                    job.Id,
+                    "building_supply_direct_command_replaced",
+                    tick,
+                    ResolveResidentRecoveryCell(residentId)));
+        }
+
+        private CellId? ResolveResidentRecoveryCell(EntityId residentId)
+        {
+            return _productionAgents?.Get(residentId)?.Position;
         }
 
         private Result CancelProductionPackageUseForDirectCommand(

@@ -19,16 +19,6 @@ public sealed partial class DigGameHudCanvas
             return;
         }
 
-        Text heading = CreateText(
-            "Top Skills",
-            parent,
-            "TOP 5 SKILLS",
-            10,
-            TextAnchor.MiddleLeft);
-        LayoutElement headingLayout = heading.gameObject.AddComponent<LayoutElement>();
-        headingLayout.preferredHeight = ResidentTopSkillHeadingHeight;
-        headingLayout.flexibleHeight = 0f;
-
         foreach (ResidentSkillViewModel skill in skills.TopFive)
         {
             CreateSkillMetric(parent, skill, "Top Skill ", useShortName: true);

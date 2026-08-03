@@ -114,6 +114,20 @@ public sealed class InterruptProductionOrderHandler
             return Result.Failure(ProductionErrors.InvalidStatus);
         }
 
+        if (job.AssignedAgentId.HasValue)
+        {
+            Result recovered = ProductionReservedResidentRecovery.DropCarriedItems(
+                inventory,
+                command.OrderId,
+                job.AssignedAgentId.Value,
+                command.RecoveryCell,
+                command.Tick);
+            if (recovered.IsFailure)
+            {
+                return recovered;
+            }
+        }
+
         ProductionOutputPackageSnapshot? package =
             production.GetOutputPackageForOrder(command.OrderId);
         if (package != null)

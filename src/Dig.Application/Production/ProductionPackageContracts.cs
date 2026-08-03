@@ -38,18 +38,21 @@ public sealed class InterruptProductionOrderCommand : ICommand<Result>
         EntityId orderId,
         EntityId jobId,
         string reason,
-        long tick)
+        long tick,
+        CellId? recoveryCell = null)
     {
         OrderId = orderId;
         JobId = jobId;
         Reason = reason;
         Tick = tick;
+        RecoveryCell = recoveryCell;
     }
 
     public EntityId OrderId { get; }
     public EntityId JobId { get; }
     public string Reason { get; }
     public long Tick { get; }
+    public CellId? RecoveryCell { get; }
 }
 
 public sealed class StartProductionPackageUseCommand : ICommand<Result>

@@ -136,12 +136,15 @@ def check_issue14_hud_contracts(
     errors.extend(require_fragments(
         skill_inspector_path,
         texts.get(skill_inspector_path, ""),
-        "fixed-height compact resident skill rows",
+        "fixed-height compact resident skill rows without redundant heading",
         (
-            "headingLayout.flexibleHeight = 0f;",
+            "foreach (ResidentSkillViewModel skill in skills.TopFive)",
             "rowLayout.flexibleHeight = 0f;",
         ),
     ))
+    if "TOP 5 SKILLS" in texts.get(skill_inspector_path, ""):
+        errors.append(
+            f"{skill_inspector_path}: redundant TOP 5 SKILLS heading is forbidden")
     errors.extend(require_fragments(
         virtualization_path,
         texts.get(virtualization_path, ""),

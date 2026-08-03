@@ -114,6 +114,48 @@ public sealed class LivingMaterialEcologyPlayModeTests
         }
     }
 
+    [Test]
+    public void EnabledHamsterSupplyKeepsReservedCreatureStableUntilPickup()
+    {
+        DigWorldSession world = DigWorldSession.CreateDemo(20, 14, 5);
+        DigAgentSession agents = DigAgentSession.CreateDemo(
+            world.LoadView(),
+            world.CreateTunnelNavigationVolume(),
+            world.Journal);
+        IReadOnlyList<AgentViewModel> residents = agents.LoadView();
+        DigTerrainWorkSession terrain = DigTerrainWorkSession.CreateDemo(
+            world,
+            residents,
+            world.Journal,
+            agents.SkillGrants);
+        terrain.InitializeBuildingDemo(world.Journal);
+        terrain.InitializeBuildingProductionDemo(agents.Repository, world.Journal);
+        terrain.InitializeLivingMaterials(agents.Tick, residents);
+        var campfire = terrain.LoadAllBuildingProduction().Single();
+        Assert.That(terrain.SetBuildingStockDelivery(
+            campfire.BuildingId.ToString(),
+            CampfireProductionContent.HamsterItemId.ToString(),
+            enabled: true,
+            tick: 1).IsSuccess, Is.True);
+
+        terrain.SynchronizeBuildingProduction(tick: 2, residents);
+        var reserved = terrain.LoadAllWorldItems()
+            .Where(value => value.ItemId == CampfireProductionContent.HamsterItemId.ToString())
+            .First(value => value.ReservedQuantity == 1);
+        CellId source = new CellId(reserved.CellX, reserved.CellY, reserved.CellZ);
+
+        Assert.That(terrain.AdvanceLivingMaterials(tick: 3, residents).IsSuccess, Is.True);
+        var after = terrain.LoadAllWorldItems().Single(value =>
+            value.StackId == reserved.StackId);
+        Assert.That(new CellId(after.CellX, after.CellY, after.CellZ), Is.EqualTo(source));
+        Assert.That(after.ReservedQuantity, Is.EqualTo(1));
+        Assert.That(terrain.LoadJobSnapshots().Any(value =>
+            !value.IsTerminal
+            && value.Definition is BuildingSupplyJobDefinition supply
+            && supply.RequestedItems.Any(item =>
+                item.ItemId == CampfireProductionContent.HamsterItemId)), Is.True);
+    }
+
     [UnityTest]
     public IEnumerator FreeRendererUsesApprovedScaleAndDormantCrawlPoses()
     {
