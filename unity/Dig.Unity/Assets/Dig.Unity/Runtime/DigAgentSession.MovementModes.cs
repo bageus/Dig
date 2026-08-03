@@ -100,9 +100,13 @@ internal sealed partial class DigAgentSession
         }
 
         _movementSources[residentKey] = source;
-        int currentBudget = ResidentInventoryMovementCadence.ResolveStepCount(
+        int currentBudget = ResidentInventoryMovementCadence.IsDue(
             _tick,
-            resolution.AuthoritativeCadenceMultiplier);
+            resolution.AuthoritativeCadenceMultiplier)
+            ? ResidentInventoryMovementCadence.ResolveStepCount(
+                _tick,
+                resolution.AuthoritativeCadenceMultiplier)
+            : 0;
         if (!_movementStepBudgets.TryGetValue(residentKey, out int budget))
         {
             budget = currentBudget;
