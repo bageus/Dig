@@ -45,7 +45,14 @@ namespace Dig.Unity
 
         internal bool TryGetVisual(string instanceId, out GameObject visual)
         {
-            return _visuals.TryGetValue(instanceId, out visual!);
+            if (_visuals.TryGetValue(instanceId, out GameObject? value))
+            {
+                visual = value;
+                return true;
+            }
+
+            visual = null!;
+            return false;
         }
 
         private GameObject CreateVisual(TunnelInfrastructureVisualViewModel instance)
