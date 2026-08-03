@@ -1,5 +1,6 @@
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
+using Dig.Presentation.Jobs;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -12,10 +13,12 @@ namespace Dig.Unity
         private bool _toolWorkActive;
         private bool _attackWorkActive;
         private bool _buildWorkActive;
+        private ResidentWorkToolVisualKind _workToolVisualKind;
 
         internal void SetWorkTarget(
             CellId? target,
             bool climbingWork,
+            ResidentWorkToolVisualKind workToolVisualKind,
             bool animateToolWork,
             bool animateAttackWork = false,
             bool animateBuildWork = false)
@@ -43,6 +46,15 @@ namespace Dig.Unity
                 && !animateAttackWork
                 && !animateBuildWork
                 && !climbingWork;
+            ResidentWorkToolVisualKind nextTool = target.HasValue
+                ? workToolVisualKind
+                : ResidentWorkToolVisualKind.None;
+            if (_workToolVisualKind != nextTool)
+            {
+                _workToolVisualKind = nextTool;
+                RefreshHandEquipment();
+            }
+
             if (hadWorkPose && !willHaveWorkPose && _duration <= 0f)
             {
                 ApplyAction(isMoving: false);
@@ -59,9 +71,6 @@ namespace Dig.Unity
                 return;
             }
 
-            // Losing support is observable immediately after the authoritative quarter
-            // commit. Apply the climbing pose even while a final movement interpolation
-            // is winding down; ordinary planar facing can still wait until idle.
             if (_climbingWorkPose)
             {
                 FaceAwayFromMainCamera();
