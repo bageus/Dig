@@ -40,12 +40,8 @@ public sealed class TunnelRuntimeTopologyProjector
         Dictionary<CellId, CellSnapshot> cells = world.Chunks
             .SelectMany(chunk => chunk.Cells)
             .ToDictionary(cell => cell.Id);
-        HashSet<CellId> horizontal = Completed(
-            plannedTunnelCells,
-            cells);
-        HashSet<CellId> vertical = Completed(
-            plannedVerticalCells,
-            cells);
+        HashSet<CellId> horizontal = Completed(plannedTunnelCells, cells);
+        HashSet<CellId> vertical = Completed(plannedVerticalCells, cells);
         CaveRoomPlan[] rooms = completedRooms
             .OrderBy(room => room.Entrance)
             .ThenBy(room => room.Preset.Id, StringComparer.Ordinal)
@@ -146,7 +142,7 @@ public sealed class TunnelRuntimeTopologyProjector
 
     private static bool HasHorizontalNeighbour(
         CellId cell,
-        IReadOnlySet<CellId> horizontal)
+        HashSet<CellId> horizontal)
     {
         return horizontal.Contains(new CellId(cell.X - 1, cell.Y, cell.Z))
             || horizontal.Contains(new CellId(cell.X + 1, cell.Y, cell.Z));
@@ -155,8 +151,8 @@ public sealed class TunnelRuntimeTopologyProjector
     private static TraceResult Trace(
         CellId origin,
         int direction,
-        IReadOnlySet<CellId> horizontal,
-        IReadOnlySet<CellId> resetOrigins)
+        HashSet<CellId> horizontal,
+        HashSet<CellId> resetOrigins)
     {
         List<CellId> cells = new List<CellId>();
         CellId current = new CellId(origin.X + direction, origin.Y, origin.Z);
@@ -177,8 +173,8 @@ public sealed class TunnelRuntimeTopologyProjector
     private static bool OwnsTrace(
         Origin origin,
         CellId? terminal,
-        IReadOnlySet<CellId> roomExits,
-        IReadOnlySet<CellId> junctions)
+        HashSet<CellId> roomExits,
+        HashSet<CellId> junctions)
     {
         if (origin.Kind == TunnelSegmentOriginKind.RoomExit || !terminal.HasValue)
         {
