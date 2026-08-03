@@ -25,6 +25,8 @@ internal sealed partial class DigAgentSession
         new Dictionary<string, int>(StringComparer.Ordinal);
     private readonly Dictionary<string, int> _movementStepsConsumed =
         new Dictionary<string, int>(StringComparer.Ordinal);
+    private readonly Dictionary<string, ResidentMovementCommandSource> _movementSources =
+        new Dictionary<string, ResidentMovementCommandSource>(StringComparer.Ordinal);
     private Func<ResidentMovementRuntimeRequest, ResidentMovementModeResolution>?
         _movementModeResolver;
 
@@ -58,6 +60,7 @@ internal sealed partial class DigAgentSession
         _movementModes.Clear();
         _movementStepBudgets.Clear();
         _movementStepsConsumed.Clear();
+        _movementSources.Clear();
     }
 
     private bool IsMovementStepDue(
@@ -88,14 +91,28 @@ internal sealed partial class DigAgentSession
             : _movementModeResolver(runtimeRequest);
         string residentKey = agent.Id.ToString();
         _movementModes[residentKey] = new ResidentMovementModeViewModel(resolution);
-        if (!_movementStepBudgets.TryGetValue(residentKey, out int budget))
+        if (_movementSources.TryGetValue(
+                residentKey,
+                out ResidentMovementCommandSource existingSource)
+            && existingSource != source)
         {
-            budget = ResidentInventoryMovementCadence.ResolveStepCount(
-                _tick,
-                resolution.AuthoritativeCadenceMultiplier);
-            _movementStepBudgets.Add(residentKey, budget);
+            return false;
         }
 
+        _movementSources[residentKey] = source;
+        int currentBudget = ResidentInventoryMovementCadence.ResolveStepCount(
+            _tick,
+            resolution.AuthoritativeCadenceMultiplier);
+        if (!_movementStepBudgets.TryGetValue(residentKey, out int budget))
+        {
+            budget = currentBudget;
+        }
+        else
+        {
+            budget = Math.Min(budget, currentBudget);
+        }
+
+        _movementStepBudgets[residentKey] = budget;
         _movementStepsConsumed.TryGetValue(residentKey, out int consumed);
         if (consumed >= budget)
         {
