@@ -189,7 +189,13 @@ public sealed partial class DigAgentVisual : MonoBehaviour
         if (_workToolVisualKind == Dig.Presentation.Jobs.ResidentWorkToolVisualKind.None
             && equipment != null)
         {
-            _equipmentVisual!.Configure(
+            if (_equipmentVisual == null)
+            {
+                throw new InvalidOperationException(
+                    "Right-hand equipment visual was not initialized.");
+            }
+
+            _equipmentVisual.Configure(
                 equipment.ItemId,
                 EquipmentAppearanceKind.Generic,
                 equipmentMaterial);
