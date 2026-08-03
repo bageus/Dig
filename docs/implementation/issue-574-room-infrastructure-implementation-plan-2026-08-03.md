@@ -373,13 +373,36 @@ Validation PR #595 на code head `9d55c5778c0d7667b21ed39507174b8efbb3f2c5`:
 
 #### Slice 4B-2b — room marker, menu, read model и progress visuals
 
-Осталось реализовать:
+Статус: `READY FOR REVIEW` в PR #599. Подробный implementation note: [`issue-574-room-presentation-2026-08-03.md`](issue-574-room-presentation-2026-08-03.md).
 
-- room world marker и input shielding;
-- central HUD menu с upgrade count `0|1`;
-- requested/active purpose и progress read model;
-- partial improvement visual projection;
-- actual Play Mode end-to-end workflow.
+Реализовано без выбора default для `Q-ROOM-003` и `Q-ROOM-007`:
+
+- `RoomInfrastructurePresenter` проецирует authoritative aggregate, completed provenance и typed diagnostics без второго gameplay owner;
+- world marker создаётся только для completed template-room identity и удаляется при исчезновении authoritative projection;
+- marker click обрабатывается раньше resident movement/excavation, consumes click и очищает competing selections;
+- existing central blocking HUD показывает template, lifecycle, count `0|1`, requested/active purpose, material delivery/work progress и blocker;
+- `Improve` доступен только для `Unimproved + count 0`, повторный order не создаётся;
+- pre-work cancel доступен только по authoritative cancellation diagnostics;
+- pre-order purpose остаётся transient UI intent до successful order, после чего source truth только `RequestedPurpose` Domain;
+- purpose choices: `None`, `Bedroom`, `KitchenDining`, `Workshop`, `Farm`;
+- каждый completed material unit создаёт stable collider-free rebuildable piece;
+- stone tiles, mushroom-leg posts, iron braces и crystal accents размещаются детерминированно по room bounds, ordinal и required count;
+- presentation driver читает authoritative session projection и обновляет marker/HUD visuals после order, delivery, work, cancel, completion и load;
+- resident, building, job, BuildingBox, marquee, Vuker и terrain-cell selection очищают selected room;
+- checked-in Play Mode scenario покрывает clickable marker, единственный enabled collider, selection retention и rebuildable progress removal.
+
+Validation PR #599 на code head `88e89a6d2d1545a80aae248f068d130f6c71694a`:
+
+- Quality run `30829868966`: success;
+- architecture, file-size, C# 9 compatibility, compiler baseline, dependency и Domain-boundary checks passed;
+- Unity source contracts and native-field initialization checks passed;
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1463/1463`;
+- room presenter, command-wiring, input-ordering и partial-visual regressions passed;
+- headless smoke passed at tick `20`;
+- standard deterministic soak replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
+- large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
+- Unity workflow `30829869713` recorded blocked evidence; actual EditMode/PlayMode execution and executed-runtime-evidence validation were skipped.
 
 Не входят до ответа на blockers:
 
@@ -405,7 +428,7 @@ Validation PR #595 на code head `9d55c5778c0d7667b21ed39507174b8efbb3f2c5`:
 - interruption removes ghost/job and leaves material with owner resident;
 - wooden support commit updates rolling anchor chain;
 - stone floor/junction trim remains decorative;
-- room marker/menu, count `0|1`, requested/active purpose, progress и typed reasons;
+- tunnel support/trim marker, progress и typed reasons;
 - input shielding before movement/excavation;
 - Unity source-contract and Play Mode tests.
 
