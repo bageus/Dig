@@ -177,12 +177,14 @@ public sealed class TunnelInfrastructureSnapshot
 {
     private readonly HorizontalTunnelSegmentSnapshot[] _segments;
     private readonly CellId[] _completedJunctionStoneTrimCells;
+    private readonly CellId[] _completedStoneFloorTrimCells;
     private readonly TunnelJunctionStoneTrimTargetSnapshot[] _pendingJunctionStoneTrimTargets;
 
     public TunnelInfrastructureSnapshot(
         long version,
         IEnumerable<HorizontalTunnelSegmentSnapshot> segments,
-        IEnumerable<CellId>? completedJunctionStoneTrimCells = null)
+        IEnumerable<CellId>? completedJunctionStoneTrimCells = null,
+        IEnumerable<CellId>? completedStoneFloorTrimCells = null)
     {
         if (version < 0)
         {
@@ -203,6 +205,11 @@ public sealed class TunnelInfrastructureSnapshot
             .Distinct()
             .OrderBy(cell => cell)
             .ToArray();
+        _completedStoneFloorTrimCells = (completedStoneFloorTrimCells
+                ?? Array.Empty<CellId>())
+            .Distinct()
+            .OrderBy(cell => cell)
+            .ToArray();
         _pendingJunctionStoneTrimTargets =
             TunnelJunctionStoneTrimProjection.DerivePending(
                 _segments,
@@ -216,6 +223,9 @@ public sealed class TunnelInfrastructureSnapshot
 
     public IReadOnlyList<CellId> CompletedJunctionStoneTrimCells =>
         new ReadOnlyCollection<CellId>(_completedJunctionStoneTrimCells);
+
+    public IReadOnlyList<CellId> CompletedStoneFloorTrimCells =>
+        new ReadOnlyCollection<CellId>(_completedStoneFloorTrimCells);
 
     public IReadOnlyList<TunnelJunctionStoneTrimTargetSnapshot>
         PendingJunctionStoneTrimTargets =>
