@@ -124,6 +124,12 @@ public sealed class JobOverlayPresenter
             targetY = production.WorkPosition.Y;
             targetZ = production.WorkPosition.Z;
         }
+        else if (job.Definition is BuildingWorkJobDefinition buildingWork)
+        {
+            targetX = buildingWork.WorkPosition.X;
+            targetY = buildingWork.WorkPosition.Y;
+            targetZ = buildingWork.WorkPosition.Z;
+        }
         else if (job.Definition is BuildingBoxAssemblyJobDefinition assembly)
         {
             targetX = assembly.WorkPosition.X;
@@ -175,6 +181,8 @@ public sealed class JobOverlayPresenter
             DigJobDefinition => ResidentWorkToolVisualKind.Pickaxe,
             SpatialDigJobDefinition => ResidentWorkToolVisualKind.Pickaxe,
             MushroomChopJobDefinition => ResidentWorkToolVisualKind.Axe,
+            BuildingWorkJobDefinition { Kind: BuildingWorkKind.Construction }
+                => ResidentWorkToolVisualKind.Hammer,
             BuildingBoxAssemblyJobDefinition => ResidentWorkToolVisualKind.Hammer,
             BuildingBoxPackingJobDefinition => ResidentWorkToolVisualKind.Hammer,
             _ => ResidentWorkToolVisualKind.None,
