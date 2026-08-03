@@ -10,7 +10,8 @@ namespace Dig.Domain.Content
 
 public static class CampfireProductionContent
 {
-    public const long ProductionMaterialTicks = 15 * 60;
+    public const long ProductionMaterialTicks = 25;
+    public const long CookingMaterialTicks = ProductionMaterialTicks * 2;
     public const long TestProductionMaterialTicks = 1;
     public const string AnimationProfileId = "production.animation.campfire";
 
@@ -146,14 +147,14 @@ public static class CampfireProductionContent
                 "Grilled mushroom",
                 MushroomCapItemId,
                 GrilledMushroomItemId,
-                baseDurationTicks,
+                checked(baseDurationTicks * 2L),
                 120),
             FoodRecipe(
                 RoastedHamsterRecipeId,
                 "Grilled hamster",
                 HamsterItemId,
                 RoastedHamsterItemId,
-                baseDurationTicks,
+                checked(baseDurationTicks * 2L),
                 180),
         };
     }
