@@ -21,7 +21,11 @@ public sealed partial class AgentState
         bool alertnessRecoveryCommitted)
     {
         AgentNeedsSnapshot previous = _needs.CreateSnapshot();
-        _needs.AdvancePassive(policy, alertnessRecoveryCommitted);
+        _needs.AdvancePassive(
+            policy,
+            Schedule.TicksPerDay,
+            tick,
+            alertnessRecoveryCommitted);
         RaiseNeedThresholdCrossings(previous, _needs.CreateSnapshot(), tick);
     }
 
