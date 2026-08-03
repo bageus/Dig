@@ -67,6 +67,20 @@ The existing Job overlay now projects support/trim target X/Y/Z. It does not cre
 - movement and final completion remain wired to existing authoritative handlers;
 - automatic tunnel work projects its exact XYZ target in the Job overlay.
 
+## Unity Safe Mode namespace regression — 2026-08-03
+
+A local Unity import exposed three `CS0246` errors in `DigTerrainTunnelInfrastructure.cs` for `TerrainWorkRoutePlan`, `AdvanceJobCommand` and `ReleaseJobAssignmentCommand`.
+
+Root cause: the Unity runtime partial used three authoritative contracts owned by `Dig.Application.Jobs`, but did not import that namespace. The normal .NET solution build does not compile the Unity runtime assembly, so the missing import was not detected by the previous validation run.
+
+Correction:
+
+- import `Dig.Application.Jobs` in `DigTerrainTunnelInfrastructure.cs`;
+- retain the existing route, stage-advance and assignment-release owners without changing observable behavior;
+- extend `TunnelInfrastructureUnityRuntimeContractTests` to require the authoritative namespace and all three symbol usages.
+
+This is a compile-contract correction only. Tunnel target selection, material reservation, movement, stage advancement, interruption and completion behavior are unchanged.
+
 ## Validation
 
 Passed on code head `d430b065baf6ff5ba4fc86958f62cb4faf47bbae`:
@@ -80,6 +94,8 @@ Passed on code head `d430b065baf6ff5ba4fc86958f62cb4faf47bbae`:
 - large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`.
 
 Unity activation was unavailable. `Run Unity EditMode and PlayMode tests` and executed-runtime-evidence validation were skipped; the workflow recorded blocked evidence only. Runtime `VERIFIED` is not claimed.
+
+The 2026-08-03 namespace correction has source-contract coverage on branch `agent/fix-tunnel-infrastructure-unity-imports`; repository CI and a local Unity recompile remain required before claiming the screenshot errors are cleared in the Editor.
 
 ## Deliberately remaining
 
