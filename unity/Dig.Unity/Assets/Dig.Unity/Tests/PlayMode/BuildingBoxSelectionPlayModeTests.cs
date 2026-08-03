@@ -49,6 +49,76 @@ namespace Dig.Unity.Tests
             Object.DestroyImmediate(root);
         }
 
+        [UnityTest]
+        public IEnumerator Tint_target_rebinds_after_cached_renderer_is_destroyed()
+        {
+            GameObject root = new GameObject("Tint target root");
+            DigVisualTintTarget tint = root.AddComponent<DigVisualTintTarget>();
+            GameObject original = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            original.name = "Original tint geometry";
+            original.transform.SetParent(root.transform, worldPositionStays: false);
+            Renderer originalRenderer = original.GetComponent<Renderer>();
+            tint.Configure(originalRenderer.sharedMaterial, Color.gray);
+
+            Object.DestroyImmediate(original);
+            GameObject replacement = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            replacement.name = "Replacement tint geometry";
+            replacement.transform.SetParent(root.transform, worldPositionStays: false);
+            Renderer replacementRenderer = replacement.GetComponent<Renderer>();
+            Color replacementTint = new Color(0.24f, 0.76f, 0.42f, 1f);
+
+            Assert.DoesNotThrow(() => tint.SetTint(replacementTint));
+            MaterialPropertyBlock properties = new MaterialPropertyBlock();
+            replacementRenderer.GetPropertyBlock(properties);
+            Assert.AreEqual(replacementTint, properties.GetColor("_Color"));
+
+            Object.DestroyImmediate(root);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator Hover_tint_recaptures_after_target_visual_rebuild()
+        {
+            GameObject targetRoot = new GameObject("Hovered building root");
+            GameObject oldVisual = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            oldVisual.transform.SetParent(targetRoot.transform, worldPositionStays: false);
+            DigVisualTintTarget oldTint = oldVisual.AddComponent<DigVisualTintTarget>();
+            Color baseTint = new Color(0.62f, 0.42f, 0.20f, 1f);
+            oldTint.Configure(oldVisual.GetComponent<Renderer>().sharedMaterial, baseTint);
+
+            GameObject interactionRoot = new GameObject("World interaction");
+            DigWorldInteraction interaction = interactionRoot.AddComponent<DigWorldInteraction>();
+            MethodInfo capture = PrivateInteractionMethod("CaptureHoverTints");
+            MethodInfo refresh = PrivateInteractionMethod("RefreshHoverTintsIfStale");
+            MethodInfo apply = PrivateInteractionMethod("ApplyHoverTints");
+            capture.Invoke(interaction, new object[] { targetRoot.transform });
+
+            Object.DestroyImmediate(oldVisual);
+            GameObject replacement = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            replacement.transform.SetParent(targetRoot.transform, worldPositionStays: false);
+            DigVisualTintTarget replacementTint =
+                replacement.AddComponent<DigVisualTintTarget>();
+            replacementTint.Configure(
+                replacement.GetComponent<Renderer>().sharedMaterial,
+                baseTint);
+
+            Assert.DoesNotThrow(() =>
+                refresh.Invoke(interaction, new object[] { targetRoot.transform }));
+            Assert.DoesNotThrow(() => apply.Invoke(interaction, null));
+            Assert.AreNotEqual(baseTint, ReadCurrentTint(replacementTint));
+
+            Object.DestroyImmediate(interactionRoot);
+            Object.DestroyImmediate(targetRoot);
+            yield return null;
+        }
+
+        private static MethodInfo PrivateInteractionMethod(string name)
+        {
+            return typeof(DigWorldInteraction).GetMethod(
+                name,
+                BindingFlags.Instance | BindingFlags.NonPublic)!;
+        }
+
         private static T GetField<T>(object target, string name)
         {
             return (T)target.GetType().GetField(

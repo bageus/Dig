@@ -145,6 +145,7 @@ public sealed class DeepGameplayInteractionRegressionTests
         string runtime = RuntimeRoot();
         string ghost = Read(runtime, "DigBuildingBoxGhostRenderer.WorldSpace.cs");
         string hover = Read(runtime, "DigWorldInteraction.WorldObjectHover.cs");
+        string tint = Read(runtime, "DigVisualTintTarget.cs");
         string cadence = Read(runtime, "DigAgentSession.MovementModes.cs");
         string execution = Read(runtime, "DigPackableBuildingExecution.cs");
         string loop = Read(runtime, "DigAgentSimulationDriverBase.Loop.cs");
@@ -156,6 +157,11 @@ public sealed class DeepGameplayInteractionRegressionTests
         Assert.Contains("_root.rotation=Quaternion.identity", ghost);
         Assert.Contains("item.Model.IsBuildingBox", hover);
         Assert.Contains("TryGetBuilding", hover);
+        Assert.Contains("RefreshHoverTintsIfStale(next)", hover);
+        Assert.Contains("HasStaleHoverTints()", hover);
+        Assert.Contains("if(tint==null)", hover);
+        Assert.Contains("HasLiveRendererCache()", tint);
+        Assert.Contains("if(renderer==null)", tint);
         Assert.Contains("ResidentInventoryMovementCadence.IsDue", cadence);
         Assert.Contains("resolution.AuthoritativeCadenceMultiplier", cadence);
         Assert.Contains("durationSeconds:1", execution);

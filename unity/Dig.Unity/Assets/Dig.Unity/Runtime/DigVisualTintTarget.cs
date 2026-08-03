@@ -17,6 +17,11 @@ namespace Dig.Unity
             for (int index = 0; index < _renderers.Length; index++)
             {
                 Renderer renderer = _renderers[index];
+                if (renderer == null)
+                {
+                    continue;
+                }
+
                 if (material != null)
                 {
                     renderer.sharedMaterial = material;
@@ -34,6 +39,11 @@ namespace Dig.Unity
             for (int index = 0; index < _renderers.Length; index++)
             {
                 Renderer renderer = _renderers[index];
+                if (renderer == null)
+                {
+                    continue;
+                }
+
                 renderer.GetPropertyBlock(_properties);
                 _properties.SetColor("_BaseColor", tint);
                 _properties.SetColor("_Color", tint);
@@ -43,15 +53,60 @@ namespace Dig.Unity
 
         private void EnsureRenderers()
         {
-            if (_renderers.Length > 0)
+            if (HasLiveRendererCache())
             {
                 return;
             }
 
             DigVisualPrefabRoot? root = GetComponent<DigVisualPrefabRoot>();
-            _renderers = root == null
+            Renderer[] candidates = root == null
                 ? GetComponentsInChildren<Renderer>(includeInactive: true)
                 : root.ResolveTintRenderers();
+            int liveCount = 0;
+            for (int index = 0; index < candidates.Length; index++)
+            {
+                if (candidates[index] != null)
+                {
+                    liveCount++;
+                }
+            }
+
+            if (liveCount == candidates.Length)
+            {
+                _renderers = candidates;
+                return;
+            }
+
+            Renderer[] live = new Renderer[liveCount];
+            int destination = 0;
+            for (int index = 0; index < candidates.Length; index++)
+            {
+                Renderer renderer = candidates[index];
+                if (renderer != null)
+                {
+                    live[destination++] = renderer;
+                }
+            }
+
+            _renderers = live;
+        }
+
+        private bool HasLiveRendererCache()
+        {
+            if (_renderers.Length == 0)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < _renderers.Length; index++)
+            {
+                if (_renderers[index] == null)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }
