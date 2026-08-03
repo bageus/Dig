@@ -55,7 +55,7 @@ public static partial class TunnelInfrastructureSaveAdapter
         sequence = 0;
         return value != null
             && value.Length == 32
-            && value[0] == 'm'
+            && value[0] == 'b'
             && ulong.TryParse(
                 value.Substring(1),
                 NumberStyles.HexNumber,
