@@ -181,8 +181,8 @@ internal static class HeadlessResidentSettlementScenario
     private static AgentState CreateAgent(EntityId id, string name)
     {
         DailySchedule schedule = new DailySchedule(
-            ticksPerDay: 8,
-            new[] { new ScheduleSegment(0, 8, ScheduleActivity.Rest) });
+            ticksPerDay: 24,
+            new[] { new ScheduleSegment(0, 24, ScheduleActivity.Rest) });
         return new AgentState(
             id,
             name,
