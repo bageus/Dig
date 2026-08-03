@@ -17,10 +17,8 @@ namespace Dig.Tests
 public sealed class TunnelManualWorkExecutionTests
 {
     private static readonly EntityId SegmentId = Id(1);
-    private static readonly EntityId ManualJobId = EntityId.Parse(
-        "b000000000000000000000000000001");
-    private static readonly EntityId AutomaticJobId = EntityId.Parse(
-        "a000000000000000000000000000001");
+    private static readonly EntityId ManualJobId = Id(2);
+    private static readonly EntityId AutomaticJobId = Id(3);
     private static readonly EntityId ResidentId = Id(4);
     private static readonly EntityId ResidentStackId = Id(5);
     private static readonly EntityId AutomaticStackId = Id(6);
