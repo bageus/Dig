@@ -25,7 +25,6 @@ public sealed class SaveMigrationAndCorruptionTests
         SaveGameDocument document = new DataContractJsonSaveCodec().Deserialize(
             File.ReadAllBytes(fixturePath));
         SaveMigrationPipeline pipeline = CreateMigrations();
-
         Result<SaveMigrationReport> first = pipeline.Apply(document);
         Result<SaveMigrationReport> replay = pipeline.Apply(document);
 
@@ -46,6 +45,7 @@ public sealed class SaveMigrationAndCorruptionTests
             "save.v11_to_v12.living_materials",
             "save.v12_to_v13.terrain_output_contract",
             "save.v13_to_v14.vuker_ecology",
+            "save.v14_to_v15.tunnel_infrastructure",
         }, first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
         Assert.Equal(1, document.Metadata.GeneratorVersion);
@@ -88,7 +88,8 @@ public sealed class SaveMigrationAndCorruptionTests
                 "save.v10_to_v11.terrain_deposit_contract",
                 "save.v11_to_v12.living_materials",
                 "save.v12_to_v13.terrain_output_contract",
-            "save.v13_to_v14.vuker_ecology",
+                "save.v13_to_v14.vuker_ecology",
+                "save.v14_to_v15.tunnel_infrastructure",
             },
             first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
@@ -312,6 +313,7 @@ public sealed class SaveMigrationAndCorruptionTests
             new SaveVersionElevenLivingMaterialsMigration(),
             new SaveVersionTwelveTerrainOutputContractMigration(),
             new SaveVersionThirteenVukerEcologyMigration(),
+            new SaveVersionFourteenTunnelInfrastructureMigration(),
         });
     }
     private static JobDefinitionSaveRegistry CreateRegistry()

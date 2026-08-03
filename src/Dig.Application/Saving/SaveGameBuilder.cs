@@ -64,6 +64,9 @@ public sealed partial class SaveGameBuilder
             Combat = CombatSaveAdapter.Encode(context.Combat),
             LivingMaterials = LivingMaterialEcologySaveAdapter.Encode(context.LivingMaterials),
             Vukers = VukerEcologySaveAdapter.Encode(context.Vukers),
+            TunnelInfrastructure = TunnelInfrastructureSaveAdapter.Encode(
+                context.TunnelInfrastructure,
+                context.Jobs),
         };
     }
 
