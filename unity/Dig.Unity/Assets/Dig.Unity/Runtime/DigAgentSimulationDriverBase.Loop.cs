@@ -105,6 +105,18 @@ namespace Dig.Unity
                 result = AgentSession.Advance(movement);
             }
 
+            if (result.IsSuccess)
+            {
+                IReadOnlyList<AgentViewModel> afterFirstMovement =
+                    AgentSession.LoadView();
+                IReadOnlyDictionary<string, CellId> movementSubstep =
+                    TerrainSession.PlanMovement(afterFirstMovement, AgentSession.Tick);
+                IReadOnlyDictionary<string, CellId> spatialSubstep =
+                    TerrainSession.PlanSpatialExcavationMovement(afterFirstMovement);
+                AgentSession.SetSpatialWorkMovementTargets(spatialSubstep);
+                result = AgentSession.AdvanceMovementSubstep(movementSubstep);
+            }
+
             DomainError? movementWarning =
                 AgentSession.ConsumeManualTunnelMovementWarning();
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
