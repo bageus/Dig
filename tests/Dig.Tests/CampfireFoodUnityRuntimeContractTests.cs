@@ -166,6 +166,30 @@ namespace Dig.Tests
             Assert.DoesNotContain("elapsedTicks:", harness);
         }
 
+        [Fact]
+        public void Food_meal_snapshot_stays_in_existing_state_compilation_unit()
+        {
+            string agents = Path.Combine(
+                FindRepositoryRoot(),
+                "src",
+                "Dig.Domain",
+                "Agents");
+            string foodMeals = File.ReadAllText(Path.Combine(
+                agents,
+                "AgentState.FoodMeals.cs"));
+            string restore = File.ReadAllText(Path.Combine(
+                agents,
+                "AgentState.RuntimeRestore.cs"));
+            string contracts = File.ReadAllText(Path.Combine(
+                agents,
+                "AgentFoodMealContracts.cs"));
+
+            Assert.Contains("public sealed class FoodMealSnapshot", foodMeals);
+            Assert.Contains("public FoodMealSnapshot? CreateFoodMealSnapshot()", foodMeals);
+            Assert.Contains("FoodMealSnapshot? activeMeal", restore);
+            Assert.DoesNotContain("public sealed class FoodMealSnapshot", contracts);
+        }
+
         private static string Read(string root, string file)
         {
             return File.ReadAllText(Path.Combine(root, file));
