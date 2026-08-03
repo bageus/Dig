@@ -12,7 +12,9 @@ namespace Dig.Unity
         // dark seams in the presentation mesh.
         private const float HalfExtent = 0.5f;
         private const float FrontRockDepth = 0.82f;
-        private const float DepthLayerScale = 0.94f;
+        // Deep layer centers are exactly one DepthSpacing apart. A full scale makes
+        // neighbouring slices share one boundary instead of exposing internal fins.
+        private const float DepthLayerScale = 1f;
         private const float Roughness = 0.012f;
 
         internal static DigTerrainChunkMeshData Build(
