@@ -192,7 +192,8 @@ public sealed partial class TunnelInfrastructureState : AggregateRoot
             _segments.Values
                 .OrderBy(value => value.SegmentId.ToString(), StringComparer.Ordinal)
                 .Select(value => value.CaptureSnapshot()),
-            _completedJunctionStoneTrimCells);
+            _completedJunctionStoneTrimCells,
+            _completedStoneFloorTrimCells);
     }
 
     public static Result<TunnelInfrastructureState> Restore(
