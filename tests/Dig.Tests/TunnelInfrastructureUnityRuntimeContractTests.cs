@@ -51,6 +51,37 @@ public sealed class TunnelInfrastructureUnityRuntimeContractTests
     }
 
     [Fact]
+    public void Completed_infrastructure_is_published_to_collider_free_world_visuals()
+    {
+        string runtime = RuntimeRoot();
+        string driver = Read(runtime, "DigAgentSimulationDriverBase.cs");
+        string infrastructure = Read(runtime, "DigTerrainTunnelInfrastructure.cs");
+        string worldRenderer = Read(
+            runtime,
+            "DigWorldRenderer.TunnelInfrastructure.cs");
+        string renderer = Read(runtime, "DigTunnelInfrastructureRenderer.cs");
+
+        Assert.Contains(
+            "BindTunnelInfrastructureVisualSink(WorldRenderer.SetTunnelInfrastructureVisuals)",
+            driver);
+        Assert.Contains("TunnelInfrastructureVisualPresenter", infrastructure);
+        Assert.Contains("PublishTunnelInfrastructureVisuals()", infrastructure);
+        int completion = infrastructure.IndexOf(
+            "CompleteTunnelAutomaticWorkCommand(job.Id,tick)",
+            StringComparison.Ordinal);
+        int publication = infrastructure.IndexOf(
+            "PublishTunnelInfrastructureVisuals()",
+            completion,
+            StringComparison.Ordinal);
+        Assert.True(completion >= 0 && publication > completion);
+        Assert.Contains("SetTunnelInfrastructureVisuals", worldRenderer);
+        Assert.Contains("MeshFilter", renderer);
+        Assert.Contains("MeshRenderer", renderer);
+        Assert.DoesNotContain("Collider", renderer);
+        Assert.DoesNotContain("UnityEngine.Random", renderer);
+    }
+
+    [Fact]
     public void Job_overlay_projects_automatic_tunnel_xyz_target()
     {
         EntityId jobId = Id(1);

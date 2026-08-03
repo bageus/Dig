@@ -199,9 +199,38 @@ Validation PR #590 на code head `d430b065baf6ff5ba4fc86958f62cb4faf47bbae`:
 - large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
 - Unity workflow recorded blocked evidence; actual EditMode/PlayMode execution and executed-runtime-evidence validation were skipped.
 
+#### Slice 2B-2b2b — completed infrastructure world visual projection
+
+Статус: `READY FOR REVIEW` в stacked PR #591. Подробный implementation note: [`issue-574-tunnel-infrastructure-visual-projection-2026-08-03.md`](issue-574-tunnel-infrastructure-visual-projection-2026-08-03.md).
+
+Реализовано:
+
+- `TunnelInfrastructureVisualPresenter` читает только `TunnelInfrastructureSnapshot`;
+- completed `WoodenSupport` anchors и completed junction stone-trim cells создают stable visual instances;
+- Origin и Door anchors не создают duplicate support visuals;
+- duplicate completed cells объединяются;
+- stable instance id зависит только от visual kind и exact XYZ cell;
+- `DigTunnelInfrastructureRenderer` создаёт collider-free wooden beam и low stone floor frame;
+- Unity projection использует exact X/Y/Z через `DigTunnelProjection`;
+- runtime публикует projection после topology synchronization и сразу после successful automatic-work Finalize;
+- удаление authoritative completion fact удаляет rebuildable visual;
+- Presentation не владеет gameplay state, reservations, navigation или input.
+
+Validation PR #591 на code head `9fcb643a3d9cd2d3ea5b428f88d941305772d66e`:
+
+- architecture, file-size, C# 9 compatibility, compiler baseline, dependency и Domain-boundary checks passed;
+- Unity source contracts passed;
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1430/1430`;
+- presenter и Unity runtime composition regressions passed;
+- headless smoke passed at tick `20`;
+- standard deterministic soak replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
+- large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
+- checked-in Play Mode scenario покрывает creation, XYZ placement, collider absence и removal;
+- Unity workflow recorded blocked evidence; actual EditMode/PlayMode execution и executed-runtime-evidence validation были skipped.
+
 Осталось в Slice 2B:
 
-- world visual renderer/projection для completed wooden support и junction stone trim;
 - actual licensed Play Mode end-to-end evidence;
 - player cancellation не реализуется до ответа `Q-TUNNEL-008`.
 

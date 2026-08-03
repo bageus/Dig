@@ -9,6 +9,7 @@ using Dig.Domain.Navigation;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Dig.Presentation.Agents;
+using Dig.Presentation.World;
 
 namespace Dig.Unity
 {
@@ -17,12 +18,29 @@ internal sealed partial class DigTerrainWorkSession
 {
     private readonly TunnelRuntimeTopologyProjector _tunnelTopologyProjector =
         new TunnelRuntimeTopologyProjector();
+    private readonly TunnelInfrastructureVisualPresenter _tunnelVisualPresenter =
+        new TunnelInfrastructureVisualPresenter();
     private InMemoryTunnelInfrastructureRepository? _tunnelInfrastructure;
     private SynchronizeTunnelTopologyHandler? _tunnelTopologySync;
     private SynchronizeTunnelAutomaticSupportHandler? _tunnelSupportSync;
     private SynchronizeTunnelAutomaticJunctionTrimHandler? _tunnelTrimSync;
     private CompleteTunnelAutomaticWorkHandler? _tunnelWorkCompletion;
+    private Action<TunnelInfrastructureVisualVolumeViewModel>? _tunnelVisualSink;
     private ulong _tunnelAutomaticJobSequence = 1UL;
+
+    internal void BindTunnelInfrastructureVisualSink(
+        Action<TunnelInfrastructureVisualVolumeViewModel> sink)
+    {
+        _tunnelVisualSink = sink
+            ?? throw new ArgumentNullException(nameof(sink));
+        if (_tunnelInfrastructure == null)
+        {
+            sink(TunnelInfrastructureVisualVolumeViewModel.Empty());
+            return;
+        }
+
+        PublishTunnelInfrastructureVisuals();
+    }
 
     internal Result SynchronizeTunnelInfrastructureRuntime(
         long tick,
@@ -117,6 +135,7 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         SynchronizeTunnelAutomaticCandidates(agents);
+        PublishTunnelInfrastructureVisuals();
         return Result.Success();
     }
 
@@ -215,8 +234,14 @@ internal sealed partial class DigTerrainWorkSession
 
         if (job.Stage == JobStageKind.Finalize)
         {
-            return _tunnelWorkCompletion!.Handle(
+            Result completed = _tunnelWorkCompletion!.Handle(
                 new CompleteTunnelAutomaticWorkCommand(job.Id, tick));
+            if (completed.IsSuccess)
+            {
+                PublishTunnelInfrastructureVisuals();
+            }
+
+            return completed;
         }
 
         return _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick));
@@ -278,6 +303,17 @@ internal sealed partial class DigTerrainWorkSession
     {
         return EntityId.Parse(
             "a" + (_tunnelAutomaticJobSequence++).ToString("x31"));
+    }
+
+    private void PublishTunnelInfrastructureVisuals()
+    {
+        if (_tunnelVisualSink == null || _tunnelInfrastructure == null)
+        {
+            return;
+        }
+
+        _tunnelVisualSink(_tunnelVisualPresenter.Present(
+            _tunnelInfrastructure.Get().CaptureSnapshot()));
     }
 
     private void EnsureTunnelInfrastructureRuntime()
