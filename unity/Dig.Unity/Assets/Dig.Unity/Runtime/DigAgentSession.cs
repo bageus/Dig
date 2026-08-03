@@ -119,7 +119,7 @@ namespace Dig.Unity
                 repository,
                 SimulationState.Create(
                     worldSeed: DemoIdentitySeed,
-                    tickDuration: TimeSpan.FromSeconds(2)),
+                    tickDuration: GameTimeCadence.NormalTickDuration),
                 walkable,
                 routeIndices,
                 residentSexes,
@@ -285,11 +285,11 @@ namespace Dig.Unity
                     identity.Id,
                     identity.Name,
                     new AgentNeedsSnapshot(
-                        new NeedValue(7_800 - (index * 900)),
+                        new NeedValue(NeedValue.Maximum),
                         new NeedValue(6_600 + (index * 500)),
                         new NeedValue(7_000 - (index * 350)),
                         new NeedValue(10_000)),
-                    DailySchedule.CreateBalanced(24),
+                    DailySchedule.CreateBalanced(GameTimeCadence.TicksPerDay),
                     skills: ResolveDemoSkills(index),
                     traits: identity.Heritage.Traits,
                     initialPosition: new CellId(
