@@ -2,7 +2,7 @@
 
 Status: `IMPLEMENTED`.
 
-Tracking: #113, #159, #390. Implementation PR: #585. Post-merge Unity test compile correction: pending PR.
+Tracking: #113, #159, #390. Implementation PR: #585. Post-merge Unity test compile correction: #589.
 
 ## Reported symptom
 
