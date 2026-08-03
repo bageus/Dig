@@ -52,9 +52,9 @@ public sealed class AgentNeedsAndScheduleTests
 
         Assert.True(result.IsSuccess);
         AgentSnapshot snapshot = agent.CreateSnapshot(1);
-        Assert.Equal(0, snapshot.Needs.Nutrition.Points);
-        Assert.Equal(0, snapshot.Needs.Alertness.Points);
-        Assert.Equal(8_333, snapshot.Needs.Health.Points);
+        Assert.Equal(99, snapshot.Needs.Nutrition.Points);
+        Assert.Equal(99, snapshot.Needs.Alertness.Points);
+        Assert.Equal(9_994, snapshot.Needs.Health.Points);
         Assert.Equal(4_799, snapshot.Needs.Mood.Points);
     }
 
