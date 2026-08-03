@@ -1,6 +1,6 @@
 # Unified game time and action cadence — 2026-08-03
 
-Status: `IMPLEMENTATION CORRECTION IN PROGRESS`; licensed Unity Play Mode evidence pending.
+Status: `IMPLEMENTED`; licensed Unity Play Mode evidence pending.
 
 Authoritative specifications:
 
@@ -37,6 +37,12 @@ The correction introduces one explicit Domain coefficient:
 - clock hands always use the global projection, independent of resident selection;
 - schedule overlays remain resident-specific but cannot own current time;
 - passive needs use global calendar ticks rather than resident schedule resolution.
+
+## Unity Domain compilation correction — 2026-08-04
+
+Runtime compilation after the cadence merge exposed a package-discovery regression: `AgentState.FoodMeals.cs` and `AgentState.RuntimeRestore.cs` referenced `FoodMealSnapshot`, while the declaration had been extracted into the newly introduced leaf file `AgentFoodMealContracts.cs`. The .NET solution and source exports contained that file, but the user's active Unity local-package import compiled the existing state files without resolving the extracted snapshot declaration, producing `CS0246` at all four snapshot references.
+
+The correction keeps `FoodMealSnapshot` in the already-established `AgentState.FoodMeals.cs` compilation unit used by Unity and leaves errors/events in `AgentFoodMealContracts.cs`. No gameplay, bite cadence, save payload or migration rule changes. A source-contract regression requires the snapshot declaration and its active-meal owner to remain in the same stable Unity package compilation unit.
 
 ## Save/load boundary
 
