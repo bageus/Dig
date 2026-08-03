@@ -186,6 +186,14 @@ public sealed partial class DigAgentVisual : MonoBehaviour
         _equipmentMaterial = equipmentMaterial
             ?? throw new ArgumentNullException(nameof(equipmentMaterial));
         RefreshHandEquipment();
+        if (_workToolVisualKind == Dig.Presentation.Jobs.ResidentWorkToolVisualKind.None
+            && equipment != null)
+        {
+            _equipmentVisual!.Configure(
+                equipment.ItemId,
+                EquipmentAppearanceKind.Generic,
+                equipmentMaterial);
+        }
     }
 
     internal Transform ResolveSocket(DigResidentSocketKind kind)
