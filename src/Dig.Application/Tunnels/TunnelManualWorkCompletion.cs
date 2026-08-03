@@ -61,12 +61,12 @@ public sealed class CompleteTunnelManualWorkHandler
 
         InventoryState inventory = _inventory.Get();
         ItemStackSnapshot? source = inventory.GetStack(definition.SourceStackId);
-        Result sourceValidation =
-            ValidateTunnelManualPlacementHandler.ValidateSource(
-                source,
-                definition.OwnerResidentId,
-                definition.SourceStackId);
-        if (sourceValidation.IsFailure
+        if (source is null
+            || source.StackId != definition.SourceStackId
+            || source.Location.Kind != ItemLocationKind.AgentInventory
+            || !source.Location.HasOwner
+            || source.Location.OwnerId != definition.OwnerResidentId
+            || !source.Location.HasResidentSlot
             || inventory.GetReservedQuantity(
                 definition.SourceStackId,
                 job.Id) < 1)
@@ -80,7 +80,7 @@ public sealed class CompleteTunnelManualWorkHandler
                 tunnels.CaptureSnapshot(),
                 definition.OwnerResidentId,
                 definition.SourceStackId,
-                source!.ItemId.ToString(),
+                source.ItemId.ToString(),
                 definition.TargetCell);
         if (target.IsFailure
             || target.Value.SegmentId != definition.SegmentId
