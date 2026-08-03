@@ -19,6 +19,10 @@ namespace Dig.Unity
                 _hoveredWorldObject = next;
                 CaptureHoverTints(next);
             }
+            else
+            {
+                RefreshHoverTintsIfStale(next);
+            }
 
             ApplyHoverTints();
         }
@@ -61,26 +65,68 @@ namespace Dig.Unity
             _hoverBaseTints = new Color[_hoverTintTargets.Length];
             for (int index = 0; index < _hoverTintTargets.Length; index++)
             {
-                _hoverBaseTints[index] = _hoverTintTargets[index].CurrentTint;
+                DigVisualTintTarget tint = _hoverTintTargets[index];
+                if (tint != null)
+                {
+                    _hoverBaseTints[index] = tint.CurrentTint;
+                }
             }
+        }
+
+        private void RefreshHoverTintsIfStale(Component? target)
+        {
+            if (!HasStaleHoverTints())
+            {
+                return;
+            }
+
+            RestoreHoverTints();
+            CaptureHoverTints(target);
+        }
+
+        private bool HasStaleHoverTints()
+        {
+            if (_hoverTintTargets.Length != _hoverBaseTints.Length)
+            {
+                return true;
+            }
+
+            for (int index = 0; index < _hoverTintTargets.Length; index++)
+            {
+                if (_hoverTintTargets[index] == null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void ApplyHoverTints()
         {
-            for (int index = 0; index < _hoverTintTargets.Length; index++)
+            int count = Math.Min(_hoverTintTargets.Length, _hoverBaseTints.Length);
+            for (int index = 0; index < count; index++)
             {
-                _hoverTintTargets[index].SetTint(
+                DigVisualTintTarget tint = _hoverTintTargets[index];
+                if (tint == null)
+                {
+                    continue;
+                }
+
+                tint.SetTint(
                     Color.Lerp(_hoverBaseTints[index], Color.white, 0.42f));
             }
         }
 
         private void RestoreHoverTints()
         {
-            for (int index = 0; index < _hoverTintTargets.Length; index++)
+            int count = Math.Min(_hoverTintTargets.Length, _hoverBaseTints.Length);
+            for (int index = 0; index < count; index++)
             {
-                if (_hoverTintTargets[index] != null)
+                DigVisualTintTarget tint = _hoverTintTargets[index];
+                if (tint != null)
                 {
-                    _hoverTintTargets[index].SetTint(_hoverBaseTints[index]);
+                    tint.SetTint(_hoverBaseTints[index]);
                 }
             }
 
