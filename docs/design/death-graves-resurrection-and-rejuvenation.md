@@ -1,29 +1,22 @@
 # Смерть гнома, колпак, надгробие, возвращение и омоложение
 
-Статус ordinary death/grave slice: `APPROVED`.
+Статус: `APPROVED`.  
+Tracking issue: [#150](https://github.com/bageus/Dig/issues/150).  
+Zombie-mode extension: [`zombie-mode-resident-death-questionnaire.md`](zombie-mode-resident-death-questionnaire.md), [#586](https://github.com/bageus/Dig/issues/586).
+
+Эта спецификация определяет обычный режим. Zombie mode использует отдельный death outcome и не может молча наследовать правила колпака/могилы.
 
 Связанная задача: [#150](https://github.com/bageus/Dig/issues/150).
 Zombie-mode extension: [`zombie-mode-resident-death-questionnaire.md`](zombie-mode-resident-death-questionnaire.md), [#586](https://github.com/bageus/Dig/issues/586), статус `QUESTIONNAIRE`.
 
 ## Граница текущего решения
 
-Эта спецификация authoritative для обычного исхода смерти resident, именного колпака, исключения из active roster, уведомления и изготовления персонального надгробия.
-
-Возвращение умершего гнома и омоложение остаются последующими building/service slices. Их правила могут быть реализованы только через authoritative Domain/Application contract; временная кнопка или локальная логика Presentation не создаются.
-
-## Смерть в обычном режиме
-
-Любая terminal death cause создаёт ровно один `ResidentDied`/death-instance outcome.
-
-В том же authoritative commit:
-
-- гном становится мёртвым и немедленно исключается из active resident roster;
-- мёртвый гном больше не является допустимой целью resident world selection, приказов, Utility AI, jobs, отдыха, еды, обучения или боя как живой resident;
-- текущие actions/jobs отменяются, а worker, item, position, designation и другие reservations освобождаются без дублирования;
+- умерший гном немедленно покидает active resident roster и больше не выбирается как живой resident в мире;
 - все stacks личного Inventory переходят в одну world cell — логическую клетку смерти;
 - в этой клетке может находиться любое количество разных предметов/stacks;
 - временный death container не создаётся;
-- создаётся отдельный поднимаемый identity-linked world item `Колпак {ИмяГнома}`;
+- появляется отдельный identity-linked world item `Колпак {ИмяГнома}`, который можно выбрать и поднять обычным item workflow;
+- колпак связан с `ResidentId` и `DeathInstanceId` и не зависит от рабочей шапки;
 - identity, имя, пол, family graph, historical relations, внешность, skills, capacity и lifecycle record сохраняются;
 - Presentation создаёт одно уведомление с локализованным шаблоном `Гном {ИмяГнома} умер`.
 
@@ -53,27 +46,25 @@ Zombie-mode extension: [`zombie-mode-resident-death-questionnaire.md`](zombie-mo
 - точная величина modifier остаётся data-driven balance value;
 - после исчезновения последнего активного источника modifier снимается.
 
-## Надгробие
+## Надгробие и могила
 
 ```text
 3 камня + Колпак конкретного гнома -> Надгробие {ИмяГнома}
 ```
 
 - производится в Мастерской каменщика;
-- player-facing результат называется `Надгробие {ИмяГнома}`;
-- internal pre-placement payload может называться `GraveBox`, но обязан хранить `ResidentId` и `DeathInstanceId`;
+- player-facing product называется `Надгробие {ИмяГнома}`; internal pre-placement/assembly payload может использовать stable type `GraveBox`, но локализованное имя не является identity key;
 - до завершения производственного цикла отмена возвращает зарезервированные материалы по общей production policy;
-- при завершении production колпак окончательно consumed и больше не может использоваться future resurrection service;
-- после размещения и сборки создаётся персональное надгробие/могила с именем умершего;
-- размещённое надгробие нельзя переносить, упаковывать или разобрать;
-- из завершённого надгробия воскресить гнома нельзя;
+- при завершении производства надгробия (`GraveBox`) колпак окончательно consumed и больше не может использоваться Храмом;
+- надгробие/`GraveBox` сохраняет `ResidentId` и `DeathInstanceId`;
+- после размещения и сборки создаётся `Могила {ИмяГнома}`;
+- размещённую могилу нельзя переносить, упаковывать или разобрать;
+- из могилы воскресить нельзя;
 - имя и связь с resident сохраняются независимо от локализации.
 
-## Будущее возвращение гнома
+## Возвращение в будущем здании/Храме
 
-В последующем строении/service можно будет вернуть умершего гнома, пока существует свободный именной колпак, не consumed завершённым надгробием.
-
-Текущий approved future contract:
+Возвращение является утверждённым будущим building/service slice. Текущая реализация колпака и надгробия не должна создавать временную кнопку, Presentation-owned resurrect command или расходовать колпак без authoritative здания.
 
 ```text
 Колпак конкретного гнома
@@ -171,4 +162,10 @@ Game-mode activation, Inventory outcome, conversion timing, identity/entity owne
 - ordinary и zombie outcomes никогда не выполняются одновременно;
 - Domain, Application, deterministic и Unity Play Mode покрывают death → roster removal → notification → drops/cap → pickup → gravestone production.
 
-Q-048 и Q-052 закрыты. Ordinary design #150 полностью определён. Zombie-mode extension остаётся `QUESTIONNAIRE` в #586.
+Q-048 и Q-052 закрыты. Design #150 полностью определён.
+
+## Журнал решений
+
+| Дата | Решение | Кто подтвердил | Изменённые разделы/issues |
+|---|---|---|---|
+| 2026-08-03 | В обычном режиме мёртвый resident исчезает из active roster/selection; вместо него остаётся поднимаемый именной колпак. Мастерская каменщика производит персональное надгробие. Resurrection остаётся будущим building slice. Zombie mode не создаёт колпак и вынесен в отдельный questionnaire. | Пользователь в проектном чате | Death workflow, grave naming, #150, #586 |
