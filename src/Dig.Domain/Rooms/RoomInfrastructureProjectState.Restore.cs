@@ -57,8 +57,9 @@ internal sealed partial class RoomInfrastructureProjectState
 
         _completedMaterialUnits.UnionWith(snapshot.CompletedMaterialUnits);
         _activeJobIds.UnionWith(snapshot.ActiveJobIds);
-        return _completedMaterialUnits.Count
-            == _materials.Values.Sum(value => value.Consumed);
+        return _materials.All(pair =>
+            _completedMaterialUnits.Count(unit => unit.ItemId == pair.Key)
+                == pair.Value.Consumed);
     }
 
     private static bool ValidateLifecycle(RoomInfrastructureProjectSnapshot snapshot)
