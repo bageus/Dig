@@ -3,7 +3,8 @@
 Status: `IMPLEMENTED IN BRANCH`.
 
 Authoritative specification: [`../design/room-purposes-upgrades-and-tunnel-reinforcement.md`](../design/room-purposes-upgrades-and-tunnel-reinforcement.md).  
-Tracking issue: [#574](https://github.com/bageus/Dig/issues/574).
+Tracking issue: [#574](https://github.com/bageus/Dig/issues/574).  
+Pull request: [#606](https://github.com/bageus/Dig/pull/606).
 
 ## Confirmed correction
 
@@ -54,8 +55,22 @@ Unity/source contracts:
 - runtime composes placement-only synchronization before ordinary assignment;
 - automatic candidates include only wooden supports;
 - marker visibility derives from current resident/building/job/placement context;
-- Play Mode fixture hides the marker while preserving physical room progress and restores it when planning visibility returns.
+- checked-in Play Mode fixture hides the marker while preserving physical room progress and restores it when planning visibility returns.
+
+## Validation — head `4d514644112bdb8930e33018d3f62f2dcc13ef03`
+
+Quality run `30858140123` passed:
+
+- architecture, file-size and C# compatibility checks;
+- Unity source contracts and presentation/runtime contract gates;
+- Release build with `0` warnings and `0` errors;
+- `1466/1466` .NET tests;
+- headless smoke;
+- standard deterministic soak;
+- large-settlement deterministic soak.
+
+Unity workflow `30858140126` completed through blocked-evidence handling. Actual Unity EditMode/PlayMode execution was skipped because licensed activation was unavailable. The checked-in Play Mode regression is present, but runtime status is therefore not promoted to `VERIFIED`.
 
 ## Verification boundary
 
-Repository Quality, Release build, .NET tests, headless smoke and deterministic soaks are required before merge. Actual licensed Unity EditMode/PlayMode execution is required before promoting this behavior to `VERIFIED`.
+Actual licensed Unity EditMode/PlayMode execution remains required before promoting this behavior to `VERIFIED`.
