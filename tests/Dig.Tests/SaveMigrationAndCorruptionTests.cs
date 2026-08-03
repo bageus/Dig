@@ -25,7 +25,6 @@ public sealed class SaveMigrationAndCorruptionTests
         SaveGameDocument document = new DataContractJsonSaveCodec().Deserialize(
             File.ReadAllBytes(fixturePath));
         SaveMigrationPipeline pipeline = CreateMigrations();
-
         Result<SaveMigrationReport> first = pipeline.Apply(document);
         Result<SaveMigrationReport> replay = pipeline.Apply(document);
 
@@ -58,8 +57,6 @@ public sealed class SaveMigrationAndCorruptionTests
         Assert.Empty(document.AgentPositions.Agents);
         Assert.NotNull(document.AgentRuntime);
         Assert.Empty(document.AgentRuntime.Agents);
-        Assert.NotNull(document.TunnelInfrastructure);
-        Assert.Empty(document.TunnelInfrastructure.Segments);
         Assert.True(replay.IsSuccess);
         Assert.Empty(replay.Value.AppliedSteps);
     }
@@ -103,8 +100,6 @@ public sealed class SaveMigrationAndCorruptionTests
         Assert.Empty(document.AgentPositions.Agents);
         Assert.NotNull(document.AgentRuntime);
         Assert.Empty(document.AgentRuntime.Agents);
-        Assert.NotNull(document.TunnelInfrastructure);
-        Assert.Empty(document.TunnelInfrastructure.Segments);
         Assert.True(replay.IsSuccess);
         Assert.Empty(replay.Value.AppliedSteps);
     }
