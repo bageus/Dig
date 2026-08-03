@@ -14,6 +14,7 @@ using Dig.Infrastructure.InMemory;
 using Dig.Presentation.Agents;
 using Dig.Presentation.World;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace Dig.Unity.Tests
 {
@@ -81,6 +82,97 @@ public sealed class ResidentNeedsRuntimeIntegrationPlayModeTests
         Assert.That(targetedTent, Is.True);
         Assert.That(reachedTent, Is.True);
         Assert.That(recoveredAtTent, Is.True);
+    }
+
+
+    [Test]
+    public void Active_floor_sleeper_survives_and_remains_rostered_and_selectable()
+    {
+        ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
+            ResidentNeedsRuntimePlayModeHarness.CreateRuntime();
+        runtime.Residents.BindResidentNeedsRuntime(runtime.Terrain);
+        runtime.Terrain.InitializeResidentNeedsRuntime(
+            runtime.Residents.Tick,
+            runtime.Residents.LoadView());
+
+        AgentState sleeper = runtime.Residents.Repository.GetAll()
+            .OrderBy(value => value.Id.ToString(), StringComparer.Ordinal)
+            .First();
+        foreach (AgentState resident in runtime.Residents.Repository.GetAll())
+        {
+            AgentNeedsSnapshot current = resident.CreateSnapshot(0).Needs;
+            int health = resident.Id == sleeper.Id ? 1_100 : current.Health.Points;
+            Result applied = resident.ApplyExternalNeedDelta(
+                new NeedDelta(
+                    9_000 - current.Nutrition.Points,
+                    (resident.Id == sleeper.Id ? 100 : 10_000)
+                        - current.Alertness.Points,
+                    9_000 - current.Mood.Points,
+                    health - current.Health.Points),
+                "test.runtime.sleep_visibility",
+                tick: 0);
+            Assert.That(applied.IsSuccess, Is.True, applied.Error?.ToString());
+            runtime.Residents.Repository.Save(resident);
+        }
+
+        AgentSnapshot? activeSleep = null;
+        for (int iteration = 0; iteration < 12; iteration++)
+        {
+            ResidentNeedsRuntimePlayModeHarness.RunTick(runtime);
+            AgentSnapshot snapshot = runtime.Residents.Repository.Get(sleeper.Id)!
+                .CreateSnapshot(runtime.Residents.Tick);
+            if (snapshot.IsAlive
+                && snapshot.ActiveAction.HasValue
+                && snapshot.ActiveAction.Value.IntentKind == AgentIntentKind.Sleep
+                && snapshot.ActiveAction.Value.ElapsedTicks > 0)
+            {
+                activeSleep = snapshot;
+                break;
+            }
+        }
+
+        Assert.That(activeSleep.HasValue, Is.True);
+        AgentSnapshot sleepingSnapshot = activeSleep!.Value;
+        Assert.That(sleepingSnapshot.IsAlive, Is.True);
+        Assert.That(sleepingSnapshot.ActiveAction.HasValue, Is.True);
+        AgentActionSnapshot sleepingAction = sleepingSnapshot.ActiveAction!.Value;
+        Assert.That(sleepingAction.Target.HasValue, Is.True);
+        Assert.That(sleepingAction.Target!.Value.Kind,
+            Is.EqualTo(AgentActivityTargetKind.FloorSleep));
+
+        string sleeperId = sleeper.Id.ToString();
+        ResidentRosterViewModel roster = runtime.Residents.LoadResidentRoster(
+            runtime.Terrain.LoadJobSnapshots().ToArray(),
+            sleeperId);
+        ResidentRosterRowViewModel row = roster.Rows.Single(value =>
+            value.Id == sleeperId);
+        Assert.That(row.IsAlive, Is.True);
+        Assert.That(row.IsExpanded, Is.True);
+        Assert.That(row.Activity.Kind, Is.EqualTo(ResidentActivityKind.Sleep));
+
+        GameObject rendererObject = new GameObject("SleepingResidentRenderer");
+        try
+        {
+            DigAgentRenderer renderer = rendererObject.AddComponent<DigAgentRenderer>();
+            renderer.Render(runtime.Residents.LoadView().ToArray(), movementDuration: 0f);
+
+            Assert.That(renderer.GetHudModels().Any(value => value.Id == sleeperId),
+                Is.True);
+            Assert.That(renderer.SelectById(sleeperId), Is.Not.Null);
+            Assert.That(renderer.SelectedAgentId, Is.EqualTo(sleeperId));
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(rendererObject);
+        }
+
+        ResidentNeedsRuntimePlayModeHarness.RunTick(runtime);
+        ResidentNeedsRuntimePlayModeHarness.RunTick(runtime);
+        AgentSnapshot afterRecovery = runtime.Residents.Repository.Get(sleeper.Id)!
+            .CreateSnapshot(runtime.Residents.Tick);
+
+        Assert.That(afterRecovery.IsAlive, Is.True);
+        Assert.That(afterRecovery.Needs.Health.Points, Is.GreaterThan(0));
     }
 
     [Test]

@@ -159,7 +159,13 @@ public sealed partial class AgentState : AggregateRoot
         }
 
         ExpirePlayerOrder(tick);
-        AdvancePassiveNeeds(policy.Needs, tick);
+        bool alertnessRecoveryCommitted = _activeAction is not null
+            && _activeAction.IntentKind == AgentIntentKind.Sleep
+            && _activeAction.ElapsedTicks > 0;
+        AdvancePassiveNeeds(
+            policy.Needs,
+            tick,
+            alertnessRecoveryCommitted);
         _lastNeedsTick = tick;
         Version = checked(Version + 1);
         HandleDeath(tick);

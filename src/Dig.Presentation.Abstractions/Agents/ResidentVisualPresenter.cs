@@ -54,7 +54,8 @@ public sealed class ResidentVisualPresenter
             || state == ResidentActionVisualState.Run
             || state == ResidentActionVisualState.Dig
             || state == ResidentActionVisualState.Carry
-            || state == ResidentActionVisualState.Build;
+            || state == ResidentActionVisualState.Build
+            || state == ResidentActionVisualState.Sleep;
         long version = ToVersion(Hash(model.Id, (int)state,
             (int)Math.Round(progress * 1000d), looping ? 1 : 0, model.Version));
         return new ResidentActionVisualViewModel(model.Id, state, progress, looping, version);
@@ -83,6 +84,8 @@ public sealed class ResidentVisualPresenter
             return ResidentActionVisualState.Pickup;
         if (ContainsAny(intent, "drop", "store", "deliver"))
             return ResidentActionVisualState.Drop;
+        if (ContainsAny(intent, "sleep"))
+            return ResidentActionVisualState.Sleep;
         return isCarrying ? ResidentActionVisualState.Carry : ResidentActionVisualState.Idle;
     }
 
