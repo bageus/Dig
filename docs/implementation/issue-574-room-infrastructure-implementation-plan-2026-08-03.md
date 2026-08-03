@@ -59,7 +59,7 @@ Tracking issue: [#574](https://github.com/bageus/Dig/issues/574).
 Validation PR #578:
 
 - quality/build passed;
-- 1390/1390 .NET tests passed;
+- `1390/1390` .NET tests passed;
 - headless smoke, standard soak и large soak passed with deterministic replay;
 - Unity Test Runner был blocked отсутствием activation, поэтому runtime verification не заявлена.
 
@@ -82,103 +82,133 @@ Validation PR #578:
 - production save registry проверяет coverage нового concrete `JobDefinition`;
 - player-cancel command/API намеренно отсутствует до ответа `Q-TUNNEL-008`.
 
-Фактические области:
-
-- `src/Dig.Domain/Jobs/TunnelAutomaticWorkJobDefinition.cs`;
-- `src/Dig.Domain/World/TunnelAutomaticWorkPlanner.cs`;
-- `src/Dig.Application/Tunnels/`;
-- `src/Dig.Application/Saving/TunnelAutomaticWorkJobSaveCodec.cs`;
-- `src/Dig.Infrastructure/InMemory/InMemoryTunnelInfrastructureRepository.cs`;
-- `src/Dig.Infrastructure/Saving/SaveGameCompositionRoot.cs`;
-- `tests/Dig.Tests/TunnelInfrastructureApplicationTests.cs`;
-- `tests/Dig.Tests/TunnelAutomaticWorkPlannerTests.cs`;
-- `tests/Dig.Tests/TunnelAutomaticWorkJobSaveCodecTests.cs`.
-
 Validation PR #579:
 
-- architecture, file-size, C# 9 compatibility, dependency and Domain-boundary checks passed;
-- Release build passed with `0` warnings and `0` errors;
-- full .NET suite passed: `1401/1401`;
-- new range, source, no-phantom-reservation, obsolete-target, interruption/reassignment and save-codec regressions passed;
+- architecture, file-size, C# 9 compatibility, dependency и Domain-boundary checks passed;
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1401/1401`;
 - headless smoke passed at tick `20`;
-- standard deterministic soak passed with replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
-- large deterministic soak with 64 residents passed with replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
+- standard deterministic soak replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
+- large deterministic soak replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
 - Stage 2 v2/v3 exports passed;
-- Unity workflow recorded blocked runtime evidence: actual EditMode/PlayMode execution was skipped because activation was unavailable, therefore runtime verification is not claimed.
+- actual Unity EditMode/PlayMode execution was skipped because activation was unavailable.
 
 ### Slice 2B — topology synchronization, execution и junction trim
 
 #### Slice 2B-1 — authoritative junction target and automatic trim job
 
-Статус: `READY FOR REVIEW` в PR #582. Подробный implementation note: [`issue-574-tunnel-junction-trim-lifecycle-2026-08-03.md`](issue-574-tunnel-junction-trim-lifecycle-2026-08-03.md).
+Статус: `MERGED` в PR #582. Подробный implementation note: [`issue-574-tunnel-junction-trim-lifecycle-2026-08-03.md`](issue-574-tunnel-junction-trim-lifecycle-2026-08-03.md).
 
 Реализовано:
 
-- `TunnelInfrastructureState` владеет одним pending/completed decorative stone-trim target на vertical-junction cell;
-- left/right chains с одним junction origin не создают duplicate targets;
-- stable owner выбирается по segment id и deterministic rebind выполняется при удалении одного направления;
-- удаление segment system-cancels его automatic jobs и освобождает Inventory reservations;
-- удаление последнего junction direction удаляет pending/completed trim provenance;
-- low-priority `JunctionStoneTrim` job переиспользует range `20` и deterministic source selection из Slice 2A;
+- unique pending/completed decorative stone-trim target на vertical-junction cell;
+- left/right chains не создают duplicate targets;
+- stable segment owner и deterministic rebind при удалении направления;
+- segment removal system-cancels automatic jobs и освобождает Inventory reservations;
+- low-priority `JunctionStoneTrim` использует range `20` и deterministic source selection;
 - no-source остаётся `Created` без phantom reservations;
-- появление stone разрешает тот же job и переводит его в `Available`;
-- completion убирает authoritative target, а synchronization отменяет stale job;
-- save codec regression покрывает оба automatic work kinds;
+- появление stone разрешает тот же job;
+- completion удаляет authoritative target, stale job отменяется;
 - player cancellation не реализована до ответа `Q-TUNNEL-008`.
 
 Validation PR #582:
 
-- architecture, file-size, C# 9 compatibility, compiler baseline, dependency и Domain-boundary checks passed;
-- Release build passed: `0` warnings, `0` errors;
-- full .NET suite passed: `1412/1412`;
-- headless smoke passed at tick `20`;
-- standard deterministic soak replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
-- large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
-- Stage 2 v2/v3 exports passed;
-- Unity workflow recorded blocked runtime evidence; actual EditMode/PlayMode execution was skipped because activation was unavailable.
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1412/1412`;
+- headless smoke и оба deterministic soak passed;
+- actual Unity EditMode/PlayMode execution was skipped because activation was unavailable.
 
 #### Slice 2B-2a — automatic work final commit
 
-Статус: `READY FOR REVIEW` в stacked PR #584. Подробный implementation note: [`issue-574-tunnel-automatic-work-execution-2026-08-03.md`](issue-574-tunnel-automatic-work-execution-2026-08-03.md).
+Статус: код был review/merged в nested PR #584 и восстановлен для merge в `main` через PR #590. Подробный implementation note: [`issue-574-tunnel-automatic-work-execution-2026-08-03.md`](issue-574-tunnel-automatic-work-execution-2026-08-03.md).
 
 Реализовано:
 
 - final commit принимает только `TunnelAutomaticWorkJobDefinition` в `InProgress/Finalize` с authoritative worker;
-- source повторно проверяется по exact stack identity, item id, исходной world cell и reservation владельца-job;
-- current support/trim target повторно сверяется с `TunnelInfrastructureState` непосредственно перед mutation;
+- exact source stack/item/world-cell/reservation preflight;
+- current support/trim target revalidation перед mutation;
 - wooden support расходует ровно один `material.mushroom_leg`, становится structural anchor и переносит rolling target;
-- junction trim расходует ровно один `material.stone`, остаётся decorative и не даёт structural protection;
+- junction trim расходует ровно один `material.stone`, остаётся decorative;
 - final stage завершает job и освобождает JobSystem claims;
 - worker получает ровно `70` fixed-point units (`+0.7`) Woodworking или Stonework;
 - skill idempotency использует stable automatic job identity;
-- stale target, missing reservation и changed source отклоняются до material, infrastructure и skill mutation;
-- terminal replay не может повторно расходовать материал или начислить skill.
+- stale target/source/reservation отклоняются до mutation;
+- terminal replay не расходует материал и не начисляет skill повторно.
 
-Validation PR #584:
+Validation исходного slice:
+
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1416/1416`;
+- automatic-work execution regressions, smoke и оба deterministic soak passed;
+- actual Unity EditMode/PlayMode execution was skipped because activation was unavailable.
+
+#### Slice 2B-2b1 — completed provenance topology reconciliation
+
+Статус: код был review/merged в nested PR #587 и восстановлен для merge в `main` через PR #590. Подробный implementation note: [`issue-574-tunnel-topology-provenance-reconciliation-2026-08-03.md`](issue-574-tunnel-topology-provenance-reconciliation-2026-08-03.md).
+
+Реализовано:
+
+- completed provenance supplies stable segment id, origin kind/cell, direction и exact ordered cells;
+- identity = `origin kind + origin cell + direction`;
+- repeated provenance idempotent;
+- missing directions registered;
+- removed directions cancel automatic work and release reservations;
+- extension/shortening preserves anchors whose cells remain;
+- completed junction trim survives geometry extension;
+- obsolete support jobs cancel only when derived target changes;
+- stable-id drift/reuse rejects before authoritative mutation;
+- complete desired topology is preflight-validated before cross-owner mutation.
+
+Validation исходного slice:
+
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1422/1422`;
+- six topology reconciliation regressions, smoke и оба deterministic soak passed;
+- actual Unity EditMode/PlayMode execution was skipped because activation was unavailable.
+
+#### Slice 2B-2b2a — Unity/runtime provenance composition
+
+Статус: `READY FOR REVIEW` в PR #590. Подробный implementation note: [`issue-574-tunnel-runtime-provenance-composition-2026-08-03.md`](issue-574-tunnel-runtime-provenance-composition-2026-08-03.md).
+
+Реализовано:
+
+- `TunnelRuntimeTopologyProjector` читает только completed World cells, completed `CaveRoomPlan`, `PlannedTunnelCells` и `PlannedVerticalTunnelCells`;
+- arbitrary open terrain не становится infrastructure provenance;
+- room exits проецируются только наружу от completed room;
+- completed horizontal/vertical intersections становятся deterministic junction origins;
+- reset origins partition corridors без reverse duplicates;
+- stable segment id зависит от immutable topology key, а не порядка input/длины geometry;
+- topology reconciliation и support/trim synchronization выполняются до ordinary assignment;
+- completed building footprints, revealed cells и current tunnel-navigation cells переиспользуют существующий planner;
+- automatic jobs участвуют в ordinary candidate/assignment pass;
+- worker движется к exact reserved source, затем к target;
+- route failure освобождает worker assignment, сохраняя job-owned material reservation;
+- stage execution использует существующий JobSystem;
+- Finalize вызывает `CompleteTunnelAutomaticWorkHandler`;
+- post-excavation topology reconciliation выполняется до world-item settlement;
+- existing Job overlay показывает exact support/trim XYZ target.
+
+Validation PR #590 на code head `d430b065baf6ff5ba4fc86958f62cb4faf47bbae`:
 
 - architecture, file-size, C# 9 compatibility, compiler baseline, dependency и Domain-boundary checks passed;
-- Release build passed: `0` warnings, `0` errors;
-- full .NET suite passed: `1416/1416`;
-- четыре новых execution regression tests passed;
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1435/1435`;
+- topology projector, reconciliation, execution и Unity-composition regressions passed;
 - headless smoke passed at tick `20`;
 - standard deterministic soak replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
 - large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
-- Unity workflow recorded blocked runtime evidence; actual EditMode/PlayMode execution was skipped because activation was unavailable.
+- Unity workflow recorded blocked evidence; actual EditMode/PlayMode execution and executed-runtime-evidence validation were skipped.
 
-#### Slice 2B-2b — excavation/template provenance topology reconciliation
+Осталось в Slice 2B:
 
-Осталось:
-
-- synchronization из completed excavation/template-room provenance;
-- deterministic creation/removal horizontal segments at room exits and vertical junctions;
-- runtime stage/movement composition and Unity projection;
-- interruption policies reuse Slice 2A;
+- world visual renderer/projection для completed wooden support и junction stone trim;
+- actual licensed Play Mode end-to-end evidence;
 - player cancellation не реализуется до ответа `Q-TUNNEL-008`.
 
 ### Slice 3 — persistence и migration для tunnel infrastructure
 
-- save ordered segments, anchor cells/kinds, next target identity, decorative targets и reservations;
-- load пересчитывает только derived target от последнего completed anchor;
+- save ordered segments, anchor cells/kinds, next target identity, decorative targets и runtime automatic-job sequence;
+- load пересчитывает only derived target от последнего completed anchor;
 - obsolete target не восстанавливается;
 - versioned migration не добавляет anchors в legacy saves без evidence;
 - deterministic save round trip и idempotency tests.
@@ -189,7 +219,7 @@ Validation PR #584:
 
 - stable room infrastructure identity для completed template rooms;
 - `UpgradeOrderCount` только `0|1`;
-- nearest reachable free temporary-stock cell с stable tie-break;
+- nearest reachable free temporary-stock cell со stable tie-break;
 - delivery/material ledger;
 - cancel только до первого actual work interval;
 - delivered items остаются в комнате и освобождаются для ordinary logistics;
@@ -222,7 +252,7 @@ Validation PR #584:
 - interruption removes ghost/job and leaves material with owner resident;
 - wooden support commit updates rolling anchor chain;
 - stone floor/junction trim remains decorative;
-- room marker/menu, count `0|1`, requested/active purpose, progress and typed reasons;
+- room marker/menu, count `0|1`, requested/active purpose, progress и typed reasons;
 - input shielding before movement/excavation;
 - Unity source-contract and Play Mode tests.
 
@@ -231,7 +261,7 @@ Validation PR #584:
 Общая часть до ответа `Q-TUNNEL-006A`:
 
 - deterministic delay `1..3` game days;
-- eligibility excludes room, vertical, junction, wooden-support and door-protected cells;
+- eligibility excludes room, vertical, junction, wooden-support и door-protected cells;
 - deterministic candidate selection and actor substitution;
 - collapse to `terrain.sand` without deposit/output;
 - buried item identities/quantities recover exactly once after re-excavation;
