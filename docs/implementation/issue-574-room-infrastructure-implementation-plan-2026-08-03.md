@@ -265,18 +265,51 @@ Validation PR #592 на code head `2ff8fef77749c983e5ae56595ccdc823af3dc4db`:
 
 ### Slice 4 — room-upgrade core
 
-Можно реализовать до закрытия layout/membership вопросов:
+#### Slice 4A — authoritative room aggregate, provenance и stock-cell planning
 
-- stable room infrastructure identity для completed template rooms;
-- `UpgradeOrderCount` только `0|1`;
-- nearest reachable free temporary-stock cell со stable tie-break;
-- delivery/material ledger;
-- cancel только до первого actual work interval;
-- delivered items остаются в комнате и освобождаются для ordinary logistics;
-- после work start операция обязана завершиться;
-- per-unit commit, partial progress и material-specific `+0.5` skill exactly once;
-- requested purpose может меняться до completion без reset;
-- save/load и diagnostics.
+Статус: `READY FOR REVIEW` в stacked PR #593. Подробный implementation note: [`issue-574-room-upgrade-foundation-2026-08-03.md`](issue-574-room-upgrade-foundation-2026-08-03.md).
+
+Реализовано без выбора default для `Q-ROOM-003` и `Q-ROOM-007`:
+
+- stable infrastructure identity выводится из immutable completed template-instance id;
+- регистрируются только completed `Small`, `Medium`, `Large` и `Tall` template instances;
+- `UpgradeOrderCount` принимает только `0|1`, повторный order отклоняется;
+- costs соответствуют confirmed material sets всех четырёх templates;
+- aggregate хранит requested/active purpose, required/delivered/consumed/released ledgers, temporary-stock cell, completed material-unit ids и active job ids;
+- temporary-stock planner рассматривает только exact room cells, open/reachable/unoccupied eligibility, Manhattan distance до geometric center и stable `CellId` tie-break;
+- отсутствие подходящей клетки возвращает typed blocked result без mutation;
+- cancel разрешён только до первого actual work start, возвращает attached jobs и released delivered quantities;
+- work start необратимо блокирует cancellation;
+- `RoomMaterialUnitId(item, ordinal)` коммитится exactly once, replay не меняет version;
+- work job остаётся attached между последовательными material stages;
+- partial progress, exact per-material committed-unit counts и lifecycle валидируются при restore;
+- completion удаляет temporary stock/job claims и активирует последний requested purpose;
+- post-completion purpose state может измениться без добавления bonus/layout/packing behavior;
+- CQRS handlers, in-memory repository и immutable typed diagnostics добавлены.
+
+Validation PR #593 на code head `b3dc06857d1adb2efc77e5a47477f8e9067c698e`:
+
+- Quality run `30811581217`: success;
+- architecture, file-size, C# 9 compatibility, compiler baseline, dependency и Domain-boundary checks passed;
+- Unity source contracts passed;
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1448/1448`;
+- room cost/order/cancel/work-lock/idempotency/restore/provenance/stock-planner/diagnostics regressions passed;
+- headless smoke passed at tick `20`;
+- standard deterministic soak replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
+- large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E1B693AA340A303F0C`;
+- Unity workflow `30811581174` recorded blocked evidence; actual EditMode/PlayMode execution and executed-runtime-evidence validation were skipped.
+
+#### Slice 4B — physical stock, jobs, grants и persistence
+
+Осталось реализовать:
+
+- physical `InventoryState` temporary stock и ordinary hauling jobs/reservations;
+- pre-work cancel system-cancels jobs/releases reservations и оставляет delivered stacks ordinary usable в комнате;
+- work-job material consumption и material-specific `+0.5` skill grant exactly once;
+- interruption/resume с сохранением partial progress;
+- save-document section, migration и Unity runtime composition;
+- marker/menu/read model и actual Play Mode workflow.
 
 Не входят до ответа на blockers:
 
