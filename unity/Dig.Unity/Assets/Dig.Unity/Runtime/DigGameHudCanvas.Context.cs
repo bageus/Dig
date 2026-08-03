@@ -7,10 +7,8 @@ using Dig.Presentation.Inventory;
 using Dig.Presentation.Jobs;
 using UnityEngine;
 using UnityEngine.UI;
-
 namespace Dig.Unity
 {
-
 public sealed partial class DigGameHudCanvas
 {
     private const float CompactBottomPanelHeight = 98f;
@@ -35,6 +33,8 @@ public sealed partial class DigGameHudCanvas
             ShowTechnologyDescriptionPanel(_technologyDescriptionId);
             return;
         }
+
+        if (TryShowSelectedRoomInfrastructure()) return;
 
         BuildingWorldViewModel? building = _buildingRenderer!.SelectedModel;
         if (building != null)
