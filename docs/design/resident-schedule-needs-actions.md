@@ -52,6 +52,9 @@ Unity normal playback использует только `SimulationState.Clock.T
 - Idle does not restore Alertness, Mood or Health by itself.
 - Work, movement and combat do not produce positive natural recovery.
 - Passive decay/critical penalties remain authoritative and continue to run on simulation ticks.
+- Travelling to a Bed does not count as recovery: while `Sleep.ElapsedTicks == 0`, critical Alertness and Nutrition use ordinary passive damage.
+- After the first Sleep interval is committed, critical Alertness alone does not apply passive Health/Mood damage while that same Sleep action remains active; Sleep Health recovery is therefore monotonic for exhaustion-only recovery.
+- Critical Nutrition remains a survival-critical damage source during Sleep and can still reduce Health.
 
 Targeted Eat, Sleep and Leisure distribute their configured total action effect across deterministic intervals. Integer remainder is assigned to the earliest intervals. Interruption preserves committed intervals. Completion clears the action and reservation but applies no duplicate full-action effect.
 
@@ -109,6 +112,7 @@ An available Bed always wins over Floor for the resident being resolved. With on
 - Free-time hunger reserves and consumes one real food unit; when loose food is unavailable but a reachable closed `food` package exists, resident automatically breaks it through the package Use workflow and then picks up/eats one released unit.
 - Work-time hunger emits one notification without automatic reservation/consumption.
 - Partial targeted Eat/Sleep/Leisure produces partial need changes.
+- A committed Sleep interval prevents Alertness-only critical Health loss until interruption/completion, but does not suppress critical Nutrition damage; walking to a Bed has no such protection.
 - Interruption preserves applied intervals and completion does not duplicate them.
 - Available Bed is preferred; no Bed produces FloorSleep.
 - Floor applies Mood 0 positive gain and Alertness cap 7500.
