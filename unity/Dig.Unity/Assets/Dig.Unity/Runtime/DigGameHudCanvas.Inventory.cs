@@ -184,8 +184,15 @@ public sealed partial class DigGameHudCanvas
         bool altPressed = Input.GetKey(KeyCode.LeftAlt)
             || Input.GetKey(KeyCode.RightAlt);
         bool dropPressed = Input.GetKey(KeyCode.C);
+        bool tunnelManualPressed = Input.GetKey(KeyCode.U);
         if (leftClick)
         {
+            if (tunnelManualPressed)
+            {
+                _interaction!.BeginTunnelManualPlacement(slot);
+                InvalidateAll();
+                return;
+            }
             if (dropPressed
                 && slot.CanDrop
                 && !ConfirmExpansionSpill(slot))

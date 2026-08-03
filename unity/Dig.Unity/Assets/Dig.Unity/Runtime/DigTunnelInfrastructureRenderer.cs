@@ -30,9 +30,8 @@ namespace Dig.Unity
 
             EnsureResources();
             _visibleInstances.Clear();
-            for (int index = 0; index < volume.Instances.Count; index++)
+            foreach (TunnelInfrastructureVisualViewModel instance in volume.Instances)
             {
-                TunnelInfrastructureVisualViewModel instance = volume.Instances[index];
                 _visibleInstances.Add(instance.InstanceId);
                 if (!_visuals.ContainsKey(instance.InstanceId))
                 {
@@ -67,7 +66,8 @@ namespace Dig.Unity
                     BuildWoodenSupport(visual.transform);
                     break;
                 case TunnelInfrastructureVisualKind.JunctionStoneTrim:
-                    BuildJunctionStoneTrim(visual.transform);
+                case TunnelInfrastructureVisualKind.StoneFloorTrim:
+                    BuildStoneTrim(visual.transform);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(instance));
@@ -86,36 +86,20 @@ namespace Dig.Unity
                 _woodMaterial!);
         }
 
-        private void BuildJunctionStoneTrim(Transform parent)
+        private void BuildStoneTrim(Transform parent)
         {
-            const float railLength = 0.88f;
-            const float railWidth = 0.10f;
-            const float edge = 0.18f;
-            const float height = 0.06f;
-            CreatePart(
-                parent,
-                "Stone trim front",
-                new Vector3(0f, height * 0.5f, edge),
-                new Vector3(railLength, height, railWidth),
-                _stoneMaterial!);
-            CreatePart(
-                parent,
-                "Stone trim back",
-                new Vector3(0f, height * 0.5f, -edge),
-                new Vector3(railLength, height, railWidth),
-                _stoneMaterial!);
-            CreatePart(
-                parent,
-                "Stone trim left",
-                new Vector3(-0.39f, height * 0.5f, 0f),
-                new Vector3(railWidth, height, 0.46f),
-                _stoneMaterial!);
-            CreatePart(
-                parent,
-                "Stone trim right",
-                new Vector3(0.39f, height * 0.5f, 0f),
-                new Vector3(railWidth, height, 0.46f),
-                _stoneMaterial!);
+            CreatePart(parent, "Stone trim front",
+                new Vector3(0f, 0.03f, 0.18f),
+                new Vector3(0.88f, 0.06f, 0.10f), _stoneMaterial!);
+            CreatePart(parent, "Stone trim back",
+                new Vector3(0f, 0.03f, -0.18f),
+                new Vector3(0.88f, 0.06f, 0.10f), _stoneMaterial!);
+            CreatePart(parent, "Stone trim left",
+                new Vector3(-0.39f, 0.03f, 0f),
+                new Vector3(0.10f, 0.06f, 0.46f), _stoneMaterial!);
+            CreatePart(parent, "Stone trim right",
+                new Vector3(0.39f, 0.03f, 0f),
+                new Vector3(0.10f, 0.06f, 0.46f), _stoneMaterial!);
         }
 
         private void CreatePart(
@@ -153,34 +137,31 @@ namespace Dig.Unity
             }
 
             _cubeMesh ??= CreateCubeMesh();
-            if (_woodMaterial == null || _stoneMaterial == null)
+            if (_woodMaterial != null && _stoneMaterial != null)
             {
-                Shader shader = ResolveShader();
-                _woodMaterial = new Material(shader)
-                {
-                    name = "Tunnel wooden support material",
-                    color = new Color(0.46f, 0.27f, 0.12f, 1f),
-                };
-                _stoneMaterial = new Material(shader)
-                {
-                    name = "Tunnel junction stone trim material",
-                    color = new Color(0.48f, 0.50f, 0.54f, 1f),
-                };
+                return;
             }
+
+            Shader shader = ResolveShader();
+            _woodMaterial = new Material(shader)
+            {
+                name = "Tunnel wooden support material",
+                color = new Color(0.46f, 0.27f, 0.12f, 1f),
+            };
+            _stoneMaterial = new Material(shader)
+            {
+                name = "Tunnel stone trim material",
+                color = new Color(0.48f, 0.50f, 0.54f, 1f),
+            };
         }
 
         private static Shader ResolveShader()
         {
-            Shader? shader = Shader.Find("Dig/Stylized Unlit")
+            return Shader.Find("Dig/Stylized Unlit")
                 ?? Shader.Find("Universal Render Pipeline/Unlit")
-                ?? Shader.Find("Standard");
-            if (shader == null)
-            {
-                throw new InvalidOperationException(
+                ?? Shader.Find("Standard")
+                ?? throw new InvalidOperationException(
                     "Tunnel infrastructure visuals require a compatible shader.");
-            }
-
-            return shader;
         }
 
         private static Mesh CreateCubeMesh()
@@ -225,9 +206,8 @@ namespace Dig.Unity
                 }
             }
 
-            for (int index = 0; index < _removedInstances.Count; index++)
+            foreach (string instanceId in _removedInstances)
             {
-                string instanceId = _removedInstances[index];
                 GameObject visual = _visuals[instanceId];
                 _visuals.Remove(instanceId);
                 Destroy(visual);
@@ -236,20 +216,9 @@ namespace Dig.Unity
 
         private void OnDestroy()
         {
-            if (_woodMaterial != null)
-            {
-                Destroy(_woodMaterial);
-            }
-
-            if (_stoneMaterial != null)
-            {
-                Destroy(_stoneMaterial);
-            }
-
-            if (_cubeMesh != null)
-            {
-                Destroy(_cubeMesh);
-            }
+            if (_woodMaterial != null) Destroy(_woodMaterial);
+            if (_stoneMaterial != null) Destroy(_stoneMaterial);
+            if (_cubeMesh != null) Destroy(_cubeMesh);
         }
     }
 }
