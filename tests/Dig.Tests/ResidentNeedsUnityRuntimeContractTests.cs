@@ -21,6 +21,22 @@ public sealed class ResidentNeedsUnityRuntimeContractTests
     }
 
     [Fact]
+    public void Global_clock_and_passive_needs_share_one_time_scale()
+    {
+        string clock = ReadRuntime("DigGameHudCanvas.Clock.cs");
+        string driverHud = ReadRuntime("DigAgentSimulationDriverBase.Hud.cs");
+        string needs = ReadRepository(
+            "src/Dig.Domain/Agents/AgentState.NeedThresholds.cs");
+
+        Assert.Contains("GameTimeCadence.Project(tick)", clock);
+        Assert.Contains("GameTimeCadence.GameSecondsPerDay", clock);
+        Assert.DoesNotContain("int ticksPerDay = 24", clock);
+        Assert.Contains("GameTimeCadence.TicksPerDay", driverHud);
+        Assert.Contains("GameTimeCadence.TicksPerDay", needs);
+        Assert.DoesNotContain("Schedule.TicksPerDay", needs);
+    }
+
+    [Fact]
     public void Tent_sleep_and_food_package_use_are_real_runtime_targets()
     {
         string needs = ReadRuntime("DigTerrainWorkSession.ResidentNeeds.cs");
@@ -39,10 +55,16 @@ public sealed class ResidentNeedsUnityRuntimeContractTests
 
     private static string ReadRuntime(string file)
     {
-        return File.ReadAllText(Path.Combine(
-            FindRepositoryRoot(),
+        return ReadRepository(Path.Combine(
             "unity/Dig.Unity/Assets/Dig.Unity/Runtime",
             file));
+    }
+
+    private static string ReadRepository(string relativePath)
+    {
+        return File.ReadAllText(Path.Combine(
+            FindRepositoryRoot(),
+            relativePath));
     }
 
     private static string FindRepositoryRoot()
