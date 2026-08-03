@@ -158,7 +158,7 @@ internal sealed partial class DigTerrainWorkSession
     private EntityId NextTunnelManualJobId()
     {
         return EntityId.Parse(
-            "m" + (_tunnelManualJobSequence++).ToString("x31"));
+            "b" + (_tunnelManualJobSequence++).ToString("x31"));
     }
 
     private void EnsureTunnelManualRuntime()
