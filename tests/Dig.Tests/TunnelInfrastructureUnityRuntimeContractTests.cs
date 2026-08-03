@@ -36,8 +36,12 @@ public sealed class TunnelInfrastructureUnityRuntimeContractTests
         Assert.Contains("PlannedTunnelCells", infrastructure);
         Assert.Contains("PlannedVerticalTunnelCells", infrastructure);
         Assert.Contains("SynchronizeTunnelAutomaticSupportHandler", infrastructure);
-        Assert.Contains("SynchronizeTunnelAutomaticJunctionTrimHandler", infrastructure);
+        Assert.Contains("SynchronizeTunnelJunctionTrimPlacementHandler", infrastructure);
+        Assert.Contains("SynchronizeTunnelJunctionTrimPlacementCommand(tick)", infrastructure);
+        Assert.DoesNotContain("SynchronizeTunnelAutomaticJunctionTrimHandler", infrastructure);
+        Assert.DoesNotContain("ResolveTrimJobId", infrastructure);
         Assert.Contains("CompleteTunnelAutomaticWorkHandler", infrastructure);
+        Assert.Contains("definition.Kind == TunnelAutomaticWorkKind.WoodenSupport", infrastructure);
         Assert.Contains("TryPlanTunnelAutomaticWorkMovement", navigation);
         Assert.Contains("AdvanceTunnelAutomaticWork", session);
 
@@ -82,7 +86,7 @@ public sealed class TunnelInfrastructureUnityRuntimeContractTests
     }
 
     [Fact]
-    public void Job_overlay_projects_automatic_tunnel_xyz_target()
+    public void Job_overlay_projects_only_the_supported_automatic_tunnel_target()
     {
         EntityId jobId = Id(1);
         EntityId segmentId = Id(2);
