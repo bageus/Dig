@@ -43,6 +43,21 @@ The cooldown is an anti-oscillation rule. It must not remove the always-availabl
 - unavailable `Flee` is diagnosed as `rejected.unavailable`;
 - `Idle` is selected with `selected.utility`.
 
+## Automated evidence
+
+Code-and-test head `4ae491df1be0f0282e998c27894c5742179af389`:
+
+- Quality `30773599097` / run 8480: success;
+- architecture, file-size and C# compatibility checks: success;
+- Unity source contracts: success;
+- Release restore/build and full .NET suite: success;
+- headless smoke: success;
+- standard deterministic soak: success;
+- large-settlement deterministic soak: success;
+- Export Stage 2 v2 `30773599070`: success;
+- Export Stage 2 v3 `30773599066`: success;
+- Unity workflow `30773599064` / run 695: workflow success, but actual EditMode/PlayMode execution and runtime-evidence validation were skipped because licensed activation was unavailable.
+
 ## Verification boundary
 
-The code and regression are present in draft PR #583. Automated validation is pending. The bug fix must not be marked merged or runtime verified before the corresponding evidence exists.
+The code and regression are present in draft PR #583 and automated non-Unity validation is green. The bug fix must not be marked merged before PR #583 merges, and must not be marked runtime `VERIFIED` without an actual licensed Unity Test Runner execution.
