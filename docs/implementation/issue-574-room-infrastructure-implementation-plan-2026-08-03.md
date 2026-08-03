@@ -335,14 +335,51 @@ Validation PR #594 на code head `f5e89ab370861cb1b05a326e502ce5f3e6a4f8bd`:
 - large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
 - Unity workflow `30815720965` recorded blocked evidence; actual EditMode/PlayMode execution and executed-runtime-evidence validation were skipped.
 
-#### Slice 4B-2 — room persistence и Unity runtime composition
+#### Slice 4B-2a — room persistence и Unity runtime composition
+
+Статус: `READY FOR REVIEW` в stacked PR #595. Подробный implementation note: [`issue-574-room-runtime-persistence-composition-2026-08-03.md`](issue-574-room-runtime-persistence-composition-2026-08-03.md).
+
+Реализовано без выбора default для `Q-ROOM-003` и `Q-ROOM-007`:
+
+- save format повышен с `15` до `16`;
+- сохраняются aggregate/per-room versions, stable room/template identities, lifecycle, purpose, exact stock XYZ, material ledgers, completed units и active job ids;
+- completed-room provenance сохраняется с exact ordered room cells;
+- deterministic room job/transit-stack sequence сохраняется и валидируется против persisted ids;
+- load сначала восстанавливает Domain aggregate, затем проверяет provenance/world bounds/overlap, active jobs, Inventory reservations и JobSystem ownership;
+- malformed provenance, orphan runtime job или stale sequence отклоняют load до publication;
+- migration `save.v15_to_v16.room_infrastructure` создаёт пустой room section без phantom identities и поднимает sequence выше существующих parseable room ids;
+- manual save и autosave переносят один authoritative room runtime snapshot;
+- Unity проецирует только completed template instances и отклоняет provenance drift;
+- room/stock/job synchronization выполняется до ordinary assignment;
+- existing Inventory/JobSystem/Haul/candidate/skill owners переиспользуются;
+- hauling движется source → exact temporary-stock cell, work — к exact work cell;
+- route failure освобождает worker/position/resident-slot claims, сохраняя job-owned material reservation;
+- stage execution вызывает existing Application delivery/work/finalize handlers;
+- post-terrain commit выполняет повторную room synchronization;
+- capture/restore восстанавливает aggregate, provenance и sequence и пересоздаёт handlers.
+
+Validation PR #595 на code head `9d55c5778c0d7667b21ed39507174b8efbb3f2c5`:
+
+- Quality run `30821792583`: success;
+- architecture, file-size, C# 9 compatibility, compiler baseline, dependency и Domain-boundary checks passed;
+- Unity source contracts passed;
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1460/1460`;
+- active save round-trip, migration, stale provenance/sequence, deterministic serialization и Unity-composition contracts passed;
+- headless smoke passed at tick `20`;
+- standard deterministic soak replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
+- large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
+- Unity workflow `30821792579` recorded blocked evidence; actual EditMode/PlayMode execution and executed-runtime-evidence validation were skipped.
+
+#### Slice 4B-2b — room marker, menu, read model и progress visuals
 
 Осталось реализовать:
 
-- room infrastructure save-document section и versioned migration;
-- сохранение/restore room aggregate, active room jobs, reservations и deterministic job-id sequence;
-- Unity completed-room synchronization, ordinary assignment, movement и stage execution;
-- room marker/menu/read model, progress visuals и actual Play Mode workflow.
+- room world marker и input shielding;
+- central HUD menu с upgrade count `0|1`;
+- requested/active purpose и progress read model;
+- partial improvement visual projection;
+- actual Play Mode end-to-end workflow.
 
 Не входят до ответа на blockers:
 
@@ -377,7 +414,7 @@ Validation PR #594 на code head `f5e89ab370861cb1b05a326e502ce5f3e6a4f8bd`:
 Общая часть до ответа `Q-TUNNEL-006A`:
 
 - deterministic delay `1..3` game days;
-- eligibility excludes room, vertical, junction, wooden-support и door-protected cells;
+- eligibility excludes room, vertical, junction, wooden-supported и door-protected cells;
 - deterministic candidate selection and actor substitution;
 - collapse to `terrain.sand` without deposit/output;
 - buried item identities/quantities recover exactly once after re-excavation;
