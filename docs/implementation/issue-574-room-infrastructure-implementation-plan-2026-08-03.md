@@ -297,7 +297,7 @@ Validation PR #593 на code head `b3dc06857d1adb2efc77e5a47477f8e9067c698e`:
 - room cost/order/cancel/work-lock/idempotency/restore/provenance/stock-planner/diagnostics regressions passed;
 - headless smoke passed at tick `20`;
 - standard deterministic soak replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
-- large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E1B693AA340A303F0C`;
+- large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
 - Unity workflow `30811581174` recorded blocked evidence; actual EditMode/PlayMode execution and executed-runtime-evidence validation were skipped.
 
 #### Slice 4B — physical stock, jobs, grants и persistence
