@@ -112,6 +112,12 @@ public sealed class JobOverlayPresenter
             targetY = barrel.TargetCell.Y;
             targetZ = barrel.TargetCell.Z;
         }
+        else if (job.Definition is TunnelAutomaticWorkJobDefinition tunnel)
+        {
+            targetX = tunnel.TargetCell.X;
+            targetY = tunnel.TargetCell.Y;
+            targetZ = tunnel.TargetCell.Z;
+        }
         else if (job.Definition is ProductionWorkJobDefinition production)
         {
             targetX = production.WorkPosition.X;
