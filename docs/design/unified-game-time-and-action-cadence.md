@@ -6,6 +6,8 @@ Decision date: 2026-08-03.
 
 Tracking issue: [#601](https://github.com/bageus/Dig/issues/601).
 
+Authoritative runtime correction: [`game-time-scale-runtime-synchronization-correction-2026-08-03.md`](game-time-scale-runtime-synchronization-correction-2026-08-03.md). Эта correction supersedes разделы 2, 3, 11 и соответствующие acceptance пункты там, где clock или needs могли использовать resident schedule/legacy fallback вместо global coefficient.
+
 Связанные authoritative systems:
 
 - [`../architecture/systems-core.md`](../architecture/systems-core.md);
@@ -27,10 +29,12 @@ Tracking issue: [#601](https://github.com/bageus/Dig/issues/601).
 - `SimulationClock.TickIndex` остаётся единственным порядком simulation commits.
 - Normal playback использует `1 simulation tick = 1 real second`.
 - Fast и VeryFast являются детерминированными множителями `x2` и `x4` того же clock.
+- Единый коэффициент normal speed равен `24 game seconds / real second`.
+- `1 simulation tick = 24 game seconds`.
 - `150 ticks = 1 игровой час`.
 - `3 600 ticks = 24 игровых часа = 1 игровые сутки`.
-- Один tick соответствует 24 игровым секундам.
 - Pause и single-step не создают отдельный календарь.
+- Clock, needs и schedules не могут хранить независимые fallback day lengths; global projection определяется только `GameTimeCadence`.
 - Existing global simulation tick не масштабируется при migration. Calendar projections выводятся из сохранённого tick и текущего cadence version.
 
 ## 3. Needs и стартовые residents
@@ -38,6 +42,7 @@ Tracking issue: [#601](https://github.com/bageus/Dig/issues/601).
 - Demo residents начинают с `Nutrition = 10 000` (100%).
 - Full Nutrition истощается за два игровых дня: `7 200 ticks`.
 - Full Alertness истощается за три игровых дня: `10 800 ticks`.
+- Passive decay использует global `GameTimeCadence.TicksPerDay`; personal `DailySchedule.TicksPerDay` не может ускорять или замедлять потребности.
 - Passive decay использует deterministic difference соседних cumulative fractions.
 - При непрерывном survival-critical голоде full Health истощается за 12 игровых часов: `1 800 ticks`.
 - Starvation Health damage также распределяется cumulative-fraction resolver и не использует фиксированный `-500` каждый tick.
@@ -129,14 +134,17 @@ Migration:
 - не переписывает stable action/job ids;
 - не повторяет completed bites/quarters/attacks/material work;
 - для отсутствующего meal due tick назначает первый безопасный due tick после load;
-- movement fractional budget пересчитывается из tick и mode, а не сериализуется.
+- movement fractional budget пересчитывается из tick и mode, а не сериализуется;
+- legacy/custom schedule resolution не переопределяет global needs cadence.
 
 ## 11. Diagnostics
 
 Runtime diagnostics показывают:
 
+- authoritative real seconds per tick;
+- `game seconds / real second` coefficient и effective x1/x2/x4 value;
+- global game day/hour/minute/second projection;
 - authoritative tick duration и playback multiplier;
-- game day/hour projection и `ticksPerDay`;
 - need depletion/starvation periods и текущую cumulative phase;
 - movement mode, speed, due transition count и consumed substeps;
 - meal completed bites и next due tick;
@@ -148,8 +156,12 @@ Runtime diagnostics показывают:
 
 - normal Unity playback получает tick duration только из active `SimulationClock` и использует 1 real second;
 - one day equals 3 600 ticks, one hour equals 150 ticks;
+- global coefficient equals 24 game seconds per real second at x1;
+- clock without selected/hovered resident uses the same global projection;
+- selecting a resident changes only schedule overlay and never clock speed/phase;
 - fresh demo residents begin with full Nutrition;
-- Nutrition/Alertness/starvation reach exact endpoints at 7 200/10 800/1 800 ticks without last-tick spike;
+- Nutrition/Alertness/starvation reach exact endpoints at 7 200/10 800/1 800 global ticks without last-tick spike;
+- a resident schedule with legacy `TicksPerDay = 24` cannot reduce full Nutrition to zero in 48 ticks;
 - save/load preserves the next proportional need delta;
 - straight supported run commits five validated cells in four ticks;
 - walk commits four cells in four ticks; climb commits two cells in four ticks;
@@ -163,4 +175,4 @@ Runtime diagnostics показывают:
 
 ## 13. Verification boundary
 
-Source contracts, build and deterministic tests may raise implementation status to `IMPLEMENTED`. `VERIFIED` requires an actual licensed Unity Play Mode run of movement, eating, excavation, combat, needs and campfire workflows, including the next repeated action and interruption/retry.
+Source contracts, build and deterministic tests may raise implementation status to `IMPLEMENTED`. `VERIFIED` requires an actual licensed Unity Play Mode run of clock/no-selection, selected schedule overlay, pause/single-step/x2/x4, movement, eating, excavation, combat, needs and campfire workflows, including the next repeated action and interruption/retry.
