@@ -150,6 +150,7 @@ public sealed partial class AgentDecisionSystem
 
             bool bypassSwitchCooldown = candidates[index].Critical
                 || candidates[index].IntentKind == AgentIntentKind.PlayerOrder
+                || candidates[index].IntentKind == AgentIntentKind.Idle
                 || candidates[index].IntentKind == currentIntent;
             bool bypassTaskPause = candidates[index].Critical
                 || candidates[index].IntentKind == AgentIntentKind.PlayerOrder
