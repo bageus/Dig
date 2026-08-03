@@ -11,7 +11,10 @@ Parent ordinary-death design: [`death-graves-resurrection-and-rejuvenation.md`](
 
 ## Подтверждённые правила
 
-- правило применяется только в zombie mode;
+- zombie mode является отдельным игровым режимом;
+- режим выбирается при создании новой игры/сценария и закрепляется за созданным сохранением;
+- существующее сохранение нельзя переключить из ordinary mode в zombie mode или обратно;
+- правило zombie death применяется только в сохранениях, созданных в zombie mode;
 - при terminal death resident немедленно покидает active resident roster и resident world selection;
 - current actions/jobs/reservations живого resident прекращаются через общий death cleanup contract;
 - именной предмет `Колпак {ИмяГнома}` не создаётся;
@@ -23,23 +26,26 @@ Parent ordinary-death design: [`death-graves-resurrection-and-rejuvenation.md`](
 
 ## Полный пользовательский workflow — подтверждённая часть
 
-1. В zombie mode здоровье resident достигает terminal death condition либо приходит другая authoritative death cause.
-2. Один death event очищает resident actions/jobs/reservations и удаляет его из active resident roster.
-3. Система выбирает zombie outcome, поэтому ordinary identity cap не создаётся.
-4. В мире появляется/активируется hostile zombie, связанный с погибшим resident по ещё не утверждённому identity/provenance contract.
-5. Дальнейшее поведение, combat targeting, second death и save/load зависят от ответов ниже.
+1. При создании новой игры игрок выбирает отдельный zombie mode.
+2. Выбранный mode сохраняется как часть authoritative game/save configuration и не переключается для существующего сохранения.
+3. В zombie mode здоровье resident достигает terminal death condition либо приходит другая authoritative death cause.
+4. Один death event очищает resident actions/jobs/reservations и удаляет его из active resident roster.
+5. Система выбирает zombie outcome, поэтому ordinary identity cap не создаётся.
+6. В мире появляется/активируется hostile zombie, связанный с погибшим resident по ещё не утверждённому identity/provenance contract.
+7. Дальнейшее поведение, combat targeting, second death и save/load зависят от ответов ниже.
 
-## Открытые бизнес-решения
+## Закрытые решения
 
 ### Q-ZD-001 — активация режима
 
-Zombie mode:
+Решение подтверждено 2026-08-03:
 
-- выбирается только при создании новой игры;
-- является отдельным scenario preset;
-- или может переключаться в существующем сохранении?
+- zombie mode — отдельный игровой режим;
+- выбирается только при создании новой игры/сценария;
+- выбранный режим закреплён за сохранением;
+- переключение режима для существующего сохранения не поддерживается.
 
-Нужно определить также поведение уже существующих saves при смене режима.
+## Открытые бизнес-решения
 
 ### Q-ZD-002 — личные вещи
 
@@ -131,17 +137,23 @@ Zombie mode:
 
 ### Q-ZD-010 — save/load и migration
 
-Нужно определить:
+Подтверждено:
+
+- game mode выбирается при создании игры и сохраняется вместе с save;
+- существующий save не переключается между ordinary и zombie mode.
+
+Остаётся определить:
 
 - zombie conversion сохраняется как terminal mode-specific death outcome;
 - replay/load не создаёт второго zombie;
-- старые saves не получают ретроактивную конвертацию уже умерших residents либо получают её по явной migration policy;
-- что происходит при загрузке zombie-mode save в обычном режиме, если переключение вообще разрешено.
+- поведение старых pre-mode saves после обновления;
+- migration schema/version для новых mode и zombie lifecycle fields.
 
 ## Владение состояния — до утверждения
 
 Подтверждено:
 
+- Game/New Game configuration владеет выбором immutable game mode для save;
 - Society/Lifecycle хранит terminal death instance и исторический resident record;
 - Agents/Application выполняет death cleanup;
 - Game mode выбирает ordinary или zombie outcome;
@@ -154,7 +166,8 @@ Zombie mode:
 
 До реализации должны быть определены типизированные:
 
-- command/input, задающий game mode;
+- new-game command/input, задающий immutable game mode;
+- save snapshot field/query для выбранного game mode;
 - death outcome decision;
 - zombie conversion event;
 - query для resident-history → zombie provenance;
@@ -166,15 +179,16 @@ Zombie mode:
 
 ## Acceptance после закрытия вопросов
 
+- новый save однозначно принадлежит ordinary или zombie mode и не меняет mode после создания;
 - один death event создаёт ровно один outcome: ordinary cap или zombie conversion, никогда оба;
 - jobs, reservations, actions, resident roster и selection очищаются атомарно;
 - conversion не дублируется после retry, replay или save/load;
 - Inventory outcome не теряет и не дублирует quantity;
 - hostile selection, combat acquisition, notification, history и visual projection читают один authoritative zombie state;
 - second death имеет однозначный terminal outcome;
-- migration не конвертирует старые deaths без подтверждённой policy;
-- unit, integration, deterministic и Unity Play Mode покрывают death → conversion → combat → second death → reload.
+- migration не меняет mode существующего save без отдельного подтверждённого правила;
+- unit, integration, deterministic и Unity Play Mode покрывают new game mode selection → death → conversion → combat → second death → reload.
 
 ## Не реализовывать до ответов
 
-Нельзя предполагать Inventory drop, timing, identity ownership, zombie stats, target policy, second-death loot или migration. Подтверждённые ordinary death rules реализуются независимо в #150.
+Нельзя предполагать Inventory drop, timing, identity ownership, zombie stats, target policy, second-death loot или migration старых saves. Подтверждённые ordinary death rules реализуются независимо в #150.
