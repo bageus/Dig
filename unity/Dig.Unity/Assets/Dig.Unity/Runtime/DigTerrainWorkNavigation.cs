@@ -82,6 +82,16 @@ namespace Dig.Unity
                     continue;
                 }
 
+                if (TryPlanTunnelAutomaticWorkMovement(
+                    job,
+                    agent,
+                    navigation,
+                    movement,
+                    tick))
+                {
+                    continue;
+                }
+
                 if (TryPlanResidentInventoryPlacementMovement(
                     job,
                     agent,
@@ -205,7 +215,6 @@ namespace Dig.Unity
 
             return movement;
         }
-
 
         private void ReleaseUnroutableExcavationAssignment(
             JobSnapshot job,

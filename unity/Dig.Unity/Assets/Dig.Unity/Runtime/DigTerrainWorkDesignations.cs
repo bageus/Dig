@@ -123,6 +123,15 @@ namespace Dig.Unity
                     CreateDynamicCandidates(agents, definition.Target.CellId));
             }
 
+            Result tunnelInfrastructure = SynchronizeTunnelInfrastructureRuntime(
+                tick,
+                agents,
+                _worldSession.CreateTunnelNavigationVolume().Cells);
+            if (tunnelInfrastructure.IsFailure)
+            {
+                throw new InvalidOperationException(tunnelInfrastructure.Error!.ToString());
+            }
+
             AssignNearestAutomaticDigJobs(agents, cells, tick);
             _assignmentHandler.Handle(new AssignAvailableJobsCommand(tick));
         }

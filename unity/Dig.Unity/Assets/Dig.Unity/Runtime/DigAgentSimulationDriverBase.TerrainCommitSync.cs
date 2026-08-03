@@ -11,10 +11,15 @@ namespace Dig.Unity
                 return current;
             }
 
-            // World is already authoritative. Rebuild every derived topology owner in
-            // the same tick so a visually open cell is also traversable and selectable.
             Result navigation = TerrainSession.RefreshCommittedTerrainNavigation();
             SynchronizeExcavatedTunnelNavigation();
+
+            Result infrastructure = AgentSession == null
+                ? Result.Success()
+                : TerrainSession.SynchronizeTunnelInfrastructureRuntime(
+                    tick,
+                    AgentSession.LoadView(),
+                    AgentSession.TunnelVolume.Cells);
 
             DigTunnelDemoRenderer? renderer = GetComponent<DigTunnelDemoRenderer>();
             if (renderer != null && AgentSession != null)
@@ -23,9 +28,6 @@ namespace Dig.Unity
                 renderer.SetDepthExcavationSources(AgentSession.TunnelDepthExcavations);
             }
 
-            // Support loss must be resolved before pickup/hauling can reserve the item.
-            // Do this even when a derived navigation operation produced a recoverable
-            // warning; that warning cannot restore terrain already removed from World.
             Result settlement = TerrainSession.SettleWorldItems(tick);
             if (current.IsFailure)
             {
@@ -35,6 +37,11 @@ namespace Dig.Unity
             if (navigation.IsFailure)
             {
                 return navigation;
+            }
+
+            if (infrastructure.IsFailure)
+            {
+                return infrastructure;
             }
 
             return settlement;
