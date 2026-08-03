@@ -114,7 +114,7 @@ def check_resident_inventory_runtime_contracts(
         "session-level movement mode cadence",
         (
             "IsMovementStepDue(",
-            "ResidentInventoryMovementCadence.IsDue(",
+            "ResidentInventoryMovementCadence.ResolveStepCount(",
             "resolution.AuthoritativeCadenceMultiplier",
         ),
     ))
