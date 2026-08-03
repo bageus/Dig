@@ -172,8 +172,12 @@ public sealed class SynchronizeTunnelTopologyHandler
         long tick)
     {
         HashSet<CellId> retainedCells = desired.OrderedHorizontalCells.ToHashSet();
-        bool completedTrim = tunnels.CaptureSnapshot()
-            .CompletedJunctionStoneTrimCells.Contains(current.OriginCell);
+        TunnelInfrastructureSnapshot snapshot = tunnels.CaptureSnapshot();
+        bool completedTrim = snapshot.CompletedJunctionStoneTrimCells
+            .Contains(current.OriginCell);
+        CellId[] completedFloorTrim = snapshot.CompletedStoneFloorTrimCells
+            .Where(retainedCells.Contains)
+            .ToArray();
         RequireSuccess(tunnels.RemoveSegment(current.SegmentId, tick));
         RequireSuccess(tunnels.RegisterSegment(
             current.SegmentId,
@@ -192,6 +196,11 @@ public sealed class SynchronizeTunnelTopologyHandler
                 ? tunnels.RegisterCompletedWoodenSupport(current.SegmentId, anchor.Cell, tick)
                 : tunnels.RegisterCompletedDoor(current.SegmentId, anchor.Cell, tick);
             RequireSuccess(registered);
+        }
+
+        foreach (CellId floorCell in completedFloorTrim)
+        {
+            RequireSuccess(tunnels.RegisterCompletedStoneFloorTrim(floorCell, tick));
         }
 
         if (completedTrim
