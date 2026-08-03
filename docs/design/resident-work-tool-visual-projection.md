@@ -1,6 +1,6 @@
 # Resident work tool visual projection
 
-Статус: `APPROVED`.
+Статус: `IMPLEMENTED`.
 
 Tracking issue: [#602](https://github.com/bageus/Dig/issues/602).
 
@@ -70,10 +70,10 @@ Tracking issue: [#602](https://github.com/bageus/Dig/issues/602).
 
 ### Unity / Play Mode
 
-Сценарий должен проверить последовательность:
+Checked-in сценарий проверяет последовательность:
 
 `real club -> pickaxe -> axe -> hammer -> real club -> empty hand`.
 
 Также проверяются отсутствие colliders и очистка transient visual после завершения работы.
 
-Переход в `VERIFIED` требует фактического выполнения EditMode/PlayMode на лицензированном Unity runner.
+Фактический запуск EditMode/PlayMode на лицензированном Unity runner остаётся обязательным для перехода в `VERIFIED`.
