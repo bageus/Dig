@@ -84,10 +84,8 @@ public sealed partial class InventoryState
             }
         }
 
-        HashSet<ResidentInventorySlot> unavailable = _residentSlotClaims
-            .Where(claim => claim.ResidentId == residentId)
-            .Select(claim => claim.Slot)
-            .ToHashSet();
+        HashSet<ResidentInventorySlot> unavailable =
+            new HashSet<ResidentInventorySlot>();
         Dictionary<ResidentInventorySlot, ItemStackState> occupied =
             pinned.ToDictionary(value => value.Location.ResidentSlot);
         ActiveInventoryExpansionSnapshot? activeCargo = ResolveActiveExpansion(
@@ -222,11 +220,23 @@ public sealed partial class InventoryState
             occupied.Add(slot, candidate.Source);
         }
 
+        Result<IReadOnlyList<ResidentInventorySlotClaimSnapshot>> claimPlan =
+            PlanResidentSlotClaimReflow(
+                residentId,
+                occupied,
+                activeCargo,
+                activeWeapon);
+        if (claimPlan.IsFailure)
+        {
+            return Result.Failure(claimPlan.Error!);
+        }
+
         ApplyResidentInventoryCompaction(
             residentId,
             tick,
             expansionAssignments,
             pendingUnits);
+        ApplyResidentSlotClaimReflow(residentId, claimPlan.Value, tick);
 
         return Result.Success();
     }
