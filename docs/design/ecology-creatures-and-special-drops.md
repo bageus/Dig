@@ -2,6 +2,8 @@
 
 Связанная задача: #149. Combat: #12/#138. Status effects: #132.
 
+Focused enemy-death lifecycle: [`enemy-death-loot-and-corpse-dissolution.md`](enemy-death-loot-and-corpse-dissolution.md), tracking [#559](https://github.com/bageus/Dig/issues/559).
+
 ## Область
 
 На текущем этапе используется один biome profile и один общий ecology simulation cycle. Сюжетные уникальные существа и campaign sequencing не рассматриваются.
@@ -78,8 +80,12 @@ Q-ENEMY-001 is answered in `enemy-combat-and-cave-encounters.md`: the vine never
 - предмет не уничтожается;
 - Inventory location становится `InsideCreature(CreatureId)`;
 - пока демон жив, предмет нельзя одновременно видеть в мире или другом inventory;
-- после смерти демон атомарно выбрасывает предмет рядом с местом смерти;
-- если обычная drop-cell занята, используется ближайшая допустимая клетка.
+- после смерти тот же physical item identity атомарно получает `ItemLocation.InWorld(DeathCell)`;
+- nearest-cell fallback запрещён: предмет остаётся в exact XYZ cell смерти, даже если там уже лежат другие world items;
+- проглоченный предмет участвует в общем exactly-once enemy death-release вместе со всеми carried/equipped/held contents;
+- растворение трупа не удаляет выпавший предмет.
+
+Это правило подтверждено 2026-08-04 и заменяет прежнее размещение «рядом с местом смерти» с fallback в ближайшую допустимую клетку.
 
 ## Паук и яйцо
 
@@ -128,23 +134,33 @@ Q-ENEMY-001 is answered in `enemy-combat-and-cave-encounters.md`: the vine never
 - drop table выдаёт золото либо золотую руду;
 - точные вероятности остаются `BALANCE_TBD`.
 
+## Общее правило смерти врага и loot
+
+При Health `0` enemy actor умирает, падает и затем исчезает через dissolve lifecycle. Все предметы, уже находившиеся внутри него или принадлежавшие ему, а также materialized species drops оказываются в exact authoritative death cell. Item identities/quantities сохраняются; death replay не создаёт дубликаты; corpse visual и world loot имеют независимый lifecycle.
+
+Полный owner/transaction/save/input/test contract находится в [`enemy-death-loot-and-corpse-dissolution.md`](enemy-death-loot-and-corpse-dissolution.md).
+
 ## Владение состоянием
 
 - World/Ecology владеет identity, age, growth, reproduction, wild/tamed state и population caps;
 - Combat владеет attacks, damage, hostility и equipment use;
-- Inventory владеет eggs, swallowed items и drops;
+- Inventory владеет eggs, swallowed items, enemy-owned contents и drops;
+- enemy death lifecycle/Application координирует exactly-once release в death cell;
 - Status Effects владеет poison/fire/omelet modifiers;
-- Presentation не создаёт существа и предметы.
+- Presentation не создаёт существа и предметы и не удаляет loot при dissolve corpse.
 
 ## Save/Load
 
-Сохраняются individuals, age/growth, cycle counters, cooldowns, tame owner, swallowed item location, egg incubation/block state, maximum Need modifiers и deterministic random state.
+Сохраняются individuals, age/growth, cycle counters, cooldowns, tame owner, swallowed item location, egg incubation/block state, maximum Need modifiers, deterministic random state, enemy death identity/cell/tick, loot-release commit и corpse lifecycle progress.
 
 ## Критерии приёмки
 
 - population cap нельзя превысить reproduction/spawn race;
 - приручённый Вукер не размножается;
-- проглоченный предмет выпадает после смерти и имеет одного owner/location;
+- проглоченный и любой другой enemy-owned предмет выпадает в exact death cell и имеет одного owner/location;
+- занятая death cell не переносит loot в соседнюю клетку;
+- corpse dissolve не удаляет world loot;
+- death replay не дублирует contents или species drops;
 - яйцо может завершить incubation внутри любого inventory;
 - blocked hatch не дублирует паука;
 - каждый омлет повышает ровно один случайный maximum на 10;
