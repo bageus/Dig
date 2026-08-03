@@ -45,7 +45,7 @@ public sealed partial class SaveGameLoader
                 new NeedValue(saved.Alertness),
                 new NeedValue(saved.Mood),
                 new NeedValue(saved.Health));
-            FoodMealSnapshot? meal = DecodeMeal(saved.ActiveMeal);
+            FoodMealSnapshot? meal = DecodeMeal(saved.ActiveMeal, simulationTick);
             AgentRuntimeSnapshot runtime = new AgentRuntimeSnapshot(
                 needs,
                 saved.LastNeedsTick,
@@ -58,7 +58,9 @@ public sealed partial class SaveGameLoader
         return new ReadOnlyDictionary<EntityId, AgentRuntimeSnapshot>(values);
     }
 
-    private static FoodMealSnapshot? DecodeMeal(ActiveFoodMealSaveData? saved)
+    private static FoodMealSnapshot? DecodeMeal(
+        ActiveFoodMealSaveData? saved,
+        long simulationTick)
     {
         if (saved == null)
         {
@@ -76,12 +78,18 @@ public sealed partial class SaveGameLoader
             throw new InvalidOperationException("Saved active food meal is invalid.");
         }
 
+        long nextBiteTick = saved.NextBiteTick > saved.StartedTick
+            ? saved.NextBiteTick
+            : checked(Math.Max(
+                simulationTick + 1L,
+                saved.StartedTick + 1L + (saved.CompletedBites * 2L)));
         return new FoodMealSnapshot(
             EntityId.Parse(saved.SourceStackId),
             new ItemId(saved.ItemId),
             saved.TotalNutrition,
             saved.BiteCount,
-            saved.CompletedBites);
+            saved.CompletedBites,
+            nextBiteTick);
     }
 
     private static void ValidateRestoredMeal(AgentRuntimeSnapshot runtime)
