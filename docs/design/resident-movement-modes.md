@@ -2,9 +2,12 @@
 
 Статус: `APPROVED`.
 
-Tracking issues: [#386](https://github.com/bageus/Dig/issues/386), [#137](https://github.com/bageus/Dig/issues/137).
+Tracking issues: [#386](https://github.com/bageus/Dig/issues/386), [#137](https://github.com/bageus/Dig/issues/137), [#601](https://github.com/bageus/Dig/issues/601).
 
-Родительская спецификация: [`resident-movement-occupancy-and-vertical-traversal.md`](resident-movement-occupancy-and-vertical-traversal.md).
+Родительские спецификации:
+
+- [`resident-movement-occupancy-and-vertical-traversal.md`](resident-movement-occupancy-and-vertical-traversal.md);
+- [`unified-game-time-and-action-cadence.md`](unified-game-time-and-action-cadence.md).
 
 Связанные системы: Navigation, Agents/Needs, Inventory, personal mobility, Jobs и Presentation.
 
@@ -17,20 +20,21 @@ Tracking issues: [#386](https://github.com/bageus/Dig/issues/386), [#137](https:
 - Agents владеет position, active intent и Alertness.
 - Navigation владеет route и `TunnelTraversalKind`.
 - Inventory владеет переносимыми предметами, BuildingBox category и cargo speed multiplier.
-- Application `ResidentMovementModeResolver` объединяет эти snapshots в derived resolution.
+- Application `ResidentMovementModeResolver` объединяет snapshots в derived resolution.
+- Domain `ResidentInventoryMovementCadence` переводит fixed-point speed в число due cell transitions текущего tick.
 - Presentation получает typed view model и не коммитит движение.
 
-Movement mode, interpolation progress и last interruption view model не сохраняются как authoritative gameplay state. После load они вычисляются повторно.
+Movement mode, interpolation progress и fractional movement budget не сохраняются как authoritative gameplay state. После load они вычисляются повторно.
 
 ## 3. Режимы
 
-- `Normal` — обычный supported/depth transition без более сильной причины.
-- `Tired` — Alertness находится на существующей critical границе `2000` или ниже.
-- `ForcedFast` — игрок повторно назначил тот же destination уже активному manual route.
-- `Fleeing` — authoritative active intent равен `Flee`.
-- `Carrying` — resident переносит BuildingBox; fast/personal mobility запрещены.
-- `Mobility` — выбран Reithamster или Hoverboard.
-- `Climbing` — `VerticalClimb` или `ShaftGapTraverse`.
+- `Normal` — обычный supported/depth transition без более сильной причины; базовая скорость `1.25 cells/tick`.
+- `Tired` — Alertness находится на границе `2000` или ниже; базовая скорость `1 cell/tick`.
+- `ForcedFast` — игрок повторно назначил тот же destination уже активному manual route; базовая скорость `1.25 cells/tick`.
+- `Fleeing` — authoritative active intent равен `Flee`; базовая скорость `1.25 cells/tick`.
+- `Carrying` — resident переносит BuildingBox; базовая скорость `1 cell/tick` до Inventory cargo multiplier.
+- `Mobility` — выбран Reithamster или Hoverboard; текущая fallback cadence `1.25 cells/tick`, точный personal profile остаётся content boundary.
+- `Climbing` — `VerticalClimb` или `ShaftGapTraverse`; базовая скорость `0.5 cells/tick`.
 
 ## 4. Deterministic priority
 
@@ -57,18 +61,27 @@ Repeat не использует wall clock, frame time или приблизи�
 
 ## 6. Cadence и transition duration
 
-`ResidentMovementModeDefinition` хранит:
+Одна соседняя cell transition стоит `1000` fixed-point movement units.
 
-- `SpeedMultiplier` для fixed-tick cadence;
-- `TransitionDurationMultiplier` для Presentation.
+- run добавляет `1250 units/tick`;
+- walk добавляет `1000 units/tick`;
+- climb добавляет `500 units/tick`.
 
-Inventory cargo multiplier умножается на mode speed multiplier. Authoritative movement ограничен одним cell transition за fixed tick; multiplier выше `1` не создаёт несколько commits в один tick. Все movement sources вызывают один cadence gate непосредственно перед transition.
+На прямом supported route run создаёт `1, 1, 1, 2` due transitions за четыре последовательных ticks. Walk создаёт `1, 1, 1, 1`; climb — `0, 1, 0, 1`.
 
-Точные коэффициенты tired/fast/fleeing/mobility и legacy automatic-distance threshold относятся к Q-014 `BALANCE_TBD`. До утверждения production catalog использует нейтральные `1.0` definitions и не выдумывает legacy числа. Существующий authoritative Inventory cargo multiplier продолжает действовать.
+Tick с двумя run transitions не является teleport:
+
+- после первого commit route пересчитывается из новой authoritative cell;
+- второй переход использует тот же movement command source;
+- текущий traversal edge повторно ограничивает budget, поэтому run не переносит второй substep в `VerticalClimb` или `ShaftGapTraverse`;
+- каждый промежуточный `CellId`, traffic restriction, route freshness и interruption проверяются отдельно;
+- needs, work, combat и production не выполняют второй simulation advance.
+
+Inventory cargo multiplier умножается на mode speed multiplier. Derived remainder не создаёт вторую authoritative position и не сохраняется.
 
 ## 7. Personal mobility boundary
 
-Resolver поддерживает `Reithamster` и `Hoverboard`, forced-repeat и nullable automatic long-route policy. Production activation остаётся выключенной до появления stable item IDs/runtime definitions и утверждённых Q-014 values. Это validation boundary, а не fallback к строковым именам или скрытым magic coefficients.
+Resolver поддерживает `Reithamster` и `Hoverboard`, forced-repeat и nullable automatic long-route policy. Точные personal mobility speeds и automatic route threshold остаются Q-014/content decisions. Они не могут обходить shared cell-transition validation или создавать Unity-only movement owner.
 
 ## 8. Typed interruption reasons
 
@@ -100,20 +113,21 @@ Presentation:
 - automatic, manual и spatial-work movement используют один resolver и cadence gate;
 - traversal mode имеет приоритет над carry/fast/flee visuals;
 - BuildingBox блокирует forced fast и personal mobility;
-- Hoverboard детерминированно сильнее Reithamster;
 - repeat определяется только совпадением active destination;
-- смена destination и repeat публикуют разные typed reasons;
 - critical Alertness выбирает `Tired`;
-- custom data definitions изменяют cadence и visual duration без изменения resolver code;
-- neutral production definitions не изобретают Q-014 numbers;
+- Normal run выполняет ровно пять validated transitions за четыре ticks на прямом supported route;
+- Tired/Carrying walk выполняет четыре transitions за четыре ticks до cargo penalty;
+- Climbing выполняет две transitions за четыре ticks;
+- второй run substep не меняет command source и не перескакивает intermediate cell;
+- переход в climbing edge повторно ограничивает текущий tick budget;
 - moving BuildingBox resident использует Carry presentation;
-- source/unit tests покрывают priority, repeat, diagnostics и все movement sources;
-- Unity Play Mode проверяет visual duration и Carry projection; фактический licensed run нужен для `VERIFIED`.
+- Domain/Application/source tests покрывают cadence, priority, repeat и все movement sources;
+- Unity Play Mode проверяет фактические cells, visual duration, Carry projection, interruption и следующий повторный маршрут; licensed run нужен для `VERIFIED`.
 
 ## 11. Открытые balance-параметры
 
-Business workflow и priority утверждены. Открыты только Q-014 values:
+Утверждены базовые run/walk/climb значения. Открыты только personal mobility параметры:
 
-- speed/duration multipliers для non-normal modes;
+- отдельные Reithamster/Hoverboard speed profiles;
 - automatic personal-mobility route threshold;
 - stable Reithamster/Hoverboard runtime content definitions.
