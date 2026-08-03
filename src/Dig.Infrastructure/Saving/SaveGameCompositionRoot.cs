@@ -73,7 +73,7 @@ public static class SaveGameCompositionRoot
                 Registration<Dig.Domain.Jobs.RoomUpgradeWorkJobDefinition>(
                     new RoomUpgradeWorkJobSaveCodec()),
                 Registration<Dig.Domain.Jobs.SpatialDigJobDefinition>(
-                    new SpatialDigJobDefinitionSaveCodec()),
+                    new SpatialDigJobSaveCodec()),
                 Registration<Dig.Domain.Jobs.StrategicExecutionJobDefinition>(
                     new StrategicExecutionJobSaveCodec()),
                 Registration<Dig.Domain.Jobs.TunnelAutomaticWorkJobDefinition>(
