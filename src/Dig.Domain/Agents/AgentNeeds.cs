@@ -1,4 +1,5 @@
 using System;
+
 namespace Dig.Domain.Agents
 {
 
@@ -149,7 +150,10 @@ internal sealed class AgentNeedsState
             && !alertnessRecoveryCommitted;
         bool survivalCritical = nutritionCritical || alertnessCritical;
         int healthDelta = survivalCritical
-            ? -policy.HealthDamagePerCriticalTick
+            ? ResolvePeriodicLoss(
+                tick,
+                Math.Max(1L, ticksPerDay / 2L),
+                NeedValue.Maximum)
             : policy.HealthRecoveryPerStableTick;
         int moodDelta = survivalCritical ? -policy.MoodCriticalPenalty : 0;
         Apply(new NeedDelta(0, 0, moodDelta, healthDelta));
@@ -174,6 +178,19 @@ internal sealed class AgentNeedsState
     public AgentNeedsSnapshot CreateSnapshot()
     {
         return new AgentNeedsSnapshot(Nutrition, Alertness, Mood, Health);
+    }
+
+    private static int ResolvePeriodicLoss(long tick, long periodTicks, int total)
+    {
+        if (tick < 0 || periodTicks <= 0 || total < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(tick));
+        }
+
+        long phase = tick % periodTicks;
+        long previous = phase * total / periodTicks;
+        long current = (phase + 1L) * total / periodTicks;
+        return checked((int)(previous - current));
     }
 }
 }
