@@ -300,16 +300,49 @@ Validation PR #593 на code head `b3dc06857d1adb2efc77e5a47477f8e9067c698e`:
 - large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
 - Unity workflow `30811581174` recorded blocked evidence; actual EditMode/PlayMode execution and executed-runtime-evidence validation were skipped.
 
-#### Slice 4B — physical stock, jobs, grants и persistence
+#### Slice 4B-1 — physical stock, hauling, staged work и grants
+
+Статус: `READY FOR REVIEW` в stacked PR #594. Подробный implementation note: [`issue-574-room-upgrade-execution-2026-08-03.md`](issue-574-room-upgrade-execution-2026-08-03.md).
+
+Реализовано без выбора default для `Q-ROOM-003` и `Q-ROOM-007`:
+
+- один persistent `RoomUpgradeWorkJobDefinition` прикрепляется к active room upgrade;
+- ordinary `HaulJobDefinition` резервирует revealed, reachable и unreserved world sources;
+- source selection детерминирован по Manhattan distance до stock cell, затем `CellId` и `StackId`;
+- delivered stacks физически перемещаются в exact temporary-stock world cell и резервируются room work job;
+- work job остаётся `Created`, пока не доставлен полный material set, затем становится `Available`;
+- repeated synchronization не создаёт duplicate jobs или reservations;
+- material units коммитятся в порядке `RoomUpgradeCostCatalog`;
+- первый actual `PerformWork` interval блокирует cancellation;
+- каждый exact `RoomMaterialUnitId(item, ordinal)` расходует одну reserved stock unit и выдаёт `50` fixed-point skill units exactly once;
+- stone/leg/iron/crystal отображаются в Stonework/Woodworking/Metallurgy/Alchemy;
+- `ReleaseAssignment` сохраняет room ledger и stock reservations, позволяя другому worker продолжить тот же job;
+- final material unit переводит job в `Finalize`, завершает upgrade и активирует последний requested purpose;
+- pre-work cancel отменяет все attached jobs, освобождает source/stock reservations и оставляет delivered stacks ordinarily usable в комнате;
+- `job.room_upgrade_work.v1` сохраняет room identity и exact work XYZ, production registry coverage обновлён.
+
+Validation PR #594 на code head `f5e89ab370861cb1b05a326e502ce5f3e6a4f8bd`:
+
+- Quality run `30815720973`: success;
+- architecture, file-size, C# 9 compatibility, compiler baseline, dependency и Domain-boundary checks passed;
+- Unity source contracts passed;
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1453/1453`;
+- full delivery/work/replay/cancel-lock/interruption/second-worker-resume workflow passed;
+- pre-work partial-delivery cancel, catalog-order, synchronization-idempotency и work-job codec regressions passed;
+- headless smoke passed at tick `20`;
+- standard deterministic soak replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
+- large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
+- Unity workflow `30815720965` recorded blocked evidence; actual EditMode/PlayMode execution and executed-runtime-evidence validation were skipped.
+
+#### Slice 4B-2 — room persistence и Unity runtime composition
 
 Осталось реализовать:
 
-- physical `InventoryState` temporary stock и ordinary hauling jobs/reservations;
-- pre-work cancel system-cancels jobs/releases reservations и оставляет delivered stacks ordinary usable в комнате;
-- work-job material consumption и material-specific `+0.5` skill grant exactly once;
-- interruption/resume с сохранением partial progress;
-- save-document section, migration и Unity runtime composition;
-- marker/menu/read model и actual Play Mode workflow.
+- room infrastructure save-document section и versioned migration;
+- сохранение/restore room aggregate, active room jobs, reservations и deterministic job-id sequence;
+- Unity completed-room synchronization, ordinary assignment, movement и stage execution;
+- room marker/menu/read model, progress visuals и actual Play Mode workflow.
 
 Не входят до ответа на blockers:
 

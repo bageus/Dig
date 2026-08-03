@@ -100,7 +100,10 @@ internal sealed partial class RoomInfrastructureProjectState
                 RoomInfrastructureErrors.MaterialNotRequired);
         }
 
-        if (unitId.Ordinal > material.Required)
+        RoomMaterialUnitId? nextUnit = ResolveNextMaterialUnit();
+        if (unitId.Ordinal > material.Required
+            || !nextUnit.HasValue
+            || nextUnit.Value != unitId)
         {
             return Result<RoomMaterialCommitResult>.Failure(
                 RoomInfrastructureErrors.InvalidMaterialUnit);
@@ -127,6 +130,23 @@ internal sealed partial class RoomInfrastructureProjectState
             new RoomMaterialCommitResult(
                 alreadyCommitted: false,
                 improvementCompleted: completed));
+    }
+
+    private RoomMaterialUnitId? ResolveNextMaterialUnit()
+    {
+        foreach (RoomMaterialRequirement requirement in
+            RoomUpgradeCostCatalog.Get(TemplateKind))
+        {
+            RoomMaterialLedgerState material = _materials[requirement.ItemId];
+            if (material.Consumed < material.Required)
+            {
+                return new RoomMaterialUnitId(
+                    requirement.ItemId,
+                    material.Consumed + 1);
+            }
+        }
+
+        return null;
     }
 
     public Result<RoomUpgradeCancellationResult> CancelBeforeWork(string reason)
