@@ -50,7 +50,8 @@ internal sealed class DigRoomInfrastructureMarkerVisual : MonoBehaviour
 
     private static void ApplyTint(Renderer renderer, Color tint)
     {
-        MaterialPropertyBlock properties = new MaterialPropertyBlock();
+        MaterialPropertyBlock properties;
+        properties = new MaterialPropertyBlock();
         renderer.GetPropertyBlock(properties);
         properties.SetColor("_BaseColor", tint);
         properties.SetColor("_Color", tint);
