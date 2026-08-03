@@ -177,11 +177,8 @@ namespace Dig.Unity
             interaction.SetTunnelMovement(tunnelRenderer);
             interaction.SetCaveRoomRenderers(caveRoomPreviewRenderer, caveRoomFloorRenderer);
             interaction.SetRoomInfrastructureRenderer(roomInfrastructureRenderer);
-            DigRoomInfrastructurePresentationDriver roomPresentation = GetOrAdd<
-                DigRoomInfrastructurePresentationDriver>(gameObject);
-            roomPresentation.Initialize(
-                terrainSession,
-                roomInfrastructureRenderer,
+            DigRoomInfrastructurePresentationDriver roomPresentation = GetOrAdd<DigRoomInfrastructurePresentationDriver>(gameObject);
+            roomPresentation.Initialize(terrainSession, roomInfrastructureRenderer,
                 () => interaction.IsRoomPlanningOverlayVisible);
             simulation.Initialize(
                 worldSession, worldRenderer, agentSession, agentRenderer,
