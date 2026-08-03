@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using Dig.Domain.Core;
 using Dig.Domain.Jobs;
 
 namespace Dig.Application.Saving
