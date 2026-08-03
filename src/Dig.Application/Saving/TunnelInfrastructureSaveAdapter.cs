@@ -17,7 +17,7 @@ public static class TunnelInfrastructureSaveErrors
         "Tunnel infrastructure save data is malformed or inconsistent.");
 }
 
-public static class TunnelInfrastructureSaveAdapter
+public static partial class TunnelInfrastructureSaveAdapter
 {
     public static TunnelInfrastructureSaveData Encode(
         TunnelInfrastructureRuntimeSnapshot runtime,
@@ -36,7 +36,8 @@ public static class TunnelInfrastructureSaveAdapter
         Result<TunnelInfrastructureState> validated =
             TunnelInfrastructureState.Restore(runtime.Infrastructure);
         if (validated.IsFailure
-            || !IsNextSequenceValid(runtime.NextAutomaticJobSequence, jobs))
+            || !IsNextSequenceValid(runtime.NextAutomaticJobSequence, jobs)
+            || !IsNextManualSequenceValid(runtime.NextManualJobSequence, jobs))
         {
             throw new InvalidOperationException(
                 TunnelInfrastructureSaveErrors.InvalidSnapshot.ToString());
@@ -48,6 +49,7 @@ public static class TunnelInfrastructureSaveAdapter
         {
             Version = snapshot.Version,
             NextAutomaticJobSequence = runtime.NextAutomaticJobSequence,
+            NextManualJobSequence = runtime.NextManualJobSequence,
         };
         foreach (HorizontalTunnelSegmentSnapshot segment in snapshot.Segments)
         {
@@ -57,6 +59,11 @@ public static class TunnelInfrastructureSaveAdapter
         foreach (CellId cell in snapshot.CompletedJunctionStoneTrimCells)
         {
             data.CompletedJunctionStoneTrimCells.Add(EncodeCell(cell));
+        }
+
+        foreach (CellId cell in snapshot.CompletedStoneFloorTrimCells)
+        {
+            data.CompletedStoneFloorTrimCells.Add(EncodeCell(cell));
         }
 
         foreach (TunnelJunctionStoneTrimTargetSnapshot target in
@@ -77,7 +84,8 @@ public static class TunnelInfrastructureSaveAdapter
 
     public static Result<TunnelInfrastructureRuntimeSnapshot> Decode(
         TunnelInfrastructureSaveData? data,
-        JobSystem jobs)
+        JobSystem jobs,
+        Dig.Domain.Inventory.InventoryState? inventory = null)
     {
         if (jobs == null)
         {
@@ -90,10 +98,13 @@ public static class TunnelInfrastructureSaveAdapter
             if (data.Segments == null
                 || data.CompletedJunctionStoneTrimCells == null
                 || data.PendingJunctionStoneTrimTargets == null
+                || data.CompletedStoneFloorTrimCells == null
                 || data.Segments.Any(value => value == null)
                 || data.CompletedJunctionStoneTrimCells.Any(value => value == null)
                 || data.PendingJunctionStoneTrimTargets.Any(value => value == null)
-                || !IsNextSequenceValid(data.NextAutomaticJobSequence, jobs))
+                || data.CompletedStoneFloorTrimCells.Any(value => value == null)
+                || !IsNextSequenceValid(data.NextAutomaticJobSequence, jobs)
+                || !IsNextManualSequenceValid(data.NextManualJobSequence, jobs))
             {
                 return Failure();
             }
@@ -105,11 +116,15 @@ public static class TunnelInfrastructureSaveAdapter
             CellId[] completedTrim = data.CompletedJunctionStoneTrimCells
                 .Select(DecodeCell)
                 .ToArray();
+            CellId[] completedFloorTrim = data.CompletedStoneFloorTrimCells
+                .Select(DecodeCell)
+                .ToArray();
             TunnelInfrastructureSnapshot savedSnapshot =
                 new TunnelInfrastructureSnapshot(
                     data.Version,
                     segments,
-                    completedTrim);
+                    completedTrim,
+                    completedFloorTrim);
             Result<TunnelInfrastructureState> restored =
                 TunnelInfrastructureState.Restore(savedSnapshot);
             if (restored.IsFailure)
@@ -127,7 +142,8 @@ public static class TunnelInfrastructureSaveAdapter
                         value => value.OwnerSegmentId.ToString(),
                         StringComparer.Ordinal)
                     .ToArray();
-            if (!derived.PendingJunctionStoneTrimTargets.SequenceEqual(savedPending))
+            if (!derived.PendingJunctionStoneTrimTargets.SequenceEqual(savedPending)
+                || !ValidateManualJobs(derived, jobs, inventory))
             {
                 return Failure();
             }
@@ -135,7 +151,8 @@ public static class TunnelInfrastructureSaveAdapter
             return Result<TunnelInfrastructureRuntimeSnapshot>.Success(
                 new TunnelInfrastructureRuntimeSnapshot(
                     derived,
-                    data.NextAutomaticJobSequence));
+                    data.NextAutomaticJobSequence,
+                    data.NextManualJobSequence));
         }
         catch (Exception exception) when (
             exception is ArgumentException
@@ -145,33 +162,6 @@ public static class TunnelInfrastructureSaveAdapter
         {
             return Failure();
         }
-    }
-
-    public static ulong ResolveLegacyNextSequence(JobsSaveData? jobs)
-    {
-        ulong next = 1UL;
-        IEnumerable<JobSaveData> savedJobs = jobs == null
-            ? Array.Empty<JobSaveData>()
-            : jobs.Jobs;
-        foreach (JobSaveData job in savedJobs)
-        {
-            JobDefinitionSaveData? definition = job?.Definition;
-            if (definition == null
-                || !string.Equals(
-                    definition.TypeId,
-                    new TunnelAutomaticWorkJobSaveCodec().TypeId,
-                    StringComparison.Ordinal)
-                || !TryParseAutomaticJobSequence(
-                    definition.JobId,
-                    out ulong sequence))
-            {
-                continue;
-            }
-
-            next = Math.Max(next, checked(sequence + 1UL));
-        }
-
-        return next;
     }
 
     private static TunnelSegmentSaveData EncodeSegment(
@@ -304,35 +294,6 @@ public static class TunnelInfrastructureSaveAdapter
         }
 
         return new CellId(data.X, data.Y, data.Z);
-    }
-
-    private static bool IsNextSequenceValid(ulong next, JobSystem jobs)
-    {
-        if (next == 0)
-        {
-            return false;
-        }
-
-        return !jobs.GetAll().Any(job =>
-            job.Definition is TunnelAutomaticWorkJobDefinition
-            && TryParseAutomaticJobSequence(job.Id.ToString(), out ulong sequence)
-            && sequence >= next);
-    }
-
-    private static bool TryParseAutomaticJobSequence(
-        string? value,
-        out ulong sequence)
-    {
-        sequence = 0;
-        return value != null
-            && value.Length == 32
-            && value[0] == 'a'
-            && ulong.TryParse(
-                value.Substring(1),
-                NumberStyles.HexNumber,
-                CultureInfo.InvariantCulture,
-                out sequence)
-            && sequence > 0;
     }
 
     private static Result<TunnelInfrastructureRuntimeSnapshot> Failure()

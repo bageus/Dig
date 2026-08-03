@@ -94,6 +94,7 @@ namespace Dig.Unity
 
         private void ToggleResidentSelection(DigAgentVisual agent)
         {
+            CancelTunnelManualPlacement();
             CancelInventoryItemPlacement();
             if (_buildingPlacementMode.HasValue)
             {
@@ -125,6 +126,7 @@ namespace Dig.Unity
                 _agentSession!.CancelPlayerAttackOrder(EntityId.Parse(residentId));
             }
 
+            CancelTunnelManualPlacement();
             CancelInventoryItemPlacement();
             if (_buildingPlacementMode.HasValue)
             {

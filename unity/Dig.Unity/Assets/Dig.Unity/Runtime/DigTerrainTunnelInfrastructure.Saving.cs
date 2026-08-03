@@ -15,7 +15,8 @@ internal sealed partial class DigTerrainWorkSession
         EnsureTunnelInfrastructureRuntime();
         return new TunnelInfrastructureRuntimeSnapshot(
             _tunnelInfrastructure!.Get().CaptureSnapshot(),
-            _tunnelAutomaticJobSequence);
+            _tunnelAutomaticJobSequence,
+            _tunnelManualJobSequence);
     }
 
     internal Result RestoreTunnelInfrastructureRuntimeState(
@@ -57,6 +58,8 @@ internal sealed partial class DigTerrainWorkSession
             _journal,
             _skillGrants);
         _tunnelAutomaticJobSequence = runtime.NextAutomaticJobSequence;
+        _tunnelManualJobSequence = runtime.NextManualJobSequence;
+        ResetTunnelManualRuntimeHandlers();
         PublishTunnelInfrastructureVisuals();
         return Result.Success();
     }

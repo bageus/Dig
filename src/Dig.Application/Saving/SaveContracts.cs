@@ -22,7 +22,7 @@ namespace Dig.Application.Saving
 
 public static class SaveFormat
 {
-    public const int CurrentVersion = 16;
+    public const int CurrentVersion = 17;
 }
 
 public static class SaveSlotNames

@@ -96,9 +96,11 @@ namespace Dig.Unity
                 return;
             }
 
+            UpdateTunnelManualPlacementHover();
             UpdateBuildingPlacementHover();
             UpdateInventoryItemPlacementHover();
-            if (TryHandleBuildingPlacementClick()
+            if (TryHandleTunnelManualPlacementClick()
+                || TryHandleBuildingPlacementClick()
                 || TryHandleInventoryItemPlacementClick())
             {
                 return;

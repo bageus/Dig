@@ -92,6 +92,16 @@ namespace Dig.Unity
                     continue;
                 }
 
+                if (TryPlanTunnelManualWorkMovement(
+                    job,
+                    agent,
+                    navigation,
+                    movement,
+                    tick))
+                {
+                    continue;
+                }
+
                 if (TryPlanTunnelAutomaticWorkMovement(
                     job,
                     agent,
