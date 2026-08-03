@@ -80,15 +80,19 @@ public sealed class AgentAutonomySystemTests
     [Fact]
     public void Same_inputs_produce_same_intent_sequence()
     {
+        DailySchedule schedule = AgentTestFactory.CreateWorkSchedule(
+            GameTimeCadence.TicksPerDay);
         AgentState first = AgentTestFactory.CreateAgent(
             nutrition: 1_000,
             alertness: 2_500,
             mood: 6_000,
+            schedule: schedule,
             id: EntityId.Parse("22222222222222222222222222222222"));
         AgentState second = AgentTestFactory.CreateAgent(
             nutrition: 1_000,
             alertness: 2_500,
             mood: 6_000,
+            schedule: schedule,
             id: EntityId.Parse("33333333333333333333333333333333"));
         RuntimeHarness firstHarness = CreateHarness(first);
         RuntimeHarness secondHarness = CreateHarness(second);
@@ -142,7 +146,6 @@ public sealed class AgentAutonomySystemTests
             domainEvent => domainEvent is AgentPlayerOrderChanged changed
                 && changed.PlayerOrderId == order.Id);
     }
-
 
     [Fact]
     public void Execution_override_owns_real_action_progress_without_generic_delta()
@@ -219,7 +222,6 @@ public sealed class AgentAutonomySystemTests
             tickDuration: TimeSpan.FromMilliseconds(100));
         return new RuntimeHarness(repository, journal, system, simulation);
     }
-
 
     private sealed class HoldingExecutionOverride : IAgentIntentExecutionOverride
     {
