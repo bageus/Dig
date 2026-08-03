@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
@@ -11,6 +12,71 @@ using Dig.Domain.Production;
 
 namespace Dig.Application.Production
 {
+
+public static class ProductionPackageMaterialization
+{
+    public static int RequiredOutputStackCount(ProductionOutputPackageSnapshot package)
+    {
+        if (package == null)
+        {
+            throw new ArgumentNullException(nameof(package));
+        }
+
+        return package.Kind == ProductionOutputPackageKind.Food
+            ? checked(package.Manifest.Sum(value => value.Quantity))
+            : package.Manifest.Count;
+    }
+
+    public static ItemStackCreation[] CreateOutputs(
+        ProductionOutputPackageSnapshot package,
+        IReadOnlyList<EntityId> outputStackIds)
+    {
+        if (package == null)
+        {
+            throw new ArgumentNullException(nameof(package));
+        }
+
+        if (outputStackIds == null)
+        {
+            throw new ArgumentNullException(nameof(outputStackIds));
+        }
+
+        int requiredCount = RequiredOutputStackCount(package);
+        if (outputStackIds.Count != requiredCount)
+        {
+            throw new ArgumentException(
+                "Output stack ids must match the package materialization count.",
+                nameof(outputStackIds));
+        }
+
+        if (package.Kind != ProductionOutputPackageKind.Food)
+        {
+            return package.Manifest
+                .Zip(
+                    outputStackIds,
+                    (item, id) => new ItemStackCreation(
+                        id,
+                        item.ItemId,
+                        item.Quantity))
+                .ToArray();
+        }
+
+        List<ItemStackCreation> outputs = new List<ItemStackCreation>(requiredCount);
+        int idIndex = 0;
+        foreach (ContentItemQuantity item in package.Manifest)
+        {
+            for (int unit = 0; unit < item.Quantity; unit++)
+            {
+                outputs.Add(new ItemStackCreation(
+                    outputStackIds[idIndex++],
+                    item.ItemId,
+                    quantity: 1));
+            }
+        }
+
+        return outputs.ToArray();
+    }
+}
 
 public sealed class StartProductionPackageUseHandler
     : ICommandHandler<StartProductionPackageUseCommand, Result>
@@ -156,16 +222,17 @@ public sealed class CompleteProductionPackageUseHandler
         EntityId[] ids = command.OutputStackIds
             .OrderBy(value => value.ToString(), StringComparer.Ordinal)
             .ToArray();
-        if (ids.Length != package.Manifest.Count
+        int requiredOutputCount =
+            ProductionPackageMaterialization.RequiredOutputStackCount(package);
+        if (ids.Length != requiredOutputCount
             || ids.Any(value => value.IsEmpty)
             || ids.Distinct().Count() != ids.Length)
         {
             return Result.Failure(ProductionErrors.OutputIdsMismatch);
         }
 
-        ItemStackCreation[] outputs = package.Manifest
-            .Zip(ids, (item, id) => new ItemStackCreation(id, item.ItemId, item.Quantity))
-            .ToArray();
+        ItemStackCreation[] outputs =
+            ProductionPackageMaterialization.CreateOutputs(package, ids);
         Result replaced = inventory.ReplaceProductionPackage(
             package.StackId,
             ProductionPackageContent.GetClosedItemId(package.Kind),

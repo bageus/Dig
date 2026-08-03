@@ -29,11 +29,24 @@ public sealed class ProductionPackageUnityContractTests
         string packages = Read(
             runtime,
             "DigTerrainWorkSession.ProductionPackages.cs");
+        string materialization = Read(
+            RepositoryPath(
+                "src",
+                "Dig.Application",
+                "Production",
+                "ProductionPackageUseLifecycle.cs"));
 
         Assert.Contains("using Dig.Domain.Content;", zones);
         Assert.Contains("ProductionPackageContent.ResolveKind", zones);
         Assert.Contains("PlanBuildingProductionRoute", packages);
         Assert.Contains("_buildingProductionRoutes", packages);
+        Assert.Contains(
+            "ProductionPackageMaterialization.RequiredOutputStackCount(package)",
+            packages);
+        Assert.Contains("Enumerable.Range(0, outputCount)", packages);
+        Assert.Contains("ProductionOutputPackageKind.Food", materialization);
+        Assert.Contains("item.Quantity", materialization);
+        Assert.Contains("new ItemStackCreation", materialization);
         Assert.DoesNotContain("TerrainWorkRoutePlan", packages);
         Assert.DoesNotContain("using Dig.Application.Navigation;", packages);
     }

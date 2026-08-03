@@ -189,7 +189,9 @@ internal sealed partial class DigTerrainWorkSession
             return CancelStaleProductionPackageUse(job.Id, tick);
         }
 
-        EntityId[] outputs = Enumerable.Range(0, package.Manifest.Count)
+        int outputCount =
+            ProductionPackageMaterialization.RequiredOutputStackCount(package);
+        EntityId[] outputs = Enumerable.Range(0, outputCount)
             .Select(_ => NextProductionEntityId(
                 '7',
                 ref _nextProductionPackageUseOutputSequence))
