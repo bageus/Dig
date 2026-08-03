@@ -68,6 +68,39 @@ public sealed class ResidentWorkToolProjectionTests
     }
 
     [Fact]
+    public void Construction_projects_hammer_but_repair_does_not_invent_one()
+    {
+        CellId work = new CellId(7, 7, 1);
+        BuildingWorkJobDefinition construction = new BuildingWorkJobDefinition(
+            Id(31),
+            Id(32),
+            BuildingWorkKind.Construction,
+            work,
+            priority: 600,
+            createdTick: 1,
+            JobRetryPolicy.Default);
+        BuildingWorkJobDefinition repair = new BuildingWorkJobDefinition(
+            Id(33),
+            Id(34),
+            BuildingWorkKind.Repair,
+            work,
+            priority: 600,
+            createdTick: 1,
+            JobRetryPolicy.Default);
+
+        JobOverlayViewModel constructionModel = Project(construction, advanceCount: 1);
+        JobOverlayViewModel repairModel = Project(repair, advanceCount: 1);
+
+        Assert.Equal(
+            ResidentWorkToolVisualKind.Hammer,
+            constructionModel.WorkToolVisualKind);
+        Assert.Equal(
+            ResidentWorkToolVisualKind.None,
+            repairModel.WorkToolVisualKind);
+        Assert.Equal(work.Z, constructionModel.TargetZ);
+    }
+
+    [Fact]
     public void Building_box_assembly_projects_hammer_and_work_position()
     {
         CellId work = new CellId(8, 6, 2);
