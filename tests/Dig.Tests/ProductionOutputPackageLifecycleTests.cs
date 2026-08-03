@@ -100,7 +100,7 @@ public sealed class ProductionOutputPackageLifecycleTests
     }
 
     [Fact]
-    public void Closed_food_package_breaks_into_manifest_exactly_once()
+    public void Closed_food_package_breaks_into_separate_units_exactly_once()
     {
         CampfireProductionTestHarness harness = ReadyFoodOrder(
             out EntityId orderId,
@@ -119,6 +119,8 @@ public sealed class ProductionOutputPackageLifecycleTests
         Assert.Equal(ProductionOutputPackageKind.Food, package.Kind);
         Assert.Single(package.Manifest);
         Assert.Equal(2, package.Manifest[0].Quantity);
+        Assert.Equal(2,
+            ProductionPackageMaterialization.RequiredOutputStackCount(package));
         Assert.Equal(
             JobStageKind.TravelToDestination,
             harness.Jobs.Get(productionJobId)!.Stage);
@@ -128,7 +130,8 @@ public sealed class ProductionOutputPackageLifecycleTests
         Assert.Equal(JobStatus.Completed, harness.Jobs.Get(productionJobId)!.Status);
 
         EntityId useJobId = CampfireProductionTestHarness.Id(204);
-        EntityId outputId = CampfireProductionTestHarness.Id(205);
+        EntityId firstOutputId = CampfireProductionTestHarness.Id(205);
+        EntityId secondOutputId = CampfireProductionTestHarness.Id(206);
         Assert.True(new StartProductionPackageUseHandler(
             harness.ProductionRepository,
             harness.InventoryRepository,
@@ -157,19 +160,23 @@ public sealed class ProductionOutputPackageLifecycleTests
 
         Result opened = complete.Handle(new CompleteProductionPackageUseCommand(
             useJobId,
-            new[] { outputId },
+            new[] { firstOutputId, secondOutputId },
             tick: 14));
 
         Assert.True(opened.IsSuccess, opened.Error?.ToString());
         Assert.Null(harness.Production.GetOutputPackage(packageId));
         Assert.Null(harness.Inventory.GetStack(packageId));
-        ItemStackSnapshot output = harness.Inventory.GetStack(outputId)!;
-        Assert.Equal(CampfireProductionContent.GrilledMushroomItemId, output.ItemId);
-        Assert.Equal(2, output.Quantity);
-        Assert.Equal(ItemLocation.InWorld(OutputCell), output.Location);
+        ItemStackSnapshot first = harness.Inventory.GetStack(firstOutputId)!;
+        ItemStackSnapshot second = harness.Inventory.GetStack(secondOutputId)!;
+        Assert.Equal(CampfireProductionContent.GrilledMushroomItemId, first.ItemId);
+        Assert.Equal(CampfireProductionContent.GrilledMushroomItemId, second.ItemId);
+        Assert.Equal(1, first.Quantity);
+        Assert.Equal(1, second.Quantity);
+        Assert.Equal(ItemLocation.InWorld(OutputCell), first.Location);
+        Assert.Equal(ItemLocation.InWorld(OutputCell), second.Location);
         Assert.True(complete.Handle(new CompleteProductionPackageUseCommand(
             useJobId,
-            new[] { CampfireProductionTestHarness.Id(206) },
+            new[] { CampfireProductionTestHarness.Id(207) },
             tick: 15)).IsFailure);
         Assert.Equal(2, harness.Inventory.GetTotal(
             CampfireProductionContent.GrilledMushroomItemId));
