@@ -223,6 +223,16 @@ namespace Dig.Domain.Agents
                 }
             }
 
+            internal void RestoreCompletedBite()
+            {
+                if (IsComplete)
+                {
+                    throw new InvalidOperationException("The meal is already complete.");
+                }
+
+                CompletedBites = checked(CompletedBites + 1);
+            }
+
             internal FoodMealSnapshot CreateSnapshot()
             {
                 return new FoodMealSnapshot(
