@@ -72,7 +72,8 @@ public sealed class CampfireProductionContentTests
     public void Grilled_mushroom_consumes_one_cap_creates_two_food_units()
     {
         RecipeDefinition recipe = CampfireProductionContent.CreateRecipes(
-                CampfireProductionContent.ProductionMaterialTicks)
+                CampfireProductionContent.ProductionMaterialTicks,
+                CampfireProductionContent.CookingMaterialTicks)
             .Single(value => value.Id == CampfireProductionContent.GrilledMushroomRecipeId);
         ContentItemQuantity input = Assert.Single(recipe.Inputs);
         ContentItemQuantity output = Assert.Single(recipe.Outputs);
