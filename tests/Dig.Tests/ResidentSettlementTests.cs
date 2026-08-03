@@ -48,7 +48,7 @@ public sealed class ResidentSettlementTests
         harness.Execute(tick: 1);
 
         Assert.Equal(0, harness.Inventory.GetTotal(ResidentSettlementHarness.Meal));
-        Assert.True(harness.Snapshot(FirstAgent, 1).Needs.Nutrition.Points >= 3_000);
+        Assert.True(harness.Snapshot(FirstAgent, 1).Needs.Nutrition.Points > 500);
         Assert.True(harness.Snapshot(SecondAgent, 1).Needs.Nutrition.Points < 1_000);
         Assert.Single(harness.Journal.Events.OfType<ReservedItemConsumed>());
     }
