@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Dig.Domain.Runtime;
 
 namespace Dig.Domain.Agents
 {
@@ -61,6 +62,8 @@ public sealed class AgentNeedPolicy
 
     public int CriticalThreshold { get; }
 
+    // Retained for save/content compatibility. Critical Health loss is now resolved
+    // proportionally by AgentNeedsState over half of DailySchedule.TicksPerDay.
     public int HealthDamagePerCriticalTick { get; }
 
     public int HealthRecoveryPerStableTick { get; }
@@ -178,7 +181,7 @@ public sealed class AgentUtilityPolicy
     {
         if (value < 0)
         {
-            throw new ArgumentOutOfRangeException(parameterName);
+            throw new ArgumentOutOfRangeException(nameof(value));
         }
 
         return value;
@@ -289,9 +292,9 @@ public sealed class AgentBehaviorPolicy
             new AgentNeedPolicy(
                 nutritionFullDepletionDays: 2,
                 alertnessFullDepletionDays: 3,
-                moodFullDepletionTicks: 100,
+                moodFullDepletionTicks: GameTimeCadence.TicksPerDay * 4,
                 criticalThreshold: 2_000,
-                healthDamagePerCriticalTick: 500,
+                healthDamagePerCriticalTick: 0,
                 healthRecoveryPerStableTick: 50,
                 moodCriticalPenalty: 200),
             new AgentUtilityPolicy(
