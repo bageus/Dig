@@ -192,8 +192,7 @@ public sealed partial class TunnelInfrastructureState : AggregateRoot
             _segments.Values
                 .OrderBy(value => value.SegmentId.ToString(), StringComparer.Ordinal)
                 .Select(value => value.CaptureSnapshot()),
-            _completedJunctionStoneTrimCells,
-            _completedStoneFloorTrimCells);
+            _completedJunctionStoneTrimCells);
     }
 
     public static Result<TunnelInfrastructureState> Restore(
@@ -299,8 +298,7 @@ public sealed partial class TunnelInfrastructureState : AggregateRoot
     {
         return TunnelJunctionStoneTrimProjection.DerivePending(
             _segments.Values.Select(segment => segment.CaptureSnapshot()),
-            _completedJunctionStoneTrimCells,
-            _completedStoneFloorTrimCells);
+            _completedJunctionStoneTrimCells);
     }
 
     private bool HasVerticalJunction(CellId cell)
