@@ -17,6 +17,7 @@ Tracking issue: [#602](https://github.com/bageus/Dig/issues/602).
 - `DigAgentVisual` хранит последний equipment read model, но временно показывает synthetic tool в том же `RightHand` socket.
 - После очистки work tool вызывается rebuild из актуального equipment model; Inventory и Job state не меняются.
 - `DigAgentEquipmentVisual` создаёт разные collider-free procedural silhouettes для `weapon.club`, кирки, топора и молотка.
+- `docs/systems/README.md`, specification и tracking issue синхронизированы со статусом `IMPLEMENTED`.
 
 ## Regression coverage
 
@@ -38,4 +39,6 @@ Final Quality run `30852795651` на code head `c0bde8b9f18bc40a21d3e3239ef11e93
 - large deterministic soak replay hash `66620BC1E1B9756DF64C0D018450E7EF0E4AD10D67F741079EA894945897701E`;
 - both soak runs reported `replay=True` and passed performance budgets.
 
-Unity workflow `30852795650` успешно записал blocked runtime evidence: activation была недоступна, поэтому реальные EditMode/PlayMode tests и executed-runtime-evidence validation были skipped. Реализация имеет статус `IMPLEMENTED`, но не `VERIFIED`.
+Последующие docs/status commits повторно прошли полный Quality pipeline и оба Stage 2 source exports без изменения production behavior.
+
+Unity workflow успешно записал blocked runtime evidence: activation была недоступна, поэтому реальные EditMode/PlayMode tests и executed-runtime-evidence validation были skipped. Реализация имеет статус `IMPLEMENTED`, но не `VERIFIED`.
