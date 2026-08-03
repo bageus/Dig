@@ -45,6 +45,14 @@ public sealed class SleepingResidentUnityRuntimeContractTests
         Assert.Contains("LoadResidentRoster", playMode, StringComparison.Ordinal);
         Assert.Contains("GetHudModels", playMode, StringComparison.Ordinal);
         Assert.Contains("SelectById", playMode, StringComparison.Ordinal);
+        Assert.Contains("Assert.That(activeSleep, Is.Not.Null)", playMode,
+            StringComparison.Ordinal);
+        Assert.Contains("AgentSnapshot sleepingSnapshot = activeSleep!;", playMode,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("activeSleep.HasValue", playMode,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("activeSleep!.Value", playMode,
+            StringComparison.Ordinal);
     }
 
     private static string ReadRuntime(string file) => Read(
