@@ -17,11 +17,13 @@ internal sealed partial class DigRoomInfrastructureRenderer : MonoBehaviour
     private Transform? _root;
     private DigRoomInfrastructureMarkerVisual? _selected;
     private DigRenderMaterialLibrary? _materials;
+    private bool _planningOverlaysVisible = true;
 
     internal string? SelectedRoomId => _selected?.Model.Id;
     internal RoomInfrastructureViewModel? SelectedModel => _selected?.Model;
     internal int MarkerCount => _markers.Count;
     internal int ProgressPieceCount => _progress.Count;
+    internal bool PlanningOverlaysVisible => _planningOverlaysVisible;
 
     internal void Render(IReadOnlyList<RoomInfrastructureViewModel> rooms)
     {
@@ -45,11 +47,25 @@ internal sealed partial class DigRoomInfrastructureRenderer : MonoBehaviour
         RemoveMissingProgress(visibleProgress);
     }
 
+    internal void SetPlanningOverlayVisibility(bool visible)
+    {
+        if (_planningOverlaysVisible == visible)
+        {
+            return;
+        }
+
+        _planningOverlaysVisible = visible;
+        foreach (DigRoomInfrastructureMarkerVisual marker in _markers.Values)
+        {
+            marker.gameObject.SetActive(visible);
+        }
+    }
+
     internal bool TryGetMarker(
         RaycastHit hit,
         out DigRoomInfrastructureMarkerVisual marker)
     {
-        marker = hit.collider == null
+        marker = !_planningOverlaysVisible || hit.collider == null
             ? null!
             : hit.collider.GetComponentInParent<DigRoomInfrastructureMarkerVisual>();
         return marker != null;
@@ -90,6 +106,7 @@ internal sealed partial class DigRoomInfrastructureRenderer : MonoBehaviour
         {
             marker.SetModel(room, markerMaterial, markerTint);
             marker.transform.position = MarkerPosition(room);
+            marker.gameObject.SetActive(_planningOverlaysVisible);
             return;
         }
 
@@ -105,6 +122,7 @@ internal sealed partial class DigRoomInfrastructureRenderer : MonoBehaviour
             markerTint,
             ResolveSelectionMaterial());
         visual.SetSelected(false);
+        root.SetActive(_planningOverlaysVisible);
         _markers.Add(room.Id, visual);
     }
 
