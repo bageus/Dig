@@ -46,6 +46,7 @@ public sealed class SaveMigrationAndCorruptionTests
             "save.v13_to_v14.vuker_ecology",
             "save.v14_to_v15.tunnel_infrastructure",
             "save.v15_to_v16.room_infrastructure",
+            "save.v16_to_v17.tunnel_manual_infrastructure",
         }, first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
         Assert.Equal(1, document.Metadata.GeneratorVersion);
@@ -89,6 +90,7 @@ public sealed class SaveMigrationAndCorruptionTests
                 "save.v13_to_v14.vuker_ecology",
                 "save.v14_to_v15.tunnel_infrastructure",
                 "save.v15_to_v16.room_infrastructure",
+                "save.v16_to_v17.tunnel_manual_infrastructure",
             },
             first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
@@ -314,6 +316,7 @@ public sealed class SaveMigrationAndCorruptionTests
             new SaveVersionThirteenVukerEcologyMigration(),
             new SaveVersionFourteenTunnelInfrastructureMigration(),
             new SaveVersionFifteenRoomInfrastructureMigration(),
+            new SaveVersionSixteenTunnelManualInfrastructureMigration(),
         });
     }
     private static JobDefinitionSaveRegistry CreateRegistry()
