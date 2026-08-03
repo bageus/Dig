@@ -41,7 +41,7 @@ public sealed class TunnelInfrastructureUnityRuntimeContractTests
         Assert.DoesNotContain("SynchronizeTunnelAutomaticJunctionTrimHandler", infrastructure);
         Assert.DoesNotContain("ResolveTrimJobId", infrastructure);
         Assert.Contains("CompleteTunnelAutomaticWorkHandler", infrastructure);
-        Assert.Contains("definition.Kind == TunnelAutomaticWorkKind.WoodenSupport", infrastructure);
+        Assert.Contains("definition.Kind==TunnelAutomaticWorkKind.WoodenSupport", infrastructure);
         Assert.Contains("TryPlanTunnelAutomaticWorkMovement", navigation);
         Assert.Contains("AdvanceTunnelAutomaticWork", session);
 
