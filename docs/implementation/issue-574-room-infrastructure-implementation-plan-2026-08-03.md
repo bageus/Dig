@@ -236,11 +236,32 @@ Validation PR #591 на code head `9fcb643a3d9cd2d3ea5b428f88d941305772d66e`:
 
 ### Slice 3 — persistence и migration для tunnel infrastructure
 
-- save ordered segments, anchor cells/kinds, next target identity, decorative targets и runtime automatic-job sequence;
-- load пересчитывает only derived target от последнего completed anchor;
-- obsolete target не восстанавливается;
-- versioned migration не добавляет anchors в legacy saves без evidence;
-- deterministic save round trip и idempotency tests.
+Статус: `READY FOR REVIEW` в stacked PR #592. Подробный implementation note: [`issue-574-tunnel-infrastructure-persistence-2026-08-03.md`](issue-574-tunnel-infrastructure-persistence-2026-08-03.md).
+
+Реализовано:
+
+- save format повышен с `14` до `15`;
+- сохраняются ordered segments, origin kind/cell, exact horizontal cells, structural anchor kind/cell/distance и aggregate/segment versions;
+- current automatic-support target и pending junction-trim targets сохраняются как integrity evidence, но при load пересчитываются Domain owner;
+- completed junction stone-trim cells сохраняются отдельно от structural anchors;
+- runtime automatic-job sequence сохраняется и валидируется против уже сохранённых `TunnelAutomaticWorkJobDefinition`;
+- obsolete derived support/trim target отклоняется при load и не восстанавливается;
+- migration `save.v14_to_v15.tunnel_infrastructure` создаёт пустой infrastructure section без phantom anchors;
+- legacy migration поднимает sequence выше существующих parseable automatic-work job ids;
+- autosave переносит тот же tunnel runtime snapshot;
+- Unity restore пересоздаёт repository/application handlers вокруг восстановленного authoritative aggregate и обновляет visual projection.
+
+Validation PR #592 на code head `2ff8fef77749c983e5ae56595ccdc823af3dc4db`:
+
+- architecture, file-size, C# 9 compatibility, compiler baseline, dependency и Domain-boundary checks passed;
+- Unity source contracts passed;
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1436/1436`;
+- tunnel save round-trip, stale-target, sequence-collision, migration и runtime-restore regressions passed;
+- headless smoke passed at tick `20`;
+- standard deterministic soak replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
+- large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
+- Unity workflow recorded blocked evidence; actual EditMode/PlayMode execution and executed-runtime-evidence validation were skipped.
 
 ### Slice 4 — room-upgrade core
 
