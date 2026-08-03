@@ -152,6 +152,11 @@ namespace Dig.Unity
             }
 
             RaycastHit hit = hits[0];
+            if (TryHandleRoomInfrastructureMarker(hits, left))
+            {
+                return;
+            }
+
             if (TryResolveAgentHit(hits, out DigAgentVisual agent))
             {
                 _creatureRenderer!.ClearSelection();
