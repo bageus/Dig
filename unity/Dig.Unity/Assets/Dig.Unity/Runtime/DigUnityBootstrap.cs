@@ -179,7 +179,10 @@ namespace Dig.Unity
             interaction.SetRoomInfrastructureRenderer(roomInfrastructureRenderer);
             DigRoomInfrastructurePresentationDriver roomPresentation = GetOrAdd<
                 DigRoomInfrastructurePresentationDriver>(gameObject);
-            roomPresentation.Initialize(terrainSession, roomInfrastructureRenderer);
+            roomPresentation.Initialize(
+                terrainSession,
+                roomInfrastructureRenderer,
+                () => interaction.IsRoomPlanningOverlayVisible);
             simulation.Initialize(
                 worldSession, worldRenderer, agentSession, agentRenderer,
                 terrainSession, creatureRenderer, mushroomRenderer, barrelRenderer, jobRenderer,
