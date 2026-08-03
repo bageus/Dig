@@ -108,9 +108,9 @@ public sealed class CombatMovementCadenceTests
                 width: 7,
                 height: 1,
                 depth: 1,
-                openCells: cells,
-                verticalTunnelCells: Array.Empty<CellId>(),
-                supportedCells: cells),
+                cells,
+                Array.Empty<CellId>(),
+                cells),
             new FixedEquipmentProvider(),
             new RecordingEvents(),
             new AgentSkillGrantService(agents, new RecordingEvents()),
@@ -143,6 +143,8 @@ public sealed class CombatMovementCadenceTests
             "Combat cadence",
             AgentTestFactory.CreateNeeds(10_000, 10_000, 10_000, 10_000),
             AgentTestFactory.CreateWorkSchedule(),
+            skills: null,
+            traits: null,
             initialPosition: position);
     }
 
