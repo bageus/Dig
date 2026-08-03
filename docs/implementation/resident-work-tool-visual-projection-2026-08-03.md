@@ -28,7 +28,7 @@ Tracking issue: [#602](https://github.com/bageus/Dig/issues/602).
 
 ## Validation
 
-Validated code behavior:
+Validated behavior:
 
 - architecture, file-size, C# compatibility, dependency и Domain-boundary gates passed;
 - Unity source contracts и runtime-evidence tooling passed;
@@ -38,6 +38,6 @@ Validated code behavior:
 - standard deterministic soak replay hash `D27036F09F4EF8CA6C20159F194ED68F07D7C54963CE82C81CB3375AE4DBDFE3`;
 - large deterministic soak replay hash `66620BC1E1B9756DF64C0D018450E7EF0E4AD10D67F741079EA894945897701E`;
 - both soak runs reported `replay=True` and passed performance budgets;
-- subsequent docs/status commits repeated the full Quality pipeline and both Stage 2 source exports without changing production behavior.
+- docs/status commits repeated the full Quality pipeline and both Stage 2 source exports without changing production behavior.
 
-Unity workflow successfully recorded blocked runtime evidence: activation was unavailable, so actual EditMode/PlayMode tests and executed-runtime-evidence validation were skipped. The system is `IMPLEMENTED`, not `VERIFIED`.
+Unity workflow recorded blocked runtime evidence: activation was unavailable, so actual EditMode/PlayMode tests and executed-runtime-evidence validation were skipped. The system is `IMPLEMENTED`, not `VERIFIED`.
