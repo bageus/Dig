@@ -51,6 +51,19 @@ public sealed class TunnelInfrastructureUnityRuntimeContractTests
     }
 
     [Fact]
+    public void Runtime_imports_authoritative_job_route_and_command_contracts()
+    {
+        string infrastructure = Read(
+            RuntimeRoot(),
+            "DigTerrainTunnelInfrastructure.cs");
+
+        Assert.Contains("usingDig.Application.Jobs;", infrastructure);
+        Assert.Contains("newTerrainWorkRoutePlan(", infrastructure);
+        Assert.Contains("newAdvanceJobCommand(", infrastructure);
+        Assert.Contains("newReleaseJobAssignmentCommand(", infrastructure);
+    }
+
+    [Fact]
     public void Job_overlay_projects_automatic_tunnel_xyz_target()
     {
         EntityId jobId = Id(1);
