@@ -11,7 +11,7 @@ namespace Dig.Tests
     public sealed class ResidentFoodMealTests
     {
         [Fact]
-        public void Starting_meal_consumes_one_portion_and_applies_three_exact_bites()
+        public void Starting_meal_consumes_one_portion_and_applies_three_bites_with_cooldowns()
         {
             Harness harness = new Harness(foodQuantity: 2, nutrition: 1_000);
 
@@ -23,23 +23,30 @@ namespace Dig.Tests
                 harness.Agent.CreateFoodMealSnapshot());
             Assert.Equal(3, active.BiteCount);
             Assert.Equal(0, active.CompletedBites);
+            Assert.Equal(11, active.NextBiteTick);
 
             Assert.False(harness.Advance(11));
             Assert.Equal(1_500, harness.Nutrition(11));
+            Assert.Equal(13, harness.Agent.CreateFoodMealSnapshot()!.NextBiteTick);
             Assert.False(harness.Advance(12));
-            Assert.Equal(2_000, harness.Nutrition(12));
-            Assert.True(harness.Advance(13));
-            Assert.Equal(2_500, harness.Nutrition(13));
+            Assert.Equal(1_500, harness.Nutrition(12));
+            Assert.False(harness.Advance(13));
+            Assert.Equal(2_000, harness.Nutrition(13));
+            Assert.False(harness.Advance(14));
+            Assert.Equal(2_000, harness.Nutrition(14));
+            Assert.True(harness.Advance(15));
+            Assert.Equal(2_500, harness.Nutrition(15));
             Assert.False(harness.Agent.HasActiveFoodMeal);
         }
 
         [Fact]
-        public void Runtime_snapshot_restores_completed_bites_without_replaying_nutrition()
+        public void Runtime_snapshot_restores_completed_bites_and_cooldown_without_replay()
         {
             Harness harness = new Harness(foodQuantity: 1, nutrition: 1_000);
             Assert.True(harness.Start(10).IsSuccess);
             Assert.False(harness.Advance(11));
             AgentRuntimeSnapshot saved = harness.Agent.CreateRuntimeSnapshot();
+            Assert.Equal(13, saved.ActiveMeal!.NextBiteTick);
             AgentState restored = new AgentState(
                 harness.ResidentId,
                 "Restored cook",
@@ -57,10 +64,14 @@ namespace Dig.Tests
             Assert.True(result.IsSuccess, result.Error?.ToString());
             Assert.Equal(1_500, restored.CreateSnapshot(11).Needs.Nutrition.Points);
             Assert.Equal(1, restored.CreateFoodMealSnapshot()!.CompletedBites);
+            Assert.Equal(13, restored.CreateFoodMealSnapshot()!.NextBiteTick);
             Assert.Equal(AgentIntentKind.Eat, restored.CreateSnapshot(11).ActiveAction!.Value.IntentKind);
             Assert.False(restored.AdvanceFoodMealBite(12).Value);
-            Assert.True(restored.AdvanceFoodMealBite(13).Value);
-            Assert.Equal(2_500, restored.CreateSnapshot(13).Needs.Nutrition.Points);
+            Assert.Equal(1_500, restored.CreateSnapshot(12).Needs.Nutrition.Points);
+            Assert.False(restored.AdvanceFoodMealBite(13).Value);
+            Assert.False(restored.AdvanceFoodMealBite(14).Value);
+            Assert.True(restored.AdvanceFoodMealBite(15).Value);
+            Assert.Equal(2_500, restored.CreateSnapshot(15).Needs.Nutrition.Points);
             Assert.False(restored.HasActiveFoodMeal);
         }
 
