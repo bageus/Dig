@@ -50,9 +50,11 @@ public sealed class ResidentHudInitializationGuardContractTests
         Assert.Contains(
             "internal bool IsHudReady => AgentSession != null && TerrainSession != null;",
             bridge);
-        Assert.Contains("ticksPerDay = 24;", bridge);
+        Assert.Contains("ticksPerDay = GameTimeCadence.TicksPerDay;", bridge);
         Assert.Contains("startTickInclusive = 0;", bridge);
-        Assert.Contains("endTickExclusive = 12;", bridge);
+        Assert.Contains(
+            "endTickExclusive = GameTimeCadence.TicksPerDay / 2;",
+            bridge);
         Assert.Contains("enabled = true;", bridge);
         Assert.Contains("return Result.Failure(NotInitialized);", bridge);
         Assert.DoesNotContain("AgentSession!.TryGetWorkWindow", bridge);
