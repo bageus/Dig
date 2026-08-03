@@ -4,7 +4,8 @@ Status: `IMPLEMENTED IN BRANCH`.
 
 Authoritative correction: [`../design/resident-inventory-claim-compaction-correction-2026-08-04.md`](../design/resident-inventory-claim-compaction-correction-2026-08-04.md).  
 Parent specification: [`../design/resident-inventory-expansion.md`](../design/resident-inventory-expansion.md).  
-Tracking issue: [#68](https://github.com/bageus/Dig/issues/68).
+Tracking issue: [#68](https://github.com/bageus/Dig/issues/68).  
+Implementation PR: [#615](https://github.com/bageus/Dig/pull/615).
 
 ## Reported regression
 
@@ -49,6 +50,8 @@ HUD проецировал authoritative `SlotIndex` корректно; оши�
 - normalization в basket Main 4 + claims Main 5/6;
 - preserved claim identities/quantities, typed reflow events и idempotent repeat.
 
+Existing `ResidentInventorySlotClaimTests` также проверяет простой reflow: physical stack получает младший совместимый Main slot, а pending claim переносится следом без смены ownership.
+
 ### Unity Play Mode fixture
 
 `ResidentInventoryClaimCompactionPlayModeTests` строит тот же authoritative layout через `ResidentInventoryLayoutPresenter` и требует:
@@ -59,6 +62,20 @@ HUD проецировал authoritative `SlotIndex` корректно; оши�
 
 Fixture checked in; actual licensed Unity Test Runner execution remains required before `VERIFIED`.
 
-## Verification boundary
+## Validation — code/test head `0364b2a767091d2a78ea67a307a28f325deb66d4`
 
-Repository Quality, Release build, full .NET suite, source contracts, headless smoke and deterministic soaks must pass on the PR head. Unity workflow success through blocked-evidence path does not count as executed Play Mode evidence.
+Quality run `30861848761` passed:
+
+- architecture, file-size and C# compatibility checks;
+- Unity source contracts and presentation/runtime gates;
+- Release build with `0` warnings and `0` errors;
+- `1474/1474` .NET tests;
+- headless smoke;
+- standard deterministic soak;
+- large-settlement deterministic soak.
+
+Export Stage 2 v2 run `30861848785` and v3 run `30861848789` passed.
+
+Unity workflow `30861848762` completed through the blocked-evidence path. Actual EditMode/PlayMode execution was skipped because licensed Unity activation was unavailable. Therefore the behavior remains `IMPLEMENTED IN BRANCH`, not `VERIFIED`.
+
+The final documentation-only head must retain the same green repository gates before merge.
