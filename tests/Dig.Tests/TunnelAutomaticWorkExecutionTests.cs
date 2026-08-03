@@ -115,9 +115,9 @@ public sealed class TunnelAutomaticWorkExecutionTests
 
         Assert.True(result.IsFailure);
         Assert.Equal(TunnelAutomaticWorkExecutionErrors.SourceInvalid, result.Error);
-        Assert.Empty(harness.Tunnels.Get().GetSegment(SegmentId)!
-            .StructuralAnchors.Where(anchor =>
-                anchor.Kind == TunnelStructuralAnchorKind.WoodenSupport));
+        Assert.DoesNotContain(
+            harness.Tunnels.Get().GetSegment(SegmentId)!.StructuralAnchors,
+            anchor => anchor.Kind == TunnelStructuralAnchorKind.WoodenSupport);
         Assert.Equal(2, harness.Inventory.CreateSnapshot().GetTotal(
             new ItemId("material.mushroom_leg")));
         Assert.Equal(0, Skill(harness, AgentSkillCatalog.Woodworking));
