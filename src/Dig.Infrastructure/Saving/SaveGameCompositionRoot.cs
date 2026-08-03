@@ -21,6 +21,7 @@ public static class SaveGameCompositionRoot
         typeof(Dig.Domain.Jobs.ProductionPackageUseJobDefinition),
         typeof(Dig.Domain.Jobs.ProductionWorkJobDefinition),
         typeof(Dig.Domain.Jobs.ResidentInventoryPlacementJobDefinition),
+        typeof(Dig.Domain.Jobs.RoomUpgradeWorkJobDefinition),
         typeof(Dig.Domain.Jobs.SpatialDigJobDefinition),
         typeof(Dig.Domain.Jobs.StrategicExecutionJobDefinition),
         typeof(Dig.Domain.Jobs.TunnelAutomaticWorkJobDefinition),
@@ -69,8 +70,10 @@ public static class SaveGameCompositionRoot
                     new ProductionWorkJobSaveCodec()),
                 Registration<Dig.Domain.Jobs.ResidentInventoryPlacementJobDefinition>(
                     new ResidentInventoryPlacementJobSaveCodec()),
+                Registration<Dig.Domain.Jobs.RoomUpgradeWorkJobDefinition>(
+                    new RoomUpgradeWorkJobSaveCodec()),
                 Registration<Dig.Domain.Jobs.SpatialDigJobDefinition>(
-                    new SpatialDigJobSaveCodec()),
+                    new SpatialDigJobDefinitionSaveCodec()),
                 Registration<Dig.Domain.Jobs.StrategicExecutionJobDefinition>(
                     new StrategicExecutionJobSaveCodec()),
                 Registration<Dig.Domain.Jobs.TunnelAutomaticWorkJobDefinition>(
