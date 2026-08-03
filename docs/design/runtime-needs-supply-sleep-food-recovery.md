@@ -23,7 +23,14 @@ It is an authoritative addendum to `systems-core.md`, `resident-schedule-needs-a
 - The demo normal tick duration is `2.0` real seconds.
 - Pause and single-step remain exact. Fast and very-fast playback remain deterministic multipliers of the same authoritative tick duration.
 - Passive Nutrition, Alertness and Mood decay is committed once per simulation tick. HUD values refresh from the committed snapshot; Presentation never predicts or applies need changes.
+- `DailySchedule.TicksPerDay` is the authoritative in-game day length for that resident; the demo uses `24` ticks per full day.
+- UI `100` equals Domain `10_000`. From a full value and without recovery, Nutrition reaches `0` after exactly `2 × TicksPerDay` committed ticks, while Alertness reaches `0` after exactly `3 × TicksPerDay` committed ticks.
+- Integer fixed-point decay is distributed proportionally across the whole period: every tick uses the deterministic difference between adjacent cumulative fractions. Therefore neighboring tick deltas differ by at most one Domain unit and the final remainder is not concentrated in a large last-tick jump.
+- Passive Mood keeps its existing full-span duration of `100` committed ticks and uses the same proportional periodic resolver. Explicit positive Mood effects and the existing survival-critical Mood penalty remain separate typed effects; they do not redefine passive decay.
+- Passive time decay is the only ordinary negative Nutrition/Alertness/Mood owner. Generic `Work`, `PlayerOrder`, `Flee` and `Idle` action completion no longer applies a second negative need delta. `Eat`, `Sleep` and `Rest/Leisure` retain only their positive recovery effects; passive decay continues during those actions.
 - A frame catch-up may execute several due ticks, but the existing maximum-ticks-per-frame boundary remains in force.
+
+The proportional decay for a period `P` and tick phase `k` is the negative difference `floor((k + 1) × 10_000 / P) - floor(k × 10_000 / P)`. The phase derives from authoritative simulation tick, so save/load and replay require no Presentation accumulator and cannot duplicate or lose a remainder.
 
 Save data stores simulation tick/time as before; changing the real-time cadence does not rewrite saved game ticks.
 
@@ -90,6 +97,10 @@ Diagnostics expose authoritative tick duration, playback multiplier, resident ne
 
 - normal Unity playback advances one simulation tick every `2.0` real seconds from the session clock;
 - pause/single-step/speed changes keep deterministic tick order;
+- with the demo `24`-tick day, full Nutrition remains above zero through tick `47` and reaches zero on the 48th passive tick; full Alertness remains above zero through tick `71` and reaches zero on the 72nd passive tick;
+- passive per-tick deltas are monotonic proportional shares whose magnitudes differ by at most one Domain unit;
+- running ordinary Work/PlayerOrder/Flee/Idle produces the same negative need trajectory as passive time alone and cannot double-drain Nutrition, Alertness or Mood;
+- save/load at any phase produces the same next proportional delta as uninterrupted execution;
 - Work-time hunger still creates no automatic food/package job;
 - free-time hunger consumes loose food when available and otherwise opens one food package then eats one released unit;
 - two tired residents use two free Tent slots; a third uses Floor; packing the Tent releases slots;

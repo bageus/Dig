@@ -58,6 +58,72 @@ public sealed class AgentNeedsAndScheduleTests
     }
 
     [Fact]
+    public void Default_passive_decay_spans_exact_schedule_days_proportionally()
+    {
+        AgentNeedPolicy policy = AgentBehaviorPolicy.CreateDefault().Needs;
+        const int ticksPerDay = 24;
+        NeedDelta[] deltas = Enumerable.Range(0, 100)
+            .Select(tick => policy.ResolvePassiveDelta(tick, ticksPerDay))
+            .ToArray();
+
+        Assert.Equal(
+            -NeedValue.Maximum,
+            deltas.Take(ticksPerDay * 2).Sum(value => value.Nutrition));
+        Assert.Equal(
+            -NeedValue.Maximum,
+            deltas.Take(ticksPerDay * 3).Sum(value => value.Alertness));
+        Assert.Equal(
+            -NeedValue.Maximum,
+            deltas.Sum(value => value.Mood));
+        AssertProportional(deltas.Take(ticksPerDay * 2).Select(value => value.Nutrition));
+        AssertProportional(deltas.Take(ticksPerDay * 3).Select(value => value.Alertness));
+        AssertProportional(deltas.Select(value => value.Mood));
+    }
+
+    [Fact]
+    public void Ordinary_work_does_not_add_a_second_negative_need_drain()
+    {
+        DailySchedule schedule = AgentTestFactory.CreateWorkSchedule(ticksPerDay: 24);
+        AgentState passive = AgentTestFactory.CreateAgent(
+            nutrition: NeedValue.Maximum,
+            alertness: NeedValue.Maximum,
+            mood: NeedValue.Maximum,
+            schedule: schedule,
+            id: EntityId.Parse("21111111111111111111111111111111"));
+        AgentState working = AgentTestFactory.CreateAgent(
+            nutrition: NeedValue.Maximum,
+            alertness: NeedValue.Maximum,
+            mood: NeedValue.Maximum,
+            schedule: schedule,
+            id: EntityId.Parse("31111111111111111111111111111111"));
+        AgentBehaviorPolicy policy = AgentBehaviorPolicy.CreateDefault();
+
+        for (int tick = 0; tick < 24; tick++)
+        {
+            Assert.True(passive.AdvanceNeeds(policy, tick).IsSuccess);
+            Assert.True(working.AdvanceNeeds(policy, tick).IsSuccess);
+            Assert.True(working.ApplyDecision(
+                AgentTestFactory.CreateForcedDecision(AgentIntentKind.Work, tick),
+                policy,
+                tick).IsSuccess);
+            Assert.True(working.AdvanceAction(policy, tick).IsSuccess);
+        }
+
+        AgentNeedsSnapshot passiveNeeds = passive.CreateSnapshot(23).Needs;
+        AgentNeedsSnapshot workingNeeds = working.CreateSnapshot(23).Needs;
+        Assert.Equal(passiveNeeds.Nutrition, workingNeeds.Nutrition);
+        Assert.Equal(passiveNeeds.Alertness, workingNeeds.Alertness);
+        Assert.Equal(passiveNeeds.Mood, workingNeeds.Mood);
+    }
+
+    private static void AssertProportional(IEnumerable<int> deltas)
+    {
+        int[] magnitudes = deltas.Select(value => -value).ToArray();
+        Assert.All(magnitudes, value => Assert.True(value >= 0));
+        Assert.InRange(magnitudes.Max() - magnitudes.Min(), 0, 1);
+    }
+
+    [Fact]
     public void Earlier_snapshot_does_not_change_after_skill_update()
     {
         AgentState agent = AgentTestFactory.CreateAgent();

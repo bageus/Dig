@@ -8,12 +8,24 @@ namespace Dig.Domain.Agents
 public sealed class AgentNeedPolicy
 {
     public AgentNeedPolicy(
-        NeedDelta passiveDelta,
+        int nutritionFullDepletionDays,
+        int alertnessFullDepletionDays,
+        int moodFullDepletionTicks,
         int criticalThreshold,
         int healthDamagePerCriticalTick,
         int healthRecoveryPerStableTick,
         int moodCriticalPenalty)
     {
+        NutritionFullDepletionDays = RequirePositive(
+            nutritionFullDepletionDays,
+            nameof(nutritionFullDepletionDays));
+        AlertnessFullDepletionDays = RequirePositive(
+            alertnessFullDepletionDays,
+            nameof(alertnessFullDepletionDays));
+        MoodFullDepletionTicks = RequirePositive(
+            moodFullDepletionTicks,
+            nameof(moodFullDepletionTicks));
+
         if (criticalThreshold < NeedValue.Minimum
             || criticalThreshold > NeedValue.Maximum)
         {
@@ -35,14 +47,17 @@ public sealed class AgentNeedPolicy
             throw new ArgumentOutOfRangeException(nameof(moodCriticalPenalty));
         }
 
-        PassiveDelta = passiveDelta;
         CriticalThreshold = criticalThreshold;
         HealthDamagePerCriticalTick = healthDamagePerCriticalTick;
         HealthRecoveryPerStableTick = healthRecoveryPerStableTick;
         MoodCriticalPenalty = moodCriticalPenalty;
     }
 
-    public NeedDelta PassiveDelta { get; }
+    public int NutritionFullDepletionDays { get; }
+
+    public int AlertnessFullDepletionDays { get; }
+
+    public int MoodFullDepletionTicks { get; }
 
     public int CriticalThreshold { get; }
 
@@ -51,6 +66,47 @@ public sealed class AgentNeedPolicy
     public int HealthRecoveryPerStableTick { get; }
 
     public int MoodCriticalPenalty { get; }
+
+    public NeedDelta ResolvePassiveDelta(long tick, int ticksPerDay)
+    {
+        if (tick < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(tick));
+        }
+
+        if (ticksPerDay <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(ticksPerDay));
+        }
+
+        long nutritionPeriod = checked(
+            (long)ticksPerDay * NutritionFullDepletionDays);
+        long alertnessPeriod = checked(
+            (long)ticksPerDay * AlertnessFullDepletionDays);
+        return new NeedDelta(
+            ResolvePeriodicDecay(tick, nutritionPeriod),
+            ResolvePeriodicDecay(tick, alertnessPeriod),
+            ResolvePeriodicDecay(tick, MoodFullDepletionTicks),
+            0);
+    }
+
+    private static int ResolvePeriodicDecay(long tick, long periodTicks)
+    {
+        long phase = tick % periodTicks;
+        long previous = phase * NeedValue.Maximum / periodTicks;
+        long current = (phase + 1L) * NeedValue.Maximum / periodTicks;
+        return checked((int)(previous - current));
+    }
+
+    private static int RequirePositive(int value, string parameterName)
+    {
+        if (value <= 0)
+        {
+            throw new ArgumentOutOfRangeException(parameterName);
+        }
+
+        return value;
+    }
 }
 
 public sealed class AgentUtilityPolicy
@@ -186,25 +242,25 @@ public sealed class AgentActionPolicy
             {
                 [AgentIntentKind.Flee] = new AgentActionEffect(
                     2,
-                    new NeedDelta(-200, -250, -50, 0)),
+                    new NeedDelta(0, 0, 0, 0)),
                 [AgentIntentKind.Eat] = new AgentActionEffect(
                     2,
-                    new NeedDelta(3_500, -50, 50, 0)),
+                    new NeedDelta(3_500, 0, 50, 0)),
                 [AgentIntentKind.Sleep] = new AgentActionEffect(
                     3,
-                    new NeedDelta(-100, 2_500, 200, 50)),
+                    new NeedDelta(0, 2_500, 200, 50)),
                 [AgentIntentKind.PlayerOrder] = new AgentActionEffect(
                     2,
-                    new NeedDelta(-300, -400, -50, 0)),
+                    new NeedDelta(0, 0, 0, 0)),
                 [AgentIntentKind.Work] = new AgentActionEffect(
                     2,
-                    new NeedDelta(-300, -500, -100, 0)),
+                    new NeedDelta(0, 0, 0, 0)),
                 [AgentIntentKind.Rest] = new AgentActionEffect(
                     2,
-                    new NeedDelta(-100, 300, 1_800, 25)),
+                    new NeedDelta(0, 300, 1_800, 25)),
                 [AgentIntentKind.Idle] = new AgentActionEffect(
                     1,
-                    new NeedDelta(-50, 0, 0, 0)),
+                    new NeedDelta(0, 0, 0, 0)),
             });
     }
 }
@@ -231,7 +287,9 @@ public sealed class AgentBehaviorPolicy
     {
         return new AgentBehaviorPolicy(
             new AgentNeedPolicy(
-                new NeedDelta(-400, -350, -100, 0),
+                nutritionFullDepletionDays: 2,
+                alertnessFullDepletionDays: 3,
+                moodFullDepletionTicks: 100,
                 criticalThreshold: 2_000,
                 healthDamagePerCriticalTick: 500,
                 healthRecoveryPerStableTick: 50,
