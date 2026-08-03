@@ -15,6 +15,9 @@ public sealed class TunnelInfrastructureSaveData
         = new List<TunnelCellSaveData>();
     [DataMember(Order = 5)] public List<TunnelJunctionStoneTrimTargetSaveData> PendingJunctionStoneTrimTargets { get; set; }
         = new List<TunnelJunctionStoneTrimTargetSaveData>();
+    [DataMember(Order = 6)] public ulong NextManualJobSequence { get; set; } = 1UL;
+    [DataMember(Order = 7)] public List<TunnelCellSaveData> CompletedStoneFloorTrimCells { get; set; }
+        = new List<TunnelCellSaveData>();
 }
 
 [DataContract]
@@ -74,6 +77,7 @@ public sealed class TunnelJunctionStoneTrimTargetSaveData
     [DataMember(Order = 4)] public int Z { get; set; }
 }
 
+
 public sealed class SaveVersionFourteenTunnelInfrastructureMigration
     : ISaveMigration
 {
@@ -100,6 +104,38 @@ public sealed class SaveVersionFourteenTunnelInfrastructureMigration
                 TunnelInfrastructureSaveAdapter.ResolveLegacyNextSequence(
                     document.Jobs),
         };
+        document.FormatVersion = ToVersion;
+    }
+}
+
+
+
+public sealed class SaveVersionSixteenTunnelManualInfrastructureMigration
+    : ISaveMigration
+{
+    public string Id => "save.v16_to_v17.tunnel_manual_infrastructure";
+    public int FromVersion => 16;
+    public int ToVersion => 17;
+
+    public void Apply(SaveGameDocument document)
+    {
+        if (document == null)
+        {
+            throw new System.ArgumentNullException(nameof(document));
+        }
+
+        if (document.FormatVersion != FromVersion)
+        {
+            throw new System.InvalidOperationException(
+                "Migration received the wrong source version.");
+        }
+
+        document.TunnelInfrastructure ??= new TunnelInfrastructureSaveData();
+        document.TunnelInfrastructure.CompletedStoneFloorTrimCells ??=
+            new List<TunnelCellSaveData>();
+        document.TunnelInfrastructure.NextManualJobSequence =
+            TunnelInfrastructureSaveAdapter.ResolveLegacyNextManualSequence(
+                document.Jobs);
         document.FormatVersion = ToVersion;
     }
 }

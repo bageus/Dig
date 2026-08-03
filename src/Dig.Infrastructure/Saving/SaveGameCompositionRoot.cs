@@ -25,6 +25,7 @@ public static class SaveGameCompositionRoot
         typeof(Dig.Domain.Jobs.SpatialDigJobDefinition),
         typeof(Dig.Domain.Jobs.StrategicExecutionJobDefinition),
         typeof(Dig.Domain.Jobs.TunnelAutomaticWorkJobDefinition),
+        typeof(Dig.Domain.Jobs.TunnelManualWorkJobDefinition),
         typeof(Dig.Domain.Jobs.WorldItemPickupJobDefinition),
     };
 
@@ -78,6 +79,8 @@ public static class SaveGameCompositionRoot
                     new StrategicExecutionJobSaveCodec()),
                 Registration<Dig.Domain.Jobs.TunnelAutomaticWorkJobDefinition>(
                     new TunnelAutomaticWorkJobSaveCodec()),
+                Registration<Dig.Domain.Jobs.TunnelManualWorkJobDefinition>(
+                    new TunnelManualWorkJobSaveCodec()),
                 Registration<Dig.Domain.Jobs.WorldItemPickupJobDefinition>(
                     new WorldItemPickupJobSaveCodec()),
             });
@@ -105,6 +108,7 @@ public static class SaveGameCompositionRoot
             new SaveVersionThirteenVukerEcologyMigration(),
             new SaveVersionFourteenTunnelInfrastructureMigration(),
             new SaveVersionFifteenRoomInfrastructureMigration(),
+            new SaveVersionSixteenTunnelManualInfrastructureMigration(),
         });
     }
 

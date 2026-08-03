@@ -20,7 +20,8 @@ public sealed partial class SaveGameLoader
         Result<TunnelInfrastructureRuntimeSnapshot> tunnel =
             TunnelInfrastructureSaveAdapter.Decode(
                 document.TunnelInfrastructure,
-                jobs);
+                jobs,
+                inventory);
         if (tunnel.IsFailure)
         {
             return Result<RestoredInfrastructureRuntime>.Failure(tunnel.Error!);
