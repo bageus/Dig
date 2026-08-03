@@ -22,6 +22,80 @@ namespace Dig.Unity.Tests
 public sealed class ResidentNeedsRuntimeIntegrationPlayModeTests
 {
     [Test]
+    public void Full_needs_follow_two_and_three_day_proportional_runtime_spans()
+    {
+        AgentBehaviorPolicy policy = AgentBehaviorPolicy.CreateDefault();
+        DailySchedule schedule = DailySchedule.CreateBalanced(24);
+        AgentState nutrition = new AgentState(
+            EntityId.Parse("bd000000000000000000000000000001"),
+            "Nutrition Span",
+            new AgentNeedsSnapshot(
+                new NeedValue(NeedValue.Maximum),
+                new NeedValue(NeedValue.Maximum),
+                new NeedValue(NeedValue.Maximum),
+                new NeedValue(NeedValue.Maximum)),
+            schedule);
+        AgentState alertness = new AgentState(
+            EntityId.Parse("bd000000000000000000000000000002"),
+            "Alertness Span",
+            new AgentNeedsSnapshot(
+                new NeedValue(NeedValue.Maximum),
+                new NeedValue(NeedValue.Maximum),
+                new NeedValue(NeedValue.Maximum),
+                new NeedValue(NeedValue.Maximum)),
+            schedule);
+
+        for (int tick = 0; tick < 72; tick++)
+        {
+            if (tick < 48)
+            {
+                Assert.That(nutrition.AdvanceNeeds(policy, tick).IsSuccess, Is.True);
+                Assert.That(nutrition.ApplyDecision(
+                    CreateWorkDecision(tick),
+                    policy,
+                    tick).IsSuccess, Is.True);
+                Assert.That(nutrition.AdvanceAction(policy, tick).IsSuccess, Is.True);
+            }
+
+            Assert.That(alertness.AdvanceNeeds(policy, tick).IsSuccess, Is.True);
+            AgentNeedsSnapshot current = alertness.CreateSnapshot(tick).Needs;
+            Assert.That(alertness.ApplyExternalNeedDelta(
+                new NeedDelta(
+                    NeedValue.Maximum - current.Nutrition.Points,
+                    0,
+                    0,
+                    0),
+                "test.keep_nutrition_full",
+                tick).IsSuccess, Is.True);
+        }
+
+        Assert.That(nutrition.CreateSnapshot(47).Needs.Nutrition.Points, Is.Zero);
+        Assert.That(alertness.CreateSnapshot(71).Needs.Alertness.Points, Is.Zero);
+    }
+
+    private static AgentDecision CreateWorkDecision(long tick)
+    {
+        UtilityOptionDiagnostic selected = new UtilityOptionDiagnostic(
+            AgentIntentKind.Work,
+            baseScore: 1,
+            finalScore: 1,
+            available: true,
+            critical: false,
+            selected: true,
+            "selected.test",
+            "Forced work for proportional decay verification.");
+        return new AgentDecision(
+            tick,
+            AgentIntentKind.Work,
+            selectedPlayerOrderId: null,
+            selectedScore: 1,
+            critical: false,
+            "selected.test",
+            "Forced work for proportional decay verification.",
+            new[] { selected });
+    }
+
+    [Test]
     public void Critical_sleep_walks_to_a_completed_tent_slot_before_recovery()
     {
         ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
