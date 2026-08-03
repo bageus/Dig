@@ -36,8 +36,9 @@ namespace Dig.Unity
                 root.transform.SetParent(
                     ResolveSocket(DigResidentSocketKind.RightHand),
                     worldPositionStays: false);
-                root.transform.localPosition = Vector3.zero;
-                root.transform.localRotation = Quaternion.identity;
+                root.transform.SetLocalPositionAndRotation(
+                    Vector3.zero,
+                    Quaternion.identity);
                 _equipmentVisual = root.AddComponent<DigAgentEquipmentVisual>();
             }
 
