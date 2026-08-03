@@ -130,7 +130,7 @@ public sealed class ResidentSettlementTests
         ResidentSettlementHarness harness = new ResidentSettlementHarness();
         harness.AddAgent(
             FirstAgent.ToString(),
-            nutrition: 500,
+            nutrition: 100,
             alertness: 9_000,
             mood: 9_000,
             scheduleActivity: ScheduleActivity.Rest);
@@ -164,7 +164,7 @@ public sealed class ResidentSettlementTests
         ResidentSettlementHarness harness = new ResidentSettlementHarness();
         harness.AddAgent(
             FirstAgent.ToString(),
-            nutrition: 1_600,
+            nutrition: AgentState.HungerNotificationThreshold,
             alertness: 9_000,
             mood: 9_000,
             scheduleActivity: ScheduleActivity.Work);

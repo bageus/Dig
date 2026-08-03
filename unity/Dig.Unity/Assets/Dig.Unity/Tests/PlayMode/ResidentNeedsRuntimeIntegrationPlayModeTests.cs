@@ -9,6 +9,7 @@ using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.Production;
+using Dig.Domain.Runtime;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Dig.Presentation.Agents;
@@ -22,10 +23,10 @@ namespace Dig.Unity.Tests
 public sealed class ResidentNeedsRuntimeIntegrationPlayModeTests
 {
     [Test]
-    public void Full_needs_follow_two_and_three_day_proportional_runtime_spans()
+    public void Full_needs_follow_global_two_and_three_day_runtime_spans()
     {
         AgentBehaviorPolicy policy = AgentBehaviorPolicy.CreateDefault();
-        DailySchedule schedule = DailySchedule.CreateBalanced(24);
+        DailySchedule legacySchedule = DailySchedule.CreateBalanced(24);
         AgentState nutrition = new AgentState(
             EntityId.Parse("bd000000000000000000000000000001"),
             "Nutrition Span",
@@ -34,7 +35,7 @@ public sealed class ResidentNeedsRuntimeIntegrationPlayModeTests
                 new NeedValue(NeedValue.Maximum),
                 new NeedValue(NeedValue.Maximum),
                 new NeedValue(NeedValue.Maximum)),
-            schedule);
+            legacySchedule);
         AgentState alertness = new AgentState(
             EntityId.Parse("bd000000000000000000000000000002"),
             "Alertness Span",
@@ -43,11 +44,13 @@ public sealed class ResidentNeedsRuntimeIntegrationPlayModeTests
                 new NeedValue(NeedValue.Maximum),
                 new NeedValue(NeedValue.Maximum),
                 new NeedValue(NeedValue.Maximum)),
-            schedule);
+            legacySchedule);
 
-        for (int tick = 0; tick < 72; tick++)
+        int nutritionTicks = checked(GameTimeCadence.TicksPerDay * 2);
+        int alertnessTicks = checked(GameTimeCadence.TicksPerDay * 3);
+        for (int tick = 0; tick < alertnessTicks; tick++)
         {
-            if (tick < 48)
+            if (tick < nutritionTicks)
             {
                 Assert.That(nutrition.AdvanceNeeds(policy, tick).IsSuccess, Is.True);
                 Assert.That(nutrition.ApplyDecision(
@@ -69,8 +72,12 @@ public sealed class ResidentNeedsRuntimeIntegrationPlayModeTests
                 tick).IsSuccess, Is.True);
         }
 
-        Assert.That(nutrition.CreateSnapshot(47).Needs.Nutrition.Points, Is.Zero);
-        Assert.That(alertness.CreateSnapshot(71).Needs.Alertness.Points, Is.Zero);
+        Assert.That(
+            nutrition.CreateSnapshot(nutritionTicks - 1).Needs.Nutrition.Points,
+            Is.Zero);
+        Assert.That(
+            alertness.CreateSnapshot(alertnessTicks - 1).Needs.Alertness.Points,
+            Is.Zero);
     }
 
     private static AgentDecision CreateWorkDecision(long tick)
@@ -275,7 +282,9 @@ public sealed class ResidentNeedsRuntimeIntegrationPlayModeTests
         }
 
         Assert.That(package, Is.Not.Null);
-        while ((runtime.Residents.Tick + 1) % 24 != 12)
+        int freeTimeStart = GameTimeCadence.TicksPerDay / 2;
+        while ((runtime.Residents.Tick + 1) % GameTimeCadence.TicksPerDay
+            != freeTimeStart)
         {
             ResidentNeedsRuntimePlayModeHarness.RunTick(runtime);
         }

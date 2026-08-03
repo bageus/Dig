@@ -33,6 +33,35 @@ public sealed class UnifiedNeedsCadenceTests
     }
 
     [Fact]
+    public void Personal_schedule_resolution_cannot_accelerate_passive_hunger()
+    {
+        AgentState agent = new AgentState(
+            EntityId.Parse("00000000000000000000000000000003"),
+            "Legacy schedule",
+            new AgentNeedsSnapshot(
+                new NeedValue(10_000),
+                new NeedValue(10_000),
+                new NeedValue(10_000),
+                new NeedValue(10_000)),
+            new DailySchedule(
+                ticksPerDay: 24,
+                new[]
+                {
+                    new ScheduleSegment(0, 24, ScheduleActivity.Work),
+                }));
+        AgentBehaviorPolicy policy = AgentBehaviorPolicy.CreateDefault();
+
+        for (long tick = 0; tick < 48; tick++)
+        {
+            Assert.True(agent.AdvanceNeeds(policy, tick).IsSuccess);
+        }
+
+        AgentSnapshot snapshot = agent.CreateSnapshot(47);
+        Assert.True(snapshot.Needs.Nutrition.Points > 9_900);
+        Assert.True(snapshot.Needs.Alertness.Points > 9_900);
+    }
+
+    [Fact]
     public void Continuous_critical_hunger_depletes_health_over_half_a_day()
     {
         AgentState agent = new AgentState(

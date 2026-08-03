@@ -1,5 +1,6 @@
 using System;
 using Dig.Domain.Core;
+using Dig.Domain.Runtime;
 using Dig.Domain.Society;
 using Dig.Presentation.Agents;
 
@@ -11,6 +12,15 @@ public abstract partial class DigAgentSimulationDriverBase
     internal bool IsHudReady => AgentSession != null && TerrainSession != null;
 
     internal long CurrentSocietyTick => AgentSession?.SocietyTick ?? 0;
+
+    internal int EffectiveGameSecondsPerRealSecond =>
+        Playback.IsPaused
+            ? 0
+            : GameTimeCadence.EffectiveGameSecondsPerRealSecond(
+                Playback.SpeedMultiplier);
+
+    internal GameTimeSnapshot CurrentGameTime =>
+        GameTimeCadence.Project(CurrentTick);
 
     internal SocietySnapshot LoadSocietySnapshot()
     {
@@ -47,9 +57,9 @@ public abstract partial class DigAgentSimulationDriverBase
     {
         if (AgentSession == null)
         {
-            ticksPerDay = 24;
+            ticksPerDay = GameTimeCadence.TicksPerDay;
             startTickInclusive = 0;
-            endTickExclusive = 12;
+            endTickExclusive = GameTimeCadence.TicksPerDay / 2;
             return false;
         }
 

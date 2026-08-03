@@ -1,4 +1,5 @@
 using System;
+using Dig.Domain.Runtime;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -76,7 +77,7 @@ public sealed partial class DigGameHudCanvas
             "Work End Handle",
             _clockFace,
             adjustStart: false,
-            new Color(0.40f, 0.76f, 1f, 1f));
+            new Color(0.40f, 0.76f, 1f));
         CreateAutomaticPlanningButton();
         SetScheduleVisible(showOverlay: false, editable: false);
     }
@@ -176,20 +177,20 @@ public sealed partial class DigGameHudCanvas
     private void RefreshClock()
     {
         long tick = _simulation!.CurrentTick;
+        GameTimeSnapshot gameTime = GameTimeCadence.Project(tick);
         string? selectedId = _agentRenderer!.SelectedCount == 1
             ? _agentRenderer.SelectedAgentId
             : null;
         string? displayedId = ResolveClockResidentId(selectedId);
-        int ticksPerDay = 24;
+        int scheduleTicksPerDay = GameTimeCadence.TicksPerDay;
         int start = 0;
-        int end = 12;
+        int end = GameTimeCadence.TicksPerDay / 2;
         bool hasSchedule = displayedId != null
             && _simulation.TryGetResidentWorkWindow(
                 displayedId,
-                out ticksPerDay,
+                out scheduleTicksPerDay,
                 out start,
                 out end);
-        int tickOfDay = (int)(tick % ticksPerDay);
         bool editable = hasSchedule
             && string.Equals(displayedId, selectedId, StringComparison.Ordinal);
         string automaticPlanningSignature = ResolveAutomaticPlanningState(
@@ -197,7 +198,8 @@ public sealed partial class DigGameHudCanvas
             out bool hasAutomaticPlanning,
             out bool automaticPlanningEnabled);
         string signature =
-            $"{tick}:{selectedId}:{displayedId}:{ticksPerDay}:{start}:{end}:{editable}:"
+            $"{gameTime.TotalGameSeconds}:{selectedId}:{displayedId}:"
+            + $"{scheduleTicksPerDay}:{start}:{end}:{editable}:"
             + automaticPlanningSignature;
         if (string.Equals(signature, _clockSignature, StringComparison.Ordinal))
         {
@@ -205,11 +207,21 @@ public sealed partial class DigGameHudCanvas
         }
 
         _clockSignature = signature;
+        int gameSecondOfDay =
+            (gameTime.Hour * GameTimeCadence.GameSecondsPerHour)
+            + (gameTime.Minute * GameTimeCadence.GameSecondsPerMinute)
+            + gameTime.Second;
+        int gameSecondOfHour =
+            (gameTime.Minute * GameTimeCadence.GameSecondsPerMinute)
+            + gameTime.Second;
         _clockHourHand!.localRotation = Quaternion.Euler(
             0f,
             0f,
-            -(360f * tickOfDay / ticksPerDay));
-        _clockMinuteHand!.localRotation = Quaternion.identity;
+            -(360f * gameSecondOfDay / GameTimeCadence.GameSecondsPerDay));
+        _clockMinuteHand!.localRotation = Quaternion.Euler(
+            0f,
+            0f,
+            -(360f * gameSecondOfHour / GameTimeCadence.GameSecondsPerHour));
         RefreshAutomaticPlanningButton(
             hasAutomaticPlanning,
             automaticPlanningEnabled);
@@ -219,9 +231,9 @@ public sealed partial class DigGameHudCanvas
             return;
         }
 
-        UpdateScheduleSegments(ticksPerDay, start, end, editable);
-        PositionScheduleHandle(_workStartHandle!, start, ticksPerDay);
-        PositionScheduleHandle(_workEndHandle!, end, ticksPerDay);
+        UpdateScheduleSegments(scheduleTicksPerDay, start, end, editable);
+        PositionScheduleHandle(_workStartHandle!, start, scheduleTicksPerDay);
+        PositionScheduleHandle(_workEndHandle!, end, scheduleTicksPerDay);
     }
 
     private string? ResolveClockResidentId(string? selectedId)
