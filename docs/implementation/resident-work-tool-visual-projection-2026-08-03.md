@@ -1,7 +1,7 @@
 # Resident work tool visual projection — implementation
 
 Дата: 2026-08-03.  
-Статус: `IN PROGRESS`.  
+Статус: `IMPLEMENTED`.  
 Authoritative specification: [`../design/resident-work-tool-visual-projection.md`](../design/resident-work-tool-visual-projection.md).  
 Tracking issue: [#602](https://github.com/bageus/Dig/issues/602).
 
@@ -22,8 +22,20 @@ Tracking issue: [#602](https://github.com/bageus/Dig/issues/602).
 
 - engine-independent tests для exact job/stage mapping, target XYZ и отсутствия invented tools;
 - Unity source contract для typed mapping, right-hand override, restoration и distinct geometry;
-- checked-in Play Mode sequence `club -> pickaxe -> axe -> hammer -> club -> empty` с проверкой отсутствия colliders.
+- checked-in Play Mode sequence `club -> pickaxe -> axe -> hammer -> club -> empty` с проверкой отсутствия colliders;
+- прежний excavation feedback contract обновлён с runtime `JobToolKind.Mining` на authoritative `ResidentWorkToolVisualKind.Pickaxe` projection.
 
 ## Validation
 
-Заполняется после финального CI. Фактический Unity EditMode/PlayMode результат будет указан отдельно; workflow-level success при skipped activation не считается runtime evidence.
+Final Quality run `30852795651` на code head `c0bde8b9f18bc40a21d3e3239ef11e93c76dc654`:
+
+- architecture, file-size, C# compatibility, dependency и Domain-boundary gates passed;
+- Unity source contracts и runtime-evidence tooling passed;
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1445/1445` passed;
+- headless smoke passed at tick `20`;
+- standard deterministic soak replay hash `D27036F09F4EF8CA6C20159F194ED68F07D7C54963CE82C81CB3375AE4DBDFE3`;
+- large deterministic soak replay hash `66620BC1E1B9756DF64C0D018450E7EF0E4AD10D67F741079EA894945897701E`;
+- both soak runs reported `replay=True` and passed performance budgets.
+
+Unity workflow `30852795650` успешно записал blocked runtime evidence: activation была недоступна, поэтому реальные EditMode/PlayMode tests и executed-runtime-evidence validation были skipped. Реализация имеет статус `IMPLEMENTED`, но не `VERIFIED`.
