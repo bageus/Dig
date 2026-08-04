@@ -10,7 +10,8 @@ Authoritative specifications:
 - [`../design/ecology-creatures-and-special-drops.md`](../design/ecology-creatures-and-special-drops.md);
 - [`../design/presentation-input-ui-and-diagnostics.md`](../design/presentation-input-ui-and-diagnostics.md).
 
-Tracking issue: [#638](https://github.com/bageus/Dig/issues/638).
+Tracking issue: [#638](https://github.com/bageus/Dig/issues/638).  
+Correction PR: [#639](https://github.com/bageus/Dig/pull/639).
 
 ## Runtime report
 
@@ -42,12 +43,23 @@ No gameplay or balance rule changed.
 - `VukerTopologyRefreshPlayModeTests.TopologyRefreshAllowsVukerInNewlyExcavatedSupportedCell` performs excavation, rebuilds navigation, places an existing Vuker in the new supported cell and advances the next ecology tick without an exception;
 - the existing birth, child combat exclusion, kidnapping, taming, direct movement and maturity scenario remains unchanged.
 
-## Local validation
+## Validation
 
-Passed:
+Local source validation passed:
 
 - `tools/quality/check_quality.py`;
 - `tools/quality/check_unity_source_contracts.py`;
 - `tools/quality/check_unity_resident_visual_contracts.py`.
 
-The local container did not provide the `dotnet` executable. Full Release build, .NET suite, smoke and deterministic soak evidence must come from exact-head GitHub CI. Actual licensed Unity Test Runner execution remains required before `VERIFIED`.
+Exact code head `5a0d531dbe9634a31a3645fa80eb784e5c3cab6b` passed:
+
+- Quality run `30946209884`;
+- architecture, file-size, C# compatibility and all Unity source/presentation contracts;
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1506/1506` passed;
+- headless smoke completed at tick `20`;
+- standard deterministic replay matched: `B26EA859F3F9668DF85CA1BA2842D8C733B09C51B596F4300549AEE7465D5292`;
+- large deterministic replay matched: `7FD411B4725F7DADC5D355FEC5FB5159D59314CB25921394D9D8B27669EC51C9`;
+- Stage 2 v2/v3 exports passed.
+
+Unity workflow `30946210578` recorded blocked evidence: actual EditMode/PlayMode execution and executed-evidence validation were skipped because licensed activation was unavailable. The correction is `IMPLEMENTED`, not `VERIFIED`; actual licensed Unity Test Runner execution remains required.
