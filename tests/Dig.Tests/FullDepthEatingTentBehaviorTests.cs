@@ -68,8 +68,10 @@ public sealed class FullDepthEatingTentBehaviorTests
         {
             for (int z = CellId.MinimumDepth + 1; z <= CellId.MaximumDepth; z++)
             {
-                CellSnapshot deep = Assert.Single(cells.Where(value =>
-                    value.Id == new CellId(cell.Id.X, cell.Id.Y, z)));
+                CellId expected = new CellId(cell.Id.X, cell.Id.Y, z);
+                CellSnapshot deep = Assert.Single(
+                    cells,
+                    value => value.Id == expected);
                 Assert.True(deep.IsSolid);
                 Assert.Equal(Unmineable, deep.State.MaterialId);
             }
