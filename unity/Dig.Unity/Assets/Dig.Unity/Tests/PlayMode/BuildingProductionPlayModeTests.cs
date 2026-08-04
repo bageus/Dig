@@ -134,9 +134,8 @@ public sealed class BuildingProductionPlayModeTests
             (object)units);
 
         Assert.That((int)GetProperty(renderer, "ActiveUnitCount"), Is.EqualTo(14));
-        Assert.That((int)GetProperty(renderer, "ActiveBayCount"), Is.EqualTo(2));
         Renderer[] renderers = _root.GetComponentsInChildren<Renderer>();
-        Assert.That(renderers.Length, Is.EqualTo(16));
+        Assert.That(renderers.Length, Is.EqualTo(14));
         Assert.That(_root.GetComponentsInChildren<Transform>()
             .Any(value => value.name == "Storage back rail"), Is.False);
         Component[] visuals = _root.GetComponentsInChildren<Component>()
@@ -159,10 +158,12 @@ public sealed class BuildingProductionPlayModeTests
 
         float buildingX = DigTunnelProjection.ResidentWorldPosition(5, 5, 0).x;
         Assert.That(visuals.All(value => value.transform.position.x < buildingX), Is.True);
-        Transform inputZone = FindTransform(_root.transform, "Internal Storage Zone ");
-        Transform outputZone = FindTransform(_root.transform, "Finished Output Zone ");
-        Assert.That(inputZone.position.x, Is.LessThan(buildingX));
-        Assert.That(outputZone.position.x, Is.GreaterThan(buildingX));
+        Assert.That(_root.GetComponentsInChildren<Transform>()
+            .Any(value => value.name.StartsWith("Internal Storage Zone ",
+                StringComparison.Ordinal)), Is.False);
+        Assert.That(_root.GetComponentsInChildren<Transform>()
+            .Any(value => value.name.StartsWith("Finished Output Zone ",
+                StringComparison.Ordinal)), Is.False);
         Assert.That(_root.GetComponentsInChildren<Collider>()
             .Where(value => !unitColliders.Contains(value))
             .All(value => !value.enabled), Is.True);

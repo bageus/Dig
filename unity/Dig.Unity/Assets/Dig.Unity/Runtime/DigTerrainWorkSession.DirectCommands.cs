@@ -37,7 +37,6 @@ namespace Dig.Unity
             }
 
             JobSystem jobs = _jobRepository.Get();
-            InventoryState terrainInventory = _inventoryRepository.Get();
             for (int residentIndex = 0; residentIndex < residentIds.Count; residentIndex++)
             {
                 EntityId residentId = EntityId.Parse(residentIds[residentIndex]);
@@ -96,7 +95,6 @@ namespace Dig.Unity
                 }
             }
 
-            _inventoryRepository.Save(terrainInventory);
             _jobRepository.Save(jobs);
             return Result.Success();
         }

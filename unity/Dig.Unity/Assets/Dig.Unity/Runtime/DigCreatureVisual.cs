@@ -99,7 +99,7 @@ public sealed class DigCreatureVisual : MonoBehaviour
         {
             if (_combatHealthBar != null)
             {
-                _combatHealthBar.Configure(0, 1, false, camera, 0.85f);
+                _combatHealthBar.Configure(0, 1, false, camera, 1.45f);
             }
             return;
         }
@@ -116,7 +116,7 @@ public sealed class DigCreatureVisual : MonoBehaviour
             Model.MaximumHealth,
             Model.ShowHealthBar && Model.IsAlive,
             camera,
-            verticalOffset: 0.85f);
+            verticalOffset: 1.45f);
     }
 
     internal void SetSelected(bool selected)

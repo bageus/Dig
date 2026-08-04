@@ -2,7 +2,7 @@
 
 Статус: `APPROVED`; staged package lifecycle, closed package categories, cancel/interruption, save/load и right-side output policy подтверждены.
 
-Tracking issues: [#433](https://github.com/bageus/Dig/issues/433), [#609](https://github.com/bageus/Dig/issues/609).
+Tracking issues: [#433](https://github.com/bageus/Dig/issues/433), [#609](https://github.com/bageus/Dig/issues/609), [#634](https://github.com/bageus/Dig/issues/634).
 
 Связанные документы:
 
@@ -41,6 +41,8 @@ Campfire использует stable IDs `building.campfire`, `building_box.camp
 - Shortage tint не блокирует enqueue; icon зелёный, когда полный input set уже доступен во внутреннем stock.
 - Для active order поверх product icon показывается segmented progress: одно деление на каждый material step, заполненное после обработки и помещения материала в output package.
 - Internal-stock icon показывает current/incoming/capacity и delivery toggle.
+- Production section не повторяет имя выбранного здания.
+- Persistent hover-instruction и required-material tooltip area отсутствуют; icons/counters/progress/toggles остаются самодостаточными.
 
 ## 5. Пространственные зоны
 
@@ -49,7 +51,7 @@ Campfire использует stable IDs `building.campfire`, `building_box.camp
 1. слева — внутренний input storage;
 2. справа — finished output.
 
-Обе зоны derived from footprint и не сохраняются как entities. Обе визуально являются только плоским tray/base. Rear rail, спинка или задняя стенка запрещены.
+Обе зоны derived from footprint и не сохраняются как entities. Отдельные плоские tray/base платформы не отображаются: видимы только реальные internal-stock units и authoritative output packages. Rear rail, спинка, задняя стенка и зелёная platform-подложка запрещены.
 
 ### 5.1 Внутренний склад
 
@@ -64,7 +66,7 @@ Campfire использует stable IDs `building.campfire`, `building_box.camp
 ### 5.2 Готовая продукция и output справа
 
 - После назначения production worker справа от workstation создаётся authoritative unfinished package entity для конкретного order; presentation-only placeholder запрещён.
-- Output zone не имеет фиксированной длины. Resolver проверяет клетки вправо от footprint последовательно `right edge + 1`, `+2`, `+3` и далее до границы мира. Занятая клетка не блокирует запуск, а пропускается; side/left/rear fallback запрещён.
+- Output zone не имеет фиксированной длины. Resolver сначала заполняет ближайший stable footprint-row вправо последовательно `right edge + 1`, `+2`, `+3` и далее без пустых клеток для будущей распаковки. Только если primary row не даёт нужного количества supported cells, проверяются следующие rows в stable order. Занятая/unsupported клетка пропускается; side/left/rear fallback запрещён.
 - Все unfinished/closed package используют единый нейтральный package visual; категория определяется authoritative package kind, а не отличающейся геометрией.
 - Каждый обработанный material step помещается в package и заполняет одно деление progress overlay.
 - После последнего step worker закрывает package, terminal-ит production order/job и уменьшает counter на один.
@@ -224,3 +226,12 @@ Unity Play Mode:
 | 2026-08-02 | Решение о concurrent supply отменено: одно building обслуживает один resident; production и refill чередуются, refill имеет приоритет после close+return, demo processing = 1 tick, transient log/workbench и processed carry являются derived presentation. | Пользовательское уточнение runtime workflow |
 | 2026-08-02 | Strict one-unit/one-batch alternation заменена threshold policy: required stock ниже `ceil(capacity/2)` инициирует supply, equality допускает production; batch берёт только доступные сейчас recipe inputs, extraction dependencies не блокируют runnable production, а без queue refill остаётся continuous-to-capacity. | Пользовательское уточнение runtime workflow |
 | 2026-08-04 | При разрушении `food` package каждая manifest quantity создаёт отдельный quantity-one world stack; `weapon`/`tool` остаются без изменения. | Пользовательский runtime bug report |
+
+## 14. User-approved runtime simplification update — 2026-08-04
+
+- The demo no longer keeps a permanent completed `Box Workshop`; the surface production slice starts from the campfire only.
+- The production HUD no longer shows the selected building name above the production icons and no longer displays the hover hint or required-material tooltip text for recipe icons.
+- Presentation hides the flat left/right production tray platforms; internal stock items and produced packages remain visible without those ground markers.
+- Produced packages should fill the nearest contiguous output row first instead of alternating rows and visually leaving gaps for future unpacking.
+- Forced pickup of internal-stock materials remains part of the direct item contract and must resolve the stock item before any generic item fallback.
+

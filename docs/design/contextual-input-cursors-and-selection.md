@@ -2,7 +2,7 @@
 
 Статус: `QUESTIONNAIRE`.
 
-Tracking issue: [#390](https://github.com/bageus/Dig/issues/390).
+Tracking issues: [#390](https://github.com/bageus/Dig/issues/390), [#634](https://github.com/bageus/Dig/issues/634).
 
 Связанные issues: [#113](https://github.com/bageus/Dig/issues/113), [#115](https://github.com/bageus/Dig/issues/115), [#118](https://github.com/bageus/Dig/issues/118), [#386](https://github.com/bageus/Dig/issues/386), [#387](https://github.com/bageus/Dig/issues/387), [#388](https://github.com/bageus/Dig/issues/388), [#398](https://github.com/bageus/Dig/issues/398).
 
@@ -75,7 +75,7 @@ Generic item pickup cursor показывается без `Alt`. `Alt` обяз
 ## 6. Синхронизация выбора
 
 - resident selection открывает resident roster и подсвечивает resident;
-- completed building selection открывает building roster и подсвечивает building row;
+- completed building selection открывает building roster, подсвечивает building row и может осветлять саму модель; отдельная footprint/platform projection не создаётся;
 - BuildingBox selection открывает building roster/menu и подсвечивает box row;
 - новый взаимоисключающий selection снимает предыдущий;
 - UI click не проходит в мир;
@@ -118,6 +118,7 @@ Generic item pickup cursor показывается без `Alt`. `Alt` обяз
 - hidden stale target не остаётся кликабельным;
 - hostile hover highlight и combat click читают один exact creature target, но highlight не требует selected resident;
 - selection и highlighted row определяются одним selected entity id;
+- completed-building selection не создаёт flat footprint marker/green platform;
 - Presentation не создаёт Domain state до command;
 - RMB очищает preview/selection без расходования коробки.
 
@@ -151,7 +152,7 @@ Generic item pickup cursor показывается без `Alt`. `Alt` обяз
 - generic item first LMB создаёт pickup либо typed rejection и не уходит в ground action;
 - новый item profile подключается к hover/click без изменения Unity router;
 - food/weapon/tool package LMB создаёт ровно один direct-use command, а BuildingBox сохраняет обычный selection/unpack workflow;
-- world/HUD/management selection дают одинаковую вкладку и highlight;
+- world/HUD/management selection дают одинаковую вкладку и model/row highlight без footprint platform;
 - ghost существует только в игровой зоне;
 - RMB, stale target и failed command очищают feedback;
 - input deterministic после restart/save-load session.

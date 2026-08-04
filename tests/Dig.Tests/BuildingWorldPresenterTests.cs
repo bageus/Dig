@@ -30,7 +30,7 @@ public sealed class BuildingWorldPresenterTests
         Assert.Equal(Id(1).ToString(), models[0].Id);
         Assert.Equal(Id(2).ToString(), models[1].Id);
         Assert.All(models, model => Assert.True(model.IsSelectable));
-        Assert.Equal("Box Workshop", models[0].Name);
+        Assert.Equal("Test Building", models[0].Name);
         Assert.Single(models[0].Footprint);
         Assert.True(models[0].Functions.Actions[0].IsEnabled);
     }
@@ -176,7 +176,7 @@ public sealed class BuildingWorldPresenterTests
     {
         BuildingDefinition definition = new BuildingDefinition(
             new BuildingDefinitionId("box.world_presenter"),
-            "Box Workshop",
+            "Test Building",
             new[] { new CellOffset(0, 0) },
             new[] { new CellOffset(0, -1) },
             Array.Empty<BuildingMaterialRequirement>(),

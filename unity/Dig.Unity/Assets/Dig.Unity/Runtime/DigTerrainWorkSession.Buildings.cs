@@ -19,8 +19,6 @@ namespace Dig.Unity
 internal sealed partial class DigTerrainWorkSession
 {
     private const int DemoCompletedBuildingDepth = 1;
-    private static readonly ItemId DemoBuildingBoxItemId =
-        new ItemId("demo.building_box.workshop");
     private static readonly ItemId DemoResidentToolItemId =
         new ItemId("demo.tool.pickaxe");
     private static readonly ItemId DemoResidentHammerItemId =
@@ -55,41 +53,27 @@ internal sealed partial class DigTerrainWorkSession
             return;
         }
 
-        BuildingDefinition workshopDefinition = CreateDemoBuildingDefinition();
         BuildingDefinition campfireDefinition =
             CampfireBuildingBoxContent.Definition.Building;
         BuildingCatalog catalog = new BuildingCatalog(
-            new[] { workshopDefinition }
-                .Concat(CampfireProductionContent.CreateBuildings())
+            CampfireProductionContent.CreateBuildings()
                 .GroupBy(value => value.Id)
                 .Select(group => group.First()));
 
-        DemoBuildingPlacement workshopPlacement = FindDemoBuildingPlacement(
-            workshopDefinition,
+        DemoBuildingPlacement campfirePlacement = FindSurfaceCampfirePlacement(
+            campfireDefinition,
             Array.Empty<CellId>());
-        BuildingSnapshot workshop = CreateCompletedDemoBuilding(
-            catalog.Get(workshopDefinition.Id),
+        BuildingSnapshot campfire = CreateCompletedDemoBuilding(
+            catalog.Get(campfireDefinition.Id),
             DemoId('b', 1),
             DemoId('c', 1),
             DemoId('d', 1),
-            workshopPlacement.Origin,
-            workshopPlacement.WorkPosition,
-            journal);
-
-        DemoBuildingPlacement campfirePlacement = FindSurfaceCampfirePlacement(
-            campfireDefinition,
-            workshop.Footprint);
-        BuildingSnapshot campfire = CreateCompletedDemoBuilding(
-            catalog.Get(campfireDefinition.Id),
-            DemoId('b', 2),
-            DemoId('c', 2),
-            DemoId('d', 2),
             campfirePlacement.Origin,
             campfirePlacement.WorkPosition,
             journal);
 
         BuildingsState buildings = BuildingsState.RestoreWithPacking(
-            new[] { workshop, campfire }).Value;
+            new[] { campfire }).Value;
         _buildingsRepository = new InMemoryBuildingsRepository(buildings);
         _buildingInventoryRepository = _inventoryRepository;
 
@@ -103,7 +87,7 @@ internal sealed partial class DigTerrainWorkSession
                 _jobRepository,
                 journal));
         InitializeBuildingPackingExecution(journal);
-        InitializeBuildingBoxWorldInput(catalog, workshopDefinition, journal);
+        InitializeBuildingBoxWorldInput(catalog, campfireDefinition, journal);
     }
 
     public IReadOnlyList<BuildingWorldViewModel> LoadBuildings()
@@ -284,25 +268,6 @@ internal sealed partial class DigTerrainWorkSession
 
         internal CellId Origin { get; }
         internal CellId WorkPosition { get; }
-    }
-
-    private static BuildingDefinition CreateDemoBuildingDefinition()
-    {
-        return new BuildingDefinition(
-            new BuildingDefinitionId("demo.workshop.box"),
-            "Box Workshop",
-            new[] { new CellOffset(0, 0) },
-            new[]
-            {
-                new CellOffset(0, -1),
-                new CellOffset(-1, 0),
-                new CellOffset(1, 0),
-                new CellOffset(0, 1),
-            },
-            Array.Empty<BuildingMaterialRequirement>(),
-            requiredWork: 3,
-            maximumDurability: 100,
-            boxPolicy: new BuildingBoxPolicy(DemoBuildingBoxItemId, packingWork: 4));
     }
 
     private static EntityId DemoId(char prefix, long value)

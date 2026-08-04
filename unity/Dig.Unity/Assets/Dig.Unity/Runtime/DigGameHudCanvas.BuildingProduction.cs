@@ -47,31 +47,21 @@ public sealed partial class DigGameHudCanvas
         RectTransform section = CreateSection(
             "Building Production",
             _bottomContent!,
-            building.Name.ToUpperInvariant(),
+            string.Empty,
             preferredWidth: 1220f);
-        Text tooltip = CreateText(
-            "Production Tooltip",
-            section,
-            "Hover an icon to view required materials.",
-            12,
-            TextAnchor.MiddleCenter);
-        tooltip.resizeTextForBestFit = true;
-        tooltip.resizeTextMinSize = 8;
-        tooltip.resizeTextMaxSize = 12;
-        tooltip.gameObject.AddComponent<LayoutElement>().preferredHeight = 14f;
 
         RectTransform productRow = CreateHorizontalRow("Products", section, 34f);
         for (int index = 0; index < production.Products.Count; index++)
         {
             ProductionIconViewModel product = production.Products[index];
-            CreateProductionIconButton(building, product, productRow, tooltip);
+            CreateProductionIconButton(building, product, productRow);
         }
 
         RectTransform stockRow = CreateHorizontalRow("Internal Stock", section, 30f);
         for (int index = 0; index < production.Stocks.Count; index++)
         {
             BuildingStockIconViewModel stock = production.Stocks[index];
-            CreateStockIconButton(building, stock, stockRow, tooltip);
+            CreateStockIconButton(building, stock, stockRow);
         }
 
         if (functions.Actions.Count > 0)
@@ -94,8 +84,7 @@ public sealed partial class DigGameHudCanvas
     private void CreateProductionIconButton(
         BuildingWorldViewModel building,
         ProductionIconViewModel product,
-        Transform parent,
-        Text tooltip)
+        Transform parent)
     {
         Button button = CreateButton(
             "Product " + product.RecipeId,
@@ -128,9 +117,8 @@ public sealed partial class DigGameHudCanvas
             button.transform,
             product.QueuedCount > 0 ? product.QueuedCount.ToString() : string.Empty,
             TextAnchor.LowerRight);
-        string hover = product.DisplayName + " ×" + product.OutputQuantity
-            + "\n" + product.Tooltip;
-        DigProductionIconPointer pointer = BindIconTooltip(button, tooltip, hover);
+        DigProductionIconPointer pointer =
+            button.gameObject.AddComponent<DigProductionIconPointer>();
         pointer.RightClicked = product.QueuedCount > 0
             ? () => CancelBuildingProduction(
                 building.Id,
@@ -199,8 +187,7 @@ public sealed partial class DigGameHudCanvas
     private void CreateStockIconButton(
         BuildingWorldViewModel building,
         BuildingStockIconViewModel stock,
-        Transform parent,
-        Text tooltip)
+        Transform parent)
     {
         Button button = CreateButton(
             "Stock " + stock.ItemId,
@@ -225,11 +212,6 @@ public sealed partial class DigGameHudCanvas
             button.transform,
             stock.Current + "/" + stock.Capacity,
             TextAnchor.LowerRight);
-        string incoming = stock.Incoming == 0 ? string.Empty : " +" + stock.Incoming;
-        string hover = stock.DisplayName + " " + stock.Current + "/"
-            + stock.Capacity + incoming + "\nDelivery: "
-            + (stock.DeliveryEnabled ? "enabled" : "disabled");
-        BindIconTooltip(button, tooltip, hover);
     }
 
     private static void CreateIconCount(
@@ -246,19 +228,6 @@ public sealed partial class DigGameHudCanvas
         count.rectTransform.offsetMin = new Vector2(4f, 2f);
         count.rectTransform.offsetMax = new Vector2(-4f, -2f);
         count.raycastTarget = false;
-    }
-
-    private static DigProductionIconPointer BindIconTooltip(
-        Button button,
-        Text tooltip,
-        string value)
-    {
-        DigProductionIconPointer pointer =
-            button.gameObject.AddComponent<DigProductionIconPointer>();
-        pointer.HoverChanged = active => tooltip.text = active
-            ? value
-            : "Hover an icon to view required materials.";
-        return pointer;
     }
 
     private void QueueBuildingProduction(string buildingId, string recipeId)

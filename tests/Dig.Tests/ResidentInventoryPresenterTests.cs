@@ -107,7 +107,7 @@ public sealed class ResidentInventoryPresenterTests
         {
             new ItemDefinition(
                 BoxItemId,
-                "Workshop BuildingBox",
+                "Test BuildingBox",
                 maximumStackSize: 1,
                 isTool: false,
                 categories: new[] { ItemInteractionCategoryIds.BuildingBox }),

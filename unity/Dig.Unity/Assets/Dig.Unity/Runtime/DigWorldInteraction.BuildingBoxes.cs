@@ -75,17 +75,24 @@ namespace Dig.Unity
                 return true;
             }
 
-            UpdateBuildingPlacementHover();
-            if (_buildingPlacementPreview == null
-                || !_buildingPlacementPreview.IsValid)
+            BuildingBoxGhostViewModel? visiblePreview = _buildingPlacementPreview;
+            if (visiblePreview == null)
             {
-                _hud.SetStatus(
-                    _buildingPlacementPreview?.ReasonCode
-                    ?? "input.building_placement.invalid");
+                _hud.SetStatus("input.building_placement.missing_preview");
                 return true;
             }
 
-            ConfirmBuildingPlacement();
+            ContextInputDecision decision = _inputRouter.Route(
+                new ContextPointerEvent(
+                    PointerInputSurface.World,
+                    PointerButtonKind.Left,
+                    altPressed: IsAltPressed()),
+                BuildState(PointerButtonKind.Left),
+                new ContextPointerTarget(
+                    ContextWorldTargetKind.Ground,
+                    cell: visiblePreview.Origin,
+                    reachable: visiblePreview.IsValid));
+            ApplyDecision(decision);
             return true;
         }
 
@@ -216,6 +223,20 @@ namespace Dig.Unity
             if (_buildingPlacementPreview == null || !_buildingPlacementMode.HasValue)
             {
                 _hud!.SetStatus("input.building_placement.missing_preview");
+                return;
+            }
+
+            _buildingPlacementPreview = _terrainSession!.PreviewBuildingBoxPlacement(
+                _buildingPlacementMode.Value,
+                _buildingPlacementPreview.Origin,
+                _agentSession!.LoadView());
+            _buildingBoxGhostRenderer!.Render(_buildingPlacementPreview);
+            _hud!.UpdateBuildingPlacement(_buildingPlacementMode.Value, _buildingPlacementPreview);
+            if (!_buildingPlacementPreview.IsValid)
+            {
+                _hud.SetStatus(
+                    _buildingPlacementPreview.ReasonCode
+                    ?? "input.building_placement.invalid");
                 return;
             }
 

@@ -121,7 +121,7 @@ public sealed class ResidentEquipmentTests
         {
             new ItemDefinition(
                 BoxItemId,
-                "Workshop BuildingBox",
+                "Test BuildingBox",
                 maximumStackSize: 1,
                 isTool: false),
             new ItemDefinition(

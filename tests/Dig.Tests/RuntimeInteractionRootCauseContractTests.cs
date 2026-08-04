@@ -52,7 +52,10 @@ namespace Dig.Tests
                 < priority.IndexOf("TryApplyTunnelMove", StringComparison.Ordinal));
             Assert.Contains("TryHandleBuildingPlacementClick()", interaction);
             Assert.Contains("TryHandleInventoryItemPlacementClick()", interaction);
-            Assert.Contains("ConfirmBuildingPlacement();", boxes);
+            Assert.Contains("BuildingBoxGhostViewModel? visiblePreview", boxes);
+            Assert.Contains("_inputRouter.Route", boxes);
+            Assert.Contains("ApplyDecision(decision)", boxes);
+            Assert.DoesNotContain("UpdateBuildingPlacementHover();", boxes);
             Assert.Contains("BuildingBoxPlacementKind.RelocateBox", boxGhost);
             Assert.Contains("BuildingVisualState.BuildingBox", boxGhost);
             Assert.Contains("BuildingVisualState.Completed", boxGhost);

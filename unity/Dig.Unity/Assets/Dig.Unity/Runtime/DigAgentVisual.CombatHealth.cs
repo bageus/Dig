@@ -16,7 +16,7 @@ public sealed partial class DigAgentVisual
         {
             if (_combatHealthBar != null)
             {
-                _combatHealthBar.Configure(0, 1, false, camera, 1.25f);
+                _combatHealthBar.Configure(0, 1, false, camera, 1.45f);
             }
             return;
         }
@@ -33,7 +33,7 @@ public sealed partial class DigAgentVisual
             health.MaximumHealth,
             health.IsVisible && Model.IsAlive,
             camera,
-            verticalOffset: 1.25f);
+            verticalOffset: 1.45f);
     }
 }
 

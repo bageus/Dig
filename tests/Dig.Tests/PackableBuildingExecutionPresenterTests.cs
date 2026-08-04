@@ -28,7 +28,7 @@ public sealed class PackableBuildingExecutionPresenterTests
     private static readonly EntityId LegacyPackage =
         EntityId.Parse("88000000000000000000000000000008");
     private static readonly BuildingDefinitionId LegacyWorkshopDefinition =
-        new BuildingDefinitionId("demo.workshop.box");
+        new BuildingDefinitionId("test.building.box");
 
     [Fact]
     public void Active_unpack_projects_partial_visual_and_clamped_progress()
