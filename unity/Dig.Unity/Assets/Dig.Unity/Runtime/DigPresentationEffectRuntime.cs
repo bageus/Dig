@@ -14,7 +14,8 @@ namespace Dig.Unity
 [DisallowMultipleComponent]
 public sealed class DigPresentationEffectRuntime : MonoBehaviour
 {
-    private const int AmbientDustIntervalTicks = 6;
+    // AmbientDustIntervalTicks / PresentationEffectKind.AmbientDust are intentionally
+    // retained only as contract names; runtime no longer emits ambient sky particles.
     private readonly PresentationDomainEffectProjector _projector =
         new PresentationDomainEffectProjector();
     private readonly Dictionary<string, PresentationEffectFact> _queued =
@@ -23,6 +24,8 @@ public sealed class DigPresentationEffectRuntime : MonoBehaviour
         new Dictionary<string, string>(StringComparer.Ordinal);
     private readonly Dictionary<string, PresentationEffectLocation> _locations =
         new Dictionary<string, PresentationEffectLocation>(StringComparer.Ordinal);
+    private readonly HashSet<string> _campfireBuildingIds =
+        new HashSet<string>(StringComparer.Ordinal);
     private DigWorldSession? _world;
     private DigAgentSession? _agents;
     private DigTerrainWorkSession? _terrain;
@@ -71,11 +74,13 @@ public sealed class DigPresentationEffectRuntime : MonoBehaviour
         IReadOnlyList<IDomainEvent> events = ReadNewEvents();
         TrackProductionEmitters(events);
         RebuildLocations();
-        Publish(_projector.Project(events, ResolveLocation));
+        IReadOnlyList<IDomainEvent> visibleEvents =
+            FilterCampfireProductionParticleEvents(events);
+        Publish(_projector.Project(visibleEvents, ResolveLocation));
 
         Dictionary<string, PresentationEffectFact> frame =
             new Dictionary<string, PresentationEffectFact>(_queued, StringComparer.Ordinal);
-        AddPersistentEmitters(frame, tick);
+        AddPersistentEmitters(frame);
         _bridge!.Present(new List<PresentationEffectFact>(frame.Values), _camera);
         _queued.Clear();
     }
@@ -121,6 +126,7 @@ public sealed class DigPresentationEffectRuntime : MonoBehaviour
     private void RebuildLocations()
     {
         _locations.Clear();
+        _campfireBuildingIds.Clear();
         IReadOnlyList<AgentViewModel> agents = _agents!.LoadView();
         for (int index = 0; index < agents.Count; index++)
         {
@@ -140,7 +146,40 @@ public sealed class DigPresentationEffectRuntime : MonoBehaviour
                 building.OriginX,
                 0d,
                 building.OriginY);
+            if (IsStableKind(building.DefinitionId, "campfire"))
+            {
+                _campfireBuildingIds.Add(building.Id);
+            }
         }
+    }
+
+    private IReadOnlyList<IDomainEvent> FilterCampfireProductionParticleEvents(
+        IReadOnlyList<IDomainEvent> events)
+    {
+        List<IDomainEvent>? filtered = null;
+        for (int index = 0; index < events.Count; index++)
+        {
+            IDomainEvent item = events[index];
+            bool suppress = item is ProductionWorkApplied production
+                && _campfireBuildingIds.Contains(production.BuildingId.ToString());
+            if (suppress)
+            {
+                if (filtered == null)
+                {
+                    filtered = new List<IDomainEvent>(events.Count);
+                    for (int prior = 0; prior < index; prior++)
+                    {
+                        filtered.Add(events[prior]);
+                    }
+                }
+
+                continue;
+            }
+
+            filtered?.Add(item);
+        }
+
+        return filtered ?? events;
     }
 
     private PresentationEffectLocation? ResolveLocation(EntityId id)
@@ -151,23 +190,10 @@ public sealed class DigPresentationEffectRuntime : MonoBehaviour
     }
 
     private void AddPersistentEmitters(
-        IDictionary<string, PresentationEffectFact> frame,
-        long tick)
+        IDictionary<string, PresentationEffectFact> frame)
     {
         AddTerrainEmitters(frame);
         AddBuildingEmitters(frame);
-        if (tick % AmbientDustIntervalTicks == 0)
-        {
-            WorldViewModel world = _world!.LoadView();
-            Add(frame, new PresentationEffectFact(
-                "ambient-dust:" + (tick / AmbientDustIntervalTicks),
-                PresentationEffectKind.AmbientDust,
-                world.Width * 0.5d,
-                0d,
-                world.Height * 0.5d,
-                0.45d,
-                tick));
-        }
     }
 
     private void AddTerrainEmitters(IDictionary<string, PresentationEffectFact> frame)
