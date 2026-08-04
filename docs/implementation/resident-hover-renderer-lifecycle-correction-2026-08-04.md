@@ -54,6 +54,23 @@ action completion, save/load или приоритет transient tools/meal/equi
 - `python tools/quality/check_unity_source_contracts.py` — pass;
 - `python tools/quality/check_unity_resident_visual_contracts.py` — pass.
 
-Release build, full .NET suite, smoke и deterministic soaks фиксируются по exact
-PR head. Фактический лицензированный Unity Play Mode result остаётся обязательным
-для статуса `VERIFIED`.
+Exact implementation head `dadb0f83f6cde85a6deec55222fab7edeff55578`
+прошёл Quality run `30926400172`:
+
+- architecture, file-size и C# compatibility checks — pass;
+- все Unity source/presentation contracts — pass;
+- Release build — `0` warnings, `0` errors;
+- full .NET suite — `1496/1496` passed;
+- headless smoke — completed at tick `20`;
+- standard deterministic replay —
+  `B26EA859F3F9668DF85CA1BA2842D8C733B09C51B596F4300549AEE7465D5292`,
+  `replay=True`;
+- large deterministic replay —
+  `7FD411B4725F7DADC5D355FEC5FB5159D59314CB25921394D9D8B27669EC51C9`,
+  `replay=True`;
+- Stage 2 v2/v3 source exports — pass.
+
+Unity workflow `30926402471` записал blocked evidence: activation была
+недоступна, поэтому фактические EditMode/PlayMode tests и executed-evidence
+validation были skipped. Checked-in Play Mode regression присутствует, но не
+считается выполненным. Статус остаётся `IMPLEMENTED`, а не `VERIFIED`.
