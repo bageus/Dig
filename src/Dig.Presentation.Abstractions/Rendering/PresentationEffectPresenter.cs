@@ -95,9 +95,6 @@ public sealed class PresentationEffectPresenter
                     3.4d, 1.1d, 0.24d, 0.72d, 1.00d, false));
                 break;
             case PresentationEffectKind.CampfireGlow:
-                effects.Add(Effect(fact, "vfx.production.campfire",
-                    VfxCategory.Production, VfxPriority.Important,
-                    1.20d, 14, 24, 0.80d, 0.50d));
                 lights.Add(Light(fact, "light.campfire", RealtimeLightPriority.Focused,
                     4.0d, 1.4d, 1.00d, 0.52d, 0.16d, true));
                 break;
