@@ -4,7 +4,8 @@
 Статус: `IMPLEMENTED IN BRANCH`.
 
 Authoritative specification: [`../design/runtime-building-ui-health-unpack-pickup-correction-2026-08-04.md`](../design/runtime-building-ui-health-unpack-pickup-correction-2026-08-04.md).  
-Tracking issue: [#634](https://github.com/bageus/Dig/issues/634).
+Tracking issue: [#634](https://github.com/bageus/Dig/issues/634).  
+Correction PR: [#637](https://github.com/bageus/Dig/pull/637).
 
 ## Runtime report
 
@@ -43,6 +44,16 @@ Tracking issue: [#634](https://github.com/bageus/Dig/issues/634).
 - `CombatHealthBarPresentationPlayModeTests` проверяет одинаковую world width и расположение над actor bounds;
 - `ForcedPickupReplacementPlayModeTests` проверяет replacement pickup и освобождение первой reservation;
 - existing BuildingBox and production source/Play Mode contracts обновлены под отсутствие workshop/tray/tooltip.
+
+## CI contract alignment
+
+Первый Quality run на production-коде прошёл Release build и все Unity source gates, но нашёл три устаревших test expectations:
+
+- screenshot contract ожидал старую синтаксическую форму `if (model.ShowWorkbench)` вместо эквивалентного guarded conjunction;
+- normalized input contract искал строку с пробелом, хотя helper удаляет whitespace перед assertion;
+- gameplay contract всё ещё требовал demo-массив `workshop + campfire`.
+
+Assertions синхронизированы с новым authoritative contract: временный active-production workbench сохранён, visible-preview routing проверяется в normalized форме, а fresh demo требует только completed campfire и запрещает `workshop`.
 
 ## Verification boundary
 
