@@ -82,13 +82,20 @@ namespace Dig.Unity
                 }
 
                 (int X, int Y, int Z) cell = (item.CellX, item.CellY, item.CellZ);
-                cellSlots.TryGetValue(cell, out int slot);
-                cellSlots[cell] = slot + 1;
+                bool consumesCellSlot =
+                    DigWorldItemVisualPolicy.ConsumesCellLayoutSlot(item.ItemId);
+                int slot = 0;
+                if (consumesCellSlot)
+                {
+                    cellSlots.TryGetValue(cell, out slot);
+                    cellSlots[cell] = slot + 1;
+                }
 
                 DigItemVisualResolution resolution = Resolve(item.ItemId);
                 ItemStackVisualLayoutViewModel layout = _layoutPresenter.Present(item);
                 visual.Configure(item, layout, resolution);
-                Vector2 cellOffset = DigWorldItemVisualPolicy.IsCampfireBox(item.ItemId)
+                Vector2 cellOffset = !consumesCellSlot
+                    || DigWorldItemVisualPolicy.IsCampfireBox(item.ItemId)
                     ? Vector2.zero
                     : ResolveCellOffset(slot);
                 visual.PlaceOnFloor(
