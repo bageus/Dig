@@ -92,14 +92,6 @@ namespace Dig.Unity
             float depth = DigTunnelProjection.DepthOrigin
                 + (model.Z * DigTunnelProjection.DepthSpacing);
             transform.localPosition = new Vector3(model.X, depth, model.Y);
-
-            if (!model.IsSolid && transform.localScale != Vector3.zero)
-            {
-                transform.localScale = new Vector3(
-                    0.94f,
-                    DigTunnelProjection.FloorDepth,
-                    DigTunnelProjection.FloorThickness);
-            }
         }
 
         private void DisableInteractionCollider()
@@ -121,7 +113,7 @@ namespace Dig.Unity
 
             bool showQuarters = Model.IsSolid
                 && _completedExcavationQuarters != ExcavationQuarter.None;
-            _renderer.enabled = !showQuarters;
+            _renderer.enabled = Model.IsSolid && !showQuarters;
             if (!showQuarters)
             {
                 SetQuarterGeometryActive(active: false);
