@@ -1,10 +1,11 @@
 # Dwarf AnimationModule compile correction
 
 Дата: 2026-08-04.  
-Статус: `IMPLEMENTED IN BRANCH`.
+Статус: `IMPLEMENTED`.
 
 Authoritative specification: [`../design/presentation-input-ui-and-diagnostics.md`](../design/presentation-input-ui-and-diagnostics.md).  
-Tracking issue: [#641](https://github.com/bageus/Dig/issues/641).
+Tracking issue: [#641](https://github.com/bageus/Dig/issues/641).  
+Correction PR: [#642](https://github.com/bageus/Dig/pull/642).
 
 ## Runtime report
 
@@ -24,6 +25,19 @@ The checked-in dwarf bridge requires the built-in animation module. The root Uni
 - a .NET source contract couples the Animator bridge to those declarations.
 
 No gameplay, animation state-machine or simulation rule changed.
+
+## Automated validation
+
+Code head `3cf7aa6430a154c63f8e39ddfe8bbee75e2d4843` passed:
+
+- Quality run `30955246319`;
+- architecture, file-size, C# compatibility and Unity source/module contracts;
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1512/1512` passed;
+- headless smoke, standard deterministic soak and large-settlement deterministic soak;
+- Stage 2 v2/v3 exports.
+
+Unity workflow `30955246398` recorded blocked evidence: actual package resolve, EditMode/PlayMode execution and executed-runtime evidence validation were skipped because licensed activation was unavailable.
 
 ## Verification boundary
 
