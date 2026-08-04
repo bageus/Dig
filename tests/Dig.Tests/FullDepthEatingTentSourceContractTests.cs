@@ -68,7 +68,10 @@ public sealed class FullDepthEatingTentSourceContractTests
         Assert.Contains("Eat = 11", visualModels);
         Assert.Contains("ResidentActionVisualState.Eat", presenter);
         Assert.Contains("EatingBitePeriodSeconds", eating);
-        Assert.Contains("Model.ActionProgress", eating);
+        Assert.Contains("AgentViewModel? model = Model;", eating);
+        Assert.Contains("model == null", eating);
+        Assert.Contains("model.ActionProgress", eating);
+        Assert.DoesNotContain("Model.ActionProgress", eating);
         Assert.Contains("MealVisualId", hands);
         Assert.Contains("transform.localPosition = new Vector3(0f, -0.31f, 0f)", rig);
         Assert.Contains("Meal Portion", equipment);

@@ -10,29 +10,30 @@ namespace Dig.Unity
 
         private void LateUpdate()
         {
-            bool eating = Model != null && Model.IsAlive && IsEating;
+            AgentViewModel? model = Model;
+            bool eating = model != null && model.IsAlive && IsEating;
             if (_mealVisualActive != eating)
             {
                 _mealVisualActive = eating;
                 RefreshHandEquipment();
             }
 
-            if (!eating || _rig == null || _duration > 0f)
+            if (!eating || model == null || _rig == null || _duration > 0f)
             {
                 return;
             }
 
-            float authoritativeOffset = (float)Model.ActionProgress
+            float authoritativeOffset = (float)model.ActionProgress
                 * EatingBitePeriodSeconds;
             float progress = Mathf.Repeat(
                 Time.unscaledTime + authoritativeOffset,
                 EatingBitePeriodSeconds) / EatingBitePeriodSeconds;
             _rig.ApplyAction(new ResidentActionVisualViewModel(
-                Model.Id,
+                model.Id,
                 ResidentActionVisualState.Eat,
                 progress,
                 isLooping: true,
-                version: Model.Version));
+                version: model.Version));
         }
     }
 }
