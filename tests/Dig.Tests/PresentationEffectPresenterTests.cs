@@ -70,7 +70,6 @@ public sealed class PresentationEffectPresenterTests
     [Theory]
     [InlineData(PresentationEffectKind.LavaGlow, true)]
     [InlineData(PresentationEffectKind.CrystalGlow, false)]
-    [InlineData(PresentationEffectKind.CampfireGlow, true)]
     [InlineData(PresentationEffectKind.ProductionBuildingGlow, false)]
     public void Emissive_kinds_create_effect_and_light(
         PresentationEffectKind kind, bool castsShadows)
@@ -82,6 +81,18 @@ public sealed class PresentationEffectPresenterTests
         LightRequest light = Assert.Single(frame.Lights);
         Assert.Equal(castsShadows, light.CastsShadows);
         Assert.StartsWith("glow:light.", light.RequestId);
+    }
+
+    [Fact]
+    public void Campfire_glow_creates_light_without_particle_effect()
+    {
+        PresentationEffectFrame frame = _presenter.Present(
+            new[] { Fact("campfire", PresentationEffectKind.CampfireGlow, 0.8d) });
+
+        Assert.Empty(frame.Effects);
+        LightRequest light = Assert.Single(frame.Lights);
+        Assert.True(light.CastsShadows);
+        Assert.Equal("campfire:light.campfire", light.RequestId);
     }
 
     [Fact]
