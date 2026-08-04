@@ -6,6 +6,7 @@
     "Dig.Domain",
     "Dig.Infrastructure",
     "Dig.Presentation.Abstractions",
+    "UnityEngine.AnimationModule",
     "UnityEngine.AudioModule",
     "UnityEngine.IMGUIModule",
     "UnityEngine.InputLegacyModule",
