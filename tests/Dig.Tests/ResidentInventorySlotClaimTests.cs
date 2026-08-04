@@ -48,7 +48,7 @@ public sealed class ResidentInventorySlotClaimTests
     }
 
     [Fact]
-    public void Compaction_skips_slots_reserved_by_incoming_claims()
+    public void Compaction_places_physical_item_before_reflowed_incoming_claim()
     {
         InventoryState inventory = CreateInventory(withBasket: true);
         var reserved = inventory.ReserveResidentSlotCapacity(
@@ -80,11 +80,17 @@ public sealed class ResidentInventorySlotClaimTests
             ItemLocation.InResidentSlot(
                 ResidentId,
                 ResidentInventoryCompartment.Main,
-                2),
+                1),
             inventory.GetStack(OreStackId)!.Location);
+        ResidentInventorySlotClaimSnapshot claim = Assert.Single(
+            inventory.GetResidentSlotClaims(FirstJobId));
+        Assert.Equal(FirstJobId, claim.JobId);
+        Assert.Equal(ResidentId, claim.ResidentId);
+        Assert.Equal(OreId, claim.ItemId);
+        Assert.Equal(1, claim.Quantity);
         Assert.Equal(
-            new ResidentInventorySlot(ResidentInventoryCompartment.Main, 1),
-            Assert.Single(inventory.GetResidentSlotClaims(FirstJobId)).Slot);
+            new ResidentInventorySlot(ResidentInventoryCompartment.Main, 2),
+            claim.Slot);
     }
 
     [Fact]
