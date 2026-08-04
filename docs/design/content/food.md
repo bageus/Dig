@@ -156,6 +156,8 @@ Output определяется tier, а не Cooking skill.
 | `food.meat_pie` | Мясной пирог | 1 шляпка + 1 хомяк | 27 | 2700 | 9 | industrial+ |
 | `food.larva_foie_gras` | Фуагра из личинок | 1 шляпка + 2 личинки | 33 | 3300 | 11 | luxury |
 
+Подтверждённые выходы костра: один order гриль-гриба расходует ровно `1 material.mushroom_cap` и производит `2 food.grilled_mushroom`; один order гриль-хомяка расходует ровно `1 creature.hamster` и производит `2 food.roasted_hamster`. `skill.cooking` меняет только длительность обработки и не меняет расход ингредиента или количество выхода.
+
 Новые блюда из Ecology, включая омлет из паучьего яйца, используют ту же модель bites/history, если их `FoodDefinition` не задаёт отдельное подтверждённое правило.
 
 ## Save/Load
