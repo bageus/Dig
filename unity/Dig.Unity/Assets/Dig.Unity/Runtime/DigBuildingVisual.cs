@@ -170,7 +170,9 @@ namespace Dig.Unity
                 Model.OriginX,
                 Model.OriginY,
                 Model.OriginZ) + (Vector3.up * DigTunnelProjection.ResidentFootSink);
-            transform.localRotation = ResolveOrientation(Model.Orientation);
+            transform.localRotation = resolution.FacesCamera
+                ? Quaternion.identity
+                : ResolveOrientation(Model.Orientation);
             transform.localScale = Vector3.one;
 
             if (_instance == null)
