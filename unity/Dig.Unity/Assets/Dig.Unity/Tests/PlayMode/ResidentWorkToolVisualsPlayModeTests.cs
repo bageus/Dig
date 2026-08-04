@@ -1,6 +1,11 @@
+using System;
 using System.Collections;
 using System.Linq;
 using Dig.Domain.Inventory;
+using Dig.Domain.World;
+using Dig.Presentation.Agents;
+using Dig.Presentation.Inventory;
+using Dig.Presentation.Jobs;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -66,6 +71,43 @@ public sealed class ResidentWorkToolVisualsPlayModeTests
         Assert.That(visual.transform.childCount, Is.Zero);
     }
 
+    [UnityTest]
+    public IEnumerator Hover_survives_hand_visual_rebuild_without_destroyed_renderer_access()
+    {
+        _root = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        _root.name = "Hovered Resident Hand Rebuild Test";
+        DigAgentVisual agent = _root.AddComponent<DigAgentVisual>();
+        Shader shader = Shader.Find("Universal Render Pipeline/Lit")
+            ?? Shader.Find("Standard");
+        Assert.That(shader, Is.Not.Null);
+        _material = new Material(shader!);
+
+        agent.InitializeSimple(CreateAgent("resident.hover"), _material, _material);
+        agent.SetEquipment(
+            new ResidentEquipmentViewModel(
+                "resident.hover",
+                "stack.club",
+                "weapon.club"),
+            _material);
+        agent.SetHovered(true);
+        agent.SetWorkTarget(
+            new CellId(1, 0, 0),
+            climbingWork: false,
+            workToolVisualKind: ResidentWorkToolVisualKind.Pickaxe,
+            animateToolWork: true);
+
+        yield return null;
+
+        DigAgentEquipmentVisual hand =
+            _root.GetComponentInChildren<DigAgentEquipmentVisual>(true);
+        Assert.That(hand.CurrentItemId, Is.EqualTo(DigAgentVisual.PickaxeVisualId));
+        agent.SetHovered(false);
+
+        yield return null;
+
+        LogAssert.NoUnexpectedReceived();
+    }
+
     private IEnumerator ConfigureAndRequire(
         DigAgentEquipmentVisual visual,
         string itemId,
@@ -85,6 +127,28 @@ public sealed class ResidentWorkToolVisualsPlayModeTests
         Assert.That(
             visual.GetComponentsInChildren<Collider>(true),
             Is.Empty);
+    }
+
+    private static AgentViewModel CreateAgent(string id)
+    {
+        return new AgentViewModel(
+            id: id,
+            name: id,
+            version: 1,
+            isAlive: true,
+            cellX: 0,
+            cellY: 0,
+            nutrition: 100,
+            alertness: 100,
+            mood: 100,
+            health: 100,
+            scheduledActivity: "Work",
+            activeIntent: "Idle",
+            actionElapsedTicks: 0,
+            actionRequiredTicks: 0,
+            decisionReason: string.Empty,
+            decisionExplanation: string.Empty,
+            utilityOptions: Array.Empty<AgentUtilityOptionViewModel>());
     }
 }
 }
