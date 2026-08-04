@@ -5,6 +5,8 @@
       "kind": "Campfire",
       "footprintSize": {"x": 1, "y": 1},
       "pivotCell": {"x": 0.0, "y": 0.0},
+      "visualBoundsCenter": {"x": 0.0, "y": 0.475, "z": 0.0},
+      "visualBoundsSize": {"x": 0.82, "y": 0.95, "z": 0.82},
       "tint": {"r": 0.92, "g": 0.42, "b": 0.12, "a": 1.0},
       "maxRenderers": 8,
       "maxTriangles": 160,
@@ -27,6 +29,8 @@
       "kind": "Furnace",
       "footprintSize": {"x": 1, "y": 1},
       "pivotCell": {"x": 0.0, "y": 0.0},
+      "visualBoundsCenter": {"x": -0.11, "y": 0.805, "z": -0.04},
+      "visualBoundsSize": {"x": 1.30, "y": 1.61, "z": 1.00},
       "tint": {"r": 0.64, "g": 0.30, "b": 0.16, "a": 1.0},
       "maxRenderers": 8,
       "maxTriangles": 192,
@@ -49,6 +53,8 @@
       "kind": "Storage",
       "footprintSize": {"x": 3, "y": 2},
       "pivotCell": {"x": 1.0, "y": 0.5},
+      "visualBoundsCenter": {"x": 1.0, "y": 0.80, "z": 0.50},
+      "visualBoundsSize": {"x": 2.82, "y": 1.60, "z": 1.82},
       "tint": {"r": 0.40, "g": 0.48, "b": 0.56, "a": 1.0},
       "maxRenderers": 12,
       "maxTriangles": 256,
@@ -68,6 +74,78 @@
         {"kind": "Storage", "stableId": "storage.left", "position": {"x": 0.34, "y": 0.82, "z": 0.50}},
         {"kind": "Storage", "stableId": "storage.right", "position": {"x": 1.66, "y": 0.82, "z": 0.50}},
         {"kind": "Visitor", "stableId": "visitor.inspect", "position": {"x": 1.0, "y": 0.0, "z": -0.92}}
+      ]
+    },
+    {
+      "stableIds": ["building.tent"],
+      "kind": "Tent",
+      "footprintSize": {"x": 1, "y": 1},
+      "pivotCell": {"x": 0.0, "y": 0.0},
+      "visualBoundsCenter": {"x": 0.0, "y": 1.0, "z": 0.0},
+      "visualBoundsSize": {"x": 3.0, "y": 2.0, "z": 2.0},
+      "tint": {"r": 0.82, "g": 0.68, "b": 0.38, "a": 1.0},
+      "maxRenderers": 10,
+      "maxTriangles": 192,
+      "parts": [
+        {"name": "Tent Groundsheet", "shape": "Box", "detail": "Marker", "position": {"x": 0.0, "y": 0.05, "z": 0.0}, "scale": {"x": 3.0, "y": 0.10, "z": 2.0}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Tent Roof Left", "shape": "Wedge", "detail": "Marker", "position": {"x": 0.0, "y": 1.05, "z": -0.5}, "scale": {"x": 3.0, "y": 1.90, "z": 1.0}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Tent Roof Right", "shape": "Wedge", "detail": "Marker", "position": {"x": 0.0, "y": 1.05, "z": 0.5}, "scale": {"x": 3.0, "y": 1.90, "z": 1.0}, "rotation": {"x": 0.0, "y": 180.0, "z": 0.0}},
+        {"name": "Tent Entrance Flap", "shape": "Pyramid", "detail": "Reduced", "position": {"x": 0.0, "y": 0.65, "z": -0.98}, "scale": {"x": 0.90, "y": 1.30, "z": 0.04}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Tent Ridge Pole", "shape": "Box", "detail": "Full", "position": {"x": 0.0, "y": 1.96, "z": 0.0}, "scale": {"x": 3.0, "y": 0.08, "z": 0.08}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}}
+      ],
+      "anchors": [
+        {"kind": "Worker", "stableId": "worker.primary", "position": {"x": 0.0, "y": 0.0, "z": -1.15}},
+        {"kind": "Visitor", "stableId": "bed.left", "position": {"x": -0.65, "y": 0.0, "z": 0.0}},
+        {"kind": "Visitor", "stableId": "bed.right", "position": {"x": 0.65, "y": 0.0, "z": 0.0}}
+      ]
+    },
+    {
+      "stableIds": ["building.stone_mason"],
+      "kind": "StoneMason",
+      "footprintSize": {"x": 1, "y": 1},
+      "pivotCell": {"x": 0.0, "y": 0.0},
+      "visualBoundsCenter": {"x": 0.0, "y": 1.25, "z": 0.0},
+      "visualBoundsSize": {"x": 3.5, "y": 2.5, "z": 2.5},
+      "tint": {"r": 0.56, "g": 0.54, "b": 0.50, "a": 1.0},
+      "maxRenderers": 12,
+      "maxTriangles": 256,
+      "parts": [
+        {"name": "Stone Foundation", "shape": "Box", "detail": "Marker", "position": {"x": 0.0, "y": 0.10, "z": 0.0}, "scale": {"x": 3.5, "y": 0.20, "z": 2.5}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Masonry Hall", "shape": "Box", "detail": "Marker", "position": {"x": 0.0, "y": 0.85, "z": 0.15}, "scale": {"x": 2.9, "y": 1.50, "z": 2.0}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Mason Roof", "shape": "Pyramid", "detail": "Marker", "position": {"x": 0.0, "y": 1.95, "z": 0.0}, "scale": {"x": 3.2, "y": 1.10, "z": 2.3}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Stone Workbench", "shape": "Box", "detail": "Reduced", "position": {"x": 0.0, "y": 0.65, "z": -1.05}, "scale": {"x": 2.0, "y": 0.50, "z": 0.35}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Cut Stone Left", "shape": "Box", "detail": "Reduced", "position": {"x": -1.25, "y": 0.40, "z": 0.75}, "scale": {"x": 0.55, "y": 0.60, "z": 0.55}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Cut Stone Right", "shape": "Box", "detail": "Full", "position": {"x": 1.15, "y": 0.30, "z": 0.85}, "scale": {"x": 0.70, "y": 0.40, "z": 0.50}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}}
+      ],
+      "anchors": [
+        {"kind": "Worker", "stableId": "worker.primary", "position": {"x": 0.0, "y": 0.0, "z": -1.35}},
+        {"kind": "Input", "stableId": "input.primary", "position": {"x": -1.25, "y": 0.25, "z": 0.85}},
+        {"kind": "Output", "stableId": "output.primary", "position": {"x": 1.20, "y": 0.25, "z": 0.85}}
+      ]
+    },
+    {
+      "stableIds": ["building.wood_workshop"],
+      "kind": "WoodWorkshop",
+      "footprintSize": {"x": 1, "y": 1},
+      "pivotCell": {"x": 0.0, "y": 0.0},
+      "visualBoundsCenter": {"x": 0.0, "y": 1.0, "z": 0.0},
+      "visualBoundsSize": {"x": 2.5, "y": 2.0, "z": 2.0},
+      "tint": {"r": 0.55, "g": 0.34, "b": 0.16, "a": 1.0},
+      "maxRenderers": 12,
+      "maxTriangles": 256,
+      "parts": [
+        {"name": "Wood Foundation", "shape": "Box", "detail": "Marker", "position": {"x": 0.0, "y": 0.08, "z": 0.0}, "scale": {"x": 2.5, "y": 0.16, "z": 2.0}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Wood Roof Left", "shape": "Wedge", "detail": "Marker", "position": {"x": 0.0, "y": 1.60, "z": -0.5}, "scale": {"x": 2.5, "y": 0.80, "z": 1.0}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Wood Roof Right", "shape": "Wedge", "detail": "Marker", "position": {"x": 0.0, "y": 1.60, "z": 0.5}, "scale": {"x": 2.5, "y": 0.80, "z": 1.0}, "rotation": {"x": 0.0, "y": 180.0, "z": 0.0}},
+        {"name": "Frame Left", "shape": "Box", "detail": "Reduced", "position": {"x": -1.05, "y": 0.70, "z": 0.0}, "scale": {"x": 0.16, "y": 1.20, "z": 0.16}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Frame Right", "shape": "Box", "detail": "Reduced", "position": {"x": 1.05, "y": 0.70, "z": 0.0}, "scale": {"x": 0.16, "y": 1.20, "z": 0.16}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Saw Bench", "shape": "Box", "detail": "Reduced", "position": {"x": 0.0, "y": 0.55, "z": -0.70}, "scale": {"x": 1.55, "y": 0.25, "z": 0.45}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        {"name": "Timber Log", "shape": "Box", "detail": "Full", "position": {"x": 0.0, "y": 0.82, "z": -0.70}, "scale": {"x": 1.85, "y": 0.22, "z": 0.22}, "rotation": {"x": 0.0, "y": 0.0, "z": 5.0}}
+      ],
+      "anchors": [
+        {"kind": "Worker", "stableId": "worker.primary", "position": {"x": 0.0, "y": 0.0, "z": -1.10}},
+        {"kind": "Input", "stableId": "input.primary", "position": {"x": -0.85, "y": 0.20, "z": 0.65}},
+        {"kind": "Output", "stableId": "output.primary", "position": {"x": 0.85, "y": 0.20, "z": 0.65}}
       ]
     }
   ]
