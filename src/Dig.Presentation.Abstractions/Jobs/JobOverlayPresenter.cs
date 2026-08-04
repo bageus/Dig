@@ -164,7 +164,8 @@ public sealed class JobOverlayPresenter
             isMushroomChop: job.Definition is MushroomChopJobDefinition,
             isBarrelAttack: job.Definition is BarrelAttackJobDefinition,
             isProductionWork: job.Definition is ProductionWorkJobDefinition,
-            workToolVisualKind: ResolveWorkTool(job));
+            workToolVisualKind: ResolveWorkTool(job),
+            isTunnelInfrastructure: job.Definition is TunnelAutomaticWorkJobDefinition);
     }
 
     private static ResidentWorkToolVisualKind ResolveWorkTool(JobSnapshot job)

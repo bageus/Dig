@@ -203,23 +203,6 @@ public sealed partial class DigWorldOverlayRenderer
             marker.transform.localScale = new Vector3(0.78f, 0.035f, 0.78f);
         }
 
-        BuildingWorldViewModel? building = _buildings.SelectedModel;
-        if (building != null)
-        {
-            for (int index = 0; index < building.Footprint.Count; index++)
-            {
-                BuildingFootprintCellViewModel cell = building.Footprint[index];
-                GameObject marker = Acquire(
-                    _selection,
-                    count++,
-                    _selectionRoot!,
-                    "Building Selection",
-                    OverlayLayerKind.Selection,
-                    OverlaySemanticKind.Selection);
-                PlaceCell(marker, cell.X, cell.Y, cell.Z, 1.04f, 0.86f);
-            }
-        }
-
         WorldCellViewModel? cellSelection = _world.SelectedModel;
         if (cellSelection is WorldCellViewModel selectedCell)
         {

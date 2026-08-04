@@ -36,7 +36,11 @@ public sealed class TunnelInfrastructureUnityRuntimeContractTests
         Assert.Contains("PlannedTunnelCells", infrastructure);
         Assert.Contains("PlannedVerticalTunnelCells", infrastructure);
         Assert.Contains("SynchronizeTunnelAutomaticSupportHandler", infrastructure);
-        Assert.Contains("SynchronizeTunnelAutomaticJunctionTrimHandler", infrastructure);
+        Assert.Contains("SynchronizeTunnelJunctionTrimPlacementHandler", infrastructure);
+        Assert.Contains("SynchronizeTunnelJunctionTrimPlacementCommand(tick)", infrastructure);
+        Assert.DoesNotContain("SynchronizeTunnelAutomaticJunctionTrimHandler", infrastructure);
+        Assert.DoesNotContain("ResolveTrimJobId", infrastructure);
+        Assert.Contains("definition.Kind==TunnelAutomaticWorkKind.WoodenSupport", infrastructure);
         Assert.Contains("CompleteTunnelAutomaticWorkHandler", infrastructure);
         Assert.Contains("TryPlanTunnelAutomaticWorkMovement", navigation);
         Assert.Contains("AdvanceTunnelAutomaticWork", session);
@@ -87,6 +91,7 @@ public sealed class TunnelInfrastructureUnityRuntimeContractTests
         Assert.Equal(target.Y, model.TargetY);
         Assert.Equal(target.Z, model.TargetZ);
         Assert.Equal(JobToolKind.Construction, model.PreferredToolKind);
+        Assert.True(model.IsTunnelInfrastructure);
     }
 
     private static EntityId Id(int value)
