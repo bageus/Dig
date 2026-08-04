@@ -36,11 +36,10 @@ public sealed class TunnelInfrastructureUnityRuntimeContractTests
         Assert.Contains("PlannedTunnelCells", infrastructure);
         Assert.Contains("PlannedVerticalTunnelCells", infrastructure);
         Assert.Contains("SynchronizeTunnelAutomaticSupportHandler", infrastructure);
-        Assert.Contains("SynchronizeTunnelJunctionTrimPlacementHandler", infrastructure);
-        Assert.Contains("SynchronizeTunnelJunctionTrimPlacementCommand(tick)", infrastructure);
-        Assert.DoesNotContain("SynchronizeTunnelAutomaticJunctionTrimHandler", infrastructure);
-        Assert.DoesNotContain("ResolveTrimJobId", infrastructure);
-        Assert.Contains("definition.Kind==TunnelAutomaticWorkKind.WoodenSupport", infrastructure);
+        Assert.Contains("SynchronizeTunnelAutomaticJunctionTrimHandler", infrastructure);
+        Assert.Contains("SynchronizeTunnelAutomaticJunctionTrimCommand(", infrastructure);
+        Assert.Contains("ResolveTrimJobId", infrastructure);
+        Assert.DoesNotContain("SynchronizeTunnelJunctionTrimPlacementHandler", infrastructure);
         Assert.Contains("CompleteTunnelAutomaticWorkHandler", infrastructure);
         Assert.Contains("TryPlanTunnelAutomaticWorkMovement", navigation);
         Assert.Contains("AdvanceTunnelAutomaticWork", session);
@@ -67,8 +66,11 @@ public sealed class TunnelInfrastructureUnityRuntimeContractTests
         Assert.Contains("newReleaseJobAssignmentCommand(", infrastructure);
     }
 
-    [Fact]
-    public void Job_overlay_projects_automatic_tunnel_xyz_target()
+    [Theory]
+    [InlineData(TunnelAutomaticWorkKind.WoodenSupport)]
+    [InlineData(TunnelAutomaticWorkKind.JunctionStoneTrim)]
+    public void Job_overlay_projects_both_automatic_tunnel_kinds_without_world_marker(
+        TunnelAutomaticWorkKind kind)
     {
         EntityId jobId = Id(1);
         EntityId segmentId = Id(2);
@@ -77,7 +79,7 @@ public sealed class TunnelInfrastructureUnityRuntimeContractTests
         Assert.True(jobs.Add(new TunnelAutomaticWorkJobDefinition(
             jobId,
             segmentId,
-            TunnelAutomaticWorkKind.WoodenSupport,
+            kind,
             target,
             createdTick: 3,
             JobRetryPolicy.Default)).IsSuccess);

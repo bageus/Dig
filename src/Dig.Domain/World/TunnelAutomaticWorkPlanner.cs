@@ -27,7 +27,7 @@ public readonly struct TunnelAutomaticWorkSource
 
 public static class TunnelAutomaticWorkPlanner
 {
-    public const int AutomaticBuildingRange = 20;
+    public const int AutomaticBuildingRange = 30;
 
     public static bool IsWithinCompletedBuildingRange(
         CellId target,
