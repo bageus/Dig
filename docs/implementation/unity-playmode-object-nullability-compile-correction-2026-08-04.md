@@ -8,7 +8,8 @@ Authoritative specifications:
 - [`../design/resident-work-tool-visual-projection.md`](../design/resident-work-tool-visual-projection.md);
 - [`../design/full-depth-tunnel-eating-and-tent-presentation-correction.md`](../design/full-depth-tunnel-eating-and-tent-presentation-correction.md).
 
-Tracking issues: [#602](https://github.com/bageus/Dig/issues/602), [#626](https://github.com/bageus/Dig/issues/626).
+Tracking issues: [#602](https://github.com/bageus/Dig/issues/602), [#626](https://github.com/bageus/Dig/issues/626).  
+Correction PR: [#633](https://github.com/bageus/Dig/pull/633).
 
 ## Runtime report
 
@@ -36,6 +37,23 @@ Eating visual сначала проверял nullable-свойство `Model`,
 - `ResidentWorkToolUnityRuntimeContractTests` требует полностью квалифицированные Unity teardown calls и запрещает неквалифицированный вызов;
 - `FullDepthEatingTentSourceContractTests` требует локальный `AgentViewModel` snapshot, явный null guard и запрещает прямое повторное чтение `Model.ActionProgress`.
 
+## Automated validation
+
+На code head `c282cd9db9a016b4afa0b31787aa21867cbe7e97`:
+
+- Quality run `30936651537` — success;
+- architecture, file-size, C# compatibility и dependency gates — success;
+- все Unity source/presentation/runtime contracts — success;
+- Release build — `0` warnings, `0` errors;
+- .NET suite — `1505/1505`;
+- headless smoke — success;
+- standard deterministic soak — success;
+- large-settlement deterministic soak — success;
+- Export Stage 2 v2 run `30936649949` — success;
+- Export Stage 2 v3 run `30936651807` — success.
+
+Unity workflow `30936651600` выполнил только blocked-evidence path: actual EditMode/PlayMode Test Runner и executed-runtime-evidence validation были skipped из-за недоступной licensed activation.
+
 ## Verification boundary
 
-Repository Quality, Release build, .NET suite, smoke и deterministic soaks должны пройти на final branch head. Фактическое исчезновение Unity Console ошибок подтверждается только повторной локальной компиляцией либо выполненным лицензированным Unity Test Runner; source contracts сами по себе не дают статус `VERIFIED`.
+Фактическое исчезновение Unity Console ошибок подтверждается только повторной локальной компиляцией либо выполненным лицензированным Unity Test Runner; source contracts и .NET checks сами по себе не дают статус `VERIFIED`.
