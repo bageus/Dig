@@ -118,7 +118,10 @@ public sealed class EarlyBuildingVisualDimensionsPlayModeTests
             string[] names = instance.GetComponentsInChildren<Transform>(true)
                 .Select(value => value.name)
                 .ToArray();
-            Assert.That(requiredParts, Is.All.Matches<string>(name => names.Contains(name)));
+            foreach (string requiredPart in requiredParts)
+            {
+                Assert.That(names, Does.Contain(requiredPart));
+            }
         }
         finally
         {
