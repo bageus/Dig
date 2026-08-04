@@ -61,6 +61,18 @@ namespace Dig.Unity
                 StringComparison.Ordinal);
         }
 
+        internal static bool IsLivingMaterial(string itemId)
+        {
+            return string.Equals(itemId, "creature.hamster", StringComparison.Ordinal)
+                || string.Equals(itemId, "creature.grub", StringComparison.Ordinal)
+                || string.Equals(itemId, "creature.larva", StringComparison.Ordinal);
+        }
+
+        internal static bool ConsumesCellLayoutSlot(string itemId)
+        {
+            return !IsLivingMaterial(itemId);
+        }
+
         private static DigItemVisualResolution CreateFallbackResolution(string itemId)
         {
             return new DigItemVisualResolution(
