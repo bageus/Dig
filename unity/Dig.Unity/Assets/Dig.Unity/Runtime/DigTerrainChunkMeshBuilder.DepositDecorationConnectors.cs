@@ -93,7 +93,8 @@ namespace Dig.Unity
         {
             float start = 0.07f;
             float end = Mathf.Max(start + 0.02f, extent);
-            Vector3 lift = normal * 0.008f;
+            Vector3 lift = normal
+                * (DepositReliefInset + DepositConnectorRelief);
             Vector3 width = perpendicular * DepositConnectorWidth;
             Vector3 a = center + axis * start - width + lift;
             Vector3 b = center + axis * end - width + lift;
