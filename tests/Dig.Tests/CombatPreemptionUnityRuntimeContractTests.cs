@@ -30,6 +30,42 @@ public sealed class CombatPreemptionUnityRuntimeContractTests
     }
 
     [Fact]
+    public void Combat_interruption_uses_current_production_and_supply_cleanup_signatures()
+    {
+        string interruption = ReadRuntime(
+            "DigTerrainWorkSession.CombatInterruption.cs");
+        string direct = ReadRuntime("DigTerrainWorkSession.DirectCommands.cs");
+
+        Assert.Contains(
+            "InterruptProductionForDirectCommand(\n"
+            + "                        job,\n"
+            + "                        production,\n"
+            + "                        resident.Id,\n"
+            + "                        tick)",
+            interruption);
+        Assert.Contains("BuildingSupplyJobDefinition =>", interruption);
+        Assert.Contains(
+            "CancelBuildingSupplyForDirectCommand(\n"
+            + "                        job,\n"
+            + "                        resident.Id,\n"
+            + "                        tick)",
+            interruption);
+        Assert.Contains(
+            "private Result InterruptProductionForDirectCommand(\n"
+            + "            JobSnapshot job,\n"
+            + "            ProductionWorkJobDefinition production,\n"
+            + "            EntityId residentId,\n"
+            + "            long tick)",
+            direct);
+        Assert.Contains(
+            "private Result CancelBuildingSupplyForDirectCommand(\n"
+            + "            JobSnapshot job,\n"
+            + "            EntityId residentId,\n"
+            + "            long tick)",
+            direct);
+    }
+
+    [Fact]
     public void Direct_command_priority_is_checked_before_self_defense_and_autonomy()
     {
         string runtime = ReadRuntime("DigResidentNeedsRuntime.cs");
