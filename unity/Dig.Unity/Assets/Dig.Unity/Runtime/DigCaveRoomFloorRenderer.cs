@@ -103,7 +103,7 @@ namespace Dig.Unity
             Vector3 size = new Vector3(
                 0.94f,
                 Mathf.Max(0.94f, top - bottom),
-                0.50f);
+                DigTunnelProjection.InteractionDepth);
             BoxCollider collider = floor.GetComponent<BoxCollider>();
             Vector3 scale = floor.transform.lossyScale;
             collider.center = floor.transform.InverseTransformPoint(center);

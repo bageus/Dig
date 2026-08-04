@@ -152,7 +152,10 @@ namespace Dig.Unity
                     DigTunnelProjection.CellWorldPosition(cell),
                     Quaternion.identity);
                 BoxCollider collider = proxy.AddComponent<BoxCollider>();
-                collider.size = new Vector3(0.94f, 0.94f, 0.50f);
+                collider.size = new Vector3(
+                    0.94f,
+                    0.94f,
+                    DigTunnelProjection.InteractionDepth);
                 collider.enabled = _digInteractionActive;
                 DigTunnelCellVisual visual = proxy.AddComponent<DigTunnelCellVisual>();
                 visual.Configure(cell, volume.IsVerticalTunnel(cell));
@@ -242,13 +245,19 @@ namespace Dig.Unity
                 float width = Mathf.Abs(last.x - first.x) + 0.94f;
                 return new Bounds(
                     new Vector3((first.x + last.x) * 0.5f, first.y, first.z),
-                    new Vector3(width, 0.94f, 0.50f));
+                    new Vector3(
+                        width,
+                        0.94f,
+                        DigTunnelProjection.InteractionDepth));
             }
 
             float height = Mathf.Abs(last.y - first.y) + 0.94f;
             return new Bounds(
                 new Vector3(first.x, (first.y + last.y) * 0.5f, first.z),
-                new Vector3(0.94f, height, 0.50f));
+                new Vector3(
+                    0.94f,
+                    height,
+                    DigTunnelProjection.InteractionDepth));
         }
 
         private void EnsureRoots()

@@ -18,19 +18,32 @@ def check_depth_terrain_contracts(
     driver_path = runtime_root / "DigAgentSimulationDriverBase.CaveRooms.cs"
     bootstrap_path = runtime_root / "DigUnityBootstrap.cs"
 
+    renderer_text = texts.get(renderer_path, "")
     errors = require_fragments(
         renderer_path,
-        texts.get(renderer_path, ""),
+        renderer_text,
         "authoritative XYZ terrain projection",
         (
             "Dictionary<CellId, DigCellVisual>",
             "Dictionary<ChunkId, Transform>",
             "new CellId(cell.X, cell.Y, cell.Z)",
             "DigTunnelProjection.CellWorldPosition(cellId)",
-            "DigTunnelProjection.FloorWorldPosition(cellId)",
+            "visual.transform.localScale = cell.IsSolid",
+            "bool renderable = pair.Value.Model.IsSolid;",
+            "return Color.clear;",
             "foreach (CellId cell in volume.Cells)",
         ),
     )
+    errors.extend(reject_fragments(
+        renderer_path,
+        renderer_text,
+        "visible open-cell terrain tiles",
+        (
+            "DigTunnelProjection.FloorWorldPosition(cellId)",
+            "else if (walkSurface)",
+            "new Color(0.20f, 0.52f, 0.66f, 1f)",
+        ),
+    ))
     errors.extend(require_fragments(
         builder_path,
         texts.get(builder_path, ""),

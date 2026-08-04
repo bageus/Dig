@@ -21,6 +21,15 @@ namespace Dig.Unity
 
             GameObject model = new GameObject("Model");
             model.transform.SetParent(template.transform, worldPositionStays: false);
+            if (profile.TryResolveKind(out DigBuildingProfileKind profileKind)
+                && profileKind == DigBuildingProfileKind.Tent)
+            {
+                // The direct side-view camera is on positive world Z. The authored
+                // tent flap is on negative local Z, so rotate the complete template
+                // once and keep the runtime building root camera-facing.
+                model.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            }
+
             BoxCollider selection = model.AddComponent<BoxCollider>();
             selection.center = profile.visualBoundsCenter;
             selection.size = profile.visualBoundsSize;

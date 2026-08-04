@@ -5,11 +5,12 @@ namespace Dig.Unity
 {
     internal static class DigTunnelProjection
     {
-        internal const float DepthOrigin = 0.41f;
-        internal const float DepthSpacing = -0.55f;
-        internal const float RockCellHalfExtent = 0.48f;
+        internal const float DepthOrigin = 0.50f;
+        internal const float DepthSpacing = -1.00f;
+        internal const float RockCellHalfExtent = 0.50f;
         internal const float FloorThickness = 0.08f;
-        internal const float FloorDepth = 0.45f;
+        internal const float FloorDepth = 1.00f;
+        internal const float InteractionDepth = 0.94f;
         internal const float ResidentFootSink = 0.02f;
         internal const float ResidentDepthOffset = 0f;
         internal const float RouteHeight = 0.10f;

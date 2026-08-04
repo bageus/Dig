@@ -64,6 +64,7 @@ public sealed class WorldGenerator
             profile,
             zonePlans,
             streams.GetOrCreate(streamPrefix + ".resources"));
+        PropagateFrontUnmineableColumns(buffer, request.Materials);
         IReadOnlyList<CellId> pointsOfInterest = WorldGenerationLayout.SelectPointsOfInterest(
             buffer,
             profile,
@@ -108,6 +109,32 @@ public sealed class WorldGenerator
         return Result<GeneratedWorld>.Success(generated);
     }
 
+    private static void PropagateFrontUnmineableColumns(
+        GenerationCellBuffer buffer,
+        MaterialCatalog materials)
+    {
+        for (int y = 0; y < buffer.Size.Height; y++)
+        {
+            for (int x = 0; x < buffer.Size.Width; x++)
+            {
+                CellId frontCell = new CellId(x, y, CellId.MinimumDepth);
+                CellState front = buffer.Get(frontCell);
+                MaterialDefinition? material = materials.Get(front.MaterialId);
+                if (material == null || !material.IsSolid || material.IsMineable)
+                {
+                    continue;
+                }
+
+                for (int z = CellId.MinimumDepth + 1; z < buffer.Size.Depth; z++)
+                {
+                    CellId deepCell = new CellId(x, y, z);
+                    buffer.Set(
+                        deepCell,
+                        buffer.Get(deepCell).WithTerrain(front.MaterialId));
+                }
+            }
+        }
+    }
 
     private static void PopulateTerrainDeposits(
         WorldState world,

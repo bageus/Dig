@@ -10,13 +10,6 @@ namespace Dig.Unity
             out float minDepth,
             out float maxDepth)
         {
-            if (z == 0)
-            {
-                minDepth = 0f;
-                maxDepth = FrontRockDepth;
-                return;
-            }
-
             float center = DigTunnelProjection.DepthOrigin
                 + (z * DigTunnelProjection.DepthSpacing);
             float half = Mathf.Abs(DigTunnelProjection.DepthSpacing)

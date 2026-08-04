@@ -55,7 +55,8 @@ public sealed class ResidentVisualPresenter
             || state == ResidentActionVisualState.Dig
             || state == ResidentActionVisualState.Carry
             || state == ResidentActionVisualState.Build
-            || state == ResidentActionVisualState.Sleep;
+            || state == ResidentActionVisualState.Sleep
+            || state == ResidentActionVisualState.Eat;
         long version = ToVersion(Hash(model.Id, (int)state,
             (int)Math.Round(progress * 1000d), looping ? 1 : 0, model.Version));
         return new ResidentActionVisualViewModel(model.Id, state, progress, looping, version);
@@ -76,6 +77,8 @@ public sealed class ResidentVisualPresenter
                 ? ResidentActionVisualState.Run
                 : ResidentActionVisualState.Walk;
         string intent = (model.ActiveIntent ?? string.Empty).Trim().ToLowerInvariant();
+        if (ContainsAny(intent, "eat"))
+            return ResidentActionVisualState.Eat;
         if (ContainsAny(intent, "dig", "excavat", "mine"))
             return ResidentActionVisualState.Dig;
         if (ContainsAny(intent, "build", "construct", "assemble"))

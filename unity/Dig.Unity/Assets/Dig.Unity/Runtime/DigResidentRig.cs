@@ -110,6 +110,16 @@ public sealed class DigResidentRig : MonoBehaviour
                 transform.localRotation = Quaternion.Euler(0f, 0f, 68f);
                 SetLimbPose(-18f, -26f, 12f, -8f);
                 break;
+            case ResidentActionVisualState.Eat:
+                float bite = (Mathf.Sin(phase) + 1f) * 0.5f;
+                transform.localPosition = new Vector3(0f, -0.31f, 0f);
+                transform.localRotation = Quaternion.Euler(4f, 0f, 0f);
+                SetLimbPose(
+                    -24f,
+                    Mathf.Lerp(-48f, -88f, bite),
+                    68f,
+                    68f);
+                break;
             case ResidentActionVisualState.Death:
                 transform.localRotation = Quaternion.Euler(0f, 0f, 82f);
                 break;
@@ -145,6 +155,7 @@ public sealed class DigResidentRig : MonoBehaviour
 
     private void ResetPose()
     {
+        transform.localPosition = Vector3.zero;
         transform.localRotation = Quaternion.identity;
         if (_leftArm == null) return;
         SetLimbPose(0f, 0f, 0f, 0f);

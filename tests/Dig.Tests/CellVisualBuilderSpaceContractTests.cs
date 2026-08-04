@@ -7,7 +7,7 @@ namespace Dig.Tests
     public sealed class CellVisualBuilderSpaceContractTests
     {
         [Fact]
-        public void Cell_visual_uses_chunk_builder_local_axes_under_side_view_root()
+        public void Cell_visual_uses_chunk_builder_local_axes_without_rendering_open_floor_tiles()
         {
             string root = FindRepositoryRoot();
             string visual = File.ReadAllText(Path.Combine(
@@ -22,8 +22,11 @@ namespace Dig.Tests
             Assert.Contains(
                 "transform.localPosition = new Vector3(model.X, depth, model.Y);",
                 visual);
-            Assert.Contains("DigTunnelProjection.FloorDepth", visual);
-            Assert.Contains("DigTunnelProjection.FloorThickness", visual);
+            Assert.Contains(
+                "_renderer.enabled = Model.IsSolid && !showQuarters;",
+                visual);
+            Assert.DoesNotContain("DigTunnelProjection.FloorDepth", visual);
+            Assert.DoesNotContain("DigTunnelProjection.FloorThickness", visual);
             Assert.DoesNotContain(
                 "transform.position = DigTunnelProjection.CellWorldPosition",
                 visual);

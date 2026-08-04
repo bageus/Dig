@@ -21,12 +21,14 @@ namespace Dig.Unity
             DigVisualAsset asset,
             Vector2Int expectedFootprintSize,
             Vector2 pivotCell,
-            bool hasProfile)
+            bool hasProfile,
+            bool facesCamera = false)
         {
             Asset = asset;
             ExpectedFootprintSize = expectedFootprintSize;
             PivotCell = pivotCell;
             HasProfile = hasProfile;
+            FacesCamera = facesCamera;
         }
 
         internal DigVisualAsset Asset { get; }
@@ -36,6 +38,8 @@ namespace Dig.Unity
         internal Vector2 PivotCell { get; }
 
         internal bool HasProfile { get; }
+
+        internal bool FacesCamera { get; }
     }
 
     [Serializable]
@@ -98,7 +102,8 @@ namespace Dig.Unity
                 asset,
                 footprintSize,
                 pivotCell,
-                hasProfile: true);
+                hasProfile: true,
+                facesCamera: kind == DigBuildingProfileKind.Tent);
         }
 
         internal void AppendValidation(int index, ICollection<string> errors)
