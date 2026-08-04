@@ -14,7 +14,6 @@ using Dig.Presentation.World;
 
 namespace Dig.Unity
 {
-
 internal sealed partial class DigTerrainWorkSession
 {
     private readonly TunnelRuntimeTopologyProjector _tunnelTopologyProjector =
