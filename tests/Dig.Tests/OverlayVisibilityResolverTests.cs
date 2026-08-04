@@ -42,19 +42,35 @@ public sealed class OverlayVisibilityResolverTests
 
         Assert.False(snapshot.IsVisible(OverlayLayerKind.Routes));
         Assert.False(snapshot.IsVisible(OverlayLayerKind.Diagnostics));
-        Assert.True(snapshot.IsVisible(OverlayLayerKind.Jobs));
+        Assert.False(snapshot.IsVisible(OverlayLayerKind.Jobs));
         Assert.True(snapshot.IsVisible(OverlayLayerKind.Preview));
     }
 
     [Fact]
-    public void Debug_profile_preserves_default_route_and_job_visibility()
+    public void Debug_profile_keeps_routes_but_jobs_require_explicit_toggle()
     {
         OverlayVisibilitySnapshot snapshot = _resolver.CreateSnapshot(
             OverlayVisibilityProfile.Debug);
 
-        Assert.True(snapshot.IsVisible(OverlayLayerKind.Jobs));
+        Assert.False(snapshot.IsVisible(OverlayLayerKind.Jobs));
         Assert.True(snapshot.IsVisible(OverlayLayerKind.Routes));
         Assert.False(snapshot.IsVisible(OverlayLayerKind.Diagnostics));
+    }
+
+    [Fact]
+    public void Jobs_overlay_can_be_enabled_explicitly_without_changing_other_defaults()
+    {
+        Dictionary<OverlayLayerKind, bool> overrides = new()
+        {
+            [OverlayLayerKind.Jobs] = true,
+        };
+
+        OverlayVisibilitySnapshot snapshot = _resolver.CreateSnapshot(
+            OverlayVisibilityProfile.Release,
+            overrides);
+
+        Assert.True(snapshot.IsVisible(OverlayLayerKind.Jobs));
+        Assert.True(snapshot.IsVisible(OverlayLayerKind.Preview));
     }
 
     [Fact]

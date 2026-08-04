@@ -174,7 +174,8 @@ namespace Dig.Unity
 
         private static bool ShouldRenderWorldMarker(JobOverlayViewModel model)
         {
-            return !model.TargetZ.HasValue || model.TargetZ.Value <= 0;
+            return !model.IsTunnelInfrastructure
+                && (!model.TargetZ.HasValue || model.TargetZ.Value <= 0);
         }
 
         private static OverlaySemanticKind ResolveSemantic(

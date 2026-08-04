@@ -38,7 +38,8 @@ public sealed class JobOverlayViewModel
         bool isMushroomChop = false,
         bool isBarrelAttack = false,
         bool isProductionWork = false,
-        ResidentWorkToolVisualKind workToolVisualKind = ResidentWorkToolVisualKind.None)
+        ResidentWorkToolVisualKind workToolVisualKind = ResidentWorkToolVisualKind.None,
+        bool isTunnelInfrastructure = false)
     {
         if (string.IsNullOrWhiteSpace(id)
             || string.IsNullOrWhiteSpace(description)
@@ -118,6 +119,7 @@ public sealed class JobOverlayViewModel
         IsBarrelAttack = isBarrelAttack;
         IsProductionWork = isProductionWork;
         WorkToolVisualKind = workToolVisualKind;
+        IsTunnelInfrastructure = isTunnelInfrastructure;
     }
 
     public string Id { get; }
@@ -141,6 +143,7 @@ public sealed class JobOverlayViewModel
     public bool IsBarrelAttack { get; }
     public bool IsProductionWork { get; }
     public ResidentWorkToolVisualKind WorkToolVisualKind { get; }
+    public bool IsTunnelInfrastructure { get; }
     public bool HasTarget => TargetX.HasValue && TargetY.HasValue && TargetZ.HasValue;
 }
 }

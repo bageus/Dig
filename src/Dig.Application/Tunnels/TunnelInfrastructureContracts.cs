@@ -165,70 +165,46 @@ public sealed class SynchronizeTunnelAutomaticSupportCommand
     }
 }
 
-public enum TunnelAutomaticJunctionTrimSyncStatus
+public enum TunnelJunctionTrimPlacementSyncStatus
 {
-    NoTarget = 0,
-    OutOfRange = 1,
-    PendingSource = 2,
-    Available = 3,
-    Retained = 4,
+    PlacementOnly = 0,
+    LegacyAutomaticJobsCancelled = 1,
 }
 
-public sealed class TunnelAutomaticJunctionTrimSyncResult
+public sealed class TunnelJunctionTrimPlacementSyncResult
 {
-    public TunnelAutomaticJunctionTrimSyncResult(
-        TunnelAutomaticJunctionTrimSyncStatus status,
-        EntityId? jobId,
-        CellId targetCell)
+    public TunnelJunctionTrimPlacementSyncResult(
+        TunnelJunctionTrimPlacementSyncStatus status,
+        IEnumerable<EntityId> cancelledJobIds)
     {
-        Status = status;
-        JobId = jobId;
-        TargetCell = targetCell;
-    }
-
-    public TunnelAutomaticJunctionTrimSyncStatus Status { get; }
-    public EntityId? JobId { get; }
-    public CellId TargetCell { get; }
-}
-
-public sealed class SynchronizeTunnelAutomaticJunctionTrimCommand
-    : ICommand<Result<TunnelAutomaticJunctionTrimSyncResult>>
-{
-    public SynchronizeTunnelAutomaticJunctionTrimCommand(
-        CellId targetCell,
-        EntityId newJobId,
-        IEnumerable<CellId> completedBuildingCells,
-        IEnumerable<CellId> revealedCells,
-        IEnumerable<CellId> reachableCells,
-        long tick)
-    {
-        if (completedBuildingCells is null
-            || revealedCells is null
-            || reachableCells is null)
+        if (cancelledJobIds is null)
         {
-            throw new ArgumentNullException(nameof(completedBuildingCells));
+            throw new ArgumentNullException(nameof(cancelledJobIds));
         }
 
-        TargetCell = targetCell;
-        NewJobId = newJobId;
-        CompletedBuildingCells = Copy(completedBuildingCells);
-        RevealedCells = Copy(revealedCells);
-        ReachableCells = Copy(reachableCells);
+        Status = status;
+        CancelledJobIds = new ReadOnlyCollection<EntityId>(
+            cancelledJobIds.OrderBy(value => value.ToString(), StringComparer.Ordinal).ToArray());
+    }
+
+    public TunnelJunctionTrimPlacementSyncStatus Status { get; }
+    public IReadOnlyList<EntityId> CancelledJobIds { get; }
+}
+
+public sealed class SynchronizeTunnelJunctionTrimPlacementCommand
+    : ICommand<Result<TunnelJunctionTrimPlacementSyncResult>>
+{
+    public SynchronizeTunnelJunctionTrimPlacementCommand(long tick)
+    {
+        if (tick < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(tick));
+        }
+
         Tick = tick;
     }
 
-    public CellId TargetCell { get; }
-    public EntityId NewJobId { get; }
-    public IReadOnlyList<CellId> CompletedBuildingCells { get; }
-    public IReadOnlyList<CellId> RevealedCells { get; }
-    public IReadOnlyList<CellId> ReachableCells { get; }
     public long Tick { get; }
-
-    private static IReadOnlyList<CellId> Copy(IEnumerable<CellId> cells)
-    {
-        return new ReadOnlyCollection<CellId>(
-            cells.Distinct().OrderBy(cell => cell).ToArray());
-    }
 }
 
 public static class TunnelInfrastructureApplicationErrors
