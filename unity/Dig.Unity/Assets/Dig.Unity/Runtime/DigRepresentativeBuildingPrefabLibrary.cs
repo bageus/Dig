@@ -87,7 +87,7 @@ namespace Dig.Unity
                 profile.footprintSize,
                 profile.pivotCell,
                 hasProfile: true,
-                facesCamera);
+                facesCamera: facesCamera);
             return true;
         }
 
