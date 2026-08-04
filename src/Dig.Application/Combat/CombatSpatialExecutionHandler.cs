@@ -16,7 +16,7 @@ public sealed partial class CombatSpatialExecutionHandler
     private readonly IAgentRepository _agents;
     private readonly ICombatRepository _combat;
     private readonly IFactionRepository _factions;
-    private readonly TunnelNavigationVolume _volume;
+    private TunnelNavigationVolume _volume;
     private readonly ICombatEquipmentProvider _equipment;
     private readonly IEventSink _events;
     private readonly CombatSpatialPolicy _policy;
@@ -44,6 +44,11 @@ public sealed partial class CombatSpatialExecutionHandler
             agents, combat, factions, events,
             skillGrants ?? throw new ArgumentNullException(nameof(skillGrants)));
         _moveHandler = new MoveAgentCommandHandler(agents, events);
+    }
+
+    public void UpdateNavigationVolume(TunnelNavigationVolume volume)
+    {
+        _volume = volume ?? throw new ArgumentNullException(nameof(volume));
     }
 
     public Result<CombatSpatialExecutionReport> Handle(AdvanceCombatSpatialExecutionCommand command)
