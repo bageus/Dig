@@ -152,45 +152,7 @@ namespace Dig.Unity
         {
             return new DigRepresentativeBuildingPackData
             {
-                profiles = new[]
-                {
-                    Profile(
-                        new[] { "kitchen.campfire", "building.campfire" },
-                        "Campfire",
-                        Vector2Int.one,
-                        Vector2.zero,
-                        new Color(0.92f, 0.42f, 0.12f, 1f),
-                        new[]
-                        {
-                            Part("Hearth", "Box", new Vector3(0f, 0.08f, 0f), new Vector3(0.82f, 0.16f, 0.82f)),
-                            Part("Flame", "Octahedron", new Vector3(0f, 0.48f, 0f), new Vector3(0.34f, 0.68f, 0.34f)),
-                        },
-                        Anchor("Worker", "worker.primary", new Vector3(0f, 0f, -0.62f))),
-                    Profile(
-                        new[] { "building.furnace", "building.forge", "demo.workshop.box" },
-                        "Furnace",
-                        Vector2Int.one,
-                        Vector2.zero,
-                        new Color(0.64f, 0.30f, 0.16f, 1f),
-                        new[]
-                        {
-                            Part("Body", "Box", new Vector3(0f, 0.42f, 0f), new Vector3(0.82f, 0.84f, 0.76f)),
-                            Part("Chimney", "Box", new Vector3(0.22f, 1.06f, 0.12f), new Vector3(0.28f, 0.72f, 0.28f)),
-                        },
-                        Anchor("Worker", "worker.primary", new Vector3(0f, 0f, -0.72f))),
-                    Profile(
-                        new[] { "building.arsenal", "building.storage" },
-                        "Storage",
-                        new Vector2Int(3, 2),
-                        new Vector2(1f, 0.5f),
-                        new Color(0.40f, 0.48f, 0.56f, 1f),
-                        new[]
-                        {
-                            Part("Foundation", "Box", new Vector3(1f, 0.12f, 0.5f), new Vector3(2.82f, 0.24f, 1.82f)),
-                            Part("Rack", "Box", new Vector3(1f, 0.82f, 0.52f), new Vector3(1.9f, 1.40f, 1.52f)),
-                        },
-                        Anchor("Storage", "storage.primary", new Vector3(1f, 0.82f, 0.50f))),
-                },
+                profiles = CreateBuiltInProfiles(),
             };
         }
 
@@ -214,9 +176,11 @@ namespace Dig.Unity
             string kind,
             Vector2Int footprint,
             Vector2 pivot,
+            Vector3 visualBoundsCenter,
+            Vector3 visualBoundsSize,
             Color tint,
             DigRepresentativeBuildingPartData[] parts,
-            DigRepresentativeBuildingAnchorData anchor)
+            params DigRepresentativeBuildingAnchorData[] anchors)
         {
             return new DigRepresentativeBuildingProfileData
             {
@@ -224,11 +188,13 @@ namespace Dig.Unity
                 kind = kind,
                 footprintSize = footprint,
                 pivotCell = pivot,
+                visualBoundsCenter = visualBoundsCenter,
+                visualBoundsSize = visualBoundsSize,
                 tint = tint,
-                maxRenderers = 8,
-                maxTriangles = 256,
+                maxRenderers = 16,
+                maxTriangles = 512,
                 parts = parts,
-                anchors = new[] { anchor },
+                anchors = anchors,
             };
         }
 
@@ -236,15 +202,18 @@ namespace Dig.Unity
             string name,
             string shape,
             Vector3 position,
-            Vector3 scale)
+            Vector3 scale,
+            Vector3? rotation = null,
+            string detail = "Marker")
         {
             return new DigRepresentativeBuildingPartData
             {
                 name = name,
                 shape = shape,
-                detail = "Marker",
+                detail = detail,
                 position = position,
                 scale = scale,
+                rotation = rotation ?? Vector3.zero,
             };
         }
 
