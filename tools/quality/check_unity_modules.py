@@ -4,12 +4,15 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+ROOT_MANIFEST_PATH = ROOT / "Packages" / "manifest.json"
+ROOT_LOCK_PATH = ROOT / "Packages" / "packages-lock.json"
 MANIFEST_PATH = ROOT / "unity" / "Dig.Unity" / "Packages" / "manifest.json"
 LOCK_PATH = ROOT / "unity" / "Dig.Unity" / "Packages" / "packages-lock.json"
 ASMDEF_PATH = ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" / "Runtime" / "Dig.Unity.asmdef"
 
 REQUIRED_PACKAGES = {
     "com.unity.render-pipelines.universal": ("17.0.4", "builtin"),
+    "com.unity.modules.animation": ("1.0.0", "builtin"),
     "com.unity.modules.audio": ("1.0.0", "builtin"),
     "com.unity.modules.imgui": ("1.0.0", "builtin"),
     "com.unity.modules.particlesystem": ("1.0.0", "builtin"),
@@ -19,6 +22,7 @@ REQUIRED_PACKAGES = {
 }
 
 REQUIRED_ASSEMBLIES = {
+    "UnityEngine.AnimationModule",
     "UnityEngine.AudioModule",
     "UnityEngine.IMGUIModule",
     "UnityEngine.InputLegacyModule",
@@ -41,9 +45,34 @@ def load_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
+def validate_package(
+    errors: list[str],
+    manifest_dependencies: dict[str, object],
+    lock_dependencies: dict[str, object],
+    package_name: str,
+    version: str,
+    source: str,
+    owner: str,
+) -> None:
+    if manifest_dependencies.get(package_name) != version:
+        errors.append(f"{owner} manifest must include {package_name} {version}")
+
+    lock_entry = lock_dependencies.get(package_name)
+    if not isinstance(lock_entry, dict):
+        errors.append(f"{owner} packages-lock must include {package_name}")
+        return
+
+    if lock_entry.get("version") != version:
+        errors.append(f"{owner} packages-lock must pin {package_name} to {version}")
+    if lock_entry.get("source") != source:
+        errors.append(f"{owner} packages-lock must mark {package_name} as {source}")
+
+
 def main() -> int:
     errors: list[str] = []
     try:
+        root_manifest = load_json(ROOT_MANIFEST_PATH)
+        root_lock = load_json(ROOT_LOCK_PATH)
         manifest = load_json(MANIFEST_PATH)
         package_lock = load_json(LOCK_PATH)
         assembly = load_json(ASMDEF_PATH)
@@ -51,26 +80,32 @@ def main() -> int:
         print(f"Unity module configuration is invalid: {error}", file=sys.stderr)
         return 1
 
+    root_manifest_dependencies = root_manifest.get("dependencies", {})
+    root_lock_dependencies = root_lock.get("dependencies", {})
     manifest_dependencies = manifest.get("dependencies", {})
     lock_dependencies = package_lock.get("dependencies", {})
     assembly_references = set(assembly.get("references", []))
 
-    for package_name, (version, source) in sorted(REQUIRED_PACKAGES.items()):
-        if manifest_dependencies.get(package_name) != version:
-            errors.append(f"manifest must include {package_name} {version}")
+    validate_package(
+        errors,
+        root_manifest_dependencies,
+        root_lock_dependencies,
+        "com.unity.modules.animation",
+        "1.0.0",
+        "builtin",
+        "root Unity host",
+    )
 
-        lock_entry = lock_dependencies.get(package_name)
-        if not isinstance(lock_entry, dict):
-            errors.append(f"packages-lock must include {package_name}")
-        else:
-            if lock_entry.get("version") != version:
-                errors.append(
-                    f"packages-lock must pin {package_name} to {version}"
-                )
-            if lock_entry.get("source") != source:
-                errors.append(
-                    f"packages-lock must mark {package_name} as {source}"
-                )
+    for package_name, (version, source) in sorted(REQUIRED_PACKAGES.items()):
+        validate_package(
+            errors,
+            manifest_dependencies,
+            lock_dependencies,
+            package_name,
+            version,
+            source,
+            "Dig.Unity",
+        )
 
     for package_name, reason in FORBIDDEN_PACKAGES.items():
         if package_name in manifest_dependencies:
@@ -88,7 +123,7 @@ def main() -> int:
             print(f"- {error}", file=sys.stderr)
         return 1
 
-    print("PASS: Unity packages and assembly references")
+    print("PASS: root and Dig.Unity packages and assembly references")
     return 0
 
 
