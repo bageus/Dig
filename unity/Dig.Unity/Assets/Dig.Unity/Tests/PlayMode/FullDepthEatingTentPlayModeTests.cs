@@ -5,6 +5,7 @@ using System.Reflection;
 using Dig.Domain.Inventory;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Buildings;
+using Dig.Presentation.World;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -57,6 +58,31 @@ public sealed class FullDepthEatingTentPlayModeTests
                 layers[z].min,
                 Is.EqualTo(layers[z + 1].max).Within(0.00001f));
         }
+    }
+
+    [Test]
+    public void Excavated_open_cell_does_not_render_a_cyan_floor_tile()
+    {
+        _root = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        DigCellVisual visual = _root.AddComponent<DigCellVisual>();
+        WorldCellViewModel open = new WorldCellViewModel(
+            x: 4,
+            y: 3,
+            z: 2,
+            materialId: "terrain.air",
+            isSolid: false,
+            isExplored: true,
+            isDesignated: false,
+            hardness: 0,
+            damage: 0,
+            temperature: 20,
+            worldVersion: 1);
+
+        visual.transform.localScale = Vector3.zero;
+        visual.Configure(open, new Color(0.20f, 0.52f, 0.66f, 1f));
+
+        Assert.That(_root.GetComponent<Renderer>().enabled, Is.False);
+        Assert.That(visual.transform.localScale, Is.EqualTo(Vector3.zero));
     }
 
     [UnityTest]
