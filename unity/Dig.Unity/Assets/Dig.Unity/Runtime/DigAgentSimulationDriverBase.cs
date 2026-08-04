@@ -92,6 +92,8 @@ namespace Dig.Unity
             WorldOverlayRenderer = worldOverlayRenderer;
             EffectRuntime = GetComponent<DigPresentationEffectRuntime>();
             Hud = hud;
+            TerrainSession.BindTunnelInfrastructureVisualSink(
+                WorldRenderer.SetTunnelInfrastructureVisuals);
             AgentSession.BindCombatInventory(TerrainSession.InventoryRepository);
             AgentSession.SetMovementModeResolver(
                 TerrainSession.ResolveResidentMovementMode);
