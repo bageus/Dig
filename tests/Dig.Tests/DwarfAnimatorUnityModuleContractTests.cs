@@ -18,12 +18,18 @@ public sealed class DwarfAnimatorUnityModuleContractTests
         string manifest = File.ReadAllText(Path.Combine(
             root,
             "unity", "Dig.Unity", "Packages", "manifest.json"));
+        string lockFile = File.ReadAllText(Path.Combine(
+            root,
+            "unity", "Dig.Unity", "Packages", "packages-lock.json"));
 
         Assert.Contains("Animator.StringToHash", bridge);
         Assert.Contains("[SerializeField] private Animator animator", bridge);
         Assert.Contains(
             "\"com.unity.modules.animation\": \"1.0.0\"",
             manifest);
+        Assert.Contains(
+            "\"com.unity.modules.animation\"",
+            lockFile);
         Assert.Contains(
             "\"com.unity.cloud.gltfast\": \"6.19.0\"",
             manifest);
