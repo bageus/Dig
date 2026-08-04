@@ -34,28 +34,62 @@ namespace Dig.Unity
                     ResidentWorkToolVisualKind.Hammer => HammerVisualId,
                     _ => _equipmentModel?.ItemId,
                 };
+
             if (string.IsNullOrWhiteSpace(itemId))
             {
-                _equipmentVisual?.Clear();
+                if (_equipmentVisual == null
+                    || _equipmentVisual.CurrentItemId == null)
+                {
+                    return;
+                }
+
+                bool reapplyHover = PrepareHoverForRendererMutation();
+                try
+                {
+                    _equipmentVisual.Clear();
+                }
+                finally
+                {
+                    CompleteHoverRendererMutation(reapplyHover);
+                }
+
                 return;
             }
 
-            if (_equipmentVisual == null)
+            if (_equipmentVisual != null
+                && string.Equals(
+                    _equipmentVisual.CurrentItemId,
+                    itemId,
+                    StringComparison.Ordinal)
+                && _equipmentVisual.transform.childCount > 0)
             {
-                GameObject root = new GameObject("Right Hand Equipment");
-                root.transform.SetParent(
-                    ResolveSocket(DigResidentSocketKind.RightHand),
-                    worldPositionStays: false);
-                root.transform.SetLocalPositionAndRotation(
-                    Vector3.zero,
-                    Quaternion.identity);
-                _equipmentVisual = root.AddComponent<DigAgentEquipmentVisual>();
+                return;
             }
 
-            _equipmentVisual.Configure(
-                itemId,
-                EquipmentAppearanceKind.Generic,
-                _equipmentMaterial);
+            bool refreshHover = PrepareHoverForRendererMutation();
+            try
+            {
+                if (_equipmentVisual == null)
+                {
+                    GameObject root = new GameObject("Right Hand Equipment");
+                    root.transform.SetParent(
+                        ResolveSocket(DigResidentSocketKind.RightHand),
+                        worldPositionStays: false);
+                    root.transform.SetLocalPositionAndRotation(
+                        Vector3.zero,
+                        Quaternion.identity);
+                    _equipmentVisual = root.AddComponent<DigAgentEquipmentVisual>();
+                }
+
+                _equipmentVisual.Configure(
+                    itemId,
+                    EquipmentAppearanceKind.Generic,
+                    _equipmentMaterial);
+            }
+            finally
+            {
+                CompleteHoverRendererMutation(refreshHover);
+            }
         }
     }
 }

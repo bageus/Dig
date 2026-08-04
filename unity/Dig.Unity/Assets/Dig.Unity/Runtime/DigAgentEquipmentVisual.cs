@@ -140,7 +140,10 @@ namespace Dig.Unity
             _appearanceKind = EquipmentAppearanceKind.Generic;
             for (int index = transform.childCount - 1; index >= 0; index--)
             {
-                Destroy(transform.GetChild(index).gameObject);
+                Transform child = transform.GetChild(index);
+                child.SetParent(null, worldPositionStays: true);
+                child.gameObject.SetActive(false);
+                Destroy(child.gameObject);
             }
         }
 
