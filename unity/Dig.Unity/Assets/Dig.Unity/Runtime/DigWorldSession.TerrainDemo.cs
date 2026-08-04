@@ -39,7 +39,7 @@ internal sealed partial class DigWorldSession
         int patchY = Math.Min(world.Size.Height - 2, layout.CaveFloorY + 2);
         for (int x = 1; x <= Math.Min(2, world.Size.Width - 2); x++)
         {
-            for (int z = 0; z <= 1; z++)
+            for (int z = CellId.MinimumDepth; z < world.Size.Depth; z++)
             {
                 CellId cell = new CellId(x, patchY, z);
                 Result<CellSnapshot> current = world.GetCell(cell);
