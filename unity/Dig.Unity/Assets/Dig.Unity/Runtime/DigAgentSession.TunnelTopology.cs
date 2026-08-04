@@ -72,12 +72,32 @@ internal sealed partial class DigAgentSession
         IReadOnlyCollection<CellId> plannedVerticalCells)
     {
         RequireTunnelMovement();
-        _tunnelVolume = TunnelNavigationVolume.FromWorldSnapshot(
+        TunnelNavigationVolume previous = _tunnelVolume!;
+        TunnelNavigationVolume refreshed = TunnelNavigationVolume.FromWorldSnapshot(
             world,
             plannedTunnelCells,
             plannedVerticalCells,
-            _tunnelVolume!.DemoLayout);
+            previous.DemoLayout);
+        bool topologyChanged = !HasSameNavigationTopology(previous, refreshed);
+        _tunnelVolume = refreshed;
         CreateTunnelRoutePlanners();
+        if (topologyChanged)
+        {
+            RefreshVukerEcologyNavigation(refreshed);
+            _combatExecution?.UpdateNavigationVolume(refreshed);
+        }
+    }
+
+    private static bool HasSameNavigationTopology(
+        TunnelNavigationVolume first,
+        TunnelNavigationVolume second)
+    {
+        return first.Width == second.Width
+            && first.Height == second.Height
+            && first.Depth == second.Depth
+            && first.Cells.SequenceEqual(second.Cells)
+            && first.VerticalCells.SequenceEqual(second.VerticalCells)
+            && first.SupportedCells.SequenceEqual(second.SupportedCells);
     }
 
     private void InitializeTunnelMovement(
