@@ -86,7 +86,7 @@ namespace Dig.Unity
                         _cells.Add(cellKey, visual);
                     }
 
-                    ApplyCell(visual, cell, walkSurface);
+                    ApplyCell(visual, cell);
                     ApplyProtectedVisual(visual, cellKey);
                 }
             }
@@ -200,31 +200,14 @@ namespace Dig.Unity
 
         private static void ApplyCell(
             DigCellVisual visual,
-            WorldCellViewModel cell,
-            bool walkSurface)
+            WorldCellViewModel cell)
         {
             CellId cellId = new CellId(cell.X, cell.Y, cell.Z);
             visual.name = $"Cell {cell.X},{cell.Y},{cell.Z} [{cell.MaterialId}]";
-            if (cell.IsSolid)
-            {
-                visual.transform.localPosition = DigTunnelProjection.CellWorldPosition(cellId);
-                visual.transform.localScale = Vector3.one * 0.96f;
-            }
-            else if (walkSurface)
-            {
-                visual.transform.localPosition =
-                    DigTunnelProjection.FloorWorldPosition(cellId);
-                visual.transform.localScale = new Vector3(
-                    0.94f,
-                    DigTunnelProjection.FloorThickness,
-                    DigTunnelProjection.FloorDepth);
-            }
-            else
-            {
-                visual.transform.localPosition = DigTunnelProjection.CellWorldPosition(cellId);
-                visual.transform.localScale = Vector3.zero;
-            }
-
+            visual.transform.localPosition = DigTunnelProjection.CellWorldPosition(cellId);
+            visual.transform.localScale = cell.IsSolid
+                ? Vector3.one * 0.96f
+                : Vector3.zero;
             visual.Configure(cell, ResolveColor(cell));
         }
 
@@ -232,9 +215,8 @@ namespace Dig.Unity
         {
             foreach (KeyValuePair<CellId, DigCellVisual> pair in _cells)
             {
-                bool renderable = pair.Value.Model.IsSolid
-                    || _walkSurfaceCells.Contains(pair.Key);
-                bool hiddenByCutaway = pair.Value.Model.IsSolid
+                bool renderable = pair.Value.Model.IsSolid;
+                bool hiddenByCutaway = renderable
                     && _tunnelCutaway.Contains(pair.Key);
                 bool visible = renderable && !hiddenByCutaway;
                 pair.Value.gameObject.SetActive(visible);
@@ -317,7 +299,7 @@ namespace Dig.Unity
                     hardness);
             }
 
-            return new Color(0.20f, 0.52f, 0.66f, 1f);
+            return Color.clear;
         }
     }
 }
