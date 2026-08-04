@@ -32,10 +32,6 @@ public static class TunnelAutomaticWorkExecutionErrors
         "tunnel.automatic_work.job_mismatch",
         "The requested job is not automatic tunnel infrastructure work.");
 
-    public static readonly DomainError ManualPlacementRequired = new DomainError(
-        "tunnel.automatic_work.manual_placement_required",
-        "Junction stone trim is completed only through resident-owned placement mode.");
-
     public static readonly DomainError InvalidJobStage = new DomainError(
         "tunnel.automatic_work.invalid_job_stage",
         "Automatic tunnel work must be in its finalization stage.");
@@ -100,12 +96,6 @@ public sealed class CompleteTunnelAutomaticWorkHandler
             return Result.Failure(TunnelAutomaticWorkExecutionErrors.JobMismatch);
         }
 
-        if (definition.Kind != TunnelAutomaticWorkKind.WoodenSupport)
-        {
-            return Result.Failure(
-                TunnelAutomaticWorkExecutionErrors.ManualPlacementRequired);
-        }
-
         if (job.Status != JobStatus.InProgress
             || job.Stage != JobStageKind.Finalize)
         {
@@ -138,7 +128,7 @@ public sealed class CompleteTunnelAutomaticWorkHandler
             return Result.Failure(TunnelAutomaticWorkExecutionErrors.SourceInvalid);
         }
 
-        SkillGrantBundle skillBundle = CreateSkillBundle(job, command.Tick);
+        SkillGrantBundle skillBundle = CreateSkillBundle(job, definition, command.Tick);
         Result skillValidation = _skillGrants.Validate(skillBundle);
         if (skillValidation.IsFailure)
         {
@@ -156,10 +146,19 @@ public sealed class CompleteTunnelAutomaticWorkHandler
                 "Validated automatic tunnel material could not be consumed.");
         }
 
-        Result infrastructureCommitted = tunnels.RegisterCompletedWoodenSupport(
-            definition.SegmentId,
-            definition.TargetCell,
-            command.Tick);
+        Result infrastructureCommitted = definition.Kind switch
+        {
+            TunnelAutomaticWorkKind.WoodenSupport =>
+                tunnels.RegisterCompletedWoodenSupport(
+                    definition.SegmentId,
+                    definition.TargetCell,
+                    command.Tick),
+            TunnelAutomaticWorkKind.JunctionStoneTrim =>
+                tunnels.RegisterCompletedJunctionStoneTrim(
+                    definition.TargetCell,
+                    command.Tick),
+            _ => Result.Failure(TunnelAutomaticWorkExecutionErrors.JobMismatch),
+        };
         if (infrastructureCommitted.IsFailure)
         {
             throw new InvalidOperationException(
@@ -187,28 +186,37 @@ public sealed class CompleteTunnelAutomaticWorkHandler
         TunnelInfrastructureState tunnels,
         TunnelAutomaticWorkJobDefinition definition)
     {
-        HorizontalTunnelSegmentSnapshot? segment =
-            tunnels.GetSegment(definition.SegmentId);
-        return segment?.NextAutomaticSupportTarget is
-            TunnelAutomaticSupportTargetSnapshot target
-            && target.TargetCell == definition.TargetCell;
+        if (definition.Kind == TunnelAutomaticWorkKind.WoodenSupport)
+        {
+            HorizontalTunnelSegmentSnapshot? segment =
+                tunnels.GetSegment(definition.SegmentId);
+            return segment?.NextAutomaticSupportTarget is
+                TunnelAutomaticSupportTargetSnapshot target
+                && target.TargetCell == definition.TargetCell;
+        }
+
+        return tunnels.CaptureSnapshot().PendingJunctionStoneTrimTargets.Any(target =>
+            target.Cell == definition.TargetCell
+            && target.OwnerSegmentId == definition.SegmentId);
     }
 
     private static SkillGrantBundle CreateSkillBundle(
         JobSnapshot job,
+        TunnelAutomaticWorkJobDefinition definition,
         long tick)
     {
+        AgentSkillId skillId = definition.Kind switch
+        {
+            TunnelAutomaticWorkKind.WoodenSupport => AgentSkillCatalog.Woodworking,
+            TunnelAutomaticWorkKind.JunctionStoneTrim => AgentSkillCatalog.Stonework,
+            _ => throw new ArgumentOutOfRangeException(nameof(definition)),
+        };
         return new SkillGrantBundle(
             job.AssignedAgentId!.Value,
             SkillGrantSourceKind.JobCompleted,
             $"tunnel-automatic:{job.Id}",
             tick,
-            new[]
-            {
-                new SkillGrant(
-                    AgentSkillCatalog.Woodworking,
-                    SkillGrantUnits),
-            });
+            new[] { new SkillGrant(skillId, SkillGrantUnits) });
     }
 
     private void ApplyConfirmedSkillResult(SkillGrantBundle bundle)
