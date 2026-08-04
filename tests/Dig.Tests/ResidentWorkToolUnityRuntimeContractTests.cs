@@ -59,6 +59,35 @@ public sealed class ResidentWorkToolUnityRuntimeContractTests
         Assert.Contains("GetComponentsInChildren<Collider>(true)", scenario);
     }
 
+    [Fact]
+    public void Hand_visual_rebuild_invalidates_stale_hover_renderers()
+    {
+        string root = FindRepositoryRoot();
+        string runtime = Path.Combine(root, "unity", "Dig.Unity", "Assets",
+            "Dig.Unity", "Runtime");
+        string playMode = Path.Combine(root, "unity", "Dig.Unity", "Assets",
+            "Dig.Unity", "Tests", "PlayMode");
+
+        string hover = Read(runtime, "DigAgentVisual.HoverLifecycle.cs");
+        string hands = Read(runtime, "DigAgentVisual.HandTools.cs");
+        string equipment = Read(runtime, "DigAgentEquipmentVisual.cs");
+        string scenario = Read(playMode, "ResidentWorkToolVisualsPlayModeTests.cs");
+
+        Assert.Contains("PrepareHoverForRendererMutation", hover);
+        Assert.Contains("CompleteHoverRendererMutation", hover);
+        Assert.Contains("InvalidateHoverRendererCache", hover);
+        Assert.Contains("if (renderer == null", hover);
+        Assert.Contains("PrepareHoverForRendererMutation()", hands);
+        Assert.Contains("CompleteHoverRendererMutation(reapplyHover)", hands);
+        Assert.Contains("CompleteHoverRendererMutation(refreshHover)", hands);
+        Assert.Contains("child.SetParent(null, worldPositionStays: true)", equipment);
+        Assert.Contains("child.gameObject.SetActive(false)", equipment);
+        Assert.Contains(
+            "Hover_survives_hand_visual_rebuild_without_destroyed_renderer_access",
+            scenario);
+        Assert.Contains("LogAssert.NoUnexpectedReceived()", scenario);
+    }
+
     private static string Read(string root, string file)
     {
         string path = Path.Combine(root, file);
