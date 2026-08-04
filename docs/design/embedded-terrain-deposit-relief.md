@@ -1,6 +1,6 @@
 # Встроенный рельеф раскрытых залежей
 
-Статус: `APPROVED`.
+Статус: `IMPLEMENTED`.
 
 Tracking issue: [#617](https://github.com/bageus/Dig/issues/617).
 
@@ -8,6 +8,8 @@ Tracking issue: [#617](https://github.com/bageus/Dig/issues/617).
 
 - [`excavation-room-templates-and-deposits.md`](excavation-room-templates-and-deposits.md);
 - [`../implementation/unity-visual-asset-pipeline.md`](../implementation/unity-visual-asset-pipeline.md).
+
+Implementation evidence: [`../implementation/embedded-terrain-deposit-relief-2026-08-04.md`](../implementation/embedded-terrain-deposit-relief-2026-08-04.md).
 
 ## 1. Назначение
 
@@ -78,3 +80,4 @@ Presentation mesh обязан соблюдать следующие инвар�
 ## 8. Журнал подтверждений
 
 - 2026-08-04 — пользователь подтвердил: залежи остаются видимыми, находятся в стене и только немного выступают; отдельные явно наложенные surface markers запрещены.
+- 2026-08-04 — implementation и source/test evidence добавлены в PR #618; без executed licensed Unity result статус не повышается до `VERIFIED`.
