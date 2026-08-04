@@ -40,8 +40,8 @@ public sealed class TunnelInfrastructureUnityRuntimeContractTests
         Assert.Contains("SynchronizeTunnelJunctionTrimPlacementCommand(tick)", infrastructure);
         Assert.DoesNotContain("SynchronizeTunnelAutomaticJunctionTrimHandler", infrastructure);
         Assert.DoesNotContain("ResolveTrimJobId", infrastructure);
-        Assert.Contains("CompleteTunnelAutomaticWorkHandler", infrastructure);
         Assert.Contains("definition.Kind==TunnelAutomaticWorkKind.WoodenSupport", infrastructure);
+        Assert.Contains("CompleteTunnelAutomaticWorkHandler", infrastructure);
         Assert.Contains("TryPlanTunnelAutomaticWorkMovement", navigation);
         Assert.Contains("AdvanceTunnelAutomaticWork", session);
 
@@ -55,38 +55,20 @@ public sealed class TunnelInfrastructureUnityRuntimeContractTests
     }
 
     [Fact]
-    public void Completed_infrastructure_is_published_to_collider_free_world_visuals()
+    public void Runtime_imports_authoritative_job_route_and_command_contracts()
     {
-        string runtime = RuntimeRoot();
-        string driver = Read(runtime, "DigAgentSimulationDriverBase.cs");
-        string infrastructure = Read(runtime, "DigTerrainTunnelInfrastructure.cs");
-        string worldRenderer = Read(
-            runtime,
-            "DigWorldRenderer.TunnelInfrastructure.cs");
-        string renderer = Read(runtime, "DigTunnelInfrastructureRenderer.cs");
+        string infrastructure = Read(
+            RuntimeRoot(),
+            "DigTerrainTunnelInfrastructure.cs");
 
-        Assert.Contains(
-            "BindTunnelInfrastructureVisualSink(WorldRenderer.SetTunnelInfrastructureVisuals)",
-            driver);
-        Assert.Contains("TunnelInfrastructureVisualPresenter", infrastructure);
-        Assert.Contains("PublishTunnelInfrastructureVisuals()", infrastructure);
-        int completion = infrastructure.IndexOf(
-            "CompleteTunnelAutomaticWorkCommand(job.Id,tick)",
-            StringComparison.Ordinal);
-        int publication = infrastructure.IndexOf(
-            "PublishTunnelInfrastructureVisuals()",
-            completion,
-            StringComparison.Ordinal);
-        Assert.True(completion >= 0 && publication > completion);
-        Assert.Contains("SetTunnelInfrastructureVisuals", worldRenderer);
-        Assert.Contains("MeshFilter", renderer);
-        Assert.Contains("MeshRenderer", renderer);
-        Assert.DoesNotContain("Collider", renderer);
-        Assert.DoesNotContain("UnityEngine.Random", renderer);
+        Assert.Contains("usingDig.Application.Jobs;", infrastructure);
+        Assert.Contains("newTerrainWorkRoutePlan(", infrastructure);
+        Assert.Contains("newAdvanceJobCommand(", infrastructure);
+        Assert.Contains("newReleaseJobAssignmentCommand(", infrastructure);
     }
 
     [Fact]
-    public void Job_overlay_projects_only_the_supported_automatic_tunnel_target()
+    public void Job_overlay_projects_automatic_tunnel_xyz_target()
     {
         EntityId jobId = Id(1);
         EntityId segmentId = Id(2);
@@ -109,6 +91,7 @@ public sealed class TunnelInfrastructureUnityRuntimeContractTests
         Assert.Equal(target.Y, model.TargetY);
         Assert.Equal(target.Z, model.TargetZ);
         Assert.Equal(JobToolKind.Construction, model.PreferredToolKind);
+        Assert.True(model.IsTunnelInfrastructure);
     }
 
     private static EntityId Id(int value)
