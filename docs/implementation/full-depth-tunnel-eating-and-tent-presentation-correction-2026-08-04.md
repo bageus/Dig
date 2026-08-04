@@ -17,6 +17,10 @@ Pull request: [#627](https://github.com/bageus/Dig/pull/627).
 
 ## Root causes
 
+### Open-cell cyan tiles
+
+`DigWorldRenderer` сохранял отдельный primitive cube для каждой open walk-surface cell. `ApplyCell` масштабировал этот cube как тонкую плитку, `DigCellVisual.Configure` повторно восстанавливал floor scale, а `ResolveColor` возвращал для empty cell бирюзовый `RGB 0.20/0.52/0.66`. Поэтому плитка оставалась видимой независимо от chunked terrain mesh.
+
 ### Depth projection
 
 `DigTunnelProjection` использовал разные сокращённые размеры:
@@ -24,9 +28,10 @@ Pull request: [#627](https://github.com/bageus/Dig/pull/627).
 - `DepthSpacing = -0.55`;
 - `FloorDepth = 0.45`;
 - `RockCellHalfExtent = 0.48`;
-- terrain mesh отдельно строил Z0 глубиной `0.82`, а Z1-Z3 — по сокращённому deep spacing.
+- terrain mesh отдельно строил Z0 глубиной `0.82`, а Z1-Z3 — по сокращённому deep spacing;
+- invisible dig/movement proxies использовали отдельный hardcoded depth `0.50`.
 
-Из-за этого logical Z-cells не имели одного визуального объёма и между слоями могли оставаться видимыми внутренние/open-cell поверхности.
+Из-за этого logical Z-cells не имели одного визуального объёма и между слоями могли оставаться видимыми внутренние поверхности.
 
 ### Eating presentation
 
@@ -42,14 +47,18 @@ World generation и demo terrain overlay применяли материал к 
 
 ## Implemented correction
 
-### Terrain and depth
+### Open cells, terrain and depth
 
+- open/non-solid `DigCellVisual` всегда имеет нулевой scale и disabled renderer;
+- `ApplyTunnelCutaway` активирует только solid cell visuals; walk-surface membership больше не создаёт render geometry;
+- бирюзовый empty-cell color удалён и заменён `Color.clear` как дополнительная защита;
+- `_walkSurfaceCells` сохраняется только как derived interaction/query state;
+- invisible dig, movement и cave-room proxies используют общий `InteractionDepth` и не имеют renderer;
 - `DepthOrigin = 0.50`, `DepthSpacing = -1.00`;
 - каждый Z0-Z3 slice имеет глубину `1.00` и общую boundary plane с соседом;
 - Z0 special-case удалён из `ResolveDepthExtents`;
 - floor/support depth также равен `1.00`;
-- resident/building positions продолжают использовать общий `DigTunnelProjection`;
-- interaction volume остаётся невидимым gameplay proxy и не создаёт отдельный open-cell render mesh.
+- resident/building positions продолжают использовать общий `DigTunnelProjection`.
 
 ### Unmineable columns
 
@@ -78,23 +87,26 @@ Demo unmineable patch также охватывает весь `world.Size.Depth
 - `FullDepthEatingTentBehaviorTests`:
   - проверяет complete unmineable depth columns;
   - проверяет typed looping Eat и authoritative progress;
-- `FullDepthEatingTentSourceContractTests` фиксирует full-depth constants, отсутствие Z0 special-case, meal pose/mesh, camera-facing tent metadata и all-Z demo patch;
-- `FullDepthEatingTentPlayModeTests` проверяет actual private depth extents, meal geometry/colliders, seated rig pose и положительную Z-сторону tent entrance;
+- `FullDepthEatingTentSourceContractTests`:
+  - фиксирует full-depth constants и отсутствие Z0 special-case;
+  - запрещает cyan empty-cell color, walk-surface render branch и open-cell renderer;
+  - требует shared interaction depth, meal pose/mesh, camera-facing tent metadata и all-Z demo patch;
+- `FullDepthEatingTentPlayModeTests` проверяет actual private depth extents, disabled renderer/zero scale open cell, meal geometry/colliders, seated rig pose и положительную Z-сторону tent entrance;
 - существующие deep seam, terrain, building, resident, item, save/overlay и deterministic tests остаются включены в полный suite.
 
 ## Validation evidence
 
-Кодовый head `9e9de051b0c13223208af5d29bdf305e151314c5`:
+До удаления последнего open-cell render path кодовый head `9e9de051b0c13223208af5d29bdf305e151314c5` уже прошёл:
 
-- architecture, file-size, C# compatibility и все Unity source/presentation contracts — passed;
-- Release build — `0` warnings, `0` errors;
-- full .NET suite — `1494/1494` passed;
-- headless smoke — passed, final tick `20`;
-- standard deterministic soak — replay matched, hash `B26EA859F3F9668DF85CA1BA2842D8C733B09C51B596F4300549AEE7465D5292`;
-- large deterministic soak — replay matched, hash `7FD411B4725F7DADC5D355FEC5FB5159D59314CB25921394D9D8B27669EC51C9`;
-- Stage 2 v2/v3 exports — passed.
+- architecture, file-size, C# compatibility и все Unity source/presentation contracts;
+- Release build с `0` warnings и `0` errors;
+- full .NET suite `1494/1494`;
+- headless smoke, standard и large deterministic replay;
+- Stage 2 v2/v3 exports.
 
-Unity workflow `30908026706` не получил активацию. Шаги actual EditMode/PlayMode execution и executed-evidence validation были skipped; записан только blocked runtime evidence. Поэтому статус остаётся `IMPLEMENTED`, а не `VERIFIED`.
+Authoritative final exact-head evidence после open-cell correction фиксируется в PR #627 и issue #626; этот implementation note входит в тот же финальный CI head.
+
+Unity activation остаётся недоступной. Actual EditMode/PlayMode execution и executed-evidence validation не считаются выполненными, поэтому статус остаётся `IMPLEMENTED`, а не `VERIFIED`.
 
 ## Remaining evidence
 
