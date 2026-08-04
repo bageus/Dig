@@ -1,9 +1,11 @@
 # Early building visual dimensions — 2026-08-04
 
-Status: `IMPLEMENTED IN BRANCH`.
+Status: `IMPLEMENTED`.
 
 Authoritative specification: [`../design/representative-building-visual-dimensions.md`](../design/representative-building-visual-dimensions.md).  
-Tracking issue: [#620](https://github.com/bageus/Dig/issues/620).
+Tracking issue: [#620](https://github.com/bageus/Dig/issues/620).  
+Implementation PR: [#623](https://github.com/bageus/Dig/pull/623).  
+Merge commit: `3c5ca3b54a88c340f5efc01997355336dbf1756a`.
 
 ## Change
 
@@ -33,9 +35,9 @@ All three current content definitions keep their authoritative `1×1` logical fo
 - built-in fallback pack contains the same three profiles as the JSON resource pack;
 - profile kinds are explicit: `Tent`, `StoneMason`, `WoodWorkshop`.
 
-## Validation
+## Regression coverage
 
-`check_unity_building_representative_contracts.py` now validates:
+`check_unity_building_representative_contracts.py` validates:
 
 - all three stable ids and profile kinds;
 - exact declared dimensions;
@@ -49,6 +51,19 @@ All three current content definitions keep their authoritative `1×1` logical fo
 
 `EarlyBuildingVisualDimensionsPlayModeTests` is checked in for actual renderer bounds, floor grounding, selection collider dimensions, silhouette parts, logical-footprint separation and compact BuildingBox geometry.
 
-## Verification boundary
+## Executed validation
 
-Repository Quality, Release build, full .NET suite, source contracts, headless smoke and deterministic soaks must pass on the PR head. A successful Unity workflow through blocked-evidence fallback does not count as executed Play Mode evidence; licensed Unity Test Runner execution is required before `VERIFIED`.
+PR head `349a8cd6410c8c3a752ead603091fe94316ca700`:
+
+- Quality run `30896466884`: architecture/file-size/C# compatibility checks, Unity source contracts and presentation gates passed;
+- Release build passed;
+- `.NET`: `1485/1485` tests passed;
+- headless smoke passed;
+- standard deterministic soak passed;
+- large-settlement deterministic soak passed;
+- Export Stage 2 v2 run `30896466868` passed;
+- Export Stage 2 v3 run `30896466840` passed.
+
+Unity workflow `30896466474` completed through the blocked-evidence path. Licensed Unity activation was unavailable, therefore actual EditMode/PlayMode execution and runtime-evidence validation were skipped. The checked-in Play Mode scenario has not been executed in Unity, so the system remains `IMPLEMENTED`, not `VERIFIED`.
+
+The unrelated system-index corrections were applied on `main` in commit `c765c6e5ba26b2bdb41c96608068bebbce012f5d` without changing feature code.
