@@ -21,7 +21,7 @@ namespace Dig.Unity
             List<Vector3> normals,
             List<List<int>> triangles)
         {
-            float scale = 0.085f + (decoration.ScaleBand * 0.014f);
+            float scale = 0.072f + (decoration.ScaleBand * 0.011f);
             float detailScale = detailLevel == TerrainVisualDetailLevel.Marker
                 ? 0.78f
                 : detailLevel == TerrainVisualDetailLevel.Reduced ? 0.90f : 1f;
@@ -116,6 +116,10 @@ namespace Dig.Unity
             float tangentScale = decoration.Variant == 1 ? 0.76f : 1f;
             float bitangentScale = decoration.Variant == 2 ? 0.74f : 0.9f;
             float heightScale = decoration.Variant == 3 ? 1.28f : 1f;
+            float reliefHeight = ClampDepositReliefHeight(
+                DepositReliefInset
+                + 0.010f
+                + (scale * 0.12f * heightScale * damageHeight));
             AddDepositPyramid(
                 center,
                 normal,
@@ -123,7 +127,7 @@ namespace Dig.Unity
                 bitangent,
                 scale * tangentScale,
                 scale * bitangentScale,
-                0.05f + (scale * 0.42f * heightScale * damageHeight),
+                reliefHeight,
                 submesh,
                 vertices,
                 normals,
@@ -144,14 +148,18 @@ namespace Dig.Unity
         {
             float width = scale * (1.30f + (decoration.Variant * 0.06f));
             float height = scale * 0.52f;
-            Vector3 lift = normal * (0.026f + (decoration.ScaleBand * 0.003f));
-            AddDepositFlatQuad(
-                center + lift,
+            float reliefHeight = ClampDepositReliefHeight(
+                DepositReliefInset
+                + 0.005f
+                + (decoration.ScaleBand * 0.001f));
+            AddDepositPyramid(
+                center,
                 normal,
                 tangent,
                 bitangent,
                 width,
                 height,
+                reliefHeight,
                 submesh,
                 vertices,
                 normals,
@@ -175,7 +183,11 @@ namespace Dig.Unity
             Vector3 b = center + tangent * (scale * 0.72f)
                 - bitangent * (scale * 0.48f);
             Vector3 c = center + bitangent * scale;
-            Vector3 tip = center + normal * (0.08f + scale * 0.95f * damageHeight);
+            float reliefHeight = ClampDepositReliefHeight(
+                DepositReliefInset
+                + 0.014f
+                + (scale * 0.16f * damageHeight));
+            Vector3 tip = center + normal * reliefHeight;
             AddDecorationTriangle(a, b, tip, normal, submesh, vertices, normals, triangles);
             AddDecorationTriangle(b, c, tip, normal, submesh, vertices, normals, triangles);
             AddDecorationTriangle(c, a, tip, normal, submesh, vertices, normals, triangles);
@@ -197,8 +209,10 @@ namespace Dig.Unity
             float halfWidth = scale * 0.34f;
             Vector3 left = center - tangent * halfLength;
             Vector3 right = center + tangent * halfLength;
-            Vector3 ridgeLeft = left + normal * (0.035f * damageHeight);
-            Vector3 ridgeRight = right + normal * (0.035f * damageHeight);
+            float reliefHeight = ClampDepositReliefHeight(
+                DepositReliefInset + (0.008f * damageHeight));
+            Vector3 ridgeLeft = left + normal * reliefHeight;
+            Vector3 ridgeRight = right + normal * reliefHeight;
             Vector3 a = left - bitangent * halfWidth;
             Vector3 b = right - bitangent * halfWidth;
             Vector3 c = right + bitangent * halfWidth;
@@ -229,6 +243,10 @@ namespace Dig.Unity
                 Vector3 offset = tangent * (direction * scale * 0.68f)
                     + bitangent * ((index == 2 ? 1f : -0.25f) * scale * 0.42f);
                 float pebbleScale = index == 2 ? scale * 0.55f : scale * 0.68f;
+                float reliefHeight = ClampDepositReliefHeight(
+                    DepositReliefInset
+                    + 0.006f
+                    + (pebbleScale * 0.10f * damageHeight));
                 AddDepositPyramid(
                     center + offset,
                     normal,
@@ -236,7 +254,7 @@ namespace Dig.Unity
                     bitangent,
                     pebbleScale,
                     pebbleScale * 0.82f,
-                    0.026f + (pebbleScale * 0.32f * damageHeight),
+                    reliefHeight,
                     submesh,
                     vertices,
                     normals,
