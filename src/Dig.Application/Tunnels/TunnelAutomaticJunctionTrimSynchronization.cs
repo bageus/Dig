@@ -6,6 +6,7 @@ using Dig.Application.Messaging;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
+using Dig.Domain.World;
 
 namespace Dig.Application.Tunnels
 {
