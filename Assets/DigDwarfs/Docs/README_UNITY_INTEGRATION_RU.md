@@ -12,12 +12,21 @@
 - **glTFast**
 - **UniGLTF**
 
+Runtime bridge использует `UnityEngine.Animator`. Unity host обязан напрямую объявлять built-in package:
+
+```json
+"com.unity.modules.animation": "1.0.0"
+```
+
+Если runtime scripts входят в custom `.asmdef`, его `references` должен содержать `UnityEngine.AnimationModule`. Без этого Unity 6 входит в Safe Mode с `CS1069` для типа `UnityEngine.Animator`.
+
 ## Быстрый старт
 1. Импортируйте весь пакет в Unity проект.
-2. Установите glTF импортер.
-3. Дождитесь импорта моделей из `Assets/DigDwarfs/Models`.
-4. Запустите меню: `Tools -> Dig Dwarfs -> Generate Prefabs And Controllers`.
-5. Готовые prefab'ы и контроллеры появятся в `Assets/DigDwarfs/Generated`.
+2. Добавьте `com.unity.modules.animation` в `Packages/manifest.json` host-проекта.
+3. Установите glTF импортер.
+4. Дождитесь импорта моделей из `Assets/DigDwarfs/Models`.
+5. Запустите меню: `Tools -> Dig Dwarfs -> Generate Prefabs And Controllers`.
+6. Готовые prefab'ы и контроллеры появятся в `Assets/DigDwarfs/Generated`.
 
 ## Что создаётся автоматически
 - по одному `AnimatorController` на персонажа;
