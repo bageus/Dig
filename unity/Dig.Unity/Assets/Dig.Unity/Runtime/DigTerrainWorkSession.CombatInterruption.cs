@@ -65,7 +65,16 @@ internal sealed partial class DigTerrainWorkSession
                 ProductionPackageUseJobDefinition =>
                     CancelProductionPackageUseForDirectCommand(job, tick),
                 ProductionWorkJobDefinition production =>
-                    InterruptProductionForDirectCommand(job, production, tick),
+                    InterruptProductionForDirectCommand(
+                        job,
+                        production,
+                        resident.Id,
+                        tick),
+                BuildingSupplyJobDefinition =>
+                    CancelBuildingSupplyForDirectCommand(
+                        job,
+                        resident.Id,
+                        tick),
                 BuildingBoxAssemblyJobDefinition =>
                     CancelBuildingBoxForDirectCommand(job, tick),
                 BuildingBoxPickupJobDefinition relocation when relocation.IsRelocation =>
