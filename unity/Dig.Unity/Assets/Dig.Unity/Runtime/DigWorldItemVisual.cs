@@ -154,7 +154,7 @@ namespace Dig.Unity
             DigItemVisualResolution resolution)
         {
             bool rawMaterial = TryResolveRawMaterialTint(Model.ItemId, out _);
-            bool livingMaterial = IsLivingMaterial(Model.ItemId);
+            bool livingMaterial = DigWorldItemVisualPolicy.IsLivingMaterial(Model.ItemId);
             int visible = livingMaterial
                 ? 0
                 : rawMaterial
@@ -250,13 +250,6 @@ namespace Dig.Unity
                     Color.Lerp(_baseTint, Color.black, 0.28f),
                 _ => _baseTint,
             };
-        }
-
-        private static bool IsLivingMaterial(string itemId)
-        {
-            return string.Equals(itemId, "creature.hamster", StringComparison.Ordinal)
-                || string.Equals(itemId, "creature.grub", StringComparison.Ordinal)
-                || string.Equals(itemId, "creature.larva", StringComparison.Ordinal);
         }
 
         private static bool TryResolveRawMaterialTint(string itemId, out Color tint)
