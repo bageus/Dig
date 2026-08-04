@@ -80,11 +80,14 @@ namespace Dig.Unity
                 _material,
                 profile.tint,
                 isFallback: false);
+            bool facesCamera = profile.TryResolveKind(out DigBuildingProfileKind kind)
+                && kind == DigBuildingProfileKind.Tent;
             resolution = new DigBuildingVisualResolution(
                 asset,
                 profile.footprintSize,
                 profile.pivotCell,
-                hasProfile: true);
+                hasProfile: true,
+                facesCamera);
             return true;
         }
 
