@@ -1,3 +1,4 @@
+using System;
 using Dig.Domain.Inventory;
 using Dig.Presentation.Jobs;
 using UnityEngine;
@@ -9,6 +10,13 @@ namespace Dig.Unity
         internal const string PickaxeVisualId = "visual.work_tool.pickaxe";
         internal const string AxeVisualId = "visual.work_tool.axe";
         internal const string HammerVisualId = "visual.work_tool.hammer";
+        internal const string MealVisualId = "visual.meal.portion";
+
+        private bool IsEating => Model != null
+            && string.Equals(
+                Model.ActiveIntent,
+                "Eat",
+                StringComparison.OrdinalIgnoreCase);
 
         private void RefreshHandEquipment()
         {
@@ -17,13 +25,15 @@ namespace Dig.Unity
                 return;
             }
 
-            string? itemId = _workToolVisualKind switch
-            {
-                ResidentWorkToolVisualKind.Pickaxe => PickaxeVisualId,
-                ResidentWorkToolVisualKind.Axe => AxeVisualId,
-                ResidentWorkToolVisualKind.Hammer => HammerVisualId,
-                _ => _equipmentModel?.ItemId,
-            };
+            string? itemId = IsEating
+                ? MealVisualId
+                : _workToolVisualKind switch
+                {
+                    ResidentWorkToolVisualKind.Pickaxe => PickaxeVisualId,
+                    ResidentWorkToolVisualKind.Axe => AxeVisualId,
+                    ResidentWorkToolVisualKind.Hammer => HammerVisualId,
+                    _ => _equipmentModel?.ItemId,
+                };
             if (string.IsNullOrWhiteSpace(itemId))
             {
                 _equipmentVisual?.Clear();
