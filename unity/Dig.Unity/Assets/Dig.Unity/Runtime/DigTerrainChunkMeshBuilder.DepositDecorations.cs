@@ -7,6 +7,9 @@ namespace Dig.Unity
     internal static partial class DigTerrainChunkMeshBuilder
     {
         private const float DepositSurfaceInset = 0.045f;
+        private const float DepositReliefInset = 0.030f;
+        private const float DepositMaximumVisibleRelief = 0.032f;
+        private const float DepositConnectorRelief = 0.004f;
         private const float DepositConnectorWidth = 0.035f;
 
         private static void AddDepositDecorations(
@@ -224,9 +227,9 @@ namespace Dig.Unity
                 decoration.RotationQuarterTurns,
                 out Vector3 shapeTangent,
                 out Vector3 shapeBitangent);
-            float offset = 0.034f;
+            float offset = 0.028f;
             Vector3 center = surfaceCenter
-                + normal * 0.018f
+                - normal * DepositReliefInset
                 + shapeTangent * (decoration.OffsetBandX * offset)
                 + shapeBitangent * (decoration.OffsetBandY * offset);
             int submesh = GetSubmesh(
@@ -273,6 +276,14 @@ namespace Dig.Unity
                     normals,
                     triangles);
             }
+        }
+
+        private static float ClampDepositReliefHeight(float height)
+        {
+            return Mathf.Clamp(
+                height,
+                DepositReliefInset,
+                DepositReliefInset + DepositMaximumVisibleRelief);
         }
 
         private static DigTerrainMaterialKey ResolveDepositKey(
