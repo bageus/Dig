@@ -27,6 +27,8 @@ namespace Dig.Unity
         public string kind = string.Empty;
         public Vector2Int footprintSize = Vector2Int.one;
         public Vector2 pivotCell = Vector2.zero;
+        public Vector3 visualBoundsCenter = new Vector3(0f, 0.5f, 0f);
+        public Vector3 visualBoundsSize = Vector3.one;
         public Color tint = Color.white;
         public int maxRenderers;
         public int maxTriangles;
@@ -110,7 +112,8 @@ namespace Dig.Unity
             }
 
             HashSet<string> ids = new HashSet<string>(StringComparer.Ordinal);
-            bool[] kinds = new bool[3];
+            bool[] kinds = new bool[
+                Enum.GetValues(typeof(DigBuildingProfileKind)).Length];
             for (int index = 0; index < pack.profiles.Length; index++)
             {
                 ValidateProfile(pack.profiles[index], index, ids, kinds, errors);
@@ -119,6 +122,9 @@ namespace Dig.Unity
             RequireKind(DigBuildingProfileKind.Campfire, kinds, errors);
             RequireKind(DigBuildingProfileKind.Furnace, kinds, errors);
             RequireKind(DigBuildingProfileKind.Storage, kinds, errors);
+            RequireKind(DigBuildingProfileKind.Tent, kinds, errors);
+            RequireKind(DigBuildingProfileKind.StoneMason, kinds, errors);
+            RequireKind(DigBuildingProfileKind.WoodWorkshop, kinds, errors);
             return errors;
         }
 
@@ -146,6 +152,7 @@ namespace Dig.Unity
 
             ValidateIds(profile, index, ids, errors);
             ValidateBudget(profile, index, errors);
+            ValidateVisualBounds(profile, index, errors);
             ValidateParts(profile, index, errors);
             ValidateAnchors(profile, index, errors);
         }
@@ -196,6 +203,27 @@ namespace Dig.Unity
                 || profile.maxTriangles > HardTriangleLimit)
             {
                 errors.Add($"Representative building profile {index} exceeds triangle budget.");
+            }
+        }
+
+        private static void ValidateVisualBounds(
+            DigRepresentativeBuildingProfileData profile,
+            int index,
+            ICollection<string> errors)
+        {
+            Vector3 size = profile.visualBoundsSize;
+            if (size.x <= 0f || size.y <= 0f || size.z <= 0f)
+            {
+                errors.Add(
+                    $"Representative building profile {index} has invalid visual bounds.");
+                return;
+            }
+
+            float bottom = profile.visualBoundsCenter.y - (size.y * 0.5f);
+            if (Mathf.Abs(bottom) > 0.001f)
+            {
+                errors.Add(
+                    $"Representative building profile {index} visual bounds are not grounded.");
             }
         }
 
