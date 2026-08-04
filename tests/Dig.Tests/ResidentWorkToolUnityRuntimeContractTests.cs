@@ -57,6 +57,15 @@ public sealed class ResidentWorkToolUnityRuntimeContractTests
             scenario);
         Assert.Contains("visual.Clear()", scenario);
         Assert.Contains("GetComponentsInChildren<Collider>(true)", scenario);
+        Assert.Contains(
+            "UnityEngine.Object.DestroyImmediate(_root)",
+            scenario);
+        Assert.Contains(
+            "UnityEngine.Object.DestroyImmediate(_material)",
+            scenario);
+        Assert.DoesNotContain(
+            "\n            Object.DestroyImmediate(",
+            scenario);
     }
 
     [Fact]
