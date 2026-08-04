@@ -69,7 +69,7 @@ public sealed class TunnelInfrastructureApplicationTests
         Harness harness = CreateHarness(withSource: false);
 
         Result<TunnelAutomaticSupportSyncResult> result = harness.Sync.Handle(
-            Command(FirstJobId, completedBuildingCell: new CellId(31, 0, 0)));
+            Command(FirstJobId, completedBuildingCell: new CellId(41, 0, 0)));
 
         Assert.True(result.IsSuccess, result.Error?.ToString());
         Assert.Equal(TunnelAutomaticSupportSyncStatus.OutOfRange, result.Value.Status);
@@ -83,7 +83,7 @@ public sealed class TunnelInfrastructureApplicationTests
         Harness harness = CreateHarness(withSource: false);
 
         Result<TunnelAutomaticSupportSyncResult> result = harness.Sync.Handle(
-            Command(FirstJobId, completedBuildingCell: new CellId(30, 0, 0)));
+            Command(FirstJobId, completedBuildingCell: new CellId(40, 0, 0)));
 
         Assert.True(result.IsSuccess, result.Error?.ToString());
         Assert.Equal(TunnelAutomaticSupportSyncStatus.PendingSource, result.Value.Status);
@@ -104,7 +104,7 @@ public sealed class TunnelInfrastructureApplicationTests
     {
         Harness harness = CreateHarness(withSource: false);
         RequireSuccess(harness.Sync.Handle(
-            Command(FirstJobId, completedBuildingCell: new CellId(30, 0, 0))));
+            Command(FirstJobId, completedBuildingCell: new CellId(40, 0, 0))));
         RequireSuccess(harness.Inventory.AddStack(
             SourceStackId,
             MushroomLeg,
@@ -115,7 +115,7 @@ public sealed class TunnelInfrastructureApplicationTests
         Result<TunnelAutomaticSupportSyncResult> result = harness.Sync.Handle(
             Command(
                 FirstJobId,
-                completedBuildingCell: new CellId(30, 0, 0),
+                completedBuildingCell: new CellId(40, 0, 0),
                 sourceCell: new CellId(2, 0, 0),
                 tick: 3));
 
@@ -140,7 +140,7 @@ public sealed class TunnelInfrastructureApplicationTests
         Harness harness = CreateHarness(withSource: true);
         RequireSuccess(harness.Sync.Handle(Command(
             FirstJobId,
-            completedBuildingCell: new CellId(30, 0, 0),
+            completedBuildingCell: new CellId(40, 0, 0),
             sourceCell: new CellId(2, 0, 0))));
         RequireSuccess(new RegisterCompletedTunnelAnchorHandler(
             harness.Tunnels,
@@ -152,7 +152,7 @@ public sealed class TunnelInfrastructureApplicationTests
 
         Result<TunnelAutomaticSupportSyncResult> result = harness.Sync.Handle(Command(
             SecondJobId,
-            completedBuildingCell: new CellId(30, 0, 0),
+            completedBuildingCell: new CellId(40, 0, 0),
             sourceCell: new CellId(2, 0, 0),
             tick: 4));
 
@@ -174,7 +174,7 @@ public sealed class TunnelInfrastructureApplicationTests
         Harness harness = CreateHarness(withSource: true);
         RequireSuccess(harness.Sync.Handle(Command(
             FirstJobId,
-            completedBuildingCell: new CellId(30, 0, 0),
+            completedBuildingCell: new CellId(40, 0, 0),
             sourceCell: new CellId(2, 0, 0))));
         RequireSuccess(harness.Jobs.Claim(FirstJobId, FirstAgentId, tick: 2));
         RequireSuccess(harness.Jobs.Start(FirstJobId, tick: 2));

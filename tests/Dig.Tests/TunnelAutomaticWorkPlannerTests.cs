@@ -12,16 +12,16 @@ public sealed class TunnelAutomaticWorkPlannerTests
     private static readonly ItemId MushroomLeg = new ItemId("material.mushroom_leg");
 
     [Fact]
-    public void Completed_building_range_is_inclusive_at_twenty_xyz_cells()
+    public void Completed_building_range_is_inclusive_at_thirty_xyz_cells()
     {
         CellId target = new CellId(10, 10, 1);
 
         Assert.True(TunnelAutomaticWorkPlanner.IsWithinCompletedBuildingRange(
             target,
-            new[] { new CellId(28, 10, 3) }));
+            new[] { new CellId(38, 10, 3) }));
         Assert.False(TunnelAutomaticWorkPlanner.IsWithinCompletedBuildingRange(
             target,
-            new[] { new CellId(29, 10, 3) }));
+            new[] { new CellId(39, 10, 3) }));
     }
 
     [Fact]
