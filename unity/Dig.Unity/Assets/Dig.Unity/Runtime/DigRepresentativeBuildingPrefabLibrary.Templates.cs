@@ -22,14 +22,8 @@ namespace Dig.Unity
             GameObject model = new GameObject("Model");
             model.transform.SetParent(template.transform, worldPositionStays: false);
             BoxCollider selection = model.AddComponent<BoxCollider>();
-            selection.center = new Vector3(
-                profile.pivotCell.x,
-                0.85f,
-                profile.pivotCell.y);
-            selection.size = new Vector3(
-                profile.footprintSize.x * 0.94f,
-                1.70f,
-                profile.footprintSize.y * 0.94f);
+            selection.center = profile.visualBoundsCenter;
+            selection.size = profile.visualBoundsSize;
 
             BuildStateGeometry(model.transform, profile, state);
             DigBuildingAnchor[] anchors = BuildAnchors(model.transform, profile);
@@ -150,18 +144,16 @@ namespace Dig.Unity
             Transform parent,
             DigRepresentativeBuildingProfileData profile)
         {
-            Vector3 center = new Vector3(
-                profile.pivotCell.x,
-                0.82f,
-                profile.pivotCell.y);
-            float width = profile.footprintSize.x * 0.92f;
+            Vector3 center = profile.visualBoundsCenter;
+            float width = profile.visualBoundsSize.x * 0.92f;
+            float height = profile.visualBoundsSize.y * 0.82f;
             CreatePart(
                 parent,
                 "Scaffold Left",
                 DigRepresentativeBuildingShape.Box,
                 TerrainVisualDetailLevel.Reduced,
                 center + new Vector3(-(width * 0.50f), 0f, 0f),
-                new Vector3(0.12f, 1.64f, 0.12f),
+                new Vector3(0.12f, height, 0.12f),
                 new Vector3(0f, 0f, 4f));
             CreatePart(
                 parent,
@@ -169,7 +161,7 @@ namespace Dig.Unity
                 DigRepresentativeBuildingShape.Box,
                 TerrainVisualDetailLevel.Reduced,
                 center + new Vector3(width * 0.50f, 0f, 0f),
-                new Vector3(0.12f, 1.64f, 0.12f),
+                new Vector3(0.12f, height, 0.12f),
                 new Vector3(0f, 0f, -4f));
         }
 

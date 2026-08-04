@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -36,11 +37,27 @@ REQUIRED_IDS = {
     "Campfire": {"kitchen.campfire", "building.campfire"},
     "Furnace": {"building.furnace", "building.forge", "demo.workshop.box"},
     "Storage": {"building.arsenal", "building.storage"},
+    "Tent": {"building.tent"},
+    "StoneMason": {"building.stone_mason"},
+    "WoodWorkshop": {"building.wood_workshop"},
 }
 REQUIRED_ANCHORS = {
     "Campfire": {"Worker", "Input", "Output", "Vfx"},
     "Furnace": {"Worker", "Input", "Output", "Vfx"},
     "Storage": {"Worker", "Visitor", "Input", "Output", "Storage"},
+    "Tent": {"Worker", "Visitor"},
+    "StoneMason": {"Worker", "Input", "Output"},
+    "WoodWorkshop": {"Worker", "Input", "Output"},
+}
+REQUIRED_VISUAL_SIZES = {
+    "Tent": (3.0, 2.0, 2.0),
+    "StoneMason": (3.5, 2.5, 2.5),
+    "WoodWorkshop": (2.5, 2.0, 2.0),
+}
+REQUIRED_PART_NAMES = {
+    "Tent": {"Tent Roof Left", "Tent Roof Right", "Tent Entrance Flap"},
+    "StoneMason": {"Stone Foundation", "Stone Workbench", "Mason Roof"},
+    "WoodWorkshop": {"Wood Foundation", "Saw Bench", "Timber Log"},
 }
 
 
@@ -62,6 +79,37 @@ def reject(path: Path, text: str, fragments: tuple[str, ...]) -> list[str]:
         for fragment in fragments
         if fragment in text
     ]
+
+
+def vector3(value: object) -> tuple[float, float, float] | None:
+    if not isinstance(value, dict):
+        return None
+    values = (value.get("x"), value.get("y"), value.get("z"))
+    if not all(isinstance(component, (int, float)) for component in values):
+        return None
+    return tuple(float(component) for component in values)  # type: ignore[arg-type]
+
+
+def validate_visual_bounds(profile: dict[str, object], index: int) -> list[str]:
+    center = vector3(profile.get("visualBoundsCenter"))
+    size = vector3(profile.get("visualBoundsSize"))
+    if center is None or size is None:
+        return [f"profile {index}: visual bounds center/size are required"]
+    errors: list[str] = []
+    if any(not math.isfinite(value) or value <= 0.0 for value in size):
+        errors.append(f"profile {index}: visual bounds size must be positive and finite")
+    if not math.isclose(center[1] - (size[1] * 0.5), 0.0, abs_tol=0.001):
+        errors.append(f"profile {index}: visual bounds must be grounded at Y=0")
+    kind = profile.get("kind")
+    expected = REQUIRED_VISUAL_SIZES.get(kind) if isinstance(kind, str) else None
+    if expected is not None and any(
+        not math.isclose(actual, required, abs_tol=0.001)
+        for actual, required in zip(size, expected)
+    ):
+        errors.append(
+            f"profile {index}: {kind} visual size {size!r} must be {expected!r}"
+        )
+    return errors
 
 
 def validate_pack() -> list[str]:
@@ -104,6 +152,13 @@ def validate_pack() -> list[str]:
             else:
                 seen_ids.add(stable_id)
 
+        footprint = profile.get("footprintSize")
+        if kind in REQUIRED_VISUAL_SIZES and footprint != {"x": 1, "y": 1}:
+            errors.append(
+                f"profile {index}: {kind} visual profile must keep logical 1x1 footprint"
+            )
+        errors.extend(validate_visual_bounds(profile, index))
+
         renderer_budget = profile.get("maxRenderers")
         triangle_budget = profile.get("maxTriangles")
         if not isinstance(renderer_budget, int) or not 0 < renderer_budget <= 16:
@@ -122,6 +177,13 @@ def validate_pack() -> list[str]:
                 errors.append(f"profile {index}: renderer budget exceeded")
             if isinstance(triangle_budget, int) and triangle_count > triangle_budget:
                 errors.append(f"profile {index}: triangle budget exceeded")
+            required_names = REQUIRED_PART_NAMES.get(kind, set())
+            names = {part.get("name") for part in parts}
+            missing_names = required_names - names
+            if missing_names:
+                errors.append(
+                    f"profile {index}: missing silhouette parts {sorted(missing_names)}"
+                )
 
         if not isinstance(anchors, list) or not anchors:
             errors.append(f"profile {index}: anchors must be non-empty")
@@ -153,6 +215,12 @@ def validate_runtime() -> list[str]:
         "HardTriangleLimit = 512",
         "markerCount == 0",
         "ResolveAnchorMask",
+        "visualBoundsCenter",
+        "visualBoundsSize",
+        "visual bounds are not grounded",
+        "DigBuildingProfileKind.Tent",
+        "DigBuildingProfileKind.StoneMason",
+        "DigBuildingProfileKind.WoodWorkshop",
     )))
 
     library_path = RUNTIME / "DigRepresentativeBuildingPrefabLibrary.cs"
@@ -163,11 +231,25 @@ def validate_runtime() -> list[str]:
         "enableInstancing = true",
         "Dictionary<string, GameObject>",
         "TryResolve(",
+        "CreateBuiltInProfiles()",
     )))
     errors.extend(reject(library_path, library, (
         "GameObject.CreatePrimitive",
         "UnityEngine.Random",
         "StaticBatchingUtility",
+    )))
+
+    built_in_path = RUNTIME / "DigRepresentativeBuildingPrefabLibrary.BuiltInProfiles.cs"
+    built_in = read(built_in_path)
+    errors.extend(require(built_in_path, built_in, (
+        'new[] { "building.tent" }',
+        'new[] { "building.stone_mason" }',
+        'new[] { "building.wood_workshop" }',
+        'Part("Tent Roof Left", "Wedge"',
+        'Part("Tent Roof Right", "Wedge"',
+        'Part("Tent Entrance Flap", "Pyramid"',
+        'Part("Stone Foundation", "Box"',
+        'Part("Saw Bench", "Box"',
     )))
 
     templates_path = RUNTIME / "DigRepresentativeBuildingPrefabLibrary.Templates.cs"
@@ -181,6 +263,8 @@ def validate_runtime() -> list[str]:
         "BuildingVisualState.BuildingBox",
         "BuildingVisualState.Packing",
         "BuildingVisualState.Damaged",
+        "selection.center = profile.visualBoundsCenter",
+        "selection.size = profile.visualBoundsSize",
     )))
     errors.extend(reject(templates_path, templates, (
         "GameObject.CreatePrimitive",
@@ -230,7 +314,7 @@ def main() -> int:
         for error in errors:
             print(f"- {error}", file=sys.stderr)
         return 1
-    print("PASS: representative building content, LOD and budgets")
+    print("PASS: representative building content, dimensions, LOD and budgets")
     return 0
 
 

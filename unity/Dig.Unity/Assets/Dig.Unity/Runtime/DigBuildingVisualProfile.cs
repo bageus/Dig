@@ -10,6 +10,9 @@ namespace Dig.Unity
         Campfire = 0,
         Furnace = 1,
         Storage = 2,
+        Tent = 3,
+        StoneMason = 4,
+        WoodWorkshop = 5,
     }
 
     internal readonly struct DigBuildingVisualResolution
