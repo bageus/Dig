@@ -54,7 +54,7 @@ public sealed class RuntimeScreenshotRegressionTests
         Assert.DoesNotContain("Finished Output Zone", zones);
         Assert.DoesNotContain("FrontDepthOffset", stock + zones);
         Assert.DoesNotContain("building.WorkPositionX", stock);
-        Assert.Contains("if (model.ShowWorkbench)", stock);
+        Assert.Contains("&& model.ShowWorkbench", stock);
         Assert.Contains("RenderWorkbench(building, visibleWorkbenches)", stock);
         Assert.Contains("building.WorkPositionX", zones);
         Assert.Contains("Destroy(collider)", zones);
