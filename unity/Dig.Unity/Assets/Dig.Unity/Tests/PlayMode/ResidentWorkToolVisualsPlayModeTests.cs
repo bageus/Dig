@@ -23,12 +23,12 @@ public sealed class ResidentWorkToolVisualsPlayModeTests
     {
         if (_root != null)
         {
-            Object.DestroyImmediate(_root);
+            UnityEngine.Object.DestroyImmediate(_root);
         }
 
         if (_material != null)
         {
-            Object.DestroyImmediate(_material);
+            UnityEngine.Object.DestroyImmediate(_material);
         }
     }
 
