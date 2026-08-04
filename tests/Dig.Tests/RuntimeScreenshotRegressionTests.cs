@@ -33,33 +33,34 @@ public sealed class RuntimeScreenshotRegressionTests
     }
 
     [Fact]
-    public void Barrel_and_building_zones_use_visible_world_space_presentation()
+    public void Barrel_and_internal_stock_items_use_world_space_without_zone_platforms()
     {
         string runtime = RuntimeRoot();
         string barrel = Read(runtime, "DigBarrelVisual.cs");
         string barrelRenderer = Read(runtime, "DigBarrelRenderer.cs");
         string stock = Read(runtime, "DigBuildingInternalStockRenderer.cs");
         string zones = Read(runtime, "DigBuildingInternalStockRenderer.Zones.cs");
-        string bay = Read(runtime, "DigBuildingInternalStockBayVisual.cs");
 
         Assert.Contains("PresentationScale = 0.70f", barrel);
         Assert.Contains("VisualHeight => 0.49f", barrel);
         Assert.Contains("worldPositionStays: true", barrelRenderer);
         Assert.Contains("visual.transform.rotation = Quaternion.identity", barrelRenderer);
         Assert.Contains("ResolveInternalZoneCell", stock + zones);
-        Assert.Contains("ResolveOutputZoneCell", zones);
         Assert.Contains("leftEdge - 1", zones);
-        Assert.Contains("rightEdge + 1", zones);
         Assert.Contains("VisibleDepthOffset = 0.12f", stock);
-        Assert.Contains("RenderBay", zones);
+        Assert.DoesNotContain("RenderZones", stock + zones);
+        Assert.DoesNotContain("RenderBay", zones);
+        Assert.DoesNotContain("Internal Storage Zone", zones);
+        Assert.DoesNotContain("Finished Output Zone", zones);
         Assert.DoesNotContain("FrontDepthOffset", stock + zones);
         Assert.DoesNotContain("building.WorkPositionX", stock);
-        Assert.Contains("if (model.ShowWorkbench)", stock);
+        Assert.Contains("&& model.ShowWorkbench", stock);
         Assert.Contains("RenderWorkbench(building, visibleWorkbenches)", stock);
         Assert.Contains("building.WorkPositionX", zones);
         Assert.Contains("Destroy(collider)", zones);
-        Assert.Contains("Storage tray", bay);
-        Assert.DoesNotContain("Storage back rail", bay);
+        Assert.False(File.Exists(Path.Combine(
+            runtime,
+            "DigBuildingInternalStockBayVisual.cs")));
     }
 
     private static string Read(string root, string file)

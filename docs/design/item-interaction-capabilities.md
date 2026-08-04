@@ -2,7 +2,7 @@
 
 Статус: `IMPLEMENTED`.
 
-Tracking issues: [#67](https://github.com/bageus/Dig/issues/67), [#70](https://github.com/bageus/Dig/issues/70), [#387](https://github.com/bageus/Dig/issues/387), [#390](https://github.com/bageus/Dig/issues/390), [#459](https://github.com/bageus/Dig/issues/459).
+Tracking issues: [#67](https://github.com/bageus/Dig/issues/67), [#70](https://github.com/bageus/Dig/issues/70), [#387](https://github.com/bageus/Dig/issues/387), [#390](https://github.com/bageus/Dig/issues/390), [#459](https://github.com/bageus/Dig/issues/459), [#634](https://github.com/bageus/Dig/issues/634).
 
 Связанные authoritative specifications:
 
@@ -194,3 +194,7 @@ Cursor/highlight отображаются только для того action, �
 |---|---|---|---|
 | 2026-08-01 | Обычные предметы подбираются ordinary LMB; только world BuildingBox требует `Alt` для pickup; direct-use food использует `Alt`; inventory LMB размещает, `C + LMB` быстро выкладывает любой разрешённый profile. | Пользователь | #67/#70/#387/#390/#459 |
 | 2026-08-01 | Новые items подключаются автоматически через authoritative `ItemDefinition`; Unity ID/prefix hardcode и раздельные hover/click classifiers запрещены. | Пользователь | #387/#390 |
+
+### Direct-command reservation replacement — 2026-08-04
+
+Before an explicit item/material pickup is created, direct-command preparation cancels the selected resident's previous active work and commits every reservation release. Runtime must not save an older Inventory snapshot after those cancellations. The new exact-stack pickup is created only from the post-cancellation authoritative Inventory state.

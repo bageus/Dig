@@ -220,7 +220,8 @@ public sealed class GameplayRegressionContractTests
         Assert.Contains("worldPositionStays:true", items);
         Assert.Contains("ActivateBuildingRosterForSelection()", boxSelection);
         Assert.Contains("CampfireBuildingBoxContent.Definition.Building", buildings);
-        Assert.Contains("new[]{workshop,campfire}", buildings);
+        Assert.Contains("new[]{campfire}", buildings);
+        Assert.DoesNotContain("workshop", buildings, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("FindSurfaceCampfirePlacement", buildings);
         Assert.Contains("layout.ShaftX-2", buildings);
         Assert.Contains("layout.SurfaceY", buildings);

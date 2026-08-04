@@ -133,7 +133,7 @@ internal sealed class BuildingBoxPickupHarness
         {
             new ItemDefinition(
                 BoxItemId,
-                "Workshop BuildingBox",
+                "Test BuildingBox",
                 maximumStackSize: 1,
                 isTool: false),
         }));

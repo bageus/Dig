@@ -30,7 +30,7 @@ The current aliases are:
 | Representative | Stable ids |
 |---|---|
 | Campfire | `kitchen.campfire`, `building.campfire` |
-| Furnace | `building.furnace`, `building.forge`, `demo.workshop.box` |
+| Furnace | `building.furnace`, `building.forge` |
 | Storage/Arsenal | `building.arsenal`, `building.storage` |
 
 Issue #98 still owns the authoritative kitchen content catalog. Supporting both Campfire aliases is a Presentation compatibility rule and does not introduce a new Domain definition.

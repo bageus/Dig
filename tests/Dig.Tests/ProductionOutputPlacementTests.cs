@@ -178,6 +178,44 @@ public sealed class ProductionOutputPlacementTests
     }
 
     [Fact]
+    public void Multi_row_footprint_fills_primary_row_contiguously_before_next_row()
+    {
+        BuildingDefinition definition = new BuildingDefinition(
+            new BuildingDefinitionId("test.production.multi_row"),
+            "Multi-row production building",
+            new[] { new CellOffset(0, 0), new CellOffset(0, 1) },
+            new[] { new CellOffset(-1, 0) },
+            Array.Empty<BuildingMaterialRequirement>(),
+            requiredWork: 1,
+            maximumDurability: 100,
+            boxPolicy: new BuildingBoxPolicy(
+                CampfireBuildingBoxContent.CampfireBoxItemId,
+                packingWork: 1));
+        CellId origin = new CellId(4, 4, 0);
+        BuildingSnapshot building = new BuildingSnapshot(
+            EntityId.Parse("b4000000000000000000000000000001"),
+            definition,
+            origin,
+            BuildingOrientation.North,
+            definition.ResolveFootprint(origin, BuildingOrientation.North),
+            definition.ResolveWorkPositions(origin, BuildingOrientation.North).First(),
+            BuildingStatus.Completed,
+            definition.RequiredWork,
+            definition.MaximumDurability,
+            1,
+            null);
+
+        CellId[] candidates = ProductionOutputPlacement.CreateCandidates(
+            building,
+            maximumLateralDistance: 2).ToArray();
+
+        Assert.Equal(new CellId(5, 4, 0), candidates[0]);
+        Assert.Equal(new CellId(6, 4, 0), candidates[1]);
+        Assert.Equal(new CellId(7, 4, 0), candidates[2]);
+        Assert.Equal(new CellId(5, 5, 0), candidates[3]);
+    }
+
+    [Fact]
     public void Every_orientation_uses_same_screen_right_zone()
     {
         Assert.Equal(new CellId(5, 4, 0), First(BuildingOrientation.North));

@@ -38,7 +38,7 @@ namespace Dig.Unity
         private static DigRepresentativeBuildingProfileData FurnaceProfile()
         {
             return Profile(
-                new[] { "building.furnace", "building.forge", "demo.workshop.box" },
+                new[] { "building.furnace", "building.forge" },
                 "Furnace",
                 Vector2Int.one,
                 Vector2.zero,

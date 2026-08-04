@@ -2,7 +2,7 @@
 
 Статус: `QUESTIONNAIRE`.
 
-Tracking issue: [#387](https://github.com/bageus/Dig/issues/387).
+Tracking issue: [#387](https://github.com/bageus/Dig/issues/387), [#634](https://github.com/bageus/Dig/issues/634).
 
 Связанные issues: [#7](https://github.com/bageus/Dig/issues/7), [#64](https://github.com/bageus/Dig/issues/64), [#67](https://github.com/bageus/Dig/issues/67), [#113](https://github.com/bageus/Dig/issues/113), [#118](https://github.com/bageus/Dig/issues/118), [#390](https://github.com/bageus/Dig/issues/390), [#396](https://github.com/bageus/Dig/issues/396).
 
@@ -138,3 +138,10 @@ Acceptance включает:
 - generic, food, tool/weapon и BuildingBox используют один profile-driven resolver;
 - pickup arrival по XYZ;
 - save/load и repeated render rebuild.
+
+### Forced pickup replacement invariant — 2026-08-04
+
+- ordinary item/material LMB with one selected living resident remains an explicit direct pickup command;
+- previous assigned work is cancelled/released first;
+- the new pickup reads the post-cancellation Inventory state;
+- stale pre-cancellation snapshots may not restore released reservations or block the new exact-stack job.

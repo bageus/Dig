@@ -23,14 +23,11 @@ public sealed partial class DigBuildingInternalStockRenderer : MonoBehaviour
     private DigItemVisualCatalog? visualCatalog;
     private readonly Dictionary<string, Material> _materials =
         new Dictionary<string, Material>(StringComparer.Ordinal);
-    private readonly Dictionary<string, DigBuildingInternalStockBayVisual> _bays =
-        new Dictionary<string, DigBuildingInternalStockBayVisual>(StringComparer.Ordinal);
     private readonly Dictionary<string, GameObject> _workbenches =
         new Dictionary<string, GameObject>(StringComparer.Ordinal);
     private Transform? _root;
 
     internal int ActiveUnitCount => _units.Values.Count(value => value.gameObject.activeSelf);
-    internal int ActiveBayCount => _bays.Values.Count(value => value.gameObject.activeSelf);
     internal int ActiveWorkbenchCount =>
         _workbenches.Values.Count(value => value.activeSelf);
 
@@ -69,20 +66,16 @@ public sealed partial class DigBuildingInternalStockRenderer : MonoBehaviour
         Dictionary<string, BuildingProductionViewModel> productionByBuilding = production
             .ToDictionary(value => value.BuildingId.ToString(), StringComparer.Ordinal);
         HashSet<string> visible = new HashSet<string>(StringComparer.Ordinal);
-        HashSet<string> visibleBays = new HashSet<string>(StringComparer.Ordinal);
         HashSet<string> visibleWorkbenches = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (BuildingProductionViewModel model in production)
         {
             if (buildingById.TryGetValue(
                 model.BuildingId.ToString(),
-                out BuildingWorldViewModel? building))
+                out BuildingWorldViewModel? building)
+                && model.ShowWorkbench)
             {
-                RenderZones(building, visibleBays);
-                if (model.ShowWorkbench)
-                {
-                    RenderWorkbench(building, visibleWorkbenches);
-                }
+                RenderWorkbench(building, visibleWorkbenches);
             }
         }
 
@@ -106,7 +99,7 @@ public sealed partial class DigBuildingInternalStockRenderer : MonoBehaviour
             RenderUnit(building, unit, stockIndex, visible);
         }
 
-        RemoveMissing(visible, visibleBays, visibleWorkbenches);
+        RemoveMissing(visible, visibleWorkbenches);
     }
 
     private void RenderUnit(
@@ -285,7 +278,6 @@ public sealed partial class DigBuildingInternalStockRenderer : MonoBehaviour
 
     private void RemoveMissing(
         ISet<string> visible,
-        ISet<string> visibleBays,
         ISet<string> visibleWorkbenches)
     {
         string[] removed = _units.Keys
@@ -296,16 +288,6 @@ public sealed partial class DigBuildingInternalStockRenderer : MonoBehaviour
             string key = removed[index];
             Destroy(_units[key].gameObject);
             _units.Remove(key);
-        }
-
-        string[] removedBays = _bays.Keys
-            .Where(value => !visibleBays.Contains(value))
-            .ToArray();
-        for (int index = 0; index < removedBays.Length; index++)
-        {
-            string key = removedBays[index];
-            Destroy(_bays[key].gameObject);
-            _bays.Remove(key);
         }
 
         string[] removedWorkbenches = _workbenches.Keys

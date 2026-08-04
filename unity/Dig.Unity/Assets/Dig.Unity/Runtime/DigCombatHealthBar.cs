@@ -9,10 +9,12 @@ internal sealed class DigCombatHealthBar : MonoBehaviour
     private const float Width = 0.72f;
     private const float Height = 0.075f;
     private const float Depth = 0.025f;
+    private const float OwnerTopGap = 0.16f;
     private static Material? _backgroundMaterial;
     private static Material? _fillMaterial;
     private Transform? _fill;
     private Camera? _camera;
+    private float _minimumVerticalOffset;
 
     internal void Configure(
         int currentHealth,
@@ -23,7 +25,7 @@ internal sealed class DigCombatHealthBar : MonoBehaviour
     {
         EnsureVisuals();
         _camera = camera;
-        transform.localPosition = new Vector3(0f, verticalOffset, 0f);
+        _minimumVerticalOffset = verticalOffset;
         gameObject.SetActive(visible && maximumHealth > 0 && currentHealth > 0);
         if (!gameObject.activeSelf)
         {
@@ -36,12 +38,50 @@ internal sealed class DigCombatHealthBar : MonoBehaviour
             -((Width - (Width * normalized)) * 0.5f),
             0f,
             -0.003f);
+        AlignAboveOwner();
         FaceCamera();
     }
 
     private void LateUpdate()
     {
+        AlignAboveOwner();
         FaceCamera();
+    }
+
+    private void AlignAboveOwner()
+    {
+        Transform? owner = transform.parent;
+        if (owner == null)
+        {
+            return;
+        }
+
+        float worldY = owner.position.y + _minimumVerticalOffset;
+        Renderer[] renderers = owner.GetComponentsInChildren<Renderer>(
+            includeInactive: false);
+        for (int index = 0; index < renderers.Length; index++)
+        {
+            Renderer renderer = renderers[index];
+            if (!renderer.enabled || renderer.transform.IsChildOf(transform))
+            {
+                continue;
+            }
+
+            worldY = Mathf.Max(worldY, renderer.bounds.max.y + OwnerTopGap);
+        }
+
+        transform.position = new Vector3(owner.position.x, worldY, owner.position.z);
+        Vector3 ownerScale = owner.lossyScale;
+        transform.localScale = new Vector3(
+            SafeInverse(ownerScale.x),
+            SafeInverse(ownerScale.y),
+            SafeInverse(ownerScale.z));
+    }
+
+    private static float SafeInverse(float value)
+    {
+        float magnitude = Mathf.Abs(value);
+        return magnitude <= 0.0001f ? 1f : 1f / magnitude;
     }
 
     private void FaceCamera()

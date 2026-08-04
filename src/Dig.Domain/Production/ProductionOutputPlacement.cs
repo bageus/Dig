@@ -158,9 +158,9 @@ public static class ProductionOutputPlacement
         List<CellId> candidates = new List<CellId>(
             checked((maximumLateralDistance + 1) * rows.Length));
 
-        for (int distance = 1; distance <= maximumLateralDistance + 1; distance++)
+        for (int rowIndex = 0; rowIndex < rows.Length; rowIndex++)
         {
-            for (int rowIndex = 0; rowIndex < rows.Length; rowIndex++)
+            for (int distance = 1; distance <= maximumLateralDistance + 1; distance++)
             {
                 candidates.Add(new CellId(
                     rightEdgeX + distance,

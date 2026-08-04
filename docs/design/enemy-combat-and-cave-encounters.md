@@ -2,7 +2,7 @@
 
 Статус: `QUESTIONNAIRE` для полной иерархии; первый vertical slice с пещерными монстрами — `APPROVED`.
 
-Tracking issue: [#559](https://github.com/bageus/Dig/issues/559).
+Tracking issues: [#559](https://github.com/bageus/Dig/issues/559), [#634](https://github.com/bageus/Dig/issues/634).
 
 Связанные authoritative systems:
 
@@ -275,3 +275,17 @@ Runtime diagnostics expose:
 ## 13. Acceptance
 
 First slice is `IMPLEMENTED` only after merge and green automated suite. It is `VERIFIED` only after actual licensed Unity Play Mode executes the complete observable scenario, включая patrol, sight aggro, asymmetric disengage, hover highlight и health-bar shader creation. Q-ENEMY-001 is answered; the full hierarchy remains `QUESTIONNAIRE` until the remaining vine ambush lifecycle, swallower ingestion/drop and spider ambush workflows are complete.
+
+## Runtime presentation adjustment — 2026-08-04
+
+- Health bars for residents and enemies are informational, not precision combat widgets.
+- They should render higher above the actor silhouette and use one visually consistent width across dwarves and hostile creatures.
+
+
+## Combat Health-bar presentation correction — 2026-08-04
+
+- Resident and enemy Health bars are notification indicators with one shared world-space width.
+- Parent/model scale cannot make one actor bar wider or narrower than another.
+- The bar root follows the top active renderer bound of its owner plus a stable gap, so it stays above residents and enemies during movement/animation.
+- Bar visibility and normalized fill continue to use authoritative Health/combat state; only Presentation geometry changes.
+- Bar parts remain collider-free and camera-facing.

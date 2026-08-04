@@ -2,7 +2,7 @@
 
 Статус: `QUESTIONNAIRE`; exact surface position подтверждена 2026-07-29, depth-layer correction подтверждена 2026-08-01.
 
-Tracking issue: [#389](https://github.com/bageus/Dig/issues/389).
+Tracking issues: [#389](https://github.com/bageus/Dig/issues/389), [#634](https://github.com/bageus/Dig/issues/634).
 
 Связанные документы:
 
@@ -19,10 +19,12 @@ Demo bootstrap одновременно показывает completed workstati
 
 ## 2. Подтверждённый состав и расположение
 
-Fresh demo содержит две независимые quantity-one entities:
+Fresh demo содержит две независимые quantity-one entities и не содержит obsolete `Box Workshop`:
 
 1. ровно один completed campfire на поверхности;
 2. ровно один отдельный campfire BuildingBox в world Inventory location нижней пещеры.
+
+`demo.workshop.box`, `demo.building_box.workshop`, completed `Box Workshop` и его roster/visual content запрещены.
 
 Completed campfire имеет deterministic origin:
 
@@ -54,6 +56,7 @@ Packed campfire BuildingBox остаётся в deterministic valid lower-cave w
 - save/load не запускает повторный spawn;
 - stable IDs не зависят от display names;
 - exactly one completed campfire и one packed campfire box существуют независимо;
+- obsolete Box Workshop entity/item/row/visual не создаются;
 - completed campfire всегда находится в `ShaftX - 2 / SurfaceY / Z1`;
 - ни один active/completed building не существует на `Z0`;
 - packed box остаётся в нижней пещере;
@@ -92,3 +95,4 @@ Packed campfire BuildingBox остаётся в deterministic valid lower-cave w
 | 2026-07-25 | Completed campfire and packed box are separate; box starts in the lower cave. | User |
 | 2026-07-29 | Completed campfire is on the surface two cells left of the shaft. | User |
 | 2026-08-01 | Completed campfire uses exact `Z1`; `Z0` is only for physical BuildingBox relocation. | User |
+| 2026-08-04 | Obsolete Box Workshop полностью удалён; demo содержит только authoritative campfire + packed campfire box. | User |

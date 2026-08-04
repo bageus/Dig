@@ -104,7 +104,9 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         Assert.Contains("production.Products", production);
         Assert.Contains("production.Stocks", production);
         Assert.Contains("product.IsOrange", production);
-        Assert.Contains("product.Tooltip", production);
+        Assert.DoesNotContain("product.Tooltip", production);
+        Assert.DoesNotContain("Hover an icon", production);
+        Assert.DoesNotContain("BindIconTooltip", production);
         Assert.Contains("product.HasProductionOverlay", production);
         Assert.Contains("CreateProductionProgressOverlay", production);
         Assert.Contains("Image.FillMethod.Vertical", production);
@@ -124,7 +126,6 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         string renderer = Read(runtime, "DigBuildingInternalStockRenderer.cs");
         string zones = Read(runtime, "DigBuildingInternalStockRenderer.Zones.cs");
         string visual = Read(runtime, "DigBuildingInternalStockVisual.cs");
-        string bay = Read(runtime, "DigBuildingInternalStockBayVisual.cs");
         string interaction = Read(runtime, "DigWorldInteraction.BuildingInternalStock.cs");
         string itemCursor = Read(runtime, "DigWorldInteraction.ItemInteractionCursor.cs");
         string pickup = Read(runtime, "DigWorldItemPickupSession.cs");
@@ -135,17 +136,14 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         Assert.Contains("stockIndex", renderer);
         Assert.Contains("unitIndex", renderer);
         Assert.Contains("TryGetStock", renderer);
-        Assert.Contains("Internal Storage Zone", zones);
-        Assert.Contains("Finished Output Zone", zones);
         Assert.Contains("ResolveInternalZoneCell", zones);
-        Assert.Contains("ResolveOutputZoneCell", zones);
         Assert.Contains("leftEdge - 1", zones);
-        Assert.Contains("rightEdge + 1", zones);
         Assert.Contains("VisibleDepthOffset = 0.12f", renderer);
-        Assert.Contains("DigBuildingInternalStockBayVisual", renderer + zones);
-        Assert.Contains("Storage tray", bay);
-        Assert.DoesNotContain("Storage back rail", bay);
-        Assert.Contains("collider.enabled = false", bay);
+        Assert.DoesNotContain("RenderZones", renderer + zones);
+        Assert.DoesNotContain("DigBuildingInternalStockBayVisual", renderer + zones);
+        Assert.False(File.Exists(Path.Combine(
+            runtime,
+            "DigBuildingInternalStockBayVisual.cs")));
         Assert.Contains("collider.isTrigger = true", visual);
         Assert.Contains("TryResolveBuildingInternalStockHit", interaction);
         Assert.Contains("TryResolveBuildingInternalStockPickup", itemCursor);

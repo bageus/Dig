@@ -68,7 +68,7 @@ namespace Dig.Unity.Tests
             EntityId buildingId = EntityId.Parse(
                 "00000000-0000-0000-0000-000000000201");
             BuildingDefinitionId definitionId = new BuildingDefinitionId(
-                "demo.workshop.box");
+                "test.building.box");
             BuildingFunctionsViewModel functions = new BuildingFunctionsViewModel(
                 buildingId,
                 definitionId,
@@ -82,7 +82,7 @@ namespace Dig.Unity.Tests
             return new BuildingWorldViewModel(
                 id: buildingId.ToString(),
                 definitionId: definitionId.ToString(),
-                name: "Box Workshop",
+                name: "Test Building",
                 originX: 3,
                 originY: 3,
                 originZ: 1,

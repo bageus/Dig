@@ -2,7 +2,7 @@
 
 Статус: `APPROVED`.
 
-Tracking issues: [#118](https://github.com/bageus/Dig/issues/118), [#390](https://github.com/bageus/Dig/issues/390), [#398](https://github.com/bageus/Dig/issues/398).
+Tracking issues: [#118](https://github.com/bageus/Dig/issues/118), [#390](https://github.com/bageus/Dig/issues/390), [#398](https://github.com/bageus/Dig/issues/398), [#634](https://github.com/bageus/Dig/issues/634).
 
 ## 1. Назначение
 
@@ -137,6 +137,17 @@ Interactive ghost отображается только тогда, когда �
 Для Z0 relocation target также должен быть открытой explored reachable cell с solid support непосредственно под ней. Для Z1–Z3 assembly применяется footprint/surface policy соответствующего `BuildingDefinition`.
 
 ЛКМ по invalid preview не создаёт reservation, plan или job и показывает reason code. Preview и authoritative confirmation используют одни и те же World support facts; stale preview не может разместить коробку или здание после исчезновения опоры.
+
+
+### Visible-preview click parity — 2026-08-04
+
+- Update loop resolves the hover preview before processing LMB.
+- LMB confirmation commits the already visible `BuildingBoxGhostViewModel`; it must not perform a second pointer/origin resolution in the same click frame.
+- The click is routed through `ContextInputRouter` with the visible preview origin/validity.
+- A valid visible green ghost creates exactly one relocation/assembly plan and closes interactive mode.
+- A stale/invalid visible preview creates no plan, remains active and shows its typed reason.
+
+Demo content uses the campfire BuildingBox only. Obsolete `demo.workshop.box`, `demo.building_box.workshop` and display name `Box Workshop` are forbidden in runtime/demo catalogs.
 
 ## 8. Confirmation и planned projection
 
@@ -303,3 +314,9 @@ Diagnostics/Inspector показывают:
 - после последнего work-step следующий tick завершает building/job, расходует source box ровно один раз и освобождает reservations/routes;
 - assembly расходует box ровно один раз;
 - repeated placement/packing и deterministic replay.
+
+## 15. Runtime correction note — 2026-08-04
+
+- BuildingBox unpack placement confirmation must revalidate the currently shown ghost at click time and commit the placement immediately when the shown preview is still valid.
+- A visible valid green ghost is expected to create the unpack/assembly plan on `ЛКМ`; the click must not silently fail because of stale preview state.
+

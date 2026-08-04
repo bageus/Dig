@@ -16,7 +16,7 @@ public sealed class CampfireInventoryPlacementTests
     private static readonly EntityId StackId =
         EntityId.Parse("b1000000000000000000000000000001");
     private static readonly ItemId LegacyBoxId =
-        new ItemId("demo.building_box.workshop");
+        new ItemId("test.building_box.generic");
     private static readonly ItemId CampfireBoxId =
         new ItemId("building_box.campfire");
 
@@ -27,7 +27,7 @@ public sealed class CampfireInventoryPlacementTests
         {
             new ItemDefinition(
                 LegacyBoxId,
-                "Workshop BuildingBox",
+                "Test BuildingBox",
                 maximumStackSize: 1,
                 isTool: false),
             new ItemDefinition(

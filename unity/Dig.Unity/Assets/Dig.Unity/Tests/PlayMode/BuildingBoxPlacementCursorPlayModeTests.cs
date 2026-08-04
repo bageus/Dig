@@ -28,7 +28,7 @@ namespace Dig.Unity.Tests
             EntityId stackId = EntityId.Parse(
                 "00000000-0000-0000-0000-000000000101");
             BuildingDefinitionId definitionId = new BuildingDefinitionId(
-                "demo.workshop.box");
+                "test.building.box");
             BuildingBoxGhostViewModel first = new BuildingBoxGhostViewModel(
                 stackId,
                 definitionId,
@@ -100,7 +100,7 @@ namespace Dig.Unity.Tests
             EntityId parsedStack = EntityId.Parse(stackId);
             BuildingBoxGhostViewModel preview = new BuildingBoxGhostViewModel(
                 parsedStack,
-                new BuildingDefinitionId("demo.workshop.box"),
+                new BuildingDefinitionId("test.building.box"),
                 new CellId(4, 2, 0),
                 BuildingOrientation.North,
                 new[] { new CellId(4, 2, 0) },

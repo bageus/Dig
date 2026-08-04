@@ -39,15 +39,6 @@ internal sealed partial class DigTerrainWorkSession
         ItemDefinition[] baseItems =
         {
             new ItemDefinition(
-                DemoBuildingBoxItemId,
-                "Workshop BuildingBox",
-                1,
-                false,
-                new[]
-                {
-                    ResidentInventoryExpansionContent.GeneralItemCategoryId,
-                }),
-            new ItemDefinition(
                 DemoResidentToolItemId,
                 "Resident pickaxe",
                 1,
