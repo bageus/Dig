@@ -55,6 +55,23 @@ Correction PR: [#637](https://github.com/bageus/Dig/pull/637).
 
 Assertions синхронизированы с новым authoritative contract: временный active-production workbench сохранён, visible-preview routing проверяется в normalized форме, а fresh demo требует только completed campfire и запрещает `workshop`.
 
+## Automated validation
+
+На code-and-contract head `54aee2b4c3ab508a3c3b05ede15fb7be71631c50`:
+
+- Quality run `30945346327` — success;
+- architecture, file-size, C# compatibility и dependency gates — success;
+- все Unity source/presentation/runtime contracts — success;
+- Release build — success;
+- .NET suite — `1510/1510`;
+- headless smoke — success;
+- standard deterministic soak — success;
+- large-settlement deterministic soak — success;
+- Export Stage 2 v2 run `30945346163` — success;
+- Export Stage 2 v3 run `30945346203` — success.
+
+Unity workflow `30945346270` завершился через blocked-evidence path: actual EditMode/PlayMode Test Runner и executed-runtime-evidence validation были skipped из-за недоступной licensed activation.
+
 ## Verification boundary
 
-Python quality and Unity source-contract checks pass locally. Release build, .NET suite, smoke and deterministic soaks выполняются GitHub Quality на final branch head. Фактические Unity EditMode/PlayMode scenarios требуют лицензированного Test Runner; source checks сами по себе не дают статус `VERIFIED`.
+Фактическое исчезновение runtime-багов требует повторной локальной проверки в Unity либо выполненного лицензированного Test Runner. Repository/source checks и .NET tests подтверждают `IMPLEMENTED IN BRANCH`, но не повышают систему до `VERIFIED`.
