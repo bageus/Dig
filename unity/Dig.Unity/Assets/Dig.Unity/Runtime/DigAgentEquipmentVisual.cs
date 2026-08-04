@@ -11,6 +11,7 @@ namespace Dig.Unity
         private const string PickaxeVisualId = "visual.work_tool.pickaxe";
         private const string AxeVisualId = "visual.work_tool.axe";
         private const string HammerVisualId = "visual.work_tool.hammer";
+        private const string MealVisualId = "visual.meal.portion";
 
         private string? _itemId;
         private EquipmentAppearanceKind _appearanceKind;
@@ -44,6 +45,26 @@ namespace Dig.Unity
             _itemId = normalized;
             _appearanceKind = appearanceKind;
             name = "Equipped " + normalized;
+
+            if (string.Equals(normalized, MealVisualId, StringComparison.Ordinal))
+            {
+                transform.localPosition = new Vector3(0.40f, 0.12f, 0.08f);
+                transform.localRotation = Quaternion.Euler(0f, 0f, -8f);
+                CreatePart(
+                    "Meal Portion",
+                    Vector3.zero,
+                    new Vector3(0.22f, 0.14f, 0.12f),
+                    material,
+                    new Vector3(0f, 0f, 18f));
+                CreatePart(
+                    "Meal Bite Edge",
+                    new Vector3(0.08f, 0.04f, 0f),
+                    new Vector3(0.08f, 0.08f, 0.13f),
+                    material,
+                    new Vector3(0f, 0f, -18f));
+                return;
+            }
+
             transform.localPosition = new Vector3(0.58f, 0.04f, 0.08f);
             transform.localRotation = Quaternion.Euler(0f, 0f, -18f);
             CreatePart(
