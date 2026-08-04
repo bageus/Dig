@@ -1,9 +1,10 @@
 # Living-material layout and campfire VFX correction — 2026-08-04
 
-Status: `IMPLEMENTATION IN PROGRESS`.
+Status: `IMPLEMENTED`; licensed Unity runtime verification pending.
 
 Authoritative specification: [`../design/living-material-layout-and-campfire-vfx-correction-2026-08-04.md`](../design/living-material-layout-and-campfire-vfx-correction-2026-08-04.md).  
-Tracking issue: [#619](https://github.com/bageus/Dig/issues/619).
+Tracking issue: [#619](https://github.com/bageus/Dig/issues/619).  
+Implementation PR: [#621](https://github.com/bageus/Dig/pull/621).
 
 ## Root cause
 
@@ -28,6 +29,16 @@ Tracking issue: [#619](https://github.com/bageus/Dig/issues/619).
 - .NET presenter test requires light-only campfire glow;
 - source contract requires shared classifier, slot exclusion and no runtime ambient emission.
 
+## Repository evidence
+
+Implementation head `298b06f9daef7e17eded71e7217f66c2b0399430` passed:
+
+- Quality `30894959445` / run 9045: architecture/file-size/C# compatibility, Unity source contracts, Release build, full test suite, headless smoke, standard deterministic soak and large-settlement deterministic soak;
+- Stage 2 v2 `30894959083`: success;
+- Stage 2 v3 `30894959863`: success.
+
+Unity workflow `30894959145` / run 846 completed with blocked evidence: activation was unavailable, so actual EditMode/PlayMode and executed-runtime-evidence validation were skipped.
+
 ## Verification boundary
 
-Release build, full tests, source contracts, headless smoke and deterministic soaks are required before merge. Actual particle absence and package stability in the representative Unity scene remain below `VERIFIED` until licensed Play Mode or local user confirmation.
+Repository implementation is covered by build, Domain/presentation tests, source contracts and deterministic runtime scenarios. Actual particle absence and package stability in the representative Unity scene remain below `VERIFIED` until licensed Play Mode or local user confirmation on merged `main`.
