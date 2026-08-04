@@ -5,6 +5,7 @@ Status: `IMPLEMENTED`; local Unity Editor compilation confirmation pending.
 Authoritative specification: [`../design/combat-spatial-execution.md`](../design/combat-spatial-execution.md).  
 Related production specification: [`../design/building-production-and-internal-supply.md`](../design/building-production-and-internal-supply.md).  
 Tracking issue: [#622](https://github.com/bageus/Dig/issues/622).  
+Implementation PR: [#624](https://github.com/bageus/Dig/pull/624).  
 Related issues: [#508](https://github.com/bageus/Dig/issues/508), [#612](https://github.com/bageus/Dig/issues/612).
 
 ## Report
@@ -28,13 +29,16 @@ The same combat switch also lacked the specialized `BuildingSupplyJobDefinition`
 
 `CombatPreemptionUnityRuntimeContractTests` now verifies both helper declarations and both combat call shapes. This makes future signature drift fail the repository test suite even when Unity activation is unavailable.
 
+## Repository evidence
+
+Implementation head `0548c474790d86fde7f41779b8b0b46c4572be2f` passed:
+
+- Quality `30896594556` / run 9069: architecture/file-size/C# compatibility, Unity source contracts, Release build, full test suite, headless smoke, standard deterministic soak and large-settlement deterministic soak;
+- Stage 2 v2 `30896594440`: success;
+- Stage 2 v3 `30896594492`: success.
+
+Unity workflow `30896594441` / run 850 completed with blocked evidence: activation was unavailable, so actual EditMode/PlayMode and executed-runtime-evidence validation were skipped.
+
 ## Verification boundary
 
-Required before merge:
-
-- architecture/file-size/C# compatibility and Unity source contracts;
-- Release build and full test suite;
-- headless smoke and deterministic soaks;
-- Stage 2 source exports.
-
-Actual Unity Editor compilation remains the final confirmation for the reported `CS7036` because the hosted Unity workflow may record blocked evidence when activation is unavailable.
+Repository implementation and the signature regression are covered by final-head Quality and deterministic scenarios. Actual Unity Editor compilation remains the final confirmation for the reported `CS7036` because the hosted workflow did not execute Unity.
