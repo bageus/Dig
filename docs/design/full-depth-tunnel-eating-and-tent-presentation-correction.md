@@ -1,8 +1,10 @@
 # Полная глубина тоннелей, визуал еды и ориентация палатки
 
-Статус: `APPROVED`.
+Статус: `IMPLEMENTED`.
 
 Tracking issue: [#626](https://github.com/bageus/Dig/issues/626).
+
+Implementation evidence: [`../implementation/full-depth-tunnel-eating-and-tent-presentation-correction-2026-08-04.md`](../implementation/full-depth-tunnel-eating-and-tent-presentation-correction-2026-08-04.md).
 
 Связанные authoritative specifications:
 
@@ -78,3 +80,4 @@ Tracking issue: [#626](https://github.com/bageus/Dig/issues/626).
 ## 7. Журнал подтверждений
 
 - 2026-08-04 — пользователь подтвердил полную глубину всех Z-слоёв, распространение non-mineable Z0 на глубину, seated food-in-hand bite presentation и разворот палатки входом к камере.
+- 2026-08-04 — implementation и regression evidence добавлены в PR #627; без executed licensed Unity result статус не повышается до `VERIFIED`.
