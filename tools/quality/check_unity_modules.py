@@ -11,6 +11,7 @@ LOCK_PATH = ROOT / "unity" / "Dig.Unity" / "Packages" / "packages-lock.json"
 ASMDEF_PATH = ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" / "Runtime" / "Dig.Unity.asmdef"
 
 REQUIRED_PACKAGES = {
+    "com.unity.cloud.gltfast": ("6.19.0", "registry"),
     "com.unity.render-pipelines.universal": ("17.0.4", "builtin"),
     "com.unity.modules.animation": ("1.0.0", "builtin"),
     "com.unity.modules.audio": ("1.0.0", "builtin"),
@@ -36,13 +37,27 @@ FORBIDDEN_PACKAGES = {
         "legacy input is exposed by UnityEngine.InputLegacyModule and is not "
         "a resolvable Unity 6 package"
     ),
+    "org.khronos.unitygltf": (
+        "Dig.Unity uses the pinned com.unity.cloud.gltfast importer; the legacy "
+        "UnityGLTF git package must not be restored"
+    ),
 }
+
+CONFLICT_MARKERS = ("<<<<<<<", "=======", ">>>>>>>")
 
 
 def load_json(path: Path) -> dict[str, object]:
     if not path.exists():
         raise FileNotFoundError(path.relative_to(ROOT))
-    return json.loads(path.read_text(encoding="utf-8-sig"))
+
+    text = path.read_text(encoding="utf-8-sig")
+    for marker in CONFLICT_MARKERS:
+        if marker in text:
+            raise ValueError(
+                f"{path.relative_to(ROOT)} contains unresolved conflict marker {marker}"
+            )
+
+    return json.loads(text)
 
 
 def validate_package(
@@ -76,7 +91,7 @@ def main() -> int:
         manifest = load_json(MANIFEST_PATH)
         package_lock = load_json(LOCK_PATH)
         assembly = load_json(ASMDEF_PATH)
-    except (FileNotFoundError, json.JSONDecodeError) as error:
+    except (FileNotFoundError, ValueError, json.JSONDecodeError) as error:
         print(f"Unity module configuration is invalid: {error}", file=sys.stderr)
         return 1
 
