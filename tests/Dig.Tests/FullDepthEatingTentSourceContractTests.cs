@@ -12,13 +12,45 @@ public sealed class FullDepthEatingTentSourceContractTests
     {
         string projection = ReadRuntime("DigTunnelProjection.cs");
         string geometry = ReadRuntime("DigTerrainChunkMeshBuilder.Geometry.cs");
+        string tunnelProxies = ReadRuntime("DigTunnelDemoRenderer.cs");
+        string caveProxies = ReadRuntime("DigCaveRoomFloorRenderer.cs");
 
         Assert.Contains("DepthOrigin = 0.50f", projection);
         Assert.Contains("DepthSpacing = -1.00f", projection);
         Assert.Contains("RockCellHalfExtent = 0.50f", projection);
         Assert.Contains("FloorDepth = 1.00f", projection);
+        Assert.Contains("InteractionDepth = 0.94f", projection);
         Assert.DoesNotContain("if (z == 0)", geometry);
         Assert.DoesNotContain("FrontRockDepth", geometry);
+        Assert.Contains("DigTunnelProjection.InteractionDepth", tunnelProxies);
+        Assert.Contains("DigTunnelProjection.InteractionDepth", caveProxies);
+        Assert.DoesNotContain("0.94f, 0.94f, 0.50f", tunnelProxies);
+        Assert.DoesNotContain("Mathf.Max(0.94f, top - bottom),\n                0.50f", caveProxies);
+    }
+
+    [Fact]
+    public void Open_tunnel_cells_do_not_render_cyan_floor_tiles()
+    {
+        string cellVisual = ReadRuntime("DigCellVisual.cs");
+        string worldRenderer = ReadRuntime("DigWorldRenderer.cs");
+
+        Assert.Contains(
+            "_renderer.enabled = Model.IsSolid && !showQuarters",
+            cellVisual);
+        Assert.DoesNotContain(
+            "if (!model.IsSolid && transform.localScale != Vector3.zero)",
+            cellVisual);
+        Assert.Contains(
+            "visual.transform.localScale = cell.IsSolid",
+            worldRenderer);
+        Assert.Contains(
+            "bool renderable = pair.Value.Model.IsSolid;",
+            worldRenderer);
+        Assert.Contains("return Color.clear;", worldRenderer);
+        Assert.DoesNotContain("else if (walkSurface)", worldRenderer);
+        Assert.DoesNotContain(
+            "new Color(0.20f, 0.52f, 0.66f, 1f)",
+            worldRenderer);
     }
 
     [Fact]
