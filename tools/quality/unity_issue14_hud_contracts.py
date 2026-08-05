@@ -113,13 +113,22 @@ def check_issue14_hud_contracts(
         "pooled world overlay integrations",
         (
             "OverlaySemanticKind.Designation",
-            "OverlaySemanticKind.BuildingFootprint",
             "OverlaySemanticKind.StorageDemand",
             "OverlaySemanticKind.Deposit",
             "OverlaySemanticKind.Fog",
             "OverlaySemanticKind.DirtyChunk",
             "OverlaySemanticKind.NavigationDiagnostic",
             "HideRemainder(_selection, count);",
+        ),
+    ))
+    errors.extend(reject_fragments(
+        overlay_path,
+        texts.get(overlay_path, ""),
+        "obsolete building footprint service platform",
+        (
+            "OverlaySemanticKind.BuildingFootprint",
+            "Building Footprint",
+            "_buildingFootprints",
         ),
     ))
     errors.extend(require_fragments(
