@@ -23,8 +23,8 @@ public sealed class WorldItemViewModel
             cellX,
             cellY,
             cellZ: 0,
-            interactionProfile,
-            displayName)
+            interactionProfile: interactionProfile,
+            displayName: displayName)
     {
     }
 
@@ -115,8 +115,6 @@ public sealed class WorldItemViewModel
             && AvailableQuantity > 0
             && InteractionProfile.SupportsWorldAction(action);
     }
-
-
 }
 
 }
