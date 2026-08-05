@@ -37,21 +37,21 @@ Implementation PR: [#655](https://github.com/bageus/Dig/pull/655).
 
 ## Executed validation
 
-Code-and-test head `cf0101aa979c1c664fb1100780db1ac1bd6d6856`:
+Tested head `a057153d3597e219b821704320e498d7c2b97253`, which includes the synchronized authoritative system index and world-item specification:
 
-- Quality run `31054337650` — success;
+- Quality run `31054660017` — success;
 - architecture, file-size, C# compatibility, dependency and Unity source-contract gates — success;
 - Release build — success;
 - .NET tests — `1527/1527` passed;
 - headless smoke — success;
 - standard deterministic soak — success;
 - large-settlement deterministic soak — success;
-- Export Stage 2 v2 run `31054337491` — success;
-- Export Stage 2 v3 run `31054335496` — success.
+- Export Stage 2 v2 run `31054659976` — success;
+- Export Stage 2 v3 run `31054660004` — success.
 
-Unity workflow `31054337643` completed through the blocked-evidence path. Licensed activation was unavailable, so actual EditMode/PlayMode Test Runner and executed runtime-evidence validation were skipped. The checked-in Play Mode regressions therefore have not executed in licensed Unity.
+Unity workflow `31054659983` completed through the blocked-evidence path. Licensed activation was unavailable, so actual EditMode/PlayMode Test Runner and executed runtime-evidence validation were skipped. The checked-in Play Mode regressions therefore have not executed in licensed Unity.
 
-The authoritative system index and world-item specification were synchronized in commit `cd885f5cccdf304ab8da1a71347a47f324d8ba80`. A final repository validation run is triggered by this report update and will be recorded in the PR/issue evidence.
+This evidence report is the only change after tested head `a057153d3597e219b821704320e498d7c2b97253`; production code, tests and authoritative specifications are unchanged.
 
 ## Verification boundary
 
