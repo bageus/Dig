@@ -32,11 +32,27 @@ public sealed class RuntimeBuildingUiHealthPickupContractTests
     public void Building_selection_and_production_hud_have_no_service_platforms_or_tooltip_text()
     {
         string overlay = ReadRuntime("DigWorldOverlayRenderer.Render.cs");
+        string overlayRenderer = ReadRuntime("DigWorldOverlayRenderer.cs");
+        string overlayAppearance = ReadRuntime("DigOverlayAppearanceDefaults.cs");
+        string overlayEnums = Read(
+            "src", "Dig.Presentation.Abstractions", "Overlays", "OverlayEnums.cs");
+        string overlayStyles = Read(
+            "src", "Dig.Presentation.Abstractions", "Overlays",
+            "DefaultOverlayStyles.cs");
         string productionHud = ReadRuntime("DigGameHudCanvas.BuildingProduction.cs");
         string stockRenderer = ReadRuntime("DigBuildingInternalStockRenderer.cs");
         string zones = ReadRuntime("DigBuildingInternalStockRenderer.Zones.cs");
 
         Assert.DoesNotContain("Building Selection", overlay);
+        Assert.DoesNotContain("Building Footprint", overlay + overlayRenderer);
+        Assert.DoesNotContain("_buildingFootprints", overlay + overlayRenderer);
+        Assert.DoesNotContain("_previewRoot", overlayRenderer);
+        Assert.DoesNotContain(
+            "OverlaySemanticKind.BuildingFootprint",
+            overlay + overlayAppearance + overlayStyles);
+        Assert.DoesNotContain("BuildingFootprint = 14", overlayEnums);
+        Assert.Contains("Storage Demand", overlay);
+        Assert.Contains("Navigation Failure", overlay);
         Assert.Contains("string.Empty", productionHud);
         Assert.DoesNotContain("Hover an icon", productionHud);
         Assert.DoesNotContain("BindIconTooltip", productionHud);
