@@ -13,7 +13,8 @@ public sealed class WorldItemViewModel
         int reservedQuantity,
         int cellX,
         int cellY,
-        ItemInteractionProfile interactionProfile)
+        ItemInteractionProfile interactionProfile,
+        string? displayName = null)
         : this(
             stackId,
             itemId,
@@ -22,7 +23,8 @@ public sealed class WorldItemViewModel
             cellX,
             cellY,
             cellZ: 0,
-            interactionProfile)
+            interactionProfile,
+            displayName)
     {
     }
 
@@ -34,7 +36,8 @@ public sealed class WorldItemViewModel
         int cellX,
         int cellY,
         int cellZ,
-        ItemInteractionProfile interactionProfile)
+        ItemInteractionProfile interactionProfile,
+        string? displayName = null)
     {
         if (string.IsNullOrWhiteSpace(stackId)
             || string.IsNullOrWhiteSpace(itemId))
@@ -56,6 +59,9 @@ public sealed class WorldItemViewModel
 
         StackId = stackId.Trim();
         ItemId = itemId.Trim();
+        DisplayName = string.IsNullOrWhiteSpace(displayName)
+            ? ItemId
+            : displayName.Trim();
         Quantity = quantity;
         ReservedQuantity = reservedQuantity;
         CellX = cellX;
@@ -67,6 +73,7 @@ public sealed class WorldItemViewModel
 
     public string StackId { get; }
     public string ItemId { get; }
+    public string DisplayName { get; }
     public int Quantity { get; }
     public int ReservedQuantity { get; }
     public int AvailableQuantity => Quantity - ReservedQuantity;
