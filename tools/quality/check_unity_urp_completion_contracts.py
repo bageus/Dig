@@ -152,7 +152,9 @@ def main() -> int:
     errors.extend(require(effects, (
         "BindPresentationEffectSink", "ExcavationImpact", "DepositReveal",
     )))
-    errors.extend(require(RUNTIME / "DigPooledVfxInstance.cs", ("localPosition",)))
+    pooled_vfx = RUNTIME / "DigPooledVfxInstance.cs"
+    errors.extend(require(pooled_vfx, ("transform.position = new Vector3",)))
+    errors.extend(reject(pooled_vfx, ("transform.localPosition = new Vector3",)))
     errors.extend(require(RUNTIME / "DigRealtimeLightPool.cs", ("localPosition",)))
     errors.extend(require(RUNTIME / "DigPresentationEffectRuntime.cs", (
         "TrackProductionEmitters", "LavaGlow", "CrystalGlow", "CampfireGlow",
