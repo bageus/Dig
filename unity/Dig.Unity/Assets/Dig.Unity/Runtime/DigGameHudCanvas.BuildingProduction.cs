@@ -119,6 +119,17 @@ public sealed partial class DigGameHudCanvas
             TextAnchor.LowerRight);
         DigProductionIconPointer pointer =
             button.gameObject.AddComponent<DigProductionIconPointer>();
+        pointer.HoverChanged = hovered =>
+        {
+            if (hovered)
+            {
+                SetProductionHoverInfo(product.DisplayName, product.Tooltip);
+            }
+            else
+            {
+                ClearProductionHoverInfo();
+            }
+        };
         pointer.RightClicked = product.QueuedCount > 0
             ? () => CancelBuildingProduction(
                 building.Id,
