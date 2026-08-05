@@ -2,7 +2,7 @@
 
 Статус: `APPROVED`.
 
-Tracking issue: [#634](https://github.com/bageus/Dig/issues/634).
+Tracking issues: [#634](https://github.com/bageus/Dig/issues/634), [#648](https://github.com/bageus/Dig/issues/648).
 
 Связанные authoritative specifications:
 
@@ -25,7 +25,7 @@ Tracking issue: [#634](https://github.com/bageus/Dig/issues/634).
 ### Building selection and production HUD
 
 - completed-building selection keeps model highlight and roster-row synchronization;
-- no footprint platform, flat green selection surface or separate world-space selection base is rendered;
+- no footprint platform, flat green selection surface or separate world-space selection base is rendered in completed, assembly, packing, relocation/project or any other building lifecycle state;
 - production panel does not repeat the selected building name above its controls;
 - production panel does not show the persistent hover instruction or a required-material tooltip area;
 - product/stock icons, queue counters, progress, toggles and Pack action remain functional;
@@ -73,7 +73,7 @@ Tracking issue: [#634](https://github.com/bageus/Dig/issues/634).
 
 - source and runtime tests reject every obsolete Box Workshop stable id/name in production/demo code and catalogs;
 - fresh demo projects exactly one completed campfire and one packed campfire box;
-- no building footprint platform or production tray is created;
+- no building footprint platform is created for any building lifecycle state and no production tray is created;
 - production HUD has no heading/tooltip text but preserves controls;
 - scaled resident/enemy parents produce equal Health-bar world width above renderer bounds;
 - multi-row output placement fills the primary row contiguously;
