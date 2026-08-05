@@ -1,6 +1,6 @@
 # Runtime pickup, combat VFX и Vuker traversal correction
 
-Статус: `APPROVED`.
+Статус: `IMPLEMENTED`.
 
 Tracking issue: [#644](https://github.com/bageus/Dig/issues/644).
 
