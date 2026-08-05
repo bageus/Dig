@@ -2,7 +2,7 @@
 
 Статус: `QUESTIONNAIRE`.
 
-Tracking issue: [#387](https://github.com/bageus/Dig/issues/387), [#634](https://github.com/bageus/Dig/issues/634).
+Tracking issue: [#387](https://github.com/bageus/Dig/issues/387), [#634](https://github.com/bageus/Dig/issues/634), [#650](https://github.com/bageus/Dig/issues/650).
 
 Связанные issues: [#7](https://github.com/bageus/Dig/issues/7), [#64](https://github.com/bageus/Dig/issues/64), [#67](https://github.com/bageus/Dig/issues/67), [#113](https://github.com/bageus/Dig/issues/113), [#118](https://github.com/bageus/Dig/issues/118), [#390](https://github.com/bageus/Dig/issues/390), [#396](https://github.com/bageus/Dig/issues/396).
 
@@ -10,7 +10,8 @@ Tracking issue: [#387](https://github.com/bageus/Dig/issues/387), [#634](https:/
 
 - [`building-box-placement-and-packing.md`](building-box-placement-and-packing.md);
 - [`contextual-input-cursors-and-selection.md`](contextual-input-cursors-and-selection.md);
-- [`entity-fall-knockback-and-vertical-shafts.md`](entity-fall-knockback-and-vertical-shafts.md).
+- [`entity-fall-knockback-and-vertical-shafts.md`](entity-fall-knockback-and-vertical-shafts.md);
+- [`world-item-floor-pose-and-work-time-autoplanning-correction-2026-08-05.md`](world-item-floor-pose-and-work-time-autoplanning-correction-2026-08-05.md);
 
 ## 1. Назначение
 
@@ -37,7 +38,7 @@ Tracking issue: [#387](https://github.com/bageus/Dig/issues/387), [#634](https:/
 
 Коробки и обычные предметы используют общую item gravity/support policy. Любой новый `ItemDefinition`, включая материал, инструмент, оружие, еду и BuildingBox, автоматически наследует grounded world-item behavior без отдельного `lies_on_ground`, `is_grounded`, ItemId allowlist или Unity override. Исключение разрешено только как явно утверждённая специальная spatial policy и не может быть обязательным полем для обычного нового предмета.
 
-Presentation также применяет одну geometry-derived grounding policy: после создания, scale и rotation фактическая нижняя граница активных renderers совмещается с projected floor. Pivot prefab, высота mesh и наличие отдельного visual profile не должны заставлять автора вручную задавать vertical offset. Та же policy используется для обычного world stack, internal stock, inventory placement ghost и BuildingBox relocation preview. Carry sockets, tethered creatures и другие не-world projections используют свои отдельные presentation owners.
+Presentation также применяет одну geometry-derived grounding policy: ordinary loose world item сначала получает deterministic flat floor-rest rotation, затем фактическая нижняя граница активных renderers совмещается с projected floor. Pivot prefab, высота mesh и наличие отдельного visual profile не должны заставлять автора вручную задавать rotation или vertical offset. Та же flat world-item pose и grounding policy используется для обычного world stack и internal stock. BuildingBox сохраняет отдельную upright container projection, а inventory placement ghost/relocation preview, carry sockets, tethered creatures и другие не-world projections используют свои отдельные presentation owners. Решение определяется definition-owned interaction/profile, а не ItemId allowlist.
 
 Если опора исчезла из-за полного excavation commit, support check использует уже обновлённый authoritative World/topology snapshot и запускается до новых pickup/hauling reservations. Ошибка обновления производной Navigation-проекции не восстанавливает удалённую породу и не отменяет обнаружение потери опоры. Это уточнение не закрывает Q-ITEM-006: текущий runtime может использовать существующую атомарную relocation, а будущая multi-tick animation/state policy остаётся отдельным решением.
 
@@ -73,7 +74,8 @@ BuildingBox остаётся Inventory item. Его строка в building ros
 - visual не может быть скрыт floor geometry при наличии selectable logical item;
 - collider не может оставаться в старой клетке после падения/landing;
 - visual front offset является производным Presentation параметром;
-- нижняя geometry bound каждого обычного world-item visual автоматически совмещается с projected floor после scale/rotation;
+- ordinary loose world-item visual детерминированно лежит на полу, а его нижняя geometry bound автоматически совмещается с projected floor после scale/rotation;
+- BuildingBox сохраняет отдельную upright container projection;
 - новое item/material content не требует per-item ground flag, pivot convention или vertical offset;
 - root transform не должен повторно применять terrain rotation к уже спроецированной world position;
 - при rebuild visual полностью восстанавливается из Inventory snapshot;
@@ -93,7 +95,7 @@ BuildingBox остаётся Inventory item. Его строка в building ros
 - support-loss detection не зависит от Unity frame rate;
 - excavation commit не может оставить item на удалённой опоре из-за stale Navigation/presentation state;
 - fall/support reconciliation выполняется раньше новых pickup/hauling reservations;
-- grounded presentation является default для всех новых `ItemDefinition`; отсутствие visual profile не отменяет grounding;
+- flat grounded presentation является default для всех новых ordinary `ItemDefinition`; отсутствие visual profile не отменяет floor-rest pose или grounding;
 - per-item grounded allowlist и ItemId-based vertical offsets запрещены.
 
 ## 8. Решённые вопросы
@@ -104,7 +106,7 @@ BuildingBox остаётся Inventory item. Его строка в building ros
 - **Q-ITEM-009:** item interaction определяется definition-owned profile; Presentation ID/prefix classifiers запрещены.
 - **Q-ITEM-006 (trigger):** свободный item автоматически начинает падение после потери опоры без отдельного воздействия; timing/state model остаётся открытым.
 - **Q-ITEM-008:** текущая demo-сцена не обязана показывать процесс падения; generalized visual/actor fall оформлен отдельной системой #396.
-- **Q-ITEM-009:** все новые item/material definitions по умолчанию являются grounded world items. Author не задаёт отдельный ground flag или vertical offset; Presentation совмещает фактическую нижнюю geometry bound с floor автоматически.
+- **Q-ITEM-009:** все новые ordinary item/material definitions по умолчанию являются flat grounded world items. Author не задаёт отдельный ground flag, floor rotation или vertical offset; Presentation сначала укладывает visual на бок, затем совмещает фактическую нижнюю geometry bound с floor автоматически. BuildingBox остаётся отдельной upright container projection.
 
 ## 9. Открытые вопросы
 
