@@ -1,0 +1,87 @@
+name: Codex documentation sync
+
+on:
+  push:
+    branches:
+      - codex/runtime-floor-pose-work-autoplanning
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/runtime-floor-pose-work-autoplanning
+          fetch-depth: 0
+
+      - name: Synchronize authoritative index and item specification
+        shell: python
+        run: |
+          from pathlib import Path
+
+          readme = Path("docs/systems/README.md")
+          text = readme.read_text(encoding="utf-8")
+          calendar = "| Единый игровой календарь и cadence действий | tick, игровой час, сутки, run speed, bite cooldown, mining cooldown, combat recovery, processing duration | `APPROVED` | [`unified-game-time-and-action-cadence.md`](../design/unified-game-time-and-action-cadence.md) | [`../implementation/unified-game-time-and-action-cadence-2026-08-03.md`](../implementation/unified-game-time-and-action-cadence-2026-08-03.md), [#601](https://github.com/bageus/Dig/issues/601), [PR #603](https://github.com/bageus/Dig/pull/603) |"
+          floor_row = "| Лежачая поза world items и автопланирование только в рабочее время | предметы лежат, orange work, blue rest, AUTO ON, AUTO OFF, schedule-gated jobs | `APPROVED` | [`world-item-floor-pose-and-work-time-autoplanning-correction-2026-08-05.md`](../design/world-item-floor-pose-and-work-time-autoplanning-correction-2026-08-05.md), [`resident-schedule-needs-actions.md`](../design/resident-schedule-needs-actions.md) | [#650](https://github.com/bageus/Dig/issues/650) |"
+          if floor_row not in text:
+              if calendar not in text:
+                  raise SystemExit("calendar index row not found")
+              text = text.replace(calendar, calendar + "\n" + floor_row, 1)
+          old_platform = "| Runtime building/UI, Health bar, unpack и forced pickup correction | Box Workshop, green platform, building title, production tooltip, health bar width, unpack LMB, forced pickup | `APPROVED` | [`runtime-building-ui-health-unpack-pickup-correction-2026-08-04.md`](../design/runtime-building-ui-health-unpack-pickup-correction-2026-08-04.md) | [#634](https://github.com/bageus/Dig/issues/634) |"
+          new_platform = "| Runtime building/UI, Health bar, unpack и forced pickup correction | Box Workshop, green platform, building footprint, building title, production tooltip, health bar width, unpack LMB, forced pickup | `APPROVED` | [`runtime-building-ui-health-unpack-pickup-correction-2026-08-04.md`](../design/runtime-building-ui-health-unpack-pickup-correction-2026-08-04.md) | [#634](https://github.com/bageus/Dig/issues/634), [#648](https://github.com/bageus/Dig/issues/648) |"
+          if old_platform in text:
+              text = text.replace(old_platform, new_platform, 1)
+          elif new_platform not in text:
+              raise SystemExit("building platform index row not found")
+          old_items = "| Мировые предметы: gravity, visibility, selection, pickup и placement | падение коробки, предмет на полу, Alt+LMB, item ghost, drop | `QUESTIONNAIRE` | [`world-item-gravity-selection-and-pickup.md`](../design/world-item-gravity-selection-and-pickup.md), [`runtime-selection-excavation-item-placement-decisions.md`](../design/runtime-selection-excavation-item-placement-decisions.md), [`runtime-stacking-barrel-and-room-recovery-decisions.md`](../design/runtime-stacking-barrel-and-room-recovery-decisions.md) | [#387](https://github.com/bageus/Dig/issues/387), [#390](https://github.com/bageus/Dig/issues/390) |"
+          new_items = "| Мировые предметы: gravity, visibility, selection, pickup и placement | падение коробки, предмет лежит на полу, flat floor pose, Alt+LMB, item ghost, drop | `QUESTIONNAIRE` | [`world-item-gravity-selection-and-pickup.md`](../design/world-item-gravity-selection-and-pickup.md), [`world-item-floor-pose-and-work-time-autoplanning-correction-2026-08-05.md`](../design/world-item-floor-pose-and-work-time-autoplanning-correction-2026-08-05.md), [`runtime-selection-excavation-item-placement-decisions.md`](../design/runtime-selection-excavation-item-placement-decisions.md), [`runtime-stacking-barrel-and-room-recovery-decisions.md`](../design/runtime-stacking-barrel-and-room-recovery-decisions.md) | [#387](https://github.com/bageus/Dig/issues/387), [#390](https://github.com/bageus/Dig/issues/390), [#650](https://github.com/bageus/Dig/issues/650) |"
+          if old_items in text:
+              text = text.replace(old_items, new_items, 1)
+          elif new_items not in text:
+              raise SystemExit("world item index row not found")
+          readme.write_text(text, encoding="utf-8")
+
+          spec = Path("docs/design/world-item-gravity-selection-and-pickup.md")
+          text = spec.read_text(encoding="utf-8")
+          text = text.replace(
+              "Tracking issue: [#387](https://github.com/bageus/Dig/issues/387), [#634](https://github.com/bageus/Dig/issues/634).",
+              "Tracking issue: [#387](https://github.com/bageus/Dig/issues/387), [#634](https://github.com/bageus/Dig/issues/634), [#650](https://github.com/bageus/Dig/issues/650).",
+              1)
+          related = "- [`world-item-floor-pose-and-work-time-autoplanning-correction-2026-08-05.md`](world-item-floor-pose-and-work-time-autoplanning-correction-2026-08-05.md);"
+          anchor = "- [`entity-fall-knockback-and-vertical-shafts.md`](entity-fall-knockback-and-vertical-shafts.md)."
+          if related not in text:
+              text = text.replace(anchor, anchor[:-1] + ";\n" + related, 1)
+          old_grounding = "Presentation также применяет одну geometry-derived grounding policy: после создания, scale и rotation фактическая нижняя граница активных renderers совмещается с projected floor. Pivot prefab, высота mesh и наличие отдельного visual profile не должны заставлять автора вручную задавать vertical offset. Та же policy используется для обычного world stack, internal stock, inventory placement ghost и BuildingBox relocation preview. Carry sockets, tethered creatures и другие не-world projections используют свои отдельные presentation owners."
+          new_grounding = "Presentation также применяет одну geometry-derived grounding policy: ordinary loose world item сначала получает deterministic flat floor-rest rotation, затем фактическая нижняя граница активных renderers совмещается с projected floor. Pivot prefab, высота mesh и наличие отдельного visual profile не должны заставлять автора вручную задавать rotation или vertical offset. Та же flat world-item pose и grounding policy используется для обычного world stack и internal stock. BuildingBox сохраняет отдельную upright container projection, а inventory placement ghost/relocation preview, carry sockets, tethered creatures и другие не-world projections используют свои отдельные presentation owners. Решение определяется definition-owned interaction/profile, а не ItemId allowlist."
+          if old_grounding in text:
+              text = text.replace(old_grounding, new_grounding, 1)
+          elif new_grounding not in text:
+              raise SystemExit("grounding paragraph not found")
+          text = text.replace(
+              "- нижняя geometry bound каждого обычного world-item visual автоматически совмещается с projected floor после scale/rotation;",
+              "- ordinary loose world-item visual детерминированно лежит на полу, а его нижняя geometry bound автоматически совмещается с projected floor после scale/rotation;\n- BuildingBox сохраняет отдельную upright container projection;",
+              1)
+          text = text.replace(
+              "- grounded presentation является default для всех новых `ItemDefinition`; отсутствие visual profile не отменяет grounding;",
+              "- flat grounded presentation является default для всех новых ordinary `ItemDefinition`; отсутствие visual profile не отменяет floor-rest pose или grounding;",
+              1)
+          text = text.replace(
+              "- **Q-ITEM-009:** все новые item/material definitions по умолчанию являются grounded world items. Author не задаёт отдельный ground flag или vertical offset; Presentation совмещает фактическую нижнюю geometry bound с floor автоматически.",
+              "- **Q-ITEM-009:** все новые ordinary item/material definitions по умолчанию являются flat grounded world items. Author не задаёт отдельный ground flag, floor rotation или vertical offset; Presentation сначала укладывает visual на бок, затем совмещает фактическую нижнюю geometry bound с floor автоматически. BuildingBox остаётся отдельной upright container projection.",
+              1)
+          spec.write_text(text, encoding="utf-8")
+
+      - name: Commit synchronized documentation and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/codex-doc-sync.yml
+          git add docs/systems/README.md docs/design/world-item-gravity-selection-and-pickup.md
+          git commit -m "Synchronize item pose and autoplanning documentation"
+          git push origin HEAD:codex/runtime-floor-pose-work-autoplanning
