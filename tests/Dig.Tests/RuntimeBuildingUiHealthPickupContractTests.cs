@@ -63,6 +63,25 @@ public sealed class RuntimeBuildingUiHealthPickupContractTests
     }
 
     [Fact]
+    public void Central_hover_region_is_reserved_without_conditional_content_resizing()
+    {
+        string contextHover = ReadRuntime("DigGameHudCanvas.ContextHover.cs");
+        string layout = ReadRuntime("DigGameHudCanvas.Layout.cs");
+        string playMode = ReadPlayMode("Issue14HudPlayModeTests.cs");
+
+        Assert.Contains("ContextHoverContentOffsetMaxY = -52f", contextHover);
+        Assert.Contains(
+            "_contextHoverPanel!.gameObject.SetActive(_bottomPanel.gameObject.activeSelf)",
+            contextHover);
+        Assert.Contains("offsetMax.y = ContextHoverContentOffsetMaxY", contextHover);
+        Assert.DoesNotContain("visible ? -52f : -8f", contextHover);
+        Assert.Contains("RefreshContextHoverInfo();", layout);
+        Assert.Contains(
+            "Context_hover_keeps_content_and_icon_geometry_stable",
+            playMode);
+    }
+
+    [Fact]
     public void Health_bars_are_world_scale_invariant_and_above_owner_renderers()
     {
         string health = ReadRuntime("DigCombatHealthBar.cs");
