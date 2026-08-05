@@ -36,9 +36,9 @@ Pull request: [#645](https://github.com/bageus/Dig/pull/645).
 
 ## Exact-head evidence
 
-Code head `50932e486e222329750c567cbd53c371611851db`:
+Code, design и system-index head `8a85a2cd0e6609b221472367822f04fa604ce62a`:
 
-- Quality run `30985031653`: success;
+- Quality run `30985861905`: success;
 - Release build: `0` warnings, `0` errors;
 - full .NET suite: `1516/1516` passed;
 - headless smoke: success at tick `20`;
@@ -46,12 +46,12 @@ Code head `50932e486e222329750c567cbd53c371611851db`:
   `B26EA859F3F9668DF85CA1BA2842D8C733B09C51B596F4300549AEE7465D5292`, replay matched;
 - large deterministic soak: hash
   `7FD411B4725F7DADC5D355FEC5FB5159D59314CB25921394D9D8B27669EC51C9`, replay matched;
-- Stage 2 v2 run `30985031725`: success;
-- Stage 2 v3 run `30985031838`: success;
-- Unity workflow `30985031596` recorded blocked evidence: actual EditMode/PlayMode
+- Stage 2 v2 run `30985862172`: success;
+- Stage 2 v3 run `30985861843`: success;
+- Unity workflow `30985861886` recorded blocked evidence: actual EditMode/PlayMode
   execution was skipped because licensed activation was unavailable.
 
-Documentation changes after this evidence require one final exact-head CI before merge.
+The final implementation-note-only commit must pass the same exact-head gates before merge.
 
 ## Verification boundary
 
