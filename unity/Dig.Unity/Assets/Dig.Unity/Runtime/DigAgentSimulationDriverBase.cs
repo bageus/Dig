@@ -107,6 +107,9 @@ namespace Dig.Unity
                 TerrainSession.HasActiveResidentDirectCommand);
             TerrainSession.BindDirectCommandCombatDisengage(
                 AgentSession.BeginResidentDirectCommand);
+            TerrainSession.BindDirectCommandManualMovementCancellation(
+                residentId => AgentSession.CancelManualTunnelMovement(
+                    residentId.ToString()));
             try
             {
                 RefreshEquipmentVisuals();
