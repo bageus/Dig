@@ -5,6 +5,7 @@ using Dig.Domain.Production;
 using Dig.Infrastructure.InMemory;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Buildings;
+using Dig.Presentation.Creatures;
 using Dig.Presentation.Rendering;
 using Dig.Presentation.World;
 using UnityEngine;
@@ -136,6 +137,17 @@ public sealed class DigPresentationEffectRuntime : MonoBehaviour
                 agent.CellY,
                 agent.CellZ);
             _locations[agent.Id] = Location(position);
+        }
+
+        IReadOnlyList<CreatureVisualSnapshot> enemies = _agents.LoadEnemyCreatures();
+        for (int index = 0; index < enemies.Count; index++)
+        {
+            CreatureVisualSnapshot enemy = enemies[index];
+            Vector3 position = DigTunnelProjection.ResidentWorldPosition(
+                enemy.CellX,
+                enemy.CellY,
+                enemy.CellZ);
+            _locations[enemy.CreatureId] = Location(position);
         }
 
         IReadOnlyList<BuildingWorldViewModel> buildings = _terrain!.LoadBuildings();

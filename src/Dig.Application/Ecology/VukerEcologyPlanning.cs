@@ -38,19 +38,20 @@ public sealed class VukerCaveRegionResolver
             throw new ArgumentNullException(nameof(volume));
         }
 
-        HashSet<CellId> remaining = new HashSet<CellId>(volume.SupportedCells);
+        HashSet<CellId> supported = new HashSet<CellId>(volume.SupportedCells);
+        HashSet<CellId> remaining = new HashSet<CellId>(volume.Cells);
         List<VukerCaveRegion> regions = new List<VukerCaveRegion>();
         while (remaining.Count > 0)
         {
             CellId root = remaining.OrderBy(value => value).First();
             Queue<CellId> queue = new Queue<CellId>();
-            List<CellId> cells = new List<CellId>();
+            List<CellId> traversalCells = new List<CellId>();
             queue.Enqueue(root);
             remaining.Remove(root);
             while (queue.Count > 0)
             {
                 CellId current = queue.Dequeue();
-                cells.Add(current);
+                traversalCells.Add(current);
                 foreach (CellId candidate in Neighbours(current))
                 {
                     if (!remaining.Contains(candidate))
@@ -69,11 +70,20 @@ public sealed class VukerCaveRegionResolver
                 }
             }
 
+            CellId[] birthCells = traversalCells
+                .Where(supported.Contains)
+                .OrderBy(value => value)
+                .ToArray();
+            if (birthCells.Length == 0)
+            {
+                continue;
+            }
+
             VukerCaveRegion region = new VukerCaveRegion(
-                new VukerRegionKey(cells.Min()),
-                cells);
+                new VukerRegionKey(birthCells[0]),
+                birthCells);
             regions.Add(region);
-            foreach (CellId cell in cells)
+            foreach (CellId cell in traversalCells)
             {
                 _byCell.Add(cell, region);
             }

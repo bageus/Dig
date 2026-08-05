@@ -72,6 +72,62 @@ public sealed class ForcedPickupReplacementPlayModeTests
         Assert.That(pickupJobs[1].AssignedAgentId?.ToString(), Is.EqualTo(residentId));
     }
 
+    [Test]
+    public void Pickup_replaces_active_manual_route_and_acquires_exact_stack()
+    {
+        ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
+            ResidentNeedsRuntimePlayModeHarness.CreateRuntime();
+        string residentId = runtime.Residents.LoadView().First().Id;
+        EntityId resident = EntityId.Parse(residentId);
+        CellId current = runtime.Residents.Repository.Get(resident)!.Position;
+        CellId destination = runtime.Residents.TunnelVolume.SupportedCells
+            .Where(value => value != current)
+            .Where(value => runtime.Residents.TunnelVolume
+                .FindPath(current, value).Succeeded)
+            .OrderByDescending(value => System.Math.Abs(value.X - current.X)
+                + System.Math.Abs(value.Y - current.Y)
+                + System.Math.Abs(value.Z - current.Z))
+            .First();
+        Assert.That(runtime.Residents.MoveResidentThroughTunnel(
+            residentId,
+            destination).Result.IsSuccess, Is.True);
+        Assert.That(runtime.Residents.HasManualTunnelMovement(residentId), Is.True);
+
+        runtime.Terrain.BindDirectCommandManualMovementCancellation(
+            value => runtime.Residents.CancelManualTunnelMovement(value.ToString()));
+        InMemoryInventoryRepository inventoryRepository =
+            ResidentNeedsRuntimePlayModeHarness.GetField<InMemoryInventoryRepository>(
+                runtime.Terrain,
+                "_inventoryRepository");
+        EntityId stackId = EntityId.Parse("fa000000000000000000000000000003");
+        InventoryState inventory = inventoryRepository.Get();
+        Require(inventory.AddUnit(
+            stackId,
+            CampfireProductionContent.StoneItemId,
+            ItemLocation.InWorld(current),
+            tick: 0));
+        inventoryRepository.Save(inventory);
+
+        Require(runtime.Terrain.CreateWorldItemPickup(
+            stackId.ToString(),
+            residentId,
+            current,
+            tick: 1));
+
+        Assert.That(runtime.Residents.HasManualTunnelMovement(residentId), Is.False);
+        for (int tick = 0; tick < 4; tick++)
+        {
+            ResidentNeedsRuntimePlayModeHarness.RunTick(runtime);
+        }
+
+        ItemStackSnapshot acquired = inventoryRepository.Get().GetStack(stackId)!;
+        Assert.That(acquired.Location.Kind, Is.EqualTo(ItemLocationKind.AgentInventory));
+        Assert.That(acquired.Location.OwnerId, Is.EqualTo(resident));
+        Assert.That(acquired.ReservedQuantity, Is.Zero);
+        Assert.That(runtime.Residents.Repository.Get(resident)!.Position,
+            Is.EqualTo(current));
+    }
+
     private static void Require(Result result)
     {
         Assert.That(result.IsSuccess, Is.True, result.Error?.ToString());
