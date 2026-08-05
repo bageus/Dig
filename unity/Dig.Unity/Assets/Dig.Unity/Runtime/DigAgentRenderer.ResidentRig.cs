@@ -99,6 +99,16 @@ public sealed partial class DigAgentRenderer
                 "VisualCatalogs/Residents");
         if (_residentVisualCatalog != null)
             return _residentVisualCatalog.ResolveResident(DefaultResidentVisualId);
+        if (DigResidentAnimatedModel.TryResolveDefault(out DigVisualAsset animatedAsset))
+        {
+            return new DigResidentVisualResolution(
+                animatedAsset,
+                ResidentBodyVariant.Masculine,
+                Vector3.one,
+                12,
+                hasProfile: true);
+        }
+
         return new DigResidentVisualResolution(
             DigVisualAsset.CreateRuntimeFallback(DefaultResidentVisualId,
                 new Color(0.25f, 0.72f, 0.82f, 1f)),

@@ -28,7 +28,12 @@ public sealed class DigResidentRig : MonoBehaviour
     private Transform[] _sockets = Array.Empty<Transform>();
     private MaterialPropertyBlock? _properties;
     private ResidentAppearanceViewModel? _appearance;
+    private DigResidentAnimationPlayer? _animationPlayer;
+    private bool _preserveAuthoredMaterials;
     private bool _selected;
+
+    internal string CurrentAnimationClipName =>
+        _animationPlayer == null ? string.Empty : _animationPlayer.CurrentClipName;
 
     internal void Initialize(
         Renderer[] renderers,
@@ -36,9 +41,11 @@ public sealed class DigResidentRig : MonoBehaviour
         Transform rightArm,
         Transform leftLeg,
         Transform rightLeg,
-        Transform[] sockets)
+        Transform[] sockets,
+        DigResidentAnimationPlayer? animationPlayer = null,
+        bool preserveAuthoredMaterials = false)
     {
-        if (renderers == null || renderers.Length < 4 || renderers.Length > 24)
+        if (renderers == null || renderers.Length < 1 || renderers.Length > 24)
             throw new ArgumentOutOfRangeException(nameof(renderers));
         if (sockets == null || sockets.Length != 6)
             throw new ArgumentException("Resident rig requires six sockets.", nameof(sockets));
@@ -48,6 +55,8 @@ public sealed class DigResidentRig : MonoBehaviour
         _leftLeg = leftLeg;
         _rightLeg = rightLeg;
         _sockets = sockets;
+        _animationPlayer = animationPlayer;
+        _preserveAuthoredMaterials = preserveAuthoredMaterials;
     }
 
     internal Transform ResolveSocket(DigResidentSocketKind kind)
@@ -71,6 +80,13 @@ public sealed class DigResidentRig : MonoBehaviour
     internal void ApplyAction(ResidentActionVisualViewModel action)
     {
         if (action == null) throw new ArgumentNullException(nameof(action));
+        if (_animationPlayer != null)
+        {
+            ResetRootPose();
+            _animationPlayer.ApplyAction(action);
+            return;
+        }
+
         float phase = (float)(action.NormalizedProgress * Mathf.PI * 2f);
         float swing = Mathf.Sin(phase) * 28f;
         ResetPose();
@@ -128,6 +144,13 @@ public sealed class DigResidentRig : MonoBehaviour
 
     internal void ApplyClimbPose(float normalizedProgress, bool ascending)
     {
+        if (_animationPlayer != null)
+        {
+            ResetRootPose();
+            _animationPlayer.ApplyClimb(normalizedProgress);
+            return;
+        }
+
         float progress = Mathf.Clamp01(normalizedProgress);
         float phase = (progress * Mathf.PI * 4f)
             + (ascending ? 0f : Mathf.PI);
@@ -155,15 +178,26 @@ public sealed class DigResidentRig : MonoBehaviour
 
     private void ResetPose()
     {
-        transform.localPosition = Vector3.zero;
-        transform.localRotation = Quaternion.identity;
+        ResetRootPose();
         if (_leftArm == null) return;
         SetLimbPose(0f, 0f, 0f, 0f);
+    }
+
+    private void ResetRootPose()
+    {
+        transform.localPosition = Vector3.zero;
+        transform.localRotation = Quaternion.identity;
     }
 
     private void RefreshColors()
     {
         if (_appearance == null) return;
+        if (_preserveAuthoredMaterials)
+        {
+            RefreshAuthoredSelection();
+            return;
+        }
+
         Color clothing = ClothingColor(_appearance.ClothingPaletteIndex);
         Color hair = HairColor(_appearance.HairPaletteIndex);
         Color skin = _appearance.BodyVariant == ResidentBodyVariant.Feminine
@@ -186,6 +220,32 @@ public sealed class DigResidentRig : MonoBehaviour
             renderer.GetPropertyBlock(properties);
             properties.SetColor(BaseColorId, color);
             properties.SetColor(ColorId, color);
+            renderer.SetPropertyBlock(properties);
+        }
+    }
+
+    private void RefreshAuthoredSelection()
+    {
+        MaterialPropertyBlock properties = ResolveProperties();
+        for (int index = 0; index < _renderers.Length; index++)
+        {
+            Renderer renderer = _renderers[index];
+            properties.Clear();
+            if (_selected)
+            {
+                Color baseColor = renderer.sharedMaterial == null
+                    ? Color.white
+                    : DigMaterialColorUtility.GetColor(
+                        renderer.sharedMaterial,
+                        Color.white);
+                Color selectedColor = Color.Lerp(
+                    baseColor,
+                    new Color(1f, 0.78f, 0.18f, baseColor.a),
+                    0.45f);
+                properties.SetColor(BaseColorId, selectedColor);
+                properties.SetColor(ColorId, selectedColor);
+            }
+
             renderer.SetPropertyBlock(properties);
         }
     }
