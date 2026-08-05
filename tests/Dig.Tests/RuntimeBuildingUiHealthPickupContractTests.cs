@@ -29,10 +29,11 @@ public sealed class RuntimeBuildingUiHealthPickupContractTests
     }
 
     [Fact]
-    public void Building_selection_and_production_hud_have_no_service_platforms_or_tooltip_text()
+    public void Building_selection_has_no_service_platforms_and_production_has_centered_hover_information()
     {
         string overlay = ReadRuntime("DigWorldOverlayRenderer.Render.cs");
         string productionHud = ReadRuntime("DigGameHudCanvas.BuildingProduction.cs");
+        string contextHover = ReadRuntime("DigGameHudCanvas.ContextHover.cs");
         string stockRenderer = ReadRuntime("DigBuildingInternalStockRenderer.cs");
         string zones = ReadRuntime("DigBuildingInternalStockRenderer.Zones.cs");
 
@@ -40,7 +41,10 @@ public sealed class RuntimeBuildingUiHealthPickupContractTests
         Assert.Contains("string.Empty", productionHud);
         Assert.DoesNotContain("Hover an icon", productionHud);
         Assert.DoesNotContain("BindIconTooltip", productionHud);
-        Assert.DoesNotContain("product.Tooltip", productionHud);
+        Assert.Contains("product.Tooltip", productionHud);
+        Assert.Contains("product.DisplayName", productionHud);
+        Assert.Contains("SetProductionHoverInfo", productionHud + contextHover);
+        Assert.Contains("TextAnchor.MiddleCenter", contextHover);
         Assert.DoesNotContain("RenderZones", stockRenderer + zones);
         Assert.DoesNotContain("DigBuildingInternalStockBayVisual", stockRenderer + zones);
         Assert.False(File.Exists(Path.Combine(
