@@ -60,6 +60,22 @@ public sealed class WorldItemFloorPoseWorkAutoplanningContractTests
         Assert.Contains(": new Color(0.26f, 0.56f, 0.88f, alpha)", clock);
     }
 
+    [Fact]
+    public void Overlay_play_mode_teardown_uses_unambiguous_unity_object_type()
+    {
+        string test = Read(
+            "unity",
+            "Dig.Unity",
+            "Assets",
+            "Dig.Unity",
+            "Tests",
+            "PlayMode",
+            "Issue14OverlayPlayModeTests.cs");
+
+        Assert.Contains("UnityEngine.Object.DestroyImmediate(_root);", test);
+        Assert.DoesNotContain("            Object.DestroyImmediate(_root);", test);
+    }
+
     private static string ReadRuntime(string file)
     {
         return Read("unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime", file);
