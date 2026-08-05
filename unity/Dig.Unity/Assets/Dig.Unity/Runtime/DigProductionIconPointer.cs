@@ -36,6 +36,11 @@ internal sealed class DigProductionIconPointer : MonoBehaviour,
             RightClicked?.Invoke();
         }
     }
+
+    private void OnDisable()
+    {
+        HoverChanged?.Invoke(false);
+    }
 }
 
 internal static class DigProductionIconGlyph

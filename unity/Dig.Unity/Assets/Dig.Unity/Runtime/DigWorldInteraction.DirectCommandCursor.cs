@@ -45,6 +45,7 @@ namespace Dig.Unity
 
         private void UpdateSelectedResidentCommandCursor()
         {
+            _hud?.ClearWorldTargetHoverInfo();
             _barrelRenderer?.SetHighlighted(null);
             _creatureRenderer?.ClearHighlight();
             SetInteractionHighlightedItem(null);
@@ -103,6 +104,7 @@ namespace Dig.Unity
                         out ResolvedWorldItemPointerTarget itemTarget)
                     && itemTarget.ActionAvailable)
                 {
+                    _hud.SetWorldTargetHoverInfo(itemTarget.Item.Model.DisplayName);
                     SetInteractionHighlightedItem(itemTarget.Item);
                     return itemTarget.Action switch
                     {
@@ -232,6 +234,7 @@ namespace Dig.Unity
             _creatureRenderer?.ClearHighlight();
             SetInteractionHighlightedItem(null);
             ClearInventorySlotHoverFeedback();
+            _hud?.ClearWorldTargetHoverInfo();
             ResetCommandCursor();
         }
 
@@ -240,22 +243,23 @@ namespace Dig.Unity
             _creatureRenderer?.ClearHighlight();
             SetInteractionHighlightedItem(null);
             ClearInventorySlotHoverFeedback();
+            _hud?.ClearWorldTargetHoverInfo();
             ResetCommandCursor();
             DestroyCommandCursorFrames(_shovelCursorFrames);
             DestroyCommandCursorFrames(_pickupCursorFrames);
             DestroyCommandCursorFrames(_dropCursorFrames);
             DestroyCommandCursorFrames(_movementCursorFrames);
             DestroyCommandCursorFrames(_axeCursorFrames);
-            DestroyCommandCursorFrames(_swordCursorFrames);
             DestroyCommandCursorFrames(_eatCursorFrames);
+            DestroyCommandCursorFrames(_swordCursorFrames);
             DestroyCommandCursorFrames(_useCursorFrames);
             _shovelCursorFrames = null;
             _pickupCursorFrames = null;
             _dropCursorFrames = null;
             _movementCursorFrames = null;
             _axeCursorFrames = null;
-            _swordCursorFrames = null;
             _eatCursorFrames = null;
+            _swordCursorFrames = null;
             _useCursorFrames = null;
         }
 

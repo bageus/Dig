@@ -26,15 +26,20 @@ public sealed class InventoryWorldPresenter
         InventorySnapshot snapshot = _queryHandler.Handle(new GetInventorySnapshotQuery());
         WorldItemViewModel[] items = snapshot.Stacks
             .Where(stack => stack.Location.Kind == ItemLocationKind.World)
-            .Select(stack => new WorldItemViewModel(
-                stack.StackId.ToString(),
-                stack.ItemId.ToString(),
-                stack.Quantity,
-                stack.ReservedQuantity,
-                stack.Location.CellId.X,
-                stack.Location.CellId.Y,
-                stack.Location.CellId.Z,
-                _catalog.Get(stack.ItemId).Interactions))
+            .Select(stack =>
+            {
+                ItemDefinition definition = _catalog.Get(stack.ItemId);
+                return new WorldItemViewModel(
+                    stack.StackId.ToString(),
+                    stack.ItemId.ToString(),
+                    stack.Quantity,
+                    stack.ReservedQuantity,
+                    stack.Location.CellId.X,
+                    stack.Location.CellId.Y,
+                    stack.Location.CellId.Z,
+                    definition.Interactions,
+                    definition.DisplayName);
+            })
             .OrderBy(item => item.CellZ)
             .ThenBy(item => item.CellY)
             .ThenBy(item => item.CellX)

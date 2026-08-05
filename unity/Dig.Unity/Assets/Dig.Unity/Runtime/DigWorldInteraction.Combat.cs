@@ -116,10 +116,16 @@ public sealed partial class DigWorldInteraction
             creature.Model.CellX,
             creature.Model.CellY,
             creature.Model.CellZ);
-        return _agentSession!.CanIssuePlayerAttackOrder(
+        bool available = _agentSession!.CanIssuePlayerAttackOrder(
             actorId,
             targetId,
             targetCell);
+        if (available)
+        {
+            SetHostileTargetHoverInfo(creature);
+        }
+
+        return available;
     }
 
     private static ContextPointerTarget BuildHostileTarget(DigCreatureVisual creature)
