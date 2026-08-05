@@ -98,15 +98,24 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         string runtime = RuntimeRoot();
         string context = Read(runtime, "DigGameHudCanvas.Context.cs");
         string production = Read(runtime, "DigGameHudCanvas.BuildingProduction.cs");
+        string hover = Read(runtime, "DigGameHudCanvas.ContextHover.cs");
         string pointer = Read(runtime, "DigProductionIconPointer.cs");
 
         Assert.Contains("TryShowBuildingProduction", context);
         Assert.Contains("production.Products", production);
         Assert.Contains("production.Stocks", production);
         Assert.Contains("product.IsOrange", production);
-        Assert.DoesNotContain("product.Tooltip", production);
-        Assert.DoesNotContain("Hover an icon", production);
-        Assert.DoesNotContain("BindIconTooltip", production);
+        Assert.Contains("product.DisplayName", production);
+        Assert.Contains("product.Tooltip", production);
+        Assert.Contains(
+            "SetProductionHoverInfo(product.DisplayName, product.Tooltip)",
+            production);
+        Assert.Contains("SetProductionHoverInfo", hover);
+        Assert.Contains("ClearProductionHoverInfo", hover);
+        Assert.Contains("TextAnchor.MiddleCenter", hover);
+        Assert.Contains("_productionHoverTitle", hover);
+        Assert.Contains("_worldTargetHoverTitle", hover);
+        Assert.Contains("hasProduction", hover);
         Assert.Contains("product.HasProductionOverlay", production);
         Assert.Contains("CreateProductionProgressOverlay", production);
         Assert.Contains("Image.FillMethod.Vertical", production);
@@ -117,6 +126,7 @@ public sealed class BuildingProductionUnityRuntimeContractTests
         Assert.Contains("SetBuildingStockDelivery", production);
         Assert.Contains("IPointerEnterHandler", pointer);
         Assert.Contains("IPointerExitHandler", pointer);
+        Assert.Contains("HoverChanged?.Invoke(false)", pointer);
     }
 
     [Fact]
