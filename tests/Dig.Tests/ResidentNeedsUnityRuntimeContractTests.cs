@@ -21,6 +21,21 @@ public sealed class ResidentNeedsUnityRuntimeContractTests
     }
 
     [Fact]
+    public void Agent_session_advances_the_authoritative_simulation_clock()
+    {
+        string session = ReadRuntime("DigAgentSession.cs");
+
+        Assert.Contains(
+            "public long Tick => _simulationState.Clock.Tick;",
+            session);
+        Assert.Contains(
+            "long tick = _simulationState.Clock.AdvanceOneTick();",
+            session);
+        Assert.DoesNotContain("private long _tick;", session);
+        Assert.DoesNotContain("_tick = checked(_tick + 1);", session);
+    }
+
+    [Fact]
     public void Global_clock_and_passive_needs_share_one_time_scale()
     {
         string clock = ReadRuntime("DigGameHudCanvas.Clock.cs");
