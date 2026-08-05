@@ -37,7 +37,7 @@ public sealed class AgentDecisionSystemTests
     }
 
     [Fact]
-    public void Active_direct_eat_continues_during_work_schedule()
+    public void Automatic_eat_stops_when_work_schedule_begins()
     {
         AgentState agent = AgentTestFactory.CreateAgent(
             nutrition: 1_000,
@@ -50,12 +50,12 @@ public sealed class AgentDecisionSystemTests
 
         AgentDecision decision = Decide(agent, tick: 1);
 
-        Assert.Equal(AgentIntentKind.Eat, decision.SelectedIntent);
+        Assert.Equal(AgentIntentKind.Work, decision.SelectedIntent);
         UtilityOptionDiagnostic eat = Assert.Single(
             decision.Options,
             option => option.IntentKind == AgentIntentKind.Eat);
-        Assert.True(eat.Available);
-        Assert.True(eat.Critical);
+        Assert.False(eat.Available);
+        Assert.False(eat.Critical);
     }
 
     [Fact]
@@ -131,7 +131,7 @@ public sealed class AgentDecisionSystemTests
     }
 
     [Fact]
-    public void Critical_sleep_interrupts_work_during_cooldown()
+    public void Critical_sleep_does_not_interrupt_owned_work_during_work_time()
     {
         AgentState agent = AgentTestFactory.CreateAgent(
             nutrition: 8_000,
@@ -144,17 +144,23 @@ public sealed class AgentDecisionSystemTests
 
         AgentDecision decision = Decide(agent, tick: 1);
 
-        Assert.Equal(AgentIntentKind.Sleep, decision.SelectedIntent);
-        Assert.True(decision.Critical);
+        Assert.Equal(AgentIntentKind.Work, decision.SelectedIntent);
+        Assert.False(Assert.Single(
+            decision.Options,
+            option => option.IntentKind == AgentIntentKind.Sleep).Available);
     }
 
     [Fact]
     public void Cooldown_blocks_noncritical_oscillation_then_expires()
     {
+        DailySchedule freeTime = new DailySchedule(
+            12,
+            new[] { new ScheduleSegment(0, 12, ScheduleActivity.Rest) });
         AgentState agent = AgentTestFactory.CreateAgent(
             nutrition: 8_000,
             alertness: 8_000,
-            mood: 1_000);
+            mood: 1_000,
+            schedule: freeTime);
         Assert.True(agent.ApplyDecision(
             AgentTestFactory.CreateForcedDecision(AgentIntentKind.Work, tick: 0),
             _policy,
