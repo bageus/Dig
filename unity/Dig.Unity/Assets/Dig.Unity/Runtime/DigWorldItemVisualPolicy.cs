@@ -1,6 +1,7 @@
 using System;
 using Dig.Domain.Content;
 using Dig.Domain.World;
+using Dig.Presentation.Inventory;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -32,6 +33,20 @@ namespace Dig.Unity
             }
 
             return DigBasketVisualPolicy.Resolve(itemId, resolution);
+        }
+
+        internal static Quaternion ResolveLooseWorldRotation(
+            WorldItemViewModel item,
+            Quaternion authoredRotation)
+        {
+            if (item == null)
+            {
+                throw new ArgumentNullException(nameof(item));
+            }
+
+            return item.IsBuildingBox
+                ? authoredRotation
+                : Quaternion.Euler(0f, 0f, 90f) * authoredRotation;
         }
 
         internal static Vector3 ResolveFloorAnchor(

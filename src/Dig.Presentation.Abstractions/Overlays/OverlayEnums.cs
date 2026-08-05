@@ -29,7 +29,6 @@ public enum OverlaySemanticKind
     Route = 11,
     Reservation = 12,
     Diagnostic = 13,
-    BuildingFootprint = 14,
     StorageDemand = 15,
     Deposit = 16,
     Fog = 17,

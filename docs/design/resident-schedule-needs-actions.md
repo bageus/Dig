@@ -1,8 +1,8 @@
 # Resident schedule-gated needs actions
 
 **Status:** APPROVED  
-**Decision dates:** 2026-08-02, cadence correction 2026-08-03  
-**Tracking:** #159, #142, #113, #601
+**Decision dates:** 2026-08-02, cadence correction 2026-08-03, autoplanning correction 2026-08-05  
+**Tracking:** #159, #142, #113, #601, #650
 
 ## Scope
 
@@ -12,9 +12,10 @@ This specification clarifies the observable schedule, needs-action, sleep-target
 - `docs/design/content/food.md`;
 - `docs/design/sleep-comfort-and-bed-assignment.md`;
 - `docs/design/resident-hud-selection-and-notifications.md`;
-- [`unified-game-time-and-action-cadence.md`](unified-game-time-and-action-cadence.md).
+- [`unified-game-time-and-action-cadence.md`](unified-game-time-and-action-cadence.md);
+- [`world-item-floor-pose-and-work-time-autoplanning-correction-2026-08-05.md`](world-item-floor-pose-and-work-time-autoplanning-correction-2026-08-05.md).
 
-Where an older implementation or test allows automatic eating during Work or blocks Sleep when no bed is available, this document is authoritative. Where an older timing value differs, the 2026-08-03 unified cadence specification is authoritative.
+Where an older implementation or test allows automatic eating, sleep, leisure or new automatic Job assignment during the wrong schedule segment, this document is authoritative. Where an older timing value differs, the 2026-08-03 unified cadence specification is authoritative.
 
 ## Authoritative state ownership
 
@@ -22,6 +23,7 @@ Where an older implementation or test allows automatic eating during Work or blo
 - Utility AI selects an intention but does not mutate needs.
 - Inventory owns food identity, quantity and reservations.
 - Building facilities own bed/leisure availability and reservations.
+- Jobs owns automatic claims and assignments.
 - Domain/Application action intervals commit need effects.
 - Presentation projects snapshots/events and never applies need effects or creates an automatic Eat command from a notification.
 
@@ -29,17 +31,21 @@ Where an older implementation or test allows automatic eating during Work or blo
 
 ### Working time
 
-- Automatic `Eat` is unavailable while `ScheduledActivity == ScheduleActivity.Work`, including critical hunger.
-- Hunger does not interrupt Work or an active direct player order.
+- Orange clock sectors mean `ScheduleActivity.Work`; blue sectors mean rest/free time.
+- Automatic `Eat`, `Sleep` and `Leisure` are unavailable during Work, including critical needs.
+- Hunger, tiredness and Mood do not interrupt an already-owned Job or an active direct player order.
 - A manual/direct feed command is allowed during working time and owns the real bite-based `Eat` workflow.
 - An already active direct meal may continue after the schedule enters Work.
-- Critical Alertness may still select Sleep; the user disabled automatic working-time eating, not emergency sleep.
+- With AUTO ON, the resident may acquire newly available automatic Jobs.
+- With AUTO OFF, no new automatic Job is assigned. If no Job/direct order/combat action is already owned, the resident remains Idle until rest/free time.
+- Changing AUTO or leaving Work does not cancel an already claimed or in-progress Job.
 
 ### Free time
 
 - Outside Work, Nutrition can select automatic Eat when food is available.
 - Sleep and Leisure compete through the existing deterministic utility rules and schedule bonuses.
-- Work remains possible off schedule only through the existing lower off-schedule score or a direct order.
+- AUTO ON/OFF is ignored outside Work and no new automatic Job is assigned.
+- Direct player orders and already-owned Jobs keep their existing lifecycle.
 
 ## Runtime cadence
 
@@ -88,9 +94,9 @@ An available Bed always wins over Floor for the resident being resolved. With on
 
 1. Simulation advances passive needs.
 2. A threshold crossing emits a typed event.
-3. Utility AI evaluates schedule-gated candidates.
-4. Automatic Eat is rejected during Work or acquires food outside Work.
-5. Sleep reserves a Bed when available, otherwise uses FloorSleep.
+3. Utility AI evaluates schedule-gated candidates and AUTO eligibility.
+4. During Work, automatic needs/leisure are rejected and automatic Work is available only with AUTO ON.
+5. Outside Work, automatic Jobs are unavailable; Eat/Sleep/Leisure use their ordinary target workflows. Sleep reserves a Bed when available, otherwise uses FloorSleep.
 6. Each active interval/bite commits its proportional need delta.
 7. Completion consumes/releases the authoritative target and clears the action without duplicating effects.
 8. HUD/notifications refresh from snapshots/events.
@@ -103,16 +109,20 @@ An available Bed always wins over Floor for the resident being resolved. With on
 - Food unavailability outside Work remains a typed blocked reason.
 - FloorSleep never fabricates a building reservation.
 - Meal interruption preserves completed bites and discards the consumed remainder; cooldown does not create a hidden fourth effect.
+- AUTO or schedule transition does not release an already-owned Job reservation.
 
 ### Multiple residents
 
 - Food and Bed reservations prevent double ownership.
 - Resolution order remains stable by resident and target identifiers.
 - Residents unable to obtain the same Bed independently fall back to Floor.
+- Automatic Job candidate production independently evaluates each resident's Work schedule and AUTO flag.
 
 ## Acceptance
 
-- Work-schedule critical hunger leaves automatic Eat unavailable and preserves Work/player order.
+- Work-schedule critical hunger/tiredness leaves automatic Eat/Sleep/Leisure unavailable and preserves owned Job/player order.
+- Work + AUTO OFF + no owned Job selects Idle until free time.
+- Work + AUTO ON exposes new automatic Job candidates; outside Work neither AUTO state exposes new Job candidates.
 - Direct feeding during Work starts and advances the authoritative meal.
 - Free-time hunger reserves and consumes one real food unit; when loose food is unavailable but a reachable closed `food` package exists, resident automatically breaks it through package Use and then picks up/eats one released unit.
 - Work-time hunger emits one notification without automatic reservation/consumption.
@@ -127,4 +137,4 @@ An available Bed always wins over Floor for the resident being resolved. With on
 
 ## Verification boundary
 
-The implementation may be marked `IMPLEMENTED` after repository Quality, Release tests, smoke and deterministic soaks pass. It may be marked `VERIFIED` only after licensed Unity EditMode/PlayMode actually executes calendar cadence, work-hunger notification, direct feed with bite cooldowns, Bed preference, Floor fallback and HUD refresh.
+The implementation may be marked `IMPLEMENTED` after repository Quality, Release tests, smoke and deterministic soaks pass. It may be marked `VERIFIED` only after licensed Unity EditMode/PlayMode actually executes calendar cadence, Work/AUTO transitions, work-hunger notification, direct feed with bite cooldowns, Bed preference, Floor fallback and HUD refresh.

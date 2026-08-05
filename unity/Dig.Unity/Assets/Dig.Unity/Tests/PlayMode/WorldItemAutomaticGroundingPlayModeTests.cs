@@ -1,3 +1,7 @@
+using Dig.Domain.Content;
+using Dig.Domain.Inventory;
+using Dig.Domain.World;
+using Dig.Presentation.Inventory;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -38,6 +42,82 @@ public sealed class WorldItemAutomaticGroundingPlayModeTests
         Assert.That(
             bottom.GetComponentInChildren<Renderer>().bounds.min.y,
             Is.EqualTo(floorY).Within(0.0001f));
+    }
+
+    [Test]
+    public void Ordinary_world_tool_lies_flat_and_building_box_keeps_upright_pose()
+    {
+        _root = new GameObject("Loose world item floor pose test");
+        ItemDefinition club = CombatEquipmentContent.CreateItems()[0];
+        ItemDefinition box = CampfireBuildingBoxContent.Definition.BoxItem;
+        DigWorldItemVisual clubVisual = CreateWorldVisual(
+            club,
+            "00000000000000000000000000000001");
+        DigWorldItemVisual boxVisual = CreateWorldVisual(
+            box,
+            "00000000000000000000000000000002");
+        const float floorY = 1.75f;
+
+        DigWorldItemGrounding.PlaceOnFloor(
+            clubVisual.transform,
+            new Vector3(-1f, floorY, 0f));
+        DigWorldItemGrounding.PlaceOnFloor(
+            boxVisual.transform,
+            new Vector3(1f, floorY, 0f));
+        Physics.SyncTransforms();
+
+        Transform clubInstance = clubVisual.transform.Find("Item instance 0");
+        Transform boxInstance = boxVisual.transform.Find("Item instance 0");
+        Assert.That(clubInstance, Is.Not.Null);
+        Assert.That(boxInstance, Is.Not.Null);
+        Assert.That(
+            Mathf.Abs(Vector3.Dot(clubInstance.up.normalized, Vector3.up)),
+            Is.LessThan(0.15f));
+        Assert.That(
+            Vector3.Dot(boxInstance.up.normalized, Vector3.up),
+            Is.GreaterThan(0.95f));
+        Bounds clubBounds = ResolveRendererBounds(clubVisual.transform);
+        Assert.That(clubBounds.min.y, Is.EqualTo(floorY).Within(0.0001f));
+        Assert.That(
+            clubVisual.GetComponent<BoxCollider>().bounds.size.x,
+            Is.GreaterThan(clubVisual.GetComponent<BoxCollider>().bounds.size.y));
+    }
+
+    private DigWorldItemVisual CreateWorldVisual(
+        ItemDefinition definition,
+        string stackId)
+    {
+        GameObject root = new GameObject("World visual " + definition.Id);
+        root.transform.SetParent(_root!.transform, worldPositionStays: false);
+        DigWorldItemVisual visual = root.AddComponent<DigWorldItemVisual>();
+        WorldItemViewModel model = new WorldItemViewModel(
+            stackId,
+            definition.Id.ToString(),
+            quantity: 1,
+            reservedQuantity: 0,
+            cellX: 0,
+            cellY: 0,
+            cellZ: 0,
+            interactionProfile: definition.Interactions);
+        ItemStackVisualLayoutViewModel layout =
+            new ItemStackVisualLayoutPresenter().Present(model);
+        visual.Configure(
+            model,
+            layout,
+            DigWorldItemVisualPolicy.Resolve(catalog: null, itemId: model.ItemId));
+        return visual;
+    }
+
+    private static Bounds ResolveRendererBounds(Transform root)
+    {
+        Renderer[] renderers = root.GetComponentsInChildren<Renderer>();
+        Assert.That(renderers, Is.Not.Empty);
+        Bounds bounds = renderers[0].bounds;
+        for (int index = 1; index < renderers.Length; index++)
+        {
+            bounds.Encapsulate(renderers[index].bounds);
+        }
+        return bounds;
     }
 
     private Transform CreateItem(string name, float x, bool bottomPivot)

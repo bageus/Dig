@@ -66,8 +66,6 @@ namespace Dig.Unity
                     new Color(0.92f, 0.70f, 0.18f, 1f),
                 OverlaySemanticKind.Designation =>
                     new Color(1f, 0.47f, 0.12f, 1f),
-                OverlaySemanticKind.BuildingFootprint =>
-                    new Color(0.72f, 0.54f, 1f, 1f),
                 OverlaySemanticKind.StorageDemand =>
                     new Color(1f, 0.74f, 0.20f, 1f),
                 OverlaySemanticKind.Deposit =>

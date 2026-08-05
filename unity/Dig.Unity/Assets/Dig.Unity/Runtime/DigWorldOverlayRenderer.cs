@@ -13,7 +13,6 @@ public sealed partial class DigWorldOverlayRenderer : MonoBehaviour
     private const float DesignationFaceOffset = 0.015f;
     private readonly List<GameObject> _selection = new List<GameObject>();
     private readonly List<GameObject> _designations = new List<GameObject>();
-    private readonly List<GameObject> _buildingFootprints = new List<GameObject>();
     private readonly List<GameObject> _storageDemand = new List<GameObject>();
     private readonly List<GameObject> _deposits = new List<GameObject>();
     private readonly List<GameObject> _fog = new List<GameObject>();
@@ -27,7 +26,6 @@ public sealed partial class DigWorldOverlayRenderer : MonoBehaviour
     private DigWorldRenderer? _world;
     private Transform? _selectionRoot;
     private Transform? _designationRoot;
-    private Transform? _previewRoot;
     private Transform? _reservationRoot;
     private Transform? _diagnosticRoot;
 
@@ -43,7 +41,6 @@ public sealed partial class DigWorldOverlayRenderer : MonoBehaviour
         _world = world ?? throw new ArgumentNullException(nameof(world));
         _selectionRoot = CreateRoot("Selection Overlay", OverlayLayerKind.Selection);
         _designationRoot = CreateRoot("Designation Overlay", OverlayLayerKind.Designation);
-        _previewRoot = CreateRoot("Building Footprint Overlay", OverlayLayerKind.Preview);
         _reservationRoot = CreateRoot("Reservation Overlay", OverlayLayerKind.Reservations);
         _diagnosticRoot = CreateRoot("World Diagnostic Overlay", OverlayLayerKind.Diagnostics);
     }

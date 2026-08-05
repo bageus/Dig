@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Domain.Buildings;
 using Dig.Infrastructure.InMemory;
 using Dig.Application.Agents;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
+using Dig.Domain.Jobs;
 using Dig.Presentation.Agents;
 
 namespace Dig.Unity
@@ -32,10 +34,18 @@ internal sealed partial class DigTerrainWorkSession
         return new AgentDecisionContext(
             foodAvailable: HasAutomaticFoodSource(agent),
             bedAvailable: true,
-            workAvailable: true,
+            workAvailable: HasAvailableAutomaticJob(agent),
             restAvailable: true,
             escapeRouteAvailable: true,
             threatLevel: 0);
+    }
+
+    private bool HasAvailableAutomaticJob(AgentSnapshot agent)
+    {
+        return agent.ScheduledActivity == ScheduleActivity.Work
+            && agent.AutomaticPlanningEnabled
+            && _jobRepository!.Get().GetAll().Any(
+                job => job.Status == JobStatus.Available);
     }
 
     internal bool TryExecuteResidentNeedsAction(
@@ -73,7 +83,8 @@ internal sealed partial class DigTerrainWorkSession
         if (_residentFacilities == null
             || _productionAgents == null
             || _buildingInventoryRepository == null
-            || _productionRepository == null)
+            || _productionRepository == null
+            || _jobRepository == null)
         {
             throw new InvalidOperationException(
                 "Resident needs runtime requires initialized buildings, production and agents.");
