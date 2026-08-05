@@ -20,7 +20,6 @@ public static class DefaultOverlayStyles
             new OverlayStyleDefinition(OverlaySemanticKind.Route, OverlayShapeKind.Line, OverlayPatternKind.Dashed, 100, 100, 0),
             new OverlayStyleDefinition(OverlaySemanticKind.Designation, OverlayShapeKind.Diamond, OverlayPatternKind.CrossHatch, 110, 100, 0),
             new OverlayStyleDefinition(OverlaySemanticKind.Reservation, OverlayShapeKind.Outline, OverlayPatternKind.Dashed, 110, 100, 0),
-            new OverlayStyleDefinition(OverlaySemanticKind.BuildingFootprint, OverlayShapeKind.Outline, OverlayPatternKind.Double, 110, 100, 0),
             new OverlayStyleDefinition(OverlaySemanticKind.StorageDemand, OverlayShapeKind.Chevron, OverlayPatternKind.Dashed, 115, 100, 0),
             new OverlayStyleDefinition(OverlaySemanticKind.Deposit, OverlayShapeKind.Diamond, OverlayPatternKind.Solid, 90, 90, 0),
             new OverlayStyleDefinition(OverlaySemanticKind.Fog, OverlayShapeKind.Cross, OverlayPatternKind.CrossHatch, 90, 100, 0),
