@@ -12,6 +12,8 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(root));
             }
 
+            DigWorldItemVisual? worldItem = root.GetComponent<DigWorldItemVisual>();
+            worldItem?.ApplyLooseWorldFloorPose();
             root.position = floorAnchor;
             if (!TryResolveVisibleWorldBounds(root, out Bounds bounds))
             {
