@@ -61,12 +61,14 @@ public sealed class ResidentSettlementTests
             FirstAgent.ToString(),
             nutrition: 9_000,
             alertness: 500,
-            mood: 8_000);
+            mood: 8_000,
+            scheduleActivity: ScheduleActivity.Rest);
         harness.AddAgent(
             SecondAgent.ToString(),
             nutrition: 9_000,
             alertness: 500,
-            mood: 8_000);
+            mood: 8_000,
+            scheduleActivity: ScheduleActivity.Rest);
         harness.AddFacility(
             "94000000000000000000000000000001",
             BuildingFacilityKind.Bed,

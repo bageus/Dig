@@ -52,10 +52,14 @@ public sealed class AgentTaskTransitionPauseTests
     [Fact]
     public void Critical_survival_bypasses_task_transition_pause()
     {
+        DailySchedule freeTime = new DailySchedule(
+            12,
+            new[] { new ScheduleSegment(0, 12, ScheduleActivity.Rest) });
         AgentState agent = AgentTestFactory.CreateAgent(
             nutrition: 8_000,
             alertness: 1_000,
-            mood: 8_000);
+            mood: 8_000,
+            schedule: freeTime);
         Assert.True(agent.RecordTaskCompletion("test_task", tick: 1).IsSuccess);
 
         AgentDecision decision = Decide(agent, tick: 2);

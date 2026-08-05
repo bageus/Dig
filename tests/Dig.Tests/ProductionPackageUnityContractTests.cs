@@ -95,7 +95,8 @@ public sealed class ProductionPackageUnityContractTests
         Assert.Contains("CreateUseCursorFrames", textures);
         Assert.Contains("ItemInteractionProfiles.NonInteractive", content);
         Assert.Contains("ItemInteractionProfiles.ClosedProductionPackage", content);
-        Assert.Contains("_catalog.Get(stack.ItemId).Interactions", presenter);
+        Assert.Contains("ItemDefinition definition = _catalog.Get(stack.ItemId);", presenter);
+        Assert.Contains("definition.Interactions", presenter);
         Assert.DoesNotContain("ProductionPackageContent.FoodPackageItemId", presenter);
     }
 

@@ -62,7 +62,8 @@ public sealed class LivingMaterialPhysicsUnityContractTests
 
         Assert.Contains("_interactionCollider.isTrigger = true", itemVisual);
         Assert.Contains("_interactionCollider!.enabled = interactive", itemVisual);
-        Assert.Contains("_catalog.Get(stack.ItemId).Interactions", presenter);
+        Assert.Contains("ItemDefinition definition = _catalog.Get(stack.ItemId);", presenter);
+        Assert.Contains("definition.Interactions", presenter);
         Assert.Contains("UnfinishedPackageItemId", packageContent);
         Assert.Contains("ItemInteractionProfiles.NonInteractive", packageContent);
     }
