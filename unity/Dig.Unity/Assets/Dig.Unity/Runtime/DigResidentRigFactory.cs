@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Dig.Presentation.Agents;
 using UnityEngine;
@@ -20,16 +19,42 @@ internal static class DigResidentRigFactory
         DigResidentRig rig;
         if (asset.Prefab != null)
         {
-            root = UnityEngine.Object.Instantiate(asset.Prefab);
-            rig = root.GetComponent<DigResidentRig>();
-            if (rig == null && !TryConfigureAuthoredRig(
-                    root,
-                    rendererBudget,
-                    out rig))
+            if (DigResidentAnimatedModel.IsDefaultAsset(asset.StableId))
             {
-                UnityEngine.Object.Destroy(root);
-                root = BuildRepresentative(material);
+                root = new GameObject("Authored Resident Rig");
+                GameObject modelRoot = UnityEngine.Object.Instantiate(asset.Prefab);
+                modelRoot.name = asset.Prefab.name;
+                modelRoot.transform.SetParent(root.transform, worldPositionStays: false);
+                modelRoot.transform.localPosition = Vector3.zero;
+                modelRoot.transform.localRotation = Quaternion.identity;
+                modelRoot.transform.localScale = Vector3.one;
+                if (!DigAuthoredResidentRigConfigurator.TryConfigure(
+                        root,
+                        modelRoot,
+                        asset.StableId,
+                        rendererBudget,
+                        out rig))
+                {
+                    UnityEngine.Object.Destroy(root);
+                    root = BuildRepresentative(material);
+                    rig = root.GetComponent<DigResidentRig>();
+                }
+            }
+            else
+            {
+                root = UnityEngine.Object.Instantiate(asset.Prefab);
                 rig = root.GetComponent<DigResidentRig>();
+                if (rig == null && !DigAuthoredResidentRigConfigurator.TryConfigure(
+                        root,
+                        root,
+                        asset.StableId,
+                        rendererBudget,
+                        out rig))
+                {
+                    UnityEngine.Object.Destroy(root);
+                    root = BuildRepresentative(material);
+                    rig = root.GetComponent<DigResidentRig>();
+                }
             }
         }
         else
@@ -46,6 +71,11 @@ internal static class DigResidentRigFactory
         DisableChildColliders(root);
         rig.ApplyAppearance(appearance);
         return rig;
+    }
+
+    internal static Renderer[] CollectRenderers(GameObject root)
+    {
+        return root.GetComponentsInChildren<Renderer>(includeInactive: true);
     }
 
     private static GameObject BuildRepresentative(Material material)
@@ -79,30 +109,14 @@ internal static class DigResidentRigFactory
         return root;
     }
 
-    private static bool TryConfigureAuthoredRig(
-        GameObject root,
-        int maximumRenderers,
-        out DigResidentRig rig)
-    {
-        Renderer[] renderers = root.GetComponentsInChildren<Renderer>(includeInactive: true);
-        if (renderers.Length < 4 || renderers.Length > maximumRenderers)
-        {
-            rig = null!;
-            return false;
-        }
-
-        Transform leftArm = FindOrCreate(root.transform, "Left Arm");
-        Transform rightArm = FindOrCreate(root.transform, "Right Arm");
-        Transform leftLeg = FindOrCreate(root.transform, "Left Leg");
-        Transform rightLeg = FindOrCreate(root.transform, "Right Leg");
-        Transform[] sockets = CreateSockets(root.transform, leftArm, rightArm);
-        rig = root.AddComponent<DigResidentRig>();
-        rig.Initialize(renderers, leftArm, rightArm, leftLeg, rightLeg, sockets);
-        return true;
-    }
-
-    private static Transform CreateLimb(Transform parent, string name, float x, float y,
-        Vector3 scale, Material material, List<Renderer> renderers)
+    private static Transform CreateLimb(
+        Transform parent,
+        string name,
+        float x,
+        float y,
+        Vector3 scale,
+        Material material,
+        List<Renderer> renderers)
     {
         Transform pivot = new GameObject(name).transform;
         pivot.SetParent(parent, worldPositionStays: false);
@@ -112,8 +126,13 @@ internal static class DigResidentRigFactory
         return pivot;
     }
 
-    private static void CreatePart(Transform parent, string name, Vector3 position,
-        Vector3 scale, Material material, List<Renderer> renderers)
+    private static void CreatePart(
+        Transform parent,
+        string name,
+        Vector3 position,
+        Vector3 scale,
+        Material material,
+        List<Renderer> renderers)
     {
         GameObject part = GameObject.CreatePrimitive(PrimitiveType.Cube);
         part.name = name;
@@ -144,7 +163,10 @@ internal static class DigResidentRigFactory
         };
     }
 
-    private static Transform CreateSocket(Transform parent, string name, Vector3 position)
+    private static Transform CreateSocket(
+        Transform parent,
+        string name,
+        Vector3 position)
     {
         Transform socket = FindOrCreate(parent, name);
         socket.localPosition = position;
