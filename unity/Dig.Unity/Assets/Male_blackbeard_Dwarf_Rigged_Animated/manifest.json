@@ -1,0 +1,51 @@
+{
+  "model": "Hi3D_Dwarf_Rigged_Animated",
+  "format": "GLB / glTF 2.0",
+  "unityRigType": "Generic",
+  "rootMotion": false,
+  "animationCount": 14,
+  "animations": [
+    "Idle",
+    "Walk",
+    "Run",
+    "Climb",
+    "Carry",
+    "Mine",
+    "Chop",
+    "Build",
+    "Eat",
+    "Study",
+    "Rest",
+    "Attack",
+    "Hit",
+    "Death"
+  ],
+  "loopClips": [
+    "Idle",
+    "Walk",
+    "Run",
+    "Climb",
+    "Carry",
+    "Build",
+    "Study",
+    "Rest"
+  ],
+  "oneShotClips": [
+    "Mine",
+    "Chop",
+    "Eat",
+    "Attack",
+    "Hit",
+    "Death"
+  ],
+  "nodeCount": 38,
+  "skinJointCount": 36,
+  "sockets": [
+    "LeftHandTool",
+    "RightHandTool",
+    "CarryAnchor",
+    "BackAttachment",
+    "HeadAccessory"
+  ],
+  "importer": "UnityGLTF"
+}
