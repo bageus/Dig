@@ -6,6 +6,7 @@ namespace Dig.Unity
 {
 public sealed partial class DigCreatureRenderer
 {
+    internal const float VukerTunnelFitScale = 0.68f;
     private bool _catalogLoadAttempted;
     private DigRenderMaterialLibrary? _materialLibrary;
 
@@ -68,7 +69,9 @@ public sealed partial class DigCreatureRenderer
                 "creature.grub",
                 System.StringComparison.Ordinal)
                 ? 0.20f
-                : 1f;
+                : appearance.Family == CreatureVisualFamily.Vuker
+                    ? VukerTunnelFitScale
+                    : 1f;
         return new DigCreatureVisualResolution(
             resolved.Asset,
             resolved.RigStableId,
