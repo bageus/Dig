@@ -152,10 +152,16 @@ public sealed partial class AgentDecisionSystem
                 candidates[index].ReceivedHysteresis = true;
             }
 
+            bool scheduledWorkBecomesAvailable =
+                candidates[index].IntentKind == AgentIntentKind.Work
+                && candidates[index].Available
+                && agent.ScheduledActivity == ScheduleActivity.Work
+                && agent.AutomaticPlanningEnabled;
             bool bypassSwitchCooldown = candidates[index].Critical
                 || candidates[index].IntentKind == AgentIntentKind.PlayerOrder
                 || candidates[index].IntentKind == AgentIntentKind.Idle
-                || candidates[index].IntentKind == currentIntent;
+                || candidates[index].IntentKind == currentIntent
+                || scheduledWorkBecomesAvailable;
             bool bypassTaskPause = candidates[index].Critical
                 || candidates[index].IntentKind == AgentIntentKind.PlayerOrder
                 || candidates[index].IntentKind == AgentIntentKind.Idle;
