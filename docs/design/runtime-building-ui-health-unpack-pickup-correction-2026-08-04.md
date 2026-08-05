@@ -2,7 +2,7 @@
 
 Статус: `APPROVED`.
 
-Tracking issues: [#634](https://github.com/bageus/Dig/issues/634), [#648](https://github.com/bageus/Dig/issues/648).
+Tracking issues: [#634](https://github.com/bageus/Dig/issues/634), [#648](https://github.com/bageus/Dig/issues/648), [#658](https://github.com/bageus/Dig/issues/658).
 
 Связанные authoritative specifications:
 
@@ -27,7 +27,10 @@ Tracking issues: [#634](https://github.com/bageus/Dig/issues/634), [#648](https:
 - completed-building selection keeps model highlight and roster-row synchronization;
 - no footprint platform, flat green selection surface or separate world-space selection base is rendered in completed, assembly, packing, relocation/project or any other building lifecycle state;
 - production panel does not repeat the selected building name above its controls;
-- production panel does not show the persistent hover instruction or a required-material tooltip area;
+- the central context menu always reserves one fixed-height tooltip region while the context panel is open;
+- when no production item or world target is hovered, the reserved tooltip region remains present and visually blank;
+- hover enter/exit changes only centered tooltip text and never changes the context-panel bounds, content rectangle, layout spacing or icon/control positions;
+- no persistent hover instruction such as `Hover an icon` is displayed;
 - product/stock icons, queue counters, progress, toggles and Pack action remain functional;
 - flat input/output tray platforms are hidden; real internal-stock units and output packages remain visible and interactive.
 
@@ -74,7 +77,8 @@ Tracking issues: [#634](https://github.com/bageus/Dig/issues/634), [#648](https:
 - source and runtime tests reject every obsolete Box Workshop stable id/name in production/demo code and catalogs;
 - fresh demo projects exactly one completed campfire and one packed campfire box;
 - no building footprint platform is created for any building lifecycle state and no production tray is created;
-- production HUD has no heading/tooltip text but preserves controls;
+- production HUD has no repeated heading or persistent instruction text and preserves one fixed blank-or-populated tooltip region;
+- repeated production/world hover enter and exit leave the context content rectangle and representative icon/control positions unchanged;
 - scaled resident/enemy parents produce equal Health-bar world width above renderer bounds;
 - multi-row output placement fills the primary row contiguously;
 - visible valid BuildingBox preview commits on one LMB without re-resolving hover;
