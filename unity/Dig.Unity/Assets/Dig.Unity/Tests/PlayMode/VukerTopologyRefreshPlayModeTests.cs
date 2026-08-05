@@ -58,6 +58,40 @@ public sealed class VukerTopologyRefreshPlayModeTests
             .Position, Is.EqualTo(target.Value));
     }
 
+    [Test]
+    public void Ecology_accepts_vuker_on_legal_unsupported_vertical_cell()
+    {
+        DigWorldSession world = DigWorldSession.CreateDemo(20, 14, 5);
+        DigAgentSession agents = DigAgentSession.CreateDemo(
+            world.LoadView(),
+            world.CreateTunnelNavigationVolume(),
+            world.Journal);
+        VukerIndividualSnapshot vuker = agents.LoadVukerEcology()
+            .Individuals
+            .OrderBy(value => value.EntityId.ToString())
+            .First();
+        HashSet<CellId> supported = agents.TunnelVolume.SupportedCells.ToHashSet();
+        CellId vertical = agents.TunnelVolume.VerticalCells
+            .Where(value => !supported.Contains(value))
+            .Where(value => agents.TunnelVolume
+                .FindPath(vuker.Position, value).Succeeded)
+            .OrderBy(value => System.Math.Abs(value.X - vuker.Position.X)
+                + System.Math.Abs(value.Y - vuker.Position.Y)
+                + System.Math.Abs(value.Z - vuker.Position.Z))
+            .First();
+
+        Assert.That(agents.MoveResident(
+            vuker.EntityId.ToString(),
+            vertical).IsSuccess, Is.True);
+
+        Result advanced = Result.Success();
+        Assert.DoesNotThrow(() => advanced = agents.Advance());
+        Assert.That(advanced.IsSuccess, Is.True, advanced.Error?.ToString());
+        Assert.That(agents.LoadVukerEcology().Individuals
+            .Single(value => value.EntityId == vuker.EntityId)
+            .Position, Is.EqualTo(vertical));
+    }
+
     private static CellId? FindNewSupportedCell(
         DigWorldSession world,
         CellId origin,
