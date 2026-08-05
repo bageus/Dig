@@ -117,6 +117,7 @@ public sealed partial class DigGameHudCanvas
         // always follows the responsive minimap/clock height in ApplyResponsiveLayout.
         _bottomPanelHeight = Mathf.Max(76f, height);
         ApplyResponsiveLayout(force: true);
+        RefreshContextHoverInfo();
     }
 }
 
