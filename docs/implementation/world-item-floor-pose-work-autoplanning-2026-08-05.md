@@ -53,6 +53,15 @@ Unity workflow `31054659983` completed through the blocked-evidence path. Licens
 
 This evidence report is the only change after tested head `a057153d3597e219b821704320e498d7c2b97253`; production code, tests and authoritative specifications are unchanged.
 
+## Unity Safe Mode compile correction — 2026-08-06
+
+A local Unity import exposed `CS0104` in `Issue14OverlayPlayModeTests.cs`: the file imported both `System` and `UnityEngine`, so the unqualified `Object.DestroyImmediate` teardown call was ambiguous between `System.Object` and `UnityEngine.Object`.
+
+- teardown now calls `UnityEngine.Object.DestroyImmediate` explicitly;
+- `WorldItemFloorPoseWorkAutoplanningContractTests` rejects reintroduction of the ambiguous call;
+- corrected code-and-regression head `85051bb33d8f9fb9b58f407a9993ff06f3c67e7d` passed Quality run `31055500970`, including source gates, Release build, .NET tests, headless smoke and both deterministic soaks;
+- licensed Unity Test Runner execution remains pending, so the local editor must reimport the corrected head before runtime verification can be claimed.
+
 ## Verification boundary
 
 The implementation is `IMPLEMENTED IN BRANCH`, not `VERIFIED`. Licensed Unity Play Mode must still execute the visible loose-item pose/collider, clock colors, building-platform absence and repeated Work/AUTO schedule transitions.
