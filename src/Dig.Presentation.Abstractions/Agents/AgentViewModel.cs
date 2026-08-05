@@ -100,8 +100,13 @@ public sealed class AgentViewModel
     public IReadOnlyList<AgentUtilityOptionViewModel> UtilityOptions { get; }
     public bool AutomaticPlanningEnabled { get; }
 
+    public bool IsScheduledForWork => string.Equals(
+        ScheduledActivity,
+        "Work",
+        StringComparison.Ordinal);
+
     public bool IsAvailableForAutomaticPlanning =>
-        IsAlive && AutomaticPlanningEnabled;
+        IsAlive && IsScheduledForWork && AutomaticPlanningEnabled;
 
     public double ActionProgress => ActionRequiredTicks <= 0
         ? 0d
