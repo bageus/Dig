@@ -22,7 +22,7 @@ public sealed class Issue14OverlayPlayModeTests
     {
         if (_root != null)
         {
-            Object.DestroyImmediate(_root);
+            UnityEngine.Object.DestroyImmediate(_root);
         }
     }
 
