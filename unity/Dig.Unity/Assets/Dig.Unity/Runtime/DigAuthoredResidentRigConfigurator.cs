@@ -14,8 +14,7 @@ internal static class DigAuthoredResidentRigConfigurator
         int maximumRenderers,
         out DigResidentRig rig)
     {
-        Renderer[] renderers = modelRoot.GetComponentsInChildren<Renderer>(
-            includeInactive: true);
+        Renderer[] renderers = DigResidentRigFactory.CollectRenderers(modelRoot);
         if (renderers.Length < 1 || renderers.Length > maximumRenderers)
         {
             rig = null!;

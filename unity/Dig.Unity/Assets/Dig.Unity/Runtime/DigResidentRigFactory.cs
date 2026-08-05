@@ -73,6 +73,11 @@ internal static class DigResidentRigFactory
         return rig;
     }
 
+    internal static Renderer[] CollectRenderers(GameObject root)
+    {
+        return root.GetComponentsInChildren<Renderer>(includeInactive: true);
+    }
+
     private static GameObject BuildRepresentative(Material material)
     {
         GameObject root = new GameObject("Low Poly Resident Rig");
