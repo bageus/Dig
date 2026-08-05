@@ -22,23 +22,42 @@ internal static class DigResidentRigFactory
         DigResidentRig rig;
         if (asset.Prefab != null)
         {
-            root = new GameObject("Authored Resident Rig");
-            GameObject modelRoot = UnityEngine.Object.Instantiate(asset.Prefab);
-            modelRoot.name = asset.Prefab.name;
-            modelRoot.transform.SetParent(root.transform, worldPositionStays: false);
-            modelRoot.transform.localPosition = Vector3.zero;
-            modelRoot.transform.localRotation = Quaternion.identity;
-            modelRoot.transform.localScale = Vector3.one;
-            if (!TryConfigureAuthoredRig(
-                    root,
-                    modelRoot,
-                    asset.StableId,
-                    rendererBudget,
-                    out rig))
+            if (DigResidentAnimatedModel.IsDefaultAsset(asset.StableId))
             {
-                UnityEngine.Object.Destroy(root);
-                root = BuildRepresentative(material);
+                root = new GameObject("Authored Resident Rig");
+                GameObject modelRoot = UnityEngine.Object.Instantiate(asset.Prefab);
+                modelRoot.name = asset.Prefab.name;
+                modelRoot.transform.SetParent(root.transform, worldPositionStays: false);
+                modelRoot.transform.localPosition = Vector3.zero;
+                modelRoot.transform.localRotation = Quaternion.identity;
+                modelRoot.transform.localScale = Vector3.one;
+                if (!TryConfigureAuthoredRig(
+                        root,
+                        modelRoot,
+                        asset.StableId,
+                        rendererBudget,
+                        out rig))
+                {
+                    UnityEngine.Object.Destroy(root);
+                    root = BuildRepresentative(material);
+                    rig = root.GetComponent<DigResidentRig>();
+                }
+            }
+            else
+            {
+                root = UnityEngine.Object.Instantiate(asset.Prefab);
                 rig = root.GetComponent<DigResidentRig>();
+                if (rig == null && !TryConfigureAuthoredRig(
+                        root,
+                        root,
+                        asset.StableId,
+                        rendererBudget,
+                        out rig))
+                {
+                    UnityEngine.Object.Destroy(root);
+                    root = BuildRepresentative(material);
+                    rig = root.GetComponent<DigResidentRig>();
+                }
             }
         }
         else
@@ -118,7 +137,10 @@ internal static class DigResidentRigFactory
             animationPlayer = configuredPlayer;
         }
 
-        NormalizeAuthoredModel(modelRoot.transform, renderers);
+        if (animationPlayer != null)
+        {
+            NormalizeAuthoredModel(modelRoot.transform, renderers);
+        }
 
         Transform leftArm = FindDescendantAny(
             modelRoot.transform,
