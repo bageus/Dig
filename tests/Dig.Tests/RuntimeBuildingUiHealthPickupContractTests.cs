@@ -32,12 +32,22 @@ public sealed class RuntimeBuildingUiHealthPickupContractTests
     public void Building_selection_has_no_service_platforms_and_production_has_centered_hover_information()
     {
         string overlay = ReadRuntime("DigWorldOverlayRenderer.Render.cs");
+        string overlayOwner = ReadRuntime("DigWorldOverlayRenderer.cs");
+        string overlayEnums = Read(
+            "src", "Dig.Presentation.Abstractions", "Overlays", "OverlayEnums.cs");
+        string overlayStyles = Read(
+            "src", "Dig.Presentation.Abstractions", "Overlays", "DefaultOverlayStyles.cs");
         string productionHud = ReadRuntime("DigGameHudCanvas.BuildingProduction.cs");
         string contextHover = ReadRuntime("DigGameHudCanvas.ContextHover.cs");
         string stockRenderer = ReadRuntime("DigBuildingInternalStockRenderer.cs");
         string zones = ReadRuntime("DigBuildingInternalStockRenderer.Zones.cs");
 
         Assert.DoesNotContain("Building Selection", overlay);
+        Assert.DoesNotContain("Building Footprint", overlay + overlayOwner);
+        Assert.DoesNotContain("_buildingFootprints", overlay + overlayOwner);
+        Assert.DoesNotContain(
+            "OverlaySemanticKind.BuildingFootprint",
+            overlayEnums + overlayStyles);
         Assert.Contains("string.Empty", productionHud);
         Assert.DoesNotContain("Hover an icon", productionHud);
         Assert.DoesNotContain("BindIconTooltip", productionHud);
