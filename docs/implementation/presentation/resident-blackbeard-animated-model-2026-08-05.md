@@ -1,8 +1,10 @@
 # Animated Blackbeard resident model integration
 
-Status: `IMPLEMENTED` (Play Mode regression added; runtime verification in Unity Editor/CI is still required).
+Status: `IMPLEMENTED` (source, build, deterministic and blocked-runtime evidence complete; executed Unity Editor runtime verification remains pending).
 
 Tracking issue: [#649](https://github.com/bageus/Dig/issues/649)
+
+Implementation PR: [#651](https://github.com/bageus/Dig/pull/651)
 
 Authoritative specification: [`../../design/presentation-input-ui-and-diagnostics.md`](../../design/presentation-input-ui-and-diagnostics.md)
 
@@ -50,6 +52,17 @@ authored materials, and reuses these model nodes:
 If the resource, required `Idle` clip, or authored rig is unavailable, the
 existing procedural low-poly resident remains the fallback.
 
+## Importer and package graph
+
+The canonical Unity host uses the pinned `com.unity.cloud.gltfast` `6.19.0`
+package graph. The obsolete `org.khronos.unitygltf` git dependency is not part
+of the supported package graph.
+
+PR #651 restores the previously validated glTFast manifest and lock state after
+the base branch regressed to the forbidden UnityGLTF dependency. This is a
+package-baseline correction and does not change gameplay ownership or resident
+action semantics.
+
 ## Current sex-selection limitation
 
 The current `AgentViewModel` snapshot does not expose an authoritative sex
@@ -58,7 +71,7 @@ attribute. Therefore this model is registered as the masculine
 path. A future male/female split must be driven by an authoritative snapshot
 field rather than name- or id-based heuristics.
 
-## Regression evidence
+## Regression coverage
 
 `DigResidentAnimatedModelPlayModeTests` covers:
 
@@ -70,5 +83,35 @@ field rather than name- or id-based heuristics.
 - selection highlight round-trip without replacing authored materials;
 - procedural fallback when the authored model is unavailable.
 
-The test is committed but was not executed in this environment because the
-Unity Editor is unavailable.
+The authored-model configuration was separated into
+`DigAuthoredResidentRigConfigurator` so `DigResidentRigFactory` remains below
+the 350-line project limit while keeping renderer discovery, fallback creation
+and root lifecycle at the factory boundary.
+
+## CI evidence on PR #651
+
+Exact head `6de5fc6f453538314e9788c0c8513b99b7716fb3`:
+
+- Quality run `31017427868`: success;
+- architecture, file-size and C# compatibility checks: success;
+- Unity module and source-contract checks: success;
+- resident visual contract: success;
+- Release restore and build: success;
+- full .NET test suite: success;
+- headless smoke: success;
+- standard deterministic soak: success;
+- large-settlement deterministic soak: success;
+- Stage 2 v2 export run `31017427813`: success;
+- Stage 2 v3 export run `31017427839`: success.
+
+Unity workflow `31017427669` completed successfully in blocked-evidence mode.
+The licensed `Run Unity EditMode and PlayMode tests` step was skipped because
+executed Unity activation was unavailable, so this workflow is not evidence
+that `DigResidentAnimatedModelPlayModeTests` actually ran.
+
+## Verification still required
+
+Before status can become `VERIFIED`, run the Unity test suite on a licensed
+Editor/runner and execute the complete resident workflow: spawn, idle, walk,
+work, climb, hit, death, selection highlighting, equipment sockets, fallback,
+and repeated resident recreation.
