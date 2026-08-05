@@ -19,12 +19,20 @@ namespace Dig.Unity
     internal sealed partial class DigTerrainWorkSession
     {
         private Func<EntityId, long, Result>? _disengageResidentCombat;
+        private Func<EntityId, bool>? _cancelResidentManualMovement;
 
         internal void BindDirectCommandCombatDisengage(
             Func<EntityId, long, Result> disengage)
         {
             _disengageResidentCombat = disengage
                 ?? throw new ArgumentNullException(nameof(disengage));
+        }
+
+        internal void BindDirectCommandManualMovementCancellation(
+            Func<EntityId, bool> cancelManualMovement)
+        {
+            _cancelResidentManualMovement = cancelManualMovement
+                ?? throw new ArgumentNullException(nameof(cancelManualMovement));
         }
 
         internal Result PrepareResidentsForDirectCommand(
@@ -47,6 +55,8 @@ namespace Dig.Unity
                 {
                     return disengaged;
                 }
+
+                _cancelResidentManualMovement?.Invoke(residentId);
 
                 Result interrupted = InterruptFoodMealForDirectCommand(residentId, tick);
                 if (interrupted.IsFailure)
