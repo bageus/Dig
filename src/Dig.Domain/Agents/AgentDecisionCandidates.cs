@@ -22,8 +22,10 @@ public sealed partial class AgentDecisionSystem
         bool fleeCritical = context.ThreatLevel >= utility.CriticalThreatThreshold;
         bool eatCritical = agent.Needs.Nutrition.IsAtOrBelow(
             policy.Needs.CriticalThreshold);
-        bool automaticEatAllowed = agent.ScheduledActivity != ScheduleActivity.Work
-            || currentIntent == AgentIntentKind.Eat;
+        bool workingTime = agent.ScheduledActivity == ScheduleActivity.Work;
+        bool automaticEatAllowed = !workingTime;
+        bool automaticSleepAllowed = !workingTime;
+        bool automaticRestAllowed = !workingTime;
         bool sleepCritical = agent.Needs.Alertness.IsAtOrBelow(
             policy.Needs.CriticalThreshold);
         int sleepScore = agent.Needs.Alertness.Deficit;
@@ -42,7 +44,7 @@ public sealed partial class AgentDecisionSystem
                 : null);
         int orderPriority = order?.Priority ?? 0;
 
-        int workScore = agent.ScheduledActivity == ScheduleActivity.Work
+        int workScore = workingTime
             ? utility.WorkScheduleScore
             : utility.OffScheduleWorkScore;
         workScore = checked(
@@ -70,8 +72,8 @@ public sealed partial class AgentDecisionSystem
         candidates[(int)AgentIntentKind.Sleep] = new Candidate(
             AgentIntentKind.Sleep,
             sleepScore,
-            context.BedAvailable || currentIntent == AgentIntentKind.Sleep,
-            sleepCritical);
+            automaticSleepAllowed && context.BedAvailable,
+            sleepCritical && automaticSleepAllowed);
         candidates[(int)AgentIntentKind.PlayerOrder] = new Candidate(
             AgentIntentKind.PlayerOrder,
             checked(utility.PlayerOrderBaseScore + orderPriority),
@@ -81,12 +83,14 @@ public sealed partial class AgentDecisionSystem
             AgentIntentKind.Work,
             workScore,
             currentIntent == AgentIntentKind.Work
-                || (agent.AutomaticPlanningEnabled && context.WorkAvailable),
+                || (workingTime
+                    && agent.AutomaticPlanningEnabled
+                    && context.WorkAvailable),
             critical: false);
         candidates[(int)AgentIntentKind.Rest] = new Candidate(
             AgentIntentKind.Rest,
             restScore,
-            context.RestAvailable || currentIntent == AgentIntentKind.Rest,
+            automaticRestAllowed && context.RestAvailable,
             critical: false);
         candidates[(int)AgentIntentKind.Idle] = new Candidate(
             AgentIntentKind.Idle,
