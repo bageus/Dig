@@ -25,14 +25,18 @@ public sealed class VukerBirthPlannerTests
             depth: 2,
             openCells: new[] { floor, walk, climb, depth, separate },
             verticalCells: new[] { walk, climb },
-            supportedCells: new[] { floor, walk, climb, depth, separate });
+            supportedCells: new[] { floor, walk, depth, separate });
 
         VukerCaveRegionResolver resolver = new VukerCaveRegionResolver(volume);
 
         Assert.Equal(2, resolver.Regions.Count);
         Assert.True(resolver.TryResolveKey(floor, out VukerRegionKey connected));
+        Assert.True(resolver.TryResolveKey(climb, out VukerRegionKey climbRegion));
+        Assert.Equal(connected, climbRegion);
         Assert.True(resolver.TryResolveKey(depth, out VukerRegionKey depthRegion));
         Assert.Equal(connected, depthRegion);
+        Assert.DoesNotContain(climb, resolver.Regions
+            .Single(value => value.Key == connected).Cells);
         Assert.True(resolver.TryResolveKey(separate, out VukerRegionKey other));
         Assert.NotEqual(connected, other);
     }
