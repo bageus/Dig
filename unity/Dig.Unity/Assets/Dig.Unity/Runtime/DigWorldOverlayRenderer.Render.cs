@@ -103,29 +103,6 @@ public sealed partial class DigWorldOverlayRenderer
         DigStorageStatus storage,
         IReadOnlyList<RouteViewModel> routes)
     {
-        int footprintCount = 0;
-        for (int index = 0; index < buildings.Count; index++)
-        {
-            BuildingWorldViewModel building = buildings[index];
-            if (building.IsSelectable)
-            {
-                continue;
-            }
-
-            for (int cellIndex = 0; cellIndex < building.Footprint.Count; cellIndex++)
-            {
-                BuildingFootprintCellViewModel cell = building.Footprint[cellIndex];
-                GameObject marker = Acquire(
-                    _buildingFootprints,
-                    footprintCount++,
-                    _previewRoot!,
-                    "Building Footprint",
-                    OverlayLayerKind.Preview,
-                    OverlaySemanticKind.BuildingFootprint);
-                PlaceCell(marker, cell.X, cell.Y, cell.Z, 0.96f, 0.82f);
-            }
-        }
-
         int storageCount = 0;
         if (storage.ReservedIncomingQuantity > 0)
         {
@@ -171,7 +148,6 @@ public sealed partial class DigWorldOverlayRenderer
                 0.62f);
         }
 
-        HideRemainder(_buildingFootprints, footprintCount);
         HideRemainder(_storageDemand, storageCount);
         HideRemainder(_navigation, navigationCount);
     }
