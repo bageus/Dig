@@ -3,7 +3,8 @@
 Status: `IMPLEMENTED IN BRANCH`.
 
 Authoritative specification: [`../design/world-item-floor-pose-and-work-time-autoplanning-correction-2026-08-05.md`](../design/world-item-floor-pose-and-work-time-autoplanning-correction-2026-08-05.md).  
-Tracking issues: [#648](https://github.com/bageus/Dig/issues/648), [#650](https://github.com/bageus/Dig/issues/650).
+Tracking issues: [#648](https://github.com/bageus/Dig/issues/648), [#650](https://github.com/bageus/Dig/issues/650).  
+Implementation PR: [#655](https://github.com/bageus/Dig/pull/655).
 
 ## Root causes
 
@@ -34,6 +35,24 @@ Tracking issues: [#648](https://github.com/bageus/Dig/issues/648), [#650](https:
 - `Issue14OverlayPlayModeTests` covers a non-selectable building without a footprint root/marker;
 - source contracts reject obsolete footprint ownership and enforce the shared item/schedule policies.
 
+## Executed validation
+
+Code-and-test head `cf0101aa979c1c664fb1100780db1ac1bd6d6856`:
+
+- Quality run `31054337650` — success;
+- architecture, file-size, C# compatibility, dependency and Unity source-contract gates — success;
+- Release build — success;
+- .NET tests — `1527/1527` passed;
+- headless smoke — success;
+- standard deterministic soak — success;
+- large-settlement deterministic soak — success;
+- Export Stage 2 v2 run `31054337491` — success;
+- Export Stage 2 v3 run `31054335496` — success.
+
+Unity workflow `31054337643` completed through the blocked-evidence path. Licensed activation was unavailable, so actual EditMode/PlayMode Test Runner and executed runtime-evidence validation were skipped. The checked-in Play Mode regressions therefore have not executed in licensed Unity.
+
+The authoritative system index and world-item specification were synchronized in commit `cd885f5cccdf304ab8da1a71347a47f324d8ba80`. A final repository validation run is triggered by this report update and will be recorded in the PR/issue evidence.
+
 ## Verification boundary
 
-Repository and CI evidence must be appended after execution. Until licensed Unity Play Mode actually runs the visible scenarios, the correction is not `VERIFIED`.
+The implementation is `IMPLEMENTED IN BRANCH`, not `VERIFIED`. Licensed Unity Play Mode must still execute the visible loose-item pose/collider, clock colors, building-platform absence and repeated Work/AUTO schedule transitions.
