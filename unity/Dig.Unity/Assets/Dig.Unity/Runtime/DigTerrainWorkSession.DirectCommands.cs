@@ -18,6 +18,8 @@ namespace Dig.Unity
 {
     internal sealed partial class DigTerrainWorkSession
     {
+        private const string DirectCommandReplacementReason = "direct_command_replaced";
+
         private Func<EntityId, long, Result>? _disengageResidentCombat;
         private Func<EntityId, bool>? _cancelResidentManualMovement;
 
@@ -58,10 +60,10 @@ namespace Dig.Unity
 
                 _cancelResidentManualMovement?.Invoke(residentId);
 
-                Result interrupted = InterruptFoodMealForDirectCommand(residentId, tick);
-                if (interrupted.IsFailure)
+                Result prepared = PrepareAgentStateForDirectCommand(residentId, tick);
+                if (prepared.IsFailure)
                 {
-                    return interrupted;
+                    return prepared;
                 }
 
                 CancelManualQuarterExcavation(residentId.ToString());
@@ -109,20 +111,31 @@ namespace Dig.Unity
             return Result.Success();
         }
 
-        private Result InterruptFoodMealForDirectCommand(EntityId residentId, long tick)
+        private Result PrepareAgentStateForDirectCommand(EntityId residentId, long tick)
         {
             AgentState? resident = _productionAgents?.Get(residentId);
-            if (resident == null || !resident.HasActiveFoodMeal)
+            if (resident == null)
             {
                 return Result.Success();
             }
 
-            Result interrupted = resident.InterruptFoodMeal(
-                "direct_command_replaced",
-                tick);
-            if (interrupted.IsFailure)
+            if (resident.HasActiveFoodMeal)
             {
-                return interrupted;
+                Result mealInterrupted = resident.InterruptFoodMeal(
+                    DirectCommandReplacementReason,
+                    tick);
+                if (mealInterrupted.IsFailure)
+                {
+                    return mealInterrupted;
+                }
+            }
+
+            Result prepared = resident.PrepareForForcedOrder(
+                DirectCommandReplacementReason,
+                tick);
+            if (prepared.IsFailure)
+            {
+                return prepared;
             }
 
             _productionAgents!.Save(resident);
