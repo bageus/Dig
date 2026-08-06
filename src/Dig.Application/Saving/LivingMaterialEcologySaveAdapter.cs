@@ -11,6 +11,9 @@ namespace Dig.Application.Saving
 
 public static class LivingMaterialEcologySaveAdapter
 {
+    private const int CurrentTimingCadenceVersion = 1;
+    private const int LegacyEcologyStepsPerDay = 96;
+
     public static LivingMaterialEcologySaveData Encode(LivingMaterialEcologyState state)
     {
         if (state == null)
@@ -24,6 +27,7 @@ public static class LivingMaterialEcologySaveAdapter
             WorldSeed = snapshot.WorldSeed,
             EcologyStep = snapshot.EcologyStep,
             Version = snapshot.Version,
+            TimingCadenceVersion = CurrentTimingCadenceVersion,
         };
         foreach (LivingMaterialSnapshot creature in snapshot.Creatures)
         {
@@ -124,7 +128,7 @@ public static class LivingMaterialEcologySaveAdapter
                     saved.NextSearchAtStep,
                     saved.NextSleepAtStep,
                     saved.ReproductionCyclesCompleted,
-                    saved.NextReproductionStep,
+                    MigrateNextReproductionStep(data, saved.NextReproductionStep),
                     saved.DeterministicSequence,
                     saved.BlockedReason,
                     saved.Version));
@@ -145,6 +149,22 @@ public static class LivingMaterialEcologySaveAdapter
             return Result<LivingMaterialEcologyState>.Failure(
                 LivingMaterialErrors.InvalidSnapshot);
         }
+    }
+
+    private static long MigrateNextReproductionStep(
+        LivingMaterialEcologySaveData data,
+        long nextStep)
+    {
+        if (data.TimingCadenceVersion >= CurrentTimingCadenceVersion
+            || nextStep <= data.EcologyStep)
+        {
+            return nextStep;
+        }
+
+        long remaining = nextStep - data.EcologyStep;
+        return checked(data.EcologyStep + (remaining
+            * LivingMaterialEcologyProfiles.EcologyStepsPerDay
+            / LegacyEcologyStepsPerDay));
     }
 }
 

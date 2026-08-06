@@ -20,7 +20,7 @@ PR #529 added:
 
 - canonical `creature.hamster` and `creature.grub` unit-item content;
 - inventory-first free/stored reconciliation and ordinary pickup/drop integration;
-- 96-step ecology day with four deterministic substeps per simulation tick;
+- unified game-time ecology day with four deterministic substeps per simulation tick;
 - hamster `0.8x` cadence, radius 6, resident steering, search/sleep and one-step post-drop dormancy;
 - grub `0.65x` continuous crawl, radius 4 and resident overlap tolerance;
 - stable-lowest hamster parent, self-reproducing grub, two successful cycles per individual and atomic cap 10 per species/plane;
