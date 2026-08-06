@@ -87,6 +87,7 @@ public sealed partial class DigWorldInteraction
         }
 
         DigJobVisual? selected = _jobRenderer!.SelectById(jobId);
+        ClearRoomInfrastructureSelection();
         _agentRenderer!.ClearSelection();
         _buildingRenderer!.Select(null);
         _selectedCell = null;

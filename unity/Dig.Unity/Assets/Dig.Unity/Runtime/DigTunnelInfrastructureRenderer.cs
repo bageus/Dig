@@ -67,6 +67,7 @@ namespace Dig.Unity
                     BuildWoodenSupport(visual.transform);
                     break;
                 case TunnelInfrastructureVisualKind.JunctionStoneTrim:
+                case TunnelInfrastructureVisualKind.StoneFloorTrim:
                     BuildJunctionStoneTrim(visual.transform);
                     break;
                 default:

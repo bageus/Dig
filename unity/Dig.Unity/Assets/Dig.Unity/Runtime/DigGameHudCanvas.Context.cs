@@ -7,10 +7,8 @@ using Dig.Presentation.Inventory;
 using Dig.Presentation.Jobs;
 using UnityEngine;
 using UnityEngine.UI;
-
 namespace Dig.Unity
 {
-
 public sealed partial class DigGameHudCanvas
 {
     private const float CompactBottomPanelHeight = 98f;
@@ -35,6 +33,8 @@ public sealed partial class DigGameHudCanvas
             ShowTechnologyDescriptionPanel(_technologyDescriptionId);
             return;
         }
+
+        if (TryShowSelectedRoomInfrastructure()) return;
 
         BuildingWorldViewModel? building = _buildingRenderer!.SelectedModel;
         if (building != null)
@@ -88,70 +88,6 @@ public sealed partial class DigGameHudCanvas
         }
 
         _bottomPanel!.gameObject.SetActive(false);
-    }
-
-    private void ShowExcavationPalette()
-    {
-        _interaction!.EnsureDefaultExcavationDrawingMode();
-        string signature = "excavation:"
-            + $"{_interaction.ExcavationModeLabel}:"
-            + $"{_interaction.CaveRoomPreset}";
-        if (!ApplyContextSignature(signature))
-        {
-            return;
-        }
-
-        BeginBottomLayout();
-        RectTransform section = CreateSection(
-            "Excavation",
-            _bottomContent!,
-            string.Empty,
-            preferredWidth: 1240f);
-        RectTransform row = CreateHorizontalRow("Excavation Tools", section, 56f);
-        Button tunnel = CreateButton("Tunnel", row, "Tunnel", () =>
-            _interaction.SetExcavationDrawingMode(DigExcavationDrawingMode.Tunnel),
-            preferredHeight: 52f);
-        Button depth = CreateButton("Depth", row, "Depth", () =>
-            _interaction.SetExcavationDrawingMode(DigExcavationDrawingMode.Depth),
-            preferredHeight: 52f);
-        Button erase = CreateButton("Erase", row, "Erase", () =>
-            _interaction.SetExcavationDrawingMode(DigExcavationDrawingMode.Delete),
-            preferredHeight: 52f);
-        SetButtonActive(
-            tunnel,
-            _interaction.ExcavationDrawingMode == DigExcavationDrawingMode.Tunnel
-                && !_interaction.CaveRoomPreset.HasValue);
-        SetButtonActive(
-            depth,
-            _interaction.ExcavationDrawingMode == DigExcavationDrawingMode.Depth);
-        SetButtonActive(
-            erase,
-            _interaction.ExcavationDrawingMode == DigExcavationDrawingMode.Delete);
-
-        Button small = CreateRoomIconButton(
-            "Small Room",
-            row,
-            new Vector2(18f, 18f),
-            () => _interaction.SetCaveRoomPlanningPreset(CaveRoomPresetKind.Small));
-        Button medium = CreateRoomIconButton(
-            "Medium Room",
-            row,
-            new Vector2(30f, 18f),
-            () => _interaction.SetCaveRoomPlanningPreset(CaveRoomPresetKind.Medium));
-        Button large = CreateRoomIconButton(
-            "Large Room",
-            row,
-            new Vector2(38f, 22f),
-            () => _interaction.SetCaveRoomPlanningPreset(CaveRoomPresetKind.Large));
-        Button tall = CreateRoomIconButton(
-            "Tall Room",
-            row,
-            new Vector2(18f, 32f),
-            () => _interaction.SetCaveRoomPlanningPreset(CaveRoomPresetKind.Tall));
-        SetButtonActive(small, _interaction.CaveRoomPreset == CaveRoomPresetKind.Small);
-        SetButtonActive(medium, _interaction.CaveRoomPreset == CaveRoomPresetKind.Medium);
-        SetButtonActive(large, _interaction.CaveRoomPreset == CaveRoomPresetKind.Large);
-        SetButtonActive(tall, _interaction.CaveRoomPreset == CaveRoomPresetKind.Tall);
     }
 
     private void ShowJobDetails(JobOverlayViewModel job)

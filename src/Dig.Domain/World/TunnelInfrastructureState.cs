@@ -5,7 +5,6 @@ using Dig.Domain.Core;
 
 namespace Dig.Domain.World
 {
-
 public static class TunnelInfrastructureErrors
 {
     public static readonly DomainError EmptySegmentId = new DomainError(
@@ -45,13 +44,15 @@ public static class TunnelInfrastructureErrors
         "Tunnel infrastructure snapshot does not match its derived anchor chain.");
 }
 
-public sealed class TunnelInfrastructureState : AggregateRoot
+public sealed partial class TunnelInfrastructureState : AggregateRoot
 {
     public const int AutomaticSupportInterval = 10;
 
     private readonly Dictionary<EntityId, HorizontalTunnelSegmentState> _segments =
         new Dictionary<EntityId, HorizontalTunnelSegmentState>();
     private readonly HashSet<CellId> _completedJunctionStoneTrimCells =
+        new HashSet<CellId>();
+    private readonly HashSet<CellId> _completedStoneFloorTrimCells =
         new HashSet<CellId>();
 
     public long Version { get; private set; }
@@ -132,6 +133,7 @@ public sealed class TunnelInfrastructureState : AggregateRoot
             Raise(new TunnelJunctionStoneTrimCompletionRemoved(tick, originCell));
         }
 
+        RemoveOrphanedStoneFloorTrimCells(tick);
         RaiseJunctionTargetChanges(
             previousJunctionTargets,
             CapturePendingJunctionTargets(),
@@ -190,7 +192,8 @@ public sealed class TunnelInfrastructureState : AggregateRoot
             _segments.Values
                 .OrderBy(value => value.SegmentId.ToString(), StringComparer.Ordinal)
                 .Select(value => value.CaptureSnapshot()),
-            _completedJunctionStoneTrimCells);
+            _completedJunctionStoneTrimCells,
+            _completedStoneFloorTrimCells);
     }
 
     public static Result<TunnelInfrastructureState> Restore(
@@ -224,6 +227,16 @@ public sealed class TunnelInfrastructureState : AggregateRoot
         {
             if (!state.HasVerticalJunction(cell)
                 || !state._completedJunctionStoneTrimCells.Add(cell))
+            {
+                return Result<TunnelInfrastructureState>.Failure(
+                    TunnelInfrastructureErrors.InvalidSnapshot);
+            }
+        }
+
+        foreach (CellId cell in snapshot.CompletedStoneFloorTrimCells)
+        {
+            if (!state.ContainsHorizontalCell(cell)
+                || !state._completedStoneFloorTrimCells.Add(cell))
             {
                 return Result<TunnelInfrastructureState>.Failure(
                     TunnelInfrastructureErrors.InvalidSnapshot);

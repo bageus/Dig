@@ -82,6 +82,26 @@ namespace Dig.Unity
                     continue;
                 }
 
+                if (TryPlanRoomUpgradeMovement(
+                    job,
+                    agent,
+                    navigation,
+                    movement,
+                    tick))
+                {
+                    continue;
+                }
+
+                if (TryPlanTunnelManualWorkMovement(
+                    job,
+                    agent,
+                    navigation,
+                    movement,
+                    tick))
+                {
+                    continue;
+                }
+
                 if (TryPlanTunnelAutomaticWorkMovement(
                     job,
                     agent,

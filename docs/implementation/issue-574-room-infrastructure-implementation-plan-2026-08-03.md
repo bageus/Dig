@@ -199,34 +199,210 @@ Validation PR #590 на code head `d430b065baf6ff5ba4fc86958f62cb4faf47bbae`:
 - large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
 - Unity workflow recorded blocked evidence; actual EditMode/PlayMode execution and executed-runtime-evidence validation were skipped.
 
+#### Slice 2B-2b2b — completed infrastructure world visual projection
+
+Статус: `READY FOR REVIEW` в stacked PR #591. Подробный implementation note: [`issue-574-tunnel-infrastructure-visual-projection-2026-08-03.md`](issue-574-tunnel-infrastructure-visual-projection-2026-08-03.md).
+
+Реализовано:
+
+- `TunnelInfrastructureVisualPresenter` читает только `TunnelInfrastructureSnapshot`;
+- completed `WoodenSupport` anchors и completed junction stone-trim cells создают stable visual instances;
+- Origin и Door anchors не создают duplicate support visuals;
+- duplicate completed cells объединяются;
+- stable instance id зависит только от visual kind и exact XYZ cell;
+- `DigTunnelInfrastructureRenderer` создаёт collider-free wooden beam и low stone floor frame;
+- Unity projection использует exact X/Y/Z через `DigTunnelProjection`;
+- runtime публикует projection после topology synchronization и сразу после successful automatic-work Finalize;
+- удаление authoritative completion fact удаляет rebuildable visual;
+- Presentation не владеет gameplay state, reservations, navigation или input.
+
+Validation PR #591 на code head `9fcb643a3d9cd2d3ea5b428f88d941305772d66e`:
+
+- architecture, file-size, C# 9 compatibility, compiler baseline, dependency и Domain-boundary checks passed;
+- Unity source contracts passed;
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1430/1430`;
+- presenter и Unity runtime composition regressions passed;
+- headless smoke passed at tick `20`;
+- standard deterministic soak replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
+- large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
+- checked-in Play Mode scenario покрывает creation, XYZ placement, collider absence и removal;
+- Unity workflow recorded blocked evidence; actual EditMode/PlayMode execution и executed-runtime-evidence validation были skipped.
+
 Осталось в Slice 2B:
 
-- world visual renderer/projection для completed wooden support и junction stone trim;
 - actual licensed Play Mode end-to-end evidence;
 - player cancellation не реализуется до ответа `Q-TUNNEL-008`.
 
 ### Slice 3 — persistence и migration для tunnel infrastructure
 
-- save ordered segments, anchor cells/kinds, next target identity, decorative targets и runtime automatic-job sequence;
-- load пересчитывает only derived target от последнего completed anchor;
-- obsolete target не восстанавливается;
-- versioned migration не добавляет anchors в legacy saves без evidence;
-- deterministic save round trip и idempotency tests.
+Статус: `READY FOR REVIEW` в stacked PR #592. Подробный implementation note: [`issue-574-tunnel-infrastructure-persistence-2026-08-03.md`](issue-574-tunnel-infrastructure-persistence-2026-08-03.md).
+
+Реализовано:
+
+- save format повышен с `14` до `15`;
+- сохраняются ordered segments, origin kind/cell, exact horizontal cells, structural anchor kind/cell/distance и aggregate/segment versions;
+- current automatic-support target и pending junction-trim targets сохраняются как integrity evidence, но при load пересчитываются Domain owner;
+- completed junction stone-trim cells сохраняются отдельно от structural anchors;
+- runtime automatic-job sequence сохраняется и валидируется против уже сохранённых `TunnelAutomaticWorkJobDefinition`;
+- obsolete derived support/trim target отклоняется при load и не восстанавливается;
+- migration `save.v14_to_v15.tunnel_infrastructure` создаёт пустой infrastructure section без phantom anchors;
+- legacy migration поднимает sequence выше существующих parseable automatic-work job ids;
+- autosave переносит тот же tunnel runtime snapshot;
+- Unity restore пересоздаёт repository/application handlers вокруг восстановленного authoritative aggregate и обновляет visual projection.
+
+Validation PR #592 на code head `2ff8fef77749c983e5ae56595ccdc823af3dc4db`:
+
+- architecture, file-size, C# 9 compatibility, compiler baseline, dependency и Domain-boundary checks passed;
+- Unity source contracts passed;
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1436/1436`;
+- tunnel save round-trip, stale-target, sequence-collision, migration и runtime-restore regressions passed;
+- headless smoke passed at tick `20`;
+- standard deterministic soak replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
+- large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
+- Unity workflow recorded blocked evidence; actual EditMode/PlayMode execution and executed-runtime-evidence validation were skipped.
 
 ### Slice 4 — room-upgrade core
 
-Можно реализовать до закрытия layout/membership вопросов:
+#### Slice 4A — authoritative room aggregate, provenance и stock-cell planning
 
-- stable room infrastructure identity для completed template rooms;
-- `UpgradeOrderCount` только `0|1`;
-- nearest reachable free temporary-stock cell со stable tie-break;
-- delivery/material ledger;
-- cancel только до первого actual work interval;
-- delivered items остаются в комнате и освобождаются для ordinary logistics;
-- после work start операция обязана завершиться;
-- per-unit commit, partial progress и material-specific `+0.5` skill exactly once;
-- requested purpose может меняться до completion без reset;
-- save/load и diagnostics.
+Статус: `READY FOR REVIEW` в stacked PR #593. Подробный implementation note: [`issue-574-room-upgrade-foundation-2026-08-03.md`](issue-574-room-upgrade-foundation-2026-08-03.md).
+
+Реализовано без выбора default для `Q-ROOM-003` и `Q-ROOM-007`:
+
+- stable infrastructure identity выводится из immutable completed template-instance id;
+- регистрируются только completed `Small`, `Medium`, `Large` и `Tall` template instances;
+- `UpgradeOrderCount` принимает только `0|1`, повторный order отклоняется;
+- costs соответствуют confirmed material sets всех четырёх templates;
+- aggregate хранит requested/active purpose, required/delivered/consumed/released ledgers, temporary-stock cell, completed material-unit ids и active job ids;
+- temporary-stock planner рассматривает только exact room cells, open/reachable/unoccupied eligibility, Manhattan distance до geometric center и stable `CellId` tie-break;
+- отсутствие подходящей клетки возвращает typed blocked result без mutation;
+- cancel разрешён только до первого actual work start, возвращает attached jobs и released delivered quantities;
+- work start необратимо блокирует cancellation;
+- `RoomMaterialUnitId(item, ordinal)` коммитится exactly once, replay не меняет version;
+- work job остаётся attached между последовательными material stages;
+- partial progress, exact per-material committed-unit counts и lifecycle валидируются при restore;
+- completion удаляет temporary stock/job claims и активирует последний requested purpose;
+- post-completion purpose state может измениться без добавления bonus/layout/packing behavior;
+- CQRS handlers, in-memory repository и immutable typed diagnostics добавлены.
+
+Validation PR #593 на code head `b3dc06857d1adb2efc77e5a47477f8e9067c698e`:
+
+- Quality run `30811581217`: success;
+- architecture, file-size, C# 9 compatibility, compiler baseline, dependency и Domain-boundary checks passed;
+- Unity source contracts passed;
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1448/1448`;
+- room cost/order/cancel/work-lock/idempotency/restore/provenance/stock-planner/diagnostics regressions passed;
+- headless smoke passed at tick `20`;
+- standard deterministic soak replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
+- large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
+- Unity workflow `30811581174` recorded blocked evidence; actual EditMode/PlayMode execution and executed-runtime-evidence validation were skipped.
+
+#### Slice 4B-1 — physical stock, hauling, staged work и grants
+
+Статус: `READY FOR REVIEW` в stacked PR #594. Подробный implementation note: [`issue-574-room-upgrade-execution-2026-08-03.md`](issue-574-room-upgrade-execution-2026-08-03.md).
+
+Реализовано без выбора default для `Q-ROOM-003` и `Q-ROOM-007`:
+
+- один persistent `RoomUpgradeWorkJobDefinition` прикрепляется к active room upgrade;
+- ordinary `HaulJobDefinition` резервирует revealed, reachable и unreserved world sources;
+- source selection детерминирован по Manhattan distance до stock cell, затем `CellId` и `StackId`;
+- delivered stacks физически перемещаются в exact temporary-stock world cell и резервируются room work job;
+- work job остаётся `Created`, пока не доставлен полный material set, затем становится `Available`;
+- repeated synchronization не создаёт duplicate jobs или reservations;
+- material units коммитятся в порядке `RoomUpgradeCostCatalog`;
+- первый actual `PerformWork` interval блокирует cancellation;
+- каждый exact `RoomMaterialUnitId(item, ordinal)` расходует одну reserved stock unit и выдаёт `50` fixed-point skill units exactly once;
+- stone/leg/iron/crystal отображаются в Stonework/Woodworking/Metallurgy/Alchemy;
+- `ReleaseAssignment` сохраняет room ledger и stock reservations, позволяя другому worker продолжить тот же job;
+- final material unit переводит job в `Finalize`, завершает upgrade и активирует последний requested purpose;
+- pre-work cancel отменяет все attached jobs, освобождает source/stock reservations и оставляет delivered stacks ordinarily usable в комнате;
+- `job.room_upgrade_work.v1` сохраняет room identity и exact work XYZ, production registry coverage обновлён.
+
+Validation PR #594 на code head `f5e89ab370861cb1b05a326e502ce5f3e6a4f8bd`:
+
+- Quality run `30815720973`: success;
+- architecture, file-size, C# 9 compatibility, compiler baseline, dependency и Domain-boundary checks passed;
+- Unity source contracts passed;
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1453/1453`;
+- full delivery/work/replay/cancel-lock/interruption/second-worker-resume workflow passed;
+- pre-work partial-delivery cancel, catalog-order, synchronization-idempotency и work-job codec regressions passed;
+- headless smoke passed at tick `20`;
+- standard deterministic soak replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
+- large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
+- Unity workflow `30815720965` recorded blocked evidence; actual EditMode/PlayMode execution and executed-runtime-evidence validation were skipped.
+
+#### Slice 4B-2a — room persistence и Unity runtime composition
+
+Статус: `READY FOR REVIEW` в stacked PR #595. Подробный implementation note: [`issue-574-room-runtime-persistence-composition-2026-08-03.md`](issue-574-room-runtime-persistence-composition-2026-08-03.md).
+
+Реализовано без выбора default для `Q-ROOM-003` и `Q-ROOM-007`:
+
+- save format повышен с `15` до `16`;
+- сохраняются aggregate/per-room versions, stable room/template identities, lifecycle, purpose, exact stock XYZ, material ledgers, completed units и active job ids;
+- completed-room provenance сохраняется с exact ordered room cells;
+- deterministic room job/transit-stack sequence сохраняется и валидируется против persisted ids;
+- load сначала восстанавливает Domain aggregate, затем проверяет provenance/world bounds/overlap, active jobs, Inventory reservations и JobSystem ownership;
+- malformed provenance, orphan runtime job или stale sequence отклоняют load до publication;
+- migration `save.v15_to_v16.room_infrastructure` создаёт пустой room section без phantom identities и поднимает sequence выше существующих parseable room ids;
+- manual save и autosave переносят один authoritative room runtime snapshot;
+- Unity проецирует только completed template instances и отклоняет provenance drift;
+- room/stock/job synchronization выполняется до ordinary assignment;
+- existing Inventory/JobSystem/Haul/candidate/skill owners переиспользуются;
+- hauling движется source → exact temporary-stock cell, work — к exact work cell;
+- route failure освобождает worker/position/resident-slot claims, сохраняя job-owned material reservation;
+- stage execution вызывает existing Application delivery/work/finalize handlers;
+- post-terrain commit выполняет повторную room synchronization;
+- capture/restore восстанавливает aggregate, provenance и sequence и пересоздаёт handlers.
+
+Validation PR #595 на code head `9d55c5778c0d7667b21ed39507174b8efbb3f2c5`:
+
+- Quality run `30821792583`: success;
+- architecture, file-size, C# 9 compatibility, compiler baseline, dependency и Domain-boundary checks passed;
+- Unity source contracts passed;
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1460/1460`;
+- active save round-trip, migration, stale provenance/sequence, deterministic serialization и Unity-composition contracts passed;
+- headless smoke passed at tick `20`;
+- standard deterministic soak replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
+- large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
+- Unity workflow `30821792579` recorded blocked evidence; actual EditMode/PlayMode execution and executed-runtime-evidence validation were skipped.
+
+#### Slice 4B-2b — room marker, menu, read model и progress visuals
+
+Статус: `READY FOR REVIEW` в PR #599. Подробный implementation note: [`issue-574-room-presentation-2026-08-03.md`](issue-574-room-presentation-2026-08-03.md).
+
+Реализовано без выбора default для `Q-ROOM-003` и `Q-ROOM-007`:
+
+- `RoomInfrastructurePresenter` проецирует authoritative aggregate, completed provenance и typed diagnostics без второго gameplay owner;
+- world marker создаётся только для completed template-room identity и удаляется при исчезновении authoritative projection;
+- marker click обрабатывается раньше resident movement/excavation, consumes click и очищает competing selections;
+- existing central blocking HUD показывает template, lifecycle, count `0|1`, requested/active purpose, material delivery/work progress и blocker;
+- `Improve` доступен только для `Unimproved + count 0`, повторный order не создаётся;
+- pre-work cancel доступен только по authoritative cancellation diagnostics;
+- pre-order purpose остаётся transient UI intent до successful order, после чего source truth только `RequestedPurpose` Domain;
+- purpose choices: `None`, `Bedroom`, `KitchenDining`, `Workshop`, `Farm`;
+- каждый completed material unit создаёт stable collider-free rebuildable piece;
+- stone tiles, mushroom-leg posts, iron braces и crystal accents размещаются детерминированно по room bounds, ordinal и required count;
+- presentation driver читает authoritative session projection и обновляет marker/HUD visuals после order, delivery, work, cancel, completion и load;
+- resident, building, job, BuildingBox, marquee, Vuker и terrain-cell selection очищают selected room;
+- checked-in Play Mode scenario покрывает clickable marker, единственный enabled collider, selection retention и rebuildable progress removal.
+
+Validation PR #599 на code head `88e89a6d2d1545a80aae248f068d130f6c71694a`:
+
+- Quality run `30829868966`: success;
+- architecture, file-size, C# 9 compatibility, compiler baseline, dependency и Domain-boundary checks passed;
+- Unity source contracts and native-field initialization checks passed;
+- Release build: `0` warnings, `0` errors;
+- full .NET suite: `1463/1463`;
+- room presenter, command-wiring, input-ordering и partial-visual regressions passed;
+- headless smoke passed at tick `20`;
+- standard deterministic soak replay hash `84DF20CCAE6B6CD42CB9B3B07415D468D45E117F8F3B6A1A675DA0A329CB3479`;
+- large deterministic soak with 64 residents replay hash `28CF96B7C7F7FC12CD859AB20E837FAC091FA3FF7B6F20E1B693AA340A303F0C`;
+- Unity workflow `30829869713` recorded blocked evidence; actual EditMode/PlayMode execution and executed-runtime-evidence validation were skipped.
 
 Не входят до ответа на blockers:
 
@@ -252,7 +428,7 @@ Validation PR #590 на code head `d430b065baf6ff5ba4fc86958f62cb4faf47bbae`:
 - interruption removes ghost/job and leaves material with owner resident;
 - wooden support commit updates rolling anchor chain;
 - stone floor/junction trim remains decorative;
-- room marker/menu, count `0|1`, requested/active purpose, progress и typed reasons;
+- tunnel support/trim marker, progress и typed reasons;
 - input shielding before movement/excavation;
 - Unity source-contract and Play Mode tests.
 
@@ -261,7 +437,7 @@ Validation PR #590 на code head `d430b065baf6ff5ba4fc86958f62cb4faf47bbae`:
 Общая часть до ответа `Q-TUNNEL-006A`:
 
 - deterministic delay `1..3` game days;
-- eligibility excludes room, vertical, junction, wooden-support и door-protected cells;
+- eligibility excludes room, vertical, junction, wooden-supported и door-protected cells;
 - deterministic candidate selection and actor substitution;
 - collapse to `terrain.sand` without deposit/output;
 - buried item identities/quantities recover exactly once after re-excavation;
