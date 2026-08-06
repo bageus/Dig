@@ -25,10 +25,8 @@ public sealed class SaveMigrationAndCorruptionTests
         SaveGameDocument document = new DataContractJsonSaveCodec().Deserialize(
             File.ReadAllBytes(fixturePath));
         SaveMigrationPipeline pipeline = CreateMigrations();
-
         Result<SaveMigrationReport> first = pipeline.Apply(document);
         Result<SaveMigrationReport> replay = pipeline.Apply(document);
-
         Assert.True(first.IsSuccess);
         Assert.Equal(new[]
         {
@@ -46,6 +44,9 @@ public sealed class SaveMigrationAndCorruptionTests
             "save.v11_to_v12.living_materials",
             "save.v12_to_v13.terrain_output_contract",
             "save.v13_to_v14.vuker_ecology",
+            "save.v14_to_v15.tunnel_infrastructure",
+            "save.v15_to_v16.room_infrastructure",
+            "save.v16_to_v17.tunnel_manual_infrastructure",
         }, first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
         Assert.Equal(1, document.Metadata.GeneratorVersion);
@@ -70,10 +71,8 @@ public sealed class SaveMigrationAndCorruptionTests
         SaveGameDocument document = new DataContractJsonSaveCodec().Deserialize(
             File.ReadAllBytes(fixturePath));
         SaveMigrationPipeline pipeline = CreateMigrations();
-
         Result<SaveMigrationReport> first = pipeline.Apply(document);
         Result<SaveMigrationReport> replay = pipeline.Apply(document);
-
         Assert.True(first.IsSuccess);
         Assert.Equal(
             new[]
@@ -88,7 +87,10 @@ public sealed class SaveMigrationAndCorruptionTests
                 "save.v10_to_v11.terrain_deposit_contract",
                 "save.v11_to_v12.living_materials",
                 "save.v12_to_v13.terrain_output_contract",
-            "save.v13_to_v14.vuker_ecology",
+                "save.v13_to_v14.vuker_ecology",
+                "save.v14_to_v15.tunnel_infrastructure",
+                "save.v15_to_v16.room_infrastructure",
+                "save.v16_to_v17.tunnel_manual_infrastructure",
             },
             first.Value.AppliedSteps);
         Assert.Equal(SaveFormat.CurrentVersion, document.FormatVersion);
@@ -107,9 +109,7 @@ public sealed class SaveMigrationAndCorruptionTests
     {
         SaveGameDocument document = MinimalDocument("future");
         document.FormatVersion = SaveFormat.CurrentVersion + 1;
-
         Result<SaveMigrationReport> result = CreateMigrations().Apply(document);
-
         Assert.True(result.IsFailure);
         Assert.Equal(SaveErrors.UnsupportedVersion, result.Error);
         Assert.Equal(SaveFormat.CurrentVersion + 1, document.FormatVersion);
@@ -124,10 +124,8 @@ public sealed class SaveMigrationAndCorruptionTests
         SaveGameDocument unknownItem = CreateValidDocument(materials, items);
         unknownItem.Inventory.Stacks[0].ItemId = "item.missing";
         SaveGameLoader loader = CreateLoader();
-
         Result<LoadedGameState> jobResult = loader.Load(unknownJob, materials, items);
         Result<LoadedGameState> itemResult = loader.Load(unknownItem, materials, items);
-
         Assert.True(jobResult.IsFailure);
         Assert.Equal(SaveErrors.UnknownJobType, jobResult.Error);
         Assert.True(itemResult.IsFailure);
@@ -144,9 +142,7 @@ public sealed class SaveMigrationAndCorruptionTests
             JobId = "fc000000000000000000000000000003",
             Quantity = 1,
         });
-
         Result<LoadedGameState> result = CreateLoader().Load(document, materials, items);
-
         Assert.True(result.IsFailure);
         Assert.Equal(SaveErrors.InvalidDocument, result.Error);
     }
@@ -163,11 +159,9 @@ public sealed class SaveMigrationAndCorruptionTests
             File.WriteAllText(
                 Path.Combine(directory, "broken.digsave"),
                 "{not valid json");
-
             SaveSlotInfo slot = Assert.Single(store.List());
             SaveStorageException exception = Assert.Throws<SaveStorageException>(
                 () => store.Load("broken"));
-
             Assert.True(slot.IsCorrupted);
             Assert.Null(slot.Metadata);
             Assert.Equal(SaveStorageFailureKind.Corrupted, exception.Kind);
@@ -192,9 +186,7 @@ public sealed class SaveMigrationAndCorruptionTests
             string target = Path.Combine(directory, "checkpoint.digsave");
             File.Move(target, target + ".bak");
             File.WriteAllText(target + ".tmp", "partial write");
-
             SaveGameDocument recovered = store.Load("checkpoint");
-
             Assert.Equal("Previous complete save", recovered.Metadata.DisplayName);
             Assert.True(File.Exists(target));
             Assert.False(File.Exists(target + ".tmp"));
@@ -218,11 +210,9 @@ public sealed class SaveMigrationAndCorruptionTests
             first.Metadata.DisplayName = "First";
             SaveGameDocument second = MinimalDocument("slot-1");
             second.Metadata.DisplayName = "Second";
-
             store.Save("slot-1", first);
             store.Save("slot-1", second);
             SaveGameDocument loaded = store.Load("slot-1");
-
             Assert.Equal("Second", loaded.Metadata.DisplayName);
             Assert.False(File.Exists(Path.Combine(directory, "slot-1.digsave.tmp")));
             Assert.False(File.Exists(Path.Combine(directory, "slot-1.digsave.bak")));
@@ -312,6 +302,9 @@ public sealed class SaveMigrationAndCorruptionTests
             new SaveVersionElevenLivingMaterialsMigration(),
             new SaveVersionTwelveTerrainOutputContractMigration(),
             new SaveVersionThirteenVukerEcologyMigration(),
+            new SaveVersionFourteenTunnelInfrastructureMigration(),
+            new SaveVersionFifteenRoomInfrastructureMigration(),
+            new SaveVersionSixteenTunnelManualInfrastructureMigration(),
         });
     }
     private static JobDefinitionSaveRegistry CreateRegistry()

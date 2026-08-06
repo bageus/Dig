@@ -9,6 +9,7 @@ namespace Dig.Unity
     internal sealed partial class DigTerrainWorkSession
     {
         private AcquireHaulingItemHandler? _haulingAcquisition;
+        private HaulingResidentSlotClaimService? _haulingSlotClaims;
 
         private AssignAvailableJobsHandler CreateHaulingAssignment(
             InMemoryExecutionJournal journal)
@@ -17,10 +18,9 @@ namespace Dig.Unity
                 new InventoryTravelCostJobCandidateProvider(
                     _haulingCandidates!,
                     _inventoryRepository);
-            HaulingResidentSlotClaimService slotClaims =
-                new HaulingResidentSlotClaimService(
-                    _inventoryRepository,
-                    journal);
+            _haulingSlotClaims = new HaulingResidentSlotClaimService(
+                _inventoryRepository,
+                journal);
             _haulingAcquisition = new AcquireHaulingItemHandler(
                 _inventoryRepository,
                 _jobRepository,
@@ -29,7 +29,7 @@ namespace Dig.Unity
                 _jobRepository,
                 candidates,
                 journal,
-                haulingResidentSlotClaims: slotClaims);
+                haulingResidentSlotClaims: _haulingSlotClaims);
         }
 
         private Result AdvanceHaulingTransitAtTarget(JobSnapshot job, long tick)

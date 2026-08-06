@@ -51,6 +51,7 @@ public sealed partial class DigWorldInteraction
             DisableExcavationDrawing();
             DisableCaveRoomPlanning();
             _agentRenderer!.ClearSelection();
+            ClearRoomInfrastructureSelection();
             _creatureRenderer!.SelectById(creature.Model.CreatureId);
             _hud!.SetAgentSelection(null, 0);
             _hud.SetStatus(

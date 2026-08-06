@@ -63,6 +63,7 @@ namespace Dig.Unity
         private void SelectCell(DigCellVisual cell)
         {
             ClearBuildingBoxSelection();
+            ClearRoomInfrastructureSelection();
             _selectedCell = cell;
             _agentRenderer!.Select(null);
             _creatureRenderer!.ClearSelection();
@@ -75,6 +76,7 @@ namespace Dig.Unity
         private void SelectJob(DigJobVisual job)
         {
             ClearBuildingBoxSelection();
+            ClearRoomInfrastructureSelection();
             _selectedCell = null;
             _renderer!.Select(null);
             _agentRenderer!.Select(null);
@@ -92,6 +94,7 @@ namespace Dig.Unity
 
         private void ToggleResidentSelection(DigAgentVisual agent)
         {
+            CancelTunnelManualPlacement();
             CancelInventoryItemPlacement();
             if (_buildingPlacementMode.HasValue)
             {
@@ -99,6 +102,7 @@ namespace Dig.Unity
             }
 
             ClearBuildingBoxSelection();
+            ClearRoomInfrastructureSelection();
             _creatureRenderer!.ClearSelection();
             DisableExcavationDrawing();
             DisableCaveRoomPlanning();
@@ -122,6 +126,7 @@ namespace Dig.Unity
                 _agentSession!.CancelPlayerAttackOrder(EntityId.Parse(residentId));
             }
 
+            CancelTunnelManualPlacement();
             CancelInventoryItemPlacement();
             if (_buildingPlacementMode.HasValue)
             {
@@ -131,6 +136,7 @@ namespace Dig.Unity
             DisableExcavationDrawing();
             DisableCaveRoomPlanning();
             ClearBuildingBoxSelection();
+            ClearRoomInfrastructureSelection();
             _selectedCell = null;
             _renderer!.Select(null);
             _agentRenderer!.ClearSelection();

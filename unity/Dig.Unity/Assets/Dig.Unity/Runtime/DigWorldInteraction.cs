@@ -96,9 +96,11 @@ namespace Dig.Unity
                 return;
             }
 
+            UpdateTunnelManualPlacementHover();
             UpdateBuildingPlacementHover();
             UpdateInventoryItemPlacementHover();
-            if (TryHandleBuildingPlacementClick()
+            if (TryHandleTunnelManualPlacementClick()
+                || TryHandleBuildingPlacementClick()
                 || TryHandleInventoryItemPlacementClick())
             {
                 return;
@@ -152,6 +154,11 @@ namespace Dig.Unity
             }
 
             RaycastHit hit = hits[0];
+            if (TryHandleRoomInfrastructureMarker(hits, left))
+            {
+                return;
+            }
+
             if (TryResolveAgentHit(hits, out DigAgentVisual agent))
             {
                 _creatureRenderer!.ClearSelection();

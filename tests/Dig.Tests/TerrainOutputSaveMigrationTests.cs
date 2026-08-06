@@ -79,6 +79,9 @@ public sealed class TerrainOutputSaveMigrationTests
         {
             new SaveVersionTwelveTerrainOutputContractMigration(),
             new SaveVersionThirteenVukerEcologyMigration(),
+            new SaveVersionFourteenTunnelInfrastructureMigration(),
+            new SaveVersionFifteenRoomInfrastructureMigration(),
+            new SaveVersionSixteenTunnelManualInfrastructureMigration(),
         });
 
         var first = pipeline.Apply(document);
@@ -89,6 +92,9 @@ public sealed class TerrainOutputSaveMigrationTests
         {
             "save.v12_to_v13.terrain_output_contract",
             "save.v13_to_v14.vuker_ecology",
+            "save.v14_to_v15.tunnel_infrastructure",
+            "save.v15_to_v16.room_infrastructure",
+            "save.v16_to_v17.tunnel_manual_infrastructure",
         }, first.Value.AppliedSteps);
         Assert.True(replay.IsSuccess);
         Assert.Empty(replay.Value.AppliedSteps);

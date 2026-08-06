@@ -14,9 +14,15 @@ namespace Dig.Unity
             Result navigation = TerrainSession.RefreshCommittedTerrainNavigation();
             SynchronizeExcavatedTunnelNavigation();
 
-            Result infrastructure = AgentSession == null
+            Result tunnelInfrastructure = AgentSession == null
                 ? Result.Success()
                 : TerrainSession.SynchronizeTunnelInfrastructureRuntime(
+                    tick,
+                    AgentSession.LoadView(),
+                    AgentSession.TunnelVolume.Cells);
+            Result roomInfrastructure = AgentSession == null
+                ? Result.Success()
+                : TerrainSession.SynchronizeRoomInfrastructureRuntime(
                     tick,
                     AgentSession.LoadView(),
                     AgentSession.TunnelVolume.Cells);
@@ -39,9 +45,14 @@ namespace Dig.Unity
                 return navigation;
             }
 
-            if (infrastructure.IsFailure)
+            if (tunnelInfrastructure.IsFailure)
             {
-                return infrastructure;
+                return tunnelInfrastructure;
+            }
+
+            if (roomInfrastructure.IsFailure)
+            {
+                return roomInfrastructure;
             }
 
             return settlement;

@@ -23,6 +23,15 @@ namespace Dig.Tests
             Assert.Contains("stone floor reinforcement ghost", specification);
             Assert.Contains("junction support/trim ghost", specification);
             Assert.Contains("invalid target, unreachable target or failed preflight preserves", specification);
+
+            string runtime = Path.Combine(
+                FindRepositoryRoot(),
+                "unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime");
+            string inventory = File.ReadAllText(Path.Combine(
+                runtime,
+                "DigGameHudCanvas.Inventory.cs"));
+            Assert.Contains("Input.GetKey(KeyCode.B)", inventory);
+            Assert.DoesNotContain("Input.GetKey(KeyCode.U)", inventory);
         }
 
         private static string FindRepositoryRoot()

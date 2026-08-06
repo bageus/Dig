@@ -10,7 +10,6 @@ using Dig.Presentation.Jobs;
 using Dig.Presentation.Navigation;
 using Dig.Presentation.World;
 using UnityEngine;
-
 namespace Dig.Unity
 {
     [DefaultExecutionOrder(-1000)]
@@ -19,7 +18,6 @@ namespace Dig.Unity
     {
         private const int MinimumDemoDimension = 8;
         private const int MaximumDemoDimension = 64;
-
         [SerializeField] private int demoWidth = 20;
         [SerializeField] private int demoHeight = 14;
         [SerializeField] private int chunkSize = 5;
@@ -89,6 +87,10 @@ namespace Dig.Unity
             terrainSession.InitializeBarrelDemo(agentSession.Tick);
             terrainSession.InitializeLivingMaterials(agentSession.Tick, agents);
             terrainSession.InitializeToolAwareJobAssignment(worldSession.Journal);
+            Result roomInfrastructure = terrainSession.SynchronizeRoomInfrastructureRuntime(
+                agentSession.Tick, agents, agentSession.TunnelVolume.Cells);
+            if (roomInfrastructure.IsFailure)
+                throw new InvalidOperationException(roomInfrastructure.Error!.ToString());
             Result settledItems = terrainSession.SettleWorldItems(agentSession.Tick);
             if (settledItems.IsFailure)
             {
@@ -139,6 +141,8 @@ namespace Dig.Unity
                 GetOrAdd<DigCaveRoomPreviewRenderer>(gameObject);
             DigCaveRoomFloorRenderer caveRoomFloorRenderer =
                 GetOrAdd<DigCaveRoomFloorRenderer>(gameObject);
+            DigRoomInfrastructureRenderer roomInfrastructureRenderer = GetOrAdd<
+                DigRoomInfrastructureRenderer>(gameObject);
             DigWorldInteraction interaction = GetOrAdd<DigWorldInteraction>(gameObject);
             DigAgentSimulationDriver simulation = GetOrAdd<DigAgentSimulationDriver>(gameObject);
             DigCameraController cameraController =
@@ -172,6 +176,10 @@ namespace Dig.Unity
                 simulation, hud);
             interaction.SetTunnelMovement(tunnelRenderer);
             interaction.SetCaveRoomRenderers(caveRoomPreviewRenderer, caveRoomFloorRenderer);
+            interaction.SetRoomInfrastructureRenderer(roomInfrastructureRenderer);
+            DigRoomInfrastructurePresentationDriver roomPresentation = GetOrAdd<DigRoomInfrastructurePresentationDriver>(gameObject);
+            roomPresentation.Initialize(terrainSession, roomInfrastructureRenderer,
+                () => interaction.IsRoomPlanningOverlayVisible);
             simulation.Initialize(
                 worldSession, worldRenderer, agentSession, agentRenderer,
                 terrainSession, creatureRenderer, mushroomRenderer, barrelRenderer, jobRenderer,
