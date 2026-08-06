@@ -16,6 +16,7 @@ public sealed class VukerEcologySaveData
         = new List<VukerIndividualSaveData>();
     [DataMember(Order = 6)] public List<VukerPairSaveData> Pairs { get; set; }
         = new List<VukerPairSaveData>();
+    [DataMember(Order = 7)] public int TimingCadenceVersion { get; set; }
 }
 
 [DataContract]

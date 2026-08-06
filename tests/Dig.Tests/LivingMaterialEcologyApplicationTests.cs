@@ -7,6 +7,7 @@ using Dig.Domain.Core;
 using Dig.Domain.Ecology;
 using Dig.Domain.Inventory;
 using Dig.Domain.Navigation;
+using Dig.Domain.Runtime;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Xunit;
@@ -24,7 +25,7 @@ public sealed class LivingMaterialEcologyApplicationTests
         harness.AddWorldUnit(2, LivingMaterialEcologyProfiles.HamsterItemId, 6);
         harness.AddWorldUnit(3, LivingMaterialEcologyProfiles.GrubItemId, 9);
 
-        harness.AdvanceTicks(24);
+        harness.AdvanceTicks(GameTimeCadence.TicksPerDay);
 
         Assert.Equal(3, harness.Count(LivingMaterialSpecies.Hamster));
         Assert.Equal(2, harness.Count(LivingMaterialSpecies.Grub));
@@ -40,7 +41,7 @@ public sealed class LivingMaterialEcologyApplicationTests
         Harness harness = new Harness();
         harness.AddWorldUnit(1, LivingMaterialEcologyProfiles.HamsterItemId, 5);
 
-        harness.AdvanceTicks(48);
+        harness.AdvanceTicks(GameTimeCadence.TicksPerDay * 2);
 
         Assert.Equal(1, harness.Count(LivingMaterialSpecies.Hamster));
         Assert.Equal(0, harness.State.Get(Id(1))!.ReproductionCyclesCompleted);
@@ -55,7 +56,7 @@ public sealed class LivingMaterialEcologyApplicationTests
             harness.AddWorldUnit(index, LivingMaterialEcologyProfiles.GrubItemId, 2 + index);
         }
 
-        harness.AdvanceTicks(24);
+        harness.AdvanceTicks(GameTimeCadence.TicksPerDay);
 
         Assert.Equal(10, harness.Count(LivingMaterialSpecies.Grub));
         Assert.All(
@@ -71,7 +72,7 @@ public sealed class LivingMaterialEcologyApplicationTests
         harness.AddStoredUnit(1, LivingMaterialEcologyProfiles.HamsterItemId, campfire);
         harness.AddStoredUnit(2, LivingMaterialEcologyProfiles.HamsterItemId, campfire);
 
-        harness.AdvanceTicks(48);
+        harness.AdvanceTicks(GameTimeCadence.TicksPerDay * 2);
 
         Assert.Equal(2, harness.Count(LivingMaterialSpecies.Hamster));
         Assert.All(harness.State.GetAll(), value =>
@@ -115,7 +116,7 @@ public sealed class LivingMaterialEcologyApplicationTests
         Assert.Equal(dropped.Y, snapshot.Cell!.Value.Y);
         Assert.Equal(dropped.Z, snapshot.Cell.Value.Z);
         Assert.Equal(LivingMaterialActivity.Moving, snapshot.Activity);
-        Assert.Equal(2400, snapshot.MovementCredit);
+        Assert.Equal(1200, snapshot.MovementCredit);
     }
 
     [Fact]

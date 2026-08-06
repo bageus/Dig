@@ -1,6 +1,7 @@
 using System;
 using Dig.Domain.Core;
 using Dig.Domain.Ecology;
+using Dig.Domain.Runtime;
 using Dig.Domain.World;
 using Xunit;
 
@@ -12,12 +13,15 @@ public sealed class LivingMaterialEcologyStateTests
     [Fact]
     public void ProfilesMatchApprovedCadenceAndRadius()
     {
-        Assert.Equal(96, LivingMaterialEcologyProfiles.EcologyStepsPerDay);
+        Assert.Equal(
+            GameTimeCadence.TicksPerDay
+                * LivingMaterialEcologyProfiles.EcologyStepsPerSimulationTick,
+            LivingMaterialEcologyProfiles.EcologyStepsPerDay);
         Assert.Equal(4, LivingMaterialEcologyProfiles.EcologyStepsPerSimulationTick);
         Assert.Equal(6, LivingMaterialEcologyProfiles.Hamster.WanderRadius);
-        Assert.Equal(800, LivingMaterialEcologyProfiles.Hamster.MovementCreditPerEcologyStep);
+        Assert.Equal(400, LivingMaterialEcologyProfiles.Hamster.MovementCreditPerEcologyStep);
         Assert.Equal(4, LivingMaterialEcologyProfiles.Grub.WanderRadius);
-        Assert.Equal(650, LivingMaterialEcologyProfiles.Grub.MovementCreditPerEcologyStep);
+        Assert.Equal(325, LivingMaterialEcologyProfiles.Grub.MovementCreditPerEcologyStep);
         Assert.Equal(10, LivingMaterialEcologyProfiles.PopulationCapPerPlane);
     }
 
@@ -43,10 +47,10 @@ public sealed class LivingMaterialEcologyStateTests
     }
 
     [Theory]
-    [InlineData(LivingMaterialSpecies.Hamster, 4, 3200, false)]
-    [InlineData(LivingMaterialSpecies.Hamster, 5, 4000, true)]
-    [InlineData(LivingMaterialSpecies.Grub, 6, 3900, false)]
-    [InlineData(LivingMaterialSpecies.Grub, 7, 4000, true)]
+    [InlineData(LivingMaterialSpecies.Hamster, 9, 3600, false)]
+    [InlineData(LivingMaterialSpecies.Hamster, 10, 4000, true)]
+    [InlineData(LivingMaterialSpecies.Grub, 12, 3900, false)]
+    [InlineData(LivingMaterialSpecies.Grub, 13, 4000, true)]
     public void FixedPointMovementCreditIsDeterministic(
         LivingMaterialSpecies species,
         int steps,
@@ -107,7 +111,9 @@ public sealed class LivingMaterialEcologyStateTests
         LivingMaterialEcologyState state = CreateFreeState(
             LivingMaterialSpecies.Grub,
             out EntityId parentId);
-        for (int index = 0; index < 96; index++)
+        for (int index = 0;
+            index < LivingMaterialEcologyProfiles.EcologyStepsPerDay;
+            index++)
         {
             Assert.True(state.AdvanceOneEcologyStep(index + 1).IsSuccess);
         }
@@ -121,7 +127,9 @@ public sealed class LivingMaterialEcologyStateTests
         LivingMaterialSnapshot newborn = state.Get(plan.Value.OffspringId)!;
         Assert.Equal(1, parent.ReproductionCyclesCompleted);
         Assert.Equal(0, newborn.ReproductionCyclesCompleted);
-        Assert.Equal(state.EcologyStep + 96, newborn.NextReproductionStep);
+        Assert.Equal(
+            state.EcologyStep + LivingMaterialEcologyProfiles.EcologyStepsPerDay,
+            newborn.NextReproductionStep);
         Assert.Equal(2, LivingMaterialEcologyProfiles.MaximumSuccessfulCycles);
     }
 

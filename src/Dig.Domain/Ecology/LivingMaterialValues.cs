@@ -1,5 +1,6 @@
 using System;
 using Dig.Domain.Inventory;
+using Dig.Domain.Runtime;
 using Dig.Domain.World;
 
 namespace Dig.Domain.Ecology
@@ -90,8 +91,9 @@ public sealed class LivingMaterialSpeciesProfile
 
 public static class LivingMaterialEcologyProfiles
 {
-    public const int EcologyStepsPerDay = 96;
     public const int EcologyStepsPerSimulationTick = 4;
+    public const int EcologyStepsPerDay =
+        GameTimeCadence.TicksPerDay * EcologyStepsPerSimulationTick;
     public const int MovementThreshold = 4000;
     public const int PopulationCapPerPlane = 10;
     public const int MaximumSuccessfulCycles = 2;
@@ -106,14 +108,14 @@ public static class LivingMaterialEcologyProfiles
         LivingMaterialSpecies.Hamster,
         HamsterItemId,
         wanderRadius: 6,
-        movementCreditPerEcologyStep: 800,
+        movementCreditPerEcologyStep: 400,
         reproductionPeriodSteps: EcologyStepsPerDay);
 
     public static readonly LivingMaterialSpeciesProfile Grub = new LivingMaterialSpeciesProfile(
         LivingMaterialSpecies.Grub,
         GrubItemId,
         wanderRadius: 4,
-        movementCreditPerEcologyStep: 650,
+        movementCreditPerEcologyStep: 325,
         reproductionPeriodSteps: EcologyStepsPerDay);
 
     public static LivingMaterialSpeciesProfile Get(LivingMaterialSpecies species)

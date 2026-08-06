@@ -1,6 +1,7 @@
 using System.Linq;
 using Dig.Domain.Core;
 using Dig.Domain.Ecology;
+using Dig.Domain.Runtime;
 using Dig.Domain.World;
 using Xunit;
 
@@ -9,6 +10,17 @@ namespace Dig.Tests
 
 public sealed class VukerEcologyStateTests
 {
+    [Fact]
+    public void ReproductionAndGrowthUseUnifiedGameTime()
+    {
+        Assert.Equal(
+            GameTimeCadence.TicksFromDays(VukerEcologyProfile.ReproductionCooldownDays),
+            VukerEcologyProfile.ReproductionCooldownTicks);
+        Assert.Equal(
+            GameTimeCadence.TicksFromDays(VukerEcologyProfile.ChildGrowthDays),
+            VukerEcologyProfile.ChildGrowthTicks);
+    }
+
     private static readonly VukerRegionKey Region =
         new VukerRegionKey(new CellId(0, 1, 0));
 

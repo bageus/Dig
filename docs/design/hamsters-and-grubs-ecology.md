@@ -93,11 +93,11 @@ Hamster stock является opt-in: default delivery выключен. Игр
 
 ### 2.6 Reproduction
 
-Ecology имеет `96` substeps в игровых сутках; один simulation tick выполняет четыре substeps. Resident schedule остаётся 24-часовым.
+Ecology выполняет четыре deterministic substeps на один simulation tick. Число substeps в игровых сутках выводится из единой `GameTimeCadence` (`3600 * 4 = 14400`), поэтому pause и speed multiplier влияют на lifecycle так же, как на остальные игровые системы.
 
-- Grub: один free individual, period `96`, один offspring, максимум два successful cycles.
-- Hamster: минимум два free hamster одной component, period `96`, parent — eligible stable-lowest ID, partner только обеспечивает pair, cycle расходуется только у parent, максимум два cycles.
-- Newborn получает собственные два cycles и первый cooldown `96`.
+- Grub: один free individual, period одни игровые сутки, один offspring, максимум два successful cycles.
+- Hamster: минимум два free hamster одной component, period одни игровые сутки, parent — eligible stable-lowest ID, partner только обеспечивает pair, cycle расходуется только у parent, максимум два cycles.
+- Newborn получает собственные два cycles и первый cooldown в одни игровые сутки.
 - Resulting free population species/component не превышает `10`.
 - Cap/parent/offspring identity фиксируются атомарно; blocked cap/no-partner/no-cell не расходует cycle и не создаёт duplicate.
 
@@ -140,7 +140,8 @@ Fresh seed выполняется до первого reconciliation и не я�
 - ecology step = `simulationTick * 4 + substep`;
 - runtime order: movement region, species, creature ID;
 - choices hash world seed + creature ID + sequence + purpose;
-- movement threshold `4000`: hamster adds `800`, grub `650` per substep;
+- movement threshold `4000`: hamster adds `400`, grub `325` per substep;
+- shaft-gap/vertical-tunnel cells не входят в movement candidates; существо останавливается перед шахтой и выбирает доступный floor detour;
 - activity bands/timers and sequence are saved;
 - repeated save/load with одинаковым input даёт тот же следующий movement/reproduction result.
 
