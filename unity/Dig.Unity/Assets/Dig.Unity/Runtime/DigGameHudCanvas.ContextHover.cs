@@ -7,6 +7,7 @@ namespace Dig.Unity
 
 public sealed partial class DigGameHudCanvas
 {
+    private const float ContextHoverContentOffsetMaxY = -52f;
     private RectTransform? _contextHoverPanel;
     private Text? _contextHoverText;
     private string _productionHoverTitle = string.Empty;
@@ -79,16 +80,15 @@ public sealed partial class DigGameHudCanvas
         string details = hasProduction
             ? _productionHoverDetails
             : string.Empty;
-        bool visible = title.Length > 0 && _bottomPanel.gameObject.activeSelf;
 
         EnsureContextHoverInfo();
-        _contextHoverPanel!.gameObject.SetActive(visible);
+        _contextHoverPanel!.gameObject.SetActive(_bottomPanel.gameObject.activeSelf);
         _contextHoverText!.text = details.Length == 0
             ? title
             : title + "\n" + details;
 
         Vector2 offsetMax = _bottomContent.offsetMax;
-        offsetMax.y = visible ? -52f : -8f;
+        offsetMax.y = ContextHoverContentOffsetMaxY;
         _bottomContent.offsetMax = offsetMax;
     }
 
