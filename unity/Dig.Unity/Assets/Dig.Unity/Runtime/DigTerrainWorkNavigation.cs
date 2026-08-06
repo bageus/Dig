@@ -218,6 +218,11 @@ namespace Dig.Unity
                     continue;
                 }
 
+                if (TryPlanResidentFreeTimeMovement(agent, navigation, movement))
+                {
+                    continue;
+                }
+
                 CellId start = new CellId(agent.CellX, agent.CellY, agent.CellZ);
                 UnsupportedResidentRecoveryPlan? recovery = _supportRecoveryPlanner.Plan(
                     start,
