@@ -42,10 +42,19 @@ internal sealed partial class DigTerrainWorkSession
 
     private bool HasAvailableAutomaticJob(AgentSnapshot agent)
     {
+        JobSnapshot[] jobs = _jobRepository!.Get().GetAll().ToArray();
+        bool ownsCurrentWork = jobs.Any(job =>
+            job.AssignedAgentId == agent.Id
+            && (job.Status == JobStatus.Claimed
+                || job.Status == JobStatus.InProgress));
+        if (ownsCurrentWork)
+        {
+            return true;
+        }
+
         return agent.ScheduledActivity == ScheduleActivity.Work
             && agent.AutomaticPlanningEnabled
-            && _jobRepository!.Get().GetAll().Any(
-                job => job.Status == JobStatus.Available);
+            && jobs.Any(job => job.Status == JobStatus.Available);
     }
 
     internal bool TryExecuteResidentNeedsAction(
