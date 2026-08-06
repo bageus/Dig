@@ -25,6 +25,14 @@ public sealed partial class SaveGameBuilder
                 Mood = runtime.Needs.Mood.Points,
                 Health = runtime.Needs.Health.Points,
                 LastNeedsTick = runtime.LastNeedsTick,
+                LeisureHistory = runtime.Leisure.History
+                    .Select(value => value.ToString())
+                    .ToList(),
+                ActiveLeisureId = runtime.Leisure.ActiveVariety?.ToString(),
+                LeisurePartnerId = runtime.Leisure.PartnerId?.ToString(),
+                NextLeisureEffectTick = runtime.Leisure.NextEffectTick,
+                LeisureHistoryCommitted = runtime.Leisure.HistoryCommitted,
+                LeisureMoodGainPercent = runtime.Leisure.MoodGainPercent,
             };
             if (runtime.ActiveMeal != null)
             {
