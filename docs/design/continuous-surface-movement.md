@@ -1,7 +1,11 @@
 # Continuous surface movement
 
-Status: approved direction; domain/save slice and authoritative freeform floor
-destination implemented.
+Статус: `IMPLEMENTED`.
+
+Tracking issue: [#669](https://github.com/bageus/Dig/issues/669).
+
+Unity Play Mode verification остаётся открытой; этот документ нельзя повышать до
+`VERIFIED` без фактически пройденного runtime-сценария.
 
 ## Rules
 
@@ -75,12 +79,10 @@ a remote deposit. Production now resolves exact poses for output-package placeme
 internal-stock acquisition, workstation processing and processed-material deposit.
 Building supply resolves separate workstation, reserved-source and destination poses;
 both execution paths gate every inventory or phase mutation on the authoritative pose.
-Horizontal local avoidance compares authoritative fixed-point world positions before
-each micro-step. A conflicting target is deferred once, then uses the approved overlap
-fallback so a stationary actor cannot create a permanent wait. Vertical climbers never
-block each other. The occupancy map is refreshed from living authoritative poses at the
-start of every tick and updated after every confirmed pose. Runtime verification remains
-required before continuous movement is complete in the playable Unity runtime.
+Horizontal local avoidance is a presentation preference and never rejects or delays an
+authoritative fixed-point micro-step. A conflicting target immediately uses the approved
+visual overlap fallback; vertical climbers likewise never block each other. Runtime
+verification remains required before continuous movement is verified in playable Unity.
 
 When excavation removes full support beneath an active spatial worker, the authoritative
 pose attaches to the nearest exposed vertical face instead of remaining on an imaginary

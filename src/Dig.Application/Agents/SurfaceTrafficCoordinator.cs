@@ -8,10 +8,6 @@ namespace Dig.Application.Agents
 
 public sealed class SurfaceTrafficCoordinator
 {
-    private readonly Dictionary<EntityId, SurfacePose> _occupied =
-        new Dictionary<EntityId, SurfacePose>();
-    private readonly Dictionary<EntityId, SurfacePose> _deferredTargets =
-        new Dictionary<EntityId, SurfacePose>();
     private long _tick = -1;
 
     public void BeginTick(
@@ -32,47 +28,15 @@ public sealed class SurfaceTrafficCoordinator
         }
 
         _tick = tick;
-        _occupied.Clear();
-        foreach (KeyValuePair<EntityId, SurfacePose> occupant in occupants)
-        {
-            if (!occupant.Key.IsEmpty)
-            {
-                _occupied[occupant.Key] = occupant.Value;
-            }
-        }
+        // Occupants are intentionally not retained as an authoritative barrier.
+        // Shared poses and visual overlap are allowed by the movement specification.
     }
 
     public bool CanOccupy(EntityId agentId, SurfacePose target, long tick)
     {
         ValidateAgent(agentId);
         ValidateTick(tick);
-        if (target.IsVertical)
-        {
-            _deferredTargets.Remove(agentId);
-            return true;
-        }
-
-        foreach (KeyValuePair<EntityId, SurfacePose> occupant in _occupied)
-        {
-            if (occupant.Key != agentId
-                && !occupant.Value.IsVertical
-                && !SurfaceSpatialMath.HasClearance(
-                    target,
-                    occupant.Value,
-                    SurfaceSpatialMath.DefaultClearanceUnits))
-            {
-                if (_deferredTargets.TryGetValue(agentId, out SurfacePose deferred)
-                    && deferred == target)
-                {
-                    _deferredTargets.Remove(agentId);
-                    return true;
-                }
-
-                _deferredTargets[agentId] = target;
-                return false;
-            }
-        }
-        _deferredTargets.Remove(agentId);
+        _ = target;
         return true;
     }
 
@@ -80,7 +44,7 @@ public sealed class SurfaceTrafficCoordinator
     {
         ValidateAgent(agentId);
         ValidateTick(tick);
-        _occupied[agentId] = pose;
+        _ = pose;
     }
 
     private void ValidateTick(long tick)

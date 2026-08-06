@@ -28,7 +28,7 @@ public sealed class SurfaceTrafficCoordinatorTests
     }
 
     [Fact]
-    public void Occupied_boundary_defers_once_then_allows_overlap_fallback()
+    public void Occupied_boundary_never_defers_authoritative_movement()
     {
         SurfaceTrafficCoordinator traffic = new SurfaceTrafficCoordinator();
         SurfacePose leftCentre = SurfacePose.FloorCentre(new CellId(1, 2, 0));
@@ -46,7 +46,7 @@ public sealed class SurfaceTrafficCoordinatorTests
 
         Assert.True(traffic.CanOccupy(AgentA, boundary, 10));
         traffic.RecordPose(AgentA, boundary, 10);
-        Assert.False(traffic.CanOccupy(AgentB, boundary, 10));
+        Assert.True(traffic.CanOccupy(AgentB, boundary, 10));
         Assert.True(traffic.CanOccupy(AgentB, boundary, 10));
     }
 
