@@ -26,12 +26,12 @@ jobs:
             cat .codex-payload/part-000
             cat .codex-payload/part-001
             cat .codex-payload/part-002
-            cat .codex-payload/part-003
+            cat .codex-payload-third/part-*
             cat .codex-payload-tail/part-*
           } > /tmp/payload.b64
           echo "165622f90e44b18dfc2ce0cae9ae9a2c1a58c3527612b3bcd0f6ce71e21f20cf  /tmp/payload.b64" | sha256sum -c -
           base64 --decode /tmp/payload.b64 | tar -xz
-          rm -rf .codex-payload .codex-payload-tail
+          rm -rf .codex-payload .codex-payload-third .codex-payload-tail
           rm -f .github/workflows/apply-codex-payload.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
