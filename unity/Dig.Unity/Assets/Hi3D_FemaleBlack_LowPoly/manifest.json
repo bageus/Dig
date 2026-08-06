@@ -1,0 +1,106 @@
+{
+  "source": "Hi3D_FemaleBlack_Rigged_Animated.glb",
+  "sourceStats": {
+    "vertices": 1012064,
+    "triangles": 1999748,
+    "animations": [
+      "Idle",
+      "Walk",
+      "Run",
+      "Climb",
+      "Carry",
+      "Mine",
+      "Chop",
+      "Build",
+      "Eat",
+      "Study",
+      "Rest",
+      "Attack",
+      "Hit",
+      "Death"
+    ],
+    "joints": 36
+  },
+  "rig": "Generic",
+  "weightInfluencesPerVertex": 4,
+  "variants": [
+    {
+      "file": "Hi3D_FemaleBlack_LowPoly_LOD0_Rigged_Animated.glb",
+      "label": "Balanced",
+      "voxel": 0.08,
+      "vertices": 45102,
+      "triangles": 89311,
+      "skins": 1,
+      "joints": 36,
+      "animations": [
+        "Idle",
+        "Walk",
+        "Run",
+        "Climb",
+        "Carry",
+        "Mine",
+        "Chop",
+        "Build",
+        "Eat",
+        "Study",
+        "Rest",
+        "Attack",
+        "Hit",
+        "Death"
+      ],
+      "weight_min_sum": 0.9999999403953552,
+      "weight_max_sum": 1.0000001192092896,
+      "max_joint": 35,
+      "size_bytes": 16584728
+    },
+    {
+      "file": "Hi3D_FemaleBlack_LowPoly_LOD1_Rigged_Animated.glb",
+      "label": "Performance",
+      "voxel": 0.12,
+      "vertices": 27171,
+      "triangles": 54516,
+      "skins": 1,
+      "joints": 36,
+      "animations": [
+        "Idle",
+        "Walk",
+        "Run",
+        "Climb",
+        "Carry",
+        "Mine",
+        "Chop",
+        "Build",
+        "Eat",
+        "Study",
+        "Rest",
+        "Attack",
+        "Hit",
+        "Death"
+      ],
+      "weight_min_sum": 0.9999999403953552,
+      "weight_max_sum": 1.0000001192092896,
+      "max_joint": 35,
+      "size_bytes": 15306492
+    }
+  ],
+  "recommended": "Hi3D_FemaleBlack_LowPoly_LOD0_Rigged_Animated.glb",
+  "loopAnimations": [
+    "Idle",
+    "Walk",
+    "Run",
+    "Climb",
+    "Carry",
+    "Build",
+    "Study",
+    "Rest"
+  ],
+  "oneShotAnimations": [
+    "Mine",
+    "Chop",
+    "Eat",
+    "Attack",
+    "Hit",
+    "Death"
+  ],
+  "rootMotion": false
+}
