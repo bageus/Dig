@@ -192,6 +192,7 @@ namespace Dig.Unity
             BeginTunnelTrafficTick(_tick);
             AdvanceVukerEcology();
             BeginMovementModeTick();
+            AdvanceResidentFreeTime();
             _autonomy.Execute(new SimulationContext(_tick, _simulationState));
             IReadOnlyList<AgentState> agents = _repository.GetAll();
             for (int index = 0; index < agents.Count; index++)
@@ -253,7 +254,6 @@ namespace Dig.Unity
             CompleteVukerKidnapOrders();
             return Result.Success();
         }
-
         private int SelectNextRouteIndex(AgentState agent)
         {
             AgentIntentKind intent = agent.LastDecision?.SelectedIntent

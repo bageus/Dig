@@ -1,13 +1,14 @@
 using System;
 using Dig.Domain.Core;
 using Dig.Domain.Society;
+using Dig.Domain.Runtime;
 
 namespace Dig.Unity
 {
 
 internal sealed partial class DigAgentSession
 {
-    private const long TicksPerYear = 24 * 365;
+    private const long TicksPerYear = GameTimeCadence.TicksPerDay * 365L;
     private const long DemoSocietyStartTick = TicksPerYear * 25;
 
     internal long SocietyTick => DemoSocietyStartTick + _tick;
@@ -23,7 +24,7 @@ internal sealed partial class DigAgentSession
             adultAgeTicks: TicksPerYear * 18,
             oldAgeTicks: TicksPerYear * 60,
             maximumAgeTicks: TicksPerYear * 100,
-            gestationTicks: 24,
+            gestationTicks: GameTimeCadence.TicksPerDay,
             closeKinshipDepth: 3,
             minimumPartnershipSympathy: 6_000,
             minimumPartnershipTrust: 6_000,

@@ -99,6 +99,12 @@ namespace Dig.Unity
                 TerrainSession.ResolveResidentMovementMode);
             TerrainSession.BindManualMovementSource(
                 AgentSession.HasManualTunnelMovement);
+            TerrainSession.BindFreeTimeMeetingSource(residentId =>
+                AgentSession.TryGetFreeTimeMeetingPartner(
+                    residentId,
+                    out EntityId partnerId)
+                    ? partnerId
+                    : (EntityId?)null);
             TerrainSession.BindTaskTransitionPauseSource(
                 residentId => AgentSession.IsResidentTaskTransitionPaused(
                     residentId,

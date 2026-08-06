@@ -47,6 +47,22 @@ public sealed class AgentExternalEffectApplied : IDomainEvent
 
 public sealed partial class AgentState
 {
+    public const int FreeTimeDirectOrderMoodPenalty = 250;
+
+    public Result ApplyFreeTimeDirectOrderPenalty(long tick)
+    {
+        ValidateTick(tick);
+        if (Schedule.GetActivity(tick) == ScheduleActivity.Work)
+        {
+            return Result.Success();
+        }
+
+        return ApplyExternalNeedDelta(
+            new NeedDelta(0, 0, -FreeTimeDirectOrderMoodPenalty, 0),
+            "free_time_direct_order",
+            tick);
+    }
+
     public Result ApplyExternalNeedDelta(
         NeedDelta delta,
         string sourceId,

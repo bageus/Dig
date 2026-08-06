@@ -140,6 +140,12 @@ namespace Dig.Unity
                 return prepared;
             }
 
+            Result moodPenalty = resident.ApplyFreeTimeDirectOrderPenalty(tick);
+            if (moodPenalty.IsFailure)
+            {
+                return moodPenalty;
+            }
+
             _productionAgents!.Save(resident);
             _journal.Append(resident.DequeueUncommittedEvents());
             return Result.Success();
