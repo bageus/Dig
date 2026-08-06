@@ -12,7 +12,8 @@ internal static class DigAuthoredResidentRigConfigurator
         GameObject modelRoot,
         string stableId,
         int maximumRenderers,
-        out DigResidentRig rig)
+        out DigResidentRig rig,
+        bool configureAnimation = true)
     {
         Renderer[] renderers = DigResidentRigFactory.CollectRenderers(modelRoot);
         if (renderers.Length < 1 || renderers.Length > maximumRenderers)
@@ -24,7 +25,7 @@ internal static class DigAuthoredResidentRigConfigurator
         bool isDefaultAuthoredModel =
             DigResidentAnimatedModel.IsDefaultAsset(stableId);
         DigResidentAnimationPlayer? animationPlayer = null;
-        if (isDefaultAuthoredModel)
+        if (isDefaultAuthoredModel && configureAnimation)
         {
             if (DigResidentAnimationPlayer.TryConfigure(
                     modelRoot,
