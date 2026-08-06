@@ -40,6 +40,8 @@ Code-and-test head `e3b37d1588d3db09ce296b9e6ae5e2862b9a37fa`:
 
 Unity workflow `31059058839` completed through the blocked-evidence path. Licensed activation was unavailable, so the actual EditMode/PlayMode Test Runner and executed runtime-evidence validation were skipped. The checked-in layout regression therefore has not executed in licensed Unity.
 
+Commits after the tested head only synchronize this evidence report; production code, regression tests, authoritative specification and system index are unchanged.
+
 ## Verification boundary
 
 The correction is `IMPLEMENTED IN BRANCH`, not `VERIFIED`. Licensed Unity Play Mode must still execute repeated hover enter/exit and confirm that the central panel, content rectangle and menu icons remain stationary.
