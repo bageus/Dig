@@ -4,6 +4,7 @@ using Dig.Domain.Agents;
 using Dig.Domain.Core;
 using Dig.Domain.Society;
 using Dig.Domain.World;
+using Dig.Application.Saving;
 using Xunit;
 
 namespace Dig.Tests
@@ -57,6 +58,46 @@ public sealed class SocietyStateTests
         Assert.Equal(FatherId, born.FatherId);
         Assert.Equal(Home, born.Position);
         Assert.True(society.ValidateFamilyGraph().IsSuccess);
+    }
+
+    [Fact]
+    public void Birth_starts_domain_owned_postpartum_cooldown()
+    {
+        SocietyState society = CreateAdultCouple(postpartumCooldownTicks: 10);
+        Assert.True(society.StartPregnancy(MotherId, FatherId, Context(), 20).IsSuccess);
+        Assert.True(society.RegisterBirth(
+            MotherId,
+            BirthPlan(FirstChildId, "Mira", ResidentSex.Female),
+            25).IsSuccess);
+
+        Assert.Equal(35, society.GetResident(MotherId)!.PostpartumUntilTick);
+        Assert.True(society.StartPregnancy(MotherId, FatherId, Context(), 34).IsFailure);
+        Assert.True(society.StartPregnancy(MotherId, FatherId, Context(), 35).IsSuccess);
+    }
+
+    [Fact]
+    public void Society_save_round_trip_preserves_pregnancy_and_postpartum_cooldown()
+    {
+        SocietyState pregnant = CreateAdultCouple(postpartumCooldownTicks: 10);
+        Assert.True(pregnant.StartPregnancy(MotherId, FatherId, Context(), 20).IsSuccess);
+        Result<SocietyState?> pregnantRoundTrip = SocietySaveAdapter.Decode(
+            SocietySaveAdapter.Encode(pregnant));
+
+        Assert.True(pregnantRoundTrip.IsSuccess);
+        PregnancySnapshot restoredPregnancy = pregnantRoundTrip.Value!
+            .GetResident(MotherId)!.Pregnancy!;
+        Assert.Equal(FatherId, restoredPregnancy.FatherId);
+        Assert.Equal(25, restoredPregnancy.DueTick);
+
+        Assert.True(pregnant.RegisterBirth(
+            MotherId,
+            BirthPlan(FirstChildId, "Mira", ResidentSex.Female),
+            25).IsSuccess);
+        Result<SocietyState?> postpartumRoundTrip = SocietySaveAdapter.Decode(
+            SocietySaveAdapter.Encode(pregnant));
+        Assert.Equal(35, postpartumRoundTrip.Value!.GetResident(MotherId)!.PostpartumUntilTick);
+        Assert.True(postpartumRoundTrip.Value.StartPregnancy(
+            MotherId, FatherId, Context(), 34).IsFailure);
     }
 
     [Fact]
@@ -204,9 +245,9 @@ public sealed class SocietyStateTests
         Assert.False(society.AreCloseRelatives(FatherId, outsider));
     }
 
-    private static SocietyState CreateAdultCouple()
+    private static SocietyState CreateAdultCouple(long postpartumCooldownTicks = 0)
     {
-        SocietyState society = new SocietyState(CreatePolicy());
+        SocietyState society = new SocietyState(CreatePolicy(postpartumCooldownTicks));
         Assert.True(society.RegisterFounder(
             Registration(MotherId, "Edda", ResidentSex.Female, birthTick: 0),
             tick: 20).IsSuccess);
@@ -234,7 +275,7 @@ public sealed class SocietyStateTests
             conceptionTick + 5).IsSuccess);
     }
 
-    private static SocietyPolicy CreatePolicy()
+    private static SocietyPolicy CreatePolicy(long postpartumCooldownTicks = 0)
     {
         return new SocietyPolicy(
             adultAgeTicks: 10,
@@ -245,7 +286,8 @@ public sealed class SocietyStateTests
             minimumPartnershipSympathy: 6_000,
             minimumPartnershipTrust: 6_000,
             minimumReproductionMood: 7_600,
-            minimumReproductionHealth: 5_000);
+            minimumReproductionHealth: 5_000,
+            postpartumCooldownTicks: postpartumCooldownTicks);
     }
 
     private static ResidentReproductionContext Context(int motherMood = 8_000)
