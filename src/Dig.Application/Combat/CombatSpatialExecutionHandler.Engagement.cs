@@ -82,6 +82,7 @@ public sealed partial class CombatSpatialExecutionHandler
         combat.SetExecutionEngagement(execution.ExecutionId, selected.Value.Cell,
             command.Tick, "engagement_selected");
         CombatExecutionStage next = actor.Position == selected.Value.Cell
+            && IsAtCombatSurfacePose(actor, target, weapon, selected.Value.Cell)
             ? CombatExecutionStage.FaceTarget : CombatExecutionStage.Approach;
         combat.AdvanceExecutionStage(execution.ExecutionId, next,
             command.Tick, command.Tick,
@@ -171,6 +172,11 @@ public sealed partial class CombatSpatialExecutionHandler
         AgentState actor,
         bool moved)
     {
+        Result<CombatSpatialExecutionReport>? surfaceApproach =
+            CompleteCombatSurfaceApproach(command, combat, execution, actor, moved);
+        if (surfaceApproach != null)
+            return surfaceApproach;
+
         CombatExecutionStage arrived = IsPursuingLastKnown(execution, actor)
             ? CombatExecutionStage.Reevaluate : CombatExecutionStage.FaceTarget;
         combat.AdvanceExecutionStage(execution.ExecutionId, arrived,

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Dig.Application.Agents;
 using Dig.Domain.Core;
+using Dig.Domain.Navigation;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
 
@@ -13,6 +14,7 @@ namespace Dig.Unity
             string residentId,
             CellId destination,
             float destinationOffsetX,
+            float destinationOffsetZ,
             DigTunnelDemoRenderer tunnelRenderer)
         {
             if (AgentSession == null
@@ -33,7 +35,12 @@ namespace Dig.Unity
             }
 
             PlanAgentTunnelRouteReport report =
-                AgentSession.MoveResidentThroughTunnel(residentId, destination);
+                AgentSession.MoveResidentThroughTunnel(
+                    residentId,
+                    SurfacePose.FloorPoint(
+                        destination,
+                        destinationOffsetX,
+                        destinationOffsetZ));
             if (report.Result.IsFailure)
             {
                 return report.Result;
@@ -42,7 +49,8 @@ namespace Dig.Unity
             AgentRenderer.SetFreeformDestination(
                 residentId,
                 destination,
-                destinationOffsetX);
+                destinationOffsetX,
+                destinationOffsetZ);
             tunnelRenderer.ShowRoute(report.Path, destinationOffsetX);
             RefreshTunnelMovementPresentation(AgentSession.LoadView());
             return Result.Success();
@@ -52,6 +60,7 @@ namespace Dig.Unity
             IReadOnlyList<string> residentIds,
             CellId destination,
             float destinationOffsetX,
+            float destinationOffsetZ,
             DigTunnelDemoRenderer tunnelRenderer)
         {
             if (AgentSession == null
@@ -78,6 +87,7 @@ namespace Dig.Unity
                     residentIds[0],
                     destination,
                     destinationOffsetX,
+                    destinationOffsetZ,
                     tunnelRenderer);
             }
 
@@ -91,7 +101,12 @@ namespace Dig.Unity
             }
 
             PlanAgentsTunnelRoutesReport report =
-                AgentSession.MoveResidentsThroughTunnel(residentIds, destination);
+                AgentSession.MoveResidentsThroughTunnel(
+                    residentIds,
+                    SurfacePose.FloorPoint(
+                        destination,
+                        destinationOffsetX,
+                        destinationOffsetZ));
             if (report.Result.IsFailure)
             {
                 return report.Result;
@@ -108,7 +123,8 @@ namespace Dig.Unity
                 AgentRenderer.SetFreeformDestination(
                     entry.AgentId.ToString(),
                     assigned,
-                    assignedOffset);
+                    assignedOffset,
+                    destinationOffsetZ);
             }
 
             float routeOffset = report.Entries.Count == 0

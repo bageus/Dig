@@ -119,6 +119,11 @@ internal sealed partial class DigTerrainWorkSession
                 continue;
             }
 
+            if (!IsAtPreciseWorkPose(job, agent))
+            {
+                continue;
+            }
+
             TryAdvanceBuildingPacking(job, agent, tick, out Result result);
             if (result.IsFailure)
             {

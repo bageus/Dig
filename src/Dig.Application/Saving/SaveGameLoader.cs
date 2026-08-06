@@ -215,6 +215,7 @@ public sealed partial class SaveGameLoader
                 BuildAgentAutomaticPlanning(document.AgentSkills);
             IReadOnlyDictionary<EntityId, CellId> agentPositions =
                 BuildAgentPositions(document.AgentPositions, document.World);
+            var agentSurfacePoses = BuildAgentSurfacePoses(document.AgentPositions, document.World);
             IReadOnlyDictionary<EntityId, Dig.Domain.Agents.AgentRuntimeSnapshot>
                 agentRuntime = BuildAgentRuntime(
                     document.AgentRuntime,
@@ -296,6 +297,7 @@ public sealed partial class SaveGameLoader
                     document.TerrainDeposits.GeneratorVersion,
                 livingMaterials: livingMaterials.Value,
                 vukers: vukers.Value,
+                agentSurfacePoses: agentSurfacePoses,
                 tunnelInfrastructure: infrastructure.Value.Tunnel,
                 roomInfrastructure: infrastructure.Value.Room));
         }

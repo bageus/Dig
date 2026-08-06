@@ -22,6 +22,7 @@ public sealed partial class CombatSpatialExecutionHandler
     private readonly CombatSpatialPolicy _policy;
     private readonly ResolveCombatAttackHandler _attackHandler;
     private readonly MoveAgentCommandHandler _moveHandler;
+    private readonly MoveAgentOnSurfaceCommandHandler _surfaceMoveHandler;
 
     public CombatSpatialExecutionHandler(
         IAgentRepository agents,
@@ -44,6 +45,7 @@ public sealed partial class CombatSpatialExecutionHandler
             agents, combat, factions, events,
             skillGrants ?? throw new ArgumentNullException(nameof(skillGrants)));
         _moveHandler = new MoveAgentCommandHandler(agents, events);
+        _surfaceMoveHandler = new MoveAgentOnSurfaceCommandHandler(agents, events);
     }
 
     public void UpdateNavigationVolume(TunnelNavigationVolume volume)

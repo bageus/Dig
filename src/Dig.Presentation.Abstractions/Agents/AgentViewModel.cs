@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Dig.Domain.Navigation;
 
 namespace Dig.Presentation.Agents
 {
@@ -27,7 +28,10 @@ public sealed class AgentViewModel
         string decisionExplanation,
         IReadOnlyCollection<AgentUtilityOptionViewModel> utilityOptions,
         int cellZ = 0,
-        bool automaticPlanningEnabled = true)
+        bool automaticPlanningEnabled = true,
+        SurfaceFace surfaceFace = SurfaceFace.Floor,
+        int surfaceU = SurfacePose.CellCentre,
+        int surfaceV = SurfacePose.CellCentre)
     {
         if (string.IsNullOrWhiteSpace(id))
         {
@@ -54,6 +58,13 @@ public sealed class AgentViewModel
             throw new ArgumentOutOfRangeException(nameof(cellZ));
         }
 
+        if (!Enum.IsDefined(typeof(SurfaceFace), surfaceFace)
+            || surfaceU < 0 || surfaceU > SurfacePose.UnitsPerCell
+            || surfaceV < 0 || surfaceV > SurfacePose.UnitsPerCell)
+        {
+            throw new ArgumentOutOfRangeException(nameof(surfaceFace));
+        }
+
         if (utilityOptions is null)
         {
             throw new ArgumentNullException(nameof(utilityOptions));
@@ -78,6 +89,9 @@ public sealed class AgentViewModel
         DecisionExplanation = decisionExplanation;
         UtilityOptions = new ReadOnlyCollection<AgentUtilityOptionViewModel>(utilityOptions.ToArray());
         AutomaticPlanningEnabled = automaticPlanningEnabled;
+        SurfaceFace = surfaceFace;
+        SurfaceU = surfaceU;
+        SurfaceV = surfaceV;
     }
 
     public string Id { get; }
@@ -99,6 +113,9 @@ public sealed class AgentViewModel
     public string DecisionExplanation { get; }
     public IReadOnlyList<AgentUtilityOptionViewModel> UtilityOptions { get; }
     public bool AutomaticPlanningEnabled { get; }
+    public SurfaceFace SurfaceFace { get; }
+    public int SurfaceU { get; }
+    public int SurfaceV { get; }
 
     public bool IsScheduledForWork => string.Equals(
         ScheduledActivity,

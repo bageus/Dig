@@ -174,6 +174,11 @@ namespace Dig.Unity
                     return Result.Success();
                 }
 
+                if (!IsAtPreciseWorkPose(current, agent))
+                {
+                    return Result.Success();
+                }
+
                 ItemStackSnapshot? box = _buildingInventoryRepository!.Get().GetStack(
                     relocation.StackId);
                 Result<BuildingBoxRelocationExecutionStepKind> evaluated =

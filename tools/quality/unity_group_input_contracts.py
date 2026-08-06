@@ -130,7 +130,7 @@ def check_tunnel_and_group_contracts(
             "PlanAgentsTunnelRoutesCommandHandler",
             "MoveResidentsThroughTunnel",
             "_groupTunnelRoutePlanner",
-            "RegisterManualMovement(entry.AgentId, entry.Path)",
+            "RegisterManualMovement(entry.AgentId, entry.Path, assignedPose)",
         ),
     ))
     errors.extend(reject_fragments(

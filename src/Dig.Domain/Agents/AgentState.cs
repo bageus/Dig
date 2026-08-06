@@ -194,6 +194,7 @@ public sealed partial class AgentState : AggregateRoot
             _skills.CreateSnapshot(),
             _traits.CreateSnapshot(),
             Position,
+            SurfacePose,
             _skills.TryCreateProgressionSnapshot(),
             AutomaticPlanningEnabled,
             LastTaskCompletionTick);

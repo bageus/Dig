@@ -145,7 +145,7 @@ def check_tunnel_depth_contracts(
         texts.get(loop, ""),
         "spatial excavation simulation loop",
         (
-            "PlanSpatialExcavationMovement",
+            "PlanPreciseWorkMovement",
             "SetSpatialWorkMovementTargets",
             "AdvanceSpatialExcavationWork",
             "LoadSpatialExcavationsToFinalize",

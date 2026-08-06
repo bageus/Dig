@@ -73,9 +73,10 @@ namespace Dig.Unity
                     continue;
                 }
 
-                if (agent.CellX != pickup.SourceCell.X
-                    || agent.CellY != pickup.SourceCell.Y
-                    || agent.CellZ != pickup.SourceCell.Z)
+                SurfacePose required = WorkSurfacePositioning.Resolve(
+                    pickup.SourceCell,
+                    pickup.SourceCell);
+                if (!WorkSurfacePositioning.IsAt(ToSurfacePose(agent), required))
                 {
                     continue;
                 }

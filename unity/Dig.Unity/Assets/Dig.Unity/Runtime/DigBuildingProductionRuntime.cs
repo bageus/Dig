@@ -57,7 +57,8 @@ internal sealed partial class DigTerrainWorkSession
                         new CellId(worker.CellX, worker.CellY, worker.CellZ)));
             }
 
-            if (!At(worker, source.Location.CellId))
+            if (!At(worker, source.Location.CellId)
+                || !IsAtPreciseWorkPose(job, worker))
             {
                 return Result.Success();
             }
@@ -69,7 +70,8 @@ internal sealed partial class DigTerrainWorkSession
                     tick));
         }
 
-        if (!At(worker, supply.WorkPosition))
+        if (!At(worker, supply.WorkPosition)
+            || !IsAtPreciseWorkPose(job, worker))
         {
             return Result.Success();
         }

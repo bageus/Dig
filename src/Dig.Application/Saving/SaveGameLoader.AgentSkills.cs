@@ -5,6 +5,7 @@ using System.Linq;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
 using Dig.Domain.World;
+using Dig.Domain.Navigation;
 
 namespace Dig.Application.Saving
 {
@@ -174,6 +175,52 @@ public sealed partial class SaveGameLoader
         }
 
         return new ReadOnlyDictionary<EntityId, CellId>(result);
+    }
+
+    private static IReadOnlyDictionary<EntityId, SurfacePose> BuildAgentSurfacePoses(
+        AgentPositionsSaveData data,
+        WorldSaveData world)
+    {
+        WorldSize size = new WorldSize(world.Width, world.Height, world.Depth);
+        Dictionary<EntityId, SurfacePose> result = new Dictionary<EntityId, SurfacePose>();
+        foreach (AgentPositionSaveData saved in data.Agents
+            .OrderBy(value => value.AgentId, StringComparer.Ordinal))
+        {
+            EntityId id = EntityId.Parse(saved.AgentId);
+            CellId cell = new CellId(saved.X, saved.Y, saved.Z);
+            SurfacePose pose;
+            if (!saved.SurfaceFace.HasValue
+                && !saved.SurfaceU.HasValue
+                && !saved.SurfaceV.HasValue)
+            {
+                pose = SurfacePose.FloorCentre(cell);
+            }
+            else
+            {
+                if (!saved.SurfaceFace.HasValue
+                    || !saved.SurfaceU.HasValue
+                    || !saved.SurfaceV.HasValue
+                    || !Enum.IsDefined(typeof(SurfaceFace), saved.SurfaceFace.Value))
+                {
+                    throw new InvalidOperationException("Agent surface pose is incomplete.");
+                }
+
+                pose = new SurfacePose(
+                    cell,
+                    (SurfaceFace)saved.SurfaceFace.Value,
+                    saved.SurfaceU.Value,
+                    saved.SurfaceV.Value);
+            }
+
+            if (!size.Contains(cell)
+                || !SurfaceTraversalPolicy.CanUse(SurfaceMoverKind.Resident, pose)
+                || !result.TryAdd(id, pose))
+            {
+                throw new InvalidOperationException("Agent surface pose is invalid or duplicated.");
+            }
+        }
+
+        return new ReadOnlyDictionary<EntityId, SurfacePose>(result);
     }
 
 

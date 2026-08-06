@@ -39,6 +39,11 @@ namespace Dig.Unity
                     return Result.Failure(BuildingBoxErrors.JobTypeMismatch);
                 }
 
+                if (!IsAtPreciseWorkPose(currentJob, agent))
+                {
+                    return Result.Success();
+                }
+
                 BuildingSnapshot? building = _buildingsRepository!.Get().Get(
                     assembly.BuildingId);
                 ItemStackSnapshot? sourceBox = _buildingInventoryRepository!.Get().GetStack(

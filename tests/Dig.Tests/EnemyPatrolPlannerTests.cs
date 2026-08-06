@@ -14,7 +14,7 @@ public sealed class EnemyPatrolPlannerTests
         "ca000000000000000000000000000011");
 
     [Fact]
-    public void Cave_monster_patrol_is_slow_deterministic_and_flat()
+    public void Cave_monster_patrol_is_slow_and_deterministic()
     {
         EnemyCombatDefinition cave = CaveEncounterCombatContent.CaveMonster;
         CellId anchor = new CellId(1, 1, 0);
@@ -51,6 +51,30 @@ public sealed class EnemyPatrolPlannerTests
         Assert.True(volume.HasFullActorSupport(first.Target));
         Assert.InRange(Math.Abs(first.Target.X - anchor.X), 0, 1);
         Assert.InRange(Math.Abs(first.Target.Z - anchor.Z), 0, 1);
+    }
+
+    [Fact]
+    public void Cave_monster_can_patrol_through_vertical_climb()
+    {
+        EnemyCombatDefinition cave = CaveEncounterCombatContent.CaveMonster;
+        CellId lower = new CellId(1, 1, 1);
+        CellId upper = new CellId(1, 2, 1);
+        TunnelNavigationVolume volume = new TunnelNavigationVolume(
+            width: 3,
+            height: 4,
+            depth: 3,
+            openCells: new[] { lower, upper },
+            verticalCells: new[] { lower, upper },
+            supportedCells: new[] { lower });
+
+        EnemyPatrolDecision decision = new EnemyPatrolPlanner().Plan(
+            cave, EnemyId, lower, lower, volume, worldSeed: 77UL, tick: 4);
+
+        Assert.True(decision.ShouldMove);
+        Assert.Equal(upper, decision.Target);
+        Assert.Equal(
+            TunnelTraversalKind.VerticalClimb,
+            volume.ClassifyTraversal(lower, upper));
     }
 
     [Fact]

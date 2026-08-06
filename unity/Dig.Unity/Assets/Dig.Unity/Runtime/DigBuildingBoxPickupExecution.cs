@@ -152,6 +152,11 @@ namespace Dig.Unity
 
                 if (pickup.IsRelocation)
                 {
+                    if (!IsAtPreciseWorkPose(job, agent))
+                    {
+                        continue;
+                    }
+
                     Result relocated = AdvanceBuildingBoxRelocation(
                         job,
                         pickup,
@@ -167,7 +172,8 @@ namespace Dig.Unity
 
                 if (agent.CellX != pickup.SourceCell.X
                     || agent.CellY != pickup.SourceCell.Y
-                    || agent.CellZ != pickup.SourceCell.Z)
+                    || agent.CellZ != pickup.SourceCell.Z
+                    || !IsAtPreciseWorkPose(job, agent))
                 {
                     continue;
                 }

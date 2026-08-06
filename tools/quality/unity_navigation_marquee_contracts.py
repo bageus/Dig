@@ -30,6 +30,7 @@ def check_navigation_and_marquee_contracts(
     world_session = runtime_root / "DigWorldSession.TunnelNavigation.cs"
     agent_session = runtime_root / "DigAgentSession.TunnelTopology.cs"
     spatial_runtime = runtime_root / "DigTerrainSpatialExcavation.cs"
+    spatial_movement = runtime_root / "DigTerrainSpatialExcavation.Movement.cs"
     navigation_sync = runtime_root / "DigAgentSimulationDriverBase.NavigationSync.cs"
     designations = runtime_root / "DigTerrainWorkDesignations.cs"
     multi_worker = runtime_root / "DigTerrainWorkManualExcavation.MultiWorker.cs"
@@ -202,12 +203,12 @@ def check_navigation_and_marquee_contracts(
     ))
     errors.extend(require_fragments(
         spatial_runtime,
-        texts.get(spatial_runtime, ""),
+        texts.get(spatial_runtime, "") + texts.get(spatial_movement, ""),
         "spatial excavation job lifecycle",
         (
             "SpatialDigJobDefinition",
             "DesignateSpatialExcavation",
-            "PlanSpatialExcavationMovement",
+            "PlanPreciseWorkMovement",
             "AdvanceSpatialExcavationWork",
             "LoadSpatialExcavationsToFinalize",
             "CompleteSpatialExcavationJob",

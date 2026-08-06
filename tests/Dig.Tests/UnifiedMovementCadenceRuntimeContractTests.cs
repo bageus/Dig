@@ -23,7 +23,7 @@ public sealed class UnifiedMovementCadenceRuntimeContractTests
 
         Assert.Equal(1, Count(driver, "AdvanceMovementSubstep("));
         Assert.Contains("PlanMovement(afterFirstMovement,AgentSession.Tick)", driver);
-        Assert.Contains("PlanSpatialExcavationMovement(afterFirstMovement)", driver);
+        Assert.Contains("PlanPreciseWorkMovement(afterFirstMovement)", driver);
         Assert.DoesNotContain("_tick=checked(_tick+1)", substeps);
         Assert.DoesNotContain("_autonomy.Execute", substeps);
         Assert.Contains("GetCombatIntent(agent.Id)!=null", substeps);

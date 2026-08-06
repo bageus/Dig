@@ -160,7 +160,8 @@ namespace Dig.Unity
             if (!target.HasValue
                 || agent.CellX != target.Value.X
                 || agent.CellY != target.Value.Y
-                || agent.CellZ != target.Value.Z)
+                || agent.CellZ != target.Value.Z
+                || !IsAtPreciseWorkPose(job, agent))
             {
                 return Result.Success();
             }

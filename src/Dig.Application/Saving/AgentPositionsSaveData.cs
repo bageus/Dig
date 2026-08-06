@@ -26,6 +26,15 @@ public sealed class AgentPositionSaveData
 
     [DataMember(Order = 4)]
     public int Z { get; set; }
+
+    [DataMember(Order = 5, EmitDefaultValue = false)]
+    public int? SurfaceFace { get; set; }
+
+    [DataMember(Order = 6, EmitDefaultValue = false)]
+    public int? SurfaceU { get; set; }
+
+    [DataMember(Order = 7, EmitDefaultValue = false)]
+    public int? SurfaceV { get; set; }
 }
 
 }

@@ -32,11 +32,13 @@ public sealed partial class DigAgentVisual
         _productionWaitPose = false;
         _freeformDestinationCell = null;
         _freeformDestinationOffsetX = 0f;
+        _freeformDestinationOffsetZ = 0f;
         _currentVisualX = _currentX;
         _previousVisualX = _currentVisualX;
         if (_duration <= 0f)
         {
-            transform.position = ToWorld(_currentVisualX, _currentY, _currentZ);
+            transform.position = ToWorld(
+                _currentVisualX, _currentVisualY, _currentVisualZ);
         }
     }
 

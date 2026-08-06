@@ -150,7 +150,8 @@ namespace Dig.Unity
         internal void SetFreeformDestination(
             string agentId,
             Dig.Domain.World.CellId cell,
-            float offsetX)
+            float offsetX,
+            float offsetZ = 0f)
         {
             if (string.IsNullOrWhiteSpace(agentId))
             {
@@ -159,7 +160,7 @@ namespace Dig.Unity
 
             if (_agents.TryGetValue(agentId, out DigAgentVisual? visual))
             {
-                visual.SetFreeformDestination(cell, offsetX);
+                visual.SetFreeformDestination(cell, offsetX, offsetZ);
             }
         }
 

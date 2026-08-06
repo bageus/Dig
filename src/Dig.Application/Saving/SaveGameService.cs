@@ -302,11 +302,11 @@ public sealed class SaveGameService
             repository.Save(agent);
         }
 
-        foreach (KeyValuePair<EntityId, Dig.Domain.World.CellId> entry
-            in loaded.Value.AgentPositions)
+        foreach (KeyValuePair<EntityId, Dig.Domain.Navigation.SurfacePose> entry
+            in loaded.Value.AgentSurfacePoses)
         {
             Dig.Domain.Agents.AgentState agent = repository.Get(entry.Key)!;
-            Result restored = agent.RestorePosition(entry.Value);
+            Result restored = agent.RestoreSurfacePose(entry.Value);
             if (restored.IsFailure)
             {
                 return Result<LoadedGameState>.Failure(restored.Error!);

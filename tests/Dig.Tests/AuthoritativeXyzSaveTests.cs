@@ -6,6 +6,7 @@ using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
+using Dig.Domain.Navigation;
 using Dig.Domain.World;
 using Xunit;
 
@@ -43,8 +44,45 @@ public sealed class AuthoritativeXyzSaveTests
 
         Assert.True(loaded.IsSuccess);
         Assert.Equal(new CellId(3, 4, 2), loaded.Value.AgentPositions[AgentId]);
+        Assert.Equal(
+            SurfacePose.FloorCentre(new CellId(3, 4, 2)),
+            loaded.Value.AgentSurfacePoses[AgentId]);
         AgentPositionSaveData saved = Assert.Single(document.AgentPositions.Agents);
         Assert.Equal(2, saved.Z);
+    }
+
+    [Fact]
+    public void Agent_surface_pose_round_trip_preserves_sub_cell_position()
+    {
+        AgentState agent = new AgentState(
+            AgentId,
+            "Free-moving dwarf",
+            AgentTestFactory.CreateNeeds(8_000, 8_000, 8_000, 10_000),
+            AgentTestFactory.CreateWorkSchedule(),
+            skills: null,
+            traits: null,
+            initialPosition: new CellId(3, 4, 2));
+        SurfacePose pose = new SurfacePose(
+            new CellId(3, 4, 2),
+            SurfaceFace.PositiveX,
+            173,
+            829);
+        Assert.True(agent.MoveOnSurface(pose, tick: 1).IsSuccess);
+
+        SaveGameDocument document = CreateBuilder().Build(CreateContext(
+            new BuildingsState(),
+            new[] { agent }));
+        Result<LoadedGameState> loaded = CreateLoader().Load(
+            document,
+            CreateMaterials(),
+            CreateItems());
+
+        Assert.True(loaded.IsSuccess);
+        Assert.Equal(pose, loaded.Value.AgentSurfacePoses[AgentId]);
+        AgentPositionSaveData saved = Assert.Single(document.AgentPositions.Agents);
+        Assert.Equal((int)SurfaceFace.PositiveX, saved.SurfaceFace);
+        Assert.Equal(173, saved.SurfaceU);
+        Assert.Equal(829, saved.SurfaceV);
     }
 
     [Fact]

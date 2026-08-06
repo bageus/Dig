@@ -19,12 +19,14 @@ namespace Dig.Unity
             CellId excavationCell,
             CellId movementCell,
             float movementOffsetX,
+            float movementOffsetZ,
             Vector3 movementWorldPosition)
         {
             Kind = kind;
             ExcavationCell = excavationCell;
             MovementCell = movementCell;
             MovementOffsetX = movementOffsetX;
+            MovementOffsetZ = movementOffsetZ;
             MovementWorldPosition = movementWorldPosition;
         }
 
@@ -32,6 +34,7 @@ namespace Dig.Unity
         internal CellId ExcavationCell { get; }
         internal CellId MovementCell { get; }
         internal float MovementOffsetX { get; }
+        internal float MovementOffsetZ { get; }
         internal Vector3 MovementWorldPosition { get; }
 
         internal static DigSelectedResidentTarget Excavation(CellId cell)
@@ -40,6 +43,7 @@ namespace Dig.Unity
                 DigSelectedResidentTargetKind.Excavation,
                 cell,
                 default,
+                0f,
                 0f,
                 default);
         }
@@ -52,6 +56,7 @@ namespace Dig.Unity
                 default,
                 destination.Cell,
                 destination.OffsetX,
+                destination.OffsetZ,
                 destination.WorldPosition);
         }
     }

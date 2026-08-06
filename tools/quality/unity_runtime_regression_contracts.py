@@ -55,7 +55,7 @@ def check_runtime_regression_contracts(
         (agent_session, "single manual movement order state", (
             "Dictionary<EntityId, ManualTunnelMovementOrder>",
             "ActiveManualTunnelResidentIds", "TryAdvanceManualTunnelMovement(",
-            "CanTraverseStep(", "agent.MoveTo(next, _tick)",
+            "CanTraverseStep(", "TryAdvanceManualSurfaceStep(",
             "ConsumeManualTunnelMovementWarning")),
         (loop, "selection and manual ownership across simulation ticks", (
             "IReadOnlyList<string> selectedAgentIds", "primarySelectedAgentId",

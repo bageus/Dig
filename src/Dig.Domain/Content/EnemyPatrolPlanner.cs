@@ -62,6 +62,7 @@ public sealed class EnemyPatrolPlanner
         }
 
         CellId[] candidates = BuildCandidates(
+            definition,
             current,
             anchor,
             definition.PatrolWanderRadius,
@@ -82,6 +83,7 @@ public sealed class EnemyPatrolPlanner
     }
 
     private static CellId[] BuildCandidates(
+        EnemyCombatDefinition definition,
         CellId current,
         CellId anchor,
         int wanderRadius,
@@ -97,9 +99,21 @@ public sealed class EnemyPatrolPlanner
         };
         for (int index = 0; index < cardinal.Length; index++)
         {
-            if (IsFlatSupportedStep(current, cardinal[index], volume))
+            if (IsAllowedStep(definition, current, cardinal[index], volume))
             {
                 candidates.Add(cardinal[index]);
+            }
+        }
+
+        if (definition.Traversal.HasFlag(EnemyTraversalCapability.VerticalClimb))
+        {
+            foreach (int deltaY in new[] { -1, 1 })
+            {
+                CellId target = new CellId(current.X, current.Y + deltaY, current.Z);
+                if (IsAllowedStep(definition, current, target, volume))
+                {
+                    candidates.Add(target);
+                }
             }
         }
 
@@ -119,7 +133,7 @@ public sealed class EnemyPatrolPlanner
         }
 
         return candidates
-            .Where(candidate => ChebyshevDistanceXZ(anchor, candidate)
+            .Where(candidate => ChebyshevDistance(anchor, candidate)
                 <= wanderRadius)
             .OrderBy(candidate => candidate)
             .ToArray();
@@ -164,10 +178,33 @@ public sealed class EnemyPatrolPlanner
             || traversal == TunnelTraversalKind.DepthTraverse;
     }
 
-    private static int ChebyshevDistanceXZ(CellId first, CellId second)
+    private static bool IsAllowedStep(
+        EnemyCombatDefinition definition,
+        CellId from,
+        CellId to,
+        TunnelNavigationVolume volume)
+    {
+        if (!volume.Contains(to))
+        {
+            return false;
+        }
+
+        TunnelTraversalKind traversal = volume.ClassifyTraversal(from, to);
+        if (traversal == TunnelTraversalKind.VerticalClimb)
+        {
+            return definition.Traversal.HasFlag(
+                EnemyTraversalCapability.VerticalClimb);
+        }
+
+        return IsFlatSupportedStep(from, to, volume);
+    }
+
+    private static int ChebyshevDistance(CellId first, CellId second)
     {
         return Math.Max(
-            Math.Abs(first.X - second.X),
+            Math.Max(
+                Math.Abs(first.X - second.X),
+                Math.Abs(first.Y - second.Y)),
             Math.Abs(first.Z - second.Z));
     }
 }

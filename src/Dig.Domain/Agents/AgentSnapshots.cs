@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Collections.ObjectModel;
 using Dig.Domain.Core;
+using Dig.Domain.Navigation;
 using Dig.Domain.World;
 
 namespace Dig.Domain.Agents
@@ -45,6 +46,10 @@ public sealed class AgentSnapshot
                 (position ?? new CellId(0, 0, 0)).X,
                 (position ?? new CellId(0, 0, 0)).Y,
                 positionZ),
+            SurfacePose.FloorCentre(new CellId(
+                (position ?? new CellId(0, 0, 0)).X,
+                (position ?? new CellId(0, 0, 0)).Y,
+                positionZ)),
             skillProgression,
             automaticPlanningEnabled,
             lastTaskCompletionTick)
@@ -65,6 +70,7 @@ public sealed class AgentSnapshot
         IReadOnlyList<AgentSkillValue> skills,
         IReadOnlyList<AgentTraitId> traits,
         CellId position,
+        SurfacePose surfacePose,
         AgentSkillProgressionSnapshot? skillProgression,
         bool automaticPlanningEnabled,
         long lastTaskCompletionTick)
@@ -102,6 +108,14 @@ public sealed class AgentSnapshot
             throw new ArgumentOutOfRangeException(nameof(position));
         }
 
+        if (surfacePose.Cell != position
+            || !SurfaceTraversalPolicy.CanUse(SurfaceMoverKind.Resident, surfacePose))
+        {
+            throw new ArgumentException(
+                "Resident surface pose must match its navigation cell.",
+                nameof(surfacePose));
+        }
+
         Skills = skills ?? throw new ArgumentNullException(nameof(skills));
         Traits = traits ?? throw new ArgumentNullException(nameof(traits));
         Id = id;
@@ -116,6 +130,7 @@ public sealed class AgentSnapshot
         LastTaskCompletionTick = lastTaskCompletionTick;
         LastDecision = lastDecision;
         Position = position;
+        SurfacePose = surfacePose;
         SkillProgression = skillProgression;
         AutomaticPlanningEnabled = automaticPlanningEnabled;
     }
@@ -136,6 +151,7 @@ public sealed class AgentSnapshot
     public AgentSkillProgressionSnapshot? SkillProgression { get; }
     public bool AutomaticPlanningEnabled { get; }
     public CellId Position { get; }
+    public SurfacePose SurfacePose { get; }
     public int PositionZ => Position.Z;
 
     public int GetSkillLevel(AgentSkillId skillId)
@@ -202,6 +218,7 @@ public sealed class AgentSnapshot
         IReadOnlyList<AgentSkillValue> skills,
         IReadOnlyList<AgentTraitId> traits,
         CellId position,
+        SurfacePose surfacePose,
         AgentSkillProgressionSnapshot? skillProgression = null,
         bool automaticPlanningEnabled = true,
         long lastTaskCompletionTick = -1)
@@ -220,6 +237,7 @@ public sealed class AgentSnapshot
             skills,
             traits,
             position,
+            surfacePose,
             skillProgression,
             automaticPlanningEnabled,
             lastTaskCompletionTick);

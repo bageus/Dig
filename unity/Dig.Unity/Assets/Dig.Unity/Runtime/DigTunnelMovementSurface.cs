@@ -19,15 +19,18 @@ namespace Dig.Unity
         internal DigTunnelMovementDestination(
             CellId cell,
             float offsetX,
+            float offsetZ,
             Vector3 worldPosition)
         {
             Cell = cell;
             OffsetX = offsetX;
+            OffsetZ = offsetZ;
             WorldPosition = worldPosition;
         }
 
         internal CellId Cell { get; }
         internal float OffsetX { get; }
+        internal float OffsetZ { get; }
         internal Vector3 WorldPosition { get; }
     }
 
@@ -70,13 +73,20 @@ namespace Dig.Unity
                 hitPoint.x,
                 logicalY);
             float offsetX = (float)target.OffsetX;
+            float offsetZ = Kind == DigTunnelMovementSurfaceKind.Horizontal
+                ? Mathf.Clamp(
+                    DigTunnelProjection.CellWorldPosition(target.Cell).z - hitPoint.z,
+                    -(float)TunnelMovementTargetResolver.MaximumOffsetX,
+                    (float)TunnelMovementTargetResolver.MaximumOffsetX)
+                : 0f;
             Vector3 world = DigTunnelProjection.ResidentWorldPosition(
                 target.Cell.X + offsetX,
                 target.Cell.Y,
-                target.Cell.Z);
+                target.Cell.Z + offsetZ);
             return new DigTunnelMovementDestination(
                 target.Cell,
                 offsetX,
+                offsetZ,
                 world);
         }
 

@@ -127,8 +127,10 @@ def main() -> int:
         "_rig.SetSelected(selected)", "PresentAction(",
         "internal void InitializeSimple(",
         "GetComponentsInChildren<Renderer>(includeInactive: true)",
-        "transform.position = ToWorld(_currentVisualX, _currentY, _currentZ)",
-        "SetFreeformDestination(CellId cell, float offsetX)",
+        "_currentVisualX, _currentVisualY, _currentVisualZ",
+        "ResolveSurfaceCoordinates(",
+        "float offsetZ = 0f",
+        "_freeformDestinationOffsetZ",
     )))
     errors.extend(reject(visual_path, visual, (
         "Animator.Set", "ApplyRootMotion", "ICommand", "Handle(",

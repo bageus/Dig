@@ -4,6 +4,7 @@ using System.Linq;
 using Dig.Application.Agents;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
+using Dig.Domain.Navigation;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Dig.Presentation.Agents;
@@ -38,6 +39,34 @@ public sealed class AgentPositionPresentationTests
         Assert.Equal(new CellId(2, 3), moved.PreviousPosition);
         Assert.Equal(new CellId(5, 4), moved.CurrentPosition);
         Assert.Equal(7, moved.Tick);
+    }
+
+    [Fact]
+    public void Surface_move_command_and_presenter_preserve_precise_pose()
+    {
+        AgentState agent = CreateAgent(
+            "00000000000000000000000000000003",
+            "Nori",
+            new CellId(3, 2, 1));
+        InMemoryAgentRepository repository = new InMemoryAgentRepository();
+        Assert.True(repository.Add(agent).IsSuccess);
+        InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
+        SurfacePose target = new SurfacePose(
+            new CellId(3, 2, 1),
+            SurfaceFace.PositiveX,
+            187,
+            904);
+
+        Result result = new MoveAgentOnSurfaceCommandHandler(repository, journal)
+            .Handle(new MoveAgentOnSurfaceCommand(agent.Id, target, tick: 2));
+        AgentViewModel model = Assert.Single(new AgentPresenter(
+            new GetAgentSnapshotsQueryHandler(repository)).Load(tick: 2));
+
+        Assert.True(result.IsSuccess);
+        Assert.IsType<AgentSurfaceMoved>(Assert.Single(journal.Events));
+        Assert.Equal(SurfaceFace.PositiveX, model.SurfaceFace);
+        Assert.Equal(187, model.SurfaceU);
+        Assert.Equal(904, model.SurfaceV);
     }
 
     [Fact]

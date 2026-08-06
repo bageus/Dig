@@ -150,6 +150,11 @@ namespace Dig.Unity
                     continue;
                 }
 
+                if (!IsAtPreciseWorkPose(job, agent))
+                {
+                    continue;
+                }
+
                 Result advanced = AdvanceBuildingBoxAssemblyJob(job.Id, agent, tick);
                 if (advanced.IsFailure)
                 {
