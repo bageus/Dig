@@ -1,6 +1,8 @@
 # Вариативность досуга и выбор активности
 
-Связанная задача: #143. Непрерывное восстановление Mood: #159.
+Статус: `IMPLEMENTED` (runtime Play Mode verification pending).
+
+Tracking issue: [#143](https://github.com/bageus/Dig/issues/143). Непрерывное восстановление Mood: #159.
 
 ## Решение
 
