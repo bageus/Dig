@@ -1,7 +1,8 @@
 # Continuous surface movement
 
-Status: approved direction; domain/save slice and authoritative freeform floor
-destination implemented.
+Status: `IMPLEMENTED` (licensed Unity Play Mode verification pending).
+
+Tracking issue: [#671](https://github.com/bageus/Dig/issues/671).
 
 ## Rules
 
