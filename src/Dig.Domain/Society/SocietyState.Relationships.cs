@@ -197,6 +197,10 @@ public sealed partial class SocietyState
         }
 
         ResidentSocialState mother = _residents[motherId];
+        if (tick < mother.PostpartumUntilTick)
+        {
+            return Result.Failure(SocietyErrors.PregnancyBlocked);
+        }
         long dueTick = checked(tick + Policy.GestationTicks);
         mother.Pregnancy = new PregnancySnapshot(fatherId, tick, dueTick);
         Version = checked(Version + 1);
