@@ -4,6 +4,12 @@
 
 Tracking issue: [#574](https://github.com/bageus/Dig/issues/574).
 
+Runtime correction for the implemented `Dig / Upgrade` entrypoint is authoritative in
+[`room-purpose-and-manual-reinforcement-runtime-entrypoints-2026-08-06.md`](room-purpose-and-manual-reinforcement-runtime-entrypoints-2026-08-06.md)
+and issue [#663](https://github.com/bageus/Dig/issues/663). In particular, its menu switch
+and room-overlay workflow supersede the world-space marker described in section 2.1 below.
+Unresolved purpose bonuses and advanced layouts remain `QUESTIONNAIRE` scope here.
+
 Связанные системы:
 
 - [`excavation-room-templates-and-deposits.md`](excavation-room-templates-and-deposits.md);
