@@ -19,12 +19,16 @@ internal sealed partial class DigTerrainWorkSession
         };
         if (target.Z > CellId.MinimumDepth)
         {
+            candidates.Add(new CellId(target.X - 1, target.Y, target.Z - 1));
             candidates.Add(new CellId(target.X, target.Y, target.Z - 1));
+            candidates.Add(new CellId(target.X + 1, target.Y, target.Z - 1));
         }
 
         if (target.Z < CellId.MaximumDepth)
         {
+            candidates.Add(new CellId(target.X - 1, target.Y, target.Z + 1));
             candidates.Add(new CellId(target.X, target.Y, target.Z + 1));
+            candidates.Add(new CellId(target.X + 1, target.Y, target.Z + 1));
         }
 
         return candidates.Distinct().ToArray();
