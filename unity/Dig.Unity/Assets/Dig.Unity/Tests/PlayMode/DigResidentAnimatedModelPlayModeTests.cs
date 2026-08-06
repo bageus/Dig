@@ -64,11 +64,16 @@ public sealed class DigResidentAnimatedModelPlayModeTests
 
             yield return null;
 
-            Assert.IsNotNull(rig.GetComponentInChildren<Animator>(includeInactive: true));
+            Assert.IsNotNull(
+                rig.GetComponentInChildren<Animator>(includeInactive: true));
             Assert.Greater(
                 rig.GetComponentsInChildren<SkinnedMeshRenderer>(
                     includeInactive: true).Length,
-                0);
+                0,
+                "Blackbeard was replaced by the procedural resident fallback.");
+            Assert.IsNotNull(
+                rig.transform.Find(asset.Prefab.name),
+                "The instantiated Blackbeard model root is missing.");
             Assert.AreEqual("LeftHandTool",
                 rig.ResolveSocket(DigResidentSocketKind.LeftHand).name);
             Assert.AreEqual("RightHandTool",
@@ -112,6 +117,37 @@ public sealed class DigResidentAnimatedModelPlayModeTests
         {
             UnityEngine.Object.DestroyImmediate(parent);
             UnityEngine.Object.DestroyImmediate(fallbackMaterial);
+        }
+    }
+
+    [Test]
+    public void Blackbeard_authored_mesh_does_not_require_animation_to_replace_fallback()
+    {
+        GameObject root = new GameObject("Blackbeard no-animation test root");
+        GameObject modelRoot = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        modelRoot.name = "Blackbeard authored mesh stand-in";
+        modelRoot.transform.SetParent(root.transform, worldPositionStays: false);
+        try
+        {
+            Assert.IsTrue(DigAuthoredResidentRigConfigurator.TryConfigure(
+                root,
+                modelRoot,
+                DigResidentAnimatedModel.StableId,
+                maximumRenderers: 12,
+                out DigResidentRig rig,
+                configureAnimation: false));
+
+            Assert.AreSame(root, rig.gameObject);
+            Assert.AreEqual(string.Empty, rig.CurrentAnimationClipName);
+            Assert.AreEqual(
+                1,
+                rig.GetComponentsInChildren<MeshRenderer>(
+                    includeInactive: true).Length,
+                "A valid authored mesh must remain active when animation setup is unavailable.");
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(root);
         }
     }
 
