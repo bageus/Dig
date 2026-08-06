@@ -39,218 +39,171 @@ public readonly struct SurfacePose : IEquatable<SurfacePose>
             throw new ArgumentOutOfRangeException(nameof(face));
         }
 
-        if (u < 0.ú×¿-¢G§²ÚîÆ­yÓAvailable = true;
-            }
-
-            if (hasAvailable)
-            {
-                _buildingBoxAssemblyAssignment!.Handle(new AssignAvailableJobsCommand(tick));
-            }
+        if (u < 0 || u > UnitsPerCell || v < 0 || v > UnitsPerCell)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(u),
+                "Surface coordinates must stay inside the selected voxel face.");
         }
 
-        // Keep this marker in the execution source: IsAvailableForAutomaticPlanning.
-        internal bool TryPlanBuildingBoxAssemblyMovement(
-            JobSnapshot job,
-            AgentViewModel agent,
-            NavigationSnapshot navigation,
-            IDictionary<string, CellId> movement)
+        Cell = cell;
+        Face = face;
+        U = u;
+        V = v;
+    }
+
+    public CellId Cell { get; }
+    public SurfaceFace Face { get; }
+    public int U { get; }
+    public int V { get; }
+    public bool IsVertical => Face != SurfaceFace.Floor;
+
+    public static SurfacePose FloorCentre(CellId cell)
+    {
+        return new SurfacePose(cell, SurfaceFace.Floor, CellCentre, CellCentre);
+    }
+
+    public static SurfacePose FloorPoint(CellId cell, double offsetX, double offsetZ = 0d)
+    {
+        return new SurfacePose(
+            cell,
+            SurfaceFace.Floor,
+            ToSurfaceCoordinate(offsetX),
+            ToSurfaceCoordinate(offsetZ));
+    }
+
+    private static int ToSurfaceCoordinate(double centreOffset)
+    {
+        if (double.IsNaN(centreOffset) || double.IsInfinity(centreOffset)
+            || centreOffset < -0.5d || centreOffset > 0.5d)
         {
-            if (job.Definition is not BuildingBoxAssemblyJobDefinition assembly)
-            {
-                return false;
-            }
+            throw new ArgumentOutOfRangeException(nameof(centreOffset));
+        }
 
-            EnsureBuildingBoxAssemblyInitialized();
-            ItemStackSnapshot? box = _buildingInventoryRepository!.Get().GetStack(
-                assembly.SourceStackId);
-            CellId target = ResolveBuildingBoxAssemblyTarget(job, assembly, box);
-            CellId start = new CellId(agent.CellX, agent.CellY, agent.CellZ);
-            PathResult path = _buildingBoxAssemblyPathfinder!.FindPath(
-                navigation,
-                new PathRequest(start, target, navigation.NavigationVersion));
-            _buildingBoxAssemblyRoutes[job.Id] = new BuildingBoxAssemblyRoutePlan(target, path);
-            if (path.Succeeded)
-            {
-                movement[agent.Id] = path.Path!.Cells.Count > 1
-                    ? path.Path.Cells[1]
-                    : target;
-            }
+        return (int)Math.Round(
+            CellCentre + (centreOffset * UnitsPerCell),
+            MidpointRounding.AwayFromZero);
+    }
 
+    public bool Equals(SurfacePose other)
+    {
+        return Cell == other.Cell
+            && Face == other.Face
+            && U == other.U
+            && V == other.V;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is SurfacePose other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        unchecked
+        {
+            int hash = Cell.GetHashCode();
+            hash = (hash * 397) ^ (int)Face;
+            hash = (hash * 397) ^ U;
+            return (hash * 397) ^ V;
+        }
+    }
+
+    public static bool operator ==(SurfacePose left, SurfacePose right) => left.Equals(right);
+    public static bool operator !=(SurfacePose left, SurfacePose right) => !left.Equals(right);
+}
+
+public static class SurfaceTraversalPolicy
+{
+    public static bool CanUse(SurfaceMoverKind mover, SurfacePose pose)
+    {
+        if (pose.Face == SurfaceFace.Floor)
+        {
             return true;
         }
 
-        internal Result AdvanceBuildingBoxAssembly(
-            long tick,
-            IReadOnlyList<AgentViewModel> agents)
+        if (!CanClimb(mover))
         {
-            EnsureBuildingBoxAssemblyInitialized();
-            Dictionary<string, AgentViewModel> agentsById = agents.ToDictionary(
-                agent => agent.Id,
-                StringComparer.Ordinal);
-            foreach (JobSnapshot job in _jobRepository.Get().GetAll())
-            {
-                if (!IsActive(job)
-                    || job.Definition is not BuildingBoxAssemblyJobDefinition
-                    || !job.AssignedAgentId.HasValue
-                    || !agentsById.TryGetValue(
-                        job.AssignedAgentId.Value.ToString(),
-                        out AgentViewModel? agent))
-                {
-                    continue;
-                }
-
-                if (!IsAtPreciseWorkPose(job, agent))
-                {
-                    continue;
-                }
-
-                Result advanced = AdvanceBuildingBoxAssemblyJob(job.Id, agent, tick);
-                if (advanced.IsFailure)
-                {
-                    return advanced;
-                }
-            }
-
-            return Result.Success();
+            return false;
         }
 
-        internal IReadOnlyList<RouteViewModel> LoadBuildingBoxAssemblyRoutes()
+        // Z0 is the open front boundary of the playable volume, not a climbable wall.
+        return pose.Face != SurfaceFace.NegativeZ || pose.Cell.Z != 0;
+    }
+
+    public static bool CanClimb(SurfaceMoverKind mover)
+    {
+        return mover == SurfaceMoverKind.Resident
+            || mover == SurfaceMoverKind.CaveMonster
+            || mover == SurfaceMoverKind.Spider;
+    }
+}
+
+public static class SurfaceSpatialMath
+{
+    public static int DefaultClearanceUnits => 300;
+
+    public static long DistanceSquared(SurfacePose left, SurfacePose right)
+    {
+        ResolveWorldPosition(left, out int leftX, out int leftY, out int leftZ);
+        ResolveWorldPosition(right, out int rightX, out int rightY, out int rightZ);
+        long deltaX = leftX - (long)rightX;
+        long deltaY = leftY - (long)rightY;
+        long deltaZ = leftZ - (long)rightZ;
+        return (deltaX * deltaX) + (deltaY * deltaY) + (deltaZ * deltaZ);
+    }
+
+    public static bool HasClearance(
+        SurfacePose left,
+        SurfacePose right,
+        int clearanceUnits)
+    {
+        if (clearanceUnits < 0)
         {
-            List<RouteViewModel> routes = new List<RouteViewModel>();
-            foreach (KeyValuePair<EntityId, BuildingBoxAssemblyRoutePlan> pair
-                in _buildingBoxAssemblyRoutes.OrderBy(
-                    value => value.Key.ToString(),
-                    StringComparer.Ordinal))
-            {
-                JobSnapshot? job = _jobRepository.Get().Get(pair.Key);
-                if (job == null || !job.AssignedAgentId.HasValue)
-                {
-                    continue;
-                }
-
-                PathResult path = pair.Value.Path;
-                RouteCellViewModel[] cells = path.Path == null
-                    ? Array.Empty<RouteCellViewModel>()
-                    : path.Path.Cells
-                        .Select(cell => new RouteCellViewModel(cell.X, cell.Y, cell.Z))
-                        .ToArray();
-                routes.Add(new RouteViewModel(
-                    pair.Key.ToString(),
-                    job.AssignedAgentId.Value.ToString(),
-                    pair.Value.Target.X,
-                    pair.Value.Target.Y,
-                    pair.Value.Target.Z,
-                    path.Succeeded,
-                    "BuildingBox assembly: " + path.Diagnostics.Detail,
-                    path.Path?.TotalCost ?? 0,
-                    path.Diagnostics.SnapshotVersion,
-                    cells));
-            }
-
-            return routes;
+            throw new ArgumentOutOfRangeException(nameof(clearanceUnits));
         }
 
-        private Result ExecuteBuildingBoxAssemblyStep(
-            BuildingBoxAssemblyExecutionStepKind step,
-            BuildingBoxAssemblyJobDefinition assembly,
-            BuildingSnapshot building,
-            EntityId workerId,
-            CellId workerCell,
-            long tick)
+        long required = clearanceUnits;
+        return DistanceSquared(left, right) >= required * required;
+    }
+
+    private static void ResolveWorldPosition(
+        SurfacePose pose,
+        out int x,
+        out int y,
+        out int z)
+    {
+        x = checked((pose.Cell.X * SurfacePose.UnitsPerCell) + SurfacePose.CellCentre);
+        y = checked((pose.Cell.Y * SurfacePose.UnitsPerCell) + SurfacePose.CellCentre);
+        z = checked((pose.Cell.Z * SurfacePose.UnitsPerCell) + SurfacePose.CellCentre);
+        switch (pose.Face)
         {
-            if (step == BuildingBoxAssemblyExecutionStepKind.None)
-            {
-                return Result.Success();
-            }
-
-            Result<PackableBuildingExecutionState> execution =
-                GetOrCreatePackableBuildingExecution(
-                    assembly.Id,
-                    assembly.BuildingId,
-                    building.Definition.Id,
-                    PackableBuildingOperationKind.Unpack,
-                    building.Definition.RequiredWork);
-            if (execution.IsFailure)
-            {
-                return Result.Failure(execution.Error!);
-            }
-
-            if (step == BuildingBoxAssemblyExecutionStepKind.StartJob)
-            {
-                Result started = _packableBuildingExecutions!.StartOrResume(
-                    assembly.Id,
-                    workerId);
-                return started.IsFailure
-                    ? started
-                    : _advanceHandler.Handle(new AdvanceJobCommand(assembly.Id, tick));
-            }
-
-            if (step == BuildingBoxAssemblyExecutionStepKind.AddWork)
-            {
-                return ExecutePackableBuildingIteration(
-                    assembly.Id,
-                    workerId,
-                    tick,
-                    () => _buildingBoxAssemblyWork!.Handle(
-                        new AddBuildingBoxAssemblyWorkCommand(
-                            assembly.BuildingId,
-                            assembly.Id,
-                            workAmount: 1,
-                            tick: tick)));
-            }
-
-            return ExecuteBuildingBoxAssemblyTransition(step, assembly, workerCell, tick);
-        }
-
-        private Result ExecuteBuildingBoxAssemblyTransition(
-            BuildingBoxAssemblyExecutionStepKind step,
-            BuildingBoxAssemblyJobDefinition assembly,
-            CellId workerCell,
-            long tick)
-        {
-            return step switch
-            {
-                BuildingBoxAssemblyExecutionStepKind.AcquireBox =>
-                    _buildingBoxAssemblyAcquire!.Handle(
-                        new AcquireBuildingBoxForAssemblyCommand(
-                            assembly.BuildingId,
-                            assembly.Id,
-                            workerCell,
-                            tick)),
-                BuildingBoxAssemblyExecutionStepKind.AdvanceStage =>
-                    _advanceHandler.Handle(new AdvanceJobCommand(assembly.Id, tick)),
-                BuildingBoxAssemblyExecutionStepKind.CommitBoxToSite =>
-                    _buildingBoxAssemblyCommit!.Handle(new CommitBuildingBoxToSiteCommand(
-                        assembly.BuildingId,
-                        assembly.Id,
-                        tick)),
-                BuildingBoxAssemblyExecutionStepKind.CompleteAssembly =>
-                    _buildingBoxAssemblyComplete!.Handle(
-                        new CompleteBuildingBoxAssemblyCommand(
-                            assembly.BuildingId,
-                            assembly.Id,
-                            tick)),
-                _ => throw new ArgumentOutOfRangeException(nameof(step)),
-            };
-        }
-
-        private void EnsureBuildingBoxAssemblyInitialized()
-        {
-            if (_buildingsRepository == null
-                || _buildingInventoryRepository == null
-                || _buildingBoxAssemblyCandidates == null
-                || _buildingBoxAssemblyAssignment == null
-                || _buildingBoxAssemblyAcquire == null
-                || _buildingBoxAssemblyCommit == null
-                || _buildingBoxAssemblyWork == null
-                || _buildingBoxAssemblyComplete == null
-                || _buildingBoxAssemblyPathfinder == null
-                || _packableBuildingExecutions == null
-                || _campfireIterationProgression == null)
-            {
-                throw new InvalidOperationException(
-                    "BuildingBox assembly execution is not initialized.");
-            }
+            case SurfaceFace.Floor:
+                x += pose.U - SurfacePose.CellCentre;
+                z += pose.V - SurfacePose.CellCentre;
+                break;
+            case SurfaceFace.NegativeX:
+                x -= SurfacePose.CellCentre;
+                z += pose.U - SurfacePose.CellCentre;
+                y += pose.V - SurfacePose.CellCentre;
+                break;
+            case SurfaceFace.PositiveX:
+                x += SurfacePose.CellCentre;
+                z += pose.U - SurfacePose.CellCentre;
+                y += pose.V - SurfacePose.CellCentre;
+                break;
+            case SurfaceFace.NegativeZ:
+                z -= SurfacePose.CellCentre;
+                x += pose.U - SurfacePose.CellCentre;
+                y += pose.V - SurfacePose.CellCentre;
+                break;
+            case SurfaceFace.PositiveZ:
+                z += SurfacePose.CellCentre;
+                x += pose.U - SurfacePose.CellCentre;
+                y += pose.V - SurfacePose.CellCentre;
+                break;
         }
     }
+}
+
 }

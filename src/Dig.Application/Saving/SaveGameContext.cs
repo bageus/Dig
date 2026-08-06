@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Dig.Application.Buildings;
+using Dig.Application.Rooms;
+using Dig.Application.Tunnels;
 using Dig.Application.World;
 using Dig.Domain.Agents;
 using Dig.Domain.Buildings;
@@ -62,7 +64,9 @@ public sealed class SaveGameContext
         CombatState? combat = null,
         int? terrainDepositGeneratorVersion = null,
         LivingMaterialEcologyState? livingMaterials = null,
-        VukerEcologyState? vukers = null)
+        VukerEcologyState? vukers = null,
+        TunnelInfrastructureRuntimeSnapshot? tunnelInfrastructure = null,
+        RoomInfrastructureRuntimeSnapshot? roomInfrastructure = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -93,6 +97,10 @@ public sealed class SaveGameContext
         Combat = combat;
         LivingMaterials = livingMaterials ?? new LivingMaterialEcologyState(metadata.WorldSeed);
         Vukers = vukers ?? new VukerEcologyState(metadata.WorldSeed);
+        TunnelInfrastructure = tunnelInfrastructure
+            ?? TunnelInfrastructureRuntimeSnapshot.Empty();
+        RoomInfrastructure = roomInfrastructure
+            ?? RoomInfrastructureRuntimeSnapshot.Empty();
     }
 
     public SaveMetadataData Metadata { get; }
@@ -112,6 +120,8 @@ public sealed class SaveGameContext
     public CombatState? Combat { get; }
     public LivingMaterialEcologyState LivingMaterials { get; }
     public VukerEcologyState Vukers { get; }
+    public TunnelInfrastructureRuntimeSnapshot TunnelInfrastructure { get; }
+    public RoomInfrastructureRuntimeSnapshot RoomInfrastructure { get; }
 }
 
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dig.Domain.Core;
 using Dig.Domain.Ecology;
+using Dig.Domain.Runtime;
 using Dig.Domain.World;
 
 namespace Dig.Application.Saving
@@ -10,6 +11,9 @@ namespace Dig.Application.Saving
 
 public static class VukerEcologySaveAdapter
 {
+    private const int CurrentTimingCadenceVersion = 1;
+    private const int LegacySimulationTicksPerDay = 24;
+
     public static VukerEcologySaveData Encode(VukerEcologyState state)
     {
         if (state == null)
@@ -24,6 +28,7 @@ public static class VukerEcologySaveAdapter
             CurrentTick = snapshot.CurrentTick,
             NextPairSequence = snapshot.NextPairSequence,
             Version = snapshot.Version,
+            TimingCadenceVersion = CurrentTimingCadenceVersion,
         };
         foreach (VukerIndividualSnapshot individual in snapshot.Individuals)
         {
@@ -80,12 +85,12 @@ public static class VukerEcologySaveAdapter
             List<VukerIndividualSnapshot> individuals = (data.Individuals
                 ?? new List<VukerIndividualSaveData>())
                 .OrderBy(value => value.EntityId, StringComparer.Ordinal)
-                .Select(DecodeIndividual)
+                .Select(value => DecodeIndividual(value, data))
                 .ToList();
             List<VukerPairSnapshot> pairs = (data.Pairs
                 ?? new List<VukerPairSaveData>())
                 .OrderBy(value => value.PairId, StringComparer.Ordinal)
-                .Select(DecodePair)
+                .Select(value => DecodePair(value, data))
                 .ToList();
             return VukerEcologyState.Restore(new VukerEcologySnapshot(
                 data.WorldSeed == 0 ? fallbackWorldSeed : data.WorldSeed,
@@ -108,7 +113,8 @@ public static class VukerEcologySaveAdapter
     }
 
     private static VukerIndividualSnapshot DecodeIndividual(
-        VukerIndividualSaveData saved)
+        VukerIndividualSaveData saved,
+        VukerEcologySaveData data)
     {
         if (!Enum.IsDefined(typeof(VukerLifecycleStage), saved.Lifecycle)
             || !Enum.IsDefined(typeof(VukerDisposition), saved.Disposition)
@@ -128,7 +134,7 @@ public static class VukerEcologySaveAdapter
             new CellId(saved.PositionX, saved.PositionY, saved.PositionZ),
             saved.IsAlive,
             saved.BirthTick,
-            saved.MaturityTick,
+            MigrateDueTick(data, saved.MaturityTick),
             OptionalId(saved.KidnapReservedBy),
             OptionalId(saved.TamedByResidentId),
             string.IsNullOrWhiteSpace(saved.ActivePairId)
@@ -137,7 +143,9 @@ public static class VukerEcologySaveAdapter
             saved.Version);
     }
 
-    private static VukerPairSnapshot DecodePair(VukerPairSaveData saved)
+    private static VukerPairSnapshot DecodePair(
+        VukerPairSaveData saved,
+        VukerEcologySaveData data)
     {
         if (saved.SuccessfulCycles < 0
             || saved.SuccessfulCycles
@@ -155,7 +163,7 @@ public static class VukerEcologySaveAdapter
             new VukerRegionKey(new CellId(
                 saved.RegionX, saved.RegionY, saved.RegionZ)),
             saved.SuccessfulCycles,
-            saved.NextBirthTick,
+            MigrateDueTick(data, saved.NextBirthTick),
             saved.IsActive,
             saved.TerminalReason,
             saved.BlockedReason,
@@ -163,6 +171,20 @@ public static class VukerEcologySaveAdapter
     }
 
     private static string? Id(EntityId? id) => id?.ToString();
+
+    private static long MigrateDueTick(VukerEcologySaveData data, long dueTick)
+    {
+        if (data.TimingCadenceVersion >= CurrentTimingCadenceVersion
+            || dueTick <= data.CurrentTick)
+        {
+            return dueTick;
+        }
+
+        long remaining = dueTick - data.CurrentTick;
+        return checked(data.CurrentTick + (remaining
+            * GameTimeCadence.TicksPerDay
+            / LegacySimulationTicksPerDay));
+    }
 
     private static EntityId? OptionalId(string? value)
     {

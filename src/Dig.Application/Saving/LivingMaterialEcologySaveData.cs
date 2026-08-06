@@ -12,6 +12,7 @@ public sealed class LivingMaterialEcologySaveData
     [DataMember(Order = 3)] public long Version { get; set; }
     [DataMember(Order = 4)] public List<LivingMaterialIndividualSaveData> Creatures { get; set; }
         = new List<LivingMaterialIndividualSaveData>();
+    [DataMember(Order = 5)] public int TimingCadenceVersion { get; set; }
 }
 
 [DataContract]

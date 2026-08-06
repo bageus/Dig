@@ -50,6 +50,57 @@ public sealed class LivingMaterialEcologySaveTests
         Assert.Equal(before.DeterministicSequence, after.DeterministicSequence);
         Assert.Equal(ecology.EcologyStep, restored.Value.EcologyStep);
         Assert.Equal(ecology.WorldSeed, restored.Value.WorldSeed);
+        Assert.Equal(1, data.TimingCadenceVersion);
+    }
+
+    [Fact]
+    public void LegacyCooldownIsMigratedOnceToUnifiedGameTime()
+    {
+        InventoryState inventory = CreateInventory();
+        EntityId grub = Id(3);
+        CellId cell = new CellId(4, 2, 0);
+        Assert.True(inventory.AddUnit(
+            grub,
+            LivingMaterialEcologyProfiles.GrubItemId,
+            ItemLocation.InWorld(cell),
+            0).IsSuccess);
+        LivingMaterialEcologySaveData legacy = new LivingMaterialEcologySaveData
+        {
+            EcologyStep = 48,
+            Creatures =
+            {
+                new LivingMaterialIndividualSaveData
+                {
+                    CreatureId = grub.ToString(),
+                    ItemEntityId = grub.ToString(),
+                    Species = (int)LivingMaterialSpecies.Grub,
+                    Containment = (int)LivingMaterialContainment.Free,
+                    HasCell = true,
+                    CellX = cell.X,
+                    CellY = cell.Y,
+                    CellZ = cell.Z,
+                    AnchorX = cell.X,
+                    AnchorY = cell.Y,
+                    AnchorZ = cell.Z,
+                    PlaneRootX = cell.X,
+                    PlaneRootY = cell.Y,
+                    PlaneRootZ = cell.Z,
+                    Direction = 1,
+                    Activity = (int)LivingMaterialActivity.Moving,
+                    NextSearchAtStep = int.MaxValue,
+                    NextSleepAtStep = int.MaxValue,
+                    NextReproductionStep = 96,
+                },
+            },
+        };
+
+        Result<LivingMaterialEcologyState> restored =
+            LivingMaterialEcologySaveAdapter.Decode(legacy, inventory, 1);
+
+        Assert.True(restored.IsSuccess, restored.Error?.ToString());
+        Assert.Equal(
+            48 + (LivingMaterialEcologyProfiles.EcologyStepsPerDay / 2),
+            restored.Value.Get(grub)!.NextReproductionStep);
     }
 
     [Fact]

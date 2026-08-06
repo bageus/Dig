@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Dig.Application.Buildings;
+using Dig.Application.Tunnels;
 using Dig.Application.World;
 using Dig.Domain.Buildings;
 using Dig.Domain.Content;
@@ -114,7 +115,6 @@ public sealed partial class SaveGameLoader
             {
                 return Result<LoadedGameState>.Failure(world.Error!);
             }
-
             Result<InventoryState> inventory = InventoryState.Restore(
                 BuildInventorySnapshot(document.Inventory),
                 items);
@@ -122,13 +122,18 @@ public sealed partial class SaveGameLoader
             {
                 return Result<LoadedGameState>.Failure(inventory.Error!);
             }
-
             Result<JobSystem> jobs = BuildJobSystem(document.Jobs);
             if (jobs.IsFailure)
             {
                 return Result<LoadedGameState>.Failure(jobs.Error!);
             }
-
+            Result<RestoredInfrastructureRuntime> infrastructure =
+                RestoreInfrastructure(
+                    document, inventory.Value, jobs.Value, world.Value.Size);
+            if (infrastructure.IsFailure)
+            {
+                return Result<LoadedGameState>.Failure(infrastructure.Error!);
+            }
             Result<BuildingsState> buildings = BuildBuildingsState(
                 document.Buildings,
                 buildingCatalog);
@@ -136,7 +141,6 @@ public sealed partial class SaveGameLoader
             {
                 return Result<LoadedGameState>.Failure(buildings.Error!);
             }
-
             Result<MushroomState> mushrooms = BuildMushroomState(
                 document.Mushrooms,
                 mushroomCatalog,
@@ -145,7 +149,6 @@ public sealed partial class SaveGameLoader
             {
                 return Result<LoadedGameState>.Failure(mushrooms.Error!);
             }
-
             Result<BarrelState> barrels = BuildBarrelState(
                 document.Barrels,
                 barrelCatalog);
@@ -153,7 +156,6 @@ public sealed partial class SaveGameLoader
             {
                 return Result<LoadedGameState>.Failure(barrels.Error!);
             }
-
             RestoredBuildingProductionState buildingProduction;
             bool hasProduction = document.BuildingProduction?.Orders?.Count > 0
                 || document.BuildingProduction?.Supplies?.Count > 0;
@@ -182,7 +184,6 @@ public sealed partial class SaveGameLoader
 
                 buildingProduction = restoredProduction.Value;
             }
-
             Result references = ValidateCrossReferences(
                 inventory.Value,
                 jobs.Value,
@@ -191,7 +192,6 @@ public sealed partial class SaveGameLoader
             {
                 return Result<LoadedGameState>.Failure(references.Error!);
             }
-
             references = ValidateBuildingReferences(
                 inventory.Value,
                 jobs.Value,
@@ -297,7 +297,9 @@ public sealed partial class SaveGameLoader
                     document.TerrainDeposits.GeneratorVersion,
                 livingMaterials: livingMaterials.Value,
                 vukers: vukers.Value,
-                agentSurfacePoses: agentSurfacePoses));
+                agentSurfacePoses: agentSurfacePoses,
+                tunnelInfrastructure: infrastructure.Value.Tunnel,
+                roomInfrastructure: infrastructure.Value.Room));
         }
         catch (UnknownTerrainDepositDefinitionException)
         {

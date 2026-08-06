@@ -71,6 +71,7 @@ namespace Dig.Unity
         {
             _selectedBuildingBox = item
                 ?? throw new ArgumentNullException(nameof(item));
+            ClearRoomInfrastructureSelection();
             SetBuildingBoxVisualSelection(visual);
             _selectedCell = null;
             _renderer!.Select(null);

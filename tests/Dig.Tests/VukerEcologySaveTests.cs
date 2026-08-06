@@ -1,6 +1,7 @@
 using Dig.Application.Saving;
 using Dig.Domain.Core;
 using Dig.Domain.Ecology;
+using Dig.Domain.Runtime;
 using Dig.Domain.World;
 using Xunit;
 
@@ -47,7 +48,54 @@ public sealed class VukerEcologySaveTests
         Assert.Equal(
             state.CreateDeterministicChildId(pair.PairId, 1),
             restored.Value.CreateDeterministicChildId(pair.PairId, 1));
+        Assert.Equal(1, saved.TimingCadenceVersion);
     }
+
+    [Fact]
+    public void LegacyPairCooldownIsMigratedOnceToUnifiedGameTime()
+    {
+        VukerEcologySaveData legacy = new VukerEcologySaveData
+        {
+            CurrentTick = 12,
+            Individuals =
+            {
+                LegacyAdult(Id(1), 0),
+                LegacyAdult(Id(2), 1),
+            },
+            Pairs =
+            {
+                new VukerPairSaveData
+                {
+                    PairId = "pair-legacy",
+                    FirstParentId = Id(1).ToString(),
+                    SecondParentId = Id(2).ToString(),
+                    RegionY = 1,
+                    NextBirthTick = 24,
+                    IsActive = true,
+                },
+            },
+        };
+
+        Result<VukerEcologyState> restored = VukerEcologySaveAdapter.Decode(legacy, 1);
+
+        Assert.True(restored.IsSuccess, restored.Error?.ToString());
+        Assert.Equal(
+            12 + (GameTimeCadence.TicksPerDay / 2),
+            restored.Value.GetPairs()[0].NextBirthTick);
+    }
+
+    private static VukerIndividualSaveData LegacyAdult(EntityId id, int x) =>
+        new VukerIndividualSaveData
+        {
+            EntityId = id.ToString(),
+            Lifecycle = (int)VukerLifecycleStage.Adult,
+            Disposition = (int)VukerDisposition.Wild,
+            RegionY = 1,
+            PositionX = x,
+            PositionY = 1,
+            IsAlive = true,
+            ActivePairId = "pair-legacy",
+        };
 
     [Fact]
     public void AdapterRejectsInvalidCycleCount()

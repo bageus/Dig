@@ -126,6 +126,7 @@ public sealed class LivingMaterialPlaneResolver
     private bool IsLegalDiagonal(CellId from, CellId target)
     {
         if (!_navigation.IsWalkable(target)
+            || _navigation.IsShaftGapCell(target)
             || target.Y != from.Y
             || Math.Abs(target.X - from.X) != 1
             || Math.Abs(target.Z - from.Z) != 1)
@@ -148,7 +149,7 @@ public sealed class LivingMaterialPlaneResolver
                 && IsEcologyCardinalEdge(from, transition));
     }
 
-    private static bool IsEcologyCardinalEdge(
+    private bool IsEcologyCardinalEdge(
         CellId from,
         NavigationTransition transition)
     {
@@ -156,6 +157,8 @@ public sealed class LivingMaterialPlaneResolver
         int deltaX = Math.Abs(target.X - from.X);
         int deltaZ = Math.Abs(target.Z - from.Z);
         return !transition.LinkKind.HasValue
+            && !_navigation.IsShaftGapCell(from)
+            && !_navigation.IsShaftGapCell(target)
             && target.Y == from.Y
             && deltaX + deltaZ == 1
             && (transition.TraversalKind == TunnelTraversalKind.SupportedWalk

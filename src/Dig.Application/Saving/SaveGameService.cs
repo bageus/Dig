@@ -64,7 +64,12 @@ public sealed class SaveGameService
             context.Production,
             context.BuildingSupply,
             context.Barrels,
-            context.Combat));
+            context.Combat,
+            terrainDepositGeneratorVersion: context.TerrainDepositGeneratorVersion,
+            livingMaterials: context.LivingMaterials,
+            vukers: context.Vukers,
+            tunnelInfrastructure: context.TunnelInfrastructure,
+            roomInfrastructure: context.RoomInfrastructure));
     }
 
     public Result<LoadedGameState> Load(

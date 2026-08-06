@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Dig.Domain.Core;
+using Dig.Domain.Runtime;
 using Dig.Domain.World;
 
 namespace Dig.Domain.Ecology
@@ -64,13 +65,14 @@ public readonly struct VukerPairId : IEquatable<VukerPairId>, IComparable<VukerP
 
 public static class VukerEcologyProfile
 {
-    public const int SimulationTicksPerDay = 24;
     public const int ReproductionCooldownDays = 7;
     public const int ChildGrowthDays = 3;
     public const int MaximumSuccessfulCyclesPerPair = 3;
     public const int PopulationCapPerRegion = 10;
-    public const int ReproductionCooldownTicks = SimulationTicksPerDay * ReproductionCooldownDays;
-    public const int ChildGrowthTicks = SimulationTicksPerDay * ChildGrowthDays;
+    public const int ReproductionCooldownTicks =
+        GameTimeCadence.TicksPerDay * ReproductionCooldownDays;
+    public const int ChildGrowthTicks =
+        GameTimeCadence.TicksPerDay * ChildGrowthDays;
 }
 
 public sealed class VukerIndividualSnapshot

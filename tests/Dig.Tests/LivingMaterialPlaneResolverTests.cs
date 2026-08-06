@@ -75,6 +75,30 @@ public sealed class LivingMaterialPlaneResolverTests
         Assert.DoesNotContain(diagonal, candidates);
     }
 
+    [Fact]
+    public void MovementCandidatesExcludeVerticalShaftGapAndKeepFloorDetour()
+    {
+        CellId from = new CellId(2, 2, 0);
+        CellId shaftGap = new CellId(3, 2, 0);
+        CellId detour = new CellId(2, 2, 1);
+        WorldState world = OpenCells(
+            from,
+            shaftGap,
+            new CellId(4, 2, 0),
+            detour,
+            new CellId(3, 2, 1),
+            new CellId(4, 2, 1),
+            new CellId(3, 3, 0));
+        LivingMaterialPlaneResolver resolver = Resolver(world);
+        Assert.True(resolver.TryResolve(from, out LivingMaterialPlane plane));
+
+        IReadOnlyList<CellId> candidates = resolver.GetMovementCandidates(
+            Creature(from, plane.Key));
+
+        Assert.DoesNotContain(shaftGap, candidates);
+        Assert.Contains(detour, candidates);
+    }
+
     private static LivingMaterialSnapshot Creature(
         CellId cell,
         LivingMaterialPlaneKey planeKey)

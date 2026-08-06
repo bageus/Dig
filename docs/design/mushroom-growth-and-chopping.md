@@ -46,7 +46,7 @@ Automatic job generation и самостоятельный выбор грибо
 2. Pointer на доступном видимом грибе показывает слегка анимированный топор, а сам гриб получает заметную hover-подсветку.
 3. Hover, cursor и LMB используют одно и то же resolved mushroom target. Если показан топор, тот же LMB обязан создать один direct chopping command и не может вместо этого выбрать перекрывающее гриб строение или выдать другое действие.
 4. LMB создаёт один direct chopping command и один ordinary chopping job, сразу предназначенный выбранному resident.
-5. Resident освобождается от несовместимого небоевого direct action, получает route к допустимой work position и идёт к грибу. Work position обязана находиться на той же высоте `Y`, быть соседней по `X` или depth `Z` и иметь полную ровную actor support surface. Вертикальные `Y±1`, shaft-gap и partial-support клетки запрещены. Если боковые `X±1` клетки являются пропастью, resolver обязан рассмотреть поддерживаемые `Z±1` позиции за/перед грибом до blocked result. Требование полной опоры относится к конечной stationary work position и повторно проверяется перед swing; transit route использует обычную Navigation policy и может включать разрешённые vertical climb, shaft и depth transitions.
+5. Resident освобождается от несовместимого небоевого direct action, получает route к допустимой work position и идёт к грибу. Work position выбирается из всех восьми соседних клеток на той же высоте `Y`: четырёх прямых `(X±1, Z)` / `(X, Z±1)` и четырёх диагональных `(X±1, Z±1)`. Она обязана иметь полную ровную actor support surface, быть walkable и достижимой через обычную Navigation policy. Вертикальные `Y±1`, target cell, shaft-gap и partial-support клетки запрещены. Кандидат, занятый или заблокированный другим грибом, бочкой, строением, resident/reservation либо иным authoritative navigation blocker, исключается; resolver детерминированно выбирает свободную достижимую позицию среди оставшихся. Если прямые позиции недоступны, но существует допустимая диагональная позиция, resident обязан использовать диагональ до blocked result. Требование полной опоры и доступности повторно проверяется перед swing; transit route может включать разрешённые vertical climb, shaft и depth transitions.
 6. На work position resident выполняет authoritative swings.
 7. После требуемого числа swings одна atomic completion transaction:
    - переводит mushroom site в `AbsentRegrowing`;
@@ -71,7 +71,8 @@ Automatic job generation и самостоятельный выбор грибо
 
 - `AbsentRegrowing` не имеет target/collider и не принимает direct chop command;
 - unreachable или unsupported work position возвращает typed reason и не создаёт успешную axe feedback;
-- потеря полной опоры после создания job отменяет текущую chop attempt до следующего swing; retry заново разрешает same-height `X/Z` work position;
+- если часть из восьми same-height work positions занята грибами, бочками, строениями или иными blockers, resolver исключает их и выбирает свободную достижимую позицию; если заблокированы все восемь, job остаётся в существующем blocked/pending retry workflow;
+- потеря полной опоры или доступности после создания job отменяет текущую chop attempt до следующего swing; retry заново разрешает все восемь same-height `X/Z` work positions;
 - смерть, удаление или недоступность worker освобождает claim без удаления site;
 - failure одного mushroom job не останавливает simulation loop и другие mushroom sites;
 - retry не reroll-ит уже сохранённые deterministic inputs и не создаёт повторные drops/skill grant;
@@ -237,6 +238,7 @@ SourceId = mushroom chop completion generation
 - Mushroom site cell входит в building blocked-cell query на всех стадиях, включая absent/regrowth.
 - World items не входят в этот blocked set: caps, legs и другие items могут лежать в mushroom cell и не мешают regrowth.
 - Mushroom visual/collider не становится Navigation occupancy; work position выбирается рядом с site.
+- Mushroom work-position resolver использует authoritative Navigation snapshot и общий movement planner: грибы, бочки, строения, reservations и другие navigation blockers не дублируются отдельным локальным списком.
 - На всём протяжении active chopping job, включая travel, stage deadline заморожен. При cancel/interruption оставшееся stage time сохраняется сдвигом deadline на длительность паузы. Successful chop заменяет старый deadline новым `AbsentRegrowing` deadline.
 
 ## 10. Инварианты
@@ -256,6 +258,7 @@ SourceId = mushroom chop completion generation
 - два demo sites имеют независимые timers, jobs и drops;
 - Presentation не хранит authoritative growth/chop progress.
 - resident никогда не выполняет mushroom swing в воздухе, на вертикальной соседней клетке или над частично выкопанной опорой.
+- mushroom work position всегда является одной из восьми соседних same-height клеток; занятые или заблокированные кандидаты не выбираются.
 - visual/collider каждого гриба остаётся внутри depth slab его logical `Z=0..3`; presentation offset не меняет слой и не выводит geometry за заднюю плоскость мира.
 
 ## 11. Save/Load и migration
@@ -313,6 +316,9 @@ Domain unit:
 Application/integration:
 
 - direct command route -> swings -> completion;
+- resolver enumerates all eight same-height neighboring work positions, including four diagonals;
+- when cardinal cells are occupied by another mushroom, barrel or building, a free reachable diagonal cell is selected;
+- when all eight candidates are unsupported, occupied or unreachable, the job remains blocked/pending and can retry;
 - unreachable, stale target, worker removal, retry;
 - two sites and two residents concurrently;
 - pickup drops while site regrows;
@@ -334,6 +340,7 @@ Unity Play Mode:
 - selected resident hover -> highlighted mushroom + animated axe cursor;
 - overlapping building/mushroom hit stack keeps hover/cursor/LMB parity and starts chopping;
 - LMB -> status «Добывает гриб» -> travel -> repeated chop animation -> disappearance;
+- work-position candidates contain all eight same-height neighbours and diagonal fallback is used when other positions are blocked;
 - mushroom base remains on walk surface, supported shader is not magenta, Large is only slightly taller than resident;
 - для fixture-sites на `Z=0`, `Z=1`, `Z=2` и `Z=3` visual/collider центр совпадает с projection этой клетки и не пересекает соседний depth slab;
 - exact physical drops visible/raycastable/pickable;
@@ -353,6 +360,9 @@ Unity Play Mode:
 - active resident status отображается как «Добывает гриб», а `PerformWork` показывает повторяющуюся рубящую pose;
 - hit bands use current Woodworking and deterministic required swings;
 - one site cannot be chopped concurrently by two residents;
+- для рубки рассматриваются все восемь соседних same-height work cells, включая диагональные;
+- клетки, заблокированные грибом, бочкой, строением, resident/reservation или другим authoritative navigation blocker, исключаются, после чего выбирается детерминированная свободная достижимая позиция;
+- если свободна только диагональная позиция, resident идёт на неё; если заблокированы все восемь, job остаётся blocked/pending для retry;
 - successful chop atomically removes visible mushroom, creates stage drops и gives `0.8` Woodworking;
 - caps/leg are ordinary pickable unit items, have no mushroom target/collider identity and cannot be chopped;
 - when a drop is in front of a regrown mushroom, pointer hover/cursor/LMB resolve the drop first; ordinary `LMB` starts the shared item-profile pickup instead of another chop;
@@ -376,9 +386,11 @@ Unity Play Mode:
 | 2026-07-27 | По runtime screenshot подтверждены обязательные исправления presentation/input: вертикальная установка на walk surface, URP-compatible material, Large около 110% resident height, hover highlight, единый hover/cursor/LMB target без перехвата overlapping building, статус «Добывает гриб» и chopping pose. | Пользователь | Workflow, Input/UI/Presentation, Play Mode acceptance, #423 |
 | 2026-07-28 | По повторному runtime screenshot уточнено: side-view bootstrap rotation не должна передаваться mushroom root; growing mushroom обязан оставаться world-upright. После рубки cap/leg — только foreground pickable materials без mushroom identity; они блокируют axe target для regrown site за ними. | Пользователь | Workflow, Input/UI/Presentation, invariants, Play Mode acceptance, #423 |
 | 2026-07-28 | По screenshot подтверждено depth-правило: visual/collider гриба обязан оставаться в slab своей authoritative клетки `Z=0..3`; дополнительный offset не может переносить гриб за `Z=3` или в соседний слой. | Пользователь | Input/UI/Presentation, invariants, Play Mode acceptance, #423 |
+| 2026-08-06 | Mushroom work position выбирается из всех восьми соседних same-height клеток, включая диагонали. Клетки с другим грибом, бочкой, строением или иным authoritative blocker исключаются; при единственной свободной диагонали resident использует её. | Пользователь | Workflow, blocked/retry, tests, acceptance, #423 |
 
 ## 13. Decision log
 
 | Date | Decision | Source |
 |---|---|---|
 | 2026-07-30 | Любая mushroom work position находится на той же высоте, имеет полную опору и выбирается по X/Z; supported depth position используется, когда боковые клетки являются пропастью. | user, #423 |
+| 2026-08-06 | Mushroom work-position resolver enumerates all eight same-height neighbours, including diagonals, and excludes occupied or otherwise blocked candidates through authoritative Navigation before deterministic selection. | user, #423 |

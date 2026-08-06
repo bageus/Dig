@@ -73,6 +73,8 @@ namespace Dig.Unity
                     JobSnapshot job = assigned[jobIndex];
                     Result released = job.Definition switch
                     {
+                        TunnelManualWorkJobDefinition =>
+                            CancelTunnelManualForDirectCommand(job, tick),
                         WorldItemPickupJobDefinition =>
                             CancelPickupForDirectCommand(jobs, job, tick),
                         MushroomChopJobDefinition =>

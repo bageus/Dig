@@ -21,9 +21,11 @@ public static class SaveGameCompositionRoot
         typeof(Dig.Domain.Jobs.ProductionPackageUseJobDefinition),
         typeof(Dig.Domain.Jobs.ProductionWorkJobDefinition),
         typeof(Dig.Domain.Jobs.ResidentInventoryPlacementJobDefinition),
+        typeof(Dig.Domain.Jobs.RoomUpgradeWorkJobDefinition),
         typeof(Dig.Domain.Jobs.SpatialDigJobDefinition),
         typeof(Dig.Domain.Jobs.StrategicExecutionJobDefinition),
         typeof(Dig.Domain.Jobs.TunnelAutomaticWorkJobDefinition),
+        typeof(Dig.Domain.Jobs.TunnelManualWorkJobDefinition),
         typeof(Dig.Domain.Jobs.WorldItemPickupJobDefinition),
     };
 
@@ -69,12 +71,16 @@ public static class SaveGameCompositionRoot
                     new ProductionWorkJobSaveCodec()),
                 Registration<Dig.Domain.Jobs.ResidentInventoryPlacementJobDefinition>(
                     new ResidentInventoryPlacementJobSaveCodec()),
+                Registration<Dig.Domain.Jobs.RoomUpgradeWorkJobDefinition>(
+                    new RoomUpgradeWorkJobSaveCodec()),
                 Registration<Dig.Domain.Jobs.SpatialDigJobDefinition>(
                     new SpatialDigJobSaveCodec()),
                 Registration<Dig.Domain.Jobs.StrategicExecutionJobDefinition>(
                     new StrategicExecutionJobSaveCodec()),
                 Registration<Dig.Domain.Jobs.TunnelAutomaticWorkJobDefinition>(
                     new TunnelAutomaticWorkJobSaveCodec()),
+                Registration<Dig.Domain.Jobs.TunnelManualWorkJobDefinition>(
+                    new TunnelManualWorkJobSaveCodec()),
                 Registration<Dig.Domain.Jobs.WorldItemPickupJobDefinition>(
                     new WorldItemPickupJobSaveCodec()),
             });
@@ -100,6 +106,9 @@ public static class SaveGameCompositionRoot
             new SaveVersionElevenLivingMaterialsMigration(),
             new SaveVersionTwelveTerrainOutputContractMigration(),
             new SaveVersionThirteenVukerEcologyMigration(),
+            new SaveVersionFourteenTunnelInfrastructureMigration(),
+            new SaveVersionFifteenRoomInfrastructureMigration(),
+            new SaveVersionSixteenTunnelManualInfrastructureMigration(),
         });
     }
 
