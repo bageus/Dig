@@ -35,6 +35,7 @@ public enum ReproductionBlockReason
     HealthTooLow = 8,
     Infertile = 9,
     NoBirthPlace = 10,
+    PostpartumCooldown = 11,
 }
 
 public readonly struct ResidentDeathCauseId : IEquatable<ResidentDeathCauseId>, IComparable<ResidentDeathCauseId>
@@ -100,7 +101,8 @@ public sealed class SocietyPolicy
         int minimumPartnershipSympathy,
         int minimumPartnershipTrust,
         int minimumReproductionMood,
-        int minimumReproductionHealth)
+        int minimumReproductionHealth,
+        long postpartumCooldownTicks = 0)
     {
         if (adultAgeTicks <= 0)
         {
@@ -122,6 +124,11 @@ public sealed class SocietyPolicy
             throw new ArgumentOutOfRangeException(nameof(gestationTicks));
         }
 
+        if (postpartumCooldownTicks < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(postpartumCooldownTicks));
+        }
+
         if (closeKinshipDepth <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(closeKinshipDepth));
@@ -141,6 +148,7 @@ public sealed class SocietyPolicy
         MinimumPartnershipTrust = minimumPartnershipTrust;
         MinimumReproductionMood = minimumReproductionMood;
         MinimumReproductionHealth = minimumReproductionHealth;
+        PostpartumCooldownTicks = postpartumCooldownTicks;
     }
 
     public long AdultAgeTicks { get; }
@@ -152,6 +160,7 @@ public sealed class SocietyPolicy
     public int MinimumPartnershipTrust { get; }
     public int MinimumReproductionMood { get; }
     public int MinimumReproductionHealth { get; }
+    public long PostpartumCooldownTicks { get; }
 
     public ResidentLifeStage ResolveStage(long birthTick, long tick)
     {

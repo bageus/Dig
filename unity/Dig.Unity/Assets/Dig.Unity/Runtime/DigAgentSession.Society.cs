@@ -29,7 +29,8 @@ internal sealed partial class DigAgentSession
             minimumPartnershipSympathy: 6_000,
             minimumPartnershipTrust: 6_000,
             minimumReproductionMood: 7_600,
-            minimumReproductionHealth: 5_000));
+            minimumReproductionHealth: 5_000,
+            postpartumCooldownTicks: GameTimeCadence.TicksPerDay * 2L));
     }
 
     private static void RegisterDemoResident(

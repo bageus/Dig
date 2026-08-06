@@ -81,6 +81,7 @@ public sealed partial class SocietyState
             father.Id);
         _residents.Add(child.Id, child);
         mother.Pregnancy = null;
+        mother.PostpartumUntilTick = checked(tick + Policy.PostpartumCooldownTicks);
         Version = checked(Version + 1);
 
         Result graphValidation = ValidateFamilyGraph();
@@ -88,6 +89,7 @@ public sealed partial class SocietyState
         {
             _residents.Remove(child.Id);
             mother.Pregnancy = pregnancy;
+            mother.PostpartumUntilTick = -1;
             Version = checked(Version + 1);
             return graphValidation;
         }

@@ -15,6 +15,7 @@ using Dig.Domain.Jobs;
 using Dig.Domain.Production;
 using Dig.Domain.World;
 using Dig.Domain.WorldObjects;
+using Dig.Domain.Society;
 namespace Dig.Application.Saving
 {
 public sealed partial class SaveGameLoader
@@ -265,6 +266,11 @@ public sealed partial class SaveGameLoader
             {
                 return Result<LoadedGameState>.Failure(vukers.Error!);
             }
+            Result<SocietyState?> society = SocietySaveAdapter.Decode(document.Society);
+            if (society.IsFailure)
+            {
+                return Result<LoadedGameState>.Failure(society.Error!);
+            }
             Result<RestoredMiningOutputState> miningOutput = RestoreMiningOutput(
                 document,
                 inventory.Value,
@@ -299,7 +305,8 @@ public sealed partial class SaveGameLoader
                 vukers: vukers.Value,
                 agentSurfacePoses: agentSurfacePoses,
                 tunnelInfrastructure: infrastructure.Value.Tunnel,
-                roomInfrastructure: infrastructure.Value.Room));
+                roomInfrastructure: infrastructure.Value.Room,
+                society: society.Value));
         }
         catch (UnknownTerrainDepositDefinitionException)
         {

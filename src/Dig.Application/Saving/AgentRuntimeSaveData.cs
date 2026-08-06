@@ -23,6 +23,13 @@ public sealed class AgentRuntimeStateSaveData
     [DataMember(Order = 6)] public long LastNeedsTick { get; set; } = -1;
     [DataMember(Order = 7, EmitDefaultValue = false)]
     public ActiveFoodMealSaveData? ActiveMeal { get; set; }
+    [DataMember(Order = 8)] public List<string> LeisureHistory { get; set; } =
+        new List<string>();
+    [DataMember(Order = 9, EmitDefaultValue = false)] public string? ActiveLeisureId { get; set; }
+    [DataMember(Order = 10, EmitDefaultValue = false)] public string? LeisurePartnerId { get; set; }
+    [DataMember(Order = 11)] public long NextLeisureEffectTick { get; set; } = -1;
+    [DataMember(Order = 12)] public bool LeisureHistoryCommitted { get; set; }
+    [DataMember(Order = 13)] public int LeisureMoodGainPercent { get; set; } = 100;
 }
 
 [DataContract]
