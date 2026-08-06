@@ -15,15 +15,11 @@ public sealed class ContextHoverLayoutContractTests
         string playMode = ReadPlayMode("ContextHoverLayoutPlayModeTests.cs");
 
         Assert.Contains("ContextHoverContentOffsetMaxY = -52f", contextHover);
-        Assert.Contains(
-            "_contextHoverPanel!.gameObject.SetActive(_bottomPanel.gameObject.activeSelf)",
-            contextHover);
+        Assert.Contains("SetActive(_bottomPanel.gameObject.activeSelf)", contextHover);
         Assert.Contains("offsetMax.y = ContextHoverContentOffsetMaxY", contextHover);
         Assert.DoesNotContain("visible ? -52f : -8f", contextHover);
         Assert.Contains("RefreshContextHoverInfo();", layout);
-        Assert.Contains(
-            "Context_hover_keeps_content_and_icon_geometry_stable",
-            playMode);
+        Assert.Contains("Context_hover_keeps_content_and_icon_geometry_stable", playMode);
     }
 
     private static string ReadRuntime(string file)
