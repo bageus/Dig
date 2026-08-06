@@ -15,6 +15,7 @@ using Dig.Domain.Jobs;
 using Dig.Domain.Production;
 using Dig.Domain.World;
 using Dig.Domain.WorldObjects;
+using Dig.Domain.Society;
 
 namespace Dig.Application.Saving
 {
@@ -66,7 +67,8 @@ public sealed class SaveGameContext
         LivingMaterialEcologyState? livingMaterials = null,
         VukerEcologyState? vukers = null,
         TunnelInfrastructureRuntimeSnapshot? tunnelInfrastructure = null,
-        RoomInfrastructureRuntimeSnapshot? roomInfrastructure = null)
+        RoomInfrastructureRuntimeSnapshot? roomInfrastructure = null,
+        SocietyState? society = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -101,6 +103,7 @@ public sealed class SaveGameContext
             ?? TunnelInfrastructureRuntimeSnapshot.Empty();
         RoomInfrastructure = roomInfrastructure
             ?? RoomInfrastructureRuntimeSnapshot.Empty();
+        Society = society;
     }
 
     public SaveMetadataData Metadata { get; }
@@ -122,6 +125,7 @@ public sealed class SaveGameContext
     public VukerEcologyState Vukers { get; }
     public TunnelInfrastructureRuntimeSnapshot TunnelInfrastructure { get; }
     public RoomInfrastructureRuntimeSnapshot RoomInfrastructure { get; }
+    public SocietyState? Society { get; }
 }
 
 }
