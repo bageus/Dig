@@ -13,6 +13,44 @@ namespace Dig.Unity.Tests
 public sealed class MushroomWorkPositionPlayModeTests
 {
     [Test]
+    public void Work_position_candidates_include_all_eight_same_height_neighbours()
+    {
+        Assembly runtime = typeof(DigWorldInteraction).Assembly;
+        Type terrainType = RequireType(runtime, "Dig.Unity.DigTerrainWorkSession");
+        MethodInfo candidateResolver = RequireMethod(
+            terrainType,
+            BindingFlags.Static | BindingFlags.NonPublic,
+            "GetSameHeightActionCandidates",
+            1);
+        int depth = CellId.MinimumDepth + 1;
+        Assert.That(depth, Is.LessThan(CellId.MaximumDepth));
+        CellId target = new CellId(4, 2, depth);
+
+        CellId[] candidates = ((IEnumerable)candidateResolver.Invoke(
+                null,
+                new object[] { target })!)
+            .Cast<CellId>()
+            .ToArray();
+
+        CellId[] expected =
+        {
+            new CellId(3, 2, depth - 1),
+            new CellId(4, 2, depth - 1),
+            new CellId(5, 2, depth - 1),
+            new CellId(3, 2, depth),
+            new CellId(5, 2, depth),
+            new CellId(3, 2, depth + 1),
+            new CellId(4, 2, depth + 1),
+            new CellId(5, 2, depth + 1),
+        };
+
+        Assert.That(candidates, Is.EquivalentTo(expected));
+        Assert.That(candidates, Has.Length.EqualTo(8));
+        Assert.That(candidates.All(cell => cell.Y == target.Y), Is.True);
+        Assert.That(candidates, Does.Not.Contain(target));
+    }
+
+    [Test]
     public void Work_position_uses_supported_depth_cell_when_side_cells_are_void()
     {
         Assembly runtime = typeof(DigWorldInteraction).Assembly;
