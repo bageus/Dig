@@ -4,7 +4,7 @@ Status: `APPROVED`.
 
 Date: 2026-08-06.
 
-Tracking issue: pending creation in this branch.
+Tracking issue: [#660](https://github.com/bageus/Dig/issues/660).
 
 System index: [`../systems/README.md`](../systems/README.md).
 
