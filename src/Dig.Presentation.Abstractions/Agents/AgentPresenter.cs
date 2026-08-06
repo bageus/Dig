@@ -71,7 +71,10 @@ public sealed class AgentPresenter
             decision?.Explanation ?? "No utility decision has been recorded yet.",
             options,
             snapshot.PositionZ,
-            snapshot.AutomaticPlanningEnabled);
+            snapshot.AutomaticPlanningEnabled,
+            snapshot.SurfacePose.Face,
+            snapshot.SurfacePose.U,
+            snapshot.SurfacePose.V);
     }
 }
 

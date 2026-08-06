@@ -7,21 +7,25 @@ namespace Dig.Presentation.Navigation
 
 public readonly struct TunnelMovementTarget
 {
-    public TunnelMovementTarget(CellId cell, double offsetX)
+    public TunnelMovementTarget(CellId cell, double offsetX, double offsetZ = 0d)
     {
         if (offsetX < -TunnelMovementTargetResolver.MaximumOffsetX
-            || offsetX > TunnelMovementTargetResolver.MaximumOffsetX)
+            || offsetX > TunnelMovementTargetResolver.MaximumOffsetX
+            || offsetZ < -TunnelMovementTargetResolver.MaximumOffsetX
+            || offsetZ > TunnelMovementTargetResolver.MaximumOffsetX)
         {
             throw new ArgumentOutOfRangeException(nameof(offsetX));
         }
 
         Cell = cell;
         OffsetX = offsetX;
+        OffsetZ = offsetZ;
     }
 
     public CellId Cell { get; }
 
     public double OffsetX { get; }
+    public double OffsetZ { get; }
 }
 
 public sealed class TunnelMovementTargetResolver

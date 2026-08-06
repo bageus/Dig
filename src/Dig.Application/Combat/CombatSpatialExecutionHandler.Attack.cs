@@ -90,6 +90,24 @@ public sealed partial class CombatSpatialExecutionHandler
         }
 
         WeaponProfile weapon = combat.Weapons.Get(selection.Value.WeaponProfileId);
+        if (!execution.EngagementCell.HasValue
+            || !IsAtCombatSurfacePose(
+                actor, target, weapon, execution.EngagementCell.Value))
+        {
+            combat.AdvanceExecutionStage(
+                execution.ExecutionId,
+                CombatExecutionStage.SelectEngagementCell,
+                command.Tick,
+                command.Tick,
+                "combat_surface_pose_invalidated");
+            SaveCombat(combat);
+            return Report(
+                combat.GetActiveExecution(actor.Id)!,
+                false,
+                null,
+                "combat_surface_pose_invalidated");
+        }
+
         int distance = CombatSpatialMath.Distance3D(actor.Position, target.Position);
         bool spatiallyValid = distance >= weapon.MinimumRange
             && distance <= weapon.MaximumRange

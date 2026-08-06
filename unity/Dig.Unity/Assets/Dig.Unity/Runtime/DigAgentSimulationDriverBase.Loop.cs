@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Dig.Domain.Core;
+using Dig.Domain.Navigation;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Inventory;
@@ -99,8 +100,8 @@ namespace Dig.Unity
             {
                 IReadOnlyDictionary<string, CellId> movement =
                     TerrainSession.PlanMovement(before, nextTick);
-                IReadOnlyDictionary<string, CellId> spatialMovement =
-                    TerrainSession.PlanSpatialExcavationMovement(before);
+                IReadOnlyDictionary<string, SurfacePose> spatialMovement =
+                    TerrainSession.PlanPreciseWorkMovement(before);
                 AgentSession.SetSpatialWorkMovementTargets(spatialMovement);
                 result = AgentSession.Advance(movement);
             }
@@ -111,8 +112,8 @@ namespace Dig.Unity
                     AgentSession.LoadView();
                 IReadOnlyDictionary<string, CellId> movementSubstep =
                     TerrainSession.PlanMovement(afterFirstMovement, AgentSession.Tick);
-                IReadOnlyDictionary<string, CellId> spatialSubstep =
-                    TerrainSession.PlanSpatialExcavationMovement(afterFirstMovement);
+                IReadOnlyDictionary<string, SurfacePose> spatialSubstep =
+                    TerrainSession.PlanPreciseWorkMovement(afterFirstMovement);
                 AgentSession.SetSpatialWorkMovementTargets(spatialSubstep);
                 result = AgentSession.AdvanceMovementSubstep(movementSubstep);
             }

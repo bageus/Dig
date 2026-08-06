@@ -1,4 +1,5 @@
 using Dig.Domain.Core;
+using Dig.Domain.Navigation;
 using Dig.Domain.World;
 
 namespace Dig.Domain.Agents
@@ -26,6 +27,26 @@ public sealed class AgentMoved : IDomainEvent
 
     public CellId CurrentPosition { get; }
 
+}
+
+public sealed class AgentSurfaceMoved : IDomainEvent
+{
+    public AgentSurfaceMoved(
+        long tick,
+        EntityId agentId,
+        SurfacePose previousPose,
+        SurfacePose currentPose)
+    {
+        Tick = tick;
+        AgentId = agentId;
+        PreviousPose = previousPose;
+        CurrentPose = currentPose;
+    }
+
+    public long Tick { get; }
+    public EntityId AgentId { get; }
+    public SurfacePose PreviousPose { get; }
+    public SurfacePose CurrentPose { get; }
 }
 
 }

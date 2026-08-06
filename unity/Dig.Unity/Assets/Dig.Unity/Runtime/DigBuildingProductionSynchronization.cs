@@ -95,23 +95,7 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         EnsureBuildingProductionInitialized();
-        CellId target = supply.WorkPosition;
-        if (job.Stage == JobStageKind.AcquireItem)
-        {
-            ItemReservationAllocation? pending = FindPendingSupplyAllocation(
-                job.Id,
-                supply);
-            if (pending.HasValue)
-            {
-                ItemStackSnapshot? source = _buildingInventoryRepository!.Get()
-                    .GetStack(pending.Value.StackId);
-                if (source?.Location.Kind == ItemLocationKind.World
-                    && source.Location.HasCell)
-                {
-                    target = source.Location.CellId;
-                }
-            }
-        }
+        TryResolveBuildingSupplyWorkCell(job, supply, out CellId target);
 
         PlanBuildingProductionRoute(
             _buildingSupplyRoutes,

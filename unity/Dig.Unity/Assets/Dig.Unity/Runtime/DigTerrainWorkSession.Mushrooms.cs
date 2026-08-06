@@ -9,6 +9,7 @@ using Dig.Domain.Core;
 using Dig.Domain.Ecology;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
+using Dig.Domain.Navigation;
 using Dig.Domain.Runtime;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
@@ -180,9 +181,12 @@ internal sealed partial class DigTerrainWorkSession
                 continue;
             }
 
-            bool atWork = worker.CellX == definition.WorkPosition.X
-                && worker.CellY == definition.WorkPosition.Y
-                && worker.CellZ == definition.WorkPosition.Z;
+            SurfacePose required = WorkSurfacePositioning.Resolve(
+                definition.WorkPosition,
+                definition.TargetCell);
+            bool atWork = WorkSurfacePositioning.IsAt(
+                ToSurfacePose(worker),
+                required);
             if (!atWork)
             {
                 continue;

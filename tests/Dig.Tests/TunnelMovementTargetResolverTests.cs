@@ -21,6 +21,7 @@ public sealed class TunnelMovementTargetResolverTests
 
         Assert.Equal(new CellId(4, 3, 1), target.Cell);
         Assert.Equal(0.31d, target.OffsetX, precision: 6);
+        Assert.Equal(0d, target.OffsetZ);
     }
 
     [Fact]

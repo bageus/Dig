@@ -21,7 +21,8 @@ internal sealed partial class DigTerrainWorkSession
         current = job;
         if (job.Status == JobStatus.Claimed)
         {
-            if (!At(worker, supply.WorkPosition))
+            if (!At(worker, supply.WorkPosition)
+                || !IsAtPreciseWorkPose(job, worker))
             {
                 return Result.Success();
             }
@@ -39,7 +40,8 @@ internal sealed partial class DigTerrainWorkSession
         if (current.Status == JobStatus.InProgress
             && current.Stage == JobStageKind.TravelToTarget)
         {
-            if (!At(worker, supply.WorkPosition))
+            if (!At(worker, supply.WorkPosition)
+                || !IsAtPreciseWorkPose(current, worker))
             {
                 return Result.Success();
             }

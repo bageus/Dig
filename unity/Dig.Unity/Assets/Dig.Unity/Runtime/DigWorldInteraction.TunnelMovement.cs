@@ -88,11 +88,13 @@ namespace Dig.Unity
                     residentIds[0],
                     destination,
                     target.MovementOffsetX,
+                    target.MovementOffsetZ,
                     _tunnelRenderer)
                 : _simulation!.MoveResidentsThroughTunnel(
                     residentIds,
                     destination,
                     target.MovementOffsetX,
+                    target.MovementOffsetZ,
                     _tunnelRenderer);
             _hud!.SetCommandResult(result);
             if (result.IsSuccess)

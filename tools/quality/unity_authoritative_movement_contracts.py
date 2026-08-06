@@ -175,7 +175,7 @@ def check_authoritative_movement_contracts(
             "PlanAgentTunnelRouteCommandHandler",
             "TryAdvanceManualTunnelMovement(",
             "TunnelVolume.CanTraverseStep(",
-            "agent.MoveTo(next, _tick)",
+            "TryAdvanceManualSurfaceStep(",
             "ConsumeManualTunnelMovementWarning",
         ),
     ))
@@ -224,7 +224,7 @@ def check_authoritative_movement_contracts(
         spatial_agent_movement,
         texts.get(spatial_agent_movement, ""),
         "authoritative spatial work steps",
-        ("FindPath", "agent.Position", "agent.MoveTo(next, _tick)"),
+        ("FindPath", "agent.Position", "MoveThroughTunnelTraffic(agent, next)"),
     ))
 
     driver_text = texts.get(movement_driver, "")

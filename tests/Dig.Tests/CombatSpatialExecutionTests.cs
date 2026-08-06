@@ -46,6 +46,10 @@ public sealed class CombatSpatialExecutionTests
 
         Assert.NotNull(attack);
         Assert.Equal(new CellId(1, 0, 0), fixture.Agents.Get(Attacker)!.Position);
+        Assert.Equal(
+            WorkSurfacePositioning.Resolve(
+                new CellId(1, 0, 0), new CellId(2, 0, 0)),
+            fixture.Agents.Get(Attacker)!.SurfacePose);
         Assert.Equal(9_000, fixture.Agents.Get(Target)!
             .CreateSnapshot(20).Needs.Health.Points);
         Assert.NotNull(fixture.Combat.GetActiveIntent(Attacker));

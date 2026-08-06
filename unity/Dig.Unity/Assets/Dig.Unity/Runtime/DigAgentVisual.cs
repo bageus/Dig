@@ -35,8 +35,13 @@ public sealed partial class DigAgentVisual : MonoBehaviour
     private int _currentZ;
     private double _previousVisualX;
     private double _currentVisualX;
+    private double _previousVisualY;
+    private double _currentVisualY;
+    private double _previousVisualZ;
+    private double _currentVisualZ;
     private CellId? _freeformDestinationCell;
     private float _freeformDestinationOffsetX;
+    private float _freeformDestinationOffsetZ;
     private float _directionalLaneOffsetX;
     private ResidentDirectionalLane _directionalLane;
     private float _elapsed;
@@ -79,17 +84,24 @@ public sealed partial class DigAgentVisual : MonoBehaviour
         _currentX = model.CellX;
         _currentY = model.CellY;
         _currentZ = model.CellZ;
-        _previousVisualX = model.CellX;
-        _currentVisualX = model.CellX;
-        transform.SetPositionAndRotation(ToWorld(model.CellX, model.CellY, model.CellZ),
+        ResolveSurfaceCoordinates(
+            model, out _currentVisualX, out _currentVisualY, out _currentVisualZ);
+        _previousVisualX = _currentVisualX;
+        _previousVisualY = _currentVisualY;
+        _previousVisualZ = _currentVisualZ;
+        transform.SetPositionAndRotation(ToWorld(
+                _currentVisualX, _currentVisualY, _currentVisualZ),
             Quaternion.identity);
     }
 
     internal void SetModel(AgentViewModel model, float duration)
     {
-        Model = model;
         bool moving = _currentX != model.CellX || _currentY != model.CellY
-            || _currentZ != model.CellZ;
+            || _currentZ != model.CellZ
+            || Model.SurfaceFace != model.SurfaceFace
+            || Model.SurfaceU != model.SurfaceU
+            || Model.SurfaceV != model.SurfaceV;
+        Model = model;
         ApplyAction(moving);
         if (!moving)
         {
@@ -103,12 +115,15 @@ public sealed partial class DigAgentVisual : MonoBehaviour
         {
             _freeformDestinationCell = null;
             _freeformDestinationOffsetX = 0f;
+            _freeformDestinationOffsetZ = 0f;
         }
 
         _previousX = _currentX;
         _previousY = _currentY;
         _previousZ = _currentZ;
         _previousVisualX = _currentVisualX;
+        _previousVisualY = _currentVisualY;
+        _previousVisualZ = _currentVisualZ;
         _currentX = model.CellX;
         _currentY = model.CellY;
         _currentZ = model.CellZ;
@@ -121,25 +136,36 @@ public sealed partial class DigAgentVisual : MonoBehaviour
             _currentZ);
         _directionalLane = lane.Lane;
         _directionalLaneOffsetX = (float)lane.OffsetX;
-        _currentVisualX = ResolveVisualX(model.CellX, model.CellY, model.CellZ);
+        ResolveSurfaceCoordinates(
+            model, out _currentVisualX, out _currentVisualY, out _currentVisualZ);
         _elapsed = 0f;
         _duration = Mathf.Max(0.01f, duration);
         PrepareTraversalKind();
-        Face(ToWorld(_currentVisualX, _currentY, _currentZ) - transform.position);
+        Face(ToWorld(_currentVisualX, _currentVisualY, _currentVisualZ)
+            - transform.position);
     }
 
-    internal void SetFreeformDestination(CellId cell, float offsetX)
+    internal void SetFreeformDestination(
+        CellId cell,
+        float offsetX,
+        float offsetZ = 0f)
     {
         float limit = (float)TunnelMovementTargetResolver.MaximumOffsetX;
         _freeformDestinationCell = cell;
         _freeformDestinationOffsetX = Mathf.Clamp(offsetX, -limit, limit);
+        _freeformDestinationOffsetZ = Mathf.Clamp(offsetZ, -limit, limit);
         if (_currentX == cell.X && _currentY == cell.Y && _currentZ == cell.Z)
         {
             _currentVisualX = cell.X + _freeformDestinationOffsetX;
+            _currentVisualY = cell.Y;
+            _currentVisualZ = cell.Z + _freeformDestinationOffsetZ;
             if (_duration <= 0f)
             {
                 _previousVisualX = _currentVisualX;
-                transform.position = ToWorld(_currentVisualX, cell.Y, cell.Z);
+                _previousVisualY = _currentVisualY;
+                _previousVisualZ = _currentVisualZ;
+                transform.position = ToWorld(
+                    _currentVisualX, _currentVisualY, _currentVisualZ);
             }
         }
     }
@@ -157,9 +183,13 @@ public sealed partial class DigAgentVisual : MonoBehaviour
 
         _directionalLane = ResidentDirectionalLane.Center;
         _directionalLaneOffsetX = 0f;
-        _currentVisualX = ResolveVisualX(_currentX, _currentY, _currentZ);
+        ResolveSurfaceCoordinates(
+            Model, out _currentVisualX, out _currentVisualY, out _currentVisualZ);
         _previousVisualX = _currentVisualX;
-        transform.position = ToWorld(_currentVisualX, _currentY, _currentZ);
+        _previousVisualY = _currentVisualY;
+        _previousVisualZ = _currentVisualZ;
+        transform.position = ToWorld(
+            _currentVisualX, _currentVisualY, _currentVisualZ);
     }
 
     private double ResolveVisualX(int cellX, int cellY, int cellZ)

@@ -291,6 +291,9 @@ public sealed partial class SaveGameBuilder
                 X = agent.Position.X,
                 Y = agent.Position.Y,
                 Z = agent.Position.Z,
+                SurfaceFace = (int)agent.SurfacePose.Face,
+                SurfaceU = agent.SurfacePose.U,
+                SurfaceV = agent.SurfacePose.V,
             });
         }
 

@@ -31,7 +31,9 @@ internal sealed partial class DigTerrainWorkSession
         {
             Result<CellId> packageTarget = ResolveProductionPackagePlacementTarget(
                 production);
-            if (packageTarget.IsFailure || !At(worker, packageTarget.Value))
+            if (packageTarget.IsFailure
+                || !At(worker, packageTarget.Value)
+                || !IsAtPreciseWorkPose(job, worker))
             {
                 return Result.Success();
             }
@@ -60,7 +62,9 @@ internal sealed partial class DigTerrainWorkSession
         {
             Result<CellId> packageTarget = ResolveProductionPackagePlacementTarget(
                 production);
-            if (packageTarget.IsFailure || !At(worker, packageTarget.Value))
+            if (packageTarget.IsFailure
+                || !At(worker, packageTarget.Value)
+                || !IsAtPreciseWorkPose(job, worker))
             {
                 return Result.Success();
             }
@@ -104,7 +108,8 @@ internal sealed partial class DigTerrainWorkSession
             }
             else
             {
-                if (!At(worker, production.WorkPosition))
+                if (!At(worker, production.WorkPosition)
+                    || !IsAtPreciseWorkPose(current, worker))
                 {
                     return Result.Success();
                 }
@@ -127,7 +132,8 @@ internal sealed partial class DigTerrainWorkSession
 
         if (current?.Stage == JobStageKind.TravelToDestination)
         {
-            if (!At(worker, production.WorkPosition))
+            if (!At(worker, production.WorkPosition)
+                || !IsAtPreciseWorkPose(current, worker))
             {
                 return Result.Success();
             }
@@ -160,7 +166,9 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         Result<CellId> outputCell = ResolveProductionPackageCell(production.OrderId);
-        if (outputCell.IsFailure || !At(worker, outputCell.Value))
+        if (outputCell.IsFailure
+            || !At(worker, outputCell.Value)
+            || !IsAtPreciseWorkPose(current, worker))
         {
             return Result.Success();
         }

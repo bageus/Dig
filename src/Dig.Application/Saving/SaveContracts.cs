@@ -13,6 +13,7 @@ using Dig.Domain.Ecology;
 using Dig.Domain.Inventory;
 using Dig.Domain.Production;
 using Dig.Domain.World;
+using Dig.Domain.Navigation;
 using Dig.Domain.WorldObjects;
 
 namespace Dig.Application.Saving
@@ -124,7 +125,8 @@ public sealed class LoadedGameState
         CombatState? combat = null,
         int? terrainDepositGeneratorVersion = null,
         LivingMaterialEcologyState? livingMaterials = null,
-        VukerEcologyState? vukers = null)
+        VukerEcologyState? vukers = null,
+        IReadOnlyDictionary<EntityId, SurfacePose>? agentSurfacePoses = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -135,6 +137,7 @@ public sealed class LoadedGameState
         AgentSkills = Copy(agentSkills);
         AgentAutomaticPlanning = Copy(agentAutomaticPlanning);
         AgentPositions = Copy(agentPositions);
+        AgentSurfacePoses = Copy(agentSurfacePoses);
         AgentRuntime = Copy(agentRuntime);
         if (terrainDeposits != null)
         {
@@ -177,6 +180,7 @@ public sealed class LoadedGameState
     public IReadOnlyDictionary<EntityId, AgentSkillProgressionSnapshot> AgentSkills { get; }
     public IReadOnlyDictionary<EntityId, bool> AgentAutomaticPlanning { get; }
     public IReadOnlyDictionary<EntityId, CellId> AgentPositions { get; }
+    public IReadOnlyDictionary<EntityId, SurfacePose> AgentSurfacePoses { get; }
     public IReadOnlyDictionary<EntityId, AgentRuntimeSnapshot> AgentRuntime { get; }
     public IReadOnlyList<TerrainDepositInstance> TerrainDeposits { get; }
     public int TerrainDepositGeneratorVersion { get; }

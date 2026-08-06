@@ -6,6 +6,7 @@ using Dig.Application.World;
 using Dig.Domain.Agents;
 using Dig.Domain.Core;
 using Dig.Domain.Jobs;
+using Dig.Domain.Navigation;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
 
@@ -120,37 +121,6 @@ internal sealed partial class DigTerrainWorkSession
             out result);
     }
 
-    internal IReadOnlyDictionary<string, CellId> PlanSpatialExcavationMovement(
-        IReadOnlyList<AgentViewModel> agents)
-    {
-        Dictionary<string, AgentViewModel> byId = agents.ToDictionary(
-            value => value.Id,
-            StringComparer.Ordinal);
-        Dictionary<string, CellId> result =
-            new Dictionary<string, CellId>(StringComparer.Ordinal);
-        foreach (JobSnapshot job in LoadActiveSpatialJobs())
-        {
-            if (!job.AssignedAgentId.HasValue)
-            {
-                continue;
-            }
-
-            string residentId = job.AssignedAgentId.Value.ToString();
-            if (!byId.TryGetValue(residentId, out AgentViewModel? agent))
-            {
-                continue;
-            }
-
-            CellId work = ((SpatialDigJobDefinition)job.Definition).Target.WorkCell;
-            if (agent.CellX != work.X || agent.CellY != work.Y || agent.CellZ != work.Z)
-            {
-                result[residentId] = work;
-            }
-        }
-
-        return result;
-    }
-
     internal Result AdvanceSpatialExcavationWork(
         long tick,
         IReadOnlyList<AgentViewModel> agents)
@@ -170,9 +140,9 @@ internal sealed partial class DigTerrainWorkSession
                 continue;
             }
 
-            CellId work = ((SpatialDigJobDefinition)snapshot.Definition)
-                .Target.WorkCell;
-            if (agent.CellX != work.X || agent.CellY != work.Y || agent.CellZ != work.Z)
+            SpatialDigJobTarget target =
+                ((SpatialDigJobDefinition)snapshot.Definition).Target;
+            if (!IsAtPreciseWorkPose(snapshot, agent))
             {
                 continue;
             }

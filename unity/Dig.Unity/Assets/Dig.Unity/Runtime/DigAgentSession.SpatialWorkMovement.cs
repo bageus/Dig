@@ -10,13 +10,13 @@ namespace Dig.Unity
 
 internal sealed partial class DigAgentSession
 {
-    private static readonly IReadOnlyDictionary<string, CellId> NoSpatialWorkTargets =
-        new Dictionary<string, CellId>(StringComparer.Ordinal);
-    private IReadOnlyDictionary<string, CellId> _spatialWorkTargets =
+    private static readonly IReadOnlyDictionary<string, SurfacePose> NoSpatialWorkTargets =
+        new Dictionary<string, SurfacePose>(StringComparer.Ordinal);
+    private IReadOnlyDictionary<string, SurfacePose> _spatialWorkTargets =
         NoSpatialWorkTargets;
 
     internal void SetSpatialWorkMovementTargets(
-        IReadOnlyDictionary<string, CellId> targets)
+        IReadOnlyDictionary<string, SurfacePose> targets)
     {
         _spatialWorkTargets = targets
             ?? throw new ArgumentNullException(nameof(targets));
@@ -28,7 +28,7 @@ internal sealed partial class DigAgentSession
     {
         if (!_spatialWorkTargets.TryGetValue(
             agent.Id.ToString(),
-            out CellId destination))
+            out SurfacePose destination))
         {
             result = Result.Success();
             return false;
@@ -44,7 +44,7 @@ internal sealed partial class DigAgentSession
 
         TunnelPathResult path = _tunnelVolume.FindPath(
             agent.Position,
-            destination);
+            destination.Cell);
         if (!path.Succeeded || path.Path == null)
         {
             result = Result.Failure(new DomainError(
@@ -53,10 +53,9 @@ internal sealed partial class DigAgentSession
             return true;
         }
 
-        CellId current = agent.Position;
         CellId next = path.Path.Cells.Count > 1
             ? path.Path.Cells[1]
-            : destination;
+            : destination.Cell;
         if (!IsMovementStepDue(
             agent,
             next,
@@ -68,21 +67,50 @@ internal sealed partial class DigAgentSession
             return true;
         }
 
-        if (!_tunnelTraffic.CanMove(agent.Id, current, next, _tick))
+        if (agent.Position == destination.Cell)
         {
-            result = Result.Success();
+            if (destination.Face == SurfaceFace.Floor
+                && !_tunnelVolume.HasFullActorSupport(destination.Cell))
+            {
+                if (agent.SurfacePose.IsVertical)
+                {
+                    result = Result.Success();
+                    return true;
+                }
+
+                if (!VerticalSurfaceSteering.TryAttachToWall(
+                    agent.SurfacePose,
+                    face => IsExposedClimbFace(agent.Position, face),
+                    out SurfacePose climbingPose))
+                {
+                    result = Result.Failure(new DomainError(
+                        "agents.spatial_work.support_unavailable",
+                        "Unsupported spatial work requires an exposed climbing face."));
+                    return true;
+                }
+
+                result = MoveOnReservedSurface(agent, climbingPose);
+                if (result.IsSuccess)
+                {
+                    SaveAutomaticSurfaceProgress(agent);
+                }
+                return true;
+            }
+
+            if (!_surfaceTraffic.CanOccupy(agent.Id, destination, _tick))
+            {
+                result = Result.Success();
+                return true;
+            }
+            result = MoveOnReservedSurface(agent, destination);
+            if (result.IsSuccess)
+            {
+                SaveAutomaticSurfaceProgress(agent);
+            }
             return true;
         }
 
-        result = agent.MoveTo(next, _tick);
-        if (result.IsFailure)
-        {
-            return true;
-        }
-
-        _tunnelTraffic.RecordMove(agent.Id, current, next, _tick);
-        _repository.Save(agent);
-        _tunnelJournal.Append(agent.DequeueUncommittedEvents());
+        result = MoveThroughTunnelTraffic(agent, next);
         return true;
     }
 }

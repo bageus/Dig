@@ -48,8 +48,8 @@ public sealed partial class DigAgentVisual
         _elapsed = Mathf.Min(_duration, _elapsed + Time.deltaTime);
         double progress = _elapsed / _duration;
         AgentInterpolatedSpatialPosition position = AgentSpatialPositionInterpolator.Interpolate(
-            _previousVisualX, _previousY, _previousZ,
-            _currentVisualX, _currentY, _currentZ, progress);
+            _previousVisualX, _previousVisualY, _previousVisualZ,
+            _currentVisualX, _currentVisualY, _currentVisualZ, progress);
         Vector3 world = ToWorld((float)position.X, (float)position.Y, (float)position.Z);
         if (_isClimbing)
         {
@@ -65,7 +65,8 @@ public sealed partial class DigAgentVisual
             _duration = 0f;
             _isClimbing = false;
             _activeTraversalKind = TunnelTraversalKind.Invalid;
-            transform.position = ToWorld(_currentVisualX, _currentY, _currentZ);
+            transform.position = ToWorld(
+                _currentVisualX, _currentVisualY, _currentVisualZ);
             ApplyAction(isMoving: false);
             ApplyWorkFacingIfIdle();
         }

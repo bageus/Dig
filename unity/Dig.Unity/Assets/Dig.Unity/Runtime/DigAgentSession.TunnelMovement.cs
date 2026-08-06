@@ -23,29 +23,9 @@ namespace Dig.Unity
         private InMemoryExecutionJournal? _tunnelJournal;
         private DomainError? _manualTunnelMovementWarning;
 
-        private void BeginTunnelTrafficTick(long tick)
-        {
-            _tunnelTraffic.BeginTick(tick);
-        }
-
         private Result MoveThroughTunnelTraffic(AgentState agent, CellId destination)
         {
-            CellId current = agent.Position;
-            if (!_tunnelTraffic.CanMove(agent.Id, current, destination, _tick))
-            {
-                return Result.Success();
-            }
-
-            Result moved = _movementHandler.Handle(new MoveAgentCommand(
-                agent.Id,
-                destination,
-                _tick));
-            if (moved.IsSuccess)
-            {
-                _tunnelTraffic.RecordMove(agent.Id, current, destination, _tick);
-            }
-
-            return moved;
+            return MoveThroughAutomaticSurfaceCorridor(agent, destination);
         }
 
         internal TunnelNavigationVolume TunnelVolume => _tunnelVolume
@@ -61,6 +41,15 @@ namespace Dig.Unity
             string residentId,
             CellId destination)
         {
+            return MoveResidentThroughTunnel(
+                residentId,
+                SurfacePose.FloorCentre(destination));
+        }
+
+        internal PlanAgentTunnelRouteReport MoveResidentThroughTunnel(
+            string residentId,
+            SurfacePose destination)
+        {
             if (string.IsNullOrWhiteSpace(residentId))
             {
                 throw new ArgumentException("Resident id is required.", nameof(residentId));
@@ -73,10 +62,10 @@ namespace Dig.Unity
 
             EntityId id = EntityId.Parse(residentId);
             PlanAgentTunnelRouteReport report = _tunnelRoutePlanner.Handle(
-                new PlanAgentTunnelRouteCommand(id, destination));
+                new PlanAgentTunnelRouteCommand(id, destination.Cell));
             if (report.Result.IsSuccess && report.Path != null)
             {
-                RegisterManualMovement(id, report.Path);
+                RegisterManualMovement(id, report.Path, destination);
             }
 
             return report;
@@ -85,6 +74,15 @@ namespace Dig.Unity
         internal PlanAgentsTunnelRoutesReport MoveResidentsThroughTunnel(
             IReadOnlyCollection<string> residentIds,
             CellId destination)
+        {
+            return MoveResidentsThroughTunnel(
+                residentIds,
+                SurfacePose.FloorCentre(destination));
+        }
+
+        internal PlanAgentsTunnelRoutesReport MoveResidentsThroughTunnel(
+            IReadOnlyCollection<string> residentIds,
+            SurfacePose destination)
         {
             if (residentIds == null)
             {
@@ -110,13 +108,18 @@ namespace Dig.Unity
             }
 
             PlanAgentsTunnelRoutesReport report = _groupTunnelRoutePlanner.Handle(
-                new PlanAgentsTunnelRoutesCommand(ids, destination));
+                new PlanAgentsTunnelRoutesCommand(ids, destination.Cell));
             if (report.Result.IsSuccess)
             {
                 for (int index = 0; index < report.Entries.Count; index++)
                 {
                     PlannedAgentTunnelRoute entry = report.Entries[index];
-                    RegisterManualMovement(entry.AgentId, entry.Path);
+                    SurfacePose assignedPose = new SurfacePose(
+                        entry.Path.Cells[entry.Path.Cells.Count - 1],
+                        destination.Face,
+                        destination.U,
+                        destination.V);
+                    RegisterManualMovement(entry.AgentId, entry.Path, assignedPose);
                 }
             }
 
@@ -180,15 +183,7 @@ namespace Dig.Unity
 
             if (order.IsComplete)
             {
-                _manualTunnelMovements.Remove(agent.Id);
-                RecordMovementInterruption(
-                    agent.Id,
-                    ResidentMovementInterruptionReason.Completed,
-                    "Manual movement completed.");
-                result = RecordResidentTaskCompletion(
-                    agent,
-                    "manual_movement_completed",
-                    _tick);
+                result = CompleteManualMovement(agent, order);
                 return true;
             }
 
@@ -205,15 +200,7 @@ namespace Dig.Unity
 
                 if (order.IsComplete)
                 {
-                    _manualTunnelMovements.Remove(agent.Id);
-                    RecordMovementInterruption(
-                        agent.Id,
-                        ResidentMovementInterruptionReason.Completed,
-                        "Manual movement completed after replan.");
-                    result = RecordResidentTaskCompletion(
-                        agent,
-                        "manual_movement_completed",
-                        _tick);
+                    result = CompleteManualMovement(agent, order);
                     return true;
                 }
             }
@@ -231,7 +218,18 @@ namespace Dig.Unity
                 return true;
             }
 
+            if (TryAdvanceManualSurfaceStep(agent, order, next, out result))
+            {
+                return true;
+            }
+
             if (!_tunnelTraffic.CanMove(agent.Id, current, next, _tick))
+            {
+                result = Result.Success();
+                return true;
+            }
+            SurfacePose nextPose = SurfacePose.FloorCentre(next);
+            if (!_surfaceTraffic.CanOccupy(agent.Id, nextPose, _tick))
             {
                 result = Result.Success();
                 return true;
@@ -249,18 +247,11 @@ namespace Dig.Unity
             }
 
             _tunnelTraffic.RecordMove(agent.Id, current, next, _tick);
+            RecordCellTrafficPose(agent);
             order.ConfirmStep(next);
             if (order.IsComplete)
             {
-                _manualTunnelMovements.Remove(agent.Id);
-                RecordMovementInterruption(
-                    agent.Id,
-                    ResidentMovementInterruptionReason.Completed,
-                    "Manual movement completed.");
-                result = RecordResidentTaskCompletion(
-                    agent,
-                    "manual_movement_completed",
-                    _tick);
+                result = CompleteManualMovement(agent, order);
                 return true;
             }
 
@@ -295,9 +286,60 @@ namespace Dig.Unity
                 agent.Id,
                 out ManualTunnelMovementOrder? previous)
                 && previous.IsRepeatedCommand;
-            order = new ManualTunnelMovementOrder(path.Path, repeated);
+            order = new ManualTunnelMovementOrder(
+                path.Path,
+                previous?.TargetPose ?? SurfacePose.FloorCentre(destination),
+                repeated);
             _manualTunnelMovements[agent.Id] = order;
             return true;
+        }
+
+        private Result CompleteManualMovement(
+            AgentState agent,
+            ManualTunnelMovementOrder order)
+        {
+            if (agent.SurfacePose.IsVertical
+                && VerticalSurfaceSteering.TryDetachToFloor(
+                    agent.SurfacePose,
+                    out SurfacePose floorPose))
+            {
+                if (!_surfaceTraffic.CanOccupy(agent.Id, floorPose, _tick))
+                {
+                    return Result.Success();
+                }
+                Result detached = MoveOnReservedSurface(agent, floorPose);
+                if (detached.IsSuccess)
+                {
+                    SaveManualMovementProgress(agent);
+                }
+                return detached;
+            }
+
+            if (!_surfaceTraffic.CanOccupy(agent.Id, order.TargetPose, _tick))
+            {
+                return Result.Success();
+            }
+            Result positioned = MoveOnReservedSurface(agent, order.TargetPose);
+            if (positioned.IsFailure)
+            {
+                CancelManualMovementWithWarning(
+                    agent.Id,
+                    positioned.Error!,
+                    ResidentMovementInterruptionReason.MovementRejected);
+                return Result.Success();
+            }
+
+            _manualTunnelMovements.Remove(agent.Id);
+            _repository.Save(agent);
+            _tunnelJournal!.Append(agent.DequeueUncommittedEvents());
+            RecordMovementInterruption(
+                agent.Id,
+                ResidentMovementInterruptionReason.Completed,
+                "Manual movement completed at the selected surface point.");
+            return RecordResidentTaskCompletion(
+                agent,
+                "manual_movement_completed",
+                _tick);
         }
 
     }

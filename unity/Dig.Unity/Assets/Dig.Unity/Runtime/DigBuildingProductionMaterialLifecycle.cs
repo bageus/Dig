@@ -45,7 +45,8 @@ internal sealed partial class DigTerrainWorkSession
                     }
 
                     CellId stockCell = ResolveBuildingInternalStockCell(building);
-                    if (!At(worker, stockCell))
+                    if (!At(worker, stockCell)
+                        || !IsAtPreciseWorkPose(job, worker))
                     {
                         return Result.Success();
                     }
@@ -61,7 +62,8 @@ internal sealed partial class DigTerrainWorkSession
                             tick));
                 }
 
-                if (!At(worker, production.WorkPosition))
+                if (!At(worker, production.WorkPosition)
+                    || !IsAtPreciseWorkPose(job, worker))
                 {
                     return Result.Success();
                 }
@@ -74,7 +76,8 @@ internal sealed partial class DigTerrainWorkSession
 
             case ProductionMaterialStepPhase.StagedOnWorkbench:
             case ProductionMaterialStepPhase.Processing:
-                if (!At(worker, production.WorkPosition))
+                if (!At(worker, production.WorkPosition)
+                    || !IsAtPreciseWorkPose(job, worker))
                 {
                     return Result.Success();
                 }
@@ -90,7 +93,9 @@ internal sealed partial class DigTerrainWorkSession
             case ProductionMaterialStepPhase.ProcessedAwaitingPackage:
                 Result<CellId> packageCell = ResolveProductionPackageCell(
                     production.OrderId);
-                if (packageCell.IsFailure || !At(worker, packageCell.Value))
+                if (packageCell.IsFailure
+                    || !At(worker, packageCell.Value)
+                    || !IsAtPreciseWorkPose(job, worker))
                 {
                     return Result.Success();
                 }
@@ -126,73 +131,9 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         EnsureBuildingProductionInitialized();
-        CellId target = production.WorkPosition;
-        if (job.Status == JobStatus.Claimed
-            || job.Stage == JobStageKind.TravelToTarget)
+        if (!TryResolveProductionWorkCell(job, production, out CellId target))
         {
-            Result<CellId> packageTarget = ResolveProductionPackagePlacementTarget(
-                production);
-            if (packageTarget.IsFailure)
-            {
-                return true;
-            }
-
-            target = packageTarget.Value;
-        }
-        else if (job.Stage == JobStageKind.PerformWork)
-        {
-            ProductionOrderSnapshot? order = _productionRepository!.Get().Get(
-                production.OrderId);
-            if (order != null
-                && order.Recipe.UsesMaterialSteps
-                && TryResolveCurrentProductionMaterialStep(
-                    order,
-                    out ProductionMaterialStepSnapshot step))
-            {
-                if (step.Phase == ProductionMaterialStepPhase.AwaitingMaterial
-                    && job.AssignedAgentId.HasValue
-                    && !HasCarriedProductionMaterial(
-                        production.OrderId,
-                        job.AssignedAgentId.Value,
-                        step.ItemId))
-                {
-                    BuildingSnapshot? building = _buildingsRepository!.Get().Get(
-                        production.BuildingId);
-                    if (building == null)
-                    {
-                        return true;
-                    }
-
-                    target = ResolveBuildingInternalStockCell(building);
-                }
-                else if (step.Phase
-                    == ProductionMaterialStepPhase.ProcessedAwaitingPackage)
-                {
-                    Result<CellId> packageCell = ResolveProductionPackageCell(
-                        production.OrderId);
-                    if (packageCell.IsFailure)
-                    {
-                        return true;
-                    }
-
-                    target = packageCell.Value;
-                }
-            }
-        }
-        else if (job.Stage == JobStageKind.Finalize)
-        {
-            Result<CellId> outputCell = ResolveProductionPackageCell(
-                production.OrderId);
-            if (outputCell.IsFailure)
-            {
-                return true;
-            }
-
-            target = outputCell.Value;
-        }
-        else if (job.Stage == JobStageKind.TravelToDestination)
-        {
-            target = production.WorkPosition;
+            return true;
         }
 
         return PlanBuildingProductionRoute(
