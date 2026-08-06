@@ -1,10 +1,11 @@
 # Central tooltip layout stability — 2026-08-06
 
-Status: `IMPLEMENTED IN BRANCH`.
+Status: `IMPLEMENTED`.
 
 Authoritative specification: [`../design/runtime-building-ui-health-unpack-pickup-correction-2026-08-04.md`](../design/runtime-building-ui-health-unpack-pickup-correction-2026-08-04.md).  
 Tracking issue: [#658](https://github.com/bageus/Dig/issues/658).  
-Implementation PR: [#659](https://github.com/bageus/Dig/pull/659).
+Implementation PR: [#659](https://github.com/bageus/Dig/pull/659).  
+Merged to `main`: `da6989d529cd19b360694746a233882abcdfab36`.
 
 ## Root cause
 
@@ -38,10 +39,10 @@ Code-and-test head `e3b37d1588d3db09ce296b9e6ae5e2862b9a37fa`:
 - Export Stage 2 v2 run `31059058885` — success;
 - Export Stage 2 v3 run `31059059136` — success.
 
-Unity workflow `31059058839` completed through the blocked-evidence path. Licensed activation was unavailable, so the actual EditMode/PlayMode Test Runner and executed runtime-evidence validation were skipped. The checked-in layout regression therefore has not executed in licensed Unity.
+Final PR head `b64fa63bf5cbb00447d81eb5c91d1e46338ba1c0` also passed Quality `31059249595`, Export Stage 2 v2 `31059249605` and v3 `31059249613`.
 
-Commits after the tested head only synchronize this evidence report; production code, regression tests, authoritative specification and system index are unchanged.
+Unity workflows `31059058839` and `31059249562` completed through the blocked-evidence path. Licensed activation was unavailable, so the actual EditMode/PlayMode Test Runner and executed runtime-evidence validation were skipped. The checked-in layout regression therefore has not executed in licensed Unity.
 
 ## Verification boundary
 
-The correction is `IMPLEMENTED IN BRANCH`, not `VERIFIED`. Licensed Unity Play Mode must still execute repeated hover enter/exit and confirm that the central panel, content rectangle and menu icons remain stationary.
+The correction is `IMPLEMENTED`, not `VERIFIED`. Licensed Unity Play Mode must still execute repeated hover enter/exit and confirm that the central panel, content rectangle and menu icons remain stationary.
