@@ -123,6 +123,7 @@ namespace Dig.Unity
             _buildingBoxAssemblyRoutes.Remove(jobId);
             _buildingProductionRoutes.Remove(jobId);
             _buildingSupplyRoutes.Remove(jobId);
+            _manualReinforcementRoutes.Remove(jobId);
         }
     }
 }

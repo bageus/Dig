@@ -128,6 +128,8 @@ public sealed partial class DigWorldInteraction
 
         if (decision.Effects.HasFlag(PresentationInputEffect.SelectResident))
         {
+            ClearRoomPurposeSelection();
+            CancelTunnelReinforcementPlacement();
             ClearBuildingBoxSelection();
             DisableExcavationDrawing();
             DisableCaveRoomPlanning();
@@ -155,6 +157,8 @@ public sealed partial class DigWorldInteraction
 
         if (decision.Effects.HasFlag(PresentationInputEffect.SelectBuilding))
         {
+            ClearRoomPurposeSelection();
+            CancelTunnelReinforcementPlacement();
             ClearBuildingBoxSelection();
             ClearSelectedInventoryStack();
             DigBuildingVisual? selected = building;

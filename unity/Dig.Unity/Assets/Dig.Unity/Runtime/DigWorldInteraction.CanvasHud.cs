@@ -148,6 +148,13 @@ public sealed partial class DigWorldInteraction
             return;
         }
 
+        if (!altPressed
+            && !dropPressed
+            && TryBeginTunnelReinforcementPlacement(slot))
+        {
+            return;
+        }
+
         EntityId residentId = EntityId.Parse(resident.Id);
         EntityId stackId = EntityId.Parse(slot.StackId!);
         ContextInputState state = new ContextInputState(

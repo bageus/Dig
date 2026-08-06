@@ -45,13 +45,15 @@ public static class TunnelInfrastructureErrors
         "Tunnel infrastructure snapshot does not match its derived anchor chain.");
 }
 
-public sealed class TunnelInfrastructureState : AggregateRoot
+public sealed partial class TunnelInfrastructureState : AggregateRoot
 {
     public const int AutomaticSupportInterval = 10;
 
     private readonly Dictionary<EntityId, HorizontalTunnelSegmentState> _segments =
         new Dictionary<EntityId, HorizontalTunnelSegmentState>();
     private readonly HashSet<CellId> _completedJunctionStoneTrimCells =
+        new HashSet<CellId>();
+    private readonly HashSet<CellId> _completedStoneFloorTrimCells =
         new HashSet<CellId>();
 
     public long Version { get; private set; }
@@ -124,6 +126,15 @@ public sealed class TunnelInfrastructureState : AggregateRoot
         Version = checked(Version + 1);
         Raise(new TunnelSegmentRemoved(tick, segmentId));
 
+        foreach (CellId trimCell in segment.CaptureSnapshot().OrderedHorizontalCells
+            .Where(cell => _completedStoneFloorTrimCells.Contains(cell))
+            .ToArray())
+        {
+            _completedStoneFloorTrimCells.Remove(trimCell);
+            Version = checked(Version + 1);
+            Raise(new TunnelStoneFloorTrimCompletionRemoved(tick, trimCell));
+        }
+
         if (originKind == TunnelSegmentOriginKind.VerticalJunction
             && !HasVerticalJunction(originCell)
             && _completedJunctionStoneTrimCells.Remove(originCell))
@@ -176,6 +187,33 @@ public sealed class TunnelInfrastructureState : AggregateRoot
         return Result.Success();
     }
 
+
+    public Result RegisterCompletedStoneFloorTrim(
+        EntityId segmentId,
+        CellId cell,
+        long tick)
+    {
+        ValidateTick(tick);
+        if (!_segments.TryGetValue(segmentId, out HorizontalTunnelSegmentState? segment))
+        {
+            return Result.Failure(TunnelInfrastructureErrors.SegmentNotFound);
+        }
+
+        HorizontalTunnelSegmentSnapshot snapshot = segment.CaptureSnapshot();
+        if (!snapshot.OrderedHorizontalCells.Contains(cell))
+        {
+            return Result.Failure(TunnelInfrastructureErrors.AnchorOutsideSegment);
+        }
+
+        if (_completedStoneFloorTrimCells.Add(cell))
+        {
+            Version = checked(Version + 1);
+            Raise(new TunnelStoneFloorTrimCompleted(tick, segmentId, cell));
+        }
+
+        return Result.Success();
+    }
+
     public HorizontalTunnelSegmentSnapshot? GetSegment(EntityId segmentId)
     {
         return _segments.TryGetValue(segmentId, out HorizontalTunnelSegmentState? segment)
@@ -190,56 +228,8 @@ public sealed class TunnelInfrastructureState : AggregateRoot
             _segments.Values
                 .OrderBy(value => value.SegmentId.ToString(), StringComparer.Ordinal)
                 .Select(value => value.CaptureSnapshot()),
-            _completedJunctionStoneTrimCells);
-    }
-
-    public static Result<TunnelInfrastructureState> Restore(
-        TunnelInfrastructureSnapshot snapshot)
-    {
-        if (snapshot is null)
-        {
-            throw new ArgumentNullException(nameof(snapshot));
-        }
-
-        TunnelInfrastructureState state = new TunnelInfrastructureState();
-        foreach (HorizontalTunnelSegmentSnapshot segmentSnapshot in snapshot.Segments)
-        {
-            if (state._segments.ContainsKey(segmentSnapshot.SegmentId))
-            {
-                return Result<TunnelInfrastructureState>.Failure(
-                    TunnelInfrastructureErrors.InvalidSnapshot);
-            }
-
-            Result<HorizontalTunnelSegmentState> restored =
-                HorizontalTunnelSegmentState.Restore(segmentSnapshot);
-            if (restored.IsFailure)
-            {
-                return Result<TunnelInfrastructureState>.Failure(restored.Error!);
-            }
-
-            state._segments.Add(segmentSnapshot.SegmentId, restored.Value);
-        }
-
-        foreach (CellId cell in snapshot.CompletedJunctionStoneTrimCells)
-        {
-            if (!state.HasVerticalJunction(cell)
-                || !state._completedJunctionStoneTrimCells.Add(cell))
-            {
-                return Result<TunnelInfrastructureState>.Failure(
-                    TunnelInfrastructureErrors.InvalidSnapshot);
-            }
-        }
-
-        TunnelInfrastructureSnapshot derived = state.CaptureSnapshot();
-        if (!derived.PendingJunctionStoneTrimTargets.SequenceEqual(
-                snapshot.PendingJunctionStoneTrimTargets))
-        {
-            return Result<TunnelInfrastructureState>.Failure(
-                TunnelInfrastructureErrors.InvalidSnapshot);
-        }
-
-        state.Version = snapshot.Version;
-        return Result<TunnelInfrastructureState>.Success(state);
+            _completedJunctionStoneTrimCells,
+            _completedStoneFloorTrimCells);
     }
 
     private Result RegisterAnchor(

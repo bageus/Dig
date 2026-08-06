@@ -140,3 +140,34 @@ internal static class TunnelJunctionStoneTrimProjection
     }
 }
 }
+
+namespace Dig.Domain.World
+{
+
+public sealed class TunnelStoneFloorTrimCompleted : IDomainEvent
+{
+    public TunnelStoneFloorTrimCompleted(long tick, EntityId segmentId, CellId cell)
+    {
+        Tick = tick;
+        SegmentId = segmentId;
+        Cell = cell;
+    }
+
+    public long Tick { get; }
+    public EntityId SegmentId { get; }
+    public CellId Cell { get; }
+}
+
+public sealed class TunnelStoneFloorTrimCompletionRemoved : IDomainEvent
+{
+    public TunnelStoneFloorTrimCompletionRemoved(long tick, CellId cell)
+    {
+        Tick = tick;
+        Cell = cell;
+    }
+
+    public long Tick { get; }
+    public CellId Cell { get; }
+}
+
+}

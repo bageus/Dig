@@ -172,8 +172,12 @@ public sealed class SynchronizeTunnelTopologyHandler
         long tick)
     {
         HashSet<CellId> retainedCells = desired.OrderedHorizontalCells.ToHashSet();
-        bool completedTrim = tunnels.CaptureSnapshot()
-            .CompletedJunctionStoneTrimCells.Contains(current.OriginCell);
+        TunnelInfrastructureSnapshot snapshot = tunnels.CaptureSnapshot();
+        bool completedTrim = snapshot.CompletedJunctionStoneTrimCells
+            .Contains(current.OriginCell);
+        CellId[] retainedFloorTrim = snapshot.CompletedStoneFloorTrimCells
+            .Where(retainedCells.Contains)
+            .ToArray();
         RequireSuccess(tunnels.RemoveSegment(current.SegmentId, tick));
         RequireSuccess(tunnels.RegisterSegment(
             current.SegmentId,
@@ -194,6 +198,14 @@ public sealed class SynchronizeTunnelTopologyHandler
             RequireSuccess(registered);
         }
 
+        foreach (CellId cell in retainedFloorTrim)
+        {
+            RequireSuccess(tunnels.RegisterCompletedStoneFloorTrim(
+                current.SegmentId,
+                cell,
+                tick));
+        }
+
         if (completedTrim
             && desired.OriginKind == TunnelSegmentOriginKind.VerticalJunction
             && !tunnels.CaptureSnapshot().CompletedJunctionStoneTrimCells
@@ -211,7 +223,14 @@ public sealed class SynchronizeTunnelTopologyHandler
         JobSystem jobs,
         long tick)
     {
-        JobSnapshot[] affected = ActiveSegmentJobs(jobs, segmentId).ToArray();
+        JobSnapshot[] affected = jobs.GetAll()
+            .Where(job => !job.IsTerminal
+                && ((job.Definition is TunnelAutomaticWorkJobDefinition automatic
+                        && automatic.SegmentId == segmentId)
+                    || (job.Definition is TunnelManualReinforcementJobDefinition manual
+                        && manual.SegmentId == segmentId)))
+            .OrderBy(job => job.Id.ToString(), StringComparer.Ordinal)
+            .ToArray();
         foreach (JobSnapshot job in affected)
         {
             Cancel(job, inventory, jobs, tick);

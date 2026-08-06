@@ -62,6 +62,7 @@ namespace Dig.Unity
 
         private void SelectCell(DigCellVisual cell)
         {
+            ClearRoomPurposeSelection();
             ClearBuildingBoxSelection();
             _selectedCell = cell;
             _agentRenderer!.Select(null);
@@ -74,6 +75,7 @@ namespace Dig.Unity
 
         private void SelectJob(DigJobVisual job)
         {
+            ClearRoomPurposeSelection();
             ClearBuildingBoxSelection();
             _selectedCell = null;
             _renderer!.Select(null);
@@ -92,6 +94,10 @@ namespace Dig.Unity
 
         private void ToggleResidentSelection(DigAgentVisual agent)
         {
+            ClearRoomPurposeSelection();
+            CancelTunnelReinforcementPlacement();
+            ClearRoomPurposeSelection();
+            CancelTunnelReinforcementPlacement();
             CancelInventoryItemPlacement();
             if (_buildingPlacementMode.HasValue)
             {

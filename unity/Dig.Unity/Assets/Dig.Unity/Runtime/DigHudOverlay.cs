@@ -96,6 +96,11 @@ namespace Dig.Unity
             _gameHudCanvas?.InvalidateAll();
         }
 
+        internal void InvalidateContext()
+        {
+            _gameHudCanvas?.InvalidateAll();
+        }
+
         public void SetCommandResult(Result result)
         {
             SetStatus(result.IsSuccess ? "Command accepted." : result.Error!.ToString());

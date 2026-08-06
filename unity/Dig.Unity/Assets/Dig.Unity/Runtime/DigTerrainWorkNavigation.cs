@@ -55,6 +55,7 @@ namespace Dig.Unity
             _buildingBoxPickupRoutes.Clear();
             _worldItemPickupRoutes.Clear();
             _residentInventoryPlacementRoutes.Clear();
+            _manualReinforcementRoutes.Clear();
             _buildingBoxAssemblyRoutes.Clear();
             _buildingProductionRoutes.Clear();
             _buildingSupplyRoutes.Clear();
@@ -78,6 +79,16 @@ namespace Dig.Unity
 
                 string agentId = job.AssignedAgentId.Value.ToString();
                 if (!agentsById.TryGetValue(agentId, out AgentViewModel? agent))
+                {
+                    continue;
+                }
+
+                if (TryPlanTunnelManualReinforcementMovement(
+                    job,
+                    agent,
+                    navigation,
+                    movement,
+                    tick))
                 {
                     continue;
                 }

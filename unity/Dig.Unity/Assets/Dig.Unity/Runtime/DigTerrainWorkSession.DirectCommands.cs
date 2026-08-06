@@ -81,6 +81,11 @@ namespace Dig.Unity
                             CancelBarrelForDirectCommand(job, tick),
                         ProductionPackageUseJobDefinition =>
                             CancelProductionPackageUseForDirectCommand(job, tick),
+                        TunnelManualReinforcementJobDefinition =>
+                            CancelTunnelManualReinforcement(
+                                job,
+                                "tunnel_manual_direct_command_replaced",
+                                tick),
                         ProductionWorkJobDefinition production =>
                             InterruptProductionForDirectCommand(
                                 job,

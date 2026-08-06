@@ -17,12 +17,12 @@ public sealed partial class DigGameHudCanvas
 
     private void RefreshContextPanel()
     {
-        if (_interaction!.HasActiveBuildingPlacement)
-        {
+        if (_interaction!.HasActiveBuildingPlacement) {
             ShowBuildingPlacement();
             return;
         }
 
+        if (TryShowSelectedRoomPurpose()) return;
         WorldItemViewModel? buildingBox = _interaction.SelectedBuildingBox;
         if (buildingBox != null)
         {

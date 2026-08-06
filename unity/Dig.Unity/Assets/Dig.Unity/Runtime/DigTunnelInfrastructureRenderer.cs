@@ -69,6 +69,9 @@ namespace Dig.Unity
                 case TunnelInfrastructureVisualKind.JunctionStoneTrim:
                     BuildJunctionStoneTrim(visual.transform);
                     break;
+                case TunnelInfrastructureVisualKind.StoneFloorTrim:
+                    BuildStoneFloorTrim(visual.transform);
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(instance));
             }
@@ -84,6 +87,16 @@ namespace Dig.Unity
                 new Vector3(0f, 0.46f, 0.15f),
                 new Vector3(0.16f, 0.92f, 0.12f),
                 _woodMaterial!);
+        }
+
+        private void BuildStoneFloorTrim(Transform parent)
+        {
+            CreatePart(
+                parent,
+                "Stone reinforced floor",
+                new Vector3(0f, 0.03f, 0f),
+                new Vector3(0.86f, 0.06f, 0.72f),
+                _stoneMaterial!);
         }
 
         private void BuildJunctionStoneTrim(Transform parent)

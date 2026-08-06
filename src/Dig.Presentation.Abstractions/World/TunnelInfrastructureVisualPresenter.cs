@@ -37,7 +37,8 @@ public sealed class TunnelInfrastructureVisualPresenter
         List<TunnelInfrastructureVisualViewModel> instances =
             new List<TunnelInfrastructureVisualViewModel>(
                 supportCells.Count
-                + snapshot.CompletedJunctionStoneTrimCells.Count);
+                + snapshot.CompletedJunctionStoneTrimCells.Count
+                + snapshot.CompletedStoneFloorTrimCells.Count);
         foreach (CellId cell in supportCells)
         {
             instances.Add(new TunnelInfrastructureVisualViewModel(
@@ -53,6 +54,14 @@ public sealed class TunnelInfrastructureVisualPresenter
             instances.Add(new TunnelInfrastructureVisualViewModel(
                 CreateInstanceId("junction-stone-trim", cell),
                 TunnelInfrastructureVisualKind.JunctionStoneTrim,
+                cell));
+        }
+
+        foreach (CellId cell in snapshot.CompletedStoneFloorTrimCells)
+        {
+            instances.Add(new TunnelInfrastructureVisualViewModel(
+                CreateInstanceId("stone-floor-trim", cell),
+                TunnelInfrastructureVisualKind.StoneFloorTrim,
                 cell));
         }
 

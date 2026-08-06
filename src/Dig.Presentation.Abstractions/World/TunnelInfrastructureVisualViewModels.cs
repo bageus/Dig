@@ -11,6 +11,7 @@ public enum TunnelInfrastructureVisualKind
 {
     WoodenSupport = 0,
     JunctionStoneTrim = 1,
+    StoneFloorTrim = 2,
 }
 
 public sealed class TunnelInfrastructureVisualViewModel

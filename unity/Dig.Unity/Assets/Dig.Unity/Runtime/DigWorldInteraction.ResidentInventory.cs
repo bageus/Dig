@@ -79,6 +79,14 @@ namespace Dig.Unity
                 return;
             }
 
+            if (button == PointerButtonKind.Left
+                && !altPressed
+                && !dropPressed
+                && TryBeginTunnelReinforcementPlacement(slot))
+            {
+                return;
+            }
+
             EntityId residentId = EntityId.Parse(residentIdValue ?? string.Empty);
             EntityId stackId = EntityId.Parse(stackIdValue ?? string.Empty);
             ContextInputState state = new ContextInputState(

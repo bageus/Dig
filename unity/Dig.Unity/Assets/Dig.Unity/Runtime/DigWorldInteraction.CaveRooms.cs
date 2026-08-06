@@ -27,8 +27,11 @@ namespace Dig.Unity
         {
             _caveRoomPreviewRenderer = previewRenderer;
             _caveRoomFloorRenderer = floorRenderer;
+            _roomPurposeMarkerRenderer = GetComponent<DigRoomPurposeMarkerRenderer>()
+                ?? gameObject.AddComponent<DigRoomPurposeMarkerRenderer>();
             _caveRoomFloorRenderer.SetDigInteractionActive(
                 UsesTunnelCellInteraction(_excavationMode));
+            RefreshCompletedCaveRooms(force: true);
         }
 
         internal void SetCaveRoomPlanningPreset(CaveRoomPresetKind kind)
@@ -225,9 +228,21 @@ namespace Dig.Unity
             }
 
             _lastCaveRoomRuntimeTick = tick;
+            IReadOnlyList<CaveRoomPlan> completedPlans =
+                _session.LoadCompletedCaveRoomPlans();
             _simulation.RefreshCaveRoomRuntime(
-                _session.LoadCompletedCaveRoomPlans(),
+                completedPlans,
                 _caveRoomFloorRenderer);
+            Result rooms = _terrainSession!.SynchronizeRoomPurposes(
+                completedPlans,
+                tick);
+            if (rooms.IsFailure)
+            {
+                _hud!.SetCommandResult(rooms);
+                return;
+            }
+
+            RefreshRoomPurposeMarkers();
         }
 
         private bool TryHandleCaveRoomPlacement()

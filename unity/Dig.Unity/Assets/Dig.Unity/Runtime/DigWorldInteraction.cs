@@ -97,14 +97,24 @@ namespace Dig.Unity
             }
 
             UpdateBuildingPlacementHover();
+            UpdateTunnelReinforcementPlacementHover();
             UpdateInventoryItemPlacementHover();
             if (TryHandleBuildingPlacementClick()
+                || TryHandleTunnelReinforcementPlacementClick()
                 || TryHandleInventoryItemPlacementClick())
             {
                 return;
             }
 
             if (TryHandlePriorityResidentPointerInput())
+            {
+                return;
+            }
+
+            if (!_hud!.ContainsScreenPoint(Input.mousePosition)
+                && TryHandleRoomPurposeMarker(
+                    GetPointerHits(),
+                    Input.GetMouseButtonDown(0)))
             {
                 return;
             }

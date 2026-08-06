@@ -130,7 +130,11 @@ internal sealed partial class DigTerrainWorkSession
             }
 
             Result result;
-            if (job.Definition is TunnelAutomaticWorkJobDefinition)
+            if (job.Definition is TunnelManualReinforcementJobDefinition)
+            {
+                result = AdvanceTunnelManualReinforcement(job, agent, tick);
+            }
+            else if (job.Definition is TunnelAutomaticWorkJobDefinition)
             {
                 result = AdvanceTunnelAutomaticWork(job, agent, tick);
             }
