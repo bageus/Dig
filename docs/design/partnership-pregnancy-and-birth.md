@@ -1,6 +1,8 @@
 # Партнёрство, беременность и рождение
 
-Связанные задачи: #11, #145 и #150.
+Статус: `IMPLEMENTED` (runtime Play Mode verification pending).
+
+Tracking issues: [#145](https://github.com/bageus/Dig/issues/145), #11 и #150.
 
 ## Active pair
 
