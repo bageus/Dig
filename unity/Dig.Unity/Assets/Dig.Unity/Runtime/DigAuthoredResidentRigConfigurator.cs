@@ -21,22 +21,30 @@ internal static class DigAuthoredResidentRigConfigurator
             return false;
         }
 
+        bool isDefaultAuthoredModel =
+            DigResidentAnimatedModel.IsDefaultAsset(stableId);
         DigResidentAnimationPlayer? animationPlayer = null;
-        if (DigResidentAnimatedModel.IsDefaultAsset(stableId))
+        if (isDefaultAuthoredModel)
         {
-            if (!DigResidentAnimationPlayer.TryConfigure(
+            if (DigResidentAnimationPlayer.TryConfigure(
                     modelRoot,
                     stableId,
                     out DigResidentAnimationPlayer configuredPlayer))
             {
-                rig = null!;
-                return false;
+                animationPlayer = configuredPlayer;
             }
-
-            animationPlayer = configuredPlayer;
+            else
+            {
+                Debug.LogWarning(
+                    $"Resident visual '{stableId}' loaded its authored Blackbeard "
+                    + "mesh, but animation clips could not be configured. The "
+                    + "authored model remains active without animation instead of "
+                    + "being replaced by the procedural fallback.",
+                    modelRoot);
+            }
         }
 
-        if (animationPlayer != null)
+        if (isDefaultAuthoredModel)
         {
             NormalizeModel(modelRoot.transform, renderers);
         }
@@ -83,7 +91,7 @@ internal static class DigAuthoredResidentRigConfigurator
             rightLeg,
             sockets,
             animationPlayer,
-            preserveAuthoredMaterials: animationPlayer != null);
+            preserveAuthoredMaterials: isDefaultAuthoredModel);
         return true;
     }
 
