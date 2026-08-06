@@ -25,6 +25,10 @@ public static class SocietyErrors
         "society.family.cycle",
         "The family graph contains a cycle.");
 
+    public static readonly DomainError InvalidFamilyGraph = new DomainError(
+        "society.family.invalid_snapshot",
+        "The saved society graph is inconsistent.");
+
     public static readonly DomainError CloseRelatives = new DomainError(
         "society.family.close_relatives",
         "Close relatives cannot form a partnership or reproduce.");
