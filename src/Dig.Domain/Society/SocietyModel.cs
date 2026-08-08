@@ -113,7 +113,8 @@ public sealed class ResidentSocietySnapshot
         CellId lastKnownPosition,
         ResidentDeathCauseId? deathCause,
         long? deathTick,
-        ResidentHeritage heritage)
+        ResidentHeritage heritage,
+        long postpartumUntilTick = -1)
     {
         Id = id;
         Name = name;
