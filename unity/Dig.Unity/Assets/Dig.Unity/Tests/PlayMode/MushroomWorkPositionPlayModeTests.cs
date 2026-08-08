@@ -47,7 +47,7 @@ public sealed class MushroomWorkPositionPlayModeTests
         Assert.That(candidates, Is.EquivalentTo(expected));
         Assert.That(candidates, Has.Length.EqualTo(8));
         Assert.That(candidates.All(cell => cell.Y == target.Y), Is.True);
-        Assert.That(candidates, Does.Not.Contain(target));
+        Assert.That(candidates.Contains(target), Is.False);
     }
 
     [Test]
