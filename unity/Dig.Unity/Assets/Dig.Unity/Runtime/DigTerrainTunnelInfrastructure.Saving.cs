@@ -46,7 +46,7 @@ internal sealed partial class DigTerrainWorkSession
             _inventoryRepository,
             _jobRepository,
             _journal);
-        _tunnelTrimSync = new SynchronizeTunnelAutomaticJunctionTrimHandler(
+        _tunnelTrimPlacementSync = new SynchronizeTunnelJunctionTrimPlacementHandler(
             _tunnelInfrastructure,
             _inventoryRepository,
             _jobRepository,

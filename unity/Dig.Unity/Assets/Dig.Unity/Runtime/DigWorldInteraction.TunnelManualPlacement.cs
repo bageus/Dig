@@ -1,4 +1,5 @@
 using System;
+using Dig.Application.Tunnels;
 using Dig.Domain.Core;
 using Dig.Domain.Jobs;
 using Dig.Domain.World;
