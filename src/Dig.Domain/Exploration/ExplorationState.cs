@@ -15,6 +15,8 @@ public sealed class ExplorationState
         (-1, 0, 0), (1, 0, 0), (0, -1, 0),
         (0, 1, 0), (0, 0, -1), (0, 0, 1),
     };
+    private static readonly (int X, int Y, int Z)[] BoundaryDirections =
+        CreateBoundaryDirections();
     private readonly HashSet<CellId> _explored = new HashSet<CellId>();
     private readonly HashSet<CellId> _visible = new HashSet<CellId>();
     private readonly Dictionary<EntityId, LastKnownWorldItemMarker> _markers =
@@ -120,7 +122,9 @@ public sealed class ExplorationState
         {
             (CellId cell, int distance) = queue.Dequeue();
             result.Add(cell);
-            if (distance == radius || IsBlocked(cell, origin, cells, doors, blockers)) continue;
+            bool blocked = IsBlocked(cell, origin, cells, doors, blockers);
+            if (!blocked) RevealBoundary(cell, size, cells, doors, blockers, result);
+            if (distance == radius || blocked) continue;
             foreach ((int x, int y, int z) in Directions)
             {
                 CellId next = new CellId(cell.X + x, cell.Y + y, cell.Z + z);
@@ -134,6 +138,29 @@ public sealed class ExplorationState
         ISet<CellId>? doors, ISet<CellId>? blockers) => cell != origin
         && (doors?.Contains(cell) == true || blockers?.Contains(cell) == true
             || !cells.TryGetValue(cell, out CellSnapshot value) || value.IsSolid);
+
+    private static void RevealBoundary(
+        CellId cell, WorldSize size, IReadOnlyDictionary<CellId, CellSnapshot> cells,
+        ISet<CellId>? doors, ISet<CellId>? blockers, HashSet<CellId> result)
+    {
+        foreach ((int x, int y, int z) in BoundaryDirections)
+        {
+            CellId boundary = new CellId(cell.X + x, cell.Y + y, cell.Z + z);
+            if (size.Contains(boundary)
+                && IsBlocked(boundary, cell, cells, doors, blockers))
+                result.Add(boundary);
+        }
+    }
+
+    private static (int X, int Y, int Z)[] CreateBoundaryDirections()
+    {
+        List<(int X, int Y, int Z)> directions = new List<(int, int, int)>();
+        for (int z = -1; z <= 1; z++)
+        for (int y = -1; y <= 1; y++)
+        for (int x = -1; x <= 1; x++)
+            if (x != 0 || y != 0 || z != 0) directions.Add((x, y, z));
+        return directions.ToArray();
+    }
 
     private static IReadOnlyCollection<CellId> ReadCells(IEnumerable<CellId> cells) =>
         new ReadOnlyCollection<CellId>(cells.OrderBy(value => value).ToArray());
