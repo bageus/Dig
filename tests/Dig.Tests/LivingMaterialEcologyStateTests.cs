@@ -43,7 +43,9 @@ public sealed class LivingMaterialEcologyStateTests
         Assert.Equal(0, snapshot.ActivityStepsRemaining);
         Assert.Equal(0, snapshot.MovementCredit);
         Assert.True(state.AdvanceOneEcologyStep(1).IsSuccess);
-        Assert.Equal(800, state.Get(id)!.MovementCredit);
+        Assert.Equal(
+            LivingMaterialEcologyProfiles.Hamster.MovementCreditPerEcologyStep,
+            state.Get(id)!.MovementCredit);
     }
 
     [Theory]
