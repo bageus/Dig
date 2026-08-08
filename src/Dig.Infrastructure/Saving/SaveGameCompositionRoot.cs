@@ -109,6 +109,7 @@ public static class SaveGameCompositionRoot
             new SaveVersionFourteenTunnelInfrastructureMigration(),
             new SaveVersionFifteenRoomInfrastructureMigration(),
             new SaveVersionSixteenTunnelManualInfrastructureMigration(),
+            new SaveVersionSeventeenExplorationMigration(),
         });
     }
 

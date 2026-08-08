@@ -5,6 +5,8 @@ using Dig.Application.World;
 using Dig.Domain.Core;
 using Dig.Domain.Navigation;
 using Dig.Domain.World;
+using Dig.Domain.Exploration;
+using Dig.Presentation.Agents;
 using Dig.Infrastructure.InMemory;
 using Dig.Presentation.World;
 
@@ -27,6 +29,8 @@ internal sealed partial class DigWorldSession
     private readonly ExcavationBoundaryPolicy _boundaryPolicy;
     private readonly TunnelDemoLayout _demoTunnelLayout;
     private long _tick;
+    private readonly ExplorationState _exploration;
+    private bool _explorationChanged;
 
     private DigWorldSession(
         DesignateDiggingCommandHandler designationHandler,
@@ -37,6 +41,7 @@ internal sealed partial class DigWorldSession
         int solidHardness,
         ExcavationBoundaryPolicy boundaryPolicy,
         TunnelDemoLayout demoTunnelLayout,
+        ExplorationState exploration,
         InMemoryExecutionJournal journal,
         long tick)
     {
@@ -49,6 +54,7 @@ internal sealed partial class DigWorldSession
         _boundaryPolicy = boundaryPolicy;
         _demoTunnelLayout = demoTunnelLayout
             ?? throw new ArgumentNullException(nameof(demoTunnelLayout));
+        _exploration = exploration ?? throw new ArgumentNullException(nameof(exploration));
         Journal = journal;
         _tick = tick;
     }
@@ -100,7 +106,7 @@ internal sealed partial class DigWorldSession
             chunkSize,
             materials,
             rock,
-            explored: true).Value;
+            explored: false).Value;
         TunnelNavigationVolume tunnel = TunnelNavigationVolume.CreateDemo(width, height);
         TunnelDemoLayout layout = tunnel.DemoLayout
             ?? throw new InvalidOperationException("The tunnel demo layout is required.");
@@ -115,15 +121,19 @@ internal sealed partial class DigWorldSession
         InMemoryExecutionJournal journal = new InMemoryExecutionJournal(
             maximumCommands: 100,
             maximumEvents: 500);
+        ExplorationState exploration = new ExplorationState();
         DigWorldSession session = new DigWorldSession(
             new DesignateDiggingCommandHandler(repository, journal),
-            new WorldPresenter(new GetWorldSnapshotQueryHandler(repository)),
+            new WorldPresenter(
+                new GetWorldSnapshotQueryHandler(repository),
+                exploration.GetVisibility),
             repository,
             air,
             rock,
             rockHardness,
             boundaryPolicy,
             layout,
+            exploration,
             journal,
             tick: 1);
         session.InitializeDemoTunnelPlan(layout);
@@ -266,7 +276,7 @@ internal sealed partial class DigWorldSession
         CellState empty = new CellState(
             air,
             CellDesignation.None,
-            isExplored: true,
+            isExplored: false,
             damage: 0,
             temperature: 20);
         HashSet<CellId> airCells = new HashSet<CellId>();

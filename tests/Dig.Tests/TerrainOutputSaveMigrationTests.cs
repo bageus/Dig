@@ -82,6 +82,7 @@ public sealed class TerrainOutputSaveMigrationTests
             new SaveVersionFourteenTunnelInfrastructureMigration(),
             new SaveVersionFifteenRoomInfrastructureMigration(),
             new SaveVersionSixteenTunnelManualInfrastructureMigration(),
+            new SaveVersionSeventeenExplorationMigration(),
         });
 
         var first = pipeline.Apply(document);
@@ -95,6 +96,7 @@ public sealed class TerrainOutputSaveMigrationTests
             "save.v14_to_v15.tunnel_infrastructure",
             "save.v15_to_v16.room_infrastructure",
             "save.v16_to_v17.tunnel_manual_infrastructure",
+            "save.v17_to_v18.exploration",
         }, first.Value.AppliedSteps);
         Assert.True(replay.IsSuccess);
         Assert.Empty(replay.Value.AppliedSteps);

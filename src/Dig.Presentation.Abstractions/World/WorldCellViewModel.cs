@@ -1,5 +1,6 @@
 using System;
 using Dig.Domain.World;
+using Dig.Domain.Exploration;
 
 namespace Dig.Presentation.World
 {
@@ -19,7 +20,8 @@ public readonly struct WorldCellViewModel
         short temperature,
         long worldVersion,
         ExcavationQuarter completedExcavationQuarters = ExcavationQuarter.None,
-        ExcavationCutPattern excavationCutPattern = ExcavationCutPattern.None)
+        ExcavationCutPattern excavationCutPattern = ExcavationCutPattern.None,
+        CellVisibility visibility = CellVisibility.Visible)
     {
         if (string.IsNullOrWhiteSpace(materialId))
         {
@@ -39,6 +41,7 @@ public readonly struct WorldCellViewModel
         WorldVersion = worldVersion;
         CompletedExcavationQuarters = completedExcavationQuarters;
         ExcavationCutPattern = excavationCutPattern;
+        Visibility = visibility;
     }
 
     public int X { get; }
@@ -54,6 +57,8 @@ public readonly struct WorldCellViewModel
     public long WorldVersion { get; }
     public ExcavationQuarter CompletedExcavationQuarters { get; }
     public ExcavationCutPattern ExcavationCutPattern { get; }
+    public CellVisibility Visibility { get; }
+    public bool IsCurrentlyVisible => Visibility == CellVisibility.Visible;
     public bool IsExcavationOpen =>
         CompletedExcavationQuarters == ExcavationQuarter.All;
     public bool HasFullActorSupport =>

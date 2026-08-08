@@ -1,4 +1,5 @@
 using Dig.Presentation.World;
+using Dig.Domain.Exploration;
 
 namespace Dig.Unity
 {
@@ -9,6 +10,7 @@ namespace Dig.Unity
             string materialId,
             bool isSolid,
             bool isExplored,
+            CellVisibility visibility,
             bool isDesignated,
             int hardness,
             ushort damage,
@@ -19,6 +21,7 @@ namespace Dig.Unity
             MaterialId = materialId;
             IsSolid = isSolid;
             IsExplored = isExplored;
+            Visibility = visibility;
             IsDesignated = isDesignated;
             Hardness = hardness;
             Damage = damage;
@@ -30,6 +33,8 @@ namespace Dig.Unity
         internal string MaterialId { get; }
         internal bool IsSolid { get; }
         internal bool IsExplored { get; }
+        internal CellVisibility Visibility { get; }
+        internal bool IsCurrentlyVisible => Visibility == CellVisibility.Visible;
         internal bool IsDesignated { get; }
         internal int Hardness { get; }
         internal ushort Damage { get; }
@@ -43,6 +48,7 @@ namespace Dig.Unity
                 cell.MaterialId,
                 cell.IsSolid,
                 cell.IsExplored,
+                cell.Visibility,
                 cell.IsDesignated,
                 cell.Hardness,
                 cell.Damage,
