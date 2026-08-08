@@ -97,6 +97,28 @@ public sealed class ResidentFreeTimeTests
     }
 
     [Fact]
+    public void Selector_keeps_active_social_choice_for_the_same_partner()
+    {
+        EntityId partner = EntityId.Parse("00000000-0000-0000-0000-000000000002");
+        LeisureActivityDefinition group = new LeisureActivityDefinition(
+            new LeisureVarietyId("group"), 50, 25, true);
+        LeisureActivityDefinition social = new LeisureActivityDefinition(
+            new LeisureVarietyId("social"), 60, 25, true);
+        AgentState resident = CreateResident(ScheduleActivity.Free);
+        Assert.True(resident.BeginLeisure(group, partner, 10).IsSuccess);
+
+        LeisureActivityDefinition selected = new LeisureActivitySelector().SelectOrContinue(
+            new[] { group, social },
+            resident.CreateLeisureRuntimeSnapshot(),
+            partner,
+            worldSeed: 42,
+            decisionId: 999);
+
+        Assert.Equal(group.Id, selected.Id);
+        Assert.Equal(35, resident.CreateLeisureRuntimeSnapshot().NextEffectTick);
+    }
+
+    [Fact]
     public void Social_reservation_claims_both_residents_and_meeting_cell_atomically()
     {
         EntityId first = EntityId.Parse("00000000-0000-0000-0000-000000000001");
