@@ -1,12 +1,31 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dig.Domain.Core;
 
 namespace Dig.Domain.Agents
 {
 
 public sealed class LeisureActivitySelector
 {
+    public LeisureActivityDefinition SelectOrContinue(
+        IReadOnlyList<LeisureActivityDefinition> candidates,
+        LeisureRuntimeSnapshot current,
+        EntityId? partnerId,
+        ulong worldSeed,
+        long decisionId)
+    {
+        if (current is null) throw new ArgumentNullException(nameof(current));
+        if (current.PartnerId == partnerId && current.ActiveVariety.HasValue)
+        {
+            LeisureActivityDefinition? active = candidates.FirstOrDefault(value =>
+                value.Id.Equals(current.ActiveVariety.Value));
+            if (active != null) return active;
+        }
+
+        return Select(candidates, current.History, worldSeed, decisionId);
+    }
+
     public LeisureActivityDefinition Select(
         IReadOnlyList<LeisureActivityDefinition> candidates,
         IReadOnlyList<LeisureVarietyId> history,
