@@ -140,8 +140,6 @@ internal sealed partial class DigTerrainWorkSession
                 continue;
             }
 
-            SpatialDigJobTarget target =
-                ((SpatialDigJobDefinition)snapshot.Definition).Target;
             if (!IsAtPreciseWorkPose(snapshot, agent))
             {
                 continue;
