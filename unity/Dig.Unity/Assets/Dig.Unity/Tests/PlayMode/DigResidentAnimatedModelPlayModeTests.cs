@@ -72,7 +72,7 @@ public sealed class DigResidentAnimatedModelPlayModeTests
                 0,
                 "Blackbeard was replaced by the procedural resident fallback.");
             Assert.IsNotNull(
-                rig.transform.Find(asset.Prefab.name),
+                rig.transform.Find(asset.Prefab!.name),
                 "The instantiated Blackbeard model root is missing.");
             Assert.AreEqual("LeftHandTool",
                 rig.ResolveSocket(DigResidentSocketKind.LeftHand).name);
