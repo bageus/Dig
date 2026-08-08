@@ -20,7 +20,8 @@ public sealed class TunnelInfrastructureUnityRuntimeContractTests
         string designations = Read(runtime, "DigTerrainWorkDesignations.cs");
         string navigation = Read(runtime, "DigTerrainWorkNavigation.cs");
         string session = Read(runtime, "DigTerrainWorkSession.cs");
-        string infrastructure = Read(runtime, "DigTerrainTunnelInfrastructure.cs");
+        string infrastructure = Read(runtime, "DigTerrainTunnelInfrastructure.cs")
+            + Read(runtime, "DigTerrainTunnelInfrastructure.Saving.cs");
         string terrainCommit = Read(
             runtime,
             "DigAgentSimulationDriverBase.TerrainCommitSync.cs");
@@ -36,10 +37,8 @@ public sealed class TunnelInfrastructureUnityRuntimeContractTests
         Assert.Contains("PlannedTunnelCells", infrastructure);
         Assert.Contains("PlannedVerticalTunnelCells", infrastructure);
         Assert.Contains("SynchronizeTunnelAutomaticSupportHandler", infrastructure);
-        Assert.Contains("SynchronizeTunnelAutomaticJunctionTrimHandler", infrastructure);
-        Assert.Contains("SynchronizeTunnelAutomaticJunctionTrimCommand(", infrastructure);
-        Assert.Contains("ResolveTrimJobId", infrastructure);
-        Assert.DoesNotContain("SynchronizeTunnelJunctionTrimPlacementHandler", infrastructure);
+        Assert.Contains("SynchronizeTunnelJunctionTrimPlacementHandler", infrastructure);
+        Assert.Contains("SynchronizeTunnelJunctionTrimPlacementCommand(", infrastructure);
         Assert.Contains("CompleteTunnelAutomaticWorkHandler", infrastructure);
         Assert.Contains("TryPlanTunnelAutomaticWorkMovement", navigation);
         Assert.Contains("AdvanceTunnelAutomaticWork", session);

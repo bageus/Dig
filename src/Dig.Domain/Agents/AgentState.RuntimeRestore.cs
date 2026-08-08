@@ -17,7 +17,8 @@ public sealed class AgentRuntimeSnapshot
         AgentNeedsSnapshot needs,
         long lastNeedsTick,
         FoodMealSnapshot? activeMeal,
-        long? mealStartedTick)
+        long? mealStartedTick,
+        LeisureRuntimeSnapshot? leisure = null)
     {
         if (lastNeedsTick < -1)
         {
@@ -42,12 +43,15 @@ public sealed class AgentRuntimeSnapshot
         LastNeedsTick = lastNeedsTick;
         ActiveMeal = activeMeal;
         MealStartedTick = mealStartedTick;
+        Leisure = leisure ?? new LeisureRuntimeSnapshot(
+            Array.Empty<LeisureVarietyId>(), null, null, -1, false, 100);
     }
 
     public AgentNeedsSnapshot Needs { get; }
     public long LastNeedsTick { get; }
     public FoodMealSnapshot? ActiveMeal { get; }
     public long? MealStartedTick { get; }
+    public LeisureRuntimeSnapshot Leisure { get; }
 }
 
 public sealed partial class AgentState
@@ -67,7 +71,8 @@ public sealed partial class AgentState
             _needs.CreateSnapshot(),
             _lastNeedsTick,
             meal,
-            mealStartedTick);
+            mealStartedTick,
+            CreateLeisureRuntimeSnapshot());
     }
 
     public Result RestoreRuntime(AgentRuntimeSnapshot snapshot)
@@ -88,6 +93,7 @@ public sealed partial class AgentState
         _activeAction = null;
         _activeFoodMeal = null;
         LastActionBlockReason = null;
+        RestoreLeisureRuntime(snapshot.Leisure);
 
         FoodMealSnapshot? meal = snapshot.ActiveMeal;
         if (meal != null)

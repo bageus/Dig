@@ -132,6 +132,12 @@ public sealed class CombatMovementCadenceTests
 
         Assert.Equal(cells[5], agents.Get(Actor)!.Position);
         Assert.Equal(
+            CombatExecutionStage.Approach,
+            combatRepository.Get().GetActiveExecution(Actor)!.Stage);
+        Result<CombatSpatialExecutionReport> positioned = handler.Handle(
+            new AdvanceCombatSpatialExecutionCommand(Actor, 1UL, tick: 5));
+        Assert.True(positioned.IsSuccess, positioned.Error?.ToString());
+        Assert.Equal(
             CombatExecutionStage.FaceTarget,
             combatRepository.Get().GetActiveExecution(Actor)!.Stage);
     }

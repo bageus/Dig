@@ -89,6 +89,16 @@ public sealed class LivingMaterialPlaneResolverTests
             new CellId(3, 2, 1),
             new CellId(4, 2, 1),
             new CellId(3, 3, 0));
+        CellState shaftState = new CellState(
+            NavigationTestFactory.Air,
+            CellDesignation.None,
+            isExplored: true,
+            damage: 0,
+            temperature: 20,
+            excavationCutPattern: ExcavationCutPattern.HorizontalRows);
+        Assert.True(world.ApplyTerrainChanges(
+            new[] { new TerrainChange(shaftGap, shaftState) },
+            tick: 2).IsSuccess);
         LivingMaterialPlaneResolver resolver = Resolver(world);
         Assert.True(resolver.TryResolve(from, out LivingMaterialPlane plane));
 

@@ -64,8 +64,7 @@ public sealed class CampfireSerializedProductionRuntimeContractTests
             "src/Dig.Domain/Jobs/ProductionWorkJobDefinition.cs");
         string completion = Read(
             "src/Dig.Application/Production/ProductionCompletionUseCase.cs");
-        string lifecycle = ReadRuntime(
-            "DigBuildingProductionMaterialLifecycle.cs");
+        string lifecycle = ReadRuntime("DigBuildingProductionRuntime.cs");
         string zones = ReadRuntime("DigBuildingProductionZones.cs");
 
         Assert.Contains("JobStageKind.TravelToDestination", definition);

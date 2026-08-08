@@ -60,8 +60,12 @@ public sealed class ExcavationContinuationRuntimeContractTests
             runtime, "DigAgentSession.cs")));
         string manual = Normalize(File.ReadAllText(Path.Combine(
             runtime, "DigAgentSession.TunnelMovement.cs")));
+        string traffic = Normalize(File.ReadAllText(Path.Combine(
+            runtime, "DigAgentSession.SurfaceTraffic.cs")));
         string spatial = Normalize(File.ReadAllText(Path.Combine(
             runtime, "DigAgentSession.SpatialWorkMovement.cs")));
+        string corridor = Normalize(File.ReadAllText(Path.Combine(
+            runtime, "DigAgentSession.SurfaceCorridor.cs")));
         string renderer = Normalize(File.ReadAllText(Path.Combine(
             runtime, "DigAgentRenderer.cs")));
         string residentRig = Normalize(File.ReadAllText(Path.Combine(
@@ -73,11 +77,12 @@ public sealed class ExcavationContinuationRuntimeContractTests
         Assert.Contains("TryAdvanceAutomaticMovement(agent,destination)", session);
         Assert.Contains("MoveThroughTunnelTraffic(agent,destination)", Normalize(File.ReadAllText(Path.Combine(
             runtime, "DigAgentSession.MovementModes.cs"))));
-        Assert.Contains("_tunnelTraffic.BeginTick(tick)", manual);
+        Assert.Contains("_tunnelTraffic.BeginTick(tick)", traffic);
         Assert.Contains("_tunnelTraffic.CanMove", manual);
         Assert.Contains("_tunnelTraffic.RecordMove", manual);
-        Assert.Contains("_tunnelTraffic.CanMove", spatial);
-        Assert.Contains("_tunnelTraffic.RecordMove", spatial);
+        Assert.Contains("MoveThroughTunnelTraffic(agent,next)", spatial);
+        Assert.Contains("_tunnelTraffic.CanMove", corridor);
+        Assert.Contains("_tunnelTraffic.RecordMove", corridor);
         Assert.DoesNotContain("ApplyCrowdingOffsets(agents)", renderer);
         Assert.DoesNotContain("SetCrowdingOffset", residentRig);
         Assert.Contains("ResidentDirectionalLaneResolver.Resolve", visual);

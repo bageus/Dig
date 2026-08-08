@@ -44,5 +44,9 @@ public static class AgentErrors
     public static readonly DomainError SkillBundleAgentMismatch = new DomainError(
         "agents.skills.agent_mismatch",
         "The skill grant bundle targets a different agent.");
+
+    public static readonly DomainError InvalidLeisureReservation = new DomainError(
+        "agents.leisure.invalid_reservation",
+        "The leisure activity and its participant reservation do not match.");
 }
 }

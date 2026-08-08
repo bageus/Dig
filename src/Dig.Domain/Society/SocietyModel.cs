@@ -16,7 +16,8 @@ public sealed class ResidentRegistration
         ResidentSex sex,
         long birthTick,
         CellId position,
-        ResidentHeritage heritage)
+        ResidentHeritage heritage,
+        long postpartumUntilTick = -1)
     {
         if (id.IsEmpty)
         {
@@ -112,7 +113,8 @@ public sealed class ResidentSocietySnapshot
         CellId lastKnownPosition,
         ResidentDeathCauseId? deathCause,
         long? deathTick,
-        ResidentHeritage heritage)
+        ResidentHeritage heritage,
+        long postpartumUntilTick = -1)
     {
         Id = id;
         Name = name;
@@ -128,6 +130,7 @@ public sealed class ResidentSocietySnapshot
         DeathCause = deathCause;
         DeathTick = deathTick;
         Heritage = heritage;
+        PostpartumUntilTick = postpartumUntilTick;
     }
 
     public EntityId Id { get; }
@@ -144,6 +147,7 @@ public sealed class ResidentSocietySnapshot
     public ResidentDeathCauseId? DeathCause { get; }
     public long? DeathTick { get; }
     public ResidentHeritage Heritage { get; }
+    public long PostpartumUntilTick { get; }
 }
 
 public sealed class SocialBondSnapshot
@@ -224,6 +228,7 @@ internal sealed class ResidentSocialState
     public ResidentDeathCauseId? DeathCause { get; set; }
     public long? DeathTick { get; set; }
     public ResidentHeritage Heritage { get; }
+    public long PostpartumUntilTick { get; set; } = -1;
 
     public ResidentSocietySnapshot CreateSnapshot()
     {
@@ -241,7 +246,8 @@ internal sealed class ResidentSocialState
             LastKnownPosition,
             DeathCause,
             DeathTick,
-            Heritage);
+            Heritage,
+            PostpartumUntilTick);
     }
 }
 

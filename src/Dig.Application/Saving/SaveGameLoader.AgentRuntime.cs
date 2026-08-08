@@ -46,16 +46,45 @@ public sealed partial class SaveGameLoader
                 new NeedValue(saved.Mood),
                 new NeedValue(saved.Health));
             FoodMealSnapshot? meal = DecodeMeal(saved.ActiveMeal, simulationTick);
+            LeisureRuntimeSnapshot leisure = DecodeLeisure(saved, simulationTick);
             AgentRuntimeSnapshot runtime = new AgentRuntimeSnapshot(
                 needs,
                 saved.LastNeedsTick,
                 meal,
-                meal == null ? null : saved.ActiveMeal!.StartedTick);
+                meal == null ? null : saved.ActiveMeal!.StartedTick,
+                leisure);
             ValidateRestoredMeal(runtime);
             values.Add(agentId, runtime);
         }
 
         return new ReadOnlyDictionary<EntityId, AgentRuntimeSnapshot>(values);
+    }
+
+    private static LeisureRuntimeSnapshot DecodeLeisure(
+        AgentRuntimeStateSaveData saved,
+        long simulationTick)
+    {
+        List<string> history = saved.LeisureHistory ?? new List<string>();
+        if (history.Count > 10
+            || saved.NextLeisureEffectTick > simulationTick + 100_000_000L
+            || saved.LeisureMoodGainPercent is not (50 or 100))
+        {
+            throw new InvalidOperationException("Saved leisure state is invalid.");
+        }
+
+        LeisureVarietyId? active = string.IsNullOrWhiteSpace(saved.ActiveLeisureId)
+            ? null
+            : new LeisureVarietyId(saved.ActiveLeisureId);
+        EntityId? partner = string.IsNullOrWhiteSpace(saved.LeisurePartnerId)
+            ? null
+            : EntityId.Parse(saved.LeisurePartnerId);
+        return new LeisureRuntimeSnapshot(
+            history.Select(value => new LeisureVarietyId(value)),
+            active,
+            partner,
+            active.HasValue ? saved.NextLeisureEffectTick : -1,
+            saved.LeisureHistoryCommitted,
+            saved.LeisureMoodGainPercent);
     }
 
     private static FoodMealSnapshot? DecodeMeal(

@@ -13,7 +13,8 @@ public sealed class CampfireProductionStallUnityContractTests
         string lifecycle = ReadRuntime(
             "DigBuildingProductionMaterialLifecycle.cs");
 
-        Assert.Contains("if (!At(worker, production.WorkPosition))", lifecycle);
+        Assert.Contains("if (!At(worker, production.WorkPosition)", lifecycle);
+        Assert.Contains("|| !IsAtPreciseWorkPose(job, worker)", lifecycle);
         Assert.DoesNotContain("tick % 2", lifecycle);
         Assert.Contains("ApplyProductionWorkCommand", lifecycle);
         Assert.Contains("ProductionMaterialStepPhase.Processing", lifecycle);

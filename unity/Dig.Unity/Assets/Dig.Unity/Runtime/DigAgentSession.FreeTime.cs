@@ -5,6 +5,7 @@ using Dig.Domain.Agents;
 using Dig.Domain.Core;
 using Dig.Domain.Society;
 using Dig.Domain.Runtime;
+using Dig.Application.Agents;
 
 namespace Dig.Unity
 {
@@ -13,13 +14,16 @@ internal sealed partial class DigAgentSession
 {
     private const int FreeTimeNeedFloor = 7_500;
     private const int FreeTimeMoodIntervalTicks = 25;
-    private const int SoloPlayMoodGain = 30;
-    private const int GroupPlayMoodGain = 50;
-    private const int SocialMoodGain = 60;
+    private static readonly LeisureActivityDefinition SoloPlay =
+        new LeisureActivityDefinition(new LeisureVarietyId("solo_play"), 30, 25, false);
+    private static readonly LeisureActivityDefinition GroupPlay =
+        new LeisureActivityDefinition(new LeisureVarietyId("group_play"), 50, 25, true);
+    private static readonly LeisureActivityDefinition Socializing =
+        new LeisureActivityDefinition(new LeisureVarietyId("social"), 60, 25, true);
     private readonly Dictionary<EntityId, EntityId> _freeTimeMeetingPartners =
         new Dictionary<EntityId, EntityId>();
-    private readonly Dictionary<EntityId, long> _postpartumUntilTick =
-        new Dictionary<EntityId, long>();
+    private readonly LeisureReservationLedger _freeTimeReservations =
+        new LeisureReservationLedger();
 
     internal bool TryGetFreeTimeMeetingPartner(
         EntityId residentId,
@@ -41,9 +45,15 @@ internal sealed partial class DigAgentSession
             RequireSociety(_society.UpdateLastKnownPosition(
                 resident.Id,
                 resident.Position));
+            if (!IsAvailableForFreeTime(resident))
+            {
+                resident.CancelLeisure();
+                _repository.Save(resident);
+            }
         }
 
         _freeTimeMeetingPartners.Clear();
+        _freeTimeReservations.Clear();
         List<AgentState> available = residents
             .Where(IsAvailableForFreeTime)
             .ToList();
@@ -54,11 +64,20 @@ internal sealed partial class DigAgentSession
             AgentState? second = SelectFreeTimePartner(first, available);
             if (second == null)
             {
-                ApplyLeisureMood(first, SoloPlayMoodGain, "free_time_solo_play");
+                AdvanceLeisure(first, SoloPlay, partnerId: null);
                 continue;
             }
 
             available.Remove(second);
+            if (!_freeTimeReservations.TryReservePair(
+                first.Id,
+                second.Id,
+                first.Position))
+            {
+                AdvanceLeisure(first, SoloPlay, partnerId: null);
+                available.Add(second);
+                continue;
+            }
             _freeTimeMeetingPartners[first.Id] = second.Id;
             _freeTimeMeetingPartners[second.Id] = first.Id;
             if (!AreStandingTogether(first.Position, second.Position))
@@ -66,19 +85,23 @@ internal sealed partial class DigAgentSession
                 continue;
             }
 
-            bool groupPlay = (_tick / FreeTimeMoodIntervalTicks) % 2 == 0;
-            int moodGain = groupPlay ? GroupPlayMoodGain : SocialMoodGain;
-            string source = groupPlay
-                ? "free_time_group_play"
-                : "free_time_social";
-            ApplyLeisureMood(first, moodGain, source);
-            ApplyLeisureMood(second, moodGain, source);
-            AdvanceRelationshipAndReproduction(first, second);
+            LeisureActivityDefinition activity = new LeisureActivitySelector().SelectOrContinue(
+                new[] { GroupPlay, Socializing },
+                first.CreateLeisureRuntimeSnapshot(),
+                second.Id,
+                _simulationState.RandomStreams.WorldSeed,
+                _tick + first.Id.GetHashCode());
+            AdvanceLeisure(first, activity, second.Id);
+            AdvanceLeisure(second, activity, first.Id);
+            if (_tick % FreeTimeMoodIntervalTicks == 0)
+            {
+                AdvanceRelationshipAndReproduction(first, second);
+            }
         }
 
         foreach (AgentState resident in available)
         {
-            ApplyLeisureMood(resident, SoloPlayMoodGain, "free_time_solo_play");
+            AdvanceLeisure(resident, SoloPlay, partnerId: null);
         }
     }
 
@@ -165,12 +188,6 @@ internal sealed partial class DigAgentSession
 
         AgentState mother = _residentSexes[first.Id] == ResidentSex.Female ? first : second;
         AgentState father = mother == first ? second : first;
-        if (_postpartumUntilTick.TryGetValue(mother.Id, out long cooldown)
-            && SocietyTick < cooldown)
-        {
-            return;
-        }
-
         AgentSnapshot motherState = mother.CreateSnapshot(_tick);
         AgentSnapshot fatherState = father.CreateSnapshot(_tick);
         if (motherState.Needs.Mood.Points <= 7_500
@@ -239,22 +256,23 @@ internal sealed partial class DigAgentSession
             RequireSociety(_repository.Add(child));
             _residentSexes.Add(birth.Id, birth.Sex);
             _routeIndices.Add(birth.Id, 0);
-            _postpartumUntilTick[mother.Id] = checked(
-                SocietyTick + (GameTimeCadence.TicksPerDay * 2L));
         }
     }
 
-    private void ApplyLeisureMood(AgentState resident, int mood, string source)
+    private void AdvanceLeisure(
+        AgentState resident,
+        LeisureActivityDefinition definition,
+        EntityId? partnerId)
     {
-        if (_tick % FreeTimeMoodIntervalTicks != 0)
+        LeisureRuntimeSnapshot current = resident.CreateLeisureRuntimeSnapshot();
+        if (!current.ActiveVariety.HasValue
+            || !current.ActiveVariety.Value.Equals(definition.Id)
+            || current.PartnerId != partnerId)
         {
-            return;
+            RequireSociety(resident.BeginLeisure(definition, partnerId, _tick));
         }
 
-        RequireSociety(resident.ApplyExternalNeedDelta(
-            new NeedDelta(0, 0, mood, 0),
-            source,
-            _tick));
+        RequireSociety(resident.AdvanceLeisure(definition, _tick));
         _repository.Save(resident);
     }
 

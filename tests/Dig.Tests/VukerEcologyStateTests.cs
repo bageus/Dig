@@ -14,11 +14,11 @@ public sealed class VukerEcologyStateTests
     public void ReproductionAndGrowthUseUnifiedGameTime()
     {
         Assert.Equal(
-            GameTimeCadence.TicksFromDays(VukerEcologyProfile.ReproductionCooldownDays),
-            VukerEcologyProfile.ReproductionCooldownTicks);
+            VukerEcologyProfile.ReproductionCooldownTicks,
+            GameTimeCadence.TicksFromDays(VukerEcologyProfile.ReproductionCooldownDays));
         Assert.Equal(
-            GameTimeCadence.TicksFromDays(VukerEcologyProfile.ChildGrowthDays),
-            VukerEcologyProfile.ChildGrowthTicks);
+            VukerEcologyProfile.ChildGrowthTicks,
+            GameTimeCadence.TicksFromDays(VukerEcologyProfile.ChildGrowthDays));
     }
 
     private static readonly VukerRegionKey Region =
