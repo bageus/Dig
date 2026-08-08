@@ -269,9 +269,10 @@ def check_gameplay_hud_and_work_contracts(
         "runtime job selection",
         ("SelectJobFromHud", "_jobRenderer!.SelectById(jobId)", "_hud!.SetJobSelection"),
     ))
+    context_parts = "\n".join(text for path, text in texts.items() if path.name.startswith("DigGameHudCanvas"))
     errors.extend(require_fragments(
         context_path,
-        texts.get(context_path, ""),
+        context_parts,
         "single-row context using responsive height",
         (
             "SelectedJobId",
@@ -284,7 +285,6 @@ def check_gameplay_hud_and_work_contracts(
     for path, text in texts.items():
         if path.name.startswith("DigGameHudCanvas") and CYRILLIC.search(text):
             errors.append(f"{path.relative_to(root)}: game HUD text must be English-only")
-
     errors.extend(require_fragments(
         agent_session_path,
         texts.get(agent_session_path, ""),
