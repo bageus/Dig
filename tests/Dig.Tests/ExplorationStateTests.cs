@@ -14,13 +14,54 @@ public sealed class ExplorationStateTests
     private static readonly MaterialId Rock = new MaterialId("rock");
 
     [Fact]
-    public void Resident_uses_graph_radius_ten()
+    public void Resident_uses_graph_radius_four()
     {
         WorldState world = CreateOpenWorld(24, 24);
         ExplorationState exploration = new ExplorationState();
         exploration.Recalculate(world.CreateSnapshot(), Sources(new CellId(11, 11, 1)));
-        Assert.Equal(CellVisibility.Visible, exploration.GetVisibility(new CellId(21, 11, 1)));
-        Assert.Equal(CellVisibility.Unexplored, exploration.GetVisibility(new CellId(22, 11, 1)));
+        Assert.Equal(CellVisibility.Visible, exploration.GetVisibility(new CellId(15, 11, 1)));
+        Assert.Equal(CellVisibility.Unexplored, exploration.GetVisibility(new CellId(16, 11, 1)));
+    }
+
+    [Fact]
+    public void Tunnel_reveals_orthogonal_and_diagonal_boundary_rock_without_seeing_through_it()
+    {
+        WorldState world = CreateOpenWorld(10, 8);
+        SetColumn(world, x: 4, Rock, tick: 1, exceptY: -1);
+        ExplorationState exploration = new ExplorationState();
+        exploration.Recalculate(world.CreateSnapshot(), Sources(new CellId(2, 3, 1)));
+        Assert.Equal(CellVisibility.Visible, exploration.GetVisibility(new CellId(4, 3, 1)));
+        Assert.Equal(CellVisibility.Visible, exploration.GetVisibility(new CellId(4, 4, 1)));
+        Assert.Equal(CellVisibility.Visible, exploration.GetVisibility(new CellId(4, 4, 2)));
+        Assert.Equal(CellVisibility.Unexplored, exploration.GetVisibility(new CellId(5, 3, 1)));
+    }
+
+    [Fact]
+    public void Building_radius_is_combined_from_every_occupied_footprint_cell()
+    {
+        WorldState world = CreateOpenWorld(12, 10);
+        CellId[] footprint = new[]
+        {
+            new CellId(2, 2, 1), new CellId(2, 2, 2),
+            new CellId(2, 3, 1), new CellId(2, 3, 2),
+            new CellId(3, 2, 1), new CellId(3, 2, 2),
+            new CellId(3, 3, 1), new CellId(3, 3, 2),
+        };
+        ExplorationState state = new ExplorationState();
+        state.Recalculate(world.CreateSnapshot(), new[]
+        {
+            new VisionSourceSnapshot("building", VisionSourceKind.Building, footprint),
+        });
+        Assert.True(state.IsVisible(new CellId(8, 3, 1)));
+        Assert.False(state.IsVisible(new CellId(9, 3, 1)));
+
+        ExplorationState damaged = new ExplorationState();
+        damaged.Recalculate(world.CreateSnapshot(), new[]
+        {
+            new VisionSourceSnapshot("building", VisionSourceKind.DamagedBuilding, footprint),
+        });
+        Assert.True(damaged.IsVisible(new CellId(5, 3, 1)));
+        Assert.False(damaged.IsVisible(new CellId(6, 3, 1)));
     }
 
     [Fact]
