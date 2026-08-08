@@ -5,9 +5,9 @@ Tracking: #165. Authoritative design: `docs/design/exploration-fog-of-war.md`.
 ## Реализованный контур
 
 - `ExplorationState` является владельцем persistent explored mask, current visible mask и last-known item markers.
-- Детерминированный flood-fill использует шесть соседей и graph-distance; solid terrain, дополнительные blockers и закрытые двери останавливают распространение.
-- Источники задаются snapshots: resident 10, building 10, damaged building 2, ladder/lift/door/trap 2, grave 5.
-- Несколько origins моделируют границу footprint и всю шахту lift.
+- Детерминированный flood-fill использует шесть проходимых соседей и graph-distance; solid terrain, дополнительные blockers и закрытые двери останавливают распространение. Отдельный 26-связный boundary pass раскрывает только один слой окружающей породы, включая диагонали, и не пропускает обзор сквозь неё.
+- Источники задаются snapshots: resident 4, building 5, damaged building 2, ladder/lift/door/trap 2, grave 5.
+- Каждая занятая клетка building footprint является origin; lift также публикует всю шахту.
 - `Visible` не сохраняется; save snapshot хранит explored history и markers, после load current mask пересчитывается.
 - Unity demo больше не помечает мир разведанным при создании. Residents и действующие buildings публикуют sources при старте и simulation tick.
 - Presentation получает `CellVisibility`, затемняет `ExploredNotVisible` и строит отдельную чёрную/полупрозрачную fog mesh для пустых клеток.
