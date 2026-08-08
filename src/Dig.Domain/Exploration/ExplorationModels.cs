@@ -42,8 +42,8 @@ public static class ExplorationRadii
 {
     public static int For(VisionSourceKind kind) => kind switch
     {
-        VisionSourceKind.Resident => 10,
-        VisionSourceKind.Building => 10,
+        VisionSourceKind.Resident => 4,
+        VisionSourceKind.Building => 5,
         VisionSourceKind.Grave => 5,
         VisionSourceKind.DamagedBuilding => 2,
         VisionSourceKind.Ladder => 2,

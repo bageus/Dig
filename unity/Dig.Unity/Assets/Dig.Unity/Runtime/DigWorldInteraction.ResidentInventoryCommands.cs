@@ -24,7 +24,7 @@ public sealed partial class DigWorldInteraction
         if (result.IsSuccess)
         {
             ClearSelectedInventoryStack();
-            _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
+            RenderCurrentlyVisibleWorldItems();
             _agentRenderer!.RenderEquipment(_terrainSession.LoadResidentEquipment());
             _hud.SetStatus("Inventory item action started.");
         }
@@ -71,7 +71,7 @@ public sealed partial class DigWorldInteraction
             return;
         }
 
-        _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
+        RenderCurrentlyVisibleWorldItems();
         _creatureRenderer!.Render(
             _agentSession!.LoadCreatures(
                 _terrainSession.LoadLivingMaterialCreatures()),

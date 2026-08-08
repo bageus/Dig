@@ -237,14 +237,14 @@ namespace Dig.Unity
 
             IReadOnlyList<JobOverlayViewModel> jobs = TerrainSession.LoadJobs();
             IReadOnlyList<WorldItemViewModel> allItems = TerrainSession.LoadAllWorldItems();
-            WorldSession!.ObserveWorldItems(allItems);
-            IReadOnlyList<WorldItemViewModel> items = WorldSession
-                .FilterCurrentlyVisibleItems(allItems);
             IReadOnlyList<RouteViewModel> routes = TerrainSession.LoadRoutes();
             IReadOnlyList<Dig.Presentation.Buildings.BuildingWorldViewModel> buildings =
                 TerrainSession.LoadBuildings();
             DigStorageStatus storage = TerrainSession.GetStorageStatus();
             WorldSession!.UpdateExploration(agents, buildings);
+            WorldSession.ObserveWorldItems(allItems);
+            IReadOnlyList<WorldItemViewModel> items = WorldSession
+                .FilterCurrentlyVisibleItems(allItems);
             if (TerrainSession.ConsumeWorldChanged() || WorldSession.ConsumeExplorationChanged())
             {
                 WorldViewModel world = WorldSession!.LoadView();
@@ -276,11 +276,13 @@ namespace Dig.Unity
                 TerrainSession.LoadProductionWaitOffsets());
             RefreshEquipmentVisuals();
             CreatureRenderer!.Render(
-                AgentSession.LoadCreatures(
-                    TerrainSession.LoadLivingMaterialCreatures()),
+                WorldSession.FilterCurrentlyVisibleCreatures(
+                    AgentSession.LoadCreatures(
+                        TerrainSession.LoadLivingMaterialCreatures())),
                 Camera.main,
                 movementDuration);
-            MushroomRenderer!.Render(TerrainSession!.LoadMushrooms());
+            MushroomRenderer!.Render(WorldSession.FilterCurrentlyVisibleMushrooms(
+                TerrainSession!.LoadMushrooms()));
             BarrelRenderer!.Render(TerrainSession.LoadBarrels());
             JobRenderer.Render(jobs);
             BuildingRenderer.Render(buildings);

@@ -8,6 +8,8 @@ using Dig.Presentation.Agents;
 using Dig.Presentation.Buildings;
 using Dig.Domain.Buildings;
 using Dig.Presentation.Inventory;
+using Dig.Presentation.Creatures;
+using Dig.Domain.Ecology;
 
 namespace Dig.Unity
 {
@@ -66,6 +68,19 @@ internal sealed partial class DigWorldSession
         .OrderBy(item => item.StackId, StringComparer.Ordinal)
         .ToArray();
 
+    internal IReadOnlyList<CreatureVisualSnapshot> FilterCurrentlyVisibleCreatures(
+        IEnumerable<CreatureVisualSnapshot> creatures) => creatures
+        .Where(creature => IsCurrentlyVisible(
+            new CellId(creature.CellX, creature.CellY, creature.CellZ)))
+        .OrderBy(creature => creature.CreatureId, StringComparer.Ordinal)
+        .ToArray();
+
+    internal IReadOnlyList<MushroomSiteSnapshot> FilterCurrentlyVisibleMushrooms(
+        IEnumerable<MushroomSiteSnapshot> mushrooms) => mushrooms
+        .Where(mushroom => IsCurrentlyVisible(mushroom.Cell))
+        .OrderBy(mushroom => mushroom.SiteId.ToString(), StringComparer.Ordinal)
+        .ToArray();
+
     internal bool ObserveWorldItems(IEnumerable<WorldItemViewModel> items)
     {
         long before = _exploration.Version;
@@ -104,14 +119,7 @@ internal sealed partial class DigWorldSession
     {
         CellId[] footprint = building.Footprint
             .Select(cell => new CellId(cell.X, cell.Y, cell.Z)).Distinct().ToArray();
-        if (kind == VisionSourceKind.Lift) return footprint.OrderBy(cell => cell).ToArray();
-        HashSet<CellId> occupied = new HashSet<CellId>(footprint);
-        return footprint.Where(cell =>
-                !occupied.Contains(new CellId(cell.X - 1, cell.Y, cell.Z))
-                || !occupied.Contains(new CellId(cell.X + 1, cell.Y, cell.Z))
-                || !occupied.Contains(new CellId(cell.X, cell.Y - 1, cell.Z))
-                || !occupied.Contains(new CellId(cell.X, cell.Y + 1, cell.Z)))
-            .OrderBy(cell => cell).ToArray();
+        return footprint.OrderBy(cell => cell).ToArray();
     }
 }
 }

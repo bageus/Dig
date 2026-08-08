@@ -213,12 +213,12 @@ namespace Dig.Unity
             });
             RunPresentationStage("rendering creatures", visualWarnings, () =>
                 creatureRenderer.Render(
-                    agentSession.LoadCreatures(
-                        terrainSession.LoadLivingMaterialCreatures()),
+                    worldSession.FilterCurrentlyVisibleCreatures(
+                        agentSession.LoadCreatures(terrainSession.LoadLivingMaterialCreatures())),
                     targetCamera,
                     movementDuration: 0f));
             RunPresentationStage("rendering mushrooms", visualWarnings, () =>
-                mushroomRenderer.Render(terrainSession.LoadMushrooms()));
+                mushroomRenderer.Render(worldSession.FilterCurrentlyVisibleMushrooms(terrainSession.LoadMushrooms())));
             RunPresentationStage("rendering jobs", visualWarnings,
                 () => jobRenderer.Render(jobs));
             RunPresentationStage("rendering buildings", visualWarnings,

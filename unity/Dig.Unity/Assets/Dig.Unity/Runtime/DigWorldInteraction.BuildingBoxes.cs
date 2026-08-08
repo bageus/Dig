@@ -253,7 +253,7 @@ namespace Dig.Unity
             }
 
             _buildingRenderer!.Render(_terrainSession.LoadBuildings());
-            _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
+            RenderCurrentlyVisibleWorldItems();
             var jobs = _terrainSession.LoadJobs();
             _jobRenderer!.Render(jobs);
             _hud.SetJobs(jobs);
@@ -327,7 +327,7 @@ namespace Dig.Unity
             var jobs = _terrainSession.LoadJobs();
             _jobRenderer!.Render(jobs);
             _hud.SetJobs(jobs);
-            _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
+            RenderCurrentlyVisibleWorldItems();
             _hud.SetStatus("BuildingBox pickup order created.");
         }
     }

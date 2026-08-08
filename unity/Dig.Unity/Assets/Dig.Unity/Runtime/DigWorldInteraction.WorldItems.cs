@@ -6,6 +6,12 @@ namespace Dig.Unity
 {
     public sealed partial class DigWorldInteraction
     {
+        private void RenderCurrentlyVisibleWorldItems()
+        {
+            _itemRenderer!.Render(_session!.FilterCurrentlyVisibleItems(
+                _terrainSession!.LoadAllWorldItems()));
+        }
+
         private void CreateWorldItemPickup(ContextInputDecision decision)
         {
             if (!decision.ActorId.HasValue
@@ -47,7 +53,7 @@ namespace Dig.Unity
             var jobs = _terrainSession.LoadJobs();
             _jobRenderer!.Render(jobs);
             _hud.SetJobs(jobs);
-            _itemRenderer!.Render(_terrainSession.LoadAllWorldItems());
+            RenderCurrentlyVisibleWorldItems();
             _hud.SetStatus("World item pickup order created.");
         }
     }

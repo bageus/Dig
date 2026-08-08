@@ -148,6 +148,9 @@ namespace Dig.Tests
             Assert.Contains("AgentRenderer!.SelectedAgentId", loop);
             Assert.Contains("BuildingRenderer!.SelectedBuildingId", loop);
             Assert.Contains(
+                "MushroomRenderer!.Render(WorldSession.FilterCurrentlyVisibleMushrooms(",
+                loop);
+            Assert.DoesNotContain(
                 "MushroomRenderer!.Render(TerrainSession!.LoadMushrooms())",
                 loop);
             Assert.DoesNotContain("BuildingRender!", loop);

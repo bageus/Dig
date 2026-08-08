@@ -93,9 +93,11 @@ public sealed class MushroomUnityRuntimeContractTests
         Assert.Contains("AdvanceMushroomGrowthCommand", mushrooms);
         Assert.Contains("MushroomChopJobDefinition", navigation);
         Assert.Contains("AdvanceMushrooms(AgentSession.Tick,agents)", loop);
-        Assert.Contains("MushroomRenderer!.Render(TerrainSession!.LoadMushrooms())", loop);
+        Assert.Contains("MushroomRenderer!.Render(WorldSession.FilterCurrentlyVisibleMushrooms(", loop);
+        Assert.Contains("TerrainSession!.LoadMushrooms()))", loop);
+        Assert.DoesNotContain("MushroomRenderer!.Render(TerrainSession!.LoadMushrooms())", loop);
         Assert.Contains("InitializeMushroomDemo(agentSession.Tick)", bootstrap);
-        Assert.Contains("mushroomRenderer.Render(terrainSession.LoadMushrooms())", bootstrap);
+        Assert.Contains("mushroomRenderer.Render(worldSession.FilterCurrentlyVisibleMushrooms(", bootstrap);
         Assert.Contains("MushroomCapItemId", inventory);
         Assert.Contains("MushroomLegItemId", inventory);
     }
