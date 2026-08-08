@@ -39,6 +39,7 @@ public sealed class ExplorationStateTests
         WorldState world = CreateOpenWorld(9, 7);
         SetColumn(world, x: 4, Rock, tick: 1, exceptY: 3);
         CellId doorway = new CellId(4, 3, 1);
+        SealOtherDepths(world, doorway, tick: 2);
         ExplorationState open = new ExplorationState();
         open.Recalculate(world.CreateSnapshot(), Sources(new CellId(2, 3, 1)));
         Assert.True(open.IsVisible(new CellId(6, 3, 1)));
@@ -154,6 +155,17 @@ public sealed class ExplorationStateTests
         {
             CellId cell = new CellId(x, y, z);
             changes.Add(new TerrainChange(cell, world.GetCell(cell).Value.State.WithTerrain(material)));
+        }
+        Assert.True(world.ApplyTerrainChanges(changes, tick).IsSuccess);
+    }
+
+    private static void SealOtherDepths(WorldState world, CellId doorway, long tick)
+    {
+        List<TerrainChange> changes = new List<TerrainChange>();
+        for (int z = 0; z < world.Size.Depth; z++) if (z != doorway.Z)
+        {
+            CellId cell = new CellId(doorway.X, doorway.Y, z);
+            changes.Add(new TerrainChange(cell, world.GetCell(cell).Value.State.WithTerrain(Rock)));
         }
         Assert.True(world.ApplyTerrainChanges(changes, tick).IsSuccess);
     }
