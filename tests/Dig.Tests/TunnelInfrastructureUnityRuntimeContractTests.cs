@@ -20,7 +20,8 @@ public sealed class TunnelInfrastructureUnityRuntimeContractTests
         string designations = Read(runtime, "DigTerrainWorkDesignations.cs");
         string navigation = Read(runtime, "DigTerrainWorkNavigation.cs");
         string session = Read(runtime, "DigTerrainWorkSession.cs");
-        string infrastructure = Read(runtime, "DigTerrainTunnelInfrastructure.cs");
+        string infrastructure = Read(runtime, "DigTerrainTunnelInfrastructure.cs")
+            + Read(runtime, "DigTerrainTunnelInfrastructure.Saving.cs");
         string terrainCommit = Read(
             runtime,
             "DigAgentSimulationDriverBase.TerrainCommitSync.cs");
