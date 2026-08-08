@@ -85,9 +85,10 @@ internal sealed partial class DigAgentSession
                 continue;
             }
 
-            LeisureActivityDefinition activity = new LeisureActivitySelector().Select(
+            LeisureActivityDefinition activity = new LeisureActivitySelector().SelectOrContinue(
                 new[] { GroupPlay, Socializing },
-                first.CreateLeisureRuntimeSnapshot().History,
+                first.CreateLeisureRuntimeSnapshot(),
+                second.Id,
                 _simulationState.RandomStreams.WorldSeed,
                 _tick + first.Id.GetHashCode());
             AdvanceLeisure(first, activity, second.Id);
