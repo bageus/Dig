@@ -57,7 +57,7 @@ namespace Dig.Unity
             var jobs = terrainSession.LoadJobs();
             _jobRenderer!.Render(jobs);
             hud.SetJobs(jobs);
-            _itemRenderer!.Render(terrainSession.LoadAllWorldItems());
+            RenderCurrentlyVisibleWorldItems();
             hud.SetStatus("Consumable pickup and use order created.");
         }
     }
