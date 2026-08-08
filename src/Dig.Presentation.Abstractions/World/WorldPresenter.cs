@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Dig.Application.Messaging;
 using Dig.Application.World;
 using Dig.Domain.World;
+using Dig.Domain.Exploration;
 
 namespace Dig.Presentation.World
 {
@@ -10,11 +11,14 @@ namespace Dig.Presentation.World
 public sealed class WorldPresenter
 {
     private readonly IQueryHandler<GetWorldSnapshotQuery, WorldSnapshot> _queryHandler;
+    private readonly Func<CellId, CellVisibility>? _visibility;
 
     public WorldPresenter(
-        IQueryHandler<GetWorldSnapshotQuery, WorldSnapshot> queryHandler)
+        IQueryHandler<GetWorldSnapshotQuery, WorldSnapshot> queryHandler,
+        Func<CellId, CellVisibility>? visibility = null)
     {
         _queryHandler = queryHandler ?? throw new ArgumentNullException(nameof(queryHandler));
+        _visibility = visibility;
     }
 
     public WorldViewModel Load()
@@ -35,7 +39,7 @@ public sealed class WorldPresenter
             chunks);
     }
 
-    private static WorldChunkViewModel PresentChunk(ChunkSnapshot chunk)
+    private WorldChunkViewModel PresentChunk(ChunkSnapshot chunk)
     {
         List<WorldCellViewModel> cells = new List<WorldCellViewModel>(chunk.Cells.Count);
         foreach (CellSnapshot cell in chunk.Cells)
@@ -53,7 +57,9 @@ public sealed class WorldPresenter
                 cell.State.Temperature,
                 cell.WorldVersion,
                 cell.State.CompletedExcavationQuarters,
-                cell.State.ExcavationCutPattern));
+                cell.State.ExcavationCutPattern,
+                _visibility?.Invoke(cell.Id) ?? (cell.State.IsExplored
+                    ? CellVisibility.Visible : CellVisibility.Unexplored)));
         }
 
         return new WorldChunkViewModel(

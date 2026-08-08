@@ -96,6 +96,7 @@ namespace Dig.Unity
             RestoreSelection(selectedCoordinates);
             ApplyTunnelCutaway();
             RefreshChunkedTerrain(world);
+            GetComponent<DigFogOfWarRenderer>()?.Render(world);
         }
 
         internal void SetTunnelCutaway(TunnelNavigationVolume volume)
@@ -176,6 +177,8 @@ namespace Dig.Unity
 
             _visualRoot = new GameObject("World Visuals").transform;
             _visualRoot.SetParent(transform, worldPositionStays: false);
+            if (GetComponent<DigFogOfWarRenderer>() == null)
+                gameObject.AddComponent<DigFogOfWarRenderer>();
         }
 
         private Transform GetOrCreateChunkRoot(ChunkId key, long version)

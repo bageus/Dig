@@ -16,6 +16,7 @@ using Dig.Domain.Production;
 using Dig.Domain.World;
 using Dig.Domain.WorldObjects;
 using Dig.Domain.Society;
+using Dig.Domain.Exploration;
 namespace Dig.Application.Saving
 {
 public sealed partial class SaveGameLoader
@@ -280,6 +281,8 @@ public sealed partial class SaveGameLoader
                 return Result<LoadedGameState>.Failure(
                     miningOutput.Error ?? MiningOutputSaveErrors.InvalidSnapshot);
             }
+            ExplorationState exploration = ExplorationSaveAdapter.Decode(
+                document.Exploration, world.Value.Size);
             return Result<LoadedGameState>.Success(new LoadedGameState(
                 CopyMetadata(document.Metadata),
                 world.Value,
@@ -306,7 +309,8 @@ public sealed partial class SaveGameLoader
                 agentSurfacePoses: agentSurfacePoses,
                 tunnelInfrastructure: infrastructure.Value.Tunnel,
                 roomInfrastructure: infrastructure.Value.Room,
-                society: society.Value));
+                society: society.Value,
+                exploration: exploration));
         }
         catch (UnknownTerrainDepositDefinitionException)
         {

@@ -42,19 +42,16 @@ namespace Dig.Unity
                 Debug.LogException(exception, this);
             }
         }
-
         private void StartRuntime(DigHudOverlay hud, DigGameHudCanvas gameHud)
         {
             _startupStage = "validating demo configuration";
             ClampDemoConfiguration();
             _startupStage = "configuring side-view world root";
             ConfigureSideViewRoot();
-
             _startupStage = "creating world";
             DigWorldSession worldSession = DigWorldSession.CreateDemo(
                 demoWidth, demoHeight, chunkSize);
             WorldViewModel world = worldSession.LoadView();
-
             _startupStage = "creating residents";
             DigAgentSession agentSession = DigAgentSession.CreateDemo(
                 world,
@@ -62,7 +59,8 @@ namespace Dig.Unity
                 worldSession.Journal);
             agentSession.InitializeHudSchedule(worldSession.Journal);
             IReadOnlyList<AgentViewModel> agents = agentSession.LoadView();
-
+            worldSession.UpdateExploration(agents);
+            world = worldSession.LoadView();
             _startupStage = "creating work systems";
             DigTerrainWorkSession terrainSession = DigTerrainWorkSession.CreateDemo(
                 worldSession, agents, worldSession.Journal, agentSession.SkillGrants);
@@ -76,6 +74,8 @@ namespace Dig.Unity
             terrainSession.InitializeHauling(worldSession.Journal);
             terrainSession.PlanMovement(agents, tick: 0);
             terrainSession.InitializeBuildingDemo(worldSession.Journal);
+            worldSession.UpdateExploration(agents, terrainSession.LoadBuildings());
+            world = worldSession.LoadView();
             terrainSession.InitializeBuildingProductionDemo(
                 agentSession.Repository,
                 worldSession.Journal);
@@ -98,11 +98,13 @@ namespace Dig.Unity
             }
 
             IReadOnlyList<JobOverlayViewModel> jobs = terrainSession.LoadJobs();
-            IReadOnlyList<WorldItemViewModel> items = terrainSession.LoadAllWorldItems();
+            IReadOnlyList<WorldItemViewModel> allItems = terrainSession.LoadAllWorldItems();
+            worldSession.ObserveWorldItems(allItems);
+            IReadOnlyList<WorldItemViewModel> items = worldSession
+                .FilterCurrentlyVisibleItems(allItems);
             IReadOnlyList<RouteViewModel> routes = terrainSession.LoadRoutes();
             IReadOnlyList<BuildingWorldViewModel> buildings = terrainSession.LoadBuildings();
             DigStorageStatus storage = terrainSession.GetStorageStatus();
-
             _startupStage = "creating Unity adapters";
             Camera targetCamera = EnsureCamera();
             GetOrAdd<DigRenderMaterialLibrary>(gameObject);
@@ -199,11 +201,9 @@ namespace Dig.Unity
                 worldRenderer.SetTunnelCutaway(agentSession.TunnelVolume);
                 worldRenderer.SetTerrainDeposits(worldSession.LoadTerrainDeposits());
                 worldRenderer.Render(world);
-            });
-            RunPresentationStage("rendering layered tunnels", visualWarnings,
+            }); RunPresentationStage("rendering layered tunnels", visualWarnings,
                 () => tunnelRenderer.Initialize(agentSession.TunnelVolume));
-            RunPresentationStage("clearing cave preview", visualWarnings,
-                caveRoomPreviewRenderer.Clear);
+            RunPresentationStage("clearing cave preview", visualWarnings, caveRoomPreviewRenderer.Clear);
             RunPresentationStage("rendering residents", visualWarnings, () =>
             {
                 agentRenderer.Render(agents, movementDuration: 0f);

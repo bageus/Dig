@@ -95,6 +95,10 @@ namespace Dig.Unity
             {
                 state = DigTerrainSurfaceState.Unexplored;
             }
+            else if (!cell.IsCurrentlyVisible)
+            {
+                state = DigTerrainSurfaceState.ExploredNotVisible;
+            }
             else if (isProtected)
             {
                 state = DigTerrainSurfaceState.Protected;

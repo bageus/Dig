@@ -100,7 +100,8 @@ namespace Dig.Unity
             foreach (PlannedHaulingJob planned in report.Created)
             {
                 ItemStackSnapshot? stack = _inventoryRepository.Get().GetStack(planned.StackId);
-                if (stack == null || !stack.Location.HasCell)
+                if (stack == null || !stack.Location.HasCell
+                    || !_worldSession.IsCurrentlyVisible(stack.Location.CellId))
                 {
                     continue;
                 }
@@ -249,7 +250,10 @@ namespace Dig.Unity
 
             ItemStackSnapshot? stack = _inventoryRepository.Get().GetStack(
                 hauling.SourceStackId);
-            return stack?.Location.HasCell == true ? stack.Location.CellId : null;
+            return stack?.Location.HasCell == true
+                && _worldSession.IsCurrentlyVisible(stack.Location.CellId)
+                    ? stack.Location.CellId
+                    : null;
         }
 
         private CellId SelectStorageCell()

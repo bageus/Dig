@@ -236,15 +236,21 @@ namespace Dig.Unity
             }
 
             IReadOnlyList<JobOverlayViewModel> jobs = TerrainSession.LoadJobs();
-            IReadOnlyList<WorldItemViewModel> items = TerrainSession.LoadAllWorldItems();
+            IReadOnlyList<WorldItemViewModel> allItems = TerrainSession.LoadAllWorldItems();
+            WorldSession!.ObserveWorldItems(allItems);
+            IReadOnlyList<WorldItemViewModel> items = WorldSession
+                .FilterCurrentlyVisibleItems(allItems);
             IReadOnlyList<RouteViewModel> routes = TerrainSession.LoadRoutes();
             IReadOnlyList<Dig.Presentation.Buildings.BuildingWorldViewModel> buildings =
                 TerrainSession.LoadBuildings();
             DigStorageStatus storage = TerrainSession.GetStorageStatus();
-            if (TerrainSession.ConsumeWorldChanged())
+            WorldSession!.UpdateExploration(agents, buildings);
+            if (TerrainSession.ConsumeWorldChanged() || WorldSession.ConsumeExplorationChanged())
             {
                 WorldViewModel world = WorldSession!.LoadView();
                 WorldRenderer!.Render(world);
+                WorldRenderer.GetComponent<DigFogOfWarRenderer>()?.RenderItemMemory(
+                    WorldSession.LoadRememberedItems());
                 WorldRenderer.SetProtectedCells(WorldSession.ProtectedCells);
                 WorldRenderer.SetTerrainDeposits(WorldSession.LoadTerrainDeposits());
                 WorldOverlayRenderer!.RenderWorld(

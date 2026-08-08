@@ -73,6 +73,7 @@ public sealed partial class SaveGameBuilder
                 context.Jobs,
                 context.World.Size),
             Society = SocietySaveAdapter.Encode(context.Society),
+            Exploration = ExplorationSaveAdapter.Encode(context.Exploration),
         };
     }
 

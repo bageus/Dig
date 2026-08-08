@@ -78,6 +78,8 @@ internal static class DigTerrainVertexColor
                 return new Color(0.95f, 0.47f, 0.12f, 1f);
             case DigTerrainSurfaceState.Protected:
                 return new Color(0.18f, 0.22f, 0.28f, 1f);
+            case DigTerrainSurfaceState.ExploredNotVisible:
+                return new Color(0.15f, 0.16f, 0.19f, 1f);
         }
         float hardness = key.Shade / 7f;
         Color result = Color.Lerp(

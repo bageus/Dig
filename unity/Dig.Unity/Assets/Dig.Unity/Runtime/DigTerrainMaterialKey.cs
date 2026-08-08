@@ -9,6 +9,7 @@ namespace Dig.Unity
         Unexplored = 1,
         Designated = 2,
         Protected = 3,
+        ExploredNotVisible = 4,
     }
 
     internal readonly struct DigTerrainMaterialKey :
