@@ -72,8 +72,8 @@ public sealed class MushroomUnityRuntimeContractTests
             StringComparison.Ordinal);
         Assert.True(itemBlock >= 0 && itemBlock < mushroomResolution);
         Assert.Contains("Aphysicaldropinfrontofaregrownsite", priority);
-        Assert.Contains("TryResolveWorldItemPointerTarget", pointerHits);
-        Assert.Contains("itemTarget.ActionAvailable", pointerHits);
+        Assert.Contains("TryResolveAnyWorldItemHit", pointerHits);
+        Assert.Contains("SetInteractionHighlighted(true)", pointerHits);
         Assert.Contains("_itemRenderer.TryGetItem(hits[index],out_)", priority);
         Assert.Contains("building=null!;returnfalse", priority);
     }
