@@ -60,7 +60,9 @@ public sealed class LivingMaterialCreatureVisualProjector
             isSpecialAction: special,
             actionProgress: progress,
             version: creature.Version,
-            activityVariantId: activityVariant);
+            activityVariantId: activityVariant,
+            surfaceU: creature.SurfacePose.U,
+            surfaceV: creature.SurfacePose.V);
     }
 }
 
