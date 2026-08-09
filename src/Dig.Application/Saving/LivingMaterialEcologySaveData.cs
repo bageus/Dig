@@ -44,6 +44,9 @@ public sealed class LivingMaterialIndividualSaveData
     [DataMember(Order = 24)] public long DeterministicSequence { get; set; }
     [DataMember(Order = 25)] public string? BlockedReason { get; set; }
     [DataMember(Order = 26)] public long Version { get; set; }
+    [DataMember(Order = 27)] public bool HasSurfacePose { get; set; }
+    [DataMember(Order = 28)] public int SurfaceU { get; set; }
+    [DataMember(Order = 29)] public int SurfaceV { get; set; }
 }
 
 }
