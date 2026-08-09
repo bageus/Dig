@@ -22,9 +22,9 @@ public sealed class SurfaceTrafficRuntimeContractTests
 
         Assert.Contains("_surfaceTraffic.RecordPose", traffic);
         Assert.Contains("_surfaceTraffic.CanOccupy", automatic);
-        Assert.Contains("MoveOnReservedSurface(agent,nextPose,mover)", automatic);
+        Assert.Contains("MoveOnReservedSurface(agent,exitPose)", automatic);
         Assert.Contains("MoveOnReservedSurface(agent,entryPose)", automatic);
-        Assert.Contains("MoveOnReservedSurface(agent,nextPose)", manual);
+        Assert.Contains("MoveOnReservedSurface(agent,exitPose)", manual);
         Assert.Contains("MoveOnReservedSurface(agent,entryPose)", manual);
         Assert.Contains("MoveOnReservedSurface(agent,verticalPose)", vertical);
     }
