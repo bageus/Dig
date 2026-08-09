@@ -2,7 +2,7 @@
 
 ## Status
 
-`IMPLEMENTED IN BRANCH`, pending executed Unity Play Mode verification.
+`IMPLEMENTED`, pending executed Unity Play Mode verification.
 
 Authoritative system: [`../design/presentation-input-ui-and-diagnostics.md`](../design/presentation-input-ui-and-diagnostics.md).
 System index owner: `World/agent/building/item visuals` in [`../systems/README.md`](../systems/README.md).
@@ -19,14 +19,22 @@ as the default in-game dwarf visual.
 - the identical Git blob is exposed to the runtime at
   `Assets/Dig.Unity/Resources/Residents/Dwarf_Hi3D_LowPoly_70k_Rigged.glb`;
 - both Unity assets receive explicit `.meta` GUIDs so imports remain stable;
-- `DigResidentAnimatedModel` now resolves the V3 resource and stable visual id
+- `DigResidentAnimatedModel` resolves the V3 resource and stable visual id
   `resident.dwarf.hi3d.lowpoly70k.rigged`;
-- the default authored resident renderer budget is raised from 12 to the existing hard cap of 24 renderers so a multipart authored GLB is not replaced only because it has more renderer parts;
+- the resident visual profile retains its existing maximum-renderer budget, but that value is advisory: a successfully imported authored resident is no longer destroyed and replaced with the procedural model solely because a multipart GLB contains more renderer components than the budget;
+- authored fallback is now reserved for a genuinely missing/unloadable GameObject resource or an authored hierarchy with no renderer components;
+- those hard fallback paths emit explicit Unity Console diagnostics so a failed glTF import is distinguishable from a renderer-budget decision;
 - authored bounds are still normalized to the existing 1.5-unit resident presentation height; authoritative resident position and the gameplay interaction capsule are unchanged;
-- imported bone lookup now accepts common left/right upper-arm, upper-leg and namespaced (`prefix:Bone`) names;
+- imported bone lookup accepts common left/right upper-arm, upper-leg and namespaced (`prefix:Bone`) names;
 - hand equipment sockets prefer actual imported hand bones when available and otherwise retain the existing upper-arm fallback;
 - when the V3 GLB contains animation clips, the existing `DigResidentAnimationPlayer` uses them;
 - when the V3 GLB contains no clips, the authored mesh remains active and `DigResidentRig` uses its existing deterministic pose fallback for movement/work/action presentation. No animation from the previous Blackbeard skeleton is applied to the new skeleton implicitly.
+
+## Runtime fallback correction
+
+The initial integration treated `MaximumRenderers` as an authored-model validity rule. If an imported model contained more renderer components than the configured budget, `DigAuthoredResidentRigConfigurator` returned `false`, the authored instance was destroyed, and `DigResidentRigFactory` silently created the procedural resident. That made a valid V3 import indistinguishable from a missing model in-game.
+
+The renderer count is now treated only as a presentation/performance budget. Presence of renderers determines whether the authored hierarchy is usable; renderer count by itself does not select the procedural fallback.
 
 ## Ownership and invariants
 
@@ -36,22 +44,23 @@ state remain visual projections and cannot complete Domain actions.
 
 ## Regression coverage
 
-`DigResidentAnimatedModelPlayModeTests` now checks that:
+`DigResidentAnimatedModelPlayModeTests` checks that:
 
 - the V3 resource resolves as the default resident asset;
 - the instantiated rig contains the V3 model rather than the procedural representative;
-- renderer count stays inside the bounded 24-renderer budget;
+- the authored hierarchy exposes runtime renderer components without imposing a fallback threshold on their count;
 - equipment/cargo/head sockets are available;
 - Idle/Walk/Dig/Climb/Death visual states can be applied;
 - embedded animation clips are used when matching clips exist;
 - a clipless authored mesh remains active and uses the rig pose path instead of a stale animation set;
 - a genuinely missing authored asset still falls back to the procedural resident.
 
+`DigAuthoredResidentRigConfiguratorTests` additionally creates an authored stand-in whose renderer count exceeds its configured budget and verifies that the authored rig remains active.
+
 ## Verification status
 
-The repository change and Play Mode regression are checked in by this branch. Actual licensed
-Unity execution is still required before this result can be called `VERIFIED` under issue #511.
+Repository/source checks and CI can verify the code contracts, but actual licensed Unity execution is still required before this result can be called `VERIFIED` under issue #511.
 The required runtime check is to open the representative scene and confirm the V3 dwarf is visible,
 correctly grounded/scaled, faces the expected direction, moves through Walk/Climb, performs Dig,
 keeps held tools/cargo attached to the intended hands/sockets, preserves authored materials and
-produces no unexpected Console errors.
+produces no unexpected Console errors. If the V3 asset itself fails to import as a GameObject, the Console now reports the failing `Resources` path explicitly.
