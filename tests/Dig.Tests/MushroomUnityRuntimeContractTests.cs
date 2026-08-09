@@ -26,7 +26,7 @@ public sealed class MushroomUnityRuntimeContractTests
         Assert.Contains("ApplicationInputCommandKind.ChopMushroom", decisions);
         Assert.Contains("DirectCommandCursorKind.Axe", cursor);
         Assert.Contains("TryResolveReachableMushroomHit(hits,out_)", cursorTargets);
-        Assert.Contains("TryResolveReachableMushroomHit(hits,outDigMushroomVisualmushroom)", pointerHits);
+        Assert.Contains("TryResolveMushroomHit(hits,outDigMushroomVisualmushroom)", pointerHits);
         Assert.DoesNotContain("?.SetHovered", pointerHits);
         Assert.Contains("if(_hoveredMushroom!=null)", pointerHits);
         Assert.Contains("_hoveredMushroom.SetHovered(false)", pointerHits);
