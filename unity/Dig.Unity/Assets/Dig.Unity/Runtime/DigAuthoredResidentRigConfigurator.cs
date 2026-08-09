@@ -16,6 +16,8 @@ internal static class DigAuthoredResidentRigConfigurator
         bool configureAnimation = true)
     {
         Renderer[] renderers = DigResidentRigFactory.CollectRenderers(modelRoot);
+        bool isDefaultAuthoredModel =
+            DigResidentAnimatedModel.IsDefaultAsset(stableId);
         if (renderers.Length < 1)
         {
             Debug.LogWarning(
@@ -26,12 +28,19 @@ internal static class DigAuthoredResidentRigConfigurator
             return false;
         }
 
-        // Renderer count is a presentation budget, not a validity rule. A valid authored
-        // model must remain visible even when a multipart import exceeds that budget.
-        _ = maximumRenderers;
+        if (!isDefaultAuthoredModel
+            && maximumRenderers > 0
+            && renderers.Length > maximumRenderers)
+        {
+            Debug.LogWarning(
+                $"Resident visual '{stableId}' uses {renderers.Length} renderer components, "
+                + $"above the configured budget of {maximumRenderers}. The procedural "
+                + "resident fallback will be used.",
+                modelRoot);
+            rig = null!;
+            return false;
+        }
 
-        bool isDefaultAuthoredModel =
-            DigResidentAnimatedModel.IsDefaultAsset(stableId);
         DigResidentAnimationPlayer? animationPlayer = null;
         if (isDefaultAuthoredModel && configureAnimation
             && DigResidentAnimatedModel.LoadAnimationClips().Length > 0)
