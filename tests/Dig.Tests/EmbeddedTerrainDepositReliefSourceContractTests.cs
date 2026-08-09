@@ -28,6 +28,7 @@ namespace Dig.Tests
             Assert.Contains("- normal * DepositReliefInset", topology);
             Assert.Contains("ClampDepositReliefHeight", topology);
             Assert.DoesNotContain("+ normal * 0.018f", topology);
+            Assert.DoesNotContain("cell.IsDesignated", topology);
 
             Assert.Contains("float scale = 0.072f", geometry);
             Assert.Contains("ClampDepositReliefHeight(", geometry);

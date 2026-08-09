@@ -104,20 +104,25 @@ public sealed class ForcedPickupReplacementPlayModeTests
         Require(inventory.AddUnit(
             stackId,
             CampfireProductionContent.StoneItemId,
-            ItemLocation.InWorld(current),
+            ItemLocation.InWorld(destination),
             tick: 0));
         inventoryRepository.Save(inventory);
 
         Require(runtime.Terrain.CreateWorldItemPickup(
             stackId.ToString(),
             residentId,
-            current,
+            destination,
             tick: 1));
 
         Assert.That(runtime.Residents.HasManualTunnelMovement(residentId), Is.False);
-        for (int tick = 0; tick < 4; tick++)
+        for (int tick = 0; tick < 24; tick++)
         {
             ResidentNeedsRuntimePlayModeHarness.RunTick(runtime);
+            if (inventoryRepository.Get().GetStack(stackId)!.Location.Kind
+                == ItemLocationKind.AgentInventory)
+            {
+                break;
+            }
         }
 
         ItemStackSnapshot acquired = inventoryRepository.Get().GetStack(stackId)!;
@@ -125,7 +130,52 @@ public sealed class ForcedPickupReplacementPlayModeTests
         Assert.That(acquired.Location.OwnerId, Is.EqualTo(resident));
         Assert.That(acquired.ReservedQuantity, Is.Zero);
         Assert.That(runtime.Residents.Repository.Get(resident)!.Position,
-            Is.EqualTo(current));
+            Is.EqualTo(destination));
+    }
+
+    [Test]
+    public void Automatic_hauling_acquires_item_after_surface_approach()
+    {
+        ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
+            ResidentNeedsRuntimePlayModeHarness.CreateRuntime();
+        string residentId = runtime.Residents.LoadView().First().Id;
+        EntityId resident = EntityId.Parse(residentId);
+        CellId current = runtime.Residents.Repository.Get(resident)!.Position;
+        CellId source = runtime.Residents.TunnelVolume.SupportedCells
+            .Where(value => value != current)
+            .Where(value => System.Math.Abs(value.X - current.X)
+                + System.Math.Abs(value.Y - current.Y)
+                + System.Math.Abs(value.Z - current.Z) <= 3)
+            .Where(value => runtime.Residents.TunnelVolume
+                .FindPath(current, value).Succeeded)
+            .OrderBy(value => value)
+            .First();
+        InMemoryInventoryRepository inventoryRepository =
+            ResidentNeedsRuntimePlayModeHarness.GetField<InMemoryInventoryRepository>(
+                runtime.Terrain,
+                "_inventoryRepository");
+        EntityId stackId = EntityId.Parse("fa000000000000000000000000000004");
+        InventoryState inventory = inventoryRepository.Get();
+        Require(inventory.AddUnit(
+            stackId,
+            CampfireProductionContent.StoneItemId,
+            ItemLocation.InWorld(source),
+            tick: 0));
+        inventoryRepository.Save(inventory);
+
+        for (int tick = 0; tick < 64; tick++)
+        {
+            ResidentNeedsRuntimePlayModeHarness.RunTick(runtime);
+            ItemStackSnapshot snapshot = inventoryRepository.Get().GetStack(stackId)!;
+            if (snapshot.Location.Kind == ItemLocationKind.Storage)
+            {
+                break;
+            }
+        }
+
+        ItemStackSnapshot delivered = inventoryRepository.Get().GetStack(stackId)!;
+        Assert.That(delivered.Location.Kind, Is.EqualTo(ItemLocationKind.Storage));
+        Assert.That(delivered.ReservedQuantity, Is.Zero);
     }
 
     private static void Require(Result result)

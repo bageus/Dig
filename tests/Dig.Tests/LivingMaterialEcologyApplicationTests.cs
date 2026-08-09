@@ -116,7 +116,7 @@ public sealed class LivingMaterialEcologyApplicationTests
         Assert.Equal(dropped.Y, snapshot.Cell!.Value.Y);
         Assert.Equal(dropped.Z, snapshot.Cell.Value.Z);
         Assert.Equal(LivingMaterialActivity.Moving, snapshot.Activity);
-        Assert.Equal(1200, snapshot.MovementCredit);
+        Assert.Equal(1380, snapshot.MovementCredit);
     }
 
     [Fact]

@@ -5,6 +5,8 @@ namespace Dig.Unity
 {
 public sealed partial class DigAgentVisual
 {
+    private const double VerticalTunnelFaceBias = 0.18d;
+
     private void ResolveSurfaceCoordinates(
         AgentViewModel model,
         out double x,
@@ -26,22 +28,22 @@ public sealed partial class DigAgentVisual
                 z += v;
                 break;
             case SurfaceFace.NegativeX:
-                x -= 0.5d;
+                x -= VerticalTunnelFaceBias;
                 z += u;
                 y += v;
                 break;
             case SurfaceFace.PositiveX:
-                x += 0.5d;
+                x += VerticalTunnelFaceBias;
                 z += u;
                 y += v;
                 break;
             case SurfaceFace.NegativeZ:
-                z -= 0.5d;
+                z -= VerticalTunnelFaceBias;
                 x += u;
                 y += v;
                 break;
             case SurfaceFace.PositiveZ:
-                z += 0.5d;
+                z += VerticalTunnelFaceBias;
                 x += u;
                 y += v;
                 break;

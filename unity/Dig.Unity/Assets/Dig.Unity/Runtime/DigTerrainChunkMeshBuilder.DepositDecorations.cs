@@ -24,7 +24,7 @@ namespace Dig.Unity
             DigTerrainVisualCatalog? catalog,
             TerrainVisualDetailLevel detailLevel)
         {
-            if (isProtected || !cell.IsExplored || cell.IsDesignated)
+            if (isProtected || !cell.IsExplored)
             {
                 return;
             }
