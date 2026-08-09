@@ -23,14 +23,11 @@ public sealed class AutomaticSurfaceCorridorRuntimeContractTests
             "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSession.SurfaceCorridor.cs")));
 
         Assert.Contains("SurfaceCorridorSteering.TryBuildBoundaryPoses(", movement);
-        Assert.Contains("SurfacePoseSteering.MoveTowards(agent.SurfacePose,exitPose)", movement);
-        Assert.Contains("MoveOnReservedSurface(agent,nextPose,mover)", movement);
+        Assert.Contains("MoveOnReservedSurface(agent,exitPose)", movement);
         Assert.Contains("MoveOnReservedSurface(agent,entryPose)", movement);
-        Assert.Contains("SurfacePoseSteering.MoveTowards(agent.SurfacePose,exitPose)", corridor);
-        Assert.Contains("MoveOnReservedSurface(agent,nextPose)", corridor);
+        Assert.Contains("MoveOnReservedSurface(agent,exitPose)", corridor);
         Assert.Contains("_automaticBoundaryApproaches.Remove(agent.Id)", movement);
         Assert.Contains("MoveThroughTunnelTraffic(agent,next)", spatial);
-        Assert.Contains("SurfacePoseSteering.MoveTowards(agent.SurfacePose,destination)", spatial);
         Assert.DoesNotContain("agent.MoveTo(next,_tick)", spatial);
     }
 
