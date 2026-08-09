@@ -89,19 +89,13 @@ internal sealed partial class DigAgentSession
             {
                 return Result.Success();
             }
-            SurfacePose nextPose = SurfacePoseSteering.MoveTowards(
-                agent.SurfacePose,
-                exitPose);
-            Result approached = MoveOnReservedSurface(agent, nextPose, mover);
+            Result approached = MoveOnReservedSurface(agent, exitPose);
             if (approached.IsFailure)
             {
                 return approached;
             }
 
-            if (nextPose == exitPose)
-            {
-                _automaticBoundaryApproaches[agent.Id] = exitPose;
-            }
+            _automaticBoundaryApproaches[agent.Id] = exitPose;
             SaveAutomaticSurfaceProgress(agent);
             return Result.Success();
         }
