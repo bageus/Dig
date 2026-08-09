@@ -41,7 +41,8 @@ public sealed class UnsupportedResidentRecoveryPlanner
     public UnsupportedResidentRecoveryPlan? Plan(
         CellId start,
         NavigationSnapshot navigation,
-        WorldSnapshot world)
+        WorldSnapshot world,
+        bool requireFloorRecovery = false)
     {
         if (navigation == null)
         {
@@ -56,7 +57,8 @@ public sealed class UnsupportedResidentRecoveryPlanner
         Dictionary<CellId, CellSnapshot> cells = world.Chunks
             .SelectMany(chunk => chunk.Cells)
             .ToDictionary(cell => cell.Id);
-        if (!navigation.IsWalkable(start) || HasFullSupport(start, cells))
+        if (!navigation.IsWalkable(start)
+            || !requireFloorRecovery && HasFullSupport(start, cells))
         {
             return null;
         }
