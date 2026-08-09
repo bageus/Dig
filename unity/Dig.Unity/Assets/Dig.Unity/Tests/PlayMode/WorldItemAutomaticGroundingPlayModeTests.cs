@@ -83,6 +83,25 @@ public sealed class WorldItemAutomaticGroundingPlayModeTests
             Is.GreaterThan(clubVisual.GetComponent<BoxCollider>().bounds.size.y));
     }
 
+    [Test]
+    public void Pickup_collider_tracks_visible_geometry_with_only_small_tolerance()
+    {
+        _root = new GameObject("Precise world item collider test");
+        ItemDefinition definition = CombatEquipmentContent.CreateItems()[0];
+        DigWorldItemVisual visual = CreateWorldVisual(
+            definition,
+            "00000000000000000000000000000003");
+        Physics.SyncTransforms();
+
+        Bounds rendered = ResolveRendererBounds(visual.transform);
+        Bounds interactive = visual.GetComponent<BoxCollider>().bounds;
+        Assert.That(interactive.size.x - rendered.size.x, Is.InRange(0f, 0.021f));
+        Assert.That(interactive.size.y - rendered.size.y, Is.InRange(0f, 0.021f));
+        Assert.That(interactive.size.z - rendered.size.z, Is.InRange(0f, 0.021f));
+        Assert.That(Vector3.Distance(interactive.center, rendered.center),
+            Is.LessThan(0.001f));
+    }
+
     private DigWorldItemVisual CreateWorldVisual(
         ItemDefinition definition,
         string stackId)
