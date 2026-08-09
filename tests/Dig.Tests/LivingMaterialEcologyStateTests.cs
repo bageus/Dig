@@ -1,6 +1,7 @@
 using System;
 using Dig.Domain.Core;
 using Dig.Domain.Ecology;
+using Dig.Domain.Navigation;
 using Dig.Domain.Runtime;
 using Dig.Domain.World;
 using Xunit;
@@ -151,6 +152,11 @@ public sealed class LivingMaterialEcologyStateTests
             direction: 1,
             tick: 1);
         Assert.True(diagonal.IsSuccess);
+        LivingMaterialSnapshot diagonalSnapshot = state.Get(id)!;
+        Assert.Equal(new CellId(6, 2, 1), diagonalSnapshot.SurfacePose.Cell);
+        Assert.NotEqual(
+            SurfacePose.FloorCentre(new CellId(6, 2, 1)),
+            diagonalSnapshot.SurfacePose);
 
         AdvanceUntilMovementDue(state, id);
         Result depth = state.CommitMovement(
