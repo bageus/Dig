@@ -19,9 +19,9 @@ public sealed class LivingMaterialEcologyStateTests
             LivingMaterialEcologyProfiles.EcologyStepsPerDay);
         Assert.Equal(4, LivingMaterialEcologyProfiles.EcologyStepsPerSimulationTick);
         Assert.Equal(6, LivingMaterialEcologyProfiles.Hamster.WanderRadius);
-        Assert.Equal(400, LivingMaterialEcologyProfiles.Hamster.MovementCreditPerEcologyStep);
+        Assert.Equal(460, LivingMaterialEcologyProfiles.Hamster.MovementCreditPerEcologyStep);
         Assert.Equal(4, LivingMaterialEcologyProfiles.Grub.WanderRadius);
-        Assert.Equal(325, LivingMaterialEcologyProfiles.Grub.MovementCreditPerEcologyStep);
+        Assert.Equal(374, LivingMaterialEcologyProfiles.Grub.MovementCreditPerEcologyStep);
         Assert.Equal(10, LivingMaterialEcologyProfiles.PopulationCapPerPlane);
     }
 
@@ -49,10 +49,10 @@ public sealed class LivingMaterialEcologyStateTests
     }
 
     [Theory]
-    [InlineData(LivingMaterialSpecies.Hamster, 9, 3600, false)]
-    [InlineData(LivingMaterialSpecies.Hamster, 10, 4000, true)]
-    [InlineData(LivingMaterialSpecies.Grub, 12, 3900, false)]
-    [InlineData(LivingMaterialSpecies.Grub, 13, 4000, true)]
+    [InlineData(LivingMaterialSpecies.Hamster, 8, 3680, false)]
+    [InlineData(LivingMaterialSpecies.Hamster, 9, 4140, true)]
+    [InlineData(LivingMaterialSpecies.Grub, 10, 3740, false)]
+    [InlineData(LivingMaterialSpecies.Grub, 11, 4114, true)]
     public void FixedPointMovementCreditIsDeterministic(
         LivingMaterialSpecies species,
         int steps,
