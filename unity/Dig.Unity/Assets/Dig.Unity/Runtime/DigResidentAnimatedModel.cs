@@ -5,8 +5,8 @@ namespace Dig.Unity
 {
 internal static class DigResidentAnimatedModel
 {
-    internal const string StableId = "resident.male.blackbeard";
-    internal const string ResourcePath = "Residents/MaleBlackbeardDwarf";
+    internal const string StableId = "resident.dwarf.hi3d.lowpoly70k.rigged";
+    internal const string ResourcePath = "Residents/Dwarf_Hi3D_LowPoly_70k_Rigged";
 
     internal static bool TryResolveDefault(out DigVisualAsset asset)
     {

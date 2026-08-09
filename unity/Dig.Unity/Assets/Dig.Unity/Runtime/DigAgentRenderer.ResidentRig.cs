@@ -105,7 +105,7 @@ public sealed partial class DigAgentRenderer
                 animatedAsset,
                 ResidentBodyVariant.Masculine,
                 Vector3.one,
-                12,
+                24,
                 hasProfile: true);
         }
 

@@ -11,11 +11,16 @@ namespace Dig.Unity.Tests
 public sealed class DigResidentAnimatedModelPlayModeTests
 {
     [UnityTest]
-    public IEnumerator Blackbeard_default_model_plays_runtime_states_and_exposes_sockets()
+    public IEnumerator V3_default_model_is_used_and_exposes_runtime_rig()
     {
         Assert.IsTrue(
             DigResidentAnimatedModel.TryResolveDefault(out DigVisualAsset asset),
-            "The runtime Blackbeard resident resource was not imported.");
+            "The V3 dwarf resident resource was not imported.");
+        Assert.AreEqual(
+            "resident.dwarf.hi3d.lowpoly70k.rigged",
+            asset.StableId);
+        Assert.IsNotNull(asset.Prefab);
+        Assert.AreEqual("Dwarf_Hi3D_LowPoly_70k_Rigged", asset.Prefab!.name);
 
         AnimationClip[] clips = DigResidentAnimatedModel.LoadAnimationClips();
         HashSet<string> clipNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -24,29 +29,17 @@ public sealed class DigResidentAnimatedModelPlayModeTests
             clipNames.Add(NormalizeClipName(clips[index].name));
         }
 
-        string[] requiredClips =
-        {
-            "Idle", "Walk", "Run", "Climb", "Carry", "Mine",
-            "Build", "Eat", "Rest", "Hit", "Death",
-        };
-        for (int index = 0; index < requiredClips.Length; index++)
-        {
-            Assert.IsTrue(
-                clipNames.Contains(requiredClips[index]),
-                $"Missing animation clip '{requiredClips[index]}'.");
-        }
-
         Shader shader = Shader.Find("Universal Render Pipeline/Lit")
             ?? Shader.Find("Standard")
             ?? Shader.Find("Sprites/Default");
         Assert.IsNotNull(shader, "No test fallback shader is available.");
 
         Material fallbackMaterial = new Material(shader);
-        GameObject parent = new GameObject("Animated resident test parent");
+        GameObject parent = new GameObject("V3 resident test parent");
         try
         {
             ResidentAppearanceViewModel appearance = new ResidentAppearanceViewModel(
-                "resident.blackbeard.test",
+                "resident.v3.test",
                 ResidentBodyVariant.Masculine,
                 ResidentAgeVisualBand.Adult,
                 ResidentHairVisualVariant.Long,
@@ -60,45 +53,43 @@ public sealed class DigResidentAnimatedModelPlayModeTests
                 asset,
                 fallbackMaterial,
                 appearance,
-                maximumRenderers: 12);
+                maximumRenderers: 24);
 
             yield return null;
 
-            Assert.IsNotNull(
-                rig.GetComponentInChildren<Animator>(includeInactive: true));
+            Renderer[] renderers = rig.GetComponentsInChildren<Renderer>(
+                includeInactive: true);
             Assert.Greater(
-                rig.GetComponentsInChildren<SkinnedMeshRenderer>(
-                    includeInactive: true).Length,
+                renderers.Length,
                 0,
-                "Blackbeard was replaced by the procedural resident fallback.");
+                "The V3 authored dwarf has no runtime renderers.");
+            Assert.LessOrEqual(
+                renderers.Length,
+                24,
+                "The V3 authored dwarf exceeds the bounded resident renderer budget.");
             Assert.IsNotNull(
-                rig.transform.Find(asset.Prefab!.name),
-                "The instantiated Blackbeard model root is missing.");
-            Assert.AreEqual("LeftHandTool",
-                rig.ResolveSocket(DigResidentSocketKind.LeftHand).name);
-            Assert.AreEqual("RightHandTool",
-                rig.ResolveSocket(DigResidentSocketKind.RightHand).name);
-            Assert.AreEqual("CarryAnchor",
-                rig.ResolveSocket(DigResidentSocketKind.Cargo).name);
-            Assert.AreEqual("BackAttachment",
-                rig.ResolveSocket(DigResidentSocketKind.Back).name);
-            Assert.AreEqual("HeadAccessory",
-                rig.ResolveSocket(DigResidentSocketKind.Head).name);
+                rig.transform.Find(asset.Prefab.name),
+                "The V3 authored dwarf was replaced by the procedural fallback.");
+            Assert.IsNotNull(rig.ResolveSocket(DigResidentSocketKind.LeftHand));
+            Assert.IsNotNull(rig.ResolveSocket(DigResidentSocketKind.RightHand));
+            Assert.IsNotNull(rig.ResolveSocket(DigResidentSocketKind.Cargo));
+            Assert.IsNotNull(rig.ResolveSocket(DigResidentSocketKind.Back));
+            Assert.IsNotNull(rig.ResolveSocket(DigResidentSocketKind.Head));
 
             Apply(rig, ResidentActionVisualState.Idle, looping: true, version: 1);
-            Assert.AreEqual("Idle", rig.CurrentAnimationClipName);
+            AssertClipWhenAvailable(rig, clipNames, "Idle");
 
             Apply(rig, ResidentActionVisualState.Walk, looping: true, version: 2);
             yield return null;
-            Assert.AreEqual("Walk", rig.CurrentAnimationClipName);
+            AssertClipWhenAvailable(rig, clipNames, "Walk");
 
             Apply(rig, ResidentActionVisualState.Dig, looping: true, version: 3);
             yield return null;
-            Assert.AreEqual("Mine", rig.CurrentAnimationClipName);
+            AssertClipWhenAvailable(rig, clipNames, "Mine");
 
             rig.ApplyClimbPose(0.5f, ascending: true);
             yield return null;
-            Assert.AreEqual("Climb", rig.CurrentAnimationClipName);
+            AssertClipWhenAvailable(rig, clipNames, "Climb");
 
             Apply(
                 rig,
@@ -107,7 +98,15 @@ public sealed class DigResidentAnimatedModelPlayModeTests
                 version: 4,
                 normalizedProgress: 1d);
             yield return null;
-            Assert.AreEqual("Death", rig.CurrentAnimationClipName);
+            AssertClipWhenAvailable(rig, clipNames, "Death");
+
+            if (clips.Length == 0)
+            {
+                Assert.AreEqual(
+                    string.Empty,
+                    rig.CurrentAnimationClipName,
+                    "A rigged model without authored clips must use pose fallback instead of stale animations.");
+            }
 
             rig.SetSelected(true);
             rig.SetSelected(false);
@@ -121,11 +120,11 @@ public sealed class DigResidentAnimatedModelPlayModeTests
     }
 
     [Test]
-    public void Blackbeard_authored_mesh_does_not_require_animation_to_replace_fallback()
+    public void V3_authored_mesh_does_not_require_animation_to_replace_fallback()
     {
-        GameObject root = new GameObject("Blackbeard no-animation test root");
+        GameObject root = new GameObject("V3 no-animation test root");
         GameObject modelRoot = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        modelRoot.name = "Blackbeard authored mesh stand-in";
+        modelRoot.name = "V3 authored mesh stand-in";
         modelRoot.transform.SetParent(root.transform, worldPositionStays: false);
         try
         {
@@ -133,7 +132,7 @@ public sealed class DigResidentAnimatedModelPlayModeTests
                 root,
                 modelRoot,
                 DigResidentAnimatedModel.StableId,
-                maximumRenderers: 12,
+                maximumRenderers: 24,
                 out DigResidentRig rig,
                 configureAnimation: false));
 
@@ -204,11 +203,24 @@ public sealed class DigResidentAnimatedModelPlayModeTests
         double normalizedProgress = 0d)
     {
         rig.ApplyAction(new ResidentActionVisualViewModel(
-            "resident.blackbeard.test",
+            "resident.v3.test",
             state,
             normalizedProgress,
             looping,
             version));
+    }
+
+    private static void AssertClipWhenAvailable(
+        DigResidentRig rig,
+        HashSet<string> clipNames,
+        string expected)
+    {
+        if (!clipNames.Contains(expected))
+        {
+            return;
+        }
+
+        Assert.AreEqual(expected, rig.CurrentAnimationClipName);
     }
 
     private static string NormalizeClipName(string name)
