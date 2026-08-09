@@ -155,7 +155,9 @@ public sealed class DeepGameplayInteractionRegressionTests
         string multiWorker = Read(runtime, "DigTerrainWorkManualExcavation.MultiWorker.cs");
 
         Assert.Contains("_root.rotation=Quaternion.identity", ghost);
-        Assert.Contains("return item;", hover);\n        Assert.Contains("TryGetMushroom", hover);\n        Assert.Contains("TryGetBarrel", hover);
+        Assert.Contains("return item;", hover);
+        Assert.Contains("TryGetMushroom", hover);
+        Assert.Contains("TryGetBarrel", hover);
         Assert.Contains("TryGetBuilding", hover);
         Assert.Contains("RefreshHoverTintsIfStale(next)", hover);
         Assert.Contains("HasStaleHoverTints()", hover);
@@ -237,7 +239,8 @@ public sealed class DeepGameplayInteractionRegressionTests
             .Replace(" ", string.Empty, StringComparison.Ordinal)
             .Replace("\t", string.Empty, StringComparison.Ordinal)
             .Replace("\r", string.Empty, StringComparison.Ordinal)
-            .Replace("\n", string.Empty, StringComparison.Ordinal);
+            .Replace("
+", string.Empty, StringComparison.Ordinal);
     }
 
     private static string FindRepositoryRoot()
