@@ -15,7 +15,8 @@ public sealed class LivingMaterialSurfacePoseTests
     {
         CellId cell = new CellId(4, 2, 1);
         LivingMaterialSnapshot creature = new LivingMaterialSnapshot(
-            EntityId.Parse("creature-1"), EntityId.Parse("item-1"),
+            EntityId.Parse("00000000000000000000000000000001"),
+            EntityId.Parse("00000000000000000000000000000002"),
             LivingMaterialSpecies.Hamster, LivingMaterialContainment.Free,
             cell, cell, new LivingMaterialPlaneKey(cell), 1,
             LivingMaterialActivity.Moving, 0, 0, 0, 4, 16, 0, 100, 0,
@@ -33,7 +34,8 @@ public sealed class LivingMaterialSurfacePoseTests
     {
         CellId cell = new CellId(1, 1, 0);
         LivingMaterialSnapshot creature = new LivingMaterialSnapshot(
-            EntityId.Parse("legacy-creature"), EntityId.Parse("legacy-item"),
+            EntityId.Parse("00000000000000000000000000000003"),
+            EntityId.Parse("00000000000000000000000000000004"),
             LivingMaterialSpecies.Grub, LivingMaterialContainment.Free,
             cell, cell, new LivingMaterialPlaneKey(cell), 1,
             LivingMaterialActivity.Moving, 0, 0, 0, int.MaxValue,

@@ -25,7 +25,8 @@ internal static class DigAuthoredResidentRigConfigurator
         bool isDefaultAuthoredModel =
             DigResidentAnimatedModel.IsDefaultAsset(stableId);
         DigResidentAnimationPlayer? animationPlayer = null;
-        if (isDefaultAuthoredModel && configureAnimation)
+        if (isDefaultAuthoredModel && configureAnimation
+            && DigResidentAnimatedModel.LoadAnimationClips().Length > 0)
         {
             if (DigResidentAnimationPlayer.TryConfigure(
                     modelRoot,
@@ -37,10 +38,9 @@ internal static class DigAuthoredResidentRigConfigurator
             else
             {
                 Debug.LogWarning(
-                    $"Resident visual '{stableId}' loaded its authored Blackbeard "
-                    + "mesh, but animation clips could not be configured. The "
-                    + "authored model remains active without animation instead of "
-                    + "being replaced by the procedural fallback.",
+                    $"Resident visual '{stableId}' loaded its authored mesh, but "
+                    + "animation clips could not be configured. The authored model "
+                    + "remains active and uses the resident rig pose fallback.",
                     modelRoot);
             }
         }
@@ -54,29 +54,43 @@ internal static class DigAuthoredResidentRigConfigurator
             modelRoot.transform,
             "LeftArm",
             "Left Arm",
+            "LeftUpperArm",
             "arm_l",
-            "upperarm_l")
+            "upperarm_l",
+            "upper_arm.L",
+            "upper_arm_l")
             ?? FindOrCreate(modelRoot.transform, "Left Arm");
         Transform rightArm = FindDescendantAny(
             modelRoot.transform,
             "RightArm",
             "Right Arm",
+            "RightUpperArm",
             "arm_r",
-            "upperarm_r")
+            "upperarm_r",
+            "upper_arm.R",
+            "upper_arm_r")
             ?? FindOrCreate(modelRoot.transform, "Right Arm");
         Transform leftLeg = FindDescendantAny(
             modelRoot.transform,
             "LeftLeg",
             "Left Leg",
+            "LeftUpLeg",
+            "LeftUpperLeg",
             "leg_l",
-            "thigh_l")
+            "thigh_l",
+            "upper_leg.L",
+            "upper_leg_l")
             ?? FindOrCreate(modelRoot.transform, "Left Leg");
         Transform rightLeg = FindDescendantAny(
             modelRoot.transform,
             "RightLeg",
             "Right Leg",
+            "RightUpLeg",
+            "RightUpperLeg",
             "leg_r",
-            "thigh_r")
+            "thigh_r",
+            "upper_leg.R",
+            "upper_leg_r")
             ?? FindOrCreate(modelRoot.transform, "Right Leg");
         Transform[] sockets = CreateSockets(
             modelRoot.transform,
@@ -153,14 +167,32 @@ internal static class DigAuthoredResidentRigConfigurator
         Transform leftArm,
         Transform rightArm)
     {
+        Transform? leftHand = FindDescendantAny(
+            root,
+            "LeftHand",
+            "Left Hand",
+            "hand_l",
+            "hand.L");
+        Transform? rightHand = FindDescendantAny(
+            root,
+            "RightHand",
+            "Right Hand",
+            "hand_r",
+            "hand.R");
         return new[]
         {
             FindDescendant(root, "HeadAccessory")
                 ?? CreateSocket(root, "Socket Head", new Vector3(0f, 1.48f, 0f)),
             FindDescendant(root, "LeftHandTool")
-                ?? CreateSocket(leftArm, "Socket Left Hand", new Vector3(0f, -0.38f, 0f)),
+                ?? CreateSocket(
+                    leftHand ?? leftArm,
+                    "Socket Left Hand",
+                    leftHand == null ? new Vector3(0f, -0.38f, 0f) : Vector3.zero),
             FindDescendant(root, "RightHandTool")
-                ?? CreateSocket(rightArm, "Socket Right Hand", new Vector3(0f, -0.38f, 0f)),
+                ?? CreateSocket(
+                    rightHand ?? rightArm,
+                    "Socket Right Hand",
+                    rightHand == null ? new Vector3(0f, -0.38f, 0f) : Vector3.zero),
             FindDescendant(root, "BackAttachment")
                 ?? CreateSocket(root, "Socket Back", new Vector3(0f, 0.82f, -0.22f)),
             FindDescendant(root, "CarryAnchor")
@@ -210,7 +242,7 @@ internal static class DigAuthoredResidentRigConfigurator
         Transform root,
         string name)
     {
-        if (string.Equals(root.name, name, StringComparison.OrdinalIgnoreCase))
+        if (MatchesImportedName(root.name, name))
         {
             return root;
         }
@@ -225,6 +257,24 @@ internal static class DigAuthoredResidentRigConfigurator
         }
 
         return null;
+    }
+
+    private static bool MatchesImportedName(string importedName, string expectedName)
+    {
+        if (string.Equals(importedName, expectedName, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        int separator = Math.Max(
+            importedName.LastIndexOf('|'),
+            importedName.LastIndexOf(':'));
+        return separator >= 0
+            && separator + 1 < importedName.Length
+            && string.Equals(
+                importedName.Substring(separator + 1),
+                expectedName,
+                StringComparison.OrdinalIgnoreCase);
     }
 }
 }
