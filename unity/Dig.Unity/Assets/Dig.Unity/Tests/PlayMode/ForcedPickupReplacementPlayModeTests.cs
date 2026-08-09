@@ -166,22 +166,33 @@ public sealed class ForcedPickupReplacementPlayModeTests
             tick: 1));
 
         Assert.That(runtime.Residents.HasManualTunnelMovement(residentId), Is.False);
+        bool reachedSource = false;
         for (int tick = 0; tick < 24; tick++)
         {
             ResidentNeedsRuntimePlayModeHarness.RunTick(runtime);
-            if (inventoryRepository.Get().GetStack(stackId)!.Location.Kind
-                == ItemLocationKind.AgentInventory)
+            if (runtime.Residents.Repository.Get(resident)!.Position != destination)
             {
-                break;
+                continue;
             }
+
+            reachedSource = true;
+            ItemStackSnapshot onArrival = inventoryRepository.Get().GetStack(stackId)!;
+            Assert.That(
+                onArrival.Location.Kind,
+                Is.EqualTo(ItemLocationKind.AgentInventory),
+                "Pickup must enter resident inventory on the same tick the resident reaches the source cell.");
+            break;
         }
 
+        Assert.That(reachedSource, Is.True, "Resident never reached the pickup source cell.");
         ItemStackSnapshot acquired = inventoryRepository.Get().GetStack(stackId)!;
         Assert.That(acquired.Location.Kind, Is.EqualTo(ItemLocationKind.AgentInventory));
         Assert.That(acquired.Location.OwnerId, Is.EqualTo(resident));
         Assert.That(acquired.ReservedQuantity, Is.Zero);
-        Assert.That(runtime.Residents.Repository.Get(resident)!.Position,
-            Is.EqualTo(destination));
+        Assert.That(runtime.Terrain.LoadAllWorldItems()
+            .Any(value => value.StackId == stackId.ToString()), Is.False);
+        Assert.That(runtime.Terrain.LoadResidentInventoryLayout(residentId).Slots
+            .Any(value => value.StackId == stackId.ToString()), Is.True);
     }
 
     [Test]
