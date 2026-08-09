@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Dig.Domain.Core;
+using Dig.Domain.Navigation;
 using Dig.Domain.World;
 
 namespace Dig.Domain.Ecology
@@ -81,6 +82,7 @@ public sealed partial class LivingMaterialEcologyState
 
         CellId from = value.Cell;
         value.Cell = target;
+        value.SurfacePose = SelectFloorPose(value, target);
         value.Direction = direction;
         value.MovementCredit -= LivingMaterialEcologyProfiles.MovementThreshold;
         value.SuccessfulMovementSteps = checked(value.SuccessfulMovementSteps + 1);
@@ -90,6 +92,29 @@ public sealed partial class LivingMaterialEcologyState
         IncrementVersion(value);
         Raise(new LivingMaterialMoved(tick, creatureId, from, target));
         return Result.Success();
+    }
+
+    private SurfacePose SelectFloorPose(LivingMaterialIndividual value, CellId target)
+    {
+        int u = LivingMaterialDeterminism.SelectInclusive(
+            WorldSeed,
+            value.CreatureId,
+            value.DeterministicSequence,
+            "surface-u",
+            100,
+            900);
+        int v = LivingMaterialDeterminism.SelectInclusive(
+            WorldSeed,
+            value.CreatureId,
+            value.DeterministicSequence,
+            "surface-v",
+            100,
+            900);
+        if (u == SurfacePose.CellCentre && v == SurfacePose.CellCentre)
+        {
+            u++;
+        }
+        return new SurfacePose(target, SurfaceFace.Floor, u, v);
     }
 
     public Result CommitBlocked(

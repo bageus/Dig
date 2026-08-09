@@ -57,6 +57,7 @@ public sealed partial class LivingMaterialEcologyState
                 Species = snapshot.Species,
                 Containment = snapshot.Containment,
                 Cell = snapshot.Cell ?? snapshot.AnchorCell,
+                SurfacePose = snapshot.SurfacePose,
                 AnchorCell = snapshot.AnchorCell,
                 PlaneKey = snapshot.PlaneKey,
                 Direction = snapshot.Direction,

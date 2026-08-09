@@ -97,12 +97,15 @@ internal sealed partial class DigAgentSession
                 return true;
             }
 
-            if (!_surfaceTraffic.CanOccupy(agent.Id, destination, _tick))
+            SurfacePose nextPose = agent.SurfacePose.Face == destination.Face
+                ? SurfacePoseSteering.MoveTowards(agent.SurfacePose, destination)
+                : destination;
+            if (!_surfaceTraffic.CanOccupy(agent.Id, nextPose, _tick))
             {
                 result = Result.Success();
                 return true;
             }
-            result = MoveOnReservedSurface(agent, destination);
+            result = MoveOnReservedSurface(agent, nextPose);
             if (result.IsSuccess)
             {
                 SaveAutomaticSurfaceProgress(agent);

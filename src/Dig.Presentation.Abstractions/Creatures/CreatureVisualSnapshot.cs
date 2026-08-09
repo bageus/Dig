@@ -1,4 +1,5 @@
 using System;
+using Dig.Domain.Navigation;
 
 namespace Dig.Presentation.Creatures
 {
@@ -23,7 +24,9 @@ public sealed class CreatureVisualSnapshot
         string activityVariantId = "",
         int currentHealth = 0,
         int maximumHealth = 0,
-        bool showHealthBar = false)
+        bool showHealthBar = false,
+        int surfaceU = SurfacePose.CellCentre,
+        int surfaceV = SurfacePose.CellCentre)
     {
         if (string.IsNullOrWhiteSpace(creatureId))
             throw new ArgumentException("Creature id is required.", nameof(creatureId));
@@ -40,6 +43,9 @@ public sealed class CreatureVisualSnapshot
             || (maximumHealth > 0 && currentHealth > maximumHealth)
             || (showHealthBar && maximumHealth <= 0))
             throw new ArgumentOutOfRangeException(nameof(currentHealth));
+        if (surfaceU < 0 || surfaceU > SurfacePose.UnitsPerCell
+            || surfaceV < 0 || surfaceV > SurfacePose.UnitsPerCell)
+            throw new ArgumentOutOfRangeException(nameof(surfaceU));
 
         CreatureId = creatureId.Trim();
         SpeciesId = speciesId.Trim();
@@ -60,6 +66,8 @@ public sealed class CreatureVisualSnapshot
         CurrentHealth = currentHealth;
         MaximumHealth = maximumHealth;
         ShowHealthBar = showHealthBar;
+        SurfaceU = surfaceU;
+        SurfaceV = surfaceV;
     }
 
     public string CreatureId { get; }
@@ -81,5 +89,7 @@ public sealed class CreatureVisualSnapshot
     public int CurrentHealth { get; }
     public int MaximumHealth { get; }
     public bool ShowHealthBar { get; }
+    public int SurfaceU { get; }
+    public int SurfaceV { get; }
 }
 }

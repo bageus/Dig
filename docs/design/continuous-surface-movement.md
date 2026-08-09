@@ -84,6 +84,14 @@ authoritative fixed-point micro-step. A conflicting target immediately uses the 
 visual overlap fallback; vertical climbers likewise never block each other. Runtime
 verification remains required before continuous movement is verified in playable Unity.
 
+The 2026-08-09 regression correction makes the coarse/fine boundary effective in
+runtime code: route cells only select a legal corridor. Residents and enemies advance
+toward boundaries and final clicked/work points by bounded fixed-point micro-steps, so
+cell centres and boundaries are not movement-sized waypoints. Hamsters and worms own a
+persisted floor `SurfacePose`; deterministic wandering selects non-centre floor points
+and creature presentation projects those exact coordinates. Legacy ecology saves load
+at the centre of the saved floor cell and acquire a free pose on the next movement.
+
 When excavation removes full support beneath an active spatial worker, the authoritative
 pose attaches to the nearest exposed vertical face instead of remaining on an imaginary
 floor. Spatial work accepts that persisted vertical pose while support is absent. Once the

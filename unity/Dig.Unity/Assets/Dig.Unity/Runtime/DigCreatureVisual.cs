@@ -1,5 +1,6 @@
 using System;
 using Dig.Presentation.Creatures;
+using Dig.Domain.Navigation;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -149,9 +150,11 @@ public sealed class DigCreatureVisual : MonoBehaviour
     private static Vector3 ToWorld(CreatureVisualSnapshot snapshot)
     {
         return DigTunnelProjection.ResidentWorldPosition(
-            snapshot.CellX,
+            snapshot.CellX + ((snapshot.SurfaceU - SurfacePose.CellCentre)
+                / (float)SurfacePose.UnitsPerCell),
             snapshot.CellY,
-            snapshot.CellZ);
+            snapshot.CellZ + ((snapshot.SurfaceV - SurfacePose.CellCentre)
+                / (float)SurfacePose.UnitsPerCell));
     }
 }
 }
