@@ -4,6 +4,7 @@ using System.Linq;
 using Dig.Domain.Core;
 using Dig.Domain.Ecology;
 using Dig.Domain.Inventory;
+using Dig.Domain.Navigation;
 using Dig.Domain.World;
 
 namespace Dig.Application.Saving
@@ -60,6 +61,9 @@ public static class LivingMaterialEcologySaveAdapter
                 DeterministicSequence = creature.DeterministicSequence,
                 BlockedReason = creature.BlockedReason,
                 Version = creature.Version,
+                HasSurfacePose = creature.IsFree,
+                SurfaceU = creature.SurfacePose.U,
+                SurfaceV = creature.SurfacePose.V,
             });
         }
 
@@ -131,7 +135,14 @@ public static class LivingMaterialEcologySaveAdapter
                     MigrateNextReproductionStep(data, saved.NextReproductionStep),
                     saved.DeterministicSequence,
                     saved.BlockedReason,
-                    saved.Version));
+                    saved.Version,
+                    saved.HasCell
+                        ? new SurfacePose(
+                            new CellId(saved.CellX, saved.CellY, saved.CellZ),
+                            SurfaceFace.Floor,
+                            saved.HasSurfacePose ? saved.SurfaceU : SurfacePose.CellCentre,
+                            saved.HasSurfacePose ? saved.SurfaceV : SurfacePose.CellCentre)
+                        : (SurfacePose?)null));
             }
 
             return LivingMaterialEcologyState.Restore(
