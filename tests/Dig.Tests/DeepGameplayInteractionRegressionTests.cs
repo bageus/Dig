@@ -239,8 +239,7 @@ public sealed class DeepGameplayInteractionRegressionTests
             .Replace(" ", string.Empty, StringComparison.Ordinal)
             .Replace("\t", string.Empty, StringComparison.Ordinal)
             .Replace("\r", string.Empty, StringComparison.Ordinal)
-            .Replace("
-", string.Empty, StringComparison.Ordinal);
+            .Replace("\\n", string.Empty, StringComparison.Ordinal);
     }
 
     private static string FindRepositoryRoot()
