@@ -33,7 +33,10 @@ public sealed partial class DigGameHudCanvas
             string.Empty,
             preferredWidth: 1240f);
         RectTransform row = CreateHorizontalRow("Excavation Tools", section, 56f);
-        if (_interaction.IsRoomUpgradeModeUnlocked)\n        {\n            AddRoomPlanningModeToggle(row);\n        }
+        if (_interaction.IsRoomUpgradeModeUnlocked)
+        {
+            AddRoomPlanningModeToggle(row);
+        }
 
         AddExcavationDrawingButtons(row);
         AddCaveRoomPlanningButtons(row);
