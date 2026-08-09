@@ -16,10 +16,23 @@ internal static class DigAuthoredResidentRigConfigurator
         bool configureAnimation = true)
     {
         Renderer[] renderers = DigResidentRigFactory.CollectRenderers(modelRoot);
-        if (renderers.Length < 1 || renderers.Length > maximumRenderers)
+        if (renderers.Length < 1)
         {
+            Debug.LogWarning(
+                $"Resident visual '{stableId}' loaded an authored model without renderer components. "
+                + "The procedural resident fallback will be used.",
+                modelRoot);
             rig = null!;
             return false;
+        }
+
+        if (maximumRenderers > 0 && renderers.Length > maximumRenderers)
+        {
+            Debug.Log(
+                $"Resident visual '{stableId}' uses {renderers.Length} renderer components, "
+                + $"above the configured budget of {maximumRenderers}. Keeping the authored "
+                + "model active instead of replacing it with the procedural fallback.",
+                modelRoot);
         }
 
         bool isDefaultAuthoredModel =
