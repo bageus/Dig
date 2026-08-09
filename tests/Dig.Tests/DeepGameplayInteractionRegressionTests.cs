@@ -155,7 +155,7 @@ public sealed class DeepGameplayInteractionRegressionTests
         string multiWorker = Read(runtime, "DigTerrainWorkManualExcavation.MultiWorker.cs");
 
         Assert.Contains("_root.rotation=Quaternion.identity", ghost);
-        Assert.Contains("return item;", hover);
+        Assert.Contains("returnitem;", hover);
         Assert.Contains("TryGetMushroom", hover);
         Assert.Contains("TryGetBarrel", hover);
         Assert.Contains("TryGetBuilding", hover);
