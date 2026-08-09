@@ -31,7 +31,7 @@ public sealed class SpatialWorkSurfaceRuntimeContractTests
     }
 
     [Fact]
-    public void Mushroom_and_world_item_actions_require_their_precise_work_pose()
+    public void Mushroom_requires_precise_pose_while_pickup_accepts_supported_source_floor()
     {
         string root = FindRepositoryRoot();
         string planner = Normalize(File.ReadAllText(Path.Combine(
@@ -47,7 +47,11 @@ public sealed class SpatialWorkSurfaceRuntimeContractTests
         Assert.Contains("MushroomChopJobDefinition", planner);
         Assert.Contains("WorldItemPickupJobDefinition", planner);
         Assert.Contains("WorkSurfacePositioning.IsAt(ToSurfacePose(worker),required)", mushrooms);
-        Assert.Contains("WorkSurfacePositioning.IsAt(ToSurfacePose(agent),required)", pickup);
+        Assert.Contains("IsAtPreciseWorkPose(job,agent)", pickup);
+        Assert.Contains("job.DefinitionisWorldItemPickupJobDefinition", planner);
+        Assert.Contains("actual.Cell==required.Cell", planner);
+        Assert.Contains("actual.Face==SurfaceFace.Floor", planner);
+        Assert.Contains("HasFullStandingSupport(required.Cell)", planner);
     }
 
     [Fact]
