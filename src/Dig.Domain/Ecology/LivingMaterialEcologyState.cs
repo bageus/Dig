@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dig.Domain.Core;
+using Dig.Domain.Navigation;
 using Dig.Domain.World;
 
 namespace Dig.Domain.Ecology
@@ -169,6 +170,7 @@ public sealed partial class LivingMaterialEcologyState : AggregateRoot
             || value.Cell != cell;
         value.Containment = LivingMaterialContainment.Free;
         value.Cell = cell;
+        value.SurfacePose = SurfacePose.FloorCentre(cell);
         value.AnchorCell = cell;
         value.PlaneKey = planeKey;
         value.Direction = SelectDirection(value, "release-direction");
@@ -223,6 +225,7 @@ public sealed partial class LivingMaterialEcologyState : AggregateRoot
         public LivingMaterialSpecies Species;
         public LivingMaterialContainment Containment;
         public CellId Cell;
+        public SurfacePose SurfacePose;
         public CellId AnchorCell;
         public LivingMaterialPlaneKey PlaneKey;
         public int Direction;
@@ -256,6 +259,7 @@ public sealed partial class LivingMaterialEcologyState : AggregateRoot
                     ? LivingMaterialContainment.Free
                     : LivingMaterialContainment.Stored,
                 Cell = worldCell ?? planeKey.Root,
+                SurfacePose = SurfacePose.FloorCentre(worldCell ?? planeKey.Root),
                 AnchorCell = worldCell ?? planeKey.Root,
                 PlaneKey = planeKey,
                 Direction = LivingMaterialDeterminism.SelectInclusive(
@@ -296,7 +300,8 @@ public sealed partial class LivingMaterialEcologyState : AggregateRoot
                 NextReproductionStep,
                 DeterministicSequence,
                 BlockedReason,
-                Version);
+                Version,
+                SurfacePose);
         }
     }
 }
