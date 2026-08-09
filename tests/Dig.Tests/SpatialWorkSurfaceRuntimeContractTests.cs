@@ -22,7 +22,8 @@ public sealed class SpatialWorkSurfaceRuntimeContractTests
         Assert.Contains("IReadOnlyDictionary<string,SurfacePose>", spatial);
         Assert.Contains("WorkSurfacePositioning.Resolve", spatial);
         Assert.Contains("WorkSurfacePositioning.IsAt(ToSurfacePose(agent),workPose)", spatial);
-        Assert.Contains("MoveOnReservedSurface(agent,destination)", movement);
+        Assert.Contains("SurfacePoseSteering.MoveTowards(agent.SurfacePose,destination)", movement);
+        Assert.Contains("MoveOnReservedSurface(agent,nextPose)", movement);
         Assert.Contains("SaveAutomaticSurfaceProgress(agent)", movement);
         Assert.Contains("!_tunnelVolume.HasFullActorSupport(destination.Cell)", movement);
         Assert.Contains("VerticalSurfaceSteering.TryAttachToWall", movement);
