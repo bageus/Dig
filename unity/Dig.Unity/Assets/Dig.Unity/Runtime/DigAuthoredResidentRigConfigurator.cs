@@ -26,14 +26,9 @@ internal static class DigAuthoredResidentRigConfigurator
             return false;
         }
 
-        if (maximumRenderers > 0 && renderers.Length > maximumRenderers)
-        {
-            Debug.Log(
-                $"Resident visual '{stableId}' uses {renderers.Length} renderer components, "
-                + $"above the configured budget of {maximumRenderers}. Keeping the authored "
-                + "model active instead of replacing it with the procedural fallback.",
-                modelRoot);
-        }
+        // Renderer count is a presentation budget, not a validity rule. A valid authored
+        // model must remain visible even when a multipart import exceeds that budget.
+        _ = maximumRenderers;
 
         bool isDefaultAuthoredModel =
             DigResidentAnimatedModel.IsDefaultAsset(stableId);
