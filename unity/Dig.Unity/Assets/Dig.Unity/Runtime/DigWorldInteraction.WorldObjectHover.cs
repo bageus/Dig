@@ -40,7 +40,19 @@ namespace Dig.Unity
                 RaycastHit hit = hits[index];
                 if (_itemRenderer!.TryGetItem(hit, out DigWorldItemVisual item))
                 {
-                    return item.Model.IsBuildingBox ? item : null;
+                    return item;
+                }
+
+                if (_mushroomRenderer != null
+                    && _mushroomRenderer.TryGetMushroom(hit, out DigMushroomVisual mushroom))
+                {
+                    return mushroom;
+                }
+
+                if (_barrelRenderer != null
+                    && _barrelRenderer.TryGetBarrel(hit, out DigBarrelVisual barrel))
+                {
+                    return barrel;
                 }
 
                 if (_buildingRenderer!.TryGetBuilding(hit, out DigBuildingVisual building))

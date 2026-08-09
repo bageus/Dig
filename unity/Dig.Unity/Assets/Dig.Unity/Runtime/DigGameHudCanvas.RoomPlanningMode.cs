@@ -33,7 +33,7 @@ public sealed partial class DigGameHudCanvas
             string.Empty,
             preferredWidth: 1240f);
         RectTransform row = CreateHorizontalRow("Excavation Tools", section, 56f);
-        AddRoomPlanningModeButtons(row);
+        if (_interaction.IsRoomUpgradeModeUnlocked)\n        {\n            AddRoomPlanningModeToggle(row);\n        }
 
         AddExcavationDrawingButtons(row);
         AddCaveRoomPlanningButtons(row);
@@ -90,17 +90,12 @@ public sealed partial class DigGameHudCanvas
         SetButtonActive(tall, _interaction.CaveRoomPreset == CaveRoomPresetKind.Tall);
     }
 
-    private void AddRoomPlanningModeButtons(RectTransform row)
+    private void AddRoomPlanningModeToggle(RectTransform row)
     {
-        Button digMode = CreateButton("Dig Mode", row, "Dig", () =>
-            _interaction!.SetRoomUpgradeMode(false),
+        Button toggle = CreateButton("Room Types Toggle", row, "Room Types", () =>
+            _interaction!.SetRoomUpgradeMode(!_interaction.RoomUpgradeMode),
             preferredHeight: 52f);
-        Button upgradeMode = CreateButton("Room Types Mode", row, "Room Types", () =>
-            _interaction!.SetRoomUpgradeMode(true),
-            preferredHeight: 52f);
-        upgradeMode.interactable = _interaction!.IsRoomUpgradeModeUnlocked;
-        SetButtonActive(digMode, !_interaction!.RoomUpgradeMode);
-        SetButtonActive(upgradeMode, _interaction.RoomUpgradeMode);
+        SetButtonActive(toggle, _interaction!.RoomUpgradeMode);
     }
 }
 

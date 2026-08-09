@@ -208,9 +208,9 @@ namespace Dig.Unity
                 resolution.WorldScale);
             _interactionCollider!.center = local.center;
             _interactionCollider.size = new Vector3(
-                Mathf.Max(0.28f, local.size.x + 0.10f),
-                Mathf.Max(0.28f, local.size.y + 0.06f),
-                Mathf.Max(0.28f, local.size.z + 0.10f));
+                Mathf.Max(0.08f, local.size.x + 0.02f),
+                Mathf.Max(0.08f, local.size.y + 0.02f),
+                Mathf.Max(0.08f, local.size.z + 0.02f));
         }
 
         private void ApplyInteraction(DigItemVisualResolution resolution)

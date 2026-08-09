@@ -32,20 +32,15 @@ namespace Dig.Unity
             if (!_hud.ContainsScreenPoint(Input.mousePosition))
             {
                 RaycastHit[] hits = GetPointerHits();
-                if (TryResolveReachableMushroomHit(hits, out DigMushroomVisual mushroom))
+                if (TryResolveMushroomHit(hits, out DigMushroomVisual mushroom))
                 {
                     nextMushroom = mushroom;
                 }
-                else if (_agentRenderer.SelectedCount > 0
-                    && TryResolveWorldItemPointerTarget(
-                        hits,
-                        IsAltPressed(),
-                        out ResolvedWorldItemPointerTarget itemTarget)
-                    && itemTarget.ActionAvailable
-                    && itemTarget.Action
-                        != Dig.Domain.Inventory.ItemWorldInteractionAction.SelectBuildingBox)
+                else if (TryResolveAnyWorldItemHit(
+                    hits,
+                    out DigWorldItemVisual item))
                 {
-                    nextItem = itemTarget.Item;
+                    nextItem = item;
                 }
                 else if (TryResolveAgentHit(hits, out DigAgentVisual candidate))
                 {
@@ -71,13 +66,13 @@ namespace Dig.Unity
             {
                 if (_hoveredWorldItem != null)
                 {
-                    _hoveredWorldItem.SetHovered(false);
+                    _hoveredWorldItem.SetInteractionHighlighted(false);
                 }
 
                 _hoveredWorldItem = nextItem;
                 if (_hoveredWorldItem != null)
                 {
-                    _hoveredWorldItem.SetHovered(true);
+                    _hoveredWorldItem.SetInteractionHighlighted(true);
                 }
             }
 
@@ -106,7 +101,7 @@ namespace Dig.Unity
 
             if (_hoveredWorldItem != null)
             {
-                _hoveredWorldItem.SetHovered(false);
+                _hoveredWorldItem.SetInteractionHighlighted(false);
             }
 
             if (_hoveredMushroom != null)

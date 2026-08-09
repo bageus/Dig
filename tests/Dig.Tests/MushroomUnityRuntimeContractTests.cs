@@ -26,7 +26,7 @@ public sealed class MushroomUnityRuntimeContractTests
         Assert.Contains("ApplicationInputCommandKind.ChopMushroom", decisions);
         Assert.Contains("DirectCommandCursorKind.Axe", cursor);
         Assert.Contains("TryResolveReachableMushroomHit(hits,out_)", cursorTargets);
-        Assert.Contains("TryResolveReachableMushroomHit(hits,outDigMushroomVisualmushroom)", pointerHits);
+        Assert.Contains("TryResolveMushroomHit(hits,outDigMushroomVisualmushroom)", pointerHits);
         Assert.DoesNotContain("?.SetHovered", pointerHits);
         Assert.Contains("if(_hoveredMushroom!=null)", pointerHits);
         Assert.Contains("_hoveredMushroom.SetHovered(false)", pointerHits);
@@ -72,8 +72,8 @@ public sealed class MushroomUnityRuntimeContractTests
             StringComparison.Ordinal);
         Assert.True(itemBlock >= 0 && itemBlock < mushroomResolution);
         Assert.Contains("Aphysicaldropinfrontofaregrownsite", priority);
-        Assert.Contains("TryResolveWorldItemPointerTarget", pointerHits);
-        Assert.Contains("itemTarget.ActionAvailable", pointerHits);
+        Assert.Contains("TryResolveAnyWorldItemHit", pointerHits);
+        Assert.Contains("SetInteractionHighlighted(true)", pointerHits);
         Assert.Contains("_itemRenderer.TryGetItem(hits[index],out_)", priority);
         Assert.Contains("building=null!;returnfalse", priority);
     }

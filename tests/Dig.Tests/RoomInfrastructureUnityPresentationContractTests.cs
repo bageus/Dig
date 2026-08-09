@@ -70,12 +70,13 @@ public sealed class RoomInfrastructureUnityPresentationContractTests
         Assert.Contains("Room Upgrade Overlay", renderer);
         Assert.DoesNotContain("PrimitiveType.Sphere", renderer);
         Assert.Contains("ShowExcavationPalette();", hudContext);
-        Assert.Contains("AddRoomPlanningModeButtons(row);", hudMode);
+        Assert.Contains("AddRoomPlanningModeToggle(row);", hudMode);
         Assert.Contains("OpenExcavationMenuInDigMode();", hudMode);
         Assert.Contains("_roomProvenance.Count > 0", session);
-        Assert.Contains("Dig Mode", hudMode);
-        Assert.Contains("Room Types Mode", hudMode);
-        Assert.Contains("upgradeMode.interactable = _interaction!.IsRoomUpgradeModeUnlocked", hudMode);
+        Assert.Contains("Room Types Toggle", hudMode);
+        Assert.Contains("SetRoomUpgradeMode(!_interaction.RoomUpgradeMode)", hudMode);
+        Assert.DoesNotContain("Dig Mode", hudMode);
+        Assert.DoesNotContain("Upgrade Mode", hudMode);
         Assert.Contains("button.interactable = room.CanChangePurpose", hudRoom);
         Assert.DoesNotContain("_progress.Values", renderer);
         Assert.Contains("TryGetMarker", renderer);

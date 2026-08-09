@@ -67,6 +67,10 @@ namespace Dig.Unity
 
             RaycastHit[] hits = GetPointerHits();
             TryHighlightHostileCreature(hits);
+            if (TryResolveBarrelHit(hits, out DigBarrelVisual hoveredBarrel))
+            {
+                _barrelRenderer!.SetHighlighted(hoveredBarrel.Model.BarrelId);
+            }
             if (TryResolveVukerKidnapHoverTarget(hits))
             {
                 return DirectCommandCursorKind.Pickup;
