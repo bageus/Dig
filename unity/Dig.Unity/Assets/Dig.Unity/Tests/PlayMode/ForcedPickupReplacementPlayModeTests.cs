@@ -13,6 +13,57 @@ namespace Dig.Unity.Tests
 public sealed class ForcedPickupReplacementPlayModeTests
 {
     [Test]
+    public void Pickup_and_drop_atomically_transfer_between_world_and_resident_inventory()
+    {
+        ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
+            ResidentNeedsRuntimePlayModeHarness.CreateRuntime();
+        string residentId = runtime.Residents.LoadView().First().Id;
+        EntityId resident = EntityId.Parse(residentId);
+        CellId source = runtime.Residents.Repository.Get(resident)!.Position;
+        InMemoryInventoryRepository inventoryRepository =
+            ResidentNeedsRuntimePlayModeHarness.GetField<InMemoryInventoryRepository>(
+                runtime.Terrain,
+                "_inventoryRepository");
+        EntityId stackId = EntityId.Parse("fa000000000000000000000000000005");
+        InventoryState inventory = inventoryRepository.Get();
+        Require(inventory.AddUnit(
+            stackId,
+            CampfireProductionContent.StoneItemId,
+            ItemLocation.InWorld(source),
+            tick: 0));
+        inventoryRepository.Save(inventory);
+
+        Require(runtime.Terrain.CreateWorldItemPickup(
+            stackId.ToString(),
+            residentId,
+            source,
+            tick: 1));
+        ResidentNeedsRuntimePlayModeHarness.RunTick(runtime);
+
+        ItemStackSnapshot carried = inventoryRepository.Get().GetStack(stackId)!;
+        Assert.That(carried.Location.Kind, Is.EqualTo(ItemLocationKind.AgentInventory));
+        Assert.That(carried.Location.OwnerId, Is.EqualTo(resident));
+        Assert.That(runtime.Terrain.LoadAllWorldItems()
+            .Any(value => value.StackId == stackId.ToString()), Is.False);
+        Assert.That(runtime.Terrain.LoadResidentInventoryLayout(residentId).Slots
+            .Any(value => value.StackId == stackId.ToString()), Is.True);
+
+        CellId destination = source;
+        Require(runtime.Terrain.DropResidentInventoryStack(
+            residentId,
+            stackId.ToString(),
+            destination,
+            tick: 3));
+
+        ItemStackSnapshot dropped = inventoryRepository.Get().GetStack(stackId)!;
+        Assert.That(dropped.Location, Is.EqualTo(ItemLocation.InWorld(destination)));
+        Assert.That(runtime.Terrain.LoadAllWorldItems()
+            .Any(value => value.StackId == stackId.ToString()), Is.True);
+        Assert.That(runtime.Terrain.LoadResidentInventoryLayout(residentId).Slots
+            .Any(value => value.StackId == stackId.ToString()), Is.False);
+    }
+
+    [Test]
     public void Second_direct_pickup_releases_first_job_reservation_before_new_claim()
     {
         ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
