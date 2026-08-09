@@ -13,6 +13,9 @@ internal static class DigResidentAnimatedModel
         GameObject prefab = Resources.Load<GameObject>(ResourcePath);
         if (prefab == null)
         {
+            Debug.LogWarning(
+                $"Default resident visual resource '{ResourcePath}' could not be loaded as a GameObject. "
+                + "The procedural resident fallback will be used. Check the glTF import in Unity.");
             asset = default;
             return false;
         }

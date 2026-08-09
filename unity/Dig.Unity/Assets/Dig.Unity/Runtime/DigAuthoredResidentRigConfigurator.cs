@@ -16,14 +16,31 @@ internal static class DigAuthoredResidentRigConfigurator
         bool configureAnimation = true)
     {
         Renderer[] renderers = DigResidentRigFactory.CollectRenderers(modelRoot);
-        if (renderers.Length < 1 || renderers.Length > maximumRenderers)
+        bool isDefaultAuthoredModel =
+            DigResidentAnimatedModel.IsDefaultAsset(stableId);
+        if (renderers.Length < 1)
         {
+            Debug.LogWarning(
+                $"Resident visual '{stableId}' loaded an authored model without renderer components. "
+                + "The procedural resident fallback will be used.",
+                modelRoot);
             rig = null!;
             return false;
         }
 
-        bool isDefaultAuthoredModel =
-            DigResidentAnimatedModel.IsDefaultAsset(stableId);
+        if (!isDefaultAuthoredModel
+            && maximumRenderers > 0
+            && renderers.Length > maximumRenderers)
+        {
+            Debug.LogWarning(
+                $"Resident visual '{stableId}' uses {renderers.Length} renderer components, "
+                + $"above the configured budget of {maximumRenderers}. The procedural "
+                + "resident fallback will be used.",
+                modelRoot);
+            rig = null!;
+            return false;
+        }
+
         DigResidentAnimationPlayer? animationPlayer = null;
         if (isDefaultAuthoredModel && configureAnimation
             && DigResidentAnimatedModel.LoadAnimationClips().Length > 0)

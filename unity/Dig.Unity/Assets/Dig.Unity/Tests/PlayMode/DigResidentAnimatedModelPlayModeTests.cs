@@ -63,10 +63,6 @@ public sealed class DigResidentAnimatedModelPlayModeTests
                 renderers.Length,
                 0,
                 "The V3 authored dwarf has no runtime renderers.");
-            Assert.LessOrEqual(
-                renderers.Length,
-                24,
-                "The V3 authored dwarf exceeds the bounded resident renderer budget.");
             Assert.IsNotNull(
                 rig.transform.Find(asset.Prefab.name),
                 "The V3 authored dwarf was replaced by the procedural fallback.");

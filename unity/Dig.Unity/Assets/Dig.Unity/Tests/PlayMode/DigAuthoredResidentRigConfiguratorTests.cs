@@ -55,6 +55,41 @@ public sealed class DigAuthoredResidentRigConfiguratorTests
         }
     }
 
+    [Test]
+    public void Default_V3_renderer_budget_does_not_replace_valid_authored_model()
+    {
+        GameObject root = new GameObject("Over-budget V3 rig root");
+        GameObject modelRoot = new GameObject("Over-budget V3 authored model");
+        modelRoot.transform.SetParent(root.transform, worldPositionStays: false);
+        for (int index = 0; index < 3; index++)
+        {
+            GameObject mesh = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            mesh.name = $"Body {index}";
+            mesh.transform.SetParent(modelRoot.transform, worldPositionStays: false);
+        }
+
+        try
+        {
+            Assert.IsTrue(DigAuthoredResidentRigConfigurator.TryConfigure(
+                root,
+                modelRoot,
+                DigResidentAnimatedModel.StableId,
+                maximumRenderers: 1,
+                out DigResidentRig rig,
+                configureAnimation: false));
+
+            Assert.AreSame(root, rig.gameObject);
+            Assert.AreEqual(
+                3,
+                rig.GetComponentsInChildren<MeshRenderer>(includeInactive: true).Length,
+                "The default V3 authored resident must not be replaced only because it exceeds the renderer budget.");
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(root);
+        }
+    }
+
     private static Transform AddBone(Transform parent, string name)
     {
         Transform bone = new GameObject(name).transform;
