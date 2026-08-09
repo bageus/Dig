@@ -56,10 +56,10 @@ public sealed class DigAuthoredResidentRigConfiguratorTests
     }
 
     [Test]
-    public void Renderer_budget_does_not_replace_valid_authored_model()
+    public void Default_V3_renderer_budget_does_not_replace_valid_authored_model()
     {
-        GameObject root = new GameObject("Over-budget rig root");
-        GameObject modelRoot = new GameObject("Over-budget authored model");
+        GameObject root = new GameObject("Over-budget V3 rig root");
+        GameObject modelRoot = new GameObject("Over-budget V3 authored model");
         modelRoot.transform.SetParent(root.transform, worldPositionStays: false);
         for (int index = 0; index < 3; index++)
         {
@@ -73,7 +73,7 @@ public sealed class DigAuthoredResidentRigConfiguratorTests
             Assert.IsTrue(DigAuthoredResidentRigConfigurator.TryConfigure(
                 root,
                 modelRoot,
-                "resident.test.over-budget",
+                DigResidentAnimatedModel.StableId,
                 maximumRenderers: 1,
                 out DigResidentRig rig,
                 configureAnimation: false));
@@ -82,7 +82,7 @@ public sealed class DigAuthoredResidentRigConfiguratorTests
             Assert.AreEqual(
                 3,
                 rig.GetComponentsInChildren<MeshRenderer>(includeInactive: true).Length,
-                "Renderer budget is advisory and must not replace a valid authored resident.");
+                "The default V3 authored resident must not be replaced only because it exceeds the renderer budget.");
         }
         finally
         {
