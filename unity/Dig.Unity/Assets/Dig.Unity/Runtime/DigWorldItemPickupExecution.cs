@@ -93,13 +93,31 @@ namespace Dig.Unity
             WorldItemPickupJobDefinition pickup,
             long tick)
         {
-            if (job.Status == JobStatus.Claimed
-                || job.Stage == JobStageKind.TravelToTarget)
+            JobSnapshot current = job;
+            for (int transition = 0; transition < 2
+                && (current.Status == JobStatus.Claimed
+                    || current.Stage == JobStageKind.TravelToTarget);
+                transition++)
             {
-                return _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick));
+                Result advanced = _advanceHandler.Handle(
+                    new AdvanceJobCommand(current.Id, tick));
+                if (advanced.IsFailure)
+                {
+                    return advanced;
+                }
+
+                JobSnapshot? refreshed = _jobRepository.Get().Get(current.Id);
+                if (refreshed == null
+                    || (refreshed.Status == current.Status
+                        && refreshed.Stage == current.Stage))
+                {
+                    return Result.Success();
+                }
+
+                current = refreshed;
             }
 
-            if (job.Stage != JobStageKind.AcquireItem)
+            if (current.Stage != JobStageKind.AcquireItem)
             {
                 return Result.Success();
             }
@@ -116,13 +134,13 @@ namespace Dig.Unity
                     ? _buildingItemPickupComplete!
                     : _terrainItemPickupComplete!;
             Result completed = handler.Handle(
-                new CompleteWorldItemPickupCommand(job.Id, tick));
+                new CompleteWorldItemPickupCommand(current.Id, tick));
             if (completed.IsFailure)
             {
                 return completed;
             }
 
-            _worldItemPickupRoutes.Remove(job.Id);
+            _worldItemPickupRoutes.Remove(current.Id);
             if (pickup.CompletionAction == WorldItemPickupCompletionAction.None)
             {
                 return Result.Success();
@@ -137,7 +155,7 @@ namespace Dig.Unity
                 new DigTerrainResidentStandingSupportQuery(this),
                 _worldSession.Journal).Handle(
                     new StartResidentFoodMealCommand(
-                        job.AssignedAgentId!.Value,
+                        current.AssignedAgentId!.Value,
                         carriedStackId,
                         tick));
         }
