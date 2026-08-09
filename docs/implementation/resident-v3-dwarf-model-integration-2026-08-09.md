@@ -21,8 +21,9 @@ as the default in-game dwarf visual.
 - both Unity assets receive explicit `.meta` GUIDs so imports remain stable;
 - `DigResidentAnimatedModel` resolves the V3 resource and stable visual id
   `resident.dwarf.hi3d.lowpoly70k.rigged`;
-- the resident visual profile retains its existing maximum-renderer budget, but that value is advisory: a successfully imported authored resident is no longer destroyed and replaced with the procedural model solely because a multipart GLB contains more renderer components than the budget;
-- authored fallback is now reserved for a genuinely missing/unloadable GameObject resource or an authored hierarchy with no renderer components;
+- the resident visual profile retains its existing maximum-renderer budget for catalog-authored resident visuals;
+- the default V3 dwarf is explicitly exempt from renderer-count rejection, so a successfully imported multipart V3 hierarchy is not destroyed and replaced with the procedural model solely because it exceeds that budget;
+- V3 fallback is reserved for a genuinely missing/unloadable GameObject resource or an authored hierarchy with no renderer components;
 - those hard fallback paths emit explicit Unity Console diagnostics so a failed glTF import is distinguishable from a renderer-budget decision;
 - authored bounds are still normalized to the existing 1.5-unit resident presentation height; authoritative resident position and the gameplay interaction capsule are unchanged;
 - imported bone lookup accepts common left/right upper-arm, upper-leg and namespaced (`prefix:Bone`) names;
@@ -32,9 +33,9 @@ as the default in-game dwarf visual.
 
 ## Runtime fallback correction
 
-The initial integration treated `MaximumRenderers` as an authored-model validity rule. If an imported model contained more renderer components than the configured budget, `DigAuthoredResidentRigConfigurator` returned `false`, the authored instance was destroyed, and `DigResidentRigFactory` silently created the procedural resident. That made a valid V3 import indistinguishable from a missing model in-game.
+The initial integration applied `MaximumRenderers` to the default V3 as an authored-model validity rule. If its imported hierarchy contained more renderer components than the configured budget, `DigAuthoredResidentRigConfigurator` returned `false`, the authored instance was destroyed, and `DigResidentRigFactory` created the procedural resident. That made a valid V3 import look like a missing model in-game.
 
-The renderer count is now treated only as a presentation/performance budget. Presence of renderers determines whether the authored hierarchy is usable; renderer count by itself does not select the procedural fallback.
+The default V3 now bypasses that rejection. Other catalog-authored resident visuals continue to respect their configured renderer budget, preserving the existing bounded-presentation rule outside this model-specific compatibility path.
 
 ## Ownership and invariants
 
@@ -48,14 +49,14 @@ state remain visual projections and cannot complete Domain actions.
 
 - the V3 resource resolves as the default resident asset;
 - the instantiated rig contains the V3 model rather than the procedural representative;
-- the authored hierarchy exposes runtime renderer components without imposing a fallback threshold on their count;
+- the authored hierarchy exposes runtime renderer components without imposing a V3 fallback threshold on their count;
 - equipment/cargo/head sockets are available;
 - Idle/Walk/Dig/Climb/Death visual states can be applied;
 - embedded animation clips are used when matching clips exist;
 - a clipless authored mesh remains active and uses the rig pose path instead of a stale animation set;
 - a genuinely missing authored asset still falls back to the procedural resident.
 
-`DigAuthoredResidentRigConfiguratorTests` additionally creates an authored stand-in whose renderer count exceeds its configured budget and verifies that the authored rig remains active.
+`DigAuthoredResidentRigConfiguratorTests` additionally creates a default-V3 stand-in whose renderer count exceeds its configured budget and verifies that the authored rig remains active.
 
 ## Verification status
 
