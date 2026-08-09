@@ -315,13 +315,11 @@ namespace Dig.Unity
                 return detached;
             }
 
-            SurfacePose nextPose = SurfacePoseSteering.MoveTowards(
-                agent.SurfacePose, order.TargetPose);
-            if (!_surfaceTraffic.CanOccupy(agent.Id, nextPose, _tick))
+            if (!_surfaceTraffic.CanOccupy(agent.Id, order.TargetPose, _tick))
             {
                 return Result.Success();
             }
-            Result positioned = MoveOnReservedSurface(agent, nextPose);
+            Result positioned = MoveOnReservedSurface(agent, order.TargetPose);
             if (positioned.IsFailure)
             {
                 CancelManualMovementWithWarning(
@@ -331,19 +329,18 @@ namespace Dig.Unity
                 return Result.Success();
             }
 
+            _manualTunnelMovements.Remove(agent.Id);
             _repository.Save(agent);
             _tunnelJournal!.Append(agent.DequeueUncommittedEvents());
-            if (nextPose != order.TargetPose)
-            {
-                return Result.Success();
-            }
-            _manualTunnelMovements.Remove(agent.Id);
             RecordMovementInterruption(
                 agent.Id,
                 ResidentMovementInterruptionReason.Completed,
                 "Manual movement completed at the selected surface point.");
             return RecordResidentTaskCompletion(
-                agent, "manual_movement_completed", _tick);
+                agent,
+                "manual_movement_completed",
+                _tick);
         }
+
     }
 }
