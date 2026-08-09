@@ -108,14 +108,14 @@ public static class LivingMaterialEcologyProfiles
         LivingMaterialSpecies.Hamster,
         HamsterItemId,
         wanderRadius: 6,
-        movementCreditPerEcologyStep: 400,
+        movementCreditPerEcologyStep: 460,
         reproductionPeriodSteps: EcologyStepsPerDay);
 
     public static readonly LivingMaterialSpeciesProfile Grub = new LivingMaterialSpeciesProfile(
         LivingMaterialSpecies.Grub,
         GrubItemId,
         wanderRadius: 4,
-        movementCreditPerEcologyStep: 325,
+        movementCreditPerEcologyStep: 374,
         reproductionPeriodSteps: EcologyStepsPerDay);
 
     public static LivingMaterialSpeciesProfile Get(LivingMaterialSpecies species)
