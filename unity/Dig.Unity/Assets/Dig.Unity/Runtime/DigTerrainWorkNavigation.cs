@@ -227,7 +227,8 @@ namespace Dig.Unity
                 UnsupportedResidentRecoveryPlan? recovery = _supportRecoveryPlanner.Plan(
                     start,
                     navigation,
-                    world);
+                    world,
+                    requireFloorRecovery: agent.SurfaceFace != SurfaceFace.Floor);
                 if (recovery == null)
                 {
                     continue;
