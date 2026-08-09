@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Dig.Domain.Core;
+using Dig.Domain.Navigation;
 using Dig.Domain.World;
 
 namespace Dig.Domain.Ecology
@@ -29,7 +30,8 @@ public sealed class LivingMaterialSnapshot
         long nextReproductionStep,
         long deterministicSequence,
         string? blockedReason,
-        long version)
+        long version,
+        SurfacePose? surfacePose = null)
     {
         if (creatureId.IsEmpty || itemEntityId.IsEmpty)
         {
@@ -70,6 +72,12 @@ public sealed class LivingMaterialSnapshot
         DeterministicSequence = deterministicSequence;
         BlockedReason = string.IsNullOrWhiteSpace(blockedReason) ? null : blockedReason.Trim();
         Version = version;
+        SurfacePose = surfacePose
+            ?? Dig.Domain.Navigation.SurfacePose.FloorCentre(cell ?? anchorCell);
+        if (cell.HasValue && SurfacePose.Cell != cell.Value)
+        {
+            throw new ArgumentException("Creature surface pose must belong to its cell.");
+        }
     }
 
     public EntityId CreatureId { get; }
@@ -91,6 +99,7 @@ public sealed class LivingMaterialSnapshot
     public long DeterministicSequence { get; }
     public string? BlockedReason { get; }
     public long Version { get; }
+    public SurfacePose SurfacePose { get; }
 
     public bool IsFree => Containment == LivingMaterialContainment.Free && Cell.HasValue;
 
