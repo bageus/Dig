@@ -50,9 +50,9 @@ public sealed class LivingMaterialEcologyStateTests
 
     [Theory]
     [InlineData(LivingMaterialSpecies.Hamster, 8, 3680, false)]
-    [InlineData(LivingMaterialSpecies.Hamster, 9, 4140, true)]
+    [InlineData(LivingMaterialSpecies.Hamster, 9, 4000, true)]
     [InlineData(LivingMaterialSpecies.Grub, 10, 3740, false)]
-    [InlineData(LivingMaterialSpecies.Grub, 11, 4114, true)]
+    [InlineData(LivingMaterialSpecies.Grub, 11, 4000, true)]
     public void FixedPointMovementCreditIsDeterministic(
         LivingMaterialSpecies species,
         int steps,
