@@ -57,40 +57,46 @@ floor edge facing the target; ranged combat uses the stable floor centre. Approa
 and attack resolution both require that same authoritative pose, so target movement
 or pose invalidation returns execution to engagement selection before damage.
 
-The first two items are represented by the current implementation. Direct resident
-commands preserve the clicked X/Z point through the coarse route and commit that point
-as the final authoritative `SurfacePose`, including destinations inside the resident's
-current cell. Horizontal manual routes now approach and cross matching fixed-point
-boundary poses instead of teleporting centre-to-centre. Spatial work routes and the
-shared automatic movement used by residents, enemies and other autonomous actors now
-use the same two-phase horizontal corridor and persist both confirmed poses. A vertical
-coarse step now attaches an approved mover to the nearest legal wall, approaches and
-crosses the matching cell boundary, and detaches at the matching floor edge before
+Direct resident commands preserve the clicked X/Z point through the coarse route and
+commit that point as the final authoritative `SurfacePose`, including destinations inside
+the resident's current cell. Horizontal resident/enemy route execution uses the approved
+cell-corridor behaviour: when a movement step is due, the actor commits the matching exit
+boundary pose, then the entry pose in the adjacent cell. It does not spend additional
+simulation ticks walking through a sequence of `SurfacePoseSteering` micro-poses inside
+the same cell. Unity presentation may interpolate between those confirmed authoritative
+poses so the visible actor moves smoothly without changing movement ownership.
+
+A vertical coarse step attaches an approved mover to the nearest legal wall, approaches
+and crosses the matching cell boundary, and detaches at the matching floor edge before
 horizontal movement or work. The domain command rejects vertical poses for explicit
 ground-only movers, and `NegativeZ` at `Z0` is excluded during attachment selection.
-Spatial excavation and mushroom chopping now resolve a deterministic floor point facing
-the target, route the resident to that exact pose, and require the pose before work
-begins. World-item pickup uses the same authoritative channel and requires the resident
-to reach the centre of the item's floor cell before acquisition. Building-box assembly
-uses the floor edge facing the construction site; packing, box pickup/relocation and
-hauling use exact phase-dependent source or destination poses. Multi-step handlers
-re-check the pose after every phase transition so acquisition cannot immediately become
-a remote deposit. Production now resolves exact poses for output-package placement,
+
+Spatial excavation and mushroom chopping resolve a deterministic floor point facing the
+target and require that pose before work begins. Once the resident is in the destination
+cell, the runtime commits the required work pose directly rather than inserting extra
+in-cell steering ticks. World-item pickup is intentionally less strict: direct pickup and
+automatic hauling may acquire once the resident is in the source cell on a fully supported
+floor; local `SurfaceU/SurfaceV` offsets do not block acquisition. The authoritative
+world-to-inventory transfer completes in the same simulation tick that pickup arrival is
+accepted.
+
+Building-box assembly uses the floor edge facing the construction site; packing, box
+pickup/relocation and hauling use phase-dependent source or destination poses. Multi-step
+handlers re-check the pose after every phase transition so acquisition cannot immediately
+become a remote deposit. Production resolves poses for output-package placement,
 internal-stock acquisition, workstation processing and processed-material deposit.
 Building supply resolves separate workstation, reserved-source and destination poses;
-both execution paths gate every inventory or phase mutation on the authoritative pose.
-Horizontal local avoidance is a presentation preference and never rejects or delays an
-authoritative fixed-point micro-step. A conflicting target immediately uses the approved
-visual overlap fallback; vertical climbers likewise never block each other. Runtime
-verification remains required before continuous movement is verified in playable Unity.
+both execution paths gate inventory or phase mutation on the authoritative pose.
 
-The 2026-08-09 regression correction makes the coarse/fine boundary effective in
-runtime code: route cells only select a legal corridor. Residents and enemies advance
-toward boundaries and final clicked/work points by bounded fixed-point micro-steps, so
-cell centres and boundaries are not movement-sized waypoints. Hamsters and worms own a
-persisted floor `SurfacePose`; deterministic wandering selects non-centre floor points
-and creature presentation projects those exact coordinates. Legacy ecology saves load
-at the centre of the saved floor cell and acquire a free pose on the next movement.
+The 2026-08-09 cell-route restoration supersedes the short-lived resident/enemy runtime
+behaviour that advanced toward horizontal boundaries and final points through bounded
+200-unit microsteps. That implementation produced visible stationary stepping followed by
+abrupt cell transitions and also delayed source-cell pickup completion. The fixed-point
+`SurfacePose` model remains authoritative, but resident/enemy coarse route execution is
+restored to direct boundary/entry commits. Hamsters and worms retain their persisted free
+floor `SurfacePose`; deterministic wandering may select non-centre floor points and their
+presentation projects those exact coordinates. Legacy ecology saves still load at the
+centre of the saved floor cell and acquire a free pose on later movement.
 
 When excavation removes full support beneath an active spatial worker, the authoritative
 pose attaches to the nearest exposed vertical face instead of remaining on an imaginary
