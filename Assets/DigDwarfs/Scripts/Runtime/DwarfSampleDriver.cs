@@ -5,7 +5,7 @@ namespace DigDwarfs
     // Optional demo component for quick scene testing.
     public sealed class DwarfSampleDriver : MonoBehaviour
     {
-        [SerializeField] private DwarfAnimatorBridge bridge;
+        [SerializeField] private DwarfAnimatorBridge bridge = null!;
         [SerializeField] private float speed;
         [SerializeField] private bool climbing;
         [SerializeField] private bool carrying;

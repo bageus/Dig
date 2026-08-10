@@ -217,7 +217,7 @@ public static class DigDwarfSetupWizard
         t.AddCondition(AnimatorConditionMode.If, 0, triggerName);
     }
 
-    private static AnimatorStateTransition AddTransition(AnimatorState from, AnimatorState to, bool hasExitTime, float duration, Action<AnimatorStateTransition> configure)
+    private static AnimatorStateTransition AddTransition(AnimatorState from, AnimatorState to, bool hasExitTime, float duration, Action<AnimatorStateTransition>? configure)
     {
         var t = from.AddTransition(to);
         t.hasExitTime = hasExitTime;

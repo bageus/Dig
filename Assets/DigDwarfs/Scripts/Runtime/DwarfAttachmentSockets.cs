@@ -4,11 +4,11 @@ namespace DigDwarfs
 {
     public sealed class DwarfAttachmentSockets : MonoBehaviour
     {
-        public Transform RightHandTool;
-        public Transform LeftHandTool;
-        public Transform CarryAnchor;
-        public Transform BackAttachment;
-        public Transform HeadAccessory;
+        public Transform? RightHandTool;
+        public Transform? LeftHandTool;
+        public Transform? CarryAnchor;
+        public Transform? BackAttachment;
+        public Transform? HeadAccessory;
 
         public void AutoBind()
         {
@@ -19,7 +19,7 @@ namespace DigDwarfs
             HeadAccessory = FindNamed(transform, nameof(HeadAccessory));
         }
 
-        private static Transform FindNamed(Transform root, string nodeName)
+        private static Transform? FindNamed(Transform root, string nodeName)
         {
             if (root == null) return null;
             if (root.name == nodeName) return root;
