@@ -11,8 +11,6 @@ public sealed class ResidentInventoryGridSourceContractTests
     {
         string runtime = Path.Combine(
             FindRepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime");

@@ -22,7 +22,7 @@ public sealed class SpatialExcavationDesignationRuntimeContractTests
             "src/Dig.Application/Jobs/DigDesignationJobSyncHandler.cs"));
         string playMode = Normalize(Read(
             RepositoryRoot(),
-            "unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/"
+            "Assets/Dig.Unity/Tests/PlayMode/"
                 + "SpatialExcavationDesignationPlayModeTests.cs"));
 
         Assert.Contains(
@@ -58,8 +58,6 @@ public sealed class SpatialExcavationDesignationRuntimeContractTests
     {
         return Path.Combine(
             RepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime");

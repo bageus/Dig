@@ -54,7 +54,7 @@ public sealed class VukerReproductionUnityRuntimeContractTests
     public void CheckedInPlayModeCoversBirthNoCombatApproachKidnapMovementAndMaturity()
     {
         string playMode = Read(
-            "unity", "Dig.Unity", "Assets", "Dig.Unity", "Tests", "PlayMode",
+            "Assets", "Dig.Unity", "Tests", "PlayMode",
             "VukerReproductionPlayModeTests.cs");
         string creatureVisual = Read(
             "src", "Dig.Presentation.Abstractions", "Creatures",
@@ -81,7 +81,7 @@ public sealed class VukerReproductionUnityRuntimeContractTests
     }
 
     private static string ReadRuntime(string file) => Read(
-        "unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime", file);
+        "Assets", "Dig.Unity", "Runtime", file);
 
     private static string Read(params string[] parts)
     {

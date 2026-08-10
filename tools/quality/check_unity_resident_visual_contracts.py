@@ -7,10 +7,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PRESENTATION = ROOT / "src" / "Dig.Presentation.Abstractions" / "Agents"
-RUNTIME = ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" / "Runtime"
-RESIDENT_MODEL = ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" \
+RUNTIME = ROOT / "Assets" / "Dig.Unity" / "Runtime"
+RESIDENT_MODEL = ROOT / "Assets" / "Dig.Unity" \
     / "Resources" / "Residents" / "Dwarf_Hi3D_LowPoly_70k_Rigged.glb"
-RESIDENT_MODEL_SOURCE = ROOT / "unity" / "Dig.Unity" / "Assets" \
+RESIDENT_MODEL_SOURCE = ROOT / "Assets" \
     / "DigDwarfEtalonV3" / "Hi3D_FemaleBlack_LowPoly_LOD1_Rigged_Animated.glb"
 
 
@@ -169,7 +169,7 @@ def main() -> int:
         "PlayRoute(", "UpdateRoute(", "_routeStepDuration", "_routeIndex",
     )))
 
-    scale_test_path = ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" \
+    scale_test_path = ROOT / "Assets" / "Dig.Unity" \
         / "Tests" / "PlayMode" / "ResidentWorldScalePlayModeTests.cs"
     scale_test = read(scale_test_path)
     errors.extend(require(scale_test_path, scale_test, (

@@ -113,8 +113,6 @@ public sealed class ProductionPackageUnityContractTests
     private static string RuntimeRoot()
     {
         return RepositoryPath(
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime");
@@ -137,7 +135,7 @@ public sealed class ProductionPackageUnityContractTests
         while (current != null)
         {
             if (Directory.Exists(Path.Combine(current.FullName, "src"))
-                && Directory.Exists(Path.Combine(current.FullName, "unity")))
+                && File.Exists(Path.Combine(current.FullName, "Dig.sln")))
             {
                 return current.FullName;
             }

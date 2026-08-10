@@ -10,9 +10,9 @@ public sealed class BasketSurfaceRuntimeContractTests
     public void Demo_and_unity_projection_keep_baskets_on_surface_and_use_basket_visuals()
     {
         string root = FindRepositoryRoot();
-        string runtime = Path.Combine(root, "unity", "Dig.Unity", "Assets",
+        string runtime = Path.Combine(root, "Assets",
             "Dig.Unity", "Runtime");
-        string playMode = Path.Combine(root, "unity", "Dig.Unity", "Assets",
+        string playMode = Path.Combine(root, "Assets",
             "Dig.Unity", "Tests", "PlayMode");
         string demo = Read(runtime, "DigTerrainWorkSession.ResidentInventoryDemo.cs");
         string policy = Read(runtime, "DigBasketVisualPolicy.cs");

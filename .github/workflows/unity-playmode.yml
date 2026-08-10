@@ -6,7 +6,9 @@ on:
     paths:
       - ".github/workflows/unity-playmode.yml"
       - "src/**"
-      - "unity/**"
+      - "Assets/**"
+      - "Packages/**"
+      - "ProjectSettings/**"
       - "tools/quality/validate_unity_runtime_evidence.py"
   push:
     branches:
@@ -14,7 +16,9 @@ on:
     paths:
       - ".github/workflows/unity-playmode.yml"
       - "src/**"
-      - "unity/**"
+      - "Assets/**"
+      - "Packages/**"
+      - "ProjectSettings/**"
       - "tools/quality/validate_unity_runtime_evidence.py"
 
 permissions:
@@ -72,8 +76,8 @@ jobs:
         if: steps.activation.outputs.configured == 'true'
         uses: actions/cache@v4
         with:
-          path: unity/Dig.Unity/Library
-          key: unity-library-${{ runner.os }}-6000.0.71f1-${{ hashFiles('unity/Dig.Unity/Packages/**', 'unity/Dig.Unity/ProjectSettings/ProjectVersion.txt') }}
+          path: Library
+          key: unity-library-${{ runner.os }}-6000.0.71f1-${{ hashFiles('Packages/**', 'ProjectSettings/ProjectVersion.txt') }}
           restore-keys: |
             unity-library-${{ runner.os }}-6000.0.71f1-
 
@@ -87,7 +91,7 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
         with:
-          projectPath: unity/Dig.Unity
+          projectPath: .
           unityVersion: 6000.0.71f1
           testMode: All
           artifactsPath: artifacts/unity-tests

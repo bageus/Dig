@@ -63,7 +63,7 @@ After pulling the compatibility change:
 
 1. close Unity or allow it to finish its current compile;
 2. update the repository to the latest `main`;
-3. reopen `unity/Dig.Unity`;
+3. reopen `.`;
 4. allow the local package and scripts to reimport;
 5. clear the Console and confirm that the previous CS8773 errors do not return.
 

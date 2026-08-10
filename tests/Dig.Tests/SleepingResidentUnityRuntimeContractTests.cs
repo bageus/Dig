@@ -31,7 +31,7 @@ public sealed class SleepingResidentUnityRuntimeContractTests
             "ResidentVisualPresenter.cs");
         string rig = ReadRuntime("DigResidentRig.cs");
         string hudProjection = ReadRuntime("DigAgentRenderer.HudProjection.cs");
-        string playMode = Read("unity", "Dig.Unity", "Assets", "Dig.Unity",
+        string playMode = Read("Assets", "Dig.Unity",
             "Tests", "PlayMode", "ResidentNeedsRuntimeIntegrationPlayModeTests.cs");
 
         Assert.Contains("ResidentActionVisualState.Sleep", presenter,
@@ -56,7 +56,7 @@ public sealed class SleepingResidentUnityRuntimeContractTests
     }
 
     private static string ReadRuntime(string file) => Read(
-        "unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime", file);
+        "Assets", "Dig.Unity", "Runtime", file);
 
     private static string Read(params string[] parts)
     {

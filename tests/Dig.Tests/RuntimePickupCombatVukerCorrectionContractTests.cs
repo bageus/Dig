@@ -61,7 +61,7 @@ public sealed class RuntimePickupCombatVukerCorrectionContractTests
     private static string ReadRuntime(string fileName)
     {
         return Read(
-            "unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime", fileName);
+            "Assets", "Dig.Unity", "Runtime", fileName);
     }
 
     private static string Read(params string[] parts)

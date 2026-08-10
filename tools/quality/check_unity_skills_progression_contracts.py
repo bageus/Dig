@@ -76,7 +76,7 @@ def main() -> int:
         errors,
     )
     require(
-        "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldSession.Deposits.cs",
+        "Assets/Dig.Unity/Runtime/DigWorldSession.Deposits.cs",
         (
             "DefaultSkillGrantProfileIds.Metallurgy",
             "DefaultSkillGrantProfileIds.Alchemy",
@@ -85,7 +85,7 @@ def main() -> int:
         errors,
     )
     require(
-        "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkSession.Composition.cs",
+        "Assets/Dig.Unity/Runtime/DigTerrainWorkSession.Composition.cs",
         ("ResolveExcavationSkillGrantProfile(targetCell)",),
         errors,
     )
@@ -100,12 +100,12 @@ def main() -> int:
         errors,
     )
     require(
-        "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigUnityBootstrap.cs",
+        "Assets/Dig.Unity/Runtime/DigUnityBootstrap.cs",
         ("agentSession.SkillGrants",),
         errors,
     )
     require(
-        "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigGameHudCanvas.SkillInspector.cs",
+        "Assets/Dig.Unity/Runtime/DigGameHudCanvas.SkillInspector.cs",
         (
             "skills.All",
             "skills.TopFive",
@@ -120,7 +120,7 @@ def main() -> int:
         errors,
     )
     require(
-        "unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/SkillInspectorPlayModeTests.cs",
+        "Assets/Dig.Unity/Tests/PlayMode/SkillInspectorPlayModeTests.cs",
         (
             "Inspector_renders_twelve_skills_capacity_thresholds_and_gradient",
             "Top_five_uses_value_then_stable_id_from_same_snapshot",

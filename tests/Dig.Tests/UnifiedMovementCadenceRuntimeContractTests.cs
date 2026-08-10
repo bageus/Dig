@@ -12,13 +12,13 @@ public sealed class UnifiedMovementCadenceRuntimeContractTests
     {
         string root = RepositoryRoot();
         string driver = Read(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/"
+            "Assets/Dig.Unity/Runtime/"
                 + "DigAgentSimulationDriverBase.Loop.cs");
         string substeps = Read(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/"
+            "Assets/Dig.Unity/Runtime/"
                 + "DigAgentSession.MovementSubsteps.cs");
         string modes = Read(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/"
+            "Assets/Dig.Unity/Runtime/"
                 + "DigAgentSession.MovementModes.cs");
 
         Assert.Equal(1, Count(driver, "AdvanceMovementSubstep("));

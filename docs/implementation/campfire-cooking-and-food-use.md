@@ -72,14 +72,14 @@ Domain/Application:
 Presentation/Unity:
 
 - `src/Dig.Presentation.Abstractions/Input/ContextInputRouter.World.cs`;
-- `unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionFoodDependencies.cs`;
-- `unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionSynchronization.cs`;
-- `unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkSession.Mushrooms.cs`;
-- `unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.FoodCursorTextures.cs`;
-- `unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.WorldFood.cs`;
-- `unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldItemPickupSession.cs`;
-- `unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldItemPickupExecution.cs`;
-- `unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkSession.DirectCommands.cs`.
+- `Assets/Dig.Unity/Runtime/DigBuildingProductionFoodDependencies.cs`;
+- `Assets/Dig.Unity/Runtime/DigBuildingProductionSynchronization.cs`;
+- `Assets/Dig.Unity/Runtime/DigTerrainWorkSession.Mushrooms.cs`;
+- `Assets/Dig.Unity/Runtime/DigWorldInteraction.FoodCursorTextures.cs`;
+- `Assets/Dig.Unity/Runtime/DigWorldInteraction.WorldFood.cs`;
+- `Assets/Dig.Unity/Runtime/DigWorldItemPickupSession.cs`;
+- `Assets/Dig.Unity/Runtime/DigWorldItemPickupExecution.cs`;
+- `Assets/Dig.Unity/Runtime/DigTerrainWorkSession.DirectCommands.cs`.
 
 ## Automated evidence
 

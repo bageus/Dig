@@ -13,10 +13,10 @@ public sealed class MiningOutputSaveRuntimeContractTests
         string root = FindRepositoryRoot();
         string session = File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkSession.cs"));
+            "Assets/Dig.Unity/Runtime/DigTerrainWorkSession.cs"));
         string composition = File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/"
+            "Assets/Dig.Unity/Runtime/"
                 + "DigTerrainWorkSession.Composition.cs"));
 
         Assert.Contains(

@@ -13,16 +13,12 @@ public sealed class ResidentHudInitializationGuardContractTests
         string root = FindRepositoryRoot();
         string bridge = File.ReadAllText(Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime",
             "DigAgentSimulationDriverBase.Hud.cs"));
         string playMode = File.ReadAllText(Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Tests",
@@ -30,8 +26,6 @@ public sealed class ResidentHudInitializationGuardContractTests
             "ResidentHudInitializationGuardPlayModeTests.cs"));
         string clockInput = File.ReadAllText(Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime",
@@ -39,8 +33,6 @@ public sealed class ResidentHudInitializationGuardContractTests
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         string startupRegression = File.ReadAllText(Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Tests",

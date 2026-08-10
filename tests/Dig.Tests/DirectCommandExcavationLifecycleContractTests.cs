@@ -11,7 +11,7 @@ namespace Dig.Tests
         {
             string root = FindRepositoryRoot();
             string runtime = Path.Combine(
-                root, "unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime");
+                root, "Assets", "Dig.Unity", "Runtime");
             string direct = File.ReadAllText(Path.Combine(
                 runtime, "DigTerrainWorkSession.DirectCommands.cs"));
             string movement = File.ReadAllText(Path.Combine(

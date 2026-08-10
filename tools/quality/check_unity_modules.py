@@ -6,9 +6,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 ROOT_MANIFEST_PATH = ROOT / "Packages" / "manifest.json"
 ROOT_LOCK_PATH = ROOT / "Packages" / "packages-lock.json"
-MANIFEST_PATH = ROOT / "unity" / "Dig.Unity" / "Packages" / "manifest.json"
-LOCK_PATH = ROOT / "unity" / "Dig.Unity" / "Packages" / "packages-lock.json"
-ASMDEF_PATH = ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" / "Runtime" / "Dig.Unity.asmdef"
+MANIFEST_PATH = ROOT / "Packages" / "manifest.json"
+LOCK_PATH = ROOT / "Packages" / "packages-lock.json"
+ASMDEF_PATH = ROOT / "Assets" / "Dig.Unity" / "Runtime" / "Dig.Unity.asmdef"
 
 REQUIRED_PACKAGES = {
     "com.unity.cloud.gltfast": ("6.19.0", "registry"),

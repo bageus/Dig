@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-UNITY = ROOT / "unity" / "Dig.Unity"
+UNITY = ROOT
 RUNTIME = UNITY / "Assets" / "Dig.Unity" / "Runtime"
 EDITOR = UNITY / "Assets" / "Dig.Unity" / "Editor"
 

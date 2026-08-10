@@ -15,7 +15,7 @@ public sealed class RuntimeBuildingUiHealthPickupContractTests
         string builtIns = ReadRuntime(
             "DigRepresentativeBuildingPrefabLibrary.BuiltInProfiles.cs");
         string catalog = Read(
-            "unity", "Dig.Unity", "Assets", "Dig.Unity", "Resources", "Dig",
+            "Assets", "Dig.Unity", "Resources", "Dig",
             "VisualCatalogs", "RepresentativeBuildings.json");
 
         Assert.DoesNotContain("demo.workshop.box", runtime + inventory + builtIns + catalog);
@@ -127,7 +127,7 @@ public sealed class RuntimeBuildingUiHealthPickupContractTests
     private static string ReadPlayMode(string file)
     {
         return Read(
-            "unity", "Dig.Unity", "Assets", "Dig.Unity", "Tests", "PlayMode", file);
+            "Assets", "Dig.Unity", "Tests", "PlayMode", file);
     }
 
     private static string Read(params string[] parts)
@@ -144,7 +144,7 @@ public sealed class RuntimeBuildingUiHealthPickupContractTests
     {
         return Path.Combine(
             FindRepositoryRoot(),
-            "unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime");
+            "Assets", "Dig.Unity", "Runtime");
     }
 
     private static string FindRepositoryRoot()

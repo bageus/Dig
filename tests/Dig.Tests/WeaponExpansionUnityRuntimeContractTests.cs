@@ -11,9 +11,9 @@ public sealed class WeaponExpansionUnityRuntimeContractTests
     public void Demo_visuals_and_play_mode_cover_weapon_expansions_and_club_slot()
     {
         string root = FindRepositoryRoot();
-        string runtime = Path.Combine(root, "unity", "Dig.Unity", "Assets",
+        string runtime = Path.Combine(root, "Assets",
             "Dig.Unity", "Runtime");
-        string playMode = Path.Combine(root, "unity", "Dig.Unity", "Assets",
+        string playMode = Path.Combine(root, "Assets",
             "Dig.Unity", "Tests", "PlayMode");
         string demo = Read(runtime, "DigTerrainWorkSession.ResidentInventoryDemo.cs");
         string policy = Read(runtime, "DigBasketVisualPolicy.Equipment.cs");

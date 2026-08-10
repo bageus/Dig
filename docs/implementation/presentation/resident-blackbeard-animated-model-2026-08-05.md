@@ -13,7 +13,7 @@ Authoritative specification: [`../../design/presentation-input-ui-and-diagnostic
 ## Scope
 
 The user-provided male Generic-rig model at
-`unity/Dig.Unity/Assets/Male_blackbeard_Dwarf_Rigged_Animated`
+`Assets/Male_blackbeard_Dwarf_Rigged_Animated`
 is the confirmed authored runtime resident model. `DigDwarfEtalonV3` is not the
 selected model for this integration.
 

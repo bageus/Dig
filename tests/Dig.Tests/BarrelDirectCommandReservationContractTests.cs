@@ -19,16 +19,12 @@ public sealed class BarrelDirectCommandReservationContractTests
             "BarrelAttackStartUseCase.cs"));
         string direct = File.ReadAllText(Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime",
             "DigTerrainWorkSession.DirectCommands.cs"));
         string playMode = File.ReadAllText(Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Tests",

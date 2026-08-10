@@ -10,7 +10,7 @@ Authoritative system contract: [`../design/presentation-input-ui-and-diagnostics
 
 1. Clone the repository.
 2. In Unity Hub, choose **Add project from disk**.
-3. Select `<repository>/unity/Dig.Unity`, not the repository root.
+3. Select the repository root.
 4. Open it with Unity `6000.0.71f1` or a compatible Unity 6 LTS patch.
 5. After scripts compile, run **Tools > Dig > Create Bootstrap Scene**.
 6. Open `Assets/Scenes/Main.unity` and enter Play mode.
@@ -55,10 +55,10 @@ The driver uses unscaled frame time and limits catch-up work to eight ticks per 
 
 ## Core integration
 
-`unity/Dig.Unity/Packages/manifest.json` references `src/` as a local UPM package:
+`Packages/manifest.json` references `src/` as a local UPM package:
 
 ```json
-"com.bageus.dig.core": "file:../../../src"
+"com.bageus.dig.core": "file:../src"
 ```
 
 Assembly definitions mirror the existing `.csproj` dependency direction:
@@ -69,7 +69,7 @@ Assembly definitions mirror the existing `.csproj` dependency direction:
 - `Dig.Presentation.Abstractions` references Application and Domain;
 - `Dig.Headless` is disabled in Unity unless `DIG_HEADLESS` is defined.
 
-This keeps one source tree for both `dotnet` tests and Unity compilation. Engine-specific code belongs under `unity/Dig.Unity/Assets/Dig.Unity` and must not be added to Domain.
+This keeps one source tree for both `dotnet` tests and Unity compilation. Engine-specific code belongs under `Assets/Dig.Unity` and must not be added to Domain.
 
 ## Nullable compiler context
 

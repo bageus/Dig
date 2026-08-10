@@ -24,13 +24,13 @@ public sealed class ContextHoverLayoutContractTests
 
     private static string ReadRuntime(string file)
     {
-        return Read("unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime", file);
+        return Read("Assets", "Dig.Unity", "Runtime", file);
     }
 
     private static string ReadPlayMode(string file)
     {
         return Read(
-            "unity", "Dig.Unity", "Assets", "Dig.Unity", "Tests", "PlayMode", file);
+            "Assets", "Dig.Unity", "Tests", "PlayMode", file);
     }
 
     private static string Read(params string[] parts)

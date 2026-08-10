@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PRESENTATION = ROOT / "src" / "Dig.Presentation.Abstractions" / "Rendering"
-RUNTIME = ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" / "Runtime"
+RUNTIME = ROOT / "Assets" / "Dig.Unity" / "Runtime"
 
 
 def read(path: Path) -> str:

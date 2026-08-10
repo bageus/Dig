@@ -27,9 +27,9 @@ The implementation now:
 - `src/Dig.Application/Jobs/CommitExcavationQuarter.cs`;
 - `src/Dig.Domain/World/ExcavationQuarterPlanner.cs`;
 - `src/Dig.Domain/World/ExcavationWorkCoordinator.cs`;
-- `unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkExcavationQuarters.cs`;
-- `unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkExcavationCadence.cs`;
-- `unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainSpatialExcavation.cs`.
+- `Assets/Dig.Unity/Runtime/DigTerrainWorkExcavationQuarters.cs`;
+- `Assets/Dig.Unity/Runtime/DigTerrainWorkExcavationCadence.cs`;
+- `Assets/Dig.Unity/Runtime/DigTerrainSpatialExcavation.cs`.
 
 ## Regression coverage
 

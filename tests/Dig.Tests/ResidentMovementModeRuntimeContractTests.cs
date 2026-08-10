@@ -76,7 +76,7 @@ public sealed class ResidentMovementModeRuntimeContractTests
     {
         return Path.Combine(
             RepositoryRoot(),
-            "unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime");
+            "Assets", "Dig.Unity", "Runtime");
     }
 
     private static string RepositoryRoot()

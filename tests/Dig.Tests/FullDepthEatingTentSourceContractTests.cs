@@ -115,7 +115,7 @@ public sealed class FullDepthEatingTentSourceContractTests
     private static string ReadRuntime(string file)
     {
         return ReadSource(
-            "unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime", file);
+            "Assets", "Dig.Unity", "Runtime", file);
     }
 
     private static string ReadSource(params string[] parts)
@@ -135,7 +135,7 @@ public sealed class FullDepthEatingTentSourceContractTests
         while (current != null)
         {
             if (Directory.Exists(Path.Combine(current.FullName, "src"))
-                && Directory.Exists(Path.Combine(current.FullName, "unity")))
+                && File.Exists(Path.Combine(current.FullName, "Dig.sln")))
             {
                 return current.FullName;
             }

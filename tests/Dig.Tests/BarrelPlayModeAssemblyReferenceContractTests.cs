@@ -12,8 +12,6 @@ public sealed class BarrelPlayModeAssemblyReferenceContractTests
         string root = FindRepositoryRoot();
         string fixturePath = Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Tests",
@@ -21,8 +19,6 @@ public sealed class BarrelPlayModeAssemblyReferenceContractTests
             "BarrelDestructionPlayModeTests.cs");
         string asmdefPath = Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Tests",

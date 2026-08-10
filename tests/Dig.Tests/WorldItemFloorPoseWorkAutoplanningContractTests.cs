@@ -64,7 +64,7 @@ public sealed class WorldItemFloorPoseWorkAutoplanningContractTests
     public void Overlay_play_mode_test_qualifies_Unity_Object_destruction()
     {
         string test = Read(
-            "unity", "Dig.Unity", "Assets", "Dig.Unity", "Tests", "PlayMode",
+            "Assets", "Dig.Unity", "Tests", "PlayMode",
             "Issue14OverlayPlayModeTests.cs");
 
         Assert.Contains("UnityEngine.Object.DestroyImmediate(_root);", test);
@@ -73,7 +73,7 @@ public sealed class WorldItemFloorPoseWorkAutoplanningContractTests
 
     private static string ReadRuntime(string file)
     {
-        return Read("unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime", file);
+        return Read("Assets", "Dig.Unity", "Runtime", file);
     }
 
     private static string Read(params string[] parts)

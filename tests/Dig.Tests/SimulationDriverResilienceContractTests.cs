@@ -13,8 +13,6 @@ public sealed class SimulationDriverResilienceContractTests
         string root = FindRepositoryRoot();
         string loop = File.ReadAllText(Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime",

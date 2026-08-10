@@ -268,8 +268,6 @@ namespace Dig.Tests
         {
             return Path.Combine(
                 FindRepositoryRoot(),
-                "unity",
-                "Dig.Unity",
                 "Assets",
                 "Dig.Unity",
                 "Runtime");

@@ -200,8 +200,6 @@ public sealed class MushroomUnityRuntimeContractTests
 
     private static string RuntimeRoot() => Path.Combine(
         FindRepositoryRoot(),
-        "unity",
-        "Dig.Unity",
         "Assets",
         "Dig.Unity",
         "Runtime");
@@ -214,8 +212,6 @@ public sealed class MushroomUnityRuntimeContractTests
 
     private static string PlayModeRoot() => Path.Combine(
         FindRepositoryRoot(),
-        "unity",
-        "Dig.Unity",
         "Assets",
         "Dig.Unity",
         "Tests",

@@ -47,7 +47,7 @@ public sealed class BuildingBoxRuntimeLifecycleRegressionContractTests
             "src/Dig.Domain/Buildings/BuildingPlacement.cs");
         string playMode = Read(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/"
+            "Assets/Dig.Unity/Tests/PlayMode/"
                 + "BuildingBoxRuntimeLifecyclePlayModeTests.cs");
 
         int assembly = loop.IndexOf(
@@ -130,7 +130,7 @@ public sealed class BuildingBoxRuntimeLifecycleRegressionContractTests
     {
         string playMode = Read(
             RepositoryRoot(),
-            "unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/"
+            "Assets/Dig.Unity/Tests/PlayMode/"
                 + "BuildingBoxRuntimeLifecyclePlayModeTests.cs");
 
         Assert.Contains("Held_box_arrival_starts_unpack_and_completes_same_lifecycle", playMode);
@@ -152,8 +152,6 @@ public sealed class BuildingBoxRuntimeLifecycleRegressionContractTests
     {
         return Path.Combine(
             RepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime");

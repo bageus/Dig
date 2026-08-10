@@ -13,21 +13,21 @@ public sealed class TerrainDepositUnityRuntimeContractTests
         string root = FindRepositoryRoot();
         string session = File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldSession.Deposits.cs"));
+            "Assets/Dig.Unity/Runtime/DigWorldSession.Deposits.cs"));
         string completion = File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkSession.cs"));
+            "Assets/Dig.Unity/Runtime/DigTerrainWorkSession.cs"));
         string playModePath = Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/"
+            "Assets/Dig.Unity/Tests/PlayMode/"
                 + "TerrainDepositLifecyclePlayModeTests.cs");
         string startupRegressionPath = Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/"
+            "Assets/Dig.Unity/Tests/PlayMode/"
                 + "DemoStartupRegressionPlayModeTests.cs");
         string terrainDemoPath = Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/"
+            "Assets/Dig.Unity/Runtime/"
                 + "DigWorldSession.TerrainDemo.cs");
 
         Assert.DoesNotContain("_terrainDeposits", session);

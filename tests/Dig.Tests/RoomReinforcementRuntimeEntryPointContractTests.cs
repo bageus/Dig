@@ -26,7 +26,7 @@ namespace Dig.Tests
 
             string runtime = Path.Combine(
                 FindRepositoryRoot(),
-                "unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime");
+                "Assets", "Dig.Unity", "Runtime");
             string inventory = File.ReadAllText(Path.Combine(
                 runtime,
                 "DigGameHudCanvas.Inventory.cs"));

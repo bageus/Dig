@@ -22,8 +22,6 @@ from unity_tunnel_depth_contracts import check_tunnel_depth_contracts
 ROOT = Path(__file__).resolve().parents[2]
 RUNTIME_ROOT = (
     ROOT
-    / "unity"
-    / "Dig.Unity"
     / "Assets"
     / "Dig.Unity"
     / "Runtime"

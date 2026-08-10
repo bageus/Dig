@@ -56,7 +56,7 @@ public sealed class ResidentNeedsUnityRuntimeContractTests
     private static string ReadRuntime(string file)
     {
         return ReadRepository(Path.Combine(
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime",
+            "Assets/Dig.Unity/Runtime",
             file));
     }
 

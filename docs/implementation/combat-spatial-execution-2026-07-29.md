@@ -20,8 +20,8 @@ The Stage 4 implementation adds one `CombatState`-owned execution lifecycle abov
 - `src/Dig.Application/Saving/CombatSaveData.cs`;
 - `src/Dig.Application/Saving/CombatSaveAdapter.cs`;
 - `src/Dig.Domain/Combat/CombatState.Restore.cs`;
-- `unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSession.Combat.cs`;
-- `unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.Combat.cs`.
+- `Assets/Dig.Unity/Runtime/DigAgentSession.Combat.cs`;
+- `Assets/Dig.Unity/Runtime/DigWorldInteraction.Combat.cs`.
 
 ## Execution lifecycle
 

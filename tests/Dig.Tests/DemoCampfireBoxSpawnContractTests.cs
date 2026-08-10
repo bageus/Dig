@@ -13,8 +13,6 @@ public sealed class DemoCampfireBoxSpawnContractTests
         string root = FindRepositoryRoot();
         string runtime = Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime");

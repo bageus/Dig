@@ -94,8 +94,6 @@ public sealed class RoomInfrastructureUnityPresentationContractTests
         {
             string candidate = Path.Combine(
                 current,
-                "unity",
-                "Dig.Unity",
                 "Assets",
                 "Dig.Unity",
                 "Runtime");

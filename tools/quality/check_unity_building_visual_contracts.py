@@ -8,8 +8,6 @@ ROOT = Path(__file__).resolve().parents[2]
 PRESENTATION = ROOT / "src" / "Dig.Presentation.Abstractions" / "Buildings"
 RUNTIME = (
     ROOT
-    / "unity"
-    / "Dig.Unity"
     / "Assets"
     / "Dig.Unity"
     / "Runtime"

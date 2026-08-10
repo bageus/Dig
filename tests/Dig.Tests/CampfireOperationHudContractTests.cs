@@ -13,8 +13,6 @@ public sealed class CampfireOperationHudContractTests
         string root = FindRepositoryRoot();
         string source = File.ReadAllText(Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime",

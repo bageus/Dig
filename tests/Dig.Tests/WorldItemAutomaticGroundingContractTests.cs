@@ -19,8 +19,6 @@ public sealed class WorldItemAutomaticGroundingContractTests
         string boxGhost = Read(runtime, "DigBuildingBoxGhostRenderer.Items.cs");
         string playMode = File.ReadAllText(Path.Combine(
             FindRepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Tests",
@@ -64,8 +62,6 @@ public sealed class WorldItemAutomaticGroundingContractTests
     {
         return Path.Combine(
             FindRepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime");

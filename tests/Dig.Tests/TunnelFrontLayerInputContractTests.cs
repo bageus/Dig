@@ -12,16 +12,12 @@ namespace Dig.Tests
             string root = FindRepositoryRoot();
             string interaction = File.ReadAllText(Path.Combine(
                 root,
-                "unity",
-                "Dig.Unity",
                 "Assets",
                 "Dig.Unity",
                 "Runtime",
                 "DigWorldInteraction.Excavation.cs"));
             string targets = File.ReadAllText(Path.Combine(
                 root,
-                "unity",
-                "Dig.Unity",
                 "Assets",
                 "Dig.Unity",
                 "Runtime",

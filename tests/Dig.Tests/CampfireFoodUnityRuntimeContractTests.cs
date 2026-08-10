@@ -17,8 +17,6 @@ namespace Dig.Tests
             string movement = Read(runtime, "DigTerrainWorkDirectMovement.cs");
             string playMode = File.ReadAllText(Path.Combine(
                 FindRepositoryRoot(),
-                "unity",
-                "Dig.Unity",
                 "Assets",
                 "Dig.Unity",
                 "Tests",
@@ -110,8 +108,6 @@ namespace Dig.Tests
             string root = FindRepositoryRoot();
             string runtime = File.ReadAllText(Path.Combine(
                 root,
-                "unity",
-                "Dig.Unity",
                 "Assets",
                 "Dig.Unity",
                 "Runtime",
@@ -147,8 +143,6 @@ namespace Dig.Tests
             string root = FindRepositoryRoot();
             string harness = File.ReadAllText(Path.Combine(
                 root,
-                "unity",
-                "Dig.Unity",
                 "Assets",
                 "Dig.Unity",
                 "Tests",
@@ -199,8 +193,6 @@ namespace Dig.Tests
         {
             return Path.Combine(
                 FindRepositoryRoot(),
-                "unity",
-                "Dig.Unity",
                 "Assets",
                 "Dig.Unity",
                 "Runtime");
@@ -212,7 +204,7 @@ namespace Dig.Tests
             while (current != null)
             {
                 if (Directory.Exists(Path.Combine(current.FullName, "src"))
-                    && Directory.Exists(Path.Combine(current.FullName, "unity")))
+                    && File.Exists(Path.Combine(current.FullName, "Dig.sln")))
                 {
                     return current.FullName;
                 }

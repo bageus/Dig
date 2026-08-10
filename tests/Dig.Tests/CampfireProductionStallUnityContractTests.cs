@@ -48,8 +48,6 @@ public sealed class CampfireProductionStallUnityContractTests
     public void PlayMode_covers_material_transit_progress_and_package_close()
     {
         string playMode = Read(
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Tests",
@@ -70,8 +68,6 @@ public sealed class CampfireProductionStallUnityContractTests
     private static string ReadRuntime(string file)
     {
         return Read(
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime",
@@ -95,7 +91,7 @@ public sealed class CampfireProductionStallUnityContractTests
         while (current != null)
         {
             if (Directory.Exists(Path.Combine(current.FullName, "src"))
-                && Directory.Exists(Path.Combine(current.FullName, "unity")))
+                && File.Exists(Path.Combine(current.FullName, "Dig.sln")))
             {
                 return current.FullName;
             }

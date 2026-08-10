@@ -11,7 +11,7 @@ namespace Dig.Tests
         {
             string root = FindRepositoryRoot();
             string runtime = Path.Combine(
-                root, "unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime");
+                root, "Assets", "Dig.Unity", "Runtime");
             string placement = File.ReadAllText(Path.Combine(
                 runtime, "DigWorldInteraction.BuildingBoxes.cs"));
             string selection = File.ReadAllText(Path.Combine(

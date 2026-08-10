@@ -13,14 +13,14 @@ public sealed class AutomaticSurfaceCorridorRuntimeContractTests
         string root = RepositoryRoot();
         string movement = Normalize(File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/"
+            "Assets/Dig.Unity/Runtime/"
                 + "DigAgentSession.AutomaticSurfaceCorridor.cs")));
         string spatial = Normalize(File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSession.SpatialWorkMovement.cs")));
+            "Assets/Dig.Unity/Runtime/DigAgentSession.SpatialWorkMovement.cs")));
         string corridor = Normalize(File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSession.SurfaceCorridor.cs")));
+            "Assets/Dig.Unity/Runtime/DigAgentSession.SurfaceCorridor.cs")));
 
         Assert.Contains("SurfaceCorridorSteering.TryBuildBoundaryPoses(", movement);
         Assert.Contains("MoveOnReservedSurface(agent,exitPose)", movement);

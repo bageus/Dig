@@ -44,8 +44,6 @@ public sealed class UnitySafeModeApiDriftContractTests
         Assert.Contains("newCompleteMushroomChopCommand(job.Id,DemoId('7',sequence),tick)", source);
         string playMode = Normalize(File.ReadAllText(Path.Combine(
             FindRepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Tests",
@@ -109,8 +107,6 @@ public sealed class UnitySafeModeApiDriftContractTests
     {
         string source = Normalize(File.ReadAllText(Path.Combine(
             FindRepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Tests",
@@ -140,8 +136,6 @@ public sealed class UnitySafeModeApiDriftContractTests
         string root = FindRepositoryRoot();
         string path = Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime",

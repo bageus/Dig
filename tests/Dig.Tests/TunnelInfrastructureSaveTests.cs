@@ -118,7 +118,7 @@ public sealed class TunnelInfrastructureSaveTests
     {
         string runtime = Path.Combine(
             FindRepositoryRoot(),
-            "unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime");
+            "Assets", "Dig.Unity", "Runtime");
         string source = Normalize(File.ReadAllText(Path.Combine(
             runtime,
             "DigTerrainTunnelInfrastructure.Saving.cs")));

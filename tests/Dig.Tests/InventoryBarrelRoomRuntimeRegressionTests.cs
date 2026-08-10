@@ -19,7 +19,7 @@ public sealed class InventoryBarrelRoomRuntimeRegressionTests
         string claims = Read(
             "src/Dig.Domain/Inventory/ResidentInventorySlotClaims.cs");
         string capacity = Read(
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigResidentInventory.Capacity.cs");
+            "Assets/Dig.Unity/Runtime/DigResidentInventory.Capacity.cs");
 
         Assert.Contains("pendingUnits", layout);
         Assert.Contains("candidate.Source.Split", apply);
@@ -36,7 +36,7 @@ public sealed class InventoryBarrelRoomRuntimeRegressionTests
     public void Barrel_route_accepts_supported_depth_without_accepting_air_paths()
     {
         string navigation = Read(
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/"
+            "Assets/Dig.Unity/Runtime/"
                 + "DigTerrainWorkSession.BarrelNavigation.cs");
 
         Assert.Contains("TunnelTraversalKind.SupportedWalk", navigation);
@@ -52,17 +52,17 @@ public sealed class InventoryBarrelRoomRuntimeRegressionTests
     public void Erased_room_keeps_paused_provenance_and_medium_preview_searches_anchors()
     {
         string session = Read(
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldSession.CaveRooms.cs");
+            "Assets/Dig.Unity/Runtime/DigWorldSession.CaveRooms.cs");
         string input = Read(
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.CaveRooms.cs");
+            "Assets/Dig.Unity/Runtime/DigWorldInteraction.CaveRooms.cs");
         string resolver = Read(
             "src/Dig.Application/World/CaveRoomPlacementCandidateResolver.cs");
         string resume = Read(
             "src/Dig.Application/World/CaveRoomResumePlanner.cs");
         string demoSkills = Read(
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSession.DemoSkills.cs");
+            "Assets/Dig.Unity/Runtime/DigAgentSession.DemoSkills.cs");
         string excavation = Read(
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/"
+            "Assets/Dig.Unity/Runtime/"
                 + "DigAgentSimulationDriverBase.Excavation.cs");
 
         Assert.Contains("_pausedCaveRoomPlans", session);
@@ -76,7 +76,7 @@ public sealed class InventoryBarrelRoomRuntimeRegressionTests
         Assert.Contains("pausedPlan.ExcavationTargets", resume);
         Assert.Contains("IsComplete(target, cells)", resume);
         Assert.Contains("ResolveDemoSkills(index)", Read(
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSession.cs"));
+            "Assets/Dig.Unity/Runtime/DigAgentSession.cs"));
         Assert.Contains("StoneworkThresholdUnits(3)", demoSkills);
         Assert.Contains("DisableCaveRoomPlanning();", input);
         Assert.Contains("InvalidateDesignationSynchronization", input);

@@ -52,8 +52,6 @@ public sealed class RuntimeRegressionCorrectionSourceTests
         {
             string candidate = Path.Combine(
                 current,
-                "unity",
-                "Dig.Unity",
                 "Assets",
                 "Dig.Unity",
                 "Runtime",
