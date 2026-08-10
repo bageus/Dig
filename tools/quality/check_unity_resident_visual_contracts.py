@@ -2,11 +2,16 @@
 from __future__ import annotations
 
 import sys
+import struct
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PRESENTATION = ROOT / "src" / "Dig.Presentation.Abstractions" / "Agents"
 RUNTIME = ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" / "Runtime"
+RESIDENT_MODEL = ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" \
+    / "Resources" / "Residents" / "Dwarf_Hi3D_LowPoly_70k_Rigged.glb"
+RESIDENT_MODEL_SOURCE = ROOT / "unity" / "Dig.Unity" / "Assets" \
+    / "DigDwarfEtalonV3" / "Hi3D_FemaleBlack_LowPoly_LOD1_Rigged_Animated.glb"
 
 
 def read(path: Path) -> str:
@@ -33,8 +38,35 @@ def reject(path: Path, text: str, fragments: tuple[str, ...]) -> list[str]:
     ]
 
 
+def validate_glb(path: Path) -> list[str]:
+    if not path.exists():
+        return [f"{path.relative_to(ROOT)}: resident GLB is missing"]
+
+    size = path.stat().st_size
+    if size < 12:
+        return [f"{path.relative_to(ROOT)}: resident GLB header is truncated"]
+
+    with path.open("rb") as stream:
+        magic, version, declared_size = struct.unpack("<4sII", stream.read(12))
+    errors: list[str] = []
+    if magic != b"glTF" or version != 2:
+        errors.append(
+            f"{path.relative_to(ROOT)}: expected a glTF 2.0 binary asset")
+    if declared_size != size:
+        errors.append(
+            f"{path.relative_to(ROOT)}: truncated GLB; header declares "
+            f"{declared_size} bytes but file contains {size}")
+    return errors
+
+
 def main() -> int:
     errors: list[str] = []
+    errors.extend(validate_glb(RESIDENT_MODEL))
+    if RESIDENT_MODEL.exists() and RESIDENT_MODEL_SOURCE.exists() \
+            and RESIDENT_MODEL.read_bytes() != RESIDENT_MODEL_SOURCE.read_bytes():
+        errors.append(
+            f"{RESIDENT_MODEL.relative_to(ROOT)}: runtime resident model differs "
+            f"from {RESIDENT_MODEL_SOURCE.relative_to(ROOT)}")
     models_path = PRESENTATION / "ResidentVisualModels.cs"
     presenter_path = PRESENTATION / "ResidentVisualPresenter.cs"
     models = read(models_path)
