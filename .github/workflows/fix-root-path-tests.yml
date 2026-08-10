@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-      - name: Rewrite stale Unity paths
+      - name: Rewrite stale Unity paths and repository-root checks
         shell: bash
         run: |
           set -euo pipefail
@@ -23,19 +23,30 @@ jobs:
           from pathlib import Path
           import re
 
-          pattern = re.compile(r'"unity"\s*,\s*"Dig\.Unity"\s*,\s*')
+          path_pattern = re.compile(r'"unity"\s*,\s*"Dig\.Unity"\s*,\s*')
+          root_pattern = re.compile(
+              r'Directory\.Exists\(Path\.Combine\(current\.FullName,\s*"unity"(?:\s*,\s*"Dig\.Unity")?\s*\)\)'
+          )
           changed = []
-          replacements = 0
+          path_replacements = 0
+          root_replacements = 0
           for path in Path('tests').rglob('*.cs'):
               text = path.read_text(encoding='utf-8')
-              updated, count = pattern.subn('', text)
-              if count:
+              updated, path_count = path_pattern.subn('', text)
+              updated, root_count = root_pattern.subn(
+                  'File.Exists(Path.Combine(current.FullName, "Dig.sln"))', updated
+              )
+              if path_count or root_count:
                   path.write_text(updated, encoding='utf-8')
                   changed.append(str(path))
-                  replacements += count
-          print(f'Updated {replacements} stale path constructors across {len(changed)} test files')
+                  path_replacements += path_count
+                  root_replacements += root_count
+          print(
+              f'Updated {path_replacements} stale path constructors and '
+              f'{root_replacements} repository-root checks across {len(changed)} test files'
+          )
           if not changed:
-              raise SystemExit('Expected stale unity/Dig.Unity test paths, but none were found')
+              raise SystemExit('Expected stale Unity test paths/root checks, but none were found')
           PY
           git diff --check
           git diff -- tests > root-path-tests.patch
