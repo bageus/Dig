@@ -67,8 +67,6 @@ public sealed class ResidentUnitAndCaveRoomRuntimeRegressionContractTests
     {
         return Path.Combine(
             RepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime");

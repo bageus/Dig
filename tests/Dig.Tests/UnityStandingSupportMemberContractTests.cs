@@ -19,8 +19,6 @@ public sealed class UnityStandingSupportMemberContractTests
     {
         string runtime = Path.Combine(
             FindRepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime");

@@ -12,8 +12,6 @@ public sealed class StylizedMaterialRuntimeContractTests
         string root = FindRepositoryRoot();
         string runtime = Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime");
@@ -53,8 +51,6 @@ public sealed class StylizedMaterialRuntimeContractTests
     {
         string diagnostics = File.ReadAllText(Path.Combine(
             FindRepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime",

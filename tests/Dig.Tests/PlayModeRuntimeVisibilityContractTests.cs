@@ -12,8 +12,6 @@ public sealed class PlayModeRuntimeVisibilityContractTests
     {
         string playMode = Path.Combine(
             FindRepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Tests",

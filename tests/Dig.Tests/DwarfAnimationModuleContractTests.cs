@@ -13,11 +13,11 @@ public sealed class DwarfAnimationModuleContractTests
     {
         string rootManifest = Read("Packages", "manifest.json");
         string unityManifest = Read(
-            "unity", "Dig.Unity", "Packages", "manifest.json");
+            "Packages", "manifest.json");
         string unityLock = Read(
-            "unity", "Dig.Unity", "Packages", "packages-lock.json");
+            "Packages", "packages-lock.json");
         string asmdef = Read(
-            "unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime",
+            "Assets", "Dig.Unity", "Runtime",
             "Dig.Unity.asmdef");
         string bridge = Read(
             "Assets", "DigDwarfs", "Scripts", "Runtime",
@@ -42,9 +42,9 @@ public sealed class DwarfAnimationModuleContractTests
     public void Dig_unity_package_graph_is_valid_json_and_uses_only_gltfast()
     {
         string unityManifest = Read(
-            "unity", "Dig.Unity", "Packages", "manifest.json");
+            "Packages", "manifest.json");
         string unityLock = Read(
-            "unity", "Dig.Unity", "Packages", "packages-lock.json");
+            "Packages", "packages-lock.json");
 
         using JsonDocument manifestDocument = JsonDocument.Parse(unityManifest);
         using JsonDocument lockDocument = JsonDocument.Parse(unityLock);

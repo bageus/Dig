@@ -70,7 +70,7 @@ public sealed class RoomInfrastructureUnityRuntimeContractTests
     {
         string path = Path.Combine(
             FindRepositoryRoot(),
-            "unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime", fileName);
+            "Assets", "Dig.Unity", "Runtime", fileName);
         return Normalize(File.ReadAllText(path));
     }
 

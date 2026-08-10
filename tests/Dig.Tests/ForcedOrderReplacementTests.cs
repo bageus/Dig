@@ -59,8 +59,6 @@ namespace Dig.Tests
                 "AgentState.ForcedOrders.cs"));
             string runtime = Path.Combine(
                 root,
-                "unity",
-                "Dig.Unity",
                 "Assets",
                 "Dig.Unity",
                 "Runtime");

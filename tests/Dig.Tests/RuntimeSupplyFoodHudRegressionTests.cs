@@ -174,24 +174,18 @@ public sealed class RuntimeSupplyFoodHudRegressionTests
         string root = FindRepositoryRoot();
         string direct = File.ReadAllText(Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime",
             "DigTerrainWorkSession.DirectCommands.cs"));
         string food = File.ReadAllText(Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime",
             "DigWorldInteraction.WorldFood.cs"));
         string skills = File.ReadAllText(Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime",

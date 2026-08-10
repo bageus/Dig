@@ -34,8 +34,6 @@ public sealed class DemoCampfirePlacementTests
     {
         string source = File.ReadAllText(Path.Combine(
             FindRepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime",
@@ -56,7 +54,7 @@ public sealed class DemoCampfirePlacementTests
         while (current != null)
         {
             if (Directory.Exists(Path.Combine(current.FullName, "src"))
-                && Directory.Exists(Path.Combine(current.FullName, "unity")))
+                && File.Exists(Path.Combine(current.FullName, "Dig.sln")))
             {
                 return current.FullName;
             }

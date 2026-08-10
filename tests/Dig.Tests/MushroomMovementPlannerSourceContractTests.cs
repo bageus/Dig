@@ -10,8 +10,8 @@ public sealed class MushroomMovementPlannerSourceContractTests
     public void Mushroom_travel_uses_normal_navigation_and_supports_only_final_work_cell()
     {
         string root = FindRepositoryRoot();
-        string runtime = Path.Combine(root, "unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime");
-        string playMode = Path.Combine(root, "unity", "Dig.Unity", "Assets", "Dig.Unity", "Tests", "PlayMode");
+        string runtime = Path.Combine(root, "Assets", "Dig.Unity", "Runtime");
+        string playMode = Path.Combine(root, "Assets", "Dig.Unity", "Tests", "PlayMode");
         string mushrooms = Read(runtime, "DigTerrainWorkSession.Mushrooms.cs");
         string navigation = Read(runtime, "DigTerrainWorkSession.MushroomNavigation.cs");
         string supported = Read(runtime, "DigTerrainWorkSession.SupportedActionPositions.cs");

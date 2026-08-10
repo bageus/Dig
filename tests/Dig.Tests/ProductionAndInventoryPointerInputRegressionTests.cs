@@ -123,8 +123,6 @@ public sealed class ProductionAndInventoryPointerInputRegressionTests
         string assemblyInfo = Normalize(Read(runtime, "AssemblyInfo.cs"));
         string testAssembly = Normalize(File.ReadAllText(Path.Combine(
             FindRepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Tests",
@@ -174,8 +172,6 @@ public sealed class ProductionAndInventoryPointerInputRegressionTests
     {
         return Path.Combine(
             FindRepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime");

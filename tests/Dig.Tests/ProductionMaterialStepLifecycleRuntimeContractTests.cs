@@ -13,8 +13,6 @@ public sealed class ProductionMaterialStepLifecycleRuntimeContractTests
         string root = FindRepositoryRoot();
         string runtime = Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime");
@@ -38,8 +36,6 @@ public sealed class ProductionMaterialStepLifecycleRuntimeContractTests
             "ProductionOrderState.MaterialSteps.cs"));
         string playMode = File.ReadAllText(Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Tests",

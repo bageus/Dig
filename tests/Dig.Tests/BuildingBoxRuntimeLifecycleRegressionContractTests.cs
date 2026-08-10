@@ -152,8 +152,6 @@ public sealed class BuildingBoxRuntimeLifecycleRegressionContractTests
     {
         return Path.Combine(
             RepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime");

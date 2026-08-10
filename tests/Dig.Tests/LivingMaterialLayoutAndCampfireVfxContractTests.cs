@@ -69,8 +69,6 @@ public sealed class LivingMaterialLayoutAndCampfireVfxContractTests
     {
         return File.ReadAllText(Path.Combine(
             FindRepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime",
@@ -81,8 +79,6 @@ public sealed class LivingMaterialLayoutAndCampfireVfxContractTests
     {
         return File.ReadAllText(Path.Combine(
             FindRepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Tests",
@@ -106,7 +102,7 @@ public sealed class LivingMaterialLayoutAndCampfireVfxContractTests
         while (current != null)
         {
             if (Directory.Exists(Path.Combine(current.FullName, "src"))
-                && Directory.Exists(Path.Combine(current.FullName, "unity")))
+                && File.Exists(Path.Combine(current.FullName, "Dig.sln")))
             {
                 return current.FullName;
             }

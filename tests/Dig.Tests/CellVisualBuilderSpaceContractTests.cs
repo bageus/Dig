@@ -12,8 +12,6 @@ namespace Dig.Tests
             string root = FindRepositoryRoot();
             string visual = File.ReadAllText(Path.Combine(
                 root,
-                "unity",
-                "Dig.Unity",
                 "Assets",
                 "Dig.Unity",
                 "Runtime",

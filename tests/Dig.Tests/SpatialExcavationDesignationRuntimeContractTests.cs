@@ -58,8 +58,6 @@ public sealed class SpatialExcavationDesignationRuntimeContractTests
     {
         return Path.Combine(
             RepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime");

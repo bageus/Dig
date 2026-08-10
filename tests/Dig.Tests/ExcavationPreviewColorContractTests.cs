@@ -11,7 +11,7 @@ namespace Dig.Tests
         {
             string root = FindRepositoryRoot();
             string runtime = Path.Combine(
-                root, "unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime");
+                root, "Assets", "Dig.Unity", "Runtime");
             string terrain = File.ReadAllText(Path.Combine(
                 runtime, "DigTerrainChunkVisual.cs"));
             string cursor = File.ReadAllText(Path.Combine(

@@ -49,7 +49,7 @@ public sealed class RuntimeRoomToggleHoverAndPickBoundsContractTests
         string? current = AppContext.BaseDirectory;
         while (current != null)
         {
-            string candidate = Path.Combine(current, "unity", "Dig.Unity", "Assets",
+            string candidate = Path.Combine(current, "Assets",
                 "Dig.Unity", "Runtime", fileName);
             if (File.Exists(candidate))
             {

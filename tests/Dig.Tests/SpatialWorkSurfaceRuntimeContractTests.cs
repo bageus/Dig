@@ -139,7 +139,7 @@ public sealed class SpatialWorkSurfaceRuntimeContractTests
         DirectoryInfo? current = new DirectoryInfo(AppContext.BaseDirectory);
         while (current != null)
         {
-            if (Directory.Exists(Path.Combine(current.FullName, "unity")))
+            if (File.Exists(Path.Combine(current.FullName, "Dig.sln")))
             {
                 return current.FullName;
             }

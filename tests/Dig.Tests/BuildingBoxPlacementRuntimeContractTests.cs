@@ -186,8 +186,6 @@ namespace Dig.Tests
             string root = FindRepositoryRoot();
             string playMode = Normalize(File.ReadAllText(Path.Combine(
                 root,
-                "unity",
-                "Dig.Unity",
                 "Assets",
                 "Dig.Unity",
                 "Tests",
@@ -195,8 +193,6 @@ namespace Dig.Tests
                 "BuildingBoxPlacementCursorPlayModeTests.cs")));
             string deepPlayMode = Normalize(File.ReadAllText(Path.Combine(
                 root,
-                "unity",
-                "Dig.Unity",
                 "Assets",
                 "Dig.Unity",
                 "Tests",
@@ -231,8 +227,6 @@ namespace Dig.Tests
         {
             return Path.Combine(
                 FindRepositoryRoot(),
-                "unity",
-                "Dig.Unity",
                 "Assets",
                 "Dig.Unity",
                 "Runtime");

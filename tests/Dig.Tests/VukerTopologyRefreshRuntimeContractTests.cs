@@ -16,7 +16,7 @@ public sealed class VukerTopologyRefreshRuntimeContractTests
             "src", "Dig.Application", "Combat",
             "CombatSpatialExecutionHandler.cs");
         string playMode = Read(
-            "unity", "Dig.Unity", "Assets", "Dig.Unity", "Tests", "PlayMode",
+            "Assets", "Dig.Unity", "Tests", "PlayMode",
             "VukerTopologyRefreshPlayModeTests.cs");
 
         Assert.Contains("HasSameNavigationTopology(previous, refreshed)", topology,
@@ -40,7 +40,7 @@ public sealed class VukerTopologyRefreshRuntimeContractTests
     }
 
     private static string ReadRuntime(string file) => Read(
-        "unity", "Dig.Unity", "Assets", "Dig.Unity", "Runtime", file);
+        "Assets", "Dig.Unity", "Runtime", file);
 
     private static string Read(params string[] parts)
     {

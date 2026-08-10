@@ -52,8 +52,6 @@ public sealed class UnityItemInteractionNamespaceContractTests
     {
         return Path.Combine(
             FindRepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity");
     }
@@ -69,7 +67,7 @@ public sealed class UnityItemInteractionNamespaceContractTests
         while (current != null)
         {
             if (Directory.Exists(Path.Combine(current.FullName, "src"))
-                && Directory.Exists(Path.Combine(current.FullName, "unity")))
+                && File.Exists(Path.Combine(current.FullName, "Dig.sln")))
             {
                 return current.FullName;
             }

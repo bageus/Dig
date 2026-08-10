@@ -11,8 +11,6 @@ public sealed class AuthoritativeXyzClosureContractTests
     {
         string runtime = Path.Combine(
             FindRepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime");

@@ -24,8 +24,6 @@ public sealed class DeepTerrainSeamSourceContractTests
     {
         return File.ReadAllText(Path.Combine(
             FindRepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime",
@@ -38,7 +36,7 @@ public sealed class DeepTerrainSeamSourceContractTests
         while (current != null)
         {
             if (Directory.Exists(Path.Combine(current.FullName, "src"))
-                && Directory.Exists(Path.Combine(current.FullName, "unity")))
+                && File.Exists(Path.Combine(current.FullName, "Dig.sln")))
             {
                 return current.FullName;
             }

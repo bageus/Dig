@@ -60,8 +60,6 @@ public sealed class ExcavationCadenceRuntimeContractTests
     {
         return Path.Combine(
             RepositoryRoot(),
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Runtime");

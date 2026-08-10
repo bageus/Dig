@@ -13,9 +13,9 @@ public sealed class ResidentWorkToolUnityRuntimeContractTests
         string root = FindRepositoryRoot();
         string presentation = Path.Combine(root, "src",
             "Dig.Presentation.Abstractions", "Jobs");
-        string runtime = Path.Combine(root, "unity", "Dig.Unity", "Assets",
+        string runtime = Path.Combine(root, "Assets",
             "Dig.Unity", "Runtime");
-        string playMode = Path.Combine(root, "unity", "Dig.Unity", "Assets",
+        string playMode = Path.Combine(root, "Assets",
             "Dig.Unity", "Tests", "PlayMode");
 
         string model = Read(presentation, "JobOverlayViewModel.cs");
@@ -72,9 +72,9 @@ public sealed class ResidentWorkToolUnityRuntimeContractTests
     public void Hand_visual_rebuild_invalidates_stale_hover_renderers()
     {
         string root = FindRepositoryRoot();
-        string runtime = Path.Combine(root, "unity", "Dig.Unity", "Assets",
+        string runtime = Path.Combine(root, "Assets",
             "Dig.Unity", "Runtime");
-        string playMode = Path.Combine(root, "unity", "Dig.Unity", "Assets",
+        string playMode = Path.Combine(root, "Assets",
             "Dig.Unity", "Tests", "PlayMode");
 
         string hover = Read(runtime, "DigAgentVisual.HoverLifecycle.cs");

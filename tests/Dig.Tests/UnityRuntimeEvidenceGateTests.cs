@@ -48,8 +48,6 @@ public sealed class UnityRuntimeEvidenceGateTests
         string root = FindRepositoryRoot();
         string editMode = File.ReadAllText(Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Tests",
@@ -57,8 +55,6 @@ public sealed class UnityRuntimeEvidenceGateTests
             "UnityProjectEditModeTests.cs"));
         string playMode = File.ReadAllText(Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Tests",
@@ -66,8 +62,6 @@ public sealed class UnityRuntimeEvidenceGateTests
             "RepresentativeSceneConsolePlayModeTests.cs"));
         string buildSettings = File.ReadAllText(Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "ProjectSettings",
             "EditorBuildSettings.asset"));
 
@@ -97,8 +91,6 @@ public sealed class UnityRuntimeEvidenceGateTests
         string root = FindRepositoryRoot();
         string caveRoom = File.ReadAllText(Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Tests",
@@ -106,8 +98,6 @@ public sealed class UnityRuntimeEvidenceGateTests
             "CaveRoomReapplyAndMediumPreviewPlayModeTests.cs"));
         string combat = File.ReadAllText(Path.Combine(
             root,
-            "unity",
-            "Dig.Unity",
             "Assets",
             "Dig.Unity",
             "Tests",
