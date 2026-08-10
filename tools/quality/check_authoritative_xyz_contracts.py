@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PRODUCTION_ROOTS = (
     ROOT / "src",
-    ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" / "Runtime",
+    ROOT / "Assets" / "Dig.Unity" / "Runtime",
 )
 
 FORBIDDEN_FRAGMENTS = (
@@ -136,13 +136,13 @@ def main() -> int:
         "WorldSnapshot world",
     )))
 
-    world_renderer = ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" / "Runtime" / "DigWorldRenderer.cs"
+    world_renderer = ROOT / "Assets" / "Dig.Unity" / "Runtime" / "DigWorldRenderer.cs"
     errors.extend(require(world_renderer, (
         "Dictionary<CellId, DigCellVisual>",
         "Dictionary<ChunkId, Transform>",
         "SelectAt(int x, int y, int z)",
     )))
-    terrain_builder = ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" / "Runtime" / "DigTerrainRenderSnapshotBuilder.cs"
+    terrain_builder = ROOT / "Assets" / "Dig.Unity" / "Runtime" / "DigTerrainRenderSnapshotBuilder.cs"
     errors.extend(require(terrain_builder, (
         "int depth = world.Depth;",
         "AddWorldChunks(",
@@ -175,8 +175,8 @@ def main() -> int:
         ROOT / "src" / "Dig.Domain" / "Navigation" / "TunnelNavigationVolume.Dynamic.cs",
         ROOT / "src" / "Dig.Presentation.Abstractions" / "World" / "TerrainDepthVolumePresenter.cs",
         ROOT / "src" / "Dig.Presentation.Abstractions" / "World" / "TerrainDepthVolumeViewModel.cs",
-        ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" / "Runtime" / "DigWorldRenderer.DepthTerrain.cs",
-        ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" / "Runtime" / "DigTerrainRenderSnapshotBuilder.Depth.cs",
+        ROOT / "Assets" / "Dig.Unity" / "Runtime" / "DigWorldRenderer.DepthTerrain.cs",
+        ROOT / "Assets" / "Dig.Unity" / "Runtime" / "DigTerrainRenderSnapshotBuilder.Depth.cs",
     )
     for path in deleted_paths:
         if path.exists():

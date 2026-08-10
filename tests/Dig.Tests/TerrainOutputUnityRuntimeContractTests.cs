@@ -13,16 +13,16 @@ public sealed class TerrainOutputUnityRuntimeContractTests
         string root = FindRepositoryRoot();
         string worldSession = File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldSession.cs"));
+            "Assets/Dig.Unity/Runtime/DigWorldSession.cs"));
         string terrainSession = File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkSession.cs"));
+            "Assets/Dig.Unity/Runtime/DigTerrainWorkSession.cs"));
         string composition = File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkSession.Composition.cs"));
+            "Assets/Dig.Unity/Runtime/DigTerrainWorkSession.Composition.cs"));
         string playMode = File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/TerrainOutputCatalogPlayModeTests.cs"));
+            "Assets/Dig.Unity/Tests/PlayMode/TerrainOutputCatalogPlayModeTests.cs"));
 
         Assert.Contains("DefaultTerrainMaterials.CreateCatalog()", worldSession);
         Assert.Contains("CompleteTerrainWorkCommand.FromPlan", terrainSession);

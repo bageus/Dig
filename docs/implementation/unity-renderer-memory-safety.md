@@ -40,9 +40,9 @@ Regression coverage includes a Play Mode scenario for replacing cached renderer 
 ## Local recovery after an allocator crash
 
 1. Close Unity and Unity Hub.
-2. Delete `unity/Dig.Unity/Library`, `unity/Dig.Unity/Temp` and `unity/Dig.Unity/obj`.
+2. Delete `Library`, `Temp` and `obj`.
 3. Delete generated `bin` and `obj` directories below `src` if they exist.
-4. Reopen exactly `unity/Dig.Unity` with the supported Unity 6 LTS editor.
+4. Reopen exactly `.` with the supported Unity 6 LTS editor.
 5. Open `Assets/Scenes/Main.unity` and enter Play Mode.
 6. If the allocator failure repeats, attach the end of `%LOCALAPPDATA%/Unity/Editor/Editor.log` to issue #85. The lines before `Could not allocate memory` are required to identify the native subsystem.
 

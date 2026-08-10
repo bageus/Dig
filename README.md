@@ -36,8 +36,9 @@ src/
 tests/
   Dig.Tests/                     Domain and cross-layer tests
 
-unity/
-  Dig.Unity/                     Unity 6 presentation host and editor tooling
+Assets/                            Unity 6 presentation assets and editor tooling
+Packages/                          Unity Package Manager configuration
+ProjectSettings/                   Unity project settings
 
 tools/quality/                   Architecture and file-size checks
 
@@ -78,11 +79,11 @@ See [`docs/implementation/quality-soak-performance.md`](docs/implementation/qual
 
 1. Clone the repository.
 2. In Unity Hub, choose **Add project from disk**.
-3. Select `unity/Dig.Unity`, not the repository root.
+3. Select the repository root.
 4. Open the project and wait for the local core package to compile.
 5. Run **Tools > Dig > Create Bootstrap Scene**.
 
-For an existing checkout that previously showed CS8773, pull the latest `main`, reopen the project and allow the local package to reimport. If the Console still contains stale compiler output, run **Assets > Reimport All** or close Unity and remove the generated `unity/Dig.Unity/Library` directory before reopening.
+For an existing checkout that previously showed CS8773, pull the latest `main`, reopen the project and allow the local package to reimport. If the Console still contains stale compiler output, run **Assets > Reimport All** or close Unity and remove the generated `Library` directory before reopening.
 
 See [`docs/implementation/unity-presentation-host.md`](docs/implementation/unity-presentation-host.md) for the integration overview, [`docs/implementation/unity-world-vertical-slice.md`](docs/implementation/unity-world-vertical-slice.md) for world interaction, [`docs/implementation/unity-resident-presentation.md`](docs/implementation/unity-resident-presentation.md) for resident visuals and AI diagnostics, and [`docs/implementation/unity-csharp-compatibility.md`](docs/implementation/unity-csharp-compatibility.md) for compiler rules.
 

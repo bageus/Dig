@@ -10,7 +10,7 @@ from typing import Iterable
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PATH = Path(__file__).with_name("quality_config.json")
-UNITY_CSHARP_ROOTS = ("src", "tests", "unity")
+UNITY_CSHARP_ROOTS = ("src", "tests", "Assets")
 FILE_SCOPED_NAMESPACE = re.compile(
     r"^[ \t]*namespace\s+[A-Za-z_][A-Za-z0-9_.]*\s*;[ \t]*$",
     re.MULTILINE,
@@ -103,9 +103,9 @@ def check_compiler_baseline(config: dict[str, object]) -> list[str]:
 def check_unity_compiler_configuration(config: dict[str, object]) -> list[str]:
     del config
     errors: list[str] = []
-    response_path = ROOT / "unity" / "Dig.Unity" / "Assets" / "csc.rsp"
+    response_path = ROOT / "Assets" / "csc.rsp"
     if not response_path.exists():
-        errors.append("unity/Dig.Unity/Assets/csc.rsp is required")
+        errors.append("Assets/csc.rsp is required")
     else:
         flags = {
             line.strip()
@@ -114,13 +114,11 @@ def check_unity_compiler_configuration(config: dict[str, object]) -> list[str]:
         }
         if "-nullable:enable" not in flags:
             errors.append(
-                "unity/Dig.Unity/Assets/csc.rsp must enable nullable annotations"
+                "Assets/csc.rsp must enable nullable annotations"
             )
 
     asmdef_path = (
         ROOT
-        / "unity"
-        / "Dig.Unity"
         / "Assets"
         / "Dig.Unity"
         / "Runtime"
@@ -138,8 +136,6 @@ def check_unity_compiler_configuration(config: dict[str, object]) -> list[str]:
 
     play_mode_asmdef_path = (
         ROOT
-        / "unity"
-        / "Dig.Unity"
         / "Assets"
         / "Dig.Unity"
         / "Tests"
@@ -172,9 +168,9 @@ def check_unity_compiler_configuration(config: dict[str, object]) -> list[str]:
                 f"{sorted(duplicates)}"
             )
 
-    manifest_path = ROOT / "unity" / "Dig.Unity" / "Packages" / "manifest.json"
+    manifest_path = ROOT / "Packages" / "manifest.json"
     if not manifest_path.exists():
-        errors.append("unity/Dig.Unity/Packages/manifest.json is required")
+        errors.append("Packages/manifest.json is required")
     else:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
         dependencies = manifest.get("dependencies", {})

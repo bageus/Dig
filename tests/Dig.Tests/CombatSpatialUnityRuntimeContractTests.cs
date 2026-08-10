@@ -12,13 +12,13 @@ public sealed class CombatSpatialUnityRuntimeContractTests
     {
         string root = FindRepositoryRoot();
         string session = File.ReadAllText(Path.Combine(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSession.Combat.cs"));
+            "Assets/Dig.Unity/Runtime/DigAgentSession.Combat.cs"));
         string interaction = File.ReadAllText(Path.Combine(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.Combat.cs"));
+            "Assets/Dig.Unity/Runtime/DigWorldInteraction.Combat.cs"));
         string cursor = File.ReadAllText(Path.Combine(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.DirectCommandCursor.cs"));
+            "Assets/Dig.Unity/Runtime/DigWorldInteraction.DirectCommandCursor.cs"));
         string selection = File.ReadAllText(Path.Combine(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.Selection.cs"));
+            "Assets/Dig.Unity/Runtime/DigWorldInteraction.Selection.cs"));
 
         Assert.Contains("CombatSpatialExecutionHandler", session, StringComparison.Ordinal);
         Assert.Contains("TryAdvanceCombat", session, StringComparison.Ordinal);
@@ -35,31 +35,31 @@ public sealed class CombatSpatialUnityRuntimeContractTests
     {
         string root = FindRepositoryRoot();
         string session = File.ReadAllText(Path.Combine(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSession.Combat.cs"));
+            "Assets/Dig.Unity/Runtime/DigAgentSession.Combat.cs"));
         string enemies = File.ReadAllText(Path.Combine(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSession.Enemies.cs"));
+            "Assets/Dig.Unity/Runtime/DigAgentSession.Enemies.cs"));
         string equipment = File.ReadAllText(Path.Combine(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSession.CombatEquipment.cs"));
+            "Assets/Dig.Unity/Runtime/DigAgentSession.CombatEquipment.cs"));
         string interaction = File.ReadAllText(Path.Combine(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.Combat.cs"));
+            "Assets/Dig.Unity/Runtime/DigWorldInteraction.Combat.cs"));
         string bootstrap = File.ReadAllText(Path.Combine(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigUnityBootstrap.cs"));
+            "Assets/Dig.Unity/Runtime/DigUnityBootstrap.cs"));
         string loop = File.ReadAllText(Path.Combine(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSimulationDriverBase.Loop.cs"));
+            "Assets/Dig.Unity/Runtime/DigAgentSimulationDriverBase.Loop.cs"));
         string driver = File.ReadAllText(Path.Combine(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSimulationDriverBase.cs"));
+            "Assets/Dig.Unity/Runtime/DigAgentSimulationDriverBase.cs"));
         string directCommands = File.ReadAllText(Path.Combine(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkSession.DirectCommands.cs"));
+            "Assets/Dig.Unity/Runtime/DigTerrainWorkSession.DirectCommands.cs"));
         string renderer = File.ReadAllText(Path.Combine(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigCreatureRenderer.cs"));
+            "Assets/Dig.Unity/Runtime/DigCreatureRenderer.cs"));
         string cursor = File.ReadAllText(Path.Combine(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.DirectCommandCursor.cs"));
+            "Assets/Dig.Unity/Runtime/DigWorldInteraction.DirectCommandCursor.cs"));
         string health = File.ReadAllText(Path.Combine(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigCombatHealthBar.cs"));
+            "Assets/Dig.Unity/Runtime/DigCombatHealthBar.cs"));
         string autonomy = File.ReadAllText(Path.Combine(root,
             "src/Dig.Application/Agents/AgentAutonomySystem.cs"));
         string playMode = File.ReadAllText(Path.Combine(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/CaveMonsterCombatPlayModeTests.cs"));
+            "Assets/Dig.Unity/Tests/PlayMode/CaveMonsterCombatPlayModeTests.cs"));
         string itemLocations = File.ReadAllText(Path.Combine(root,
             "src/Dig.Domain/Inventory/ItemLocations.cs"));
 

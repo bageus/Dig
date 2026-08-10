@@ -23,18 +23,18 @@ __pycache__/
 unity-source-contracts.log
 
 # Unity project generated files
-unity/Dig.Unity/[Ll]ibrary/
-unity/Dig.Unity/[Tt]emp/
-unity/Dig.Unity/[Oo]bj/
-unity/Dig.Unity/[Bb]uild/
-unity/Dig.Unity/[Bb]uilds/
-unity/Dig.Unity/[Ll]ogs/
-unity/Dig.Unity/[Uu]ser[Ss]ettings/
-unity/Dig.Unity/[Mm]emoryCaptures/
-unity/Dig.Unity/[Rr]ecordings/
-unity/Dig.Unity/*.csproj
-unity/Dig.Unity/*.sln
-unity/Dig.Unity/*.user
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+*.csproj
+*.sln
+*.user
 
 # OS
 .DS_Store

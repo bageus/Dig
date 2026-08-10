@@ -10,7 +10,7 @@ System index owner: `World/agent/building/item visuals` in [`../systems/README.m
 ## Request
 
 Use the newly added authored resident model
-`unity/Dig.Unity/Assets/DigDwarfEtalonV3/Dwarf_Hi3D_LowPoly_70k_Rigged.glb`
+`Assets/DigDwarfEtalonV3/Dwarf_Hi3D_LowPoly_70k_Rigged.glb`
 as the default in-game dwarf visual.
 
 ## Implementation

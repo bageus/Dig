@@ -15,7 +15,7 @@ public sealed class EarlyBuildingVisualDimensionsContractTests
     public void Early_building_visual_profiles_have_exact_sizes_and_distinct_silhouettes()
     {
         using JsonDocument document = JsonDocument.Parse(Read(
-            "unity/Dig.Unity/Assets/Dig.Unity/Resources/Dig/VisualCatalogs/RepresentativeBuildings.json"));
+            "Assets/Dig.Unity/Resources/Dig/VisualCatalogs/RepresentativeBuildings.json"));
 
         AssertProfile(
             document,
@@ -76,7 +76,7 @@ public sealed class EarlyBuildingVisualDimensionsContractTests
         string ghost = ReadRuntime(
             "DigBuildingBoxGhostRenderer.Representatives.cs");
         string playMode = Read(
-            "unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/EarlyBuildingVisualDimensionsPlayModeTests.cs");
+            "Assets/Dig.Unity/Tests/PlayMode/EarlyBuildingVisualDimensionsPlayModeTests.cs");
 
         Assert.Contains("visualBoundsCenter", data);
         Assert.Contains("visualBoundsSize", data);
@@ -125,7 +125,7 @@ public sealed class EarlyBuildingVisualDimensionsContractTests
 
     private static string ReadRuntime(string file)
     {
-        return Read("unity/Dig.Unity/Assets/Dig.Unity/Runtime/" + file);
+        return Read("Assets/Dig.Unity/Runtime/" + file);
     }
 
     private static string Read(string relative)

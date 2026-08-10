@@ -32,7 +32,7 @@ public sealed class GameTimeScaleUnityRuntimeContractTests
     {
         return File.ReadAllText(Path.Combine(
             FindRepositoryRoot(),
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime",
+            "Assets/Dig.Unity/Runtime",
             file));
     }
 

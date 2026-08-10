@@ -116,8 +116,8 @@
 
 - `src/Dig.Domain/Content/ResidentInventoryExpansionContent.cs`;
 - `src/Dig.Domain/Content/ResidentInventoryExpansionContentValidation.cs`;
-- `unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentRenderer.InventoryAttachments.cs`;
-- `unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigResidentInventoryAttachmentVisual.cs`;
+- `Assets/Dig.Unity/Runtime/DigAgentRenderer.InventoryAttachments.cs`;
+- `Assets/Dig.Unity/Runtime/DigResidentInventoryAttachmentVisual.cs`;
 - `tests/Dig.Tests/ResidentInventoryExpansionContentTests.cs`.
 
 **Вывод:** issue можно закрывать.
@@ -162,8 +162,8 @@
 
 Основные файлы:
 
-- `unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingRenderer.cs`;
-- `unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingVisual.cs`;
+- `Assets/Dig.Unity/Runtime/DigBuildingRenderer.cs`;
+- `Assets/Dig.Unity/Runtime/DigBuildingVisual.cs`;
 - representative building library и visual catalog files;
 - quality contracts для building prefabs.
 
@@ -190,8 +190,8 @@
 Основные файлы:
 
 - `src/Dig.Domain/Jobs/SpatialDigJobDefinition.cs`;
-- `unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainSpatialExcavation.cs`;
-- `unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainSpatialExcavation.Assignment.cs`;
+- `Assets/Dig.Unity/Runtime/DigTerrainSpatialExcavation.cs`;
+- `Assets/Dig.Unity/Runtime/DigTerrainSpatialExcavation.Assignment.cs`;
 - `tests/Dig.Tests/SpatialDigJobTests.cs`.
 
 Связанный PR: #242.

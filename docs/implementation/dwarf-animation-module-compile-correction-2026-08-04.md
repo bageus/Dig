@@ -13,7 +13,7 @@ Root Unity project entered Safe Mode with `CS1069` because `DwarfEtalonAnimatorB
 
 ## Root cause
 
-The checked-in dwarf bridge requires the built-in animation module. The root Unity manifest omitted its package declaration. The canonical `unity/Dig.Unity` manifest and runtime asmdef omitted the same dependency, and the quality gate did not validate it.
+The checked-in dwarf bridge requires the built-in animation module. The root Unity manifest omitted its package declaration. The canonical `.` manifest and runtime asmdef omitted the same dependency, and the quality gate did not validate it.
 
 ## Correction
 
@@ -43,8 +43,8 @@ Unity workflow `30955246398` recorded blocked evidence: actual package resolve, 
 
 A later direct `main` commit (`15c664a4c169bd06f1ca1a825a254fe070f84f72`) committed unresolved stash conflict markers into both canonical package files:
 
-- `unity/Dig.Unity/Packages/manifest.json`;
-- `unity/Dig.Unity/Packages/packages-lock.json`.
+- `Packages/manifest.json`;
+- `Packages/packages-lock.json`.
 
 The conflicting alternatives mixed the approved `com.unity.modules.animation` dependency with the obsolete git dependency `org.khronos.unitygltf`. Unity rejected the manifest as invalid JSON (`Expected double-quoted property name`, line 244) and then continued showing secondary compiler errors from the stale UnityGLTF PackageCache.
 

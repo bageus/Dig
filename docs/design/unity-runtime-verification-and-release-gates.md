@@ -41,7 +41,7 @@ Tracking issue: [#511](https://github.com/bageus/Dig/issues/511).
 ## 3. Основной success path
 
 1. Checkout фиксирует exact commit SHA.
-2. Unity `6000.0.71f1` открывает `unity/Dig.Unity`.
+2. Unity `6000.0.71f1` открывает `.`.
 3. Test Runner выполняет `EditMode` и `PlayMode`, а не пропускает их.
 4. EditMode acceptance подтверждает, что `Assets/Scenes/Main.unity` включена в build settings и содержит ровно один `DigUnityBootstrap`.
 5. PlayMode acceptance загружает `Main.unity`, ждёт активные simulation/input adapters и проверяет representative rendered residents/world/HUD.

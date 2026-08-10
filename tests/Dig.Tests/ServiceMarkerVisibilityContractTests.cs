@@ -14,9 +14,9 @@ public sealed class ServiceMarkerVisibilityContractTests
         string defaults = Read(root,
             "src/Dig.Presentation.Abstractions/Overlays/DefaultOverlayDefinitions.cs");
         string jobRenderer = Read(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigJobRenderer.cs");
+            "Assets/Dig.Unity/Runtime/DigJobRenderer.cs");
         string selection = Read(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldOverlayRenderer.Render.cs");
+            "Assets/Dig.Unity/Runtime/DigWorldOverlayRenderer.Render.cs");
 
         Assert.Contains(
             "OverlayLayerKind.Jobs,500,false,false,3",
@@ -30,7 +30,7 @@ public sealed class ServiceMarkerVisibilityContractTests
     {
         string root = FindRepositoryRoot();
         string itemVisual = Read(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldItemVisual.cs");
+            "Assets/Dig.Unity/Runtime/DigWorldItemVisual.cs");
 
         Assert.Contains("RequireComponent(typeof(BoxCollider))", itemVisual);
         Assert.Contains("_interactionCollider.isTrigger = true", itemVisual);

@@ -39,7 +39,7 @@ public sealed class ExcavationCadenceRuntimeContractTests
         string partial = Read(root,
             "src/Dig.Application/Jobs/PartialTerrainWorkCompletion.cs");
         string playMode = Read(root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/"
+            "Assets/Dig.Unity/Tests/PlayMode/"
                 + "ExcavationCadenceProfilesPlayModeTests.cs");
 
         Assert.Contains("SkillGrantSourceKind.ExcavationQuarterCommitted", quarter);

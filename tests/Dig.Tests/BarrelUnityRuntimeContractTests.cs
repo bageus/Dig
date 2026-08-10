@@ -10,14 +10,14 @@ public sealed class BarrelUnityRuntimeContractTests
     [Fact]
     public void Runtime_wires_four_demo_barrels_attack_cursor_and_safe_falling()
     {
-        string session = Read("unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkSession.Barrels.cs");
-        string navigation = Read("unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkSession.BarrelNavigation.cs");
-        string cursor = Read("unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.DirectCommandCursor.cs");
-        string visual = Read("unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBarrelVisual.cs");
-        string renderer = Read("unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBarrelRenderer.cs");
-        string interaction = Read("unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.Barrels.cs");
+        string session = Read("Assets/Dig.Unity/Runtime/DigTerrainWorkSession.Barrels.cs");
+        string navigation = Read("Assets/Dig.Unity/Runtime/DigTerrainWorkSession.BarrelNavigation.cs");
+        string cursor = Read("Assets/Dig.Unity/Runtime/DigWorldInteraction.DirectCommandCursor.cs");
+        string visual = Read("Assets/Dig.Unity/Runtime/DigBarrelVisual.cs");
+        string renderer = Read("Assets/Dig.Unity/Runtime/DigBarrelRenderer.cs");
+        string interaction = Read("Assets/Dig.Unity/Runtime/DigWorldInteraction.Barrels.cs");
         string playMode = Read(
-            "unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/"
+            "Assets/Dig.Unity/Tests/PlayMode/"
                 + "BarrelAttackSurfacePlayModeTests.cs");
 
         Assert.Contains("FindBarrelDemoCells(surface: true, count: 2", session, StringComparison.Ordinal);
@@ -61,19 +61,19 @@ public sealed class BarrelUnityRuntimeContractTests
     public void Barrel_hover_click_and_job_presentation_use_one_complete_contract()
     {
         string worldInteraction = Read(
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.cs");
+            "Assets/Dig.Unity/Runtime/DigWorldInteraction.cs");
         string decisions = Read(
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.Decisions.cs");
+            "Assets/Dig.Unity/Runtime/DigWorldInteraction.Decisions.cs");
         string priority = Read(
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldInteraction.ResidentCommandPriority.cs");
+            "Assets/Dig.Unity/Runtime/DigWorldInteraction.ResidentCommandPriority.cs");
         string overlay = Read(
             "src/Dig.Presentation.Abstractions/Jobs/JobOverlayPresenter.cs");
         string activity = Read(
             "src/Dig.Presentation.Abstractions/Agents/ResidentActivityPresenter.cs");
         string facing = Read(
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentRenderer.WorkFacing.cs");
+            "Assets/Dig.Unity/Runtime/DigAgentRenderer.WorkFacing.cs");
         string visualFacing = Read(
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentVisual.WorkFacing.cs");
+            "Assets/Dig.Unity/Runtime/DigAgentVisual.WorkFacing.cs");
 
         Assert.Contains("DigBarrelRenderer barrelRenderer", worldInteraction, StringComparison.Ordinal);
         Assert.Contains("_barrelRenderer = barrelRenderer", worldInteraction, StringComparison.Ordinal);
@@ -93,7 +93,7 @@ public sealed class BarrelUnityRuntimeContractTests
     {
         string state = Read("src/Dig.Domain/WorldObjects/BarrelState.cs");
         string job = Read("src/Dig.Domain/Jobs/BarrelAttackJobDefinition.cs");
-        string placement = Read("unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingBoxPlacement.cs");
+        string placement = Read("Assets/Dig.Unity/Runtime/DigBuildingBoxPlacement.cs");
 
         Assert.Contains("GetBuildingBlockedCells", state, StringComparison.Ordinal);
         Assert.Contains("ReservationKey.ForPosition(WorkPosition)", job, StringComparison.Ordinal);

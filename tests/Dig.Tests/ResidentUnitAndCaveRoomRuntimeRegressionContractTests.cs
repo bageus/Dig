@@ -31,7 +31,7 @@ public sealed class ResidentUnitAndCaveRoomRuntimeRegressionContractTests
         string driver = Read(runtime, "DigAgentSimulationDriverBase.Excavation.cs");
         string playMode = Read(
             RepositoryRoot(),
-            "unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/"
+            "Assets/Dig.Unity/Tests/PlayMode/"
                 + "CaveRoomReapplyAndMediumPreviewPlayModeTests.cs");
 
         int refresh = room.IndexOf(

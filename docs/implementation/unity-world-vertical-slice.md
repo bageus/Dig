@@ -21,7 +21,7 @@ Deleting `World Visuals` or rebuilding the renderer does not mutate the world.
 
 ## Start the slice
 
-Open `unity/Dig.Unity`, then run **Tools > Dig > Create Bootstrap Scene** if `Assets/Scenes/Main.unity` does not exist. Enter Play mode.
+Open `.`, then run **Tools > Dig > Create Bootstrap Scene** if `Assets/Scenes/Main.unity` does not exist. Enter Play mode.
 
 `DigUnityBootstrap` creates a deterministic 20 by 14 demonstration cavern, configures the camera, renders every cell and starts the HUD. The generated world exists only as the current composition-root scenario; it will be replaced by generation and save loading without changing the renderer contracts.
 

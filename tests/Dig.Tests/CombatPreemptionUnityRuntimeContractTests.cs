@@ -126,7 +126,7 @@ public sealed class CombatPreemptionUnityRuntimeContractTests
     private static string ReadRuntime(string file)
     {
         return ReadSource(Path.Combine(
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime",
+            "Assets/Dig.Unity/Runtime",
             file));
     }
 

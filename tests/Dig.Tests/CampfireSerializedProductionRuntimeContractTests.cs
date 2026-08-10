@@ -50,7 +50,7 @@ public sealed class CampfireSerializedProductionRuntimeContractTests
             "BuildingSupplyPlanner.PlanForItems",
             Read("src/Dig.Application/Production/BuildingSupplyUseCases.cs"));
         string playMode = Read(
-            "unity/Dig.Unity/Assets/Dig.Unity/Tests/PlayMode/ActiveProductionBuildingSupplyPlayModeTests.cs");
+            "Assets/Dig.Unity/Tests/PlayMode/ActiveProductionBuildingSupplyPlayModeTests.cs");
         Assert.Contains(
             "Three_cooking_cycles_run_before_half_stock_refill_then_production_resumes",
             playMode);
@@ -124,7 +124,7 @@ public sealed class CampfireSerializedProductionRuntimeContractTests
     private static string ReadRuntime(string file)
     {
         return Read(
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/" + file);
+            "Assets/Dig.Unity/Runtime/" + file);
     }
 
     private static string Read(string relative)

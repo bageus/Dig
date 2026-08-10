@@ -13,10 +13,10 @@ public sealed class SpatialWorkSurfaceRuntimeContractTests
         string root = FindRepositoryRoot();
         string spatial = Normalize(File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainSpatialExcavation.Movement.cs")));
+            "Assets/Dig.Unity/Runtime/DigTerrainSpatialExcavation.Movement.cs")));
         string movement = Normalize(File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigAgentSession.SpatialWorkMovement.cs")));
+            "Assets/Dig.Unity/Runtime/DigAgentSession.SpatialWorkMovement.cs")));
 
         Assert.Contains("PlanPreciseWorkMovement", spatial);
         Assert.Contains("IReadOnlyDictionary<string,SurfacePose>", spatial);
@@ -36,13 +36,13 @@ public sealed class SpatialWorkSurfaceRuntimeContractTests
         string root = FindRepositoryRoot();
         string planner = Normalize(File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainSpatialExcavation.Movement.cs")));
+            "Assets/Dig.Unity/Runtime/DigTerrainSpatialExcavation.Movement.cs")));
         string mushrooms = Normalize(File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainWorkSession.Mushrooms.cs")));
+            "Assets/Dig.Unity/Runtime/DigTerrainWorkSession.Mushrooms.cs")));
         string pickup = Normalize(File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigWorldItemPickupExecution.cs")));
+            "Assets/Dig.Unity/Runtime/DigWorldItemPickupExecution.cs")));
 
         Assert.Contains("MushroomChopJobDefinition", planner);
         Assert.Contains("WorldItemPickupJobDefinition", planner);
@@ -60,25 +60,25 @@ public sealed class SpatialWorkSurfaceRuntimeContractTests
         string root = FindRepositoryRoot();
         string planner = Normalize(File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainSpatialExcavation.Movement.cs")));
+            "Assets/Dig.Unity/Runtime/DigTerrainSpatialExcavation.Movement.cs")));
         string assembly = Normalize(File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingBoxAssemblyExecution.cs")));
+            "Assets/Dig.Unity/Runtime/DigBuildingBoxAssemblyExecution.cs")));
         string assemblyDrain = Normalize(File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingBoxAssemblyTickDrain.cs")));
+            "Assets/Dig.Unity/Runtime/DigBuildingBoxAssemblyTickDrain.cs")));
         string packing = Normalize(File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingPackingExecution.cs")));
+            "Assets/Dig.Unity/Runtime/DigBuildingPackingExecution.cs")));
         string pickup = Normalize(File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingBoxPickupExecution.cs")));
+            "Assets/Dig.Unity/Runtime/DigBuildingBoxPickupExecution.cs")));
         string relocation = Normalize(File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingBoxRelocationExecution.cs")));
+            "Assets/Dig.Unity/Runtime/DigBuildingBoxRelocationExecution.cs")));
         string hauling = Normalize(File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainHauling.cs")));
+            "Assets/Dig.Unity/Runtime/DigTerrainHauling.cs")));
 
         Assert.Contains("BuildingBoxAssemblyJobDefinition", planner);
         Assert.Contains("BuildingBoxPackingJobDefinition", planner);
@@ -99,22 +99,22 @@ public sealed class SpatialWorkSurfaceRuntimeContractTests
         string root = FindRepositoryRoot();
         string planner = Normalize(File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainSpatialExcavation.Movement.cs"))
+            "Assets/Dig.Unity/Runtime/DigTerrainSpatialExcavation.Movement.cs"))
             + File.ReadAllText(Path.Combine(
                 root,
-                "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigTerrainSpatialExcavation.ProductionMovement.cs")));
+                "Assets/Dig.Unity/Runtime/DigTerrainSpatialExcavation.ProductionMovement.cs")));
         string production = Normalize(File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionZones.cs"))
+            "Assets/Dig.Unity/Runtime/DigBuildingProductionZones.cs"))
             + File.ReadAllText(Path.Combine(
                 root,
-                "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionMaterialLifecycle.cs")));
+                "Assets/Dig.Unity/Runtime/DigBuildingProductionMaterialLifecycle.cs")));
         string supply = Normalize(File.ReadAllText(Path.Combine(
             root,
-            "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionRuntime.cs"))
+            "Assets/Dig.Unity/Runtime/DigBuildingProductionRuntime.cs"))
             + File.ReadAllText(Path.Combine(
                 root,
-                "unity/Dig.Unity/Assets/Dig.Unity/Runtime/DigBuildingProductionSupplyCheck.cs")));
+                "Assets/Dig.Unity/Runtime/DigBuildingProductionSupplyCheck.cs")));
 
         Assert.Contains("ProductionWorkJobDefinition", planner);
         Assert.Contains("BuildingSupplyJobDefinition", planner);

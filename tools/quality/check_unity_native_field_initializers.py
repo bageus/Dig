@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-RUNTIME = ROOT / "unity" / "Dig.Unity" / "Assets" / "Dig.Unity" / "Runtime"
+RUNTIME = ROOT / "Assets" / "Dig.Unity" / "Runtime"
 
 FIELD_INITIALIZER = re.compile(
     r"^[ \t]*(?:(?:public|private|protected|internal|static|readonly|volatile)\s+)*"
