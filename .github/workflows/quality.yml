@@ -25,6 +25,9 @@ jobs:
       - name: Run architecture, file-size and C# compatibility checks
         run: python tools/quality/check_quality.py
 
+      - name: Validate single root Unity project layout
+        run: python tools/quality/check_single_unity_project.py
+
       - name: Validate quality workflow gates
         run: python tools/quality/check_quality_workflow_contracts.py
 
