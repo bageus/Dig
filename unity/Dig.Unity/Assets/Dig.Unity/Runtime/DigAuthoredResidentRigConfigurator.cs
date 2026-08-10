@@ -28,6 +28,17 @@ internal static class DigAuthoredResidentRigConfigurator
             return false;
         }
 
+        modelRoot.SetActive(true);
+        for (int index = 0; index < renderers.Length; index++)
+        {
+            Renderer renderer = renderers[index];
+            renderer.enabled = true;
+            if (renderer is SkinnedMeshRenderer skinnedRenderer)
+            {
+                skinnedRenderer.updateWhenOffscreen = true;
+            }
+        }
+
         if (!isDefaultAuthoredModel
             && maximumRenderers > 0
             && renderers.Length > maximumRenderers)
@@ -72,6 +83,7 @@ internal static class DigAuthoredResidentRigConfigurator
             "LeftArm",
             "Left Arm",
             "LeftUpperArm",
+            "LUpperArm",
             "arm_l",
             "upperarm_l",
             "upper_arm.L",
@@ -82,6 +94,7 @@ internal static class DigAuthoredResidentRigConfigurator
             "RightArm",
             "Right Arm",
             "RightUpperArm",
+            "RUpperArm",
             "arm_r",
             "upperarm_r",
             "upper_arm.R",
@@ -93,6 +106,7 @@ internal static class DigAuthoredResidentRigConfigurator
             "Left Leg",
             "LeftUpLeg",
             "LeftUpperLeg",
+            "LUpperLeg",
             "leg_l",
             "thigh_l",
             "upper_leg.L",
@@ -104,6 +118,7 @@ internal static class DigAuthoredResidentRigConfigurator
             "Right Leg",
             "RightUpLeg",
             "RightUpperLeg",
+            "RUpperLeg",
             "leg_r",
             "thigh_r",
             "upper_leg.R",
@@ -188,12 +203,14 @@ internal static class DigAuthoredResidentRigConfigurator
             root,
             "LeftHand",
             "Left Hand",
+            "LHand",
             "hand_l",
             "hand.L");
         Transform? rightHand = FindDescendantAny(
             root,
             "RightHand",
             "Right Hand",
+            "RHand",
             "hand_r",
             "hand.R");
         return new[]

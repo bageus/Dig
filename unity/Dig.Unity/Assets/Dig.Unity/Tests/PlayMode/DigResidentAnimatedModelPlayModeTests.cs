@@ -28,6 +28,14 @@ public sealed class DigResidentAnimatedModelPlayModeTests
         {
             clipNames.Add(NormalizeClipName(clips[index].name));
         }
+        CollectionAssert.IsSubsetOf(
+            new[]
+            {
+                "Idle", "Walk", "Run", "Climb", "Carry", "Mine",
+                "Build", "Eat", "Rest", "Hit", "Death",
+            },
+            clipNames,
+            "The V3 runtime resource must expose the authored resident animation set.");
 
         Shader shader = Shader.Find("Universal Render Pipeline/Lit")
             ?? Shader.Find("Standard")
@@ -63,6 +71,12 @@ public sealed class DigResidentAnimatedModelPlayModeTests
                 renderers.Length,
                 0,
                 "The V3 authored dwarf has no runtime renderers.");
+            Assert.IsTrue(
+                Array.TrueForAll(
+                    renderers,
+                    renderer => renderer.enabled
+                        && renderer.gameObject.activeInHierarchy),
+                "The V3 authored dwarf renderers must be active and visible after rig setup.");
             Assert.IsNotNull(
                 rig.transform.Find(asset.Prefab.name),
                 "The V3 authored dwarf was replaced by the procedural fallback.");
@@ -73,19 +87,19 @@ public sealed class DigResidentAnimatedModelPlayModeTests
             Assert.IsNotNull(rig.ResolveSocket(DigResidentSocketKind.Head));
 
             Apply(rig, ResidentActionVisualState.Idle, looping: true, version: 1);
-            AssertClipWhenAvailable(rig, clipNames, "Idle");
+            AssertClip(rig, "Idle");
 
             Apply(rig, ResidentActionVisualState.Walk, looping: true, version: 2);
             yield return null;
-            AssertClipWhenAvailable(rig, clipNames, "Walk");
+            AssertClip(rig, "Walk");
 
             Apply(rig, ResidentActionVisualState.Dig, looping: true, version: 3);
             yield return null;
-            AssertClipWhenAvailable(rig, clipNames, "Mine");
+            AssertClip(rig, "Mine");
 
             rig.ApplyClimbPose(0.5f, ascending: true);
             yield return null;
-            AssertClipWhenAvailable(rig, clipNames, "Climb");
+            AssertClip(rig, "Climb");
 
             Apply(
                 rig,
@@ -94,15 +108,7 @@ public sealed class DigResidentAnimatedModelPlayModeTests
                 version: 4,
                 normalizedProgress: 1d);
             yield return null;
-            AssertClipWhenAvailable(rig, clipNames, "Death");
-
-            if (clips.Length == 0)
-            {
-                Assert.AreEqual(
-                    string.Empty,
-                    rig.CurrentAnimationClipName,
-                    "A rigged model without authored clips must use pose fallback instead of stale animations.");
-            }
+            AssertClip(rig, "Death");
 
             rig.SetSelected(true);
             rig.SetSelected(false);
@@ -206,16 +212,8 @@ public sealed class DigResidentAnimatedModelPlayModeTests
             version));
     }
 
-    private static void AssertClipWhenAvailable(
-        DigResidentRig rig,
-        HashSet<string> clipNames,
-        string expected)
+    private static void AssertClip(DigResidentRig rig, string expected)
     {
-        if (!clipNames.Contains(expected))
-        {
-            return;
-        }
-
         Assert.AreEqual(expected, rig.CurrentAnimationClipName);
     }
 
