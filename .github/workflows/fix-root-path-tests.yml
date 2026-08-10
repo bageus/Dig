@@ -5,17 +5,19 @@ on:
     branches: [chore/unify-unity-project]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   fix-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-      - name: Rewrite stale Unity paths and repository-root checks
+      - name: Rewrite, verify, and publish test migration
         shell: bash
         run: |
           set -euo pipefail
@@ -45,33 +47,26 @@ jobs:
               f'Updated {path_replacements} stale path constructors and '
               f'{root_replacements} repository-root checks across {len(changed)} test files'
           )
-          if not changed:
-              raise SystemExit('Expected stale Unity test paths/root checks, but none were found')
           PY
+
+          if git diff --quiet -- tests; then
+            echo 'Root-path test migration is already applied.'
+            exit 0
+          fi
+
           git diff --check
-          git diff -- tests > root-path-tests.patch
-      - name: Restore
-        run: dotnet restore Dig.sln
-      - name: Build
-        run: dotnet build Dig.sln --configuration Release --no-restore
-      - name: Test
-        shell: bash
-        run: |
-          set -o pipefail
-          dotnet test Dig.sln --configuration Release --no-build --verbosity normal 2>&1 | tee root-path-test.log
-      - name: Stage fixed test files
-        if: always()
-        shell: bash
-        run: |
-          mkdir -p root-path-fix
-          cp --parents $(git diff --name-only -- tests) root-path-fix/ || true
-          cp root-path-tests.patch root-path-fix/ || true
-          cp root-path-test.log root-path-fix/ || true
-      - name: Upload fixed tests and logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: root-path-test-fix
-          path: root-path-fix
-          if-no-files-found: error
-          retention-days: 1
+          dotnet restore Dig.sln
+          dotnet build Dig.sln --configuration Release --no-restore
+          dotnet test Dig.sln --configuration Release --no-build --verbosity normal
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tests
+          git commit -m 'test: resolve Unity project paths from repository root'
+
+          git fetch origin chore/unify-unity-project
+          test "$(git rev-parse HEAD^)" = "$(git rev-parse origin/chore/unify-unity-project)" || {
+            echo 'Branch moved while fixer was running; refusing non-fast-forward push' >&2
+            exit 1
+          }
+          git push origin HEAD:chore/unify-unity-project
