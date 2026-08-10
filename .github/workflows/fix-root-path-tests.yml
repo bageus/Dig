@@ -5,23 +5,20 @@ on:
     branches: [chore/unify-unity-project]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   fix-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-      - name: Rewrite stale Unity paths, verify tests, and publish
+      - name: Rewrite stale Unity paths
         shell: bash
         run: |
           set -euo pipefail
-
           python - <<'PY'
           from pathlib import Path
           import re
@@ -36,31 +33,34 @@ jobs:
                   path.write_text(updated, encoding='utf-8')
                   changed.append(str(path))
                   replacements += count
-
+          print(f'Updated {replacements} stale path constructors across {len(changed)} test files')
           if not changed:
               raise SystemExit('Expected stale unity/Dig.Unity test paths, but none were found')
-
-          print(f'Updated {replacements} stale path constructors across {len(changed)} test files')
           PY
-
-          if grep -RInE '"unity"[[:space:]]*,[[:space:]]*"Dig\.Unity"' tests --include='*.cs'; then
-            echo 'Remaining stale nested Unity path constructor found in tests' >&2
-            exit 1
-          fi
-
-          dotnet restore Dig.sln
-          dotnet build Dig.sln --configuration Release --no-restore
-          dotnet test Dig.sln --configuration Release --no-build --verbosity normal
-
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add tests
-          git rm .github/workflows/fix-root-path-tests.yml
-          git commit -m 'test: resolve Unity assets from repository root'
-
-          git fetch origin chore/unify-unity-project
-          test "$(git rev-parse HEAD^)" = "$(git rev-parse origin/chore/unify-unity-project)" || {
-            echo 'Branch moved while fixer was running; refusing non-fast-forward push' >&2
-            exit 1
-          }
-          git push origin HEAD:chore/unify-unity-project
+          git diff --check
+          git diff -- tests > root-path-tests.patch
+      - name: Restore
+        run: dotnet restore Dig.sln
+      - name: Build
+        run: dotnet build Dig.sln --configuration Release --no-restore
+      - name: Test
+        shell: bash
+        run: |
+          set -o pipefail
+          dotnet test Dig.sln --configuration Release --no-build --verbosity normal 2>&1 | tee root-path-test.log
+      - name: Stage fixed test files
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p root-path-fix
+          cp --parents $(git diff --name-only -- tests) root-path-fix/ || true
+          cp root-path-tests.patch root-path-fix/ || true
+          cp root-path-test.log root-path-fix/ || true
+      - name: Upload fixed tests and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: root-path-test-fix
+          path: root-path-fix
+          if-no-files-found: error
+          retention-days: 1
