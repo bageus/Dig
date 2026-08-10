@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-      - name: Rewrite remaining nested Unity path constructors and test
+      - name: Rewrite all nested Unity test paths and run tests
         shell: bash
         run: |
           set -euo pipefail
@@ -26,10 +26,10 @@ jobs:
           import re
 
           changed = []
-          pattern = re.compile(r',\s*"unity"\s*,\s*"Dig\.Unity"\s*,\s*"Assets"')
+          pattern = re.compile(r'"unity"\s*,\s*"Dig\.Unity"\s*,\s*')
           for path in Path('tests').rglob('*.cs'):
               text = path.read_text(encoding='utf-8')
-              updated, count = pattern.subn(', "Assets"', text)
+              updated, count = pattern.subn('', text)
               if count:
                   path.write_text(updated, encoding='utf-8')
                   changed.append((str(path), count))
