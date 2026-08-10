@@ -13,8 +13,8 @@ namespace DigDwarfs
         private static readonly int HitTriggerHash = Animator.StringToHash("HitTrigger");
         private static readonly int DieTriggerHash = Animator.StringToHash("DieTrigger");
 
-        [SerializeField] private Animator animator;
-        [SerializeField] private DwarfAttachmentSockets sockets;
+        [SerializeField] private Animator animator = null!;
+        [SerializeField] private DwarfAttachmentSockets sockets = null!;
 
         public Animator Animator => animator;
         public DwarfAttachmentSockets Sockets => sockets;
