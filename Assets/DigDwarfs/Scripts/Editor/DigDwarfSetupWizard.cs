@@ -18,8 +18,8 @@ public static class DigDwarfSetupWizard
     {
         EnsureFolder("Assets/DigDwarfs");
         EnsureFolder(GeneratedRoot);
-        EnsureFolder(Path.Combine(GeneratedRoot, "Controllers").Replace('\', '/'));
-        EnsureFolder(Path.Combine(GeneratedRoot, "Prefabs").Replace('\', '/'));
+        EnsureFolder(Path.Combine(GeneratedRoot, "Controllers").Replace(Path.DirectorySeparatorChar, '/'));
+        EnsureFolder(Path.Combine(GeneratedRoot, "Prefabs").Replace(Path.DirectorySeparatorChar, '/'));
 
         var prefabGuids = AssetDatabase.FindAssets("t:GameObject", new[] { ModelsRoot });
         int generated = 0;
@@ -228,7 +228,7 @@ public static class DigDwarfSetupWizard
 
     private static void EnsureFolder(string assetPath)
     {
-        assetPath = assetPath.Replace('\', '/');
+        assetPath = assetPath.Replace(Path.DirectorySeparatorChar, '/');
         var parts = assetPath.Split('/');
         var current = parts[0];
         for (int i = 1; i < parts.Length; i++)
