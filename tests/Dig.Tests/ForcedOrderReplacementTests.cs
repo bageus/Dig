@@ -68,6 +68,15 @@ namespace Dig.Tests
             string movement = File.ReadAllText(Path.Combine(
                 runtime,
                 "DigWorldInteraction.TunnelMovement.cs"));
+            string consumables = File.ReadAllText(Path.Combine(
+                runtime,
+                "DigResidentInventory.Consumables.cs"));
+            string planning = File.ReadAllText(Path.Combine(
+                root,
+                "src",
+                "Dig.Presentation.Abstractions",
+                "Agents",
+                "AgentViewModel.cs"));
 
             Assert.Contains("InterruptActiveAction(reason.Trim(), tick)", domain);
             Assert.Contains("ClearPlayerOrder(tick)", domain);
@@ -83,6 +92,10 @@ namespace Dig.Tests
             Assert.Contains("ReleaseDigWorkForDirectCommand", direct);
             Assert.Contains("PrepareResidentsForDirectCommand", movement);
             Assert.Contains("PrepareExplicitExcavationResidents", movement);
+            Assert.Contains("if (directCommand)", consumables);
+            Assert.Contains("PrepareResidentsForDirectCommand(", consumables);
+            Assert.Contains("!string.Equals(ActiveIntent, \"Eat\"", planning);
+            Assert.Contains("!string.Equals(ActiveIntent, \"Sleep\"", planning);
         }
 
         private static string FindRepositoryRoot()

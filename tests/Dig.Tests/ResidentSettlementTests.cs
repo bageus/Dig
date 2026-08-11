@@ -89,10 +89,12 @@ public sealed class ResidentSettlementTests
 
         harness.Execute(tick: 1);
         harness.Execute(tick: 2);
+        harness.Execute(tick: 3);
+        harness.Execute(tick: 4);
 
         Assert.Empty(harness.Facilities.GetReservations());
-        Assert.True(harness.Snapshot(FirstAgent, 2).Needs.Alertness.Points > 500);
-        Assert.True(harness.Snapshot(SecondAgent, 2).Needs.Alertness.Points > 500);
+        Assert.True(harness.Snapshot(FirstAgent, 4).Needs.Alertness.Points > 500);
+        Assert.True(harness.Snapshot(SecondAgent, 4).Needs.Alertness.Points > 500);
     }
 
     [Fact]

@@ -123,7 +123,11 @@ public sealed class AgentViewModel
         StringComparison.Ordinal);
 
     public bool IsAvailableForAutomaticPlanning =>
-        IsAlive && IsScheduledForWork && AutomaticPlanningEnabled;
+        IsAlive
+        && IsScheduledForWork
+        && AutomaticPlanningEnabled
+        && !string.Equals(ActiveIntent, "Eat", StringComparison.Ordinal)
+        && !string.Equals(ActiveIntent, "Sleep", StringComparison.Ordinal);
 
     public double ActionProgress => ActionRequiredTicks <= 0
         ? 0d
