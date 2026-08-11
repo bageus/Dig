@@ -39,6 +39,8 @@ public sealed class RuntimeBuildingUiHealthPickupContractTests
             "src", "Dig.Presentation.Abstractions", "Overlays", "DefaultOverlayStyles.cs");
         string productionHud = ReadRuntime("DigGameHudCanvas.BuildingProduction.cs");
         string contextHover = ReadRuntime("DigGameHudCanvas.ContextHover.cs");
+        string worldContextHover = ReadRuntime("DigWorldInteraction.ContextHover.cs");
+        string directCursor = ReadRuntime("DigWorldInteraction.DirectCommandCursor.cs");
         string stockRenderer = ReadRuntime("DigBuildingInternalStockRenderer.cs");
         string zones = ReadRuntime("DigBuildingInternalStockRenderer.Zones.cs");
 
@@ -54,6 +56,8 @@ public sealed class RuntimeBuildingUiHealthPickupContractTests
         Assert.Contains("product.Tooltip", productionHud);
         Assert.Contains("product.DisplayName", productionHud);
         Assert.Contains("SetProductionHoverInfo", productionHud + contextHover);
+        Assert.Contains("building.Model.Name", worldContextHover);
+        Assert.Contains("SetBuildingTargetHoverInfo(hoveredBuilding)", directCursor);
         Assert.Contains("TextAnchor.MiddleCenter", contextHover);
         Assert.DoesNotContain("RenderZones", stockRenderer + zones);
         Assert.DoesNotContain("DigBuildingInternalStockBayVisual", stockRenderer + zones);

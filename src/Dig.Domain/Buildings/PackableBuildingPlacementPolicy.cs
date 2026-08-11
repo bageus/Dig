@@ -109,6 +109,10 @@ public sealed class PackableBuildingSurfacePolicy
 
 public static class PackableBuildingPlacementErrors
 {
+    public static readonly DomainError PhysicalFootprintOutOfBounds = new DomainError(
+        "buildings.placement.physical_footprint_out_of_bounds",
+        "The physical building footprint exceeds the available room depth.");
+
     public static readonly DomainError SurfaceMissing = new DomainError(
         "buildings.placement.surface_missing",
         "The complete physical building footprint requires known surface data.");
@@ -177,6 +181,14 @@ public sealed class PackableBuildingPlacementPolicyValidator
         }
 
         BuildingPhysicalFootprint footprint = ResolveFootprint(policy, origin);
+        if (footprint.CoveredCells.Any(cell =>
+            cell.Z < CellId.MinimumDepth || cell.Z > CellId.MaximumDepth))
+        {
+            return PackableBuildingPlacementPolicyResult.Failure(
+                PackableBuildingPlacementErrors.PhysicalFootprintOutOfBounds,
+                footprint);
+        }
+
         Dictionary<CellId, BuildingPlacementSurfaceCell> surfaces = surfaceCells
             .GroupBy(value => value.Cell)
             .ToDictionary(group => group.Key, group => group.First());
@@ -231,9 +243,9 @@ public sealed class PackableBuildingPlacementPolicyValidator
         List<CellId> cells = new List<CellId>(width * depth);
         for (int x = 0; x < width; x++)
         {
-            for (int y = 0; y < depth; y++)
+            for (int z = 0; z < depth; z++)
             {
-                cells.Add(new CellId(origin.X + x, origin.Y + y, origin.Z));
+                cells.Add(new CellId(origin.X + x, origin.Y, origin.Z + z));
             }
         }
 

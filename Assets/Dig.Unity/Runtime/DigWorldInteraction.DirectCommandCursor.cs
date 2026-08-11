@@ -66,6 +66,13 @@ namespace Dig.Unity
             }
 
             RaycastHit[] hits = GetPointerHits();
+            if (TryResolveCompletedBuildingHit(
+                hits,
+                out DigBuildingVisual hoveredBuilding))
+            {
+                SetBuildingTargetHoverInfo(hoveredBuilding);
+            }
+
             TryHighlightHostileCreature(hits);
             if (TryResolveBarrelHit(hits, out DigBarrelVisual hoveredBarrel))
             {

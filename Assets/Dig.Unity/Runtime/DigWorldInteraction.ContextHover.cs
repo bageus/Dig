@@ -33,6 +33,16 @@ public sealed partial class DigWorldInteraction
     {
         _hud?.SetWorldTargetHoverInfo(DigWorldTargetDisplayNames.Barrel);
     }
+
+    private void SetBuildingTargetHoverInfo(DigBuildingVisual building)
+    {
+        if (building == null)
+        {
+            throw new ArgumentNullException(nameof(building));
+        }
+
+        _hud?.SetWorldTargetHoverInfo(building.Model.Name);
+    }
 }
 
 internal static class DigWorldTargetDisplayNames
