@@ -268,7 +268,9 @@ namespace Dig.Unity
                 Hud!.SetWorld(world);
             }
 
-            float movementDuration = TickIntervalSeconds * 0.82f;
+            // Finish the visual step at the next simulation boundary. Ending early
+            // leaves an idle frame gap after every traversed cell.
+            float movementDuration = TickIntervalSeconds;
             if (!Playback.IsPaused)
             {
                 movementDuration /= Playback.SpeedMultiplier;
