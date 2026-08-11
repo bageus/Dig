@@ -189,7 +189,7 @@ public sealed class PlanHaulingHandler
                 continue;
             }
 
-            int quantity = Math.Min(candidate.AvailableQuantity, destination.AvailableCapacity);
+            int quantity = 1;
             EntityId jobId = _jobIds.Next();
             if (jobId.IsEmpty)
             {
