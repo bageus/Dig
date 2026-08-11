@@ -45,6 +45,27 @@ public sealed class RuntimeRegressionCorrectionSourceTests
             StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Direct_commands_cancel_hauling_and_general_hover_shows_world_names()
+    {
+        string direct = ReadRuntime("DigTerrainWorkSession.DirectCommands.cs");
+        string hover = ReadRuntime("DigWorldInteraction.ContextHover.cs");
+        string cursor = ReadRuntime("DigWorldInteraction.DirectCommandCursor.cs");
+        string canvas = ReadRuntime("DigGameHudCanvas.ContextHover.cs");
+
+        Assert.Contains("HaulJobDefinition", direct, StringComparison.Ordinal);
+        Assert.Contains("CancelHaulingForDirectCommand", direct, StringComparison.Ordinal);
+        Assert.Contains("_haulingCancellation.Handle", direct, StringComparison.Ordinal);
+        Assert.Contains("SetGeneralWorldTargetHoverInfo(hits)", cursor,
+            StringComparison.Ordinal);
+        Assert.Contains("item.Model.DisplayName", hover, StringComparison.Ordinal);
+        Assert.Contains("building.Model.Name", hover, StringComparison.Ordinal);
+        Assert.Contains("SetHostileTargetHoverInfo(creature)", hover,
+            StringComparison.Ordinal);
+        Assert.Contains("resident.Model.Name", hover, StringComparison.Ordinal);
+        Assert.DoesNotContain("SelectedCount != 1", canvas, StringComparison.Ordinal);
+    }
+
     private static string ReadRuntime(string fileName)
     {
         string? current = AppContext.BaseDirectory;

@@ -113,6 +113,40 @@ public sealed class HaulingResidentSlotClaimLifecycleTests
     }
 
     [Fact]
+    public void Cancellation_after_acquisition_keeps_carried_item_available()
+    {
+        Harness harness = new Harness();
+        EntityId carriedStackId = Id(40);
+        Assert.True(harness.CreateHaul().IsSuccess);
+        Assert.Single(harness.Assign(FirstResidentId, tick: 2).Assignments);
+        Assert.True(harness.Jobs.Start(JobId, tick: 3).IsSuccess);
+        Assert.True(new AcquireHaulingItemHandler(
+            harness.InventoryRepository,
+            harness.JobRepository,
+            harness.Journal).Handle(new AcquireHaulingItemCommand(
+                JobId,
+                carriedStackId,
+                tick: 4)).IsSuccess);
+
+        Result cancelled = new CancelHaulingJobHandler(
+            harness.InventoryRepository,
+            harness.StorageRepository,
+            harness.JobRepository,
+            harness.Journal).Handle(new CancelHaulingJobCommand(
+                JobId,
+                "Forced resident command.",
+                tick: 5));
+
+        Assert.True(cancelled.IsSuccess, cancelled.Error?.ToString());
+        ItemStackSnapshot carried = harness.Inventory.GetStack(carriedStackId)!;
+        Assert.Equal(ItemLocationKind.AgentInventory, carried.Location.Kind);
+        Assert.Equal(FirstResidentId, carried.Location.OwnerId);
+        Assert.Equal(0, carried.ReservedQuantity);
+        Assert.Empty(harness.Inventory.GetResidentSlotClaims(JobId));
+        Assert.Null(harness.Storage.GetReservation(JobId));
+    }
+
+    [Fact]
     public void Completion_releases_resident_capacity_claim()
     {
         Harness harness = new Harness();

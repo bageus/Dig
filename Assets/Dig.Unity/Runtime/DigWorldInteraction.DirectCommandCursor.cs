@@ -66,6 +66,7 @@ namespace Dig.Unity
             }
 
             RaycastHit[] hits = GetPointerHits();
+            SetGeneralWorldTargetHoverInfo(hits);
             if (TryResolveCompletedBuildingHit(
                 hits,
                 out DigBuildingVisual hoveredBuilding))

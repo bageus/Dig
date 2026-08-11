@@ -77,6 +77,8 @@ namespace Dig.Unity
                             CancelTunnelManualForDirectCommand(job, tick),
                         WorldItemPickupJobDefinition =>
                             CancelPickupForDirectCommand(jobs, job, tick),
+                        HaulJobDefinition =>
+                            CancelHaulingForDirectCommand(job, tick),
                         MushroomChopJobDefinition =>
                             CancelMushroomForDirectCommand(job, tick),
                         BarrelAttackJobDefinition =>
@@ -211,6 +213,16 @@ namespace Dig.Unity
                 : _cancelMushroomChop.Handle(new CancelMushroomChopCommand(
                     job.Id,
                     "mushroom_direct_command_replaced",
+                    tick));
+        }
+
+        private Result CancelHaulingForDirectCommand(JobSnapshot job, long tick)
+        {
+            return _haulingCancellation == null
+                ? Result.Success()
+                : _haulingCancellation.Handle(new CancelHaulingJobCommand(
+                    job.Id,
+                    DirectCommandReplacementReason,
                     tick));
         }
 
