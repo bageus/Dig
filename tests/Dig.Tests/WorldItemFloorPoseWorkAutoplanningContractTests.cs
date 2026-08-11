@@ -44,9 +44,11 @@ public sealed class WorldItemFloorPoseWorkAutoplanningContractTests
         string needsRuntime = ReadRuntime("DigTerrainWorkSession.ResidentNeeds.cs");
 
         Assert.Contains("IsScheduledForWork", viewModel);
-        Assert.Contains(
-            "IsAlive && IsScheduledForWork && AutomaticPlanningEnabled",
-            viewModel);
+        Assert.Contains("IsAlive", viewModel);
+        Assert.Contains("IsScheduledForWork", viewModel);
+        Assert.Contains("AutomaticPlanningEnabled", viewModel);
+        Assert.Contains("ActiveIntent, \"Eat\"", viewModel);
+        Assert.Contains("ActiveIntent, \"Sleep\"", viewModel);
         Assert.Contains("workingTime", candidates);
         Assert.Contains("automaticEatAllowed", candidates);
         Assert.Contains("automaticSleepAllowed && context.BedAvailable", candidates);
