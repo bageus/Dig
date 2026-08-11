@@ -34,7 +34,8 @@ namespace Dig.Unity
 
         private Result AdvanceHaulingTransitAtTarget(JobSnapshot job, long tick)
         {
-            if (job.Status == JobStatus.Claimed)
+            if (job.Status == JobStatus.Claimed
+                || job.Stage == JobStageKind.TravelToTarget)
             {
                 return _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick));
             }
