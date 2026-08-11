@@ -358,9 +358,10 @@ public sealed class ForcedPickupReplacementPlayModeTests
                 "_inventoryRepository");
         EntityId stackId = EntityId.Parse("fa000000000000000000000000000004");
         InventoryState inventory = inventoryRepository.Get();
-        Require(inventory.AddUnit(
+        Require(inventory.AddStack(
             stackId,
             CampfireProductionContent.StoneItemId,
+            quantity: 12,
             ItemLocation.InWorld(source),
             tick: 0));
         inventoryRepository.Save(inventory);
@@ -368,16 +369,16 @@ public sealed class ForcedPickupReplacementPlayModeTests
         for (int tick = 0; tick < 64; tick++)
         {
             ResidentNeedsRuntimePlayModeHarness.RunTick(runtime);
-            ItemStackSnapshot snapshot = inventoryRepository.Get().GetStack(stackId)!;
-            if (snapshot.Location.Kind == ItemLocationKind.Storage)
+            if (runtime.Terrain.GetStorageStatus().StoredQuantity > 0)
             {
                 break;
             }
         }
 
-        ItemStackSnapshot delivered = inventoryRepository.Get().GetStack(stackId)!;
-        Assert.That(delivered.Location.Kind, Is.EqualTo(ItemLocationKind.Storage));
-        Assert.That(delivered.ReservedQuantity, Is.Zero);
+        ItemStackSnapshot remainder = inventoryRepository.Get().GetStack(stackId)!;
+        Assert.That(remainder.Location.Kind, Is.EqualTo(ItemLocationKind.World));
+        Assert.That(remainder.Quantity, Is.EqualTo(11));
+        Assert.That(runtime.Terrain.GetStorageStatus().StoredQuantity, Is.EqualTo(1));
     }
 
     private static void Require(Result result)
