@@ -28,13 +28,6 @@ public sealed partial class InventoryState
                 return Result.Failure(InventoryErrors.ResidentInventoryLayoutInvalid);
             }
 
-            if (!definition.IsInventoryExpansion
-                && stack.Quantity > 1
-                && (stack.ReservedQuantity != 0 || stack.HeldQuantity != 0))
-            {
-                return Result.Failure(InventoryErrors.ResidentInventoryLayoutInvalid);
-            }
-
             if (stack.Location.HasResidentSlot)
             {
                 ResidentInventorySlot slot = stack.Location.ResidentSlot;
@@ -53,6 +46,13 @@ public sealed partial class InventoryState
             if (definition.IsInventoryExpansion)
             {
                 expansions.Add(stack);
+            }
+
+            if (!definition.IsInventoryExpansion
+                && stack.Quantity > 1
+                && (stack.ReservedQuantity != 0 || stack.HeldQuantity != 0))
+            {
+                return Result.Failure(InventoryErrors.ResidentInventoryLayoutInvalid);
             }
 
             if (stack.HeldQuantity != 0)

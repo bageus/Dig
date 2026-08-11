@@ -133,8 +133,7 @@ public static class BuildingSupplyPlanner
                 continue;
             }
 
-            int maximumStackSize = items.Get(stock.ItemId).MaximumStackSize;
-            int remaining = Math.Min(stock.Missing, checked(availableSlots * maximumStackSize));
+            int remaining = Math.Min(stock.Missing, availableSlots);
             int allocatedForItem = 0;
             ItemStackSnapshot[] candidates = worldStacks
                 .Where(stack => stack.ItemId == stock.ItemId
@@ -165,7 +164,7 @@ public static class BuildingSupplyPlanner
                 allocatedForItem += quantity;
             }
 
-            int itemSlots = (allocatedForItem + maximumStackSize - 1) / maximumStackSize;
+            int itemSlots = allocatedForItem;
             availableSlots -= itemSlots;
             usedSlots += itemSlots;
             if (availableSlots == 0)
@@ -222,10 +221,9 @@ public static class BuildingSupplyPlanner
                 continue;
             }
 
-            int maximumStackSize = items.Get(stock.ItemId).MaximumStackSize;
             int remaining = Math.Min(
                 Math.Min(stock.Missing, requestedQuantity),
-                checked(availableSlots * maximumStackSize));
+                availableSlots);
             int allocatedForItem = 0;
             ItemStackSnapshot[] candidates = worldStacks
                 .Where(stack => stack.ItemId == stock.ItemId
@@ -256,7 +254,7 @@ public static class BuildingSupplyPlanner
                 allocatedForItem += quantity;
             }
 
-            int itemSlots = (allocatedForItem + maximumStackSize - 1) / maximumStackSize;
+            int itemSlots = allocatedForItem;
             availableSlots -= itemSlots;
             usedSlots += itemSlots;
             if (availableSlots == 0)
