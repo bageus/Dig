@@ -1,3 +1,4 @@
+using System;
 using Dig.Domain.Navigation;
 using Dig.Domain.World;
 using Xunit;
@@ -85,6 +86,44 @@ public sealed class TunnelNavigationTests
         Assert.Contains(result.Path.Cells, cell => cell.Z == 3);
         Assert.Contains(result.Path.Cells, cell => cell.X == goal.X);
         AssertRouteUsesOnlyAuthoritativeSteps(volume, result.Path);
+    }
+
+    [Fact]
+    public void Surface_route_uses_diagonal_steps_when_both_sides_are_open()
+    {
+        CellId start = new CellId(1, 1, 1);
+        CellId sideX = new CellId(2, 1, 1);
+        CellId sideZ = new CellId(1, 1, 2);
+        CellId diagonal = new CellId(2, 1, 2);
+        TunnelNavigationVolume volume = new TunnelNavigationVolume(
+            width: 4,
+            height: 3,
+            depth: 4,
+            openCells: new[] { start, sideX, sideZ, diagonal },
+            verticalCells: Array.Empty<CellId>());
+
+        TunnelPathResult result = volume.FindPath(start, diagonal);
+
+        Assert.True(volume.CanTraverseStep(start, diagonal));
+        Assert.True(result.Succeeded, result.Detail);
+        Assert.Equal(new[] { start, diagonal }, result.Path!.Cells);
+    }
+
+    [Fact]
+    public void Surface_diagonal_does_not_cut_through_a_blocked_corner()
+    {
+        CellId start = new CellId(1, 1, 1);
+        CellId sideX = new CellId(2, 1, 1);
+        CellId diagonal = new CellId(2, 1, 2);
+        TunnelNavigationVolume volume = new TunnelNavigationVolume(
+            width: 4,
+            height: 3,
+            depth: 4,
+            openCells: new[] { start, sideX, diagonal },
+            verticalCells: Array.Empty<CellId>());
+
+        Assert.False(volume.CanTraverseStep(start, diagonal));
+        Assert.False(volume.FindPath(start, diagonal).Succeeded);
     }
 
     [Fact]
