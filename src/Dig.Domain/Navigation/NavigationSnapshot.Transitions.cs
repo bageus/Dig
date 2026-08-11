@@ -32,6 +32,10 @@ public sealed partial class NavigationSnapshot
             from,
             new CellId(from.X, from.Y, from.Z + 1),
             Profile.OrthogonalCost);
+        AddDiagonalIfWalkable(transitions, from, -1, -1);
+        AddDiagonalIfWalkable(transitions, from, -1, 1);
+        AddDiagonalIfWalkable(transitions, from, 1, -1);
+        AddDiagonalIfWalkable(transitions, from, 1, 1);
 
         if (Profile.Mode == TraversalMode.Free)
         {
@@ -68,6 +72,28 @@ public sealed partial class NavigationSnapshot
                     checked(Profile.StepCost * step));
             }
         }
+    }
+
+    private void AddDiagonalIfWalkable(
+        Dictionary<CellId, NavigationTransition> transitions,
+        CellId from,
+        int deltaX,
+        int deltaZ)
+    {
+        CellId acrossX = new CellId(from.X + deltaX, from.Y, from.Z);
+        CellId acrossZ = new CellId(from.X, from.Y, from.Z + deltaZ);
+        CellId target = new CellId(from.X + deltaX, from.Y, from.Z + deltaZ);
+        if (!IsWalkable(acrossX) || !IsWalkable(acrossZ) || !IsWalkable(target))
+        {
+            return;
+        }
+
+        AddLowestCost(
+            transitions,
+            new NavigationTransition(
+                target,
+                Profile.OrthogonalCost,
+                traversalKind: TunnelTraversalKind.DepthTraverse));
     }
 
     private void AddIfWalkable(

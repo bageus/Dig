@@ -95,6 +95,10 @@ public sealed partial class TunnelNavigationVolume
             new CellId(cell.X, cell.Y, cell.Z + 1),
             new CellId(cell.X, cell.Y - 1, cell.Z),
             new CellId(cell.X, cell.Y + 1, cell.Z),
+            new CellId(cell.X - 1, cell.Y, cell.Z - 1),
+            new CellId(cell.X - 1, cell.Y, cell.Z + 1),
+            new CellId(cell.X + 1, cell.Y, cell.Z - 1),
+            new CellId(cell.X + 1, cell.Y, cell.Z + 1),
         };
         for (int index = 0; index < candidates.Length; index++)
         {
