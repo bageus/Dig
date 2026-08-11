@@ -8,6 +8,26 @@ namespace Dig.Tests
 public sealed class RuntimeRegressionCorrectionSourceTests
 {
     [Fact]
+    public void Resident_steps_fill_the_tick_without_per_cell_recentering()
+    {
+        string loop = ReadRuntime("DigAgentSimulationDriverBase.Loop.cs");
+        string visual = ReadRuntime("DigAgentVisual.cs");
+
+        Assert.Contains("float movementDuration = TickIntervalSeconds;", loop);
+        Assert.DoesNotContain("RecenterAfterHorizontalMovement", visual);
+        Assert.Contains("_directionalLaneOffsetX = 0f;", visual);
+    }
+
+    [Fact]
+    public void Surface_designation_does_not_tint_the_whole_terrain_cube_green()
+    {
+        string cell = ReadRuntime("DigCellVisual.cs");
+
+        Assert.Contains("_baseColor = baseColor;", cell);
+        Assert.DoesNotContain("TunnelDesignationColor", cell);
+    }
+
+    [Fact]
     public void Vertical_idle_recovery_and_centered_climb_are_wired()
     {
         string navigation = ReadRuntime("DigTerrainWorkNavigation.cs");
