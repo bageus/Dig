@@ -61,6 +61,17 @@ public sealed class WorldItemFloorPoseWorkAutoplanningContractTests
     }
 
     [Fact]
+    public void Hauling_advances_from_arrival_to_item_acquisition()
+    {
+        string dispatch = ReadRuntime("DigTerrainHauling.cs");
+        string transit = ReadRuntime("DigTerrainHauling.Assignment.cs");
+
+        Assert.Contains("job.Stage == JobStageKind.TravelToTarget", dispatch);
+        Assert.Contains("job.Stage == JobStageKind.TravelToTarget", transit);
+        Assert.Contains("AcquireHaulingItemCommand", transit);
+    }
+
+    [Fact]
     public void Overlay_play_mode_test_qualifies_Unity_Object_destruction()
     {
         string test = Read(
