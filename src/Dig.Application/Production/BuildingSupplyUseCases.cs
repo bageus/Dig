@@ -86,6 +86,7 @@ public sealed class CreateBuildingSupplyJobHandler
         int freeSlots = layout.Slots.Count(value => value.IsEmpty);
         BuildingSupplyPlan plan = command.HasTargetItemFilter
             ? BuildingSupplyPlanner.PlanForItems(
+                inventory.Catalog,
                 snapshot,
                 inventory.GetAvailableWorldStacks(),
                 command.RevealedCells,
@@ -94,6 +95,7 @@ public sealed class CreateBuildingSupplyJobHandler
                 freeSlots,
                 command.TargetItemIds)
             : BuildingSupplyPlanner.Plan(
+                inventory.Catalog,
                 snapshot,
                 inventory.GetAvailableWorldStacks(),
                 command.RevealedCells,
