@@ -17,7 +17,11 @@ public interface IHaulingJobIdSource
 
 public sealed class PlanHaulingCommand : ICommand<HaulingPlanningReport>
 {
-    public PlanHaulingCommand(int maximumJobs, int priority, long tick)
+    public PlanHaulingCommand(
+        int maximumJobs,
+        int priority,
+        long tick,
+        int maximumQuantityPerJob = int.MaxValue)
     {
         if (maximumJobs <= 0)
         {
@@ -29,9 +33,15 @@ public sealed class PlanHaulingCommand : ICommand<HaulingPlanningReport>
             throw new ArgumentOutOfRangeException(nameof(tick));
         }
 
+        if (maximumQuantityPerJob <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maximumQuantityPerJob));
+        }
+
         MaximumJobs = maximumJobs;
         Priority = priority;
         Tick = tick;
+        MaximumQuantityPerJob = maximumQuantityPerJob;
     }
 
     public int MaximumJobs { get; }
@@ -39,6 +49,8 @@ public sealed class PlanHaulingCommand : ICommand<HaulingPlanningReport>
     public int Priority { get; }
 
     public long Tick { get; }
+
+    public int MaximumQuantityPerJob { get; }
 }
 
 public sealed class PlannedHaulingJob
@@ -189,7 +201,9 @@ public sealed class PlanHaulingHandler
                 continue;
             }
 
-            int quantity = 1;
+            int quantity = Math.Min(
+                command.MaximumQuantityPerJob,
+                Math.Min(candidate.AvailableQuantity, destination.AvailableCapacity));
             EntityId jobId = _jobIds.Next();
             if (jobId.IsEmpty)
             {
