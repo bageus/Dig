@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Dig.Application.Agents;
 using Dig.Application.Inventory;
+using Dig.Application.Production;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -59,6 +60,15 @@ namespace Dig.Unity
 
             if (!automatic)
             {
+                Result preempted = PreemptBuildingSupplyReservations(
+                    repository,
+                    stack,
+                    tick);
+                if (preempted.IsFailure)
+                {
+                    return preempted;
+                }
+
                 Result prepared = PrepareResidentsForDirectCommand(
                     new[] { residentId },
                     tick);
@@ -92,6 +102,50 @@ namespace Dig.Unity
                 eatAfterPickup
                     ? WorldItemPickupCompletionAction.UseConsumable
                     : WorldItemPickupCompletionAction.None));
+        }
+
+        private Result PreemptBuildingSupplyReservations(
+            InMemoryInventoryRepository repository,
+            EntityId stackId,
+            long tick)
+        {
+            ItemStackSnapshot? stack = repository.Get().GetStack(stackId);
+            if (stack == null)
+            {
+                return Result.Failure(WorldItemPickupErrors.StackMissing);
+            }
+
+            EntityId[] supplyJobIds = stack.Reservations
+                .Select(value => value.JobId)
+                .Distinct()
+                .Where(jobId =>
+                {
+                    JobSnapshot? job = _jobRepository.Get().Get(jobId);
+                    return job != null
+                        && !job.IsTerminal
+                        && job.Definition is BuildingSupplyJobDefinition;
+                })
+                .ToArray();
+            for (int index = 0; index < supplyJobIds.Length; index++)
+            {
+                JobSnapshot job = _jobRepository.Get().Get(supplyJobIds[index])!;
+                EntityId? assigned = job.AssignedAgentId;
+                Result cancelled = _cancelBuildingSupply == null
+                    ? Result.Failure(JobErrors.InvalidStatus)
+                    : _cancelBuildingSupply.Handle(new CancelBuildingSupplyCommand(
+                        job.Id,
+                        "building_supply_preempted_by_direct_pickup",
+                        tick,
+                        assigned.HasValue
+                            ? ResolveResidentRecoveryCell(assigned.Value)
+                            : null));
+                if (cancelled.IsFailure)
+                {
+                    return cancelled;
+                }
+            }
+
+            return Result.Success();
         }
 
         internal bool TryResolveBuildingInternalStockPickup(

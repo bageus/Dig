@@ -73,16 +73,24 @@ public sealed class BuildingSupplyBatchPickupTests
         ResidentInventorySlotClaimSnapshot claim = Assert.Single(
             harness.Inventory.GetResidentSlotClaims(jobId));
         Assert.Equal(4, claim.Quantity);
+        Result normalizedBeforePickup = harness.Inventory.NormalizeResidentInventory(
+            CampfireProductionTestHarness.WorkerId,
+            tick: 2);
+        Assert.True(
+            normalizedBeforePickup.IsSuccess,
+            normalizedBeforePickup.Error?.ToString());
+        Assert.Equal(4, Assert.Single(
+            harness.Inventory.GetResidentSlotClaims(jobId)).Quantity);
 
-        Assert.True(harness.Jobs.Start(jobId, 2).IsSuccess);
-        Assert.True(harness.Jobs.AdvanceStage(jobId, 2).IsSuccess);
+        Assert.True(harness.Jobs.Start(jobId, 3).IsSuccess);
+        Assert.True(harness.Jobs.AdvanceStage(jobId, 3).IsSuccess);
         Result acquired = new AcquireBuildingSupplySourceHandler(
             harness.InventoryRepository,
             harness.JobsRepository,
             harness.Journal).Handle(new AcquireBuildingSupplySourceCommand(
                 jobId,
                 sourceId,
-                3));
+                4));
 
         Assert.True(acquired.IsSuccess, acquired.Error?.ToString());
         ItemStackSnapshot carried = harness.Inventory.GetResidentInventoryLayout(
@@ -93,6 +101,17 @@ public sealed class BuildingSupplyBatchPickupTests
             .Select(value => harness.Inventory.GetStack(value.StackId!.Value)!)
             .Single();
         Assert.Equal(4, carried.Quantity);
+        Assert.Equal(4, carried.ReservedQuantity);
+        Result normalizedAfterPickup = harness.Inventory.NormalizeResidentInventory(
+            CampfireProductionTestHarness.WorkerId,
+            tick: 5);
+        Assert.True(
+            normalizedAfterPickup.IsSuccess,
+            normalizedAfterPickup.Error?.ToString());
+        ItemStackSnapshot normalizedCarried = harness.Inventory.GetStack(carried.StackId)!;
+        Assert.Equal(4, normalizedCarried.Quantity);
+        Assert.Equal(4, normalizedCarried.ReservedQuantity);
+        Assert.Equal(carried.Location, normalizedCarried.Location);
     }
 }
 
