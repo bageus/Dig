@@ -24,6 +24,20 @@ public sealed class ExplorationStateTests
     }
 
     [Fact]
+    public void Resident_vision_reaches_horizontal_vertical_and_xyz_diagonals()
+    {
+        WorldState world = CreateOpenWorld(16, 16);
+        ExplorationState exploration = new ExplorationState();
+        exploration.Recalculate(world.CreateSnapshot(), Sources(new CellId(6, 6, 0)));
+
+        Assert.True(exploration.IsVisible(new CellId(10, 6, 0)));
+        Assert.True(exploration.IsVisible(new CellId(6, 10, 0)));
+        Assert.True(exploration.IsVisible(new CellId(10, 10, 0)));
+        Assert.True(exploration.IsVisible(new CellId(9, 9, 3)));
+        Assert.False(exploration.IsVisible(new CellId(11, 11, 3)));
+    }
+
+    [Fact]
     public void Tunnel_reveals_orthogonal_and_diagonal_boundary_rock_without_seeing_through_it()
     {
         WorldState world = CreateOpenWorld(10, 8);
@@ -62,6 +76,28 @@ public sealed class ExplorationStateTests
         });
         Assert.True(damaged.IsVisible(new CellId(5, 3, 1)));
         Assert.False(damaged.IsVisible(new CellId(6, 3, 1)));
+    }
+
+    [Fact]
+    public void Building_extreme_footprint_cells_cast_full_three_dimensional_vision()
+    {
+        WorldState world = CreateOpenWorld(18, 18);
+        CellId[] footprint = new[]
+        {
+            new CellId(4, 4, 0), new CellId(4, 4, 1),
+            new CellId(4, 5, 0), new CellId(4, 5, 1),
+            new CellId(5, 4, 0), new CellId(5, 4, 1),
+            new CellId(5, 5, 0), new CellId(5, 5, 1),
+        };
+        ExplorationState exploration = new ExplorationState();
+        exploration.Recalculate(world.CreateSnapshot(), new[]
+        {
+            new VisionSourceSnapshot("building", VisionSourceKind.Building, footprint),
+        });
+
+        Assert.True(exploration.IsVisible(new CellId(10, 10, 3)));
+        Assert.True(exploration.IsVisible(new CellId(0, 0, 3)));
+        Assert.False(exploration.IsVisible(new CellId(11, 11, 3)));
     }
 
     [Fact]
