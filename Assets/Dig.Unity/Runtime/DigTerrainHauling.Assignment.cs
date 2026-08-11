@@ -37,7 +37,22 @@ namespace Dig.Unity
             if (job.Status == JobStatus.Claimed
                 || job.Stage == JobStageKind.TravelToTarget)
             {
-                return _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick));
+                Result started = _advanceHandler.Handle(
+                    new AdvanceJobCommand(job.Id, tick));
+                if (started.IsFailure)
+                {
+                    return started;
+                }
+
+                JobSnapshot? refreshed = _jobRepository.Get().Get(job.Id);
+                if (refreshed == null
+                    || (refreshed.Status == job.Status
+                        && refreshed.Stage == job.Stage))
+                {
+                    return Result.Success();
+                }
+
+                job = refreshed;
             }
 
             if (job.Stage == JobStageKind.AcquireItem)
