@@ -206,6 +206,40 @@ namespace Dig.Unity
             return completed;
         }
 
+        internal Result AdvanceHauling(
+            long tick,
+            IReadOnlyList<AgentViewModel> agents)
+        {
+            if (agents == null)
+            {
+                throw new ArgumentNullException(nameof(agents));
+            }
+
+            Dictionary<string, AgentViewModel> agentsById = agents.ToDictionary(
+                value => value.Id,
+                StringComparer.Ordinal);
+            foreach (JobSnapshot job in _jobRepository.Get().GetAll())
+            {
+                if (!IsActive(job)
+                    || job.Definition is not HaulJobDefinition
+                    || !job.AssignedAgentId.HasValue
+                    || !agentsById.TryGetValue(
+                        job.AssignedAgentId.Value.ToString(),
+                        out AgentViewModel? agent))
+                {
+                    continue;
+                }
+
+                Result result = AdvanceHaulingAtTarget(job, agent, tick);
+                if (result.IsFailure)
+                {
+                    return result;
+                }
+            }
+
+            return Result.Success();
+        }
+
         internal IReadOnlyList<RouteViewModel> LoadHaulingRoutes()
         {
             List<RouteViewModel> routes = new List<RouteViewModel>();

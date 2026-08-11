@@ -407,19 +407,37 @@ public sealed class ForcedPickupReplacementPlayModeTests
             tick: 0));
         inventoryRepository.Save(inventory);
 
+        JobSnapshot? carryingJob = null;
         for (int tick = 0; tick < 64; tick++)
         {
             ResidentNeedsRuntimePlayModeHarness.RunTick(runtime);
-            if (runtime.Terrain.GetStorageStatus().StoredQuantity > 0)
+            carryingJob = ResidentNeedsRuntimePlayModeHarness
+                .GetField<InMemoryJobRepository>(runtime.Terrain, "_jobRepository")
+                .Get()
+                .GetAll()
+                .SingleOrDefault(value =>
+                    value.Definition is HaulJobDefinition hauling
+                    && hauling.SourceStackId == stackId
+                    && value.Stage == JobStageKind.TravelToDestination);
+            if (carryingJob != null)
             {
                 break;
             }
         }
 
+        Assert.That(carryingJob, Is.Not.Null,
+            "Automatic hauling never acquired the world item.");
+        ItemStackSnapshot carried = inventoryRepository.Get()
+            .FindAvailable(CampfireProductionContent.StoneItemId)
+            .Single(value => value.Location.Kind == ItemLocationKind.AgentInventory
+                && value.Location.OwnerId == carryingJob!.AssignedAgentId!.Value
+                && value.ItemId == CampfireProductionContent.StoneItemId);
+        Assert.That(carried.Quantity, Is.EqualTo(1));
+        Assert.That(carried.Location.HasResidentSlot, Is.True);
         ItemStackSnapshot remainder = inventoryRepository.Get().GetStack(stackId)!;
         Assert.That(remainder.Location.Kind, Is.EqualTo(ItemLocationKind.World));
         Assert.That(remainder.Quantity, Is.EqualTo(11));
-        Assert.That(runtime.Terrain.GetStorageStatus().StoredQuantity, Is.EqualTo(1));
+        Assert.That(runtime.Terrain.GetStorageStatus().StoredQuantity, Is.Zero);
     }
 
     private static void Require(Result result)

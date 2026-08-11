@@ -50,6 +50,9 @@ internal static class ResidentNeedsRuntimePlayModeHarness
         Assert.That(runtime.Residents.Advance(movement).IsSuccess, Is.True);
         AgentViewModel[] after = runtime.Residents.LoadView().ToArray();
         Assert.That(
+            runtime.Terrain.AdvanceHauling(runtime.Residents.Tick, after).IsSuccess,
+            Is.True);
+        Assert.That(
             runtime.Terrain.AdvanceProductionPackages(
                 runtime.Residents.Tick,
                 after).IsSuccess,
@@ -59,6 +62,15 @@ internal static class ResidentNeedsRuntimePlayModeHarness
                 runtime.Residents.Tick,
                 after).IsSuccess,
             Is.True);
+        foreach (AgentViewModel agent in after)
+        {
+            long effectiveTick = runtime.Terrain.ResolveTerrainAdvanceTick(
+                agent.Id,
+                runtime.Residents.Tick);
+            Assert.That(
+                runtime.Terrain.Advance(effectiveTick, new[] { agent }).IsSuccess,
+                Is.True);
+        }
         Assert.That(
             runtime.Terrain.AdvanceWorldItemPickup(
                 runtime.Residents.Tick,
