@@ -168,6 +168,7 @@ namespace Dig.Unity
             }
 
             if (job.Status == JobStatus.Claimed
+                || job.Stage == JobStageKind.TravelToTarget
                 || job.Stage == JobStageKind.AcquireItem
                 || job.Stage == JobStageKind.TravelToDestination)
             {
