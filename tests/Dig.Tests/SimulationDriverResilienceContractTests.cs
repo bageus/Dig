@@ -23,6 +23,29 @@ public sealed class SimulationDriverResilienceContractTests
         Assert.DoesNotContain("enabled = false;", loop);
     }
 
+    [Fact]
+    public void Direct_world_item_pickup_runs_even_after_an_earlier_tick_failure()
+    {
+        string root = FindRepositoryRoot();
+        string loop = File.ReadAllText(Path.Combine(
+            root,
+            "Assets",
+            "Dig.Unity",
+            "Runtime",
+            "DigAgentSimulationDriverBase.Loop.cs"));
+
+        Assert.Contains(
+            "Result worldItemPickupResult = TerrainSession.AdvanceWorldItemPickup(",
+            loop);
+        Assert.Contains(
+            "if (result.IsSuccess && worldItemPickupResult.IsFailure)",
+            loop);
+        Assert.DoesNotContain(
+            "if (result.IsSuccess)\n            {\n"
+                + "                result = TerrainSession.AdvanceWorldItemPickup",
+            loop);
+    }
+
     private static string FindRepositoryRoot()
     {
         DirectoryInfo? current = new DirectoryInfo(AppContext.BaseDirectory);

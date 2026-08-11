@@ -197,9 +197,12 @@ namespace Dig.Unity
                 result = TerrainSession.AdvanceBuildingBoxPickup(AgentSession.Tick, agents);
             }
 
-            if (result.IsSuccess)
+            Result worldItemPickupResult = TerrainSession.AdvanceWorldItemPickup(
+                AgentSession.Tick,
+                agents);
+            if (result.IsSuccess && worldItemPickupResult.IsFailure)
             {
-                result = TerrainSession.AdvanceWorldItemPickup(AgentSession.Tick, agents);
+                result = worldItemPickupResult;
             }
 
             if (result.IsSuccess)
