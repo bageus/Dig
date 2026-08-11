@@ -12,7 +12,8 @@ namespace Dig.Unity
         internal Result UseResidentInventoryActionWithSlotGuard(
             string residentId,
             string stackId,
-            long tick)
+            long tick,
+            bool directCommand = true)
         {
             if (string.IsNullOrWhiteSpace(residentId)
                 || string.IsNullOrWhiteSpace(stackId))
@@ -35,6 +36,17 @@ namespace Dig.Unity
                 if (_productionAgents == null)
                 {
                     return Result.Failure(ResidentFoodMealErrors.ResidentNotFound);
+                }
+
+                if (directCommand)
+                {
+                    Result prepared = PrepareResidentsForDirectCommand(
+                        new[] { residentId },
+                        tick);
+                    if (prepared.IsFailure)
+                    {
+                        return prepared;
+                    }
                 }
 
                 return new StartResidentFoodMealHandler(
