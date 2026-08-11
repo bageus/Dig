@@ -35,7 +35,11 @@ public sealed class HaulingStorageCycleTests
             journal);
 
         HaulingPlanningReport planned = planner.Handle(
-            new PlanHaulingCommand(maximumJobs: 1, priority: 600, tick: 1));
+            new PlanHaulingCommand(
+                maximumJobs: 1,
+                priority: 600,
+                tick: 1,
+                maximumQuantityPerJob: 1));
 
         PlannedHaulingJob created = Assert.Single(planned.Created);
         Assert.Equal(JobId, created.JobId);
