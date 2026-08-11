@@ -11,12 +11,8 @@ namespace Dig.Domain.Exploration
 public sealed class ExplorationState
 {
     private static readonly (int X, int Y, int Z)[] Directions =
-    {
-        (-1, 0, 0), (1, 0, 0), (0, -1, 0),
-        (0, 1, 0), (0, 0, -1), (0, 0, 1),
-    };
-    private static readonly (int X, int Y, int Z)[] BoundaryDirections =
-        CreateBoundaryDirections();
+        CreateDirections();
+    private static readonly (int X, int Y, int Z)[] BoundaryDirections = Directions;
     private readonly HashSet<CellId> _explored = new HashSet<CellId>();
     private readonly HashSet<CellId> _visible = new HashSet<CellId>();
     private readonly Dictionary<EntityId, LastKnownWorldItemMarker> _markers =
@@ -152,7 +148,7 @@ public sealed class ExplorationState
         }
     }
 
-    private static (int X, int Y, int Z)[] CreateBoundaryDirections()
+    private static (int X, int Y, int Z)[] CreateDirections()
     {
         List<(int X, int Y, int Z)> directions = new List<(int, int, int)>();
         for (int z = -1; z <= 1; z++)
