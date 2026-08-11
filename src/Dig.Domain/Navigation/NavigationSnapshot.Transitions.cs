@@ -93,7 +93,7 @@ public sealed partial class NavigationSnapshot
             new NavigationTransition(
                 target,
                 Profile.OrthogonalCost,
-                traversalKind: TunnelTraversalKind.SupportedWalk));
+                traversalKind: TunnelTraversalKind.DepthTraverse));
     }
 
     private void AddIfWalkable(
