@@ -244,6 +244,7 @@ namespace Dig.Unity
         private CellId? ResolveHaulingTarget(JobSnapshot job, HaulJobDefinition hauling)
         {
             if (job.Status != JobStatus.Claimed
+                && job.Stage != JobStageKind.TravelToTarget
                 && job.Stage != JobStageKind.AcquireItem)
             {
                 return _storageRepository!.Get().GetZone(_storageId)?.Cell;
