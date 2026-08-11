@@ -6,6 +6,7 @@ using Dig.Domain.Jobs;
 using Dig.Domain.Navigation;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
+using Dig.Presentation.Inventory;
 using NUnit.Framework;
 
 namespace Dig.Unity.Tests
@@ -140,13 +141,13 @@ public sealed class ForcedPickupReplacementPlayModeTests
         Assert.That(remainder.Location, Is.EqualTo(ItemLocation.InWorld(source)));
         Assert.That(remainder.Quantity, Is.EqualTo(3));
         Assert.That(remainder.ReservedQuantity, Is.Zero);
-        ResidentInventoryLayoutSnapshot layout =
+        ResidentInventoryLayoutViewModel layout =
             runtime.Terrain.LoadResidentInventoryLayout(residentId);
-        ResidentInventorySlotSnapshot carried = layout.Slots.Single(value =>
-            value.StackId.HasValue
-            && value.StackId.Value != stackId);
+        ResidentInventoryLayoutSlotViewModel carried = layout.Slots.Single(value =>
+            value.StackId != null
+            && value.StackId != stackId.ToString());
         Assert.That(carried.Quantity, Is.EqualTo(1));
-        Assert.That(inventoryRepository.Get().GetStack(carried.StackId!.Value)!.Location.OwnerId,
+        Assert.That(inventoryRepository.Get().GetStack(EntityId.Parse(carried.StackId!))!.Location.OwnerId,
             Is.EqualTo(resident));
     }
 
