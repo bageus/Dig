@@ -37,14 +37,13 @@ public sealed partial class InventoryState
         for (int index = 0; index < claims.Length; index++)
         {
             ResidentInventorySlotClaimSnapshot claim = claims[index];
-            ItemDefinition definition = Catalog.Get(claim.ItemId);
-            if (claim.Quantity <= 0
-                || claim.Quantity > definition.MaximumStackSize)
+            if (claim.Quantity != 1)
             {
                 return Result<IReadOnlyList<ResidentInventorySlotClaimSnapshot>>.Failure(
                     InventoryErrors.ResidentSlotClaimStale);
             }
 
+            ItemDefinition definition = Catalog.Get(claim.ItemId);
             if (!TryPlanResidentClaimSlot(
                     definition,
                     activeCargo,

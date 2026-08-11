@@ -52,8 +52,7 @@ public sealed partial class InventoryState
                 residentId,
                 claim.Slot.Compartment,
                 claim.Slot.Index);
-            if (claim.Quantity <= 0
-                || claim.Quantity > Catalog.Get(allocation.ItemId).MaximumStackSize)
+            if (claim.Quantity != 1)
             {
                 return Result<bool>.Failure(InventoryErrors.ResidentSlotClaimStale);
             }

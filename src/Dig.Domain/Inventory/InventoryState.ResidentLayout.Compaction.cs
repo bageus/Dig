@@ -48,7 +48,14 @@ public sealed partial class InventoryState
                 expansions.Add(stack);
             }
 
-            if (stack.HeldQuantity != 0 || stack.ReservedQuantity != 0)
+            if (!definition.IsInventoryExpansion
+                && stack.Quantity > 1
+                && (stack.ReservedQuantity != 0 || stack.HeldQuantity != 0))
+            {
+                return Result.Failure(InventoryErrors.ResidentInventoryLayoutInvalid);
+            }
+
+            if (stack.HeldQuantity != 0)
             {
                 if (!stack.Location.HasResidentSlot)
                 {

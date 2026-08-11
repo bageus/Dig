@@ -55,8 +55,7 @@ public sealed partial class InventoryState
                 residentId,
                 definition,
                 layout,
-                occupied,
-                allowStackQuantities: true);
+                occupied);
             int remaining = request.Quantity;
             foreach (SlotCapacity capacity in capacities)
             {
@@ -190,8 +189,7 @@ public sealed partial class InventoryState
 
         foreach (ResidentInventorySlotClaimSnapshot claim in claims)
         {
-            if (claim.Quantity <= 0
-                || claim.Quantity > Catalog.Get(itemId).MaximumStackSize)
+            if (claim.Quantity != 1)
             {
                 return Result.Failure(InventoryErrors.ResidentSlotClaimStale);
             }
