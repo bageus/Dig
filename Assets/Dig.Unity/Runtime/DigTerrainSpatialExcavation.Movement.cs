@@ -153,9 +153,7 @@ internal sealed partial class DigTerrainWorkSession
 
         if ((job.Definition is WorldItemPickupJobDefinition
                 || job.Definition is HaulJobDefinition)
-            && actual.Cell == required.Cell
-            && actual.Face == SurfaceFace.Floor
-            && HasFullStandingSupport(required.Cell))
+            && actual.Cell == required.Cell)
         {
             return true;
         }
