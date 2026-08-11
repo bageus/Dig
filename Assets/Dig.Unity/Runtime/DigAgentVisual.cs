@@ -105,7 +105,6 @@ public sealed partial class DigAgentVisual : MonoBehaviour
         ApplyAction(moving);
         if (!moving)
         {
-            RecenterAfterHorizontalMovement();
             return;
         }
         if (_freeformDestinationCell.HasValue
@@ -135,7 +134,10 @@ public sealed partial class DigAgentVisual : MonoBehaviour
             _currentY,
             _currentZ);
         _directionalLane = lane.Lane;
-        _directionalLaneOffsetX = (float)lane.OffsetX;
+        // Cell traffic is coordinated by the simulation. A visual lane offset
+        // changes the endpoint of every step and causes a backward correction
+        // when the route changes direction, so cell travel stays center-to-center.
+        _directionalLaneOffsetX = 0f;
         ResolveSurfaceCoordinates(
             model, out _currentVisualX, out _currentVisualY, out _currentVisualZ);
         _elapsed = 0f;
@@ -173,24 +175,6 @@ public sealed partial class DigAgentVisual : MonoBehaviour
     internal ResidentDirectionalLane DirectionalLane => _directionalLane;
 
     internal float DirectionalLaneOffsetX => _directionalLaneOffsetX;
-
-    private void RecenterAfterHorizontalMovement()
-    {
-        if (_duration > 0f || _directionalLane == ResidentDirectionalLane.Center)
-        {
-            return;
-        }
-
-        _directionalLane = ResidentDirectionalLane.Center;
-        _directionalLaneOffsetX = 0f;
-        ResolveSurfaceCoordinates(
-            Model, out _currentVisualX, out _currentVisualY, out _currentVisualZ);
-        _previousVisualX = _currentVisualX;
-        _previousVisualY = _currentVisualY;
-        _previousVisualZ = _currentVisualZ;
-        transform.position = ToWorld(
-            _currentVisualX, _currentVisualY, _currentVisualZ);
-    }
 
     private double ResolveVisualX(int cellX, int cellY, int cellZ)
     {
