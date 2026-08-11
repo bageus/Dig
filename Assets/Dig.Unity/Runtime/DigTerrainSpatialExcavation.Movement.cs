@@ -152,6 +152,7 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         if ((job.Definition is WorldItemPickupJobDefinition
+                || job.Definition is BuildingBoxPickupJobDefinition
                 || job.Definition is HaulJobDefinition)
             && actual.Cell == required.Cell)
         {
