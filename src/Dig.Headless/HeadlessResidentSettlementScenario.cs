@@ -15,7 +15,7 @@ namespace Dig.Headless
 
 internal static class HeadlessResidentSettlementScenario
 {
-    private const int MaximumSettlementTicks = 24;
+    private const int MaximumSettlementTicks = 256;
 
     public static int Run(
         SimulationState state,
