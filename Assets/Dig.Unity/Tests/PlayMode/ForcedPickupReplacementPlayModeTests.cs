@@ -14,6 +14,47 @@ namespace Dig.Unity.Tests
 public sealed class ForcedPickupReplacementPlayModeTests
 {
     [Test]
+    public void Pickup_acquires_one_unit_from_a_material_stack()
+    {
+        ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
+            ResidentNeedsRuntimePlayModeHarness.CreateRuntime();
+        string residentId = runtime.Residents.LoadView().First().Id;
+        EntityId resident = EntityId.Parse(residentId);
+        CellId source = runtime.Residents.Repository.Get(resident)!.Position;
+        InMemoryInventoryRepository inventoryRepository =
+            ResidentNeedsRuntimePlayModeHarness.GetField<InMemoryInventoryRepository>(
+                runtime.Terrain,
+                "_inventoryRepository");
+        EntityId stackId = EntityId.Parse("fa000000000000000000000000000008");
+        InventoryState inventory = inventoryRepository.Get();
+        Require(inventory.AddUnit(
+            stackId,
+            CampfireProductionContent.StoneItemId,
+            ItemLocation.InWorld(source),
+            tick: 0));
+        inventoryRepository.Save(inventory);
+
+        Require(runtime.Terrain.CreateWorldItemPickup(
+            stackId.ToString(),
+            residentId,
+            source,
+            tick: 1));
+        Require(runtime.Terrain.AdvanceWorldItemPickup(
+            tick: 2,
+            runtime.Residents.LoadView()));
+
+        ItemStackSnapshot world = inventoryRepository.Get().GetStack(stackId)!;
+        Assert.That(world.Location.Kind, Is.EqualTo(ItemLocationKind.World));
+        Assert.That(world.Quantity, Is.EqualTo(2));
+        ItemStackSnapshot carried = inventoryRepository.Get().CreateSnapshot().Stacks
+            .Single(value => value.ItemId == CampfireProductionContent.StoneItemId
+                && value.Location.Kind == ItemLocationKind.AgentInventory
+                && value.Location.OwnerId == resident);
+        Assert.That(carried.Quantity, Is.EqualTo(1));
+        Assert.That(carried.ReservedQuantity, Is.Zero);
+    }
+
+    [Test]
     public void Pickup_and_drop_atomically_transfer_between_world_and_resident_inventory()
     {
         ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
@@ -27,9 +68,10 @@ public sealed class ForcedPickupReplacementPlayModeTests
                 "_inventoryRepository");
         EntityId stackId = EntityId.Parse("fa000000000000000000000000000005");
         InventoryState inventory = inventoryRepository.Get();
-        Require(inventory.AddUnit(
+        Require(inventory.AddStack(
             stackId,
             CampfireProductionContent.StoneItemId,
+            quantity: 3,
             ItemLocation.InWorld(source),
             tick: 0));
         inventoryRepository.Save(inventory);
@@ -309,14 +351,15 @@ public sealed class ForcedPickupReplacementPlayModeTests
                 "_inventoryRepository");
         EntityId stackId = EntityId.Parse("fa000000000000000000000000000004");
         InventoryState inventory = inventoryRepository.Get();
-        Require(inventory.AddUnit(
+        Require(inventory.AddStack(
             stackId,
             CampfireProductionContent.StoneItemId,
+            quantity: 3,
             ItemLocation.InWorld(source),
             tick: 0));
         inventoryRepository.Save(inventory);
 
-        for (int tick = 0; tick < 64; tick++)
+        for (int tick = 0; tick < 192; tick++)
         {
             ResidentNeedsRuntimePlayModeHarness.RunTick(runtime);
             ItemStackSnapshot snapshot = inventoryRepository.Get().GetStack(stackId)!;
