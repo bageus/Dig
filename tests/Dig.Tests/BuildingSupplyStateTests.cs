@@ -51,6 +51,7 @@ public sealed class BuildingSupplyStateTests
             inventory.CreateSnapshot())!;
 
         BuildingSupplyPlan plan = BuildingSupplyPlanner.Plan(
+            items,
             supply,
             inventory.GetAvailableWorldStacks(),
             new[] { capCell, legCell, stoneCell },
@@ -59,7 +60,7 @@ public sealed class BuildingSupplyStateTests
             freeSlotCount: 6);
 
         Assert.Equal(2, plan.Allocations.Count);
-        Assert.Equal(6, plan.SlotCount);
+        Assert.Equal(2, plan.SlotCount);
         Assert.Equal(CampfireProductionContent.MushroomCapItemId, plan.Allocations[0].ItemId);
         Assert.Equal(4, plan.Allocations[0].Quantity);
         Assert.Equal(CampfireProductionContent.MushroomLegItemId, plan.Allocations[1].ItemId);
@@ -88,6 +89,7 @@ public sealed class BuildingSupplyStateTests
         BuildingSupplySnapshot supply = state.Get(BuildingId, inventory.CreateSnapshot())!;
 
         Assert.Empty(BuildingSupplyPlanner.Plan(
+            items,
             supply,
             inventory.GetAvailableWorldStacks(),
             new[] { cell },
@@ -102,6 +104,7 @@ public sealed class BuildingSupplyStateTests
             tick: 2);
         supply = state.Get(BuildingId, inventory.CreateSnapshot())!;
         Assert.Empty(BuildingSupplyPlanner.Plan(
+            items,
             supply,
             inventory.GetAvailableWorldStacks(),
             Array.Empty<CellId>(),
@@ -109,6 +112,7 @@ public sealed class BuildingSupplyStateTests
             cell,
             4).Allocations);
         BuildingSupplyPlan enabled = BuildingSupplyPlanner.Plan(
+            items,
             supply,
             inventory.GetAvailableWorldStacks(),
             new[] { cell },
