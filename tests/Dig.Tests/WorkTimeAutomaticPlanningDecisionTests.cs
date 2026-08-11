@@ -1,5 +1,6 @@
 using System.Linq;
 using Dig.Domain.Agents;
+using Dig.Presentation.Agents;
 using Xunit;
 
 namespace Dig.Tests
@@ -7,6 +8,16 @@ namespace Dig.Tests
 
 public sealed class WorkTimeAutomaticPlanningDecisionTests
 {
+    [Theory]
+    [InlineData("Eat")]
+    [InlineData("Sleep")]
+    public void Active_needs_action_blocks_automatic_job_planning(string activeIntent)
+    {
+        AgentViewModel agent = CreateAgent(activeIntent);
+
+        Assert.False(agent.IsAvailableForAutomaticPlanning);
+    }
+
     private readonly AgentBehaviorPolicy _policy = AgentBehaviorPolicy.CreateDefault();
     private readonly AgentDecisionSystem _decisions = new AgentDecisionSystem();
 
@@ -119,6 +130,28 @@ public sealed class WorkTimeAutomaticPlanningDecisionTests
             restAvailable: needsAvailable,
             escapeRouteAvailable: true,
             threatLevel: 0);
+    }
+
+    private static AgentViewModel CreateAgent(string activeIntent)
+    {
+        return new AgentViewModel(
+            "ae000000000000000000000000000001",
+            "Planning Test",
+            version: 1,
+            isAlive: true,
+            cellX: 1,
+            cellY: 1,
+            nutrition: 5_000,
+            alertness: 5_000,
+            mood: 5_000,
+            health: 10_000,
+            scheduledActivity: "Work",
+            activeIntent: activeIntent,
+            actionElapsedTicks: 0,
+            actionRequiredTicks: 4,
+            decisionReason: "test",
+            decisionExplanation: "test",
+            utilityOptions: System.Array.Empty<AgentUtilityOptionViewModel>());
     }
 }
 
