@@ -273,59 +273,6 @@ public sealed partial class TunnelNavigationVolume
         return _shaftGapCells.Contains(cell);
     }
 
-    public TunnelTraversalKind ClassifyTraversal(CellId from, CellId to)
-    {
-        if (!IsOpen(from) || !IsOpen(to))
-        {
-            return TunnelTraversalKind.Invalid;
-        }
-
-        int deltaX = Math.Abs(to.X - from.X);
-        int deltaY = Math.Abs(to.Y - from.Y);
-        int deltaZ = Math.Abs(to.Z - from.Z);
-        if (deltaX + deltaY + deltaZ != 1)
-        {
-            return TunnelTraversalKind.Invalid;
-        }
-
-        if (deltaY != 0)
-        {
-            return deltaX == 0
-                && deltaZ == 0
-                && (IsVerticalTunnel(from) || IsVerticalTunnel(to))
-                    ? TunnelTraversalKind.VerticalClimb
-                    : TunnelTraversalKind.Invalid;
-        }
-
-        if (deltaZ != 0)
-        {
-            return TunnelTraversalKind.DepthTraverse;
-        }
-
-        bool crossesShaftGap = IsShaftGapCell(from) || IsShaftGapCell(to);
-        return crossesShaftGap
-            ? TunnelTraversalKind.ShaftGapTraverse
-            : TunnelTraversalKind.SupportedWalk;
-    }
-
-    private bool IsVerticalTopologyCell(CellId cell)
-    {
-        if (_verticalCells.Contains(cell))
-        {
-            return true;
-        }
-
-        CellId above = new CellId(cell.X, cell.Y - 1, cell.Z);
-        CellId below = new CellId(cell.X, cell.Y + 1, cell.Z);
-        return (Contains(above) && _verticalCells.Contains(above))
-            || (Contains(below) && _verticalCells.Contains(below));
-    }
-
-    public bool CanTraverseStep(CellId from, CellId to)
-    {
-        return ClassifyTraversal(from, to) != TunnelTraversalKind.Invalid;
-    }
-
     private void ValidateCells(IEnumerable<CellId> cells, string parameterName)
     {
         foreach (CellId cell in cells)
