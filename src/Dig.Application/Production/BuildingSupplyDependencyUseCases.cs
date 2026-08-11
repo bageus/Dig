@@ -159,6 +159,7 @@ public sealed class ResolveDeferredBuildingSupplyJobHandler
             inventory.GetResidentInventoryLayout(command.ResidentId);
         int freeSlots = layout.Slots.Count(value => value.IsEmpty);
         BuildingSupplyPlan plan = BuildingSupplyPlanner.PlanRequests(
+            inventory.Catalog,
             snapshot,
             inventory.GetAvailableWorldStacks(),
             command.RevealedCells,
