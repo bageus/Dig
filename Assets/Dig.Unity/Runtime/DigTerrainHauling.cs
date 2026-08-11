@@ -95,23 +95,31 @@ namespace Dig.Unity
             IReadOnlyList<AgentViewModel> agents)
         {
             EnsureHaulingInitialized();
-            HaulingPlanningReport report = _haulingPlanner!.Handle(
+            _haulingPlanner!.Handle(
                 new PlanHaulingCommand(
                     maximumJobs: 4,
                     priority: 600,
                     tick,
                     maximumQuantityPerJob: 1));
-            foreach (PlannedHaulingJob planned in report.Created)
+            EntityId[] activeHaulingJobs = _jobRepository.Get().GetAll()
+                .Where(job => !job.IsTerminal && job.Definition is HaulJobDefinition)
+                .Select(job => job.Id)
+                .ToArray();
+            foreach (EntityId jobId in activeHaulingJobs)
             {
-                ItemStackSnapshot? stack = _inventoryRepository.Get().GetStack(planned.StackId);
+                JobSnapshot job = _jobRepository.Get().Get(jobId)!;
+                HaulJobDefinition hauling = (HaulJobDefinition)job.Definition;
+                ItemStackSnapshot? stack = _inventoryRepository.Get().GetStack(
+                    hauling.SourceStackId);
                 if (stack == null || !stack.Location.HasCell
                     || !_worldSession.IsCurrentlyVisible(stack.Location.CellId))
                 {
+                    _haulingCandidates!.SetCandidates(jobId, Array.Empty<JobCandidate>());
                     continue;
                 }
 
                 _haulingCandidates!.SetCandidates(
-                    planned.JobId,
+                    jobId,
                     CreateHaulingCandidates(agents, stack.Location.CellId));
             }
 
