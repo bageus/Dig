@@ -15,6 +15,47 @@ namespace Dig.Unity.Tests
 public sealed class ForcedPickupReplacementPlayModeTests
 {
     [Test]
+    public void Existing_hauling_job_becomes_assignable_when_its_stack_becomes_visible()
+    {
+        ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
+            ResidentNeedsRuntimePlayModeHarness.CreateRuntime();
+        string residentId = runtime.Residents.LoadView().First().Id;
+        CellId source = runtime.Residents.Repository
+            .Get(EntityId.Parse(residentId))!.Position;
+        InMemoryInventoryRepository inventoryRepository =
+            ResidentNeedsRuntimePlayModeHarness.GetField<InMemoryInventoryRepository>(
+                runtime.Terrain,
+                "_inventoryRepository");
+        InMemoryJobRepository jobRepository =
+            ResidentNeedsRuntimePlayModeHarness.GetField<InMemoryJobRepository>(
+                runtime.Terrain,
+                "_jobRepository");
+        EntityId stackId = EntityId.Parse("fa000000000000000000000000000009");
+        InventoryState inventory = inventoryRepository.Get();
+        Require(inventory.AddUnit(
+            stackId,
+            CampfireProductionContent.StoneItemId,
+            ItemLocation.InWorld(source),
+            tick: 0));
+        inventoryRepository.Save(inventory);
+
+        runtime.Terrain.SynchronizeHauling(tick: 1, runtime.Residents.LoadView());
+        JobSnapshot orphaned = jobRepository.Get().GetAll().Single(value =>
+            value.Definition is HaulJobDefinition hauling
+            && hauling.SourceStackId == stackId);
+        Assert.That(orphaned.Status, Is.EqualTo(JobStatus.Available));
+        Assert.That(inventoryRepository.Get().GetStack(stackId)!.ReservedQuantity,
+            Is.EqualTo(1));
+
+        runtime.World.UpdateExploration(runtime.Residents.LoadView());
+        runtime.Terrain.SynchronizeHauling(tick: 2, runtime.Residents.LoadView());
+
+        JobSnapshot assigned = jobRepository.Get().Get(orphaned.Id)!;
+        Assert.That(assigned.AssignedAgentId?.ToString(), Is.EqualTo(residentId));
+        Assert.That(assigned.Status, Is.EqualTo(JobStatus.Claimed));
+    }
+
+    [Test]
     public void Pickup_and_drop_atomically_transfer_between_world_and_resident_inventory()
     {
         ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
