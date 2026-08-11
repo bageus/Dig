@@ -23,7 +23,7 @@ public sealed partial class TunnelNavigationVolume
                 && ClassifyCardinalTraversal(from, acrossZ) != TunnelTraversalKind.Invalid
                 && ClassifyCardinalTraversal(acrossX, to) != TunnelTraversalKind.Invalid
                 && ClassifyCardinalTraversal(acrossZ, to) != TunnelTraversalKind.Invalid
-                    ? TunnelTraversalKind.SupportedWalk
+                    ? TunnelTraversalKind.DepthTraverse
                     : TunnelTraversalKind.Invalid;
         }
 
