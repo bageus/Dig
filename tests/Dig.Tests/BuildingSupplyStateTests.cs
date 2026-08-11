@@ -59,12 +59,14 @@ public sealed class BuildingSupplyStateTests
             new CellId(4, 1, 0),
             freeSlotCount: 6);
 
-        Assert.Equal(2, plan.Allocations.Count);
-        Assert.Equal(2, plan.SlotCount);
+        Assert.Equal(3, plan.Allocations.Count);
+        Assert.Equal(3, plan.SlotCount);
         Assert.Equal(CampfireProductionContent.MushroomCapItemId, plan.Allocations[0].ItemId);
         Assert.Equal(4, plan.Allocations[0].Quantity);
         Assert.Equal(CampfireProductionContent.MushroomLegItemId, plan.Allocations[1].ItemId);
-        Assert.Equal(2, plan.Allocations[1].Quantity);
+        Assert.Equal(4, plan.Allocations[1].Quantity);
+        Assert.Equal(CampfireProductionContent.StoneItemId, plan.Allocations[2].ItemId);
+        Assert.Equal(4, plan.Allocations[2].Quantity);
     }
 
     [Fact]
