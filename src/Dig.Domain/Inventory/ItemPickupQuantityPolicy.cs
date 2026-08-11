@@ -12,7 +12,9 @@ public static class ItemPickupQuantityPolicy
             throw new ArgumentNullException(nameof(stack));
         }
 
-        return Math.Min(1, stack.AvailableQuantity);
+        return stack.Location.Kind == ItemLocationKind.BuildingInventory
+            ? Math.Min(1, stack.AvailableQuantity)
+            : stack.AvailableQuantity;
     }
 }
 

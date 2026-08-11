@@ -40,7 +40,7 @@ public sealed class ProductionMaterialTransitTests
             System.Array.Empty<ItemQuantityReservationSnapshot>());
 
         Assert.Equal(1, ItemPickupQuantityPolicy.ResolveRequestedQuantity(internalStack));
-        Assert.Equal(1, ItemPickupQuantityPolicy.ResolveRequestedQuantity(worldStack));
+        Assert.Equal(4, ItemPickupQuantityPolicy.ResolveRequestedQuantity(worldStack));
     }
 
     [Fact]
