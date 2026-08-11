@@ -42,6 +42,7 @@ internal static class ResidentNeedsRuntimePlayModeHarness
     {
         AgentViewModel[] before = runtime.Residents.LoadView().ToArray();
         long nextTick = runtime.Residents.Tick + 1;
+        runtime.Terrain.SynchronizeHauling(nextTick, before);
         runtime.Terrain.SynchronizeBuildingProduction(nextTick, before);
         IReadOnlyDictionary<string, CellId> movement =
             runtime.Terrain.PlanMovement(before, nextTick);

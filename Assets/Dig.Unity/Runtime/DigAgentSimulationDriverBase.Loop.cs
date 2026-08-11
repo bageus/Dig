@@ -75,6 +75,7 @@ namespace Dig.Unity
             {
                 TerrainSession.SynchronizeDesignations(nextTick, before);
                 TerrainSession.SynchronizeSpatialExcavations(nextTick, before);
+                TerrainSession.SynchronizeHauling(nextTick, before);
                 result = TerrainSession.SynchronizeResidentInventoryPlacement(nextTick);
             }
 

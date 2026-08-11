@@ -316,30 +316,30 @@ def check_gameplay_hud_and_work_contracts(
     errors.extend(require_fragments(
         loop_path,
         loop_text,
-        "manual work interruption before automatic reassignment",
+        "manual work interruption before automatic reassignment and hauling",
         (
             "AgentSession.ActiveManualTunnelResidentIds",
             "InterruptForManualMovement(",
             "SynchronizeDesignations(nextTick, before)",
+            "SynchronizeHauling(nextTick, before)",
         ),
     ))
     release_index = loop_text.find("InterruptForManualMovement(")
     assignment_index = loop_text.find("SynchronizeDesignations(nextTick, before)")
+    hauling_index = loop_text.find("SynchronizeHauling(nextTick, before)"); movement_index = loop_text.find("PlanMovement(before, nextTick)")
     if release_index < 0 or assignment_index < 0 or release_index >= assignment_index:
         errors.append(
             f"{loop_path}: manual movement work interruption must occur before assignment"
+        )
+    if hauling_index < assignment_index or movement_index < 0 or hauling_index >= movement_index:
+        errors.append(
+            f"{loop_path}: hauling must run after assignment release and before movement"
         )
     errors.extend(reject_fragments(
         loop_path,
         loop_text,
         "legacy direct movement ownership",
         ("EnforceDirectMovementOwnership(nextTick)",),
-    ))
-    errors.extend(reject_fragments(
-        loop_path,
-        loop_text,
-        "automatic excavation rock hauling",
-        ("SynchronizeHauling(nextTick, before)",),
     ))
     errors.extend(reject_fragments(
         router_path,
