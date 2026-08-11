@@ -6,6 +6,7 @@ using Dig.Domain.Jobs;
 using Dig.Domain.Navigation;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
+using Dig.Presentation.Agents;
 using Dig.Presentation.Inventory;
 using NUnit.Framework;
 
@@ -374,6 +375,46 @@ public sealed class ForcedPickupReplacementPlayModeTests
         Assert.That(acquired.Location.Kind, Is.EqualTo(ItemLocationKind.AgentInventory));
         Assert.That(acquired.Location.OwnerId, Is.EqualTo(resident));
         Assert.That(acquired.ReservedQuantity, Is.Zero);
+    }
+
+    [Test]
+    public void Automatic_hauling_acquires_item_on_first_arrival_tick()
+    {
+        ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
+            ResidentNeedsRuntimePlayModeHarness.CreateRuntime();
+        AgentViewModel resident = runtime.Residents.LoadView().First();
+        CellId source = new CellId(resident.CellX, resident.CellY, resident.CellZ);
+        InMemoryInventoryRepository inventoryRepository =
+            ResidentNeedsRuntimePlayModeHarness.GetField<InMemoryInventoryRepository>(
+                runtime.Terrain,
+                "_inventoryRepository");
+        EntityId stackId = EntityId.Parse("fa000000000000000000000000000005");
+        InventoryState inventory = inventoryRepository.Get();
+        Require(inventory.AddStack(
+            stackId,
+            CampfireProductionContent.StoneItemId,
+            quantity: 12,
+            ItemLocation.InWorld(source),
+            tick: 0));
+        inventoryRepository.Save(inventory);
+
+        runtime.Terrain.SynchronizeHauling(tick: 1, runtime.Residents.LoadView());
+        Require(runtime.Terrain.AdvanceHauling(
+            tick: 1,
+            runtime.Residents.LoadView()));
+
+        JobSnapshot job = ResidentNeedsRuntimePlayModeHarness
+            .GetField<InMemoryJobRepository>(runtime.Terrain, "_jobRepository")
+            .Get()
+            .GetAll()
+            .Single(value => value.Definition is HaulJobDefinition hauling
+                && hauling.SourceStackId == stackId);
+        Assert.That(job.Stage, Is.EqualTo(JobStageKind.TravelToDestination));
+        Assert.That(inventoryRepository.Get().FindAvailable(
+                CampfireProductionContent.StoneItemId)
+            .Any(value => value.Location.Kind == ItemLocationKind.AgentInventory
+                && value.Location.OwnerId == job.AssignedAgentId!.Value), Is.True);
+        Assert.That(inventoryRepository.Get().GetStack(stackId)!.Quantity, Is.EqualTo(11));
     }
 
     [Test]
