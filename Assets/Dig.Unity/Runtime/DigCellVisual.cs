@@ -8,8 +8,6 @@ namespace Dig.Unity
     [DisallowMultipleComponent]
     public sealed class DigCellVisual : MonoBehaviour
     {
-        private static readonly Color TunnelDesignationColor =
-            new Color(0.68f, 0.86f, 0.62f, 1f);
         private static readonly ExcavationQuarter[] ExcavationQuarters =
         {
             ExcavationQuarter.UpperLeft,
@@ -45,7 +43,9 @@ namespace Dig.Unity
         public void Configure(WorldCellViewModel model, Color baseColor)
         {
             Model = model;
-            _baseColor = model.IsDesignated ? TunnelDesignationColor : baseColor;
+            // A designation has its own thin overlay. Tinting the complete terrain
+            // cube as well created the large green platform visible on the surface.
+            _baseColor = baseColor;
             if (!model.IsDesignated)
             {
                 _designationTint = null;
