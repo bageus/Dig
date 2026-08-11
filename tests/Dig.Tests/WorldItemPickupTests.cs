@@ -46,6 +46,25 @@ public sealed class WorldItemPickupTests
     }
 
     [Fact]
+    public void Hauling_reconcile_preserves_manual_pickup_slot_claim_until_arrival()
+    {
+        Harness harness = new Harness(quantity: 1);
+        Assert.True(harness.Create().IsSuccess);
+        Assert.Single(harness.Inventory.GetResidentSlotClaims(harness.JobId));
+
+        int released = harness.ReconcileHaulingClaims();
+
+        Assert.Equal(0, released);
+        Assert.Single(harness.Inventory.GetResidentSlotClaims(harness.JobId));
+        harness.AdvanceToAcquireItem();
+        Result completed = harness.Complete();
+        Assert.True(completed.IsSuccess, completed.Error?.ToString());
+        ItemStackSnapshot carried = harness.Inventory.GetStack(harness.StackId)!;
+        Assert.Equal(ItemLocationKind.AgentInventory, carried.Location.Kind);
+        Assert.Equal(harness.ResidentId, carried.Location.OwnerId);
+    }
+
+    [Fact]
     public void Competing_pickup_is_rejected_without_duplicate_job()
     {
         Harness harness = new Harness(quantity: 4);
@@ -227,6 +246,13 @@ public sealed class WorldItemPickupTests
                 InventoryRepository,
                 JobRepository,
                 Journal).Handle(new CompleteWorldItemPickupCommand(JobId, _tick++));
+        }
+
+        public int ReconcileHaulingClaims()
+        {
+            return new HaulingResidentSlotClaimService(
+                InventoryRepository,
+                Journal).Reconcile(Jobs, _tick++);
         }
 
         public Result Cancel()

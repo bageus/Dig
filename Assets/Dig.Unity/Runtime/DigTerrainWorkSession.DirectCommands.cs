@@ -198,6 +198,7 @@ namespace Dig.Unity
 
             InventoryState inventory = repository.Get();
             inventory.ReleaseReservations(job.Id, tick);
+            inventory.ReleaseResidentSlotClaims(job.Id, tick);
             repository.Save(inventory);
             _journal.Append(inventory.DequeueUncommittedEvents());
             return Result.Success();
