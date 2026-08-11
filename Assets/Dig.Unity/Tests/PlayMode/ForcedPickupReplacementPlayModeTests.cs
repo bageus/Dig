@@ -247,6 +247,9 @@ public sealed class ForcedPickupReplacementPlayModeTests
             .Where(value => value.Definition is WorldItemPickupJobDefinition)
             .OrderBy(value => value.Definition.CreatedTick)
             .ToArray();
+        Assert.That(
+            inventoryRepository.Get().GetResidentSlotClaims(pickupJobs[0].Id),
+            Is.Empty);
         Assert.That(pickupJobs.Length, Is.EqualTo(2));
         Assert.That(pickupJobs[0].Status, Is.EqualTo(JobStatus.Cancelled));
         Assert.That(pickupJobs[1].IsTerminal, Is.False);
