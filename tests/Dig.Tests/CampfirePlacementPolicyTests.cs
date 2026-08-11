@@ -29,6 +29,60 @@ public sealed class CampfirePlacementPolicyTests
     }
 
     [Fact]
+    public void Physical_depth_extends_across_world_depth_layers_not_vertical_cells()
+    {
+        PackableBuildingSurfacePolicy policy = new PackableBuildingSurfacePolicy(
+            widthCells: 2m,
+            depthCells: 2m,
+            requiresFlatSurface: true,
+            outdoorOnly: false,
+            allowsTunnel: true);
+
+        BuildingPhysicalFootprint footprint = _validator.ResolveFootprint(
+            policy,
+            new CellId(4, 5, 1));
+
+        Assert.Equal(new[]
+        {
+            new CellId(4, 5, 1),
+            new CellId(5, 5, 1),
+            new CellId(4, 5, 2),
+            new CellId(5, 5, 2),
+        }, footprint.CoveredCells);
+    }
+
+    [Fact]
+    public void Depth_two_building_is_rejected_when_started_on_last_depth_layer()
+    {
+        PackableBuildingSurfacePolicy policy = new PackableBuildingSurfacePolicy(
+            widthCells: 1m,
+            depthCells: 2m,
+            requiresFlatSurface: true,
+            outdoorOnly: false,
+            allowsTunnel: true);
+        CellId origin = new CellId(2, 3, CellId.MaximumDepth);
+
+        PackableBuildingPlacementPolicyResult result = _validator.Validate(
+            policy,
+            origin,
+            new[]
+            {
+                new BuildingPlacementSurfaceCell(
+                    origin,
+                    elevation: 4m,
+                    BuildingPlacementSurfaceKind.Tunnel),
+            },
+            new CellId[0]);
+
+        Assert.Equal(
+            PackableBuildingPlacementErrors.PhysicalFootprintOutOfBounds,
+            result.Error);
+        Assert.Contains(
+            new CellId(origin.X, origin.Y, CellId.MaximumDepth + 1),
+            result.Footprint.CoveredCells);
+    }
+
+    [Fact]
     public void Campfire_accepts_complete_flat_tunnel_surface()
     {
         PackableBuildingSurfacePolicy policy = CampfireBuildingBoxContent.Definition
