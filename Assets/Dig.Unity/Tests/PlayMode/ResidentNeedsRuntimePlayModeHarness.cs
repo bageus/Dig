@@ -30,6 +30,7 @@ internal static class ResidentNeedsRuntimePlayModeHarness
             residents.LoadView(),
             world.Journal,
             residents.SkillGrants);
+        terrain.InitializeHauling(world.Journal);
         terrain.InitializeBuildingDemo(world.Journal);
         terrain.InitializeBuildingProductionDemo(
             residents.Repository,
