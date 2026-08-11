@@ -69,11 +69,11 @@ public sealed class BuildingSupplyApplicationTests
         Assert.Equal(4, harness.Inventory.GetAvailableQuantityAt(
             Dig.Domain.Content.CampfireProductionContent.MushroomCapItemId,
             ItemLocation.InBuilding(CampfireProductionTestHarness.BuildingId)));
-        Assert.Equal(2, harness.Inventory.GetAvailableQuantityAt(
+        Assert.Equal(4, harness.Inventory.GetAvailableQuantityAt(
             Dig.Domain.Content.CampfireProductionContent.MushroomLegItemId,
             ItemLocation.InBuilding(CampfireProductionTestHarness.BuildingId)));
-        Assert.Equal(2, harness.Inventory.GetStack(
-            CampfireProductionTestHarness.Id(201))!.AvailableQuantity);
+        Assert.Null(harness.Inventory.GetStack(
+            CampfireProductionTestHarness.Id(201)));
         Assert.Equal(ItemLocation.InBuilding(CampfireProductionTestHarness.BuildingId),
             harness.Inventory.GetStack(capDeposit)!.Location);
         Assert.Equal(ItemLocation.InBuilding(CampfireProductionTestHarness.BuildingId),
@@ -156,7 +156,7 @@ public sealed class BuildingSupplyApplicationTests
         Assert.True(secondAcquire.IsSuccess, secondAcquire.Error?.ToString());
         Assert.Equal(JobStageKind.TravelToDestination, harness.Jobs.Get(jobId)!.Stage);
         Assert.Empty(harness.Inventory.GetResidentSlotClaims(jobId));
-        Assert.Equal(2, harness.Inventory.GetStack(legSource)!.AvailableQuantity);
+        Assert.Null(harness.Inventory.GetStack(legSource));
     }
 
 

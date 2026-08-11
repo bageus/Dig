@@ -130,6 +130,7 @@ public sealed class BuildingSupplyQueuePolicyTests
             inventory.CreateSnapshot())!;
 
         BuildingSupplyPlan plan = BuildingSupplyPlanner.PlanForItems(
+            inventory.Catalog,
             supply,
             inventory.GetAvailableWorldStacks(),
             new[] { capCell, legCell },

@@ -114,6 +114,7 @@ public sealed class ProgressiveBuildingProductionTests
             harness.Inventory.CreateSnapshot())!;
 
         Assert.NotEmpty(BuildingSupplyPlanner.Plan(
+            harness.Inventory.Catalog,
             supply,
             harness.Inventory.GetAvailableWorldStacks(),
             new[] { sourceCell },
@@ -142,6 +143,7 @@ public sealed class ProgressiveBuildingProductionTests
             CampfireProductionTestHarness.BuildingId,
             harness.Inventory.CreateSnapshot())!;
         Assert.NotEmpty(BuildingSupplyPlanner.Plan(
+            harness.Inventory.Catalog,
             supply,
             harness.Inventory.GetAvailableWorldStacks(),
             new[] { sourceCell },

@@ -52,7 +52,8 @@ public sealed partial class InventoryState
                 residentId,
                 claim.Slot.Compartment,
                 claim.Slot.Index);
-            if (claim.Quantity != 1)
+            if (claim.Quantity <= 0
+                || claim.Quantity > Catalog.Get(allocation.ItemId).MaximumStackSize)
             {
                 return Result<bool>.Failure(InventoryErrors.ResidentSlotClaimStale);
             }
@@ -60,34 +61,38 @@ public sealed partial class InventoryState
             ItemStackState? target = FindStackAt(destination, default);
             if (target != null)
             {
-                if (target.ItemId == allocation.ItemId
-                    && target.GetReservedQuantity(jobId) == 1)
+                if (target.ItemId != allocation.ItemId
+                    || target.GetReservedQuantity(jobId) > claim.Quantity)
                 {
-                    continue;
+                    return Result<bool>.Failure(InventoryErrors.ResidentSlotClaimStale);
                 }
-
-                return Result<bool>.Failure(InventoryErrors.ResidentSlotClaimStale);
             }
-
-            if (ids.Count == 0)
+            else if (ids.Count == 0)
             {
                 return Result<bool>.Failure(InventoryErrors.SplitIdRequired);
             }
-
-            EntityId newId = ids.Dequeue();
-            if (newId.IsEmpty || _stacks.ContainsKey(newId))
+            else
             {
-                return Result<bool>.Failure(InventoryErrors.StackAlreadyExists);
+                EntityId newId = ids.Dequeue();
+                if (newId.IsEmpty || _stacks.ContainsKey(newId))
+                {
+                    return Result<bool>.Failure(InventoryErrors.StackAlreadyExists);
+                }
+
+                target = new ItemStackState(
+                    newId,
+                    allocation.ItemId,
+                    quantity: 0,
+                    destination);
+                _stacks.Add(newId, target);
             }
 
-            target = new ItemStackState(
-                newId,
-                allocation.ItemId,
-                quantity: 0,
-                destination);
-            _stacks.Add(newId, target);
-
-            int moved = Math.Min(remaining, 1);
+            int claimAvailable = claim.Quantity - target.GetReservedQuantity(jobId);
+            int moved = Math.Min(remaining, claimAvailable);
+            if (moved == 0)
+            {
+                continue;
+            }
             source.ConsumeReservedQuantity(jobId, moved);
             target.AddQuantity(moved);
             target.Reserve(jobId, moved);
