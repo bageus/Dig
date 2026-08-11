@@ -26,7 +26,9 @@ internal static class HaulingResidentSlotClaimReconciler
 
         EntityId[] staleJobs = inventory.GetResidentSlotClaims()
             .GroupBy(claim => claim.JobId)
-            .Where(group => IsStale(jobs.Get(group.Key), group.ToArray()))
+            .Where(group => IsStaleHaulingClaim(
+                jobs.Get(group.Key),
+                group.ToArray()))
             .Select(group => group.Key)
             .OrderBy(jobId => jobId.ToString(), StringComparer.Ordinal)
             .ToArray();
@@ -40,13 +42,21 @@ internal static class HaulingResidentSlotClaimReconciler
         return released;
     }
 
-    private static bool IsStale(
+    private static bool IsStaleHaulingClaim(
         JobSnapshot? job,
         ResidentInventorySlotClaimSnapshot[] claims)
     {
-        if (job is null
-            || job.IsTerminal
-            || job.Definition is not HaulJobDefinition hauling
+        if (job is null)
+        {
+            return true;
+        }
+
+        if (job.Definition is not HaulJobDefinition hauling)
+        {
+            return false;
+        }
+
+        if (job.IsTerminal
             || !job.AssignedAgentId.HasValue
             || (job.Status != JobStatus.Claimed && job.Status != JobStatus.InProgress))
         {
