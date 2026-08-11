@@ -36,12 +36,6 @@ public sealed partial class DigGameHudCanvas
 
     internal void SetWorldTargetHoverInfo(string title)
     {
-        if (_agentRenderer?.SelectedCount != 1)
-        {
-            ClearWorldTargetHoverInfo();
-            return;
-        }
-
         string normalized = NormalizeHoverText(title);
         if (string.Equals(
                 _worldTargetHoverTitle,
