@@ -144,7 +144,10 @@ internal sealed class AgentNeedsState
             throw new ArgumentNullException(nameof(policy));
         }
 
-        Apply(policy.ResolvePassiveDelta(tick, ticksPerDay));
+        NeedDelta passive = policy.ResolvePassiveDelta(tick, ticksPerDay);
+        Apply(alertnessRecoveryCommitted
+            ? new NeedDelta(passive.Nutrition, 0, passive.Mood, passive.Health)
+            : passive);
         bool nutritionCritical = Nutrition.IsAtOrBelow(policy.CriticalThreshold);
         bool alertnessCritical = Alertness.IsAtOrBelow(policy.CriticalThreshold)
             && !alertnessRecoveryCommitted;
