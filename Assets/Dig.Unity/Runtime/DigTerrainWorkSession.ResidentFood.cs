@@ -29,7 +29,8 @@ internal sealed partial class DigTerrainWorkSession
             return UseResidentInventoryActionWithSlotGuard(
                 agent.Id.ToString(),
                 carried.StackId.ToString(),
-                tick);
+                tick,
+                directCommand: false);
         }
 
         AutomaticFoodSource? source = FindAutomaticFoodSource(agent);
