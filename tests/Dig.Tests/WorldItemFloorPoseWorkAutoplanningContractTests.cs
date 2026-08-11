@@ -67,6 +67,9 @@ public sealed class WorldItemFloorPoseWorkAutoplanningContractTests
         string transit = ReadRuntime("DigTerrainHauling.Assignment.cs");
 
         Assert.Contains("job.Stage == JobStageKind.TravelToTarget", dispatch);
+        Assert.Contains(
+            "job.Stage != JobStageKind.TravelToTarget",
+            dispatch);
         Assert.Contains("job.Stage == JobStageKind.TravelToTarget", transit);
         Assert.Contains("AcquireHaulingItemCommand", transit);
     }
