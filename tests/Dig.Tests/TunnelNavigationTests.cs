@@ -107,6 +107,9 @@ public sealed class TunnelNavigationTests
         Assert.True(volume.CanTraverseStep(start, diagonal));
         Assert.True(result.Succeeded, result.Detail);
         Assert.Equal(new[] { start, diagonal }, result.Path!.Cells);
+        Assert.Equal(
+            new[] { TunnelTraversalKind.DepthTraverse },
+            result.Path.TraversalKinds);
     }
 
     [Fact]
@@ -123,7 +126,9 @@ public sealed class TunnelNavigationTests
             verticalCells: Array.Empty<CellId>());
 
         Assert.False(volume.CanTraverseStep(start, diagonal));
-        Assert.False(volume.FindPath(start, diagonal).Succeeded);
+        TunnelPathResult result = volume.FindPath(start, diagonal);
+        Assert.True(result.Succeeded, result.Detail);
+        Assert.Equal(new[] { start, sideX, diagonal }, result.Path!.Cells);
     }
 
     [Fact]
