@@ -103,6 +103,54 @@ public sealed class ForcedPickupReplacementPlayModeTests
     }
 
     [Test]
+    public void Pickup_splits_one_unit_from_aggregated_world_stack_into_resident_inventory()
+    {
+        ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
+            ResidentNeedsRuntimePlayModeHarness.CreateRuntime();
+        string residentId = runtime.Residents.LoadView().First().Id;
+        EntityId resident = EntityId.Parse(residentId);
+        CellId source = runtime.Residents.Repository.Get(resident)!.Position;
+        InMemoryInventoryRepository inventoryRepository =
+            ResidentNeedsRuntimePlayModeHarness.GetField<InMemoryInventoryRepository>(
+                runtime.Terrain,
+                "_inventoryRepository");
+        EntityId stackId = EntityId.Parse("fa000000000000000000000000000008");
+        InventoryState inventory = inventoryRepository.Get();
+        Require(inventory.AddStack(
+            stackId,
+            CampfireProductionContent.StoneItemId,
+            quantity: 4,
+            ItemLocation.InWorld(source),
+            tick: 0));
+        inventoryRepository.Save(inventory);
+
+        Require(runtime.Terrain.ValidateResidentCanPickupStack(
+            residentId,
+            stackId.ToString()));
+        Require(runtime.Terrain.CreateWorldItemPickup(
+            stackId.ToString(),
+            residentId,
+            source,
+            tick: 1));
+        Require(runtime.Terrain.AdvanceWorldItemPickup(
+            tick: 2,
+            runtime.Residents.LoadView()));
+
+        ItemStackSnapshot remainder = inventoryRepository.Get().GetStack(stackId)!;
+        Assert.That(remainder.Location, Is.EqualTo(ItemLocation.InWorld(source)));
+        Assert.That(remainder.Quantity, Is.EqualTo(3));
+        Assert.That(remainder.ReservedQuantity, Is.Zero);
+        ResidentInventoryLayoutSnapshot layout =
+            runtime.Terrain.LoadResidentInventoryLayout(residentId);
+        ResidentInventorySlotSnapshot carried = layout.Slots.Single(value =>
+            value.StackId.HasValue
+            && value.StackId.Value != stackId);
+        Assert.That(carried.Quantity, Is.EqualTo(1));
+        Assert.That(inventoryRepository.Get().GetStack(carried.StackId!.Value)!.Location.OwnerId,
+            Is.EqualTo(resident));
+    }
+
+    [Test]
     public void Second_direct_pickup_releases_first_job_reservation_before_new_claim()
     {
         ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
