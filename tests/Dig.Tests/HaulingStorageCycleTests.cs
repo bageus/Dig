@@ -35,12 +35,16 @@ public sealed class HaulingStorageCycleTests
             journal);
 
         HaulingPlanningReport planned = planner.Handle(
-            new PlanHaulingCommand(maximumJobs: 1, priority: 600, tick: 1));
+            new PlanHaulingCommand(
+                maximumJobs: 1,
+                priority: 600,
+                tick: 1,
+                maximumQuantityPerJob: 1));
 
         PlannedHaulingJob created = Assert.Single(planned.Created);
         Assert.Equal(JobId, created.JobId);
-        Assert.Equal(12, created.Quantity);
-        Assert.Equal(12, inventory.Get().GetStack(StackId)!.ReservedQuantity);
+        Assert.Equal(1, created.Quantity);
+        Assert.Equal(1, inventory.Get().GetStack(StackId)!.ReservedQuantity);
         Assert.NotNull(storage.Get().GetReservation(JobId));
 
         InMemoryJobCandidateProvider candidates = new InMemoryJobCandidateProvider();
@@ -84,12 +88,12 @@ public sealed class HaulingStorageCycleTests
         Assert.Empty(jobs.Get().GetReservations());
         Assert.Empty(storage.Get().GetReservations());
         ItemStackSnapshot moved = inventory.Get().GetStack(StackId)!;
-        Assert.Equal(ItemLocation.InStorage(StorageId), moved.Location);
-        Assert.Equal(12, moved.Quantity);
+        Assert.Equal(ItemLocation.InWorld(new CellId(4, 3)), moved.Location);
+        Assert.Equal(11, moved.Quantity);
         Assert.Equal(0, moved.ReservedQuantity);
-        Assert.Equal(12, inventory.Get().GetTotalQuantityAt(
+        Assert.Equal(1, inventory.Get().GetTotalQuantityAt(
             ItemLocation.InStorage(StorageId)));
-        Assert.Empty(inventory.Get().GetAvailableWorldStacks());
+        Assert.Single(inventory.Get().GetAvailableWorldStacks());
     }
 
     private static InMemoryInventoryRepository CreateInventory()

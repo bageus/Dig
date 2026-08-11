@@ -96,7 +96,11 @@ namespace Dig.Unity
         {
             EnsureHaulingInitialized();
             HaulingPlanningReport report = _haulingPlanner!.Handle(
-                new PlanHaulingCommand(maximumJobs: 4, priority: 600, tick));
+                new PlanHaulingCommand(
+                    maximumJobs: 4,
+                    priority: 600,
+                    tick,
+                    maximumQuantityPerJob: 1));
             foreach (PlannedHaulingJob planned in report.Created)
             {
                 ItemStackSnapshot? stack = _inventoryRepository.Get().GetStack(planned.StackId);
