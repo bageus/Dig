@@ -3,6 +3,7 @@ using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
+using Dig.Domain.Navigation;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using NUnit.Framework;
@@ -61,6 +62,44 @@ public sealed class ForcedPickupReplacementPlayModeTests
             .Any(value => value.StackId == stackId.ToString()), Is.True);
         Assert.That(runtime.Terrain.LoadResidentInventoryLayout(residentId).Slots
             .Any(value => value.StackId == stackId.ToString()), Is.False);
+    }
+
+    [Test]
+    public void Pickup_acquires_from_same_horizontal_cell_without_exact_surface_pose()
+    {
+        ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
+            ResidentNeedsRuntimePlayModeHarness.CreateRuntime();
+        string residentId = runtime.Residents.LoadView().First().Id;
+        EntityId resident = EntityId.Parse(residentId);
+        CellId source = runtime.Residents.Repository.Get(resident)!.Position;
+        Require(runtime.Residents.Repository.Get(resident)!.RestoreSurfacePose(
+            new SurfacePose(source, SurfaceFace.Floor, u: 175, v: 825)));
+        InMemoryInventoryRepository inventoryRepository =
+            ResidentNeedsRuntimePlayModeHarness.GetField<InMemoryInventoryRepository>(
+                runtime.Terrain,
+                "_inventoryRepository");
+        EntityId stackId = EntityId.Parse("fa000000000000000000000000000007");
+        InventoryState inventory = inventoryRepository.Get();
+        Require(inventory.AddUnit(
+            stackId,
+            CampfireProductionContent.StoneItemId,
+            ItemLocation.InWorld(source),
+            tick: 0));
+        inventoryRepository.Save(inventory);
+
+        Require(runtime.Terrain.CreateWorldItemPickup(
+            stackId.ToString(),
+            residentId,
+            source,
+            tick: 1));
+        Require(runtime.Terrain.AdvanceWorldItemPickup(
+            tick: 2,
+            runtime.Residents.LoadView()));
+
+        ItemStackSnapshot acquired = inventoryRepository.Get().GetStack(stackId)!;
+        Assert.That(acquired.Location.Kind, Is.EqualTo(ItemLocationKind.AgentInventory));
+        Assert.That(acquired.Location.OwnerId, Is.EqualTo(resident));
+        Assert.That(acquired.ReservedQuantity, Is.Zero);
     }
 
     [Test]
@@ -193,6 +232,58 @@ public sealed class ForcedPickupReplacementPlayModeTests
             .Any(value => value.StackId == stackId.ToString()), Is.False);
         Assert.That(runtime.Terrain.LoadResidentInventoryLayout(residentId).Slots
             .Any(value => value.StackId == stackId.ToString()), Is.True);
+    }
+
+    [Test]
+    public void Pickup_acquires_item_from_reachable_unsupported_surface()
+    {
+        ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
+            ResidentNeedsRuntimePlayModeHarness.CreateRuntime();
+        string residentId = runtime.Residents.LoadView().First().Id;
+        EntityId resident = EntityId.Parse(residentId);
+        CellId current = runtime.Residents.Repository.Get(resident)!.Position;
+        CellId source = runtime.Residents.TunnelVolume.SupportedCells
+            .Where(value => value != current)
+            .Where(value => !runtime.Residents.TunnelVolume.HasFullActorSupport(value))
+            .Where(value => runtime.Residents.TunnelVolume
+                .FindPath(current, value).Succeeded)
+            .OrderBy(value => System.Math.Abs(value.X - current.X)
+                + System.Math.Abs(value.Y - current.Y)
+                + System.Math.Abs(value.Z - current.Z))
+            .First();
+        InMemoryInventoryRepository inventoryRepository =
+            ResidentNeedsRuntimePlayModeHarness.GetField<InMemoryInventoryRepository>(
+                runtime.Terrain,
+                "_inventoryRepository");
+        EntityId stackId = EntityId.Parse("fa000000000000000000000000000006");
+        InventoryState inventory = inventoryRepository.Get();
+        Require(inventory.AddUnit(
+            stackId,
+            CampfireProductionContent.StoneItemId,
+            ItemLocation.InWorld(source),
+            tick: 0));
+        inventoryRepository.Save(inventory);
+
+        Require(runtime.Terrain.CreateWorldItemPickup(
+            stackId.ToString(),
+            residentId,
+            source,
+            tick: 1));
+
+        for (int tick = 0; tick < 64; tick++)
+        {
+            ResidentNeedsRuntimePlayModeHarness.RunTick(runtime);
+            if (inventoryRepository.Get().GetStack(stackId)!.Location.Kind
+                == ItemLocationKind.AgentInventory)
+            {
+                break;
+            }
+        }
+
+        ItemStackSnapshot acquired = inventoryRepository.Get().GetStack(stackId)!;
+        Assert.That(acquired.Location.Kind, Is.EqualTo(ItemLocationKind.AgentInventory));
+        Assert.That(acquired.Location.OwnerId, Is.EqualTo(resident));
+        Assert.That(acquired.ReservedQuantity, Is.Zero);
     }
 
     [Test]
