@@ -45,9 +45,7 @@ namespace Dig.Unity
             }
 
             ItemStackSnapshot snapshot = repository.Get().GetStack(stack)!;
-            bool internalStock = snapshot.Location.Kind
-                == ItemLocationKind.BuildingInventory;
-            int quantity = internalStock ? 1 : snapshot.Quantity;
+            int quantity = ItemPickupQuantityPolicy.ResolveRequestedQuantity(snapshot);
             ItemDefinition definition = repository.Get().Catalog.Get(snapshot.ItemId);
             if (eatAfterPickup
                 && (definition.FoodUse == null

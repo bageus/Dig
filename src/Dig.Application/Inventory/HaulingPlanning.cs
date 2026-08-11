@@ -189,7 +189,9 @@ public sealed class PlanHaulingHandler
                 continue;
             }
 
-            int quantity = Math.Min(candidate.AvailableQuantity, destination.AvailableCapacity);
+            int quantity = Math.Min(
+                ItemPickupQuantityPolicy.ResolveRequestedQuantity(candidate),
+                destination.AvailableCapacity);
             EntityId jobId = _jobIds.Next();
             if (jobId.IsEmpty)
             {
