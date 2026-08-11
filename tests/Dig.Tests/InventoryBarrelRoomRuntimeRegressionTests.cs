@@ -27,7 +27,8 @@ public sealed class InventoryBarrelRoomRuntimeRegressionTests
         Assert.Contains("CreateResidentUnitId", stacking);
         Assert.DoesNotContain("GroupBy(value => value.ItemId)", stacking);
         Assert.Contains("occupied.ContainsKey(slot)", claims);
-        Assert.Contains("availableQuantity: 1", claims);
+        Assert.Contains("capacity.AvailableQuantity", claims);
+        Assert.Contains("Math.Min(remaining", claims);
         Assert.Contains("capacity = checked(capacity + 1)", capacity);
         Assert.DoesNotContain("definition.MaximumStackSize - slot.Quantity", capacity);
     }
