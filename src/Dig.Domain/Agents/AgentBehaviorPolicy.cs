@@ -250,8 +250,8 @@ public sealed class AgentActionPolicy
                     2,
                     new NeedDelta(3_500, 0, 50, 0)),
                 [AgentIntentKind.Sleep] = new AgentActionEffect(
-                    3,
-                    new NeedDelta(0, 2_500, 200, 50)),
+                    5,
+                    new NeedDelta(0, 200, 200, 50)),
                 [AgentIntentKind.PlayerOrder] = new AgentActionEffect(
                     2,
                     new NeedDelta(0, 0, 0, 0)),
