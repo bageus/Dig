@@ -124,6 +124,11 @@ namespace Dig.Unity
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
             if (result.IsSuccess)
             {
+                result = TerrainSession.AdvanceHauling(AgentSession.Tick, agents);
+            }
+
+            if (result.IsSuccess)
+            {
                 result = TerrainSession.AdvanceBuildingBoxAssembly(
                     AgentSession.Tick,
                     agents);
