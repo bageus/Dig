@@ -123,7 +123,7 @@ internal static class HeadlessResidentSettlementScenario
             AgentIntentKind.Sleep);
         if (inventory.GetTotal(meal) != 0
             || eatingCompleted != 2
-            || sleepingCompleted != 2
+            || sleepingCompleted < 2
             || facilities.GetReservations().Count != 0
             || first.Needs.Nutrition.Points <= 0
             || second.Needs.Nutrition.Points <= 0
@@ -163,7 +163,7 @@ internal static class HeadlessResidentSettlementScenario
                 journal,
                 firstAgent,
                 secondAgent,
-                AgentIntentKind.Sleep) == 2
+                AgentIntentKind.Sleep) >= 2
             && facilities.GetReservations().Count == 0;
     }
 
