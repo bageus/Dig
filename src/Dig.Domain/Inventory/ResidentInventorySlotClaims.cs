@@ -200,7 +200,8 @@ public sealed partial class InventoryState
         EntityId residentId,
         ItemDefinition definition,
         ResidentInventoryLayoutSnapshot layout,
-        IReadOnlyDictionary<ResidentInventorySlot, ItemStackState> occupied)
+        IReadOnlyDictionary<ResidentInventorySlot, ItemStackState> occupied,
+        bool allowStackQuantities = false)
     {
         List<SlotCapacity> capacities = new List<SlotCapacity>();
         for (int index = 0; index < layout.Slots.Count; index++)
@@ -220,12 +221,14 @@ public sealed partial class InventoryState
                 continue;
             }
 
-            int available = 1 - claims.Sum(claim => claim.Quantity);
-            if (available == 1)
+            int capacity = allowStackQuantities ? definition.MaximumStackSize : 1;
+            int available = capacity
+                - claims.Sum(claim => claim.Quantity);
+            if (available > 0)
             {
                 capacities.Add(new SlotCapacity(
                     slot,
-                    availableQuantity: 1,
+                    available,
                     SlotCapacityRank(definition, slot, layout)));
             }
         }
