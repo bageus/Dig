@@ -22,6 +22,7 @@ namespace Dig.Unity
             new Dictionary<EntityId, HaulingRoutePlan>();
         private InMemoryStorageRepository? _storageRepository;
         private PlanHaulingHandler? _haulingPlanner;
+        private CancelHaulingJobHandler? _haulingCancellation;
         private CompleteHaulingJobHandler? _haulingCompletion;
         private AssignAvailableJobsHandler? _haulingAssignment;
         private InMemoryJobCandidateProvider? _haulingCandidates;
@@ -61,6 +62,11 @@ namespace Dig.Unity
                 _storageRepository,
                 _jobRepository,
                 _haulingIds,
+                journal);
+            _haulingCancellation = new CancelHaulingJobHandler(
+                _inventoryRepository,
+                _storageRepository,
+                _jobRepository,
                 journal);
             _haulingCompletion = new CompleteHaulingJobHandler(
                 _inventoryRepository,
