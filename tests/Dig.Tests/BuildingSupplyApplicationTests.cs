@@ -22,7 +22,7 @@ public sealed class BuildingSupplyApplicationTests
         harness.Inventory.AddStack(
             CampfireProductionTestHarness.Id(200),
             Dig.Domain.Content.CampfireProductionContent.MushroomCapItemId,
-            4,
+            1,
             ItemLocation.InWorld(capCell),
             0);
         harness.Inventory.AddStack(
@@ -66,14 +66,14 @@ public sealed class BuildingSupplyApplicationTests
             harness.JobsRepository,
             harness.Journal).Handle(new DepositBuildingSupplyCommand(jobId, 4)).IsSuccess);
 
-        Assert.Equal(4, harness.Inventory.GetAvailableQuantityAt(
+        Assert.Equal(1, harness.Inventory.GetAvailableQuantityAt(
             Dig.Domain.Content.CampfireProductionContent.MushroomCapItemId,
             ItemLocation.InBuilding(CampfireProductionTestHarness.BuildingId)));
-        Assert.Equal(4, harness.Inventory.GetAvailableQuantityAt(
+        Assert.Equal(1, harness.Inventory.GetAvailableQuantityAt(
             Dig.Domain.Content.CampfireProductionContent.MushroomLegItemId,
             ItemLocation.InBuilding(CampfireProductionTestHarness.BuildingId)));
-        Assert.Null(harness.Inventory.GetStack(
-            CampfireProductionTestHarness.Id(201)));
+        Assert.Equal(3, harness.Inventory.GetStack(
+            CampfireProductionTestHarness.Id(201))!.AvailableQuantity);
         Assert.Equal(ItemLocation.InBuilding(CampfireProductionTestHarness.BuildingId),
             harness.Inventory.GetStack(capDeposit)!.Location);
         Assert.Equal(ItemLocation.InBuilding(CampfireProductionTestHarness.BuildingId),
@@ -96,7 +96,7 @@ public sealed class BuildingSupplyApplicationTests
         harness.Inventory.AddStack(
             capSource,
             Dig.Domain.Content.CampfireProductionContent.MushroomCapItemId,
-            4,
+            1,
             ItemLocation.InWorld(capCell),
             0);
         harness.Inventory.AddStack(
@@ -156,7 +156,7 @@ public sealed class BuildingSupplyApplicationTests
         Assert.True(secondAcquire.IsSuccess, secondAcquire.Error?.ToString());
         Assert.Equal(JobStageKind.TravelToDestination, harness.Jobs.Get(jobId)!.Stage);
         Assert.Empty(harness.Inventory.GetResidentSlotClaims(jobId));
-        Assert.Null(harness.Inventory.GetStack(legSource));
+        Assert.Equal(3, harness.Inventory.GetStack(legSource)!.AvailableQuantity);
     }
 
 
