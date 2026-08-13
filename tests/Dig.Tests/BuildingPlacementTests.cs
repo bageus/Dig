@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
@@ -190,6 +191,57 @@ public sealed class BuildingPlacementTests
             Assert.Equal(3, cell.X);
             Assert.Equal(1, cell.Z);
         });
+    }
+
+    [Fact]
+    public void Wooden_ladder_requires_the_front_face_of_z1()
+    {
+        BuildingPlacementResult placement = new BuildingPlacementValidator().Validate(
+            CreateLadderDefinition(),
+            new CellId(3, 4, 2),
+            BuildingOrientation.North,
+            CreateEmptyWorld().CreateSnapshot(),
+            Array.Empty<CellId>(),
+            new[] { new CellId(2, 4, 2) });
+
+        Assert.Equal(BuildingErrors.LadderRequiresVerticalTunnel, placement.Error);
+    }
+
+    [Fact]
+    public void Completed_ladder_grows_with_its_tunnel_but_never_above_eight_cells()
+    {
+        BuildingDefinition definition = CreateLadderDefinition();
+        CellId origin = new CellId(3, 4, 1);
+        CellId[] initial = Enumerable.Range(2, 4)
+            .Select(y => new CellId(3, y, 1))
+            .ToArray();
+        BuildingSnapshot snapshot = new BuildingSnapshot(
+            FirstBuildingId,
+            definition,
+            origin,
+            BuildingOrientation.North,
+            initial,
+            new CellId(2, 4, 1),
+            BuildingStatus.Completed,
+            definition.RequiredWork,
+            definition.MaximumDurability,
+            version: 1,
+            diagnosticReason: null,
+            boxPlan: new BuildingBoxPlanSnapshot(
+                SecondBuildingId,
+                EntityId.Parse("71000000000000000000000000000004"),
+                BuildingBoxCommitState.Consumed));
+        BuildingsState buildings = BuildingsState.Restore(new[] { snapshot }).Value;
+
+        int changed = buildings.ReconcileAdaptiveLadders(
+            CreateEmptyWorld().CreateSnapshot());
+
+        Assert.Equal(1, changed);
+        BuildingSnapshot grown = buildings.Get(FirstBuildingId)!;
+        Assert.Equal(8, grown.Footprint.Count);
+        Assert.Contains(origin, grown.Footprint);
+        Assert.Equal(0, buildings.ReconcileAdaptiveLadders(
+            CreateEmptyWorld().CreateSnapshot()));
     }
 
     internal static BuildingDefinition CreateDefinition()
