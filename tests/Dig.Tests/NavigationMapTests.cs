@@ -16,7 +16,7 @@ public sealed class NavigationMapTests
         MaterialId air = new MaterialId("air");
         MaterialId rock = new MaterialId("rock");
         WorldState world = WorldState.CreateFilled(
-            new WorldSize(3, 2, 1),
+            new WorldSize(3, 2, 4),
             chunkSize: 3,
             new MaterialCatalog(new[]
             {
