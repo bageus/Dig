@@ -117,11 +117,15 @@ namespace Dig.Tests
         public void Unity_bootstrap_keeps_required_adapter_identifiers_intact()
         {
             string bootstrap = Read(RuntimeRoot(), "DigUnityBootstrap.cs");
+            string loop = Read(
+                RuntimeRoot(),
+                "DigAgentSimulationDriverBase.Loop.cs");
 
             Assert.Contains("BindExcavationSkillSource", bootstrap);
             Assert.DoesNotContain("DigStockpileRenderer", bootstrap);
             Assert.DoesNotContain("InitializeHauling", bootstrap);
             Assert.DoesNotContain("GetStorageStatus()", bootstrap);
+            Assert.DoesNotContain("SetStorageStatus", loop);
             Assert.Contains("SetSimulationControls(simulation)", bootstrap);
             Assert.Contains(
                 "SetToolAssignmentControls(terrainSession,jobRenderer)",

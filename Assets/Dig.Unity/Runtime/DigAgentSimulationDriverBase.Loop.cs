@@ -310,7 +310,6 @@ namespace Dig.Unity
             EffectRuntime!.Flush(AgentSession.Tick);
             Hud!.SetAgents(agents, AgentSession.Tick);
             Hud.SetJobs(jobs);
-            Hud.SetStorageStatus(storage);
             RestoreSelection(
                 selectedAgentIds,
                 primarySelectedAgentId,
