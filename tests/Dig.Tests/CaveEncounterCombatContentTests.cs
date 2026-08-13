@@ -94,17 +94,29 @@ public sealed class CaveEncounterCombatContentTests
     }
 
     [Fact]
-    public void Resident_weapon_selection_is_data_driven_and_maps_club_to_one_handed_profile()
+    public void Resident_weapon_selection_is_data_driven_for_club_and_slingshot()
     {
-        ResidentCombatWeaponDefinition definition = Assert.Single(
-            CaveEncounterCombatContent.ResidentWeaponDefinitions);
+        Assert.Collection(
+            CaveEncounterCombatContent.ResidentWeaponDefinitions,
+            club =>
+            {
+                Assert.Equal(CombatEquipmentContent.ClubItemId, club.ItemId);
+                Assert.Equal(CaveEncounterCombatContent.ClubProfileId, club.ProfileId);
+                Assert.Equal(10, club.SelectionPriority);
+                Assert.Same(
+                    club,
+                    CaveEncounterCombatContent.FindResidentWeapon(club.ItemId));
+            },
+            slingshot =>
+            {
+                Assert.Equal(WorkshopProductionContent.SlingshotItemId, slingshot.ItemId);
+                Assert.Equal(CaveEncounterCombatContent.SlingshotProfileId, slingshot.ProfileId);
+                Assert.Equal(20, slingshot.SelectionPriority);
+                Assert.Same(
+                    slingshot,
+                    CaveEncounterCombatContent.FindResidentWeapon(slingshot.ItemId));
+            });
 
-        Assert.Equal(CombatEquipmentContent.ClubItemId, definition.ItemId);
-        Assert.Equal(CaveEncounterCombatContent.ClubProfileId, definition.ProfileId);
-        Assert.Equal(10, definition.SelectionPriority);
-        Assert.Same(
-            definition,
-            CaveEncounterCombatContent.FindResidentWeapon(definition.ItemId));
         Assert.Null(CaveEncounterCombatContent.FindResidentWeapon(
             new Dig.Domain.Inventory.ItemId("weapon.unknown")));
     }

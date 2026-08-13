@@ -80,6 +80,7 @@ internal sealed partial class DigTerrainWorkSession
             .Append(CampfireBuildingBoxContent.Definition.BoxItem)
             .Concat(expansions.Items)
             .Concat(CombatEquipmentContent.CreateItems())
+            .Concat(WorkshopProductionContent.CreateItems())
             .Concat(LivingMaterialContent.CreateItems())
             .Concat(CampfireProductionContent.CreateItems())
             .GroupBy(value => value.Id)
@@ -155,6 +156,24 @@ internal sealed partial class DigTerrainWorkSession
             DemoId('7', 1),
             CampfireBuildingBoxContent.CampfireBoxItemId,
             ItemLocation.InWorld(campfireBoxCell),
+            tick: 0));
+        CellId woodWorkshopBoxCell = new CellId(
+            residentStartCell.X - 2,
+            residentStartCell.Y,
+            residentStartCell.Z);
+        Require(inventory.AddUnit(
+            DemoId('9', 1),
+            CampfireProductionContent.WoodWorkshopBoxItemId,
+            ItemLocation.InWorld(woodWorkshopBoxCell),
+            tick: 0));
+        CellId stoneWorkshopBoxCell = new CellId(
+            residentStartCell.X - 3,
+            residentStartCell.Y,
+            residentStartCell.Z);
+        Require(inventory.AddUnit(
+            DemoId('9', 2),
+            CampfireProductionContent.StoneMasonBoxItemId,
+            ItemLocation.InWorld(stoneWorkshopBoxCell),
             tick: 0));
         return inventory;
     }

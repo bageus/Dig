@@ -203,6 +203,8 @@ public static class CaveEncounterCombatContent
         new WeaponProfileId("combat.weapon.unarmed");
     public static readonly WeaponProfileId ClubProfileId =
         new WeaponProfileId("combat.weapon.club");
+    public static readonly WeaponProfileId SlingshotProfileId =
+        new WeaponProfileId("combat.weapon.slingshot");
     public static readonly WeaponProfileId CaveMonsterBiteProfileId =
         new WeaponProfileId("combat.enemy.cave_bite");
 
@@ -218,6 +220,10 @@ public static class CaveEncounterCombatContent
                 CombatEquipmentContent.ClubItemId,
                 ClubProfileId,
                 selectionPriority: 10),
+            new ResidentCombatWeaponDefinition(
+                WorkshopProductionContent.SlingshotItemId,
+                SlingshotProfileId,
+                selectionPriority: 20),
         });
 
     private static readonly IReadOnlyList<EnemyCombatDefinition> Enemies =
@@ -314,6 +320,19 @@ public static class CaveEncounterCombatContent
                     hitGrantUnits: 25),
                 spatialMode: CombatAttackSpatialMode.Melee,
                 maximumHitChance: 9_500),
+            new WeaponProfile(
+                SlingshotProfileId,
+                minimumRange: 2,
+                maximumRange: 6,
+                accuracy: 6_000,
+                baseDamage: 600,
+                armorPenetration: 0,
+                cooldownTicks: BaseMeleeCycleTicks,
+                skillProfile: new CombatSkillProfile(
+                    AgentSkillCatalog.RangedCombat,
+                    hitGrantUnits: 25),
+                spatialMode: CombatAttackSpatialMode.Ranged,
+                maximumHitChance: 9_000),
             new WeaponProfile(
                 CaveMonsterBiteProfileId,
                 minimumRange: 1,
