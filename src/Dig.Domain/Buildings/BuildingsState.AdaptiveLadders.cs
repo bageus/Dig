@@ -33,7 +33,7 @@ public sealed partial class BuildingsState
                     cells,
                     occupiedByOtherBuildings);
 
-            if (ladder.ExtendAdaptiveLadder(footprint)) changed++;
+            if (ladder.SynchronizeAdaptiveLadder(footprint)) changed++;
         }
 
         return changed;

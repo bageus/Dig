@@ -118,19 +118,20 @@ internal sealed class BuildingProjectState
         return Result<BuildingProjectState>.Success(restored);
     }
 
-    public bool ExtendAdaptiveLadder(IReadOnlyCollection<CellId> footprint)
+    public bool SynchronizeAdaptiveLadder(IReadOnlyCollection<CellId> footprint)
     {
         CellId[] candidate = footprint.OrderBy(cell => cell).ToArray();
         if (Definition.Id.ToString() != "building.ladder"
-            || candidate.Length <= Footprint.Count
+            || candidate.Length < 2
             || candidate.Length > BuildingPlacementValidator.MaximumLadderHeight
-            || Footprint.Any(cell => !candidate.Contains(cell))
             || candidate.Any(cell => cell.X != Origin.X
                 || cell.Z != BuildingPlacementValidator.LadderDepth)
             || !IsConsecutive(candidate))
         {
             return false;
         }
+
+        if (candidate.SequenceEqual(Footprint)) return false;
 
         Footprint = candidate;
         IncrementVersion();
@@ -257,7 +258,6 @@ internal sealed class BuildingProjectState
         return snapshot.Definition.Id.ToString() == "building.ladder"
             && footprint.Count >= 2
             && footprint.Count <= BuildingPlacementValidator.MaximumLadderHeight
-            && footprint.Any(cell => cell == snapshot.Origin)
             && footprint.All(cell => cell.X == snapshot.Origin.X
                 && cell.Z == BuildingPlacementValidator.LadderDepth)
             && IsConsecutive(footprint);
