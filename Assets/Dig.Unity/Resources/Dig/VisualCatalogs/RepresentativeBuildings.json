@@ -79,7 +79,7 @@
     {
       "stableIds": ["building.tent"],
       "kind": "Tent",
-      "footprintSize": {"x": 3, "y": 2},
+      "footprintSize": {"x": 2, "y": 2},
       "pivotCell": {"x": 0.0, "y": 0.0},
       "visualBoundsCenter": {"x": 0.0, "y": 0.75, "z": 0.0},
       "visualBoundsSize": {"x": 1.5, "y": 1.5, "z": 1.5},
