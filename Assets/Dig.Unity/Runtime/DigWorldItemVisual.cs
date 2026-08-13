@@ -254,6 +254,12 @@ namespace Dig.Unity
 
         private static bool TryResolveRawMaterialTint(string itemId, out Color tint)
         {
+            if (DigWorldItemVisualPolicy.IsBuildingBox(itemId))
+            {
+                tint = Color.white;
+                return false;
+            }
+
             string value = itemId?.ToLowerInvariant() ?? string.Empty;
             if (value.Contains("gold"))
             {

@@ -135,6 +135,17 @@ public sealed class ProductionPackageUnityContractTests
     }
 
     [Fact]
+    public void Building_box_names_never_enter_raw_material_visual_path()
+    {
+        string visual = Read(RuntimeRoot(), "DigWorldItemVisual.cs");
+
+        Assert.Contains(
+            "DigWorldItemVisualPolicy.IsBuildingBox(itemId)",
+            visual);
+        Assert.Contains("return false;", visual);
+    }
+
+    [Fact]
     public void Front_z0_is_box_relocation_only_and_never_building_assembly()
     {
         string presenter = Read(RepositoryPath(
