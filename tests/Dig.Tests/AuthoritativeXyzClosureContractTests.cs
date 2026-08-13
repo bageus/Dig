@@ -7,7 +7,7 @@ namespace Dig.Tests
 public sealed class AuthoritativeXyzClosureContractTests
 {
     [Fact]
-    public void Unity_routes_overlays_and_stockpiles_project_authoritative_depth()
+    public void Unity_routes_and_overlays_project_authoritative_depth()
     {
         string runtime = Path.Combine(
             FindRepositoryRoot(),
@@ -23,9 +23,6 @@ public sealed class AuthoritativeXyzClosureContractTests
         string overlayRender = File.ReadAllText(Path.Combine(
             runtime,
             "DigWorldOverlayRenderer.Render.cs"));
-        string stockpile = File.ReadAllText(Path.Combine(
-            runtime,
-            "DigStockpileRenderer.cs"));
         string packing = File.ReadAllText(Path.Combine(
             runtime,
             "DigBuildingPackingExecution.cs"));
@@ -39,7 +36,6 @@ public sealed class AuthoritativeXyzClosureContractTests
         Assert.Contains("new CellId(x, y, z)", overlay);
         Assert.Contains("center.X, center.Y, center.Z", overlayRender);
         Assert.Contains("cell.X, cell.Y, cell.Z", overlayRender);
-        Assert.Contains("status.Cell.Z", stockpile);
         Assert.Contains("pair.Value.Target.Z", packing);
         Assert.Contains("pair.Value.Target.Z", production);
     }

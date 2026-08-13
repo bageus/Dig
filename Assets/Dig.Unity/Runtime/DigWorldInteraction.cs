@@ -23,7 +23,6 @@ namespace Dig.Unity
         private DigBuildingRenderer? _buildingRenderer;
         private DigBuildingInternalStockRenderer? _buildingInternalStockRenderer;
         private DigTerrainWorkSession? _terrainSession;
-        private DigStockpileRenderer? _stockpileRenderer;
         private DigAgentSimulationDriver? _simulation;
         private DigAgentSession? _agentSession;
         private DigHudOverlay? _hud;
@@ -46,7 +45,6 @@ namespace Dig.Unity
             DigWorldItemRenderer itemRenderer,
             DigBuildingBoxGhostRenderer buildingBoxGhostRenderer,
             DigTerrainWorkSession terrainSession,
-            DigStockpileRenderer stockpileRenderer,
             DigAgentSession agentSession,
             DigAgentSimulationDriver simulation,
             DigHudOverlay hud)
@@ -65,7 +63,6 @@ namespace Dig.Unity
             _itemRenderer = itemRenderer;
             _buildingBoxGhostRenderer = buildingBoxGhostRenderer;
             _terrainSession = terrainSession;
-            _stockpileRenderer = stockpileRenderer;
             _agentSession = agentSession;
             _simulation = simulation;
             _hud = hud;
@@ -111,7 +108,6 @@ namespace Dig.Unity
                 return;
             }
 
-            HandleStoragePlacement();
             UpdateCaveRoomPreview();
             if (TryHandleResidentMarqueeSelection()
                 || TryHandleCaveRoomPlacement()
@@ -315,7 +311,6 @@ namespace Dig.Unity
                 && _itemRenderer != null
                 && _buildingBoxGhostRenderer != null
                 && _terrainSession != null
-                && _stockpileRenderer != null
                 && _agentSession != null
                 && _simulation != null
                 && _hud != null;

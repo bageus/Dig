@@ -55,7 +55,7 @@ public sealed class SpatialWorkSurfaceRuntimeContractTests
     }
 
     [Fact]
-    public void Construction_and_hauling_resolve_each_phase_and_gate_actions_by_pose()
+    public void Construction_resolves_each_phase_and_gates_actions_by_pose()
     {
         string root = FindRepositoryRoot();
         string planner = Normalize(File.ReadAllText(Path.Combine(
@@ -76,21 +76,14 @@ public sealed class SpatialWorkSurfaceRuntimeContractTests
         string relocation = Normalize(File.ReadAllText(Path.Combine(
             root,
             "Assets/Dig.Unity/Runtime/DigBuildingBoxRelocationExecution.cs")));
-        string hauling = Normalize(File.ReadAllText(Path.Combine(
-            root,
-            "Assets/Dig.Unity/Runtime/DigTerrainHauling.cs")));
-
         Assert.Contains("BuildingBoxAssemblyJobDefinition", planner);
         Assert.Contains("BuildingBoxPackingJobDefinition", planner);
         Assert.Contains("BuildingBoxPickupJobDefinition", planner);
-        Assert.Contains("HaulJobDefinition", planner);
-        Assert.Contains("ResolveHaulingTarget(job,hauling)", planner);
         Assert.Contains("IsAtPreciseWorkPose(job,agent)", assembly);
         Assert.Contains("IsAtPreciseWorkPose(currentJob,agent)", assemblyDrain);
         Assert.Contains("IsAtPreciseWorkPose(job,agent)", packing);
         Assert.Contains("IsAtPreciseWorkPose(job,agent)", pickup);
         Assert.Contains("IsAtPreciseWorkPose(current,agent)", relocation);
-        Assert.Contains("IsAtPreciseWorkPose(job,agent)", hauling);
     }
 
     [Fact]

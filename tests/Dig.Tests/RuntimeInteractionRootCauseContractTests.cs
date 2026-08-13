@@ -119,9 +119,9 @@ namespace Dig.Tests
             string bootstrap = Read(RuntimeRoot(), "DigUnityBootstrap.cs");
 
             Assert.Contains("BindExcavationSkillSource", bootstrap);
-            Assert.Contains("GetStorageStatus()", bootstrap);
-            Assert.Contains("DigStockpileRendererstockpileRenderer", bootstrap);
-            Assert.Contains("SetStorageStatus(storage)", bootstrap);
+            Assert.DoesNotContain("DigStockpileRenderer", bootstrap);
+            Assert.DoesNotContain("InitializeHauling", bootstrap);
+            Assert.DoesNotContain("GetStorageStatus()", bootstrap);
             Assert.Contains("SetSimulationControls(simulation)", bootstrap);
             Assert.Contains(
                 "SetToolAssignmentControls(terrainSession,jobRenderer)",

@@ -59,7 +59,7 @@ public sealed class UnityInputParserMergeRegressionTests
             "interaction.Initialize(targetCamera,cameraController,worldSession,worldRenderer,"
             + "agentRenderer,creatureRenderer,mushroomRenderer,barrelRenderer,jobRenderer,"
             + "buildingRenderer,buildingInternalStockRenderer,itemRenderer,ghostRenderer,"
-            + "terrainSession,stockpileRenderer,agentSession,simulation,hud);";
+            + "terrainSession,agentSession,simulation,hud);";
 
         Assert.Equal(1, Count(bootstrap, "interaction.Initialize("));
         Assert.Contains(expectedCall, bootstrap);

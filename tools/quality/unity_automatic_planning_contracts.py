@@ -20,7 +20,6 @@ def check_automatic_planning_contracts(
     driver_hud_path = runtime_root / "DigAgentSimulationDriverBase.Hud.cs"
     candidate_paths = (
         runtime_root / "DigTerrainWorkSession.cs",
-        runtime_root / "DigTerrainHauling.cs",
         runtime_root / "DigBuildingBoxAssemblyExecution.cs",
         runtime_root / "DigBuildingPackingExecution.cs",
         runtime_root / "DigJobSession.cs",

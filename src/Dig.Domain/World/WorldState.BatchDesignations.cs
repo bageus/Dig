@@ -45,7 +45,7 @@ public sealed partial class WorldState
                     WorldErrors.DigDesignationRequiresSolidCell);
             }
 
-            if (!material.IsMineable)
+            if (!IsDiggableColumn(cellId, material))
             {
                 return Result<WorldMutationResult>.Failure(WorldErrors.InvalidDesignation);
             }
@@ -56,6 +56,19 @@ public sealed partial class WorldState
         }
 
         return ApplyTerrainChanges(changes, tick);
+    }
+
+    private bool IsDiggableColumn(CellId cellId, MaterialDefinition material)
+    {
+        if (!material.IsMineable)
+        {
+            return false;
+        }
+
+        CellId surfaceCell = cellId.WithDepth(CellId.MinimumDepth);
+        CellState surface = _cells[GetCellIndex(surfaceCell)];
+        MaterialDefinition surfaceMaterial = Materials.Get(surface.MaterialId)!;
+        return !surfaceMaterial.IsSolid || surfaceMaterial.IsMineable;
     }
 }
 

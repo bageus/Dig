@@ -150,37 +150,6 @@ namespace Dig.Unity
             _hud.SetStatus("Current mode, action, route, and selection cancelled.");
         }
 
-        private void HandleStoragePlacement()
-        {
-            bool requested = Input.GetKeyDown(KeyCode.Alpha5)
-                || Input.GetKeyDown(KeyCode.Keypad5);
-            if (!requested)
-            {
-                return;
-            }
-
-            if (_selectedCell == null)
-            {
-                _hud!.SetStatus("Select an open cell before placing the stockpile.");
-                return;
-            }
-
-            WorldCellViewModel selected = _selectedCell.Model;
-            Result result = _terrainSession!.MoveStorageZone(
-                new CellId(selected.X, selected.Y, selected.Z),
-                _simulation!.CurrentTick);
-            if (result.IsFailure)
-            {
-                _hud!.SetCommandResult(result);
-                return;
-            }
-
-            DigStorageStatus storage = _terrainSession.GetStorageStatus();
-            _stockpileRenderer!.Render(storage);
-            _hud!.SetStorageStatus(storage);
-            _hud.SetStatus($"Stockpile moved to {storage.Cell.X},{storage.Cell.Y}.");
-        }
-
         private void ToggleDesignation(WorldCellViewModel selected)
         {
             Result result = _session!.ToggleDesignation(selected);

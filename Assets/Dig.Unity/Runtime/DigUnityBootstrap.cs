@@ -71,7 +71,6 @@ namespace Dig.Unity
                     agentId,
                     Dig.Domain.Agents.AgentSkillCatalog.Stonework)
                 / Dig.Domain.Agents.AgentSkillCatalog.UnitsPerPoint);
-            terrainSession.InitializeHauling(worldSession.Journal);
             terrainSession.PlanMovement(agents, tick: 0);
             terrainSession.InitializeBuildingDemo(worldSession.Journal);
             worldSession.UpdateExploration(agents, terrainSession.LoadBuildings());
@@ -104,7 +103,6 @@ namespace Dig.Unity
                 .FilterCurrentlyVisibleItems(allItems);
             IReadOnlyList<RouteViewModel> routes = terrainSession.LoadRoutes();
             IReadOnlyList<BuildingWorldViewModel> buildings = terrainSession.LoadBuildings();
-            DigStorageStatus storage = terrainSession.GetStorageStatus();
             _startupStage = "creating Unity adapters";
             Camera targetCamera = EnsureCamera();
             GetOrAdd<DigRenderMaterialLibrary>(gameObject);
@@ -135,7 +133,6 @@ namespace Dig.Unity
             DigWorldItemRenderer itemRenderer = GetOrAdd<DigWorldItemRenderer>(gameObject);
             DigBuildingBoxGhostRenderer ghostRenderer =
                 GetOrAdd<DigBuildingBoxGhostRenderer>(gameObject);
-            DigStockpileRenderer stockpileRenderer = GetOrAdd<DigStockpileRenderer>(gameObject);
             DigNavigationRouteRenderer routeRenderer =
                 GetOrAdd<DigNavigationRouteRenderer>(gameObject);
             DigTunnelDemoRenderer tunnelRenderer = GetOrAdd<DigTunnelDemoRenderer>(gameObject);
@@ -157,7 +154,6 @@ namespace Dig.Unity
             hud.SetWorld(world);
             hud.SetAgents(agents, agentSession.Tick);
             hud.SetJobs(jobs);
-            hud.SetStorageStatus(storage);
             hud.SetSimulationControls(simulation);
             hud.SetToolAssignmentControls(terrainSession, jobRenderer);
             hud.SetBuildingControls(terrainSession, buildingRenderer, jobRenderer);
@@ -174,7 +170,7 @@ namespace Dig.Unity
                 targetCamera, cameraController, worldSession, worldRenderer,
                 agentRenderer, creatureRenderer, mushroomRenderer, barrelRenderer,
                 jobRenderer, buildingRenderer, buildingInternalStockRenderer, itemRenderer,
-                ghostRenderer, terrainSession, stockpileRenderer, agentSession,
+                ghostRenderer, terrainSession, agentSession,
                 simulation, hud);
             interaction.SetTunnelMovement(tunnelRenderer);
             interaction.SetCaveRoomRenderers(caveRoomPreviewRenderer, caveRoomFloorRenderer);
@@ -186,7 +182,7 @@ namespace Dig.Unity
                 worldSession, worldRenderer, agentSession, agentRenderer,
                 terrainSession, creatureRenderer, mushroomRenderer, barrelRenderer, jobRenderer,
                 buildingRenderer, buildingInternalStockRenderer, itemRenderer,
-                stockpileRenderer, routeRenderer, worldOverlayRenderer, hud);
+                routeRenderer, worldOverlayRenderer, hud);
 
             _startupStage = "binding uGUI game HUD";
             gameHud.Initialize(
@@ -236,8 +232,6 @@ namespace Dig.Unity
             RunPresentationStage("rendering world items", visualWarnings,
                 () => itemRenderer.Render(items));
             RunPresentationStage("clearing building ghost", visualWarnings, ghostRenderer.Clear);
-            RunPresentationStage("rendering stockpile", visualWarnings,
-                () => stockpileRenderer.Render(storage));
             RunPresentationStage("rendering navigation routes", visualWarnings,
                 () => routeRenderer.Render(routes));
             RunPresentationStage("rendering world overlays", visualWarnings, () =>
@@ -245,7 +239,7 @@ namespace Dig.Unity
                 worldOverlayRenderer.RenderWorld(
                     world,
                     worldSession.LoadTerrainDeposits());
-                worldOverlayRenderer.RenderDynamic(buildings, storage, routes);
+                worldOverlayRenderer.RenderDynamic(buildings, routes);
             });
             RunPresentationStage("rendering ambient effects", visualWarnings,
                 () => effectRuntime.Flush(agentSession.Tick));

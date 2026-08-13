@@ -28,6 +28,11 @@ public sealed partial class WorldState
                 WorldErrors.DigDesignationRequiresSolidCell);
         }
 
+        if (designated && !IsDiggableColumn(cellId, material))
+        {
+            return Result<WorldMutationResult>.Failure(WorldErrors.InvalidDesignation);
+        }
+
         CellDesignation designation = designated
             ? CellDesignation.Dig
             : CellDesignation.None;

@@ -181,7 +181,6 @@ namespace Dig.Unity
                 WorldSession.LoadTerrainDeposits());
             WorldOverlayRenderer.RenderDynamic(
                 TerrainSession!.LoadBuildings(),
-                TerrainSession.GetStorageStatus(),
                 TerrainSession.LoadRoutes());
             JobRenderer!.Render(jobs);
             Hud!.SetWorld(world);
