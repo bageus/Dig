@@ -130,9 +130,10 @@ namespace Dig.Unity
             Color tint,
             DigItemVisualResolution resolution)
         {
-            DigVisualAsset asset = resolution.Asset.IsFallback
-                ? DigVisualAsset.CreateRuntimeFallback(visualId, tint)
-                : resolution.Asset;
+            // A box family is a gameplay visual contract. Never retain an authored
+            // per-item asset here: otherwise one catalog entry (for example the
+            // stone workshop) silently gets a different shape and scale.
+            DigVisualAsset asset = DigVisualAsset.CreateRuntimeFallback(visualId, tint);
             return new DigItemVisualResolution(
                 asset,
                 resolution.Icon,
