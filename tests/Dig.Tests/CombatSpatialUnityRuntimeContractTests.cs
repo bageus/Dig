@@ -66,6 +66,10 @@ public sealed class CombatSpatialUnityRuntimeContractTests
         Assert.Contains("SeedCaveMonsterPair", session, StringComparison.Ordinal);
         Assert.Contains("CaveMonsterOneId", enemies, StringComparison.Ordinal);
         Assert.Contains("CaveMonsterTwoId", enemies, StringComparison.Ordinal);
+        Assert.Contains(
+            "Enumerable.Range(layout.CaveMinX, layout.CaveWidth)",
+            enemies,
+            StringComparison.Ordinal);
         Assert.Contains("EnsureAutonomousEnemyIntent", enemies, StringComparison.Ordinal);
         Assert.Contains("TryAdvanceEnemyPatrol", enemies, StringComparison.Ordinal);
         Assert.Contains("EnemyPatrolPlanner", enemies, StringComparison.Ordinal);
