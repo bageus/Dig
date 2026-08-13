@@ -114,7 +114,8 @@ namespace Dig.Tests
             Assert.Contains("resolution.WorldScale", itemGhost);
             Assert.Contains("RenderPlans", itemGhost);
             Assert.Contains("PlannedItemGhostTint", itemGhost);
-            Assert.Contains("CreateCampfireBoxResolution", itemPolicy);
+            Assert.Contains("CreateBoxFamilyResolution", itemPolicy);
+            Assert.Contains("IsBuildingBox(itemId)", itemPolicy);
             Assert.Contains("ResolveWorldPosition", itemPolicy);
             Assert.Contains("BuildingBoxPickupJobDefinition", plans);
             Assert.Contains("BuildingBoxRelocationExecutionPolicy.Evaluate", execution);
