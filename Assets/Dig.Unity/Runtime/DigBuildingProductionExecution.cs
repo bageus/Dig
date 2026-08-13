@@ -125,10 +125,12 @@ internal sealed partial class DigTerrainWorkSession
             _buildingInventoryRepository.Get().Catalog,
             _buildingBoxCatalog,
             CampfireProductionContent.CreateRecipes(
-                materialDurationTicks,
-                cookingDurationTicks),
+                    materialDurationTicks,
+                    cookingDurationTicks)
+                .Concat(WorkshopProductionContent.CreateRecipes(materialDurationTicks)),
             Array.Empty<TechnologyDefinition>(),
-            new[] { CampfireProductionContent.CreateWorkstation() });
+            new[] { CampfireProductionContent.CreateWorkstation() }
+                .Concat(WorkshopProductionContent.CreateWorkstations()));
         if (!validated.Succeeded || validated.Catalog == null)
         {
             throw new InvalidOperationException(

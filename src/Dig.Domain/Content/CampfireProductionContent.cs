@@ -103,7 +103,7 @@ public static class CampfireProductionContent
                 "Wooden workshop",
                 3,
                 3),
-        };
+        }.Concat(WorkshopProductionContent.CreateBuildings()).ToArray();
     }
 
     public static IReadOnlyList<RecipeDefinition> CreateRecipes(long baseDurationTicks)
