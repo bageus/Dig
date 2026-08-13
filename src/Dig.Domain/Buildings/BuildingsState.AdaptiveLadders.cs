@@ -27,26 +27,11 @@ public sealed partial class BuildingsState
             .Where(value => value.Status is BuildingStatus.Completed
                 or BuildingStatus.Damaged))
         {
-            List<CellId> footprint = ladder.Footprint.OrderBy(cell => cell.Y).ToList();
-            for (int y = footprint[0].Y - 1;
-                footprint.Count < BuildingPlacementValidator.MaximumLadderHeight;
-                y--)
-            {
-                CellId candidate = new CellId(ladder.Origin.X, y,
-                    BuildingPlacementValidator.LadderDepth);
-                if (!CanOccupy(candidate, cells, occupiedByOtherBuildings)) break;
-                footprint.Insert(0, candidate);
-            }
-
-            for (int y = footprint[footprint.Count - 1].Y + 1;
-                footprint.Count < BuildingPlacementValidator.MaximumLadderHeight;
-                y++)
-            {
-                CellId candidate = new CellId(ladder.Origin.X, y,
-                    BuildingPlacementValidator.LadderDepth);
-                if (!CanOccupy(candidate, cells, occupiedByOtherBuildings)) break;
-                footprint.Add(candidate);
-            }
+            IReadOnlyList<CellId> footprint =
+                BuildingPlacementValidator.ResolveLadderFootprint(
+                    ladder.Origin,
+                    cells,
+                    occupiedByOtherBuildings);
 
             if (ladder.ExtendAdaptiveLadder(footprint)) changed++;
         }
@@ -54,16 +39,6 @@ public sealed partial class BuildingsState
         return changed;
     }
 
-    private static bool CanOccupy(
-        CellId cell,
-        IReadOnlyDictionary<CellId, CellSnapshot> cells,
-        ISet<CellId> occupied)
-    {
-        return !occupied.Contains(cell)
-            && cells.TryGetValue(cell, out CellSnapshot snapshot)
-            && !snapshot.IsSolid
-            && snapshot.State.IsExplored;
-    }
 }
 
 }
