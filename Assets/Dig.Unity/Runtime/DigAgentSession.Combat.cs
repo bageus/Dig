@@ -65,8 +65,10 @@ internal sealed partial class DigAgentSession
         {
             factions.AssignMember(resident.Id, ResidentFaction);
         }
-        InitializeVukerEcology(tunnelVolume);
-        SeedCaveMonsterPair(tunnelVolume, factions);
+        TunnelNavigationVolume ecologyNavigation =
+            ResolveVukerEcologyNavigation(tunnelVolume);
+        InitializeVukerEcology(ecologyNavigation);
+        SeedCaveMonsterPair(ecologyNavigation, factions);
         FormInitialVukerPair();
 
         _combatRepository = new InMemoryCombatRepository(combat);

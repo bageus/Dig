@@ -23,9 +23,13 @@ public sealed class VukerTopologyRefreshRuntimeContractTests
             StringComparison.Ordinal);
         Assert.Contains("RefreshVukerEcologyNavigation(refreshed)", topology,
             StringComparison.Ordinal);
+        Assert.Contains("ResolveVukerEcologyNavigation", ecology,
+            StringComparison.Ordinal);
+        Assert.Contains("TunnelNavigationVolume.CreateDemo", ecology,
+            StringComparison.Ordinal);
         Assert.Contains("_combatExecution?.UpdateNavigationVolume(refreshed)", topology,
             StringComparison.Ordinal);
-        Assert.Contains("new VukerCaveRegionResolver(tunnelVolume)", ecology,
+        Assert.Contains("new VukerCaveRegionResolver(ecologyNavigation)", ecology,
             StringComparison.Ordinal);
         Assert.Contains("new VukerBirthPlanner(_vukerRegions)", ecology,
             StringComparison.Ordinal);
