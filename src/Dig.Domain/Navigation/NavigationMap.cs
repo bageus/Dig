@@ -223,6 +223,11 @@ public sealed partial class NavigationMap
         NavigationWorldIndex index,
         HashSet<CellId> linkEndpoints)
     {
+        if (!cell.State.IsExplored)
+        {
+            return false;
+        }
+
         if (cell.IsSolid && !cell.State.IsExcavationOpen)
         {
             return false;

@@ -42,6 +42,11 @@ public sealed partial class TunnelNavigationVolume
 
         foreach (CellSnapshot snapshot in cells.Values)
         {
+            if (!snapshot.State.IsExplored)
+            {
+                continue;
+            }
+
             if (snapshot.IsSolid && !snapshot.State.IsExcavationOpen)
             {
                 continue;

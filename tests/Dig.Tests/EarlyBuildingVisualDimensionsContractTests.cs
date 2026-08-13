@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.Json;
 using Dig.Domain.Buildings;
 using Dig.Domain.Content;
+using Dig.Domain.World;
 using Xunit;
 
 namespace Dig.Tests
@@ -47,24 +48,48 @@ public sealed class EarlyBuildingVisualDimensionsContractTests
     }
 
     [Fact]
-    public void Visual_dimensions_do_not_change_authoritative_building_footprints()
+    public void Visual_dimensions_match_authoritative_xyz_building_volumes()
     {
-        BuildingDefinitionId[] ids =
-        {
-            CampfireProductionContent.TentBuildingId,
-            CampfireProductionContent.StoneMasonBuildingId,
-            CampfireProductionContent.WoodWorkshopBuildingId,
-        };
-        BuildingDefinition[] definitions = CampfireProductionContent.CreateBuildings()
-            .Where(value => ids.Contains(value.Id))
-            .ToArray();
+        AssertVolume(CampfireProductionContent.TentBuildingId, 3, 2);
+        AssertVolume(CampfireProductionContent.StoneMasonBuildingId, 4, 3);
+        AssertVolume(CampfireProductionContent.WoodWorkshopBuildingId, 3, 2);
+    }
 
-        Assert.Equal(ids.Length, definitions.Length);
-        Assert.All(definitions, definition =>
+    [Fact]
+    public void Placement_rejects_visual_volume_overlap_and_depth_overflow()
+    {
+        BuildingDefinition workshop = CampfireProductionContent.CreateBuildings()
+            .Single(value => value.Id == CampfireProductionContent.WoodWorkshopBuildingId);
+        MaterialId air = new MaterialId("placement.air");
+        MaterialCatalog materials = new MaterialCatalog(new[]
         {
-            Assert.Single(definition.Footprint);
-            Assert.Equal(new CellOffset(0, 0), definition.Footprint[0]);
+            new MaterialDefinition(air, isSolid: false, hardness: 0),
         });
+        WorldSnapshot world = WorldState.CreateFilled(
+            new WorldSize(10, 10, 4),
+            chunkSize: 5,
+            materials,
+            air,
+            explored: true).Value.CreateSnapshot();
+        BuildingPlacementValidator validator = new BuildingPlacementValidator();
+
+        BuildingPlacementResult overlap = validator.Validate(
+            workshop,
+            new CellId(5, 5, 1),
+            BuildingOrientation.North,
+            world,
+            new[] { new CellId(6, 5, 2) },
+            new[] { new CellId(3, 5, 1) });
+        BuildingPlacementResult overflow = validator.Validate(
+            workshop,
+            new CellId(5, 5, 3),
+            BuildingOrientation.North,
+            world,
+            Array.Empty<CellId>(),
+            new[] { new CellId(3, 5, 3) });
+
+        Assert.Equal(BuildingErrors.PlacementOccupied, overlap.Error);
+        Assert.Equal(BuildingErrors.PlacementOutOfBounds, overflow.Error);
     }
 
     [Fact]
@@ -104,8 +129,8 @@ public sealed class EarlyBuildingVisualDimensionsContractTests
         JsonElement center = profile.GetProperty("visualBoundsCenter");
         JsonElement size = profile.GetProperty("visualBoundsSize");
 
-        Assert.Equal(1, footprint.GetProperty("x").GetInt32());
-        Assert.Equal(1, footprint.GetProperty("y").GetInt32());
+        Assert.Equal((int)Math.Ceiling(width), footprint.GetProperty("x").GetInt32());
+        Assert.Equal((int)Math.Ceiling(depth), footprint.GetProperty("y").GetInt32());
         AssertClose(width, size.GetProperty("x").GetSingle());
         AssertClose(height, size.GetProperty("y").GetSingle());
         AssertClose(depth, size.GetProperty("z").GetSingle());
@@ -116,6 +141,24 @@ public sealed class EarlyBuildingVisualDimensionsContractTests
             .Select(value => value.GetProperty("name").GetString() ?? string.Empty)
             .ToArray();
         Assert.All(requiredParts, name => Assert.Contains(name, names));
+    }
+
+    private static void AssertVolume(
+        BuildingDefinitionId id,
+        int width,
+        int depth)
+    {
+        BuildingDefinition definition = CampfireProductionContent.CreateBuildings()
+            .Single(value => value.Id == id);
+        CellId origin = new CellId(10, 5, 0);
+        CellId[] cells = definition.ResolveFootprint(
+            origin,
+            BuildingOrientation.North).ToArray();
+
+        Assert.Equal(width * depth, cells.Length);
+        Assert.Equal(width, cells.Select(value => value.X).Distinct().Count());
+        Assert.Equal(depth, cells.Select(value => value.Z).Distinct().Count());
+        Assert.All(cells, value => Assert.Equal(origin.Y, value.Y));
     }
 
     private static void AssertClose(float expected, float actual)
