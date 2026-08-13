@@ -189,7 +189,7 @@ public sealed class BuildingPlacementValidator
         CellId[] configured = definition
             .ResolveWorkPositions(origin, orientation)
             .ToArray();
-        CellId[] sideWorkPositions = ResolveSideWorkPositions(footprint, origin)
+        CellId[] sideWorkPositions = ResolveSideWorkPositions(footprint)
             .ToArray();
         HashSet<CellId> sideWorkPositionSet = new HashSet<CellId>(sideWorkPositions);
         CellId? workPosition = sideWorkPositions
@@ -284,13 +284,15 @@ public sealed class BuildingPlacementValidator
     }
 
     private static IEnumerable<CellId> ResolveSideWorkPositions(
-        IReadOnlyCollection<CellId> footprint,
-        CellId origin)
+        IReadOnlyCollection<CellId> footprint)
     {
         int minimumX = footprint.Min(cell => cell.X);
         int maximumX = footprint.Max(cell => cell.X);
-        yield return new CellId(minimumX - 1, origin.Y, origin.Z);
-        yield return new CellId(maximumX + 1, origin.Y, origin.Z);
+        foreach (CellId cell in footprint.OrderByDescending(cell => cell.Y))
+        {
+            yield return new CellId(minimumX - 1, cell.Y, cell.Z);
+            yield return new CellId(maximumX + 1, cell.Y, cell.Z);
+        }
     }
 }
 
