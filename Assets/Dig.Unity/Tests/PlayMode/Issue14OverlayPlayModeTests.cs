@@ -114,7 +114,6 @@ public sealed class Issue14OverlayPlayModeTests
             overlays,
             "RenderDynamic",
             (object)new[] { project },
-            new DigStorageStatus(new CellId(0, 0, 0), 0, 0, 10),
             (object)Array.Empty<RouteViewModel>());
 
         Assert.That(_root.transform.Find("Building Footprint Overlay"), Is.Null);

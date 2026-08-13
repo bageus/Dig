@@ -30,7 +30,6 @@ internal static class ResidentNeedsRuntimePlayModeHarness
             residents.LoadView(),
             world.Journal,
             residents.SkillGrants);
-        terrain.InitializeHauling(world.Journal);
         terrain.InitializeBuildingDemo(world.Journal);
         terrain.InitializeBuildingProductionDemo(
             residents.Repository,
@@ -43,15 +42,11 @@ internal static class ResidentNeedsRuntimePlayModeHarness
     {
         AgentViewModel[] before = runtime.Residents.LoadView().ToArray();
         long nextTick = runtime.Residents.Tick + 1;
-        runtime.Terrain.SynchronizeHauling(nextTick, before);
         runtime.Terrain.SynchronizeBuildingProduction(nextTick, before);
         IReadOnlyDictionary<string, CellId> movement =
             runtime.Terrain.PlanMovement(before, nextTick);
         Assert.That(runtime.Residents.Advance(movement).IsSuccess, Is.True);
         AgentViewModel[] after = runtime.Residents.LoadView().ToArray();
-        Assert.That(
-            runtime.Terrain.AdvanceHauling(runtime.Residents.Tick, after).IsSuccess,
-            Is.True);
         Assert.That(
             runtime.Terrain.AdvanceProductionPackages(
                 runtime.Residents.Tick,
