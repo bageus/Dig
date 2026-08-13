@@ -100,6 +100,37 @@ public sealed class ProductionPackageUnityContractTests
         Assert.DoesNotContain("ProductionPackageContent.FoodPackageItemId", presenter);
     }
 
+    [Fact]
+    public void Food_weapon_tool_and_building_boxes_have_stable_family_visuals()
+    {
+        string policy = Read(RuntimeRoot(), "DigWorldItemVisualPolicy.cs");
+        string content = Read(RepositoryPath(
+            "src", "Dig.Domain", "Content", "ProductionPackageContent.cs"));
+
+        Assert.Contains("visual.box.building", policy);
+        Assert.Contains("visual.box.food", policy);
+        Assert.Contains("visual.box.weapon", policy);
+        Assert.Contains("visual.box.tool", policy);
+        Assert.Contains("ProductionOutputPackageKind.Weapon", content);
+        Assert.Contains("ProductionOutputPackageKind.Tool", content);
+        string zones = Read(RuntimeRoot(), "DigBuildingProductionZones.cs");
+        Assert.Contains("StartAutomaticProductionPackageUse", zones);
+        Assert.Contains("ProductionOutputPackageKind.Weapon", zones);
+        Assert.Contains("ProductionOutputPackageKind.Tool", zones);
+    }
+
+    [Fact]
+    public void Front_z0_is_box_relocation_only_and_never_building_assembly()
+    {
+        string presenter = Read(RepositoryPath(
+            "src", "Dig.Presentation.Abstractions", "Buildings",
+            "BuildingBoxPlacementPresenter.cs"));
+
+        Assert.Contains("origin.Z == 0", presenter);
+        Assert.Contains("BuildingBoxPlacementKind.RelocateBox", presenter);
+        Assert.Contains("BuildingBoxPlacementKind.AssembleBuilding", presenter);
+    }
+
     private static string Read(string root, string file)
     {
         return File.ReadAllText(Path.Combine(root, file));

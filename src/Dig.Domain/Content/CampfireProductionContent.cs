@@ -90,22 +90,22 @@ public static class CampfireProductionContent
         return new[]
         {
             CampfireBuildingBoxContent.Definition.Building,
-            CreateBuilding(TentBuildingId, TentBoxItemId, "Tent", 2, 2, 3, 2),
+            CreateBuilding(TentBuildingId, TentBoxItemId, "Tent", 2, 2, 2, 2),
             CreateBuilding(
                 StoneMasonBuildingId,
                 StoneMasonBoxItemId,
                 "Stone mason workshop",
                 3,
                 3,
-                4,
-                3),
+                2,
+                2),
             CreateBuilding(
                 WoodWorkshopBuildingId,
                 WoodWorkshopBoxItemId,
                 "Wooden workshop",
                 3,
                 3,
-                3,
+                2,
                 2),
         }.Concat(WorkshopProductionContent.CreateBuildings()).ToArray();
     }

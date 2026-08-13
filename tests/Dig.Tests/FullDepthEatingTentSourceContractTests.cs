@@ -93,7 +93,7 @@ public sealed class FullDepthEatingTentSourceContractTests
         Assert.Contains("profileKind == DigBuildingProfileKind.Tent", templates);
         Assert.Contains("Quaternion.Euler(0f, 180f, 0f)", templates);
         Assert.Contains("resolution.FacesCamera", visual);
-        Assert.Contains("new Vector3(3f, 2f, 2f)", builtIns);
+        Assert.Contains("new Vector3(1.5f, 1.5f, 1.5f)", builtIns);
         Assert.Contains("Vector2Int.one", builtIns);
         Assert.Contains("facesCamera: facesCamera", library);
     }

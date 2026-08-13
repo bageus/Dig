@@ -170,7 +170,8 @@ public sealed partial class BuildingBoxPlacementPresenter
                 BuildingBoxPlacementKind.AssembleBuilding);
         }
 
-        if (!BuildingPlacementSurfaceFactProjector.HasSupportingPlane(
+        if (definition.Id.ToString() != "building.ladder"
+            && !BuildingPlacementSurfaceFactProjector.HasSupportingPlane(
             placement.Footprint,
             world))
         {

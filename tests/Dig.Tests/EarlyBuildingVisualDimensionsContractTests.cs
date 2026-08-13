@@ -21,27 +21,27 @@ public sealed class EarlyBuildingVisualDimensionsContractTests
         AssertProfile(
             document,
             "building.tent",
-            3.0f,
-            2.0f,
-            2.0f,
+            1.5f,
+            1.5f,
+            1.5f,
             "Tent Roof Left",
             "Tent Roof Right",
             "Tent Entrance Flap");
         AssertProfile(
             document,
             "building.stone_mason",
-            3.5f,
-            2.5f,
-            2.5f,
+            2.0f,
+            1.5f,
+            1.5f,
             "Stone Foundation",
             "Stone Workbench",
             "Mason Roof");
         AssertProfile(
             document,
             "building.wood_workshop",
-            2.5f,
             2.0f,
-            2.0f,
+            1.5f,
+            1.5f,
             "Wood Foundation",
             "Saw Bench",
             "Timber Log");
@@ -50,9 +50,9 @@ public sealed class EarlyBuildingVisualDimensionsContractTests
     [Fact]
     public void Visual_dimensions_match_authoritative_xyz_building_volumes()
     {
-        AssertVolume(CampfireProductionContent.TentBuildingId, 3, 2);
-        AssertVolume(CampfireProductionContent.StoneMasonBuildingId, 4, 3);
-        AssertVolume(CampfireProductionContent.WoodWorkshopBuildingId, 3, 2);
+        AssertVolume(CampfireProductionContent.TentBuildingId, 2, 2);
+        AssertVolume(CampfireProductionContent.StoneMasonBuildingId, 2, 2);
+        AssertVolume(CampfireProductionContent.WoodWorkshopBuildingId, 2, 2);
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public sealed class EarlyBuildingVisualDimensionsContractTests
             new CellId(5, 5, 1),
             BuildingOrientation.North,
             world,
-            new[] { new CellId(6, 5, 2) },
+            new[] { new CellId(5, 5, 2) },
             new[] { new CellId(3, 5, 1) });
         BuildingPlacementResult overflow = validator.Validate(
             workshop,
