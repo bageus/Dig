@@ -52,9 +52,8 @@ public sealed class DemoCampfireBoxSpawnContractTests
         Assert.Contains("? Vector2.zero", renderer);
         Assert.Contains("CampfireBoxFootprintSide = 0.35355339f", visualPolicy);
         Assert.Contains("CampfireBoxHeight = 0.30f", visualPolicy);
-        Assert.Contains(
-            "DigVisualAsset.CreateRuntimeFallback(itemId, CampfireBoxTint)",
-            visualPolicy);
+        Assert.Contains("CreateBoxFamilyResolution(", visualPolicy);
+        Assert.Contains("\"visual.box.building\"", visualPolicy);
         Assert.Contains("maxVisibleInstances: 1", visualPolicy);
     }
 
