@@ -111,12 +111,27 @@ public sealed class ProductionPackageUnityContractTests
         Assert.Contains("visual.box.food", policy);
         Assert.Contains("visual.box.weapon", policy);
         Assert.Contains("visual.box.tool", policy);
+        Assert.Contains(
+            "DigVisualAsset.CreateRuntimeFallback(visualId, tint)",
+            policy);
+        Assert.DoesNotContain("resolution.Asset.IsFallback", policy);
         Assert.Contains("ProductionOutputPackageKind.Weapon", content);
         Assert.Contains("ProductionOutputPackageKind.Tool", content);
         string zones = Read(RuntimeRoot(), "DigBuildingProductionZones.cs");
         Assert.Contains("StartAutomaticProductionPackageUse", zones);
         Assert.Contains("ProductionOutputPackageKind.Weapon", zones);
         Assert.Contains("ProductionOutputPackageKind.Tool", zones);
+    }
+
+    [Fact]
+    public void Demo_surface_contains_an_installable_ladder_box()
+    {
+        string demo = Read(RuntimeRoot(),
+            "DigTerrainWorkSession.ResidentInventoryDemo.cs");
+
+        Assert.Contains("WorkshopProductionContent.LadderBoxItemId", demo);
+        Assert.Contains("ladderBoxCell", demo);
+        Assert.Contains("ItemLocation.InWorld(ladderBoxCell)", demo);
     }
 
     [Fact]
