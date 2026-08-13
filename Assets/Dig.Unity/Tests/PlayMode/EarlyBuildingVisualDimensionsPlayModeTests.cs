@@ -22,21 +22,21 @@ public sealed class EarlyBuildingVisualDimensionsPlayModeTests
             AssertCompleted(
                 library,
                 "building.tent",
-                new Vector3(3f, 2f, 2f),
+                new Vector3(1.5f, 1.5f, 1.5f),
                 "Tent Roof Left",
                 "Tent Roof Right",
                 "Tent Entrance Flap");
             AssertCompleted(
                 library,
                 "building.stone_mason",
-                new Vector3(3.5f, 2.5f, 2.5f),
+                new Vector3(2f, 1.5f, 1.5f),
                 "Stone Foundation",
                 "Stone Workbench",
                 "Mason Roof");
             AssertCompleted(
                 library,
                 "building.wood_workshop",
-                new Vector3(2.5f, 2f, 2f),
+                new Vector3(2f, 1.5f, 1.5f),
                 "Wood Foundation",
                 "Saw Bench",
                 "Timber Log");

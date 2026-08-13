@@ -50,6 +50,10 @@ public static class BuildingErrors
         "buildings.placement.ecology_growth_site",
         "The building footprint overlaps a permanent ecology growth site.");
 
+    public static readonly DomainError LadderRequiresVerticalTunnel = new DomainError(
+        "buildings.placement.ladder_vertical_tunnel_required",
+        "A wooden ladder requires between two and eight connected vertical tunnel cells.");
+
     public static readonly DomainError NoReachableWorkPosition = new DomainError(
         "buildings.placement.no_reachable_work_position",
         "No configured work position is currently reachable.");
@@ -126,7 +130,19 @@ public sealed class BuildingPlacementValidator
             throw new ArgumentNullException(nameof(occupiedCells));
         }
 
-        IReadOnlyList<CellId> footprint = definition.ResolveFootprint(origin, orientation);
+        Dictionary<CellId, CellSnapshot> cells = world.Chunks
+            .SelectMany(chunk => chunk.Cells)
+            .ToDictionary(cell => cell.Id);
+        IReadOnlyList<CellId> footprint = definition.Id.ToString() == "building.ladder"
+            ? ResolveLadderFootprint(origin, cells)
+            : definition.ResolveFootprint(origin, orientation);
+        if (footprint.Count < 2 && definition.Id.ToString() == "building.ladder")
+        {
+            return BuildingPlacementResult.Failure(
+                BuildingErrors.LadderRequiresVerticalTunnel,
+                footprint);
+        }
+
         if (footprint.Any(cell => !world.Size.Contains(cell)))
         {
             return BuildingPlacementResult.Failure(
@@ -134,9 +150,6 @@ public sealed class BuildingPlacementValidator
                 footprint);
         }
 
-        Dictionary<CellId, CellSnapshot> cells = world.Chunks
-            .SelectMany(chunk => chunk.Cells)
-            .ToDictionary(cell => cell.Id);
         if (footprint.Any(cell => cells[cell].IsSolid))
         {
             return BuildingPlacementResult.Failure(
@@ -196,6 +209,40 @@ public sealed class BuildingPlacementValidator
         }
 
         return BuildingPlacementResult.Success(footprint, workPosition.Value);
+    }
+
+    private static IReadOnlyList<CellId> ResolveLadderFootprint(
+        CellId origin,
+        IReadOnlyDictionary<CellId, CellSnapshot> cells)
+    {
+        const int maximumHeight = 8;
+        List<CellId> run = new List<CellId> { origin };
+        for (int y = origin.Y - 1; run.Count < maximumHeight; y--)
+        {
+            CellId cell = new CellId(origin.X, y, origin.Z);
+            if (!IsOpenExplored(cells, cell)) break;
+            run.Insert(0, cell);
+        }
+
+        for (int y = origin.Y + 1; run.Count < maximumHeight; y++)
+        {
+            CellId cell = new CellId(origin.X, y, origin.Z);
+            if (!IsOpenExplored(cells, cell)) break;
+            run.Add(cell);
+        }
+
+        return run.Where(cell => IsOpenExplored(cells, cell))
+            .OrderBy(cell => cell.Y)
+            .ToArray();
+    }
+
+    private static bool IsOpenExplored(
+        IReadOnlyDictionary<CellId, CellSnapshot> cells,
+        CellId cell)
+    {
+        return cells.TryGetValue(cell, out CellSnapshot snapshot)
+            && !snapshot.IsSolid
+            && snapshot.State.IsExplored;
     }
 
     private static IEnumerable<CellId> ResolveSideWorkPositions(

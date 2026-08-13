@@ -171,6 +171,27 @@ public sealed class BuildingPlacementTests
         Assert.Equal(BuildingErrors.PlacementOutOfBounds, outside.Error);
     }
 
+    [Fact]
+    public void Wooden_ladder_fits_vertical_tunnel_between_two_and_eight_cells()
+    {
+        BuildingDefinition ladder = CreateLadderDefinition();
+        BuildingPlacementResult placement = new BuildingPlacementValidator().Validate(
+            ladder,
+            new CellId(3, 4, 1),
+            BuildingOrientation.North,
+            CreateEmptyWorld().CreateSnapshot(),
+            Array.Empty<CellId>(),
+            new[] { new CellId(2, 4, 1) });
+
+        Assert.True(placement.Succeeded, placement.Error?.ToString());
+        Assert.InRange(placement.Footprint.Count, 2, 8);
+        Assert.All(placement.Footprint, cell =>
+        {
+            Assert.Equal(3, cell.X);
+            Assert.Equal(1, cell.Z);
+        });
+    }
+
     internal static BuildingDefinition CreateDefinition()
     {
         return new BuildingDefinition(
@@ -184,6 +205,21 @@ public sealed class BuildingPlacementTests
             },
             requiredWork: 10,
             maximumDurability: 100);
+    }
+
+    private static BuildingDefinition CreateLadderDefinition()
+    {
+        return new BuildingDefinition(
+            new BuildingDefinitionId("building.ladder"),
+            "Wooden ladder",
+            new[] { new CellOffset(0, 0) },
+            new[] { new CellOffset(-1, 0), new CellOffset(1, 0) },
+            Array.Empty<BuildingMaterialRequirement>(),
+            requiredWork: 2,
+            maximumDurability: 100,
+            boxPolicy: new BuildingBoxPolicy(
+                new ItemId("building_box.ladder"),
+                packingWork: 2));
     }
 
     internal static WorldState CreateEmptyWorld()

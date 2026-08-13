@@ -27,9 +27,27 @@ namespace Dig.Unity
             DigItemVisualResolution resolution = catalog != null
                 ? catalog.ResolveItem(itemId)
                 : CreateFallbackResolution(itemId);
-            if (IsCampfireBox(itemId))
+            if (IsBuildingBox(itemId))
             {
-                return CreateCampfireBoxResolution(itemId, resolution);
+                return CreateBoxFamilyResolution(
+                    "visual.box.building",
+                    CampfireBoxTint,
+                    resolution);
+            }
+
+            if (string.Equals(itemId, ProductionPackageContent.FoodPackageItemId.ToString(), StringComparison.Ordinal))
+            {
+                return CreateBoxFamilyResolution("visual.box.food", new Color(0.72f, 0.52f, 0.24f, 1f), resolution);
+            }
+
+            if (string.Equals(itemId, ProductionPackageContent.WeaponPackageItemId.ToString(), StringComparison.Ordinal))
+            {
+                return CreateBoxFamilyResolution("visual.box.weapon", new Color(0.42f, 0.44f, 0.48f, 1f), resolution);
+            }
+
+            if (string.Equals(itemId, ProductionPackageContent.ToolPackageItemId.ToString(), StringComparison.Ordinal))
+            {
+                return CreateBoxFamilyResolution("visual.box.tool", new Color(0.48f, 0.34f, 0.20f, 1f), resolution);
             }
 
             return DigBasketVisualPolicy.Resolve(itemId, resolution);
@@ -76,6 +94,11 @@ namespace Dig.Unity
                 StringComparison.Ordinal);
         }
 
+        internal static bool IsBuildingBox(string itemId)
+        {
+            return itemId.StartsWith("building_box.", StringComparison.Ordinal);
+        }
+
         internal static bool IsLivingMaterial(string itemId)
         {
             return string.Equals(itemId, "creature.hamster", StringComparison.Ordinal)
@@ -102,12 +125,13 @@ namespace Dig.Unity
                 hasProfile: false);
         }
 
-        private static DigItemVisualResolution CreateCampfireBoxResolution(
-            string itemId,
+        private static DigItemVisualResolution CreateBoxFamilyResolution(
+            string visualId,
+            Color tint,
             DigItemVisualResolution resolution)
         {
             DigVisualAsset asset = resolution.Asset.IsFallback
-                ? DigVisualAsset.CreateRuntimeFallback(itemId, CampfireBoxTint)
+                ? DigVisualAsset.CreateRuntimeFallback(visualId, tint)
                 : resolution.Asset;
             return new DigItemVisualResolution(
                 asset,

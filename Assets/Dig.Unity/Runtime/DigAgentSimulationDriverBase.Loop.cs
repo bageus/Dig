@@ -243,6 +243,7 @@ namespace Dig.Unity
             IReadOnlyList<RouteViewModel> routes = TerrainSession.LoadRoutes();
             IReadOnlyList<Dig.Presentation.Buildings.BuildingWorldViewModel> buildings =
                 TerrainSession.LoadBuildings();
+            AgentSession.SynchronizeWoodenLadders(buildings);
             WorldSession!.UpdateExploration(agents, buildings);
             WorldSession.ObserveWorldItems(allItems);
             IReadOnlyList<WorldItemViewModel> items = WorldSession

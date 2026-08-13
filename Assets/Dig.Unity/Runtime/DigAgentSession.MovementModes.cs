@@ -89,6 +89,21 @@ internal sealed partial class DigAgentSession
         ResidentMovementModeResolution resolution = _movementModeResolver == null
             ? ResolveFallback(runtimeRequest)
             : _movementModeResolver(runtimeRequest);
+        if (traversal == TunnelTraversalKind.VerticalClimb
+            && IsWoodenLadderStep(agent.Position, destination))
+        {
+            resolution = new ResidentMovementModeResolution(
+                resolution.ResidentId,
+                resolution.Mode,
+                resolution.Reason,
+                resolution.Mobility,
+                resolution.CommandSource,
+                Math.Min(4d, resolution.EffectiveSpeedMultiplier
+                    * WoodenLadderSpeedMultiplier),
+                resolution.TransitionDurationMultiplier
+                    / WoodenLadderSpeedMultiplier,
+                resolution.RepeatedManualCommand);
+        }
         string residentKey = agent.Id.ToString();
         _movementModes[residentKey] = new ResidentMovementModeViewModel(resolution);
         if (_movementSources.TryGetValue(

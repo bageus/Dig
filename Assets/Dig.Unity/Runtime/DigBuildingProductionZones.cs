@@ -196,7 +196,19 @@ internal sealed partial class DigTerrainWorkSession
                 tick,
                 ItemLocation.InWorld(outputCell.Value),
                 package.StackId));
-        return completed;
+        if (completed.IsFailure
+            || outputKind is not ProductionOutputPackageKind.Weapon
+                and not ProductionOutputPackageKind.Tool
+            || !job.AssignedAgentId.HasValue)
+        {
+            return completed;
+        }
+
+        return StartAutomaticProductionPackageUse(
+            package.StackId,
+            job.AssignedAgentId.Value,
+            outputCell.Value,
+            tick);
     }
 
     internal IReadOnlyDictionary<string, float> LoadProductionWaitOffsets()

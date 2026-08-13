@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Dig.Domain.Buildings;
 using Dig.Presentation.Buildings;
 using Dig.Presentation.World;
@@ -182,6 +183,24 @@ namespace Dig.Unity
 
             if (resolution.Asset.IsFallback || resolution.Asset.Prefab == null)
             {
+                if (Model.DefinitionId == "building.ladder")
+                {
+                    int minimumY = Model.Footprint.Min(value => value.Y);
+                    int maximumY = Model.Footprint.Max(value => value.Y);
+                    float ladderHeight = maximumY - minimumY + 1f;
+                    float centreY = (minimumY + maximumY) * 0.5f;
+                    _instance.transform.localPosition = new Vector3(
+                        0f,
+                        -(centreY - Model.OriginY),
+                        0f);
+                    _instance.transform.localRotation = Quaternion.identity;
+                    _instance.transform.localScale = new Vector3(
+                        0.72f,
+                        ladderHeight,
+                        0.16f);
+                    return;
+                }
+
                 ResolveLocalBounds(out Vector2 center, out Vector2 size);
                 float height = ResolveFallbackHeight(Model.VisualState);
                 _instance.transform.localPosition = new Vector3(

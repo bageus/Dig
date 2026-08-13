@@ -136,7 +136,8 @@ public sealed class ConfirmBuildingBoxPlacementHandler
             return Result.Failure(placement.Error!);
         }
 
-        if (!BuildingPlacementSurfaceFactProjector.HasSupportingPlane(
+        if (definition.Id.ToString() != "building.ladder"
+            && !BuildingPlacementSurfaceFactProjector.HasSupportingPlane(
             placement.Footprint,
             world))
         {
