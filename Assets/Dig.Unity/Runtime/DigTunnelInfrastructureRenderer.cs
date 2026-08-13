@@ -9,6 +9,7 @@ namespace Dig.Unity
     [DisallowMultipleComponent]
     internal sealed class DigTunnelInfrastructureRenderer : MonoBehaviour
     {
+        private const float ExternalFaceOffset = 0.01f;
         private readonly Dictionary<string, GameObject> _visuals =
             new Dictionary<string, GameObject>(StringComparer.Ordinal);
         private readonly HashSet<string> _visibleInstances =
@@ -167,10 +168,10 @@ namespace Dig.Unity
             CellId cell,
             TunnelInfrastructureVisualKind kind)
         {
-            float depth = kind == TunnelInfrastructureVisualKind.WoodenSupport
-                ? DigTunnelProjection.DepthOrigin
-                : DigTunnelProjection.DepthOrigin
-                    + (cell.Z * DigTunnelProjection.DepthSpacing);
+            _ = kind;
+            float depth = DigTunnelProjection.DepthOrigin
+                + (DigTunnelProjection.DepthSpacing * 0.5f)
+                - ExternalFaceOffset;
             return new Vector3(
                 cell.X,
                 DigTunnelProjection.WalkSurfaceY(cell.Y),
