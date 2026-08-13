@@ -192,7 +192,7 @@ namespace Dig.Unity
                     _instance.transform.localPosition = new Vector3(
                         0f,
                         -(centreY - Model.OriginY),
-                        0f);
+                        DigTunnelProjection.LadderWallDepthOffset);
                     _instance.transform.localRotation = Quaternion.identity;
                     _instance.transform.localScale = new Vector3(
                         0.72f,
