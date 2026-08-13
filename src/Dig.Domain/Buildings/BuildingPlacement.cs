@@ -138,7 +138,7 @@ public sealed class BuildingPlacementValidator
             .ToDictionary(cell => cell.Id);
         bool ladder = definition.Id.ToString() == "building.ladder";
         IReadOnlyList<CellId> footprint = ladder
-            ? ResolveLadderFootprint(origin, cells)
+            ? ResolveLadderFootprint(origin, cells, null)
             : definition.ResolveFootprint(origin, orientation);
         if (ladder && (origin.Z != LadderDepth || footprint.Count < 2))
         {
@@ -215,35 +215,49 @@ public sealed class BuildingPlacementValidator
         return BuildingPlacementResult.Success(footprint, workPosition.Value);
     }
 
-    private static IReadOnlyList<CellId> ResolveLadderFootprint(
+    internal static IReadOnlyList<CellId> ResolveLadderFootprint(
         CellId origin,
-        IReadOnlyDictionary<CellId, CellSnapshot> cells)
+        IReadOnlyDictionary<CellId, CellSnapshot> cells,
+        ISet<CellId>? blockedCells)
     {
-        List<CellId> run = new List<CellId> { origin };
-        for (int y = origin.Y - 1; run.Count < MaximumLadderHeight; y--)
+        if (!IsOpenExplored(cells, origin, blockedCells))
         {
-            CellId cell = new CellId(origin.X, y, origin.Z);
-            if (!IsOpenExplored(cells, cell)) break;
-            run.Insert(0, cell);
+            return Array.Empty<CellId>();
         }
 
-        for (int y = origin.Y + 1; run.Count < MaximumLadderHeight; y++)
+        int topY = origin.Y;
+        while (IsOpenExplored(
+            cells,
+            new CellId(origin.X, topY - 1, origin.Z),
+            blockedCells))
         {
-            CellId cell = new CellId(origin.X, y, origin.Z);
-            if (!IsOpenExplored(cells, cell)) break;
-            run.Add(cell);
+            topY--;
         }
 
-        return run.Where(cell => IsOpenExplored(cells, cell))
-            .OrderBy(cell => cell.Y)
+        int bottomY = origin.Y;
+        while (IsOpenExplored(
+            cells,
+            new CellId(origin.X, bottomY + 1, origin.Z),
+            blockedCells))
+        {
+            bottomY++;
+        }
+
+        // The ladder is anchored to the flat bottom of the shaft. When the
+        // tunnel is taller than the ladder, the uncovered part remains above.
+        int firstY = Math.Max(topY, bottomY - MaximumLadderHeight + 1);
+        return Enumerable.Range(firstY, bottomY - firstY + 1)
+            .Select(y => new CellId(origin.X, y, origin.Z))
             .ToArray();
     }
 
     private static bool IsOpenExplored(
         IReadOnlyDictionary<CellId, CellSnapshot> cells,
-        CellId cell)
+        CellId cell,
+        ISet<CellId>? blockedCells)
     {
-        return cells.TryGetValue(cell, out CellSnapshot snapshot)
+        return (blockedCells == null || !blockedCells.Contains(cell))
+            && cells.TryGetValue(cell, out CellSnapshot snapshot)
             && !snapshot.IsSolid
             && snapshot.State.IsExplored;
     }
