@@ -116,7 +116,9 @@ internal sealed partial class DigTerrainWorkSession
 
         if (job.Definition is HaulJobDefinition hauling)
         {
-            CellId? target = ResolveHaulingTarget(job, hauling);
+            CellId? target = IsRoomUpgradeJob(job.Id)
+                ? ResolveRoomUpgradeDestination(job)
+                : null;
             if (target.HasValue)
             {
                 pose = WorkSurfacePositioning.Resolve(target.Value, target.Value);

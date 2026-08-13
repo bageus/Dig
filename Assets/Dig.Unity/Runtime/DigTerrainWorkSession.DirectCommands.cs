@@ -218,12 +218,12 @@ namespace Dig.Unity
 
         private Result CancelHaulingForDirectCommand(JobSnapshot job, long tick)
         {
-            return _haulingCancellation == null
-                ? Result.Success()
-                : _haulingCancellation.Handle(new CancelHaulingJobCommand(
-                    job.Id,
-                    DirectCommandReplacementReason,
-                    tick));
+            if (IsRoomUpgradeJob(job.Id))
+            {
+                ReleaseRoomUpgradeAssignment(job, tick);
+            }
+
+            return Result.Success();
         }
 
         private Result CancelBarrelForDirectCommand(JobSnapshot job, long tick)

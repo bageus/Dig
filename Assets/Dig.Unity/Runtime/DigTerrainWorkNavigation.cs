@@ -50,7 +50,6 @@ namespace Dig.Unity
             Dictionary<string, CellId> movement =
                 new Dictionary<string, CellId>(StringComparer.Ordinal);
             _routePlans.Clear();
-            _haulingRoutes.Clear();
             _buildingPackingRoutes.Clear();
             _buildingBoxPickupRoutes.Clear();
             _worldItemPickupRoutes.Clear();

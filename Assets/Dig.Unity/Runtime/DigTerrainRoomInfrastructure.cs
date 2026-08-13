@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Rooms;
 using Dig.Domain.Buildings;
@@ -33,6 +34,10 @@ internal sealed partial class DigTerrainWorkSession
     private CommitRoomUpgradeWorkIntervalHandler? _roomWorkInterval;
     private CompleteRoomUpgradeWorkHandler? _roomWorkCompletion;
     private CancelRoomUpgradeOperationHandler? _roomCancellation;
+    private InMemoryJobCandidateProvider? _roomDeliveryCandidates;
+    private AssignAvailableJobsHandler? _roomAssignment;
+    private AcquireHaulingItemHandler? _roomDeliveryAcquisition;
+    private HaulingResidentSlotClaimService? _roomDeliverySlotClaims;
     private ulong _roomRuntimeSequence = 1UL;
 
     internal Result SynchronizeRoomInfrastructureRuntime(
@@ -188,8 +193,8 @@ internal sealed partial class DigTerrainWorkSession
         long tick)
     {
         if (_candidateProvider == null
-            || _haulingCandidates == null
-            || _haulingAssignment == null)
+            || _roomDeliveryCandidates == null
+            || _roomAssignment == null)
         {
             throw new InvalidOperationException(
                 "Room assignment dependencies are not initialized.");
@@ -214,14 +219,14 @@ internal sealed partial class DigTerrainWorkSession
                     _inventoryRepository.Get().GetStack(haul.SourceStackId);
                 if (source?.Location.HasCell == true)
                 {
-                    _haulingCandidates.SetCandidates(
+                    _roomDeliveryCandidates.SetCandidates(
                         job.Id,
-                        CreateHaulingCandidates(agents, source.Location.CellId));
+                        CreateRoomDeliveryCandidates(agents, source.Location.CellId));
                 }
             }
         }
 
-        _haulingAssignment.Handle(new AssignAvailableJobsCommand(tick));
+        _roomAssignment.Handle(new AssignAvailableJobsCommand(tick));
     }
 
     private bool IsRoomUpgradeJob(EntityId jobId)
@@ -276,6 +281,34 @@ internal sealed partial class DigTerrainWorkSession
             _inventoryRepository,
             _jobRepository,
             _journal);
+        _roomDeliveryCandidates ??= new InMemoryJobCandidateProvider();
+        _roomDeliverySlotClaims ??= new HaulingResidentSlotClaimService(
+            _inventoryRepository,
+            _journal);
+        _roomDeliveryAcquisition ??= new AcquireHaulingItemHandler(
+            _inventoryRepository,
+            _jobRepository,
+            _journal);
+        _roomAssignment = new AssignAvailableJobsHandler(
+            _jobRepository,
+            new InventoryTravelCostJobCandidateProvider(
+                _roomDeliveryCandidates!,
+                _inventoryRepository),
+            _journal,
+            haulingResidentSlotClaims: _roomDeliverySlotClaims);
+    }
+
+    private static IReadOnlyList<JobCandidate> CreateRoomDeliveryCandidates(
+        IReadOnlyList<AgentViewModel> agents,
+        CellId source)
+    {
+        return agents.Select((agent, index) => new JobCandidate(
+            EntityId.Parse(agent.Id),
+            skillLevel: 4_000 - (index * 200),
+            distanceCost: Math.Abs(agent.CellX - source.X)
+                + Math.Abs(agent.CellY - source.Y)
+                + Math.Abs(agent.CellZ - source.Z),
+            isAvailable: agent.IsAvailableForAutomaticPlanning)).ToArray();
     }
 
     private sealed class RuntimeRoomJobIds : IRoomUpgradeJobIdSource

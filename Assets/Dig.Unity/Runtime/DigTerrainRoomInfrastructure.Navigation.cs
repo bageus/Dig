@@ -91,7 +91,7 @@ internal sealed partial class DigTerrainWorkSession
             new ReleaseJobAssignmentCommand(job.Id, tick));
         if (released.IsSuccess)
         {
-            _haulingSlotClaims?.Release(job.Id, tick);
+            _roomDeliverySlotClaims?.Release(job.Id, tick);
             _routePlans.Remove(job.Id);
         }
     }
