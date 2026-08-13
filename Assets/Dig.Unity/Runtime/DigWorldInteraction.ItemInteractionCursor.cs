@@ -14,6 +14,7 @@ namespace Dig.Unity
         private bool _hoveredInventoryCanDrop;
         private bool _hoveredInventoryCanUse;
         private ItemInteractionFeedbackKind _hoveredInventoryUseFeedback;
+        private string? _hoveredInventoryItemId;
 
         internal void SetInventorySlotHoverFeedback(
             ResidentInventoryLayoutSlotViewModel slot)
@@ -28,6 +29,7 @@ namespace Dig.Unity
             _hoveredInventoryCanUse = slot.CanUse;
             _hoveredInventoryUseFeedback =
                 slot.InteractionProfile.DirectUseFeedback;
+            _hoveredInventoryItemId = slot.ItemId;
         }
 
         internal void ClearInventorySlotHoverFeedback()
@@ -36,6 +38,7 @@ namespace Dig.Unity
             _hoveredInventoryCanDrop = false;
             _hoveredInventoryCanUse = false;
             _hoveredInventoryUseFeedback = ItemInteractionFeedbackKind.None;
+            _hoveredInventoryItemId = null;
         }
 
         private DirectCommandCursorKind ResolveInventoryHoverCursorKind()
@@ -53,6 +56,13 @@ namespace Dig.Unity
                     == ItemInteractionFeedbackKind.Eat
                         ? DirectCommandCursorKind.Eat
                         : DirectCommandCursorKind.Use;
+            }
+
+            if (Input.GetKey(KeyCode.B)
+                && (_hoveredInventoryItemId == "material.mushroom_leg"
+                    || _hoveredInventoryItemId == "material.stone"))
+            {
+                return DirectCommandCursorKind.Hammer;
             }
 
             return Input.GetKey(KeyCode.C) && _hoveredInventoryCanDrop
