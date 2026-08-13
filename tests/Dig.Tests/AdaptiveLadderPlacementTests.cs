@@ -1,8 +1,10 @@
 using System;
 using System.Linq;
 using Dig.Domain.Buildings;
+using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
+using Dig.Presentation.Buildings;
 using Xunit;
 
 namespace Dig.Tests
@@ -30,6 +32,54 @@ public sealed class AdaptiveLadderPlacementTests
         Assert.Equal(1, upperClick.Footprint.Min(cell => cell.Y));
         Assert.Equal(6, upperClick.Footprint.Max(cell => cell.Y));
         Assert.False(shaft.GetCell(new CellId(3, 7, 1)).Value.IsSolid);
+    }
+
+    [Fact]
+    public void Ladder_preview_snaps_to_bottom_junction_and_rejects_horizontal_space()
+    {
+        WorldState shaft = CreateShaftWorld(1, 6, 8);
+        BuildingDefinition ladder = CreateLadderDefinition();
+        ItemId boxItem = ladder.BoxPolicy!.BoxItemId;
+        EntityId stackId = EntityId.Parse("10000000000000000000000000000001");
+        ItemStackSnapshot stack = new ItemStackSnapshot(
+            stackId,
+            boxItem,
+            quantity: 1,
+            ItemLocation.InWorld(new CellId(1, 6, 0)),
+            Array.Empty<ItemQuantityReservationSnapshot>());
+        ItemDefinition item = new ItemDefinition(
+            boxItem,
+            "Ladder box",
+            maximumStackSize: 1,
+            isTool: false);
+        BuildingBoxPlacementPresenter presenter =
+            new BuildingBoxPlacementPresenter(new BuildingPlacementValidator());
+
+        BuildingBoxGhostViewModel valid = presenter.Preview(
+            stack,
+            item,
+            ladder,
+            new CellId(3, 2, 1),
+            BuildingOrientation.North,
+            shaft.CreateSnapshot(),
+            Array.Empty<CellId>(),
+            new[] { new CellId(2, 6, 1) });
+        BuildingBoxGhostViewModel invalid = presenter.Preview(
+            stack,
+            item,
+            ladder,
+            new CellId(2, 6, 1),
+            BuildingOrientation.North,
+            shaft.CreateSnapshot(),
+            Array.Empty<CellId>(),
+            new[] { new CellId(2, 6, 1) });
+
+        Assert.True(valid.IsValid);
+        Assert.Equal(new CellId(3, 6, 1), valid.Origin);
+        Assert.False(invalid.IsValid);
+        Assert.Equal(
+            BuildingErrors.LadderRequiresVerticalTunnel.Code,
+            invalid.ReasonCode);
     }
 
     private static BuildingPlacementResult Validate(

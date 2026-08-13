@@ -176,13 +176,14 @@ public sealed class BuildingPlacementTests
     public void Wooden_ladder_fits_vertical_tunnel_between_two_and_eight_cells()
     {
         BuildingDefinition ladder = CreateLadderDefinition();
+        WorldState shaft = CreateLadderShaftWorld();
         BuildingPlacementResult placement = new BuildingPlacementValidator().Validate(
             ladder,
             new CellId(3, 4, 1),
             BuildingOrientation.North,
-            CreateEmptyWorld().CreateSnapshot(),
+            shaft.CreateSnapshot(),
             Array.Empty<CellId>(),
-            new[] { new CellId(2, 4, 1) });
+            new[] { new CellId(2, 7, 1) });
 
         Assert.True(placement.Succeeded, placement.Error?.ToString());
         Assert.InRange(placement.Footprint.Count, 2, 8);
@@ -232,16 +233,15 @@ public sealed class BuildingPlacementTests
                 EntityId.Parse("71000000000000000000000000000004"),
                 BuildingBoxCommitState.Consumed));
         BuildingsState buildings = BuildingsState.Restore(new[] { snapshot }).Value;
+        WorldSnapshot shaft = CreateLadderShaftWorld().CreateSnapshot();
 
-        int changed = buildings.ReconcileAdaptiveLadders(
-            CreateEmptyWorld().CreateSnapshot());
+        int changed = buildings.ReconcileAdaptiveLadders(shaft);
 
         Assert.Equal(1, changed);
         BuildingSnapshot grown = buildings.Get(FirstBuildingId)!;
         Assert.Equal(8, grown.Footprint.Count);
         Assert.Contains(origin, grown.Footprint);
-        Assert.Equal(0, buildings.ReconcileAdaptiveLadders(
-            CreateEmptyWorld().CreateSnapshot()));
+        Assert.Equal(0, buildings.ReconcileAdaptiveLadders(shaft));
     }
 
     internal static BuildingDefinition CreateDefinition()
@@ -287,6 +287,34 @@ public sealed class BuildingPlacementTests
             materials,
             air,
             explored: true));
+    }
+
+    private static WorldState CreateLadderShaftWorld()
+    {
+        MaterialId rock = new MaterialId("ladder.rock");
+        MaterialId air = new MaterialId("ladder.air");
+        MaterialCatalog materials = new MaterialCatalog(new[]
+        {
+            new MaterialDefinition(rock, isSolid: true, hardness: 10),
+            new MaterialDefinition(air, isSolid: false, hardness: 0),
+        });
+        WorldState world = Require(WorldState.CreateFilled(
+            new WorldSize(8, 8, 4),
+            chunkSize: 4,
+            materials,
+            rock,
+            explored: true));
+        CellId[] openings = Enumerable.Range(0, 8)
+            .Select(y => new CellId(3, y, 1))
+            .Concat(new[] { new CellId(2, 7, 1), new CellId(4, 7, 1) })
+            .ToArray();
+        TerrainChange[] changes = openings
+            .Select(cell => new TerrainChange(
+                cell,
+                world.GetCell(cell).Value.State.WithExcavatedTerrain(air)))
+            .ToArray();
+        Assert.True(world.ApplyTerrainChanges(changes, tick: 1).IsSuccess);
+        return world;
     }
 
     private static T Require<T>(Result<T> result)

@@ -225,33 +225,35 @@ public sealed class BuildingPlacementValidator
             return Array.Empty<CellId>();
         }
 
+        int bottomY = origin.Y;
+        while (!HasOpenHorizontalNeighbour(
+            new CellId(origin.X, bottomY, origin.Z),
+            cells,
+            blockedCells))
+        {
+            bottomY++;
+            if (!IsOpenTunnelCell(
+                cells,
+                new CellId(origin.X, bottomY, origin.Z),
+                blockedCells))
+            {
+                return Array.Empty<CellId>();
+            }
+        }
+
         int columnTopY = origin.Y;
         while (IsOpenTunnelCell(
             cells,
             new CellId(origin.X, columnTopY - 1, origin.Z),
-            blockedCells))
+            blockedCells)
+            && !HasOpenHorizontalNeighbour(
+                new CellId(origin.X, columnTopY - 1, origin.Z),
+                cells,
+                blockedCells))
         {
             columnTopY--;
         }
 
-        int columnBottomY = origin.Y;
-        while (IsOpenTunnelCell(
-            cells,
-            new CellId(origin.X, columnBottomY + 1, origin.Z),
-            blockedCells))
-        {
-            columnBottomY++;
-        }
-
-        int bottomY = Enumerable.Range(
-                columnTopY,
-                columnBottomY - columnTopY + 1)
-            .Where(y => HasOpenHorizontalNeighbour(
-                new CellId(origin.X, y, origin.Z),
-                cells,
-                blockedCells))
-            .DefaultIfEmpty(columnBottomY)
-            .Max();
         int firstY = Math.Max(columnTopY, bottomY - MaximumLadderHeight + 1);
         return Enumerable.Range(firstY, bottomY - firstY + 1)
             .Select(y => new CellId(origin.X, y, origin.Z))
