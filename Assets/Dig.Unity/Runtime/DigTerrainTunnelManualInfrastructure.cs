@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Jobs;
 using Dig.Application.Navigation;
 using Dig.Application.Tunnels;
@@ -58,6 +59,17 @@ internal sealed partial class DigTerrainWorkSession
         return created.IsSuccess
             ? Result.Success()
             : Result.Failure(created.Error!);
+    }
+
+    internal bool HasActiveTunnelManualWork(
+        TunnelManualWorkKind kind,
+        CellId targetCell)
+    {
+        return _jobRepository.Get().GetAll().Any(job =>
+            !job.IsTerminal
+            && job.Definition is TunnelManualWorkJobDefinition definition
+            && definition.Kind == kind
+            && definition.TargetCell == targetCell);
     }
 
     private bool TryPlanTunnelManualWorkMovement(

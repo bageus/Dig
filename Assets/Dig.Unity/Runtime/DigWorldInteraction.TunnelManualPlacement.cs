@@ -17,6 +17,8 @@ namespace Dig.Unity
         private CellId? _tunnelManualTarget;
         private TunnelManualWorkKind? _tunnelManualKind;
         private bool _tunnelManualTargetValid;
+        private CellId? _pendingTunnelManualTarget;
+        private TunnelManualWorkKind? _pendingTunnelManualKind;
 
         private bool TunnelManualPlacementActive =>
             _tunnelManualStackId != null;
@@ -120,15 +122,17 @@ namespace Dig.Unity
             _hud.SetCommandResult(result);
             if (result.IsSuccess)
             {
+                _pendingTunnelManualTarget = _tunnelManualTarget;
+                _pendingTunnelManualKind = _tunnelManualKind;
                 ClearSelectedInventoryStack();
-                CancelTunnelManualPlacement();
+                CancelTunnelManualPlacement(clearGhost: false);
                 _hud.SetStatus("Manual tunnel work order created.");
             }
 
             return true;
         }
 
-        private void CancelTunnelManualPlacement()
+        private void CancelTunnelManualPlacement(bool clearGhost = true)
         {
             bool wasActive = TunnelManualPlacementActive;
             _tunnelManualResidentId = null;
@@ -137,11 +141,37 @@ namespace Dig.Unity
             _tunnelManualTarget = null;
             _tunnelManualKind = null;
             _tunnelManualTargetValid = false;
-            _tunnelManualGhost?.Clear();
+            if (clearGhost) _tunnelManualGhost?.Clear();
             if (wasActive)
             {
                 Cursor.visible = true;
             }
+        }
+
+        private void SynchronizePendingTunnelManualGhost()
+        {
+            if (!_pendingTunnelManualTarget.HasValue
+                || !_pendingTunnelManualKind.HasValue
+                || _terrainSession == null)
+            {
+                return;
+            }
+
+            if (_terrainSession.HasActiveTunnelManualWork(
+                _pendingTunnelManualKind.Value,
+                _pendingTunnelManualTarget.Value))
+            {
+                EnsureTunnelManualGhost();
+                _tunnelManualGhost!.Render(
+                    _pendingTunnelManualKind.Value,
+                    _pendingTunnelManualTarget.Value,
+                    valid: true);
+                return;
+            }
+
+            _pendingTunnelManualTarget = null;
+            _pendingTunnelManualKind = null;
+            if (!TunnelManualPlacementActive) _tunnelManualGhost?.Clear();
         }
 
         private void EnsureTunnelManualGhost()

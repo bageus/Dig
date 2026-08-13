@@ -26,6 +26,9 @@ public sealed partial class DigWorldInteraction
     private static Texture2D[] CreateUseCursorFrames() =>
         CreateToolFrames("Use", DrawUseHand);
 
+    private static Texture2D[] CreateHammerCursorFrames() =>
+        CreateToolFrames("Hammer", DrawHammer);
+
     private static Texture2D[] CreateToolFrames(
         string name,
         Action<Color32[], int> draw)
@@ -107,6 +110,17 @@ public sealed partial class DigWorldInteraction
         DrawDiagonal(pixels, 8 + offset, 5, 19, outline, handle);
         FillRect(pixels, 14 + offset, 20, 27 + offset, 27, outline);
         FillRect(pixels, 16 + offset, 21, 25 + offset, 26, metal);
+    }
+
+    private static void DrawHammer(Color32[] pixels, int phase)
+    {
+        int swing = phase == 0 ? -2 : phase == 2 ? 2 : 0;
+        Color32 outline = new Color32(38, 29, 23, 255);
+        Color32 handle = new Color32(143, 87, 43, 255);
+        Color32 metal = new Color32(184, 194, 201, 255);
+        DrawDiagonal(pixels, 8 + swing, 5, 18, outline, handle);
+        FillRect(pixels, 13 + swing, 20, 28 + swing, 27, outline);
+        FillRect(pixels, 15 + swing, 21, 26 + swing, 26, metal);
     }
 
     private static void DrawUseHand(Color32[] pixels, int phase)

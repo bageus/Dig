@@ -16,6 +16,7 @@ namespace Dig.Unity
         private static readonly Vector2 EatCursorHotspot = new Vector2(16f, 16f);
         private static readonly Vector2 SwordCursorHotspot = new Vector2(12f, 28f);
         private static readonly Vector2 UseCursorHotspot = new Vector2(16f, 16f);
+        private static readonly Vector2 HammerCursorHotspot = new Vector2(11f, 27f);
 
         private Texture2D[]? _shovelCursorFrames;
         private Texture2D[]? _pickupCursorFrames;
@@ -25,6 +26,7 @@ namespace Dig.Unity
         private Texture2D[]? _eatCursorFrames;
         private Texture2D[]? _swordCursorFrames;
         private Texture2D[]? _useCursorFrames;
+        private Texture2D[]? _hammerCursorFrames;
         private DirectCommandCursorKind _commandCursorKind;
         private int _commandCursorFrame = -1;
         private float _commandCursorAnimationStartedAt;
@@ -41,6 +43,7 @@ namespace Dig.Unity
             Eat = 6,
             Drop = 7,
             Use = 8,
+            Hammer = 9,
         }
 
         private void UpdateSelectedResidentCommandCursor()
@@ -219,6 +222,8 @@ namespace Dig.Unity
                     return _eatCursorFrames ??= CreateEatCursorFrames();
                 case DirectCommandCursorKind.Use:
                     return _useCursorFrames ??= CreateUseCursorFrames();
+                case DirectCommandCursorKind.Hammer:
+                    return _hammerCursorFrames ??= CreateHammerCursorFrames();
                 default:
                     throw new ArgumentOutOfRangeException(nameof(kind));
             }
@@ -236,6 +241,7 @@ namespace Dig.Unity
                 DirectCommandCursorKind.Sword => SwordCursorHotspot,
                 DirectCommandCursorKind.Eat => EatCursorHotspot,
                 DirectCommandCursorKind.Use => UseCursorHotspot,
+                DirectCommandCursorKind.Hammer => HammerCursorHotspot,
                 _ => Vector2.zero,
             };
         }
@@ -265,6 +271,7 @@ namespace Dig.Unity
             DestroyCommandCursorFrames(_eatCursorFrames);
             DestroyCommandCursorFrames(_swordCursorFrames);
             DestroyCommandCursorFrames(_useCursorFrames);
+            DestroyCommandCursorFrames(_hammerCursorFrames);
             _shovelCursorFrames = null;
             _pickupCursorFrames = null;
             _dropCursorFrames = null;
@@ -273,6 +280,7 @@ namespace Dig.Unity
             _eatCursorFrames = null;
             _swordCursorFrames = null;
             _useCursorFrames = null;
+            _hammerCursorFrames = null;
         }
 
         private void ResetCommandCursor()

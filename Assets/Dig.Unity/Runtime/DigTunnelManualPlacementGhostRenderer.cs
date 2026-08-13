@@ -83,7 +83,31 @@ namespace Dig.Unity
                 return;
             }
 
+            if (kind == TunnelManualWorkKind.JunctionStoneTrim)
+            {
+                CreateJunctionCorner();
+                return;
+            }
+
             CreateStoneFrame();
+        }
+
+        private void CreateJunctionCorner()
+        {
+            CreatePart(
+                "Junction reinforcement horizontal",
+                new Vector3(0.22f, 0.06f, 0.16f),
+                new Vector3(0.52f, 0.12f, 0.12f));
+            CreatePart(
+                "Junction reinforcement vertical",
+                new Vector3(0.42f, 0.28f, 0.16f),
+                new Vector3(0.12f, 0.56f, 0.12f));
+            CreatePart(
+                "Junction reinforcement diagonal",
+                new Vector3(0.25f, 0.25f, 0.16f),
+                new Vector3(0.10f, 0.58f, 0.10f));
+            _root!.GetChild(_root.childCount - 1).localRotation =
+                Quaternion.Euler(0f, 0f, -45f);
         }
 
         private void CreateStoneFrame()

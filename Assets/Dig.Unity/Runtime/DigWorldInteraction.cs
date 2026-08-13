@@ -93,6 +93,7 @@ namespace Dig.Unity
                 return;
             }
 
+            SynchronizePendingTunnelManualGhost();
             UpdateTunnelManualPlacementHover();
             UpdateBuildingPlacementHover();
             UpdateInventoryItemPlacementHover();
