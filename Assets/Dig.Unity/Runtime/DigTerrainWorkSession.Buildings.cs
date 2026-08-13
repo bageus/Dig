@@ -97,7 +97,14 @@ internal sealed partial class DigTerrainWorkSession
             return Array.Empty<BuildingWorldViewModel>();
         }
 
-        return _buildingPresenter.Load(_buildingsRepository.Get().GetAll());
+        BuildingsState buildings = _buildingsRepository.Get();
+        if (buildings.ReconcileAdaptiveLadders(
+            _worldSession.Repository.Get().CreateSnapshot()) > 0)
+        {
+            _buildingsRepository.Save(buildings);
+        }
+
+        return _buildingPresenter.Load(buildings.GetAll());
     }
 
     public Result StartBuildingPacking(string buildingId, long tick)
