@@ -92,6 +92,8 @@ public sealed partial class WorldState
                 "The world snapshot is missing one or more cells."));
         }
 
+        NormalizeRestoredUnmineableColumns(snapshot.Size, materials, cells);
+
         WorldState world = new WorldState(snapshot.Size, layout, materials, cells)
         {
             Version = snapshot.Version,
