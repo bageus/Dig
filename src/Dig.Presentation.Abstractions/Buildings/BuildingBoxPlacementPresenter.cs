@@ -160,12 +160,16 @@ public sealed partial class BuildingBoxPlacementPresenter
             ecologyBlockedCells);
         if (!placement.Succeeded)
         {
+            IReadOnlyCollection<CellId> invalidFootprint =
+                placement.Footprint.Count == 0
+                    ? new[] { origin }
+                    : placement.Footprint;
             return Invalid(
                 sourceStack.StackId,
                 definition,
                 origin,
                 orientation,
-                placement.Footprint,
+                invalidFootprint,
                 placement.Error!.Code,
                 BuildingBoxPlacementKind.AssembleBuilding);
         }
@@ -215,10 +219,13 @@ public sealed partial class BuildingBoxPlacementPresenter
             previewFootprint = physical.Footprint.CoveredCells;
         }
 
+        CellId previewOrigin = definition.Id.ToString() == "building.ladder"
+            ? placement.Footprint.OrderByDescending(cell => cell.Y).First()
+            : origin;
         return new BuildingBoxGhostViewModel(
             sourceStack.StackId,
             definition.Id,
-            origin,
+            previewOrigin,
             orientation,
             previewFootprint,
             placement.WorkPosition,
