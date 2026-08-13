@@ -189,7 +189,7 @@ public sealed class BuildingPlacementValidator
         CellId[] configured = definition
             .ResolveWorkPositions(origin, orientation)
             .ToArray();
-        CellId[] sideWorkPositions = ResolveSideWorkPositions(footprint, origin)
+        CellId[] sideWorkPositions = ResolveSideWorkPositions(footprint)
             .ToArray();
         HashSet<CellId> sideWorkPositionSet = new HashSet<CellId>(sideWorkPositions);
         CellId? workPosition = sideWorkPositions
@@ -220,56 +220,79 @@ public sealed class BuildingPlacementValidator
         IReadOnlyDictionary<CellId, CellSnapshot> cells,
         ISet<CellId>? blockedCells)
     {
-        if (!IsOpenExplored(cells, origin, blockedCells))
+        if (!IsOpenTunnelCell(cells, origin, blockedCells))
         {
             return Array.Empty<CellId>();
         }
 
-        int topY = origin.Y;
-        while (IsOpenExplored(
+        int columnTopY = origin.Y;
+        while (IsOpenTunnelCell(
             cells,
-            new CellId(origin.X, topY - 1, origin.Z),
+            new CellId(origin.X, columnTopY - 1, origin.Z),
             blockedCells))
         {
-            topY--;
+            columnTopY--;
         }
 
-        int bottomY = origin.Y;
-        while (IsOpenExplored(
+        int columnBottomY = origin.Y;
+        while (IsOpenTunnelCell(
             cells,
-            new CellId(origin.X, bottomY + 1, origin.Z),
+            new CellId(origin.X, columnBottomY + 1, origin.Z),
             blockedCells))
         {
-            bottomY++;
+            columnBottomY++;
         }
 
-        // The ladder is anchored to the flat bottom of the shaft. When the
-        // tunnel is taller than the ladder, the uncovered part remains above.
-        int firstY = Math.Max(topY, bottomY - MaximumLadderHeight + 1);
+        int bottomY = Enumerable.Range(
+                columnTopY,
+                columnBottomY - columnTopY + 1)
+            .Where(y => HasOpenHorizontalNeighbour(
+                new CellId(origin.X, y, origin.Z),
+                cells,
+                blockedCells))
+            .DefaultIfEmpty(columnBottomY)
+            .Max();
+        int firstY = Math.Max(columnTopY, bottomY - MaximumLadderHeight + 1);
         return Enumerable.Range(firstY, bottomY - firstY + 1)
             .Select(y => new CellId(origin.X, y, origin.Z))
             .ToArray();
     }
 
-    private static bool IsOpenExplored(
+    private static bool HasOpenHorizontalNeighbour(
+        CellId cell,
+        IReadOnlyDictionary<CellId, CellSnapshot> cells,
+        ISet<CellId>? blockedCells)
+    {
+        return IsOpenTunnelCell(
+                cells,
+                new CellId(cell.X - 1, cell.Y, cell.Z),
+                blockedCells)
+            || IsOpenTunnelCell(
+                cells,
+                new CellId(cell.X + 1, cell.Y, cell.Z),
+                blockedCells);
+    }
+
+    private static bool IsOpenTunnelCell(
         IReadOnlyDictionary<CellId, CellSnapshot> cells,
         CellId cell,
         ISet<CellId>? blockedCells)
     {
         return (blockedCells == null || !blockedCells.Contains(cell))
             && cells.TryGetValue(cell, out CellSnapshot snapshot)
-            && !snapshot.IsSolid
-            && snapshot.State.IsExplored;
+            && !snapshot.IsSolid;
     }
 
     private static IEnumerable<CellId> ResolveSideWorkPositions(
-        IReadOnlyCollection<CellId> footprint,
-        CellId origin)
+        IReadOnlyCollection<CellId> footprint)
     {
         int minimumX = footprint.Min(cell => cell.X);
         int maximumX = footprint.Max(cell => cell.X);
-        yield return new CellId(minimumX - 1, origin.Y, origin.Z);
-        yield return new CellId(maximumX + 1, origin.Y, origin.Z);
+        foreach (CellId cell in footprint.OrderByDescending(cell => cell.Y))
+        {
+            yield return new CellId(minimumX - 1, cell.Y, cell.Z);
+            yield return new CellId(maximumX + 1, cell.Y, cell.Z);
+        }
     }
 }
 

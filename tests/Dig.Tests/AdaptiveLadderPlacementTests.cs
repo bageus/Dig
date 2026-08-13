@@ -13,7 +13,10 @@ public sealed class AdaptiveLadderPlacementTests
     [Fact]
     public void Ladder_uses_the_whole_shaft_from_its_flat_bottom_regardless_of_click_cell()
     {
-        WorldState shaft = CreateShaftWorld(topY: 1, bottomY: 6);
+        WorldState shaft = CreateShaftWorld(
+            topY: 1,
+            junctionY: 6,
+            columnBottomY: 8);
         BuildingPlacementValidator validator = new BuildingPlacementValidator();
         BuildingDefinition ladder = CreateLadderDefinition();
 
@@ -26,7 +29,7 @@ public sealed class AdaptiveLadderPlacementTests
         Assert.Equal(6, upperClick.Footprint.Count);
         Assert.Equal(1, upperClick.Footprint.Min(cell => cell.Y));
         Assert.Equal(6, upperClick.Footprint.Max(cell => cell.Y));
-        Assert.True(shaft.GetCell(new CellId(3, 7, 1)).Value.IsSolid);
+        Assert.False(shaft.GetCell(new CellId(3, 7, 1)).Value.IsSolid);
     }
 
     private static BuildingPlacementResult Validate(
@@ -41,7 +44,7 @@ public sealed class AdaptiveLadderPlacementTests
             BuildingOrientation.North,
             world.CreateSnapshot(),
             Array.Empty<CellId>(),
-            new[] { new CellId(2, y, 1) });
+            new[] { new CellId(2, 6, 1) });
     }
 
     private static BuildingDefinition CreateLadderDefinition()
@@ -59,7 +62,10 @@ public sealed class AdaptiveLadderPlacementTests
                 packingWork: 2));
     }
 
-    private static WorldState CreateShaftWorld(int topY, int bottomY)
+    private static WorldState CreateShaftWorld(
+        int topY,
+        int junctionY,
+        int columnBottomY)
     {
         MaterialId rock = new MaterialId("shaft.rock");
         MaterialId air = new MaterialId("shaft.air");
@@ -74,13 +80,17 @@ public sealed class AdaptiveLadderPlacementTests
             materials,
             rock,
             explored: true).Value;
-        TerrainChange[] openings = Enumerable.Range(topY, bottomY - topY + 1)
-            .SelectMany(y => new[]
+        CellId[] shaft = Enumerable.Range(
+                topY,
+                columnBottomY - topY + 1)
+            .Select(y => new CellId(3, y, 1))
+            .Concat(new[]
             {
-                new CellId(3, y, 1),
-                new CellId(2, y, 1),
-                new CellId(4, y, 1),
+                new CellId(2, junctionY, 1),
+                new CellId(4, junctionY, 1),
             })
+            .ToArray();
+        TerrainChange[] openings = shaft
             .Select(cell => new TerrainChange(
                 cell,
                 world.GetCell(cell).Value.State.WithExcavatedTerrain(air)))
