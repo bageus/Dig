@@ -100,28 +100,8 @@ public sealed partial class DigWorldOverlayRenderer
 
     internal void RenderDynamic(
         IReadOnlyList<BuildingWorldViewModel> buildings,
-        DigStorageStatus storage,
         IReadOnlyList<RouteViewModel> routes)
     {
-        int storageCount = 0;
-        if (storage.ReservedIncomingQuantity > 0)
-        {
-            GameObject marker = Acquire(
-                _storageDemand,
-                storageCount++,
-                _reservationRoot!,
-                "Storage Demand",
-                OverlayLayerKind.Reservations,
-                OverlaySemanticKind.StorageDemand);
-            PlaceCell(
-                marker,
-                storage.Cell.X,
-                storage.Cell.Y,
-                storage.Cell.Z,
-                1.12f,
-                0.94f);
-        }
-
         int navigationCount = 0;
         for (int index = 0; index < routes.Count
             && navigationCount < MaximumDiagnosticMarkers; index++)
@@ -148,7 +128,6 @@ public sealed partial class DigWorldOverlayRenderer
                 0.62f);
         }
 
-        HideRemainder(_storageDemand, storageCount);
         HideRemainder(_navigation, navigationCount);
     }
 

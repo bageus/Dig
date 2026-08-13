@@ -31,7 +31,6 @@ namespace Dig.Unity
         protected DigBuildingRenderer? BuildingRenderer;
         protected DigBuildingInternalStockRenderer? BuildingInternalStockRenderer;
         protected DigWorldItemRenderer? ItemRenderer;
-        protected DigStockpileRenderer? StockpileRenderer;
         protected DigNavigationRouteRenderer? RouteRenderer;
         protected DigWorldOverlayRenderer? WorldOverlayRenderer;
         private protected DigPresentationEffectRuntime? EffectRuntime;
@@ -67,7 +66,6 @@ namespace Dig.Unity
             DigBuildingRenderer buildingRenderer,
             DigBuildingInternalStockRenderer buildingInternalStockRenderer,
             DigWorldItemRenderer itemRenderer,
-            DigStockpileRenderer stockpileRenderer,
             DigNavigationRouteRenderer routeRenderer,
             DigWorldOverlayRenderer worldOverlayRenderer,
             DigHudOverlay hud)
@@ -87,7 +85,6 @@ namespace Dig.Unity
             BuildingRenderer = buildingRenderer;
             BuildingInternalStockRenderer = buildingInternalStockRenderer;
             ItemRenderer = itemRenderer;
-            StockpileRenderer = stockpileRenderer;
             RouteRenderer = routeRenderer;
             WorldOverlayRenderer = worldOverlayRenderer;
             EffectRuntime = GetComponent<DigPresentationEffectRuntime>();
@@ -184,7 +181,6 @@ namespace Dig.Unity
                 && BuildingRenderer != null
                 && BuildingInternalStockRenderer != null
                 && ItemRenderer != null
-                && StockpileRenderer != null
                 && RouteRenderer != null
                 && WorldOverlayRenderer != null
                 && EffectRuntime != null

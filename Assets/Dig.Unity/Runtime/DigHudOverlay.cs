@@ -22,7 +22,6 @@ namespace Dig.Unity
         private WorldCellViewModel? _selectedCell;
         private AgentViewModel? _selectedAgent;
         private int _selectedAgentCount;
-        private DigStorageStatus? _storageStatus;
         private DigAgentSimulationDriver? _simulation;
         private Vector2 _scrollPosition;
         private bool _isCollapsed;
@@ -38,11 +37,6 @@ namespace Dig.Unity
         {
             _agents = agents;
             _tick = tick;
-        }
-
-        internal void SetStorageStatus(DigStorageStatus status)
-        {
-            _storageStatus = status;
         }
 
         internal void SetSimulationControls(DigAgentSimulationDriver simulation)
@@ -138,7 +132,6 @@ namespace Dig.Unity
             DrawExcavationControls();
             DrawToolAssignmentControls();
             DrawJobAttentionSummary();
-            DrawStorageStatus();
             DrawBuildingPlacement();
             if (!HasBuildingPlacement)
             {
@@ -204,20 +197,6 @@ namespace Dig.Unity
             }
 
             GUILayout.EndHorizontal();
-        }
-
-        private void DrawStorageStatus()
-        {
-            if (!_storageStatus.HasValue)
-            {
-                return;
-            }
-
-            DigStorageStatus value = _storageStatus.Value;
-            GUILayout.Label(
-                $"Stockpile {value.Cell.X},{value.Cell.Y}: " +
-                $"{value.StoredQuantity}/{value.Capacity} stored | " +
-                $"{value.ReservedIncomingQuantity} incoming");
         }
 
         private void DrawCellSelection()

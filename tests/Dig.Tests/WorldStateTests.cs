@@ -14,6 +14,77 @@ public sealed class WorldStateTests
 {
     private static readonly MaterialId Rock = new MaterialId("rock");
     private static readonly MaterialId Air = new MaterialId("air");
+    private static readonly MaterialId ProtectedRock = new MaterialId("protected-rock");
+
+    [Fact]
+    public void Unmineable_surface_cell_protects_the_same_column_at_every_depth()
+    {
+        WorldState world = CreateWorld();
+        CellId surface = new CellId(2, 3, CellId.MinimumDepth);
+        Assert.True(world.ApplyTerrainChanges(
+            new[]
+            {
+                new TerrainChange(
+                    surface,
+                    world.GetCell(surface).Value.State.WithTerrain(ProtectedRock)),
+            },
+            tick: 1).IsSuccess);
+
+        for (int z = CellId.MinimumDepth; z <= CellId.MaximumDepth; z++)
+        {
+            Result<WorldMutationResult> result = world.SetDigDesignation(
+                new CellId(surface.X, surface.Y, z),
+                designated: true,
+                tick: 2 + z);
+
+            Assert.True(result.IsFailure);
+            Assert.Equal(WorldErrors.InvalidDesignation, result.Error);
+            Assert.Equal(
+                CellDesignation.None,
+                world.GetCell(new CellId(surface.X, surface.Y, z)).Value.State.Designation);
+        }
+    }
+
+    [Fact]
+    public void Batch_designation_is_atomic_when_one_deep_cell_has_protected_surface()
+    {
+        WorldState world = CreateWorld();
+        CellId protectedSurface = new CellId(2, 3, CellId.MinimumDepth);
+        Assert.True(world.ApplyTerrainChanges(
+            new[]
+            {
+                new TerrainChange(
+                    protectedSurface,
+                    world.GetCell(protectedSurface).Value.State.WithTerrain(ProtectedRock)),
+            },
+            tick: 1).IsSuccess);
+        CellId allowed = new CellId(1, 3, 2);
+        CellId blocked = new CellId(2, 3, 2);
+
+        Result<WorldMutationResult> result = world.SetDigDesignations(
+            new[] { allowed, blocked },
+            tick: 2);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(WorldErrors.InvalidDesignation, result.Error);
+        Assert.Equal(CellDesignation.None, world.GetCell(allowed).Value.State.Designation);
+        Assert.Equal(CellDesignation.None, world.GetCell(blocked).Value.State.Designation);
+    }
+
+    [Fact]
+    public void Excavated_surface_keeps_deeper_mineable_cells_diggable()
+    {
+        WorldState world = CreateWorld();
+        CellId surface = new CellId(2, 3, CellId.MinimumDepth);
+        Assert.True(world.Excavate(surface, Air, tick: 1).IsSuccess);
+
+        Result<WorldMutationResult> result = world.SetDigDesignation(
+            new CellId(surface.X, surface.Y, 2),
+            designated: true,
+            tick: 2);
+
+        Assert.True(result.IsSuccess, result.Error?.ToString());
+    }
 
     [Fact]
     public void Interior_change_invalidates_only_owner_chunk()
@@ -234,6 +305,13 @@ public sealed class WorldStateTests
             {
                 new MaterialDefinition(Rock, isSolid: true, hardness: 100),
                 new MaterialDefinition(Air, isSolid: false, hardness: 0),
+                new MaterialDefinition(
+                    ProtectedRock,
+                    "Protected rock",
+                    isSolid: true,
+                    hardness: 100,
+                    isMineable: false,
+                    outputProfile: null),
             });
         Result<WorldState> result = WorldState.CreateFilled(
             new WorldSize(width, height),

@@ -170,11 +170,6 @@ namespace Dig.Unity
                     continue;
                 }
 
-                if (TryPlanHaulingMovement(job, agent, navigation, movement))
-                {
-                    continue;
-                }
-
                 if (TryPlanBuildingPackingMovement(job, agent, navigation, movement))
                 {
                     continue;
@@ -281,7 +276,6 @@ namespace Dig.Unity
                     job.AssignedAgentId.Value));
             }
 
-            routes.AddRange(LoadHaulingRoutes());
             routes.AddRange(LoadBuildingPackingRoutes());
             routes.AddRange(LoadBuildingBoxPickupRoutes());
             routes.AddRange(LoadWorldItemPickupRoutes());

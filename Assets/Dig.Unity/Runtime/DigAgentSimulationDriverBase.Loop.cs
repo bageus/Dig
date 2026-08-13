@@ -75,7 +75,6 @@ namespace Dig.Unity
             {
                 TerrainSession.SynchronizeDesignations(nextTick, before);
                 TerrainSession.SynchronizeSpatialExcavations(nextTick, before);
-                TerrainSession.SynchronizeHauling(nextTick, before);
                 result = TerrainSession.SynchronizeResidentInventoryPlacement(nextTick);
             }
 
@@ -122,11 +121,6 @@ namespace Dig.Unity
             DomainError? movementWarning =
                 AgentSession.ConsumeManualTunnelMovementWarning();
             IReadOnlyList<AgentViewModel> agents = AgentSession.LoadView();
-            if (result.IsSuccess)
-            {
-                result = TerrainSession.AdvanceHauling(AgentSession.Tick, agents);
-            }
-
             if (result.IsSuccess)
             {
                 result = TerrainSession.AdvanceBuildingBoxAssembly(
@@ -249,7 +243,6 @@ namespace Dig.Unity
             IReadOnlyList<RouteViewModel> routes = TerrainSession.LoadRoutes();
             IReadOnlyList<Dig.Presentation.Buildings.BuildingWorldViewModel> buildings =
                 TerrainSession.LoadBuildings();
-            DigStorageStatus storage = TerrainSession.GetStorageStatus();
             WorldSession!.UpdateExploration(agents, buildings);
             WorldSession.ObserveWorldItems(allItems);
             IReadOnlyList<WorldItemViewModel> items = WorldSession
@@ -305,9 +298,8 @@ namespace Dig.Unity
                 TerrainSession.LoadLivingMaterialCampfireTethers(),
                 buildings);
             ItemRenderer!.Render(items);
-            StockpileRenderer!.Render(storage);
             RouteRenderer!.Render(routes);
-            WorldOverlayRenderer!.RenderDynamic(buildings, storage, routes);
+            WorldOverlayRenderer!.RenderDynamic(buildings, routes);
             EffectRuntime!.Flush(AgentSession.Tick);
             Hud!.SetAgents(agents, AgentSession.Tick);
             Hud.SetJobs(jobs);

@@ -113,13 +113,18 @@ def check_issue14_hud_contracts(
         "pooled world overlay integrations",
         (
             "OverlaySemanticKind.Designation",
-            "OverlaySemanticKind.StorageDemand",
             "OverlaySemanticKind.Deposit",
             "OverlaySemanticKind.Fog",
             "OverlaySemanticKind.DirtyChunk",
             "OverlaySemanticKind.NavigationDiagnostic",
             "HideRemainder(_selection, count);",
         ),
+    ))
+    errors.extend(reject_fragments(
+        overlay_path,
+        texts.get(overlay_path, ""),
+        "removed demo stockpile overlay",
+        ("OverlaySemanticKind.StorageDemand", "Storage Demand"),
     ))
     errors.extend(reject_fragments(
         overlay_path,

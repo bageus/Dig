@@ -35,9 +35,7 @@ public sealed class RoomInfrastructureUnityRuntimeContractTests
             < navigation.IndexOf(
                 "TryPlanTunnelAutomaticWorkMovement",
                 StringComparison.Ordinal));
-        Assert.True(
-            navigation.IndexOf("TryPlanRoomUpgradeMovement", StringComparison.Ordinal)
-            < navigation.IndexOf("TryPlanHaulingMovement", StringComparison.Ordinal));
+        Assert.DoesNotContain("TryPlanHaulingMovement", navigation);
         Assert.True(
             session.IndexOf("IsRoomUpgradeJob(job.Id)", StringComparison.Ordinal)
             < session.IndexOf(
