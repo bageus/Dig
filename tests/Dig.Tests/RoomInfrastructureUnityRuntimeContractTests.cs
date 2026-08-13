@@ -16,8 +16,8 @@ public sealed class RoomInfrastructureUnityRuntimeContractTests
         Assert.Contains("SynchronizeRoomTemporaryStockCellCommand", source);
         Assert.Contains("SynchronizeRoomUpgradeJobsCommand", source);
         Assert.Contains("CreateDynamicCandidates(agents,work.WorkCell)", source);
-        Assert.Contains("CreateHaulingCandidates(agents,source.Location.CellId)", source);
-        Assert.Contains("_haulingAssignment.Handle(newAssignAvailableJobsCommand(tick))", source);
+        Assert.Contains("CreateRoomDeliveryCandidates(agents,source.Location.CellId)", source);
+        Assert.Contains("_roomAssignment.Handle(newAssignAvailableJobsCommand(tick))", source);
         Assert.Contains("RoomUpgradeRuntimeIdentity.CreateJobId", source);
         Assert.Contains("RoomUpgradeRuntimeIdentity.CreateTransitStackId", source);
     }

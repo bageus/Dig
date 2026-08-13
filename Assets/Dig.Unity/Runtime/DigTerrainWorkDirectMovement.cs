@@ -116,7 +116,6 @@ namespace Dig.Unity
         private void RemoveAllRoutePlans(EntityId jobId)
         {
             _routePlans.Remove(jobId);
-            _haulingRoutes.Remove(jobId);
             _buildingPackingRoutes.Remove(jobId);
             _buildingBoxPickupRoutes.Remove(jobId);
             _worldItemPickupRoutes.Remove(jobId);

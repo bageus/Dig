@@ -75,7 +75,9 @@ public sealed class RuntimeRegressionCorrectionSourceTests
 
         Assert.Contains("HaulJobDefinition", direct, StringComparison.Ordinal);
         Assert.Contains("CancelHaulingForDirectCommand", direct, StringComparison.Ordinal);
-        Assert.Contains("_haulingCancellation.Handle", direct, StringComparison.Ordinal);
+        Assert.Contains("ReleaseRoomUpgradeAssignment(job,tick)", direct,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("_haulingCancellation", direct, StringComparison.Ordinal);
         Assert.Contains("SetGeneralWorldTargetHoverInfo(hits)", cursor,
             StringComparison.Ordinal);
         Assert.Contains("item.Model.DisplayName", hover, StringComparison.Ordinal);

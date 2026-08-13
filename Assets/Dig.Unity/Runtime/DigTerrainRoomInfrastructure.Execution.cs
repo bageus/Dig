@@ -88,7 +88,7 @@ internal sealed partial class DigTerrainWorkSession
 
         if (job.Stage == JobStageKind.AcquireItem)
         {
-            return _haulingAcquisition!.Handle(
+            return _roomDeliveryAcquisition!.Handle(
                 new AcquireHaulingItemCommand(
                     job.Id,
                     NextRoomTransitStackId(),
