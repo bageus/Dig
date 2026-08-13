@@ -60,15 +60,19 @@ namespace Dig.Unity
             GameObject visual = new GameObject(
                 $"Tunnel infrastructure {instance.InstanceId}");
             visual.transform.SetParent(_root, worldPositionStays: false);
-            visual.transform.localPosition = ResolveRootPosition(instance.Cell);
+            visual.transform.localPosition = ResolveRootPosition(
+                instance.Cell,
+                instance.Kind);
             switch (instance.Kind)
             {
                 case TunnelInfrastructureVisualKind.WoodenSupport:
                     BuildWoodenSupport(visual.transform);
                     break;
                 case TunnelInfrastructureVisualKind.JunctionStoneTrim:
-                case TunnelInfrastructureVisualKind.StoneFloorTrim:
                     BuildJunctionStoneTrim(visual.transform);
+                    break;
+                case TunnelInfrastructureVisualKind.StoneFloorTrim:
+                    BuildStoneFloorLayer(visual.transform);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(instance));
@@ -79,11 +83,24 @@ namespace Dig.Unity
 
         private void BuildWoodenSupport(Transform parent)
         {
+            const float frontZ = 0f;
             CreatePart(
                 parent,
-                "Vertical wooden beam",
-                new Vector3(0f, 0.46f, 0.15f),
-                new Vector3(0.16f, 0.92f, 0.12f),
+                "Wooden support left post",
+                new Vector3(-0.43f, 0.46f, frontZ),
+                new Vector3(0.12f, 0.92f, 0.10f),
+                _woodMaterial!);
+            CreatePart(
+                parent,
+                "Wooden support right post",
+                new Vector3(0.43f, 0.46f, frontZ),
+                new Vector3(0.12f, 0.92f, 0.10f),
+                _woodMaterial!);
+            CreatePart(
+                parent,
+                "Wooden support crossbeam",
+                new Vector3(0f, 0.88f, frontZ),
+                new Vector3(0.98f, 0.14f, 0.10f),
                 _woodMaterial!);
         }
 
@@ -119,6 +136,16 @@ namespace Dig.Unity
                 _stoneMaterial!);
         }
 
+        private void BuildStoneFloorLayer(Transform parent)
+        {
+            CreatePart(
+                parent,
+                "Stone reinforced floor surface",
+                new Vector3(0f, 0.025f, 0f),
+                new Vector3(0.96f, 0.05f, 0.96f),
+                _stoneMaterial!);
+        }
+
         private void CreatePart(
             Transform parent,
             string name,
@@ -136,13 +163,18 @@ namespace Dig.Unity
             renderer.sharedMaterial = material;
         }
 
-        private static Vector3 ResolveRootPosition(CellId cell)
+        private static Vector3 ResolveRootPosition(
+            CellId cell,
+            TunnelInfrastructureVisualKind kind)
         {
+            float depth = kind == TunnelInfrastructureVisualKind.WoodenSupport
+                ? DigTunnelProjection.DepthOrigin
+                : DigTunnelProjection.DepthOrigin
+                    + (cell.Z * DigTunnelProjection.DepthSpacing);
             return new Vector3(
                 cell.X,
                 DigTunnelProjection.WalkSurfaceY(cell.Y),
-                DigTunnelProjection.DepthOrigin
-                    + (cell.Z * DigTunnelProjection.DepthSpacing));
+                depth);
         }
 
         private void EnsureResources()
