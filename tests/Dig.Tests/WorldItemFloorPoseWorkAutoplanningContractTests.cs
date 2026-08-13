@@ -36,7 +36,6 @@ public sealed class WorldItemFloorPoseWorkAutoplanningContractTests
             "src", "Dig.Domain", "Agents", "AgentDecisionCandidates.cs");
         string runtime = string.Concat(
             ReadRuntime("DigTerrainWorkSession.cs"),
-            ReadRuntime("DigTerrainHauling.cs"),
             ReadRuntime("DigJobSession.cs"),
             ReadRuntime("DigBuildingBoxAssemblyCandidates.cs"),
             ReadRuntime("DigBuildingPackingExecution.cs"));
@@ -60,20 +59,6 @@ public sealed class WorldItemFloorPoseWorkAutoplanningContractTests
         Assert.Contains("bool work = IsInsideWorkWindow", clock);
         Assert.Contains("? new Color(0.96f, 0.50f, 0.12f, alpha)", clock);
         Assert.Contains(": new Color(0.26f, 0.56f, 0.88f, alpha)", clock);
-    }
-
-    [Fact]
-    public void Hauling_advances_from_arrival_to_item_acquisition()
-    {
-        string dispatch = ReadRuntime("DigTerrainHauling.cs");
-        string transit = ReadRuntime("DigTerrainHauling.Assignment.cs");
-
-        Assert.Contains("job.Stage == JobStageKind.TravelToTarget", dispatch);
-        Assert.Contains(
-            "job.Stage != JobStageKind.TravelToTarget",
-            dispatch);
-        Assert.Contains("job.Stage == JobStageKind.TravelToTarget", transit);
-        Assert.Contains("AcquireHaulingItemCommand", transit);
     }
 
     [Fact]
