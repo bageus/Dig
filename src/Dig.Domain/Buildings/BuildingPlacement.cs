@@ -106,6 +106,9 @@ public sealed class BuildingPlacementResult
 
 public sealed class BuildingPlacementValidator
 {
+    public const int LadderDepth = 1;
+    public const int MaximumLadderHeight = 8;
+
     public BuildingPlacementResult Validate(
         BuildingDefinition definition,
         CellId origin,
@@ -133,10 +136,11 @@ public sealed class BuildingPlacementValidator
         Dictionary<CellId, CellSnapshot> cells = world.Chunks
             .SelectMany(chunk => chunk.Cells)
             .ToDictionary(cell => cell.Id);
-        IReadOnlyList<CellId> footprint = definition.Id.ToString() == "building.ladder"
+        bool ladder = definition.Id.ToString() == "building.ladder";
+        IReadOnlyList<CellId> footprint = ladder
             ? ResolveLadderFootprint(origin, cells)
             : definition.ResolveFootprint(origin, orientation);
-        if (footprint.Count < 2 && definition.Id.ToString() == "building.ladder")
+        if (ladder && (origin.Z != LadderDepth || footprint.Count < 2))
         {
             return BuildingPlacementResult.Failure(
                 BuildingErrors.LadderRequiresVerticalTunnel,
@@ -215,16 +219,15 @@ public sealed class BuildingPlacementValidator
         CellId origin,
         IReadOnlyDictionary<CellId, CellSnapshot> cells)
     {
-        const int maximumHeight = 8;
         List<CellId> run = new List<CellId> { origin };
-        for (int y = origin.Y - 1; run.Count < maximumHeight; y--)
+        for (int y = origin.Y - 1; run.Count < MaximumLadderHeight; y--)
         {
             CellId cell = new CellId(origin.X, y, origin.Z);
             if (!IsOpenExplored(cells, cell)) break;
             run.Insert(0, cell);
         }
 
-        for (int y = origin.Y + 1; run.Count < maximumHeight; y++)
+        for (int y = origin.Y + 1; run.Count < MaximumLadderHeight; y++)
         {
             CellId cell = new CellId(origin.X, y, origin.Z);
             if (!IsOpenExplored(cells, cell)) break;

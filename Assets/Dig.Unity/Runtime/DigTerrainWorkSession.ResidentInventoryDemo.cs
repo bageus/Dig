@@ -175,6 +175,15 @@ internal sealed partial class DigTerrainWorkSession
             CampfireProductionContent.StoneMasonBoxItemId,
             ItemLocation.InWorld(stoneWorkshopBoxCell),
             tick: 0));
+        CellId ladderBoxCell = new CellId(
+            residentStartCell.X - 4,
+            residentStartCell.Y,
+            residentStartCell.Z);
+        Require(inventory.AddUnit(
+            DemoId('9', 3),
+            WorkshopProductionContent.LadderBoxItemId,
+            ItemLocation.InWorld(ladderBoxCell),
+            tick: 0));
         return inventory;
     }
 

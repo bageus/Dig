@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Dig.Domain.Buildings;
 using Dig.Domain.World;
 using Dig.Presentation.Buildings;
@@ -150,6 +151,27 @@ namespace Dig.Unity
 
             if (resolution.Asset.IsFallback || resolution.Asset.Prefab == null)
             {
+                if (preview.DefinitionId.ToString() == "building.ladder")
+                {
+                    int minimumY = preview.Footprint.Min(value => value.Y);
+                    int maximumY = preview.Footprint.Max(value => value.Y);
+                    float ladderHeight = maximumY - minimumY + 1f;
+                    float centreY = (minimumY + maximumY) * 0.5f;
+                    _previewInstance!.transform.localPosition = new Vector3(
+                        0f,
+                        -(centreY - preview.Origin.Y),
+                        DigTunnelProjection.LadderWallDepthOffset);
+                    _previewInstance.transform.localRotation = Quaternion.identity;
+                    _previewInstance.transform.localScale = new Vector3(
+                        0.72f,
+                        ladderHeight,
+                        0.16f);
+                    _previewTint?.SetTint(preview.IsValid
+                        ? new Color(0.25f, 0.82f, 0.56f, 0.72f)
+                        : new Color(0.92f, 0.32f, 0.28f, 0.82f));
+                    return;
+                }
+
                 ResolveLocalBounds(preview, out Vector2 center, out Vector2 size);
                 _previewInstance!.transform.localPosition = new Vector3(
                     center.x,

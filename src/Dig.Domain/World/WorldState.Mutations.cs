@@ -133,7 +133,8 @@ public sealed partial class WorldState
         }
 
         ValidateTick(tick);
-        TerrainChange[] requested = changes.ToArray();
+        TerrainChange[] requested = PropagateFrontUnmineableColumns(
+            changes.ToArray());
         if (requested.Length == 0)
         {
             return Result<WorldMutationResult>.Success(CreateNoChangeResult());
