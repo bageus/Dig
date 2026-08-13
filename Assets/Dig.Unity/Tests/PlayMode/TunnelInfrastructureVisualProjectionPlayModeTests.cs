@@ -17,8 +17,10 @@ public sealed class TunnelInfrastructureVisualProjectionPlayModeTests
         DigWorldRenderer worldRenderer = host.AddComponent<DigWorldRenderer>();
         CellId supportCell = new CellId(5, 7, 1);
         CellId trimCell = new CellId(9, 7, 2);
+        CellId floorCell = new CellId(7, 7, 3);
         const string supportId = "tunnel:wooden-support:5:7:1";
         const string trimId = "tunnel:junction-stone-trim:9:7:2";
+        const string floorId = "tunnel:stone-floor-trim:7:7:3";
         worldRenderer.SetTunnelInfrastructureVisuals(
             new TunnelInfrastructureVisualVolumeViewModel(
                 version: 4,
@@ -32,6 +34,10 @@ public sealed class TunnelInfrastructureVisualProjectionPlayModeTests
                         supportId,
                         TunnelInfrastructureVisualKind.WoodenSupport,
                         supportCell),
+                    new TunnelInfrastructureVisualViewModel(
+                        floorId,
+                        TunnelInfrastructureVisualKind.StoneFloorTrim,
+                        floorCell),
                 }));
 
         yield return null;
@@ -39,25 +45,33 @@ public sealed class TunnelInfrastructureVisualProjectionPlayModeTests
         DigTunnelInfrastructureRenderer projection =
             host.GetComponent<DigTunnelInfrastructureRenderer>();
         Assert.That(projection, Is.Not.Null);
-        Assert.That(projection.InstanceCount, Is.EqualTo(2));
+        Assert.That(projection.InstanceCount, Is.EqualTo(3));
         Assert.That(projection.TryGetVisual(supportId, out GameObject support), Is.True);
         Assert.That(projection.TryGetVisual(trimId, out GameObject trim), Is.True);
-        Assert.That(support.transform.childCount, Is.EqualTo(1));
+        Assert.That(projection.TryGetVisual(floorId, out GameObject floor), Is.True);
+        Assert.That(support.transform.childCount, Is.EqualTo(3));
         Assert.That(trim.transform.childCount, Is.EqualTo(4));
+        Assert.That(floor.transform.childCount, Is.EqualTo(1));
         Assert.That(
             support.GetComponentsInChildren<Collider>(includeInactive: true),
             Is.Empty);
         Assert.That(
             trim.GetComponentsInChildren<Collider>(includeInactive: true),
             Is.Empty);
+        Assert.That(
+            floor.GetComponentsInChildren<Collider>(includeInactive: true),
+            Is.Empty);
+        float externalFaceDepth = DigTunnelProjection.DepthOrigin
+            + (DigTunnelProjection.DepthSpacing * 0.5f)
+            - 0.01f;
         Vector3 expectedSupport = new Vector3(
             supportCell.X,
             DigTunnelProjection.WalkSurfaceY(supportCell.Y),
-            DigTunnelProjection.DepthOrigin
-                + (supportCell.Z * DigTunnelProjection.DepthSpacing));
+            externalFaceDepth);
         Assert.That(
             Vector3.Distance(support.transform.localPosition, expectedSupport),
             Is.LessThan(0.0001f));
+        Assert.That(floor.transform.localPosition.z, Is.EqualTo(externalFaceDepth));
 
         worldRenderer.SetTunnelInfrastructureVisuals(
             TunnelInfrastructureVisualVolumeViewModel.Empty());

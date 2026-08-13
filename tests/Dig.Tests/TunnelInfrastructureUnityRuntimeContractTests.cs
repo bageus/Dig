@@ -97,6 +97,8 @@ public sealed class TunnelInfrastructureUnityRuntimeContractTests
         Assert.Contains("Woodensupportleftpost", renderer);
         Assert.Contains("Woodensupportrightpost", renderer);
         Assert.Contains("DigTunnelProjection.DepthOrigin", renderer);
+        Assert.Contains("DigTunnelProjection.DepthSpacing*0.5f", renderer);
+        Assert.Contains("ExternalFaceOffset", renderer);
         Assert.Contains("Stonereinforcedfloorsurface", renderer);
         Assert.Contains("newVector3(0.96f,0.05f,0.96f)", renderer);
         Assert.DoesNotContain("Collider", renderer);
