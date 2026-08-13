@@ -93,6 +93,12 @@ public sealed class TunnelInfrastructureUnityRuntimeContractTests
         Assert.Contains("SetTunnelInfrastructureVisuals", worldRenderer);
         Assert.Contains("MeshFilter", renderer);
         Assert.Contains("MeshRenderer", renderer);
+        Assert.Contains("Woodensupportcrossbeam", renderer);
+        Assert.Contains("Woodensupportleftpost", renderer);
+        Assert.Contains("Woodensupportrightpost", renderer);
+        Assert.Contains("DigTunnelProjection.DepthOrigin", renderer);
+        Assert.Contains("Stonereinforcedfloorsurface", renderer);
+        Assert.Contains("newVector3(0.96f,0.05f,0.96f)", renderer);
         Assert.DoesNotContain("Collider", renderer);
         Assert.DoesNotContain("UnityEngine.Random", renderer);
     }
