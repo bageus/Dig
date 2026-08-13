@@ -79,6 +79,17 @@ internal sealed partial class DigAgentSession
             .ThenBy(cell => cell)
             .Take(definition.MaximumGroupSize)
             .ToArray();
+        if (cells.Length < definition.MaximumGroupSize)
+        {
+            cells = Enumerable.Range(layout.CaveMinX, layout.CaveWidth)
+                .SelectMany(x => Enumerable.Range(0, volume.Depth)
+                    .Select(z => new CellId(x, layout.CaveFloorY, z)))
+                .OrderByDescending(cell => Math.Abs(cell.X - layout.ShaftX))
+                .ThenBy(cell => cell.Z)
+                .ThenBy(cell => cell)
+                .Take(definition.MaximumGroupSize)
+                .ToArray();
+        }
         if (cells.Length != definition.MaximumGroupSize)
         {
             throw new InvalidOperationException(
