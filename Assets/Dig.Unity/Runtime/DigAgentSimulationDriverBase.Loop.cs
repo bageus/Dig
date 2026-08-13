@@ -247,7 +247,14 @@ namespace Dig.Unity
             WorldSession.ObserveWorldItems(allItems);
             IReadOnlyList<WorldItemViewModel> items = WorldSession
                 .FilterCurrentlyVisibleItems(allItems);
-            if (TerrainSession.ConsumeWorldChanged() || WorldSession.ConsumeExplorationChanged())
+            bool terrainChanged = TerrainSession.ConsumeWorldChanged();
+            bool explorationChanged = WorldSession.ConsumeExplorationChanged();
+            if (explorationChanged)
+            {
+                SynchronizeExcavatedTunnelNavigation();
+            }
+
+            if (terrainChanged || explorationChanged)
             {
                 WorldViewModel world = WorldSession!.LoadView();
                 WorldRenderer!.Render(world);

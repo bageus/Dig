@@ -11,6 +11,43 @@ namespace Dig.Tests
 public sealed class NavigationMapTests
 {
     [Fact]
+    public void Navigation_excludes_black_fog_but_keeps_explored_gray_cells_walkable()
+    {
+        MaterialId air = new MaterialId("air");
+        MaterialId rock = new MaterialId("rock");
+        WorldState world = WorldState.CreateFilled(
+            new WorldSize(3, 2, 4),
+            chunkSize: 3,
+            new MaterialCatalog(new[]
+            {
+                new MaterialDefinition(air, false, 0),
+                new MaterialDefinition(rock, true, 1),
+            }),
+            air,
+            explored: false).Value;
+        world.ApplyTerrainChanges(new[]
+        {
+            new TerrainChange(new CellId(0, 0, 0),
+                new CellState(air, CellDesignation.None, true, 0, 20)),
+            new TerrainChange(new CellId(1, 0, 0),
+                new CellState(air, CellDesignation.None, true, 0, 20)),
+            new TerrainChange(new CellId(0, 1, 0),
+                new CellState(rock, CellDesignation.None, true, 0, 20)),
+            new TerrainChange(new CellId(1, 1, 0),
+                new CellState(rock, CellDesignation.None, true, 0, 20)),
+            new TerrainChange(new CellId(2, 1, 0),
+                new CellState(rock, CellDesignation.None, true, 0, 20)),
+        }, tick: 1);
+
+        NavigationMap map = new NavigationMap(TraversalProfile.CreateGroundedDwarf());
+        map.Rebuild(world.CreateSnapshot(), Array.Empty<TraversalLink>());
+        NavigationSnapshot snapshot = map.GetSnapshot().Value;
+
+        Assert.True(snapshot.IsWalkable(new CellId(1, 0, 0)));
+        Assert.False(snapshot.IsWalkable(new CellId(2, 0, 0)));
+    }
+
+    [Fact]
     public void Opening_passage_rebuilds_only_changed_chunk()
     {
         WorldState world = NavigationTestFactory.CreateGroundedCorridor(

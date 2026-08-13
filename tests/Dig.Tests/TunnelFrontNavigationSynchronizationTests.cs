@@ -111,6 +111,35 @@ public sealed class TunnelFrontNavigationSynchronizationTests
         Assert.False(synchronized.IsOpen(new CellId(unsupported.X, unsupported.Y, 0)));
     }
 
+    [Fact]
+    public void Black_fog_is_closed_but_previously_explored_gray_tunnel_is_open()
+    {
+        CellId gray = new CellId(1, 2, 0);
+        CellId black = new CellId(2, 2, 0);
+        WorldSnapshot baseline = CreateWorld(new[] { gray, black });
+        MaterialId rock = new MaterialId("sync.rock");
+        MaterialId air = new MaterialId("sync.air");
+        MaterialCatalog materials = new MaterialCatalog(new[]
+        {
+            new MaterialDefinition(rock, isSolid: true, hardness: 100),
+            new MaterialDefinition(air, isSolid: false, hardness: 0),
+        });
+        WorldState world = WorldState.Restore(baseline, materials).Value;
+        CellState blackState = world.GetCell(black).Value.State.WithExplored(false);
+        world.ApplyTerrainChanges(
+            new[] { new TerrainChange(black, blackState) },
+            tick: 2);
+
+        TunnelNavigationVolume synchronized =
+            TunnelNavigationVolume.FromWorldSnapshot(
+                world.CreateSnapshot(),
+                new CellId[0],
+                new CellId[0]);
+
+        Assert.True(synchronized.IsOpen(gray));
+        Assert.False(synchronized.IsOpen(black));
+    }
+
     private static WorldSnapshot CreateWorld(IReadOnlyCollection<CellId> airCells)
     {
         MaterialId rock = new MaterialId("sync.rock");

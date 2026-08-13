@@ -79,7 +79,7 @@
     {
       "stableIds": ["building.tent"],
       "kind": "Tent",
-      "footprintSize": {"x": 1, "y": 1},
+      "footprintSize": {"x": 3, "y": 2},
       "pivotCell": {"x": 0.0, "y": 0.0},
       "visualBoundsCenter": {"x": 0.0, "y": 1.0, "z": 0.0},
       "visualBoundsSize": {"x": 3.0, "y": 2.0, "z": 2.0},
@@ -102,7 +102,7 @@
     {
       "stableIds": ["building.stone_mason"],
       "kind": "StoneMason",
-      "footprintSize": {"x": 1, "y": 1},
+      "footprintSize": {"x": 4, "y": 3},
       "pivotCell": {"x": 0.0, "y": 0.0},
       "visualBoundsCenter": {"x": 0.0, "y": 1.25, "z": 0.0},
       "visualBoundsSize": {"x": 3.5, "y": 2.5, "z": 2.5},
@@ -126,7 +126,7 @@
     {
       "stableIds": ["building.wood_workshop"],
       "kind": "WoodWorkshop",
-      "footprintSize": {"x": 1, "y": 1},
+      "footprintSize": {"x": 3, "y": 2},
       "pivotCell": {"x": 0.0, "y": 0.0},
       "visualBoundsCenter": {"x": 0.0, "y": 1.0, "z": 0.0},
       "visualBoundsSize": {"x": 2.5, "y": 2.0, "z": 2.0},

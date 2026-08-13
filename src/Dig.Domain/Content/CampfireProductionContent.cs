@@ -90,19 +90,23 @@ public static class CampfireProductionContent
         return new[]
         {
             CampfireBuildingBoxContent.Definition.Building,
-            CreateBuilding(TentBuildingId, TentBoxItemId, "Tent", 2, 2),
+            CreateBuilding(TentBuildingId, TentBoxItemId, "Tent", 2, 2, 3, 2),
             CreateBuilding(
                 StoneMasonBuildingId,
                 StoneMasonBoxItemId,
                 "Stone mason workshop",
                 3,
+                3,
+                4,
                 3),
             CreateBuilding(
                 WoodWorkshopBuildingId,
                 WoodWorkshopBoxItemId,
                 "Wooden workshop",
                 3,
-                3),
+                3,
+                3,
+                2),
         }.Concat(WorkshopProductionContent.CreateBuildings()).ToArray();
     }
 
@@ -288,7 +292,9 @@ public static class CampfireProductionContent
         ItemId boxItemId,
         string name,
         int assemblyWork,
-        int packingWork)
+        int packingWork,
+        int widthCells,
+        int depthCells)
     {
         return new BuildingDefinition(
             id,
@@ -304,7 +310,22 @@ public static class CampfireProductionContent
             Array.Empty<BuildingMaterialRequirement>(),
             assemblyWork,
             maximumDurability: 100,
-            boxPolicy: new BuildingBoxPolicy(boxItemId, packingWork));
+            boxPolicy: new BuildingBoxPolicy(boxItemId, packingWork),
+            occupiedVolume: CreateOccupiedVolume(widthCells, depthCells));
+    }
+
+    private static IEnumerable<BuildingVolumeOffset> CreateOccupiedVolume(
+        int widthCells,
+        int depthCells)
+    {
+        int minimumX = -(widthCells / 2);
+        for (int z = 0; z < depthCells; z++)
+        {
+            for (int x = 0; x < widthCells; x++)
+            {
+                yield return new BuildingVolumeOffset(minimumX + x, 0, z);
+            }
+        }
     }
 }
 }

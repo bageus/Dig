@@ -148,6 +148,7 @@ public sealed class BuildingDefinition
     private readonly CellOffset[] _footprint;
     private readonly CellOffset[] _workPositions;
     private readonly BuildingMaterialRequirement[] _materials;
+    private readonly BuildingVolumeOffset[]? _occupiedVolume;
 
     public BuildingDefinition(
         BuildingDefinitionId id,
@@ -157,7 +158,8 @@ public sealed class BuildingDefinition
         IEnumerable<BuildingMaterialRequirement> materials,
         int requiredWork,
         int maximumDurability,
-        BuildingBoxPolicy? boxPolicy = null)
+        BuildingBoxPolicy? boxPolicy = null,
+        IEnumerable<BuildingVolumeOffset>? occupiedVolume = null)
     {
         if (id.IsEmpty)
         {
@@ -172,6 +174,9 @@ public sealed class BuildingDefinition
         _footprint = NormalizeOffsets(footprint, nameof(footprint));
         _workPositions = NormalizeOffsets(workPositions, nameof(workPositions));
         _materials = NormalizeMaterials(materials, requireMaterials: boxPolicy is null);
+        _occupiedVolume = occupiedVolume is null
+            ? null
+            : BuildingVolumeOffsets.Normalize(occupiedVolume);
         if (boxPolicy is not null && _materials.Length != 0)
         {
             throw new ArgumentException(
@@ -218,6 +223,14 @@ public sealed class BuildingDefinition
         CellId origin,
         BuildingOrientation orientation)
     {
+        if (_occupiedVolume != null)
+        {
+            return new ReadOnlyCollection<CellId>(_occupiedVolume
+                .Select(offset => offset.Rotate(orientation).Apply(origin))
+                .OrderBy(cell => cell)
+                .ToArray());
+        }
+
         return new ReadOnlyCollection<CellId>(_footprint
             .Select(offset => offset.Rotate(orientation).Apply(origin))
             .OrderBy(cell => cell)
