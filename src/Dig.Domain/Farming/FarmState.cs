@@ -12,8 +12,11 @@ public sealed class FarmState
     private int _hamsterCount;
     private int _grubCount;
     private int _feedCount;
+    private int _escapingHamsterCount;
+    private int _escapingGrubCount;
     private long _nextReproductionTick = -1;
     private long _nextFeedConsumptionTick = -1;
+    private long _nextEscapeTick = -1;
 
     public FarmState(FarmMode initialMode = FarmMode.Mushrooms)
     {
@@ -28,6 +31,8 @@ public sealed class FarmState
     public int HamsterCount => _hamsterCount;
     public int GrubCount => _grubCount;
     public int FeedCount => _feedCount;
+    public int EscapingHamsterCount => _escapingHamsterCount;
+    public int EscapingGrubCount => _escapingGrubCount;
 
     public int AvailableHamsters => Math.Max(
         0,
@@ -98,11 +103,13 @@ public sealed class FarmState
         else if (previous == FarmMode.Hamsters)
         {
             releasedHamsters = _hamsterCount;
+            _escapingHamsterCount = checked(_escapingHamsterCount + releasedHamsters);
             _hamsterCount = 0;
         }
         else
         {
             releasedGrubs = _grubCount;
+            _escapingGrubCount = checked(_escapingGrubCount + releasedGrubs);
             _grubCount = 0;
         }
 
@@ -110,6 +117,7 @@ public sealed class FarmState
         _nextFeedConsumptionTick = -1;
         _nextReproductionTick = -1;
         Mode = mode;
+        ScheduleEscapeIfNeeded(tick);
         return new FarmModeTransition(
             previous,
             mode,
@@ -180,14 +188,14 @@ public sealed class FarmState
 
     public bool CollectHamster()
     {
-        if (AvailableHamsters <= 0) return false;
+        if (Mode != FarmMode.Hamsters || AvailableHamsters <= 0) return false;
         _hamsterCount--;
         return true;
     }
 
     public bool CollectGrub()
     {
-        if (AvailableGrubs <= 0) return false;
+        if (Mode != FarmMode.Grubs || AvailableGrubs <= 0) return false;
         _grubCount--;
         return true;
     }
@@ -195,6 +203,8 @@ public sealed class FarmState
     public FarmAdvanceResult Advance(long tick)
     {
         ValidateTick(tick);
+        AdvanceEscapingAnimals(tick, out int hamstersEscaped, out int grubsEscaped);
+
         int regrown = 0;
         int hamstersBorn = 0;
         int grubsBorn = 0;
@@ -207,7 +217,13 @@ public sealed class FarmState
                 regrown = FarmOperationPolicy.MushroomGrowthSlots - _mushroomSlotsOccupied;
                 _mushroomSlotsOccupied = FarmOperationPolicy.MushroomGrowthSlots;
             }
-            return new FarmAdvanceResult(regrown, 0, 0, 0);
+            return new FarmAdvanceResult(
+                regrown,
+                0,
+                0,
+                0,
+                hamstersEscaped,
+                grubsEscaped);
         }
 
         while (_nextFeedConsumptionTick >= 0 && tick >= _nextFeedConsumptionTick)
@@ -247,7 +263,13 @@ public sealed class FarmState
             _nextReproductionTick = checked(tick + reproductionInterval);
         }
 
-        return new FarmAdvanceResult(0, hamstersBorn, grubsBorn, feedConsumed);
+        return new FarmAdvanceResult(
+            0,
+            hamstersBorn,
+            grubsBorn,
+            feedConsumed,
+            hamstersEscaped,
+            grubsEscaped);
     }
 
     public FarmSnapshot CreateSnapshot()
@@ -261,7 +283,10 @@ public sealed class FarmState
             _grubCount,
             _feedCount,
             _nextReproductionTick,
-            _nextFeedConsumptionTick);
+            _nextFeedConsumptionTick,
+            _escapingHamsterCount,
+            _escapingGrubCount,
+            _nextEscapeTick);
     }
 
     public static FarmState Restore(FarmSnapshot snapshot)
@@ -278,6 +303,9 @@ public sealed class FarmState
             _feedCount = snapshot.FeedCount,
             _nextReproductionTick = snapshot.NextReproductionTick,
             _nextFeedConsumptionTick = snapshot.NextFeedConsumptionTick,
+            _escapingHamsterCount = snapshot.EscapingHamsterCount,
+            _escapingGrubCount = snapshot.EscapingGrubCount,
+            _nextEscapeTick = snapshot.NextEscapeTick,
         };
         return state;
     }
@@ -293,6 +321,52 @@ public sealed class FarmState
             ? FarmOperationPolicy.HamsterReproductionTicks
             : FarmOperationPolicy.GrubReproductionTicks;
         _nextReproductionTick = checked(tick + interval);
+    }
+
+    private void ScheduleEscapeIfNeeded(long tick)
+    {
+        if (_nextEscapeTick >= 0
+            || (_escapingHamsterCount <= 0 && _escapingGrubCount <= 0))
+        {
+            return;
+        }
+
+        _nextEscapeTick = checked(tick + 1);
+    }
+
+    private void AdvanceEscapingAnimals(
+        long tick,
+        out int hamstersEscaped,
+        out int grubsEscaped)
+    {
+        hamstersEscaped = 0;
+        grubsEscaped = 0;
+        if (_nextEscapeTick < 0 || tick < _nextEscapeTick)
+        {
+            return;
+        }
+
+        long elapsedTicks = tick - _nextEscapeTick;
+        int escapeSlots = elapsedTicks >= int.MaxValue - 1L
+            ? int.MaxValue
+            : checked((int)elapsedTicks + 1);
+
+        hamstersEscaped = Math.Min(_escapingHamsterCount, escapeSlots);
+        _escapingHamsterCount -= hamstersEscaped;
+        escapeSlots -= hamstersEscaped;
+
+        grubsEscaped = Math.Min(_escapingGrubCount, escapeSlots);
+        _escapingGrubCount -= grubsEscaped;
+
+        int escaped = checked(hamstersEscaped + grubsEscaped);
+        if (_escapingHamsterCount <= 0 && _escapingGrubCount <= 0)
+        {
+            _nextEscapeTick = -1;
+        }
+        else
+        {
+            _nextEscapeTick = checked(_nextEscapeTick + escaped);
+        }
     }
 
     private void RequireMode(FarmMode expected)
@@ -325,8 +399,11 @@ public sealed class FarmState
             || snapshot.GrubCount > FarmOperationPolicy.AnimalCapacity
             || snapshot.FeedCount < 0
             || snapshot.FeedCount > FarmOperationPolicy.FeedCapacity
+            || snapshot.EscapingHamsterCount < 0
+            || snapshot.EscapingGrubCount < 0
             || snapshot.NextReproductionTick < -1
-            || snapshot.NextFeedConsumptionTick < -1)
+            || snapshot.NextFeedConsumptionTick < -1
+            || snapshot.NextEscapeTick < -1)
         {
             throw new ArgumentException("Farm snapshot contains invalid values.", nameof(snapshot));
         }
