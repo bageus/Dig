@@ -70,12 +70,16 @@ public readonly struct FarmAdvanceResult
         int mushroomsRegrown,
         int hamstersBorn,
         int grubsBorn,
-        int feedConsumed)
+        int feedConsumed,
+        int hamstersEscaped = 0,
+        int grubsEscaped = 0)
     {
         MushroomsRegrown = mushroomsRegrown;
         HamstersBorn = hamstersBorn;
         GrubsBorn = grubsBorn;
         FeedConsumed = feedConsumed;
+        HamstersEscaped = hamstersEscaped;
+        GrubsEscaped = grubsEscaped;
     }
 
     public int MushroomsRegrown { get; }
@@ -85,6 +89,10 @@ public readonly struct FarmAdvanceResult
     public int GrubsBorn { get; }
 
     public int FeedConsumed { get; }
+
+    public int HamstersEscaped { get; }
+
+    public int GrubsEscaped { get; }
 }
 
 public static class FarmOperationPolicy
@@ -117,7 +125,10 @@ public sealed class FarmSnapshot
         int grubCount,
         int feedCount,
         long nextReproductionTick,
-        long nextFeedConsumptionTick)
+        long nextFeedConsumptionTick,
+        int escapingHamsterCount = 0,
+        int escapingGrubCount = 0,
+        long nextEscapeTick = -1)
     {
         Mode = mode;
         MushroomSeedEstablished = mushroomSeedEstablished;
@@ -128,6 +139,9 @@ public sealed class FarmSnapshot
         FeedCount = feedCount;
         NextReproductionTick = nextReproductionTick;
         NextFeedConsumptionTick = nextFeedConsumptionTick;
+        EscapingHamsterCount = escapingHamsterCount;
+        EscapingGrubCount = escapingGrubCount;
+        NextEscapeTick = nextEscapeTick;
     }
 
     public FarmMode Mode { get; }
@@ -139,6 +153,9 @@ public sealed class FarmSnapshot
     public int FeedCount { get; }
     public long NextReproductionTick { get; }
     public long NextFeedConsumptionTick { get; }
+    public int EscapingHamsterCount { get; }
+    public int EscapingGrubCount { get; }
+    public long NextEscapeTick { get; }
 }
 
 }

@@ -166,6 +166,13 @@ namespace Dig.Unity
             DigBuildingVisual visual = root.AddComponent<DigBuildingVisual>();
             visual.Initialize(model, resolution);
             visual.SetDetailLevel(_buildingDetailLevel);
+            if (string.Equals(
+                model.DefinitionId,
+                "building.farm",
+                StringComparison.Ordinal))
+            {
+                DigFarmVisualDecoration.Ensure(root);
+            }
             _buildings.Add(model.Id, visual);
         }
 

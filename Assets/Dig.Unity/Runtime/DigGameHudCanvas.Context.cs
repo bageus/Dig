@@ -120,7 +120,7 @@ public sealed partial class DigGameHudCanvas
 
     private void ShowBuildingFunctions(BuildingWorldViewModel building)
     {
-        if (TryShowBuildingProduction(building))
+        if (TryShowFarm(building) || TryShowBuildingProduction(building))
         {
             return;
         }

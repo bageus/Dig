@@ -99,8 +99,9 @@ internal sealed partial class DigTerrainWorkSession
             .Select(value => new CellId(value.CellX, value.CellY, value.CellZ))
             .OrderBy(value => value)
             .ToArray();
-        return _livingMaterialAdvance.Handle(
+        Result ecology = _livingMaterialAdvance.Handle(
             new AdvanceLivingMaterialEcologyCommand(tick, residentCells));
+        return ecology.IsFailure ? ecology : AdvanceFarms(tick);
     }
 
     internal IReadOnlyList<CreatureVisualSnapshot> LoadLivingMaterialCreatures()
