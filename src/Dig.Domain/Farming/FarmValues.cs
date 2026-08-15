@@ -13,7 +13,6 @@ public enum FarmMode
 
 public enum FarmDeliveryKind
 {
-    // Kept for save/API compatibility. Mushroom mode no longer requires a seed delivery.
     MushroomSeed = 0,
     Hamster = 1,
     Grub = 2,
@@ -99,10 +98,10 @@ public readonly struct FarmAdvanceResult
 public static class FarmOperationPolicy
 {
     public const int MushroomGrowthSlots = 3;
-    public const int HamsterBreederReserve = 1;
+    public const int HamsterBreederReserve = 2;
     public const int GrubBreederReserve = 1;
     public const int AnimalCapacity = 8;
-    public const int FeedCapacity = AnimalCapacity;
+    public const int FeedCapacity = 2;
     public const int HamsterReproductionHours = 2;
     public const int GrubReproductionHours = 1;
 
