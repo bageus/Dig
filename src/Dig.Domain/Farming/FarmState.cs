@@ -21,16 +21,10 @@ public sealed partial class FarmState
     public FarmState(FarmMode initialMode = FarmMode.Mushrooms)
     {
         Mode = initialMode;
-        if (initialMode == FarmMode.Mushrooms)
-        {
-            EnableMushroomGrowth(fillSlotsImmediately: true);
-        }
     }
 
     public FarmMode Mode { get; private set; }
 
-    // Kept for snapshot/API compatibility. This now means that mushroom growth is enabled,
-    // not that a physical seed item was delivered.
     public bool MushroomSeedEstablished => _mushroomSeedEstablished;
     public int MushroomSlotsOccupied => _mushroomSlotsOccupied;
     public int ResidualMushrooms => _residualMushrooms;
@@ -54,29 +48,37 @@ public sealed partial class FarmState
         switch (Mode)
         {
             case FarmMode.Mushrooms:
-                // Mushroom cultivation is selected by farm mode; #731 does not require
-                // a separate seed delivery before growth can start.
+                if (!_mushroomSeedEstablished)
+                {
+                    demands.Add(new FarmDeliveryDemand(FarmDeliveryKind.MushroomSeed, 1));
+                }
                 break;
             case FarmMode.Hamsters:
-                AddIfPositive(
-                    demands,
-                    FarmDeliveryKind.Hamster,
-                    FarmOperationPolicy.HamsterBreederReserve - _hamsterCount);
-                AddIfPositive(
-                    demands,
-                    FarmDeliveryKind.MushroomFeed,
-                    FarmOperationPolicy.FeedCapacity - _feedCount);
+            {
+                int missingStarters = FarmOperationPolicy.HamsterBreederReserve - _hamsterCount;
+                AddIfPositive(demands, FarmDeliveryKind.Hamster, missingStarters);
+                if (missingStarters <= 0)
+                {
+                    AddIfPositive(
+                        demands,
+                        FarmDeliveryKind.MushroomFeed,
+                        FarmOperationPolicy.FeedCapacity - _feedCount);
+                }
                 break;
+            }
             case FarmMode.Grubs:
-                AddIfPositive(
-                    demands,
-                    FarmDeliveryKind.Grub,
-                    FarmOperationPolicy.GrubBreederReserve - _grubCount);
-                AddIfPositive(
-                    demands,
-                    FarmDeliveryKind.MushroomFeed,
-                    FarmOperationPolicy.FeedCapacity - _feedCount);
+            {
+                int missingStarters = FarmOperationPolicy.GrubBreederReserve - _grubCount;
+                AddIfPositive(demands, FarmDeliveryKind.Grub, missingStarters);
+                if (missingStarters <= 0)
+                {
+                    AddIfPositive(
+                        demands,
+                        FarmDeliveryKind.MushroomFeed,
+                        FarmOperationPolicy.FeedCapacity - _feedCount);
+                }
                 break;
+            }
             default:
                 throw new ArgumentOutOfRangeException();
         }
@@ -121,10 +123,6 @@ public sealed partial class FarmState
         _nextFeedConsumptionTick = -1;
         _nextReproductionTick = -1;
         Mode = mode;
-        if (mode == FarmMode.Mushrooms)
-        {
-            EnableMushroomGrowth(fillSlotsImmediately: false);
-        }
         ScheduleEscapeIfNeeded(tick);
         return new FarmModeTransition(
             previous,
@@ -142,12 +140,14 @@ public sealed partial class FarmState
         switch (kind)
         {
             case FarmDeliveryKind.MushroomSeed:
-                // Legacy compatibility for callers/saves produced by the first #731 implementation.
-                // Growth no longer depends on this delivery kind.
                 RequireMode(FarmMode.Mushrooms);
-                if (quantity != 1)
-                    throw new InvalidOperationException("Mushroom seed compatibility delivery accepts one item.");
-                EnableMushroomGrowth(fillSlotsImmediately: true);
+                if (_mushroomSeedEstablished || quantity != 1)
+                {
+                    throw new InvalidOperationException(
+                        "The mushroom seed requirement is already satisfied or has an invalid quantity.");
+                }
+                _mushroomSeedEstablished = true;
+                _mushroomSlotsOccupied = FarmOperationPolicy.MushroomGrowthSlots;
                 break;
             case FarmDeliveryKind.Hamster:
                 RequireMode(FarmMode.Hamsters);
@@ -167,11 +167,14 @@ public sealed partial class FarmState
                 break;
             case FarmDeliveryKind.MushroomFeed:
                 if (Mode == FarmMode.Mushrooms)
+                {
                     throw new InvalidOperationException("Mushroom mode does not use feed stock.");
+                }
                 _feedCount = Math.Min(
                     FarmOperationPolicy.FeedCapacity,
                     checked(_feedCount + quantity));
                 ScheduleFeedingIfReady(tick);
+                ScheduleReproductionIfReady(tick);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(kind));
@@ -238,10 +241,10 @@ public sealed partial class FarmState
         long reproductionInterval = Mode == FarmMode.Hamsters
             ? FarmOperationPolicy.HamsterReproductionTicks
             : FarmOperationPolicy.GrubReproductionTicks;
+        int reserve = Mode == FarmMode.Hamsters
+            ? FarmOperationPolicy.HamsterBreederReserve
+            : FarmOperationPolicy.GrubBreederReserve;
 
-        // Process ecology events chronologically so a large simulation jump produces the
-        // same result as advancing one game tick at a time. Feed wins ties: animals born
-        // at the same instant have not lived through the preceding half-day feeding cycle.
         while (true)
         {
             bool feedDue = _nextFeedConsumptionTick >= 0 && tick >= _nextFeedConsumptionTick;
@@ -250,8 +253,6 @@ public sealed partial class FarmState
 
             if (feedDue && (!reproductionDue || _nextFeedConsumptionTick <= _nextReproductionTick))
             {
-                // Feeding is a farm-wide upkeep event, not a per-animal cost: one cap is
-                // consumed at the start of each half-day while an animal mode is active.
                 int consumed = _feedCount > 0 ? 1 : 0;
                 _feedCount -= consumed;
                 feedConsumed = checked(feedConsumed + consumed);
@@ -260,21 +261,21 @@ public sealed partial class FarmState
                 continue;
             }
 
-            if (Mode == FarmMode.Hamsters)
+            int population = Mode == FarmMode.Hamsters ? _hamsterCount : _grubCount;
+            if (_feedCount > 0
+                && population >= reserve
+                && population < FarmOperationPolicy.AnimalCapacity)
             {
-                int born = Math.Min(
-                    _hamsterCount,
-                    FarmOperationPolicy.AnimalCapacity - _hamsterCount);
-                _hamsterCount += born;
-                hamstersBorn = checked(hamstersBorn + born);
-            }
-            else
-            {
-                int born = Math.Min(
-                    _grubCount,
-                    FarmOperationPolicy.AnimalCapacity - _grubCount);
-                _grubCount += born;
-                grubsBorn = checked(grubsBorn + born);
+                if (Mode == FarmMode.Hamsters)
+                {
+                    _hamsterCount++;
+                    hamstersBorn++;
+                }
+                else
+                {
+                    _grubCount++;
+                    grubsBorn++;
+                }
             }
 
             _nextReproductionTick = checked(_nextReproductionTick + reproductionInterval);
@@ -310,7 +311,7 @@ public sealed partial class FarmState
     {
         if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
         ValidateSnapshot(snapshot);
-        FarmState state = new FarmState(snapshot.Mode)
+        return new FarmState(snapshot.Mode)
         {
             _mushroomSeedEstablished = snapshot.MushroomSeedEstablished,
             _mushroomSlotsOccupied = snapshot.MushroomSlotsOccupied,
@@ -324,13 +325,6 @@ public sealed partial class FarmState
             _escapingGrubCount = snapshot.EscapingGrubCount,
             _nextEscapeTick = snapshot.NextEscapeTick,
         };
-
-        // Migrate snapshots produced while mushroom mode incorrectly required an item seed.
-        if (state.Mode == FarmMode.Mushrooms)
-        {
-            state._mushroomSeedEstablished = true;
-        }
-        return state;
     }
 }
 
