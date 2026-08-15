@@ -155,6 +155,7 @@ public sealed class FarmState
                     FarmOperationPolicy.AnimalCapacity,
                     checked(_hamsterCount + quantity));
                 ScheduleReproductionIfReady(tick);
+                ScheduleFeedingIfReady(tick);
                 break;
             case FarmDeliveryKind.Grub:
                 RequireMode(FarmMode.Grubs);
@@ -162,6 +163,7 @@ public sealed class FarmState
                     FarmOperationPolicy.AnimalCapacity,
                     checked(_grubCount + quantity));
                 ScheduleReproductionIfReady(tick);
+                ScheduleFeedingIfReady(tick);
                 break;
             case FarmDeliveryKind.MushroomFeed:
                 if (Mode == FarmMode.Mushrooms)
@@ -169,8 +171,7 @@ public sealed class FarmState
                 _feedCount = Math.Min(
                     FarmOperationPolicy.FeedCapacity,
                     checked(_feedCount + quantity));
-                if (_nextFeedConsumptionTick < 0)
-                    _nextFeedConsumptionTick = checked(tick + FarmOperationPolicy.FeedConsumptionTicks);
+                ScheduleFeedingIfReady(tick);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(kind));
@@ -249,8 +250,9 @@ public sealed class FarmState
 
             if (feedDue && (!reproductionDue || _nextFeedConsumptionTick <= _nextReproductionTick))
             {
-                int population = Mode == FarmMode.Hamsters ? _hamsterCount : _grubCount;
-                int consumed = Math.Min(_feedCount, population);
+                // Feeding is a farm-wide upkeep event, not a per-animal cost: one cap is
+                // consumed at the start of each half-day while an animal mode is active.
+                int consumed = _feedCount > 0 ? 1 : 0;
                 _feedCount -= consumed;
                 feedConsumed = checked(feedConsumed + consumed);
                 _nextFeedConsumptionTick = checked(
@@ -351,6 +353,21 @@ public sealed class FarmState
             ? FarmOperationPolicy.HamsterReproductionTicks
             : FarmOperationPolicy.GrubReproductionTicks;
         _nextReproductionTick = checked(tick + interval);
+    }
+
+    private void ScheduleFeedingIfReady(long tick)
+    {
+        int population = Mode == FarmMode.Hamsters ? _hamsterCount : _grubCount;
+        if (population <= 0 || _nextFeedConsumptionTick >= 0)
+        {
+            return;
+        }
+
+        long interval = FarmOperationPolicy.FeedConsumptionTicks;
+        long remainder = tick % interval;
+        _nextFeedConsumptionTick = remainder == 0
+            ? tick
+            : checked(tick + (interval - remainder));
     }
 
     private void ScheduleEscapeIfNeeded(long tick)
