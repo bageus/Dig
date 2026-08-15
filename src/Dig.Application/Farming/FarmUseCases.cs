@@ -104,13 +104,22 @@ public sealed class DeliverFarmStockCommandHandler
         if (command == null) throw new ArgumentNullException(nameof(command));
         FarmState? farm = _repository.Get(command.BuildingId);
         if (farm == null) return Result.Failure(FarmApplicationErrors.MissingFarm);
-        FarmDeliveryDemand? demand = farm.GetDeliveryDemands()
-            .Cast<FarmDeliveryDemand?>()
-            .FirstOrDefault(value => value!.Value.Kind == command.Kind);
+
+        FarmDeliveryDemand? demand = null;
+        foreach (FarmDeliveryDemand candidate in farm.GetDeliveryDemands())
+        {
+            if (candidate.Kind == command.Kind)
+            {
+                demand = candidate;
+                break;
+            }
+        }
+
         if (!demand.HasValue || command.Quantity <= 0 || command.Quantity > demand.Value.Quantity)
         {
             return Result.Failure(FarmApplicationErrors.InvalidDelivery);
         }
+
         farm.Deliver(command.Kind, command.Quantity, command.Tick);
         _repository.Save(command.BuildingId, farm);
         return Result.Success();
