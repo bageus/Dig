@@ -111,7 +111,7 @@ public sealed class FarmStateTests
     }
 
     [Fact]
-    public void Switching_animal_mode_releases_all_old_stock_and_requests_new_mode_starters()
+    public void Switching_animal_mode_releases_stock_immediately_but_animals_escape_gradually()
     {
         FarmState farm = new FarmState(FarmMode.Hamsters);
         farm.Deliver(FarmDeliveryKind.Hamster, 4, 0);
@@ -122,10 +122,36 @@ public sealed class FarmStateTests
         Assert.Equal(4, transition.ReleasedHamsters);
         Assert.Equal(2, transition.ReleasedFeed);
         Assert.Equal(0, farm.HamsterCount);
+        Assert.Equal(4, farm.EscapingHamsterCount);
         Assert.Equal(0, farm.FeedCount);
+        Assert.False(farm.CollectHamster());
+
         FarmDeliveryDemand[] demands = farm.GetDeliveryDemands().ToArray();
         Assert.Contains(demands, value => value.Kind == FarmDeliveryKind.Grub && value.Quantity == 1);
         Assert.Contains(demands, value => value.Kind == FarmDeliveryKind.MushroomFeed && value.Quantity == 2);
+
+        FarmAdvanceResult firstEscape = farm.Advance(4);
+        Assert.Equal(1, firstEscape.HamstersEscaped);
+        Assert.Equal(3, farm.EscapingHamsterCount);
+
+        FarmAdvanceResult remainingEscape = farm.Advance(7);
+        Assert.Equal(3, remainingEscape.HamstersEscaped);
+        Assert.Equal(0, farm.EscapingHamsterCount);
+    }
+
+    [Fact]
+    public void Escaping_animals_survive_snapshot_round_trip()
+    {
+        FarmState farm = new FarmState(FarmMode.Grubs);
+        farm.Deliver(FarmDeliveryKind.Grub, 3, 0);
+        farm.Deliver(FarmDeliveryKind.MushroomFeed, 2, 0);
+        farm.SwitchMode(FarmMode.Mushrooms, 10);
+
+        FarmState restored = FarmState.Restore(farm.CreateSnapshot());
+
+        Assert.Equal(3, restored.EscapingGrubCount);
+        Assert.Equal(1, restored.Advance(11).GrubsEscaped);
+        Assert.Equal(2, restored.EscapingGrubCount);
     }
 
     [Fact]
