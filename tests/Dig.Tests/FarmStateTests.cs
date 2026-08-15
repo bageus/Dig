@@ -9,17 +9,14 @@ namespace Dig.Tests
 public sealed class FarmStateTests
 {
     [Fact]
-    public void Mushroom_mode_requests_one_seed_and_maintains_three_growth_slots()
+    public void Mushroom_mode_starts_without_seed_delivery_and_maintains_three_growth_slots()
     {
         FarmState farm = new FarmState();
 
-        FarmDeliveryDemand demand = Assert.Single(farm.GetDeliveryDemands());
-        Assert.Equal(FarmDeliveryKind.MushroomSeed, demand.Kind);
-        Assert.Equal(1, demand.Quantity);
-
-        farm.Deliver(FarmDeliveryKind.MushroomSeed, 1, tick: 0);
-        Assert.Equal(3, farm.MushroomSlotsOccupied);
         Assert.Empty(farm.GetDeliveryDemands());
+        Assert.True(farm.MushroomSeedEstablished);
+        Assert.Equal(3, farm.MushroomSlotsOccupied);
+
         Assert.True(farm.HarvestMushroom());
         Assert.Equal(2, farm.MushroomSlotsOccupied);
 
@@ -29,10 +26,9 @@ public sealed class FarmStateTests
     }
 
     [Fact]
-    public void Switching_from_mushrooms_detaches_existing_plants_and_stops_regrowth()
+    public void Switching_from_mushrooms_keeps_existing_plants_and_stops_new_regrowth()
     {
         FarmState farm = new FarmState();
-        farm.Deliver(FarmDeliveryKind.MushroomSeed, 1, 0);
         farm.HarvestMushroom();
 
         FarmModeTransition transition = farm.SwitchMode(FarmMode.Hamsters, 1);
@@ -46,40 +42,67 @@ public sealed class FarmStateTests
     }
 
     [Fact]
-    public void Hamster_mode_protects_two_breeders_and_reproduces_every_two_hours_when_fed()
+    public void Switching_back_to_mushrooms_resumes_growth_without_delivery()
+    {
+        FarmState farm = new FarmState();
+        farm.SwitchMode(FarmMode.Hamsters, 1);
+        farm.SwitchMode(FarmMode.Mushrooms, 2);
+
+        Assert.Empty(farm.GetDeliveryDemands());
+        Assert.Equal(0, farm.MushroomSlotsOccupied);
+
+        FarmAdvanceResult advance = farm.Advance(3);
+
+        Assert.Equal(FarmOperationPolicy.MushroomGrowthSlots, advance.MushroomsRegrown);
+        Assert.Equal(FarmOperationPolicy.MushroomGrowthSlots, farm.MushroomSlotsOccupied);
+    }
+
+    [Fact]
+    public void One_hamster_starts_breeding_and_each_hamster_reproduces_every_two_hours()
     {
         FarmState farm = new FarmState(FarmMode.Hamsters);
-        Assert.Equal(
-            new[] { FarmDeliveryKind.Hamster, FarmDeliveryKind.MushroomFeed },
-            farm.GetDeliveryDemands().Select(value => value.Kind).ToArray());
+        FarmDeliveryDemand[] demands = farm.GetDeliveryDemands().ToArray();
+        Assert.Contains(
+            demands,
+            value => value.Kind == FarmDeliveryKind.Hamster && value.Quantity == 1);
+        Assert.Contains(
+            demands,
+            value => value.Kind == FarmDeliveryKind.MushroomFeed
+                && value.Quantity == FarmOperationPolicy.FeedCapacity);
 
-        farm.Deliver(FarmDeliveryKind.Hamster, 2, 0);
-        farm.Deliver(FarmDeliveryKind.MushroomFeed, 2, 0);
+        farm.Deliver(FarmDeliveryKind.Hamster, 1, 0);
+        farm.Deliver(FarmDeliveryKind.MushroomFeed, FarmOperationPolicy.FeedCapacity, 0);
         Assert.Equal(0, farm.AvailableHamsters);
 
         Assert.Equal(0, farm.Advance(GameTimeCadence.TicksFromHours(1)).HamstersBorn);
         Assert.Equal(1, farm.Advance(GameTimeCadence.TicksFromHours(2)).HamstersBorn);
-        Assert.Equal(3, farm.HamsterCount);
-        Assert.Equal(1, farm.AvailableHamsters);
-        Assert.True(farm.CollectHamster());
         Assert.Equal(2, farm.HamsterCount);
-        Assert.False(farm.CollectHamster());
+        Assert.Equal(1, farm.AvailableHamsters);
+
+        Assert.Equal(2, farm.Advance(GameTimeCadence.TicksFromHours(4)).HamstersBorn);
+        Assert.Equal(4, farm.HamsterCount);
+
+        Assert.True(farm.CollectHamster());
+        Assert.Equal(3, farm.HamsterCount);
     }
 
     [Fact]
-    public void Grub_mode_reproduces_hourly_but_never_exceeds_eight()
+    public void One_grub_doubles_population_hourly_until_capacity()
     {
         FarmState farm = new FarmState(FarmMode.Grubs);
         farm.Deliver(FarmDeliveryKind.Grub, 1, 0);
-        farm.Deliver(FarmDeliveryKind.MushroomFeed, 2, 0);
+        farm.Deliver(FarmDeliveryKind.MushroomFeed, FarmOperationPolicy.FeedCapacity, 0);
 
-        long tick = 0;
-        for (int index = 0; index < 10; index++)
-        {
-            tick += GameTimeCadence.TicksFromHours(1);
-            farm.Advance(tick);
-        }
+        FarmAdvanceResult first = farm.Advance(GameTimeCadence.TicksFromHours(1));
+        Assert.Equal(1, first.GrubsBorn);
+        Assert.Equal(2, farm.GrubCount);
 
+        FarmAdvanceResult second = farm.Advance(GameTimeCadence.TicksFromHours(2));
+        Assert.Equal(2, second.GrubsBorn);
+        Assert.Equal(4, farm.GrubCount);
+
+        FarmAdvanceResult third = farm.Advance(GameTimeCadence.TicksFromHours(3));
+        Assert.Equal(4, third.GrubsBorn);
         Assert.Equal(FarmOperationPolicy.AnimalCapacity, farm.GrubCount);
         Assert.Equal(
             FarmOperationPolicy.AnimalCapacity - FarmOperationPolicy.GrubBreederReserve,
@@ -87,27 +110,33 @@ public sealed class FarmStateTests
     }
 
     [Fact]
-    public void Feed_is_capped_at_two_consumed_each_half_day_and_shortage_blocks_reproduction()
+    public void Every_animal_consumes_one_mushroom_cap_each_half_day()
     {
         FarmState farm = new FarmState(FarmMode.Hamsters);
-        farm.Deliver(FarmDeliveryKind.Hamster, 2, 0);
-        farm.Deliver(FarmDeliveryKind.MushroomFeed, 5, 0);
-        Assert.Equal(2, farm.FeedCount);
+        farm.Deliver(FarmDeliveryKind.Hamster, FarmOperationPolicy.AnimalCapacity, 0);
+        farm.Deliver(FarmDeliveryKind.MushroomFeed, FarmOperationPolicy.FeedCapacity, 0);
+        Assert.Equal(FarmOperationPolicy.AnimalCapacity, farm.FeedCount);
 
-        long halfDay = FarmOperationPolicy.FeedConsumptionTicks;
-        FarmAdvanceResult first = farm.Advance(halfDay);
-        Assert.Equal(1, first.FeedConsumed);
-        Assert.Equal(1, farm.FeedCount);
+        FarmAdvanceResult halfDay = farm.Advance(FarmOperationPolicy.FeedConsumptionTicks);
+
+        Assert.Equal(FarmOperationPolicy.AnimalCapacity, halfDay.FeedConsumed);
+        Assert.Equal(0, farm.FeedCount);
         Assert.Contains(
             farm.GetDeliveryDemands(),
-            value => value.Kind == FarmDeliveryKind.MushroomFeed && value.Quantity == 1);
+            value => value.Kind == FarmDeliveryKind.MushroomFeed
+                && value.Quantity == FarmOperationPolicy.FeedCapacity);
+    }
 
-        farm.Advance(halfDay * 2);
-        Assert.Equal(0, farm.FeedCount);
-        int population = farm.HamsterCount;
-        FarmAdvanceResult starved = farm.Advance(halfDay * 2 + GameTimeCadence.TicksFromHours(2));
-        Assert.Equal(0, starved.HamstersBorn);
-        Assert.Equal(population, farm.HamsterCount);
+    [Fact]
+    public void Reproduction_continues_when_feed_is_missing_because_starvation_rules_are_not_part_of_731()
+    {
+        FarmState farm = new FarmState(FarmMode.Hamsters);
+        farm.Deliver(FarmDeliveryKind.Hamster, 1, 0);
+
+        FarmAdvanceResult advance = farm.Advance(FarmOperationPolicy.HamsterReproductionTicks);
+
+        Assert.Equal(1, advance.HamstersBorn);
+        Assert.Equal(2, farm.HamsterCount);
     }
 
     [Fact]
@@ -128,7 +157,10 @@ public sealed class FarmStateTests
 
         FarmDeliveryDemand[] demands = farm.GetDeliveryDemands().ToArray();
         Assert.Contains(demands, value => value.Kind == FarmDeliveryKind.Grub && value.Quantity == 1);
-        Assert.Contains(demands, value => value.Kind == FarmDeliveryKind.MushroomFeed && value.Quantity == 2);
+        Assert.Contains(
+            demands,
+            value => value.Kind == FarmDeliveryKind.MushroomFeed
+                && value.Quantity == FarmOperationPolicy.FeedCapacity);
 
         FarmAdvanceResult firstEscape = farm.Advance(4);
         Assert.Equal(1, firstEscape.HamstersEscaped);
@@ -168,6 +200,26 @@ public sealed class FarmStateTests
         Assert.Equal(farm.GrubCount, restored.GrubCount);
         Assert.Equal(farm.FeedCount, restored.FeedCount);
         Assert.Equal(farm.AvailableGrubs, restored.AvailableGrubs);
+    }
+
+    [Fact]
+    public void Legacy_mushroom_snapshot_migrates_to_mode_driven_growth()
+    {
+        FarmSnapshot legacy = new FarmSnapshot(
+            FarmMode.Mushrooms,
+            mushroomSeedEstablished: false,
+            mushroomSlotsOccupied: 0,
+            residualMushrooms: 0,
+            hamsterCount: 0,
+            grubCount: 0,
+            feedCount: 0,
+            nextReproductionTick: -1,
+            nextFeedConsumptionTick: -1);
+
+        FarmState restored = FarmState.Restore(legacy);
+
+        Assert.True(restored.MushroomSeedEstablished);
+        Assert.Equal(FarmOperationPolicy.MushroomGrowthSlots, restored.Advance(1).MushroomsRegrown);
     }
 }
 
