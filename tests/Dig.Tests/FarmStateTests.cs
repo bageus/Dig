@@ -110,21 +110,43 @@ public sealed class FarmStateTests
     }
 
     [Fact]
-    public void Every_animal_consumes_one_mushroom_cap_each_half_day()
+    public void Farm_consumes_one_mushroom_cap_at_start_of_each_half_day()
     {
         FarmState farm = new FarmState(FarmMode.Hamsters);
         farm.Deliver(FarmDeliveryKind.Hamster, FarmOperationPolicy.AnimalCapacity, 0);
         farm.Deliver(FarmDeliveryKind.MushroomFeed, FarmOperationPolicy.FeedCapacity, 0);
-        Assert.Equal(FarmOperationPolicy.AnimalCapacity, farm.FeedCount);
 
-        FarmAdvanceResult halfDay = farm.Advance(FarmOperationPolicy.FeedConsumptionTicks);
+        FarmAdvanceResult firstHalf = farm.Advance(0);
+        Assert.Equal(1, firstHalf.FeedConsumed);
+        Assert.Equal(FarmOperationPolicy.FeedCapacity - 1, farm.FeedCount);
 
-        Assert.Equal(FarmOperationPolicy.AnimalCapacity, halfDay.FeedConsumed);
-        Assert.Equal(0, farm.FeedCount);
-        Assert.Contains(
-            farm.GetDeliveryDemands(),
-            value => value.Kind == FarmDeliveryKind.MushroomFeed
-                && value.Quantity == FarmOperationPolicy.FeedCapacity);
+        FarmAdvanceResult beforeSecondHalf = farm.Advance(
+            FarmOperationPolicy.FeedConsumptionTicks - 1);
+        Assert.Equal(0, beforeSecondHalf.FeedConsumed);
+        Assert.Equal(FarmOperationPolicy.FeedCapacity - 1, farm.FeedCount);
+
+        FarmAdvanceResult secondHalf = farm.Advance(FarmOperationPolicy.FeedConsumptionTicks);
+        Assert.Equal(1, secondHalf.FeedConsumed);
+        Assert.Equal(FarmOperationPolicy.FeedCapacity - 2, farm.FeedCount);
+    }
+
+    [Fact]
+    public void Feed_delivery_mid_half_day_waits_until_next_half_day_boundary()
+    {
+        FarmState farm = new FarmState(FarmMode.Hamsters);
+        const long deliveryTick = 1;
+        farm.Deliver(FarmDeliveryKind.Hamster, 1, deliveryTick);
+        farm.Deliver(FarmDeliveryKind.MushroomFeed, 2, deliveryTick);
+
+        Assert.Equal(
+            0,
+            farm.Advance(FarmOperationPolicy.FeedConsumptionTicks - 1).FeedConsumed);
+        Assert.Equal(2, farm.FeedCount);
+
+        Assert.Equal(
+            1,
+            farm.Advance(FarmOperationPolicy.FeedConsumptionTicks).FeedConsumed);
+        Assert.Equal(1, farm.FeedCount);
     }
 
     [Fact]
