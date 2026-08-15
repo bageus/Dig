@@ -6,22 +6,17 @@ namespace Dig.Domain.Farming
 
 public sealed partial class FarmState
 {
-    private void EnableMushroomGrowth(bool fillSlotsImmediately)
-    {
-        _mushroomSeedEstablished = true;
-        if (fillSlotsImmediately)
-        {
-            _mushroomSlotsOccupied = FarmOperationPolicy.MushroomGrowthSlots;
-        }
-    }
-
     private void ScheduleReproductionIfReady(long tick)
     {
         int reserve = Mode == FarmMode.Hamsters
             ? FarmOperationPolicy.HamsterBreederReserve
             : FarmOperationPolicy.GrubBreederReserve;
         int population = Mode == FarmMode.Hamsters ? _hamsterCount : _grubCount;
-        if (population < reserve || _nextReproductionTick >= 0) return;
+        if (_feedCount <= 0 || population < reserve || _nextReproductionTick >= 0)
+        {
+            return;
+        }
+
         long interval = Mode == FarmMode.Hamsters
             ? FarmOperationPolicy.HamsterReproductionTicks
             : FarmOperationPolicy.GrubReproductionTicks;
@@ -36,11 +31,7 @@ public sealed partial class FarmState
             return;
         }
 
-        long interval = FarmOperationPolicy.FeedConsumptionTicks;
-        long remainder = tick % interval;
-        _nextFeedConsumptionTick = remainder == 0
-            ? tick
-            : checked(tick + (interval - remainder));
+        _nextFeedConsumptionTick = checked(tick + FarmOperationPolicy.FeedConsumptionTicks);
     }
 
     private void ScheduleEscapeIfNeeded(long tick)
@@ -92,7 +83,9 @@ public sealed partial class FarmState
     private void RequireMode(FarmMode expected)
     {
         if (Mode != expected)
+        {
             throw new InvalidOperationException("The delivery does not match the active farm mode.");
+        }
     }
 
     private static void AddIfPositive(
