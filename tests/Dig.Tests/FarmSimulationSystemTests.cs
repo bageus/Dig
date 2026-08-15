@@ -17,7 +17,8 @@ public sealed class FarmSimulationSystemTests
         InMemoryFarmRepository repository = new InMemoryFarmRepository();
         EntityId farmId = EntityId.New();
         FarmState farm = new FarmState(FarmMode.Hamsters);
-        farm.Deliver(FarmDeliveryKind.Hamster, 1, 0);
+        farm.Deliver(FarmDeliveryKind.Hamster, FarmOperationPolicy.HamsterBreederReserve, 0);
+        farm.Deliver(FarmDeliveryKind.MushroomFeed, FarmOperationPolicy.FeedCapacity, 0);
         repository.Save(farmId, farm);
 
         FarmSimulationSystem system = new FarmSimulationSystem(repository);
@@ -31,7 +32,7 @@ public sealed class FarmSimulationSystemTests
 
         FarmState? advanced = repository.Get(farmId);
         Assert.NotNull(advanced);
-        Assert.Equal(2, advanced!.HamsterCount);
+        Assert.Equal(3, advanced!.HamsterCount);
     }
 
     [Fact]
