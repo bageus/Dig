@@ -14,7 +14,8 @@ Tracking: [issue #731](https://github.com/bageus/Dig/issues/731),
 - The farm is visually a `2 x 1.5` dirt plot with a `0.5` high low fence.
 - Switching mode immediately replaces the active supply demand. Feed left at the
   former internal stock is released from farm ownership. Existing mushrooms
-  remain harvestable; former animals escape gradually.
+  remain harvestable and continue occupying the shared three growth slots;
+  former animals escape gradually.
 
 ## Authoritative rules
 

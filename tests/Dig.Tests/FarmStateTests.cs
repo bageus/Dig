@@ -49,6 +49,32 @@ public sealed class FarmStateTests
     }
 
     [Fact]
+    public void Returning_to_mushrooms_shares_three_slots_with_residual_growth()
+    {
+        FarmState farm = new FarmState();
+        farm.Deliver(FarmDeliveryKind.MushroomSeed, 1, tick: 0);
+        farm.SwitchMode(FarmMode.Hamsters, tick: 1);
+        farm.SwitchMode(FarmMode.Mushrooms, tick: 2);
+        farm.Deliver(FarmDeliveryKind.MushroomSeed, 1, tick: 2);
+
+        Assert.Equal(3, farm.ResidualMushrooms);
+        Assert.Equal(0, farm.MushroomSlotsOccupied);
+        Assert.True(farm.HarvestMushroom());
+        Assert.Equal(2, farm.ResidualMushrooms);
+        Assert.Equal(1, farm.Advance(3).MushroomsRegrown);
+        Assert.Equal(
+            FarmOperationPolicy.MushroomGrowthSlots,
+            farm.ResidualMushrooms + farm.MushroomSlotsOccupied);
+
+        Assert.True(farm.HarvestMushroom());
+        Assert.Equal(1, farm.ResidualMushrooms);
+        Assert.Equal(1, farm.Advance(4).MushroomsRegrown);
+        Assert.Equal(
+            FarmOperationPolicy.MushroomGrowthSlots,
+            farm.ResidualMushrooms + farm.MushroomSlotsOccupied);
+    }
+
+    [Fact]
     public void Hamster_mode_requests_two_starters_then_opens_two_slot_feeder()
     {
         FarmState farm = new FarmState(FarmMode.Hamsters);
