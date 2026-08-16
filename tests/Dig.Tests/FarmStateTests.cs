@@ -268,6 +268,65 @@ public sealed class FarmStateTests
         Assert.Throws<System.ArgumentException>(() => FarmState.Restore(missingSeed));
         Assert.Throws<System.ArgumentException>(() => FarmState.Restore(wrongMode));
     }
+
+    [Fact]
+    public void Restore_rejects_unknown_mode_and_mushroom_only_state_leaking_to_other_modes()
+    {
+        FarmSnapshot unknownMode = Snapshot((FarmMode)99);
+        FarmSnapshot seedInAnimalMode = Snapshot(
+            FarmMode.Hamsters,
+            mushroomSeedEstablished: true,
+            hamsterCount: 2);
+        FarmSnapshot feedInMushroomMode = Snapshot(
+            FarmMode.Mushrooms,
+            feedCount: 1);
+
+        Assert.Throws<System.ArgumentException>(() => FarmState.Restore(unknownMode));
+        Assert.Throws<System.ArgumentException>(() => FarmState.Restore(seedInAnimalMode));
+        Assert.Throws<System.ArgumentException>(() => FarmState.Restore(feedInMushroomMode));
+    }
+
+    [Fact]
+    public void Restore_rejects_timers_that_do_not_match_operational_state()
+    {
+        FarmSnapshot mushroomTimer = Snapshot(
+            FarmMode.Mushrooms,
+            nextReproductionTick: 10);
+        FarmSnapshot escapingWithoutTimer = Snapshot(
+            FarmMode.Mushrooms,
+            escapingHamsterCount: 1);
+        FarmSnapshot timerWithoutEscapingAnimals = Snapshot(
+            FarmMode.Mushrooms,
+            nextEscapeTick: 10);
+
+        Assert.Throws<System.ArgumentException>(() => FarmState.Restore(mushroomTimer));
+        Assert.Throws<System.ArgumentException>(() => FarmState.Restore(escapingWithoutTimer));
+        Assert.Throws<System.ArgumentException>(() => FarmState.Restore(timerWithoutEscapingAnimals));
+    }
+
+    private static FarmSnapshot Snapshot(
+        FarmMode mode,
+        bool mushroomSeedEstablished = false,
+        int hamsterCount = 0,
+        int feedCount = 0,
+        long nextReproductionTick = -1,
+        int escapingHamsterCount = 0,
+        long nextEscapeTick = -1)
+    {
+        return new FarmSnapshot(
+            mode,
+            mushroomSeedEstablished,
+            mushroomSlotsOccupied: 0,
+            residualMushrooms: 0,
+            hamsterCount,
+            grubCount: 0,
+            feedCount,
+            nextReproductionTick,
+            nextFeedConsumptionTick: -1,
+            escapingHamsterCount,
+            escapingGrubCount: 0,
+            nextEscapeTick);
+    }
 }
 
 }

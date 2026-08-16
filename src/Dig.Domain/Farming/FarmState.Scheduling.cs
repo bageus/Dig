@@ -103,7 +103,10 @@ public sealed partial class FarmState
 
     private static void ValidateSnapshot(FarmSnapshot snapshot)
     {
-        if (snapshot.MushroomSlotsOccupied < 0
+        bool hasEscapingAnimals = snapshot.EscapingHamsterCount > 0
+            || snapshot.EscapingGrubCount > 0;
+        if (!Enum.IsDefined(typeof(FarmMode), snapshot.Mode)
+            || snapshot.MushroomSlotsOccupied < 0
             || snapshot.MushroomSlotsOccupied > FarmOperationPolicy.MushroomGrowthSlots
             || snapshot.ResidualMushrooms < 0
             || snapshot.ResidualMushrooms > FarmOperationPolicy.MushroomGrowthSlots
@@ -113,6 +116,8 @@ public sealed partial class FarmState
                 && snapshot.MushroomSlotsOccupied > 0)
             || (snapshot.Mode != FarmMode.Mushrooms
                 && snapshot.MushroomSlotsOccupied > 0)
+            || (snapshot.Mode != FarmMode.Mushrooms
+                && snapshot.MushroomSeedEstablished)
             || snapshot.HamsterCount < 0
             || snapshot.HamsterCount > FarmOperationPolicy.AnimalCapacity
             || snapshot.GrubCount < 0
@@ -121,11 +126,16 @@ public sealed partial class FarmState
             || (snapshot.Mode != FarmMode.Grubs && snapshot.GrubCount > 0)
             || snapshot.FeedCount < 0
             || snapshot.FeedCount > FarmOperationPolicy.FeedCapacity
+            || (snapshot.Mode == FarmMode.Mushrooms && snapshot.FeedCount > 0)
             || snapshot.EscapingHamsterCount < 0
             || snapshot.EscapingGrubCount < 0
             || snapshot.NextReproductionTick < -1
             || snapshot.NextFeedConsumptionTick < -1
-            || snapshot.NextEscapeTick < -1)
+            || snapshot.NextEscapeTick < -1
+            || (snapshot.Mode == FarmMode.Mushrooms
+                && (snapshot.NextReproductionTick != -1
+                    || snapshot.NextFeedConsumptionTick != -1))
+            || (hasEscapingAnimals != (snapshot.NextEscapeTick >= 0)))
         {
             throw new ArgumentException("Farm snapshot contains invalid values.", nameof(snapshot));
         }
