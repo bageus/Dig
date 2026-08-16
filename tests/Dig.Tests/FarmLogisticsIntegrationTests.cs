@@ -132,10 +132,17 @@ public sealed class FarmLogisticsIntegrationTests
         FarmState farm = new FarmState(FarmMode.Mushrooms);
         farms.Save(farmId, farm);
         InventoryState inventory = new InventoryState(
-            new ItemCatalog(LivingMaterialContent.CreateItems()));
+            new ItemCatalog(LivingMaterialContent.CreateItems().Concat(new[]
+            {
+                new ItemDefinition(
+                    CampfireProductionContent.MushroomCapItemId,
+                    "Mushroom cap",
+                    maximumStackSize: 100,
+                    isTool: false),
+            })));
         Assert.True(inventory.AddUnit(
             capStackId,
-            LivingMaterialContent.MushroomCapItemId,
+            CampfireProductionContent.MushroomCapItemId,
             ItemLocation.InWorld(new CellId(2, 2)),
             tick: 0).IsSuccess);
         InMemoryInventoryRepository inventoryRepository =
