@@ -19,8 +19,10 @@ internal sealed partial class DigTerrainWorkSession
 {
     private const int FarmLogisticsPriority = 650;
     private const int MaximumFarmDeliveryJobs = 8;
-    private readonly FarmLogisticsReservations _farmLogisticsReservations =
-        new FarmLogisticsReservations();
+    private readonly FarmLogisticsReservations _farmLogisticsReservations;
+
+    internal FarmLogisticsReservations FarmLogisticsReservations =>
+        _farmLogisticsReservations;
     private InMemoryJobCandidateProvider? _farmDeliveryCandidates;
     private AssignAvailableJobsHandler? _farmAssignment;
     private AcquireHaulingItemHandler? _farmAcquisition;

@@ -9,7 +9,9 @@ namespace Dig.Application.Saving
 
 public static class FarmSaveAdapter
 {
-    public static FarmSaveData Encode(IFarmRepository farms)
+    public static FarmSaveData Encode(
+        IFarmRepository farms,
+        FarmLogisticsReservations? reservations = null)
     {
         if (farms == null) throw new ArgumentNullException(nameof(farms));
         FarmSaveData data = new FarmSaveData();
@@ -34,7 +36,56 @@ public static class FarmSaveAdapter
                 NextEscapeTick = snapshot.NextEscapeTick,
             });
         }
+        if (reservations != null)
+        {
+            foreach (FarmLogisticsReservation reservation in reservations.GetAll())
+            {
+                data.Reservations.Add(new FarmLogisticsReservationSaveData
+                {
+                    JobId = reservation.JobId.ToString(),
+                    BuildingId = reservation.BuildingId.ToString(),
+                    Kind = (int)reservation.Kind,
+                    Quantity = reservation.Quantity,
+                    Direction = (int)reservation.Direction,
+                });
+            }
+        }
         return data;
+    }
+
+    public static Result<FarmLogisticsReservations> DecodeReservations(FarmSaveData? data)
+    {
+        FarmLogisticsReservations reservations = new FarmLogisticsReservations();
+        if (data?.Reservations == null)
+        {
+            return Result<FarmLogisticsReservations>.Success(reservations);
+        }
+
+        foreach (FarmLogisticsReservationSaveData saved in data.Reservations
+            .OrderBy(value => value.JobId, StringComparer.Ordinal))
+        {
+            if (saved == null
+                || string.IsNullOrWhiteSpace(saved.JobId)
+                || string.IsNullOrWhiteSpace(saved.BuildingId)
+                || saved.Quantity <= 0
+                || !Enum.IsDefined(typeof(FarmDeliveryKind), saved.Kind)
+                || !Enum.IsDefined(typeof(FarmLogisticsDirection), saved.Direction))
+            {
+                return Result<FarmLogisticsReservations>.Failure(SaveErrors.InvalidDocument);
+            }
+
+            FarmLogisticsReservation reservation = new FarmLogisticsReservation(
+                EntityId.Parse(saved.JobId),
+                EntityId.Parse(saved.BuildingId),
+                (FarmDeliveryKind)saved.Kind,
+                saved.Quantity,
+                (FarmLogisticsDirection)saved.Direction);
+            if (!reservations.TryRestore(reservation))
+            {
+                return Result<FarmLogisticsReservations>.Failure(SaveErrors.InvalidDocument);
+            }
+        }
+        return Result<FarmLogisticsReservations>.Success(reservations);
     }
 
     public static Result<InMemoryFarmRepository> Decode(FarmSaveData? data)

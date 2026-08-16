@@ -74,7 +74,9 @@ public sealed partial class SaveGameBuilder
                 context.World.Size),
             Society = SocietySaveAdapter.Encode(context.Society),
             Exploration = ExplorationSaveAdapter.Encode(context.Exploration),
-            Farms = FarmSaveAdapter.Encode(context.Farms),
+            Farms = FarmSaveAdapter.Encode(
+                context.Farms,
+                context.FarmLogisticsReservations),
         };
     }
 

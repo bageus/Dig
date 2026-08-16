@@ -98,6 +98,14 @@ public sealed class FarmSaveRoundTripTests
         farm.SwitchMode(FarmMode.Grubs, tick: 6);
         InMemoryFarmRepository farms = new InMemoryFarmRepository();
         farms.Save(farmId, farm);
+        EntityId farmJobId = EntityId.Parse("73100000000000000000000000000003");
+        FarmLogisticsReservations farmReservations = new FarmLogisticsReservations();
+        Assert.True(farmReservations.TryReserveOutgoing(
+            farmJobId,
+            farmId,
+            FarmDeliveryKind.Hamster,
+            collectableQuantity: 1,
+            quantity: 1));
         JobDefinitionSaveRegistry jobs = new JobDefinitionSaveRegistry(
             new IJobDefinitionSaveCodec[] { new DigJobDefinitionSaveCodec() });
         SaveGameDocument document = new SaveGameBuilder(jobs).Build(
@@ -116,7 +124,8 @@ public sealed class FarmSaveRoundTripTests
                 new JobSystem(),
                 new BuildingsState(),
                 Array.Empty<AgentState>(),
-                farms: farms));
+                farms: farms,
+                farmLogisticsReservations: farmReservations));
         DataContractJsonSaveCodec codec = new DataContractJsonSaveCodec();
 
         Result<LoadedGameState> loaded = new SaveGameLoader(
@@ -130,6 +139,12 @@ public sealed class FarmSaveRoundTripTests
         Assert.Equal(expected.FeedCount, actual.FeedCount);
         Assert.Equal(expected.EscapingHamsterCount, actual.EscapingHamsterCount);
         Assert.Equal(expected.NextEscapeTick, actual.NextEscapeTick);
+        FarmLogisticsReservation restored = Assert.Single(
+            loaded.Value.FarmLogisticsReservations.GetAll());
+        Assert.Equal(farmJobId, restored.JobId);
+        Assert.Equal(farmId, restored.BuildingId);
+        Assert.Equal(FarmDeliveryKind.Hamster, restored.Kind);
+        Assert.Equal(FarmLogisticsDirection.Outgoing, restored.Direction);
     }
 }
 

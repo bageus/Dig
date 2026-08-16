@@ -31,7 +31,8 @@ internal sealed partial class DigTerrainWorkSession
         InMemoryExecutionJournal journal,
         IAgentSkillGrantService skillGrants,
         MiningOutputCommitState? miningOutputCommits = null,
-        IFarmRepository? farms = null)
+        IFarmRepository? farms = null,
+        FarmLogisticsReservations? farmLogisticsReservations = null)
     {
         if (worldSession == null || agents == null)
         {
@@ -98,7 +99,8 @@ internal sealed partial class DigTerrainWorkSession
             profile,
             outputStackIds,
             miningOutputCommits,
-            farms);
+            farms,
+            farmLogisticsReservations);
     }
 
     private static Dictionary<EntityId, EntityId> CreateInitialDigJobs(
@@ -198,7 +200,8 @@ internal sealed partial class DigTerrainWorkSession
         TraversalProfile profile,
         Dictionary<EntityId, EntityId> outputIds,
         MiningOutputCommitState? miningOutputCommits,
-        IFarmRepository? farms)
+        IFarmRepository? farms,
+        FarmLogisticsReservations? farmLogisticsReservations)
     {
         MiningOutputCommitState commits =
             miningOutputCommits ?? new MiningOutputCommitState();
@@ -231,7 +234,8 @@ internal sealed partial class DigTerrainWorkSession
             outputIds,
             skills,
             commits,
-            farms);
+            farms,
+            farmLogisticsReservations);
     }
 }
 

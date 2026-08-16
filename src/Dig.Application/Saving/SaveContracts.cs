@@ -141,7 +141,8 @@ public sealed class LoadedGameState
         RoomInfrastructureRuntimeSnapshot? roomInfrastructure = null,
         SocietyState? society = null,
         ExplorationState? exploration = null,
-        IFarmRepository? farms = null)
+        IFarmRepository? farms = null,
+        FarmLogisticsReservations? farmLogisticsReservations = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -191,6 +192,8 @@ public sealed class LoadedGameState
         Society = society;
         Exploration = exploration ?? new ExplorationState();
         Farms = farms ?? new InMemoryFarmRepository();
+        FarmLogisticsReservations = farmLogisticsReservations
+            ?? new FarmLogisticsReservations();
     }
 
     public SaveMetadataData Metadata { get; }
@@ -220,6 +223,7 @@ public sealed class LoadedGameState
     public SocietyState? Society { get; }
     public ExplorationState Exploration { get; }
     public IFarmRepository Farms { get; }
+    public FarmLogisticsReservations FarmLogisticsReservations { get; }
 
     private static IReadOnlyDictionary<TKey, TValue> Copy<TKey, TValue>(
         IReadOnlyDictionary<TKey, TValue>? values) where TKey : notnull

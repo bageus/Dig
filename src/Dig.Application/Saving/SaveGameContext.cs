@@ -72,7 +72,8 @@ public sealed class SaveGameContext
         RoomInfrastructureRuntimeSnapshot? roomInfrastructure = null,
         SocietyState? society = null,
         ExplorationState? exploration = null,
-        IFarmRepository? farms = null)
+        IFarmRepository? farms = null,
+        FarmLogisticsReservations? farmLogisticsReservations = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -110,6 +111,8 @@ public sealed class SaveGameContext
         Society = society;
         Exploration = exploration ?? new ExplorationState();
         Farms = farms ?? new InMemoryFarmRepository();
+        FarmLogisticsReservations = farmLogisticsReservations
+            ?? new FarmLogisticsReservations();
     }
 
     public SaveMetadataData Metadata { get; }
@@ -134,6 +137,7 @@ public sealed class SaveGameContext
     public SocietyState? Society { get; }
     public ExplorationState Exploration { get; }
     public IFarmRepository Farms { get; }
+    public FarmLogisticsReservations FarmLogisticsReservations { get; }
 }
 
 }

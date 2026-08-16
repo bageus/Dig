@@ -70,7 +70,8 @@ public sealed class SaveGameService
             vukers: context.Vukers,
             tunnelInfrastructure: context.TunnelInfrastructure,
             roomInfrastructure: context.RoomInfrastructure,
-            farms: context.Farms));
+            farms: context.Farms,
+            farmLogisticsReservations: context.FarmLogisticsReservations));
     }
 
     public Result<LoadedGameState> Load(

@@ -65,7 +65,8 @@ internal sealed partial class DigTerrainWorkSession
         Dictionary<EntityId, EntityId> outputStackIds,
         IAgentSkillGrantService skillGrants,
         MiningOutputCommitState? miningOutputCommits,
-        IFarmRepository? farms)
+        IFarmRepository? farms,
+        FarmLogisticsReservations? farmLogisticsReservations)
     {
         _advanceHandler = advanceHandler;
         _completionHandler = completionHandler;
@@ -86,6 +87,8 @@ internal sealed partial class DigTerrainWorkSession
         _quarterCommitHandler = new CommitExcavationQuarterCommandHandler(worldSession.Repository, _skillGrants, _journal);
         _miningOutputCommits = miningOutputCommits ?? new MiningOutputCommitState();
         _farmRepository = farms ?? new InMemoryFarmRepository();
+        _farmLogisticsReservations = farmLogisticsReservations
+            ?? new FarmLogisticsReservations();
     }
 
     internal MiningOutputCommitState MiningOutputCommits => _miningOutputCommits;

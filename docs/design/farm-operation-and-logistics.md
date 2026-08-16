@@ -46,6 +46,8 @@ terminal work, removed farms and invalidated work support cannot leave a stale
 farm harvest reservation behind.
 The save document persists every authoritative farm snapshot field, including
 mode, stock, populations, reproduction/feed timers and gradual escape progress.
+Active incoming and outgoing logistics reservations are persisted with their job
+and farm identities so in-transit hauling resumes without duplication after load.
 Older documents without a farms section restore an empty repository and rebuild
 completed farms through normal registration.
 

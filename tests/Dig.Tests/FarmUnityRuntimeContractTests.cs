@@ -37,9 +37,14 @@ public sealed class FarmUnityRuntimeContractTests
         string farming = Read(runtime, "DigTerrainWorkSession.Farming.cs");
 
         Assert.Contains("IFarmRepository? farms = null", composition);
-        Assert.Contains("miningOutputCommits,\n            farms);", composition);
+        Assert.Contains(
+            "miningOutputCommits,\n            farms,\n            farmLogisticsReservations);",
+            composition);
         Assert.Contains("_farmRepository = farms ?? new InMemoryFarmRepository();", session);
         Assert.Contains("internal IFarmRepository FarmRepository => _farmRepository;", farming);
+        Assert.Contains(
+            "internal FarmLogisticsReservations FarmLogisticsReservations",
+            Read(runtime, "DigTerrainFarmLogistics.cs"));
         Assert.DoesNotContain(
             "_farmRepository = new InMemoryFarmRepository()",
             farming);
