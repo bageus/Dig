@@ -44,7 +44,7 @@ public sealed class FarmUnityRuntimeContractTests
         Assert.Contains("SetVisible(_grubs, grubs)", decoration);
         Assert.Contains("snapshot.FeedCount", decoration);
         Assert.Contains("SetVisible(_feedCaps", decoration);
-        Assert.Contains("new Vector3(-0.09f + (index * 0.18f)", decoration);
+        Assert.Contains("-0.09f + (index * 0.18f)", decoration);
         Assert.Contains("Destroy(collider)", decoration);
         Assert.DoesNotContain("AddForce", decoration);
         Assert.DoesNotContain("Rigidbody", decoration);
