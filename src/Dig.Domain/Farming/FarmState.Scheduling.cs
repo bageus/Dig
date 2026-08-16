@@ -106,10 +106,19 @@ public sealed partial class FarmState
         if (snapshot.MushroomSlotsOccupied < 0
             || snapshot.MushroomSlotsOccupied > FarmOperationPolicy.MushroomGrowthSlots
             || snapshot.ResidualMushrooms < 0
+            || snapshot.ResidualMushrooms > FarmOperationPolicy.MushroomGrowthSlots
+            || snapshot.MushroomSlotsOccupied + snapshot.ResidualMushrooms
+                > FarmOperationPolicy.MushroomGrowthSlots
+            || (!snapshot.MushroomSeedEstablished
+                && snapshot.MushroomSlotsOccupied > 0)
+            || (snapshot.Mode != FarmMode.Mushrooms
+                && snapshot.MushroomSlotsOccupied > 0)
             || snapshot.HamsterCount < 0
             || snapshot.HamsterCount > FarmOperationPolicy.AnimalCapacity
             || snapshot.GrubCount < 0
             || snapshot.GrubCount > FarmOperationPolicy.AnimalCapacity
+            || (snapshot.Mode != FarmMode.Hamsters && snapshot.HamsterCount > 0)
+            || (snapshot.Mode != FarmMode.Grubs && snapshot.GrubCount > 0)
             || snapshot.FeedCount < 0
             || snapshot.FeedCount > FarmOperationPolicy.FeedCapacity
             || snapshot.EscapingHamsterCount < 0

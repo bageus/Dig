@@ -223,6 +223,51 @@ public sealed class FarmStateTests
         FarmDeliveryDemand seed = Assert.Single(restored.GetDeliveryDemands());
         Assert.Equal(FarmDeliveryKind.MushroomSeed, seed.Kind);
     }
+
+    [Fact]
+    public void Restore_rejects_mushrooms_that_exceed_shared_physical_slots()
+    {
+        FarmSnapshot invalid = new FarmSnapshot(
+            FarmMode.Mushrooms,
+            mushroomSeedEstablished: true,
+            mushroomSlotsOccupied: 2,
+            residualMushrooms: 2,
+            hamsterCount: 0,
+            grubCount: 0,
+            feedCount: 0,
+            nextReproductionTick: -1,
+            nextFeedConsumptionTick: -1);
+
+        Assert.Throws<System.ArgumentException>(() => FarmState.Restore(invalid));
+    }
+
+    [Fact]
+    public void Restore_rejects_active_growth_without_seed_or_matching_mode()
+    {
+        FarmSnapshot missingSeed = new FarmSnapshot(
+            FarmMode.Mushrooms,
+            mushroomSeedEstablished: false,
+            mushroomSlotsOccupied: 1,
+            residualMushrooms: 0,
+            hamsterCount: 0,
+            grubCount: 0,
+            feedCount: 0,
+            nextReproductionTick: -1,
+            nextFeedConsumptionTick: -1);
+        FarmSnapshot wrongMode = new FarmSnapshot(
+            FarmMode.Hamsters,
+            mushroomSeedEstablished: true,
+            mushroomSlotsOccupied: 1,
+            residualMushrooms: 0,
+            hamsterCount: 2,
+            grubCount: 0,
+            feedCount: 0,
+            nextReproductionTick: -1,
+            nextFeedConsumptionTick: -1);
+
+        Assert.Throws<System.ArgumentException>(() => FarmState.Restore(missingSeed));
+        Assert.Throws<System.ArgumentException>(() => FarmState.Restore(wrongMode));
+    }
 }
 
 }
