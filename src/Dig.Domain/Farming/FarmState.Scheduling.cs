@@ -101,6 +101,14 @@ public sealed partial class FarmState
         if (tick < 0) throw new ArgumentOutOfRangeException(nameof(tick));
     }
 
+    private static void ValidateMode(FarmMode mode, string parameterName)
+    {
+        if (!Enum.IsDefined(typeof(FarmMode), mode))
+        {
+            throw new ArgumentOutOfRangeException(parameterName);
+        }
+    }
+
     private static void ValidateSnapshot(FarmSnapshot snapshot)
     {
         bool hasEscapingAnimals = snapshot.EscapingHamsterCount > 0

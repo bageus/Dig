@@ -9,6 +9,22 @@ namespace Dig.Tests
 public sealed class FarmStateTests
 {
     [Fact]
+    public void Unknown_mode_is_rejected_without_mutating_existing_farm()
+    {
+        Assert.Throws<System.ArgumentOutOfRangeException>(
+            () => new FarmState((FarmMode)99));
+        FarmState farm = new FarmState(FarmMode.Hamsters);
+
+        Assert.Throws<System.ArgumentOutOfRangeException>(
+            () => farm.SwitchMode((FarmMode)99, tick: 1));
+
+        Assert.Equal(FarmMode.Hamsters, farm.Mode);
+        FarmDeliveryDemand demand = Assert.Single(farm.GetDeliveryDemands());
+        Assert.Equal(FarmDeliveryKind.Hamster, demand.Kind);
+        Assert.Equal(2, demand.Quantity);
+    }
+
+    [Fact]
     public void Mushroom_mode_requests_one_seed_and_maintains_three_growth_slots()
     {
         FarmState farm = new FarmState();

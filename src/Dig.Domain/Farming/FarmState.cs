@@ -20,6 +20,7 @@ public sealed partial class FarmState
 
     public FarmState(FarmMode initialMode = FarmMode.Mushrooms)
     {
+        ValidateMode(initialMode, nameof(initialMode));
         Mode = initialMode;
     }
 
@@ -89,6 +90,7 @@ public sealed partial class FarmState
     public FarmModeTransition SwitchMode(FarmMode mode, long tick)
     {
         ValidateTick(tick);
+        ValidateMode(mode, nameof(mode));
         if (mode == Mode)
         {
             return new FarmModeTransition(Mode, Mode, 0, 0, 0, 0);
