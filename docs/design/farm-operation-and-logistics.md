@@ -28,6 +28,10 @@ Animal modes expose two mushroom-cap feed slots after starter stock arrives.
 The farm consumes one cap at every global half-day boundary. Reproduction pauses
 without feed and at population capacity.
 
+The presentation projects the authoritative farm snapshot inside the fenced plot:
+three growth slots, up to eight animals, and both feed caps at the physical center
+of the farm. These objects are presentation-only and do not own simulation state.
+
 ## Logistics contract
 
 - `FarmState` owns mode, internal stock, population, growth and timers.

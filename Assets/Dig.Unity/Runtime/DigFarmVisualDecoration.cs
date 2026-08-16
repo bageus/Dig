@@ -16,6 +16,7 @@ internal sealed class DigFarmVisualDecoration : MonoBehaviour
     private readonly GameObject[] _mushrooms = new GameObject[3];
     private readonly GameObject[] _hamsters = new GameObject[8];
     private readonly GameObject[] _grubs = new GameObject[8];
+    private readonly GameObject[] _feedCaps = new GameObject[2];
     private bool _contentsBuilt;
 
     internal static void Ensure(GameObject buildingRoot)
@@ -42,6 +43,7 @@ internal sealed class DigFarmVisualDecoration : MonoBehaviour
         SetVisible(_mushrooms, mushrooms);
         SetVisible(_hamsters, hamsters);
         SetVisible(_grubs, grubs);
+        SetVisible(_feedCaps, Mathf.Min(_feedCaps.Length, snapshot.FeedCount));
     }
 
     private void Build()
@@ -140,9 +142,15 @@ internal sealed class DigFarmVisualDecoration : MonoBehaviour
                 new Color(0.68f, 0.82f, 0.35f, 1f));
         }
 
+        for (int index = 0; index < _feedCaps.Length; index++)
+        {
+            _feedCaps[index] = CreateFeedCap(contents, index);
+        }
+
         SetVisible(_mushrooms, 0);
         SetVisible(_hamsters, 0);
         SetVisible(_grubs, 0);
+        SetVisible(_feedCaps, 0);
     }
 
     private static GameObject CreateMushroom(
@@ -185,6 +193,25 @@ internal sealed class DigFarmVisualDecoration : MonoBehaviour
         animal.transform.localScale = scale;
         RemoveColliderAndTint(animal, tint);
         return animal;
+    }
+
+    private static GameObject CreateFeedCap(Transform parent, int index)
+    {
+        GameObject root = new GameObject("Feed Cap " + index);
+        root.transform.SetParent(parent, worldPositionStays: false);
+        root.transform.localPosition = new Vector3(
+            -0.09f + (index * 0.18f),
+            0.12f + (index * 0.035f),
+            0f);
+        root.transform.localRotation = Quaternion.Euler(0f, index * 32f, 0f);
+        CreatePart(
+            "Cap",
+            root.transform,
+            Vector3.zero,
+            new Vector3(0.24f, 0.08f, 0.20f),
+            new Color(0.70f, 0.22f, 0.16f, 1f),
+            PrimitiveType.Sphere);
+        return root;
     }
 
     private static Vector3 ResolveAnimalPosition(int index)

@@ -35,12 +35,16 @@ public sealed class FarmUnityRuntimeContractTests
 
         Assert.Contains("new GameObject[3]", decoration);
         Assert.Equal(2, Count(decoration, "new GameObject[8]"));
+        Assert.Contains("new GameObject[2]", decoration);
         Assert.Contains("snapshot.MushroomSlotsOccupied + snapshot.ResidualMushrooms", decoration);
         Assert.Contains("snapshot.HamsterCount + snapshot.EscapingHamsterCount", decoration);
         Assert.Contains("snapshot.GrubCount + snapshot.EscapingGrubCount", decoration);
         Assert.Contains("SetVisible(_mushrooms, mushrooms)", decoration);
         Assert.Contains("SetVisible(_hamsters, hamsters)", decoration);
         Assert.Contains("SetVisible(_grubs, grubs)", decoration);
+        Assert.Contains("snapshot.FeedCount", decoration);
+        Assert.Contains("SetVisible(_feedCaps", decoration);
+        Assert.Contains("new Vector3(-0.09f + (index * 0.18f)", decoration);
         Assert.Contains("Destroy(collider)", decoration);
         Assert.DoesNotContain("AddForce", decoration);
         Assert.DoesNotContain("Rigidbody", decoration);
