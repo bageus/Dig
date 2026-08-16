@@ -147,6 +147,13 @@ public sealed class FarmLogisticsReservations
         return _byJob.Remove(jobId);
     }
 
+    public bool TryRestore(FarmLogisticsReservation reservation)
+    {
+        if (_byJob.ContainsKey(reservation.JobId)) return false;
+        _byJob.Add(reservation.JobId, reservation);
+        return true;
+    }
+
     public int ReleaseForFarm(EntityId buildingId)
     {
         EntityId[] jobIds = _byJob.Values

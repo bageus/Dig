@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.Serialization;
 using Dig.Application.Buildings;
+using Dig.Application.Farming;
 using Dig.Application.Rooms;
 using Dig.Application.Tunnels;
 using Dig.Application.World;
@@ -108,6 +109,7 @@ public sealed class SaveGameDocument
     [DataMember(Order = 20)] public RoomInfrastructureSaveData RoomInfrastructure { get; set; } = new RoomInfrastructureSaveData();
     [DataMember(Order = 21)] public SocietySaveData Society { get; set; } = new SocietySaveData();
     [DataMember(Order = 22)] public ExplorationSaveData Exploration { get; set; } = new ExplorationSaveData();
+    [DataMember(Order = 23)] public FarmSaveData Farms { get; set; } = new FarmSaveData();
 }
 
 public sealed class LoadedGameState
@@ -138,7 +140,9 @@ public sealed class LoadedGameState
         TunnelInfrastructureRuntimeSnapshot? tunnelInfrastructure = null,
         RoomInfrastructureRuntimeSnapshot? roomInfrastructure = null,
         SocietyState? society = null,
-        ExplorationState? exploration = null)
+        ExplorationState? exploration = null,
+        IFarmRepository? farms = null,
+        FarmLogisticsReservations? farmLogisticsReservations = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -187,6 +191,9 @@ public sealed class LoadedGameState
             ?? RoomInfrastructureRuntimeSnapshot.Empty();
         Society = society;
         Exploration = exploration ?? new ExplorationState();
+        Farms = farms ?? new InMemoryFarmRepository();
+        FarmLogisticsReservations = farmLogisticsReservations
+            ?? new FarmLogisticsReservations();
     }
 
     public SaveMetadataData Metadata { get; }
@@ -215,6 +222,8 @@ public sealed class LoadedGameState
     public RoomInfrastructureRuntimeSnapshot RoomInfrastructure { get; }
     public SocietyState? Society { get; }
     public ExplorationState Exploration { get; }
+    public IFarmRepository Farms { get; }
+    public FarmLogisticsReservations FarmLogisticsReservations { get; }
 
     private static IReadOnlyDictionary<TKey, TValue> Copy<TKey, TValue>(
         IReadOnlyDictionary<TKey, TValue>? values) where TKey : notnull

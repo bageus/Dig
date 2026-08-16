@@ -6,6 +6,7 @@ using Dig.Domain.Buildings;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Farming;
+using Dig.Domain.Inventory;
 using Dig.Presentation.Agents;
 
 namespace Dig.Unity
@@ -13,8 +14,10 @@ namespace Dig.Unity
 
 internal sealed partial class DigTerrainWorkSession
 {
-    private readonly InMemoryFarmRepository _farmRepository = new InMemoryFarmRepository();
+    private readonly IFarmRepository _farmRepository;
     private readonly FarmItemCatalog _farmItems = FarmItemCatalog.Default;
+
+    internal IFarmRepository FarmRepository => _farmRepository;
 
     public Result AdvanceFarms(long tick, IReadOnlyList<AgentViewModel> agents)
     {
@@ -29,6 +32,12 @@ internal sealed partial class DigTerrainWorkSession
             {
                 return Result.Failure(result.Error!);
             }
+
+            Result escaped = MaterializeEscapedFarmAnimals(
+                farmId,
+                result.Value,
+                tick);
+            if (escaped.IsFailure) return escaped;
         }
 
         return SynchronizeFarmLogisticsRuntime(
@@ -47,6 +56,17 @@ internal sealed partial class DigTerrainWorkSession
         SynchronizeFarmRegistrations();
         return new GetFarmSnapshotQueryHandler(_farmRepository).Handle(
             new GetFarmSnapshotQuery(EntityId.Parse(buildingId)));
+    }
+
+    internal IReadOnlyDictionary<string, FarmSnapshot> LoadAllFarmSnapshots()
+    {
+        SynchronizeFarmRegistrations();
+        return _farmRepository.GetFarmIds()
+            .OrderBy(value => value.ToString(), StringComparer.Ordinal)
+            .ToDictionary(
+                value => value.ToString(),
+                value => _farmRepository.Get(value)!.CreateSnapshot(),
+                StringComparer.Ordinal);
     }
 
     public IReadOnlyList<FarmSupplyDemand> LoadFarmSupplyDemands(string buildingId)
@@ -71,7 +91,11 @@ internal sealed partial class DigTerrainWorkSession
         SynchronizeFarmRegistrations();
         Result<FarmModeTransition> result = new SetFarmModeCommandHandler(_farmRepository).Handle(
             new SetFarmModeCommand(EntityId.Parse(buildingId), mode, tick));
-        return result.IsSuccess ? Result.Success() : Result.Failure(result.Error!);
+        if (result.IsFailure) return Result.Failure(result.Error!);
+        return MaterializeReleasedFarmFeed(
+            EntityId.Parse(buildingId),
+            result.Value.ReleasedFeed,
+            tick);
     }
 
     public Result DeliverFarmStock(
@@ -94,16 +118,48 @@ internal sealed partial class DigTerrainWorkSession
                 tick));
     }
 
-    public Result CollectFarmProduct(string buildingId, FarmDeliveryKind kind)
+    public Result HarvestFarmMushroom(string buildingId, long tick)
     {
         if (string.IsNullOrWhiteSpace(buildingId))
         {
             throw new ArgumentException("Building id is required.", nameof(buildingId));
         }
 
+        if (tick < 0) throw new ArgumentOutOfRangeException(nameof(tick));
         SynchronizeFarmRegistrations();
-        return new CollectFarmProductCommandHandler(_farmRepository).Handle(
-            new CollectFarmProductCommand(EntityId.Parse(buildingId), kind));
+        EntityId farmId = EntityId.Parse(buildingId);
+        BuildingSnapshot? farm = _buildingsRepository?.Get().Get(farmId);
+        if (farm == null) return Result.Failure(FarmApplicationErrors.MissingFarm);
+        Result harvested = new CollectFarmProductCommandHandler(_farmRepository).Handle(
+            new CollectFarmProductCommand(farmId, FarmDeliveryKind.MushroomSeed));
+        if (harvested.IsFailure) return harvested;
+
+        InventoryState inventory = _inventoryRepository.Get();
+        Result cap = inventory.AddUnit(
+            NextFarmRuntimeId("stack"),
+            _farmItems.MushroomCap,
+            ItemLocation.InWorld(farm.Origin),
+            tick);
+        if (cap.IsFailure)
+        {
+            throw new InvalidOperationException(
+                "Validated farm mushroom cap could not enter world inventory.");
+        }
+
+        Result leg = inventory.AddUnit(
+            NextFarmRuntimeId("stack"),
+            CampfireProductionContent.MushroomLegItemId,
+            ItemLocation.InWorld(farm.Origin),
+            tick);
+        if (leg.IsFailure)
+        {
+            throw new InvalidOperationException(
+                "Validated farm mushroom leg could not enter world inventory.");
+        }
+
+        _inventoryRepository.Save(inventory);
+        _journal.Append(inventory.DequeueUncommittedEvents());
+        return Result.Success();
     }
 
     private void SynchronizeFarmRegistrations()
@@ -136,7 +192,6 @@ internal sealed partial class DigTerrainWorkSession
             if (!activeSet.Contains(existing))
             {
                 _farmRepository.Remove(existing);
-                _farmLogisticsReservations.ReleaseForFarm(existing);
             }
         }
     }

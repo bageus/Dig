@@ -298,6 +298,8 @@ namespace Dig.Unity
             BarrelRenderer!.Render(TerrainSession.LoadBarrels());
             JobRenderer.Render(jobs);
             BuildingRenderer.Render(buildings);
+            BuildingRenderer.RenderFarmContents(
+                TerrainSession.LoadAllFarmSnapshots());
             BuildingInternalStockRenderer!.Render(
                 TerrainSession.LoadAllBuildingProduction(),
                 buildings,

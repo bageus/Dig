@@ -194,8 +194,9 @@ internal sealed partial class DigTerrainWorkSession
 
             if (!HasFullStandingSupport(definition.WorkPosition))
             {
-                Result cancelled = _cancelMushroomChop!.Handle(
-                    new CancelMushroomChopCommand(
+                Result cancelled = IsFarmMushroomHarvest(job)
+                    ? CancelFarmMushroomHarvest(job, tick)
+                    : _cancelMushroomChop!.Handle(new CancelMushroomChopCommand(
                         job.Id,
                         "mushroom_work_position_unsupported",
                         tick));
@@ -207,7 +208,13 @@ internal sealed partial class DigTerrainWorkSession
                 continue;
             }
 
-            Result result = AdvanceMushroomJob(job, definition, tick);
+            Result result = TryAdvanceFarmMushroomJob(
+                job,
+                definition,
+                tick,
+                out Result farmResult)
+                ? farmResult
+                : AdvanceMushroomJob(job, definition, tick);
             if (result.IsFailure)
             {
                 return result;

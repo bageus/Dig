@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Dig.Application.Buildings;
+using Dig.Application.Farming;
 using Dig.Application.Tunnels;
 using Dig.Application.World;
 using Dig.Domain.Buildings;
@@ -283,6 +284,14 @@ public sealed partial class SaveGameLoader
             }
             ExplorationState exploration = ExplorationSaveAdapter.Decode(
                 document.Exploration, world.Value.Size);
+            Result<InMemoryFarmRepository> farms = FarmSaveAdapter.Decode(document.Farms);
+            if (farms.IsFailure) return Result<LoadedGameState>.Failure(farms.Error!);
+            Result<FarmLogisticsReservations> farmReservations = FarmSaveAdapter.DecodeReservations(document.Farms);
+            if (farmReservations.IsFailure)
+                return Result<LoadedGameState>.Failure(farmReservations.Error!);
+            Result farmReservationIntegrity = FarmSaveAdapter.ValidateReservations(
+                farmReservations.Value, farms.Value, jobs.Value);
+            if (farmReservationIntegrity.IsFailure) return Result<LoadedGameState>.Failure(farmReservationIntegrity.Error!);
             return Result<LoadedGameState>.Success(new LoadedGameState(
                 CopyMetadata(document.Metadata),
                 world.Value,
@@ -310,7 +319,9 @@ public sealed partial class SaveGameLoader
                 tunnelInfrastructure: infrastructure.Value.Tunnel,
                 roomInfrastructure: infrastructure.Value.Room,
                 society: society.Value,
-                exploration: exploration));
+                exploration: exploration,
+                farms: farms.Value,
+                farmLogisticsReservations: farmReservations.Value));
         }
         catch (UnknownTerrainDepositDefinitionException)
         {

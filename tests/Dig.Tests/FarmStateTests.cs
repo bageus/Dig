@@ -9,6 +9,22 @@ namespace Dig.Tests
 public sealed class FarmStateTests
 {
     [Fact]
+    public void Unknown_mode_is_rejected_without_mutating_existing_farm()
+    {
+        Assert.Throws<System.ArgumentOutOfRangeException>(
+            () => new FarmState((FarmMode)99));
+        FarmState farm = new FarmState(FarmMode.Hamsters);
+
+        Assert.Throws<System.ArgumentOutOfRangeException>(
+            () => farm.SwitchMode((FarmMode)99, tick: 1));
+
+        Assert.Equal(FarmMode.Hamsters, farm.Mode);
+        FarmDeliveryDemand demand = Assert.Single(farm.GetDeliveryDemands());
+        Assert.Equal(FarmDeliveryKind.Hamster, demand.Kind);
+        Assert.Equal(2, demand.Quantity);
+    }
+
+    [Fact]
     public void Mushroom_mode_requests_one_seed_and_maintains_three_growth_slots()
     {
         FarmState farm = new FarmState();
@@ -46,6 +62,32 @@ public sealed class FarmStateTests
         FarmDeliveryDemand seed = Assert.Single(farm.GetDeliveryDemands());
         Assert.Equal(FarmDeliveryKind.MushroomSeed, seed.Kind);
         Assert.Equal(0, farm.Advance(3).MushroomsRegrown);
+    }
+
+    [Fact]
+    public void Returning_to_mushrooms_shares_three_slots_with_residual_growth()
+    {
+        FarmState farm = new FarmState();
+        farm.Deliver(FarmDeliveryKind.MushroomSeed, 1, tick: 0);
+        farm.SwitchMode(FarmMode.Hamsters, tick: 1);
+        farm.SwitchMode(FarmMode.Mushrooms, tick: 2);
+        farm.Deliver(FarmDeliveryKind.MushroomSeed, 1, tick: 2);
+
+        Assert.Equal(3, farm.ResidualMushrooms);
+        Assert.Equal(0, farm.MushroomSlotsOccupied);
+        Assert.True(farm.HarvestMushroom());
+        Assert.Equal(2, farm.ResidualMushrooms);
+        Assert.Equal(1, farm.Advance(3).MushroomsRegrown);
+        Assert.Equal(
+            FarmOperationPolicy.MushroomGrowthSlots,
+            farm.ResidualMushrooms + farm.MushroomSlotsOccupied);
+
+        Assert.True(farm.HarvestMushroom());
+        Assert.Equal(1, farm.ResidualMushrooms);
+        Assert.Equal(1, farm.Advance(4).MushroomsRegrown);
+        Assert.Equal(
+            FarmOperationPolicy.MushroomGrowthSlots,
+            farm.ResidualMushrooms + farm.MushroomSlotsOccupied);
     }
 
     [Fact]
@@ -196,6 +238,110 @@ public sealed class FarmStateTests
         Assert.Equal(2, restored.EscapingGrubCount);
         FarmDeliveryDemand seed = Assert.Single(restored.GetDeliveryDemands());
         Assert.Equal(FarmDeliveryKind.MushroomSeed, seed.Kind);
+    }
+
+    [Fact]
+    public void Restore_rejects_mushrooms_that_exceed_shared_physical_slots()
+    {
+        FarmSnapshot invalid = new FarmSnapshot(
+            FarmMode.Mushrooms,
+            mushroomSeedEstablished: true,
+            mushroomSlotsOccupied: 2,
+            residualMushrooms: 2,
+            hamsterCount: 0,
+            grubCount: 0,
+            feedCount: 0,
+            nextReproductionTick: -1,
+            nextFeedConsumptionTick: -1);
+
+        Assert.Throws<System.ArgumentException>(() => FarmState.Restore(invalid));
+    }
+
+    [Fact]
+    public void Restore_rejects_active_growth_without_seed_or_matching_mode()
+    {
+        FarmSnapshot missingSeed = new FarmSnapshot(
+            FarmMode.Mushrooms,
+            mushroomSeedEstablished: false,
+            mushroomSlotsOccupied: 1,
+            residualMushrooms: 0,
+            hamsterCount: 0,
+            grubCount: 0,
+            feedCount: 0,
+            nextReproductionTick: -1,
+            nextFeedConsumptionTick: -1);
+        FarmSnapshot wrongMode = new FarmSnapshot(
+            FarmMode.Hamsters,
+            mushroomSeedEstablished: true,
+            mushroomSlotsOccupied: 1,
+            residualMushrooms: 0,
+            hamsterCount: 2,
+            grubCount: 0,
+            feedCount: 0,
+            nextReproductionTick: -1,
+            nextFeedConsumptionTick: -1);
+
+        Assert.Throws<System.ArgumentException>(() => FarmState.Restore(missingSeed));
+        Assert.Throws<System.ArgumentException>(() => FarmState.Restore(wrongMode));
+    }
+
+    [Fact]
+    public void Restore_rejects_unknown_mode_and_mushroom_only_state_leaking_to_other_modes()
+    {
+        FarmSnapshot unknownMode = Snapshot((FarmMode)99);
+        FarmSnapshot seedInAnimalMode = Snapshot(
+            FarmMode.Hamsters,
+            mushroomSeedEstablished: true,
+            hamsterCount: 2);
+        FarmSnapshot feedInMushroomMode = Snapshot(
+            FarmMode.Mushrooms,
+            feedCount: 1);
+
+        Assert.Throws<System.ArgumentException>(() => FarmState.Restore(unknownMode));
+        Assert.Throws<System.ArgumentException>(() => FarmState.Restore(seedInAnimalMode));
+        Assert.Throws<System.ArgumentException>(() => FarmState.Restore(feedInMushroomMode));
+    }
+
+    [Fact]
+    public void Restore_rejects_timers_that_do_not_match_operational_state()
+    {
+        FarmSnapshot mushroomTimer = Snapshot(
+            FarmMode.Mushrooms,
+            nextReproductionTick: 10);
+        FarmSnapshot escapingWithoutTimer = Snapshot(
+            FarmMode.Mushrooms,
+            escapingHamsterCount: 1);
+        FarmSnapshot timerWithoutEscapingAnimals = Snapshot(
+            FarmMode.Mushrooms,
+            nextEscapeTick: 10);
+
+        Assert.Throws<System.ArgumentException>(() => FarmState.Restore(mushroomTimer));
+        Assert.Throws<System.ArgumentException>(() => FarmState.Restore(escapingWithoutTimer));
+        Assert.Throws<System.ArgumentException>(() => FarmState.Restore(timerWithoutEscapingAnimals));
+    }
+
+    private static FarmSnapshot Snapshot(
+        FarmMode mode,
+        bool mushroomSeedEstablished = false,
+        int hamsterCount = 0,
+        int feedCount = 0,
+        long nextReproductionTick = -1,
+        int escapingHamsterCount = 0,
+        long nextEscapeTick = -1)
+    {
+        return new FarmSnapshot(
+            mode,
+            mushroomSeedEstablished,
+            mushroomSlotsOccupied: 0,
+            residualMushrooms: 0,
+            hamsterCount,
+            grubCount: 0,
+            feedCount,
+            nextReproductionTick,
+            nextFeedConsumptionTick: -1,
+            escapingHamsterCount,
+            escapingGrubCount: 0,
+            nextEscapeTick);
     }
 }
 

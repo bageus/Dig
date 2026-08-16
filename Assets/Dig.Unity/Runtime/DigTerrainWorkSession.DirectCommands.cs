@@ -208,6 +208,11 @@ namespace Dig.Unity
 
         private Result CancelMushroomForDirectCommand(JobSnapshot job, long tick)
         {
+            if (IsFarmMushroomHarvest(job))
+            {
+                return CancelFarmMushroomHarvest(job, tick);
+            }
+
             return _cancelMushroomChop == null
                 ? Result.Success()
                 : _cancelMushroomChop.Handle(new CancelMushroomChopCommand(

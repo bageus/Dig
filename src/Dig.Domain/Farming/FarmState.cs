@@ -20,6 +20,7 @@ public sealed partial class FarmState
 
     public FarmState(FarmMode initialMode = FarmMode.Mushrooms)
     {
+        ValidateMode(initialMode, nameof(initialMode));
         Mode = initialMode;
     }
 
@@ -89,6 +90,7 @@ public sealed partial class FarmState
     public FarmModeTransition SwitchMode(FarmMode mode, long tick)
     {
         ValidateTick(tick);
+        ValidateMode(mode, nameof(mode));
         if (mode == Mode)
         {
             return new FarmModeTransition(Mode, Mode, 0, 0, 0, 0);
@@ -147,7 +149,9 @@ public sealed partial class FarmState
                         "The mushroom seed requirement is already satisfied or has an invalid quantity.");
                 }
                 _mushroomSeedEstablished = true;
-                _mushroomSlotsOccupied = FarmOperationPolicy.MushroomGrowthSlots;
+                _mushroomSlotsOccupied = Math.Max(
+                    0,
+                    FarmOperationPolicy.MushroomGrowthSlots - _residualMushrooms);
                 break;
             case FarmDeliveryKind.Hamster:
                 RequireMode(FarmMode.Hamsters);
@@ -183,15 +187,15 @@ public sealed partial class FarmState
 
     public bool HarvestMushroom()
     {
-        if (Mode == FarmMode.Mushrooms && _mushroomSlotsOccupied > 0)
-        {
-            _mushroomSlotsOccupied--;
-            return true;
-        }
-
         if (_residualMushrooms > 0)
         {
             _residualMushrooms--;
+            return true;
+        }
+
+        if (Mode == FarmMode.Mushrooms && _mushroomSlotsOccupied > 0)
+        {
+            _mushroomSlotsOccupied--;
             return true;
         }
 
@@ -220,11 +224,14 @@ public sealed partial class FarmState
         int regrown = 0;
         if (Mode == FarmMode.Mushrooms)
         {
+            int activeCapacity = Math.Max(
+                0,
+                FarmOperationPolicy.MushroomGrowthSlots - _residualMushrooms);
             if (_mushroomSeedEstablished
-                && _mushroomSlotsOccupied < FarmOperationPolicy.MushroomGrowthSlots)
+                && _mushroomSlotsOccupied < activeCapacity)
             {
-                regrown = FarmOperationPolicy.MushroomGrowthSlots - _mushroomSlotsOccupied;
-                _mushroomSlotsOccupied = FarmOperationPolicy.MushroomGrowthSlots;
+                regrown = activeCapacity - _mushroomSlotsOccupied;
+                _mushroomSlotsOccupied = activeCapacity;
             }
             return new FarmAdvanceResult(
                 regrown,

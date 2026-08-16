@@ -61,7 +61,6 @@ public sealed partial class DigGameHudCanvas
             FarmMode.Grubs,
             DigProductionIconGlyph.Resolve(LivingMaterialContent.GrubItemId.ToString()),
             modeRow);
-
         string status = BuildFarmStatus(farm, demands);
         Text details = CreateText(
             "Farm Status",

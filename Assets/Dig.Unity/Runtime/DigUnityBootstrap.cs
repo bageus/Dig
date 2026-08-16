@@ -218,7 +218,12 @@ namespace Dig.Unity
             RunPresentationStage("rendering jobs", visualWarnings,
                 () => jobRenderer.Render(jobs));
             RunPresentationStage("rendering buildings", visualWarnings,
-                () => buildingRenderer.Render(buildings));
+                () =>
+                {
+                    buildingRenderer.Render(buildings);
+                    buildingRenderer.RenderFarmContents(
+                        terrainSession.LoadAllFarmSnapshots());
+                });
             RunPresentationStage("rendering internal building stock", visualWarnings, () =>
             {
                 buildingInternalStockRenderer.Render(

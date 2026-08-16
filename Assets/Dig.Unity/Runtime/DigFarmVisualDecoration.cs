@@ -1,3 +1,5 @@
+using System;
+using Dig.Domain.Farming;
 using UnityEngine;
 
 namespace Dig.Unity
@@ -11,6 +13,13 @@ internal sealed class DigFarmVisualDecoration : MonoBehaviour
     private const float FenceHeight = 0.5f;
     private const float RailThickness = 0.08f;
     private const float DirtThickness = 0.08f;
+    private readonly GameObject[] _mushrooms = new GameObject[3];
+    private readonly GameObject[] _hamsters = new GameObject[8];
+    private readonly GameObject[] _grubs = new GameObject[8];
+    private readonly GameObject[] _feedCaps = new GameObject[2];
+    private readonly Vector3[] _hamsterOrigins = new Vector3[8];
+    private readonly Vector3[] _grubOrigins = new Vector3[8];
+    private bool _contentsBuilt;
 
     internal static void Ensure(GameObject buildingRoot)
     {
@@ -18,6 +27,32 @@ internal sealed class DigFarmVisualDecoration : MonoBehaviour
         {
             buildingRoot.AddComponent<DigFarmVisualDecoration>().Build();
         }
+    }
+
+    internal void SetState(FarmSnapshot snapshot)
+    {
+        if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
+        EnsureContents();
+        int mushrooms = Mathf.Min(
+            _mushrooms.Length,
+            snapshot.MushroomSlotsOccupied + snapshot.ResidualMushrooms);
+        int hamsters = Mathf.Min(
+            _hamsters.Length,
+            snapshot.HamsterCount + snapshot.EscapingHamsterCount);
+        int grubs = Mathf.Min(
+            _grubs.Length,
+            snapshot.GrubCount + snapshot.EscapingGrubCount);
+        SetVisible(_mushrooms, mushrooms);
+        SetVisible(_hamsters, hamsters);
+        SetVisible(_grubs, grubs);
+        SetVisible(_feedCaps, Mathf.Min(_feedCaps.Length, snapshot.FeedCount));
+    }
+
+    private void Update()
+    {
+        if (!_contentsBuilt) return;
+        AnimateAnimals(_hamsters, _hamsterOrigins, speed: 0.72f, radius: 0.13f);
+        AnimateAnimals(_grubs, _grubOrigins, speed: 0.50f, radius: 0.11f);
     }
 
     private void Build()
@@ -68,6 +103,171 @@ internal sealed class DigFarmVisualDecoration : MonoBehaviour
         CreatePost("Post FR", visualRoot, halfWidth, -halfDepth, wood);
         CreatePost("Post BL", visualRoot, -halfWidth, halfDepth, wood);
         CreatePost("Post BR", visualRoot, halfWidth, halfDepth, wood);
+        EnsureContents();
+    }
+
+    private void EnsureContents()
+    {
+        if (_contentsBuilt) return;
+        _contentsBuilt = true;
+        Transform contents = new GameObject("Farm Contents").transform;
+        contents.SetParent(transform, worldPositionStays: false);
+        contents.localPosition = Vector3.zero;
+        contents.localRotation = Quaternion.identity;
+
+        Vector3[] mushroomPositions =
+        {
+            new Vector3(-0.58f, 0.10f, -0.22f),
+            new Vector3(0f, 0.10f, 0.24f),
+            new Vector3(0.58f, 0.10f, -0.18f),
+        };
+        for (int index = 0; index < _mushrooms.Length; index++)
+        {
+            _mushrooms[index] = CreateMushroom(
+                contents,
+                index,
+                mushroomPositions[index]);
+        }
+
+        for (int index = 0; index < _hamsters.Length; index++)
+        {
+            _hamsterOrigins[index] = ResolveAnimalPosition(index);
+            _hamsters[index] = CreateAnimal(
+                contents,
+                "Hamster " + index,
+                _hamsterOrigins[index],
+                new Vector3(0.22f, 0.16f, 0.16f),
+                new Color(0.64f, 0.38f, 0.18f, 1f));
+        }
+
+        for (int index = 0; index < _grubs.Length; index++)
+        {
+            Vector3 position = ResolveAnimalPosition(index);
+            position.z += 0.06f;
+            _grubOrigins[index] = position;
+            _grubs[index] = CreateAnimal(
+                contents,
+                "Grub " + index,
+                position,
+                new Vector3(0.25f, 0.10f, 0.12f),
+                new Color(0.68f, 0.82f, 0.35f, 1f));
+        }
+
+        for (int index = 0; index < _feedCaps.Length; index++)
+        {
+            _feedCaps[index] = CreateFeedCap(contents, index);
+        }
+
+        SetVisible(_mushrooms, 0);
+        SetVisible(_hamsters, 0);
+        SetVisible(_grubs, 0);
+        SetVisible(_feedCaps, 0);
+    }
+
+    private static GameObject CreateMushroom(
+        Transform parent,
+        int index,
+        Vector3 position)
+    {
+        GameObject root = new GameObject("Mushroom " + index);
+        root.transform.SetParent(parent, worldPositionStays: false);
+        root.transform.localPosition = position;
+        CreatePart(
+            "Stem",
+            root.transform,
+            new Vector3(0f, 0.12f, 0f),
+            new Vector3(0.10f, 0.24f, 0.10f),
+            new Color(0.78f, 0.68f, 0.49f, 1f),
+            PrimitiveType.Cylinder);
+        CreatePart(
+            "Cap",
+            root.transform,
+            new Vector3(0f, 0.27f, 0f),
+            new Vector3(0.30f, 0.13f, 0.30f),
+            new Color(0.70f, 0.22f, 0.16f, 1f),
+            PrimitiveType.Sphere);
+        return root;
+    }
+
+    private static GameObject CreateAnimal(
+        Transform parent,
+        string name,
+        Vector3 position,
+        Vector3 scale,
+        Color tint)
+    {
+        GameObject animal = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        animal.name = name;
+        animal.transform.SetParent(parent, worldPositionStays: false);
+        animal.transform.localPosition = position;
+        animal.transform.localRotation = Quaternion.identity;
+        animal.transform.localScale = scale;
+        RemoveColliderAndTint(animal, tint);
+        return animal;
+    }
+
+    private static GameObject CreateFeedCap(Transform parent, int index)
+    {
+        GameObject root = new GameObject("Feed Cap " + index);
+        root.transform.SetParent(parent, worldPositionStays: false);
+        root.transform.localPosition = new Vector3(
+            -0.09f + (index * 0.18f),
+            0.12f + (index * 0.035f),
+            0f);
+        root.transform.localRotation = Quaternion.Euler(0f, index * 32f, 0f);
+        CreatePart(
+            "Cap",
+            root.transform,
+            Vector3.zero,
+            new Vector3(0.24f, 0.08f, 0.20f),
+            new Color(0.70f, 0.22f, 0.16f, 1f),
+            PrimitiveType.Sphere);
+        return root;
+    }
+
+    private static Vector3 ResolveAnimalPosition(int index)
+    {
+        int column = index % 4;
+        int row = index / 4;
+        return new Vector3(
+            -0.66f + (column * 0.44f),
+            0.13f,
+            -0.30f + (row * 0.55f));
+    }
+
+    private static void AnimateAnimals(
+        GameObject[] animals,
+        Vector3[] origins,
+        float speed,
+        float radius)
+    {
+        float halfWidth = (FarmWidth * 0.5f) - radius;
+        float halfDepth = (FarmDepth * 0.5f) - radius;
+        for (int index = 0; index < animals.Length; index++)
+        {
+            GameObject animal = animals[index];
+            if (!animal.activeSelf) continue;
+            float phase = (index * 1.73f) + (Time.time * speed);
+            Vector3 origin = origins[index];
+            float x = origin.x + (Mathf.Sin(phase) * 0.16f);
+            float z = origin.z + (Mathf.Cos(phase * 0.79f) * 0.12f);
+            animal.transform.localPosition = new Vector3(
+                Mathf.Clamp(x, -halfWidth, halfWidth),
+                origin.y,
+                Mathf.Clamp(z, -halfDepth, halfDepth));
+            animal.transform.localRotation = Quaternion.Euler(
+                0f,
+                Mathf.Atan2(x - origin.x, z - origin.z) * Mathf.Rad2Deg,
+                0f);
+        }
+    }
+
+    private static void SetVisible(GameObject[] values, int count)
+    {
+        for (int index = 0; index < values.Length; index++)
+        {
+            values[index].SetActive(index < count);
+        }
     }
 
     private static void CreatePost(
@@ -90,15 +290,21 @@ internal sealed class DigFarmVisualDecoration : MonoBehaviour
         Transform parent,
         Vector3 localPosition,
         Vector3 localScale,
-        Color tint)
+        Color tint,
+        PrimitiveType primitive = PrimitiveType.Cube)
     {
-        GameObject part = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        GameObject part = GameObject.CreatePrimitive(primitive);
         part.name = name;
         part.transform.SetParent(parent, worldPositionStays: false);
         part.transform.localPosition = localPosition;
         part.transform.localRotation = Quaternion.identity;
         part.transform.localScale = localScale;
 
+        RemoveColliderAndTint(part, tint);
+    }
+
+    private static void RemoveColliderAndTint(GameObject part, Color tint)
+    {
         Collider? collider = part.GetComponent<Collider>();
         if (collider != null)
         {

@@ -44,7 +44,7 @@ public sealed class MiningOutputSaveRuntimeContractTests
             composition,
             StringComparison.Ordinal);
         Assert.Contains(
-            "skills,\n            commits);",
+            "skills,\n            commits,\n            farms,\n            farmLogisticsReservations);",
             composition,
             StringComparison.Ordinal);
         Assert.Contains(

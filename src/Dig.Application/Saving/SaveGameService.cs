@@ -69,7 +69,9 @@ public sealed class SaveGameService
             livingMaterials: context.LivingMaterials,
             vukers: context.Vukers,
             tunnelInfrastructure: context.TunnelInfrastructure,
-            roomInfrastructure: context.RoomInfrastructure));
+            roomInfrastructure: context.RoomInfrastructure,
+            farms: context.Farms,
+            farmLogisticsReservations: context.FarmLogisticsReservations));
     }
 
     public Result<LoadedGameState> Load(
