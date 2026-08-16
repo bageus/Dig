@@ -130,7 +130,11 @@ internal sealed partial class DigTerrainWorkSession
             }
 
             Result result;
-            if (IsRoomUpgradeJob(job.Id))
+            if (IsFarmLogisticsJob(job.Id))
+            {
+                result = AdvanceFarmDeliveryAtTarget(job, agent, tick);
+            }
+            else if (IsRoomUpgradeJob(job.Id))
             {
                 result = AdvanceRoomUpgradeAtTarget(job, agent, tick);
             }

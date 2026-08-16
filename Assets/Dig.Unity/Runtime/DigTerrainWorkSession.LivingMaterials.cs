@@ -101,7 +101,7 @@ internal sealed partial class DigTerrainWorkSession
             .ToArray();
         Result ecology = _livingMaterialAdvance.Handle(
             new AdvanceLivingMaterialEcologyCommand(tick, residentCells));
-        return ecology.IsFailure ? ecology : AdvanceFarms(tick);
+        return ecology.IsFailure ? ecology : AdvanceFarms(tick, agents);
     }
 
     internal IReadOnlyList<CreatureVisualSnapshot> LoadLivingMaterialCreatures()
