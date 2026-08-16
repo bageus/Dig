@@ -107,7 +107,9 @@ public sealed partial class DigWorldInteraction
                 _agentRenderer!.SelectedModel;
             if (selected != null
                 && _terrainSession!.CanDirectHarvestFarmMushroom(
-                    completedBuilding.Model.Id))
+                    completedBuilding.Model.Id,
+                    new CellId(selected.CellX, selected.CellY, selected.CellZ),
+                    out _))
             {
                 Result harvest = _terrainSession.StartFarmMushroomHarvest(
                     completedBuilding.Model.Id,

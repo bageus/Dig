@@ -88,11 +88,18 @@ public sealed class FarmUnityRuntimeContractTests
             "DigWorldInteraction.ResidentCommandPriority.cs");
         string cursor = Read(runtime, "DigWorldInteraction.DirectCommandCursor.cs");
         Assert.Contains("CanDirectHarvestFarmMushroom", priority);
+        Assert.Contains("new CellId(selected.CellX, selected.CellY, selected.CellZ)",
+            priority);
         Assert.Contains("StartFarmMushroomHarvest", priority);
         Assert.Contains("Dwarf ordered to harvest farm mushroom", priority);
         Assert.Contains("CanDirectHarvestFarmMushroom", cursor);
+        Assert.Contains("selected.CellX", cursor);
         Assert.Contains("DirectCommandCursorKind.Axe", cursor);
         Assert.DoesNotContain("Order harvest (", hud);
+        Assert.Contains("farm.harvest_route_unavailable", harvest);
+        Assert.Contains("TryResolveMushroomWorkPosition", harvest);
+        Assert.Contains("farm.Origin,", harvest);
+        Assert.Contains("workPosition,", harvest);
     }
 
     private static int Count(string source, string value)

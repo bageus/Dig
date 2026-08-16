@@ -39,6 +39,8 @@ walks to the farm work position, performs
 the axe swings, then removes one authoritative growth slot and creates one
 physical cap plus one physical leg at the farm origin. The empty slot is then
 eligible for the normal farm regrowth step.
+The axe cursor and command are available only when the selected resident has a
+supported navigation route to a valid work position beside the farm.
 Active harvest work is recoverable from its persisted mushroom-chop definition;
 terminal work, removed farms and invalidated work support cannot leave a stale
 farm harvest reservation behind.

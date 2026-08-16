@@ -20,16 +20,29 @@ internal sealed partial class DigTerrainWorkSession
     private readonly Dictionary<EntityId, int> _farmMushroomSwings =
         new Dictionary<EntityId, int>();
 
-    internal bool CanDirectHarvestFarmMushroom(string buildingId)
+    internal bool CanDirectHarvestFarmMushroom(
+        string buildingId,
+        CellId workerCell,
+        out CellId workPosition)
     {
+        workPosition = default;
         if (string.IsNullOrWhiteSpace(buildingId)) return false;
         EntityId farmId = EntityId.Parse(buildingId);
         BuildingSnapshot? building = _buildingsRepository?.Get().Get(farmId);
         FarmSnapshot? snapshot = LoadFarmSnapshot(buildingId);
-        return building?.Definition.Id ==
-                Dig.Domain.Content.WorkshopProductionContent.FarmBuildingId
-            && snapshot != null
-            && snapshot.MushroomSlotsOccupied + snapshot.ResidualMushrooms > 0;
+        if (building == null
+            || building.Definition.Id !=
+                Dig.Domain.Content.WorkshopProductionContent.FarmBuildingId)
+        {
+            return false;
+        }
+
+        return snapshot != null
+            && snapshot.MushroomSlotsOccupied + snapshot.ResidualMushrooms > 0
+            && TryResolveMushroomWorkPosition(
+                building.Origin,
+                workerCell,
+                out workPosition);
     }
 
     internal Result StartFarmMushroomHarvest(
@@ -57,6 +70,16 @@ internal sealed partial class DigTerrainWorkSession
             return Result.Failure(FarmApplicationErrors.ProductUnavailable);
         }
 
+        if (!CanDirectHarvestFarmMushroom(
+                buildingId,
+                workerCell,
+                out CellId workPosition))
+        {
+            return Result.Failure(new DomainError(
+                "farm.harvest_route_unavailable",
+                "The selected resident cannot reach a farm mushroom."));
+        }
+
         if (_farmMushroomHarvests.ContainsValue(farmId))
         {
             return Result.Failure(new DomainError(
@@ -73,7 +96,7 @@ internal sealed partial class DigTerrainWorkSession
             jobId,
             farmId,
             farm.Origin,
-            farm.WorkPosition,
+            workPosition,
             growthGeneration: 0,
             requiredSwings: FarmMushroomRequiredSwings,
             priority: FarmMushroomPriority,
