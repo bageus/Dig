@@ -17,6 +17,8 @@ internal sealed class DigFarmVisualDecoration : MonoBehaviour
     private readonly GameObject[] _hamsters = new GameObject[8];
     private readonly GameObject[] _grubs = new GameObject[8];
     private readonly GameObject[] _feedCaps = new GameObject[2];
+    private readonly Vector3[] _hamsterOrigins = new Vector3[8];
+    private readonly Vector3[] _grubOrigins = new Vector3[8];
     private bool _contentsBuilt;
 
     internal static void Ensure(GameObject buildingRoot)
@@ -44,6 +46,13 @@ internal sealed class DigFarmVisualDecoration : MonoBehaviour
         SetVisible(_hamsters, hamsters);
         SetVisible(_grubs, grubs);
         SetVisible(_feedCaps, Mathf.Min(_feedCaps.Length, snapshot.FeedCount));
+    }
+
+    private void Update()
+    {
+        if (!_contentsBuilt) return;
+        AnimateAnimals(_hamsters, _hamsterOrigins, speed: 0.72f, radius: 0.13f);
+        AnimateAnimals(_grubs, _grubOrigins, speed: 0.50f, radius: 0.11f);
     }
 
     private void Build()
@@ -122,10 +131,11 @@ internal sealed class DigFarmVisualDecoration : MonoBehaviour
 
         for (int index = 0; index < _hamsters.Length; index++)
         {
+            _hamsterOrigins[index] = ResolveAnimalPosition(index);
             _hamsters[index] = CreateAnimal(
                 contents,
                 "Hamster " + index,
-                ResolveAnimalPosition(index),
+                _hamsterOrigins[index],
                 new Vector3(0.22f, 0.16f, 0.16f),
                 new Color(0.64f, 0.38f, 0.18f, 1f));
         }
@@ -134,6 +144,7 @@ internal sealed class DigFarmVisualDecoration : MonoBehaviour
         {
             Vector3 position = ResolveAnimalPosition(index);
             position.z += 0.06f;
+            _grubOrigins[index] = position;
             _grubs[index] = CreateAnimal(
                 contents,
                 "Grub " + index,
@@ -222,6 +233,33 @@ internal sealed class DigFarmVisualDecoration : MonoBehaviour
             -0.66f + (column * 0.44f),
             0.13f,
             -0.30f + (row * 0.55f));
+    }
+
+    private static void AnimateAnimals(
+        GameObject[] animals,
+        Vector3[] origins,
+        float speed,
+        float radius)
+    {
+        float halfWidth = (FarmWidth * 0.5f) - radius;
+        float halfDepth = (FarmDepth * 0.5f) - radius;
+        for (int index = 0; index < animals.Length; index++)
+        {
+            GameObject animal = animals[index];
+            if (!animal.activeSelf) continue;
+            float phase = (index * 1.73f) + (Time.time * speed);
+            Vector3 origin = origins[index];
+            float x = origin.x + (Mathf.Sin(phase) * 0.16f);
+            float z = origin.z + (Mathf.Cos(phase * 0.79f) * 0.12f);
+            animal.transform.localPosition = new Vector3(
+                Mathf.Clamp(x, -halfWidth, halfWidth),
+                origin.y,
+                Mathf.Clamp(z, -halfDepth, halfDepth));
+            animal.transform.localRotation = Quaternion.Euler(
+                0f,
+                Mathf.Atan2(x - origin.x, z - origin.z) * Mathf.Rad2Deg,
+                0f);
+        }
     }
 
     private static void SetVisible(GameObject[] values, int count)

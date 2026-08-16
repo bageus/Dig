@@ -48,6 +48,11 @@ public sealed class FarmUnityRuntimeContractTests
         Assert.Contains("Destroy(collider)", decoration);
         Assert.DoesNotContain("AddForce", decoration);
         Assert.DoesNotContain("Rigidbody", decoration);
+        Assert.Contains("AnimateAnimals(_hamsters", decoration);
+        Assert.Contains("AnimateAnimals(_grubs", decoration);
+        Assert.Contains("Mathf.Clamp(x, -halfWidth, halfWidth)", decoration);
+        Assert.Contains("Mathf.Clamp(z, -halfDepth, halfDepth)", decoration);
+        Assert.Contains("Time.time * speed", decoration);
     }
 
     [Fact]
