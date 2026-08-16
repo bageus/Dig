@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Dig.Application.Buildings;
+using Dig.Application.Farming;
 using Dig.Application.Rooms;
 using Dig.Application.Tunnels;
 using Dig.Application.World;
@@ -70,7 +71,8 @@ public sealed class SaveGameContext
         TunnelInfrastructureRuntimeSnapshot? tunnelInfrastructure = null,
         RoomInfrastructureRuntimeSnapshot? roomInfrastructure = null,
         SocietyState? society = null,
-        ExplorationState? exploration = null)
+        ExplorationState? exploration = null,
+        IFarmRepository? farms = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -107,6 +109,7 @@ public sealed class SaveGameContext
             ?? RoomInfrastructureRuntimeSnapshot.Empty();
         Society = society;
         Exploration = exploration ?? new ExplorationState();
+        Farms = farms ?? new InMemoryFarmRepository();
     }
 
     public SaveMetadataData Metadata { get; }
@@ -130,6 +133,7 @@ public sealed class SaveGameContext
     public RoomInfrastructureRuntimeSnapshot RoomInfrastructure { get; }
     public SocietyState? Society { get; }
     public ExplorationState Exploration { get; }
+    public IFarmRepository Farms { get; }
 }
 
 }

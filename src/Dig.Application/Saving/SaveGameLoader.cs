@@ -283,6 +283,12 @@ public sealed partial class SaveGameLoader
             }
             ExplorationState exploration = ExplorationSaveAdapter.Decode(
                 document.Exploration, world.Value.Size);
+            Result<Dig.Application.Farming.InMemoryFarmRepository> farms =
+                FarmSaveAdapter.Decode(document.Farms);
+            if (farms.IsFailure)
+            {
+                return Result<LoadedGameState>.Failure(farms.Error!);
+            }
             return Result<LoadedGameState>.Success(new LoadedGameState(
                 CopyMetadata(document.Metadata),
                 world.Value,
@@ -310,7 +316,8 @@ public sealed partial class SaveGameLoader
                 tunnelInfrastructure: infrastructure.Value.Tunnel,
                 roomInfrastructure: infrastructure.Value.Room,
                 society: society.Value,
-                exploration: exploration));
+                exploration: exploration,
+                farms: farms.Value));
         }
         catch (UnknownTerrainDepositDefinitionException)
         {
