@@ -63,8 +63,14 @@ public sealed class FarmUnityRuntimeContractTests
         Assert.Contains("_farmItems.MushroomCap", session);
         Assert.Contains("CampfireProductionContent.MushroomLegItemId", session);
         Assert.Equal(2, Count(session, "ItemLocation.InWorld(farm.Origin)"));
-        Assert.Contains("Harvest mushroom (", hud);
-        Assert.Contains("() => HarvestFarmMushroom(building.Id)", hud);
+        string harvest = Read(runtime, "DigTerrainWorkSession.FarmHarvest.cs");
+        Assert.Contains("MushroomChopJobDefinition", harvest);
+        Assert.Contains("FarmMushroomRequiredSwings", harvest);
+        Assert.Contains("PrepareResidentsForDirectCommand", harvest);
+        Assert.Contains("jobs.Claim(jobId, workerId, tick)", harvest);
+        Assert.Contains("HarvestFarmMushroom(farmId.ToString(), tick)", harvest);
+        Assert.Contains("Order harvest (", hud);
+        Assert.Contains("() => StartFarmMushroomHarvest(building.Id)", hud);
     }
 
     private static int Count(string source, string value)

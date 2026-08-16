@@ -207,7 +207,9 @@ internal sealed partial class DigTerrainWorkSession
                 continue;
             }
 
-            Result result = AdvanceMushroomJob(job, definition, tick);
+            Result result = TryAdvanceFarmMushroomJob(job, tick, out Result farmResult)
+                ? farmResult
+                : AdvanceMushroomJob(job, definition, tick);
             if (result.IsFailure)
             {
                 return result;
