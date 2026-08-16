@@ -65,6 +65,20 @@ public sealed class FarmUnityRuntimeContractTests
     }
 
     [Fact]
+    public void Removed_farm_keeps_logistics_links_until_runtime_reconciliation()
+    {
+        string farming = Read(RuntimeRoot(), "DigTerrainWorkSession.Farming.cs");
+        string logistics = Read(RuntimeRoot(), "DigTerrainFarmLogistics.cs");
+
+        Assert.Contains("_farmRepository.Remove(existing)", farming);
+        Assert.DoesNotContain("_farmLogisticsReservations.ReleaseForFarm", farming);
+        Assert.Contains("ReconcileReservations(jobs, command.Tick, inventory)",
+            ReadApplication("Farming", "FarmLogisticsUseCases.cs"));
+        Assert.Contains("SynchronizeFarmLogisticsRuntime(", farming);
+        Assert.Contains("SynchronizeFarmLogisticsHandler(", logistics);
+    }
+
+    [Fact]
     public void Decoration_visualizes_stock_and_escaping_animals_without_physics()
     {
         string decoration = Read(RuntimeRoot(), "DigFarmVisualDecoration.cs");
@@ -153,6 +167,14 @@ public sealed class FarmUnityRuntimeContractTests
 
     private static string Read(string root, string file) =>
         File.ReadAllText(Path.Combine(root, file));
+
+    private static string ReadApplication(string folder, string file) =>
+        File.ReadAllText(Path.Combine(
+            FindRepositoryRoot(),
+            "src",
+            "Dig.Application",
+            folder,
+            file));
 
     private static string RuntimeRoot() => Path.Combine(
         FindRepositoryRoot(),

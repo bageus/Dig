@@ -179,6 +179,56 @@ public sealed class FarmLogisticsIntegrationTests
         Assert.Empty(reservations.GetAll());
     }
 
+    [Fact]
+    public void Removed_farm_cancels_delivery_before_releasing_its_reservation()
+    {
+        EntityId farmId = Id(30);
+        EntityId capStackId = Id(31);
+        EntityId deliveryJobId = Id(32);
+        InMemoryFarmRepository farms = new InMemoryFarmRepository();
+        farms.Save(farmId, new FarmState(FarmMode.Mushrooms));
+        InventoryState inventory = new InventoryState(new ItemCatalog(new[]
+        {
+            new ItemDefinition(
+                CampfireProductionContent.MushroomCapItemId,
+                "Mushroom cap",
+                maximumStackSize: 100,
+                isTool: false),
+        }));
+        Assert.True(inventory.AddUnit(
+            capStackId,
+            CampfireProductionContent.MushroomCapItemId,
+            ItemLocation.InWorld(new CellId(3, 3)),
+            tick: 0).IsSuccess);
+        InMemoryInventoryRepository inventoryRepository =
+            new InMemoryInventoryRepository(inventory);
+        InMemoryJobRepository jobRepository =
+            new InMemoryJobRepository(new JobSystem());
+        FarmLogisticsReservations reservations = new FarmLogisticsReservations();
+        SynchronizeFarmLogisticsHandler handler = new SynchronizeFarmLogisticsHandler(
+            farms,
+            inventoryRepository,
+            jobRepository,
+            FarmItemCatalog.Default,
+            reservations,
+            new FixedIds(deliveryJobId, Id(33)),
+            new InMemoryExecutionJournal());
+        SynchronizeFarmLogisticsCommand command = new SynchronizeFarmLogisticsCommand(
+            new[] { new CellId(3, 3) }, 650, 8, tick: 1);
+        Assert.Single(handler.Handle(command).Value.Created);
+
+        farms.Remove(farmId);
+        Result<FarmLogisticsSynchronizationReport> reconciled = handler.Handle(
+            new SynchronizeFarmLogisticsCommand(
+                new[] { new CellId(3, 3) }, 650, 8, tick: 2));
+
+        Assert.True(reconciled.IsSuccess, reconciled.Error?.ToString());
+        Assert.Equal(1, reconciled.Value.ReleasedReservations);
+        Assert.Equal(JobStatus.Cancelled, jobRepository.Get().Get(deliveryJobId)!.Status);
+        Assert.Equal(0, inventoryRepository.Get().GetStack(capStackId)!.ReservedQuantity);
+        Assert.Empty(reservations.GetAll());
+    }
+
     private static EntityId Id(int value) => EntityId.Parse(value.ToString("x32"));
 
     private sealed class FixedIds : IFarmLogisticsJobIdSource

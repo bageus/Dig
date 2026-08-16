@@ -192,7 +192,6 @@ internal sealed partial class DigTerrainWorkSession
             if (!activeSet.Contains(existing))
             {
                 _farmRepository.Remove(existing);
-                _farmLogisticsReservations.ReleaseForFarm(existing);
             }
         }
     }
