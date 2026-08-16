@@ -78,7 +78,14 @@ public sealed class FarmSaveRoundTripTests
                 isMineable: true,
                 outputProfile: null),
         });
-        ItemCatalog items = new ItemCatalog(Array.Empty<ItemDefinition>());
+        ItemCatalog items = new ItemCatalog(new[]
+        {
+            new ItemDefinition(
+                new ItemId("item.farm-save-fixture"),
+                "Farm save fixture",
+                maximumStackSize: 1,
+                isTool: false),
+        });
         WorldState world = WorldState.CreateFilled(
             new WorldSize(2, 2, 2),
             chunkSize: 2,
