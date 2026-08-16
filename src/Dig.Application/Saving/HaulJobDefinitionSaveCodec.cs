@@ -5,6 +5,7 @@ using System.Linq;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
+using Dig.Domain.World;
 
 namespace Dig.Application.Saving
 {
@@ -24,14 +25,7 @@ public sealed class HaulJobDefinitionSaveCodec : IJobDefinitionSaveCodec
     {
         HaulJobDefinition haul = definition as HaulJobDefinition
             ?? throw new ArgumentException("Expected a hauling job definition.", nameof(definition));
-        if (haul.Destination.Kind != ItemLocationKind.Storage
-            || !haul.Destination.HasOwner)
-        {
-            throw new InvalidOperationException(
-                "The v1 hauling save codec supports storage destinations only.");
-        }
-
-        return new JobDefinitionSaveData
+        JobDefinitionSaveData data = new JobDefinitionSaveData
         {
             TypeId = TypeId,
             JobId = haul.Id.ToString(),
@@ -47,9 +41,10 @@ public sealed class HaulJobDefinitionSaveCodec : IJobDefinitionSaveCodec
                 Property("source.stack_id", haul.SourceStackId.ToString()),
                 Property("item.id", haul.ItemId.ToString()),
                 Property("quantity", haul.Quantity),
-                Property("destination.storage_id", haul.Destination.OwnerId.ToString()),
             },
         };
+        EncodeDestination(data.Properties, haul.Destination);
+        return data;
     }
 
     public JobDefinition Decode(JobDefinitionSaveData data)
@@ -59,16 +54,83 @@ public sealed class HaulJobDefinitionSaveCodec : IJobDefinitionSaveCodec
         EntityId[] dependencies = data.Dependencies
             .Select(EntityId.Parse)
             .ToArray();
+        ItemLocation destination = DecodeDestination(properties);
         return new HaulJobDefinition(
             EntityId.Parse(data.JobId),
             EntityId.Parse(Required(properties, "source.stack_id")),
             new ItemId(Required(properties, "item.id")),
             ParseInt(properties, "quantity"),
-            EntityId.Parse(Required(properties, "destination.storage_id")),
+            destination,
             data.Priority,
             data.CreatedTick,
             new JobRetryPolicy(data.MaximumRetries, data.RetryDelayTicks),
             dependencies);
+    }
+
+    private static void EncodeDestination(
+        ICollection<SavePropertyData> properties,
+        ItemLocation destination)
+    {
+        properties.Add(Property("destination.kind", (int)destination.Kind));
+        if (destination.HasOwner)
+        {
+            properties.Add(Property("destination.owner_id", destination.OwnerId.ToString()));
+            if (destination.Kind == ItemLocationKind.Storage)
+            {
+                properties.Add(Property(
+                    "destination.storage_id",
+                    destination.OwnerId.ToString()));
+            }
+        }
+        if (destination.HasCell)
+        {
+            properties.Add(Property("destination.x", destination.CellId.X));
+            properties.Add(Property("destination.y", destination.CellId.Y));
+            properties.Add(Property("destination.z", destination.CellId.Z));
+        }
+    }
+
+    private static ItemLocation DecodeDestination(
+        IReadOnlyDictionary<string, string> properties)
+    {
+        if (!properties.TryGetValue("destination.kind", out string? rawKind))
+        {
+            return ItemLocation.InStorage(EntityId.Parse(
+                Required(properties, "destination.storage_id")));
+        }
+        if (!int.TryParse(rawKind, NumberStyles.Integer, CultureInfo.InvariantCulture, out int kind)
+            || !Enum.IsDefined(typeof(ItemLocationKind), kind))
+        {
+            throw new InvalidOperationException("Saved hauling destination kind is invalid.");
+        }
+        ItemLocationKind parsed = (ItemLocationKind)kind;
+        if (parsed == ItemLocationKind.World)
+        {
+            return ItemLocation.InWorld(new CellId(
+                ParseCoordinate(properties, "destination.x"),
+                ParseCoordinate(properties, "destination.y"),
+                ParseCoordinate(properties, "destination.z")));
+        }
+        EntityId owner = EntityId.Parse(Required(properties, "destination.owner_id"));
+        return parsed == ItemLocationKind.Building
+            ? ItemLocation.InBuilding(owner)
+            : ItemLocation.InStorage(owner);
+    }
+
+    private static int ParseCoordinate(
+        IReadOnlyDictionary<string, string> properties,
+        string key)
+    {
+        if (!int.TryParse(
+                Required(properties, key),
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out int parsed))
+        {
+            throw new InvalidOperationException(
+                $"Saved hauling job property '{key}' is invalid.");
+        }
+        return parsed;
     }
 
     private static SavePropertyData Property(string key, object value)
