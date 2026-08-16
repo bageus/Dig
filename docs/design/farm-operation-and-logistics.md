@@ -44,6 +44,8 @@ of the farm. These objects are presentation-only and do not own simulation state
   Repeated synchronization cannot create duplicate work for in-transit stock.
 - Terminal/orphan jobs and removed farms release both reservations. Failed path
   assignment releases only the worker/slot claim so the same delivery may retry.
+- A mode change cancels incoming jobs whose demand no longer exists, releasing
+  their inventory reservation and resident slot before planning the new demand.
 - Delivery is complete only after the item left the resident inventory, farm
   state changed and the job reached its terminal completed stage.
 - Animal production above the protected reserve is transferred into the farm's

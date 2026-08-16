@@ -18,6 +18,9 @@ public sealed class SynchronizeFarmLogisticsHandler
         SynchronizeFarmLogisticsCommand,
         Result<FarmLogisticsSynchronizationReport>>
 {
+    private static readonly JobBlockReason ObsoleteDemandReason = new JobBlockReason(
+        "farm_demand_changed",
+        "The farm no longer requests this delivery.");
     private readonly IFarmRepository _farms;
     private readonly IInventoryRepository _inventory;
     private readonly IJobRepository _jobs;
@@ -152,19 +155,56 @@ public sealed class SynchronizeFarmLogisticsHandler
     private int ReconcileReservations(JobSystem jobs, long tick, InventoryState inventory)
     {
         int released = 0;
+        Dictionary<string, int> retainedIncoming = new Dictionary<string, int>(
+            StringComparer.Ordinal);
         foreach (FarmLogisticsReservation reservation in _reservations.GetAll())
         {
             JobSnapshot? job = jobs.Get(reservation.JobId);
-            if (job != null && !job.IsTerminal && _farms.Get(reservation.BuildingId) != null)
+            FarmState? farm = _farms.Get(reservation.BuildingId);
+            bool canContinue = job != null && !job.IsTerminal && farm != null;
+            if (canContinue && reservation.Direction == FarmLogisticsDirection.Incoming)
+            {
+                canContinue = CanRetainIncoming(reservation, farm, retainedIncoming);
+            }
+
+            if (canContinue)
             {
                 continue;
             }
 
+            if (job != null && !job.IsTerminal)
+            {
+                Result cancelled = jobs.Cancel(job.Id, ObsoleteDemandReason, tick);
+                if (cancelled.IsFailure)
+                {
+                    throw new InvalidOperationException(
+                        "Obsolete farm delivery could not be cancelled.");
+                }
+            }
+
             inventory.ReleaseReservations(reservation.JobId, tick);
+            inventory.ReleaseResidentSlotClaims(reservation.JobId, tick);
             if (_reservations.Release(reservation.JobId)) released++;
         }
 
         return released;
+    }
+
+    private static bool CanRetainIncoming(
+        FarmLogisticsReservation reservation,
+        FarmState? farm,
+        IDictionary<string, int> retained)
+    {
+        if (farm == null) return false;
+        FarmDeliveryDemand? demand = farm.GetDeliveryDemands()
+            .FirstOrDefault(value => value.Kind == reservation.Kind);
+        if (!demand.HasValue) return false;
+        string key = reservation.BuildingId + ":" + reservation.Kind;
+        retained.TryGetValue(key, out int quantity);
+        int next = checked(quantity + reservation.Quantity);
+        if (next > demand.Value.Quantity) return false;
+        retained[key] = next;
+        return true;
     }
 
     private EntityId NextJobId()
