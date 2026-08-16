@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Agents;
+using Dig.Application.Farming;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Navigation;
@@ -29,7 +30,8 @@ internal sealed partial class DigTerrainWorkSession
         IReadOnlyList<AgentViewModel> agents,
         InMemoryExecutionJournal journal,
         IAgentSkillGrantService skillGrants,
-        MiningOutputCommitState? miningOutputCommits = null)
+        MiningOutputCommitState? miningOutputCommits = null,
+        IFarmRepository? farms = null)
     {
         if (worldSession == null || agents == null)
         {
@@ -95,7 +97,8 @@ internal sealed partial class DigTerrainWorkSession
             navigation,
             profile,
             outputStackIds,
-            miningOutputCommits);
+            miningOutputCommits,
+            farms);
     }
 
     private static Dictionary<EntityId, EntityId> CreateInitialDigJobs(
@@ -194,7 +197,8 @@ internal sealed partial class DigTerrainWorkSession
         InMemoryNavigationRepository navigation,
         TraversalProfile profile,
         Dictionary<EntityId, EntityId> outputIds,
-        MiningOutputCommitState? miningOutputCommits)
+        MiningOutputCommitState? miningOutputCommits,
+        IFarmRepository? farms)
     {
         MiningOutputCommitState commits =
             miningOutputCommits ?? new MiningOutputCommitState();
@@ -226,7 +230,8 @@ internal sealed partial class DigTerrainWorkSession
             profile,
             outputIds,
             skills,
-            commits);
+            commits,
+            farms);
     }
 }
 

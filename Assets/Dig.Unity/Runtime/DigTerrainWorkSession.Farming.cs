@@ -14,8 +14,10 @@ namespace Dig.Unity
 
 internal sealed partial class DigTerrainWorkSession
 {
-    private readonly InMemoryFarmRepository _farmRepository = new InMemoryFarmRepository();
+    private readonly IFarmRepository _farmRepository;
     private readonly FarmItemCatalog _farmItems = FarmItemCatalog.Default;
+
+    internal IFarmRepository FarmRepository => _farmRepository;
 
     public Result AdvanceFarms(long tick, IReadOnlyList<AgentViewModel> agents)
     {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dig.Application.Agents;
+using Dig.Application.Farming;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Navigation;
@@ -63,7 +64,8 @@ internal sealed partial class DigTerrainWorkSession
         TraversalProfile profile,
         Dictionary<EntityId, EntityId> outputStackIds,
         IAgentSkillGrantService skillGrants,
-        MiningOutputCommitState? miningOutputCommits)
+        MiningOutputCommitState? miningOutputCommits,
+        IFarmRepository? farms)
     {
         _advanceHandler = advanceHandler;
         _completionHandler = completionHandler;
@@ -83,6 +85,7 @@ internal sealed partial class DigTerrainWorkSession
         _skillGrants = skillGrants ?? throw new ArgumentNullException(nameof(skillGrants));
         _quarterCommitHandler = new CommitExcavationQuarterCommandHandler(worldSession.Repository, _skillGrants, _journal);
         _miningOutputCommits = miningOutputCommits ?? new MiningOutputCommitState();
+        _farmRepository = farms ?? new InMemoryFarmRepository();
     }
 
     internal MiningOutputCommitState MiningOutputCommits => _miningOutputCommits;

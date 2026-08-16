@@ -29,6 +29,23 @@ public sealed class FarmUnityRuntimeContractTests
     }
 
     [Fact]
+    public void Runtime_composition_accepts_loaded_farm_repository()
+    {
+        string runtime = RuntimeRoot();
+        string composition = Read(runtime, "DigTerrainWorkSession.Composition.cs");
+        string session = Read(runtime, "DigTerrainWorkSession.cs");
+        string farming = Read(runtime, "DigTerrainWorkSession.Farming.cs");
+
+        Assert.Contains("IFarmRepository? farms = null", composition);
+        Assert.Contains("miningOutputCommits,\n            farms);", composition);
+        Assert.Contains("_farmRepository = farms ?? new InMemoryFarmRepository();", session);
+        Assert.Contains("internal IFarmRepository FarmRepository => _farmRepository;", farming);
+        Assert.DoesNotContain(
+            "_farmRepository = new InMemoryFarmRepository()",
+            farming);
+    }
+
+    [Fact]
     public void Decoration_visualizes_stock_and_escaping_animals_without_physics()
     {
         string decoration = Read(RuntimeRoot(), "DigFarmVisualDecoration.cs");
