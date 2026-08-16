@@ -51,6 +51,20 @@ public sealed class FarmUnityRuntimeContractTests
     }
 
     [Fact]
+    public void Reloaded_runtime_ids_skip_restored_farm_jobs_and_stacks()
+    {
+        string logistics = Read(RuntimeRoot(), "DigTerrainFarmLogistics.cs");
+
+        Assert.Contains("while (true)", logistics);
+        Assert.Contains("_jobRepository.Get().Get(candidate) != null", logistics);
+        Assert.Contains("_inventoryRepository.Get().GetStack(candidate) != null", logistics);
+        Assert.Contains("if (!exists) return candidate;", logistics);
+        Assert.Contains(
+            "_farmRuntimeSequence = checked(_farmRuntimeSequence + 1UL)",
+            logistics);
+    }
+
+    [Fact]
     public void Decoration_visualizes_stock_and_escaping_animals_without_physics()
     {
         string decoration = Read(RuntimeRoot(), "DigFarmVisualDecoration.cs");

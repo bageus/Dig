@@ -253,9 +253,17 @@ internal sealed partial class DigTerrainWorkSession
 
     private EntityId NextFarmRuntimeId(string family)
     {
-        string suffix = (_farmRuntimeSequence++).ToString("x16");
         string prefix = family == "job" ? "7310000000000000" : "7320000000000000";
-        return EntityId.Parse(prefix + suffix);
+        while (true)
+        {
+            string suffix = _farmRuntimeSequence.ToString("x16");
+            _farmRuntimeSequence = checked(_farmRuntimeSequence + 1UL);
+            EntityId candidate = EntityId.Parse(prefix + suffix);
+            bool exists = family == "job"
+                ? _jobRepository.Get().Get(candidate) != null
+                : _inventoryRepository.Get().GetStack(candidate) != null;
+            if (!exists) return candidate;
+        }
     }
 
     private sealed class RuntimeFarmJobIds : IFarmLogisticsJobIdSource
