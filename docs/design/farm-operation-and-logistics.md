@@ -31,6 +31,9 @@ without feed and at population capacity.
 The presentation projects the authoritative farm snapshot inside the fenced plot:
 three growth slots, up to eight animals, and both feed caps at the physical center
 of the farm. These objects are presentation-only and do not own simulation state.
+Harvesting an available farm mushroom removes one authoritative growth slot and
+creates one physical cap plus one physical leg at the farm origin. The empty slot
+is then eligible for the normal farm regrowth step.
 
 ## Logistics contract
 

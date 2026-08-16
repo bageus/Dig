@@ -6,6 +6,7 @@ using Dig.Domain.Buildings;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Farming;
+using Dig.Domain.Inventory;
 using Dig.Presentation.Agents;
 
 namespace Dig.Unity
@@ -115,16 +116,48 @@ internal sealed partial class DigTerrainWorkSession
                 tick));
     }
 
-    public Result CollectFarmProduct(string buildingId, FarmDeliveryKind kind)
+    public Result HarvestFarmMushroom(string buildingId, long tick)
     {
         if (string.IsNullOrWhiteSpace(buildingId))
         {
             throw new ArgumentException("Building id is required.", nameof(buildingId));
         }
 
+        if (tick < 0) throw new ArgumentOutOfRangeException(nameof(tick));
         SynchronizeFarmRegistrations();
-        return new CollectFarmProductCommandHandler(_farmRepository).Handle(
-            new CollectFarmProductCommand(EntityId.Parse(buildingId), kind));
+        EntityId farmId = EntityId.Parse(buildingId);
+        BuildingSnapshot? farm = _buildingsRepository?.Get().Get(farmId);
+        if (farm == null) return Result.Failure(FarmApplicationErrors.MissingFarm);
+        Result harvested = new CollectFarmProductCommandHandler(_farmRepository).Handle(
+            new CollectFarmProductCommand(farmId, FarmDeliveryKind.MushroomSeed));
+        if (harvested.IsFailure) return harvested;
+
+        InventoryState inventory = _inventoryRepository.Get();
+        Result cap = inventory.AddUnit(
+            NextFarmRuntimeId("stack"),
+            _farmItems.MushroomCap,
+            ItemLocation.InWorld(farm.Origin),
+            tick);
+        if (cap.IsFailure)
+        {
+            throw new InvalidOperationException(
+                "Validated farm mushroom cap could not enter world inventory.");
+        }
+
+        Result leg = inventory.AddUnit(
+            NextFarmRuntimeId("stack"),
+            CampfireProductionContent.MushroomLegItemId,
+            ItemLocation.InWorld(farm.Origin),
+            tick);
+        if (leg.IsFailure)
+        {
+            throw new InvalidOperationException(
+                "Validated farm mushroom leg could not enter world inventory.");
+        }
+
+        _inventoryRepository.Save(inventory);
+        _journal.Append(inventory.DequeueUncommittedEvents());
+        return Result.Success();
     }
 
     private void SynchronizeFarmRegistrations()

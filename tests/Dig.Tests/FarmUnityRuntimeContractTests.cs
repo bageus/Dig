@@ -50,6 +50,23 @@ public sealed class FarmUnityRuntimeContractTests
         Assert.DoesNotContain("Rigidbody", decoration);
     }
 
+    [Fact]
+    public void Farm_mushroom_harvest_creates_physical_cap_and_leg_outputs()
+    {
+        string runtime = RuntimeRoot();
+        string session = Read(runtime, "DigTerrainWorkSession.Farming.cs");
+        string hud = Read(runtime, "DigGameHudCanvas.Farming.cs");
+
+        Assert.Contains("HarvestFarmMushroom(string buildingId, long tick)", session);
+        Assert.Contains("CollectFarmProductCommand", session);
+        Assert.Contains("FarmDeliveryKind.MushroomSeed", session);
+        Assert.Contains("_farmItems.MushroomCap", session);
+        Assert.Contains("CampfireProductionContent.MushroomLegItemId", session);
+        Assert.Equal(2, Count(session, "ItemLocation.InWorld(farm.Origin)"));
+        Assert.Contains("Harvest mushroom (", hud);
+        Assert.Contains("() => HarvestFarmMushroom(building.Id)", hud);
+    }
+
     private static int Count(string source, string value)
     {
         int count = 0;

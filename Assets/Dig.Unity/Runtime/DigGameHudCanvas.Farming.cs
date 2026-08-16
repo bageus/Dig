@@ -61,6 +61,17 @@ public sealed partial class DigGameHudCanvas
             FarmMode.Grubs,
             DigProductionIconGlyph.Resolve(LivingMaterialContent.GrubItemId.ToString()),
             modeRow);
+        int harvestableMushrooms =
+            farm.MushroomSlotsOccupied + farm.ResidualMushrooms;
+        if (harvestableMushrooms > 0)
+        {
+            CreateButton(
+                "Harvest Farm Mushroom",
+                modeRow,
+                "Harvest mushroom (" + harvestableMushrooms + ")",
+                () => HarvestFarmMushroom(building.Id),
+                preferredHeight: 36f);
+        }
 
         string status = BuildFarmStatus(farm, demands);
         Text details = CreateText(
@@ -99,6 +110,14 @@ public sealed partial class DigGameHudCanvas
     {
         long tick = _simulation?.CurrentTick ?? 0;
         Result result = _terrainSession!.SetFarmMode(buildingId, mode, tick);
+        _legacyHud!.SetCommandResult(result);
+        InvalidateAll();
+    }
+
+    private void HarvestFarmMushroom(string buildingId)
+    {
+        long tick = _simulation?.CurrentTick ?? 0;
+        Result result = _terrainSession!.HarvestFarmMushroom(buildingId, tick);
         _legacyHud!.SetCommandResult(result);
         InvalidateAll();
     }
