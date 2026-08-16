@@ -87,7 +87,7 @@ public sealed class FarmSaveRoundTripTests
                 isTool: false),
         });
         WorldState world = WorldState.CreateFilled(
-            new WorldSize(2, 2, 2),
+            new WorldSize(2, 2, 4),
             chunkSize: 2,
             materials,
             ground).Value;
