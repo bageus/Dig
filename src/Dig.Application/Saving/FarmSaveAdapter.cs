@@ -75,10 +75,15 @@ public static class FarmSaveAdapter
             {
                 return Result<FarmLogisticsReservations>.Failure(SaveErrors.InvalidDocument);
             }
+            if (!EntityId.TryParse(saved.JobId, out EntityId jobId)
+                || !EntityId.TryParse(saved.BuildingId, out EntityId buildingId))
+            {
+                return Result<FarmLogisticsReservations>.Failure(SaveErrors.InvalidDocument);
+            }
 
             FarmLogisticsReservation reservation = new FarmLogisticsReservation(
-                EntityId.Parse(saved.JobId),
-                EntityId.Parse(saved.BuildingId),
+                jobId,
+                buildingId,
                 (FarmDeliveryKind)saved.Kind,
                 saved.Quantity,
                 (FarmLogisticsDirection)saved.Direction);
@@ -138,7 +143,10 @@ public static class FarmSaveAdapter
                 return Result<InMemoryFarmRepository>.Failure(SaveErrors.InvalidDocument);
             }
 
-            EntityId farmId = EntityId.Parse(saved.BuildingId);
+            if (!EntityId.TryParse(saved.BuildingId, out EntityId farmId))
+            {
+                return Result<InMemoryFarmRepository>.Failure(SaveErrors.InvalidDocument);
+            }
             if (farms.Get(farmId) != null)
             {
                 return Result<InMemoryFarmRepository>.Failure(SaveErrors.InvalidDocument);

@@ -65,6 +65,35 @@ public sealed class FarmSaveRoundTripTests
     }
 
     [Fact]
+    public void Malformed_farm_and_reservation_ids_are_rejected_without_throwing()
+    {
+        FarmSaveData invalidFarm = new FarmSaveData();
+        invalidFarm.Farms.Add(new FarmStateSaveData
+        {
+            BuildingId = "not-an-entity-id",
+            Mode = (int)FarmMode.Mushrooms,
+        });
+        FarmSaveData invalidReservation = new FarmSaveData();
+        invalidReservation.Reservations.Add(new FarmLogisticsReservationSaveData
+        {
+            JobId = "not-an-entity-id",
+            BuildingId = EntityId.New().ToString(),
+            Kind = (int)FarmDeliveryKind.MushroomSeed,
+            Quantity = 1,
+            Direction = (int)FarmLogisticsDirection.Incoming,
+        });
+
+        Result<InMemoryFarmRepository> farms = FarmSaveAdapter.Decode(invalidFarm);
+        Result<FarmLogisticsReservations> reservations =
+            FarmSaveAdapter.DecodeReservations(invalidReservation);
+
+        Assert.True(farms.IsFailure);
+        Assert.Equal(SaveErrors.InvalidDocument, farms.Error);
+        Assert.True(reservations.IsFailure);
+        Assert.Equal(SaveErrors.InvalidDocument, reservations.Error);
+    }
+
+    [Fact]
     public void Builder_json_and_loader_restore_farms_into_loaded_game_state()
     {
         MaterialId ground = new MaterialId("terrain.farm-save-ground");
