@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Application.Jobs;
 using Dig.Domain.Buildings;
 using Dig.Domain.Core;
@@ -32,6 +33,7 @@ internal sealed partial class DigTerrainWorkSession
 
         EntityId farmId = EntityId.Parse(buildingId);
         FarmSnapshot? snapshot = LoadFarmSnapshot(buildingId);
+        ReconcileFarmMushroomHarvests();
         BuildingSnapshot? farm = _buildingsRepository?.Get().Get(farmId);
         if (farm == null || snapshot == null)
         {
@@ -93,11 +95,13 @@ internal sealed partial class DigTerrainWorkSession
 
     private bool TryAdvanceFarmMushroomJob(
         JobSnapshot job,
+        MushroomChopJobDefinition definition,
         long tick,
         out Result result)
     {
         result = Result.Success();
-        if (!_farmMushroomHarvests.TryGetValue(job.Id, out EntityId farmId))
+        if (!_farmMushroomHarvests.TryGetValue(job.Id, out EntityId farmId)
+            && !TryRestoreFarmMushroomHarvest(job, definition, out farmId))
         {
             return false;
         }
@@ -154,6 +158,55 @@ internal sealed partial class DigTerrainWorkSession
         _jobRepository.Save(jobs);
         _journal.Append(jobs.DequeueUncommittedEvents());
         return Result.Success();
+    }
+
+    private bool IsFarmMushroomHarvest(JobSnapshot job)
+    {
+        if (_farmMushroomHarvests.ContainsKey(job.Id)) return true;
+        return job.Definition is MushroomChopJobDefinition definition
+            && _farmRepository.Get(definition.SiteId) != null;
+    }
+
+    private bool TryRestoreFarmMushroomHarvest(
+        JobSnapshot job,
+        MushroomChopJobDefinition definition,
+        out EntityId farmId)
+    {
+        farmId = definition.SiteId;
+        if (_farmRepository.Get(farmId) == null || job.IsTerminal)
+        {
+            return false;
+        }
+
+        _farmMushroomHarvests[job.Id] = farmId;
+        _farmMushroomSwings[job.Id] = 0;
+        return true;
+    }
+
+    private void ReconcileFarmMushroomHarvests()
+    {
+        foreach (EntityId jobId in _farmMushroomHarvests.Keys.ToArray())
+        {
+            JobSnapshot? job = _jobRepository.Get().Get(jobId);
+            EntityId farmId = _farmMushroomHarvests[jobId];
+            if (job != null && !job.IsTerminal && _farmRepository.Get(farmId) != null)
+            {
+                continue;
+            }
+
+            _farmMushroomHarvests.Remove(jobId);
+            _farmMushroomSwings.Remove(jobId);
+        }
+
+        foreach (JobSnapshot job in _jobRepository.Get().GetAll()
+            .Where(value => !value.IsTerminal
+                && value.Definition is MushroomChopJobDefinition))
+        {
+            if (_farmMushroomHarvests.ContainsKey(job.Id)) continue;
+            MushroomChopJobDefinition definition =
+                (MushroomChopJobDefinition)job.Definition;
+            TryRestoreFarmMushroomHarvest(job, definition, out _);
+        }
     }
 }
 

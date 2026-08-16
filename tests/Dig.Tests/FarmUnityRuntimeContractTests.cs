@@ -69,6 +69,15 @@ public sealed class FarmUnityRuntimeContractTests
         Assert.Contains("PrepareResidentsForDirectCommand", harvest);
         Assert.Contains("jobs.Claim(jobId, workerId, tick)", harvest);
         Assert.Contains("HarvestFarmMushroom(farmId.ToString(), tick)", harvest);
+        Assert.Contains("TryRestoreFarmMushroomHarvest", harvest);
+        Assert.Contains("ReconcileFarmMushroomHarvests", harvest);
+        Assert.Contains("job.Definition is MushroomChopJobDefinition", harvest);
+        Assert.Contains("IsFarmMushroomHarvest(job)", Read(
+            runtime,
+            "DigTerrainWorkSession.DirectCommands.cs"));
+        Assert.Contains("CancelFarmMushroomHarvest(job, tick)", Read(
+            runtime,
+            "DigTerrainWorkSession.Mushrooms.cs"));
         Assert.Contains("Order harvest (", hud);
         Assert.Contains("() => StartFarmMushroomHarvest(building.Id)", hud);
     }

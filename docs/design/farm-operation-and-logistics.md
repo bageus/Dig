@@ -36,6 +36,9 @@ normal mushroom-chop job. The resident walks to the farm work position, performs
 the axe swings, then removes one authoritative growth slot and creates one
 physical cap plus one physical leg at the farm origin. The empty slot is then
 eligible for the normal farm regrowth step.
+Active harvest work is recoverable from its persisted mushroom-chop definition;
+terminal work, removed farms and invalidated work support cannot leave a stale
+farm harvest reservation behind.
 
 ## Logistics contract
 

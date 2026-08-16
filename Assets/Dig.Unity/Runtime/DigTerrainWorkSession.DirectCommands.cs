@@ -208,7 +208,7 @@ namespace Dig.Unity
 
         private Result CancelMushroomForDirectCommand(JobSnapshot job, long tick)
         {
-            if (_farmMushroomHarvests.ContainsKey(job.Id))
+            if (IsFarmMushroomHarvest(job))
             {
                 return CancelFarmMushroomHarvest(job, tick);
             }
