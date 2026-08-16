@@ -29,6 +29,12 @@ internal sealed partial class DigTerrainWorkSession
             {
                 return Result.Failure(result.Error!);
             }
+
+            Result escaped = MaterializeEscapedFarmAnimals(
+                farmId,
+                result.Value,
+                tick);
+            if (escaped.IsFailure) return escaped;
         }
 
         return SynchronizeFarmLogisticsRuntime(
@@ -71,7 +77,11 @@ internal sealed partial class DigTerrainWorkSession
         SynchronizeFarmRegistrations();
         Result<FarmModeTransition> result = new SetFarmModeCommandHandler(_farmRepository).Handle(
             new SetFarmModeCommand(EntityId.Parse(buildingId), mode, tick));
-        return result.IsSuccess ? Result.Success() : Result.Failure(result.Error!);
+        if (result.IsFailure) return Result.Failure(result.Error!);
+        return MaterializeReleasedFarmFeed(
+            EntityId.Parse(buildingId),
+            result.Value.ReleasedFeed,
+            tick);
     }
 
     public Result DeliverFarmStock(

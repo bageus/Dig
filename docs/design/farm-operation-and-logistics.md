@@ -42,14 +42,22 @@ without feed and at population capacity.
   assignment releases only the worker/slot claim so the same delivery may retry.
 - Delivery is complete only after the item left the resident inventory, farm
   state changed and the job reached its terminal completed stage.
+- Animal production above the protected reserve is transferred into the farm's
+  building-owned Inventory as unit items. A staged outgoing hauling job makes a
+  resident collect each unit at the farm work position and place the physical
+  hamster or grub at the farm output cell. Failed jobs leave the unit in internal
+  stock for deterministic retry; they never subtract the protected breeders twice.
+- Switching away from an animal mode materializes escaping animals gradually at
+  the farm origin. Released feed becomes an ordinary world mushroom-cap stack at
+  the same location and no longer belongs to the farm.
 
 ## Acceptance evidence
 
 - Domain tests cover mode switching, stock, growth, breeding, feeding, capacity,
   escaping animals and snapshot restoration.
 - Application integration tests cover creation of a physical farm haul and
-  duplicate suppression while the stock is in transit.
+  duplicate suppression while the stock is in transit, plus outgoing unit
+  materialization and protected breeder reserves.
 - Unity source contracts, compilation and Play Mode must cover assignment,
   acquisition, movement to the farm work position, deposit, presentation refresh,
   mode change cancellation/reconciliation and retry after an unreachable route.
-

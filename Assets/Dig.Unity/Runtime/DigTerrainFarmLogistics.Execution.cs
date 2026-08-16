@@ -40,8 +40,13 @@ internal sealed partial class DigTerrainWorkSession
         }
         if (job.Stage != JobStageKind.DepositItem) return Result.Success();
 
-        Result completed = _farmDeliveryCompletion!.Handle(
-            new CompleteFarmDeliveryCommand(
+        _farmLogisticsReservations.TryGet(
+            job.Id,
+            out FarmLogisticsReservation reservation);
+        Result completed = reservation.Direction == FarmLogisticsDirection.Outgoing
+            ? _farmOutputCompletion!.Handle(new CompleteFarmOutputCommand(
+                job.Id, NextFarmRuntimeId("stack"), tick))
+            : _farmDeliveryCompletion!.Handle(new CompleteFarmDeliveryCommand(
                 job.Id, NextFarmRuntimeId("stack"), tick));
         if (completed.IsSuccess) _routePlans.Remove(job.Id);
         return completed;

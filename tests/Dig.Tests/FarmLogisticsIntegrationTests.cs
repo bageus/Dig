@@ -70,6 +70,58 @@ public sealed class FarmLogisticsIntegrationTests
             FarmLogisticsDirection.Incoming));
     }
 
+    [Fact]
+    public void Output_synchronization_preserves_breeders_and_creates_one_physical_job()
+    {
+        EntityId farmId = Id(10);
+        EntityId outputStackId = Id(11);
+        EntityId outputJobId = Id(12);
+        FarmState farm = new FarmState(FarmMode.Hamsters);
+        farm.Deliver(FarmDeliveryKind.Hamster, 2, tick: 0);
+        farm.Deliver(FarmDeliveryKind.MushroomFeed, 1, tick: 0);
+        farm.Advance(FarmOperationPolicy.HamsterReproductionTicks);
+        Assert.Equal(3, farm.HamsterCount);
+        InMemoryFarmRepository farms = new InMemoryFarmRepository();
+        farms.Save(farmId, farm);
+        InventoryState inventory = new InventoryState(
+            new ItemCatalog(LivingMaterialContent.CreateItems()));
+        InMemoryInventoryRepository inventoryRepository =
+            new InMemoryInventoryRepository(inventory);
+        InMemoryJobRepository jobRepository =
+            new InMemoryJobRepository(new JobSystem());
+        FarmLogisticsReservations reservations = new FarmLogisticsReservations();
+        SynchronizeFarmOutputsHandler handler = new SynchronizeFarmOutputsHandler(
+            farms,
+            inventoryRepository,
+            jobRepository,
+            FarmItemCatalog.Default,
+            reservations,
+            new FixedIds(outputStackId, outputJobId, Id(13)),
+            new InMemoryExecutionJournal());
+        FarmLogisticsSite site = new FarmLogisticsSite(
+            farmId,
+            new CellId(7, 7),
+            new CellId(8, 7));
+
+        Result<FarmLogisticsSynchronizationReport> first = handler.Handle(
+            new SynchronizeFarmOutputsCommand(new[] { site }, 650, 8, tick: 1));
+        Result<FarmLogisticsSynchronizationReport> second = handler.Handle(
+            new SynchronizeFarmOutputsCommand(new[] { site }, 650, 8, tick: 2));
+
+        Assert.True(first.IsSuccess, first.Error?.ToString());
+        FarmLogisticsJobPlan plan = Assert.Single(first.Value.Created);
+        Assert.Equal(outputStackId, plan.SourceStackId);
+        Assert.Equal(2, farms.Get(farmId)!.HamsterCount);
+        ItemStackSnapshot output = inventoryRepository.Get().GetStack(outputStackId)!;
+        Assert.Equal(ItemLocation.InBuilding(farmId), output.Location);
+        Assert.Equal(1, output.ReservedQuantity);
+        HaulJobDefinition haul = Assert.IsType<HaulJobDefinition>(
+            jobRepository.Get().Get(outputJobId)!.Definition);
+        Assert.Equal(ItemLocation.InWorld(site.OutputCell), haul.Destination);
+        Assert.Empty(second.Value.Created);
+        Assert.Equal(2, farms.Get(farmId)!.HamsterCount);
+    }
+
     private static EntityId Id(int value) => EntityId.Parse(value.ToString("x32"));
 
     private sealed class FixedIds : IFarmLogisticsJobIdSource
@@ -83,6 +135,8 @@ public sealed class FarmLogisticsIntegrationTests
         }
 
         public EntityId NextJobId() => _ids[_index++];
+
+        public EntityId NextStackId() => _ids[_index++];
     }
 }
 
