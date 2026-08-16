@@ -81,7 +81,13 @@ namespace Dig.Unity
                     continue;
                 }
 
-                if (TryPlanRoomUpgradeMovement(
+                if (TryPlanFarmLogisticsMovement(
+                    job,
+                    agent,
+                    navigation,
+                    movement,
+                    tick)
+                    || TryPlanRoomUpgradeMovement(
                     job,
                     agent,
                     navigation,

@@ -6,6 +6,7 @@ using Dig.Domain.Buildings;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
 using Dig.Domain.Farming;
+using Dig.Presentation.Agents;
 
 namespace Dig.Unity
 {
@@ -15,7 +16,7 @@ internal sealed partial class DigTerrainWorkSession
     private readonly InMemoryFarmRepository _farmRepository = new InMemoryFarmRepository();
     private readonly FarmItemCatalog _farmItems = FarmItemCatalog.Default;
 
-    public Result AdvanceFarms(long tick)
+    public Result AdvanceFarms(long tick, IReadOnlyList<AgentViewModel> agents)
     {
         if (tick < 0) throw new ArgumentOutOfRangeException(nameof(tick));
         SynchronizeFarmRegistrations();
@@ -30,7 +31,10 @@ internal sealed partial class DigTerrainWorkSession
             }
         }
 
-        return Result.Success();
+        return SynchronizeFarmLogisticsRuntime(
+            tick,
+            agents,
+            _worldSession.CreateTunnelNavigationVolume().Cells);
     }
 
     public FarmSnapshot? LoadFarmSnapshot(string buildingId)
@@ -132,6 +136,7 @@ internal sealed partial class DigTerrainWorkSession
             if (!activeSet.Contains(existing))
             {
                 _farmRepository.Remove(existing);
+                _farmLogisticsReservations.ReleaseForFarm(existing);
             }
         }
     }
