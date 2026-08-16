@@ -1,7 +1,13 @@
+using System;
+using Dig.Domain.Agents;
 using Dig.Application.Farming;
 using Dig.Application.Saving;
+using Dig.Domain.Buildings;
 using Dig.Domain.Core;
 using Dig.Domain.Farming;
+using Dig.Domain.Inventory;
+using Dig.Domain.Jobs;
+using Dig.Domain.World;
 using Dig.Infrastructure.Saving;
 using Xunit;
 
@@ -56,6 +62,67 @@ public sealed class FarmSaveRoundTripTests
 
         Assert.True(decoded.IsSuccess);
         Assert.Empty(decoded.Value.GetFarmIds());
+    }
+
+    [Fact]
+    public void Builder_json_and_loader_restore_farms_into_loaded_game_state()
+    {
+        MaterialId ground = new MaterialId("terrain.farm-save-ground");
+        MaterialCatalog materials = new MaterialCatalog(new[]
+        {
+            new MaterialDefinition(
+                ground,
+                "Farm save ground",
+                isSolid: true,
+                hardness: 1,
+                isMineable: true,
+                outputProfile: null),
+        });
+        ItemCatalog items = new ItemCatalog(Array.Empty<ItemDefinition>());
+        WorldState world = WorldState.CreateFilled(
+            new WorldSize(2, 2, 2),
+            chunkSize: 2,
+            materials,
+            ground).Value;
+        EntityId farmId = EntityId.Parse("73100000000000000000000000000002");
+        FarmState farm = new FarmState(FarmMode.Hamsters);
+        farm.Deliver(FarmDeliveryKind.Hamster, 4, tick: 5);
+        farm.Deliver(FarmDeliveryKind.MushroomFeed, 2, tick: 5);
+        farm.SwitchMode(FarmMode.Grubs, tick: 6);
+        InMemoryFarmRepository farms = new InMemoryFarmRepository();
+        farms.Save(farmId, farm);
+        JobDefinitionSaveRegistry jobs = new JobDefinitionSaveRegistry(
+            Array.Empty<IJobDefinitionSaveCodec>());
+        SaveGameDocument document = new SaveGameBuilder(jobs).Build(
+            new SaveGameContext(
+                new SaveMetadataData
+                {
+                    SlotId = "farm-round-trip",
+                    DisplayName = "Farm round trip",
+                    SavedAtUtc = "2026-08-16T00:00:00Z",
+                    SimulationTick = 6,
+                    WorldSeed = 731,
+                    GeneratorVersion = 1,
+                },
+                world,
+                new InventoryState(items),
+                new JobSystem(),
+                new BuildingsState(),
+                Array.Empty<AgentState>(),
+                farms: farms));
+        DataContractJsonSaveCodec codec = new DataContractJsonSaveCodec();
+
+        Result<LoadedGameState> loaded = new SaveGameLoader(
+            new SaveMigrationPipeline(Array.Empty<ISaveMigration>()),
+            jobs).Load(codec.Deserialize(codec.Serialize(document)), materials, items);
+
+        Assert.True(loaded.IsSuccess, loaded.Error?.ToString());
+        FarmSnapshot expected = farm.CreateSnapshot();
+        FarmSnapshot actual = loaded.Value.Farms.Get(farmId)!.CreateSnapshot();
+        Assert.Equal(expected.Mode, actual.Mode);
+        Assert.Equal(expected.FeedCount, actual.FeedCount);
+        Assert.Equal(expected.EscapingHamsterCount, actual.EscapingHamsterCount);
+        Assert.Equal(expected.NextEscapeTick, actual.NextEscapeTick);
     }
 }
 
