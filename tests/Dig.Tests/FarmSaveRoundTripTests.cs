@@ -99,7 +99,7 @@ public sealed class FarmSaveRoundTripTests
         InMemoryFarmRepository farms = new InMemoryFarmRepository();
         farms.Save(farmId, farm);
         JobDefinitionSaveRegistry jobs = new JobDefinitionSaveRegistry(
-            Array.Empty<IJobDefinitionSaveCodec>());
+            new IJobDefinitionSaveCodec[] { new DigJobDefinitionSaveCodec() });
         SaveGameDocument document = new SaveGameBuilder(jobs).Build(
             new SaveGameContext(
                 new SaveMetadataData
