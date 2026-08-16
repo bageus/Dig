@@ -20,6 +20,18 @@ internal sealed partial class DigTerrainWorkSession
     private readonly Dictionary<EntityId, int> _farmMushroomSwings =
         new Dictionary<EntityId, int>();
 
+    internal bool CanDirectHarvestFarmMushroom(string buildingId)
+    {
+        if (string.IsNullOrWhiteSpace(buildingId)) return false;
+        EntityId farmId = EntityId.Parse(buildingId);
+        BuildingSnapshot? building = _buildingsRepository?.Get().Get(farmId);
+        FarmSnapshot? snapshot = LoadFarmSnapshot(buildingId);
+        return building?.Definition.Id ==
+                Dig.Domain.Content.WorkshopProductionContent.FarmBuildingId
+            && snapshot != null
+            && snapshot.MushroomSlotsOccupied + snapshot.ResidualMushrooms > 0;
+    }
+
     internal Result StartFarmMushroomHarvest(
         string buildingId,
         EntityId workerId,

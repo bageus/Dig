@@ -75,6 +75,12 @@ namespace Dig.Unity
                 out DigBuildingVisual hoveredBuilding))
             {
                 SetBuildingTargetHoverInfo(hoveredBuilding);
+                if (_agentRenderer?.SelectedModel != null
+                    && _terrainSession!.CanDirectHarvestFarmMushroom(
+                        hoveredBuilding.Model.Id))
+                {
+                    return DirectCommandCursorKind.Axe;
+                }
             }
 
             TryHighlightHostileCreature(hits);

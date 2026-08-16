@@ -83,8 +83,16 @@ public sealed class FarmUnityRuntimeContractTests
         Assert.Contains("CancelFarmMushroomHarvest(job, tick)", Read(
             runtime,
             "DigTerrainWorkSession.Mushrooms.cs"));
-        Assert.Contains("Order harvest (", hud);
-        Assert.Contains("() => StartFarmMushroomHarvest(building.Id)", hud);
+        string priority = Read(
+            runtime,
+            "DigWorldInteraction.ResidentCommandPriority.cs");
+        string cursor = Read(runtime, "DigWorldInteraction.DirectCommandCursor.cs");
+        Assert.Contains("CanDirectHarvestFarmMushroom", priority);
+        Assert.Contains("StartFarmMushroomHarvest", priority);
+        Assert.Contains("Dwarf ordered to harvest farm mushroom", priority);
+        Assert.Contains("CanDirectHarvestFarmMushroom", cursor);
+        Assert.Contains("DirectCommandCursorKind.Axe", cursor);
+        Assert.DoesNotContain("Order harvest (", hud);
     }
 
     private static int Count(string source, string value)

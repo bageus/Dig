@@ -103,6 +103,25 @@ public sealed partial class DigWorldInteraction
             CancelResidentMarquee();
             DisableExcavationDrawing();
             DisableCaveRoomPlanning();
+            Dig.Presentation.Agents.AgentViewModel? selected =
+                _agentRenderer!.SelectedModel;
+            if (selected != null
+                && _terrainSession!.CanDirectHarvestFarmMushroom(
+                    completedBuilding.Model.Id))
+            {
+                Result harvest = _terrainSession.StartFarmMushroomHarvest(
+                    completedBuilding.Model.Id,
+                    EntityId.Parse(selected.Id),
+                    new CellId(selected.CellX, selected.CellY, selected.CellZ),
+                    _agentSession!.Tick);
+                _hud!.SetCommandResult(harvest);
+                if (harvest.IsSuccess)
+                {
+                    _hud.SetStatus("Dwarf ordered to harvest farm mushroom.");
+                }
+                return true;
+            }
+
             ContextPointerTarget buildingTarget = new ContextPointerTarget(
                 ContextWorldTargetKind.CompletedBuilding,
                 EntityId.Parse(completedBuilding.Model.Id),

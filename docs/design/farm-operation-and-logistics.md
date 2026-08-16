@@ -33,8 +33,9 @@ three growth slots, up to eight animals, and both feed caps at the physical cent
 of the farm. These objects are presentation-only and do not own simulation state.
 Visible hamsters and grubs wander within clamped plot bounds; their motion never
 crosses the low fence and does not create physics or authoritative movement state.
-Ordering harvest for an available farm mushroom assigns the selected resident a
-normal mushroom-chop job. The resident walks to the farm work position, performs
+Clicking a farm with an available mushroom while a resident is selected assigns
+that resident a normal mushroom-chop job and projects the axe cursor. The resident
+walks to the farm work position, performs
 the axe swings, then removes one authoritative growth slot and creates one
 physical cap plus one physical leg at the farm origin. The empty slot is then
 eligible for the normal farm regrowth step.

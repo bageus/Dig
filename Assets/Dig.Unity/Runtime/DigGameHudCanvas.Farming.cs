@@ -61,19 +61,6 @@ public sealed partial class DigGameHudCanvas
             FarmMode.Grubs,
             DigProductionIconGlyph.Resolve(LivingMaterialContent.GrubItemId.ToString()),
             modeRow);
-        int harvestableMushrooms =
-            farm.MushroomSlotsOccupied + farm.ResidualMushrooms;
-        if (harvestableMushrooms > 0)
-        {
-            Button harvest = CreateButton(
-                "Harvest Farm Mushroom",
-                modeRow,
-                "Order harvest (" + harvestableMushrooms + ")",
-                () => StartFarmMushroomHarvest(building.Id),
-                preferredHeight: 36f);
-            harvest.interactable = _agentRenderer!.SelectedModel != null;
-        }
-
         string status = BuildFarmStatus(farm, demands);
         Text details = CreateText(
             "Farm Status",
@@ -111,25 +98,6 @@ public sealed partial class DigGameHudCanvas
     {
         long tick = _simulation?.CurrentTick ?? 0;
         Result result = _terrainSession!.SetFarmMode(buildingId, mode, tick);
-        _legacyHud!.SetCommandResult(result);
-        InvalidateAll();
-    }
-
-    private void StartFarmMushroomHarvest(string buildingId)
-    {
-        Dig.Presentation.Agents.AgentViewModel? worker = _agentRenderer!.SelectedModel;
-        if (worker == null)
-        {
-            _legacyHud!.SetStatus("Select a dwarf before harvesting a farm mushroom.");
-            return;
-        }
-
-        long tick = _simulation?.CurrentTick ?? 0;
-        Result result = _terrainSession!.StartFarmMushroomHarvest(
-            buildingId,
-            EntityId.Parse(worker.Id),
-            new Dig.Domain.World.CellId(worker.CellX, worker.CellY, worker.CellZ),
-            tick);
         _legacyHud!.SetCommandResult(result);
         InvalidateAll();
     }
