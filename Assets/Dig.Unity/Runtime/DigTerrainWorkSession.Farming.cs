@@ -55,6 +55,17 @@ internal sealed partial class DigTerrainWorkSession
             new GetFarmSnapshotQuery(EntityId.Parse(buildingId)));
     }
 
+    internal IReadOnlyDictionary<string, FarmSnapshot> LoadAllFarmSnapshots()
+    {
+        SynchronizeFarmRegistrations();
+        return _farmRepository.GetFarmIds()
+            .OrderBy(value => value.ToString(), StringComparer.Ordinal)
+            .ToDictionary(
+                value => value.ToString(),
+                value => _farmRepository.Get(value)!.CreateSnapshot(),
+                StringComparer.Ordinal);
+    }
+
     public IReadOnlyList<FarmSupplyDemand> LoadFarmSupplyDemands(string buildingId)
     {
         if (string.IsNullOrWhiteSpace(buildingId))
