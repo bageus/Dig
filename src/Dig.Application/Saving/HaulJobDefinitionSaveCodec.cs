@@ -111,8 +111,14 @@ public sealed class HaulJobDefinitionSaveCodec : IJobDefinitionSaveCodec
                 ParseCoordinate(properties, "destination.y"),
                 ParseCoordinate(properties, "destination.z")));
         }
+        if (parsed != ItemLocationKind.BuildingInventory
+            && parsed != ItemLocationKind.Storage)
+        {
+            throw new InvalidOperationException(
+                "Saved hauling destination kind is not supported.");
+        }
         EntityId owner = EntityId.Parse(Required(properties, "destination.owner_id"));
-        return parsed == ItemLocationKind.Building
+        return parsed == ItemLocationKind.BuildingInventory
             ? ItemLocation.InBuilding(owner)
             : ItemLocation.InStorage(owner);
     }
