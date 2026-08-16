@@ -3,6 +3,8 @@ using System.Linq;
 using Dig.Application.Farming;
 using Dig.Domain.Core;
 using Dig.Domain.Farming;
+using Dig.Domain.Inventory;
+using Dig.Domain.Jobs;
 
 namespace Dig.Application.Saving
 {
@@ -86,6 +88,36 @@ public static class FarmSaveAdapter
             }
         }
         return Result<FarmLogisticsReservations>.Success(reservations);
+    }
+
+    public static Result ValidateReservations(
+        FarmLogisticsReservations reservations,
+        IFarmRepository farms,
+        JobSystem jobs)
+    {
+        if (reservations == null || farms == null || jobs == null)
+            throw new ArgumentNullException(
+                reservations == null ? nameof(reservations)
+                : farms == null ? nameof(farms) : nameof(jobs));
+        FarmItemCatalog items = FarmItemCatalog.Default;
+        foreach (FarmLogisticsReservation reservation in reservations.GetAll())
+        {
+            JobSnapshot? job = jobs.Get(reservation.JobId);
+            if (farms.Get(reservation.BuildingId) == null
+                || job?.Definition is not HaulJobDefinition haul
+                || job.IsTerminal
+                || haul.ItemId != items.Resolve(reservation.Kind)
+                || haul.Quantity != reservation.Quantity)
+            {
+                return Result.Failure(SaveErrors.InvalidDocument);
+            }
+
+            bool validDirection = reservation.Direction == FarmLogisticsDirection.Incoming
+                ? haul.Destination == ItemLocation.InBuilding(reservation.BuildingId)
+                : haul.Destination.Kind == ItemLocationKind.World;
+            if (!validDirection) return Result.Failure(SaveErrors.InvalidDocument);
+        }
+        return Result.Success();
     }
 
     public static Result<InMemoryFarmRepository> Decode(FarmSaveData? data)

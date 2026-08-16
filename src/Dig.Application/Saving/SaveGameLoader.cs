@@ -286,10 +286,12 @@ public sealed partial class SaveGameLoader
                 document.Exploration, world.Value.Size);
             Result<InMemoryFarmRepository> farms = FarmSaveAdapter.Decode(document.Farms);
             if (farms.IsFailure) return Result<LoadedGameState>.Failure(farms.Error!);
-            Result<FarmLogisticsReservations> farmReservations =
-                FarmSaveAdapter.DecodeReservations(document.Farms);
+            Result<FarmLogisticsReservations> farmReservations = FarmSaveAdapter.DecodeReservations(document.Farms);
             if (farmReservations.IsFailure)
                 return Result<LoadedGameState>.Failure(farmReservations.Error!);
+            Result farmReservationIntegrity = FarmSaveAdapter.ValidateReservations(
+                farmReservations.Value, farms.Value, jobs.Value);
+            if (farmReservationIntegrity.IsFailure) return Result<LoadedGameState>.Failure(farmReservationIntegrity.Error!);
             return Result<LoadedGameState>.Success(new LoadedGameState(
                 CopyMetadata(document.Metadata),
                 world.Value,

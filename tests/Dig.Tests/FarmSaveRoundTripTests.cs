@@ -85,6 +85,11 @@ public sealed class FarmSaveRoundTripTests
                 "Farm save fixture",
                 maximumStackSize: 1,
                 isTool: false),
+            new ItemDefinition(
+                FarmItemCatalog.Default.Hamster,
+                "Farm save hamster",
+                maximumStackSize: 1,
+                isTool: false),
         });
         WorldState world = WorldState.CreateFilled(
             new WorldSize(2, 2, 4),
@@ -106,8 +111,24 @@ public sealed class FarmSaveRoundTripTests
             FarmDeliveryKind.Hamster,
             collectableQuantity: 1,
             quantity: 1));
+        JobSystem jobSystem = new JobSystem();
+        EntityId sourceStackId = EntityId.Parse("73200000000000000000000000000004");
+        Assert.True(jobSystem.Add(new HaulJobDefinition(
+            farmJobId,
+            sourceStackId,
+            FarmItemCatalog.Default.Hamster,
+            quantity: 1,
+            ItemLocation.InWorld(new CellId(0, 0, 1)),
+            priority: 650,
+            createdTick: 5,
+            JobRetryPolicy.Default)).IsSuccess);
+        Assert.True(jobSystem.MakeAvailable(farmJobId, tick: 5).IsSuccess);
         JobDefinitionSaveRegistry jobs = new JobDefinitionSaveRegistry(
-            new IJobDefinitionSaveCodec[] { new DigJobDefinitionSaveCodec() });
+            new IJobDefinitionSaveCodec[]
+            {
+                new DigJobDefinitionSaveCodec(),
+                new HaulJobDefinitionSaveCodec(),
+            });
         SaveGameDocument document = new SaveGameBuilder(jobs).Build(
             new SaveGameContext(
                 new SaveMetadataData
@@ -121,7 +142,7 @@ public sealed class FarmSaveRoundTripTests
                 },
                 world,
                 new InventoryState(items),
-                new JobSystem(),
+                jobSystem,
                 new BuildingsState(),
                 Array.Empty<AgentState>(),
                 farms: farms,
@@ -145,6 +166,30 @@ public sealed class FarmSaveRoundTripTests
         Assert.Equal(farmId, restored.BuildingId);
         Assert.Equal(FarmDeliveryKind.Hamster, restored.Kind);
         Assert.Equal(FarmLogisticsDirection.Outgoing, restored.Direction);
+    }
+
+    [Fact]
+    public void Reservation_without_matching_active_job_is_rejected()
+    {
+        EntityId farmId = EntityId.Parse("73100000000000000000000000000005");
+        EntityId jobId = EntityId.Parse("73100000000000000000000000000006");
+        InMemoryFarmRepository farms = new InMemoryFarmRepository();
+        farms.Save(farmId, new FarmState(FarmMode.Hamsters));
+        FarmLogisticsReservations reservations = new FarmLogisticsReservations();
+        Assert.True(reservations.TryReserveOutgoing(
+            jobId,
+            farmId,
+            FarmDeliveryKind.Hamster,
+            collectableQuantity: 1,
+            quantity: 1));
+
+        Result integrity = FarmSaveAdapter.ValidateReservations(
+            reservations,
+            farms,
+            new JobSystem());
+
+        Assert.True(integrity.IsFailure);
+        Assert.Equal(SaveErrors.InvalidDocument, integrity.Error);
     }
 }
 
