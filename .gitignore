@@ -1,42 +1,72 @@
-# .NET
+# ===================================
+# .NET / C# Build Artifacts
+# ===================================
 **/bin/
 **/obj/
 *.user
 *.suo
 *.userprefs
 *.csproj.user
+*.pidb
+*.pdb
+*.opendb
+*.VC.db
 
-# IDE
+# ===================================
+# IDEs & Editors
+# ===================================
 .vs/
 .idea/
 .vscode/
 *.sln.iml
+*.swp
+*~
 
-# Test and coverage output
+# ===================================
+# Test, Soak & Coverage Output
+# ===================================
 TestResults/
 coverage/
 *.trx
+*.coverage
+*.coveragexml
 
-# Local quality-tool output
+# ===================================
+# Local Quality, Scripts & Logs
+# ===================================
 __pycache__/
 *.py[cod]
+*.log
 unity-source-contracts.log
 
-# Unity project generated files
-[Ll]ibrary/
-[Tt]emp/
-[Oo]bj/
-[Bb]uild/
-[Bb]uilds/
-[Ll]ogs/
-[Uu]ser[Ss]ettings/
-[Mm]emoryCaptures/
-[Rr]ecordings/
-*.csproj
-*.sln
-*.user
+# ===================================
+# Unity Generated Folders & Caches
+# ===================================
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+/[Aa]sset[Ss]tore[Tt]ools*
+/[Cc]rashReports/
 
-# OS
+# ===================================
+# Unity Generated Project Files
+# (Не игнорируем корневой Dig.sln)
+# ===================================
+*.unityproj
+*Unity*.sln
+*Unity*.csproj
+
+# ===================================
+# OS & Agent Temporary Files
+# ===================================
 .DS_Store
 Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
 .aider*
