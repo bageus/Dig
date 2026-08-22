@@ -172,6 +172,11 @@ public sealed class CompleteBuildingBoxPickupHandler
             return Result.Failure(BuildingBoxPickupErrors.JobTypeMismatch);
         }
 
+        if (job.Status == JobStatus.Completed)
+        {
+            return Result.Success();
+        }
+
         if (job.Status != JobStatus.InProgress
             || job.Stage != JobStageKind.AcquireItem
             || !job.AssignedAgentId.HasValue)

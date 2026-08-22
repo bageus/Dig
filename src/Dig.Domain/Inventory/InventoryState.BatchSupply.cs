@@ -222,7 +222,8 @@ public sealed partial class InventoryState
                 (ItemStackState source, int remaining) = sources.Dequeue();
                 int moved = Math.Min(need, remaining);
                 ItemLocation sourceLocation = source.Location;
-                source.ConsumeReservedQuantity(jobId, moved);
+                source.ConsumeReservation(jobId, moved);
+                source.ConsumeAvailable(moved);
                 target.AddQuantity(moved);
                 target.Reserve(jobId, moved);
                 Raise(new ItemQuantityReservationChanged(

@@ -92,7 +92,8 @@ public sealed partial class InventoryState
             {
                 continue;
             }
-            source.ConsumeReservedQuantity(jobId, moved);
+            source.ConsumeReservation(jobId, moved);
+            source.ConsumeAvailable(moved);
             target.AddQuantity(moved);
             target.Reserve(jobId, moved);
             Raise(new ItemQuantityReservationChanged(
