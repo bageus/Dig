@@ -154,7 +154,7 @@ internal sealed partial class DigTerrainWorkSession
             }
             else if (job.Definition is HaulJobDefinition)
             {
-                continue;
+                result = AdvanceGenericHaulingAtTarget(job, agent, tick);
             }
             else if (_routePlans.TryGetValue(
                     job.Id,
