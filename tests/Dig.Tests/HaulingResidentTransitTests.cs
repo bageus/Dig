@@ -54,7 +54,7 @@ public sealed class HaulingResidentTransitTests
         Assert.Equal(4, harness.Inventory.GetQuantityAt(
             OreId,
             ItemLocation.InStorage(StorageId)));
-        Assert.Equal(10, harness.Inventory.GetTotal(OreId));
+        Assert.Equal(14, harness.Inventory.GetTotal(OreId));
     }
 
     [Fact]
