@@ -310,10 +310,11 @@ public sealed class ReconcileHaulingHandler
         EntityId jobId,
         HaulJobDefinition hauling)
     {
-        ItemStackSnapshot? stack = inventory.GetStack(hauling.SourceStackId);
-        int itemQuantity = stack?.Reservations
+        int itemQuantity = inventory.CreateSnapshot().Stacks
+            .Where(stack => stack.ItemId == hauling.ItemId)
+            .SelectMany(stack => stack.Reservations)
             .Where(value => value.JobId == jobId)
-            .Sum(value => value.Quantity) ?? 0;
+            .Sum(value => value.Quantity);
         if (itemQuantity != hauling.Quantity)
         {
             return false;
