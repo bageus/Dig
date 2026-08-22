@@ -71,7 +71,8 @@ public sealed class SaveGameService
             tunnelInfrastructure: context.TunnelInfrastructure,
             roomInfrastructure: context.RoomInfrastructure,
             farms: context.Farms,
-            farmLogisticsReservations: context.FarmLogisticsReservations));
+            farmLogisticsReservations: context.FarmLogisticsReservations,
+            storage: context.Storage));
     }
 
     public Result<LoadedGameState> Load(

@@ -77,6 +77,7 @@ public sealed partial class SaveGameBuilder
             Farms = FarmSaveAdapter.Encode(
                 context.Farms,
                 context.FarmLogisticsReservations),
+            Storage = StorageSaveAdapter.Encode(context.Storage),
         };
     }
 

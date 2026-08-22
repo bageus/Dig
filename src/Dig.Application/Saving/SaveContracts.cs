@@ -20,13 +20,14 @@ using Dig.Domain.Navigation;
 using Dig.Domain.WorldObjects;
 using Dig.Domain.Society;
 using Dig.Domain.Exploration;
+using Dig.Domain.Storage;
 
 namespace Dig.Application.Saving
 {
 
 public static class SaveFormat
 {
-    public const int CurrentVersion = 18;
+    public const int CurrentVersion = 19;
 }
 
 public static class SaveSlotNames
@@ -110,6 +111,7 @@ public sealed class SaveGameDocument
     [DataMember(Order = 21)] public SocietySaveData Society { get; set; } = new SocietySaveData();
     [DataMember(Order = 22)] public ExplorationSaveData Exploration { get; set; } = new ExplorationSaveData();
     [DataMember(Order = 23)] public FarmSaveData Farms { get; set; } = new FarmSaveData();
+    [DataMember(Order = 24)] public StorageSaveData Storage { get; set; } = new StorageSaveData();
 }
 
 public sealed class LoadedGameState
@@ -142,7 +144,8 @@ public sealed class LoadedGameState
         SocietyState? society = null,
         ExplorationState? exploration = null,
         IFarmRepository? farms = null,
-        FarmLogisticsReservations? farmLogisticsReservations = null)
+        FarmLogisticsReservations? farmLogisticsReservations = null,
+        StorageState? storage = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -150,6 +153,8 @@ public sealed class LoadedGameState
         Jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
         Buildings = buildings ?? throw new ArgumentNullException(nameof(buildings));
         MigrationReport = migrationReport ?? throw new ArgumentNullException(nameof(migrationReport));
+        Storage = storage ?? new StorageState();
+
         AgentSkills = Copy(agentSkills);
         AgentAutomaticPlanning = Copy(agentAutomaticPlanning);
         AgentPositions = Copy(agentPositions);
@@ -224,6 +229,7 @@ public sealed class LoadedGameState
     public ExplorationState Exploration { get; }
     public IFarmRepository Farms { get; }
     public FarmLogisticsReservations FarmLogisticsReservations { get; }
+    public StorageState Storage { get; }
 
     private static IReadOnlyDictionary<TKey, TValue> Copy<TKey, TValue>(
         IReadOnlyDictionary<TKey, TValue>? values) where TKey : notnull

@@ -16,6 +16,7 @@ using Dig.Domain.Jobs;
 using Dig.Domain.Production;
 using Dig.Domain.World;
 using Dig.Domain.WorldObjects;
+using Dig.Domain.Storage;
 using Dig.Domain.Society;
 using Dig.Domain.Exploration;
 
@@ -73,7 +74,8 @@ public sealed class SaveGameContext
         SocietyState? society = null,
         ExplorationState? exploration = null,
         IFarmRepository? farms = null,
-        FarmLogisticsReservations? farmLogisticsReservations = null)
+        FarmLogisticsReservations? farmLogisticsReservations = null,
+        StorageState? storage = null)
     {
         Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         World = world ?? throw new ArgumentNullException(nameof(world));
@@ -113,6 +115,7 @@ public sealed class SaveGameContext
         Farms = farms ?? new InMemoryFarmRepository();
         FarmLogisticsReservations = farmLogisticsReservations
             ?? new FarmLogisticsReservations();
+        Storage = storage ?? new StorageState();
     }
 
     public SaveMetadataData Metadata { get; }
@@ -138,6 +141,7 @@ public sealed class SaveGameContext
     public ExplorationState Exploration { get; }
     public IFarmRepository Farms { get; }
     public FarmLogisticsReservations FarmLogisticsReservations { get; }
+    public StorageState Storage { get; }
 }
 
 }
