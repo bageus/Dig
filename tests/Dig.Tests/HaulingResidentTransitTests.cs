@@ -50,7 +50,7 @@ public sealed class HaulingResidentTransitTests
         Result completed = harness.Complete(Id(21), tick: 5);
 
         Assert.True(completed.IsSuccess, completed.Error?.ToString());
-        Assert.Equal(1d, harness.Inventory.GetResidentMoveSpeedMultiplier(ResidentId));
+        Assert.Equal(0.75d, harness.Inventory.GetResidentMoveSpeedMultiplier(ResidentId));
         Assert.Equal(4, harness.Inventory.GetQuantityAt(
             OreId,
             ItemLocation.InStorage(StorageId)));
