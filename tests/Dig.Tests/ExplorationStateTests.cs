@@ -38,6 +38,46 @@ public sealed class ExplorationStateTests
     }
 
     [Fact]
+    public void Diagonal_corner_cutting_is_allowed_when_target_is_open()
+    {
+        WorldState world = CreateOpenWorld(6, 6);
+        SetCell(world, new CellId(2, 2, 1), Rock, tick: 1);
+        SetCell(world, new CellId(1, 1, 1), Rock, tick: 2);
+        ExplorationState exploration = new ExplorationState();
+        exploration.Recalculate(world.CreateSnapshot(), Sources(new CellId(1, 1, 1)),
+            additionalBlockers: new HashSet<CellId>
+            {
+                new CellId(2, 1, 1),
+                new CellId(1, 2, 1),
+            });
+
+        Assert.True(exploration.IsVisible(new CellId(2, 2, 1)));
+    }
+
+    [Fact]
+    public void Z_edge_and_corner_diagonals_use_one_graph_step()
+    {
+        WorldState world = CreateOpenWorld(10, 10);
+        ExplorationState exploration = new ExplorationState();
+        exploration.Recalculate(world.CreateSnapshot(), Sources(new CellId(4, 4, 1)));
+
+        Assert.True(exploration.IsVisible(new CellId(5, 4, 2)));
+        Assert.True(exploration.IsVisible(new CellId(5, 5, 2)));
+    }
+
+    [Fact]
+    public void Solid_target_is_boundary_only_and_does_not_propagate()
+    {
+        WorldState world = CreateOpenWorld(9, 9);
+        SetCell(world, new CellId(4, 4, 1), Rock, tick: 1);
+        ExplorationState exploration = new ExplorationState();
+        exploration.Recalculate(world.CreateSnapshot(), Sources(new CellId(3, 3, 1)));
+
+        Assert.Equal(CellVisibility.Visible, exploration.GetVisibility(new CellId(4, 4, 1)));
+        Assert.Equal(CellVisibility.Visible, exploration.GetVisibility(new CellId(5, 5, 1)));
+    }
+
+    [Fact]
     public void Tunnel_reveals_orthogonal_and_diagonal_boundary_rock_without_seeing_through_it()
     {
         WorldState world = CreateOpenWorld(10, 8);
@@ -210,6 +250,14 @@ public sealed class ExplorationStateTests
             new MaterialDefinition(Air, false, 0), new MaterialDefinition(Rock, true, 10),
         });
         return WorldState.CreateFilled(new WorldSize(width, height), 4, catalog, Air, false).Value;
+    }
+
+    private static void SetCell(WorldState world, CellId cell, MaterialId material, long tick)
+    {
+        Assert.True(world.ApplyTerrainChanges(new[]
+        {
+            new TerrainChange(cell, world.GetCell(cell).Value.State.WithTerrain(material)),
+        }, tick).IsSuccess);
     }
 
     private static void SetLayer(WorldState world, int y, MaterialId material, long tick)

@@ -97,7 +97,7 @@ internal sealed partial class DigAgentSession
                 return true;
             }
 
-            if (!_surfaceTraffic.CanOccupy(agent.Id, destination, _tick))
+            if (!_surfaceTraffic.CanOccupy(agent.Id, destination, Tick))
             {
                 result = Result.Success();
                 return true;

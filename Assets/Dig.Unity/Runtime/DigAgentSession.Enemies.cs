@@ -52,7 +52,7 @@ internal sealed partial class DigAgentSession
             .Where(value => !_combatOnlyActors.Contains(value.Id))
             .OrderBy(value => value.Id.ToString(), StringComparer.Ordinal))
         {
-            AgentSnapshot snapshot = resident.CreateSnapshot(_tick);
+            AgentSnapshot snapshot = resident.CreateSnapshot(Tick);
             bool engaged = combat != null && IsCombatEngaged(combat, resident.Id);
             result.Add(new CombatantHealthBarViewModel(
                 resident.Id.ToString(),
@@ -212,14 +212,14 @@ internal sealed partial class DigAgentSession
         _issueCombatIntent.Handle(new IssueCombatIntentCommand(
             new CombatIntentRequest(
                 new CombatIntentId(
-                    reason + ":" + actorId + ":" + targetId + ":" + _tick),
+                    reason + ":" + actorId + ":" + targetId + ":" + Tick),
                 actorId,
                 CombatIntentKind.Attack,
                 source,
-                _tick,
+                Tick,
                 RetainsEnemyAggro(actorId)
                     ? long.MaxValue
-                    : checked(_tick + AutonomousIntentLifetimeTicks),
+                    : checked(Tick + AutonomousIntentLifetimeTicks),
                 targetId,
                 target.Position)));
     }
@@ -295,7 +295,7 @@ internal sealed partial class DigAgentSession
             enemy.Position,
             TunnelVolume,
             DemoIdentitySeed,
-            _tick);
+            Tick);
         if (!decision.ShouldMove)
         {
             return false;
@@ -304,7 +304,7 @@ internal sealed partial class DigAgentSession
         result = MoveThroughTunnelTraffic(enemy, decision.Target);
         if (result.IsSuccess && enemy.Position == decision.Target)
         {
-            _lastEnemyPatrolMoveTicks[enemy.Id] = _tick;
+            _lastEnemyPatrolMoveTicks[enemy.Id] = Tick;
         }
         return true;
     }

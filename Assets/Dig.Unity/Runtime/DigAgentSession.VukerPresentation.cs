@@ -27,7 +27,7 @@ internal sealed partial class DigAgentSession
                 continue;
             }
 
-            AgentSnapshot snapshot = actor.CreateSnapshot(_tick);
+            AgentSnapshot snapshot = actor.CreateSnapshot(Tick);
             CombatExecutionSnapshot? execution = combat?.GetActiveExecution(actor.Id);
             bool engaged = combat != null && IsCombatEngaged(combat, actor.Id);
             bool moving = execution != null
@@ -36,12 +36,12 @@ internal sealed partial class DigAgentSession
             moving |= _lastEnemyPatrolMoveTicks.TryGetValue(
                 actor.Id,
                 out long patrolTick)
-                && patrolTick == _tick;
+                && patrolTick == Tick;
             bool attacking = execution != null
                 && (execution.Stage == CombatExecutionStage.WindUp
                     || execution.Stage == CombatExecutionStage.ResolveAttack);
             bool impact = _lastCombatImpactTicks.TryGetValue(actor.Id, out long impactTick)
-                && _tick - impactTick <= 1;
+                && Tick - impactTick <= 1;
             VukerIndividualSnapshot? vuker = _vukerEcology.GetIndividual(actor.Id);
             CreatureLifecycleVisualStage lifecycle = vuker?.Lifecycle
                 == VukerLifecycleStage.Child
@@ -57,7 +57,7 @@ internal sealed partial class DigAgentSession
                     0d,
                     Math.Min(
                         1d,
-                        (double)(_tick - vuker.BirthTick)
+                        (double)(Tick - vuker.BirthTick)
                             / Math.Max(1L, vuker.MaturityTick - vuker.BirthTick)))
                 : 0d;
             result.Add(new CreatureVisualSnapshot(

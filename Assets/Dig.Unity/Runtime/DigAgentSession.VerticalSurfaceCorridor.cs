@@ -26,7 +26,7 @@ internal sealed partial class DigAgentSession
                     agent.SurfacePose,
                     out SurfacePose floorPose))
             {
-                if (!_surfaceTraffic.CanOccupy(agent.Id, floorPose, _tick))
+                if (!_surfaceTraffic.CanOccupy(agent.Id, floorPose, Tick))
                 {
                     result = Result.Success();
                     return true;
@@ -59,13 +59,13 @@ internal sealed partial class DigAgentSession
         }
 
         if (crossesBoundary
-            && !_tunnelTraffic.CanMove(agent.Id, current, next, _tick))
+            && !_tunnelTraffic.CanMove(agent.Id, current, next, Tick))
         {
             result = Result.Success();
             return true;
         }
 
-        if (!_surfaceTraffic.CanOccupy(agent.Id, verticalPose, _tick))
+        if (!_surfaceTraffic.CanOccupy(agent.Id, verticalPose, Tick))
         {
             result = Result.Success();
             return true;
@@ -83,7 +83,7 @@ internal sealed partial class DigAgentSession
 
         if (crossesBoundary)
         {
-            _tunnelTraffic.RecordMove(agent.Id, current, next, _tick);
+            _tunnelTraffic.RecordMove(agent.Id, current, next, Tick);
             order.ConfirmStep(next);
         }
 

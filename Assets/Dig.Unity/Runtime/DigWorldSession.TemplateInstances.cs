@@ -24,8 +24,7 @@ internal sealed partial class DigWorldSession
             }
         }
 
-        _tick = checked(_tick + 1);
-        return _repository.Get().SetDigDesignations(instance.OrderedMask, _tick);
+        return _repository.Get().SetDigDesignations(instance.OrderedMask, _simulationState.Clock.TickIndex);
     }
 }
 

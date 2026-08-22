@@ -46,7 +46,7 @@ internal sealed partial class DigAgentSession
             : EntityId.Parse(selectedResidentId);
         AgentSnapshot[] snapshots = _repository.GetAll()
             .Where(agent => !_combatOnlyActors.Contains(agent.Id))
-            .Select(agent => agent.CreateSnapshot(_tick))
+            .Select(agent => agent.CreateSnapshot(Tick))
             .ToArray();
         return _rosterPresenter.Present(
             snapshots,
@@ -90,7 +90,7 @@ internal sealed partial class DigAgentSession
             EntityId.Parse(residentId),
             startTickInclusive,
             endTickExclusive,
-            _tick));
+            Tick));
     }
 
     internal bool TryGetAutomaticPlanning(
@@ -113,10 +113,10 @@ internal sealed partial class DigAgentSession
             new SetAgentAutomaticPlanningCommand(
                 EntityId.Parse(residentId),
                 enabled,
-                _tick));
+                Tick));
         if (result.IsSuccess && enabled)
         {
-            _autonomy.Execute(new SimulationContext(_tick, _simulationState));
+            _autonomy.Execute(new SimulationContext(Tick, _simulationState));
         }
 
         return result;

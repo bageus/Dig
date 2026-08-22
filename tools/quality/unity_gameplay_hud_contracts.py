@@ -227,7 +227,7 @@ def check_gameplay_hud_and_work_contracts(
         (
             "ResidentRosterPresenter",
             "LoadResidentRoster",
-            "CreateSnapshot(_tick)",
+            "CreateSnapshot(Tick)",
             "TryGetWorkWindow",
             "SetAgentWorkRestWindowCommand",
             "SetAgentAutomaticPlanningCommand",

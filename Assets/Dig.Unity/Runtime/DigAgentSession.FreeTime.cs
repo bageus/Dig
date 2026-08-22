@@ -90,10 +90,10 @@ internal sealed partial class DigAgentSession
                 first.CreateLeisureRuntimeSnapshot(),
                 second.Id,
                 _simulationState.RandomStreams.WorldSeed,
-                _tick + first.Id.GetHashCode());
+                Tick + first.Id.GetHashCode());
             AdvanceLeisure(first, activity, second.Id);
             AdvanceLeisure(second, activity, first.Id);
-            if (_tick % FreeTimeMoodIntervalTicks == 0)
+            if (Tick % FreeTimeMoodIntervalTicks == 0)
             {
                 AdvanceRelationshipAndReproduction(first, second);
             }
@@ -107,7 +107,7 @@ internal sealed partial class DigAgentSession
 
     private bool IsAvailableForFreeTime(AgentState resident)
     {
-        AgentSnapshot snapshot = resident.CreateSnapshot(_tick);
+        AgentSnapshot snapshot = resident.CreateSnapshot(Tick);
         ResidentSocietySnapshot? social = _society.CreateSnapshot().Residents
             .FirstOrDefault(value => value.Id == resident.Id);
         if (snapshot.ScheduledActivity == ScheduleActivity.Work
@@ -188,8 +188,8 @@ internal sealed partial class DigAgentSession
 
         AgentState mother = _residentSexes[first.Id] == ResidentSex.Female ? first : second;
         AgentState father = mother == first ? second : first;
-        AgentSnapshot motherState = mother.CreateSnapshot(_tick);
-        AgentSnapshot fatherState = father.CreateSnapshot(_tick);
+        AgentSnapshot motherState = mother.CreateSnapshot(Tick);
+        AgentSnapshot fatherState = father.CreateSnapshot(Tick);
         if (motherState.Needs.Mood.Points <= 7_500
             || fatherState.Needs.Mood.Points <= 7_500
             || motherState.Needs.Nutrition.Points <= 8_000
@@ -269,10 +269,10 @@ internal sealed partial class DigAgentSession
             || !current.ActiveVariety.Value.Equals(definition.Id)
             || current.PartnerId != partnerId)
         {
-            RequireSociety(resident.BeginLeisure(definition, partnerId, _tick));
+            RequireSociety(resident.BeginLeisure(definition, partnerId, Tick));
         }
 
-        RequireSociety(resident.AdvanceLeisure(definition, _tick));
+        RequireSociety(resident.AdvanceLeisure(definition, Tick));
         _repository.Save(resident);
     }
 

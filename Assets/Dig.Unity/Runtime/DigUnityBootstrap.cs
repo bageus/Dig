@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Dig.Domain.Core;
+using Dig.Domain.Runtime;
 using Dig.Domain.World;
 using Dig.Presentation.Agents;
 using Dig.Presentation.Buildings;
@@ -49,14 +50,19 @@ namespace Dig.Unity
             _startupStage = "configuring side-view world root";
             ConfigureSideViewRoot();
             _startupStage = "creating world";
+            SimulationState simulationState = SimulationState.Create(
+                worldSeed: 0xD1661EUL,
+                tickDuration: GameTimeCadence.NormalTickDuration);
             DigWorldSession worldSession = DigWorldSession.CreateDemo(
-                demoWidth, demoHeight, chunkSize);
+                demoWidth, demoHeight, chunkSize,
+                simulationState: simulationState);
             WorldViewModel world = worldSession.LoadView();
             _startupStage = "creating residents";
             DigAgentSession agentSession = DigAgentSession.CreateDemo(
                 world,
                 worldSession.CreateTunnelNavigationVolume(),
-                worldSession.Journal);
+                worldSession.Journal,
+                simulationState: worldSession.SimulationState);
             agentSession.InitializeHudSchedule(worldSession.Journal);
             IReadOnlyList<AgentViewModel> agents = agentSession.LoadView();
             worldSession.UpdateExploration(agents);
