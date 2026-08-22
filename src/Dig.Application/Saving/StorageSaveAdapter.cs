@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dig.Domain.Core;
+using Dig.Domain.Inventory;
 using Dig.Domain.Storage;
 using Dig.Domain.World;
 
@@ -55,7 +56,7 @@ public static class StorageSaveAdapter
                     EntityId.Parse(zone.Id), zone.Name, zone.Priority, zone.Capacity,
                     new CellId(zone.X, zone.Y, zone.Z), zone.AcceptsAll,
                     zone.AllowedItems.Select(value => new ItemId(value)),
-                    zone.AllowedCategories.Select(value => new ItemCategoryId(value))),
+                    zone.AllowedCategories.Select(value => new ItemCategoryId(value)))),
                 data.Reservations.Select(reservation => new StorageReservationStateSnapshot(
                     EntityId.Parse(reservation.JobId), EntityId.Parse(reservation.ZoneId),
                     new ItemId(reservation.ItemId), reservation.Quantity)));
