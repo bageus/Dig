@@ -196,6 +196,11 @@ public sealed class CompleteWorldItemPickupHandler
             return Result.Failure(WorldItemPickupErrors.JobTypeMismatch);
         }
 
+        if (job.Status == JobStatus.Completed)
+        {
+            return Result.Success();
+        }
+
         if (job.Status != JobStatus.InProgress
             || job.Stage != JobStageKind.AcquireItem
             || !job.AssignedAgentId.HasValue)

@@ -15,6 +15,23 @@ namespace Dig.Tests
 public sealed class WorldItemPickupTests
 {
     [Fact]
+    public void Repeated_completion_of_world_item_pickup_is_idempotent()
+    {
+        Harness harness = new Harness(quantity: 1);
+        Assert.True(harness.Create().IsSuccess);
+        harness.AdvanceToAcquireItem();
+
+        Assert.True(harness.Complete().IsSuccess);
+        int totalBefore = harness.Inventory.GetTotal(harness.ItemId);
+
+        Result repeated = harness.Complete();
+
+        Assert.True(repeated.IsSuccess, repeated.Error?.ToString());
+        Assert.Equal(JobStatus.Completed, harness.Jobs.Get(harness.JobId)!.Status);
+        Assert.Equal(totalBefore, harness.Inventory.GetTotal(harness.ItemId));
+    }
+
+    [Fact]
     public void Pickup_splits_full_world_stack_into_one_unit_per_resident_slot()
     {
         Harness harness = new Harness(quantity: 6);
