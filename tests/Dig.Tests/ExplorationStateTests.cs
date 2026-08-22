@@ -70,7 +70,6 @@ public sealed class ExplorationStateTests
     {
         WorldState world = CreateOpenWorld(9, 9);
         SetCell(world, new CellId(4, 4, 1), Rock, tick: 1);
-        SetCell(world, new CellId(5, 5, 1), Rock, tick: 2);
         ExplorationState exploration = new ExplorationState();
         exploration.Recalculate(world.CreateSnapshot(), Sources(new CellId(3, 3, 1)));
 

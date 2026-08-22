@@ -61,7 +61,8 @@ namespace Dig.Unity
             DigAgentSession agentSession = DigAgentSession.CreateDemo(
                 world,
                 worldSession.CreateTunnelNavigationVolume(),
-                worldSession.Journal);
+                worldSession.Journal,
+                simulationState: worldSession.SimulationState);
             agentSession.InitializeHudSchedule(worldSession.Journal);
             IReadOnlyList<AgentViewModel> agents = agentSession.LoadView();
             worldSession.UpdateExploration(agents);
