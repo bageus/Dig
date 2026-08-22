@@ -84,7 +84,7 @@ Creation performs one application-level transaction:
 
 Failure at any stage releases earlier reservations. Job claim still reserves the worker through the common Jobs reservation ledger, enforcing one active job per resident.
 
-Finalization is permitted only at `DepositItem`. It moves the reserved quantity to the storage location, completes the job, releases worker reservations and releases incoming capacity. Cancellation releases item, destination and job reservations without moving quantity.
+Finalization is permitted only at `DepositItem`. It moves the reserved quantity to the storage location, completes the job, releases worker reservations and releases incoming capacity. A repeated completion request for an already completed hauling job is an idempotent no-op: it returns success and cannot move or consume the quantity again. Cancellation releases item, destination and job reservations without moving quantity.
 
 ## Retry and reconciliation
 

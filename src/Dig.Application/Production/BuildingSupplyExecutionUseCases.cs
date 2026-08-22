@@ -195,9 +195,18 @@ public sealed class DepositBuildingSupplyHandler
         JobSystem jobs = _jobRepository.Get();
         JobSnapshot? job = jobs.Get(command.JobId);
         if (job?.Definition is not BuildingSupplyJobDefinition supply
-            || job.Status != JobStatus.InProgress
-            || job.Stage != JobStageKind.DepositItem
             || !job.AssignedAgentId.HasValue)
+        {
+            return Result.Failure(JobErrors.InvalidStatus);
+        }
+
+        if (job.Status == JobStatus.Completed)
+        {
+            return Result.Success();
+        }
+
+        if (job.Status != JobStatus.InProgress
+            || job.Stage != JobStageKind.DepositItem)
         {
             return Result.Failure(JobErrors.InvalidStatus);
         }

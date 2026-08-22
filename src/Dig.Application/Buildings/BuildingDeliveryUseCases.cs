@@ -175,6 +175,11 @@ public sealed class CompleteBuildingDeliveryHandler
             return Result.Failure(BuildingUseCaseErrors.JobMismatch);
         }
 
+        if (snapshot.Status == JobStatus.Completed)
+        {
+            return Result.Success();
+        }
+
         if (snapshot.Status != JobStatus.InProgress
             || snapshot.Stage != JobStageKind.DepositItem)
         {
