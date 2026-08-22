@@ -177,6 +177,17 @@ public sealed class StorageHaulingTests
         Assert.Equal(JobStatus.Completed, harness.Jobs.Get(JobId)!.Status);
         Assert.Empty(harness.Jobs.GetReservations());
         Assert.Empty(harness.Storage.GetReservations());
+
+        Assert.True(complete.Handle(new CompleteHaulingJobCommand(
+            JobId,
+            movedStackId,
+            tick: 7)).IsSuccess);
+        Assert.Equal(10, harness.Inventory.GetTotal(Ore));
+        Assert.Equal(6, harness.Inventory.GetQuantityAt(
+            Ore,
+            ItemLocation.InStorage(RawStorageId)));
+        Assert.Equal(JobStatus.Completed, harness.Jobs.Get(JobId)!.Status);
+        Assert.Empty(harness.Storage.GetReservations());
     }
 
     private static HaulingHarness CreateHarness(bool addDefaultStorage = false)

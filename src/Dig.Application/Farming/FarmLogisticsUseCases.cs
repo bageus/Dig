@@ -252,6 +252,14 @@ public sealed class CompleteFarmDeliveryHandler
     public Result Handle(CompleteFarmDeliveryCommand command)
     {
         if (command == null) throw new ArgumentNullException(nameof(command));
+        JobSystem jobs = _jobs.Get();
+        JobSnapshot? existing = jobs.Get(command.JobId);
+        if (existing?.Definition is HaulJobDefinition
+            && existing.Status == JobStatus.Completed)
+        {
+            return Result.Success();
+        }
+
         if (!_reservations.TryGet(command.JobId, out FarmLogisticsReservation reservation)
             || reservation.Direction != FarmLogisticsDirection.Incoming)
         {
@@ -259,7 +267,6 @@ public sealed class CompleteFarmDeliveryHandler
         }
 
         InventoryState inventory = _inventory.Get();
-        JobSystem jobs = _jobs.Get();
         JobSnapshot? job = jobs.Get(command.JobId);
         if (job?.Definition is not HaulJobDefinition hauling
             || !job.AssignedAgentId.HasValue

@@ -242,6 +242,16 @@ public sealed class CompleteHaulingJobHandler
             return Result.Failure(HaulingErrors.JobNotHauling);
         }
 
+        if (snapshot.Status == JobStatus.Completed)
+        {
+            return Result.Success();
+        }
+
+        if (snapshot.IsTerminal)
+        {
+            return Result.Failure(JobErrors.InvalidStatus);
+        }
+
         if (snapshot.Status != JobStatus.InProgress
             || snapshot.Stage != JobStageKind.DepositItem
             || !snapshot.AssignedAgentId.HasValue)

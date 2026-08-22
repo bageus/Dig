@@ -54,6 +54,11 @@ public sealed class CompleteRoomUpgradeDeliveryHandler
             return Result.Failure(RoomUpgradeExecutionErrors.JobMismatch);
         }
 
+        if (job.Status == JobStatus.Completed)
+        {
+            return Result.Success();
+        }
+
         if (job.Status != JobStatus.InProgress
             || job.Stage != JobStageKind.DepositItem)
         {
