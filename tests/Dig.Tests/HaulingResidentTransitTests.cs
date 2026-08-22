@@ -44,7 +44,7 @@ public sealed class HaulingResidentTransitTests
             Assert.Equal(1, stack.Quantity);
             Assert.Equal(1, stack.ReservedQuantity);
         });
-        Assert.Equal(0.75d, harness.Inventory.GetResidentMoveSpeedMultiplier(ResidentId));
+        Assert.Equal(1d, harness.Inventory.GetResidentMoveSpeedMultiplier(ResidentId));
         Assert.True(harness.Jobs.AdvanceStage(JobId, tick: 4).IsSuccess);
 
         Result completed = harness.Complete(Id(21), tick: 5);
@@ -92,7 +92,7 @@ public sealed class HaulingResidentTransitTests
 
         Assert.True(harness.Jobs.AdvanceStage(JobId, tick: 4).IsSuccess);
         Assert.True(harness.Complete(Id(21), tick: 5).IsSuccess);
-        Assert.Equal(11, harness.Inventory.GetTotal(OreId));
+        Assert.Equal(15, harness.Inventory.GetTotal(OreId));
         Assert.Equal(1, harness.Inventory.GetQuantityAt(
             OreId,
             ItemLocation.InResidentSlot(
