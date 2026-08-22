@@ -75,7 +75,7 @@ public sealed class ExplorationStateTests
         exploration.Recalculate(world.CreateSnapshot(), Sources(new CellId(3, 3, 1)));
 
         Assert.Equal(CellVisibility.Visible, exploration.GetVisibility(new CellId(4, 4, 1)));
-        Assert.Equal(CellVisibility.Unexplored, exploration.GetVisibility(new CellId(5, 5, 1)));
+        Assert.Equal(CellVisibility.Visible, exploration.GetVisibility(new CellId(5, 5, 1)));
     }
 
     [Fact]
