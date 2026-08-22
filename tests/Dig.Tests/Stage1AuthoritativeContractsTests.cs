@@ -18,7 +18,7 @@ public sealed class Stage1AuthoritativeContractsTests
         Assert.Contains("publiclongTick=>_simulationState.Clock.TickIndex", agent);
         Assert.Contains("internalSimulationStateSimulationState=>_simulationState", agent);
         Assert.Contains("internalSimulationStateSimulationState=>_simulationState", world);
-        Assert.Contains("simulationState: worldSession.SimulationState", bootstrap);
+        Assert.Contains("simulationState:simulationState", bootstrap);
         Assert.Equal(1, Count(agent, "_simulationState.Clock.AdvanceOneTick()"));
         Assert.DoesNotContain("private long _tick", agent);
         Assert.DoesNotContain("private long _tick", world);
