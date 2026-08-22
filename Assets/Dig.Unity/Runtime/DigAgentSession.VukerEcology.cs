@@ -74,14 +74,14 @@ internal sealed partial class DigAgentSession
                 region,
                 actor.Position,
                 actor.IsAlive,
-                _tick);
+                Tick);
             if (synchronized.IsFailure)
             {
                 throw new InvalidOperationException(synchronized.Error!.ToString());
             }
         }
 
-        IReadOnlyList<VukerPairSnapshot> due = _vukerEcology.Advance(_tick);
+        IReadOnlyList<VukerPairSnapshot> due = _vukerEcology.Advance(Tick);
         HashSet<CellId> occupied = new HashSet<CellId>(
             _repository.GetAll()
                 .Where(value => value.IsAlive)
@@ -93,13 +93,13 @@ internal sealed partial class DigAgentSession
                 _vukerEcology,
                 pair,
                 occupied,
-                _tick);
+                Tick);
             if (planned.IsFailure)
             {
                 _vukerEcology.RecordBirthBlocked(
                     pair.PairId,
                     planned.Error!.Code,
-                    _tick);
+                    Tick);
                 continue;
             }
 
@@ -109,7 +109,7 @@ internal sealed partial class DigAgentSession
                 _vukerEcology.RecordBirthBlocked(
                     pair.PairId,
                     "ecology.vuker.child_identity_collision",
-                    _tick);
+                    Tick);
                 continue;
             }
 
@@ -123,7 +123,7 @@ internal sealed partial class DigAgentSession
                 birth.ChildId,
                 birth.Region,
                 birth.Position,
-                _tick);
+                Tick);
             if (committed.IsFailure)
             {
                 throw new InvalidOperationException(committed.Error!.ToString());
@@ -213,7 +213,7 @@ internal sealed partial class DigAgentSession
         result = MoveThroughTunnelTraffic(vuker, target);
         if (result.IsSuccess && vuker.Position == target)
         {
-            _lastEnemyPatrolMoveTicks[vuker.Id] = _tick;
+            _lastEnemyPatrolMoveTicks[vuker.Id] = Tick;
         }
         return true;
     }

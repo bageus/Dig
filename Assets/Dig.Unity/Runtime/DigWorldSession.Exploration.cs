@@ -46,8 +46,9 @@ internal sealed partial class DigWorldSession
             if (current.IsSuccess && !current.Value.State.IsExplored)
                 changes.Add(new TerrainChange(cell, current.Value.State.WithExplored(true)));
         }
-        _tick++;
-        Result<WorldMutationResult> applied = world.ApplyTerrainChanges(changes, _tick);
+        Result<WorldMutationResult> applied = world.ApplyTerrainChanges(
+            changes,
+            _simulationState.Clock.TickIndex);
         if (applied.IsFailure) throw new InvalidOperationException(applied.Error!.ToString());
         _explorationChanged = true;
         return true;
@@ -86,7 +87,7 @@ internal sealed partial class DigWorldSession
         long before = _exploration.Version;
         _exploration.ObserveMarkers(items.Select(item => new LastKnownWorldItemMarker(
             EntityId.Parse(item.StackId), new Dig.Domain.Inventory.ItemId(item.ItemId),
-            new CellId(item.CellX, item.CellY, item.CellZ), _tick)));
+            new CellId(item.CellX, item.CellY, item.CellZ), _simulationState.Clock.TickIndex)));
         if (_exploration.Version == before) return false;
         _explorationChanged = true;
         return true;

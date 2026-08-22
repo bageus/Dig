@@ -223,19 +223,19 @@ namespace Dig.Unity
                 return true;
             }
 
-            if (!_tunnelTraffic.CanMove(agent.Id, current, next, _tick))
+            if (!_tunnelTraffic.CanMove(agent.Id, current, next, Tick))
             {
                 result = Result.Success();
                 return true;
             }
             SurfacePose nextPose = SurfacePose.FloorCentre(next);
-            if (!_surfaceTraffic.CanOccupy(agent.Id, nextPose, _tick))
+            if (!_surfaceTraffic.CanOccupy(agent.Id, nextPose, Tick))
             {
                 result = Result.Success();
                 return true;
             }
 
-            Result moved = agent.MoveTo(next, _tick);
+            Result moved = agent.MoveTo(next, Tick);
             if (moved.IsFailure)
             {
                 CancelManualMovementWithWarning(
@@ -246,7 +246,7 @@ namespace Dig.Unity
                 return true;
             }
 
-            _tunnelTraffic.RecordMove(agent.Id, current, next, _tick);
+            _tunnelTraffic.RecordMove(agent.Id, current, next, Tick);
             RecordCellTrafficPose(agent);
             order.ConfirmStep(next);
             if (order.IsComplete)
@@ -303,7 +303,7 @@ namespace Dig.Unity
                     agent.SurfacePose,
                     out SurfacePose floorPose))
             {
-                if (!_surfaceTraffic.CanOccupy(agent.Id, floorPose, _tick))
+                if (!_surfaceTraffic.CanOccupy(agent.Id, floorPose, Tick))
                 {
                     return Result.Success();
                 }
@@ -315,7 +315,7 @@ namespace Dig.Unity
                 return detached;
             }
 
-            if (!_surfaceTraffic.CanOccupy(agent.Id, order.TargetPose, _tick))
+            if (!_surfaceTraffic.CanOccupy(agent.Id, order.TargetPose, Tick))
             {
                 return Result.Success();
             }
@@ -339,7 +339,7 @@ namespace Dig.Unity
             return RecordResidentTaskCompletion(
                 agent,
                 "manual_movement_completed",
-                _tick);
+                Tick);
         }
 
     }

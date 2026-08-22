@@ -105,7 +105,7 @@ internal sealed partial class DigAgentSession
                         residentId,
                         heldStack.StackId,
                         HeldItemPurpose.WeaponUse,
-                        _owner._tick);
+                        _owner.Tick);
                     if (switched.IsFailure)
                     {
                         return Result<WeaponProfileId>.Failure(switched.Error!);
@@ -141,7 +141,7 @@ internal sealed partial class DigAgentSession
                     residentId,
                     candidates.Stack.StackId,
                     HeldItemPurpose.WeaponUse,
-                    _owner._tick);
+                    _owner.Tick);
                 if (switched.IsFailure)
                 {
                     return Result<WeaponProfileId>.Failure(switched.Error!);
@@ -154,7 +154,7 @@ internal sealed partial class DigAgentSession
 
             if (held.HasValue)
             {
-                Result released = inventory.ReleaseHeldItem(residentId, _owner._tick);
+                Result released = inventory.ReleaseHeldItem(residentId, _owner.Tick);
                 if (released.IsFailure)
                 {
                     return Result<WeaponProfileId>.Failure(released.Error!);
@@ -176,7 +176,7 @@ internal sealed partial class DigAgentSession
                 return new CombatantModifiers(0, 0, 0, 0, 0);
             }
 
-            int skillUnits = actor.CreateSnapshot(_owner._tick)
+            int skillUnits = actor.CreateSnapshot(_owner.Tick)
                 .GetSkillLevel(weapon.SkillProfile.SkillId);
             return new CombatantModifiers(
                 _scaling.ResolveAccuracyModifier(skillUnits),
@@ -195,7 +195,7 @@ internal sealed partial class DigAgentSession
                 return new CombatantModifiers(0, 0, 0, 0, 0);
             }
 
-            int defenseUnits = target.CreateSnapshot(_owner._tick)
+            int defenseUnits = target.CreateSnapshot(_owner.Tick)
                 .GetSkillLevel(AgentSkillCatalog.Defense);
             return new CombatantModifiers(
                 accuracyModifier: 0,

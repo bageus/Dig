@@ -29,7 +29,6 @@ namespace Dig.Unity
         private readonly Dictionary<EntityId, ResidentSex> _residentSexes;
         private readonly SocietyState _society;
         private readonly IAgentSkillGrantService _skillGrants;
-        private long _tick;
         private DigAgentSession(
             AgentAutonomySystem autonomy,
             DigResidentNeedsRuntime residentNeedsRuntime,
@@ -49,7 +48,8 @@ namespace Dig.Unity
             _movementHandler = movementHandler;
             _presenter = presenter;
             _repository = repository;
-            _simulationState = simulationState;
+            _simulationState = simulationState
+                ?? throw new ArgumentNullException(nameof(simulationState));
             _walkableCells = walkableCells;
             _routeIndices = routeIndices;
             _residentSexes = residentSexes;
@@ -57,13 +57,15 @@ namespace Dig.Unity
             _skillGrants = skillGrants
                 ?? throw new ArgumentNullException(nameof(skillGrants));
         }
-        public long Tick => _tick;
+        public long Tick => _simulationState.Clock.TickIndex;
+        internal SimulationState SimulationState => _simulationState;
         internal IAgentSkillGrantService SkillGrants => _skillGrants;
         internal InMemoryAgentRepository Repository => _repository;
         public static DigAgentSession CreateDemo(
             WorldViewModel world,
             TunnelNavigationVolume tunnelVolume,
-            InMemoryExecutionJournal journal)
+            InMemoryExecutionJournal journal,
+            SimulationState? simulationState = null)
         {
             if (world == null)
             {
@@ -117,7 +119,7 @@ namespace Dig.Unity
                 new MoveAgentCommandHandler(repository, journal),
                 new AgentPresenter(new GetAgentSnapshotsQueryHandler(repository)),
                 repository,
-                SimulationState.Create(
+                simulationState ?? SimulationState.Create(
                     worldSeed: DemoIdentitySeed,
                     tickDuration: GameTimeCadence.NormalTickDuration),
                 walkable,
@@ -138,14 +140,14 @@ namespace Dig.Unity
         internal int GetSkillLevel(EntityId agentId, AgentSkillId skillId)
         {
             AgentState? agent = _repository.Get(agentId);
-            return agent?.CreateSnapshot(_tick).GetSkillLevel(skillId) ?? 0;
+            return agent?.CreateSnapshot(Tick).GetSkillLevel(skillId) ?? 0;
         }
 
         internal int GetMaximumSkillLevel(AgentSkillId skillId)
         {
             return _repository.GetAll()
                 .Where(agent => agent.IsAlive)
-                .Select(agent => agent.CreateSnapshot(_tick).GetSkillLevel(skillId))
+                .Select(agent => agent.CreateSnapshot(Tick).GetSkillLevel(skillId))
                 .DefaultIfEmpty(0)
                 .Max();
         }
@@ -173,7 +175,7 @@ namespace Dig.Unity
             return _movementHandler.Handle(new MoveAgentCommand(
                 EntityId.Parse(residentId),
                 destination,
-                _tick));
+                Tick));
         }
 
         public Result Advance()
@@ -188,12 +190,12 @@ namespace Dig.Unity
                 throw new ArgumentNullException(nameof(movementTargets));
             }
 
-            _tick = checked(_tick + 1);
-            BeginTunnelTrafficTick(_tick);
+            long tick = _simulationState.Clock.AdvanceOneTick();
+            BeginTunnelTrafficTick(tick);
             AdvanceVukerEcology();
             BeginMovementModeTick();
             AdvanceResidentFreeTime();
-            _autonomy.Execute(new SimulationContext(_tick, _simulationState));
+            _autonomy.Execute(new SimulationContext(tick, _simulationState));
             IReadOnlyList<AgentState> agents = _repository.GetAll();
             for (int index = 0; index < agents.Count; index++)
             {

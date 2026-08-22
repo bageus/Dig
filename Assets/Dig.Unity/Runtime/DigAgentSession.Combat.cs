@@ -163,8 +163,8 @@ internal sealed partial class DigAgentSession
             actorId,
             CombatIntentKind.Attack,
             CombatIntentSource.PlayerOrder,
-            createdTick: _tick,
-            expiresTick: checked(_tick + PlayerAttackIntentLifetimeTicks),
+            createdTick: Tick,
+            expiresTick: checked(Tick + PlayerAttackIntentLifetimeTicks),
             targetEntityId: targetId,
             targetCell: _repository.Get(targetId)!.Position);
         CombatIntentSnapshot intent = _issueCombatIntent.Handle(
@@ -241,7 +241,7 @@ internal sealed partial class DigAgentSession
         Result cancelled = combat.CancelIntent(
             intent.IntentId,
             "player_cancelled",
-            _tick);
+            Tick);
         if (cancelled.IsSuccess)
         {
             _combatRepository.Save(combat);
@@ -267,10 +267,10 @@ internal sealed partial class DigAgentSession
             new AdvanceCombatSpatialExecutionCommand(
                 actor.Id,
                 DemoIdentitySeed,
-                _tick));
+                Tick));
         if (advanced.IsSuccess && advanced.Value.Attack != null)
         {
-            _lastCombatImpactTicks[advanced.Value.Attack.TargetId] = _tick;
+            _lastCombatImpactTicks[advanced.Value.Attack.TargetId] = Tick;
         }
         result = advanced.IsSuccess
             ? Result.Success()
@@ -280,7 +280,7 @@ internal sealed partial class DigAgentSession
 
     private IReadOnlyList<Dig.Presentation.Agents.AgentViewModel> LoadResidentView()
     {
-        return _presenter.Load(_tick)
+        return _presenter.Load(Tick)
             .Where(value => !_combatOnlyActors.Contains(EntityId.Parse(value.Id)))
             .ToArray();
     }
@@ -302,7 +302,7 @@ internal sealed partial class DigAgentSession
         CombatIntentSnapshot? intent = combat.GetActiveIntent(actorId);
         if (intent != null)
         {
-            combat.CancelIntent(intent.IntentId, "actor_dead", _tick);
+            combat.CancelIntent(intent.IntentId, "actor_dead", Tick);
         }
         else
         {
@@ -311,7 +311,7 @@ internal sealed partial class DigAgentSession
             {
                 combat.CancelExecution(
                     execution.ExecutionId,
-                    _tick,
+                    Tick,
                     "actor_dead");
             }
         }
@@ -327,7 +327,7 @@ internal sealed partial class DigAgentSession
 
     private string BuildAttackIntentId(EntityId actorId, EntityId targetId)
     {
-        return "player.attack." + actorId + "." + targetId + "." + _tick;
+        return "player.attack." + actorId + "." + targetId + "." + Tick;
     }
 
 }

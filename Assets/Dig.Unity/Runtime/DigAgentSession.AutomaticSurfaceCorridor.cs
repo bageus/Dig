@@ -32,12 +32,12 @@ internal sealed partial class DigAgentSession
             }
 
             if (crossesVerticalBoundary
-                && !_tunnelTraffic.CanMove(agent.Id, current, destination, _tick))
+                && !_tunnelTraffic.CanMove(agent.Id, current, destination, Tick))
             {
                 return Result.Success();
             }
 
-            if (!_surfaceTraffic.CanOccupy(agent.Id, verticalPose, _tick))
+            if (!_surfaceTraffic.CanOccupy(agent.Id, verticalPose, Tick))
             {
                 return Result.Success();
             }
@@ -46,7 +46,7 @@ internal sealed partial class DigAgentSession
             {
                 if (crossesVerticalBoundary)
                 {
-                    _tunnelTraffic.RecordMove(agent.Id, current, destination, _tick);
+                    _tunnelTraffic.RecordMove(agent.Id, current, destination, Tick);
                 }
                 SaveAutomaticSurfaceProgress(agent);
             }
@@ -58,7 +58,7 @@ internal sealed partial class DigAgentSession
                 agent.SurfacePose,
                 out SurfacePose floorPose))
         {
-            if (!_surfaceTraffic.CanOccupy(agent.Id, floorPose, _tick))
+            if (!_surfaceTraffic.CanOccupy(agent.Id, floorPose, Tick))
             {
                 return Result.Success();
             }
@@ -85,7 +85,7 @@ internal sealed partial class DigAgentSession
             out SurfacePose approachedExit)
             || approachedExit != exitPose)
         {
-            if (!_surfaceTraffic.CanOccupy(agent.Id, exitPose, _tick))
+            if (!_surfaceTraffic.CanOccupy(agent.Id, exitPose, Tick))
             {
                 return Result.Success();
             }
@@ -100,19 +100,19 @@ internal sealed partial class DigAgentSession
             return Result.Success();
         }
 
-        if (!_tunnelTraffic.CanMove(agent.Id, current, destination, _tick))
+        if (!_tunnelTraffic.CanMove(agent.Id, current, destination, Tick))
         {
             return Result.Success();
         }
 
-        if (!_surfaceTraffic.CanOccupy(agent.Id, entryPose, _tick))
+        if (!_surfaceTraffic.CanOccupy(agent.Id, entryPose, Tick))
         {
             return Result.Success();
         }
         Result crossed = MoveOnReservedSurface(agent, entryPose);
         if (crossed.IsSuccess)
         {
-            _tunnelTraffic.RecordMove(agent.Id, current, destination, _tick);
+            _tunnelTraffic.RecordMove(agent.Id, current, destination, Tick);
             _automaticBoundaryApproaches.Remove(agent.Id);
             SaveAutomaticSurfaceProgress(agent);
         }
@@ -159,14 +159,14 @@ internal sealed partial class DigAgentSession
         CellId current,
         CellId destination)
     {
-        if (!_tunnelTraffic.CanMove(agent.Id, current, destination, _tick))
+        if (!_tunnelTraffic.CanMove(agent.Id, current, destination, Tick))
         {
             return Result.Success();
         }
         if (!_surfaceTraffic.CanOccupy(
             agent.Id,
             SurfacePose.FloorCentre(destination),
-            _tick))
+            Tick))
         {
             return Result.Success();
         }
@@ -174,10 +174,10 @@ internal sealed partial class DigAgentSession
         Result moved = _movementHandler.Handle(new MoveAgentCommand(
             agent.Id,
             destination,
-            _tick));
+            Tick));
         if (moved.IsSuccess)
         {
-            _tunnelTraffic.RecordMove(agent.Id, current, destination, _tick);
+            _tunnelTraffic.RecordMove(agent.Id, current, destination, Tick);
             RecordCellTrafficPose(agent);
         }
 

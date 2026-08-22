@@ -5,6 +5,7 @@ using Dig.Application.World;
 using Dig.Domain.Core;
 using Dig.Domain.Navigation;
 using Dig.Domain.World;
+using Dig.Domain.Runtime;
 using Dig.Domain.Exploration;
 using Dig.Presentation.Agents;
 using Dig.Infrastructure.InMemory;
@@ -28,7 +29,7 @@ internal sealed partial class DigWorldSession
     private readonly int _solidHardness;
     private readonly ExcavationBoundaryPolicy _boundaryPolicy;
     private readonly TunnelDemoLayout _demoTunnelLayout;
-    private long _tick;
+    private readonly SimulationState _simulationState;
     private readonly ExplorationState _exploration;
     private bool _explorationChanged;
 
@@ -43,7 +44,7 @@ internal sealed partial class DigWorldSession
         TunnelDemoLayout demoTunnelLayout,
         ExplorationState exploration,
         InMemoryExecutionJournal journal,
-        long tick)
+        SimulationState simulationState)
     {
         _designationHandler = designationHandler;
         _presenter = presenter;
@@ -56,12 +57,15 @@ internal sealed partial class DigWorldSession
             ?? throw new ArgumentNullException(nameof(demoTunnelLayout));
         _exploration = exploration ?? throw new ArgumentNullException(nameof(exploration));
         Journal = journal;
-        _tick = tick;
+        _simulationState = simulationState
+            ?? throw new ArgumentNullException(nameof(simulationState));
     }
 
     public InMemoryExecutionJournal Journal { get; }
 
     internal InMemoryWorldRepository Repository => _repository;
+
+    internal SimulationState SimulationState => _simulationState;
 
     internal MaterialId EmptyMaterialId => _emptyMaterialId;
 
@@ -80,7 +84,8 @@ internal sealed partial class DigWorldSession
         int width,
         int height,
         int chunkSize,
-        int generationSeed)
+        int generationSeed,
+        SimulationState? simulationState = null)
     {
         if (width < 8)
         {
@@ -135,7 +140,9 @@ internal sealed partial class DigWorldSession
             layout,
             exploration,
             journal,
-            tick: 1);
+            simulationState ?? SimulationState.Create(
+                worldSeed: (ulong)generationSeed,
+                tickDuration: GameTimeCadence.NormalTickDuration));
         session.InitializeDemoTunnelPlan(layout);
         session.InitializeNaturalCaveProtection(layout);
         session.InitializeDemoDeposits(generationSeed);
@@ -178,11 +185,10 @@ internal sealed partial class DigWorldSession
             return Result.Success();
         }
 
-        _tick = checked(_tick + 1);
         Result<WorldMutationResult> result = world.Excavate(
             cell,
             _emptyMaterialId,
-            _tick);
+            _simulationState.Clock.TickIndex);
         return result.IsSuccess
             ? Result.Success()
             : Result.Failure(result.Error!);
@@ -219,8 +225,9 @@ internal sealed partial class DigWorldSession
             return Result.Success();
         }
 
-        _tick = checked(_tick + 1);
-        Result<WorldMutationResult> result = world.ApplyTerrainChanges(changes, _tick);
+        Result<WorldMutationResult> result = world.ApplyTerrainChanges(
+            changes,
+            _simulationState.Clock.TickIndex);
         return result.IsSuccess
             ? Result.Success()
             : Result.Failure(result.Error!);
@@ -259,11 +266,10 @@ internal sealed partial class DigWorldSession
             return Result.Failure(ProtectedRock);
         }
 
-        _tick = checked(_tick + 1);
         return _designationHandler.Handle(new DesignateDiggingCommand(
             cell,
             active,
-            _tick));
+            _simulationState.Clock.TickIndex));
     }
 
     private static void CarveDemoAir(

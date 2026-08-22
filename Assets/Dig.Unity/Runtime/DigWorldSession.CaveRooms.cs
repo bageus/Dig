@@ -82,10 +82,9 @@ namespace Dig.Unity
                 }
             }
 
-            _tick = checked(_tick + 1);
             Result<WorldMutationResult> designated = _repository.Get().SetDigDesignations(
                 plan.ExcavationCells,
-                _tick);
+                _simulationState.Clock.TickIndex);
             if (designated.IsFailure)
             {
                 return Result.Failure(designated.Error!);

@@ -70,7 +70,7 @@ internal sealed partial class DigAgentSession
         bool repeatedManualCommand,
         int remainingPathSteps)
     {
-        AgentSnapshot snapshot = agent.CreateSnapshot(_tick);
+        AgentSnapshot snapshot = agent.CreateSnapshot(Tick);
         TunnelTraversalKind traversal = _tunnelVolume?.ClassifyTraversal(
                 agent.Position,
                 destination)
@@ -116,10 +116,10 @@ internal sealed partial class DigAgentSession
 
         _movementSources[residentKey] = source;
         int currentBudget = ResidentInventoryMovementCadence.IsDue(
-            _tick,
+            Tick,
             resolution.AuthoritativeCadenceMultiplier)
             ? ResidentInventoryMovementCadence.ResolveStepCount(
-                _tick,
+                Tick,
                 resolution.AuthoritativeCadenceMultiplier)
             : 0;
         if (!_movementStepBudgets.TryGetValue(residentKey, out int budget))
@@ -192,7 +192,7 @@ internal sealed partial class DigAgentSession
             new ResidentMovementInterruptionViewModel(
                 residentId.ToString(),
                 reason,
-                _tick,
+                Tick,
                 detail);
     }
 }

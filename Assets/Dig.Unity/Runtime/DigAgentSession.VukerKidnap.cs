@@ -27,7 +27,7 @@ internal sealed partial class DigAgentSession
             return Result.Failure(VukerEcologyErrors.KidnapUnavailable);
         }
 
-        Result reserved = _vukerEcology.ReserveKidnap(childId, residentId, _tick);
+        Result reserved = _vukerEcology.ReserveKidnap(childId, residentId, Tick);
         if (reserved.IsFailure)
         {
             return reserved;
@@ -41,7 +41,7 @@ internal sealed partial class DigAgentSession
             _vukerEcology.CancelKidnap(
                 childId,
                 residentId,
-                _tick,
+                Tick,
                 route.Result.Error!.Code);
             AppendVukerEvents();
             return route.Result;
@@ -99,7 +99,7 @@ internal sealed partial class DigAgentSession
             _vukerEcology.CancelKidnap(
                 order.ChildId,
                 order.ResidentId,
-                _tick,
+                Tick,
                 "kidnap_actor_unavailable");
             _vukerKidnapOrders.Remove(childId);
             return;
@@ -113,7 +113,7 @@ internal sealed partial class DigAgentSession
         Result tamed = _vukerEcology.CommitTame(
             child.Id,
             resident.Id,
-            _tick);
+            Tick);
         if (tamed.IsFailure)
         {
             _vukerKidnapOrders.Remove(childId);
@@ -142,14 +142,14 @@ internal sealed partial class DigAgentSession
         CombatIntentSnapshot? intent = combat.GetActiveIntent(vukerId);
         if (intent != null)
         {
-            combat.CancelIntent(intent.IntentId, "vuker_tamed", _tick);
+            combat.CancelIntent(intent.IntentId, "vuker_tamed", Tick);
         }
         else
         {
             CombatExecutionSnapshot? execution = combat.GetActiveExecution(vukerId);
             if (execution != null)
             {
-                combat.CancelExecution(execution.ExecutionId, _tick, "vuker_tamed");
+                combat.CancelExecution(execution.ExecutionId, Tick, "vuker_tamed");
             }
         }
         _combatRepository.Save(combat);

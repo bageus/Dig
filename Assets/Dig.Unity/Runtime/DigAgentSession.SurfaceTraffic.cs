@@ -27,10 +27,10 @@ internal sealed partial class DigAgentSession
 
     private Result MoveOnReservedSurface(AgentState agent, SurfacePose target)
     {
-        Result moved = agent.MoveOnSurface(target, _tick);
+        Result moved = agent.MoveOnSurface(target, Tick);
         if (moved.IsSuccess)
         {
-            _surfaceTraffic.RecordPose(agent.Id, target, _tick);
+            _surfaceTraffic.RecordPose(agent.Id, target, Tick);
         }
         return moved;
     }
@@ -40,17 +40,17 @@ internal sealed partial class DigAgentSession
         SurfacePose target,
         SurfaceMoverKind mover)
     {
-        Result moved = agent.MoveOnSurface(target, mover, _tick);
+        Result moved = agent.MoveOnSurface(target, mover, Tick);
         if (moved.IsSuccess)
         {
-            _surfaceTraffic.RecordPose(agent.Id, target, _tick);
+            _surfaceTraffic.RecordPose(agent.Id, target, Tick);
         }
         return moved;
     }
 
     private void RecordCellTrafficPose(AgentState agent)
     {
-        _surfaceTraffic.RecordPose(agent.Id, agent.SurfacePose, _tick);
+        _surfaceTraffic.RecordPose(agent.Id, agent.SurfacePose, Tick);
     }
 }
 

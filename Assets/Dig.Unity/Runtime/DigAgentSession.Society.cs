@@ -11,7 +11,7 @@ internal sealed partial class DigAgentSession
     private const long TicksPerYear = GameTimeCadence.TicksPerDay * 365L;
     private const long DemoSocietyStartTick = TicksPerYear * 25;
 
-    internal long SocietyTick => DemoSocietyStartTick + _tick;
+    internal long SocietyTick => DemoSocietyStartTick + Tick;
 
     internal SocietySnapshot LoadSocietySnapshot()
     {

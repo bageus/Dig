@@ -16,7 +16,7 @@ internal sealed partial class DigAgentSession
     {
         if (order.CorridorPhase == SurfaceCorridorPhase.ApproachBoundary)
         {
-            if (!_surfaceTraffic.CanOccupy(agent.Id, exitPose, _tick))
+            if (!_surfaceTraffic.CanOccupy(agent.Id, exitPose, Tick))
             {
                 return Result.Success();
             }
@@ -33,12 +33,12 @@ internal sealed partial class DigAgentSession
 
         CellId current = agent.Position;
         CellId next = order.NextCell;
-        if (!_tunnelTraffic.CanMove(agent.Id, current, next, _tick))
+        if (!_tunnelTraffic.CanMove(agent.Id, current, next, Tick))
         {
             return Result.Success();
         }
 
-        if (!_surfaceTraffic.CanOccupy(agent.Id, entryPose, _tick))
+        if (!_surfaceTraffic.CanOccupy(agent.Id, entryPose, Tick))
         {
             return Result.Success();
         }
@@ -48,7 +48,7 @@ internal sealed partial class DigAgentSession
             return crossed;
         }
 
-        _tunnelTraffic.RecordMove(agent.Id, current, next, _tick);
+        _tunnelTraffic.RecordMove(agent.Id, current, next, Tick);
         order.ConfirmBoundaryCrossing(next);
         if (order.IsComplete)
         {
