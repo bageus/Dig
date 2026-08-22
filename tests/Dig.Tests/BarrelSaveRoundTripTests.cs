@@ -111,6 +111,7 @@ public sealed class BarrelSaveRoundTripTests
             new SaveVersionFifteenRoomInfrastructureMigration(),
             new SaveVersionSixteenTunnelManualInfrastructureMigration(),
             new SaveVersionSeventeenExplorationMigration(),
+            new SaveVersionEighteenStorageMigration(),
         });
 
         Result<SaveMigrationReport> migrated = pipeline.Apply(document);
