@@ -287,6 +287,22 @@ public sealed class SaveVersionSixBuildingProductionMigration : ISaveMigration
     }
 }
 
+public sealed class SaveVersionEighteenStorageMigration : ISaveMigration
+{
+    public string Id => "save.v18_to_v19.storage";
+    public int FromVersion => 18;
+    public int ToVersion => 19;
+
+    public void Apply(SaveGameDocument document)
+    {
+        if (document is null) throw new ArgumentNullException(nameof(document));
+        if (document.FormatVersion != FromVersion)
+            throw new InvalidOperationException("Migration received the wrong source version.");
+        document.Storage ??= new StorageSaveData();
+        document.FormatVersion = ToVersion;
+    }
+}
+
 public sealed class SaveVersionSeventeenExplorationMigration : ISaveMigration
 {
     public string Id => "save.v17_to_v18.exploration";

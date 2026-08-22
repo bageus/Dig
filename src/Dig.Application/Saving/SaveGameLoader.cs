@@ -184,7 +184,6 @@ public sealed partial class SaveGameLoader
                 {
                     return Result<LoadedGameState>.Failure(restoredProduction.Error!);
                 }
-
                 buildingProduction = restoredProduction.Value;
             }
             Result references = ValidateCrossReferences(
@@ -321,7 +320,8 @@ public sealed partial class SaveGameLoader
                 society: society.Value,
                 exploration: exploration,
                 farms: farms.Value,
-                farmLogisticsReservations: farmReservations.Value));
+                farmLogisticsReservations: farmReservations.Value,
+                storage: infrastructure.Value.Storage));
         }
         catch (UnknownTerrainDepositDefinitionException)
         {
