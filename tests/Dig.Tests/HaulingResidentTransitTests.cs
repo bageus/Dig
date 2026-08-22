@@ -27,7 +27,7 @@ public sealed class HaulingResidentTransitTests
     {
         Harness harness = new Harness(existingCargoUnits: 0, haulQuantity: 4);
         harness.AssignAndStart();
-        Assert.Equal(1d, harness.Inventory.GetResidentMoveSpeedMultiplier(ResidentId));
+        Assert.Equal(0.75d, harness.Inventory.GetResidentMoveSpeedMultiplier(ResidentId));
 
         Result acquired = harness.Acquire(Id(20), tick: 3);
 
@@ -44,7 +44,7 @@ public sealed class HaulingResidentTransitTests
             Assert.Equal(1, stack.Quantity);
             Assert.Equal(1, stack.ReservedQuantity);
         });
-        Assert.Equal(0.75d, harness.Inventory.GetResidentMoveSpeedMultiplier(ResidentId));
+        Assert.Equal(1d, harness.Inventory.GetResidentMoveSpeedMultiplier(ResidentId));
         Assert.True(harness.Jobs.AdvanceStage(JobId, tick: 4).IsSuccess);
 
         Result completed = harness.Complete(Id(21), tick: 5);
