@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Dig.Domain.Content;
+using Dig.Presentation.Inventory;
 using UnityEngine;
 
 namespace Dig.Unity
