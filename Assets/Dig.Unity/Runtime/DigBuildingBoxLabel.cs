@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Dig.Unity
 {
@@ -130,7 +131,7 @@ public sealed class DigBuildingBoxLabel : MonoBehaviour
 
         if (_iconRoot != null)
         {
-            Destroy(_iconRoot);
+            Object.Destroy(_iconRoot);
         }
 
         _itemId = itemId;
@@ -231,7 +232,7 @@ public sealed class DigBuildingBoxLabel : MonoBehaviour
         Collider? collider = part.GetComponent<Collider>();
         if (collider != null)
         {
-            Destroy(collider);
+            Object.Destroy(collider);
         }
 
         Renderer renderer = part.GetComponent<Renderer>();

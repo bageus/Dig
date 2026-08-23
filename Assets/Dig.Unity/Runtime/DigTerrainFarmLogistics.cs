@@ -4,6 +4,7 @@ using System.Linq;
 using Dig.Application.Farming;
 using Dig.Application.Inventory;
 using Dig.Application.Jobs;
+using Dig.Domain.Farming;
 using Dig.Domain.Buildings;
 using Dig.Domain.Content;
 using Dig.Domain.Core;

@@ -20,7 +20,7 @@ public sealed class BuildingBoxLabelsAndLadderDepthContractTests
         Assert.Contains("CreateHammerAndSaw(parent)", label);
         Assert.Contains("CreateFood(parent)", label);
         Assert.Contains("\"package.food\"", label);
-        Assert.Contains("PrimitiveType.Sphere", label);
+        Assert.DoesNotContain("PrimitiveType.Sphere", label);
         Assert.Contains("FaceCameraOnFrontSurface", label);
         Assert.Contains("ResolveFrontDepth", label);
         Assert.Contains("Quaternion.LookRotation", label);
