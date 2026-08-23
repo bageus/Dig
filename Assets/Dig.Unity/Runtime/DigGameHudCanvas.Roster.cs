@@ -199,7 +199,7 @@ public sealed partial class DigGameHudCanvas
         {
             string jobId = plan.BuildingBoxJobId!;
             Button row = CreateButton(
-                "BuildingBox transformation " + plan.SourceBuildingBoxStackId,
+                "BuildingBox transformation " + ShortenIdentifiers(plan.SourceBuildingBoxStackId!),
                 _rightContent!,
                 FormatBuildingBoxTransformationLabel(plan, "At site"),
                 () => _interaction!.SelectJobFromHud(jobId),
@@ -317,23 +317,21 @@ public sealed partial class DigGameHudCanvas
 
     private static string FormatJobDescription(string description)
     {
-        int separator = description.LastIndexOf(' ');
-        if (separator < 0)
-        {
-            return description;
-        }
+        return ShortenIdentifiers(description);
+    }
 
-        string identifier = description.Substring(separator + 1);
-        if (identifier.Length <= 16
-            || identifier.Any(character => !char.IsLetterOrDigit(character)))
-        {
-            return description;
-        }
-
-        return description.Substring(0, separator + 1)
-            + identifier.Substring(0, 4)
-            + "…"
-            + identifier.Substring(identifier.Length - 4);
+    private static string ShortenIdentifiers(string value)
+    {
+        const int maximumIdentifierLength = 12;
+        const int visibleEdgeLength = 3;
+        return System.Text.RegularExpressions.Regex.Replace(
+            value,
+            @"(?<![A-Za-z0-9])[A-Za-z0-9]{13,}(?![A-Za-z0-9])",
+            match => match.Value.Length <= maximumIdentifierLength
+                ? match.Value
+                : match.Value.Substring(0, visibleEdgeLength)
+                    + "…"
+                    + match.Value.Substring(match.Value.Length - visibleEdgeLength));
     }
 
     private static bool IsTerminalStatus(string status)
