@@ -136,6 +136,11 @@ namespace Dig.Unity
                 tick,
                 agents,
                 _worldSession.CreateTunnelNavigationVolume().Cells);
+            Result genericHauling = SynchronizeGenericHauling(agents, tick);
+            if (genericHauling.IsFailure)
+            {
+                throw new InvalidOperationException(genericHauling.Error!.ToString());
+            }
             if (roomInfrastructure.IsFailure)
             {
                 throw new InvalidOperationException(roomInfrastructure.Error!.ToString());

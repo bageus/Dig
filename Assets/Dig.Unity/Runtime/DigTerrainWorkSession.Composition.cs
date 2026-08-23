@@ -32,7 +32,8 @@ internal sealed partial class DigTerrainWorkSession
         IAgentSkillGrantService skillGrants,
         MiningOutputCommitState? miningOutputCommits = null,
         IFarmRepository? farms = null,
-        FarmLogisticsReservations? farmLogisticsReservations = null)
+        FarmLogisticsReservations? farmLogisticsReservations = null,
+        InMemoryStorageRepository? storageRepository = null)
     {
         if (worldSession == null || agents == null)
         {
@@ -95,6 +96,7 @@ internal sealed partial class DigTerrainWorkSession
             jobs,
             advance,
             inventoryRepository,
+            storageRepository ?? new InMemoryStorageRepository(),
             navigation,
             profile,
             outputStackIds,
@@ -196,6 +198,7 @@ internal sealed partial class DigTerrainWorkSession
         InMemoryJobRepository jobs,
         AdvanceJobHandler advance,
         InMemoryInventoryRepository inventory,
+        InMemoryStorageRepository storage,
         InMemoryNavigationRepository navigation,
         TraversalProfile profile,
         Dictionary<EntityId, EntityId> outputIds,
@@ -226,6 +229,7 @@ internal sealed partial class DigTerrainWorkSession
             new NavigationRoutePresenter(),
             jobs,
             inventory,
+            storage,
             navigation,
             world,
             new TerrainWorkRoutePlanner(new NavigationPathfinder()),
