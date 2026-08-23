@@ -73,7 +73,10 @@ namespace Dig.Unity
                     continue;
                 }
 
-                if (!IsAtPreciseWorkPose(job, agent))
+                if (agent.CellX != pickup.SourceCell.X
+                    || agent.CellY != pickup.SourceCell.Y
+                    || agent.CellZ != pickup.SourceCell.Z
+                    || !IsAtPreciseWorkPose(job, agent))
                 {
                     continue;
                 }
