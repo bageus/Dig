@@ -21,6 +21,12 @@ public sealed class BuildingBoxLabelsAndLadderDepthContractTests
         Assert.Contains("CreateFood(parent)", label);
         Assert.Contains("\"package.food\"", label);
         Assert.Contains("PrimitiveType.Sphere", label);
+        Assert.Contains("FaceCameraOnFrontSurface", label);
+        Assert.Contains("ResolveFrontDepth", label);
+        Assert.Contains("Quaternion.LookRotation", label);
+        Assert.Contains("PrimitiveType.Quad", label);
+        Assert.Contains("CreateFlatPart", label);
+        Assert.DoesNotContain("CreatePart(parent", label);
         Assert.DoesNotContain("AddComponent<TextMesh>()", label);
         Assert.DoesNotContain("ResolveBuildingName", label);
         Assert.DoesNotContain("LabelOffset", label);

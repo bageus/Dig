@@ -7,12 +7,13 @@ namespace Dig.Unity
 [DisallowMultipleComponent]
 public sealed class DigBuildingBoxLabel : MonoBehaviour
 {
-    private static readonly Vector3 IconOffset = new Vector3(0f, 0.12f, -0.24f);
+    private const float IconDepth = 0.015f;
     private const float IconScale = 0.13f;
 
     private DigWorldItemVisual? _visual;
     private GameObject? _iconRoot;
     private string _itemId = string.Empty;
+    private Camera? _camera;
 
     private void Awake()
     {
@@ -37,8 +38,87 @@ public sealed class DigBuildingBoxLabel : MonoBehaviour
 
         EnsureIcon(itemId);
         _iconRoot!.SetActive(true);
-        _iconRoot.transform.localPosition = IconOffset;
-        _iconRoot.transform.localRotation = Quaternion.identity;
+        FaceCameraOnFrontSurface();
+    }
+
+    private void FaceCameraOnFrontSurface()
+    {
+        _camera ??= Camera.main;
+        if (_camera == null || _iconRoot == null)
+        {
+            return;
+        }
+
+        Vector3 towardCamera = _camera.transform.position - transform.position;
+        if (towardCamera.sqrMagnitude <= 0.0001f)
+        {
+            towardCamera = Vector3.forward;
+        }
+
+        towardCamera.Normalize();
+        _iconRoot.transform.position = transform.position
+            + (towardCamera * ResolveFrontDepth())
+            + (Vector3.up * 0.12f);
+        _iconRoot.transform.rotation = Quaternion.LookRotation(
+            towardCamera,
+            _camera.transform.up);
+    }
+
+    private float ResolveFrontDepth()
+    {
+        Renderer[] renderers = GetComponentsInChildren<Renderer>(includeInactive: true);
+        Bounds boxBounds = default;
+        bool hasBoxBounds = false;
+        for (int index = 0; index < renderers.Length; index++)
+        {
+            Renderer renderer = renderers[index];
+            if (_iconRoot != null
+                && renderer.transform.IsChildOf(_iconRoot.transform))
+            {
+                continue;
+            }
+
+            if (!renderer.enabled)
+            {
+                continue;
+            }
+
+            if (!hasBoxBounds)
+            {
+                boxBounds = renderer.bounds;
+                hasBoxBounds = true;
+            }
+            else
+            {
+                boxBounds.Encapsulate(renderer.bounds);
+            }
+        }
+
+        if (!hasBoxBounds)
+        {
+            return IconDepth;
+        }
+
+        Vector3 direction = ResolveCameraDirection();
+        Vector3 extents = boxBounds.extents;
+        float extent = Mathf.Abs(direction.x) * extents.x
+            + Mathf.Abs(direction.y) * extents.y
+            + Mathf.Abs(direction.z) * extents.z;
+        return Mathf.Max(0.04f, extent) + IconDepth;
+    }
+
+    private Vector3 ResolveCameraDirection()
+    {
+        _camera ??= Camera.main;
+        if (_camera == null)
+        {
+            return Vector3.forward;
+        }
+
+        Vector3 direction = _camera.transform.position - transform.position;
+        return direction.sqrMagnitude <= 0.0001f
+            ? Vector3.forward
+            : direction.normalized;
     }
 
     private void EnsureIcon(string itemId)
@@ -57,8 +137,6 @@ public sealed class DigBuildingBoxLabel : MonoBehaviour
         _iconRoot = new GameObject("Building box contents icon");
         _iconRoot.layer = 2;
         _iconRoot.transform.SetParent(transform, worldPositionStays: false);
-        _iconRoot.transform.localPosition = IconOffset;
-        _iconRoot.transform.localRotation = Quaternion.identity;
         _iconRoot.transform.localScale = Vector3.one * IconScale;
         CreateIcon(itemId, _iconRoot.transform);
     }
@@ -94,63 +172,68 @@ public sealed class DigBuildingBoxLabel : MonoBehaviour
 
     private static void CreateFlame(Transform parent)
     {
-        CreatePart(parent, "Fire bowl", PrimitiveType.Cube, new Vector3(0f, -0.24f, 0f),
-            new Vector3(1.5f, 0.28f, 0.55f), new Color(0.30f, 0.15f, 0.06f));
-        CreatePart(parent, "Fire", PrimitiveType.Sphere, new Vector3(0f, 0.35f, -0.02f),
-            new Vector3(0.78f, 1.10f, 0.34f), new Color(1f, 0.55f, 0.08f));
+        CreateFlatPart(parent, "Fire bowl", new Vector2(0f, -0.24f),
+            new Vector2(1.5f, 0.28f), new Color(0.30f, 0.15f, 0.06f));
+        CreateFlatPart(parent, "Fire", new Vector2(0f, 0.35f),
+            new Vector2(0.78f, 1.10f), new Color(1f, 0.55f, 0.08f));
     }
 
     private static void CreateStoneAndHammer(Transform parent)
     {
-        CreatePart(parent, "Stone", PrimitiveType.Sphere, new Vector3(-0.27f, 0f, 0f),
-            new Vector3(0.82f, 0.68f, 0.40f), new Color(0.68f, 0.70f, 0.72f));
-        CreatePart(parent, "Hammer head", PrimitiveType.Cube, new Vector3(0.30f, 0.26f, 0f),
-            new Vector3(0.72f, 0.25f, 0.22f), new Color(0.52f, 0.54f, 0.58f));
-        CreatePart(parent, "Hammer handle", PrimitiveType.Cube, new Vector3(0.30f, -0.12f, 0f),
-            new Vector3(0.13f, 0.68f, 0.13f), new Color(0.48f, 0.27f, 0.12f));
+        CreateFlatPart(parent, "Stone", new Vector2(-0.27f, 0f),
+            new Vector2(0.82f, 0.68f), new Color(0.68f, 0.70f, 0.72f));
+        CreateFlatPart(parent, "Hammer head", new Vector2(0.30f, 0.26f),
+            new Vector2(0.72f, 0.25f), new Color(0.52f, 0.54f, 0.58f));
+        CreateFlatPart(parent, "Hammer handle", new Vector2(0.30f, -0.12f),
+            new Vector2(0.13f, 0.68f), new Color(0.48f, 0.27f, 0.12f));
     }
 
     private static void CreateHammerAndSaw(Transform parent)
     {
-        CreatePart(parent, "Hammer head", PrimitiveType.Cube, new Vector3(-0.28f, 0.27f, 0f),
-            new Vector3(0.72f, 0.25f, 0.22f), new Color(0.52f, 0.54f, 0.58f));
-        CreatePart(parent, "Hammer handle", PrimitiveType.Cube, new Vector3(-0.28f, -0.12f, 0f),
-            new Vector3(0.13f, 0.68f, 0.13f), new Color(0.48f, 0.27f, 0.12f));
-        CreatePart(parent, "Saw blade", PrimitiveType.Cube, new Vector3(0.28f, 0.02f, 0f),
-            new Vector3(0.78f, 0.10f, 0.16f), new Color(0.72f, 0.74f, 0.78f));
-        CreatePart(parent, "Saw handle", PrimitiveType.Cube, new Vector3(0.06f, -0.20f, 0f),
-            new Vector3(0.24f, 0.32f, 0.18f), new Color(0.60f, 0.30f, 0.10f));
+        CreateFlatPart(parent, "Hammer head", new Vector2(-0.28f, 0.27f),
+            new Vector2(0.72f, 0.25f), new Color(0.52f, 0.54f, 0.58f));
+        CreateFlatPart(parent, "Hammer handle", new Vector2(-0.28f, -0.12f),
+            new Vector2(0.13f, 0.68f), new Color(0.48f, 0.27f, 0.12f));
+        CreateFlatPart(parent, "Saw blade", new Vector2(0.28f, 0.02f),
+            new Vector2(0.78f, 0.10f), new Color(0.72f, 0.74f, 0.78f));
+        CreateFlatPart(parent, "Saw handle", new Vector2(0.06f, -0.20f),
+            new Vector2(0.24f, 0.32f), new Color(0.60f, 0.30f, 0.10f));
     }
 
     private static void CreateFood(Transform parent)
     {
-        CreatePart(parent, "Food", PrimitiveType.Sphere, Vector3.zero,
-            new Vector3(0.92f, 0.72f, 0.40f), new Color(0.92f, 0.45f, 0.14f));
-        CreatePart(parent, "Food highlight", PrimitiveType.Sphere, new Vector3(-0.12f, 0.18f, -0.16f),
-            new Vector3(0.22f, 0.18f, 0.08f), new Color(1f, 0.82f, 0.36f));
+        CreateFlatPart(parent, "Food", Vector2.zero,
+            new Vector2(0.92f, 0.72f), new Color(0.92f, 0.45f, 0.14f));
+        CreateFlatPart(parent, "Food highlight", new Vector2(-0.12f, 0.18f),
+            new Vector2(0.22f, 0.18f), new Color(1f, 0.82f, 0.36f));
     }
 
     private static void CreateBuildingSymbol(Transform parent)
     {
-        CreatePart(parent, "Building symbol", PrimitiveType.Cube, Vector3.zero,
-            new Vector3(0.72f, 0.72f, 0.20f), new Color(0.86f, 0.74f, 0.42f));
+        CreateFlatPart(parent, "Building symbol", Vector2.zero,
+            new Vector2(0.72f, 0.72f), new Color(0.86f, 0.74f, 0.42f));
     }
 
-    private static void CreatePart(
+    private static void CreateFlatPart(
         Transform parent,
         string name,
-        PrimitiveType primitive,
-        Vector3 position,
-        Vector3 scale,
+        Vector2 position,
+        Vector2 size,
         Color color)
     {
-        GameObject part = GameObject.CreatePrimitive(primitive);
+        GameObject part = GameObject.CreatePrimitive(PrimitiveType.Quad);
         part.name = name;
         part.layer = 2;
         part.transform.SetParent(parent, worldPositionStays: false);
-        part.transform.localPosition = position;
+        part.transform.localPosition = new Vector3(position.x, position.y, 0f);
         part.transform.localRotation = Quaternion.identity;
-        part.transform.localScale = scale;
+        part.transform.localScale = new Vector3(size.x, size.y, 1f);
+        Collider? collider = part.GetComponent<Collider>();
+        if (collider != null)
+        {
+            Destroy(collider);
+        }
+
         Renderer renderer = part.GetComponent<Renderer>();
         renderer.material.color = color;
     }
