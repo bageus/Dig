@@ -18,6 +18,7 @@ internal sealed partial class DigTerrainWorkSession
     private AcquireHaulingItemHandler? _genericHaulingAcquisition;
     private CompleteHaulingJobHandler? _genericHaulingCompletion;
     private HaulingResidentSlotClaimService? _genericHaulingSlotClaims;
+    private ReconcileHaulingHandler? _genericHaulingReconciliation;
     private ulong _genericHaulingRuntimeSequence = 1UL;
 
     internal Result SynchronizeGenericHauling(
@@ -57,7 +58,7 @@ internal sealed partial class DigTerrainWorkSession
                 {
                     _genericHaulingCandidates.SetCandidates(
                         job.Id,
-                        CreateDynamicCandidates(agents, source.Location.CellId));
+                        CreateGenericHaulingCandidates(agents, source.Location.CellId));
                 }
             }
         }
@@ -65,7 +66,7 @@ internal sealed partial class DigTerrainWorkSession
         return Result.Success();
     }
 
-    private IReadOnlyList<JobCandidate> CreateDynamicCandidates(
+    private IReadOnlyList<JobCandidate> CreateGenericHaulingCandidates(
         IReadOnlyList<AgentViewModel> agents,
         CellId target)
     {
@@ -75,7 +76,7 @@ internal sealed partial class DigTerrainWorkSession
             Math.Abs(agent.CellX - target.X)
                 + Math.Abs(agent.CellY - target.Y)
                 + Math.Abs(agent.CellZ - target.Z),
-            agent.IsAvailableForAutomaticPlanning)).ToArray();
+            IsAvailableForAutomaticWork(agent))).ToArray();
     }
 
     private sealed class RuntimeGenericHaulingJobIds : IHaulingJobIdSource
@@ -253,8 +254,12 @@ internal sealed partial class DigTerrainWorkSession
 
     private EntityId NextGenericHaulingStackId()
     {
-        return EntityId.Parse(
-            "7340000000000000" + (_genericHaulingRuntimeSequence++).ToString("x16"));
+        while (true)
+        {
+            EntityId candidate = EntityId.Parse(
+                "7340000000000000" + (_genericHaulingRuntimeSequence++).ToString("x16"));
+            if (_inventoryRepository.Get().GetStack(candidate) == null) return candidate;
+        }
     }
 }
 
