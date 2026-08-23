@@ -52,7 +52,6 @@ namespace Dig.Unity
             _routePlans.Clear();
             _buildingPackingRoutes.Clear();
             _buildingBoxPickupRoutes.Clear();
-            _worldItemPickupRoutes.Clear();
             _residentInventoryPlacementRoutes.Clear();
             _buildingBoxAssemblyRoutes.Clear();
             _buildingProductionRoutes.Clear();

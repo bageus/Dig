@@ -1,4 +1,5 @@
 using System;
+using Dig.Presentation.Rendering;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -8,13 +9,15 @@ namespace Dig.Unity
 [DisallowMultipleComponent]
 public sealed class DigBuildingBoxLabel : MonoBehaviour
 {
-    private const float IconDepth = 0.015f;
+    private const float IconDepth = 0.035f;
     private const float IconScale = 0.13f;
+    private static readonly Color IconMaterialTint = new Color(1f, 0.86f, 0.35f, 1f);
 
     private DigWorldItemVisual? _visual;
     private GameObject? _iconRoot;
     private string _itemId = string.Empty;
     private Camera? _camera;
+    private Material? _iconMaterial;
 
     private void Awake()
     {
@@ -39,10 +42,10 @@ public sealed class DigBuildingBoxLabel : MonoBehaviour
 
         EnsureIcon(itemId);
         _iconRoot!.SetActive(true);
-        FaceCameraOnFrontSurface();
+        PositionIconOnCameraFacingFace();
     }
 
-    private void FaceCameraOnFrontSurface()
+    private void PositionIconOnCameraFacingFace()
     {
         _camera ??= Camera.main;
         if (_camera == null || _iconRoot == null)
@@ -51,75 +54,58 @@ public sealed class DigBuildingBoxLabel : MonoBehaviour
         }
 
         Vector3 towardCamera = _camera.transform.position - transform.position;
+        towardCamera.y = 0f;
         if (towardCamera.sqrMagnitude <= 0.0001f)
         {
             towardCamera = Vector3.forward;
         }
 
         towardCamera.Normalize();
-        _iconRoot.transform.position = transform.position
-            + (towardCamera * ResolveFrontDepth())
-            + (Vector3.up * 0.12f);
+        Vector3 faceNormal = Mathf.Abs(towardCamera.x) >= Mathf.Abs(towardCamera.z)
+            ? new Vector3(Mathf.Sign(towardCamera.x), 0f, 0f)
+            : new Vector3(0f, 0f, Mathf.Sign(towardCamera.z));
+        Bounds bounds = ResolveBoxBounds();
+        Vector3 center = new Vector3(
+            bounds.center.x,
+            bounds.min.y + (bounds.size.y * 0.58f),
+            bounds.center.z);
+        float faceDistance = faceNormal.x != 0f
+            ? bounds.extents.x
+            : bounds.extents.z;
+        _iconRoot.transform.position = center
+            + (faceNormal * (faceDistance + IconDepth));
         _iconRoot.transform.rotation = Quaternion.LookRotation(
-            towardCamera,
-            _camera.transform.up);
+            faceNormal,
+            Vector3.up);
     }
 
-    private float ResolveFrontDepth()
+    private Bounds ResolveBoxBounds()
     {
         Renderer[] renderers = GetComponentsInChildren<Renderer>(includeInactive: true);
-        Bounds boxBounds = default;
-        bool hasBoxBounds = false;
+        Bounds bounds = new Bounds(transform.position, Vector3.one * 0.3f);
+        bool found = false;
         for (int index = 0; index < renderers.Length; index++)
         {
             Renderer renderer = renderers[index];
-            if (_iconRoot != null
-                && renderer.transform.IsChildOf(_iconRoot.transform))
+            if (!renderer.enabled
+                || (_iconRoot != null
+                    && renderer.transform.IsChildOf(_iconRoot.transform)))
             {
                 continue;
             }
 
-            if (!renderer.enabled)
+            if (!found)
             {
-                continue;
-            }
-
-            if (!hasBoxBounds)
-            {
-                boxBounds = renderer.bounds;
-                hasBoxBounds = true;
+                bounds = renderer.bounds;
+                found = true;
             }
             else
             {
-                boxBounds.Encapsulate(renderer.bounds);
+                bounds.Encapsulate(renderer.bounds);
             }
         }
 
-        if (!hasBoxBounds)
-        {
-            return IconDepth;
-        }
-
-        Vector3 direction = ResolveCameraDirection();
-        Vector3 extents = boxBounds.extents;
-        float extent = Mathf.Abs(direction.x) * extents.x
-            + Mathf.Abs(direction.y) * extents.y
-            + Mathf.Abs(direction.z) * extents.z;
-        return Mathf.Max(0.04f, extent) + IconDepth;
-    }
-
-    private Vector3 ResolveCameraDirection()
-    {
-        _camera ??= Camera.main;
-        if (_camera == null)
-        {
-            return Vector3.forward;
-        }
-
-        Vector3 direction = _camera.transform.position - transform.position;
-        return direction.sqrMagnitude <= 0.0001f
-            ? Vector3.forward
-            : direction.normalized;
+        return bounds;
     }
 
     private void EnsureIcon(string itemId)
@@ -137,12 +123,20 @@ public sealed class DigBuildingBoxLabel : MonoBehaviour
         _itemId = itemId;
         _iconRoot = new GameObject("Building box contents icon");
         _iconRoot.layer = 2;
-        _iconRoot.transform.SetParent(transform, worldPositionStays: false);
+        _iconRoot.transform.SetParent(transform, worldPositionStays: true);
         _iconRoot.transform.localScale = Vector3.one * IconScale;
         CreateIcon(itemId, _iconRoot.transform);
     }
 
-    private static void CreateIcon(string itemId, Transform parent)
+    private void OnDestroy()
+    {
+        if (_iconMaterial != null)
+        {
+            Object.Destroy(_iconMaterial);
+        }
+    }
+
+    private void CreateIcon(string itemId, Transform parent)
     {
         if (itemId == "building_box.campfire")
         {
@@ -171,7 +165,7 @@ public sealed class DigBuildingBoxLabel : MonoBehaviour
         CreateBuildingSymbol(parent);
     }
 
-    private static void CreateFlame(Transform parent)
+    private void CreateFlame(Transform parent)
     {
         CreateFlatPart(parent, "Fire bowl", new Vector2(0f, -0.24f),
             new Vector2(1.5f, 0.28f), new Color(0.30f, 0.15f, 0.06f));
@@ -179,7 +173,7 @@ public sealed class DigBuildingBoxLabel : MonoBehaviour
             new Vector2(0.78f, 1.10f), new Color(1f, 0.55f, 0.08f));
     }
 
-    private static void CreateStoneAndHammer(Transform parent)
+    private void CreateStoneAndHammer(Transform parent)
     {
         CreateFlatPart(parent, "Stone", new Vector2(-0.27f, 0f),
             new Vector2(0.82f, 0.68f), new Color(0.68f, 0.70f, 0.72f));
@@ -189,7 +183,7 @@ public sealed class DigBuildingBoxLabel : MonoBehaviour
             new Vector2(0.13f, 0.68f), new Color(0.48f, 0.27f, 0.12f));
     }
 
-    private static void CreateHammerAndSaw(Transform parent)
+    private void CreateHammerAndSaw(Transform parent)
     {
         CreateFlatPart(parent, "Hammer head", new Vector2(-0.28f, 0.27f),
             new Vector2(0.72f, 0.25f), new Color(0.52f, 0.54f, 0.58f));
@@ -201,7 +195,7 @@ public sealed class DigBuildingBoxLabel : MonoBehaviour
             new Vector2(0.24f, 0.32f), new Color(0.60f, 0.30f, 0.10f));
     }
 
-    private static void CreateFood(Transform parent)
+    private void CreateFood(Transform parent)
     {
         CreateFlatPart(parent, "Food", Vector2.zero,
             new Vector2(0.92f, 0.72f), new Color(0.92f, 0.45f, 0.14f));
@@ -209,13 +203,13 @@ public sealed class DigBuildingBoxLabel : MonoBehaviour
             new Vector2(0.22f, 0.18f), new Color(1f, 0.82f, 0.36f));
     }
 
-    private static void CreateBuildingSymbol(Transform parent)
+    private void CreateBuildingSymbol(Transform parent)
     {
         CreateFlatPart(parent, "Building symbol", Vector2.zero,
             new Vector2(0.72f, 0.72f), new Color(0.86f, 0.74f, 0.42f));
     }
 
-    private static void CreateFlatPart(
+    private void CreateFlatPart(
         Transform parent,
         string name,
         Vector2 position,
@@ -236,7 +230,24 @@ public sealed class DigBuildingBoxLabel : MonoBehaviour
         }
 
         Renderer renderer = part.GetComponent<Renderer>();
-        renderer.material.color = color;
+        renderer.sharedMaterial = ResolveIconMaterial();
+        DigMaterialColorUtility.SetColor(renderer.material, color);
+    }
+
+    private Material ResolveIconMaterial()
+    {
+        if (_iconMaterial != null)
+        {
+            return _iconMaterial;
+        }
+
+        DigRenderMaterialLibrary library = GetComponentInParent<DigRenderMaterialLibrary>()
+            ?? throw new InvalidOperationException("Building box icon requires material library.");
+        _iconMaterial = library.Resolve(
+            RenderMaterialSemantic.Item,
+            RenderSurfaceKind.Unlit,
+            IconMaterialTint);
+        return _iconMaterial;
     }
 }
 

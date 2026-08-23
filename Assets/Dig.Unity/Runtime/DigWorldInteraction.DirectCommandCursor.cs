@@ -132,7 +132,8 @@ namespace Dig.Unity
                         out ResolvedWorldItemPointerTarget itemTarget)
                     && itemTarget.ActionAvailable)
                 {
-                    _hud.SetWorldTargetHoverInfo(itemTarget.Item.Model.DisplayName);
+                    _hud.SetWorldTargetHoverInfo(
+                        DigWorldTargetDisplayNames.Resolve(itemTarget.Item.Model));
                     SetInteractionHighlightedItem(itemTarget.Item);
                     return itemTarget.Action switch
                     {
