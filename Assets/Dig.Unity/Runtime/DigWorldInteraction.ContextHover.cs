@@ -16,7 +16,7 @@ public sealed partial class DigWorldInteraction
             RaycastHit hit = hits[index];
             if (_itemRenderer!.TryGetItem(hit, out DigWorldItemVisual item))
             {
-                _hud?.SetWorldTargetHoverInfo(DigWorldTargetDisplayNames.Resolve(item.Model));
+                _hud?.SetWorldTargetHoverInfo(item.Model.DisplayName);
                 return;
             }
 

@@ -42,10 +42,10 @@ public sealed class DigBuildingBoxLabel : MonoBehaviour
 
         EnsureIcon(itemId);
         _iconRoot!.SetActive(true);
-        PositionIconOnCameraFacingFace();
+        FaceCameraOnFrontSurface();
     }
 
-    private void PositionIconOnCameraFacingFace()
+    private void FaceCameraOnFrontSurface()
     {
         _camera ??= Camera.main;
         if (_camera == null || _iconRoot == null)
@@ -77,6 +77,31 @@ public sealed class DigBuildingBoxLabel : MonoBehaviour
         _iconRoot.transform.rotation = Quaternion.LookRotation(
             faceNormal,
             Vector3.up);
+    }
+
+    private float ResolveFrontDepth()
+    {
+        Bounds bounds = ResolveBoxBounds();
+        Vector3 direction = ResolveCameraDirection();
+        Vector3 extents = bounds.extents;
+        float extent = Mathf.Abs(direction.x) * extents.x
+            + Mathf.Abs(direction.y) * extents.y
+            + Mathf.Abs(direction.z) * extents.z;
+        return Mathf.Max(0.04f, extent) + IconDepth;
+    }
+
+    private Vector3 ResolveCameraDirection()
+    {
+        _camera ??= Camera.main;
+        if (_camera == null)
+        {
+            return Vector3.forward;
+        }
+
+        Vector3 direction = _camera.transform.position - transform.position;
+        return direction.sqrMagnitude <= 0.0001f
+            ? Vector3.forward
+            : direction.normalized;
     }
 
     private Bounds ResolveBoxBounds()
