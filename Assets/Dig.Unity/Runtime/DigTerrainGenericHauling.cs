@@ -123,7 +123,8 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         EnsureGenericHaulingRuntime();
-        if (job.Status == JobStatus.Claimed)
+        if (job.Status == JobStatus.Claimed
+            || job.Stage == JobStageKind.TravelToTarget)
         {
             return _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick));
         }
