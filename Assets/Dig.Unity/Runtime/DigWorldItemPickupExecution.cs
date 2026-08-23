@@ -73,7 +73,11 @@ namespace Dig.Unity
                     continue;
                 }
 
-                if (!IsAtPreciseWorkPose(job, agent))
+                CellId sourceCell = new CellId(
+                    agent.CellX,
+                    agent.CellY,
+                    agent.CellZ);
+                if (sourceCell != pickup.SourceCell)
                 {
                     continue;
                 }

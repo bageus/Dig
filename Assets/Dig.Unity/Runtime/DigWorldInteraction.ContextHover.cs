@@ -15,7 +15,7 @@ public sealed partial class DigWorldInteraction
             RaycastHit hit = hits[index];
             if (_itemRenderer!.TryGetItem(hit, out DigWorldItemVisual item))
             {
-                _hud?.SetWorldTargetHoverInfo(item.Model.DisplayName);
+                _hud?.SetWorldTargetHoverInfo(DigWorldTargetDisplayNames.Resolve(item.Model));
                 return;
             }
 
@@ -91,6 +91,48 @@ internal static class DigWorldTargetDisplayNames
 {
     internal const string Mushroom = "Гриб";
     internal const string Barrel = "Бочка";
+
+    internal static string Resolve(WorldItemViewModel item)
+    {
+        if (item == null)
+        {
+            throw new ArgumentNullException(nameof(item));
+        }
+
+        if (!item.IsBuildingBox)
+        {
+            return item.DisplayName;
+        }
+
+        return item.ItemId switch
+        {
+            "building_box.campfire" => "Campfire",
+            "building_box.tent" => "Tent",
+            "building_box.stone_mason" => "Stone mason workshop",
+            "building_box.wood_workshop" => "Wooden workshop",
+            "building_box.wooden_door" => "Wooden door",
+            "building_box.ladder" => "Ladder",
+            "building_box.farm" => "Farm",
+            "building_box.border_stone" => "Border stone",
+            "building_box.press_trap" => "Press trap",
+            "building_box.stone_door" => "Stone door",
+            _ => Humanize(item.ItemId),
+        };
+    }
+
+    private static string Humanize(string itemId)
+    {
+        const string prefix = "building_box.";
+        if (!itemId.StartsWith(prefix, StringComparison.Ordinal))
+        {
+            return itemId;
+        }
+
+        string value = itemId.Substring(prefix.Length).Replace('_', ' ');
+        return value.Length == 0
+            ? itemId
+            : char.ToUpperInvariant(value[0]) + value.Substring(1);
+    }
 }
 
 }
