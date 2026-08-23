@@ -34,6 +34,7 @@ internal sealed partial class DigTerrainWorkSession
     private readonly NavigationRoutePresenter _routePresenter;
     private readonly InMemoryJobRepository _jobRepository;
     private readonly InMemoryInventoryRepository _inventoryRepository;
+    private readonly InMemoryStorageRepository _storageRepository;
     private readonly InMemoryNavigationRepository _navigationRepository;
     private readonly DigWorldSession _worldSession;
     private readonly IAgentSkillGrantService _skillGrants;
@@ -46,6 +47,10 @@ internal sealed partial class DigTerrainWorkSession
     private readonly Dictionary<EntityId, TerrainWorkRoutePlan> _routePlans =
         new Dictionary<EntityId, TerrainWorkRoutePlan>();
     private bool _worldChanged;
+    private InMemoryJobCandidateProvider? _genericHaulingCandidates;
+    private PlanHaulingHandler? _genericHaulingPlanner;
+    private AssignAvailableJobsHandler? _genericHaulingAssignment;
+    private IHaulingJobIdSource? _genericHaulingJobIds;
 
     private DigTerrainWorkSession(
         AdvanceJobHandler advanceHandler,
@@ -57,6 +62,7 @@ internal sealed partial class DigTerrainWorkSession
         NavigationRoutePresenter routePresenter,
         InMemoryJobRepository jobRepository,
         InMemoryInventoryRepository inventoryRepository,
+        InMemoryStorageRepository storageRepository,
         InMemoryNavigationRepository navigationRepository,
         DigWorldSession worldSession,
         TerrainWorkRoutePlanner routePlanner,
@@ -77,6 +83,7 @@ internal sealed partial class DigTerrainWorkSession
         _routePresenter = routePresenter;
         _jobRepository = jobRepository;
         _inventoryRepository = inventoryRepository;
+        _storageRepository = storageRepository;
         _navigationRepository = navigationRepository;
         _worldSession = worldSession;
         _routePlanner = routePlanner;
@@ -94,6 +101,8 @@ internal sealed partial class DigTerrainWorkSession
     internal MiningOutputCommitState MiningOutputCommits => _miningOutputCommits;
 
     internal InMemoryInventoryRepository InventoryRepository => _inventoryRepository;
+
+    internal InMemoryStorageRepository StorageRepository => _storageRepository;
 
     internal bool HasWorldChanged => _worldChanged;
 
