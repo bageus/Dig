@@ -50,6 +50,9 @@ public sealed class SpatialWorkSurfaceRuntimeContractTests
         Assert.Contains("IsAtPreciseWorkPose(job,agent)", pickup);
         Assert.Contains("job.DefinitionisWorldItemPickupJobDefinition", planner);
         Assert.Contains("actual.Cell==required.Cell", planner);
+        Assert.DoesNotContain(
+            "if(job.DefinitionisWorldItemPickupJobDefinition)\n{\npose=WorkSurfacePositioning.Resolve",
+            planner);
         Assert.Contains("job.DefinitionisBuildingBoxPickupJobDefinition", planner);
         Assert.Contains("job.DefinitionisHaulJobDefinition", planner);
     }
