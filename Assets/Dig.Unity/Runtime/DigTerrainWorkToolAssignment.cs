@@ -97,6 +97,10 @@ namespace Dig.Unity
                 _buildingBoxAssemblyCandidates,
                 preparation,
                 journal);
+            _genericHaulingAssignment = CreateToolAwareAssignmentHandler(
+                _genericHaulingCandidates!,
+                preparation,
+                journal);
             _prepareSuggestedTool = new PrepareSuggestedJobToolHandler(
                 _jobRepository,
                 preparation,
