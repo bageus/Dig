@@ -234,7 +234,7 @@ public sealed partial class DigGameHudCanvas
                     : "Unassigned";
             string marker = isSelected ? "▲ " : string.Empty;
             string label = marker
-                + job.Description
+                + FormatJobDescription(job.Description)
                 + $" · {job.Status} · P{job.Priority} · {worker}";
             Button row = CreateButton(
                 $"Job {id}",
@@ -313,6 +313,27 @@ public sealed partial class DigGameHudCanvas
             + $"{_interaction!.SelectedBuildingBox?.StackId}|"
             + $"{residentVersions}|{buildingVersions}|{buildingBoxVersions}|"
             + $"{heldBoxVersions}|{jobVersions}";
+    }
+
+    private static string FormatJobDescription(string description)
+    {
+        int separator = description.LastIndexOf(' ');
+        if (separator < 0)
+        {
+            return description;
+        }
+
+        string identifier = description.Substring(separator + 1);
+        if (identifier.Length <= 16
+            || identifier.Any(character => !char.IsLetterOrDigit(character)))
+        {
+            return description;
+        }
+
+        return description.Substring(0, separator + 1)
+            + identifier.Substring(0, 4)
+            + "…"
+            + identifier.Substring(identifier.Length - 4);
     }
 
     private static bool IsTerminalStatus(string status)
