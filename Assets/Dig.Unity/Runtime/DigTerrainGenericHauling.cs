@@ -7,6 +7,7 @@ using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.Navigation;
+using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Dig.Presentation.Agents;
 
