@@ -8,18 +8,22 @@ namespace Dig.Tests
 public sealed class BuildingBoxLabelsAndLadderDepthContractTests
 {
     [Fact]
-    public void Every_building_box_gets_a_visible_building_name_label()
+    public void Building_boxes_use_front_contents_icons_without_floating_labels()
     {
         string label = ReadRuntime("DigBuildingBoxLabel.cs");
 
         Assert.Contains("DigWorldItemVisualPolicy.IsBuildingBox(itemId)", label);
         Assert.Contains("RequireComponent(typeof(DigBuildingBoxLabel))", label);
-        Assert.Contains("AddComponent<TextMesh>()", label);
-        Assert.Contains("\"building_box.campfire\" => \"Campfire\"", label);
-        Assert.Contains("\"building_box.stone_mason\" => \"Stone mason workshop\"", label);
-        Assert.Contains("\"building_box.wood_workshop\" => \"Wooden workshop\"", label);
-        Assert.Contains("\"building_box.ladder\" => \"Ladder\"", label);
-        Assert.Contains("HumanizeBuildingBoxId(itemId)", label);
+        Assert.Contains("Building box contents icon", label);
+        Assert.Contains("CreateFlame(parent)", label);
+        Assert.Contains("CreateStoneAndHammer(parent)", label);
+        Assert.Contains("CreateHammerAndSaw(parent)", label);
+        Assert.Contains("CreateFood(parent)", label);
+        Assert.Contains("\"package.food\"", label);
+        Assert.Contains("PrimitiveType.Sphere", label);
+        Assert.DoesNotContain("AddComponent<TextMesh>()", label);
+        Assert.DoesNotContain("ResolveBuildingName", label);
+        Assert.DoesNotContain("LabelOffset", label);
     }
 
     [Fact]
