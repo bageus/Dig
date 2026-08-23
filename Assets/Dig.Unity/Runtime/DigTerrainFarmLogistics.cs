@@ -8,7 +8,6 @@ using Dig.Domain.Farming;
 using Dig.Domain.Buildings;
 using Dig.Domain.Content;
 using Dig.Domain.Core;
-using Dig.Domain.Farming;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.World;
