@@ -63,6 +63,12 @@ internal sealed partial class DigTerrainWorkSession
             }
         }
         _genericHaulingAssignment.Handle(new AssignAvailableJobsCommand(tick));
+        _genericHaulingReconciliation ??= new ReconcileHaulingHandler(
+            _inventoryRepository,
+            _storageRepository,
+            _jobRepository,
+            _journal);
+        _genericHaulingReconciliation.Handle(new ReconcileHaulingCommand(tick));
         return Result.Success();
     }
 
