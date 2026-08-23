@@ -121,6 +121,13 @@ internal sealed partial class DigTerrainWorkSession
         return _inventoryPresenter.Load();
     }
 
+    internal Result AdvanceGenericHauling(
+        long tick,
+        IReadOnlyList<AgentViewModel> agents)
+    {
+        return Advance(tick, agents);
+    }
+
     public Result Advance(long tick, IReadOnlyList<AgentViewModel> agents)
     {
         Dictionary<string, AgentViewModel> agentsById = agents.ToDictionary(
