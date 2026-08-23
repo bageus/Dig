@@ -81,6 +81,8 @@ namespace Dig.Unity
                     "Tool-aware job assignment requires initialized runtime candidates and inventory.");
             }
 
+            _genericHaulingCandidates ??= new InMemoryJobCandidateProvider();
+
             InventoryJobToolPreparationService preparation =
                 new InventoryJobToolPreparationService(
                     _buildingInventoryRepository,
