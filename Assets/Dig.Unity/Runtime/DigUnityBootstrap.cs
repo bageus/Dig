@@ -55,6 +55,7 @@ namespace Dig.Unity
                 tickDuration: GameTimeCadence.NormalTickDuration);
             DigWorldSession worldSession = DigWorldSession.CreateDemo(
                 demoWidth, demoHeight, chunkSize,
+                generationSeed: 0xD1661E,
                 simulationState: simulationState);
             WorldViewModel world = worldSession.LoadView();
             _startupStage = "creating residents";
