@@ -62,6 +62,23 @@ public sealed class WorldItemFloorPoseWorkAutoplanningContractTests
     }
 
     [Fact]
+    public void Pickup_uses_source_pose_and_world_item_renderer_relies_on_required_label()
+    {
+        string pose = ReadRuntime("DigTerrainSpatialExcavation.Movement.cs");
+        string renderer = ReadRuntime("DigWorldItemRenderer.cs");
+        string visual = ReadRuntime("DigBuildingBoxLabel.cs");
+
+        Assert.Contains(
+            "if (job.Definition is WorldItemPickupJobDefinition pickup)",
+            pose);
+        Assert.Contains(
+            "WorkSurfacePositioning.Resolve(\n                pickup.SourceCell,\n                pickup.SourceCell)",
+            pose);
+        Assert.DoesNotContain("root.AddComponent<DigBuildingBoxLabel>();", renderer);
+        Assert.Contains("RequireComponent(typeof(DigBuildingBoxLabel))", visual);
+    }
+
+    [Fact]
     public void Overlay_play_mode_test_qualifies_Unity_Object_destruction()
     {
         string test = Read(

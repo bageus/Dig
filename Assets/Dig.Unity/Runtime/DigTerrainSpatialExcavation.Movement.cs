@@ -67,10 +67,12 @@ internal sealed partial class DigTerrainWorkSession
             return true;
         }
 
-        if (job.Definition is WorldItemPickupJobDefinition)
+        if (job.Definition is WorldItemPickupJobDefinition pickup)
         {
-            pose = default;
-            return false;
+            pose = WorkSurfacePositioning.Resolve(
+                pickup.SourceCell,
+                pickup.SourceCell);
+            return true;
         }
 
         if (job.Definition is BuildingBoxAssemblyJobDefinition assembly)

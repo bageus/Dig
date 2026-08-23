@@ -157,7 +157,6 @@ namespace Dig.Unity
                 GameObject root = new GameObject("World Item Stack");
                 root.transform.SetParent(_root, worldPositionStays: false);
                 visual = root.AddComponent<DigWorldItemVisual>();
-                root.AddComponent<DigBuildingBoxLabel>();
             }
 
             visual.transform.SetParent(_root, worldPositionStays: false);
