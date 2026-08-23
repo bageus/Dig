@@ -20,6 +20,11 @@ public sealed partial class DigGameHudCanvas
 
     private void RefreshNotifications()
     {
+        if (!_initialized || _terrainSession == null || _agentRenderer == null)
+        {
+            return;
+        }
+
         IReadOnlyList<JournalEventEntry> entries = _terrainSession!.ReadEventsAfter(
             _notificationEventSequence,
             NotificationReadBatchSize);
