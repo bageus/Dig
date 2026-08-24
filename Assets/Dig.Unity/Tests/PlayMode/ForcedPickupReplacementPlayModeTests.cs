@@ -4,6 +4,7 @@ using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.Navigation;
+using Dig.Domain.Storage;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Dig.Presentation.Agents;
@@ -213,6 +214,94 @@ public sealed class ForcedPickupReplacementPlayModeTests
         Assert.That(pickupJobs[0].Status, Is.EqualTo(JobStatus.Cancelled));
         Assert.That(pickupJobs[1].IsTerminal, Is.False);
         Assert.That(pickupJobs[1].AssignedAgentId?.ToString(), Is.EqualTo(residentId));
+    }
+
+    [Test]
+    public void Direct_pickup_cancels_competing_automatic_haul_before_acquisition()
+    {
+        ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
+            ResidentNeedsRuntimePlayModeHarness.CreateRuntime();
+        InMemoryInventoryRepository inventoryRepository =
+            ResidentNeedsRuntimePlayModeHarness.GetField<InMemoryInventoryRepository>(
+                runtime.Terrain,
+                "_inventoryRepository");
+        InMemoryStorageRepository storageRepository =
+            ResidentNeedsRuntimePlayModeHarness.GetField<InMemoryStorageRepository>(
+                runtime.Terrain,
+                "_storageRepository");
+        InMemoryJobRepository jobRepository =
+            ResidentNeedsRuntimePlayModeHarness.GetField<InMemoryJobRepository>(
+                runtime.Terrain,
+                "_jobRepository");
+        AgentViewModel[] agents = runtime.Residents.LoadView().ToArray();
+        CellId haulSource = new CellId(
+            agents[0].CellX,
+            agents[0].CellY,
+            agents[0].CellZ);
+        EntityId haulStackId = EntityId.Parse("fa000000000000000000000000000009");
+        EntityId pickupStackId = EntityId.Parse("fa00000000000000000000000000000a");
+        EntityId storageId = EntityId.Parse("fa00000000000000000000000000000b");
+        InventoryState inventory = inventoryRepository.Get();
+        ItemId itemId = inventory.Catalog.Definitions
+            .Where(definition => !definition.IsInventoryExpansion)
+            .Select(definition => definition.Id)
+            .First(candidate => inventory.GetAvailableWorldStacks()
+                .All(stack => stack.ItemId != candidate));
+        Require(inventory.AddUnit(
+            haulStackId,
+            itemId,
+            ItemLocation.InWorld(haulSource),
+            tick: 0));
+        inventoryRepository.Save(inventory);
+        StorageState storage = storageRepository.Get();
+        Require(storage.AddZone(new StorageZoneDefinition(
+            storageId,
+            "Direct command regression storage",
+            priority: 500,
+            capacity: 10,
+            filter: new StorageFilter(
+                acceptsAll: false,
+                allowedItems: new[] { itemId }),
+            cell: haulSource)));
+        storageRepository.Save(storage);
+
+        Require(runtime.Terrain.SynchronizeGenericHauling(agents, tick: 1));
+        JobSnapshot haul = jobRepository.Get().GetAll().Single(job =>
+            job.Definition is HaulJobDefinition definition
+                && definition.SourceStackId == haulStackId);
+        Assert.That(haul.AssignedAgentId.HasValue, Is.True);
+        EntityId resident = haul.AssignedAgentId!.Value;
+        CellId pickupSource = runtime.Residents.Repository.Get(resident)!.Position;
+        inventory = inventoryRepository.Get();
+        Require(inventory.AddUnit(
+            pickupStackId,
+            itemId,
+            ItemLocation.InWorld(pickupSource),
+            tick: 1));
+        inventoryRepository.Save(inventory);
+
+        Require(runtime.Terrain.CreateWorldItemPickup(
+            pickupStackId.ToString(),
+            resident.ToString(),
+            pickupSource,
+            tick: 2));
+
+        Assert.That(
+            jobRepository.Get().Get(haul.Id)!.Status,
+            Is.EqualTo(JobStatus.Cancelled));
+        Assert.That(
+            inventoryRepository.Get().GetStack(haulStackId)!.ReservedQuantity,
+            Is.Zero);
+        Assert.That(storageRepository.Get().GetReservation(haul.Id), Is.Null);
+        Assert.That(
+            inventoryRepository.Get().GetResidentSlotClaims(haul.Id),
+            Is.Empty);
+        Require(runtime.Terrain.AdvanceWorldItemPickup(
+            tick: 3,
+            runtime.Residents.LoadView()));
+        ItemStackSnapshot pickedUp = inventoryRepository.Get().GetStack(pickupStackId)!;
+        Assert.That(pickedUp.Location.Kind, Is.EqualTo(ItemLocationKind.AgentInventory));
+        Assert.That(pickedUp.Location.OwnerId, Is.EqualTo(resident));
     }
 
     [Test]
