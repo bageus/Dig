@@ -236,7 +236,7 @@ internal sealed partial class DigTerrainWorkSession
                 navigation.NavigationVersion));
         if (!path.Succeeded || path.Path == null)
         {
-            ReleaseGenericHaulingAssignment(job, tick);
+            HandleGenericHaulingPathFailure(job, tick);
             return true;
         }
 
@@ -250,6 +250,16 @@ internal sealed partial class DigTerrainWorkSession
             ? path.Path.Cells[1]
             : destination.Value;
         return true;
+    }
+
+    internal void HandleGenericHaulingPathFailure(JobSnapshot job, long tick)
+    {
+        if (job.Status == JobStatus.Claimed
+            || job.Stage == JobStageKind.TravelToTarget
+            || job.Stage == JobStageKind.AcquireItem)
+        {
+            ReleaseGenericHaulingAssignment(job, tick);
+        }
     }
 
     private void EnsureGenericHaulingRuntime()
