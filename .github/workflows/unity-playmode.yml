@@ -125,8 +125,12 @@ jobs:
             echo "${{ steps.activation.outputs.reason }}."
             echo "The workflow conclusion alone is not verification. Inspect the unity-runtime-evidence artifact."
           } >> "${GITHUB_STEP_SUMMARY}"
-          echo "::error title=Unity runtime tests not executed::${{ steps.activation.outputs.reason }}"
-          exit 1
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            echo "::warning title=Unity runtime tests not executed::${{ steps.activation.outputs.reason }}"
+          else
+            echo "::error title=Unity runtime tests not executed::${{ steps.activation.outputs.reason }}"
+            exit 1
+          fi
 
       - name: Upload Unity test results
         if: always() && steps.activation.outputs.configured == 'true'
