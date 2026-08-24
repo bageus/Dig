@@ -346,3 +346,5 @@ public sealed class CancelBuildingSupplyHandler
         _eventSink.Append(jobs.DequeueUncommittedEvents());
         return Result.Success();
     }
+}
+}
