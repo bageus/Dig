@@ -24,6 +24,22 @@ public sealed class SimulationDriverResilienceContractTests
     }
 
     [Fact]
+    public void Automatic_hauling_is_advanced_in_the_production_tick_loop()
+    {
+        string root = FindRepositoryRoot();
+        string loop = File.ReadAllText(Path.Combine(
+            root,
+            "Assets",
+            "Dig.Unity",
+            "Runtime",
+            "DigAgentSimulationDriverBase.Loop.cs"));
+
+        Assert.Contains(
+            "result = TerrainSession.AdvanceGenericHauling(\n                    AgentSession.Tick,\n                    agents);",
+            loop);
+    }
+
+    [Fact]
     public void Direct_world_item_pickup_runs_even_after_an_earlier_tick_failure()
     {
         string root = FindRepositoryRoot();
