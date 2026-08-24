@@ -106,45 +106,44 @@ public sealed class ForcedPickupReplacementPlayModeTests
     }
 
     [Test]
-    public void Pickup_acquires_demo_basket_from_shared_cell_boundary()
+    public void Generic_hauling_reconciliation_preserves_direct_pickup_reservation()
     {
         ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
             ResidentNeedsRuntimePlayModeHarness.CreateRuntime();
         string residentId = runtime.Residents.LoadView().First().Id;
         EntityId resident = EntityId.Parse(residentId);
-        CellId current = runtime.Residents.Repository.Get(resident)!.Position;
-        EntityId basketStackId = EntityId.Parse(
-            "30000000000000000000000000000001");
+        CellId source = runtime.Residents.Repository.Get(resident)!.Position;
         InMemoryInventoryRepository inventoryRepository =
             ResidentNeedsRuntimePlayModeHarness.GetField<InMemoryInventoryRepository>(
                 runtime.Terrain,
                 "_inventoryRepository");
-        ItemStackSnapshot basket = inventoryRepository.Get().GetStack(basketStackId)!;
-        CellId source = basket.Location.CellId;
-        Assert.That(source, Is.EqualTo(new CellId(
-            current.X + 1,
-            current.Y,
-            current.Z)));
-        Require(runtime.Residents.Repository.Get(resident)!.RestoreSurfacePose(
-            new SurfacePose(
-                current,
-                SurfaceFace.Floor,
-                SurfacePose.UnitsPerCell,
-                SurfacePose.CellCentre)));
+        EntityId stackId = EntityId.Parse("fa00000000000000000000000000000c");
+        InventoryState inventory = inventoryRepository.Get();
+        Require(inventory.AddUnit(
+            stackId,
+            CampfireProductionContent.StoneItemId,
+            ItemLocation.InWorld(source),
+            tick: 0));
+        inventoryRepository.Save(inventory);
 
         Require(runtime.Terrain.CreateWorldItemPickup(
-            basketStackId.ToString(),
+            stackId.ToString(),
             residentId,
             source,
             tick: 1));
+        Require(runtime.Terrain.SynchronizeGenericHauling(
+            runtime.Residents.LoadView(),
+            tick: 2));
+
+        Assert.That(
+            inventoryRepository.Get().GetStack(stackId)!.ReservedQuantity,
+            Is.EqualTo(1));
         Require(runtime.Terrain.AdvanceWorldItemPickup(
             tick: 2,
             runtime.Residents.LoadView()));
-
-        ItemStackSnapshot acquired = inventoryRepository.Get().GetStack(basketStackId)!;
+        ItemStackSnapshot acquired = inventoryRepository.Get().GetStack(stackId)!;
         Assert.That(acquired.Location.Kind, Is.EqualTo(ItemLocationKind.AgentInventory));
         Assert.That(acquired.Location.OwnerId, Is.EqualTo(resident));
-        Assert.That(acquired.ReservedQuantity, Is.Zero);
     }
 
     [Test]

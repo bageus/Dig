@@ -264,14 +264,13 @@ public sealed class ReconcileHaulingHandler
             }
         }
 
-        HashSet<EntityId> validJobs = jobs.GetAll()
+        HashSet<EntityId> activeReservationOwners = jobs.GetAll()
             .Where(value => !value.IsTerminal)
-            .Where(value => value.Definition is HaulJobDefinition)
             .Select(value => value.Id)
             .ToHashSet();
         foreach (StorageReservationSnapshot reservation in storage.GetReservations())
         {
-            if (validJobs.Contains(reservation.JobId))
+            if (activeReservationOwners.Contains(reservation.JobId))
             {
                 continue;
             }
@@ -285,7 +284,7 @@ public sealed class ReconcileHaulingHandler
             .SelectMany(value => value.Reservations)
             .Select(value => value.JobId)
             .Distinct()
-            .Where(value => !validJobs.Contains(value))
+            .Where(value => !activeReservationOwners.Contains(value))
             .OrderBy(value => value.ToString(), StringComparer.Ordinal)
             .ToArray();
         foreach (EntityId jobId in inventoryReservationJobs)
