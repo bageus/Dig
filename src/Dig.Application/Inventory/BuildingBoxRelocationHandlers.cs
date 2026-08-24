@@ -251,7 +251,8 @@ public sealed class AcquireBuildingBoxForRelocationHandler
             return Result.Failure(BuildingBoxPickupErrors.StackNotInWorld);
         }
 
-        Result moved = inventory.MoveFullyReservedPreservingReservation(
+        Result moved = ResidentItemTransferService.AcquireReservedStack(
+            inventory,
             box.StackId,
             job.Id,
             carried,
@@ -307,7 +308,8 @@ public sealed class CompleteBuildingBoxRelocationHandler
             return Result.Failure(BuildingBoxPickupErrors.BoxUnavailable);
         }
 
-        Result moved = inventory.MoveReserved(
+        Result moved = ResidentItemTransferService.MoveReserved(
+            inventory,
             box.StackId,
             job.Id,
             quantity: 1,

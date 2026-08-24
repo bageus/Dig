@@ -44,9 +44,11 @@ public sealed class DropResidentInventoryStackHandler
             return Result.Failure(ResidentInventoryActionErrors.StackReserved);
         }
 
-        Result moved = inventory.DropResidentStackWithSpill(
+        Result moved = ResidentItemTransferService.Drop(
+            inventory,
+            command.ActorId,
             command.StackId,
-            ItemLocation.InWorld(command.Destination),
+            command.Destination,
             command.Tick);
         if (moved.IsFailure)
         {
@@ -60,10 +62,7 @@ public sealed class DropResidentInventoryStackHandler
 
     public static bool IsOwnedByResident(ItemLocation location, EntityId residentId)
     {
-        return location.HasOwner
-            && location.OwnerId == residentId
-            && (location.Kind == ItemLocationKind.AgentInventory
-                || location.Kind == ItemLocationKind.Equipped);
+        return ResidentItemTransferService.IsOwnedByResident(location, residentId);
     }
 }
 

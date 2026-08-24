@@ -186,7 +186,8 @@ public sealed class CompleteBuildingDeliveryHandler
             return Result.Failure(HaulingErrors.InvalidStage);
         }
 
-        Result moved = inventory.MoveReserved(
+        Result moved = ResidentItemTransferService.MoveReserved(
+            inventory,
             hauling.SourceStackId,
             command.JobId,
             hauling.Quantity,

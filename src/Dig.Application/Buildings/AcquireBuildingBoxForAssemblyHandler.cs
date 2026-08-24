@@ -118,7 +118,8 @@ public sealed class AcquireBuildingBoxForAssemblyHandler
             return Result.Failure(BuildingBoxAssemblyTransitErrors.SourceNotAtWorker);
         }
 
-        Result moved = inventory.MoveFullyReservedPreservingReservation(
+        Result moved = ResidentItemTransferService.AcquireReservedStack(
+            inventory,
             box.StackId,
             job.Id,
             carried,

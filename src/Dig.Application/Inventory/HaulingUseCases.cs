@@ -269,7 +269,9 @@ public sealed class CompleteHaulingJobHandler
             return skillValidation;
         }
 
-        Result moved = inventory.DepositReservedResidentItems(
+        Result moved = ResidentItemTransferService.DepositReservedResidentItems(
+            inventory,
+            hauling.SourceStackId,
             command.JobId,
             snapshot.AssignedAgentId.Value,
             hauling.ItemId,
@@ -277,20 +279,6 @@ public sealed class CompleteHaulingJobHandler
             ItemLocation.InStorage(hauling.DestinationStorageId),
             command.SplitStackId,
             command.Tick);
-        if (moved.IsFailure && moved.Error == InventoryErrors.ReservationNotFound)
-        {
-            Result legacyMove = inventory.MoveReserved(
-                hauling.SourceStackId,
-                command.JobId,
-                hauling.Quantity,
-                ItemLocation.InStorage(hauling.DestinationStorageId),
-                command.SplitStackId,
-                command.Tick);
-            if (legacyMove.IsSuccess)
-            {
-                moved = legacyMove;
-            }
-        }
 
         if (moved.IsFailure)
         {

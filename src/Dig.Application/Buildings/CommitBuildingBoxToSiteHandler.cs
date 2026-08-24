@@ -78,7 +78,8 @@ public sealed class CommitBuildingBoxToSiteHandler
             return Result.Failure(BuildingBoxErrors.SourceStackMissing);
         }
 
-        Result moved = inventory.MoveReserved(
+        Result moved = ResidentItemTransferService.MoveReserved(
+            inventory,
             box.StackId,
             command.JobId,
             quantity: 1,

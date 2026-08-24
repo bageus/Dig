@@ -291,7 +291,9 @@ public sealed class CompleteFarmDeliveryHandler
             return Result.Failure(FarmApplicationErrors.InvalidDelivery);
         }
 
-        Result deposited = inventory.DepositReservedResidentItems(
+        Result deposited = ResidentItemTransferService.DepositReservedResidentItems(
+            inventory,
+            hauling.SourceStackId,
             job.Id,
             job.AssignedAgentId.Value,
             hauling.ItemId,

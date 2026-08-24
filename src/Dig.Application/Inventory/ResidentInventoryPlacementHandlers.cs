@@ -288,7 +288,8 @@ public sealed class CompleteResidentInventoryPlacementHandler
                 job.Id,
                 ItemLocation.InWorld(placement.DestinationCell),
                 command.Tick)
-            : inventory.MoveReserved(
+            : ResidentItemTransferService.MoveReserved(
+                inventory,
                 placement.StackId,
                 job.Id,
                 placement.Quantity,

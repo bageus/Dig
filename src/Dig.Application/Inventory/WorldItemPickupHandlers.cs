@@ -222,7 +222,8 @@ public sealed class CompleteWorldItemPickupHandler
             return Result.Failure(WorldItemPickupErrors.StackUnavailable);
         }
 
-        Result moved = inventory.AcquireReservedIntoResidentSlots(
+        Result moved = ResidentItemTransferService.AcquireReservedIntoResidentSlots(
+            inventory,
             pickup.StackId,
             job.Id,
             job.AssignedAgentId.Value,

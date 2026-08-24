@@ -198,7 +198,8 @@ public sealed class CompleteBuildingBoxPickupHandler
             return Result.Failure(BuildingBoxPickupErrors.BoxUnavailable);
         }
 
-        Result moved = inventory.MoveReserved(
+        Result moved = ResidentItemTransferService.MoveReserved(
+            inventory,
             pickup.StackId,
             job.Id,
             quantity: 1,

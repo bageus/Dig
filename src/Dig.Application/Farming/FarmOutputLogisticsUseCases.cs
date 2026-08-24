@@ -239,7 +239,9 @@ public sealed class CompleteFarmOutputHandler
             return Result.Failure(FarmLogisticsErrors.InvalidStage);
         }
 
-        Result deposited = inventory.DepositReservedResidentItems(
+        Result deposited = ResidentItemTransferService.DepositReservedResidentItems(
+            inventory,
+            haul.SourceStackId,
             job.Id,
             job.AssignedAgentId.Value,
             haul.ItemId,

@@ -76,7 +76,8 @@ public sealed class AcquireHaulingItemHandler
             return Result.Failure(HaulingErrors.InvalidStage);
         }
 
-        Result acquired = inventory.AcquireReservedIntoResidentSlots(
+        Result acquired = ResidentItemTransferService.AcquireReservedIntoResidentSlots(
+            inventory,
             hauling.SourceStackId,
             job.Id,
             job.AssignedAgentId.Value,
