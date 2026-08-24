@@ -94,21 +94,21 @@ public sealed class HaulingTransitSaveContinuationTests
         InMemoryJobRepository jobRepository = new InMemoryJobRepository(jobs);
         InMemoryExecutionJournal journal = new InMemoryExecutionJournal();
         Assert.True(jobs.Start(JobId, tick: 3).IsSuccess);
-        Assert.True(jobs.AdvanceStage(JobId, tick: 4).IsSuccess);
-        Assert.True(new AcquireHaulingItemHandler(
+        Result acquired = new AcquireHaulingItemHandler(
             inventoryRepository,
             jobRepository,
             journal).Handle(new AcquireHaulingItemCommand(
                 JobId,
                 Id(40),
-                tick: 5)).IsSuccess);
+                tick: 4));
+        Assert.True(acquired.IsSuccess, acquired.Error?.ToString());
         Assert.Equal(JobStageKind.TravelToDestination, jobs.Get(JobId)!.Stage);
         Assert.Equal(4, ReservedResidentOre(inventory));
 
         JobDefinitionSaveRegistry registry = Registry();
         SaveGameBuilder builder = new SaveGameBuilder(registry);
         Result<LoadedGameState> carriedLoad = Load(
-            builder.Build(Context(world, inventory, jobs, storage, tick: 5)),
+            builder.Build(Context(world, inventory, jobs, storage, tick: 4)),
             registry,
             materials,
             items);
