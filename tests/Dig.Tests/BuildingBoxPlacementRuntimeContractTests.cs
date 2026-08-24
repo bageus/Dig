@@ -174,7 +174,7 @@ namespace Dig.Tests
             Assert.Contains("ReservationKey.ForItem(StackId)", definition);
             Assert.Contains("ReservationKey.ForPosition(DestinationCell.Value)", definition);
             Assert.Contains("jobs.Claim(command.JobId,stack.Location.OwnerId", handlers);
-            Assert.Contains("MoveFullyReservedPreservingReservation", handlers);
+            Assert.Contains("ResidentItemTransferService.AcquireReservedStack(", handlers);
             Assert.Contains("ItemLocation.InWorld(relocation.DestinationCell.Value)", handlers);
             Assert.Contains("MoveReserved(", handlers);
             Assert.Contains("destination_x", codec);
