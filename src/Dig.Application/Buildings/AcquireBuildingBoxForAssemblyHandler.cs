@@ -122,7 +122,7 @@ public sealed class AcquireBuildingBoxForAssemblyHandler
             inventory,
             box.StackId,
             job.Id,
-            carried,
+            workerId,
             command.Tick);
         if (moved.IsFailure)
         {

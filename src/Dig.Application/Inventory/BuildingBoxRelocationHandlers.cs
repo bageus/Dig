@@ -255,7 +255,7 @@ public sealed class AcquireBuildingBoxForRelocationHandler
             inventory,
             box.StackId,
             job.Id,
-            carried,
+            workerId,
             command.Tick);
         if (moved.IsFailure)
         {
