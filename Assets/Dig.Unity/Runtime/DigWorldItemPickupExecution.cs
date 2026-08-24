@@ -73,10 +73,7 @@ namespace Dig.Unity
                     continue;
                 }
 
-                if (agent.CellX != pickup.SourceCell.X
-                    || agent.CellY != pickup.SourceCell.Y
-                    || agent.CellZ != pickup.SourceCell.Z
-                    || !IsAtPreciseWorkPose(job, agent))
+                if (!HasReachedWorldItemPickupSource(job, pickup, agent))
                 {
                     continue;
                 }
@@ -89,6 +86,39 @@ namespace Dig.Unity
             }
 
             return Result.Success();
+        }
+
+        private bool HasReachedWorldItemPickupSource(
+            JobSnapshot job,
+            WorldItemPickupJobDefinition pickup,
+            AgentViewModel agent)
+        {
+            SurfacePose actual = ToSurfacePose(agent);
+            if (actual.Cell == pickup.SourceCell)
+            {
+                return IsAtPreciseWorkPose(job, agent);
+            }
+
+            if (actual.Face != SurfaceFace.Floor
+                || actual.Cell.Y != pickup.SourceCell.Y)
+            {
+                return false;
+            }
+
+            int deltaX = pickup.SourceCell.X - actual.Cell.X;
+            int deltaZ = pickup.SourceCell.Z - actual.Cell.Z;
+            if (Math.Abs(deltaX) + Math.Abs(deltaZ) != 1)
+            {
+                return false;
+            }
+
+            return deltaX switch
+            {
+                1 => actual.U == SurfacePose.UnitsPerCell,
+                -1 => actual.U == 0,
+                _ when deltaZ == 1 => actual.V == SurfacePose.UnitsPerCell,
+                _ => actual.V == 0,
+            };
         }
 
         private Result AdvanceWorldItemPickupAtSource(
