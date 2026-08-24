@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.World;
@@ -20,6 +21,36 @@ public static class ResidentItemTransferService
         if (inventory is null)
         {
             throw new ArgumentNullException(nameof(inventory));
+        }
+
+        ItemStackSnapshot? source = inventory.GetStack(sourceStackId);
+        if (source != null)
+        {
+            int reservedQuantity = source.Reservations
+                .Where(reservation => reservation.JobId == jobId)
+                .Sum(reservation => reservation.Quantity);
+            ResidentInventorySlotClaimSnapshot[] claims = inventory
+                .GetResidentSlotClaims(jobId)
+                .ToArray();
+            bool claimsMatch = claims.Length > 0
+                && claims.All(claim => claim.ResidentId == residentId)
+                && claims.All(claim => claim.ItemId == source.ItemId)
+                && claims.Sum(claim => claim.Quantity) == reservedQuantity;
+            if (reservedQuantity > 0 && !claimsMatch)
+            {
+                inventory.ReleaseResidentSlotClaims(jobId, tick);
+                Result<IReadOnlyList<ResidentInventorySlotClaimSnapshot>> repaired =
+                    inventory.ReserveResidentSlotCapacity(
+                        jobId,
+                        residentId,
+                        source.ItemId,
+                        reservedQuantity,
+                        tick);
+                if (repaired.IsFailure)
+                {
+                    return Result.Failure(repaired.Error!);
+                }
+            }
         }
 
         return inventory.AcquireReservedIntoResidentSlots(

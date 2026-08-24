@@ -104,6 +104,26 @@ public sealed class HaulingResidentTransitTests
             ItemLocation.InStorage(StorageId)));
     }
 
+    [Fact]
+    public void Acquisition_repairs_missing_slot_claim_for_in_progress_job()
+    {
+        Harness harness = new Harness(existingCargoUnits: 0, haulQuantity: 1);
+        harness.AssignAndStart();
+        Assert.Equal(
+            1,
+            harness.Inventory.ReleaseResidentSlotClaims(JobId, tick: 3));
+        Assert.Empty(harness.Inventory.GetResidentSlotClaims(JobId));
+
+        Result acquired = harness.Acquire(Id(20), tick: 4);
+
+        Assert.True(acquired.IsSuccess, acquired.Error?.ToString());
+        Assert.Equal(JobStageKind.TravelToDestination, harness.Jobs.Get(JobId)!.Stage);
+        ItemStackSnapshot carried = Assert.Single(
+            ResidentStacks(harness.Inventory),
+            stack => stack.ItemId == OreId);
+        Assert.Equal(ResidentId, carried.Location.OwnerId);
+    }
+
     private static ItemStackSnapshot[] ResidentStacks(InventoryState inventory)
     {
         return inventory.CreateSnapshot().Stacks
