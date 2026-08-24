@@ -126,7 +126,22 @@ internal sealed partial class DigTerrainWorkSession
         if (job.Status == JobStatus.Claimed
             || job.Stage == JobStageKind.TravelToTarget)
         {
-            return _advanceHandler.Handle(new AdvanceJobCommand(job.Id, tick));
+            Result advanced = _advanceHandler.Handle(
+                new AdvanceJobCommand(job.Id, tick));
+            if (advanced.IsFailure)
+            {
+                return advanced;
+            }
+
+            JobSnapshot? refreshed = _jobRepository.Get().Get(job.Id);
+            if (refreshed == null
+                || (refreshed.Status == job.Status
+                    && refreshed.Stage == job.Stage))
+            {
+                return Result.Success();
+            }
+
+            job = refreshed;
         }
 
         if (job.Stage == JobStageKind.AcquireItem)
@@ -169,6 +184,7 @@ internal sealed partial class DigTerrainWorkSession
         }
 
         if (job.Status == JobStatus.Claimed
+            || job.Stage == JobStageKind.TravelToTarget
             || job.Stage == JobStageKind.AcquireItem)
         {
             ItemStackSnapshot? source = _inventoryRepository.Get().GetStack(
