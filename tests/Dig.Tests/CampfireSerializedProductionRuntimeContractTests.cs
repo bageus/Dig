@@ -106,19 +106,27 @@ public sealed class CampfireSerializedProductionRuntimeContractTests
     }
 
     [Fact]
-    public void Successful_ingress_normalizes_after_releasing_slot_claim()
+    public void Successful_ingress_reflows_before_validation_and_normalizes_after_release()
     {
         string transit = Read(
             "src/Dig.Domain/Inventory/InventoryState.HaulingTransit.cs");
+        int preflightNormalize = transit.IndexOf(
+            "NormalizeResidentInventory(residentId, tick)",
+            StringComparison.Ordinal);
+        int claimValidation = transit.IndexOf(
+            "ResidentInventorySlotClaimSnapshot[] claims",
+            StringComparison.Ordinal);
         int release = transit.IndexOf(
             "ReleaseResidentSlotClaims(jobId, tick)",
             StringComparison.Ordinal);
-        int normalize = transit.IndexOf(
+        int postTransferNormalize = transit.LastIndexOf(
             "NormalizeResidentInventory(residentId, tick)",
             StringComparison.Ordinal);
 
+        Assert.True(preflightNormalize >= 0);
+        Assert.True(claimValidation > preflightNormalize);
         Assert.True(release >= 0);
-        Assert.True(normalize > release);
+        Assert.True(postTransferNormalize > release);
     }
 
     private static string ReadRuntime(string file)
