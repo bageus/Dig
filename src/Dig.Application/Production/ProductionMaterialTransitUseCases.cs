@@ -108,7 +108,8 @@ public sealed class AcquireProductionMaterialHandler
             return Result.Failure(InventoryErrors.ReservationNotFound);
         }
 
-        Result<EntityId> acquired = inventory.AcquireReservedProductionUnit(
+        Result<EntityId> acquired = ResidentItemTransferService.AcquireReservedProductionUnit(
+            inventory,
             source.StackId,
             command.OrderId,
             residentId,

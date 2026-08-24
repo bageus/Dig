@@ -44,7 +44,8 @@ public sealed class AcquireBuildingSupplyHandler
         if (started.IsFailure) return started;
         Result checkedStock = jobs.AdvanceStage(command.JobId, command.Tick);
         if (checkedStock.IsFailure) return checkedStock;
-        Result acquired = inventory.AcquireReservedBatchIntoResidentSlots(
+        Result acquired = ResidentItemTransferService.AcquireReservedBatchIntoResidentSlots(
+            inventory,
             command.JobId,
             job.AssignedAgentId.Value,
             supply.Allocations,
@@ -127,7 +128,8 @@ public sealed class AcquireBuildingSupplySourceHandler
         EntityId[] unusedTransitIds = supply.TransitStackIds
             .Where(value => inventory.GetStack(value) is null)
             .ToArray();
-        Result<bool> acquired = inventory.AcquireReservedSupplySourceIntoResidentSlots(
+        Result<bool> acquired = ResidentItemTransferService.AcquireReservedSupplySourceIntoResidentSlots(
+            inventory,
             command.JobId,
             workerId,
             allocation.Value,
@@ -223,7 +225,9 @@ public sealed class DepositBuildingSupplyHandler
         for (int index = 0; index < groups.Length; index++)
         {
             var group = groups[index];
-            Result deposited = inventory.DepositReservedResidentItems(
+            Result deposited = ResidentItemTransferService.DepositReservedResidentItems(
+                inventory,
+                group.First().StackId,
                 command.JobId,
                 job.AssignedAgentId.Value,
                 group.Key,
@@ -343,5 +347,4 @@ public sealed class CancelBuildingSupplyHandler
         return Result.Success();
     }
 }
-
 }

@@ -97,7 +97,9 @@ public sealed class CompleteRoomUpgradeDeliveryHandler
             return skillValidation;
         }
 
-        Result moved = inventory.DepositReservedResidentItems(
+        Result moved = ResidentItemTransferService.DepositReservedResidentItems(
+            inventory,
+            hauling.SourceStackId,
             job.Id,
             job.AssignedAgentId.Value,
             hauling.ItemId,
@@ -107,7 +109,8 @@ public sealed class CompleteRoomUpgradeDeliveryHandler
             command.Tick);
         if (moved.IsFailure && moved.Error == InventoryErrors.ReservationNotFound)
         {
-            moved = inventory.MoveReserved(
+            moved = ResidentItemTransferService.MoveReserved(
+                inventory,
                 hauling.SourceStackId,
                 job.Id,
                 hauling.Quantity,
