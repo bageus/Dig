@@ -24,6 +24,16 @@ public sealed partial class InventoryState
             return Result.Failure(InventoryErrors.StackNotFound);
         }
 
+        // A resident can finish another inventory-changing task while travelling
+        // to this source. Reflow the previously reserved slots against the current
+        // layout before validating them, otherwise a valid hauling reservation can
+        // remain stuck in AcquireItem forever as ResidentSlotClaimStale.
+        Result normalized = NormalizeResidentInventory(residentId, tick);
+        if (normalized.IsFailure)
+        {
+            return normalized;
+        }
+
         ResidentInventorySlotClaimSnapshot[] claims = GetResidentSlotClaims(jobId)
             .ToArray();
         int quantity = claims.Sum(claim => claim.Quantity);
