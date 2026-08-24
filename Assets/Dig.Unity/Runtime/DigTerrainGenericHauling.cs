@@ -7,6 +7,7 @@ using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.Navigation;
+using Dig.Domain.Storage;
 using Dig.Domain.World;
 using Dig.Infrastructure.InMemory;
 using Dig.Presentation.Agents;
@@ -192,6 +193,14 @@ internal sealed partial class DigTerrainWorkSession
             return source?.Location.HasCell == true
                 ? source.Location.CellId
                 : (CellId?)null;
+        }
+
+        if (hauling.Destination.Kind == ItemLocationKind.Storage
+            && hauling.Destination.HasOwner)
+        {
+            StorageZoneDefinition? storage = _storageRepository.Get().GetZone(
+                hauling.Destination.OwnerId);
+            return storage?.Cell;
         }
 
         return hauling.Destination.HasCell
