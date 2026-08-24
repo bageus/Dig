@@ -82,6 +82,24 @@ public sealed class WorldItemPickupTests
     }
 
     [Fact]
+    public void Pickup_repairs_missing_slot_claim_before_acquisition()
+    {
+        Harness harness = new Harness(quantity: 1);
+        Assert.True(harness.Create().IsSuccess);
+        Assert.Equal(1, harness.DropSlotClaims());
+        Assert.Empty(harness.Inventory.GetResidentSlotClaims(harness.JobId));
+        harness.AdvanceToAcquireItem();
+
+        Result completed = harness.Complete();
+
+        Assert.True(completed.IsSuccess, completed.Error?.ToString());
+        Assert.Equal(JobStatus.Completed, harness.Jobs.Get(harness.JobId)!.Status);
+        ItemStackSnapshot carried = harness.Inventory.GetStack(harness.StackId)!;
+        Assert.Equal(ItemLocationKind.AgentInventory, carried.Location.Kind);
+        Assert.Equal(harness.ResidentId, carried.Location.OwnerId);
+    }
+
+    [Fact]
     public void Competing_pickup_is_rejected_without_duplicate_job()
     {
         Harness harness = new Harness(quantity: 4);
@@ -270,6 +288,11 @@ public sealed class WorldItemPickupTests
             return new HaulingResidentSlotClaimService(
                 InventoryRepository,
                 Journal).Reconcile(Jobs, _tick++);
+        }
+
+        public int DropSlotClaims()
+        {
+            return Inventory.ReleaseResidentSlotClaims(JobId, _tick++);
         }
 
         public Result Cancel()
