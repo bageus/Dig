@@ -118,8 +118,9 @@ public sealed class HaulingResidentTransitTests
 
         Assert.True(acquired.IsSuccess, acquired.Error?.ToString());
         Assert.Equal(JobStageKind.TravelToDestination, harness.Jobs.Get(JobId)!.Stage);
-        ItemStackSnapshot carried = Assert.Single(ResidentStacks(harness.Inventory)
-            .Where(stack => stack.ItemId == OreId));
+        ItemStackSnapshot carried = Assert.Single(
+            ResidentStacks(harness.Inventory),
+            stack => stack.ItemId == OreId);
         Assert.Equal(ResidentId, carried.Location.OwnerId);
     }
 
