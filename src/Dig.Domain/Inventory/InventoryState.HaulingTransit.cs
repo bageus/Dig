@@ -157,7 +157,7 @@ public sealed partial class InventoryState
             ItemStackState source = sources[index];
             int moved = source.GetReservedQuantity(jobId);
             ItemLocation sourceLocation = source.Location;
-            source.ConsumeReservation(jobId, moved);
+            source.ConsumeReservedQuantity(jobId, moved);
             if (source.Quantity == 0)
             {
                 _stacks.Remove(source.Id);
