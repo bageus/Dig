@@ -226,9 +226,24 @@ namespace Dig.Unity
             if (IsRoomUpgradeJob(job.Id))
             {
                 ReleaseRoomUpgradeAssignment(job, tick);
+                return Result.Success();
             }
 
-            return Result.Success();
+            bool farmLogistics = IsFarmLogisticsJob(job.Id);
+            Result cancelled = new CancelHaulingJobHandler(
+                _inventoryRepository,
+                _storageRepository,
+                _jobRepository,
+                _journal).Handle(new CancelHaulingJobCommand(
+                    job.Id,
+                    DirectCommandReplacementReason,
+                    tick));
+            if (cancelled.IsSuccess && farmLogistics)
+            {
+                _farmLogisticsReservations.Release(job.Id);
+            }
+
+            return cancelled;
         }
 
         private Result CancelBarrelForDirectCommand(JobSnapshot job, long tick)
