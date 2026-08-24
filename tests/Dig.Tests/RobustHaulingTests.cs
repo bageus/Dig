@@ -122,6 +122,77 @@ public sealed class RobustHaulingTests
             value => value.JobId == jobId && value.ActionCode == "failed_mismatched");
     }
 
+    [Fact]
+    public void Reconciliation_preserves_active_pickup_and_building_supply_reservations()
+    {
+        Harness harness = CreateHarness();
+        EntityId pickupStackId = harness.AddStack(
+            "83000000000000000000000000000005",
+            quantity: 1,
+            x: 5);
+        EntityId supplyStackId = harness.AddStack(
+            "83000000000000000000000000000006",
+            quantity: 1,
+            x: 6);
+        EntityId pickupJobId = EntityId.Parse(
+            "84000000000000000000000000000006");
+        EntityId supplyJobId = EntityId.Parse(
+            "84000000000000000000000000000007");
+        EntityId supplyWorker = EntityId.Parse(
+            "82000000000000000000000000000002");
+        Assert.True(harness.Inventory.ReserveQuantity(
+            pickupStackId,
+            pickupJobId,
+            quantity: 1,
+            tick: 1).IsSuccess);
+        Assert.True(harness.Inventory.ReserveQuantity(
+            supplyStackId,
+            supplyJobId,
+            quantity: 1,
+            tick: 1).IsSuccess);
+
+        Assert.True(harness.Jobs.Add(new WorldItemPickupJobDefinition(
+            pickupJobId,
+            pickupStackId,
+            quantity: 1,
+            new CellId(5, 1),
+            priority: 675,
+            createdTick: 1,
+            JobRetryPolicy.Default)).IsSuccess);
+        Assert.True(harness.Jobs.MakeAvailable(pickupJobId, tick: 1).IsSuccess);
+        Assert.True(harness.Jobs.Claim(pickupJobId, Worker, tick: 1).IsSuccess);
+        Assert.True(harness.Jobs.Start(pickupJobId, tick: 1).IsSuccess);
+
+        Assert.True(harness.Jobs.Add(new BuildingSupplyJobDefinition(
+            supplyJobId,
+            EntityId.Parse("85000000000000000000000000000001"),
+            new CellId(7, 1),
+            new[] { new ItemReservationAllocation(supplyStackId, Ore, quantity: 1) },
+            new[] { EntityId.Parse("86000000000000000000000000000001") },
+            new[] { EntityId.Parse("87000000000000000000000000000001") },
+            priority: 625,
+            createdTick: 1,
+            JobRetryPolicy.Default)).IsSuccess);
+        Assert.True(harness.Jobs.MakeAvailable(supplyJobId, tick: 1).IsSuccess);
+        Assert.True(harness.Jobs.Claim(supplyJobId, supplyWorker, tick: 1).IsSuccess);
+        Assert.True(harness.Jobs.Start(supplyJobId, tick: 1).IsSuccess);
+
+        ReconcileHaulingHandler reconcile = new ReconcileHaulingHandler(
+            harness.InventoryRepository,
+            harness.StorageRepository,
+            harness.JobRepository,
+            harness.Journal);
+        HaulingReconciliationReport report = reconcile.Handle(
+            new ReconcileHaulingCommand(tick: 2));
+
+        Assert.Equal(1, harness.Inventory.GetStack(pickupStackId)!.ReservedQuantity);
+        Assert.Equal(1, harness.Inventory.GetStack(supplyStackId)!.ReservedQuantity);
+        Assert.Equal(JobStatus.InProgress, harness.Jobs.Get(pickupJobId)!.Status);
+        Assert.Equal(JobStatus.InProgress, harness.Jobs.Get(supplyJobId)!.Status);
+        Assert.DoesNotContain(report.Entries, value => value.JobId == pickupJobId);
+        Assert.DoesNotContain(report.Entries, value => value.JobId == supplyJobId);
+    }
+
     private static void ExhaustRetries(
         Harness harness,
         BlockHaulingJobHandler block,
