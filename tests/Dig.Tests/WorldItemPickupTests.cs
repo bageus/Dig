@@ -159,7 +159,7 @@ public sealed class WorldItemPickupTests
 
 
     [Fact]
-    public void Quantity_one_building_stock_pickup_splits_into_resident_slot_and_round_trips()
+    public void Building_stock_moves_through_resident_to_world_and_definition_round_trips()
     {
         EntityId buildingId = Id('6');
         EntityId destinationId = Id('7');
@@ -188,6 +188,14 @@ public sealed class WorldItemPickupTests
             codec.Decode(codec.Encode(definition)));
         Assert.Equal(ItemLocation.InBuilding(buildingId), decoded.SourceLocation);
         Assert.Equal(destinationId, decoded.DestinationStackId);
+
+        CellId dropCell = new CellId(8, 5);
+        Result dropped = harness.Drop(destinationId, dropCell);
+
+        Assert.True(dropped.IsSuccess, dropped.Error?.ToString());
+        Assert.Equal(ItemLocation.InWorld(dropCell),
+            harness.Inventory.GetStack(destinationId)!.Location);
+        Assert.Equal(4, harness.Inventory.GetTotal(harness.ItemId));
     }
 
     private static EntityId Id(char prefix)
@@ -281,6 +289,17 @@ public sealed class WorldItemPickupTests
                 InventoryRepository,
                 JobRepository,
                 Journal).Handle(new CompleteWorldItemPickupCommand(JobId, _tick++));
+        }
+
+        public Result Drop(EntityId stackId, CellId destination)
+        {
+            return new DropResidentInventoryStackHandler(
+                InventoryRepository,
+                Journal).Handle(new DropResidentInventoryStackCommand(
+                    ResidentId,
+                    stackId,
+                    destination,
+                    _tick++));
         }
 
         public int ReconcileHaulingClaims()
