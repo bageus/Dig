@@ -106,6 +106,48 @@ public sealed class ForcedPickupReplacementPlayModeTests
     }
 
     [Test]
+    public void Pickup_acquires_demo_basket_from_shared_cell_boundary()
+    {
+        ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
+            ResidentNeedsRuntimePlayModeHarness.CreateRuntime();
+        string residentId = runtime.Residents.LoadView().First().Id;
+        EntityId resident = EntityId.Parse(residentId);
+        CellId current = runtime.Residents.Repository.Get(resident)!.Position;
+        EntityId basketStackId = EntityId.Parse(
+            "30000000000000000000000000000001");
+        InMemoryInventoryRepository inventoryRepository =
+            ResidentNeedsRuntimePlayModeHarness.GetField<InMemoryInventoryRepository>(
+                runtime.Terrain,
+                "_inventoryRepository");
+        ItemStackSnapshot basket = inventoryRepository.Get().GetStack(basketStackId)!;
+        CellId source = basket.Location.CellId;
+        Assert.That(source, Is.EqualTo(new CellId(
+            current.X + 1,
+            current.Y,
+            current.Z)));
+        Require(runtime.Residents.Repository.Get(resident)!.RestoreSurfacePose(
+            new SurfacePose(
+                current,
+                SurfaceFace.Floor,
+                SurfacePose.UnitsPerCell,
+                SurfacePose.CellCentre)));
+
+        Require(runtime.Terrain.CreateWorldItemPickup(
+            basketStackId.ToString(),
+            residentId,
+            source,
+            tick: 1));
+        Require(runtime.Terrain.AdvanceWorldItemPickup(
+            tick: 2,
+            runtime.Residents.LoadView()));
+
+        ItemStackSnapshot acquired = inventoryRepository.Get().GetStack(basketStackId)!;
+        Assert.That(acquired.Location.Kind, Is.EqualTo(ItemLocationKind.AgentInventory));
+        Assert.That(acquired.Location.OwnerId, Is.EqualTo(resident));
+        Assert.That(acquired.ReservedQuantity, Is.Zero);
+    }
+
+    [Test]
     public void Pickup_splits_one_unit_from_aggregated_world_stack_into_resident_inventory()
     {
         ResidentNeedsRuntimePlayModeHarness.Runtime runtime =
