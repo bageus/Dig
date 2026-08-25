@@ -38,7 +38,7 @@ internal sealed class DigRoomInfrastructurePresentationDriver : MonoBehaviour
         }
 
         bool planningVisible = _planningVisibility();
-        _renderer.SetPlanningOverlayVisibility(planningVisible);
+        _renderer.SetPlanningOverlayVisibility(_planningVisibility());
         var rooms = _session.LoadRoomInfrastructurePresentation();
         StringBuilder signature = new StringBuilder(
             planningVisible ? "visible:" : "hidden:");
