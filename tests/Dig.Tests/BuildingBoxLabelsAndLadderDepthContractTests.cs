@@ -39,10 +39,10 @@ public sealed class BuildingBoxLabelsAndLadderDepthContractTests
         string preview = ReadRuntime("DigBuildingBoxGhostRenderer.cs");
         string completed = ReadRuntime("DigBuildingVisual.cs");
 
-        Assert.Contains("LadderWallDepthOffset = 0f;", projection);
+        Assert.Contains("LadderWallDepthOffset = -0.42f;", projection);
         Assert.Contains("DigTunnelProjection.LadderWallDepthOffset", preview);
         Assert.Contains("DigTunnelProjection.LadderWallDepthOffset", completed);
-        Assert.DoesNotContain("LadderWallDepthOffset = 0.42f", projection);
+        Assert.DoesNotContain("LadderWallDepthOffset = 0f;", projection);
     }
 
     private static string ReadRuntime(string file)
