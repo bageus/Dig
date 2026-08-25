@@ -115,10 +115,10 @@ public sealed class AdaptiveLadderPlacementTests
                 Array.Empty<CellId>(),
                 new[] { new CellId(2, 6, 1) });
 
-            Assert.That(preview.IsValid, Is.True, preview.ReasonCode);
-            Assert.That(preview.Origin, Is.EqualTo(new CellId(3, 6, 1)));
-            Assert.That(preview.Footprint.Min(cell => cell.Y), Is.EqualTo(1));
-            Assert.That(preview.Footprint.Max(cell => cell.Y), Is.EqualTo(6));
+            Assert.True(preview.IsValid, preview.ReasonCode);
+            Assert.Equal(new CellId(3, 6, 1), preview.Origin);
+            Assert.Equal(1, preview.Footprint.Min(cell => cell.Y));
+            Assert.Equal(6, preview.Footprint.Max(cell => cell.Y));
         }
     }
 
