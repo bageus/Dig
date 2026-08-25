@@ -11,6 +11,7 @@ Tracking: #165. Authoritative design: `docs/design/exploration-fog-of-war.md`.
 - `Visible` не сохраняется; save snapshot хранит explored history и markers, после load current mask пересчитывается.
 - Unity demo больше не помечает мир разведанным при создании. Residents и действующие buildings публикуют sources при старте и simulation tick.
 - Presentation получает `CellVisibility`, затемняет `ExploredNotVisible` и строит отдельную чёрную/полупрозрачную fog mesh для пустых клеток.
+- Placement использует persistent explored state, а не наличие currently-visible dynamic target: в `ExploredNotVisible` можно создать item или BuildingBox placement. Перед deposit/site commit цель повторно валидируется; ставшая недопустимой цель отменяет job, освобождает reservation и оставляет предмет в inventory гнома.
 
 ## Verification boundary
 

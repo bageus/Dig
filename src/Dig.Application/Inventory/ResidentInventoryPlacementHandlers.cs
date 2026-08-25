@@ -259,13 +259,22 @@ public sealed class CompleteResidentInventoryPlacementHandler
             new[] { placement.DestinationCell });
         if (target.IsFailure)
         {
-            Result blocked = jobs.Block(
+            Result cancelled = jobs.Cancel(
                 job.Id,
                 new JobBlockReason(target.Error!.Code, target.Error.Message),
                 command.Tick);
+            if (cancelled.IsFailure)
+            {
+                return cancelled;
+            }
+
+            InventoryState cancelledInventory = _inventoryRepository.Get();
+            cancelledInventory.ReleaseReservations(job.Id, command.Tick);
+            _inventoryRepository.Save(cancelledInventory);
             _jobRepository.Save(jobs);
+            _eventSink.Append(cancelledInventory.DequeueUncommittedEvents());
             _eventSink.Append(jobs.DequeueUncommittedEvents());
-            return blocked.IsFailure ? blocked : Result.Success();
+            return Result.Success();
         }
 
         InventoryState inventory = _inventoryRepository.Get();

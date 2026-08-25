@@ -1,4 +1,5 @@
 using Dig.Application.Inventory;
+using Dig.Application.Jobs;
 using Dig.Domain.Core;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
@@ -78,6 +79,37 @@ public sealed class ResidentInventoryPlacementFailureTests
             harness.Inventory.GetStack(FirstStackId)!.Location);
     }
 
+    [Fact]
+    public void Target_that_becomes_unavailable_at_arrival_cancels_and_keeps_item()
+    {
+        Harness harness = new Harness();
+        Assert.True(harness.Create(
+            FirstJobId,
+            FirstStackId,
+            FirstTarget,
+            tick: 10).IsSuccess);
+        harness.AdvanceToDeposit(FirstJobId, tick: 11);
+
+        WorldState world = harness.WorldRepository.Get();
+        CellState hidden = world.GetCell(FirstTarget).Value.State.WithExplored(false);
+        Assert.True(world.ApplyTerrainChanges(
+            new[] { new TerrainChange(FirstTarget, hidden) },
+            tick: 13).IsSuccess);
+
+        Result completed = harness.Complete(FirstJobId, FirstTarget, tick: 14);
+
+        Assert.True(completed.IsSuccess, completed.Error?.ToString());
+        Assert.Equal(JobStatus.Cancelled, harness.Jobs.Get(FirstJobId)!.Status);
+        ItemStackSnapshot stack = harness.Inventory.GetStack(FirstStackId)!;
+        Assert.Equal(0, stack.ReservedQuantity);
+        Assert.Equal(
+            ItemLocation.InResidentSlot(
+                ResidentId,
+                ResidentInventoryCompartment.Main,
+                0),
+            stack.Location);
+    }
+
     private static EntityId Id(int value)
     {
         return EntityId.Parse(value.ToString("x32"));
@@ -141,6 +173,25 @@ public sealed class ResidentInventoryPlacementFailureTests
         public InMemoryExecutionJournal Journal { get; }
         public CreateResidentInventoryPlacementHandler CreateHandler { get; }
         public ResidentInventoryPlacementQueue Queue { get; }
+
+        public void AdvanceToDeposit(EntityId jobId, long tick)
+        {
+            AdvanceJobHandler advance = new AdvanceJobHandler(JobRepository, Journal);
+            Assert.True(advance.Handle(new AdvanceJobCommand(jobId, tick)).IsSuccess);
+            Assert.True(advance.Handle(new AdvanceJobCommand(jobId, tick + 1)).IsSuccess);
+        }
+
+        public Result Complete(EntityId jobId, CellId workerCell, long tick)
+        {
+            return new CompleteResidentInventoryPlacementHandler(
+                WorldRepository,
+                InventoryRepository,
+                JobRepository,
+                Journal).Handle(new CompleteResidentInventoryPlacementCommand(
+                    jobId,
+                    workerCell,
+                    tick));
+        }
 
         public Result Create(
             EntityId jobId,

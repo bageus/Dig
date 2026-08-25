@@ -60,7 +60,11 @@ public sealed class CreateBuildingBoxRelocationHandler
             return source;
         }
 
-        Result target = ValidateTarget(command);
+        Result target = ValidateTarget(
+            _worldRepository.Get().CreateSnapshot(),
+            _buildingsRepository.Get(),
+            command.DestinationCell,
+            command.ReachableCells);
         if (target.IsFailure)
         {
             return target;
@@ -124,14 +128,17 @@ public sealed class CreateBuildingBoxRelocationHandler
         return Result.Success();
     }
 
-    private Result ValidateTarget(CreateBuildingBoxRelocationCommand command)
+    internal static Result ValidateTarget(
+        WorldSnapshot world,
+        BuildingsState buildings,
+        CellId destination,
+        IReadOnlyCollection<CellId> reachableCells)
     {
-        WorldSnapshot world = _worldRepository.Get().CreateSnapshot();
-        if (!world.Size.Contains(command.DestinationCell)
-            || !command.ReachableCells.Contains(command.DestinationCell)
-            || _buildingsRepository.Get().GetOccupiedCells().Contains(command.DestinationCell)
+        if (!world.Size.Contains(destination)
+            || !reachableCells.Contains(destination)
+            || buildings.GetOccupiedCells().Contains(destination)
             || !BuildingPlacementSurfaceFactProjector.HasSupportingPlane(
-                command.DestinationCell,
+                destination,
                 world))
         {
             return Result.Failure(BuildingBoxRelocationErrors.TargetUnavailable);
@@ -139,7 +146,7 @@ public sealed class CreateBuildingBoxRelocationHandler
 
         CellSnapshot? target = world.Chunks
             .SelectMany(chunk => chunk.Cells)
-            .FirstOrDefault(cell => cell.Id == command.DestinationCell);
+            .FirstOrDefault(cell => cell.Id == destination);
         return target.HasValue
             && !target.Value.IsSolid
             && target.Value.State.IsExplored
@@ -264,73 +271,6 @@ public sealed class AcquireBuildingBoxForRelocationHandler
 
         _inventoryRepository.Save(inventory);
         _eventSink.Append(inventory.DequeueUncommittedEvents());
-        return Result.Success();
-    }
-}
-
-public sealed class CompleteBuildingBoxRelocationHandler
-    : ICommandHandler<CompleteBuildingBoxRelocationCommand, Result>
-{
-    private readonly IInventoryRepository _inventoryRepository;
-    private readonly IJobRepository _jobRepository;
-    private readonly IEventSink _eventSink;
-
-    public CompleteBuildingBoxRelocationHandler(
-        IInventoryRepository inventoryRepository,
-        IJobRepository jobRepository,
-        IEventSink eventSink)
-    {
-        _inventoryRepository = inventoryRepository;
-        _jobRepository = jobRepository;
-        _eventSink = eventSink;
-    }
-
-    public Result Handle(CompleteBuildingBoxRelocationCommand command)
-    {
-        JobSystem jobs = _jobRepository.Get();
-        JobSnapshot? job = jobs.Get(command.JobId);
-        if (job?.Definition is not BuildingBoxPickupJobDefinition relocation
-            || !relocation.DestinationCell.HasValue
-            || job.Status != JobStatus.InProgress
-            || job.Stage != JobStageKind.DepositItem
-            || !job.AssignedAgentId.HasValue)
-        {
-            return Result.Failure(BuildingBoxPickupErrors.InvalidJobStage);
-        }
-
-        InventoryState inventory = _inventoryRepository.Get();
-        ItemStackSnapshot? box = inventory.GetStack(relocation.StackId);
-        if (box is null
-            || !DropResidentInventoryStackHandler.IsOwnedByResident(
-                box.Location,
-                job.AssignedAgentId.Value))
-        {
-            return Result.Failure(BuildingBoxPickupErrors.BoxUnavailable);
-        }
-
-        Result moved = ResidentItemTransferService.MoveReserved(
-            inventory,
-            box.StackId,
-            job.Id,
-            quantity: 1,
-            ItemLocation.InWorld(relocation.DestinationCell.Value),
-            splitStackId: default,
-            command.Tick);
-        if (moved.IsFailure)
-        {
-            return moved;
-        }
-
-        Result completed = jobs.AdvanceStage(job.Id, command.Tick);
-        if (completed.IsFailure)
-        {
-            return completed;
-        }
-
-        _inventoryRepository.Save(inventory);
-        _jobRepository.Save(jobs);
-        _eventSink.Append(inventory.DequeueUncommittedEvents());
-        _eventSink.Append(jobs.DequeueUncommittedEvents());
         return Result.Success();
     }
 }

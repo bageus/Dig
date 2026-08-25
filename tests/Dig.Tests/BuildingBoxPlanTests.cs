@@ -151,6 +151,37 @@ public sealed class BuildingBoxPlanTests
     }
 
     [Fact]
+    public void Target_that_becomes_invalid_at_arrival_cancels_plan_and_keeps_carried_box()
+    {
+        BuildingBoxHarness harness = new BuildingBoxHarness(carriedByResident: true);
+        CellId origin = new CellId(3, 3);
+        Assert.True(harness.Confirm(
+            harness.BuildingId,
+            harness.JobId,
+            origin).IsSuccess);
+        harness.AssignAndAdvanceToDeposit();
+
+        WorldState world = harness.WorldRepository.Get();
+        CellState hidden = world.GetCell(origin).Value.State.WithExplored(false);
+        Assert.True(world.ApplyTerrainChanges(
+            new[] { new TerrainChange(origin, hidden) },
+            tick: 100).IsSuccess);
+
+        Result committed = harness.CommitToSite();
+
+        Assert.True(committed.IsSuccess, committed.Error?.ToString());
+        Assert.Equal(JobStatus.Cancelled, harness.Jobs.Get(harness.JobId)!.Status);
+        Assert.Equal(
+            BuildingStatus.Cancelled,
+            harness.Buildings.Get(harness.BuildingId)!.Status);
+        ItemStackSnapshot box = harness.Inventory.GetStack(harness.SourceStackId)!;
+        Assert.True(Dig.Application.Inventory.DropResidentInventoryStackHandler
+            .IsOwnedByResident(box.Location, harness.WorkerId));
+        Assert.Equal(0, box.ReservedQuantity);
+        Assert.Empty(harness.Jobs.GetReservations());
+    }
+
+    [Fact]
     public void Cancel_after_site_commit_returns_box_to_world()
     {
         BuildingBoxHarness harness = new BuildingBoxHarness(carriedByResident: true);

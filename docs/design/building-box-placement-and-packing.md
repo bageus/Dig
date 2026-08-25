@@ -203,6 +203,8 @@ Candidate set содержит только resident, чей `AgentInventory` в
 
 Worker не обязан входить в target cell коробки. Runtime выбирает ближайшую reachable work cell, ортогонально соседнюю с destination на том же Z0; сама destination используется только как fallback, если соседняя позиция отсутствует. Resident или loose item в destination не блокируют delivery. Когда worker с зарезервированной коробкой достигает допустимой work cell, все немедленные stage transitions дренируются в том же simulation tick, коробка перемещается в target Z0 world cell, reservation/job завершаются, BuildingBox остаётся доступной для последующего выбора и `Unpack`.
 
+Перед authoritative deposit relocation и перед commit BuildingBox на строительную площадку runtime повторно проверяет terrain, explored history, support, building/ecology occupancy и physical placement policy. Если выбранное место к моменту прибытия стало недопустимым, job и building plan отменяются, reservation освобождается, а коробка остаётся в inventory несущего resident. В world она автоматически не выкладывается.
+
 ### Assembly completion
 
 После delivery автоматически выполняется unpack/assembly. Коробка расходуется только при успешном completion здания.
@@ -218,8 +220,8 @@ Worker не обязан входить в target cell коробки. Runtime �
 - Обычный explicit cancel после pickup возвращает коробку в допустимое world location и не меняет quantity.
 - Если assigned resident уже несёт зарезервированную коробку в своём inventory и получает принудительный direct-move command, active relocation/assembly job и незавершённый plan отменяются, все item/worker/position reservations освобождаются, planned target ghost исчезает, синяя inventory-подсветка снимается, а та же quantity-one коробка остаётся в inventory этого resident.
 - Forced-move cancellation применяется только пока box ещё не committed `AtSite`; после site commit действует обычная explicit-cancel policy.
-- Temporary route/source/target block сохраняет job и reservation для retry.
-- Missing/destroyed source или permanently invalid target переводят workflow в typed blocked/failed state.
+- Недоступный маршрут или target, ставший недопустимым до deposit/site commit, отменяет workflow, освобождает reservation и оставляет уже поднятую коробку в inventory resident.
+- Missing/destroyed source переводит workflow в typed failed state.
 - Retry не резервирует коробку повторно и не создаёт duplicate entity.
 
 ## 11. Packing completed building
@@ -319,4 +321,3 @@ Diagnostics/Inspector показывают:
 
 - BuildingBox unpack placement confirmation must revalidate the currently shown ghost at click time and commit the placement immediately when the shown preview is still valid.
 - A visible valid green ghost is expected to create the unpack/assembly plan on `ЛКМ`; the click must not silently fail because of stale preview state.
-
