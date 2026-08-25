@@ -58,7 +58,10 @@ public sealed partial class DigWorldInteraction
 
     internal void OpenExcavationMenuInDigMode()
     {
-        SetRoomUpgradeMode(false);
+        if (_roomUpgradeMode)
+        {
+            SetRoomUpgradeMode(false);
+        }
     }
 
     private bool TryHandleRoomInfrastructureMarker(

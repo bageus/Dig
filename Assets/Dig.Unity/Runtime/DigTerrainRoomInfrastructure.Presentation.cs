@@ -15,7 +15,14 @@ internal sealed partial class DigTerrainWorkSession
     private OrderRoomUpgradeHandler? _roomOrder;
     private ChangeRoomRequestedPurposeHandler? _roomPurposeChange;
 
-    internal bool IsRoomUpgradeModeUnlocked => _roomProvenance.Count > 0;
+    internal bool IsRoomUpgradeModeUnlocked
+    {
+        get
+        {
+            MergeCompletedRoomProvenance();
+            return _roomProvenance.Count > 0;
+        }
+    }
 
     internal IReadOnlyList<RoomInfrastructureViewModel>
         LoadRoomInfrastructurePresentation()
