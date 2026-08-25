@@ -15,7 +15,23 @@ namespace Dig.Unity
         internal const float ResidentDepthOffset = 0f;
         internal const float RouteHeight = 0.10f;
         internal const float RouteDepthOffset = 0.02f;
-        internal const float LadderWallDepthOffset = 0f;
+        internal const float LadderWallDepthOffset = -0.42f;
+        internal const float LadderVisualWidth = 0.72f;
+        internal const float LadderVisualDepth = 0.16f;
+
+        internal static float LadderVisualHeight(int minimumY, int maximumY)
+        {
+            return maximumY - minimumY + 1f;
+        }
+
+        internal static float LadderVisualCentreOffset(
+            int originY,
+            int minimumY,
+            int maximumY)
+        {
+            float centreY = (minimumY + maximumY) * 0.5f;
+            return 0.5f - (centreY - originY);
+        }
 
         internal static Vector3 CellWorldPosition(CellId cell)
         {

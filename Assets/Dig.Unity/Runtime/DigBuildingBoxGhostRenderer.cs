@@ -155,17 +155,22 @@ namespace Dig.Unity
                 {
                     int minimumY = preview.Footprint.Min(value => value.Y);
                     int maximumY = preview.Footprint.Max(value => value.Y);
-                    float ladderHeight = maximumY - minimumY + 1f;
-                    float centreY = (minimumY + maximumY) * 0.5f;
+                    float ladderHeight = DigTunnelProjection.LadderVisualHeight(
+                        minimumY,
+                        maximumY);
+                    float centreOffset = DigTunnelProjection.LadderVisualCentreOffset(
+                        preview.Origin.Y,
+                        minimumY,
+                        maximumY);
                     _previewInstance!.transform.localPosition = new Vector3(
                         0f,
-                        -(centreY - preview.Origin.Y),
+                        centreOffset,
                         DigTunnelProjection.LadderWallDepthOffset);
                     _previewInstance.transform.localRotation = Quaternion.identity;
                     _previewInstance.transform.localScale = new Vector3(
-                        0.72f,
+                        DigTunnelProjection.LadderVisualWidth,
                         ladderHeight,
-                        0.16f);
+                        DigTunnelProjection.LadderVisualDepth);
                     _previewTint?.SetTint(preview.IsValid
                         ? new Color(0.25f, 0.82f, 0.56f, 0.72f)
                         : new Color(0.92f, 0.32f, 0.28f, 0.82f));

@@ -188,6 +188,51 @@ namespace Dig.Unity.Tests
             Object.DestroyImmediate(cameraHost);
         }
 
+        [UnityTest]
+        public IEnumerator Ladder_ghost_uses_front_camera_depth_and_exact_tunnel_height()
+        {
+            GameObject host = new GameObject("Ladder ghost depth host");
+            DigBuildingBoxGhostRenderer renderer =
+                host.AddComponent<DigBuildingBoxGhostRenderer>();
+            renderer.SetVisualCatalog(null);
+            renderer.SetItemVisualCatalog(null);
+            EntityId stackId = EntityId.Parse(
+                "00000000-0000-0000-0000-000000000105");
+            BuildingBoxGhostViewModel preview = new BuildingBoxGhostViewModel(
+                stackId,
+                new BuildingDefinitionId("building.ladder"),
+                new CellId(3, 6, 1),
+                BuildingOrientation.North,
+                new[]
+                {
+                    new CellId(3, 1, 1),
+                    new CellId(3, 2, 1),
+                    new CellId(3, 3, 1),
+                    new CellId(3, 4, 1),
+                    new CellId(3, 5, 1),
+                    new CellId(3, 6, 1),
+                },
+                new CellId(2, 6, 1),
+                isValid: true,
+                reasonCode: null,
+                BuildingBoxPlacementKind.AssembleBuilding);
+
+            renderer.Render(preview);
+            yield return null;
+
+            Transform previewContainer = GetField<Transform>(
+                renderer,
+                "_previewContainer");
+            GameObject instance = GetField<GameObject>(renderer, "_previewInstance");
+            Bounds bounds = CombinedRendererBounds(instance);
+            Assert.AreEqual(DigTunnelProjection.LadderWallDepthOffset, instance.transform.localPosition.z, 0.001f);
+            Assert.AreEqual(6f, bounds.size.y, 0.001f);
+            Assert.AreEqual(0.5f, instance.transform.localPosition.y, 0.001f);
+            Assert.AreEqual(-5.5f, previewContainer.position.y, 0.001f);
+
+            Object.DestroyImmediate(host);
+        }
+
         private static Bounds CombinedRendererBounds(GameObject root)
         {
             Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);

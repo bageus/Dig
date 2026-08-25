@@ -187,17 +187,22 @@ namespace Dig.Unity
                 {
                     int minimumY = Model.Footprint.Min(value => value.Y);
                     int maximumY = Model.Footprint.Max(value => value.Y);
-                    float ladderHeight = maximumY - minimumY + 1f;
-                    float centreY = (minimumY + maximumY) * 0.5f;
+                    float ladderHeight = DigTunnelProjection.LadderVisualHeight(
+                        minimumY,
+                        maximumY);
+                    float centreOffset = DigTunnelProjection.LadderVisualCentreOffset(
+                        Model.OriginY,
+                        minimumY,
+                        maximumY);
                     _instance.transform.localPosition = new Vector3(
                         0f,
-                        -(centreY - Model.OriginY),
+                        centreOffset,
                         DigTunnelProjection.LadderWallDepthOffset);
                     _instance.transform.localRotation = Quaternion.identity;
                     _instance.transform.localScale = new Vector3(
-                        0.72f,
+                        DigTunnelProjection.LadderVisualWidth,
                         ladderHeight,
-                        0.16f);
+                        DigTunnelProjection.LadderVisualDepth);
                     return;
                 }
 

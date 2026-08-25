@@ -82,6 +82,46 @@ public sealed class AdaptiveLadderPlacementTests
             invalid.ReasonCode);
     }
 
+    [Fact]
+    public void Ladder_preview_origin_is_the_bottom_junction_for_every_vertical_click()
+    {
+        WorldState shaft = CreateShaftWorld(1, 6, 8);
+        BuildingDefinition ladder = CreateLadderDefinition();
+        ItemId boxItem = ladder.BoxPolicy!.BoxItemId;
+        EntityId stackId = EntityId.Parse("10000000000000000000000000000002");
+        ItemStackSnapshot stack = new ItemStackSnapshot(
+            stackId,
+            boxItem,
+            quantity: 1,
+            ItemLocation.InWorld(new CellId(1, 6, 0)),
+            Array.Empty<ItemQuantityReservationSnapshot>());
+        ItemDefinition item = new ItemDefinition(
+            boxItem,
+            "Ladder box",
+            maximumStackSize: 1,
+            isTool: false);
+        BuildingBoxPlacementPresenter presenter =
+            new BuildingBoxPlacementPresenter(new BuildingPlacementValidator());
+
+        foreach (int y in new[] { 1, 3, 6 })
+        {
+            BuildingBoxGhostViewModel preview = presenter.Preview(
+                stack,
+                item,
+                ladder,
+                new CellId(3, y, 1),
+                BuildingOrientation.North,
+                shaft.CreateSnapshot(),
+                Array.Empty<CellId>(),
+                new[] { new CellId(2, 6, 1) });
+
+            Assert.That(preview.IsValid, Is.True, preview.ReasonCode);
+            Assert.That(preview.Origin, Is.EqualTo(new CellId(3, 6, 1)));
+            Assert.That(preview.Footprint.Min(cell => cell.Y), Is.EqualTo(1));
+            Assert.That(preview.Footprint.Max(cell => cell.Y), Is.EqualTo(6));
+        }
+    }
+
     private static BuildingPlacementResult Validate(
         BuildingPlacementValidator validator,
         BuildingDefinition ladder,
