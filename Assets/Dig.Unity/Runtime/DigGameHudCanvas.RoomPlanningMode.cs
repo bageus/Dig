@@ -10,11 +10,12 @@ public sealed partial class DigGameHudCanvas
 {
     private void ShowExcavationPalette()
     {
-        if (!_lastContextSignature.StartsWith(
+        if (!_interaction!.RoomUpgradeMode
+            && !_lastContextSignature.StartsWith(
                 "excavation:",
                 StringComparison.Ordinal))
         {
-            _interaction!.OpenExcavationMenuInDigMode();
+            _interaction.OpenExcavationMenuInDigMode();
         }
 
         _interaction!.EnsureDefaultExcavationDrawingMode();

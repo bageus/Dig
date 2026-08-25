@@ -263,9 +263,13 @@ public sealed class BuildingBoxAssemblyExecutionPolicyTests
             BuildingBoxAssemblyExecutionStepKind.AdvanceStage => Advance(harness, tick),
             BuildingBoxAssemblyExecutionStepKind.CommitBoxToSite =>
                 new CommitBuildingBoxToSiteHandler(
+                    harness.WorldRepository,
                     harness.BuildingsRepository,
                     harness.InventoryRepository,
                     harness.JobRepository,
+                    new BuildingPlacementValidator(),
+                    new PackableBuildingPlacementPolicyValidator(),
+                    Dig.Domain.Content.CampfireBuildingBoxContent.Catalog,
                     harness.Journal).Handle(new CommitBuildingBoxToSiteCommand(
                         harness.BuildingId,
                         harness.JobId,

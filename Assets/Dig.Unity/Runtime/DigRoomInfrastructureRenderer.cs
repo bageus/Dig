@@ -49,11 +49,6 @@ internal sealed partial class DigRoomInfrastructureRenderer : MonoBehaviour
 
     internal void SetPlanningOverlayVisibility(bool visible)
     {
-        if (_planningOverlaysVisible == visible)
-        {
-            return;
-        }
-
         _planningOverlaysVisible = visible;
         foreach (DigRoomInfrastructureMarkerVisual marker in _markers.Values)
         {

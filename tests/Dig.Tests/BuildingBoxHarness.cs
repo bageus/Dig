@@ -139,9 +139,13 @@ internal sealed class BuildingBoxHarness
     public Result CommitToSite()
     {
         return new CommitBuildingBoxToSiteHandler(
+            WorldRepository,
             BuildingsRepository,
             InventoryRepository,
             JobRepository,
+            new BuildingPlacementValidator(),
+            new PackableBuildingPlacementPolicyValidator(),
+            Dig.Domain.Content.CampfireBuildingBoxContent.Catalog,
             Journal).Handle(new CommitBuildingBoxToSiteCommand(
                 BuildingId,
                 JobId,

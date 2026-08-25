@@ -147,10 +147,10 @@ namespace Dig.Unity
                         out ResidentInventoryPlacementRoutePlan? route)
                     && !route.Path.Succeeded)
                 {
-                    Result blocked = BlockResidentInventoryPlacement(job.Id, tick);
-                    if (blocked.IsFailure)
+                    Result cancelled = CancelResidentInventoryPlacement(job, tick);
+                    if (cancelled.IsFailure)
                     {
-                        return blocked;
+                        return cancelled;
                     }
 
                     continue;
@@ -236,23 +236,36 @@ namespace Dig.Unity
             return Result.Failure(JobErrors.InvalidStatus);
         }
 
-        private Result BlockResidentInventoryPlacement(EntityId jobId, long tick)
+        private Result CancelResidentInventoryPlacement(JobSnapshot job, long tick)
         {
+            ResidentInventoryPlacementJobDefinition placement =
+                (ResidentInventoryPlacementJobDefinition)job.Definition;
+            InMemoryInventoryRepository? repository =
+                ResolveResidentInventoryPlacementRepository(placement.StackId);
+            if (repository == null)
+            {
+                return Result.Failure(InventoryErrors.StackNotFound);
+            }
+
             JobSystem jobs = _jobRepository.Get();
-            Result blocked = jobs.Block(
-                jobId,
+            Result cancelled = jobs.Cancel(
+                job.Id,
                 new JobBlockReason(
                     "inventory.placement.route_unavailable",
                     "The selected resident cannot reach the item placement target."),
                 tick);
-            if (blocked.IsFailure)
+            if (cancelled.IsFailure)
             {
-                return blocked;
+                return cancelled;
             }
 
+            InventoryState inventory = repository.Get();
+            inventory.ReleaseReservations(job.Id, tick);
+            repository.Save(inventory);
             _jobRepository.Save(jobs);
+            _worldSession.Journal.Append(inventory.DequeueUncommittedEvents());
             _worldSession.Journal.Append(jobs.DequeueUncommittedEvents());
-            _residentInventoryPlacementRoutes.Remove(jobId);
+            _residentInventoryPlacementRoutes.Remove(job.Id);
             return Result.Success();
         }
 

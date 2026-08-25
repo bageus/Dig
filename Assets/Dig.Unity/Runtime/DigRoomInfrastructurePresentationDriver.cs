@@ -11,7 +11,7 @@ internal sealed class DigRoomInfrastructurePresentationDriver : MonoBehaviour
     private DigTerrainWorkSession? _session;
     private DigRoomInfrastructureRenderer? _renderer;
     private Func<bool>? _planningVisibility;
-    private long _lastSignature = long.MinValue;
+    private string _lastSignature = string.Empty;
 
     internal void Initialize(
         DigTerrainWorkSession session,
@@ -37,22 +37,33 @@ internal sealed class DigRoomInfrastructurePresentationDriver : MonoBehaviour
             return;
         }
 
+        bool planningVisible = _planningVisibility();
         _renderer.SetPlanningOverlayVisibility(_planningVisibility());
         var rooms = _session.LoadRoomInfrastructurePresentation();
-        long signature = 17;
+        StringBuilder signature = new StringBuilder(
+            planningVisible ? "visible:" : "hidden:");
         for (int index = 0; index < rooms.Count; index++)
         {
-            signature = unchecked((signature * 31) + rooms[index].Version);
-            signature = unchecked((signature * 31) + rooms[index].ConsumedUnits);
-            signature = unchecked((signature * 31) + rooms[index].UpgradeOrderCount);
+            RoomInfrastructureViewModel room = rooms[index];
+            signature.Append(room.Id).Append(':')
+                .Append(room.Version).Append(':')
+                .Append(room.Status).Append(':')
+                .Append(room.UpgradeOrderCount).Append(':')
+                .Append(room.DeliveredUnits).Append(':')
+                .Append(room.ConsumedUnits).Append(':')
+                .Append(room.RequestedPurpose).Append(':')
+                .Append(room.ActivePurpose).Append(':')
+                .Append(room.BlockReason).Append(':')
+                .Append(room.CancellationAllowed).Append(';');
         }
 
-        if (!force && signature == _lastSignature)
+        string signatureValue = signature.ToString();
+        if (!force && signatureValue == _lastSignature)
         {
             return;
         }
 
-        _lastSignature = signature;
+        _lastSignature = signatureValue;
         _renderer.Render(rooms);
     }
 }

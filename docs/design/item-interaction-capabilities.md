@@ -135,7 +135,7 @@ Item target поглощает event даже при typed rejection, поэто
 - cancel/failure placement job освобождает reservations;
 - rejected pickup/use/drop не изменяет Inventory;
 - stale target возвращает typed reason и не создаёт другую command;
-- blocked destination использует существующий typed retry path;
+- destination, ставшая недопустимой к моменту deposit, отменяет placement job, освобождает reservation и оставляет stack в resident inventory;
 - repeated click после уже созданного reservation не создаёт второй job;
 - BuildingBox selection остаётся Presentation state и не резервирует stack.
 

@@ -47,9 +47,13 @@ namespace Dig.Unity
                 _jobRepository,
                 journal);
             _buildingBoxAssemblyCommit = new CommitBuildingBoxToSiteHandler(
+                _worldSession.Repository,
                 _buildingsRepository,
                 _buildingInventoryRepository,
                 _jobRepository,
+                new BuildingPlacementValidator(),
+                new PackableBuildingPlacementPolicyValidator(),
+                Dig.Domain.Content.CampfireBuildingBoxContent.Catalog,
                 journal);
             _buildingBoxAssemblyWork = new AddBuildingBoxAssemblyWorkHandler(
                 _buildingsRepository,
@@ -274,7 +278,8 @@ namespace Dig.Unity
                     _buildingBoxAssemblyCommit!.Handle(new CommitBuildingBoxToSiteCommand(
                         assembly.BuildingId,
                         assembly.Id,
-                        tick)),
+                        tick,
+                        BuildingPlacementBlockedCells)),
                 BuildingBoxAssemblyExecutionStepKind.CompleteAssembly =>
                     _buildingBoxAssemblyComplete!.Handle(
                         new CompleteBuildingBoxAssemblyCommand(

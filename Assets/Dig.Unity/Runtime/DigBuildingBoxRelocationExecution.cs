@@ -40,6 +40,8 @@ namespace Dig.Unity
                 _jobRepository,
                 journal);
             _buildingBoxRelocationComplete = new CompleteBuildingBoxRelocationHandler(
+                _worldSession.Repository,
+                _buildingsRepository,
                 _buildingInventoryRepository,
                 _jobRepository,
                 journal);
