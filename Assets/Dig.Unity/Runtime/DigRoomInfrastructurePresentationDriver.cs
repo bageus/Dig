@@ -1,4 +1,5 @@
 using System;
+using Dig.Presentation.Rooms;
 using UnityEngine;
 
 namespace Dig.Unity
