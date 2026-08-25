@@ -225,7 +225,7 @@ namespace Dig.Unity.Tests
                 "_previewContainer");
             GameObject instance = GetField<GameObject>(renderer, "_previewInstance");
             Bounds bounds = CombinedRendererBounds(instance);
-            Assert.AreEqual(DigTunnelProjection.LadderWallDepthOffset, instance.transform.localPosition.z, 0.001f);
+            Assert.AreEqual(-0.42f, instance.transform.localPosition.z, 0.001f);
             Assert.AreEqual(6f, bounds.size.y, 0.001f);
             Assert.AreEqual(0.5f, instance.transform.localPosition.y, 0.001f);
             Assert.AreEqual(-5.5f, previewContainer.position.y, 0.001f);
