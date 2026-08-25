@@ -95,16 +95,22 @@ public sealed class ConfirmBuildingBoxPlacementCommand : ICommand<Result>
 
 public sealed class CommitBuildingBoxToSiteCommand : ICommand<Result>
 {
-    public CommitBuildingBoxToSiteCommand(EntityId buildingId, EntityId jobId, long tick)
+    public CommitBuildingBoxToSiteCommand(
+        EntityId buildingId,
+        EntityId jobId,
+        long tick,
+        IReadOnlyCollection<CellId>? ecologyBlockedCells = null)
     {
         BuildingId = buildingId;
         JobId = jobId;
         Tick = tick;
+        EcologyBlockedCells = ecologyBlockedCells ?? Array.Empty<CellId>();
     }
 
     public EntityId BuildingId { get; }
     public EntityId JobId { get; }
     public long Tick { get; }
+    public IReadOnlyCollection<CellId> EcologyBlockedCells { get; }
 }
 
 public sealed class AddBuildingBoxAssemblyWorkCommand : ICommand<Result>

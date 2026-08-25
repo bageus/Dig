@@ -100,6 +100,8 @@ public sealed class BuildingBoxRelocationTests
         harness.Advance(tick: 7);
         Assert.Equal(JobStageKind.DepositItem, harness.Jobs.Get(JobId)!.Stage);
         Result completed = new CompleteBuildingBoxRelocationHandler(
+            harness.WorldRepository,
+            harness.BuildingsRepository,
             harness.InventoryRepository,
             harness.JobRepository,
             harness.Journal).Handle(new CompleteBuildingBoxRelocationCommand(
@@ -114,6 +116,46 @@ public sealed class BuildingBoxRelocationTests
         Assert.Equal(1, box.Quantity);
         Assert.Equal(0, box.ReservedQuantity);
         Assert.Equal(1, harness.Inventory.GetTotal(BoxItemId));
+    }
+
+    [Fact]
+    public void Target_that_becomes_invalid_at_arrival_cancels_and_keeps_box_with_worker()
+    {
+        RelocationHarness harness = new RelocationHarness(ItemLocation.InWorld(Source));
+        Assert.True(harness.Create().IsSuccess);
+        Assert.True(harness.Jobs.Claim(JobId, WorkerId, tick: 2).IsSuccess);
+        harness.Advance(tick: 3);
+        harness.Advance(tick: 4);
+        Assert.True(new AcquireBuildingBoxForRelocationHandler(
+            harness.InventoryRepository,
+            harness.JobRepository,
+            harness.Journal).Handle(new AcquireBuildingBoxForRelocationCommand(
+                JobId,
+                Source,
+                tick: 5)).IsSuccess);
+        harness.Advance(tick: 6);
+        harness.Advance(tick: 7);
+
+        WorldState world = harness.WorldRepository.Get();
+        CellState hidden = world.GetCell(Destination).Value.State.WithExplored(false);
+        Assert.True(world.ApplyTerrainChanges(
+            new[] { new TerrainChange(Destination, hidden) },
+            tick: 8).IsSuccess);
+
+        Result completed = new CompleteBuildingBoxRelocationHandler(
+            harness.WorldRepository,
+            harness.BuildingsRepository,
+            harness.InventoryRepository,
+            harness.JobRepository,
+            harness.Journal).Handle(new CompleteBuildingBoxRelocationCommand(
+                JobId,
+                tick: 9));
+
+        Assert.True(completed.IsSuccess, completed.Error?.ToString());
+        Assert.Equal(JobStatus.Cancelled, harness.Jobs.Get(JobId)!.Status);
+        ItemStackSnapshot box = harness.Inventory.GetStack(StackId)!;
+        Assert.Equal(ItemLocation.InAgent(WorkerId), box.Location);
+        Assert.Equal(0, box.ReservedQuantity);
     }
 
     [Fact]

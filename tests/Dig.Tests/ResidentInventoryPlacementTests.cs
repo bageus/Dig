@@ -3,6 +3,7 @@ using Dig.Application.Inventory;
 using Dig.Application.Jobs;
 using Dig.Application.Saving;
 using Dig.Domain.Core;
+using Dig.Domain.Exploration;
 using Dig.Domain.Inventory;
 using Dig.Domain.Jobs;
 using Dig.Domain.World;
@@ -48,6 +49,29 @@ public sealed class ResidentInventoryPlacementTests
             ResidentId,
             ResidentInventoryCompartment.Main,
             0), harness.Inventory.GetStack(FirstStackId)!.Location);
+    }
+
+    [Fact]
+    public void Explored_not_visible_target_can_create_placement_job()
+    {
+        Harness harness = new Harness();
+        ExplorationState visibility = ExplorationState.Restore(
+            new ExplorationSaveSnapshot(
+                schemaVersion: 1,
+                explored: new[] { FirstTarget },
+                markers: System.Array.Empty<LastKnownWorldItemMarker>()));
+        Assert.Equal(
+            CellVisibility.ExploredNotVisible,
+            visibility.GetVisibility(FirstTarget));
+
+        Result result = harness.Create(
+            FirstJobId,
+            FirstStackId,
+            FirstTarget,
+            tick: 10);
+
+        Assert.True(result.IsSuccess, result.Error?.ToString());
+        Assert.Equal(JobStatus.Claimed, harness.Jobs.Get(FirstJobId)!.Status);
     }
 
     [Fact]

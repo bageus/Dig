@@ -108,7 +108,7 @@ namespace Dig.Tests
             Assert.Contains("bottomOccupiedCell.Y+1", support);
             Assert.Contains("HasSupportingPlane(placement.Footprint,world)", presenter);
             Assert.Contains("HasSupportingPlane(placement.Footprint,world)", confirmation);
-            Assert.Contains("HasSupportingPlane(command.DestinationCell,world)", relocation);
+            Assert.Contains("HasSupportingPlane(destination,world)", relocation);
             Assert.Contains("if(!preview.IsVisible){Clear();return;}", renderer);
             Assert.Contains("RenderBuildingBoxItemPreview(preview)", renderer);
             Assert.Contains("resolution.WorldScale", itemGhost);
@@ -162,6 +162,12 @@ namespace Dig.Tests
                 "Dig.Application",
                 "Inventory",
                 "BuildingBoxRelocationHandlers.cs")));
+            string completion = Normalize(File.ReadAllText(Path.Combine(
+                root,
+                "src",
+                "Dig.Application",
+                "Inventory",
+                "BuildingBoxRelocationCompletionHandler.cs")));
             string codec = Normalize(File.ReadAllText(Path.Combine(
                 root,
                 "src",
@@ -175,8 +181,9 @@ namespace Dig.Tests
             Assert.Contains("ReservationKey.ForPosition(DestinationCell.Value)", definition);
             Assert.Contains("jobs.Claim(command.JobId,stack.Location.OwnerId", handlers);
             Assert.Contains("ResidentItemTransferService.AcquireReservedStack(", handlers);
-            Assert.Contains("ItemLocation.InWorld(relocation.DestinationCell.Value)", handlers);
-            Assert.Contains("MoveReserved(", handlers);
+            Assert.Contains("ItemLocation.InWorld(destination)", completion);
+            Assert.Contains("MoveReserved(", completion);
+            Assert.Contains("CancelAndKeepCarriedBox", completion);
             Assert.Contains("destination_x", codec);
             Assert.Contains("starts_held", codec);
         }

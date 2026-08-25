@@ -99,9 +99,9 @@ Resident, creature и loose world item в target cell не блокируют pl
 - зарезервированный для placement stack остаётся видимым в inventory и получает синюю подкраску с числовым reservation marker до deposit/cancel/failure cleanup;
 - несколько placement jobs одного resident образуют deterministic dependency chain по порядку создания и выполняются этим resident последовательно;
 - следующая работа становится available только после terminal-success предыдущей; cancel/failure предыдущей освобождает её reservations и явно разблокирует либо отменяет dependents по общей job policy;
-- destination, ставшая blocked до deposit, переводит job в typed blocked/retry path без потери/дублирования stack;
+- destination, ставшая недопустимой до deposit, отменяет job при прибытии, освобождает reservation и оставляет stack в inventory того же resident без потери/дублирования;
 - completion active Cargo expansion использует reserved spill-aware Inventory transaction: expansion и всё содержимое Cargo перемещаются в destination, дополнительные slots исчезают в том же refresh, quantity сохраняется;
-- cancel/failure/retry не проливает Cargo и освобождает reservation, пока deposit не committed;
+- cancel/failure не проливает Cargo и освобождает reservation, пока deposit не committed;
 - invalid target не меняет Inventory и не создаёт job;
 - RMB отменяет preview и восстанавливает системный cursor;
 - успешное создание job очищает selection/preview и восстанавливает системный cursor, но stack остаётся видимым синим как reserved до deposit;
@@ -190,7 +190,7 @@ Quick drop использует отдельный явный modifier:
 13. resident проходит через world item collider;
 14. inventory generic item LMB -> hidden system cursor + transparent moving ghost -> green valid flat/walkable target -> resident-bound placement job, stack остаётся синим и reserved в slot до deposit;
 15. два и более placement jobs одного resident выполняются строго в порядке создания, без параллельного claim, потери или дублирования items;
-16. blocked destination использует retry/cancel cleanup, снимает stale blue tint, а save/load сохраняет очередь и stage;
+16. destination, ставшая недопустимой к моменту прибытия, отменяет job, снимает stale blue tint и оставляет предмет в inventory resident; save/load сохраняет очередь и stage до этой проверки;
 17. inventory item C hover -> animated down arrow -> C+LMB immediate drop at resident cell -> fall through open vertical tunnel;
 18. D+LMB не создаёт quick drop; camera pan остаётся доступен через `A/D/S/W` и `Left/Right/Down/Up`;
 19. double click/RMB не создают quick drop; Alt use, `C` quick drop и BuildingBox ordinary placement сохраняют profile-defined priority;
